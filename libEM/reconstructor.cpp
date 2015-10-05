@@ -3296,8 +3296,7 @@ void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, fl
 {
 	m_weighting = ESTIMATE;
 	if( params.has_key("weighting") ) {
-		int tmp = int( params["weighting"] );
-		if( tmp==0 ) m_weighting = NONE;
+		if( int( params["weighting"])==0 ) m_weighting = NONE;
 	}
 
 
@@ -3671,37 +3670,110 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 		return 1;
 	}
 	if(weight >0.0f) {
+		int buffed = slice->get_attr_default( "buffed", 0 );
+			if( buffed > 0 ) {
+				insert_buffed_slice( slice, weight );
+				return 0;
+			}
+
 		int padffted= slice->get_attr_default("padffted", 0);
-		if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
+		if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
+			{
 			// FIXME: Why doesn't this throw an exception?
 			LOGERR("Tried to insert a slice that is the wrong size.");
 			return 1;
 		}
 
 		EMData* padfft = NULL;
-		EMData* sigmasq2;
-		sigmasq2 = slice->get_attr("sigmasq2");
-		//cout<<"  size  "<<sigmasq2->get_xsize()<<"   "<<sigmasq2->get_ysize()<<endl;
+
 		if( padffted != 0 ) padfft = new EMData(*slice);
 		else                padfft = padfft_slice( slice, t, m_npad );
 
+		float tmp = padfft->get_attr_default("ctf_applied", 0);
+		int   ctf_applied = (int) tmp;
+
+		// Generate 2D CTF (EMData object)
+    	ctf_store_real::init( padfft->get_ysize(), padfft->get_attr( "ctf" ) );
+    	EMData* ctf2d = ctf_store_real::get_ctf_real(); //This is in 2D projection plane
+
+		int nx=ctf2d->get_xsize(),ny=ctf2d->get_ysize(),nz=ctf2d->get_zsize();
+		float *ctf2d_ptr  = ctf2d->get_data();
+
+		size_t size = (size_t)nx*ny*nz;
+		if (!ctf_applied) {
+			for (int i = 0; i < size; ++i) padfft->cmplx(i) *= ctf2d_ptr[i]; // Multiply padfft by CTF
+		}
+
+		for (int i = 0; i < size; ++i) ctf2d_ptr[i] *= ctf2d_ptr[i];     // Square 2D CTF
+		
+		EMData* sigmasq2;
+		sigmasq2 = slice->get_attr("sigmasq2");
+		
+		insert_padfft_slice_weighted(padfft, ctf2d, sigmasq2, t, weight);
+
+		checked_delete( ctf2d );  
+		checked_delete( padfft );
+
+		//cout<<"  size  "<<sigmasq2->get_xsize()<<"   "<<sigmasq2->get_ysize()<<endl;
+
 //for (int ix = 0; ix <= 20; ix++) cout <<"  "<<(*sigmasq2)(ix) ;//<<"  "<<(*padfft)(ix,1);
 //cout <<endl;
-		insert_padfft_slice_weighted( padfft, sigmasq2, t, weight );
 
-		checked_delete( padfft );
 	}
 	return 0;
 }
 
-int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData* sigmasq2, const Transform& t, float weight )
+
+int nn4_ctfwReconstructor::insert_buffed_slice( const EMData* buffed, float weight )
+{
+	const float* bufdata = buffed->get_data();
+	float* cdata = m_volume->get_data();
+	float* wdata = m_wptr->get_data();
+
+	int npoint = buffed->get_xsize()/4;
+	for( int i=0; i < npoint; ++i ) {
+
+		int pos2 = int( bufdata[4*i] );
+		int pos1 = pos2 * 2;
+		cdata[pos1  ] += bufdata[4*i+1]*weight;
+		cdata[pos1+1] += bufdata[4*i+2]*weight;
+		wdata[pos2  ] += bufdata[4*i+3]*weight;
+/*
+        std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
+        std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
+        std::cout << pos2 << " " << bufdata[5*i+4] << std::endl;
+ */
+	}
+	return 0;
+}
+
+int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData* ctf2d2, EMData* sigmasq2, const Transform& t, float weight )
 {
 	Assert( padfft != NULL );
 	//float tmp = padfft->get_attr_default("ctf_applied", 0);
 	//int   ctf_applied = (int) tmp;
 
+	vector<float> abc_list;
+	int abc_list_len = 0;	
+	if (m_volume->has_attr("smear"))
+	{
+		abc_list = m_volume->get_attr("smear");
+		abc_list_len = abc_list.size();
+	}
+	
+	// for (unsigned int isym=0; isym < tsym.size(); isym++)  m_volume->nn_ctfw(m_wptr, padfft, sigmasq2, tsym[isym], weight);
+
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
-	for (unsigned int isym=0; isym < tsym.size(); isym++)  m_volume->nn_ctfw(m_wptr, padfft, sigmasq2, tsym[isym], weight);
+	for (unsigned int isym=0; isym < tsym.size(); isym++) {
+		if (abc_list_len == 0)
+			// m_volume->nn_ctf_exists(m_wptr, padfft, ctf2d2, tsym[isym], weight);
+			m_volume->nn_ctfw(m_wptr, padfft, ctf2d2, sigmasq2, tsym[isym], weight);
+		else
+			for (int i = 0; i < abc_list_len; i += 4) {
+				// m_volume->nn_ctf_exists(m_wptr, padfft, ctf2d2, tsym[isym] * Transform(Dict("type", "SPIDER", "phi",  abc_list[i], "theta", abc_list[i+1], "psi", abc_list[i+2])), weight * abc_list[i+3]);
+				m_volume->nn_ctfw(m_wptr, padfft, ctf2d2, sigmasq2, tsym[isym] * Transform(Dict("type", "SPIDER", "phi",  abc_list[i], "theta", abc_list[i+1], "psi", abc_list[i+2])), weight * abc_list[i+3]);
+			}
+	}
 
 	return 0;
 }

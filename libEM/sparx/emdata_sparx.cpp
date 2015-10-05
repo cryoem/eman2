@@ -1828,16 +1828,18 @@ void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Tr
 }
 
 //  Helper functions for method nn4_ctfw
-void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* sigmasq2, const Transform& tf, float weight) {
+// void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* sigmasq2, const Transform& tf, float weight) {
+void EMData::onelinenn_ctfw(int j, int n, int n2,
+		          EMData* w, EMData* bi, EMData* c2, EMData* sigmasq2, const Transform& tf, float weight) {
 //std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 //for (int i = 0; i <= 12; i++)  cout <<"  "<<i<<"  "<<(*sigmasq2)(i)<<endl;
-    int nnd4 = n*n/4;
+	int nnd4 = n*n/4;
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	//for (int i = 0; i<sigmasq2->get_xsize(); i++) cout <<"  "<<i<<"  "<< (*sigmasq2)(i)<<endl;
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
-		int r2 = i*i+j*j;
-		if ( (r2<nnd4) && !((0==i) && (j<0)) ) {
+		int r2 = i*i + j*j;
+		if ( (r2 < nnd4) && !((0 == i) && (j < 0)) ) {
 			float ctf = ctf_store::get_ctf( r2, i, j ); //This is in 2D projection plane
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
@@ -1849,6 +1851,9 @@ void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData*
 				znew = -znew;
 				btq = conj(bi->cmplx(i,jp));
 			} else  btq = bi->cmplx(i,jp);
+			
+			float c2val = (*c2)(i,jp);
+			
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
@@ -1866,8 +1871,10 @@ void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData*
             float df = rr - float(ir);
             float mult = (1.0f - df)*(*sigmasq2)(ir) + df*(*sigmasq2)(ir+1);
             //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
-			cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
-			(*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
+			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
+			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
+			cmplx(ixn, iya, iza) += btq * mult * weight;
+			(*w)(ixn, iya, iza) += c2val * mult * weight;
 
 		}
 	}
@@ -1920,17 +1927,18 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 }
 
 void EMData::onelinenn_ctf_exists(int j, int n, int n2,
-		          EMData* w, EMData* bi, EMData* c2, const Transform& tf, float mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
-
+		          EMData* w, EMData* bi, EMData* c2, const Transform& tf, float weight) {
+	//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
     //int remove = bi->get_attr_default( "remove", 0 );
 
+	int nnd4 = n*n/4;
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
-	        int r2 = i*i + j*j;
-		if ( (r2< n*n/4) && !((0==i) && (j< 0)) ) {
-
-			 //	   if ( !((0 == i) && (j < 0))) {
+	    int r2 = i*i + j*j;
+		if ( (r2 < n*n/4) && !((0 == i) && (j < 0)) ) {
+			float ctf = ctf_store::get_ctf( r2, i, j ); //This is in 2D projection plane
+			//	   if ( !((0 == i) && (j < 0))) {
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
@@ -1956,11 +1964,11 @@ void EMData::onelinenn_ctf_exists(int j, int n, int n2,
 			else          iya = n + iyn + 1;
 
 			//if( remove > 0 ) {
-			//	cmplx(ixn,iya,iza) -= btq*mult;
-			//	(*w)(ixn,iya,iza) -= c2val*mult;
+			//	cmplx(ixn,iya,iza) -= btq*weight;
+			//	(*w)(ixn,iya,iza) -= c2val*weight;
 			//} else {
-				cmplx(ixn,iya,iza) += btq*mult;
-				(*w)(ixn,iya,iza) += c2val*mult;
+				cmplx(ixn, iya, iza) += btq * weight;
+				(*w)(ixn, iya, iza) += c2val * weight;
 			//}
 
 		}
@@ -1987,7 +1995,8 @@ void EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 	EXITFUNC;
 }
 
-void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* sigmasq2, const Transform& tf, float weight ) {
+// void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* sigmasq2, const Transform& tf, float weight ) {
+void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* sigmasq2, const Transform& tf, float weight ) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -1997,14 +2006,19 @@ void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* sigmasq2, const Transform
 	myfft->set_array_offsets(0,1);
 	//sigmasq2->set_array_offsets(0,1);
 
-    Ctf* ctf = myfft->get_attr("ctf");
-    ctf_store::init( ny, ctf );
-    if(ctf) {delete ctf; ctf=0;}
+    // Ctf* ctf = myfft->get_attr("ctf");
+    // ctf_store::init( ny, ctf );
+    // if(ctf) {delete ctf; ctf=0;}
+    
+	vector<int> ctf2d2_saved_offsets = ctf2d2->get_array_offsets();
+	ctf2d2->set_array_offsets(0,1);
 
 	// loop over frequencies in y
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, sigmasq2, tf, weight);
+	// for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, sigmasq2, tf, weight);
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, ctf2d2, sigmasq2, tf, weight);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
+	ctf2d2->set_array_offsets(ctf2d2_saved_offsets);
 	EXITFUNC;
 }
 
@@ -2028,7 +2042,7 @@ void EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float
 	EXITFUNC;
 }
 
-void EMData::nn_ctf_exists(EMData* w, EMData* myfft, EMData* ctf2d2, const Transform& tf, float mult) {
+void EMData::nn_ctf_exists(EMData* w, EMData* myfft, EMData* ctf2d2, const Transform& tf, float weight) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -2041,7 +2055,7 @@ void EMData::nn_ctf_exists(EMData* w, EMData* myfft, EMData* ctf2d2, const Trans
 	ctf2d2->set_array_offsets(0,1);
 
 	// loop over frequencies in y
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf_exists(iy, ny, nxc, w, myfft, ctf2d2, tf, mult);
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf_exists(iy, ny, nxc, w, myfft, ctf2d2, tf, weight);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	ctf2d2->set_array_offsets(ctf2d2_saved_offsets);

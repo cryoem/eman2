@@ -236,7 +236,8 @@ void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform&
  * @param tf Transform reference
  * @param mult
  */
-void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* sigmasq2, const Transform& tf, float weight);
+// void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* sigmasq2, const Transform& tf, float weight);
+void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, EMData* sigmasq2, const Transform& tf, float weight);
 
 
 /** Nearest Neighbor interpolation.
@@ -267,7 +268,7 @@ void insert_rect_slice_ctf_applied(EMData* w, EMData* myfft, const Transform& tr
  * @param mult
  */
 void onelinenn_ctf_applied(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float mult);
-void onelinenn_ctf_exists(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, const Transform& tf, float mult);
+void onelinenn_ctf_exists(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, const Transform& tf, float weight);
 
 /** Nearest Neighbor interpolation.
  *  Modifies the current object.
@@ -280,7 +281,7 @@ void onelinenn_ctf_exists(int j, int n, int n2, EMData* w, EMData* bi, EMData* c
  */
 void nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float mult );
 
-void nn_ctf_exists(EMData* w, EMData* myfft, EMData* ctf2d2, const Transform& tf, float mult );
+void nn_ctf_exists(EMData* w, EMData* myfft, EMData* ctf2d2, const Transform& tf, float weight);
 
 /** Symmetrize plane 0
  *  Modifies the current object.
@@ -302,7 +303,8 @@ void symplane0_rect(EMData* w);
  * @param tf Transform reference
  * @param mult
  */
-void nn_ctfw(EMData* w, EMData* myfft, EMData* sigmasq2, const Transform& tf, float weight);
+//void nn_ctfw(EMData* w, EMData* myfft, EMData* sigmasq2, const Transform& tf, float weight);
+void nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* sigmasq2, const Transform& tf, float weight);
 
 
 /** Symmetrize volume in real space.
