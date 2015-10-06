@@ -20,7 +20,7 @@
         "MODE": "filter",
         "PROGRAM": "e2rawdata.py",
         "WIZARD":"/lib/pmconfig/rawdata.json",
-        "NAME": "Import Micrographs",
+        "NAME": "Import Micrographs & est Defocus",
         "CHILDREN": []
       }
     ]
@@ -36,15 +36,16 @@
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
         "PROGRAM": "e2boxer.py",
         "WIZARD":"/lib/pmconfig/boxer.json",
-        "NAME": "Interactive Boxing-  e2boxer",
+        "NAME": "Interactive Particle Picking (e2boxer.py)",
         "CHILDREN": []
       },
       {
         "ICON": "green_boxes",
-	"MODE": "coords",
-        "PROGRAM": "e2import.py",
-        "WIZARD":"/lib/pmconfig/particleimport.json",
-        "NAME": "Import Box Coord (.box files) -e2import.py",
+        "MODE": "boxing",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
+        "PROGRAM": "e2boxer.py",
+        "WIZARD":"/lib/pmconfig/boxer.json",
+        "NAME": "New Particle Picker (e2boxer21.py)",
         "CHILDREN": []
       },
       {
@@ -54,39 +55,58 @@
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
         "PROGRAM": "e2boxer.py",
         "WIZARD":"/lib/pmconfig/boxergo.json",
-        "NAME": "Generate Output -e2boxer",
+        "NAME": "Generate Output (e2boxer)",
         "CHILDREN": []
       },
       {
-        "ICON": "green_boxes",
-        "MODE": "boxing",
-        "PROGRAM": "e2RCTboxer.py",
-        "NAME": "Box Tilt Pairs -e2RCTboxer",
-        "CHILDREN": []
+      "ICON": "green_boxes",
+      "NAME": "Tilt Pair",
+      "CHILDREN": [
+        {
+          "ICON": "green_boxes",
+          "MODE": "boxing",
+          "PROGRAM": "e2RCTboxer.py",
+          "NAME": "Box Tilt Pairs -e2RCTboxer",
+          "CHILDREN": []
+        },
+        {
+          "ICON": "green_boxes",
+          "MODE": "extraction",
+          "PROGRAM": "e2RCTboxer.py",
+          "NAME": "Extract Tilt Pairs -e2RCTboxer",
+          "CHILDREN": []
+        }
+      ]
       },
       {
-        "ICON": "green_boxes",
-        "MODE": "extraction",
-        "PROGRAM": "e2RCTboxer.py",
-        "NAME": "Extract Tilt Pairs -e2RCTboxer",
-        "CHILDREN": []
-      },
+      "ICON": "green_boxes",
+      "NAME": "Import Tools",
+      "CHILDREN": [
       {
         "ICON": "green_boxes",
-	"MODE": "parts",
+        "MODE": "coords",
         "PROGRAM": "e2import.py",
         "WIZARD":"/lib/pmconfig/particleimport.json",
-        "NAME": "Particle Import -e2import.py",
+        "NAME": "Import EMAN1 .box files (e2import.py)",
         "CHILDREN": []
       },
       {
         "ICON": "green_boxes",
-	"MODE": "eman1",
+        "MODE": "eman1",
         "PROGRAM": "e2import.py",
-        "NAME": "Import start.hed/img from EMAN1",
+        "NAME": "Import EMAN1 start.hed/img",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+        "MODE": "parts",
+        "PROGRAM": "e2import.py",
+        "WIZARD":"/lib/pmconfig/particleimport.json",
+        "NAME": "Import Particle Stacks (e2import.py)",
         "CHILDREN": []
       }
-
+      ]
+      }
     ]
   },
   {
@@ -100,17 +120,17 @@
         "MODE": "autofit",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
         "WIZARD":"/lib/pmconfig/ctfautofit.json",
-        "NAME": "Automated Fitting -e2ctf",
-	"NOTELEVEL": "1",
+        "NAME": "Automated Fitting (e2ctf)",
+        "NOTELEVEL": "1",
         "CHILDREN": []
       },
       {
         "ICON": "ctf",
         "PROGRAM": "e2ctf.py",
-	"MODE": "tuning",
+        "MODE": "tuning",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
         "WIZARD":"/lib/pmconfig/ctftuning.json",
-        "NAME": "Interactive Tuning -e2ctf",
+        "NAME": "Interactive Tuning (e2ctf)",
         "CHILDREN": []
       },
       {
@@ -119,8 +139,8 @@
         "MODE": "gensf",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
         "WIZARD":"/lib/pmconfig/ctfsf.json",
-        "NAME": "Generate Structure Factor - e2ctf",
-	"NOTELEVEL": "1",
+        "NAME": "Generate Structure Factor (e2ctf)",
+        "NOTELEVEL": "1",
         "CHILDREN": []
       },
       {
@@ -129,10 +149,14 @@
         "MODE": "genoutp",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
         "WIZARD":"/lib/pmconfig/ctfgo.json",
-        "NAME": "Generate Output - e2ctf",
-	"NOTELEVEL": "1",
+        "NAME": "Generate Output (e2ctf)",
+        "NOTELEVEL": "1",
         "CHILDREN": []
       },
+      {
+      "ICON": "green_boxes",
+      "NAME": "Other Tools",
+      "CHILDREN": [
       {
         "ICON": "ctf",
         "PROGRAM": "e2ctffind3util.py",
@@ -146,7 +170,9 @@
         "MODE": "import",
         "NAME": "Import Ctffind3 Results - e2ctf",
         "CHILDREN": []
-      }      
+      }
+      ]
+      }
     ]
   },
   {
@@ -159,7 +185,7 @@
         "PROGRAM": "e2buildsets.py",
         "NAME": "Build Particle Sets",
         "WIZARD":"/lib/pmconfig/buildsets.json",
-	"NOTELEVEL": "1",
+        "NOTELEVEL": "1",
         "CHILDREN": []
       }
     ]
@@ -167,14 +193,14 @@
   {
     "ICON": "web",
     "TABLE": "EMRefine2dTable(withmodal=False,multiselect=False)",
-    "NAME": "Reference Free Class Averages",
+    "NAME": "2D Analysis",
     "CHILDREN": [
       {
         "ICON": "web",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refine2d",
-    	"MODE": "spr",
+        "MODE": "spr",
         "PROGRAM": "e2refine2d.py",
-        "NAME": "Generate Classes - e2refine2d",
+        "NAME": "Reference Free Class Averaging (e2refine2d)",
         "CHILDREN": []
       },
       {
@@ -182,7 +208,7 @@
 	"PROGRAM":"e2refinetorelion2d.py",
 	"WIZARD":"/lib/pmconfig/relion2d.json",
 	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinetorelion2d",
-	"NAME": "Relion 2D Maximum Likelihood",
+	"NAME": "Export to Relion 2D",
 	"NOTELEVEL": "1",
 	"EXPERT": 1,
 	"CHILDREN": []
@@ -191,7 +217,7 @@
 	"ICON": "single_image",
 	"PROGRAM":"e2evalparticles.py",
 	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2evalparticles",
-	"NAME": "Class-based particle eval",
+	"NAME": "Separate Particles By Class (e2evalparticles)",
 	"NOTELEVEL": "1",
 	"EXPERT": 1,
 	"CHILDREN": []
@@ -209,7 +235,16 @@
         "EXPERT": 1,
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2initialmodel",
         "PROGRAM": "e2initialmodel.py",
-        "NAME": "Make Model - e2initialmodel",
+        "NAME": "Make Initial Model (e2initialmodel)",
+	"NOTELEVEL": "1",
+        "CHILDREN": []
+      },
+     {
+        "ICON": "single_image_3d",
+        "EXPERT": 1,
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2initialmodel",
+        "PROGRAM": "e2initialmodel_hisym.py",
+        "NAME": "High Symmetry Initial Model (e2initialmodel_hisym)",
 	"NOTELEVEL": "1",
         "CHILDREN": []
       },
@@ -218,17 +253,10 @@
 	"MODE":"align",
         "WIZARD":"/lib/pmconfig/symsearch.json",
         "PROGRAM": "e2symsearch3d.py",
-        "NAME": "Align to Symmetry Axis",
+        "NAME": "Align Map to Symmetry Axes (e2symsearch3d)",
 	"NOTELEVEL": "1",
         "CHILDREN": []
-      },
-      {
-        "ICON":"refine",
-        "NAME":"Random Conical Tilt Reconstruction",
-        "PROGRAM":"e2rct.py",
-        "CHILDREN":[]
-      }
-    ]
+      }    ]
   },
   {
     "ICON": "refine",
@@ -254,24 +282,23 @@
         "CHILDREN": []
       },
       {
-        "ICON": "eulers",
-        "PROGRAM": "e2eulerxplor.py",
-        "NAME": "Run e2eulerxplor",
-	"WIKIPAGE":"http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2eulerxplor",
-        "CHILDREN": []
+        "ICON":"refine",
+        "NAME":"Random Conical Tilt Reconstruction (e2rct)",
+        "PROGRAM":"e2rct.py",
+        "CHILDREN":[]
       },
       {
 	"ICON": "refine",
 	"PROGRAM": "e2refinetorelion3d.py",
         "WIZARD":"/lib/pmconfig/relion3d.json",
 	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinetorelion3d",
-	"NAME": "Relion 3D Refinement",
+	"NAME": "Relion Refinement",
 	"EXPERT": 1,
 	"CHILDREN": []
       },
       {
         "ICON": "refine",
-        "NAME": "FreAlign 3D Refinement",
+        "NAME": "FreAlign Refinement",
         "CHILDREN": [
            {
             "ICON": "refine",
@@ -301,8 +328,21 @@
   },
   {
     "ICON":"resolution",
-    "NAME":"Validation",
+    "NAME":"Validation and Analysis",
     "CHILDREN": [
+      {
+        "ICON": "eulers",
+        "PROGRAM": "e2eulerxplor.py",
+        "NAME": "Run e2eulerxplor",
+	"WIKIPAGE":"http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2eulerxplor",
+        "CHILDREN": []
+      },
+       {
+        "ICON":"resolution",
+        "PROGRAM":"e2runresmap.py",
+        "NAME":"Run ResMap",
+        "CHILDREN":[]
+       },
       {
         "ICON":"resolution",
         "PROGRAM":"e2tiltvalidate.py",
@@ -317,27 +357,6 @@
         "NAME":"Plot Tilt Validation",
         "CHILDREN":[]
       }
-    ]
-  },
-  {
-    "ICON": "resolution",
-    "TABLE": "PMFSCTableWidget('fsclist','','',resize=True)",
-    "NAME": "Resolution",
-    "CHILDREN": [
-       {
-        "ICON": "resolution",
-        "WIZARD":"/lib/pmconfig/plotfsc.json",
-        "PROGRAM": "e2plotFSC.py",
-        "NAME": "Run e2plotFSC",
-	"NOTELEVEL": "1",
-        "CHILDREN": []
-       },
-       {
-        "ICON":"resolution",
-        "PROGRAM":"e2runresmap.py",
-        "NAME":"Run ResMap",
-        "CHILDREN":[]
-       }
     ]
   }
 ]
