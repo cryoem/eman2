@@ -239,6 +239,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.changec={}
 		self.selected=[]
 		self.hist = []
+		self.rzonce=False			# This is used to make sure we don't automatically resize more than once
 		self.targetorigin=None
 		self.targetspeed=20.0
 		self.mag = 1.1				# magnification factor
@@ -739,7 +740,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				
 		cache_size = -1
 
-		if self.data==None : needresize=True
+		if self.data==None and not self.rzonce: 
+			needresize=True
+			self.rzonce=True
 		else: needresize=False
 
 		if isinstance(obj, EMMXDataCache) :

@@ -911,34 +911,39 @@ void Axis0FourierProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	if (!image->is_complex()) {
-		fft = image->do_fft();
-		fftd = fft->get_data();
-		f=1;
-	}
-	else {
-		fft=image;
-		fftd=image->get_data();
-	}
+	if (!image->is_complex()) fft = image->do_fft();
+	else fft = image;
 
-	int nx=fft->get_xsize();
+	int neighbor=params.set_default("neighbor",0);
+	
+	int nx=fft->get_xsize()/2;
 	int ny=fft->get_ysize();
 	if (params.set_default("x",1)) {
-		for (int x=2; x<nx; x++) fftd[x]=0;
+		if (neighbor) {
+				for (int x=1; x<nx; x++) fft->set_complex_at(x,0,(fft->get_complex_at(x,1)+fft->get_complex_at(x,-1))/sqrt(2.0f)); // sqrt is because the pixels are normally pretty noisy
+		}
+		else {
+				for (int x=1; x<nx; x++) fft->set_complex_at(x,0,0.0f);
+		}
 	}
 	if (params.set_default("y",1)) {
-		for (int y=1; y<ny; y++) { fftd[y*nx]=0; fftd[y*nx+1]=0; }
+		if (neighbor) {
+				for (int y=1; y<ny; y++) fft->set_complex_at(0,y,(fft->get_complex_at(-1,y)+fft->get_complex_at(1,y))/sqrt(2.0f)); // sqrt is because the pixels are normally pretty noisy
+		}
+		else {
+				for (int y=1; y<ny; y++) fft->set_complex_at(0,y,0.0f);
+		}
 	}
 
-	if (f) {
-		fft->update();
+	if (fft!=image) {
+//		fft->update();
 		EMData *ift=fft->do_ift();
-		memcpy(image->get_data(),ift->get_data(),(nx-2)*ny*sizeof(float));
+		memcpy(image->get_data(),ift->get_data(),(nx*2-2)*ny*sizeof(float));
 		delete fft;
 		delete ift;
 	}
 
-	image->update();
+//	image->update();
 
 }
 

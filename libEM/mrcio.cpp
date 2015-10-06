@@ -398,27 +398,6 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 		dict["MRC.nystart"] = mrch.nxstart;
 	}
 
-	Transform * trans = new Transform();
-
-	if (is_transpose) {
-		trans->set_trans(mrch.nystart, mrch.nxstart, mrch.nzstart);
-		trans->set_rotation(Dict("type", "imagic", "alpha", mrch.alpha,
-										 "beta", mrch.beta, "gamma", mrch.gamma));
-	}
-	else {
-		trans->set_trans(mrch.nxstart, mrch.nystart, mrch.nzstart);
-		trans->set_rotation(Dict("type", "imagic", "alpha", mrch.alpha,
-										 "beta", mrch.beta, "gamma", mrch.gamma));
-	}
-	
-	if (zlen <= 1) {
-		dict["xform.projection"] = trans;
-	}
-	else {
-		dict["xform.align3d"] = trans;
-	}
-
-	if (trans) {delete trans; trans = NULL;}
 
 	EXITFUNC;
 
@@ -629,10 +608,10 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	if (nz <= 1 && dict.has_key("xform.projection") && ! dict.has_key("UCSF.chimera")) {
 		Transform * t = dict["xform.projection"];
-		Dict d = t->get_params("imagic");
-		mrch.alpha   = d["alpha"];
-		mrch.beta    = d["beta"];
-		mrch.gamma   = d["gamma"];
+		Dict d = t->get_params("eman");
+//		mrch.alpha   = d["alpha"];
+//		mrch.beta    = d["beta"];
+//		mrch.gamma   = d["gamma"];
 		mrch.xorigin = d["tx"];
 		mrch.yorigin = d["ty"];
 		mrch.zorigin = d["tz"];
@@ -641,10 +620,10 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	}
 	else if (nz > 1 && dict.has_key("xform.align3d") && ! dict.has_key("UCSF.chimera")) {
 		Transform * t = dict["xform.align3d"];
-		Dict d = t->get_params("imagic");
-		mrch.alpha   = d["alpha"];
-		mrch.beta    = d["beta"];
-		mrch.gamma   = d["gamma"];
+		Dict d = t->get_params("eman");
+//		mrch.alpha   = d["alpha"];
+//		mrch.beta    = d["beta"];
+//		mrch.gamma   = d["gamma"];
 		mrch.xorigin = d["tx"];
 		mrch.yorigin = d["ty"];
 		mrch.zorigin = d["tz"];

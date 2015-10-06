@@ -520,7 +520,8 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 			d.put("x", EMObject::INT, "If set, zeroes along X axis. Default True.");
-			d.put("y", EMObject::INT, "If set, zeroes along X axis. Default True.");
+			d.put("y", EMObject::INT, "If set, zeroes along Y axis. Default True.");
+			d.put("neighbor", EMObject::INT, "If set, interpolates neighbor values rather than zeroing");
 			return d;
 		}
 

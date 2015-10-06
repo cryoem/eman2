@@ -265,7 +265,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			print ""
 
 			av=avgr.finish()
-			av.write_image(outname[:-4]+"_mean.hdf",0)
+			if first!=1 or last!=-1 : av.write_image(outname[:-4]+"_{}-{}_mean.hdf".format(first,flast),0)
+			else: av.write_image(outname[:-4]+"_mean.hdf",0)
 
 		# Generates different possibilites for resolution-weighted, but unaligned, averages
 
@@ -486,14 +487,14 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	s2a=s2.get_clip(Region((s2["nx"]-newbx)/2-guess[0],(s2["ny"]-newbx)/2-guess[1],newbx,newbx))
 
 #	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
-	s1a.process_inplace("filter.xyaxes0")
+	s1a.process_inplace("filter.xyaxes0",{"neighbor":1})
 #	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 #	s1a.process_inplace("threshold.compress",{"value":0,"range":s1a["sigma"]/2.0})
 	s1a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 	
 #	s2a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 #	s2a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
-	s2a.process_inplace("filter.xyaxes0")
+	s2a.process_inplace("filter.xyaxes0",{"neighbor":1})
 	s2a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 
 	tot=s1a.calc_ccf(s2a)
@@ -575,14 +576,14 @@ def align_subpixel(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	s2a.scale(2)
 
 #	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
-	s1a.process_inplace("filter.xyaxes0")
+	s1a.process_inplace("filter.xyaxes0",{"neighbor":1})
 #	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 #	s1a.process_inplace("threshold.compress",{"value":0,"range":s1a["sigma"]/2.0})
 	s1a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 	
 #	s2a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 #	s2a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
-	s2a.process_inplace("filter.xyaxes0")
+	s2a.process_inplace("filter.xyaxes0",{"neighbor":1})
 	s2a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 	
 	tot=s1a.calc_ccf(s2a)
