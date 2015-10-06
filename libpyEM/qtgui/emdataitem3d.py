@@ -1314,7 +1314,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 
 	def setDiffuseColor(self, red, green, blue, alpha=1.0):
 		self.diffuse = [red, green, blue, alpha]
-
+	
 	def setSpecularColor(self, red, green, blue, alpha=1.0):
 		self.specular = [red, green, blue, alpha]
 
@@ -1575,10 +1575,10 @@ class EMIsosurface(EMItem3D,EM3DModel):
 
 			glStencilFunc(GL_EQUAL,self.rank,0)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
-			glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
-			glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
-			glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
-			glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
+			glMaterial(GL_FRONT, GL_AMBIENT, self.ambient) #self.colors[self.isocolor]["ambient"])
+			glMaterial(GL_FRONT, GL_DIFFUSE, self.diffuse) #self.colors[self.isocolor]["diffuse"])
+			glMaterial(GL_FRONT, GL_SPECULAR, self.specular) #self.colors[self.isocolor]["specular"])
+			glMaterial(GL_FRONT, GL_SHININESS, self.shininess) #self.colors[self.isocolor]["shininess"])
 			glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.isocolor]["emission"])
 			glColor(self.colors[self.isocolor]["ambient"])
 			glPushMatrix()
