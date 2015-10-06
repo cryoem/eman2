@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-#  06/27/2015
-#  New version.  
+#  10/06/2015
+#  Use spherical/cosine mask to assess resolution.
 #
 #
 
@@ -820,7 +820,7 @@ def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 	f = bcast_list_to_all(f, myid, main_node)
 	return f
 
-
+'''
 def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	# this function is single processor
 	#  Get updated FSC curves, user can also provide a mask using radi variable
@@ -853,12 +853,16 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	lowpass, falloff = fit_tanh1(nfsc, 0.01)
 
 	return  round(lowpass,4), round(falloff,4), round(currentres,2)
-
+'''
 
 def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 	# this function is single processor
 	nx = vol[0].get_xsize()
-	nfsc = fsc( vol[0]*mask, vol[1]*mask, 1.0 )
+
+	msk = cosinemask(model_blank(nx,nx,nx,1.0),int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5)-3,5)
+	#model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5),nx,nx,nx)
+	nfsc = fsc( vol[0]*msk, vol[1]*msk, 1.0 )
+	del msk
 	if(nx<Tracker["constants"]["nnxo"]):
 		for i in xrange(3):
 			for k in xrange(nx//2+1,Tracker["constants"]["nnxo"]/2+1):
@@ -1023,10 +1027,15 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 		nz = stack[0][0].get_zsize()
 	else:
 		nz = 1
+	"""
 	if(Tracker["constants"]["mask3D"] is None):
 		mask = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	else:
 		mask = get_im(Tracker["constants"]["mask3D"])
+	"""
+	mask = cosinemask(model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],1.0),Tracker["constants"]["radius"]-3,5)
+
+	#model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 
 	projdata = []
 	for procid in xrange(2):
@@ -1039,7 +1048,8 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 			if( procid == 0 ):
 				nx = projdata[procid][0].get_xsize()
 				if( nx != Tracker["constants"]["nnxo"]):
-					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
+					mask = cosinemask(model_blank(nx,nx,nx,1.0),int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5)-3,5)
+					#mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
 
 			if Tracker["constants"]["CTF"]:
 				if Tracker["constants"]["smear"] :
