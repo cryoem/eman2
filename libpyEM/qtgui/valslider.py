@@ -983,7 +983,7 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		self.setLightColor()
 		
 	def paintGL(self):
-		#glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
+		#glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glClearBuffer()
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
 		# Draw the flashlight
@@ -1108,7 +1108,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glEnable(GL_DEPTH_TEST)
 
 	def paintGL(self):
-		#glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
+		#glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glClearBuffer()
 		glColor3f(1.0, 1.0, 1.0)	# Default color is white
 		self._drawZslice()
