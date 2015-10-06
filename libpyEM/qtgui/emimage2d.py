@@ -198,10 +198,11 @@ class EMImage2DWidget(EMGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		# glClear(GL_COLOR_BUFFER_BIT) # throws error.
+		glClearColor(0.0, 0.0, 0.0, 0.0)
 		if glIsEnabled(GL_DEPTH_TEST):
-			glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
+			glClear(GL_DEPTH_BUFFER_BIT)
 		if glIsEnabled(GL_STENCIL_TEST):
-			glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
+			glClear(GL_STENCIL_BUFFER_BIT)
 		#self.cam.position()
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Image2D context is", context
