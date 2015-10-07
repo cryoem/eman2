@@ -36,8 +36,8 @@ from EMAN2 import *
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] files
-	This program performs a variety of tasks for getting data or metadata from other programs into an EMAN2 project. 
-	
+	This program performs a variety of tasks for getting data or metadata from other programs into an EMAN2 project.
+
 	import_particles - will simply copy a set of per-micrograph particle files into EMAN2.1's preferred HDF format in particles/
 	import_boxes - will read EMAN1 '.box' files (text files containing coordinates) into appropriate info/*json files (see --box_type)
 	import_tomos - imports subtomogams for a SPT project (see also --importation)
@@ -73,22 +73,22 @@ def main():
 		except:
 			print "Error, couldn't read images from: ",args[0]
 			sys.exit(1)
-		
+
 		try:
 			img=EMData(args[0],0)
 			ctf=img["ctf"]
 		except:
 			print "Error, start.hed/img must be phase-flipped to import"
 			sys.exit(1)
-		
+
 		db=js_open_dict("info/project.json")
 		db["global.apix"]=ctf.apix
 		db["global.cs"]=ctf.cs
 		db["global.voltage"]=ctf.voltage
-		
+
 		try: os.mkdir("particles")
 		except: pass
-		
+
 		imgnum=0
 		lastdf=-1.0
 		for i in xrange(n):
@@ -115,19 +115,19 @@ def main():
 				ctf2.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
 
 			lastdf=ctf.defocus
-			
+
 			# unflip the EMAN1 phases (hopefully accurate enough)
 			fft1.mult(flipim)
 			img=fft1.do_ift()
 			img.write_image("particles/particles{:03d}.hdf".format(imgnum),-1)		# append particle to stack
-			
-		if options.curdefocusfix: 
+
+		if options.curdefocusfix:
 			flag="--curdefocusfix"
 			rbysnr=" "
-		elif options.curdefocushint: 
+		elif options.curdefocushint:
 			flag="--curdefocushint"
 			rbysnr="--refinebysnr"
-		else: 
+		else:
 			flag=""
 			rbysnr="--refinebysnr"
 
@@ -200,10 +200,13 @@ def main():
 					if len(fields)<4 : continue		# skip lines that don't work
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'untilted'])
 				js_open_dict(info_name(filename,nodir=True))["boxes_rct"]=boxlist
-		
+
 		elif options.box_type == 'relion_star':
 			bs = options.boxsize
 			starfs = [f for f in args if '.star' in f]
+			if len(starfs) < 1:
+			    print("You must specify at least one .star file containing particle coordinates")
+			    exit(1)
 			for filename in starfs:
 				sf = StarFile(filename)
 				hdr = sf.keys()
