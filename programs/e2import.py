@@ -32,6 +32,8 @@
 #
 import os, shutil, glob
 from EMAN2 import *
+from EMAN2star import StarFile
+import numpy as np
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -205,8 +207,8 @@ def main():
 			bs = options.boxsize
 			starfs = [f for f in args if '.star' in f]
 			if len(starfs) < 1:
-			    print("You must specify at least one .star file containing particle coordinates")
-			    exit(1)
+				print("You must specify at least one .star file containing particle coordinates")
+				exit(1)
 			for filename in starfs:
 				sf = StarFile(filename)
 				hdr = sf.keys()
