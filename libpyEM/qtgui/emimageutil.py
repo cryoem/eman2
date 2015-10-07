@@ -424,8 +424,7 @@ class ImgHistogram(QtGui.QWidget):
 		
 	def paintEvent (self, event):
 		
-		
-		if self.histdata==None : return
+		if self.histdata is None: return
 		p=QtGui.QPainter()
 		p.begin(self)
 		p.setBackground(QtGui.QColor(16,16,16))
@@ -434,7 +433,7 @@ class ImgHistogram(QtGui.QWidget):
 		for i,j in enumerate(self.histdata):
 			p.drawLine(i,127,i,127-j*126/self.norm)
 		
-		if self.histdata==None : return
+		if self.histdata is None: return
 		p=QtGui.QPainter()
 		p.begin(self)
 		p.setBackground(QtGui.QColor(16,16,16))
