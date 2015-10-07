@@ -210,9 +210,9 @@ def main():
 				print("You must specify at least one .star file containing particle coordinates")
 				exit(1)
 			for filename in starfs:
+				print("Importing from {}".format(base_name(filename,nodir=True)))
 				sf = StarFile(filename)
 				hdr = sf.keys()
-				# Conventional RELION starfile header keys
 				mk = "rlnMicrographName"
 				yk = "rlnCoordinateY"
 				xk = "rlnCoordinateX"
@@ -222,27 +222,34 @@ def main():
 					if yk not in hdr: print("Y coordinates must be listed under _rlnCoordinateY")
 					if xk not in hdr: print("X coordinates must be listed under _rlnCoordinateX")
 					continue
+				project_micros = os.listdir('micrographs')
 				micros=[i.split('/')[-1] for i in np.unique(sf[mk])]
 				if len(micros) == 1:
+					mg = micros[0]
 					boxlist = []
+					print("Found {} boxes for {}".format(len(sf[xk]),mg))
 					for x,y in zip(sf[xk],sf[yk]):
-						xc = int(x-bs/4)
-						yc = int(y-bs/4)
-						boxlist.append([xc,yc,'relion'])
-					js_open_dict(info_name(micros[0],nodir=True))["boxes"]=boxlist
-					if not "{}.hdf".format(base_name(micros[0],nodir=True)) in micros:
-						print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,nodir=True))
-				elif nmgs > 1:
-					for mg in micros:
+						xc = int(x)
+						yc = int(y)
+						boxlist.append([xc,yc,'manual']) # should probably be 'relion' or 'from_star'
+					js_open_dict(info_name(mg,nodir=True))["boxes"]=boxlist
+					if not "{}.hdf".format(base_name(mg,nodir=True)) in project_micros:
+						print "Warning: Imported boxes for {}.hdf, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(mg,nodir=True))
+				elif len(micros) > 1:
+					for mg in project_micros:
 						boxlist = []
-						ptcls = [i for i,name in enumerate(sf[mk]) if name == mg]
+						ptcls = []
+						for i,name in enumerate(sf[mk]):
+							hdf_name = name.split('/')[-1].split('.')[0]+'.hdf'
+							if hdf_name == mg: ptcls.append(i)
+						print("Found {} boxes for {}".format(len(ptcls),mg))
 						for p in ptcls:
-							xc = int(starf[xk][p]-bs/4)
-							yc = int(starf[xk][p]-bs/4)
-							boxlist.append([xc,yc,'relion'])
+							xc = int(sf[xk][p])
+							yc = int(sf[yk][p])
+							boxlist.append([xc,yc,'manual']) # should probably be 'relion' or 'from_star'
 						js_open_dict(info_name(mg,nodir=True))["boxes"]=boxlist
-						if not "{}.hdf".format(base_name(mg,nodir=True)) in micros:
-							print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,nodir=True))
+						if not "{}.hdf".format(base_name(mg,nodir=True)) in project_micros:
+							print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(mg),base_name(mg,nodir=True))
 
 		else : print "ERROR: Unknown box_type"
 
