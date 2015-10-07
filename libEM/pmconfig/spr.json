@@ -87,7 +87,7 @@
         "MODE": "coords",
         "PROGRAM": "e2import.py",
         "WIZARD":"/lib/pmconfig/particleimport.json",
-        "NAME": "Import EMAN1 .box files (e2import.py)",
+        "NAME": "Import .box or .star files (e2import.py)",
         "CHILDREN": []
       },
       {

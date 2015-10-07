@@ -54,7 +54,7 @@ def main():
 	parser.add_argument("--importation",help="Specify mode move, copy or link, for importing tomograms only",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode='tomos')
 	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='coords[True]')
 	parser.add_argument("--extension",type=str,help="Extension of the micrographs that the boxes match", default='dm3')
-	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default="boxes",guitype='combobox',choicelist='["boxes","coords","starfile","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
+	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default="boxes",guitype='combobox',choicelist='["boxes","coords","relion_star","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
 	parser.add_argument("--boxsize",help="Specify the boxsize for each particle.",type=int,default=256)
 	parser.add_argument("--curdefocushint",action="store_true",help="Used with import_eman1, will use EMAN1 defocus as starting point",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='eman1[True]')
 	parser.add_argument("--curdefocusfix",action="store_true",help="Used with import_eman1, will use EMAN1 defocus unchanged (+-.001 um)",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='eman1[False]')
@@ -201,7 +201,7 @@ def main():
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'untilted'])
 				js_open_dict(info_name(filename,nodir=True))["boxes_rct"]=boxlist
 		
-		elif options.box_type == 'starfile':
+		elif options.box_type == 'relion_star':
 			bs = options.boxsize
 			starfs = [f for f in args if '.star' in f]
 			for filename in starfs:
