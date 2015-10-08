@@ -57,7 +57,6 @@ from emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasic
 from emapplication import EMGLWidget, get_application, EMApp
 from emanimationutil import LineAnimation
 import weakref
-import traceback
 
 from emapplication import EMProgressDialog
 
@@ -144,7 +143,6 @@ class EMMatrixPanel:
 	def get_min_scale(self,view_width,view_height,view_scale,view_data):
 		'''
 		Gets min scale using something like a bifurcation algorithm
-
 		'''
 
 		s = str(view_width) + str(view_height)
