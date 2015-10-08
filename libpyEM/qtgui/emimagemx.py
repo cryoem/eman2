@@ -201,11 +201,8 @@ class EMMatrixPanel:
 
 #		print self.height,self.xsep,self.visiblecols
 
-
-
 class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def __init__(self, data=None,application=None,winid=None, parent=None, title=""):
-
 		self.emit_events = False
 
 		fmt=QtOpenGL.QGLFormat()
@@ -315,9 +312,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		glEnable(GL_CULL_FACE)
 		glCullFace(GL_BACK)
+	
 	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
+		try:
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		except: pass
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		#context = OpenGL.contextdata.getContext(None)
@@ -1279,11 +1278,18 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		if self.use_display_list and render :
 			glEndList()
-			glCallList(self.main_display_list)
+			try:
+				glCallList(self.main_display_list)
+			except: 
+				pass
 			if self.first_render: #A hack, FTGL is slowing us down
 				self.display_states = []
 				self.first_render = False
-		if self.draw_scroll: self.draw_scroll_bar()
+		if self.draw_scroll: 
+			try:
+				self.draw_scroll_bar()
+			except:
+				pass
 
 	def load_set_color(self,set):
 		color = BoxingTools.get_color(set+1)
