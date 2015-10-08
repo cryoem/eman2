@@ -310,9 +310,9 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	dict["MRC.minimum"] = mrch.amin;
 	dict["MRC.maximum"] = mrch.amax;
 	dict["MRC.mean"] = mrch.amean;
-	dict["minimum"] = mrch.amin;
-	dict["maximum"] = mrch.amax;
-	dict["mean"] = mrch.amean;
+//	dict["minimum"] = mrch.amin;
+//	dict["maximum"] = mrch.amax;
+//	dict["mean"] = mrch.amean;
 
 	dict["MRC.ispg"] = mrch.ispg;
 	dict["MRC.nsymbt"] = mrch.nsymbt;
@@ -452,7 +452,7 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	dict["FEIMRC.minimum"] = feimrch.amin;
 	dict["FEIMRC.maximum"] = feimrch.amax;
 	dict["FEIMRC.mean"] = feimrch.amean;
-	dict["mean"] = feimrch.amean;
+//	dict["mean"] = feimrch.amean;
 
 	dict["FEIMRC.ispg"] = feimrch.ispg;
 	dict["FEIMRC.nsymbt"] = feimrch.nsymbt;
