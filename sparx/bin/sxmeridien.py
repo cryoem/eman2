@@ -912,7 +912,7 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 			break
 	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
 	if( finitres > 0):
-		for i in xrange(finitres, len(nfsc[0])):  nfsc[3][i] = 0.0
+		for i in xrange(finitres, len(nfsc[0])):  nfsc[2][i] = 0.0
 	#  Columns in fsc:  absfreq, raw fsc, smoothed fsc, smoothed fsc for volf
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	#lowpass, falloff = fit_tanh1(nfsc, 0.01)
