@@ -907,7 +907,7 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 	if( len(nfsc[0])>len(nfsc[3]) ):  nfsc[3] += [0.0]*(len(nfsc[0])-len(nfsc[3]))
 	finitres = -1
 	for i in xrange(1,ns-1):
-		if ( nfsc[3][i] < 0.143):
+		if ( nfsc[2][i] < 0.143):
 			finitres = i
 			break
 	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
