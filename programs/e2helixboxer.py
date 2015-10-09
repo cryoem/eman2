@@ -90,6 +90,10 @@ def main():
 	parser.add_argument("--save-ext",type=str,default="hdf",dest="save_ext",help="The default file extension to use when saving 'particle' images. This is simply a convenience for improved workflow. If a format other than HDF is used, metadata will be lost when saving.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
+
+	if len(args)==0 :
+		print "ERROR: please provide a list of files to be boxed at the command line"
+		sys.exit(1)
 	
 	if options.helix_width < 1:
 		helix_width = None

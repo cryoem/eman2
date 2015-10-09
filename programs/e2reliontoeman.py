@@ -56,10 +56,16 @@ will be extracted from the STAR file and will be automatically processed through
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	#options associated with e2refine.py
-	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getAPIX()']")
+	parser.add_header(name="text1", help='Important instructions', title="Use this to create an EMAN2.1 project from a Relion project:", row=0, col=0, rowspan=1, colspan=3)
+	parser.add_header(name="text2", help='Important instructions', title="* cd <folder with Relion STAR file>", row=1, col=0, rowspan=1, colspan=3)
+	parser.add_header(name="text3", help='Important instructions', title="* run e2projectmanager, and use this tool", row=2, col=0, rowspan=1, colspan=3)
+	parser.add_header(name="text4", help='Important instructions', title="* exit PM, cd eman2, run PM from new eman2 folder", row=3, col=0, rowspan=1, colspan=3)
+	parser.add_pos_argument(name="star_file",help="Select STAR file", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=False)",  row=6, col=0,rowspan=1, colspan=3)
+	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles.", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--refinedefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refine the defocus by SNR optimization (+-0.1 micron from the current values, no astigmatism adjustment)")
-	parser.add_argument("--refitdefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refit the defocus values (+-0.1 micron, astigmatism unchanged)")
+	parser.add_argument("--fixeddefocus",  action="store_true", help="Defocus and astigmatism are used unchanged from STAR file",default=False,guitype='boolbox', row=10, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--refinedefocus",  action="store_true", help="Will refit defocus to +-0.1 micron then further optimize using SSNR",default=False,guitype='boolbox', row=10, col=2, rowspan=1, colspan=1,mode="[True]")
+	parser.add_argument("--refitdefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refit the defocus values within +-0.1 micron, astigmatism unchanged",default=False,guitype='boolbox', row=10, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -117,13 +123,16 @@ will be extracted from the STAR file and will be automatically processed through
 
 	if options.refinedefocus : 
 		dfopt="--curdefocushint --refinebysnr"
-		if options.verbose>0 : print "CTF Refinement"
+		if options.verbose>0 : print "Defocus Refit and SSNR Refinement to +-0.1 micron"
 	elif options.refitdefocus : 
 		dfopt="--curdefocushint"
-		if options.verbose>0 : print "CTF Refit"
-	else: 
+		if options.verbose>0 : print "Defocus Refit to +-0.1 micron from Relion values"
+	elif options.fixeddefocus: 
 		dfopt="--curdefocusfix"
 		if options.verbose>0 : print "Computing particle SNRs"
+	else:
+		dfopt=" "
+		if options.verbose>0 : print "Full refit of CTF parameters"
 
 	launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit {} -v {}".format(ctf.voltage,ctf.cs,ctf.ampcont,ctf.apix,dfopt,options.verbose-1))
 	

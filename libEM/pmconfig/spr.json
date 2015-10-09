@@ -92,6 +92,14 @@
       },
       {
         "ICON": "green_boxes",
+        "MODE": "parts",
+        "PROGRAM": "e2import.py",
+        "WIZARD":"/lib/pmconfig/particleimport.json",
+        "NAME": "Import Particle Stacks (e2import.py)",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
         "MODE": "eman1",
         "PROGRAM": "e2import.py",
         "NAME": "Import EMAN1 start.hed/img",
@@ -99,12 +107,11 @@
       },
       {
         "ICON": "green_boxes",
-        "MODE": "parts",
-        "PROGRAM": "e2import.py",
-        "WIZARD":"/lib/pmconfig/particleimport.json",
-        "NAME": "Import Particle Stacks (e2import.py)",
+        "PROGRAM": "e2reliontoeman.py",
+        "NAME": "Import Relion Project (e2reliontoeman.py)",
         "CHILDREN": []
       }
+
       ]
       }
     ]
@@ -249,6 +256,12 @@
         "CHILDREN": []
       },
       {
+        "ICON":"refine",
+        "NAME":"Random Conical Tilt Reconstruction (e2rct)",
+        "PROGRAM":"e2rct.py",
+        "CHILDREN":[]
+      },
+      {
         "ICON": "single_image_3d",
 	"MODE":"align",
         "WIZARD":"/lib/pmconfig/symsearch.json",
@@ -280,12 +293,6 @@
         "NAME": "e2refinemult - multi-model refinement",
 	"NOTELEVEL": "1",
         "CHILDREN": []
-      },
-      {
-        "ICON":"refine",
-        "NAME":"Random Conical Tilt Reconstruction (e2rct)",
-        "PROGRAM":"e2rct.py",
-        "CHILDREN":[]
       },
       {
 	"ICON": "refine",
