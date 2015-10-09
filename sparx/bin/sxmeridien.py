@@ -911,6 +911,8 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 			finitres = i
 			break
 	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
+	if( finitres > 0):
+		for i in xrange(finitres, len(nfsc[0])):  nfsc[3][i] = 0.0
 	#  Columns in fsc:  absfreq, raw fsc, smoothed fsc, smoothed fsc for volf
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	#lowpass, falloff = fit_tanh1(nfsc, 0.01)
@@ -1343,7 +1345,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	if filter_by_fsc:
 		#  READ processed FSC.
 		if(myid == main_node):
-			Tracker["lowpass"] = read_text_file(os.path.join(Tracker["previousoutputdir"],"fsc.txt"),1)
+			Tracker["lowpass"] = read_text_file(os.path.join(Tracker["previousoutputdir"],"fsc.txt"),2)
 			lex = len(Tracker["lowpass"])
 		else:  lex = 0
 		lex = bcast_number_to_all(lex, source_node = main_node)
@@ -2033,7 +2035,7 @@ def main():
 			if( myid == main_node ):
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
 				#  This structure will be calculated without local filter
-				Tracker["lowpass"] = read_text_file(os.path.join(Tracker["directory"],"fsc.txt"),1)
+				Tracker["lowpass"] = read_text_file(os.path.join(Tracker["directory"],"fsc.txt"),2)
 				lex = len(Tracker["lowpass"])
 				#Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
 			else:
