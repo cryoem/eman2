@@ -26,7 +26,8 @@ from   time import localtime, strftime
 
 global cushion
 cushion = 6
-
+global filter_by_fsc
+filter_by_fsc = True
 
 def AI( Tracker, HISTORY, chout = False):
 	#  chout - if true, one can print, call the program with, chout = (myid == main_node)
@@ -1339,7 +1340,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 
-	if False:
+	if filter_by_fsc:
 		#  READ processed FSC.
 		if(myid == main_node):
 			Tracker["lowpass"] = read_text_file(os.path.join(Tracker["previousoutputdir"],"fsc.txt"),1)
@@ -1740,7 +1741,7 @@ def main():
 	#   It will be exhaustive search with zoom option to establish good shifts.
 	Tracker["inires"] = Tracker["constants"]["pixel_size"]/Tracker["inires"]  # This is in full size image units.
 	Tracker["icurrentres"] = int(Tracker["constants"]["nnxo"]*Tracker["inires"]+0.5)
-	if  False:
+	if  filter_by_fsc:
 		#  Prepare initial FSC corresponding to initial resolution
 		[xxx,Tracker["lowpass"]] = tanhfilter(Tracker["constants"]["nnxo"], Tracker["inires"], Tracker["falloff"])
 		if(myid == main_node):
