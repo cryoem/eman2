@@ -5007,13 +5007,14 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 				defocus,cs,voltage,apix,bfactor,ampcont,dfdiff,dfang = get_ctf(data[im])
 				apix =apix/shrinkage
 				p = [defocus,cs,voltage,apix,bfactor,ampcont,dfdiff,dfang]
-				set_ctf(data[im],p)
 		if preshift:
 			data[im] = fshift(data[im], sx, sy)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 		#oldshifts[im] = [sx,sy]
 		#  resample will properly adjusts shifts and pixel size in ctf
 		data[im] = resample(data[im], shrinkage)
+		if Tracker["constants"]["CTF"] and Tracker["applyctf"] is False:
+			set_ctf(data[im],p)
 		#  We have to make sure the shifts are within correct range, shrinkage or not
 		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 		#  For local SHC set anchor
