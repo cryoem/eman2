@@ -4998,10 +4998,16 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 		st = Util.infomask(data[im], mask2D, False)
 		data[im] = (data[im] - st[0])/st[1]  #  Always normalize the data
 		phi,theta,psi,sx,sy = partstack[im][0], partstack[im][1], partstack[im][2], partstack[im][3], partstack[im][4]
-		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
-			ctf_params = data[im].get_attr("ctf")
-			data[im] = filt_ctf(data[im], ctf_params)
-			data[im].set_attr('ctf_applied', 1)
+		if( Tracker["constants"]["CTF"]):
+			if Tracker["applyctf"]:
+				ctf_params = data[im].get_attr("ctf")
+				data[im] = filt_ctf(data[im],ctf_params)
+				data[im].set_attr('ctf_applied', 1)
+			else: # reset ctf when pixel size is changed
+				defocus,cs,voltage,apix,bfactor,ampcont,dfdiff,dfang = get_ctf(data[im])
+				apix =apix/shrinkage
+				p = [defocus,cs,voltage,apix,bfactor,ampcont,dfdiff,dfang]
+				set_ctf(data[im],p)
 		if preshift:
 			data[im] = fshift(data[im], sx, sy)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
