@@ -119,10 +119,11 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--phaseflipsmall",action="store_true",help="Produce an output set with 1/2 size particles for faster initial model work",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
-	parser.add_argument("--proctag",help="tag added to the name of each particle when using the phaseflipproc options",default="proc", guitype='strbox', row=8, col=0, rowspan=1, colspan=3, mode='genoutp["filter.lowpass.gauss:cutoff_freq=.07"]')
-	parser.add_argument("--phaseflipproc",help="If specified _proc particles will be generated. Typical = filter.lowpass.gauss:cutoff_freq=.07",default=None, guitype='strbox', row=10, col=0, rowspan=1, colspan=3, mode='genoutp["filter.lowpass.gauss:cutoff_freq=.07"]')
-	parser.add_argument("--phaseflipproc2",help="If specified _proc particles will be generated. Typical = filter.highpass.gauss:cutoff_freq=.005",default=None, guitype='strbox', row=11, col=0, rowspan=1, colspan=3, mode='genoutp["filter.highpass.gauss:cutoff_freq=.005"]')
-	parser.add_argument("--phaseflipproc3",help="If specified _proc particles will be generated. Typical = math.meanshrink:n=2",default=None, guitype='strbox', row=12, col=0, rowspan=1, colspan=3, mode='genoutp["math.meanshrink:n=2"]')
+	parser.add_argument("--proctag",help="Tag added to the name of each particle when using the phaseflipproc options",default="proc", guitype='strbox', row=8, col=0, rowspan=1, colspan=1, mode='genoutp["proc"]')
+	parser.add_argument("--phaseflipproc",help="If specified _proc particles will be generated. Typical = filter.lowpass.gauss:cutoff_freq=.07",default=None, guitype='strbox', row=9, col=0, rowspan=1, colspan=3, mode='genoutp["filter.lowpass.gauss:cutoff_freq=.07"]')
+	parser.add_argument("--phaseflipproc2",help="If specified _proc particles will be generated. Typical = filter.highpass.gauss:cutoff_freq=.005",default=None, guitype='strbox', row=10, col=0, rowspan=1, colspan=3, mode='genoutp["filter.highpass.gauss:cutoff_freq=.005"]')
+	parser.add_argument("--phaseflipproc3",help="If specified _proc particles will be generated. Typical = math.meanshrink:n=2",default=None, guitype='strbox', row=11, col=0, rowspan=1, colspan=3, mode='genoutp["math.meanshrink:n=2"]')
+	parser.add_argument("--phaseflipproc4",help="If specified _proc particles will be generated.",default=None, guitype='strbox', row=12, col=0, rowspan=1, colspan=3, mode='genoutp')
 #	parser.add_argument("--virtualout",type=str,help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
 	parser.add_argument("--storeparm",action="store_true",help="Output files will include CTF info. CTF parameters are used from the database, rather than values that may be present in the input image header. Critical to use this when generating output !",default=False,guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--oversamp",type=int,help="Oversampling factor",default=1, guitype='intbox', row=3, col=0, rowspan=1, colspan=2, mode='autofit[2]')
@@ -389,6 +390,8 @@ def write_e2ctf_output(options):
 				if options.phaseflipproc3!=None:
 					phaseprocout.append(parsemodopt(options.phaseflipproc3))
 
+				if options.phaseflipproc4!=None:
+					phaseprocout.append(parsemodopt(options.phaseflipproc4))
 			try:
 				js=js_open_dict(info_name(filename))
 				ctf=js["ctf"][0]		# EMAN2CTF object from disk
