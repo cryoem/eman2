@@ -71,9 +71,10 @@ namespace EMAN
 			MRC_SHORT_COMPLEX=3,
 			MRC_FLOAT_COMPLEX=4,
 			MRC_USHORT = 6,
-			MRC_UCHAR3 = 16,	//unsigned char * 3, for rgb data, non-standard
-			MRC_CHAR,		// non-standard, not sure what the nubmer is?
-			MRC_UNKNOWN
+			MRC_UCHAR3 = 16,	// unsigned char * 3, for rgb data, non-standard
+			MRC_CHAR = 17,		// non-standard - signed char
+			MRC_UHEX = 101,	// 2 4-bit values packed into each 8-bit byte
+			MRC_UNKNOWN = 18
 		};
 
 		enum {
@@ -122,7 +123,9 @@ namespace EMAN
 
 			int nsymbt;			/* Number of chars used for storing symmetry operators. */
 
-			int user[25];
+			int user1[15];
+			int imod_flags;	/* bit flags used by IMOD - >= 16 for 8 bit packed */
+			int user2[9];
 
 			float xorigin;		/* X origin. */
 			float yorigin;		/* Y origin. */
@@ -278,6 +281,10 @@ namespace EMAN
 		/* for MRCS (MRC stack) format */
 		bool is_stack;
 		int stack_size;
+
+		/* for MRC 8 bit packed format (2 4-bit values in each byte) */
+		bool is_8_bit_packed;
+		bool use_given_dimensions;
 
 		int is_ri;
 		bool is_big_endian;
