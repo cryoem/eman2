@@ -46,20 +46,23 @@ def simfn(jsd,projs,fsp,i,options,verbose):
 	ptcl=EMData(fsp,i)
 	ptcl.process_inplace("normalize.edgemean")
 	vals={}
-	for proj in projs:
-		aligned=proj.align(options.align[0],ptcl,options.align[1],options.aligncmp[0],options.aligncmp[1])
+	for j,proj in enumerate(projs):
+		projf=proj.process("filter.matchto",{"to":ptcl})
+		aligned=projf.align(options.align[0],ptcl,options.align[1],options.aligncmp[0],options.aligncmp[1])
 		if options.ralign != None: # potentially employ refine alignment
 			refine_parms=options.ralign[1]
 			refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
-			proj.del_attr("xform.align2d")
-			aligned = proj.align(options.ralign[0],ptcl,refine_parms,options.raligncmp[0],options.raligncmp[1])
+			projf.del_attr("xform.align2d")
+			aligned = projf.align(options.ralign[0],ptcl,refine_parms,options.raligncmp[0],options.raligncmp[1])
 		
 		c=ptcl.cmp(options.cmp[0],aligned,options.cmp[1])
-		if best==None or c<best[0] : best=(c,aligned,proj)
-		vals[projs.index(proj)]=c
-		if options.verbose>2 : print i,projs.index(proj),c
+		if best==None or c<best[0] : 
+			aptcl=ptcl.process("xform",{"transform":aligned["xform.align2d"].inverse()})
+			best=(c,aptcl,projf)
+		vals[j]=c
+		if options.verbose>2 : print i,j,c
 	
-	if options.verbose>1: print "Class-average {} with projection {}".format(i,str(best[1]["xform.projection"]))
+	if options.verbose>1: print "Class-average {} with projection {}".format(i,str(best[2]["xform.projection"]))
 
 	# return ptcl#, best sim val, aligned ptcl, projection, {per proj sim}
 	jsd.put((i,best[0],best[1],best[2],vals))
