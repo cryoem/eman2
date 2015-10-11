@@ -892,6 +892,22 @@ void EMUtil::get_region_origins(const Region * area, int *p_x0, int *p_y0, int *
 	}
 }
 
+size_t EMUtil::mode_size_product(size_t factor, size_t mode_size)
+{
+	const size_t mode_size_half = 111111111111;
+
+	size_t product;
+
+	if (mode_size == mode_size_half) {
+		product = factor / 2;
+	}
+	else {
+		product = factor * mode_size;
+	}
+
+	return product;
+}
+
 void EMUtil::process_region_io(void *vdata, FILE * file,
 							   int rw_mode, int image_index,
 							   size_t mode_size, int nx, int ny, int nz,
@@ -1009,11 +1025,12 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	if (area != 0) size = area->get_size();
 	else size = Vec3d(nx,ny,nz);
 
-	//size_t area_sec_size = xlen * ylen * mode_size;
-	size_t memory_sec_size = size[0] * size[1] * mode_size;
-	size_t img_row_size = nx * mode_size + pre_row + post_row;
-	size_t area_row_size = xlen * mode_size;
-	size_t memory_row_size = size[0] * mode_size;
+	//size_t area_sec_size = ylen    * mode_size_product(xlen,    mode_size);
+	size_t memory_sec_size = size[1] * mode_size_product(size[0], mode_size);
+	size_t img_row_size    = mode_size_product(nx,      mode_size) +
+									 pre_row + post_row;
+	size_t area_row_size   = mode_size_product(xlen,    mode_size);
+	size_t memory_row_size = mode_size_product(size[0], mode_size);
 
 	if ( area_row_size <= 0 ) {
 		cout << "Xlen was too small " << xlen << " mode_size " << mode_size << endl;
@@ -1021,10 +1038,10 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 		return;
 	}
 
-	size_t x_pre_gap = fx0 * mode_size;
-	size_t x_post_gap = (nx - fx0 - xlen) * mode_size;
+	size_t x_pre_gap  = mode_size_product(fx0, mode_size);
+	size_t x_post_gap = mode_size_product(nx - fx0 - xlen, mode_size);
 
-	size_t y_pre_gap = fy0 * img_row_size;
+	size_t y_pre_gap  = fy0 * img_row_size;
 	size_t y_post_gap = (ny - fy0 - ylen) * img_row_size;
 
 	portable_fseek(file, img_row_size * ny * fz0, SEEK_CUR);
@@ -1070,7 +1087,8 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 			if (need_flip) {
 				jj = (dy0+ylen) - 1 - j;
 
-				// region considerations add complications in the flipping scenario (imagic format)
+				// region considerations add complications
+				// in the flipping scenario (imagic format)
 
 				if (dy0 > 0 ) {
 					jj += dy0;
@@ -1078,16 +1096,20 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 			}
 
 			if (rw_mode == ImageIO::READ_ONLY) {
-				if (fread(&cdata[k2 + jj * memory_row_size+dx0*mode_size],
+				if (fread(&cdata[k2 + jj * memory_row_size +
+						  mode_size_product(dx0, mode_size)],
 						  area_row_size, 1, file) != 1) {
-					cout << jj << " " << k2 << " " << memory_row_size << " " << dx0 << " "
+					cout << jj << " " << k2 << " " << memory_row_size
+						  << " " << dx0 << " "
 						  << mode_size << " " << area_row_size << " "
 						  << cdata << ftell(file) << "done" << endl;
-					throw ImageReadException("Unknownfilename", "incomplete data read");
+					throw ImageReadException("Unknownfilename",
+													 "incomplete data read");
 				}
 			}
 			else {
-				if (fwrite(&cdata[k2 + jj * memory_row_size+dx0*mode_size],
+				if (fwrite(&cdata[k2 + jj * memory_row_size +
+							mode_size_product(dx0, mode_size)],
 						   area_row_size, 1, file) != 1) {
 					throw ImageWriteException("", "incomplete data write");
 				}
