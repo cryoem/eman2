@@ -54,6 +54,7 @@ MrcIO::MrcIO(const string & mrc_filename, IOMode rw)
 :	filename(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0),
 		isFEI(false), is_ri(0), is_new_file(false), initialized(false),
 		is_transpose(false), is_stack(false), stack_size(1),
+		is_8_bit_packed(false), use_given_dimensions(true),
 		rendermin(0.0), rendermax(0.0)
 {
 	memset(&mrch, 0, sizeof(MrcHeader));
@@ -167,6 +168,40 @@ void MrcIO::init()
 		if (is_stack) {
 			stack_size = mrch.nz;
 			mrch.nz = 1;
+		}
+
+		// Stuff added for 8 bit packed mode,
+		// with 2 4-bit values packed into each 8-bit byte:
+
+		float ny_to_nx_ratio;
+
+		if (mrch.nx > 0) {
+			ny_to_nx_ratio = (float) mrch.ny / (float) mrch.nx;
+		}
+		else {
+			ny_to_nx_ratio = 1.0;
+		}
+
+		bool ny_twice_nx = (fabs(ny_to_nx_ratio - 2.0f) <= 0.1f);
+		bool double_nx   = (ny_twice_nx  &&  mrch.nlabels > 0  &&
+								  strstr(mrch.labels[0], "4 bits packed") != NULL);
+
+      use_given_dimensions = (! double_nx);
+
+		is_8_bit_packed = (mrch.mode == MRC_UHEX       ||
+							   (mrch.imod_flags & 16) == 1  ||  double_nx);
+
+		if (getenv("DISALLOW_PACKED_FORMAT") != NULL) {
+			use_given_dimensions = true;
+			is_8_bit_packed = false;
+		}
+
+		if (is_8_bit_packed) {
+			mrch.mode = MRC_UHEX;
+
+			if (! use_given_dimensions) {
+				mrch.nx = mrch.nx * 2;
+			}
 		}
 	}
 
@@ -864,8 +899,20 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
 		portable_fseek(mrcfile, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
 
+		size_t modesize;
+
+		if (mrch.mode == MRC_UHEX) {
+			// Have MRC packed 8 bit format with 2 4-bit values in each 8-bit byte,
+			// so the mode size is effectively half a byte, signalled by this value:
+
+			modesize = 111111111111;
+		}
+		else {
+			modesize = mode_size;
+		}
+
 		EMUtil::process_region_io(cdata, mrcfile, READ_ONLY,
-								  image_index, mode_size,
+								  image_index, modesize,
 								  mrch.nx, mrch.ny, mrch.nz, area);
 
 		EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
@@ -873,7 +920,9 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		size = (size_t)xlen * ylen * zlen;
 	}
 
-	if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR) {
+	if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR  &&
+	    mrch.mode != MRC_UHEX) {
+
 		if (mode_size == sizeof(short)) {
 			become_host_endian < short >(sdata, size);
 		}
@@ -882,7 +931,21 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		}
 	}
 
-	if (mrch.mode == MRC_UCHAR) {
+	if (mrch.mode == MRC_UHEX) {
+		size_t num_pairs = size / 2;
+		size_t num_pts   = num_pairs * 2;
+
+		size_t ipt = num_pts;
+
+		for (size_t ipair = num_pairs; ipair >= 1; ipair--) {
+			unsigned int v = (unsigned int) cdata[ipair-1];
+			ipt--;
+			rdata[ipt] = (v >> 4); // v / 16;
+			ipt--;
+			rdata[ipt] = (v & 15); // v % 16;
+		}
+	}
+	else if (mrch.mode == MRC_UCHAR) {
 		for (size_t i = 0; i < size; ++i) {
 			size_t j = size - 1 - i;
 			// rdata[i] = static_cast<float>(cdata[i]/100.0f - 1.28f);
