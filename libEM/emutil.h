@@ -218,6 +218,12 @@ namespace EMAN
 		static void get_region_origins(const Region * area, int *p_x0, int *p_y0,
 									   int *p_z0 = 0, int nz = 1, int image_index = 0);
 
+		/** Return a factor times the mode size, which may be a special value
+		 *  (111111111111) meaning one half, needed for MRC packed 8 bit format.
+		 */
+
+		static size_t mode_size_product(size_t factor, size_t mode_size);
+
 		/** Process image region IO. It eithers read a region from an
 		 * image file. Or write a region to an image file.
 		 * Works for regions that are outside the image data dimension area.(David Woolford, April 23 2009)
