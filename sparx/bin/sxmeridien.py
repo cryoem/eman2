@@ -28,6 +28,8 @@ global cushion
 cushion = 6
 global filter_by_fsc
 filter_by_fsc = True
+global  beenhere
+beenhere = -1
 
 def AI( Tracker, HISTORY, chout = False):
 	#  chout - if true, one can print, call the program with, chout = (myid == main_node)
@@ -168,11 +170,14 @@ def AI( Tracker, HISTORY, chout = False):
 						move_up_phase = True
 					else:
 						if(Tracker["state"] == "EXHAUSTIVE"):
-								xr = int(max(Tracker["shifter"],1.0)*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
-								Tracker["zoom"] = True
-								#Tracker["xr"] = "%d  %d"%(2*xr, xr)
-								#Tracker["ts"] = "%f  %f"%(min(2.0*xr,2.0),1.0)
-								Tracker["xr"] , Tracker["ts"] = stepshift(2*xr, nxrsteps = 2)
+								beenhere += 1
+								if(beenhere == 2):  move_up_phase = True
+								else:								
+									xr = int(max(Tracker["shifter"],1.0)*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
+									Tracker["zoom"] = True
+									#Tracker["xr"] = "%d  %d"%(2*xr, xr)
+									#Tracker["ts"] = "%f  %f"%(min(2.0*xr,2.0),1.0)
+									Tracker["xr"] , Tracker["ts"] = stepshift(2*xr, nxrsteps = 2)
 						# turn on pwadjustment
 						elif(Tracker["state"] == "RESTRICTED"):
 								Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
@@ -236,6 +241,7 @@ def AI( Tracker, HISTORY, chout = False):
 				#Tracker["xr"] = "%d    1"%(int(max(Tracker["shifter"],1.0)*float(Tracker["constants"]["nnxo"])/float(Tracker["nxinit"])))# This should be derived from the previous size
 				#Tracker["ts"] = "1    0.32"
 				keepgoing = 1
+				beenhere = 0
 			#  Exhaustive searches
 			elif(Tracker["state"] == "EXHAUSTIVE"):
 				#  Switch to RESTRICTED
@@ -263,6 +269,7 @@ def AI( Tracker, HISTORY, chout = False):
 				#Tracker["xr"] = "%d   1"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
 				#Tracker["ts"] = "1   0.32"
 				keepgoing = 1
+				beenhere = 0
 			#  Restricted searches
 			elif(Tracker["state"] == "RESTRICTED"):
 				#  Switch to LOCAL
@@ -299,6 +306,7 @@ def AI( Tracker, HISTORY, chout = False):
 				Tracker["xr"] = "2"
 				Tracker["ts"] = "2"
 				keepgoing = 1
+				beenhere = 0
 			elif(Tracker["state"] == "FINAL1"):
 				#  Switch to FINAL2
 				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
@@ -315,6 +323,7 @@ def AI( Tracker, HISTORY, chout = False):
 				Tracker["xr"] = "2"
 				Tracker["ts"] = "2"
 				keepgoing = 1
+				beenhere = 0
 			elif(Tracker["state"] == "FINAL2"):
 				keepgoing = 0
 			else:
@@ -2130,7 +2139,7 @@ def main():
 
 		# Update HISTORY
 		HISTORY.append(Tracker.copy())
-		if( Tracker["constants"]["restrict_shifts"] == -1 ):  keepgoing, reset_data, Tracker = AI( Tracker, HISTORY )
+		if( Tracker["constants"]["restrict_shifts"] == -1 ):  keepgoing, reset_data, Tracker = AI( Tracker, HISTORY, myid == main_node )
 		else:  keepgoing, reset_data, Tracker = AI_restrict_shifts( Tracker, HISTORY )
 
 		if( keepgoing == 1 ):
