@@ -892,14 +892,14 @@ void EMUtil::get_region_origins(const Region * area, int *p_x0, int *p_y0, int *
 	}
 }
 
-size_t EMUtil::mode_size_product(size_t factor, size_t mode_size)
+double EMUtil::mode_size_product(size_t factor, size_t mode_size)
 {
 	const size_t mode_size_half = 111111111111;
 
-	size_t product;
+	double product;
 
 	if (mode_size == mode_size_half) {
-		product = factor / 2;
+		product = factor * 0.5;
 	}
 	else {
 		product = factor * mode_size;
@@ -1097,7 +1097,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 			if (rw_mode == ImageIO::READ_ONLY) {
 				if (fread(&cdata[k2 + jj * memory_row_size +
-						  mode_size_product(dx0, mode_size)],
+						  (size_t) mode_size_product(dx0, mode_size)],
 						  area_row_size, 1, file) != 1) {
 					cout << jj << " " << k2 << " " << memory_row_size
 						  << " " << dx0 << " "
@@ -1109,7 +1109,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 			}
 			else {
 				if (fwrite(&cdata[k2 + jj * memory_row_size +
-							mode_size_product(dx0, mode_size)],
+							(size_t) mode_size_product(dx0, mode_size)],
 						   area_row_size, 1, file) != 1) {
 					throw ImageWriteException("", "incomplete data write");
 				}
