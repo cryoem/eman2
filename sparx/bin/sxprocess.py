@@ -383,6 +383,8 @@ def main():
 			
 			tmp.write_image(outstack, i)
 	elif options.adaptive_mask:
+		from utilities import get_im
+		from morphology import adaptive_mask
 		nargs = len(args)
                 if nargs > 2:
                         print "too many inputs"
