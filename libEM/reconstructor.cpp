@@ -3793,7 +3793,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 
 
 	float max = max3d( kc, pow_a );
-	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
+	//float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	float osnr = 1.0f/m_snr;
  
     vector<float> sigma2(m_vnyc+1, 0.0f);

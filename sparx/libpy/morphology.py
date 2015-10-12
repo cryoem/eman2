@@ -1449,6 +1449,41 @@ def refine_with_mask(vol):
 	return vol
 '''
 
+
+
+def bfactor(pws,idx_freq_min,idx_freq_max):
+	"""
+		Estimate B-factor from power spectrum
+		pwd          : power spectrum
+		idx_freq_min : the index of the minimum frequency of fitting range
+		idx_freq_max : the index of the maximum frequency of fitting range
+	"""
+	from math import log
+	from statistics import linreg
+	nr = len(pws)
+	
+	if (idx_freq_min < 0):
+		print "Invalid value of idx_freq_min. Setting to 0";
+		idx_freq_min = 0
+	if (idx_freq_max >= nr):
+		print "Invalid value of idx_freq_max. Setting to %d" % (nr - 1);
+		idx_freq_max = (nr - 1)
+	
+	pws_log = [0.0]*nr
+	for i in range(nr): pws_log[i] = log(pws[i])
+	a,b = linreg(range(idx_freq_max-idx_freq_min),pws_log[idx_freq_min:idx_freq_max])
+	l=[0.0]*nr
+	for i in range(nr): l[i] = a*i-b
+
+	return a
+
+	
+################
+#
+#  CTER code
+#
+################
+
 def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= -1.0 , f_stop = -1.0, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False, overlap_x = 50, overlap_y=50 , edge_x = 0, edge_y=0, guimic=None, set_ctf_header=False):
 	'''
 	Input
@@ -2986,33 +3021,6 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 		outf.write("  %s\n"%totresi[i][0])
 	outf.close()		
 
-def bfactor(pws,idx_freq_min,idx_freq_max):
-	"""
-		Estimate B-factor from power spectrum
-		pwd          : power spectrum
-		idx_freq_min : the index of the minimum frequency of fitting range
-		idx_freq_max : the index of the maximum frequency of fitting range
-	"""
-	from math import log
-	from statistics import linreg
-	nr = len(pws)
-	
-	if (idx_freq_min < 0):
-		print "Invalid value of idx_freq_min. Setting to 0";
-		idx_freq_min = 0
-	if (idx_freq_max >= nr):
-		print "Invalid value of idx_freq_max. Setting to %d" % (nr - 1);
-		idx_freq_max = (nr - 1)
-	
-	pws_log = [0.0]*nr
-	for i in range(nr): pws_log[i] = log(pws[i])
-	a,b = linreg(range(idx_freq_max-idx_freq_min),pws_log[idx_freq_min:idx_freq_max])
-	l=[0.0]*nr
-	for i in range(nr): l[i] = a*i-b
-
-	return a
-
-	
 ########################################################################
 # end of code used for estimation of cross resolution
 ########################################################################
