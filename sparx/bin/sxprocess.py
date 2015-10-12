@@ -394,7 +394,7 @@ def main():
 			if nargs == 2:
 				mask_file_name = args[1]
 			else:
-				mask_file_name = "advaptive_mask.hdf" 
+				mask_file_name = "adaptive_mask.hdf" 
 			mask3d = adaptive_mask(inputvol, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9)
 			mask3d.write_image(mask_file_name)
 
