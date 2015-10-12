@@ -300,7 +300,7 @@ def main():
 	parser.add_option("--pw", 					action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
 	parser.add_option("--wn", 					type="int", 		default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
 	parser.add_option("--phase_flip", 			action="store_true", help="Phase flip the input stack", default=False)
-	parser.add_option("--adaptive_mask")                    action="store_true", help="create adavptive 3-D mask from a given volume", default=False)
+	parser.add_option("--adaptive_mask",                    action="store_true", help="create adavptive 3-D mask from a given volume", default=False)
 	parser.add_option("--makedb", 				metavar="param1=value1:param2=value2", type="string",
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
 	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type="string",
@@ -389,7 +389,7 @@ def main():
                         return
 		else:
 			inputvol = get_im(args[0])
-			if nargs = 2:
+			if nargs == 2:
 				mask_file_name = args[1]
 			else:
 				mask_file_name = "advaptive_mask.hdf" 
