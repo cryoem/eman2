@@ -41,6 +41,7 @@ def AI( Tracker, HISTORY, chout = False):
 	#    4.  resolution decreased: back off and move to the next phase
 	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
 	from sys import exit
+	global  beenhere
 	reset_data = False
 	Tracker["delpreviousmax"] = False
 	if(Tracker["mainiteration"] == 1):
@@ -1507,7 +1508,7 @@ def main():
 	# ------------------------------------------------------------------------------------
 	#  INPUT PARAMETERS
 	global_def.BATCH = True
-
+	beenhere = -1
 
 	#  Constant settings of the project
 	Constants				= {}
