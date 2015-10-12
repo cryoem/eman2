@@ -7630,9 +7630,9 @@ class MainWindow(QtGui.QWidget):
         self.btn10.setToolTip('Use the "common line" algorithm to assign initial values of phi, theta, psi to 2D average projections.')
 	# self.btn10.mouseDoubleClickEvent(lambda : os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper"))
 	self.connect(self.btn10, SIGNAL("clicked()"), self.viper)
-	def mmm(x):
-		os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper")
-	self.btn10.mouseDoubleClickEvent = mmm
+	# def mmm(x):
+	# 	os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper")
+	# self.btn10.mouseDoubleClickEvent = mmm
 	
 		
 
@@ -7893,6 +7893,12 @@ class MainWindow(QtGui.QWidget):
     
     
     def viper(self):
+        # print "AAAAA"
+        modifiers = QtGui.QApplication.keyboardModifiers()
+        if modifiers == QtCore.Qt.ShiftModifier:
+            os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper")
+            return
+        #print "Opening a new popup window..."
         #print "Opening a new popup window..."
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
