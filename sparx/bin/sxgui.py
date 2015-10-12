@@ -7662,8 +7662,16 @@ class Popupfilterlocal(QWidget):
 class MainWindow(QtGui.QWidget):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
+        # self.setStyleSheet('background-image: url("1.png")')
         #sets the title of the window
 	self.setWindowTitle('SPARX GUI')
+	self.setAutoFillBackground(True)		
+	palette = QPalette(self)		
+	palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory()+"sxgui.py_main_window_background_image.png")))		
+	# palette.setBrush(QPalette.Background, QBrush(QPixmap("Fig6.png")))		
+	# palette.setBrush(QPalette.Background, QBrush(QPixmap("spaxgui02.png")))		
+	self.setPalette(palette)		
+
 	
 	self.y2 = 65
 
@@ -7738,7 +7746,13 @@ class MainWindow(QtGui.QWidget):
         self.btn10.move(10, self.y2)
         #sets an infotip for this Pushbutton
         self.btn10.setToolTip('Use the "common line" algorithm to assign initial values of phi, theta, psi to 2D average projections.')
+	# self.btn10.mouseDoubleClickEvent(lambda : os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper"))
 	self.connect(self.btn10, SIGNAL("clicked()"), self.viper)
+	def mmm(x):
+		os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper")
+	self.btn10.mouseDoubleClickEvent = mmm
+	
+		
 
 	self.y2 += 30
 
@@ -7824,7 +7838,7 @@ class MainWindow(QtGui.QWidget):
 	self.btn3.move(180, 5)
         self.connect(self.btn3, QtCore.SIGNAL('clicked()'),QtGui.qApp, QtCore.SLOT('quit()'))
         #here we set two labels, their position and font style
-	title=QtGui.QLabel('<b>SPARX</b> GUI', self)
+	title=QtGui.QLabel('<b>PROGRAMS</b>', self)
 	title.move(10,10)
 	QtGui.QToolTip.setFont(QtGui.QFont('OldEnglish', 8))
 	
@@ -8084,7 +8098,8 @@ class App(QApplication):
         QApplication.__init__(self, *args)
         #here we define the main window (class MainWindow)
         self.main = MainWindow()
-	self.main.resize(400,450)
+	# self.main.resize(400,450)
+	self.main.resize(1000, 755)
         #here we define that when all windows are closed, function byebye of class App will be started
         self.connect(self, SIGNAL("lastWindowClosed()"), self.byebye )
         #hshows main window
@@ -8112,8 +8127,11 @@ for single particle analysis."""
 	DEMO_mpibdbctf = 'mpibdbctf'
 	global DEMO_mpibdb
 	DEMO_mpibdb = 'mpibdb'
+	
 	global app
 	app = App(args)
+	app.setWindowIcon(QIcon(get_image_directory()+"sparxicon.png"))
+	
 	app.exec_()
 
 if __name__ == "__main__":
