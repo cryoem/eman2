@@ -7875,6 +7875,10 @@ class MainWindow(QtGui.QWidget):
     	self.TabWidget.show()
 
     def isac(self):
+        modifiers = QtGui.QApplication.keyboardModifiers()
+        if modifiers == QtCore.Qt.ShiftModifier:
+            os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxisac")
+            return
         ##print "Opening a new popup window..."
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
@@ -7930,6 +7934,10 @@ class MainWindow(QtGui.QWidget):
 
     
     def variability3d(self):
+        modifiers = QtGui.QApplication.keyboardModifiers()
+        if modifiers == QtCore.Qt.ShiftModifier:
+            os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sx3dvariability")
+            return
         #print "Opening a new popup window..."
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
