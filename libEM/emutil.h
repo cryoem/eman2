@@ -222,7 +222,7 @@ namespace EMAN
 		 *  (111111111111) meaning one half, needed for MRC packed 8 bit format.
 		 */
 
-		static size_t mode_size_product(size_t factor, size_t mode_size);
+		static double mode_size_product(size_t factor, size_t mode_size);
 
 		/** Process image region IO. It eithers read a region from an
 		 * image file. Or write a region to an image file.
