@@ -1366,6 +1366,10 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		Tracker["lowpass"] = map(float, Tracker["lowpass"])
 	else:
 		Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+
+	delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["nxinit"]))/Tracker["radius"])), 2), 3.0)
+	if Tracker["constants"]["smear"] : Tracker["smearstep"] = 0.5*delta
+	else:                              Tracker["smearstep"] = 0.0
 	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
 		Tracker["pixercutoff"] = 0.5
 		Tracker["delta"] = "2.0"
@@ -1374,9 +1378,6 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 			try:  print(" smear in LOCAL metamove ",Tracker["smearstep"])
 			except:  print("no smearstep in Tracker")
 	else:
-		delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["nxinit"]))/Tracker["radius"])), 2), 3.0)
-		if Tracker["constants"]["smear"] : Tracker["smearstep"] = 0.5*delta
-		else:                              Tracker["smearstep"] = 0.0
 		delta = "%f  "%delta
 		Tracker["delta"] = ""
 		for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
