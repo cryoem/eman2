@@ -33,16 +33,16 @@
 
 import global_def
 from global_def import *
-import sys
-from PyQt4.Qt import *
-from PyQt4 import QtGui
-from PyQt4 import QtCore
-import os
-import subprocess
-from subprocess import *
-from EMAN2 import *
-from sparx import *
-from EMAN2_cppwrap import *
+import  sys
+from    PyQt4.Qt import *
+from    PyQt4 import QtGui
+from    PyQt4 import QtCore
+import  os
+import  subprocess
+from    subprocess import *
+from    EMAN2 import *
+from    sparx import *
+from    EMAN2_cppwrap import *
 
 #Layout of the Pop Up window infosparx; started by the function info of the main window
 class infosparx(QWidget):
@@ -1368,7 +1368,7 @@ class Popupmeridien(QWidget):
 		
 		self.cmd = ""
 		# populate with default values
-		self.savedparmsdict = {'stackname':'','foldername':'','template':'','radius':'-1','sym':'c1','inires':'25','pwreference':'','nproc':'1','mask':'',"CTF":Qt.Unchecked,"usrfunc":"","usrfuncfile":""}
+		self.savedparmsdict = {'stackname':'','foldername':'','inivol':'','radius':'-1','sym':'c1','inires':'25','pwreference':'','nproc':'1','mask':'',"CTF":Qt.Unchecked,"usrfunc":"","usrfuncfile":""}
 
 		#######################################################################################
 		# Layout parameters
@@ -1433,11 +1433,11 @@ class Popupmeridien(QWidget):
 		self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_meridien)
 		self.y2 += 30
 
-		template= QtGui.QLabel('Initial 3D structure', self)
-		template.move(self.x1,self.y2)
-		self.templateedit=QtGui.QLineEdit(self)
-		self.templateedit.move(self.x2,self.y2)
-		self.templateedit.setText(self.savedparmsdict['template'])
+		inivol= QtGui.QLabel('Initial 3D structure', self)
+		inivol.move(self.x1,self.y2)
+		self.inivoledit=QtGui.QLineEdit(self)
+		self.inivoledit.move(self.x2,self.y2)
+		self.inivoledit.setText(self.savedparmsdict['inivol'])
 		self.y2 += 30
 		
 		radius= QtGui.QLabel('Particle radius', self)
@@ -1530,33 +1530,35 @@ class Popupmeridien(QWidget):
 		
 	def gencmdline_meridien(self,writefile=True):
 		#Here we just read in all user inputs in the line edits of the Poptwodali window
-		stack = self.stacknameedit.text()
-		print "stack defined="+ stack
-		output=self.foldernameedit.text()
-		print "output folder="+ output
-		radius=self.radiusedit.text()
-		print "Particle radius="+ radius
-		inires=self.iniresedit.text()
-		print "Initial resolution="+ inires
+		stack       = self.stacknameedit.text()
+		output      = self.foldernameedit.text()
+		radius      = self.radiusedit.text()
+		inires      = self.iniresedit.text()
+		inivol      = self.inivoledit.text()
+		sym         = self.symedit.text()
+		pwreference = self.pwreferenceedit.text()
+		mask        = self.maskedit.text()
 		
-		cmd1 = "sxmeridien.py "+str(stack) +" "+ str(output)
+		cmd1 = "sxmeridien.py "+str(stack) +" "+ str(output)+" "+ str(inivol)
 		
-		args = " --radius="+ str(radius) +  " --smear --MPI"
+		args = " --radius=" + str(radius) +  " --sym=" + str(sym) + " --smear"
 
-		mask = self.maskedit.text()
-				
-		if len(str(mask))> 1:
-				cmd1 = cmd1+" "+str(mask)
-		cmd1 = cmd1 + args
+		cmd1 += args
+		if len(str(mask)) > 0:
+				cmd1 += " --mask3D=" +str(mask)
+		if len(str(pwreference)) > 0:
+			cmd1 += " --pwreference=" + str(pwreference)
+		if len(str(inires)) > 0:
+			cmd1 += " --inires=" + str(inires)
 
-		CTF = self.ctfchkbx.checkState()
-		userf = self.w1.usrfuncedit.text()
-		userfile = self.w1.usrfuncfileedit.text()
+		CTF        = self.ctfchkbx.checkState()
+		userf      = self.w1.usrfuncedit.text()
+		userfile   = self.w1.usrfuncfileedit.text()
 						
 		if CTF == Qt.Checked:
 				cmd1 = cmd1 + " --CTF"
 		if len(userfile) < 1:
-				cmd1 = cmd1 + " --function="+str(userf)
+				if(len(userf) > 0):   cmd1 += " --function="+str(userf)
 		else:
 			userfile = str(userfile)
 			# break it down into file name and directory path
@@ -1565,20 +1567,23 @@ class Popupmeridien(QWidget):
 			if rind == -1:
 				userfile = os.path.abspath(userfile)
 				rind = userfile.rfind('/')
-					
+
 			fname = userfile[rind+1:]
 			fname, ext = os.path.splitext(fname)
 			fdir = userfile[0:rind]
-			cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
+			cmd1 += " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
 				
-		np = self.nprocedit.text()
-		self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'template':str(template),'radius':str(radius),'sym':str(sym),'radius':str(radius),'inires':str(inires),'pwreference':str(pwreference),'maskname':str(mask),"ctf":CTF,"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+		nproc = self.nprocedit.text()
+		self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'inivol':str(inivol),\
+								'radius':str(radius),'sym':str(sym),'inires':str(inires),'nproc':str(nproc),'pwreference':str(pwreference),\
+								'maskname':str(mask),"ctf":CTF,"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+
+		self.w1.savedparmsdict = self.savedparmsdict
 		
-		self.w1.savedparmsdict=self.savedparmsdict
-		
-		if int(str(np)) > 1:
-				cmd1="mpirun -np "+ str(np) + " "+ cmd1
-		
+		if int(str(nproc)) > 0:
+				cmd1 = "mpirun -np " + str(nproc) + " " + cmd1
+		else:  ERROR("sxgui","numper of processors has to be specified",1)
+
 		if writefile:		
 			(fname,stat)= QInputDialog.getText(self,"Generate Command Line","Enter name of file to save command line in",QLineEdit.Normal,"")
 			if stat:
@@ -1605,32 +1610,28 @@ class Popupmeridien(QWidget):
 			self.gencmdline_meridien(writefile=False)
 			pickle.dump(self.savedparmsdict,output)
 			output.close()
-		
+
 	def repoparms_meridien(self):		
 		(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
 		if stat:
 			import pickle
 			pkl = open(fname,'rb')
 			self.savedparmsdict = pickle.load(pkl)
-			self.partradiusedit.setText(self.savedparmsdict['radius'])
+			self.radiusedit.setText(self.savedparmsdict['radius'])
 			self.stacknameedit.setText(self.savedparmsdict['stackname'])		
 			self.foldernameedit.setText(self.savedparmsdict['foldername'])		
 			self.nprocedit.setText(self.savedparmsdict['nproc'])
-			self.masknameedit.setText(self.savedparmsdict['maskname'])
+			self.maskedit.setText(self.savedparmsdict['maskname'])
+			self.iniresedit.setText(self.savedparmsdict['inires'])	
+			self.inivoledit.setText(self.savedparmsdict['inivol'])	
+			self.symedit.setText(self.savedparmsdict['sym'])	
+			self.pwreferenceedit.setText(self.savedparmsdict['pwreference'])	
 			self.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
 			self.w1.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
 			self.w1.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
-				
-	
-	def setactiveheader(self):
-		stack = self.stacknameedit.text()
-		print "stack defined="+ stack
-		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# header(str(stack), "active", one=True)
 
 
-		
-		#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
 	def choose_file(self):
 		#opens a file browser, showing files only in .hdf format
 		file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF files (*.hdf)")
@@ -1640,7 +1641,7 @@ class Popupmeridien(QWidget):
 		#we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 		self.stacknameedit.setText(str(a))
 		
-		#Function choose_file started when  the  open_file of the  Poptwodali window is clicked (same as above but for bdb files(maybe we can combine these two into one function)
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked (same as above but for bdb files(maybe we can combine these two into one function)
 	def choose_file1(self):
 		file_name1 = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "EMAN2DB/", "BDB FILES (*.bdb)" )
 		a=QtCore.QString(file_name1)
@@ -3191,7 +3192,7 @@ class Popuppdb2em(QWidget):
 		self.x4 = self.x3+100 # fourth column (Open .bdb button)
 		self.x5 = 230 # run button
 		#######################################################################################
-		
+
 		#Here we just set the window title
 		self.setWindowTitle('sxpdb2em')
 		#Here we just set a label and its position in the window
@@ -3232,7 +3233,7 @@ class Popuppdb2em(QWidget):
 		#when this button is clicked, this action starts the subfunction twodali
 		self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_pdb2em)
 		self.y2 += 30
-		
+
 		apix= QtGui.QLabel('Pixel size (Angstroms)', self)
 		apix.move(self.x1,self.y2)
 		self.apixedit=QtGui.QLineEdit(self)
@@ -3240,7 +3241,7 @@ class Popuppdb2em(QWidget):
 		self.apixedit.setText(self.savedparmsdict['apix'])
 		self.apixedit.setToolTip('Angstrom/voxel')		
 		self.y2 += 30
-		
+
 		box= QtGui.QLabel('Box size (voxels)', self)
 		box.move(self.x1,self.y2)
 		self.boxedit=QtGui.QLineEdit(self)
@@ -3256,7 +3257,7 @@ class Popuppdb2em(QWidget):
 		self.hetchkbx.setCheckState(self.savedparmsdict['het'])
 		self.hetchkbx.setToolTip('Include HET atoms in the map.')		
 		self.y2 += 30
-		
+
 		center= QtGui.QLabel('Center atomic model', self)
 		center.move(self.x1,self.y2)
 		self.centeredit=QtGui.QLineEdit(self)
@@ -3326,39 +3327,37 @@ class Popuppdb2em(QWidget):
 				
 	 #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
 	def outputinfo_pdb2em(self):
-		QMessageBox.information(self, "sxpdb2em output",'output 3-D electron density map (any EM format). Attribute pixel_size will be set to the specified value.')
+		QMessageBox.information(self, "sxpdb2em output",'output 3-D electron density map (any EM format).\n Attributes apix_x,apix_y,apix_z will be set to the specified value.')
 		
 	def gencmdline_pdb2em(self,writefile=True):
 		#Here we just read in all user inputs in the line edits of the Poptwodali window
 		pdbfile = self.pdbfileedit.text()
-		output=self.outputedit.text()
-		apix=self.apixedit.text()
-		box=self.boxedit.text()
-		center=self.centeredit.text()
-		tr0=self.tr0edit.text()
-		het=self.hetchkbx.checkState()
-		quiet=self.quietchkbx.checkState()
-		Och=self.Ochchkbx.checkState()
-		
+		output  = self.outputedit.text()
+		apix    = self.apixedit.text()
+		box     = self.boxedit.text()
+		center  = self.centeredit.text()
+		tr0     = self.tr0edit.text()
+		het     = self.hetchkbx.checkState()
+		quiet   = self.quietchkbx.checkState()
+		Och     = self.Ochchkbx.checkState()
+
 		cmd1 = "sxpdb2em.py "+str(pdbfile) +" "+ str(output)
-		
+
 		args = " --apix="+ str(apix)+" --box="+ str(box)+ " --center="+str(center)
-		
-		cmd1 = cmd1 + args
-				
+
+		cmd1 += args
+
 		if het == Qt.Checked:
-			cmd1 = cmd1 + " --het"
+			cmd1 += " --het"
 		if quiet == Qt.Checked:
-			cmd1 = cmd1 + " --quiet"
+			cmd1 += " --quiet"
 		if Och == Qt.Checked:
-			cmd1 = cmd1 + " --O"				
-		
+			cmd1 += " --O"				
 		if len(str(tr0)) > 0:
-			cmd1 = cmd1 + " --tr0="+str(tr0)
+			cmd1 += " --tr0="+str(tr0)
 		
 		self.savedparmsdict = {'pdbfile':str(pdbfile),'output':str(output),'apix':str(apix),'box':str(box),'het':het,'center':str(center),'Och':Och,'quiet':quiet,'tr0':str(tr0)}
-		
-		
+
 		if writefile:		
 			(fname,stat)= QInputDialog.getText(self,"Generate Command Line","Enter name of file to save command line in",QLineEdit.Normal,"")
 			if stat:
@@ -3366,10 +3365,10 @@ class Popuppdb2em(QWidget):
 				f.write(cmd1)
 				f.write('\n')
 				f.close()
-		
+
 		print cmd1
 		self.cmd = cmd1
-		
+
 	def runsxpdb2em(self):
 		self.gencmdline_pdb2em(writefile=False)
 		process = subprocess.Popen(self.cmd,shell=True)
