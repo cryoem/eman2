@@ -428,7 +428,7 @@ int PCAlarge::insert_image(EMData * image)
    EMData *maskedimage = Util::compress_image_mask(image,mask);
 
    FILE *fp;
-   string scratchfile = string("maskedimages.scratch");
+   string scratchfile = params.set_default("tmpfile","maskedimages.scratch");
 
    fp = fopen(scratchfile.c_str(),"ab");
 
@@ -483,7 +483,7 @@ vector<EMData*> PCAlarge::analyze()
 	float one = 1.0, zero = 0.0;
 	char trans;
         float *eigvec;
-        string scratchfile = string("maskedimages.scratch");
+        string scratchfile = (string) params["tmpfile"];
         char command[100];
 
 	printf("start analyzing..., ncov = %d\n", ncov);

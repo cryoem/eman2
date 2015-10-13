@@ -139,6 +139,7 @@ namespace EMAN
 			TypeDict d;
 			d.put("mask", EMObject::EMDATA, "mask image");
 			d.put("nvec", EMObject::INT, "number of desired principal components");
+			d.put("tmpfile", EMObject::STRING, "Name of temporary file during processing");
 			return d;
 		}
 		

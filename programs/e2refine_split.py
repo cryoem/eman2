@@ -111,6 +111,8 @@ def main():
 		if len(cl)<6 : continue
 		tasks.append(ClassSplitTask(ptcls,ns,cl,gc,options.verbose-1))
 		gc+=1
+	
+#	for t in tasks: t.execute()
 
 	# execute task list
 	taskids=etc.send_tasks(tasks)
@@ -176,11 +178,15 @@ class ClassSplitTask(JSTask):
 			avgr.add_image(p[3])
 		
 		avg=avgr.finish()
-		if options["verbose"]>0: print "averaging class {}".format(options["classnum"])
+		mask=ptcls[0][-1].copy()
+		mask.to_one()
+		mask.process("mask.soft",{"outer_radius":-8,"width":4})
+		
+		for p in ptcls: p[3].sub(avg)
 
-		pca=Analyzers.get("pca_large",{"nvec":5})
+		pca=Analyzers.get("pca_large",{"nvec":5,"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
 		for p in ptcls: 
-			pca.insert_image(p[3]-avg)
+			pca.insert_image(p[3])
 		
 		basis=pca.analyze()
 
@@ -189,7 +195,7 @@ class ClassSplitTask(JSTask):
 			#avgr.add_image(p[3].process("xform",{"transform":p[2]}))
 		
 		if options["verbose"]>0: print "Finish averaging class {}".format(options["classnum"])
-		if callback!=None : callback(100)
+#		if callback!=None : callback(100)
 		return {"avg":avg,"basis":basis}
 
 jsonclasses["ClassSplitTask"]=ClassSplitTask.from_jsondict
