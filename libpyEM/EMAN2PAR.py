@@ -52,6 +52,7 @@ from EMAN2db import e2filemodtime
 from EMAN2jsondb import JSTask,JSTaskQueue,js_open_dict
 from e2classaverage import ClassAvTask
 from e2classifytree import TreeClassifyTask
+from e2refine_split import ClassSplitTask
 
 from e2tiltvalidate import CompareToTiltTask
 from e2simmx import EMSimTaskDC
