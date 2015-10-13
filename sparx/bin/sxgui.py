@@ -872,7 +872,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.datasymedit.move(x2,y)
 	self.datasymedit.setText(self.savedparmsdict['datasym'])
 	self.datasymedit.setToolTip('file to save helical parameters of each iteration')	
-	
+
 
 """
 #Layout of the Pop Up window Popuptwodali (for sxali2d); started by the function twodali of the main window        
@@ -1556,8 +1556,8 @@ class Popupmeridien(QWidget):
 	cmd1 = cmd1 + args
 
 	CTF = self.ctfchkbx.checkState()
-	userf = self.usrfuncedit.text()
-	userfile = self.usrfuncfileedit.text()
+	userf = self.w1.usrfuncedit.text()
+	userfile = self.w1.usrfuncfileedit.text()
 			
 	if CTF == Qt.Checked:
 		cmd1 = cmd1 + " --CTF"
@@ -1622,8 +1622,8 @@ class Popupmeridien(QWidget):
 		self.stacknameedit.setText(self.savedparmsdict['stackname'])	
 		self.foldernameedit.setText(self.savedparmsdict['foldername'])	
 		self.nprocedit.setText(self.savedparmsdict['nproc'])
-		self.w1.masknameedit.setText(self.savedparmsdict['maskname'])
-		self.w1.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+		self.masknameedit.setText(self.savedparmsdict['maskname'])
+		self.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
 		self.w1.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
 		self.w1.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
 		
@@ -7529,484 +7529,480 @@ class Popupfilterlocal(QWidget):
 	self.pdbfileedit.setText(str(a))
        
        
-    def choose_file1(self):
-	#opens a file browser, showing files only in .hdf format
-   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open file containing transformation matrix", "", "(*)")
-        #after the user selected a file, we obtain this filename as a Qstring
-	a=QtCore.QString(file_name)
-        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
-	self.tr0edit.setText(str(a))
+	def choose_file1(self):
+		#opens a file browser, showing files only in .hdf format
+		file_name = QtGui.QFileDialog.getOpenFileName(self, "Open file containing transformation matrix", "", "(*)")
+		#after the user selected a file, we obtain this filename as a Qstring
+		a=QtCore.QString(file_name)
+		#we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+		self.tr0edit.setText(str(a))
 
 
 
 ###MAIN WINDOW	(started by class App)
 #This class includes the layout of the main window; within each class, i name the main object self, to avoid confusion)    	
 class MainWindow(QtGui.QWidget):
-    def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-        # self.setStyleSheet('background-image: url("1.png")')
-        #sets the title of the window
-	self.setWindowTitle('SPARX GUI')
-	self.setAutoFillBackground(True)		
-	palette = QPalette(self)		
-	palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory()+"sxgui.py_main_window_background_image.png")))		
-	# palette.setBrush(QPalette.Background, QBrush(QPixmap("Fig6.png")))
-	# palette.setBrush(QPalette.Background, QBrush(QPixmap("spaxgui02.png")))
-	self.setPalette(palette)		
+	def __init__(self, parent=None):
+		QtGui.QWidget.__init__(self, parent)
+		# self.setStyleSheet('background-image: url("1.png")')
+		#sets the title of the window
+		self.setWindowTitle('SPARX GUI')
+		self.setAutoFillBackground(True)		
+		palette = QPalette(self)		
+		palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory()+"sxgui.py_main_window_background_image.png")))		
+		# palette.setBrush(QPalette.Background, QBrush(QPixmap("Fig6.png")))
+		# palette.setBrush(QPalette.Background, QBrush(QPixmap("spaxgui02.png")))
+		self.setPalette(palette)		
 
 
-	self.y2 = 65
+		self.y2 = 65
 
-	self.btn7 = QPushButton("sxpdb2em", self)
-        self.btn7.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn7.setToolTip('convert atomic model (pdb file) into sampled electron density map')
-	self.connect(self.btn7, SIGNAL("clicked()"), self.pdb2em)
-	"""
-	self.y2 += 30
-	
-        #creates a Pushbutton, named sxali2d, defines its position in the window 
-        self.btn1 = QPushButton("sxali2d", self)
-        self.btn1.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn1.setToolTip('2D  reference free alignment of an image series ')
-        #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.btn1, SIGNAL("clicked()"), self.twodali)
-	
-	self.y2 += 30
-	
-        #another Pushbutton, with a tooltip, not linked to a function yet
-	self.btn2 = QPushButton("sxmref_ali2d", self)
-        self.btn2.setToolTip('2D MULTI-referencealignment of an image series ')
-        self.btn2.move(10, self.y2)
+		self.btn7 = QPushButton("sxpdb2em", self)
+		self.btn7.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn7.setToolTip('Convert atomic model (pdb file) into sampled electron density map')
+		self.connect(self.btn7, SIGNAL("clicked()"), self.pdb2em)
+		"""
+		self.y2 += 30
 
-       
-	self.y2 += 30
-	
-	self.btn6 = QPushButton("sxk_means_groups", self)
-        self.btn6.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn6.setToolTip('determine \'best\' number of clusters in the data using K-means classification of a set of images')
-	self.connect(self.btn6, SIGNAL("clicked()"), self.kmeansgroups)
-	
-	self.y2 += 30
-	
-	self.btn5 = QPushButton("sxk_means", self)
-        self.btn5.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn5.setToolTip('K-means classification of a set of images')
-	self.connect(self.btn5, SIGNAL("clicked()"), self.kmeans)
-	
-	self.y2 += 30
-	
-	
-	self.btn8 = QPushButton("sxpca", self)
-        self.btn8.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn8.setToolTip('Principal Component Analysis of images')
-	self.connect(self.btn8, SIGNAL("clicked()"), self.pca)
-	"""	
-	self.y2 += 30
+		#creates a Pushbutton, named sxali2d, defines its position in the window 
+		self.btn1 = QPushButton("sxali2d", self)
+		self.btn1.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn1.setToolTip('2D  reference free alignment of an image series ')
+		#when this button is clicked, this action starts the subfunction twodali
+		self.connect(self.btn1, SIGNAL("clicked()"), self.twodali)
 
-	self.btn10 = QPushButton("sxcter", self)
-        self.btn10.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn10.setToolTip('Automated estimation of CTF parameters with error assessment')
-	self.connect(self.btn10, SIGNAL("clicked()"), self.cter)
+		self.y2 += 30
 
-	self.y2 += 30
-
-	self.btn10 = QPushButton("sxisac", self)
-        self.btn10.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn10.setToolTip('Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack')
-	self.connect(self.btn10, SIGNAL("clicked()"), self.isac)
-	
-	self.y2 += 30
-	
-	self.btn10 = QPushButton("sxviper", self)
-        self.btn10.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn10.setToolTip('Use the "common line" algorithm to assign initial values of phi, theta, psi to 2D average projections.')
-	# self.btn10.mouseDoubleClickEvent(lambda : os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper"))
-	self.connect(self.btn10, SIGNAL("clicked()"), self.viper)
-	# def mmm(x):
-	# 	os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper")
-	# self.btn10.mouseDoubleClickEvent = mmm
-	
-		
-
-	self.y2 += 30
-
-	"""	
-	self.y2 += 30
-	
-	self.btn4 = QPushButton("sxali3d", self)
-        self.btn4.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn4.setToolTip('Perform 3-D projection matching given initial reference volume and image series')
-	self.connect(self.btn4, SIGNAL("clicked()"), self.ali3d)
-	"""
-	
-	self.btn4 = QPushButton("sxmeridien", self)
-        self.btn4.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn4.setToolTip('3D structure refinement')
-	self.connect(self.btn4, SIGNAL("clicked()"), self.meridien)
-	
-	self.y2 += 30
-	
-	self.btn4 = QPushButton("sx3dvariability", self)
-        self.btn4.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn4.setToolTip('3D local variability (real space)')
-	self.connect(self.btn4, SIGNAL("clicked()"), self.variability3d)
-	
-	self.y2 += 30
-	
-	self.btn4 = QPushButton("sxlocres", self)
-        self.btn4.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn4.setToolTip('Local resolution (FSC)')
-	self.connect(self.btn4, SIGNAL("clicked()"), self.locres)
-	
-	self.y2 += 30
-	
-	self.btn4 = QPushButton("sxfilterlocal", self)
-        self.btn4.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn4.setToolTip('3D local filter')
-	self.connect(self.btn4, SIGNAL("clicked()"), self.filterlocal)
-	
-	self.y2 += 30
-	"""
-	self.btn9 = QPushButton("sxmref_ali3d", self)
-        self.btn9.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn9.setToolTip('perform 3-D multireference projection matching given initial reference volumes and image series')
-	self.connect(self.btn9, SIGNAL("clicked()"), self.mref_ali3d)
-	
-	self.y2 += 30
-	
-	self.btn11 = QPushButton("sxlocal_ali3d", self)
-        self.btn11.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn11.setToolTip('Perform local refinement of 3-D projection alignment of image series using highy accurate gridding method')
-	self.connect(self.btn11, SIGNAL("clicked()"), self.localali3d)
-	"""
-	self.y2 += 30
-	
-	self.btn3 = QPushButton("sxihrsr", self)
-	self.btn3.move(10, self.y2)
-	#sets an infotip for this Pushbutton
-	self.btn3.setToolTip('Iterative Real Space Helical Refinement ')
-	#when this button is clicked, this action starts the subfunction twodali
-	self.connect(self.btn3, SIGNAL("clicked()"), self.helicalrefinement)
-	
-	
-	 #Pushbutton named Info
-	self.picbutton = QPushButton(self)
-        #when this button is clicked, this action starts the subfunction info
-        self.connect(self.picbutton, SIGNAL("clicked()"), self.info)
-	#creates a Pushbutton, named sxihrsr defines its position in the window 
-        #this decorates the button with the sparx image
-	icon = QIcon(get_image_directory()+"sparxicon.png")
-	self.picbutton.setIcon(icon)
-        self.picbutton.move(120, 5)
-        self.picbutton.setToolTip('Info Page')
-        #Quitbutton
-        self.btn3 = QPushButton("Close", self)
-        self.btn3.setToolTip('Close SPARX GUI ')
-	self.btn3.move(180, 5)
-        self.connect(self.btn3, QtCore.SIGNAL('clicked()'),QtGui.qApp, QtCore.SLOT('quit()'))
-        #here we set two labels, their position and font style
-	title=QtGui.QLabel('<b>PROGRAMS</b>', self)
-	title.move(10,10)
-	QtGui.QToolTip.setFont(QtGui.QFont('OldEnglish', 8))
-	
-    	#here we set the width and height of the main window
-        self.resize(300,400)
+		#another Pushbutton, with a tooltip, not linked to a function yet
+		self.btn2 = QPushButton("sxmref_ali2d", self)
+		self.btn2.setToolTip('2D MULTI-referencealignment of an image series ')
+		self.btn2.move(10, self.y2)
 
 
-    #This is the function two2ali, which is being started when the Pushbutton btn1 of the main window(called sxali2d) is being clicked
-    def twodali(self):
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popuptwodali()
-	self.w1 = Popupadvparams_ali2d(self.w.savedparmsdict)
-        self.w.w1 = self.w1
-        self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced')
-	self.TabWidget.resize(550,570)
-    	self.TabWidget.show()
-	
-    def helicalrefinement(self):
-	#print "Opening a new popup window..."
-	#opens the window Poptwodali, and defines its width and height
+		self.y2 += 30
 
-	#self.w.show()   
-	self.w = PopupHelicalRefinement()
-	self.w1 = Popupadvparams_helical_1(self.w.savedparmsdict)
-	self.w2 = Popupadvparams_helical_2(self.w.savedparmsdict)
+		self.btn6 = QPushButton("sxk_means_groups", self)
+		self.btn6.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn6.setToolTip('determine \'best\' number of clusters in the data using K-means classification of a set of images')
+		self.connect(self.btn6, SIGNAL("clicked()"), self.kmeansgroups)
+
+		self.y2 += 30
+
+		self.btn5 = QPushButton("sxk_means", self)
+		self.btn5.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn5.setToolTip('K-means classification of a set of images')
+		self.connect(self.btn5, SIGNAL("clicked()"), self.kmeans)
+
+		self.y2 += 30
+
+
+		self.btn8 = QPushButton("sxpca", self)
+		self.btn8.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn8.setToolTip('Principal Component Analysis of images')
+		self.connect(self.btn8, SIGNAL("clicked()"), self.pca)
+		"""	
+		self.y2 += 30
+
+		self.btn10 = QPushButton("sxcter", self)
+		self.btn10.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn10.setToolTip('Automated estimation of CTF parameters with error assessment')
+		self.connect(self.btn10, SIGNAL("clicked()"), self.cter)
+
+		self.y2 += 30
+
+		self.btn10 = QPushButton("sxisac", self)
+		self.btn10.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn10.setToolTip('Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack')
+		self.connect(self.btn10, SIGNAL("clicked()"), self.isac)
+
+		self.y2 += 30
+
+		self.btn10 = QPushButton("sxviper", self)
+		self.btn10.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn10.setToolTip('Use the "common line" algorithm to assign initial values of phi, theta, psi to 2D average projections.')
+		# self.btn10.mouseDoubleClickEvent(lambda : os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper"))
+		self.connect(self.btn10, SIGNAL("clicked()"), self.viper)
+		# def mmm(x):
+		# 	os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper")
+		# self.btn10.mouseDoubleClickEvent = mmm
+
+
+
+		self.y2 += 30
+
+		"""	
+		self.y2 += 30
+
+		self.btn4 = QPushButton("sxali3d", self)
+		self.btn4.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn4.setToolTip('Perform 3-D projection matching given initial reference volume and image series')
+		self.connect(self.btn4, SIGNAL("clicked()"), self.ali3d)
+		"""
+
+		self.btn4 = QPushButton("sxmeridien", self)
+		self.btn4.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn4.setToolTip('3D structure refinement')
+		self.connect(self.btn4, SIGNAL("clicked()"), self.meridien)
+
+		self.y2 += 30
+
+		self.btn4 = QPushButton("sx3dvariability", self)
+		self.btn4.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn4.setToolTip('3D local variability (real space)')
+		self.connect(self.btn4, SIGNAL("clicked()"), self.variability3d)
+
+		self.y2 += 30
+
+		self.btn4 = QPushButton("sxlocres", self)
+		self.btn4.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn4.setToolTip('Local resolution (FSC)')
+		self.connect(self.btn4, SIGNAL("clicked()"), self.locres)
+
+		self.y2 += 30
+
+		self.btn4 = QPushButton("sxfilterlocal", self)
+		self.btn4.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn4.setToolTip('3D local filter')
+		self.connect(self.btn4, SIGNAL("clicked()"), self.filterlocal)
+
+		self.y2 += 30
+		"""
+		self.btn9 = QPushButton("sxmref_ali3d", self)
+		self.btn9.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn9.setToolTip('perform 3-D multireference projection matching given initial reference volumes and image series')
+		self.connect(self.btn9, SIGNAL("clicked()"), self.mref_ali3d)
+
+		self.y2 += 30
+
+		self.btn11 = QPushButton("sxlocal_ali3d", self)
+		self.btn11.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn11.setToolTip('Perform local refinement of 3-D projection alignment of image series using highy accurate gridding method')
+		self.connect(self.btn11, SIGNAL("clicked()"), self.localali3d)
+		"""
+		self.y2 += 30
+
+		self.btn3 = QPushButton("sxihrsr", self)
+		self.btn3.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn3.setToolTip('Iterative Real Space Helical Refinement ')
+		#when this button is clicked, this action starts the subfunction twodali
+		self.connect(self.btn3, SIGNAL("clicked()"), self.helicalrefinement)
+
+
+		#Pushbutton named Info
+		self.picbutton = QPushButton(self)
+		#when this button is clicked, this action starts the subfunction info
+		self.connect(self.picbutton, SIGNAL("clicked()"), self.info)
+		#creates a Pushbutton, named sxihrsr defines its position in the window 
+		#this decorates the button with the sparx image
+		icon = QIcon(get_image_directory()+"sparxicon.png")
+		self.picbutton.setIcon(icon)
+		self.picbutton.move(120, 5)
+		self.picbutton.setToolTip('Info Page')
+		#Quitbutton
+		self.btn3 = QPushButton("Close", self)
+		self.btn3.setToolTip('Close SPARX GUI ')
+		self.btn3.move(180, 5)
+		self.connect(self.btn3, QtCore.SIGNAL('clicked()'),QtGui.qApp, QtCore.SLOT('quit()'))
+		#here we set two labels, their position and font style
+		title=QtGui.QLabel('<b>PROGRAMS</b>', self)
+		title.move(10,10)
+		QtGui.QToolTip.setFont(QtGui.QFont('OldEnglish', 8))
+
+		#here we set the width and height of the main window
+		self.resize(300,400)
+
+
+	#This is the function two2ali, which is being started when the Pushbutton btn1 of the main window(called sxali2d) is being clicked
+	def twodali(self):
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popuptwodali()
+		self.w1 = Popupadvparams_ali2d(self.w.savedparmsdict)
+		self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced')
+		self.TabWidget.resize(550,570)
+		self.TabWidget.show()
 	
-	intro_string = "Place holder text....fill this in"
-	self.w3 = Popupcenter(self.w,intro_string)
-	
-	self.w.w1 = self.w1
-	self.w.w2 = self.w2
-	self.w.w3 = self.w3
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced CTF and Search')
-	self.TabWidget.insertTab(2,self.w2,'Advanced Symmetry')
-	self.TabWidget.insertTab(3,self.w3,'Pre-center input stack (Recommended)')
-	self.TabWidget.resize(730,800)
-    	self.TabWidget.show()
-        
-	
-    def ali3d(self):
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popupthreedali()
-	self.w1 = Popupadvparams_ali3d_1(self.w.savedparmsdict)
-	self.w2 = Popupadvparams_ali3d_2(self.w.savedparmsdict)
-	self.w.w1 = self.w1
-	self.w.w2 = self.w2
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced CTF and Search')
-	self.TabWidget.insertTab(2,self.w2,'Advanced MISC')
-	self.TabWidget.resize(550,650)
-    	self.TabWidget.show()
+	def helicalrefinement(self):
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#self.w.show()   
+		self.w = PopupHelicalRefinement()
+		self.w1 = Popupadvparams_helical_1(self.w.savedparmsdict)
+		self.w2 = Popupadvparams_helical_2(self.w.savedparmsdict)
+
+		intro_string = "Place holder text....fill this in"
+		self.w3 = Popupcenter(self.w,intro_string)
+
+		self.w.w1 = self.w1
+		self.w.w2 = self.w2
+		self.w.w3 = self.w3
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced CTF and Search')
+		self.TabWidget.insertTab(2,self.w2,'Advanced Symmetry')
+		self.TabWidget.insertTab(3,self.w3,'Pre-center input stack (Recommended)')
+		self.TabWidget.resize(730,800)
+		self.TabWidget.show()
         
 
-    def localali3d(self):
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popuplocalthreedali()
-	self.w1 = Popupadvparams_localali3d_1(self.w.savedparmsdict)
-	self.w.w1 = self.w1
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced CTF')
-	self.TabWidget.resize(550,600)
-    	self.TabWidget.show() 	
-	
-    def kmeans(self):
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        
-	self.w = Popupkmeans()
-	self.w1 = Popupadvparams_kmeans(self.w.savedparmsdict)
-        self.w.w1 = self.w1
-        self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced')
-	self.TabWidget.resize(580,570)
-    	self.TabWidget.show()
-	
+	def ali3d(self):
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupthreedali()
+		self.w1 = Popupadvparams_ali3d_1(self.w.savedparmsdict)
+		self.w2 = Popupadvparams_ali3d_2(self.w.savedparmsdict)
+		self.w.w1 = self.w1
+		self.w.w2 = self.w2
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced CTF and Search')
+		self.TabWidget.insertTab(2,self.w2,'Advanced MISC')
+		self.TabWidget.resize(550,650)
+		self.TabWidget.show()
+
+
+	def localali3d(self):
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popuplocalthreedali()
+		self.w1 = Popupadvparams_localali3d_1(self.w.savedparmsdict)
+		self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced CTF')
+		self.TabWidget.resize(550,600)
+		self.TabWidget.show() 	
+
+	def kmeans(self):
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupkmeans()
+		self.w1 = Popupadvparams_kmeans(self.w.savedparmsdict)
+		self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced')
+		self.TabWidget.resize(580,570)
+		self.TabWidget.show()
+	"""
     def kmeansgroups(self):
-        #print "Opening a new popup window..."
+		#print "Opening a new popup window..."	
+		self.w = Popupkmeansgroups()
+		self.w1 = Popupadvparams_kmeans_groups(self.w.savedparmsdict)
+		self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced')
+		self.TabWidget.resize(580,570)
+		self.TabWidget.show()
+	"""
+	def pdb2em(self):
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popuppdb2em()
+		self.w.resize(580,570)
+		self.w.show()
 	
-	self.w = Popupkmeansgroups()
-	self.w1 = Popupadvparams_kmeans_groups(self.w.savedparmsdict)
-        self.w.w1 = self.w1
-        self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced')
-	self.TabWidget.resize(580,570)
-    	self.TabWidget.show()
-
-    def pdb2em(self):
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        
-	self.w = Popuppdb2em()
-	self.w.resize(580,570)
-    	self.w.show()
+	def pca(self):
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popuppca()
+		self.w1 = Popupadvparams_pca(self.w.savedparmsdict)
+		self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced')
+		self.TabWidget.resize(630,500)
+		self.TabWidget.show()
 	
-    def pca(self):
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popuppca()
-	self.w1 = Popupadvparams_pca(self.w.savedparmsdict)
-        self.w.w1 = self.w1
-        self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced')
-	self.TabWidget.resize(630,500)
-    	self.TabWidget.show()
-	
-    def mref_ali3d(self):
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popupmrefthreedali()
-	self.w1 = Popupadvparams_mrefali3d_1(self.w.savedparmsdict)
-	self.w.w1 = self.w1
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
-	self.TabWidget.resize(570,740)
-    	self.TabWidget.show()
+	def mref_ali3d(self):
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupmrefthreedali()
+		self.w1 = Popupadvparams_mrefali3d_1(self.w.savedparmsdict)
+		self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
+		self.TabWidget.resize(570,740)
+		self.TabWidget.show()
 
-    def cter(self):
-        ##print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popupisac()
-	self.w1 = Popupadvparams_cter_1(self.w.savedparmsdict)
-	#intro_string = "Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0."
-	#self.w2 = Popupcenter(self.w,intro_string)
-	self.w.w1 = self.w1
-	#self.w.w2 = self.w2
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced')
-	#self.TabWidget.insertTab(2,self.w2,'Pre-center input stack (Recommended)')
-	self.TabWidget.resize(730,800)
-    	self.TabWidget.show()
+	def cter(self):
+		##print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupisac()
+		self.w1 = Popupadvparams_cter_1(self.w.savedparmsdict)
+		#intro_string = "Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0."
+		#self.w2 = Popupcenter(self.w,intro_string)
+		self.w.w1 = self.w1
+		#self.w.w2 = self.w2
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced')
+		#self.TabWidget.insertTab(2,self.w2,'Pre-center input stack (Recommended)')
+		self.TabWidget.resize(730,800)
+		self.TabWidget.show()
 
-    def isac(self):
-        modifiers = QtGui.QApplication.keyboardModifiers()
-        if modifiers == QtCore.Qt.ShiftModifier:
-            os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxisac")
-            return
-        ##print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popupisac()
-	self.w1 = Popupadvparams_isac_1(self.w.savedparmsdict)
-	intro_string = "Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0."
-	self.w2 = Popupcenter(self.w,intro_string)
-	self.w.w1 = self.w1
-	self.w.w2 = self.w2
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced')
-	self.TabWidget.insertTab(2,self.w2,'Pre-center input stack (Recommended)')
-	self.TabWidget.resize(730,800)
-    	self.TabWidget.show()
+	def isac(self):
+		modifiers = QtGui.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxisac")
+			return
+		##print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupisac()
+		self.w1 = Popupadvparams_isac_1(self.w.savedparmsdict)
+		intro_string = "Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0."
+		self.w2 = Popupcenter(self.w,intro_string)
+		self.w.w1 = self.w1
+		self.w.w2 = self.w2
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced')
+		self.TabWidget.insertTab(2,self.w2,'Pre-center input stack (Recommended)')
+		self.TabWidget.resize(730,800)
+		self.TabWidget.show()
     
-    
-    def viper(self):
-        modifiers = QtGui.QApplication.keyboardModifiers()
-        if modifiers == QtCore.Qt.ShiftModifier:
-            os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper")
-            return
-        #print "Opening a new popup window..."
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popupviper()
-	self.w1 = Popupadvparams_viper(self.w.savedparmsdict)
-	self.w.w1 = self.w1
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
-	self.TabWidget.resize(570,740)
-    	self.TabWidget.show()
 
-    
-    def meridien(self):
-        modifiers = QtGui.QApplication.keyboardModifiers()
-        if modifiers == QtCore.Qt.ShiftModifier:
-            os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxmeridien")
-            return
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popupmeridien()
-	self.w1 = Popupadvparams_meridien(self.w.savedparmsdict)
-	self.w.w1 = self.w1
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
-	self.TabWidget.resize(570,740)
-    	self.TabWidget.show()
+	def viper(self):
+		modifiers = QtGui.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxviper")
+			return
+		#print "Opening a new popup window..."
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupviper()
+		self.w1 = Popupadvparams_viper(self.w.savedparmsdict)
+		self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
+		self.TabWidget.resize(570,740)
+		self.TabWidget.show()
+
+
+	def meridien(self):
+		modifiers = QtGui.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sxmeridien")
+			return
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupmeridien()
+		self.w1 = Popupadvparams_meridien(self.w.savedparmsdict)
+		self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
+		self.TabWidget.resize(570,740)
+		self.TabWidget.show()
 
     
-    def variability3d(self):
-        modifiers = QtGui.QApplication.keyboardModifiers()
-        if modifiers == QtCore.Qt.ShiftModifier:
-            os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sx3dvariability")
-            return
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popupvariability3d()
-	#self.w1 = Popupadvparams_variability3d(self.w.savedparmsdict)
-	#self.w.w1 = self.w1
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	#self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
-	self.TabWidget.resize(570,740)
-    	self.TabWidget.show()
+	def variability3d(self):
+		modifiers = QtGui.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			os.system("python -m webbrowser http://sparx-em.org/sparxwiki/sx3dvariability")
+			return
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupvariability3d()
+		#self.w1 = Popupadvparams_variability3d(self.w.savedparmsdict)
+		#self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		#self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
+		self.TabWidget.resize(570,740)
+		self.TabWidget.show()
 
 
     
-    def locres(self):
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popuplocres()
-	#self.w1 = Popupadvparams_locres(self.w.savedparmsdict)
-	#self.w.w1 = self.w1
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	#self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
-	self.TabWidget.resize(570,740)
-    	self.TabWidget.show()
+	def locres(self):
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popuplocres()
+		#self.w1 = Popupadvparams_locres(self.w.savedparmsdict)
+		#self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		#self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
+		self.TabWidget.resize(570,740)
+		self.TabWidget.show()
 
 
     
-    def filterlocal(self):
-        #print "Opening a new popup window..."
-        #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = Popupfilterlocal()
-	#self.w1 = Popupadvparams_filterlocal(self.w.savedparmsdict)
-	#self.w.w1 = self.w1
-	self.TabWidget = QtGui.QTabWidget()
-    	self.TabWidget.insertTab(0,self.w,'Main')
-    	#self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
-	self.TabWidget.resize(570,740)
-    	self.TabWidget.show()
+	def filterlocal(self):
+		#print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupfilterlocal()
+		#self.w1 = Popupadvparams_filterlocal(self.w.savedparmsdict)
+		#self.w.w1 = self.w1
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		#self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
+		self.TabWidget.resize(570,740)
+		self.TabWidget.show()
 
     				
-    #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
-    def info(self):
-        #print "Opening a new popup window..."
-        #opens the window infosparx, and defines its width and height
-        #The layout of the infosparx window is defined in class infosparx(QWidget Window)
-        self.w = infosparx()
-        self.w.resize(250,200)
-        self.w.show()
+	#This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
+	def info(self):
+		#print "Opening a new popup window..."
+		#opens the window infosparx, and defines its width and height
+		#The layout of the infosparx window is defined in class infosparx(QWidget Window)
+		self.w = infosparx()
+		self.w.resize(250,200)
+		self.w.show()
 
 #  this is the main class of the program
 #  Here we provide the necessary imports. The basic GUI widgets are located in QtGui module.
 class App(QApplication):
-    def __init__(self, *args):
-        QApplication.__init__(self, *args)
-        #here we define the main window (class MainWindow)
-        self.main = MainWindow()
-	# self.main.resize(400,450)
-	self.main.resize(1000, 755)
-        #here we define that when all windows are closed, function byebye of class App will be started
-        self.connect(self, SIGNAL("lastWindowClosed()"), self.byebye )
-        #hshows main window
-        self.main.show()
-    #function byebye (just quit)  
-    def byebye( self ):
-        print' bye bye!'
-        self.exit(0)
+	def __init__(self, *args):
+		QApplication.__init__(self, *args)
+		#here we define the main window (class MainWindow)
+		self.main = MainWindow()
+		# self.main.resize(400,450)
+		self.main.resize(1000, 755)
+		#here we define that when all windows are closed, function byebye of class App will be started
+		self.connect(self, SIGNAL("lastWindowClosed()"), self.byebye )
+		#hshows main window
+		self.main.show()
+		#function byebye (just quit)  
+	def byebye( self ):
+		print' bye bye!'
+		self.exit(0)
 
       
 #  Necessary for execution of the program
