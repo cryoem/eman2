@@ -889,19 +889,44 @@ def main():
 
 					#print_iminfo(data, "Final")
 
-					if options.outmode != "float":
+					if options.outmode != "float" and \
+						(options.fixintscaling == None or \
+						 options.fixintscaling == "noscale") :
+
 	#					if outfile[-4:] != ".hdf" :
 	#						print "WARNING: outmode is not working correctly for non HDF images in"
 	#						print "2.1beta3. We expect to have this fixed in the next few days."
 
-						if options.outnorescale :
+						if options.outnorescale or \
+							options.fixintscaling == "noscale" :
+	
 							# This sets the minimum and maximum values to the range
 							# for the specified type, which should result in no rescaling
 
-							outmode = file_mode_map[options.outmode]
+#							outmode = file_mode_map[options.outmode]
 
-							d["render_min"] = file_mode_range[outmode][0]
-							d["render_max"] = file_mode_range[outmode][1]
+#							d["render_min"] = file_mode_range[outmode][0]
+#							d["render_max"] = file_mode_range[outmode][1]
+
+							if   options.outmode == "int8" :
+								u =   -128.0
+								v =    127.0
+							elif options.outmode == "uint8" :
+								u =      0.0
+								v =    255.0
+							elif options.outmode == "int16" :
+								u = -32768.0
+								v =  32767.0
+							elif options.outmode == "uint16" :
+								u =      0.0
+								v =  65535.0
+							else :
+								u =      1.0
+								v =      0.0
+
+							if u < v :
+								d["render_min"] = u
+								d["render_max"] = v
 						else:
 							d["render_min"] = d["minimum"]
 							d["render_max"] = d["maximum"]
