@@ -82,12 +82,14 @@ and e2refine_evenodd.py. Major features of this program:
  * While a range of command-line options still exist. You should not normally specify more than a few basic requirements. The rest will be auto-selected for you.
  * This program will split your data in half and automatically refine the halves independently to produce a gold standard resolution curve for every step in the refinement.
  * An HTML report file will be generated as this program runs, telling you exactly what it decided to do and why, as well as giving information about runtime, etc while the job is still running.
- * The gold standard FSC also permits us to automatically filter the structure at each refinement step. The resolution you specify is a target, not the filter resolution.
+ * The gold standard FSC also permits us to automatically filter the structure at each refinement step. The resolution you specify is a target, NOT the filter resolution.
+ * If --inputavg is specified to use a different stack for alignment and averaging, both stacks must have the same box size and sampling
  * Many of the 'advanced' options are hidden in the e2projectmanager.py GUI, because most users should not need to specify them.
 
 To run this program, you would normally specify only the following options:
-  --input=<lst file referencing phase-flipped particles in HDF format>
   --model=<starting map to seed refinement>
+  --input=<lst file referencing phase-flipped particles in HDF format used for alignment>
+  --inputavg=<optional lst file with particles to be reconstructed, if not specified --input used>
   OR
   --startfrom=<path to existing refine_xx directory to continue from>
 
@@ -143,7 +145,8 @@ not need to specify any of the following other than the ones already listed abov
 	#options associated with e2refine.py
 	#parser.add_header(name="multirefineheader", help='Options below this label are specific to e2refinemulti', title="### e2refinemulti options ###", row=1, col=0, rowspan=1, colspan=3, mode="refinement")
 	#parser.add_header(name="multimodelheader", help='Options below this label are specific to e2refinemulti Model', title="### e2refinemulti model options ###", row=4, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image file containing the particle data", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--input", dest="input", default=None,type=str, help="Image stack containing phase-flipped particles used for alignment", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--inputavg", dest="inputavg", default=None,type=str, help="Optional file containing alternate version of the particles to use for reconstruction after alignment", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=2, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--model", dest="model", type=str,default=None, help="The map to use as a starting point for refinement", guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', filecheck=False, row=3, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_header(name="orblock", help='Just a visual separation', title="- OR -", row=5, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--startfrom", default=None, type=str,help="Path to an existing refine_xx directory to continue refining from. Alternative to --input and --model.",guitype='filebox', filecheck=False, browser='EMModelsTable(withmodal=True,multiselect=False)', row=7, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -323,6 +326,7 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 gold standard resolution assessment is not valid, and you need to re-refine, starting with a lower resolution target.</p>
 <p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
 			options.input=image_eosplit(options.input)
+			if options.inputavg!=None : options.inputavg=image_eosplit(options.inputavg)
 		except:
 			traceback.print_exc()
 			print "Error: Unable to prepare input files"
@@ -545,6 +549,12 @@ important to use an angular step which is 90/integer.</p>")
 
 	if options.classrefsf : classrefsf="--setsfref"
 	else: classrefsf=""
+	
+	if options.inputavg!=None: 
+		cainput=["--input {} --usefilt {}".format(options.inputavg[ii],options.input[ii]) for ii in (0,1)]
+	else:
+		cainput=["--input {}".format(options.input[ii]) for ii in (0,1)]
+
 
 	if options.classautomask : classautomask="--automask"
 	else: classautomask=""
@@ -711,17 +721,17 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 		### Class-averaging
 		append_html("<p>* Iteratively align and average all of the particles within each class, discarding the worst fraction</p>",True)
-		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
+		cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
-			inputfile=options.input[0], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
+			inputfile=cainput[0], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
 			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 		run(cmd)
-		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
+		cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
-			inputfile=options.input[1], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
+			inputfile=cainput[1], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
 			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 		run(cmd)

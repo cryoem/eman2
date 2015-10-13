@@ -1,11 +1,10 @@
 High priority
 2.1
+10/12/15	mask biased refinement
 10/11/15	remember to check tight masking (make it not so tight?)
 9/30/15		Plot selection of data sets
 9/30/15		Simple reference based autopicker with downsampling
 9/23/15		Seriously, got to do something about centering.
-9/23/15		Add highsym and other new programs to gui workflow
-6/27/13		DDD movies, allow 'usefilt'-like behavior for low/high dose particles
 7/22/12		Counting in filename entry in GUI (was taking a LOOONG time). Fix with new caching system.
 8/2/12		More dimensions in tilt validate
 7/13/13		Gauss boxer can't be run from GUI on second image without funny button series
@@ -61,6 +60,8 @@ Low priority
 9/23/15		Show stack/ Filter tool only work on the first image in 3D stacks
 
 Complete
+10/12/15	usefilt like option (inputavg) added to e2refine_easy
+9/23/15		10/10/15 Add highsym and other new programs to gui workflow
 7/17/15		added 'single' orientation generator
 7/17/15		made perturb default -> false for eman orientation generator
 7/16/15		Updated align_nbest to work properly with python threads

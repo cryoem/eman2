@@ -20,7 +20,8 @@ def main():
 	usage = """Usage: e2spt_stat.py [options] 
 Note that this program is not part of the original e2spt hierarchy, but is part of an experimental refactoring.
 
-This program will take an input stack of subtomograms and a reference volume, and perform a missing-wedge aware alignment of each particle to the reference. If --goldstandard is specified, then even and odd particles will be aligned to different perturbed versions of the reference volume, phase-randomized past the specified resolution."""
+This program will look in an spt_XX folder at particle_parms_xx.json and show a quality histogram of the particles as compared to the alignment reference. Smaller values are better.
+"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
