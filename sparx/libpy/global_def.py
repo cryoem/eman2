@@ -76,6 +76,9 @@ IS_LOGFILE_OPEN = False
 global SPARXVERSION
 SPARXVERSION = "SPARX v3.0" + ' (CVS' + CVSDATESTAMP[6:-2] +')'
 
+global SPARX_DOCUMENTATION_WEBSITE
+SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
+
 
 def ERROR(message, where, action = 1, myid = 0):
 	"""
