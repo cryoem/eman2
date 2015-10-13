@@ -182,9 +182,14 @@ void MrcIO::init()
 			ny_to_nx_ratio = 1.0;
 		}
 
+		bool have_packed_label    = (mrch.nlabels > 0  &&
+			  strstr(mrch.labels[0],   "4 bits packed") != NULL);
+		bool have_packed_filename =
+			 (strstr(filename.c_str(), "4_bits_packed") != NULL);
+
 		bool ny_twice_nx = (fabs(ny_to_nx_ratio - 2.0f) <= 0.1f);
-		bool double_nx   = (ny_twice_nx  &&  mrch.nlabels > 0  &&
-								  strstr(mrch.labels[0], "4 bits packed") != NULL);
+		bool double_nx   = (ny_twice_nx  &&  mrch.mode == MRC_UCHAR  &&
+			 (have_packed_label  ||  have_packed_filename));
 
       use_given_dimensions = (! double_nx);
 
