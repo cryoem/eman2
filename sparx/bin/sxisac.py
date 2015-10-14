@@ -131,6 +131,7 @@ def main():
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 
 	radi  = options.radius
+	center_method  = options.center_method
 	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
 
 	
