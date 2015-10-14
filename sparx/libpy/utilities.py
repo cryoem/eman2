@@ -4679,7 +4679,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
 	#  The read data is properly distributed among MPI threads.
-	from fundamentals import resample
+	from fundamentals import resample, fshift
 	from filter import filt_ctf
 	from applications import MPI_start_end
 
@@ -4730,6 +4730,8 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 		if preshift:
 			data[im] = fshift(data[im], sx, sy)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
+			sx = 0.0
+			sy = 0.0
 		#oldshifts[im] = [sx,sy]
 		#  resample will properly adjusts shifts and pixel size in ctf
 		data[im] = resample(data[im], shrinkage)
