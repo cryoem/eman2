@@ -79,6 +79,7 @@ def main():
 	parser.add_option("--ts",             type="float",        default=1.0,     help="search step of translational search (1.0)")
 	parser.add_option("--maxit",          type="int",          default=30,      help="number of iterations for reference-free alignment (30)")
 	#parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)")
+	parser.add_option("--center_method",  type="int",          default=7,       help="Method for centering of global 2D average during initial prealignment of data (default : 7; 0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7)")
 	parser.add_option("--dst",            type="float",        default=90.0,    help="discrete angle used in within group alignment ")
 	parser.add_option("--FL",             type="float",        default=0.2,     help="lowest stopband frequency used in the tangent filter (0.2)")
 	parser.add_option("--FH",             type="float",        default=0.3,     help="highest stopband frequency used in the tangent filter (0.3)")
@@ -281,7 +282,7 @@ def main():
 
 	#  centering method is set to #7
 	params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
-				False, 90.0, 7, 14, options.CTF, 1.0, False, \
+				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
 				"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
 
 	if( myid == main_node ):
