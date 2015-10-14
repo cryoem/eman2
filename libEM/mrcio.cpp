@@ -1084,8 +1084,12 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		mrch.nz = stack_size;
 	}
 
+	bool dont_rescale;
+
 	if (mrch.mode == MRC_UCHAR) {
 		cdata = new unsigned char[size];
+
+		dont_rescale = (rmin == 0.0  &&  rmax == UCHAR_MAX);
 
 		for (size_t i = 0; i < size; ++i) {
 			if (data[i] <= rmin) {
@@ -1093,6 +1097,9 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 			}
 			else if (data[i] >= rmax){
 				cdata[i] = UCHAR_MAX;
+			}
+			else if (dont_rescale) {
+				cdata[i] = (unsigned char) data[i];
 			}
 			else {
 				cdata[i] = (unsigned char)((data[i] - rmin) /
@@ -1108,12 +1115,17 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	else if (mrch.mode == MRC_CHAR) {
 		scdata = new signed char[size];
 
+		dont_rescale = (rmin == SCHAR_MIN  &&  rmax == SCHAR_MAX);
+
 		for (size_t i = 0; i < size; ++i) {
 			if (data[i] <= rmin) {
 				scdata[i] = SCHAR_MIN;
 			}
 			else if (data[i] >= rmax){
 				scdata[i] = SCHAR_MAX;
+			}
+			else if (dont_rescale) {
+				scdata[i] = (signed char) data[i];
 			}
 			else {
 				scdata[i] = (signed char)((data[i] - rmin) /
@@ -1129,12 +1141,17 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX) {
 		sdata = new short[size];
 
+		dont_rescale = (rmin == SHRT_MIN  &&  rmax == SHRT_MAX);
+
 		for (size_t i = 0; i < size; ++i) {
 			if (data[i] <= rmin) {
 				sdata[i] = SHRT_MIN;
 			}
 			else if (data[i] >= rmax) {
 				sdata[i] = SHRT_MAX;
+			}
+			else if (dont_rescale) {
+				sdata[i] = (short) data[i];
 			}
 			else {
 				sdata[i] = (short)(((data[i] - rmin) /
@@ -1150,12 +1167,17 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	else if (mrch.mode == MRC_USHORT) {
 		usdata = new unsigned short[size];
 
+		dont_rescale = (rmin == 0.0  &&  rmax == USHRT_MAX);
+
 		for (size_t i = 0; i < size; ++i) {
 			if (data[i] <= rmin) {
 				usdata[i] = 0;
 			}
 			else if (data[i] >= rmax) {
 				usdata[i] = USHRT_MAX;
+			}
+			else if (dont_rescale) {
+				usdata[i] = (unsigned short) data[i];
 			}
 			else {
 				usdata[i] = (unsigned short)((data[i] - rmin) /
