@@ -60,7 +60,6 @@ def main(args):
 	# print parser
 	
 	if options.return_options:
-		
 		return parser
 	
 	if options.moon_elimination == "":

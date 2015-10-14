@@ -37,7 +37,7 @@ import random
 
 import global_def
 from   global_def import *
-from   optparse import OptionParser
+from optparse import OptionParser, SUPPRESS_HELP
 import ConfigParser
 from inspect import currentframe, getframeinfo
 
@@ -62,31 +62,31 @@ NAME_OF_RUN_DIR = "run"
 NAME_OF_MAIN_DIR = "generation_"
 DIR_DELIM = os.sep
 
-def main():
+def main(args):
 	progname = os.path.basename(sys.argv[0])
-	usage = ( progname + " stack_file  <output_directory> --radius=particle_radius --img_per_grp=img_per_grp --CTF --restart_section<The remaining parameters are optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
+	usage = ( progname + " stack_file  output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --restart_section<The remaining parameters are optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
 			" --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp" +
 			"  --generation=generation  --rand_seed=rand_seed>" )
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--radius",         type="int",          default=-1,      help="Particle radius, it has to be provided.")
-	parser.add_option("--img_per_grp",    type="int",          default=100,     help="number of images per group in the ideal case (essentially maximum size of class) (100)")
-	parser.add_option("--CTF",            action="store_true", default=False,   help="CTF flag, if set the data will be phase-flipped")
-	parser.add_option("--ir",             type="int",          default=1,       help="inner ring of the resampling to polar coordinates (1)")
-	parser.add_option("--rs",             type="int",          default=1,       help="ring step of the resampling to polar coordinates (1)")
-	parser.add_option("--xr",             type="int",          default=-1,      help="x range of translational search (By default set by the program)")
-	parser.add_option("--yr",             type="int",          default=-1,      help="y range of translational search (same as xr")
-	parser.add_option("--ts",             type="float",        default=1.0,     help="search step of translational search (1.0)")
+	parser.add_option("--radius",         type="int",          default=-1,      help="<Particle radius>, it has to be provided.")
+	parser.add_option("--img_per_grp",    type="int",          default=100,     help="<number of images per group> in the ideal case (essentially maximum size of class) (100)")
+	parser.add_option("--CTF",            action="store_true", default=False,   help="<CTF flag>, if set the data will be phase-flipped")
+	parser.add_option("--ir",             type="int",          default=1,       help="<inner ring> of the resampling to polar coordinates (1)")
+	parser.add_option("--rs",             type="int",          default=1,       help="<ring step> of the resampling to polar coordinates (1)")
+	parser.add_option("--xr",             type="int",          default=-1,      help="<x range> of translational search (By default set by the program) (advanced)")
+	parser.add_option("--yr",             type="int",          default=-1,      help="<y range> of translational search (same as xr) (advanced)")
+	parser.add_option("--ts",             type="float",        default=1.0,     help="<search step> of translational search (1.0)")
 	parser.add_option("--maxit",          type="int",          default=30,      help="number of iterations for reference-free alignment (30)")
 	#parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)")
-	parser.add_option("--center_method",  type="int",          default=7,       help="Method for centering of global 2D average during initial prealignment of data (default : 7; 0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7)")
+	parser.add_option("--center_method",  type="int",          default=7,       help="<Method for centering> of global 2D average during initial prealignment of data (default : 7; 0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7)")
 	parser.add_option("--dst",            type="float",        default=90.0,    help="discrete angle used in within group alignment ")
-	parser.add_option("--FL",             type="float",        default=0.2,     help="lowest stopband frequency used in the tangent filter (0.2)")
-	parser.add_option("--FH",             type="float",        default=0.3,     help="highest stopband frequency used in the tangent filter (0.3)")
-	parser.add_option("--FF",             type="float",        default=0.2,     help="fall-off of the tangent filter (0.2)")
-	parser.add_option("--init_iter",      type="int",          default=3,       help="number of iterations of ISAC program in initialization (3)")
-	parser.add_option("--main_iter",      type="int",          default=3,       help="number of iterations of ISAC program in main part (3)")
-	parser.add_option("--iter_reali",     type="int",          default=1,       help="number of iterations in ISAC before checking stability (1)")
+	parser.add_option("--FL",             type="float",        default=0.2,     help="<lowest stopband> frequency used in the tangent filter (0.2)")
+	parser.add_option("--FH",             type="float",        default=0.3,     help="<highest stopband> frequency used in the tangent filter (0.3)")
+	parser.add_option("--FF",             type="float",        default=0.2,     help="<fall-off of the tangent> filter (0.2)")
+	parser.add_option("--init_iter",      type="int",          default=3,       help="<init_iter> number of iterations of ISAC program in initialization (3)")
+	parser.add_option("--main_iter",      type="int",          default=3,       help="<main_iter> number of iterations of ISAC program in main part (3)")
+	parser.add_option("--iter_reali",     type="int",          default=1,       help="<iter_reali> number of iterations in ISAC before checking stability (1)")
 	parser.add_option("--match_first",    type="int",          default=1,       help="number of iterations to run 2-way matching in the first phase (1)")
 	parser.add_option("--max_round",      type="int",          default=20,      help="maximum rounds of generating candidate averages in the first phase (20)")
 	parser.add_option("--match_second",   type="int",          default=5,       help="number of iterations to run 2-way (or 3-way) matching in the second phase (5)")
@@ -94,7 +94,7 @@ def main():
 	parser.add_option("--thld_err",       type="float",        default=0.7,     help="the threshold of pixel error when checking stability (0.7)")
 	parser.add_option("--indep_run",      type="int",          default=4,       help="number of independent runs for reproducibility (default=4, only values 2, 3 and 4 are supported (4)")
 	parser.add_option("--thld_grp",       type="int",          default=10,      help="minimum size of class (10)")
-	parser.add_option("--n_generations",     type="int",          default=100,       help="program stops when reaching this total number of generations")
+	parser.add_option("--n_generations",     type="int",          default=100,       help="<n_generations> program stops when reaching this total number of generations (advanced)")
 	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
 	parser.add_option("--rand_seed",      type="int",          default=None,    help="random seed set before calculations, useful for testing purposes (default None - total randomness)")
 	parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
@@ -103,10 +103,15 @@ def main():
 	# must be switched off in production
 	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=False)
 	
-	parser.add_option("--restart_section", type="string", default="", help="restart section name (no spaces) followed immediately by comma, followed immediately by generation to restart, example: \n--restart_section=candidate_class_averages,1         (Sections: restart, candidate_class_averages, reproducible_class_averages)")
-	parser.add_option("--stop_after_candidates",          action="store_true", default=False,   help="stops after the 'candidate_class_averages' section")
+	parser.add_option("--restart_section", type="string", default="", help="<restart section name> (no spaces) followed immediately by comma, followed immediately by generation to restart, example: \n--restart_section=candidate_class_averages,1         (Sections: restart, candidate_class_averages, reproducible_class_averages)")
+	parser.add_option("--stop_after_candidates",          action="store_true", default=False,   help="<stop_after_candidates> stops after the 'candidate_class_averages' section")
 
-	(options, args) = parser.parse_args()
+	parser.add_option("--return_options", action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)
+
+	(options, args) = parser.parse_args(args)
+
+	if options.return_options:
+		return parser
 	
 	if len(args) > 2:
 		print "usage: " + usage
@@ -581,6 +586,7 @@ def main():
 
 	mpi_finalize()
 
-if __name__ == "__main__":
-	main()
+if __name__=="__main__":
+	main(sys.argv[1:])
+
 
