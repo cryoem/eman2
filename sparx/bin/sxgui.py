@@ -6410,90 +6410,38 @@ class Popupviper(QWidget):
 		
 		# self.y2 = self.y2+30
 		
-		from sxviper import main as sxviper_main
 
-		parser = sxviper_main(["aa", "--return_options"])
-
-# ['__doc__', '__init__', '__module__', '_add_help_option', '_add_version_option', '_check_conflict', '_create_option_list', '_create_option_mappings', '_get_all_options', '_get_args', '_get_encoding', '_init_parsing_state', '_long_opt', '_match_long_opt', '_populate_option_list', '_process_args', '_process_long_opt', '_process_short_opts', '_share_option_mappings', '_short_opt', 'add_option', 'add_option_group', 'add_options', 'allow_interspersed_args', 'check_values', 'conflict_handler', 'defaults', 'description', 'destroy', 'disable_interspersed_args', 'enable_interspersed_args', 'epilog', 'error', 'exit', 'expand_prog_name', 'format_description', 'format_epilog', 'format_help', 'format_option_help', 'formatter', 'get_default_values', 'get_description', 'get_option', 'get_option_group', 'get_prog_name', 'get_usage', 'get_version', 'has_option', 'largs', 'option_class', 'option_groups', 'option_list', 'parse_args', 'print_help', 'print_usage', 'print_version', 'process_default_values', 'prog', 'rargs', 'remove_option', 'set_conflict_handler', 'set_default', 'set_defaults', 'set_description', 'set_process_default_values', 'set_usage', 'standard_option_list', 'usage', 'values', 'version']
-# >>> a.optionlist
-# Traceback (most recent call last):
-#   File "<stdin>", line 1, in <module>
-# AttributeError: OptionParser instance has no attribute 'optionlist'
-# >>> len(a.option_list)
-# 25
-# >>> a.option_list[1].help
-# 'show this help message and exit'
-# >>> a.option_list[11].help
-# 'maximum number of iterations performed for the finishing up part (set to 50) '
-# >>>
-# >>> dir(a.option_list[11])
-# ['ACTIONS', 'ALWAYS_TYPED_ACTIONS', 'ATTRS', 'CHECK_METHODS', 'CONST_ACTIONS', 'STORE_ACTIONS', 'TYPED_ACTIONS', 'TYPES', 'TYPE_CHECKER', '__doc__', '__init__', '__module__', '__repr__', '__str__', '_check_action', '_check_callback', '_check_choice', '_check_const', '_check_dest', '_check_nargs', '_check_opt_strings', '_check_type', '_long_opts', '_set_attrs', '_set_opt_strings', '_short_opts', 'action', 'callback', 'callback_args', 'callback_kwargs', 'check_value', 'choices', 'const', 'container', 'convert_value', 'default', 'dest', 'get_opt_string', 'help', 'metavar', 'nargs', 'process', 'take_action', 'takes_value', 'type']
-# >>> a.option_list[11].dest
-# 'maxit2'
-
-
-
-
-		# fz= QtGui.QLabel('Assign the first projection orientation to 0', self)
-		# fz.move(self.x1,self.y1)
-		# self.first_zerochkbx=QtGui.QCheckBox("",self)
-		# self.first_zerochkbx.move(self.x2,self.y1)
-		# self.first_zerochkbx.setCheckState(self.savedparmsdict['first_zero'])
-		# self.first_zerochkbx.setToolTip('Assign the first projection orientation to 0')
-
-
-		# self.y2 = self.y2 - 70
-		
-		class ImmitateOptionList:
-			default=""
-			help=""
-			dest = ""
-			action = ""
-
-		prog_args = parser.usage.split("--")[0].split(" ")
-		# print prog_args
-		args_list = []
-		for a in prog_args[1:]:
-			if a == "": continue
-			aa = a.strip()
-			b = ImmitateOptionList()
-			b.help = "<" + aa + ">"
-			b.dest = aa[:]
-			if a == "stack":
-				b.help = "<Projection stack file>"
-			args_list.append(b)
-
-		list_to_follow =  args_list + parser.option_list[2:]
-		parser.option_list = list_to_follow 
-		QLabels = [None]*(len(parser.option_list) + len(args_list))
-		self.QLineEditsAndChecks = [None]*(len(parser.option_list) + len(args_list))
+		args_list_and_parser =  self.get_args_list_and_parser()
+		QLabels = [None]*len(args_list_and_parser)
+		self.QLineEditsAndChecks = [None]*len(args_list_and_parser)
 		# for option_iterator in range(2, len(parser.option_list)):
-		for option_iterator in range(len(parser.option_list)):
-			if parser.option_list[option_iterator].help == None or \
-				parser.option_list[option_iterator].help == "" or \
-				parser.option_list[option_iterator].help[0] != "<" or \
-				parser.option_list[option_iterator].help[-10:] == "(advanced)":
+		for option_iterator in range(len(args_list_and_parser)):
+			if args_list_and_parser[option_iterator].help == None or \
+				args_list_and_parser[option_iterator].help == "" or \
+				args_list_and_parser[option_iterator].help[0] != "<" or \
+				args_list_and_parser[option_iterator].help[-10:] == "(advanced)":
 				continue
-			label = parser.option_list[option_iterator].help[1:].split(">")[0]
+			label = args_list_and_parser[option_iterator].help[1:].split(">")[0]
 			# a = QtGui.QCheckBox("",self)
 			QLabels[option_iterator] = QtGui.QLabel(label, self)
 			QLabels[option_iterator].move(self.x1,self.y2)
 
-			control_is_an_edit_box = parser.option_list[option_iterator].action != "store_true"
+			control_is_an_edit_box = args_list_and_parser[option_iterator].action != "store_true"
+			control_is_for_a_parameter = args_list_and_parser[option_iterator].action == "LPlFHy3uNTjucRlk"
 			if control_is_an_edit_box:
 				self.QLineEditsAndChecks[option_iterator] = QtGui.QLineEdit(self)
 				# modify_function = self.QLineEditsAndChecks[option_iterator].setText
-				self.QLineEditsAndChecks[option_iterator].setText(str(parser.option_list[option_iterator].default))
+				self.QLineEditsAndChecks[option_iterator].setText(str(args_list_and_parser[option_iterator].default))
 			else:
 				self.QLineEditsAndChecks[option_iterator] = QtGui.QCheckBox("",self)
 				# modify_function = self.QLineEditsAndChecks[option_iterator].setCheckState
-				modify_function = self.QLineEditsAndChecks[option_iterator].setCheckState(parser.option_list[option_iterator].default)
+				modify_function = self.QLineEditsAndChecks[option_iterator].setCheckState(args_list_and_parser[option_iterator].default)
 
 			self.QLineEditsAndChecks[option_iterator].move(self.x2,self.y2 - 7)
 			# self.QLineEdits[option_iterator].setText(self.savedparmsdict[parser.option_list[option_iterator].dest])
-			self.savedparmsdict[parser.option_list[option_iterator].dest] = [option_iterator, str(parser.option_list[option_iterator].default), control_is_an_edit_box]
+			self.savedparmsdict[args_list_and_parser[option_iterator].dest] = [option_iterator, str(args_list_and_parser[option_iterator].default), control_is_an_edit_box, control_is_for_a_parameter]
 			# modify_function(str(parser.option_list[option_iterator].default))
-			self.QLineEditsAndChecks[option_iterator].setToolTip(parser.option_list[option_iterator].help)		
+			self.QLineEditsAndChecks[option_iterator].setToolTip(args_list_and_parser[option_iterator].help)		
 	
 			self.y2 = self.y2+25
 
@@ -6745,23 +6693,81 @@ class Popupviper(QWidget):
 		
 	#Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
 
+	def get_args_list_and_parser(self):
+
+		from sxviper import main as sxviper_main
+		parser = sxviper_main(["aa", "--return_options"])
+
+		# ['__doc__', '__init__', '__module__', '_add_help_option', '_add_version_option', '_check_conflict', '_create_option_list', '_create_option_mappings', '_get_all_options', '_get_args', '_get_encoding', '_init_parsing_state', '_long_opt', '_match_long_opt', '_populate_option_list', '_process_args', '_process_long_opt', '_process_short_opts', '_share_option_mappings', '_short_opt', 'add_option', 'add_option_group', 'add_options', 'allow_interspersed_args', 'check_values', 'conflict_handler', 'defaults', 'description', 'destroy', 'disable_interspersed_args', 'enable_interspersed_args', 'epilog', 'error', 'exit', 'expand_prog_name', 'format_description', 'format_epilog', 'format_help', 'format_option_help', 'formatter', 'get_default_values', 'get_description', 'get_option', 'get_option_group', 'get_prog_name', 'get_usage', 'get_version', 'has_option', 'largs', 'option_class', 'option_groups', 'option_list', 'parse_args', 'print_help', 'print_usage', 'print_version', 'process_default_values', 'prog', 'rargs', 'remove_option', 'set_conflict_handler', 'set_default', 'set_defaults', 'set_description', 'set_process_default_values', 'set_usage', 'standard_option_list', 'usage', 'values', 'version']
+		# >>> a.optionlist
+		# Traceback (most recent call last):
+		#   File "<stdin>", line 1, in <module>
+		# AttributeError: OptionParser instance has no attribute 'optionlist'
+		# >>> len(a.option_list)
+		# 25
+		# >>> a.option_list[1].help
+		# 'show this help message and exit'
+		# >>> a.option_list[11].help
+		# 'maximum number of iterations performed for the finishing up part (set to 50) '
+		# >>>
+		# >>> dir(a.option_list[11])
+		# ['ACTIONS', 'ALWAYS_TYPED_ACTIONS', 'ATTRS', 'CHECK_METHODS', 'CONST_ACTIONS', 'STORE_ACTIONS', 'TYPED_ACTIONS', 'TYPES', 'TYPE_CHECKER', '__doc__', '__init__', '__module__', '__repr__', '__str__', '_check_action', '_check_callback', '_check_choice', '_check_const', '_check_dest', '_check_nargs', '_check_opt_strings', '_check_type', '_long_opts', '_set_attrs', '_set_opt_strings', '_short_opts', 'action', 'callback', 'callback_args', 'callback_kwargs', 'check_value', 'choices', 'const', 'container', 'convert_value', 'default', 'dest', 'get_opt_string', 'help', 'metavar', 'nargs', 'process', 'take_action', 'takes_value', 'type']
+		# >>> a.option_list[11].dest
+		# 'maxit2'
+		
+		class ImmitateOptionList:
+			default=""
+			help=""
+			dest = ""
+			action = "LPlFHy3uNTjucRlk"
+
+		prog_args = parser.usage.split("--")[0].split(" ")
+		# print prog_args
+		args_list = []
+		for a in prog_args[1:]:
+			if a == "": continue
+			aa = a.strip()
+			b = ImmitateOptionList()
+			b.help = "<" + aa + ">"
+			b.dest = aa[:]
+			if a == "stack":
+				b.help = "<Projection stack file>"
+			args_list.append(b)
+		
+		return args_list + parser.option_list[2:]
+
+
 	def outputinfo_viper(self):
 		QMessageBox.information(self, "sxviper output",'outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program. \n\noutdir/angles_000: \n\nThis file contains Eulerian angles fount in trial #000 \n\noutdir/plot_agls_000.hdf: \n\nThis image in the hdf format contains visualization of the distribution of projections found during trial #000 (see also sxplot_projs_distrib) \n\noutdir/structure_000.hdf: \n\nCopy of the stack of 2D projections with Eulerian angles found at trial #000 set in the header. In order to examine the structure, one has to do the 3D reconstructions sxrecons3d_n.py outdir/structure_000.hdf myvol.hdf \n\noutdir/structure.hdf: \n\nFor multiple trials, it is a copy of the stack of 2D projections with Eulerian angles found at the best trial set in the header (this feature is no longer supported).')
 		
 
 	def gencmdline_viper(self,writefile=True):
 		#Here we just read in all user inputs in the line edits of the Poptwodali window
-		stack = self.stacknameedit.text()
-		output=self.foldernameedit.text()
-		cmd1 = "sxviper.py "+str(stack) +" "+str(output)
+		# stack = self.stacknameedit.text()
+		# output=self.foldernameedit.text()
+		# cmd1 = "sxviper.py "+str(stack) +" "+str(output)
+		cmd1 = "sxviper.py "
 
 		args = " "
+		for param in self.get_args_list_and_parser():
+			if param.action != "LPlFHy3uNTjucRlk": break
+			args += "%s "%self.QLineEditsAndChecks[self.savedparmsdict[param.dest][0]].text()
+		
 		for key in self.savedparmsdict:
 			if type(self.savedparmsdict[key]) != list:
 				continue
-			# print self.savedparmsdict
+			# print 
+			# print 
+			# print 
+			# print 
+			# for k in self.savedparmsdict:
+			# 	print k, self.savedparmsdict[k]
+			# 	print
 			if self.savedparmsdict[key][2]:
-				args += "--%s=%s "%(key,self.QLineEditsAndChecks[self.savedparmsdict[key][0]].text())
+				if not self.savedparmsdict[key][3]: ## check to see if this is not a parameter
+					args += "--%s=%s "%(key,self.QLineEditsAndChecks[self.savedparmsdict[key][0]].text())
+				else:
+					args += "%s "%self.QLineEditsAndChecks[self.savedparmsdict[key][0]].text()
 				self.savedparmsdict[key][1] = self.QLineEditsAndChecks[self.savedparmsdict[key][0]].text()
 			else:
 				if self.QLineEditsAndChecks[self.savedparmsdict[key][0]].checkState() == Qt.Checked:
@@ -6786,7 +6792,7 @@ class Popupviper(QWidget):
 		cmd1 = cmd1 + args
 
 
-
+		self.savedparmsdict['nproc'] = self.nprocedit.text()
 		
 		# np = self.QLineEditsAndChecks[int(self.savedparmsdict["nproc"])].text()
 		
@@ -6896,8 +6902,8 @@ class Popupviper(QWidget):
 			# self.savedparmsdict = pickle.load(pkl)
 			(self.savedparmsdict, self.w1.savedparmsdict) = pickle.load(pkl)
 			# print self.savedparmsdict
-			self.stacknameedit.setText(self.savedparmsdict['stackname'])
-			self.foldernameedit.setText(self.savedparmsdict['foldername'])
+			# self.stacknameedit.setText(self.savedparmsdict['stackname'])
+			# self.foldernameedit.setText(self.savedparmsdict['foldername'])
 			for key in self.savedparmsdict:
 				if type(self.savedparmsdict[key]) != list:
 					continue
@@ -6913,7 +6919,8 @@ class Popupviper(QWidget):
 					self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].setText(self.w1.savedparmsdict[key][1])
 				else:
 					self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].setChecked(self.w1.savedparmsdict[key][1] == Qt.Checked)
-		pass					
+		pass	
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
 
 
 
