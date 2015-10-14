@@ -297,7 +297,7 @@ def AI( Tracker, HISTORY, chout = False):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
-				Tracker["saturatecrit"]= 0.99
+				Tracker["saturatecrit"]= 0.98
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = False
 				Tracker["upscale"]     = 0.5
@@ -315,8 +315,9 @@ def AI( Tracker, HISTORY, chout = False):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.99
 				if Tracker["applyctf"] :  reset_data  = True
-				Tracker["upscale"]     = 1.0
+				Tracker["upscale"]     = 0.65
 				Tracker["applyctf"]    = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "FINAL2"
@@ -541,7 +542,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
-				Tracker["saturatecrit"]= 0.99
+				Tracker["saturatecrit"]= 0.98
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = False
 				Tracker["upscale"]     = 0.5
@@ -558,8 +559,9 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.99
 				if Tracker["applyctf"] :  reset_data  = True
-				Tracker["upscale"]     = 1.0
+				Tracker["upscale"]     = 0.65
 				Tracker["applyctf"]    = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "FINAL2"
@@ -869,7 +871,6 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 	# this function is single processor
 	nx = vol[0].get_xsize()
-
 	msk = cosinemask(model_blank(nx,nx,nx,1.0),int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5)-3,5)
 	#model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5),nx,nx,nx)
 	nfsc = fsc( vol[0]*msk, vol[1]*msk, 1.0 )
@@ -913,16 +914,16 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 			break
 	"""
 	#if( Tracker["state"] == "INITIAL" ):
-	[lowpass,nfsc[3]] = tanhfilter(Tracker["constants"]["nnxo"], float(currentres)/Tracker["constants"]["nnxo"], Tracker["falloff"])
-	if( len(nfsc[0])>len(nfsc[3]) ):  nfsc[3] += [0.0]*(len(nfsc[0])-len(nfsc[3]))
+	#[lowpass,nfsc[3]] = tanhfilter(Tracker["constants"]["nnxo"], float(currentres)/Tracker["constants"]["nnxo"], Tracker["falloff"])
+	#if( len(nfsc[0])>len(nfsc[3]) ):  nfsc[3] += [0.0]*(len(nfsc[0])-len(nfsc[3]))
 	finitres = -1
 	for i in xrange(1,ns-1):
 		if ( nfsc[2][i] < 0.143):
 			finitres = i
 			break
-	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
 	if( finitres > 0):
 		for i in xrange(finitres, len(nfsc[0])):  nfsc[2][i] = 0.0
+	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
 	#  Columns in fsc:  absfreq, raw fsc, smoothed fsc, smoothed fsc for volf
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	#lowpass, falloff = fit_tanh1(nfsc, 0.01)
@@ -1998,10 +1999,9 @@ def main():
 
 
 		#doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"vol0.hdf"), keepchecking, myid, main_node)
+		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"params.txt"), keepchecking, myid, main_node)
 		if doit:
-			#  PRESENTABLE RESULT  AND vol*.hdf to start next iteration     <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-			#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 			if( myid == main_node ):
 				pinids = read_text_file(partids[0])  + read_text_file(partids[1])
 				params = read_text_row(partstack[0]) + read_text_row(partstack[1])
@@ -2047,6 +2047,7 @@ def main():
 						cmdexecute(cmd)
 			'''
 		#  
+		#  PRESENTABLE RESULT  AND vol*.hdf to start next iteration     <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"volf.hdf"), keepchecking, myid, main_node)
 		if doit:
 			'''
@@ -2078,21 +2079,45 @@ def main():
 			Tracker["local_filter"] = lsave
 			'''
 			if( myid == main_node ):
-				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
+				currentres = 0
+				vol0 = get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))
+				vol1 = get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))
+				if( Tracker["nxinit"] == Tracker["constants"]["nnxo"] ):
+					if(Tracker["constants"]["mask3D"] is None):
+						mask = cosinemask(model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],1.0),int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5)-3,5)
+					else:
+						mask = get_im(Tracker["constants"]["mask3D"])
+					nfsc = fsc(vol0*mask,vol1*mask)
+					for i in xrange(1,len(nfsc[0])):
+						nfsc[0][i] = Tracker["constants"]["pixel_size"]/nfsc[0][i]
+					nfsc[0][0] = 1.e10
+					for i in xrange(1,len(nfsc[0])):
+						nfsc[2][i] = 2*nfsc[1][i]/(1.0+nfsc[1][i])
+					write_text_file( nfsc, os.path.join(Tracker["directory"],"tfsc.txt") )
+					currentres = -1
+					for i in xrange(1,len(nfsc[0])-1):
+						if ( nfsc[2][i] < 0.5):
+							currentres = i
+							break
+				volf = 0.5*(vol0+vol1)
+				del vol0,vol1
 				[newlowpass, newfalloff, icurrentres, ares, finitres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
 				#  This structure will be calculated without local filter
 				Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
 				Tracker["falloff"] = newfalloff
-				
 			else:
 				volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-				Tracker["lowpass"] = 0.0; Tracker["falloff"] = 0.0; icurrentres = 0; ares = 0
+				Tracker["lowpass"] = 0.0; Tracker["falloff"] = 0.0; icurrentres = 0; ares = 0; currentres = 0
 			lsave = Tracker["local_filter"]
 			Tracker["local_filter"] = False
 			Tracker["lowpass"] = bcast_number_to_all(Tracker["lowpass"], source_node = main_node)
 			Tracker["falloff"] = bcast_number_to_all(Tracker["falloff"], source_node = main_node)
+			currentres = bcast_number_to_all(currentres, source_node = main_node)
 
 			#volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			if currentres>0 :
+				csave = Tracker["lowpass"]
+				Tracker["lowpass"] = currentres/float(Tracker["constants"]["nnxo"])
 			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
 			user_func = Tracker["constants"] ["user_func"]
 			volf = user_func(ref_data)
@@ -2101,6 +2126,7 @@ def main():
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
 			del volf
 			Tracker["local_filter"] = lsave
+			if currentres>0 : Tracker["lowpass"] = csave
 
 		"""
 		else:
