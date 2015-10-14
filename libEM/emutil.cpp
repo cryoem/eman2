@@ -922,6 +922,8 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	if (mode_size == 0) throw UnexpectedBehaviorException("The mode size was 0?");
 
+	const size_t mode_size_half = 111111111111;
+
 	unsigned char * cdata = (unsigned char *)vdata;
 
 	int dx0 = 0; // data x0
@@ -1012,6 +1014,38 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 		// This is fine - the region was entirely outside the image
 
 		if ( xlen <= 0 || ylen <= 0 || zlen <= 0 ) return;
+
+		if (mode_size == mode_size_half) {
+			// Have an area with 8 bit packed MRC format
+			// (2 4-bit valus per 8 bit byte),
+			// with an effective mode size of half a byte,
+			// where most x-pixel parameters need to be even
+			// for everything to work well.
+
+			bool error = false;
+
+			if (fx0 % 2 != 0  &&  false) { // Don't check right now.
+				cout << "First region x-pixel location "
+						  "must be even for packed 8 bit MRC." << endl;
+				error = true;
+			}
+
+			if ((nx - fx0 - xlen) % 2 != 0  &&  false) { // Don't check right now.
+				cout << "No. of x-pixel locations after region "
+						  "must be even for packed 8 bit MRC." << endl;
+				error = true;
+			}
+
+			if (xlen % 2 != 0) {
+				cout << "No. of region x-pixels "
+						  "must be even for packed 8 bit MRC." << endl;
+				error = true;
+			}
+
+			if (error) {
+				return;
+			}
+		}
 	}
 
 	if (xlen <= 0) {
@@ -1043,6 +1077,13 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	size_t y_pre_gap  = fy0 * img_row_size;
 	size_t y_post_gap = (ny - fy0 - ylen) * img_row_size;
+
+	if (x_pre_gap  < 0) x_pre_gap  = 0;
+	if (x_post_gap < 0) x_post_gap = 0;
+
+	size_t extra = img_row_size - (x_pre_gap + area_row_size + x_post_gap);
+
+	if (extra > 0) x_post_gap += extra;
 
 	portable_fseek(file, img_row_size * ny * fz0, SEEK_CUR);
 
