@@ -72,7 +72,9 @@ def main():
 		olddb = js_open_dict(options.path+"/0_refine_parms.json")
 		last_map=olddb["last_map"]
 		last_iter=int(last_map.split("_")[-1][:2])
-		try: ptcls=olddb["inputavg"]
+		try: 
+			ptcls=olddb["inputavg"]
+			if ptcls==None : raise Exception
 		except: ptcls=olddb["input"]
 		
 		if options.verbose : print "Found iteration {} in {}, using {}".format(last_iter,options.path," & ".join(ptcls))
@@ -87,7 +89,7 @@ def main():
 	classmx=[]
 	classmx.append(EMData.read_images("{}/cls_result_{:02d}_even.hdf".format(options.path,last_iter)))
 	classmx.append(EMData.read_images("{}/cls_result_{:02d}_odd.hdf".format(options.path,last_iter)))
-	ncls=max(int(classmx[0][0]["maximum"])+1,int(classmx[0][0]["maximum"])+1)
+	ncls=max(int(classmx[0][0]["maximum"])+1,int(classmx[1][0]["maximum"])+1)
 
 	# Rearrange the info in classmx
 	classlists=[[] for i in xrange(ncls)]	# empty list for each class
@@ -96,6 +98,8 @@ def main():
 	for eo in (0,1):
 		for y in xrange(classmx[eo][0]["ny"]):
 			ptcl=[eo,y,Transform({"type":"2d","tx":classmx[eo][2][0,y],"ty":classmx[eo][3][0,y],"alpha":classmx[eo][4][0,y],"mirror":int(classmx[eo][5][0,y])})]
+			#print ptcl, 
+			#print int(classmx[eo][0][0,y])
 			classlists[int(classmx[eo][0][0,y])].append(ptcl)
 	
 
@@ -128,7 +132,12 @@ def main():
 				
 #					print rsltd["avg"],cls
 				rsltd["avg"].write_image("test.hdf",cls)
-				for ii,i in enumerate(rsltd["basis"]): i.write_image("basis.hdf",cls*5+ii)
+				if options.verbose: print cls,
+				
+				for ii,i in enumerate(rsltd["basis"]): 
+					i.write_image("basis.hdf",cls*5+ii)
+					if options.verbose: print i["eigval"],
+				if options.verbose: print ""
 				
 		taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
 
@@ -189,6 +198,10 @@ class ClassSplitTask(JSTask):
 			pca.insert_image(p[3])
 		
 		basis=pca.analyze()
+		
+		# at the moment we are just splitting into 2 classes, so we'll use the first eigenvector. A bit worried about defocus coming through, but hopefully ok...
+		
+		
 
 		
 		#for p in ptcls: 
