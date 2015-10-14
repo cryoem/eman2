@@ -6311,6 +6311,7 @@ class Popupadvparams_localali3d_1(QWidget):
 		self.masknameedit.setText(str(a))
 
 class Popupviper(QWidget):
+
 	def __init__(self):
 		QWidget.__init__(self)
 		
@@ -6318,7 +6319,7 @@ class Popupviper(QWidget):
 		# class variables
 		self.cmd = ""
 		# populate with default values
-		self.savedparmsdict = {'stackname':'','foldername':'','partradius':'-1','delta':'5.0','maxit':'100','dpsi':'1','lf':'0.0','hf':'0.5','nproc':'1',"innerradius":"-1","debug":False,"given":False,"rand_seed":"-1","first_zero":False,"noweights":False,"pcross":"0.95","pmut":"0.05","maxgen":"10"}
+		self.savedparmsdict = {'stackname':'','foldername':'','partradius':'-1','delta':'2.0','maxit':'100','moon_elimination':'','lf':'0.15','hf':'0.25','nproc':'1',"innerradius":"-1","debug":False,"given":False,"rand_seed":"-1","first_zero":False,"noweights":False,"pcross":"0.95","pmut":"0.05","maxgen":"10"}
 		
 		if options.demo == DEMO_mpibdbctf:
 			self.savedparmsdict['stackname']='class_averages_generation_1.hdf'
@@ -6373,111 +6374,140 @@ class Popupviper(QWidget):
 		
 		########################################################################################
 		
-		stackname= QtGui.QLabel('Projection stack file', self)
-		stackname.move(self.x1,self.y2)
-		#Now add a line edit and define its position
-		self.stacknameedit=QtGui.QLineEdit(self)
-		self.stacknameedit.move(self.x2,self.y2)
-		#Adds a default value for the line edit
-		self.stacknameedit.setText(self.savedparmsdict['stackname'])
+		# stackname= QtGui.QLabel('Projection stack file', self)
+		# stackname.move(self.x1,self.y2)
+		# #Now add a line edit and define its position
+		# self.stacknameedit=QtGui.QLineEdit(self)
+		# self.stacknameedit.move(self.x2,self.y2)
+		# #Adds a default value for the line edit
+		# self.stacknameedit.setText(self.savedparmsdict['stackname'])
+		# 
+		# #Here we create a Button(file_button with title run open .hdf) and its position in the window
+		# self.file_button = QtGui.QPushButton("Open .hdf", self)
+		# self.file_button.move(self.x3, self.y2-self.yspc)
+		# #Here we define, that when this button is clicked, it starts subfunction choose_file
+		# QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
+		# #exactly the same as above, but for subfunction choose_file1
+		# self.file_button1 = QtGui.QPushButton("Open .bdb", self)
+		# self.file_button1.move(self.x4,self.y2-self.yspc)
+		# QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
 		
-		#Here we create a Button(file_button with title run open .hdf) and its position in the window
-		self.file_button = QtGui.QPushButton("Open .hdf", self)
-		self.file_button.move(self.x3, self.y2-self.yspc)
-		#Here we define, that when this button is clicked, it starts subfunction choose_file
-		QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
-		#exactly the same as above, but for subfunction choose_file1
-		self.file_button1 = QtGui.QPushButton("Open .bdb", self)
-		self.file_button1.move(self.x4,self.y2-self.yspc)
-		QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
+		# self.y2 += 30
 		
-		self.y2 += 30
+		# #The same as above, but many line edits include Infotips
+		# foldername= QtGui.QLabel('Output folder', self)
+		# foldername.move(self.x1,self.y2)
+		# self.foldernameedit=QtGui.QLineEdit(self)
+		# self.foldernameedit.move(self.x2,self.y2)
+		# self.foldernameedit.setText(self.savedparmsdict['foldername'])		
 		
-		#The same as above, but many line edits include Infotips
-		foldername= QtGui.QLabel('Output folder', self)
-		foldername.move(self.x1,self.y2)
-		self.foldernameedit=QtGui.QLineEdit(self)
-		self.foldernameedit.move(self.x2,self.y2)
-		self.foldernameedit.setText(self.savedparmsdict['foldername'])		
+		# self.outinfobtn = QPushButton("Output Info", self)
+		# self.outinfobtn.move(self.x3,  self.y2-self.yspc)
+		# #sets an infotip for this Pushbutton
+		# self.outinfobtn.setToolTip('Output Info')
+		# #when this button is clicked, this action starts the subfunction twodali
+		# self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_viper)
 		
-		self.outinfobtn = QPushButton("Output Info", self)
-		self.outinfobtn.move(self.x3,  self.y2-self.yspc)
-		#sets an infotip for this Pushbutton
-		self.outinfobtn.setToolTip('Output Info')
-		#when this button is clicked, this action starts the subfunction twodali
-		self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_viper)
+		# self.y2 = self.y2+30
 		
-		self.y2 = self.y2+30
-		
-		partradius= QtGui.QLabel('Outer radius of particle \n< int(nx/2)-1', self)
-		partradius.move(self.x1,self.y2)
-		self.partradiusedit=QtGui.QLineEdit(self)
-		self.partradiusedit.move(self.x2,self.y2)
-		self.partradiusedit.setText(self.savedparmsdict['partradius'])
-		self.partradiusedit.setToolTip('Parameter ou: Outer radius for rotational correlation \nshould be set to particle radius\nif not sure, set to boxsize/2-2 ')		
+		from sxviper import main as sxviper_main
 
-		self.y2 = self.y2+50
-		
-		innerradius= QtGui.QLabel('Inner radius of particle \n(set to -1)', self)
-		innerradius.move(self.x1,self.y2)
-		self.innerradiusedit=QtGui.QLineEdit(self)
-		self.innerradiusedit.move(self.x2,self.y2)
-		self.innerradiusedit.setText(self.savedparmsdict['innerradius'])
-		self.innerradiusedit.setToolTip('Inner radius of particle (set to -1)')		
-		
-		self.y2 += 50
-		
-		delta= QtGui.QLabel('Angular step', self)
-		delta.move(self.x1,self.y2)
-		self.deltaedit=QtGui.QLineEdit(self)
-		self.deltaedit.move(self.x2,self.y2)
-		self.deltaedit.setText(self.savedparmsdict['delta'])
-		self.deltaedit.setToolTip('angular step for the reference projections in respective iterations')				
-		
-		self.y2 =self.y2+30
+		parser = sxviper_main(["aa", "--return_options"])
 
-		dpsilab= QtGui.QLabel('Angle accuracy of sinogram \n(set to 1)', self)
-		dpsilab.move(self.x1,self.y2)
-		self.dpsiedit=QtGui.QLineEdit(self)
-		self.dpsiedit.move(self.x2,self.y2)
-		self.dpsiedit.setText(self.savedparmsdict['dpsi'])
-		self.dpsiedit.setToolTip('Angle accuracy of sinogram (set to 1)')				
+# ['__doc__', '__init__', '__module__', '_add_help_option', '_add_version_option', '_check_conflict', '_create_option_list', '_create_option_mappings', '_get_all_options', '_get_args', '_get_encoding', '_init_parsing_state', '_long_opt', '_match_long_opt', '_populate_option_list', '_process_args', '_process_long_opt', '_process_short_opts', '_share_option_mappings', '_short_opt', 'add_option', 'add_option_group', 'add_options', 'allow_interspersed_args', 'check_values', 'conflict_handler', 'defaults', 'description', 'destroy', 'disable_interspersed_args', 'enable_interspersed_args', 'epilog', 'error', 'exit', 'expand_prog_name', 'format_description', 'format_epilog', 'format_help', 'format_option_help', 'formatter', 'get_default_values', 'get_description', 'get_option', 'get_option_group', 'get_prog_name', 'get_usage', 'get_version', 'has_option', 'largs', 'option_class', 'option_groups', 'option_list', 'parse_args', 'print_help', 'print_usage', 'print_version', 'process_default_values', 'prog', 'rargs', 'remove_option', 'set_conflict_handler', 'set_default', 'set_defaults', 'set_description', 'set_process_default_values', 'set_usage', 'standard_option_list', 'usage', 'values', 'version']
+# >>> a.optionlist
+# Traceback (most recent call last):
+#   File "<stdin>", line 1, in <module>
+# AttributeError: OptionParser instance has no attribute 'optionlist'
+# >>> len(a.option_list)
+# 25
+# >>> a.option_list[1].help
+# 'show this help message and exit'
+# >>> a.option_list[11].help
+# 'maximum number of iterations performed for the finishing up part (set to 50) '
+# >>>
+# >>> dir(a.option_list[11])
+# ['ACTIONS', 'ALWAYS_TYPED_ACTIONS', 'ATTRS', 'CHECK_METHODS', 'CONST_ACTIONS', 'STORE_ACTIONS', 'TYPED_ACTIONS', 'TYPES', 'TYPE_CHECKER', '__doc__', '__init__', '__module__', '__repr__', '__str__', '_check_action', '_check_callback', '_check_choice', '_check_const', '_check_dest', '_check_nargs', '_check_opt_strings', '_check_type', '_long_opts', '_set_attrs', '_set_opt_strings', '_short_opts', 'action', 'callback', 'callback_args', 'callback_kwargs', 'check_value', 'choices', 'const', 'container', 'convert_value', 'default', 'dest', 'get_opt_string', 'help', 'metavar', 'nargs', 'process', 'take_action', 'takes_value', 'type']
+# >>> a.option_list[11].dest
+# 'maxit2'
+
+
+
+
+		# fz= QtGui.QLabel('Assign the first projection orientation to 0', self)
+		# fz.move(self.x1,self.y1)
+		# self.first_zerochkbx=QtGui.QCheckBox("",self)
+		# self.first_zerochkbx.move(self.x2,self.y1)
+		# self.first_zerochkbx.setCheckState(self.savedparmsdict['first_zero'])
+		# self.first_zerochkbx.setToolTip('Assign the first projection orientation to 0')
+
+
+		# self.y2 = self.y2 - 70
 		
-		self.y2 =self.y2+50
-		
-		lflab= QtGui.QLabel('Filter, minimum frequency \n(set to 0.0)', self)
-		lflab.move(self.x1,self.y2)
-		self.lfedit=QtGui.QLineEdit(self)
-		self.lfedit.move(self.x2,self.y2)
-		self.lfedit.setText(self.savedparmsdict['lf'])
-		self.lfedit.setToolTip('Filter, minimum frequency (set to 0.0)')				
-		
-		self.y2 =self.y2+50
-		
-		hflab= QtGui.QLabel('Filter, maximum frequency \n(set to 0.5)', self)
-		hflab.move(self.x1,self.y2)
-		self.hfedit=QtGui.QLineEdit(self)
-		self.hfedit.move(self.x2,self.y2)
-		self.hfedit.setText(self.savedparmsdict['hf'])
-		self.hfedit.setToolTip('Filter, maximum frequency (set to 0.5)')				
-		
-		self.y2 =self.y2+50
-		
-		maxit= QtGui.QLabel('Maximum number of iterations', self)
-		maxit.move(self.x1,self.y2)
-		self.maxitedit=QtGui.QLineEdit(self)
-		self.maxitedit.move(self.x2,self.y2)
-		self.maxitedit.setText(self.savedparmsdict['maxit'])
-		self.maxitedit.setToolTip('Maximum number of iterations')
-		
-		self.y2 =self.y2+50
-		
+		class ImmitateOptionList:
+			default=""
+			help=""
+			dest = ""
+			action = ""
+
+		prog_args = parser.usage.split("--")[0].split(" ")
+		# print prog_args
+		args_list = []
+		for a in prog_args[1:]:
+			if a == "": continue
+			aa = a.strip()
+			b = ImmitateOptionList()
+			b.help = "<" + aa + ">"
+			b.dest = aa[:]
+			if a == "stack":
+				b.help = "<Projection stack file>"
+			args_list.append(b)
+
+		list_to_follow =  args_list + parser.option_list[2:]
+		parser.option_list = list_to_follow 
+		QLabels = [None]*(len(parser.option_list) + len(args_list))
+		self.QLineEditsAndChecks = [None]*(len(parser.option_list) + len(args_list))
+		# for option_iterator in range(2, len(parser.option_list)):
+		for option_iterator in range(len(parser.option_list)):
+			if parser.option_list[option_iterator].help == None or \
+				parser.option_list[option_iterator].help == "" or \
+				parser.option_list[option_iterator].help[0] != "<" or \
+				parser.option_list[option_iterator].help[-10:] == "(advanced)":
+				continue
+			label = parser.option_list[option_iterator].help[1:].split(">")[0]
+			# a = QtGui.QCheckBox("",self)
+			QLabels[option_iterator] = QtGui.QLabel(label, self)
+			QLabels[option_iterator].move(self.x1,self.y2)
+
+			control_is_an_edit_box = parser.option_list[option_iterator].action != "store_true"
+			if control_is_an_edit_box:
+				self.QLineEditsAndChecks[option_iterator] = QtGui.QLineEdit(self)
+				# modify_function = self.QLineEditsAndChecks[option_iterator].setText
+				self.QLineEditsAndChecks[option_iterator].setText(str(parser.option_list[option_iterator].default))
+			else:
+				self.QLineEditsAndChecks[option_iterator] = QtGui.QCheckBox("",self)
+				# modify_function = self.QLineEditsAndChecks[option_iterator].setCheckState
+				modify_function = self.QLineEditsAndChecks[option_iterator].setCheckState(parser.option_list[option_iterator].default)
+
+			self.QLineEditsAndChecks[option_iterator].move(self.x2,self.y2 - 7)
+			# self.QLineEdits[option_iterator].setText(self.savedparmsdict[parser.option_list[option_iterator].dest])
+			self.savedparmsdict[parser.option_list[option_iterator].dest] = [option_iterator, str(parser.option_list[option_iterator].default), control_is_an_edit_box]
+			# modify_function(str(parser.option_list[option_iterator].default))
+			self.QLineEditsAndChecks[option_iterator].setToolTip(parser.option_list[option_iterator].help)		
+	
+			self.y2 = self.y2+25
+
+
 		nproc= QtGui.QLabel('MPI processors', self)
 		nproc.move(self.x1,self.y2)
 		self.nprocedit=QtGui.QLineEdit(self)
 		self.nprocedit.move(self.x2,self.y2)
 		self.nprocedit.setText(self.savedparmsdict['nproc'])
 		self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
+
+		self.y2 =self.y2+25
+		
+
 		
 		########################################################################################
 		
@@ -6509,6 +6539,207 @@ class Popupviper(QWidget):
 		self.RUN_button.move(self.x5,  self.y5)
 		#Here we define, that when this button is clicked, it starts subfunction runsxali2d
 		self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxviper)
+
+
+
+	# def __init__(self):
+	# 	QWidget.__init__(self)
+	# 	
+	# 	########################################################################################
+	# 	# class variables
+	# 	self.cmd = ""
+	# 	# populate with default values
+	# 	self.savedparmsdict = {'stackname':'','foldername':'','partradius':'-1','delta':'2.0','maxit':'100','moon_elimination':'','lf':'0.15','hf':'0.25','nproc':'1',"innerradius":"-1","debug":False,"given":False,"rand_seed":"-1","first_zero":False,"noweights":False,"pcross":"0.95","pmut":"0.05","maxgen":"10"}
+	# 	
+	# 	if options.demo == DEMO_mpibdbctf:
+	# 		self.savedparmsdict['stackname']='class_averages_generation_1.hdf'
+	# 		self.savedparmsdict['foldername']='structure'
+	# 		self.savedparmsdict['partradius']='30'
+	# 		self.savedparmsdict['delta']='6'
+	# 		self.savedparmsdict['lf']='0.05'
+	# 		self.savedparmsdict['hf']='0.25'
+	# 		self.savedparmsdict['maxit']='20'
+	# 		self.savedparmsdict['rand_seed']='10'
+	# 		self.savedparmsdict['nproc']='4'
+	# 	
+	# 	if options.demo == DEMO_mpibdb:
+	# 		self.savedparmsdict['stackname']='class_averages_generation_1.hdf'
+	# 		self.savedparmsdict['foldername']='structure'
+	# 		self.savedparmsdict['partradius']='30'
+	# 		self.savedparmsdict['delta']='6'
+	# 		self.savedparmsdict['lf']='0.05'
+	# 		self.savedparmsdict['hf']='0.3'
+	# 		self.savedparmsdict['maxit']='20'
+	# 		self.savedparmsdict['rand_seed']='200'
+	# 		self.savedparmsdict['nproc']='4'
+	# 	########################################################################################
+	# 	# layout parameters
+	# 	
+	# 	self.y1 = 10
+	# 	self.y2 = self.y1 + 98
+	# 	self.y4 = self.y2 + 450
+	# 	self.y5 = self.y4 + 95
+	# 	self.yspc = 4
+	# 	
+	# 	self.x1 = 10
+	# 	self.x2 = self.x1 + 200
+	# 	self.x3 = self.x2+145
+	# 	self.x4 = self.x3+100
+	# 	self.x5 = 230
+	# 	########################################################################################
+	# 	
+	# 	#Here we just set the window title
+	# 	self.setWindowTitle('sxviper')
+	# 	#Here we just set a label and its position in the window
+	# 	title1=QtGui.QLabel('<b>sxviper</b> -  use the "common line" algorithm to assign initial values of phi, theta, <br>psi to 2D average projections', self)
+	# 	title1.move(self.x1,self.y1)
+	# 	self.y1 += 50
+	# 
+	# 	self.repopbtn = QPushButton("Retrieve saved parameters", self)
+	# 	self.repopbtn.move(self.x1-5,self.y1)
+	# 	#sets an infotip for this Pushbutton
+	# 	self.repopbtn.setToolTip('Retrieve saved parameters')
+	# 	#when this button is clicked, this action starts the subfunction twodali
+	# 	self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_viper)
+	# 	
+	# 	########################################################################################
+	# 	
+	# 	stackname= QtGui.QLabel('Projection stack file', self)
+	# 	stackname.move(self.x1,self.y2)
+	# 	#Now add a line edit and define its position
+	# 	self.stacknameedit=QtGui.QLineEdit(self)
+	# 	self.stacknameedit.move(self.x2,self.y2)
+	# 	#Adds a default value for the line edit
+	# 	self.stacknameedit.setText(self.savedparmsdict['stackname'])
+	# 	
+	# 	#Here we create a Button(file_button with title run open .hdf) and its position in the window
+	# 	self.file_button = QtGui.QPushButton("Open .hdf", self)
+	# 	self.file_button.move(self.x3, self.y2-self.yspc)
+	# 	#Here we define, that when this button is clicked, it starts subfunction choose_file
+	# 	QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
+	# 	#exactly the same as above, but for subfunction choose_file1
+	# 	self.file_button1 = QtGui.QPushButton("Open .bdb", self)
+	# 	self.file_button1.move(self.x4,self.y2-self.yspc)
+	# 	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
+	# 	
+	# 	self.y2 += 30
+	# 	
+	# 	#The same as above, but many line edits include Infotips
+	# 	foldername= QtGui.QLabel('Output folder', self)
+	# 	foldername.move(self.x1,self.y2)
+	# 	self.foldernameedit=QtGui.QLineEdit(self)
+	# 	self.foldernameedit.move(self.x2,self.y2)
+	# 	self.foldernameedit.setText(self.savedparmsdict['foldername'])		
+	# 	
+	# 	self.outinfobtn = QPushButton("Output Info", self)
+	# 	self.outinfobtn.move(self.x3,  self.y2-self.yspc)
+	# 	#sets an infotip for this Pushbutton
+	# 	self.outinfobtn.setToolTip('Output Info')
+	# 	#when this button is clicked, this action starts the subfunction twodali
+	# 	self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_viper)
+	# 	
+	# 	self.y2 = self.y2+30
+	# 	
+	# 	partradius= QtGui.QLabel('Outer radius of particle \n< int(nx/2)-1', self)
+	# 	partradius.move(self.x1,self.y2)
+	# 	self.partradiusedit=QtGui.QLineEdit(self)
+	# 	self.partradiusedit.move(self.x2,self.y2)
+	# 	self.partradiusedit.setText(self.savedparmsdict['partradius'])
+	# 	self.partradiusedit.setToolTip('Parameter ou: Outer radius for rotational correlation \nshould be set to particle radius\nif not sure, set to boxsize/2-2 ')		
+	# 
+	# 	self.y2 = self.y2+50
+	# 	
+	# 	innerradius= QtGui.QLabel('Inner radius of particle \n(set to -1)', self)
+	# 	innerradius.move(self.x1,self.y2)
+	# 	self.innerradiusedit=QtGui.QLineEdit(self)
+	# 	self.innerradiusedit.move(self.x2,self.y2)
+	# 	self.innerradiusedit.setText(self.savedparmsdict['innerradius'])
+	# 	self.innerradiusedit.setToolTip('Inner radius of particle (set to -1)')		
+	# 	
+	# 	self.y2 += 50
+	# 	
+	# 	delta= QtGui.QLabel('Angular step', self)
+	# 	delta.move(self.x1,self.y2)
+	# 	self.deltaedit=QtGui.QLineEdit(self)
+	# 	self.deltaedit.move(self.x2,self.y2)
+	# 	self.deltaedit.setText(self.savedparmsdict['delta'])
+	# 	self.deltaedit.setToolTip('angular step for the reference projections in respective iterations')				
+	# 	
+	# 	self.y2 =self.y2+30
+	# 
+	# 	moon_eliminationlab= QtGui.QLabel('Moon elimination', self)
+	# 	moon_eliminationlab.move(self.x1,self.y2)
+	# 	self.moon_elimination_edit=QtGui.QLineEdit(self)
+	# 	self.moon_elimination_edit.move(self.x2,self.y2)
+	# 	self.moon_elimination_edit.setText(self.savedparmsdict['moon_elimination'])
+	# 	self.moon_elimination_edit.setToolTip('mass in KDa and resolution in px/A separated by comma, no space, leave empty to disable')				
+	# 	
+	# 	self.y2 =self.y2+50
+	# 	
+	# 	lflab= QtGui.QLabel('Filter, minimum frequency \n(set to 0.0)', self)
+	# 	lflab.move(self.x1,self.y2)
+	# 	self.lfedit=QtGui.QLineEdit(self)
+	# 	self.lfedit.move(self.x2,self.y2)
+	# 	self.lfedit.setText(self.savedparmsdict['lf'])
+	# 	self.lfedit.setToolTip('Filter, minimum frequency (set to 0.0)')				
+	# 	
+	# 	self.y2 =self.y2+50
+	# 	
+	# 	hflab= QtGui.QLabel('Filter, maximum frequency \n(set to 0.5)', self)
+	# 	hflab.move(self.x1,self.y2)
+	# 	self.hfedit=QtGui.QLineEdit(self)
+	# 	self.hfedit.move(self.x2,self.y2)
+	# 	self.hfedit.setText(self.savedparmsdict['hf'])
+	# 	self.hfedit.setToolTip('Filter, maximum frequency (set to 0.5)')				
+	# 	
+	# 	self.y2 =self.y2+50
+	# 	
+	# 	maxit= QtGui.QLabel('Maximum number of iterations', self)
+	# 	maxit.move(self.x1,self.y2)
+	# 	self.maxitedit=QtGui.QLineEdit(self)
+	# 	self.maxitedit.move(self.x2,self.y2)
+	# 	self.maxitedit.setText(self.savedparmsdict['maxit'])
+	# 	self.maxitedit.setToolTip('Maximum number of iterations')
+	# 	
+	# 	self.y2 =self.y2+50
+	# 	
+	# 	nproc= QtGui.QLabel('MPI processors', self)
+	# 	nproc.move(self.x1,self.y2)
+	# 	self.nprocedit=QtGui.QLineEdit(self)
+	# 	self.nprocedit.move(self.x2,self.y2)
+	# 	self.nprocedit.setText(self.savedparmsdict['nproc'])
+	# 	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
+	# 	
+	# 	########################################################################################
+	# 	
+	# 	self.savepbtn = QPushButton("Save Input Parameters", self)
+	# 	self.savepbtn.move(self.x1-5,  self.y4)
+	# 	#sets an infotip for this Pushbutton
+	# 	self.savepbtn.setToolTip('Save Input Parameters')
+	# 	#when this button is clicked, this action starts the subfunction twodali
+	# 	self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
+	# 	
+	# 	self.y4 = self.y4+30
+	# 	
+	# 	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
+	# 	self.cmdlinebtn.move(self.x1-5,  self.y4)
+	# 	#sets an infotip for this Pushbutton
+	# 	self.cmdlinebtn.setToolTip('Generate command line using input parameters')
+	# 	#when this button is clicked, this action starts the subfunction twodali
+	# 	self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_viper)
+	# 	
+	# 	########################################################################################
+	# 	
+	# 	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
+	# 	self.RUN_button = QtGui.QPushButton('Run sxviper', self)
+	# 	# make 3D textured push button look
+	# 	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+	# 	
+	# 	self.RUN_button.setStyleSheet(s)
+	# 	
+	# 	self.RUN_button.move(self.x5,  self.y5)
+	# 	#Here we define, that when this button is clicked, it starts subfunction runsxali2d
+	# 	self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxviper)
 		#Labels and Line Edits for User Input
 
 		
@@ -6517,49 +6748,49 @@ class Popupviper(QWidget):
 	def outputinfo_viper(self):
 		QMessageBox.information(self, "sxviper output",'outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program. \n\noutdir/angles_000: \n\nThis file contains Eulerian angles fount in trial #000 \n\noutdir/plot_agls_000.hdf: \n\nThis image in the hdf format contains visualization of the distribution of projections found during trial #000 (see also sxplot_projs_distrib) \n\noutdir/structure_000.hdf: \n\nCopy of the stack of 2D projections with Eulerian angles found at trial #000 set in the header. In order to examine the structure, one has to do the 3D reconstructions sxrecons3d_n.py outdir/structure_000.hdf myvol.hdf \n\noutdir/structure.hdf: \n\nFor multiple trials, it is a copy of the stack of 2D projections with Eulerian angles found at the best trial set in the header (this feature is no longer supported).')
 		
+
 	def gencmdline_viper(self,writefile=True):
 		#Here we just read in all user inputs in the line edits of the Poptwodali window
 		stack = self.stacknameedit.text()
 		output=self.foldernameedit.text()
-		ou=self.partradiusedit.text()
-		delta=self.deltaedit.text()
-		maxit=self.maxitedit.text()
-		dpsi=self.dpsiedit.text()
-		lf=self.lfedit.text()
-		hf=self.hfedit.text()
-		inrad = self.innerradiusedit.text()
-		
 		cmd1 = "sxviper.py "+str(stack) +" "+str(output)
-		
-		args = " --ou="+ str(ou)+ " --ir=" + str(inrad)+" --delta='"+str(delta)+"'"+" --dpsi='"+str(dpsi)+"'"+" --maxit="+ str(maxit) +" --lf="+ str(lf)+" --hf="+ str(hf)
-		
-		cmd1 = cmd1 + args
-		
-		rand_seed=self.w1.rand_seededit.text()
-		given = self.w1.givenchkbx.checkState()		
-		debug = self.w1.debugchkbx.checkState()
-		first_zero = self.w1.first_zerochkbx.checkState()
-		noweights = self.w1.noweightschkbx.checkState()
-		pcross = self.w1.pcrossedit.text()
-		pmut = self.w1.pmutedit.text()
-		maxgen = self.w1.maxgenedit.text()
-		
-		cmd1 = cmd1+" --rand_seed="+str(rand_seed)+" --pcross="+str(pcross)+" --pmut="+str(pmut)+" --maxgen="+str(maxgen)
-		
-		if debug == Qt.Checked:
-			cmd1 = cmd1 + " --debug"
-		if given == Qt.Checked:
-			cmd1 = cmd1 + " --given"
-		if first_zero == Qt.Checked:
-			cmd1 = cmd1 + " --first_zero"
-		if noweights == Qt.Checked:
-			cmd1 = cmd1 + " --noweights"
-								
-		np = self.nprocedit.text()
-		
-		self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'partradius':str(ou),'delta':str(delta),'dpsi':str(dpsi),'lf':str(lf),'hf':str(hf),'maxit':str(maxit),'nproc':str(np),"innerradius":str(inrad),"debug":debug,"given":given,"rand_seed":str(rand_seed),"first_zero":first_zero,"noweights":noweights,"pcross":str(pcross),"pmut":str(pmut),"maxgen":str(maxgen)}
 
-		self.w1.savedparmsdict=self.savedparmsdict
+		args = " "
+		for key in self.savedparmsdict:
+			if type(self.savedparmsdict[key]) != list:
+				continue
+			# print self.savedparmsdict
+			if self.savedparmsdict[key][2]:
+				args += "--%s=%s "%(key,self.QLineEditsAndChecks[self.savedparmsdict[key][0]].text())
+				self.savedparmsdict[key][1] = self.QLineEditsAndChecks[self.savedparmsdict[key][0]].text()
+			else:
+				if self.QLineEditsAndChecks[self.savedparmsdict[key][0]].checkState() == Qt.Checked:
+					args += "--%s "%key
+					self.savedparmsdict[key][1] = self.QLineEditsAndChecks[self.savedparmsdict[key][0]].checkState()
+		cmd1 = cmd1 + args
+
+		args = " "
+		for key in self.w1.savedparmsdict:
+			if type(self.w1.savedparmsdict[key]) != list:
+				continue
+			# print self.savedparmsdict
+			if self.w1.savedparmsdict[key][2]:
+				val_str = self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].text()
+				self.w1.savedparmsdict[key][1] = val_str
+				if val_str != "":
+					args += "--%s=%s "%(key,val_str)
+			else:
+				if self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].checkState() == Qt.Checked:
+					args += "--%s "%key
+					self.w1.savedparmsdict[key][1] = self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].checkState()
+		cmd1 = cmd1 + args
+
+
+
+		
+		# np = self.QLineEditsAndChecks[int(self.savedparmsdict["nproc"])].text()
+		
+		np = self.nprocedit.text()
 		
 		if int(str(np)) > 1: 
 			cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
@@ -6574,6 +6805,66 @@ class Popupviper(QWidget):
 		
 		print cmd1
 		self.cmd = cmd1
+
+
+
+	# def gencmdline_viper(self,writefile=True):
+	# 	#Here we just read in all user inputs in the line edits of the Poptwodali window
+	# 	stack = self.stacknameedit.text()
+	# 	output=self.foldernameedit.text()
+	# 	ou=self.partradiusedit.text()
+	# 	delta=self.deltaedit.text()
+	# 	maxit=self.maxitedit.text()
+	# 	moon_elimination=self.moon_elimination_edit.text()
+	# 	lf=self.lfedit.text()
+	# 	hf=self.hfedit.text()
+	# 	inrad = self.innerradiusedit.text()
+	# 	
+	# 	cmd1 = "sxviper.py "+str(stack) +" "+str(output)
+	# 	
+	# 	args = " --ou="+ str(ou)+ " --ir=" + str(inrad)+" --delta='"+str(delta)+"'"+" --moon_elimination='"+str(moon_elimination)+"'"+" --maxit="+ str(maxit) +" --lf="+ str(lf)+" --hf="+ str(hf)
+	# 	
+	# 	cmd1 = cmd1 + args
+	# 	
+	# 	rand_seed=self.w1.rand_seededit.text()
+	# 	given = self.w1.givenchkbx.checkState()		
+	# 	debug = self.w1.debugchkbx.checkState()
+	# 	first_zero = self.w1.first_zerochkbx.checkState()
+	# 	noweights = self.w1.noweightschkbx.checkState()
+	# 	pcross = self.w1.pcrossedit.text()
+	# 	pmut = self.w1.pmutedit.text()
+	# 	maxgen = self.w1.maxgenedit.text()
+	# 	
+	# 	cmd1 = cmd1+" --rand_seed="+str(rand_seed)+" --pcross="+str(pcross)+" --pmut="+str(pmut)+" --maxgen="+str(maxgen)
+	# 	
+	# 	if debug == Qt.Checked:
+	# 		cmd1 = cmd1 + " --debug"
+	# 	if given == Qt.Checked:
+	# 		cmd1 = cmd1 + " --given"
+	# 	if first_zero == Qt.Checked:
+	# 		cmd1 = cmd1 + " --first_zero"
+	# 	if noweights == Qt.Checked:
+	# 		cmd1 = cmd1 + " --noweights"
+	# 							
+	# 	np = self.nprocedit.text()
+	# 	
+	# 	self.savedparmsdict = {'stackname':str(stack),'foldername':str(output),'partradius':str(ou),'delta':str(delta),'moon_elimination':str(moon_elimination),'lf':str(lf),'hf':str(hf),'maxit':str(maxit),'nproc':str(np),"innerradius":str(inrad),"debug":debug,"given":given,"rand_seed":str(rand_seed),"first_zero":first_zero,"noweights":noweights,"pcross":str(pcross),"pmut":str(pmut),"maxgen":str(maxgen)}
+	# 
+	# 	self.w1.savedparmsdict=self.savedparmsdict
+	# 	
+	# 	if int(str(np)) > 1: 
+	# 		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
+	# 	
+	# 	if writefile:		
+	# 		(fname,stat)= QInputDialog.getText(self,"Generate Command Line","Enter name of file to save command line in",QLineEdit.Normal,"")
+	# 		if stat:
+	# 			f = open(fname,'a')
+	# 			f.write(cmd1)
+	# 			f.write('\n')
+	# 			f.close()
+	# 	
+	# 	print cmd1
+	# 	self.cmd = cmd1
 		
 	def runsxviper(self):
 		self.gencmdline_viper(writefile=False)
@@ -6590,36 +6881,71 @@ class Popupviper(QWidget):
 			import pickle
 			output=open(fname,'wb')
 			self.gencmdline_viper(writefile=False)
-			pickle.dump(self.savedparmsdict,output)
+			pickle.dump((self.savedparmsdict, self.w1.savedparmsdict),output)
 			output.close()
 		
+
 	def repoparms_viper(self):		
 		# repopulate with saved parms
 		(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+		print (fname,stat)
+		
 		if stat:
 			import pickle
 			pkl = open(fname,'rb')
-			self.savedparmsdict = pickle.load(pkl)
-			print self.savedparmsdict
-			self.partradiusedit.setText(self.savedparmsdict['partradius'])
+			# self.savedparmsdict = pickle.load(pkl)
+			(self.savedparmsdict, self.w1.savedparmsdict) = pickle.load(pkl)
+			# print self.savedparmsdict
 			self.stacknameedit.setText(self.savedparmsdict['stackname'])
-			self.foldernameedit.setText(self.savedparmsdict['foldername'])		
-			self.deltaedit.setText(self.savedparmsdict['delta'])
-			self.dpsiedit.setText(self.savedparmsdict['dpsi'])
-			self.lfedit.setText(self.savedparmsdict['lf'])
-			self.hfedit.setText(self.savedparmsdict['hf'])
-			self.maxitedit.setText(self.savedparmsdict['maxit'])
-			self.nprocedit.setText(self.savedparmsdict['nproc'])
-			self.innerradiusedit.setText(self.savedparmsdict['innerradius'])
-			
-			self.w1.rand_seededit.setText(self.savedparmsdict['rand_seed'])
-			self.w1.givenchkbx.setCheckState(self.savedparmsdict['given'])
-			self.w1.debugchkbx.setCheckState(self.savedparmsdict['debug'])
-			self.w1.first_zerochkbx.setCheckState(self.savedparmsdict['first_zero'])
-			self.w1.noweightschkbx.setCheckState(self.savedparmsdict['noweights'])
-			self.w1.pcrossedit.setText(self.savedparmsdict['pcross'])
-			self.w1.pmutedit.setText(self.savedparmsdict['pmut'])
-			self.w1.maxgenedit.setText(self.savedparmsdict['maxgen'])
+			self.foldernameedit.setText(self.savedparmsdict['foldername'])
+			for key in self.savedparmsdict:
+				if type(self.savedparmsdict[key]) != list:
+					continue
+				if self.savedparmsdict[key][2]:
+					self.QLineEditsAndChecks[self.savedparmsdict[key][0]].setText(self.savedparmsdict[key][1])
+				else:
+					# print self.savedparmsdict[key]
+					self.QLineEditsAndChecks[self.savedparmsdict[key][0]].setChecked(self.savedparmsdict[key][1] == Qt.Checked)
+			for key in self.w1.savedparmsdict:
+				if type(self.w1.savedparmsdict[key]) != list:
+					continue
+				if self.w1.savedparmsdict[key][2]:
+					self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].setText(self.w1.savedparmsdict[key][1])
+				else:
+					self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].setChecked(self.w1.savedparmsdict[key][1] == Qt.Checked)
+		pass					
+
+
+
+
+
+	# def repoparms_viper(self):		
+	# 	# repopulate with saved parms
+	# 	(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	# 	if stat:
+	# 		import pickle
+	# 		pkl = open(fname,'rb')
+	# 		self.savedparmsdict = pickle.load(pkl)
+	# 		print self.savedparmsdict
+	# 		self.partradiusedit.setText(self.savedparmsdict['partradius'])
+	# 		self.stacknameedit.setText(self.savedparmsdict['stackname'])
+	# 		self.foldernameedit.setText(self.savedparmsdict['foldername'])		
+	# 		self.deltaedit.setText(self.savedparmsdict['delta'])
+	# 		self.moon_elimination_edit.setText(self.savedparmsdict['moon_elimination'])
+	# 		self.lfedit.setText(self.savedparmsdict['lf'])
+	# 		self.hfedit.setText(self.savedparmsdict['hf'])
+	# 		self.maxitedit.setText(self.savedparmsdict['maxit'])
+	# 		self.nprocedit.setText(self.savedparmsdict['nproc'])
+	# 		self.innerradiusedit.setText(self.savedparmsdict['innerradius'])
+	# 		
+	# 		self.w1.rand_seededit.setText(self.savedparmsdict['rand_seed'])
+	# 		self.w1.givenchkbx.setCheckState(self.savedparmsdict['given'])
+	# 		self.w1.debugchkbx.setCheckState(self.savedparmsdict['debug'])
+	# 		self.w1.first_zerochkbx.setCheckState(self.savedparmsdict['first_zero'])
+	# 		self.w1.noweightschkbx.setCheckState(self.savedparmsdict['noweights'])
+	# 		self.w1.pcrossedit.setText(self.savedparmsdict['pcross'])
+	# 		self.w1.pmutedit.setText(self.savedparmsdict['pmut'])
+	# 		self.w1.maxgenedit.setText(self.savedparmsdict['maxgen'])
 		#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
 	def choose_file(self):
 		#opens a file browser, showing files only in .hdf format
@@ -6645,6 +6971,9 @@ class Popupadvparams_viper(QWidget):
 	def __init__(self,savedparms):
 		QWidget.__init__(self)
 		
+		# self.savedparmsdict=savedparms
+		self.savedparmsdict=dict()
+		
 		########################################################################################
 		# layout parameters
 		
@@ -6661,92 +6990,129 @@ class Popupadvparams_viper(QWidget):
 		#Here we just set a label and its position in the window
 		title1=QtGui.QLabel('<b>sxviper</b> - set advanced parameters', self)
 		title1.move(self.x1,self.y1)
+		self.y1 = self.y1+25
 		
-		self.y1 += 30
-		#Labels and Line Edits for User Input
-		#Just a label
-		#title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
-		#title2.move(self.x1,self.y1)
-		
-		#self.y1 += 30
-		
-		self.savedparmsdict=savedparms
-		#Example for User input stack name
-		#First create the label and define its position
-		
-		
-		gven= QtGui.QLabel('Start from given projections orientation \n(set to False, means start with randomize \norientations)', self)
-		gven.move(self.x1,self.y1)
-		self.givenchkbx=QtGui.QCheckBox("",self)
-		self.givenchkbx.move(self.x2,self.y1)
-		self.givenchkbx.setCheckState(self.savedparmsdict['given'])
-		self.givenchkbx.setToolTip('Start from given projections orientation (set to False, means start with randomize orientations)')
-		
-		self.y1 += 70
-		
-		rs= QtGui.QLabel('Random seed of initial orientations \n(if set to randomly)', self)
-		rs.move(self.x1,self.y1)
-		self.rand_seededit=QtGui.QLineEdit("",self)
-		self.rand_seededit.move(self.x2,self.y1)
-		self.rand_seededit.setText(self.savedparmsdict['rand_seed'])
-		self.rand_seededit.setToolTip('Random seed of initial orientations (if set to randomly)')
-		
-		self.y1 += 50
-		
-		fz= QtGui.QLabel('Assign the first projection orientation to 0', self)
-		fz.move(self.x1,self.y1)
-		self.first_zerochkbx=QtGui.QCheckBox("",self)
-		self.first_zerochkbx.move(self.x2,self.y1)
-		self.first_zerochkbx.setCheckState(self.savedparmsdict['first_zero'])
-		self.first_zerochkbx.setToolTip('Assign the first projection orientation to 0')
-		
-		self.y1 += 30
-		
-		nw= QtGui.QLabel('Use Voronoi weighting (by default use \nweights)', self)
-		nw.move(self.x1,self.y1)
-		self.noweightschkbx=QtGui.QCheckBox("",self)
-		self.noweightschkbx.move(self.x2,self.y1)
-		self.noweightschkbx.setCheckState(self.savedparmsdict['noweights'])
-		self.noweightschkbx.setToolTip('Use Voronoi weighting (by default use weights)')
-		
-		self.y1 += 50
-		
-		
-		pc= QtGui.QLabel('Cross-over probability (set to 0.95)', self)
-		pc.move(self.x1,self.y1)
-		self.pcrossedit=QtGui.QLineEdit("",self)
-		self.pcrossedit.move(self.x2,self.y1)
-		self.pcrossedit.setText(self.savedparmsdict['pcross'])
-		self.pcrossedit.setToolTip('Cross-over probability (set to 0.95)')
-		
-		self.y1 += 30
-		
-		pm= QtGui.QLabel('Mutation probability (set to 0.05)', self)
-		pm.move(self.x1,self.y1)
-		self.pmutedit=QtGui.QLineEdit("",self)
-		self.pmutedit.move(self.x2,self.y1)
-		self.pmutedit.setText(self.savedparmsdict['pmut'])
-		self.pmutedit.setToolTip('Mutation probability (set to 0.05)')
-		
-		self.y1 += 30
-		
-		mg= QtGui.QLabel('Maximum number of generations \n(set to 10)', self)
-		mg.move(self.x1,self.y1)
-		self.maxgenedit=QtGui.QLineEdit(self)
-		self.maxgenedit.move(self.x2,self.y1)
-		self.maxgenedit.setText(self.savedparmsdict['maxgen'])
-		self.maxgenedit.setToolTip('Maximum number of generations (set to 10)')
-		
-		self.y1 += 50
-		
-		dbg= QtGui.QLabel('Debug mode', self)
-		dbg.move(self.x1,self.y1)
-		self.debugchkbx=QtGui.QCheckBox("",self)
-		self.debugchkbx.move(self.x2,self.y1)
-		self.debugchkbx.setCheckState(self.savedparmsdict['debug'])
-		self.debugchkbx.setToolTip('Debug')
 
-		self.y1 += 30
+		from sxviper import main as sxviper_main
+		parser = sxviper_main(["aa", "--return_options"])
+		
+		
+		QLabels = [None]*len(parser.option_list)
+		self.QLineEditsAndChecks = [None]*len(parser.option_list)
+		for option_iterator in range(2, len(parser.option_list)):
+		# for option_iterator in range(2, 6):
+			if parser.option_list[option_iterator].help == None or \
+				parser.option_list[option_iterator].help == "" or \
+				parser.option_list[option_iterator].help[0] != "<" or \
+				parser.option_list[option_iterator].help[-10:] != "(advanced)":
+				continue
+			label = parser.option_list[option_iterator].help[1:].split(">")[0]
+		
+			QLabels[option_iterator] = QtGui.QLabel(label, self)
+			QLabels[option_iterator].move(self.x1,self.y1)
+		
+			control_is_an_edit_box = parser.option_list[option_iterator].action != "store_true"
+			if control_is_an_edit_box:
+				self.QLineEditsAndChecks[option_iterator] = QtGui.QLineEdit(self)
+				modify_function = self.QLineEditsAndChecks[option_iterator].setText
+			else:
+				self.QLineEditsAndChecks[option_iterator] = QtGui.QCheckBox("",self)
+				modify_function = self.QLineEditsAndChecks[option_iterator].setCheckState
+		
+			self.QLineEditsAndChecks[option_iterator].move(self.x2,self.y1)
+			# self.QLineEdits[option_iterator].setText(self.savedparmsdict[parser.option_list[option_iterator].dest])
+			self.savedparmsdict[parser.option_list[option_iterator].dest] = [option_iterator, str(parser.option_list[option_iterator].default), control_is_an_edit_box]
+			modify_function(str(parser.option_list[option_iterator].default))
+			self.QLineEditsAndChecks[option_iterator].setToolTip(parser.option_list[option_iterator].help)		
+		
+			self.y1 = self.y1+25
+		
+		
+		# self.y1 += 30
+		# #Labels and Line Edits for User Input
+		# #Just a label
+		# #title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
+		# #title2.move(self.x1,self.y1)
+		# 
+		# #self.y1 += 30
+		# 
+		# self.savedparmsdict=savedparms
+		# #Example for User input stack name
+		# #First create the label and define its position
+		# 
+		# 
+		# gven= QtGui.QLabel('Start from given projections orientation \n(set to False, means start with randomize \norientations)', self)
+		# gven.move(self.x1,self.y1)
+		# self.givenchkbx=QtGui.QCheckBox("",self)
+		# self.givenchkbx.move(self.x2,self.y1)
+		# self.givenchkbx.setCheckState(self.savedparmsdict['given'])
+		# self.givenchkbx.setToolTip('Start from given projections orientation (set to False, means start with randomize orientations)')
+		# 
+		# self.y1 += 70
+		# 
+		# rs= QtGui.QLabel('Random seed of initial orientations \n(if set to randomly)', self)
+		# rs.move(self.x1,self.y1)
+		# self.rand_seededit=QtGui.QLineEdit("",self)
+		# self.rand_seededit.move(self.x2,self.y1)
+		# self.rand_seededit.setText(self.savedparmsdict['rand_seed'])
+		# self.rand_seededit.setToolTip('Random seed of initial orientations (if set to randomly)')
+		# 
+		# self.y1 += 50
+		# 
+		# fz= QtGui.QLabel('Assign the first projection orientation to 0', self)
+		# fz.move(self.x1,self.y1)
+		# self.first_zerochkbx=QtGui.QCheckBox("",self)
+		# self.first_zerochkbx.move(self.x2,self.y1)
+		# self.first_zerochkbx.setCheckState(self.savedparmsdict['first_zero'])
+		# self.first_zerochkbx.setToolTip('Assign the first projection orientation to 0')
+		# 
+		# self.y1 += 30
+		# 
+		# nw= QtGui.QLabel('Use Voronoi weighting (by default use \nweights)', self)
+		# nw.move(self.x1,self.y1)
+		# self.noweightschkbx=QtGui.QCheckBox("",self)
+		# self.noweightschkbx.move(self.x2,self.y1)
+		# self.noweightschkbx.setCheckState(self.savedparmsdict['noweights'])
+		# self.noweightschkbx.setToolTip('Use Voronoi weighting (by default use weights)')
+		# 
+		# self.y1 += 50
+		# 
+		# 
+		# pc= QtGui.QLabel('Cross-over probability (set to 0.95)', self)
+		# pc.move(self.x1,self.y1)
+		# self.pcrossedit=QtGui.QLineEdit("",self)
+		# self.pcrossedit.move(self.x2,self.y1)
+		# self.pcrossedit.setText(self.savedparmsdict['pcross'])
+		# self.pcrossedit.setToolTip('Cross-over probability (set to 0.95)')
+		# 
+		# self.y1 += 30
+		# 
+		# pm= QtGui.QLabel('Mutation probability (set to 0.05)', self)
+		# pm.move(self.x1,self.y1)
+		# self.pmutedit=QtGui.QLineEdit("",self)
+		# self.pmutedit.move(self.x2,self.y1)
+		# self.pmutedit.setText(self.savedparmsdict['pmut'])
+		# self.pmutedit.setToolTip('Mutation probability (set to 0.05)')
+		# 
+		# self.y1 += 30
+		# 
+		# mg= QtGui.QLabel('Maximum number of generations \n(set to 10)', self)
+		# mg.move(self.x1,self.y1)
+		# self.maxgenedit=QtGui.QLineEdit(self)
+		# self.maxgenedit.move(self.x2,self.y1)
+		# self.maxgenedit.setText(self.savedparmsdict['maxgen'])
+		# self.maxgenedit.setToolTip('Maximum number of generations (set to 10)')
+		# 
+		# self.y1 += 50
+		# 
+		# dbg= QtGui.QLabel('Debug mode', self)
+		# dbg.move(self.x1,self.y1)
+		# self.debugchkbx=QtGui.QCheckBox("",self)
+		# self.debugchkbx.move(self.x2,self.y1)
+		# self.debugchkbx.setCheckState(self.savedparmsdict['debug'])
+		# self.debugchkbx.setToolTip('Debug')
+		# 
+		# self.y1 += 30
 
 
 
