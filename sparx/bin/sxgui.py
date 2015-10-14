@@ -6759,11 +6759,6 @@ class Popupvariability3d(QWidget):
 		self.cmd = ""
 		# populate with default values
 		self.savedparmsdict = {'pdbfile':'','output':'','apix':'1.0','box':'150','het':Qt.Unchecked,'center':'n','Och':Qt.Unchecked,'quiet':Qt.Unchecked,'tr0':''}
-		if (options.demo == DEMO_mpibdbctf) or (options.demo == DEMO_mpibdb):
-			self.savedparmsdict['pdbfile'] = '../tteftu_with_tRNA.pdb'
-			self.savedparmsdict['output']='tmp.hdf'
-			self.savedparmsdict['apix']='5.2'
-			self.savedparmsdict['box']='64'
 		#######################################################################################
 		# Layout parameters
 		
@@ -7011,20 +7006,14 @@ class Popupvariability3d(QWidget):
 class Popuplocres(QWidget):
 	def __init__(self):
 		QWidget.__init__(self)
-		
+
 		#######################################################################################
 		# class variables
 		self.cmd = ""
 		# populate with default values
-		self.savedparmsdict = {'pdbfile':'','output':'','apix':'1.0','box':'150','het':Qt.Unchecked,'center':'n','Och':Qt.Unchecked,'quiet':Qt.Unchecked,'tr0':''}
-		if (options.demo == DEMO_mpibdbctf) or (options.demo == DEMO_mpibdb):
-			self.savedparmsdict['pdbfile'] = '../tteftu_with_tRNA.pdb'
-			self.savedparmsdict['output']='tmp.hdf'
-			self.savedparmsdict['apix']='5.2'
-			self.savedparmsdict['box']='64'
+		self.savedparmsdict = {'vol1':'','vol2':'','mask':'','output':'','wn':'11','step':'1','cutoff':'0.5','radius':'-1','nproc':'4','fsc':''}
 		#######################################################################################
 		# Layout parameters
-		
 		self.y1 = 10 # title and Repopulate button
 		self.y2 = self.y1 + 85 # Text boxes for inputting parameters
 		#self.y3 = self.y2 + 222 # activate images button and set xform.align2d button
@@ -7042,7 +7031,7 @@ class Popuplocres(QWidget):
 		#Here we just set the window title
 		self.setWindowTitle('sxlocres')
 		#Here we just set a label and its position in the window
-		title1=QtGui.QLabel('<b>sxlocres</b> - convert atomic model (pdb file) into sampled electron density map', self)
+		title1=QtGui.QLabel('<b>sxlocres</b> - compute local FSC resolution in real space unsing half-maps, within area outlined by the maskfile and within regions wn x wn x wn', self)
 		title1.move(self.x1,self.y1)
 		self.y1 += 30
 
@@ -7055,24 +7044,38 @@ class Popuplocres(QWidget):
 
 		#######################################################################################
 		#Here we create a Button(file_button with title run open .hdf) and its position in the window
-		self.file_button = QtGui.QPushButton("Open .pdb", self)
+		self.file_button = QtGui.QPushButton("Open first half volume", self)
 		self.file_button.move(self.x3, self.y2-self.yspc)
 		#Here we define, that when this button is clicked, it starts subfunction choose_file
 		QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
 		
-		pdb= QtGui.QLabel('Name of pdb file', self)
-		pdb.move(self.x1,self.y2)
-		self.pdbfileedit=QtGui.QLineEdit(self)
-		self.pdbfileedit.move(self.x2,self.y2)
-		self.pdbfileedit.setText(self.savedparmsdict['pdbfile'])
+		vol1 = QtGui.QLabel('Name of volume 1', self)
+		vol1.move(self.x1,self.y2)
+		self.vol1edit=QtGui.QLineEdit(self)
+		self.vol1edit.move(self.x2,self.y2)
+		self.vol1edit.setText(self.savedparmsdict['vol1'])
 		self.y2 += 30
 		
-		output= QtGui.QLabel('EM Output file', self)
+		vol2 = QtGui.QLabel('Name of volume 2', self)
+		vol2.move(self.x1,self.y2)
+		self.vol2edit=QtGui.QLineEdit(self)
+		self.vol2edit.move(self.x2,self.y2)
+		self.vol2edit.setText(self.savedparmsdict['vol2'])
+		self.y2 += 30
+		
+		mask = QtGui.QLabel('Name of 3D mask', self)
+		mask.move(self.x1,self.y2)
+		self.maskedit=QtGui.QLineEdit(self)
+		self.maskedit.move(self.x2,self.y2)
+		self.maskedit.setText(self.savedparmsdict['mask'])
+		self.y2 += 30
+
+		output = QtGui.QLabel('Output local res volume', self)
 		output.move(self.x1,self.y2)
 		self.outputedit=QtGui.QLineEdit(self)
 		self.outputedit.move(self.x2,self.y2)
 		self.outputedit.setText(self.savedparmsdict['output'])		
-		self.outinfobtn = QPushButton("Output Info", self)
+		self.outinfobtn = QPushButton("Output", self)
 		self.outinfobtn.move(self.x3,  self.y2-self.yspc)
 		#sets an infotip for this Pushbutton
 		self.outinfobtn.setToolTip('Output Info')
@@ -7080,30 +7083,55 @@ class Popuplocres(QWidget):
 		self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_locres)
 		self.y2 += 30
 		
-		apix= QtGui.QLabel('Pixel size (Angstroms)', self)
-		apix.move(self.x1,self.y2)
-		self.apixedit=QtGui.QLineEdit(self)
-		self.apixedit.move(self.x2,self.y2)
-		self.apixedit.setText(self.savedparmsdict['apix'])
-		self.apixedit.setToolTip('Angstrom/voxel')		
+		wn = QtGui.QLabel('Window size (voxels)', self)
+		wn.move(self.x1,self.y2)
+		self.wnedit=QtGui.QLineEdit(self)
+		self.wnedit.move(self.x2,self.y2)
+		self.wnedit.setText(self.savedparmsdict['wn'])
+		self.wnedit.setToolTip('Window size defines local FSC region')		
 		self.y2 += 30
 		
-		box= QtGui.QLabel('Box size (voxels)', self)
-		box.move(self.x1,self.y2)
-		self.boxedit=QtGui.QLineEdit(self)
-		self.boxedit.move(self.x2,self.y2)
-		self.boxedit.setText(self.savedparmsdict['box'])
-		self.boxedit.setToolTip('Box size in pixels, <xyz> or <x,y,z>')		
+		step = QtGui.QLabel('Resolution step (voxels)', self)
+		step.move(self.x1,self.y2)
+		self.stepedit = QtGui.QLineEdit(self)
+		self.stepedit.move(self.x2,self.y2)
+		self.stepedit.setText(self.savedparmsdict['step'])
+		self.stepedit.setToolTip('Resolution step size defines shell width')		
 		self.y2 += 30
 
-		het= QtGui.QLabel('Include HET atoms', self)
-		het.move(self.x1,self.y2)
-		self.hetchkbx = QtGui.QCheckBox("",self)
-		self.hetchkbx.move(self.x2, self.y2)
-		self.hetchkbx.setCheckState(self.savedparmsdict['het'])
-		self.hetchkbx.setToolTip('Include HET atoms in the map.')		
+		cutoff = QtGui.QLabel('Resolution cutoff', self)
+		cutoff.move(self.x1,self.y2)
+		self.cutoffedit = QtGui.QLineEdit(self)
+		self.cutoffedit.move(self.x2,self.y2)
+		self.cutoffedit.setText(self.savedparmsdict['cutoff'])
+		self.cutoffedit.setToolTip('Resolution cut-off for FSC.  The local resolution volume will contain absolute frequencies corresponding to the selected cut-off values.  Default is 0.5.  Note excesively small values (as 0.14) will result in a choppy local resolution volume.')		
 		self.y2 += 30
-		
+
+		nproc = QtGui.QLabel('Number of processors', self)
+		nproc.move(self.x1,self.y2)
+		self.nprocedit = QtGui.QLineEdit(self)
+		self.nprocedit.move(self.x2, self.y2)
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
+		self.nprocedit.setToolTip('Number of processors for MPI processing.  If set to 1 or 0, a single processor non-MPI version will be used.')		
+		self.y2 += 30
+
+		radius = QtGui.QLabel('Radius of the structure', self)
+		radius.move(self.x1,self.y2)
+		self.radiusedit = QtGui.QLineEdit(self)
+		self.radiusedit.move(self.x2, self.y2)
+		self.radiusedit.setText(self.savedparmsdict['radius'])
+		self.radiusedit.setToolTip('Radius of the structure in pixels.  Only required if mask is not given.')		
+		self.y2 += 30
+
+		fsc = QtGui.QLabel('FSC file name', self)
+		fsc.move(self.x1,self.y2)
+		self.fscedit = QtGui.QLineEdit(self)
+		self.fscedit.move(self.x2, self.y2)
+		self.fscedit.setText(self.savedparmsdict['fsc'])
+		self.fscedit.setToolTip('Optional. Name of the output text file to contain overall 1D resolution curve. It is a rotational average of local FSC resolution values')		
+		self.y2 += 30
+		"""
+
 		center= QtGui.QLabel('Center atomic model', self)
 		center.move(self.x1,self.y2)
 		self.centeredit=QtGui.QLineEdit(self)
@@ -7127,7 +7155,6 @@ class Popuplocres(QWidget):
 		self.quietchkbx.setCheckState(self.savedparmsdict['quiet'])
 		self.quietchkbx.setToolTip('Verbose is the default')		
 		self.y2 += 30
-		
 		tr0= QtGui.QLabel('Transformation matrix to apply to PDB', self)
 		tr0.move(self.x1,self.y2)
 		self.tr0edit=QtGui.QLineEdit(self)
@@ -7141,7 +7168,7 @@ class Popuplocres(QWidget):
 		QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file1)
 		
 		self.y2 += 30
-		# make ctf, normalize and init_method radio button...
+		"""
 		
 		self.savepbtn = QPushButton("Save Input Parameters", self)
 		self.savepbtn.move(self.x1-5, self.y4)
@@ -7159,7 +7186,7 @@ class Popuplocres(QWidget):
 		self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_locres)
 
 		#######################################################################
-		 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
+		#Here we create a Button(Run_button with title run sxali2d) and its position in the window
 		self.RUN_button = QtGui.QPushButton('Run sxlocres', self)
 		# make 3D textured push button look
 		s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
@@ -7173,37 +7200,33 @@ class Popuplocres(QWidget):
 				
 	 #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
 	def outputinfo_locres(self):
-		QMessageBox.information(self, "sxlocres output",'output 3-D electron density map (any EM format). Attribute pixel_size will be set to the specified value.')
+		QMessageBox.information(self, "sxlocres output",'output 3D local resolution map (any EM format).')
 		
 	def gencmdline_locres(self,writefile=True):
 		#Here we just read in all user inputs in the line edits of the Poptwodali window
-		pdbfile = self.pdbfileedit.text()
-		output=self.outputedit.text()
-		apix=self.apixedit.text()
-		box=self.boxedit.text()
-		center=self.centeredit.text()
-		tr0=self.tr0edit.text()
-		het=self.hetchkbx.checkState()
-		quiet=self.quietchkbx.checkState()
-		Och=self.Ochchkbx.checkState()
+		vol1     = self.vol1edit.text()
+		vol2     = self.vol2edit.text()
+		mask     = self.maskedit.text()
+		output   = self.outputedit.text()
+		wn       = self.wnedit.text()
+		step     = self.stepedit.text()
+		cutoff   = self.cutoffedit.text()
+		radius   = self.radiusedit.text()
+		fsc      = self.fscedit.text()
+		nproc    = self.nprocedit.text()
+
+		cmd1 = "sxlocres.py "+str(vol1) +" "+ str(vol2)
+		if(len(str(mask)) > 0): cmd1 += " "+ str(mask)
+		cmd1 += " "+ str(output)
+		if int(str(nproc)) >1:
+				cmd1 = "mpirun -np " + str(nproc) + " " + cmd1
+		cmd1 += " --wn="+ str(wn)+" --step="+ str(step) + " --cutoff="+str(cutoff)+ " --radius="+str(radius)+ " --fsc="+str(fsc)
+		if int(str(nproc)) >1:
+			cmd1 += "  --MPI"
+
 		
-		cmd1 = "sxlocres.py "+str(pdbfile) +" "+ str(output)
-		
-		args = " --apix="+ str(apix)+" --box="+ str(box)+ " --center="+str(center)
-		
-		cmd1 = cmd1 + args
-				
-		if het == Qt.Checked:
-			cmd1 = cmd1 + " --het"
-		if quiet == Qt.Checked:
-			cmd1 = cmd1 + " --quiet"
-		if Och == Qt.Checked:
-			cmd1 = cmd1 + " --O"				
-		
-		if len(str(tr0)) > 0:
-			cmd1 = cmd1 + " --tr0="+str(tr0)
-		
-		self.savedparmsdict = {'pdbfile':str(pdbfile),'output':str(output),'apix':str(apix),'box':str(box),'het':het,'center':str(center),'Och':Och,'quiet':quiet,'tr0':str(tr0)}
+		self.savedparmsdict = {'vol1':str(vol1),'vol2':str(vol2),'mask':str(mask),'output':str(output),'wn':str(wn),\
+						'step':str(step),'cutoff':cutoff,'radius':str(radius),'fsc':str(fsc),'nproc':nproc}
 		
 		
 		if writefile:		
@@ -7238,25 +7261,26 @@ class Popuplocres(QWidget):
 			import pickle
 			pkl = open(fname,'rb')
 			self.savedparmsdict = pickle.load(pkl)
-			self.pdbfileedit.setText(self.savedparmsdict['pdbfile'])
+			self.vol1edit.setText(self.savedparmsdict['vol1'])
+			self.vol2edit.setText(self.savedparmsdict['vol2'])
+			self.maskedit.setText(self.savedparmsdict['mask'])
 			self.outputedit.setText(self.savedparmsdict['output'])
-			self.apixedit.setText(self.savedparmsdict['apix'])		
-			self.boxedit.setText(self.savedparmsdict['box'])		
-			self.centeredit.setText(self.savedparmsdict['center'])
-			self.hetchkbx.setCheckState(self.savedparmsdict['het'])
-			self.Ochchkbx.setCheckState(self.savedparmsdict['Och'])
-			self.quietchkbx.setCheckState(self.savedparmsdict['quiet'])
-			self.tr0edit.setText(self.savedparmsdict['tr0'])
+			self.wnedit.setText(self.savedparmsdict['wn'])		
+			self.stepedit.setText(self.savedparmsdict['step'])		
+			self.cutoffedit.setText(self.savedparmsdict['cutoff'])
+			self.radiusedit.setText(self.savedparmsdict['radius'])
+			self.fscedit.setText(self.savedparmsdict['fsc'])
+			self.nprocedit.setText(self.savedparmsdict['nproc'])
+
 				
 	def choose_file(self):
 		#opens a file browser, showing files only in .hdf format
-		file_name = QtGui.QFileDialog.getOpenFileName(self, "Open PDB File", "", "PDB files (*.pdb)")
+		file_name = QtGui.QFileDialog.getOpenFileName(self, "Open volume", "", "PDB files (*.pdb)")
 		#after the user selected a file, we obtain this filename as a Qstring
 		a=QtCore.QString(file_name)
 		#we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
-		self.pdbfileedit.setText(str(a))
-	
-	
+		self.vol1edit.setText(str(a))
+
 	def choose_file1(self):
 		#opens a file browser, showing files only in .hdf format
 		file_name = QtGui.QFileDialog.getOpenFileName(self, "Open file containing transformation matrix", "", "(*)")
