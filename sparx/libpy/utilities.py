@@ -4679,6 +4679,10 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
 	#  The read data is properly distributed among MPI threads.
+	from fundamentals import resample
+	from filter import filt_ctf
+	from applications import MPI_start_end
+
 	if( myid == main_node ):
 		print "  "
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
