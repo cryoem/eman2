@@ -4674,7 +4674,7 @@ def if_error_all_processes_quit_program(error_status):
 		mpi_finalize()
 		sys.exit()
 
-def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
+def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
@@ -4747,6 +4747,106 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	return data, oldshifts
 
 
+def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
+	# The function will read from stack a subset of images specified in partids
+	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
+	# So, the lengths of partids and partstack are the same.
+	#  The read data is properly distributed among MPI threads.
+	from fundamentals import resample
+	from filter import filt_ctf
+	from applications import MPI_start_end
+
+	if( myid == main_node ):
+		print "  "
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], Tracker["applyctf"], preshift)
+		print  "                       stack:      %s\n                       partids:     %s\n                       partstack: %s\n"%(Tracker["constants"]["stack"], partids, partstack)
+	if( myid == main_node ): lpartids = read_text_file(partids)
+	else:  lpartids = 0
+	lpartids = wrap_mpi_bcast(lpartids, main_node)
+	ndata = len(lpartids)
+	if( myid == main_node ):  partstack = read_text_row(partstack)
+	else:  partstack = 0
+	partstack = wrap_mpi_bcast(partstack, main_node)
+	if( ndata < nproc):
+		if(myid<ndata):
+			image_start = myid
+			image_end   = myid+1
+		else:
+			image_start = 0
+			image_end   = 1
+	else:
+		image_start, image_end = MPI_start_end(ndata, nproc, myid)
+	lpartids  = lpartids[image_start:image_end]
+	partstack = partstack[image_start:image_end]
+	#  Preprocess the data
+	mask2D  = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	nima = image_end - image_start
+	oldshifts = [[0.0,0.0]]#*nima
+	data = [None]*nima
+	shrinkage = nxinit/float(Tracker["constants"]["nnxo"])
+	radius = int(Tracker["constants"]["radius"] * shrinkage +0.5)
+	#  Note these are in Fortran notation for polar searches
+	#txm = float(nxinit-(nxinit//2+1) - radius -1)
+	#txl = float(2 + radius - nxinit//2+1)
+	txm = float(nxinit-(nxinit//2+1) - radius)
+	txl = float(radius - nxinit//2+1)
+	for im in xrange(nima):
+		data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
+		phi,theta,psi,sx,sy = partstack[im][0], partstack[im][1], partstack[im][2], partstack[im][3], partstack[im][4]
+		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+		if preshift:
+			data[im] = fshift(data[im], sx, sy)
+			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
+		#oldshifts[im] = [sx,sy]
+		#  resample will properly adjusts shifts and pixel size in ctf
+		data[im] = resample(data[im], shrinkage)
+		#  We have to make sure the shifts are within correct range, shrinkage or not
+		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
+		#  For local SHC set anchor
+		#if(nsoft == 1 and an[0] > -1):
+		#  We will always set it to simplify the code
+		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
+	assert( nxinit == data[0].get_xsize() )  #  Just to make sure.
+	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
+	return data, oldshifts
+
+
+def getindexdata(stack, partids, partstack, myid, nproc):
+	# The function will read from stack a subset of images specified in partids
+	#   and assign to them parameters from partstack
+	# So, the lengths of partids and partstack are the same.
+	#  The read data is properly distributed among MPI threads.
+	
+	from applications import MPI_start_end
+
+	lpartids = read_text_file(partids)
+	ndata = len(lpartids)
+	partstack = read_text_row(partstack)
+
+	if( ndata < nproc):
+		if(myid<ndata):
+			image_start = myid
+			image_end   = myid+1
+		else:
+			image_start = 0
+			image_end   = 1
+	else:
+		image_start, image_end = MPI_start_end(ndata, nproc, myid)
+	lpartids  = lpartids[image_start:image_end]
+	partstack = partstack[image_start:image_end]
+	data = EMData.read_images(stack, lpartids)
+
+	for i in xrange(len(partstack)):
+		set_params_proj(data[i], partstack[i])
+	return data
+
+
 def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_of_vars = [], write_or_append = "w", 
 	vars_that_will_show_only_size = []):
 	
@@ -4780,35 +4880,6 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 		json.dump(ordered_my_vars, fp, indent = 2)
 	fp.close()
 
-
-def getindexdata(stack, partids, partstack, myid, nproc):
-	# The function will read from stack a subset of images specified in partids
-	#   and assign to them parameters from partstack
-	# So, the lengths of partids and partstack are the same.
-	#  The read data is properly distributed among MPI threads.
-	
-	from applications import MPI_start_end
-
-	lpartids = read_text_file(partids)
-	ndata = len(lpartids)
-	partstack = read_text_row(partstack)
-
-	if( ndata < nproc):
-		if(myid<ndata):
-			image_start = myid
-			image_end   = myid+1
-		else:
-			image_start = 0
-			image_end   = 1
-	else:
-		image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	lpartids  = lpartids[image_start:image_end]
-	partstack = partstack[image_start:image_end]
-	data = EMData.read_images(stack, lpartids)
-
-	for i in xrange(len(partstack)):
-		set_params_proj(data[i], partstack[i])
-	return data
 
 def print_program_start_information():
 	
