@@ -284,7 +284,13 @@ satisfied with the results with speed=5 you may consider reducing this number as
 
 	if options.automask3d: automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
 	if options.apix>0 : apix=options.apix
-	else : apix=EMData(options.input,0,True)["apix_x"]
+	else:
+		if options.startfrom!=None : 
+			olddb = js_open_dict(options.startfrom+"/0_refine_parms.json")
+			apix=options.apix=olddb["apix"]
+			if apix<=0 :
+				apix=EMData(str(olddb["last_even"]),0,True)["apix_x"]
+		else : apix=EMData(options.input,0,True)["apix_x"]
 
 	if options.targetres<apix*2:
 		print "ERROR: Target resolution is smaller than 2*A/pix value. This is impossible."
