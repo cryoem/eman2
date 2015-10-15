@@ -1851,7 +1851,7 @@ def main():
 				Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres0p3.hdf")
 				if( myid == main_node ):
 					freqvol.write_image(Tracker["local_filter"])
-					volf = 0.5*(get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf")))
+					volf = 0.5*(get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["previousoutputdir"] ,"vol1.hdf")))
 				else:
 					volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 				del freqvol, resolut
@@ -2052,7 +2052,7 @@ def main():
 		if doit:
 			'''
 			if( myid == main_node ):
-				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
+				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol1.hdf")))
 				#  This structure will be calculated without local filter
 				Tracker["lowpass"] = read_text_file(os.path.join(Tracker["directory"],"fsc.txt"),2)
 				lex = len(Tracker["lowpass"])
@@ -2081,7 +2081,7 @@ def main():
 			if( myid == main_node ):
 				currentres = 0
 				vol0 = get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))
-				vol1 = get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))
+				vol1 = get_im(os.path.join(Tracker["directory"] ,"vol1.hdf"))
 				if( Tracker["nxinit"] == Tracker["constants"]["nnxo"] ):
 					if(Tracker["constants"]["mask3D"] is None):
 						mask = cosinemask(model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],1.0),int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5)-3,5)

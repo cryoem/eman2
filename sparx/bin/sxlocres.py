@@ -53,7 +53,7 @@ def main():
 	parser.add_option("--step",     type="float",	default= 1.0,       help="Shell step in Fourier size in pixels (default 1.0)")   
 	parser.add_option("--cutoff",   type="float",	default= 0.5,       help="resolution cut-off for FSC (default 0.5)")
 	parser.add_option("--radius",	type="int",		default=-1, 		help="if there is no maskfile, sphere with r=radius will be used, by default the radius is nx/2-wn")
-	parser.add_option("--fsc",      type="string",	default= None,      help="overall FSC curve (migh be truncated) (default no curve)")
+	parser.add_option("--fsc",      type="string",	default= None,      help="overall FSC curve (might be truncated) (default no curve)")
 	parser.add_option("--MPI",      action="store_true",   	default=False,  help="use MPI version")
 
 	(options, args) = parser.parse_args(arglist[1:])
@@ -66,7 +66,6 @@ def main():
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
 
-	
 
 	if options.MPI:
 		from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
