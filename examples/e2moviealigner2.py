@@ -6,7 +6,12 @@ from Simplex import Simplex
 from EMAN2 import *
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.optimize import minimize
+
+try: from scipy.optimize import minimize
+except:
+	print("You must install scipy to use this program."
+	print("To do this, you could use either 'sudo pip install scipy' or 'sudo easy_install scipy'.")
+	sys.exit(1)
 
 def main():
 	progname = os.path.basename(sys.argv[0])
