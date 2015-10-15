@@ -4706,7 +4706,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	else:
 		image_start, image_end = MPI_start_end(ndata, nproc, myid)
 	lpartids  = lpartids[image_start:image_end]
-	partstack = partstack[image_start:image_end]
+	#partstack = partstack[image_start:image_end]
 	#  Preprocess the data
 	mask2D  = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	nima = image_end - image_start
@@ -4721,7 +4721,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	txl = float(radius - nxinit//2+1)
 	for im in xrange(nima):
 		data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
-		phi,theta,psi,sx,sy = partstack[im][0], partstack[im][1], partstack[im][2], partstack[im][3], partstack[im][4]
+		phi,theta,psi,sx,sy = partstack[lpartids[im]][0], partstack[lpartids[im]][1], partstack[lpartids[im]][2], partstack[lpartids[im]][3], partstack[lpartids[im]][4]
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			ctf_params = data[im].get_attr("ctf")
 			st = Util.infomask(data[im], mask2D, False)
