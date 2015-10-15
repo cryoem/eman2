@@ -317,13 +317,13 @@ def AI( Tracker, HISTORY, chout = False):
 				Tracker["zoom"]        = False
 				Tracker["saturatecrit"]= 0.99
 				if Tracker["applyctf"] :  reset_data  = True
-				Tracker["upscale"]     = 0.65
+				Tracker["upscale"]     = 0.5
 				Tracker["applyctf"]    = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "FINAL2"
 				Tracker["maxit"]       = 1
-				Tracker["xr"] = "2"
-				Tracker["ts"] = "2"
+				Tracker["xr"] = "1"
+				Tracker["ts"] = "1"
 				keepgoing = 1
 				beenhere = 0
 			elif(Tracker["state"] == "FINAL2"):
@@ -1077,7 +1077,7 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 				else:  Tracker["smearstep"] = 0.0
 				from reconstruction import rec3D_MPI
 				if(myid == main_node):
-					print(" smear in compute_resolution ",nx,shrinkage,Tracker["icurrentres"], Tracker["radius"],delta,Tracker["smearstep"])
+					print(" smear in compute_resolution ",nx,shrinkage,Tracker["icurrentres"], Tracker["radius"],Tracker["smearstep"])
 				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2, smearstep = Tracker["smearstep"])
