@@ -38,7 +38,7 @@ def main():
 
 	if len(args) < 1:
 		print usage
-		parser.error("You must specify at least one input DDD stack.")
+		parser.error("You must specify at least one input DDD movie stack.")
 		sys.exit(1)
 	
 	if options.boxsize: bs = options.boxsize
@@ -96,7 +96,7 @@ class MovieAligner:
 		for ir in xrange(len(self._regions[0])):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self.iter = 0
-		self.middle = self.hdr['nimg']/2
+		self.middle = self.hdr['nimg']-2/2
 		self.energies = []
 		self.calc_energy()
 	
@@ -235,11 +235,12 @@ class MovieAligner:
 	def _compares(ts,aligner):
 		test = ts.reshape((aligner.hdr['nimg'],2))
 		for i,t in enumerate(test):
-			aligner.translations[i] = t
-			for n,r in enumerate(aligner._regions[i]): 
-				aligner._regions[i][n] = np.add(r,t)
-			for n,r in enumerate(aligner._regions[i]): 
-				aligner._stacks[n][i] = r
+			if i != aligner.middle:
+				aligner.translations[i] = t
+				for n,r in enumerate(aligner._regions[i]): 
+					aligner._regions[i][n] = np.add(r,t)
+				for n,r in enumerate(aligner._regions[i]): 
+					aligner._stacks[n][i] = r
 		return aligner.calc_energy()
 	
 	def save(self,descriptor,save_frames=False):
