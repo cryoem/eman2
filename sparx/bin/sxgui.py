@@ -57,14 +57,14 @@ class infosparx(QWidget):
 		title3=QtGui.QLabel('For more information visit:\nhttp://sparx-em.org/sparxwiki ', self)
 		title3.move(10,70)
 
-#helical_start
-class PopupHelicalRefinement(QWidget):
+#helicon_start
+class PopupHeliconRefinement(QWidget):
 	def __init__(self):
 		QWidget.__init__(self)
 		
 		
 		# populate with default values
-		self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2","nise":"2","rmin":"0.0","fract":"0.7","dp_step":"0.1","ndp":"12","dphi_step":"0.1","ndphi":"12","psi_max":"15","an":"-1", "npad":"2", "chunk":"-1.0", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":"",'stackname_prectr':'','outdir_prectr':'','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2'}
+		self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2","nise":"2","rmin":"0.0","fract":"0.7","dp_step":"0.1","ndp":"12","dphi_step":"0.1","ndphi":"12","psi_max":"15","an":"-1", "npad":"2", "chunk":"-1.0", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helicon","usrfuncfile":"",'stackname_prectr':'','outdir_prectr':'','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2'}
 		
 		
 		self.setadv=False
@@ -75,9 +75,9 @@ class PopupHelicalRefinement(QWidget):
 		x4 = x3 + 100
 		x5 = 230 # run button
 		#Here we just set the window title
-		self.setWindowTitle('sxhelical')
+		self.setWindowTitle('sxhelicon')
 		#Here we just set a label and its position in the window
-		title1=QtGui.QLabel('<b>shelical</b> - performs helical refinement', self)
+		title1=QtGui.QLabel('<b>sxhelicon</b> - performs helical refinement', self)
 		y = 10
 		title1.move(10,y)
 		
@@ -88,7 +88,7 @@ class PopupHelicalRefinement(QWidget):
 		#sets an infotip for this Pushbutton
 		self.repopbtn.setToolTip('Retrieve saved parameters')
 		#when this button is clicked, this action starts the subfunction twodali
-		self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_helical)
+		self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_helicon)
 
 		
 		#Here we create a Button(file_button with title run open .hdf) and its position in the window
@@ -155,7 +155,7 @@ class PopupHelicalRefinement(QWidget):
 		#sets an infotip for this Pushbutton
 		self.outinfobtn.setToolTip('Output Info')
 		#when this button is clicked, this action starts the subfunction twodali
-		self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_helical)
+		self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_helicon)
 		
 		y = y +30
 		outradius= QtGui.QLabel('Particle outer radius', self)
@@ -251,7 +251,7 @@ class PopupHelicalRefinement(QWidget):
 		#sets an infotip for this Pushbutton
 		self.savepbtn.setToolTip('Save Input Parameters')
 		#when this button is clicked, this action starts the subfunction twodali
-		self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms_helical)
+		self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms_helicon)
 		
 		y = y +30
 		self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
@@ -259,12 +259,12 @@ class PopupHelicalRefinement(QWidget):
 		#sets an infotip for this Pushbutton
 		self.cmdlinebtn.setToolTip('Generate command line using input parameters')
 		#when this button is clicked, this action starts the subfunction twodali
-		self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_helical)
+		self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_helicon)
 
 		#Here we create a Button(Run_button with title run sxali2d) and its position in the window
 		
 		y = y +30
-		self.RUN_button = QtGui.QPushButton('Run sxhelical', self)
+		self.RUN_button = QtGui.QPushButton('Run sxhelicon', self)
 		# make 3D textured push button look
 		s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 		
@@ -273,17 +273,17 @@ class PopupHelicalRefinement(QWidget):
 
 		self.RUN_button.move(x5, y)
 		#Here we define, that when this button is clicked, it starts subfunction runsxali2d
-		self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxhelical)
+		self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxhelicon)
 		#Labels and Line Edits for User Input
 				
-	def outputinfo_helical(self):
-		QMessageBox.information(self, "helical output",'Output files (logfile, projection parameter files and pix error files)\nvol--reconstructed volume, volf--reconstructed volume after helicising and user function \n xform.projection was stored in each image header.')
+	def outputinfo_helicon(self):
+		QMessageBox.information(self, "helicon output",'Output files (logfile, projection parameter files and pix error files)\nvol--reconstructed volume, volf--reconstructed volume after helicising and user function \n xform.projection was stored in each image header.')
 		
 
 		
 	#Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
 
-	def gencmdline_helical(self,writefile=True):
+	def gencmdline_helicon(self,writefile=True):
 		#Here we just read in all user inputs in the line edits of the Poptwodali window
 		stack = self.stacknameedit.text()
 		print "stack defined="+ stack
@@ -312,7 +312,7 @@ class PopupHelicalRefinement(QWidget):
 		maxit=self.nriteredit.text()
 		print "maxit="+maxit
 		
-		cmd1 = " sxhelical.py "+str(stack) +" "+str(referencevolume)+" " + str(output)
+		cmd1 = " sxhelicon.py "+str(stack) +" "+str(referencevolume)+" " + str(output)
 		
 		args = " --ou="+ str(ou)+ " --xr="+str(xr)+" " + " --ynumber="+str(ynumber)+ " " + " --txs="+str(tx)+" " +" --rmax="+str(rmax)+" " + " --maxit="+ str(maxit) 
 		
@@ -465,8 +465,8 @@ class PopupHelicalRefinement(QWidget):
 		print cmd1
 		self.cmd = cmd1
 		
-	def runsxhelical(self):
-		self.gencmdline_helical(writefile=False)
+	def runsxhelicon(self):
+		self.gencmdline_helicon(writefile=False)
 		outfolder=self.savedparmsdict['foldername']
 		if os.path.exists(outfolder):
 			print "output folder "+outfolder+" already exists!"
@@ -474,19 +474,19 @@ class PopupHelicalRefinement(QWidget):
 		process = subprocess.Popen(self.cmd,shell=True)
 		self.emit(QtCore.SIGNAL("process_started"),process.pid)
 		
-	def saveparms_helical(self):		
+	def saveparms_helicon(self):		
 		# save all the parms in a text file so we can repopulate if user requests
 
 		(fname,stat)= QInputDialog.getText(self,"Save Input Parameters","Enter name of file to save parameters in",QLineEdit.Normal,"")
 		if stat:
 			import pickle
 			output=open(fname,'wb')
-			self.gencmdline_helical(writefile=False)
+			self.gencmdline_helicon(writefile=False)
 			self.w3.gencmdline_shftali(writefile=False)
 			pickle.dump(self.savedparmsdict,output)
 			output.close()
 
-	def repoparms_helical(self):
+	def repoparms_helicon(self):
 		  
 		# repopulate with saved parms
 		(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
@@ -605,18 +605,18 @@ class PopupHelicalRefinement(QWidget):
 		#we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 		self.referencevolumeedit.setText(str(a))
 
-class Popupadvparams_helical_1(QWidget):
+class Popupadvparams_helicon_1(QWidget):
 	def __init__(self,savedparms):
 		QWidget.__init__(self)
 		#Here we just set the window title
-		self.setWindowTitle('sxhelical advanced parameter selection')
+		self.setWindowTitle('sxhelicon advanced parameter selection')
 		#Here we just set a label and its position in the window
 		x1 = 10
 		x2 = x1 + 150
 		x3 = x2 + 145
 		x4 = x3 + 100
 		y = 10
-		title1=QtGui.QLabel('<b>sxhelical</b> - set advanced params', self)
+		title1=QtGui.QLabel('<b>sxhelicon</b> - set advanced params', self)
 		title1.move(10,y)
 		#Labels and Line Edits for User Input
 		#Just a label
@@ -764,20 +764,20 @@ class Popupadvparams_helical_1(QWidget):
 		print a
 		#we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 		self.masknameedit.setText(str(a))
-#helical_end				
+#helicon_end				
 
-class Popupadvparams_helical_2(QWidget):
+class Popupadvparams_helicon_2(QWidget):
 	def __init__(self,savedparms):
 		QWidget.__init__(self)
 		#Here we just set the window title
-		self.setWindowTitle('sxhelical advanced parameters related to helix and symmetry')
+		self.setWindowTitle('sxhelicon advanced parameters related to helix and symmetry')
 		#Here we just set a label and its position in the window
 		x1 = 10
 		x2 = x1 + 300
 		x3 = x2 + 145
 		x4 = x3 + 100
 		y = 10
-		title1=QtGui.QLabel('<b>sxhelical</b> - set advanced helical params', self)
+		title1=QtGui.QLabel('<b>sxhelicon</b> - set advanced helical params', self)
 		title1.move(10,y)
 		#Labels and Line Edits for User Input
 		#Just a label
@@ -7921,7 +7921,8 @@ class MainWindow(QtGui.QWidget):
 		self.setPalette(palette)				
 
 
-		self.y2 = 65
+		# self.y2 = 65
+		self.y2 = 95
 
 		self.btn7 = QPushButton("sxpdb2em", self)
 		self.btn7.move(10, self.y2)
@@ -8067,21 +8068,21 @@ class MainWindow(QtGui.QWidget):
 		self.btn11.setToolTip('Sorts out possible conformations from one heterogenous data set whose xform.projection parameters are already determined using K-means, and Equal K-means method.')
 		# self.connect(self.btn11, SIGNAL("clicked()"), self.localali3d)
 
-		self.y2 += 30
+		for i in range(10): self.y2 += 30
 
-		self.btn3 = QPushButton("sxhelical", self)
+		self.btn3 = QPushButton("sxhelicon", self)
 		self.btn3.move(10, self.y2)
 		#sets an infotip for this Pushbutton
 		self.btn3.setToolTip('Iterative Real Space Helical Refinement ')
 		#when this button is clicked, this action starts the subfunction twodali
-		self.connect(self.btn3, SIGNAL("clicked()"), self.helicalrefinement)
+		self.connect(self.btn3, SIGNAL("clicked()"), self.heliconrefinement)
 
 
 		#Pushbutton named Info
 		self.picbutton = QPushButton(self)
 		#when this button is clicked, this action starts the subfunction info
 		self.connect(self.picbutton, SIGNAL("clicked()"), self.info)
-		#creates a Pushbutton, named sxhelical defines its position in the window 
+		#creates a Pushbutton, named sxhelicon defines its position in the window 
 		#this decorates the button with the sparx image
 		icon = QIcon(get_image_directory()+"sparxicon.png")
 		self.picbutton.setIcon(icon)
@@ -8115,13 +8116,13 @@ class MainWindow(QtGui.QWidget):
 		self.TabWidget.resize(550,570)
 		self.TabWidget.show()
 	
-	def helicalrefinement(self):
+	def heliconrefinement(self):
 		#print "Opening a new popup window..."
 		#opens the window Poptwodali, and defines its width and height
 		#self.w.show()
-		self.w = PopupHelicalRefinement()
-		self.w1 = Popupadvparams_helical_1(self.w.savedparmsdict)
-		self.w2 = Popupadvparams_helical_2(self.w.savedparmsdict)
+		self.w = PopupHeliconRefinement()
+		self.w1 = Popupadvparams_helicon_1(self.w.savedparmsdict)
+		self.w2 = Popupadvparams_helicon_2(self.w.savedparmsdict)
 
 		intro_string = "Place holder text....fill this in"
 		self.w3 = Popupcenter(self.w,intro_string)
