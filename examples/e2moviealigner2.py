@@ -6,6 +6,7 @@ from Simplex import Simplex
 from EMAN2 import *
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.optimize import minimize
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -24,11 +25,10 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=512)
+	parser.add_argument("--maxiter", type=int, help="Set the number of iterations for simplex minimization",default=500)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument('--xybadlines', help="Specify the list of bad pixel coordinates for your detector. Will only be used if --fixbadpixels is also specified.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
-	#parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
-	#parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
 	parser.add_argument("--show", action="store_true",help="Show average of movie frames before and after alignment.",default=False)
 	parser.add_argument("--onlycorrect", action="store_true",help="Only correct the data. Do not align.",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -96,7 +96,7 @@ class MovieAligner:
 		for ir in xrange(len(self._regions[0])):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self.iter = 0
-		self.middle = int(self.hdr['nimg']/3)
+		self.static_fnum = int(self.hdr['nimg']/3)
 		self.energies = []
 		self.calc_energy()
 	
@@ -114,7 +114,7 @@ class MovieAligner:
 			ips.add_image(img_ips.finish())
 		self.ips = ips.finish()
 		self.ips.process_inplace("math.sqrt") 
-		self.ips["is_intensity"]=0 
+		self.ips["is_intensity"]=0
 		self.ips.process_inplace('math.rotationalaverage')
 		self.real_ips = self.ips.do_ift()
 		self.oned_ips, self.ips_ctf, self.ips_ctf_fit  = self.fit_defocus(self.ips)
@@ -214,33 +214,30 @@ class MovieAligner:
 		return ret
 	
 	def optimize(self, options):
-		if options.verbose: print("Performing simplex minimization")
-		state = np.random.randint(-3,3,size=(self.hdr['nimg'],2))
-		#print(state)
-		sm = Simplex(self._compares,state.flatten(),[1]*len(state.flatten()),data=self)
-		minimum, error, iters = sm.minimize(0.001,250,monitor=1)
-		print(minimum)
-		#self.translations = minimum.reshape((self.hdr['nimg'],2))
+		state = np.random.randint(-3,3,size=(self.hdr['nimg'],2)).flatten()
+		#sm = Simplex(self._compares,state,[1]*len(state),data=self)
+		#minimum, error, iters = sm.minimize(0.01,options.maxiter,monitor=1)
+		res = minimize(self._compares, state, method='Nelder-Mead', options={'maxiter':options.maxiter,'maxfev':10*options.maxiter,'disp': True,'xtol':0.25,'ftol':0.001}, args=self)
+		print(res.message)
 		print("\nFrame\tTranslation")
 		with open(self.path[:-4]+"_results.txt",'w') as results:
-			title = "\nError: {}\nIters: {}".format(error,iters)
-			results.write(title+"\n")
+			info = "\nenergy: {}\niters: {}\nfevals: {}".format(res.fun,res.nit,res.nfev)
+			print(info); results.write(info+"\n")
 			for i,t in enumerate(self.best_translations):
-				info = "{}\t( {}, {} )".format(i+1,int(t[0]),int(t[1]))
-				print(info)
-				results.write(info+"\n")
+				info = "{}\t( {}, {} )".format(i+1,round(t[0],1),round(t[1],1))
+				print(info); results.write(info+"\n")
 		self.after = self.save(descriptor="aligned",save_frames=True)
 	
 	@staticmethod
 	def _compares(ts,aligner):
-		test = ts.reshape((aligner.hdr['nimg'],2))
-		for i,t in enumerate(test):
-			if i != aligner.middle:
-				aligner.translations[i] = t
-				for n,r in enumerate(aligner._regions[i]): 
-					aligner._regions[i][n] = np.add(r,t)
-				for n,r in enumerate(aligner._regions[i]): 
-					aligner._stacks[n][i] = r
+		translations = ts.reshape((aligner.hdr['nimg'],2))
+		for frame_num,trans in enumerate(translations):
+			if frame_num != aligner.static_fnum:
+				aligner.translations[frame_num] = trans
+				for reg_num, current_coords in enumerate(aligner._regions[frame_num]): 
+					new_coords = np.add(current_coords,trans)
+					aligner._regions[frame_num][reg_num] = new_coords
+					aligner._stacks[reg_num][frame_num] = new_coords
 		return aligner.calc_energy()
 	
 	def save(self,descriptor,save_frames=False):
@@ -248,8 +245,8 @@ class MovieAligner:
 		average_file = self.path[:-4]+"_{}_average.hdf".format(descriptor)
 		avg = Averagers.get('mean')
 		for i,t in enumerate(self.translations):
-			tf = Transform({'type':'eman','tx':int(t[0]),'ty':int(t[1])})
 			f = self.frames[i]
+			tf = Transform({'type':'eman','tx':round(t[0],1),'ty':round(t[1],1)})
 			f.transform(tf)
 			if save_frames: f.write_image(frame_file,i)
 			avg.add_image(f)
