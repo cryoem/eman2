@@ -96,7 +96,7 @@ class MovieAligner:
 		for ir in xrange(len(self._regions[0])):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self.iter = 0
-		self.middle = self.hdr['nimg']-2/2
+		self.middle = int(self.hdr['nimg']/3)
 		self.energies = []
 		self.calc_energy()
 	
