@@ -1070,8 +1070,10 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 					#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
 					nx = projdata[procid][0].get_xsize()
 					shrinkage = float(nx)/float(Tracker["constants"]["nnxo"])
-					delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(nx))/Tracker["radius"])), 2), 3.0)
-					Tracker["smearstep"] = 0.5*delta
+					#delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(nx))/Tracker["radius"])), 2), 3.0)
+					#Tracker["smearstep"] = 0.5*delta
+					#  Base smear on current radius, not on the resolution
+					Tracker["smearstep"] = round(degrees(atan(1.0/float(int(Tracker["constants"]["radius"] * shrinkage +0.5)))), 2)
 				else:  Tracker["smearstep"] = 0.0
 				from reconstruction import rec3D_MPI
 				if(myid == main_node):
@@ -1369,7 +1371,9 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 
 	delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["nxinit"]))/Tracker["radius"])), 2), 3.0)
-	if Tracker["constants"]["smear"] : Tracker["smearstep"] = 0.5*delta
+	#if Tracker["constants"]["smear"] : Tracker["smearstep"] = 0.5*delta
+	#  Base smear on current radius, not on the resolution
+	if Tracker["constants"]["smear"] : Tracker["smearstep"] = round(degrees(atan(1.0/float(Tracker["radius"]))), 2)
 	else:                              Tracker["smearstep"] = 0.0
 	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
 		Tracker["pixercutoff"] = 0.5

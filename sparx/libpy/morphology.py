@@ -1451,31 +1451,52 @@ def refine_with_mask(vol):
 
 
 
-def bfactor(pws,idx_freq_min,idx_freq_max):
+def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 	"""
 		Estimate B-factor from power spectrum
-		pwd          : power spectrum
+		pws          : 1D rotational average of power spectrum, length should be half of the image size
 		idx_freq_min : the index of the minimum frequency of fitting range
 		idx_freq_max : the index of the maximum frequency of fitting range
+		pixel_size   :  in A
 	"""
-	from math import log
+	from math import log, sqrt
 	from statistics import linreg
 	nr = len(pws)
-	
+	"""
 	if (idx_freq_min < 0):
-		print "Invalid value of idx_freq_min. Setting to 0";
+		ERROR("compute_bfactor", "Invalid value of idx_freq_min. Setting to 0", 0)
 		idx_freq_min = 0
 	if (idx_freq_max >= nr):
-		print "Invalid value of idx_freq_max. Setting to %d" % (nr - 1);
+		pERROR("compute_bfactor", "Invalid value of idx_freq_max. Setting to %d" % (nr - 1), 0)
 		idx_freq_max = (nr - 1)
-	
-	pws_log = [0.0]*nr
-	for i in range(nr): pws_log[i] = log(pws[i])
-	a,b = linreg(range(idx_freq_max-idx_freq_min),pws_log[idx_freq_min:idx_freq_max])
-	l=[0.0]*nr
-	for i in range(nr): l[i] = a*i-b
+	"""
 
-	return a
+	pws_log = [0.0]*nr
+	x = [0.0]*nr
+	q = min(pws)
+	for i in range(1,nr):
+		pws_log[i] = log(pws[i]/q)
+		x[i] = (float(i)/(2*nr)/pixel_size)**2
+	idx_freq_min = 1
+	for i in range(1,nr):
+		if(x[i] < freq_min**2):
+			idx_freq_min = i
+			break
+
+	idx_freq_max = 1
+	for i in range(1,nr):
+		if(x[i] > freq_max**2):
+			idx_freq_max = i
+			break
+
+	B, s = linreg(x[idx_freq_min:idx_freq_max], pws_log[idx_freq_min:idx_freq_max])
+	print  B,s
+
+	ff = [0.0]*nr
+	from math import exp
+	for i in xrange(nr):  ff[i] = B*x[i] + s
+
+	return -B/4.0, [x,ff,pws_log]
 
 	
 ################
