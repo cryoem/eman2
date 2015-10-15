@@ -75,9 +75,9 @@ class PopupHelicalRefinement(QWidget):
 		x4 = x3 + 100
 		x5 = 230 # run button
 		#Here we just set the window title
-		self.setWindowTitle('sxihrsr')
+		self.setWindowTitle('sxhelical')
 		#Here we just set a label and its position in the window
-		title1=QtGui.QLabel('<b>sihrsr</b> - performs helical refinement', self)
+		title1=QtGui.QLabel('<b>shelical</b> - performs helical refinement', self)
 		y = 10
 		title1.move(10,y)
 		
@@ -264,7 +264,7 @@ class PopupHelicalRefinement(QWidget):
 		#Here we create a Button(Run_button with title run sxali2d) and its position in the window
 		
 		y = y +30
-		self.RUN_button = QtGui.QPushButton('Run sxihrsr', self)
+		self.RUN_button = QtGui.QPushButton('Run sxhelical', self)
 		# make 3D textured push button look
 		s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 		
@@ -273,7 +273,7 @@ class PopupHelicalRefinement(QWidget):
 
 		self.RUN_button.move(x5, y)
 		#Here we define, that when this button is clicked, it starts subfunction runsxali2d
-		self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxihrsr)
+		self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxhelical)
 		#Labels and Line Edits for User Input
 				
 	def outputinfo_helical(self):
@@ -312,7 +312,7 @@ class PopupHelicalRefinement(QWidget):
 		maxit=self.nriteredit.text()
 		print "maxit="+maxit
 		
-		cmd1 = " sxihrsr.py "+str(stack) +" "+str(referencevolume)+" " + str(output)
+		cmd1 = " sxhelical.py "+str(stack) +" "+str(referencevolume)+" " + str(output)
 		
 		args = " --ou="+ str(ou)+ " --xr="+str(xr)+" " + " --ynumber="+str(ynumber)+ " " + " --txs="+str(tx)+" " +" --rmax="+str(rmax)+" " + " --maxit="+ str(maxit) 
 		
@@ -465,7 +465,7 @@ class PopupHelicalRefinement(QWidget):
 		print cmd1
 		self.cmd = cmd1
 		
-	def runsxihrsr(self):
+	def runsxhelical(self):
 		self.gencmdline_helical(writefile=False)
 		outfolder=self.savedparmsdict['foldername']
 		if os.path.exists(outfolder):
@@ -609,14 +609,14 @@ class Popupadvparams_helical_1(QWidget):
 	def __init__(self,savedparms):
 		QWidget.__init__(self)
 		#Here we just set the window title
-		self.setWindowTitle('sxihrsr advanced parameter selection')
+		self.setWindowTitle('sxhelical advanced parameter selection')
 		#Here we just set a label and its position in the window
 		x1 = 10
 		x2 = x1 + 150
 		x3 = x2 + 145
 		x4 = x3 + 100
 		y = 10
-		title1=QtGui.QLabel('<b>sxihrsr</b> - set advanced params', self)
+		title1=QtGui.QLabel('<b>sxhelical</b> - set advanced params', self)
 		title1.move(10,y)
 		#Labels and Line Edits for User Input
 		#Just a label
@@ -770,14 +770,14 @@ class Popupadvparams_helical_2(QWidget):
 	def __init__(self,savedparms):
 		QWidget.__init__(self)
 		#Here we just set the window title
-		self.setWindowTitle('sxihrsr advanced parameters related to helix and symmetry')
+		self.setWindowTitle('sxhelical advanced parameters related to helix and symmetry')
 		#Here we just set a label and its position in the window
 		x1 = 10
 		x2 = x1 + 300
 		x3 = x2 + 145
 		x4 = x3 + 100
 		y = 10
-		title1=QtGui.QLabel('<b>sxihrsr</b> - set advanced helical params', self)
+		title1=QtGui.QLabel('<b>sxhelical</b> - set advanced helical params', self)
 		title1.move(10,y)
 		#Labels and Line Edits for User Input
 		#Just a label
@@ -8060,9 +8060,16 @@ class MainWindow(QtGui.QWidget):
 		self.btn11.setToolTip('Perform local refinement of 3-D projection alignment of image series using highy accurate gridding method')
 		self.connect(self.btn11, SIGNAL("clicked()"), self.localali3d)
 		"""
+
+		self.btn11 = QPushButton("sxsort3d", self)
+		self.btn11.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn11.setToolTip('Sorts out possible conformations from one heterogenous data set whose xform.projection parameters are already determined using K-means, and Equal K-means method.')
+		# self.connect(self.btn11, SIGNAL("clicked()"), self.localali3d)
+
 		self.y2 += 30
 
-		self.btn3 = QPushButton("sxihrsr", self)
+		self.btn3 = QPushButton("sxhelical", self)
 		self.btn3.move(10, self.y2)
 		#sets an infotip for this Pushbutton
 		self.btn3.setToolTip('Iterative Real Space Helical Refinement ')
@@ -8074,7 +8081,7 @@ class MainWindow(QtGui.QWidget):
 		self.picbutton = QPushButton(self)
 		#when this button is clicked, this action starts the subfunction info
 		self.connect(self.picbutton, SIGNAL("clicked()"), self.info)
-		#creates a Pushbutton, named sxihrsr defines its position in the window 
+		#creates a Pushbutton, named sxhelical defines its position in the window 
 		#this decorates the button with the sparx image
 		icon = QIcon(get_image_directory()+"sparxicon.png")
 		self.picbutton.setIcon(icon)
@@ -8237,26 +8244,26 @@ def kmeansgroups(self):
 			self.TabWidget.show()
 
 	def isac(self):
-			modifiers = QtGui.QApplication.keyboardModifiers()
-			if modifiers == QtCore.Qt.ShiftModifier:
-					os.system("python -m webbrowser %ssxisac"%SPARX_DOCUMENTATION_WEBSITE)
-					return
-			##print "Opening a new popup window..."
-			#opens the window Poptwodali, and defines its width and height
-			#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-			self.w = Popupisac()
-			# self.w1 = Popupadvparams_isac_1(self.w.savedparmsdict)
-			self.w1 = Popupadvparams_isac(self.w.savedparmsdict)
-			intro_string = "Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0."
-			# self.w2 = Popupcenter(self.w,intro_string)
-			self.w.w1 = self.w1
-			# self.w.w2 = self.w2
-			self.TabWidget = QtGui.QTabWidget()
-			self.TabWidget.insertTab(0,self.w,'Main')
-			self.TabWidget.insertTab(1,self.w1,'Advanced')
-			# self.TabWidget.insertTab(2,self.w2,'Pre-center input stack (Recommended)')
-			self.TabWidget.resize(730,800)
-			self.TabWidget.show()
+		modifiers = QtGui.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			os.system("python -m webbrowser %ssxisac"%SPARX_DOCUMENTATION_WEBSITE)
+			return
+		##print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupisac()
+		# self.w1 = Popupadvparams_isac_1(self.w.savedparmsdict)
+		self.w1 = Popupadvparams_isac(self.w.savedparmsdict)
+		intro_string = "Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0."
+		# self.w2 = Popupcenter(self.w,intro_string)
+		self.w.w1 = self.w1
+		# self.w.w2 = self.w2
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced')
+		# self.TabWidget.insertTab(2,self.w2,'Pre-center input stack (Recommended)')
+		self.TabWidget.resize(730,800)
+		self.TabWidget.show()
 
 
 	def viper(self):
