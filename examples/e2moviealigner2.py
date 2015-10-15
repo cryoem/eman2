@@ -27,8 +27,8 @@ def main():
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument('--xybadlines', help="Specify the list of bad pixel coordinates for your detector. Will only be used if --fixbadpixels is also specified.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
-	parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
-	parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
+	#parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
+	#parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
 	parser.add_argument("--show", action="store_true",help="Show average of movie frames before and after alignment.",default=False)
 	parser.add_argument("--onlycorrect", action="store_true",help="Only correct the data. Do not align.",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -80,6 +80,7 @@ class MovieAligner:
 		self.base = fname.split('.')[0]
 		self.frames = [EMData(fname,i) for i in xrange(self.hdr['nimg'])]
 		self.translations = np.zeros((self.hdr['nimg'],2))
+		self.best_translations = self.translations
 		self.before = self.save(descriptor="unaligned",save_frames=False)
 		self.fullbox = good_boxsize(min(self.hdr['nx']-50,self.hdr['ny']-50)/2,False)
 		self.bs = bs
@@ -95,6 +96,8 @@ class MovieAligner:
 		for ir in xrange(len(self._regions[0])):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self.iter = 0
+		self.middle = self.hdr['nimg']/2
+		self.energies = []
 		self.calc_energy()
 	
 	def calc_incoherent_pws(self):
@@ -136,13 +139,21 @@ class MovieAligner:
 	def calc_energy(self):
 		if self.iter == 0:
 			self.calc_incoherent_pws()
-			self.write_ips("incoherent_pws.hdf")
+			self.write_ips(self.path[:4]+"_incoherent_pws.hdf")
 		self.calc_coherent_pws()
-		self.write_cps("coherent_pws.hdf",n=self.iter)
-		self.iter += 1
+		if self.iter == 0:
+			self.write_cps(self.path[:4]+"_coherent_pws.hdf",n=self.iter)
 		ips_ctf_fit = np.asarray(self.ips_ctf_fit)
 		cps_pws = np.asarray(self.oned_cps)
-		self.energy = -np.dot(ips_ctf_fit,cps_pws)
+		
+		energy = -np.dot(ips_ctf_fit,cps_pws)
+		
+		self.energies.append(energy)
+		self.iter += 1
+		if energy <= min(self.energies):
+			self.write_cps(self.path[:4]+"_coherent_pws.hdf",n=self.iter)
+			self.best_translations = self.translations
+		return energy
 	
 	def write_cps(self,name,n=0):
 		self.real_cps['is_intensity'] = 0
@@ -204,35 +215,32 @@ class MovieAligner:
 	
 	def optimize(self, options):
 		if options.verbose: print("Performing simplex minimization")
-		state = self.translations.flatten()
-		sm = Simplex(self._compares,state,[1]*len(state),data=self)
-		result, error, iters = sm.minimize(options.epsilon,options.maxiters,monitor=1)
-		self.translations = result.reshape((self.hdr['nimg'],2))
+		state = np.random.randint(-3,3,size=(self.hdr['nimg'],2))
+		#print(state)
+		sm = Simplex(self._compares,state.flatten(),[1]*len(state.flatten()),data=self)
+		minimum, error, iters = sm.minimize(0.001,250,monitor=1)
+		print(minimum)
+		#self.translations = minimum.reshape((self.hdr['nimg'],2))
 		print("\nFrame\tTranslation")
 		with open(self.path[:-4]+"_results.txt",'w') as results:
 			title = "\nError: {}\nIters: {}".format(error,iters)
 			results.write(title+"\n")
-			for i,t in enumerate(self.translations):
-				info = "{}\t( {}, {} )".format(i+1,t[0],t[1])
+			for i,t in enumerate(self.best_translations):
+				info = "{}\t( {}, {} )".format(i+1,int(t[0]),int(t[1]))
 				print(info)
 				results.write(info+"\n")
 		self.after = self.save(descriptor="aligned",save_frames=True)
 	
-	def update_frame_params(self,fnum,trans):
-		self.translations[fnum] = trans # update translations
-		for rnum,reg in enumerate(self._regions[fnum]): # update regions first
-			self._regions[fnum][rnum] = np.add(reg,trans) # add transform vector from "origin"
-		for rnum,reg in enumerate(self._regions[fnum]): # update stacks after regions are updated
-			self._stacks[rnum][fnum] = reg
-	
 	@staticmethod
 	def _compares(ts,aligner):
-		middle = aligner.hdr['nimg']/2
-		translations = ts.reshape((aligner.hdr['nimg'],2))
-		for i,t in enumerate(translations):
-			if i != middle: aligner.update_frame_params(i,t)
-		aligner.calc_energy()
-		return aligner.energy
+		test = ts.reshape((aligner.hdr['nimg'],2))
+		for i,t in enumerate(test):
+			aligner.translations[i] = t
+			for n,r in enumerate(aligner._regions[i]): 
+				aligner._regions[i][n] = np.add(r,t)
+			for n,r in enumerate(aligner._regions[i]): 
+				aligner._stacks[n][i] = r
+		return aligner.calc_energy()
 	
 	def save(self,descriptor,save_frames=False):
 		frame_file = self.path[:-4]+"_{}_frames.hdf".format(descriptor)
