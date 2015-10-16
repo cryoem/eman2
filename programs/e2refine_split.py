@@ -77,6 +77,7 @@ def main():
 			if ptcls==None : raise Exception
 		except: ptcls=olddb["input"]
 		
+		sym=olddb["sym"]
 		if options.verbose : print "Found iteration {} in {}, using {}".format(last_iter,options.path," & ".join(ptcls))
 	except:
 		traceback.print_exc()
@@ -102,18 +103,31 @@ def main():
 			#print int(classmx[eo][0][0,y])
 			classlists[int(classmx[eo][0][0,y])].append(ptcl)
 	
+	classout=["{}/classes_{:02d}_spl1.hdf".format(options.path,last_iter),"{}/classes_{:02d}_spl2.hdf".format(options.path,last_iter)]
 
 	# Initialize parallelism
 	from EMAN2PAR import EMTaskCustomer
 	etc=EMTaskCustomer(options.parallel)
 
+	# Empty image to pad classes file
+	zero=EMData(str(ptcls[0]),0)
+	zero.to_zero()
+	zero["ptcl_repr"]=0
+	
+	# Euler angles for averages
+	projin="{}/projections_{:02d}_even.hdf".format(options.path,last_iter)
+	eulers=[EMData(projin,i,True)["xform.projection"] for i in xrange(ncls)]
+	
 	# prepare tasks
 	tasks=[]
 	gc=0
 	ns=[classmx[eo][0]["ny"] for eo in (0,1)]
 	for c,cl in enumerate(classlists):
-		if len(cl)<6 : continue
-		tasks.append(ClassSplitTask(ptcls,ns,cl,gc,options.verbose-1))
+		if len(cl)<6 : 
+			zero.write_image(classout[0],c)
+			zero.write_image(classout[1],c)
+			continue
+		tasks.append(ClassSplitTask(ptcls,ns,cl,c,eulers[c],options.verbose-1))
 		gc+=1
 	
 #	for t in tasks: t.execute()
@@ -122,6 +136,7 @@ def main():
 	taskids=etc.send_tasks(tasks)
 	alltaskids=taskids[:]
 
+	classes=[]
 	while len(taskids)>0 :
 		curstat=etc.check_task(taskids)
 		for i,j in enumerate(curstat):
@@ -130,14 +145,10 @@ def main():
 				rsltd=rslt[1]
 				cls=rslt[0].options["classnum"]
 				
-#					print rsltd["avg"],cls
-				rsltd["avg"].write_image("test.hdf",cls)
-				if options.verbose: print cls,
-				
-				for ii,i in enumerate(rsltd["basis"]): 
-					i.write_image("basis.hdf",cls*5+ii)
-					if options.verbose: print i["eigval"],
-				if options.verbose: print ""
+				#rsltd["avg1"].write_image(classout[0],cls)
+				#rsltd["avg2"].write_image(classout[1],cls)
+				ncls=rsltd["avg1"]["ptcl_repr"]+rsltd["avg2"]["ptcl_repr"]
+				classes[0].append([ncls,rsltd["avg1"],rsltd["avg2"]])	# list of (ptcl_repr, avg1,avg2)
 				
 		taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
 
@@ -146,24 +157,27 @@ def main():
 		if 100 in curstat :
 			E2progress(logger,1.0-(float(len(taskids))/len(alltaskids)))
 
-		time.sleep(3)
+		if options.verbose : print "Completed all tasks\nGrouping consistent averages"
 
+		classes.sort(reverse=True)		# we want to start with the largest number of particles
+		ny=classes[0][1]["ny"]
+		pad=good_size(ny*1.5)
+		
+		recon=Reconstructors.get("fourier",{"size":pad,"sym":sym})
+		
+		
 
-		if options.verbose : print "Completed all tasks"
-
-
-	print "Class averaging complete"
 	E2end(logger)
 
 class ClassSplitTask(JSTask):
 	"""This task will create a single task-average"""
 
-	def __init__(self,ptclfiles,ns,ptcls,nc,verbose):
+	def __init__(self,ptclfiles,ns,ptcls,nc,euler,verbose):
 		"""ptclfiles is a list of 2 (even/odd) particle stacks. ns is the number of particles in each of ptcfiles. ptcls is a list of lists containing [eo,ptcl#,Transform]"""
 		data={"particles1":["cache",ptclfiles[0],(0,ns[0])],"particles2":["cache",ptclfiles[1],(0,ns[1])]}
 		JSTask.__init__(self,"ClassSplit",data,{},"")
 
-		self.options={"particles":ptcls,"classnum":nc,"verbose":verbose}
+		self.options={"particles":ptcls,"classnum":nc,"euler":euler,"verbose":verbose}
 
 	def execute(self,callback=None):
 		"""This does the actual class-averaging, and returns the result"""
@@ -180,36 +194,49 @@ class ClassSplitTask(JSTask):
 			#return {"avg":z,"basis":[z,z,z,z,z]}
 		 		
 #		print files,ptcls[0]
-		# read in all particles and append each to element in ptcls
+		# read in all particles and append each to element to ptcls
 		avgr=Averagers.get("mean")
 		for p in ptcls: 
 			p.append(EMData(str(files[p[0]]),p[1]).process("xform",{"transform":p[2]}).process("normalize.circlemean",{"radius":-6}).process("mask.soft",{"outer_radius":-8,"width":4}))
 			avgr.add_image(p[3])
 		
+		# Copy each particle minus it's mean value
 		avg=avgr.finish()
 		mask=ptcls[0][-1].copy()
 		mask.to_one()
 		mask.process("mask.soft",{"outer_radius":-8,"width":4})
 		
-		for p in ptcls: p[3].sub(avg)
+		# PCA on the mean-subtracted particles
+		for p in ptcls: 
+			p.append(p[3].copy())
+			p[4].sub(avg)
 
 		pca=Analyzers.get("pca_large",{"nvec":5,"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
 		for p in ptcls: 
-			pca.insert_image(p[3])
+			pca.insert_image(p[4])
 		
 		basis=pca.analyze()
 		
 		# at the moment we are just splitting into 2 classes, so we'll use the first eigenvector. A bit worried about defocus coming through, but hopefully ok...
+		dots=[p[3].cmp("ccc",basis[0]) for p in ptcls]
 		
-		
-
+		# we will just use the sign of the dot product to split
+		avgr=[Averagers.get("mean"),Averagers.get("mean")]
+		for i,d in enumerate(dots):
+			if d<0: avgr[0].add_image(ptcls[i][3])
+			else: avgr[1].add_image(ptcls[i][3])
 		
 		#for p in ptcls: 
 			#avgr.add_image(p[3].process("xform",{"transform":p[2]}))
 		
 		if options["verbose"]>0: print "Finish averaging class {}".format(options["classnum"])
 #		if callback!=None : callback(100)
-		return {"avg":avg,"basis":basis}
+#		return {"avg":avg,"basis":basis}
+		avg1=avgr[0].finish()
+		avg1["xform.projection"]=options["euler"]
+		avg2=avgr[1].finish()
+		avg2["xform.projection"]=options["euler"]
+		return {"avg1":avg1,"avg2":avg2}
 
 jsonclasses["ClassSplitTask"]=ClassSplitTask.from_jsondict
 

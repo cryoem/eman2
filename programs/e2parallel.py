@@ -160,7 +160,8 @@ def runlocaltask(taskin,taskout):
 	
 	try: dump(task.execute(progcb),file(taskout,"wb"),-1)
 	except:
-		traceback.print_exc()
+		err=file("/tmp/eman2threaderr.txt","w")
+		traceback.print_exc(30,err)
 		sys.exit(1)		# Error !
 #	print "Done %s (%s)"%(taskin,taskout)
 	

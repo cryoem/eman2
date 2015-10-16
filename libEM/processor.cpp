@@ -239,10 +239,10 @@ const string TestImageNoiseUniformRand::NAME = "testimage.noise.uniform.rand";
 const string TestImageNoiseGauss::NAME = "testimage.noise.gauss";
 const string TestImageCylinder::NAME = "testimage.cylinder";
 const string CCDNormProcessor::NAME = "filter.ccdnorm";
-const string WaveletProcessor::NAME = "basis.wavelet";
+//const string WaveletProcessor::NAME = "basis.wavelet";
 const string TomoTiltEdgeMaskProcessor::NAME = "tomo.tiltedgemask";
 const string TomoTiltAngleWeightProcessor::NAME = "tomo.tiltangleweight";
-const string FFTProcessor::NAME = "basis.fft";
+//const string FFTProcessor::NAME = "basis.fft";
 const string RadialProcessor::NAME = "mask.radialprofile";
 const string HistogramBin::NAME = "histogram.bin";
 const string ModelEMCylinderProcessor::NAME = "math.model_em_cylinder";
@@ -915,12 +915,13 @@ void Axis0FourierProcessor::process_inplace(EMData * image)
 	else fft = image;
 
 	int neighbor=params.set_default("neighbor",0);
+	float neighbornorm=params.set_default("neighbornorm",sqrt(2.0f));
 	
 	int nx=fft->get_xsize()/2;
 	int ny=fft->get_ysize();
 	if (params.set_default("x",1)) {
 		if (neighbor) {
-				for (int x=1; x<nx; x++) fft->set_complex_at(x,0,(fft->get_complex_at(x,1)+fft->get_complex_at(x,-1))/sqrt(2.0f)); // sqrt is because the pixels are normally pretty noisy
+				for (int x=1; x<nx; x++) fft->set_complex_at(x,0,(fft->get_complex_at(x,1)+fft->get_complex_at(x,-1))/neighbornorm); // sqrt is because the pixels are normally pretty noisy
 		}
 		else {
 				for (int x=1; x<nx; x++) fft->set_complex_at(x,0,0.0f);
@@ -928,7 +929,7 @@ void Axis0FourierProcessor::process_inplace(EMData * image)
 	}
 	if (params.set_default("y",1)) {
 		if (neighbor) {
-				for (int y=1; y<ny; y++) fft->set_complex_at(0,y,(fft->get_complex_at(-1,y)+fft->get_complex_at(1,y))/sqrt(2.0f)); // sqrt is because the pixels are normally pretty noisy
+				for (int y=1; y<ny; y++) fft->set_complex_at(0,y,(fft->get_complex_at(-1,y)+fft->get_complex_at(1,y))/neighbornorm); // sqrt is because the pixels are normally pretty noisy
 		}
 		else {
 				for (int y=1; y<ny; y++) fft->set_complex_at(0,y,0.0f);

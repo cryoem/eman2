@@ -522,6 +522,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("x", EMObject::INT, "If set, zeroes along X axis. Default True.");
 			d.put("y", EMObject::INT, "If set, zeroes along Y axis. Default True.");
 			d.put("neighbor", EMObject::INT, "If set, interpolates neighbor values rather than zeroing");
+			d.put("neighbornorm", EMObject::INT, "In neighbor mode it sums the neighboring 2 (complex) pixels, then divides by this factor. default = sqrt(2), which is good for very noisy images");
 			return d;
 		}
 

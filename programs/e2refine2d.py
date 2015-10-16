@@ -232,7 +232,7 @@ def main():
 		# first we sort and align the class-averages from the last step
 		run("e2proc2d.py %s %s/allrefs_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_pixels=5 --process=normalize.circlemean:radius=-5"%(options.initial,options.path,it))
 		# now we try for mutual alignment of particle orientations
-		run("e2stacksort.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_flip --useali --iterative"%(options.path,it,options.path,it))
+		run("e2stacksort.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_flip:maxshift=5 --useali --iterative"%(options.path,it,options.path,it))
 		# however we don't want things off-center, so we do a final recentering
 		#run("e2proc2d.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --inplace --process xform.center"%(options.path,it,options.path,it))
 		proc_tally += 1.0
@@ -250,14 +250,15 @@ def main():
 #		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --byheader=class_ptcl_qual"%(options.path,it,options.path,it))
 
 		# instead we sort by how much azimuthally varying low resolution contrast we have
-		run("e2stacksort.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --byheader=eval_contrast_lowres --reverse"%(options.path,it,options.path,it))
+		run("e2stacksort.py %s/allrefs_%02d.hdf %s/tmp.hdf --byheader=eval_contrast_lowres --reverse"%(options.path,it,options.path))
 
 		# number of 'best' particles to select from
 		ncheck=options.ncls/3
 		ncheck=max(ncheck,options.naliref+2)
 
        	# now extract most different refs. ninput eliminates ~2/3 particles with lowest 'quality' from consideration
-		run("e2stacksort.py %s/allrefs_%02d.hdf %s/aliref_%02d.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc --simalign=rotate_translate_flip"%(options.path,it,options.path,it,ncheck,options.naliref))
+#		run("e2stacksort.py %s/allrefs_%02d.hdf %s/aliref_%02d.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc --simalign=rotate_translate_flip"%(options.path,it,options.path,it,ncheck,options.naliref))
+		run("e2stacksort.py %s/tmp.hdf %s/aliref_%02d.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc"%(options.path,options.path,it,ncheck,options.naliref))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# We use e2simmx to compute the optimal particle orientations
