@@ -63,10 +63,8 @@ def main():
 			if options.verbose: print("Correcting movie frames")
 			fname = MovieAligner.correct_frames(options,fname)
 		
-		if options.verbose: print("Computing alignment parameters")
+		if options.verbose: print("Acquiring alignment parameters")
 		alignment = MovieAligner(fname,bs=options.boxsize,fixaxes=options.fixaxes)
-		
-		if options.verbose: print("Optimizing alignment")
 		alignment.optimize(options)
 		
 		if options.show:
@@ -159,13 +157,11 @@ class MovieAligner:
 		# get power spectra
 		ips_ctf_fit = np.asarray(self.ips_ctf_fit)
 		oned_cps = np.asarray(self.oned_cps)
-		# normalize ips/cps
+		# normalize
 		ips_ctf_fit/=np.sqrt(ips_ctf_fit.dot(ips_ctf_fit))
 		oned_cps/=np.sqrt(oned_cps.dot(oned_cps))
-		# compute dot product between ips/cps
+		# compare
 		energy = np.log(1-np.dot(ips_ctf_fit,oned_cps))
-		#energy = np.exp((1-dp)/(1+dp))-1
-		#energy = -np.dot(ips_ctf_fit,oned_cps)
 		if energy < min(self.energies):
 			self.write_cps()
 			self.best_translations = self.translations
@@ -230,37 +226,37 @@ class MovieAligner:
 		ret[:floc]=0
 		return ret
 	
-	def optimize(self, options):
+	def optimize(self, options,bounds=None):
 		if options.verbose: self.verbose = True
-		
 		#state = np.random.randint(-3,3,size=(self.hdr['nimg'],2)).flatten()
 		#sm = Simplex(self._compares,state,[1]*len(state),data=self)
 		#minimum, error, iters = sm.minimize(0.01,options.maxiter,monitor=1)
 		#res = minimize(self._compares, state, method='Nelder-Mead', options={'maxfev':1000,'disp': True,'xtol':0.25}, args=self)
-		
-		ms = options.maxshift
-		#bounds = [(-ms,ms) for i in range(self.hdr['nimg']*2)]
-		c1 = self.static_fnum
-		c2 = self.hdr['nimg'] - self.static_fnum
-		ub1 = [round(ms*((c1+1)-(i+1))/(c1+1),1) for i in range(c1)]
-		ub2 = [round(ms*(i+1)/(c2+1),1) for i in range(c2)]
-		bounds = []
-		for b in ub1+ub2:
-			bounds.append((-b,b))
-			bounds.append((-b,b))
+		if bounds == None:
+			ms = options.maxshift
+			#bounds = [(-ms,ms) for i in range(self.hdr['nimg']*2)]
+			c1 = self.static_fnum
+			c2 = self.hdr['nimg'] - self.static_fnum
+			ub1 = [round(ms*((c1+1)-(i+1))/(c1+1),1) for i in range(c1)]
+			ub2 = [round(ms*(i+1)/(c2+1),1) for i in range(c2)]
+			bounds = []
+			for b in ub1+ub2:
+				bounds.append((-int(round(b)),int(round(b))))
+				bounds.append((-int(round(b)),int(round(b))))
 		if options.verbose > 6:
-			print("Initializing optimizer with the following bounds:")
-			print("FRAME\tLOWER BOUNDS\tUPPER BOUNDS")
-			bds = np.array(bounds).reshape((self.hdr['nimg'],2,2))
+			print("Initializing optimization with the following bounds:")
+			print("Frame\tLower\t\tUpper")
+			bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
 			for i,bd in enumerate(bds):
-				print("{}\t({}, {})\t({}, {})".format(i+1,bd[0,0],bd[1,0],bd[0,1],bd[1,1]))
-		print("")
-		res = differential_evolution(self._compares, bounds, args=(self,), polish=False) # polish might be useful
+				print("{}\t( {}, {} )\t( {}, {} )".format(i+1,bd[0,0],bd[1,0],bd[0,1],bd[1,1]))
+		print("Optimizing alignment")
+		res = differential_evolution(self._compares, bounds, args=(self,), polish=True)
 		if options.verbose > 6: print(res.message)
+		info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
+		print(info)
 		print("\nFrame\tTranslation")
 		with open(self.path[:-4]+"_results.txt",'w') as results:
-			info = "\nenergy: {}\niters: {}\nfevals: {}".format(res.fun,res.nit,res.nfev)
-			print(info); results.write(info+"\n")
+			results.write(info)
 			for i,t in enumerate(self.best_translations):
 				info = "{}\t( {}, {} )".format(i+1,t[0],t[1])
 				print(info); results.write(info+"\n")
@@ -269,6 +265,7 @@ class MovieAligner:
 	@staticmethod
 	def _compares(ts,aligner):
 		translations = np.asarray(ts).reshape((aligner.hdr['nimg'],2))
+		translations = np.round(translations).astype(int)
 		for frame_num,trans in enumerate(translations):
 			if frame_num != aligner.static_fnum:
 				aligner.translations[frame_num] = trans
@@ -293,9 +290,10 @@ class MovieAligner:
 		average_file = self.path[:-4]+"_{}_average.hdf".format(descriptor)
 		avg = Averagers.get('mean')
 		for i,t in enumerate(self.translations):
-			f = self.frames[i]
-			tf = Transform({'type':'eman','tx':t[0],'ty':t[1]})
-			f.transform(tf)
+			f = self.frames[i].copy()
+			#tf = Transform({'type':'eman','tx':int(round(t[0])),'ty':int(round(t[1]))})
+			#f.transform(tf)
+			f.translate(int(round(t[0])),int(round(t[1])),0)
 			if save_frames: f.write_image(frame_file,i)
 			avg.add_image(f)
 		average = avg.finish()
