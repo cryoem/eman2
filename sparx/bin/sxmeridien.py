@@ -159,7 +159,7 @@ def AI( Tracker, HISTORY, chout = False):
 						Tracker["an"] = ""
 						for i in xrange(len(get_input_from_string(Tracker["xr"]))):
 							if(Tracker["anger"] == 0.0 ):
-								Tracker["an"] += "%f  "%r(3*min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"]*Tracker["constants"]["radius"])))), 2), 3.0))
+								Tracker["an"] += "%f  "%(3*min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"]*Tracker["constants"]["radius"])))), 2), 3.0))
 							else:
 								Tracker["an"] += "%f  "%(3*Tracker["anger"])
 				else:
@@ -191,7 +191,7 @@ def AI( Tracker, HISTORY, chout = False):
 								Tracker["an"] = ""
 								for i in xrange(len(get_input_from_string(Tracker["xr"]))):
 									if(Tracker["anger"] == 0.0 ):
-										Tracker["an"] += "%f  "%r(3*min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"]*Tracker["constants"]["radius"])))), 2), 3.0))
+										Tracker["an"] += "%f  "%(3*min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"]*Tracker["constants"]["radius"])))), 2), 3.0))
 									else:
 										Tracker["an"] += "%f  "%(3*Tracker["anger"])
 						keepgoing = 1
