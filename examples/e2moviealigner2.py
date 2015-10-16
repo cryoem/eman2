@@ -239,7 +239,7 @@ class MovieAligner:
 		state = np.random.randint(-3,3,size=(self.hdr['nimg'],2)).flatten()
 		#sm = Simplex(self._compares,state,[1]*len(state),data=self)
 		#minimum, error, iters = sm.minimize(0.01,options.maxiter,monitor=1)
-		res = minimize(self._compares, state, method='Nelder-Mead', options={'maxiter':options.maxiters,'disp': True,'xtol':0.25}, args=self)
+		res = minimize(self._compares, state, method='Nelder-Mead', options={'maxiter':options.maxiter,'disp': True,'xtol':0.25}, args=self)
 		# if bounds == None:
 # 			ms = options.maxshift
 # 			c1 = self.static_fnum
