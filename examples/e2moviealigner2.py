@@ -87,7 +87,9 @@ class MovieAligner:
 		self.base = fname.split('.')[0]
 		self.frames = []
 		for i in xrange(self.hdr['nimg']):
-			self.frames.append(EMData(fname,i))
+			f = EMData(fname,i)
+			if fixaxes: f.process_inplace('filter.xyaxes0',{'x':0,'y':0})
+			self.frames.append(f)
 		self.translations = np.zeros((self.hdr['nimg'],2))
 		self.best_translations = np.zeros((self.hdr['nimg'],2))
 		self.before = self.save(descriptor="unaligned",save_frames=False) 
@@ -122,8 +124,7 @@ class MovieAligner:
 		self.ips = ips.finish()
 		self.ips.process_inplace("math.sqrt") 
 		self.ips["is_intensity"]=0
-		if self.fixaxes: self.ips.process('filter.xyaxes0',{'x':0,'y':0})
-		self.ips.process_inplace('filter.highpass.gauss',{'cutoff_freq':0.0005})
+		#self.ips.process_inplace('filter.highpass.gauss',{'cutoff_freq':0.0005})
 		self.ips.process_inplace('math.rotationalaverage')
 		self.real_ips = self.ips.do_ift()
 		self.real_ips['is_intensity'] = 0
@@ -142,9 +143,8 @@ class MovieAligner:
 			cps.add_image(avg)
 		self.cps = cps.finish()
 		self.cps.process_inplace('math.sqrt')
-		if self.fixaxes: self.cps.process('filter.xyaxes0',{'x':0,'y':0})
 		self.cps["is_intensity"]=0
-		self.cps.process_inplace('filter.highpass.gauss',{'cutoff_freq':0.0005})
+		#self.cps.process_inplace('filter.highpass.gauss',{'cutoff_freq':0.0005})
 		self.real_cps = self.cps.do_ift()
 		self.real_cps['is_intensity'] = 0
 		self.oned_cps, self.cps_ctf, self.cps_ctf_fit = self.fit_defocus(self.cps)
