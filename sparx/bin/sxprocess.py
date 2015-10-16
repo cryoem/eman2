@@ -283,6 +283,8 @@ def main():
 
    11. Scale 3D shifts.  The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor
 		sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5
+   
+   12. Generate adaptive mask from a given 3-D volume. 
 
 
 """
@@ -300,7 +302,6 @@ def main():
 	parser.add_option("--pw", 					action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
 	parser.add_option("--wn", 					type="int", 		default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
 	parser.add_option("--phase_flip", 			action="store_true", help="Phase flip the input stack", default=False)
-	parser.add_option("--adaptive_mask",                    action="store_true", help="create adavptive 3-D mask from a given volume", default=False)
 	parser.add_option("--makedb", 				metavar="param1=value1:param2=value2", type="string",
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
 	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type="string",
@@ -321,8 +322,14 @@ def main():
 
 	# import ctf estimates done using cter
 	parser.add_option("--scale",              	type="float", 		default=-1.0,      		  help="Divide shifts in the input 3D orientation parameters text file by the scale factor.")
-
-
+	
+	# generate adaptive mask from an given 3-Db volue
+	parser.add_option("--adaptive_mask",                    action="store_true",          help="create adavptive 3-D mask from a given volume", default=False)
+	parser.add_option("--nsigma",              	type="float",	default= 1.,     	      help="number of times of sigma of the input volume to obtain the the large density cluster")
+	parser.add_option("--ndilation",            type="int",		default= 3.,     		  help="number of times of dilation applied to the largest cluster of density")
+	parser.add_option("--kernel_size",          type="int",		default= 11,     		  help="convolution kernel for smoothing the edge of the mask")
+	parser.add_option("--gauss_standard_dev",   type="int",		default= 9,     		  help="stanadard deviation value to generate Gaussian edge")
+	 
  	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
@@ -382,21 +389,6 @@ def main():
 			tmp.set_attr_dict({"ctf": ctf})
 			
 			tmp.write_image(outstack, i)
-	elif options.adaptive_mask:
-		from utilities import get_im
-		from morphology import adaptive_mask
-		nargs = len(args)
-                if nargs > 2:
-                        print "too many inputs"
-                        return
-		else:
-			inputvol = get_im(args[0])
-			if nargs == 2:
-				mask_file_name = args[1]
-			else:
-				mask_file_name = "adaptive_mask.hdf" 
-			mask3d = adaptive_mask(inputvol, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9)
-			mask3d.write_image(mask_file_name)
 
 	elif options.changesize:
 		nargs = len(args)
@@ -806,6 +798,27 @@ def main():
 			p[i][3] /= scale
 			p[i][4] /= scale
 		write_text_row(p, args[1])
+		
+	elif options.adaptive_mask:
+		from utilities import get_im
+		from morphology import adaptive_mask
+		nsigma             = options.nsigma
+		ndilation          = options.ndilation
+		kernel_size        = options.kernel_size
+		gauss_standard_dev = options.gauss_standard_dev
+		nargs = len(args)
+		if nargs > 2:
+			print "Too many inputs are given, try again!"
+			return
+		else:
+			inputvol = get_im(args[0])
+			input_path, input_file_name = os.path.split(args[0])
+			input_file_name_root,ext=os.path.splitext(input_file_name)
+			if nargs == 2:  mask_file_name = args[1]
+			else:           mask_file_name = "adaptive_mask_for"+input_file_name_root+".hdf" # Only hdf file is output. 
+			mask3d = adaptive_mask(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
+			mask3d.write_image(mask_file_name)
+
 
 	else:  ERROR("Please provide option name","sxprocess.py",1)	
 
