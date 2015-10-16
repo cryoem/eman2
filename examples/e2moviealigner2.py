@@ -162,7 +162,7 @@ class MovieAligner:
 		ips_ctf_fit/=np.sqrt(ips_ctf_fit.dot(ips_ctf_fit))
 		oned_cps/=np.sqrt(oned_cps.dot(oned_cps))
 		# compare
-		energy = -np.dot(ips_ctf_fit,oned_cps)
+		energy = np.log(1-np.dot(ips_ctf_fit,oned_cps))
 		#c = self.cps.process('normalize.unitlen')
 		#i = self.ips.process('normalize.unitlen')
 		#energy = -EMData.cmp(c,'dot',i)
