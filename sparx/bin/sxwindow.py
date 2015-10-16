@@ -65,7 +65,7 @@ def check_options(options, progname):
 		print "\nOutput directory must be specified with option --outdir. Type %s -h for help.\n" % progname
 		sys.exit()
 		
-	if  options.coordsdir == None:
+	if  options.coords_dir == None:
 		print "\nCoordinates directory must be specified with option --coords_dir. Type %s -h for help.\n" % progname
 		sys.exit()
 
@@ -90,39 +90,57 @@ def check_options(options, progname):
 		print "\nInvalid option value: --resample_ratio=%s. Type %s -h for help.\n" % (options.resample_ratio, progname)
 		sys.exit()
 	
-def main():
+def main(args):
 # 	parser1 = argparse.ArgumentParser(description='This program is used to window particles from a micrograph. The coordinates of the particles are given as input.')
 # 	parser1.add_argument()
 
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " [micrographs list] ...  --coords_dir=coords_dir  --coords_suffix=coords_suffix" + \
-	                                          "  --coords_extension=coords_extension  --coords_format=coords_format" + \
-	                                          "  --indir=input_dir  --importctf=ctf_file  --limitctf" + \
-	                                          "  --resample_ratio=resample_ratio  --box_size=box_size" + \
-	                                          "  --outdir=outdir  --outsuffix=outsuffix  --micsuffix=micsuffix" + \
-	                                          "  --nameroot=nameroot  --invert" + \
-	                                          "  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror"
-
+	# usage = progname + "  [micrographs list] ...  --coords_dir=coords_dir  --coords_suffix=coords_suffix" + \
+	#                                            "  --coords_extension=coords_extension  --coords_format=coords_format" + \
+	#                                            "  --indir=input_dir  --nameroot=nameroot  --micsuffix=micsuffix" + \
+	#                                            "  --outdir=outdir  --outsuffix=outsuffix" + \
+	#                                            "  --importctf=ctf_file  --box_size=box_size  --invert" + \
+	#                                            "  --resample_ratio=resample_ratio --limitctf" + \
+	#                                            "  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror"
+	usage = progname + "  --coords_dir=coords_dir  --coords_suffix=coords_suffix" + \
+	                   "  --coords_extension=coords_extension  --coords_format=coords_format" + \
+	                   "  --indir=input_dir  --nameroot=nameroot  --micsuffix=micsuffix" + \
+	                   "  --outdir=outdir  --outsuffix=outsuffix" + \
+	                   "  --importctf=ctf_file  --box_size=box_size  --invert" + \
+	                   "  --resample_ratio=resample_ratio --limitctf" + \
+	                   "  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror"
+	
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option('--coords_dir',       dest='coordsdir',                 help='Directory containing files with particle coordinates.')
-	parser.add_option('--coords_suffix',                   default="",        help='Suffix of coordinate files. For example "_ptcls".')
-	parser.add_option('--coords_extension',                                   help='File extension of coordinate files. e.g "box" for eman1, "json" for eman2, ...') # required
-	parser.add_option('--coords_format',                                      help='Format of coordinates file: "sparx", "eman1", "eman2", or "spider". The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size.')
-	parser.add_option("--indir",            type="string", default= ".",      help="Directory containing micrographs to be processed. (Default: current directory)")
-	parser.add_option('--importctf',                                          help='File name with CTF parameters produced by sxcter.')
-	parser.add_option("--limitctf",         action="store_true", default=False,     help="Filter micrographs based on the CTF limit. It requires --importctf. (Default: no filter)")
-	parser.add_option('--resample_ratio',   type=float,    default=1.0,       help='Ratio of new to old image size (or old to new pixel size) for resampling. Valid range is 0.0 < resample_ratio <= 1.0. (Default: 1.0)')
-	parser.add_option('--box_size',         type=int,      default=256,       help='x and y dimension in pixels of square area to be windowed. Pixel size after resampling is assumed when resample_ratio < 1.0 (Default 256)')
-	parser.add_option('--outdir',                                             help='Output directory')
-	parser.add_option('--outsuffix',        type=str,      default="_ptcls",  help="Suffix for output stack. (Default '_ptcls')")	
-	parser.add_option("--micsuffix",        type=str,      default="hdf",     help="A string denoting micrograph type. (Default 'hdf')")
-	parser.add_option("--nameroot",         type="string", default="",        help="Prefix of micrographs to be processed.")
-	parser.add_option("--invert",           action="store_true", default=False, help="Invert image contrast (recommended for cryo data) (Default, no contrast inversion)")
-	parser.add_option("--defocuserror",     type="float",  default=1000000.0, help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%. (Default: include all irrespective of error values.)" )
-	parser.add_option("--astigmatismerror", type="float",  default=360.0,     help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (Default: include all irrespective of error values.)")
+	parser.add_option("--coords_dir",       type="string",        default=".",       help="<Coordinates Directory> Directory containing files with particle coordinates. (Default: current directory)")
+	parser.add_option("--coords_suffix",    type="string",        default="",        help="<Coordinates File Suffix> Suffix of coordinate files. For example '_ptcls'. ")
+	parser.add_option("--coords_extension", type="string",        default="box",     help="<Coordinates File Extension> File extension of coordinate files. e.g 'box' for eman1, 'json' for eman2, ...")
+	parser.add_option("--coords_format",    type="string",        default="eman1",   help="<Coordinates File Format> Format of coordinates file: 'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size.")
+	parser.add_option("--indir",            type="string",        default=".",       help="<Micrograph Directory> Directory containing micrographs to be processed. (Default: current directory)")
+	parser.add_option("--nameroot",         type="string",        default="",        help="<Micrograph Root Name> Root name (Prefix) of micrographs to be processed.")
+	parser.add_option("--micsuffix",        type="string",        default="hdf",     help="<Micrograph Extension > A string denoting micrograph type. (Default 'hdf')")
+	parser.add_option("--outdir",           type="string",        default=".",       help="<Output Directory> Output directory (Default: current directory)")
+	parser.add_option("--outsuffix",        type="string",        default="_ptcls",  help="<Output File Suffix> Suffix for output stack. (Default '_ptcls')")
+	parser.add_option("--importctf",        type="string",        default="",        help="<CTER CTF File> File name with CTF parameters produced by sxcter.") 
+	parser.add_option("--box_size",         type="int",           default=256,       help="<Box Size> x and y dimension in pixels of square area to be windowed. Pixel size after resampling is assumed when resample_ratio < 1.0 (Default 256)")
+	parser.add_option("--invert",           action="store_true",  default=False,     help="<Invert Contrast> Invert image contrast (recommended for cryo data) (Default, no contrast inversion)")
+	parser.add_option("--resample_ratio",   type="float",         default=1.0,       help="<Resample Ratio> Ratio of new to old image size (or old to new pixel size) for resampling. Valid range is 0.0 < resample_ratio <= 1.0. (Default: 1.0)  (advanced)")
+	parser.add_option("--limitctf",         action="store_true",  default=False,     help="<Apply CTF-Limit Filter> Filter micrographs based on the CTF limit. It requires --importctf. (Default: no filter) (advanced)")	
+	parser.add_option("--defocuserror",     type="float",         default=1000000.0, help="<Defocus Error Limit> Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%. (Default: include all irrespective of error values.) (advanced)" )
+	parser.add_option("--astigmatismerror", type="float",         default=360.0,     help="<Astigmatism Error Limit> Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (Default: include all irrespective of error values.)  (advanced)")
+	
+	# must be switched off in production
+	# parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=False)
+	# 
+	# parser.add_option("--restart_section", type="string", default="", help="<restart section name> (no spaces) followed immediately by comma, followed immediately by generation to restart, example: \n--restart_section=candidate_class_averages,1         (Sections: restart, candidate_class_averages, reproducible_class_averages)")
+	# parser.add_option("--stop_after_candidates",          action="store_true", default=False,   help="<stop_after_candidates> stops after the 'candidate_class_averages' section")
+	# 
+	parser.add_option("--return_options", action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)
 
-	(options, args) = parser.parse_args()
+	(options, args) = parser.parse_args(args)
+
+	if options.return_options:
+		return parser
 	
 # 	Set local constants
 	box_size = options.box_size
@@ -181,7 +199,7 @@ def main():
 		# Here, assuming micrograph and coordinates have the same file basename
 		basename = micnames[k]
 		f_mic    = os.path.join(os.path.abspath(options.indir), basename + options.micsuffix)
-		f_info   = os.path.join(options.coordsdir, basename + extension_coord)
+		f_info   = os.path.join(options.coords_dir, basename + extension_coord)
 
 # 		CHECKS: BEGIN
 # 		IF micrograph exists
@@ -417,4 +435,4 @@ def main():
 
 						
 if __name__=='__main__':
-	main()
+	main(sys.argv[1:])
