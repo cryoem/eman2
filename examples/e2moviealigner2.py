@@ -32,7 +32,7 @@ def main():
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=512)
 	parser.add_argument("--maxshift", type=int, help="Set the maximum frame translation distance in pixels.",default=5)
-	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization.",default=1000)
+	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization.",default=2500)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--fixaxes",action="store_true",default=True,help="Tries to identify bad pixels and fill them in with sane values instead")
 	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
@@ -167,9 +167,6 @@ class MovieAligner:
 		compared = np.dot(ips_ctf_fit,oned_cps)
 		# scale
 		energy = compared #np.log(1-compared)
-		#c = self.cps.process('normalize.unitlen')
-		#i = self.ips.process('normalize.unitlen')
-		#energy = -EMData.cmp(c,'dot',i)
 		if energy < min(self.energies):
 			self.write_cps()
 			self.best_translations = self.translations
