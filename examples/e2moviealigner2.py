@@ -65,6 +65,7 @@ def main():
 		
 		if options.verbose: print("Acquiring alignment parameters")
 		alignment = MovieAligner(fname,bs=options.boxsize,fixaxes=options.fixaxes)
+		if options.verbose: print("Optimizing frame alignment")
 		alignment.optimize(options)
 		
 		if options.show:
@@ -161,7 +162,10 @@ class MovieAligner:
 		ips_ctf_fit/=np.sqrt(ips_ctf_fit.dot(ips_ctf_fit))
 		oned_cps/=np.sqrt(oned_cps.dot(oned_cps))
 		# compare
-		energy = np.log(1-np.dot(ips_ctf_fit,oned_cps))
+		energy = -np.dot(ips_ctf_fit,oned_cps)
+		#c = self.cps.process('normalize.unitlen')
+		#i = self.ips.process('normalize.unitlen')
+		#energy = -EMData.cmp(c,'dot',i)
 		if energy < min(self.energies):
 			self.write_cps()
 			self.best_translations = self.translations
@@ -243,13 +247,12 @@ class MovieAligner:
 			for b in ub1+ub2:
 				bounds.append((-int(round(b)),int(round(b))))
 				bounds.append((-int(round(b)),int(round(b))))
-		if options.verbose > 6:
-			print("Initializing optimization with the following bounds:")
-			print("Frame\tLower\t\tUpper")
-			bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
-			for i,bd in enumerate(bds):
-				print("{}\t( {}, {} )\t( {}, {} )".format(i+1,bd[0,0],bd[1,0],bd[0,1],bd[1,1]))
-		print("Optimizing alignment")
+		#if options.verbose > 6:
+		#	print("Initializing optimization with the following bounds:")
+		#	print("Frame\tLower\t\tUpper")
+		#	bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
+		#	for i,bd in enumerate(bds):
+		#		print("{}\t( {}, {} )\t( {}, {} )".format(i+1,bd[0,0],bd[1,0],bd[0,1],bd[1,1]))
 		res = differential_evolution(self._compares, bounds, args=(self,), polish=True)
 		if options.verbose > 6: print(res.message)
 		info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
@@ -278,9 +281,10 @@ class MovieAligner:
 			i = str(aligner.iter).ljust(4)
 			b = str(min(aligner.energies)).ljust(4)
 			c = str(aligner.energies[-1]).ljust(4)
-			if i > 1: w = str(max(aligner.energies[1:])).ljust(4)
-			else: w = l
-			out = "{}\tEnergy: {}\tBest: {}\tWorst: {}\r".format(i,c,b,w)
+			#if i > 1: w = str(max(aligner.energies[1:])).ljust(4)
+			#else: w = l
+			#out = "{}\tEnergy: {}\tBest: {}\tWorst: {}\r".format(i,c,b,w)
+			out = "{}\tEnergy: {}\tBest: {}\r".format(i,c,b)
 			sys.stdout.write(out)
 			sys.stdout.flush()
 		return energy
