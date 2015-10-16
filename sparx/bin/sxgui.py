@@ -8605,21 +8605,25 @@ def kmeansgroups(self):
 			self.TabWidget.show()
 
 	def sxwindow(self):
-			##print "Opening a new popup window..."
-			#opens the window Poptwodali, and defines its width and height
-			#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-			self.w = Popupsxwindow()
-			self.w1 = Popupadvparams_sxwindow(self.w.savedparmsdict)
-			#intro_string = ""
-			#self.w2 = Popupcenter(self.w,intro_string)
-			self.w.w1 = self.w1
-			#self.w.w2 = self.w2
-			self.TabWidget = QtGui.QTabWidget()
-			self.TabWidget.insertTab(0,self.w,'Main')
-			self.TabWidget.insertTab(1,self.w1,'Advanced')
-			#self.TabWidget.insertTab(2,self.w2,'Pre-center input stack (Recommended)')
-			self.TabWidget.resize(730,800)
-			self.TabWidget.show()
+		modifiers = QtGui.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			os.system("python -m webbrowser %ssxwindow"%SPARX_DOCUMENTATION_WEBSITE)
+			return
+		##print "Opening a new popup window..."
+		#opens the window Poptwodali, and defines its width and height
+		#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+		self.w = Popupsxwindow()
+		self.w1 = Popupadvparams_sxwindow(self.w.savedparmsdict)
+		#intro_string = ""
+		#self.w2 = Popupcenter(self.w,intro_string)
+		self.w.w1 = self.w1
+		#self.w.w2 = self.w2
+		self.TabWidget = QtGui.QTabWidget()
+		self.TabWidget.insertTab(0,self.w,'Main')
+		self.TabWidget.insertTab(1,self.w1,'Advanced')
+		#self.TabWidget.insertTab(2,self.w2,'Pre-center input stack (Recommended)')
+		self.TabWidget.resize(730,800)
+		self.TabWidget.show()
 
 	def isac(self):
 		modifiers = QtGui.QApplication.keyboardModifiers()
