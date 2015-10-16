@@ -4799,6 +4799,358 @@ class Popupcter(QWidget):
 		print d
 		self.stacknameedit.setText(d)
 
+class Popupsxwindow(QWidget):
+
+	def __init__(self):
+		QWidget.__init__(self)
+		
+		########################################################################################
+		# class variables
+		self.cmd = ""
+		# populate with default values
+		# self.savedparmsdict = {'nproc': "1"}
+		self.savedparmsdict = {'nproc': "1", 'coords_dir':'.','coords_suffix':'_ptcls','coords_extension':'box','coords_format':'eman1','indir':'.','importctf':'','limitctf':Qt.Unchecked,'resample_ratio':'1.0','box_size':'256','outdir':'.','outsuffix':'_ptcls','micsuffix':'hdf','nameroot':'','invert':Qt.Unchecked,'defocuserror':'1000000.0','astigmatismerror':'360.0'}
+		
+		self.y1 = 10
+		self.y2 = self.y1 + 98
+		self.y4 = self.y2 + 450
+		self.y5 = self.y4 + 95
+		self.yspc = 4
+		
+		self.x1 = 10
+		self.x2 = self.x1 + 200
+		self.x3 = self.x2+145
+		self.x4 = self.x3+100
+		self.x5 = 230
+		########################################################################################
+		
+		#Here we just set the window title
+		self.setWindowTitle('sxwindow')
+		#Here we just set a label and its position in the window
+		title1=QtGui.QLabel('<b>sxwindow</b> - Window out particles with known coordinates from a micrograph', self)
+		title1.move(self.x1,self.y1)
+		self.y1 += 50
+
+		self.repopbtn = QPushButton("Retrieve saved parameters", self)
+		self.repopbtn.move(self.x1-5,self.y1)
+		#sets an infotip for this Pushbutton
+		self.repopbtn.setToolTip('Retrieve saved parameters')
+		#when this button is clicked, this action starts the subfunction twodali
+		self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_sxwindow)
+		
+		args_list_and_parser =  self.get_args_list_and_parser()
+		QLabels = [None]*len(args_list_and_parser)
+		self.QLineEditsAndChecks = [None]*len(args_list_and_parser)
+		# for option_iterator in range(2, len(parser.option_list)):
+		for option_iterator in range(len(args_list_and_parser)):
+			if args_list_and_parser[option_iterator].help == None or \
+				args_list_and_parser[option_iterator].help == "" or \
+				args_list_and_parser[option_iterator].help[0] != "<" or \
+				args_list_and_parser[option_iterator].help[-10:] == "(advanced)":
+				continue
+			label = args_list_and_parser[option_iterator].help[1:].split(">")[0]
+			# a = QtGui.QCheckBox("",self)
+			QLabels[option_iterator] = QtGui.QLabel(label, self)
+			QLabels[option_iterator].move(self.x1,self.y2)
+
+			control_is_an_edit_box = args_list_and_parser[option_iterator].action != "store_true"
+			control_is_for_a_parameter = args_list_and_parser[option_iterator].action == "LPlFHy3uNTjucRlk"
+			if control_is_an_edit_box:
+				self.QLineEditsAndChecks[option_iterator] = QtGui.QLineEdit(self)
+				# modify_function = self.QLineEditsAndChecks[option_iterator].setText
+				self.QLineEditsAndChecks[option_iterator].setText(str(args_list_and_parser[option_iterator].default))
+			else:
+				self.QLineEditsAndChecks[option_iterator] = QtGui.QCheckBox("",self)
+				# modify_function = self.QLineEditsAndChecks[option_iterator].setCheckState
+				modify_function = self.QLineEditsAndChecks[option_iterator].setCheckState(args_list_and_parser[option_iterator].default)
+
+			self.QLineEditsAndChecks[option_iterator].move(self.x2,self.y2 - 7)
+			# self.QLineEdits[option_iterator].setText(self.savedparmsdict[parser.option_list[option_iterator].dest])
+			self.savedparmsdict[args_list_and_parser[option_iterator].dest] = [option_iterator, str(args_list_and_parser[option_iterator].default), control_is_an_edit_box, control_is_for_a_parameter]
+			# modify_function(str(parser.option_list[option_iterator].default))
+			self.QLineEditsAndChecks[option_iterator].setToolTip(args_list_and_parser[option_iterator].help)		
+	
+			self.y2 = self.y2+25
+
+
+		nproc= QtGui.QLabel('MPI processors', self)
+		nproc.move(self.x1,self.y2)
+		self.nprocedit=QtGui.QLineEdit(self)
+		self.nprocedit.move(self.x2,self.y2)
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
+		self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
+		
+		self.y2 =self.y2+25
+		
+
+		
+		########################################################################################
+		
+		self.savepbtn = QPushButton("Save Input Parameters", self)
+		self.savepbtn.move(self.x1-5,  self.y4)
+		#sets an infotip for this Pushbutton
+		self.savepbtn.setToolTip('Save Input Parameters')
+		#when this button is clicked, this action starts the subfunction twodali
+		self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
+		
+		self.y4 = self.y4+30
+		
+		self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
+		self.cmdlinebtn.move(self.x1-5,  self.y4)
+		#sets an infotip for this Pushbutton
+		self.cmdlinebtn.setToolTip('Generate command line using input parameters')
+		#when this button is clicked, this action starts the subfunction twodali
+		self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_sxwindow)
+		
+		########################################################################################
+		
+		 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
+		self.RUN_button = QtGui.QPushButton('Run sxwindow', self)
+		# make 3D textured push button look
+		s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+		
+		self.RUN_button.setStyleSheet(s)
+		
+		self.RUN_button.move(self.x5,  self.y5)
+		#Here we define, that when this button is clicked, it starts subfunction runsxali2d
+		self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxwindow)
+
+	def get_args_list_and_parser(self):
+
+		from sxwindow import main as sxwindow_main
+		parser = sxwindow_main(["aa", "--return_options"])
+
+		# ['__doc__', '__init__', '__module__', '_add_help_option', '_add_version_option', '_check_conflict', '_create_option_list', '_create_option_mappings', '_get_all_options', '_get_args', '_get_encoding', '_init_parsing_state', '_long_opt', '_match_long_opt', '_populate_option_list', '_process_args', '_process_long_opt', '_process_short_opts', '_share_option_mappings', '_short_opt', 'add_option', 'add_option_group', 'add_options', 'allow_interspersed_args', 'check_values', 'conflict_handler', 'defaults', 'description', 'destroy', 'disable_interspersed_args', 'enable_interspersed_args', 'epilog', 'error', 'exit', 'expand_prog_name', 'format_description', 'format_epilog', 'format_help', 'format_option_help', 'formatter', 'get_default_values', 'get_description', 'get_option', 'get_option_group', 'get_prog_name', 'get_usage', 'get_version', 'has_option', 'largs', 'option_class', 'option_groups', 'option_list', 'parse_args', 'print_help', 'print_usage', 'print_version', 'process_default_values', 'prog', 'rargs', 'remove_option', 'set_conflict_handler', 'set_default', 'set_defaults', 'set_description', 'set_process_default_values', 'set_usage', 'standard_option_list', 'usage', 'values', 'version']
+		# >>> a.optionlist
+		# Traceback (most recent call last):
+		#   File "<stdin>", line 1, in <module>
+		# AttributeError: OptionParser instance has no attribute 'optionlist'
+		# >>> len(a.option_list)
+		# 25
+		# >>> a.option_list[1].help
+		# 'show this help message and exit'
+		# >>> a.option_list[11].help
+		# 'maximum number of iterations performed for the finishing up part (set to 50) '
+		# >>>
+		# >>> dir(a.option_list[11])
+		# ['ACTIONS', 'ALWAYS_TYPED_ACTIONS', 'ATTRS', 'CHECK_METHODS', 'CONST_ACTIONS', 'STORE_ACTIONS', 'TYPED_ACTIONS', 'TYPES', 'TYPE_CHECKER', '__doc__', '__init__', '__module__', '__repr__', '__str__', '_check_action', '_check_callback', '_check_choice', '_check_const', '_check_dest', '_check_nargs', '_check_opt_strings', '_check_type', '_long_opts', '_set_attrs', '_set_opt_strings', '_short_opts', 'action', 'callback', 'callback_args', 'callback_kwargs', 'check_value', 'choices', 'const', 'container', 'convert_value', 'default', 'dest', 'get_opt_string', 'help', 'metavar', 'nargs', 'process', 'take_action', 'takes_value', 'type']
+		# >>> a.option_list[11].dest
+		# 'maxit2'
+		
+		class ImmitateOptionList:
+			default=""
+			help=""
+			dest = ""
+			action = "LPlFHy3uNTjucRlk"
+
+		prog_args = parser.usage.split("--")[0].split(" ")
+		args_list = []
+		for a in prog_args[1:]:
+			if a == "": continue
+			aa = a.strip()
+			b = ImmitateOptionList()
+			b.help = "<" + aa + ">"
+			b.dest = aa[:]
+			if a == "stack":
+				b.help = "<Projection stack file>"
+			args_list.append(b)
+				
+		return args_list + parser.option_list[2:]
+
+
+	def outputinfo_sxwindow(self):
+		# QMessageBox.information(self, "sxwindow output",'outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program. \n\noutdir/angles_000: \n\nThis file contains Eulerian angles fount in trial #000 \n\noutdir/plot_agls_000.hdf: \n\nThis image in the hdf format contains visualization of the distribution of projections found during trial #000 (see also sxplot_projs_distrib) \n\noutdir/structure_000.hdf: \n\nCopy of the stack of 2D projections with Eulerian angles found at trial #000 set in the header. In order to examine the structure, one has to do the 3D reconstructions sxrecons3d_n.py outdir/structure_000.hdf myvol.hdf \n\noutdir/structure.hdf: \n\nFor multiple trials, it is a copy of the stack of 2D projections with Eulerian angles found at the best trial set in the header (this feature is no longer supported).')
+		QMessageBox.information(self, "sxwindow output",'outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program.')
+		
+	def gencmdline_sxwindow(self,writefile=True):
+		#Here we just read in all user inputs in the line edits of the Poptwodali window
+		cmd1 = "sxwindow.py "
+
+		args = " "
+		for param in self.get_args_list_and_parser():
+			if param.action != "LPlFHy3uNTjucRlk": break
+			args += "%s "%self.QLineEditsAndChecks[self.savedparmsdict[param.dest][0]].text()
+		
+		for key in self.savedparmsdict:
+			if type(self.savedparmsdict[key]) != list:
+				continue
+			if self.savedparmsdict[key][2]: ## check to see if this is not a boolean option
+				if not self.savedparmsdict[key][3]: ## check to see if this is not a parameter
+					args += "--%s=%s "%(key,self.QLineEditsAndChecks[self.savedparmsdict[key][0]].text())
+				else:
+					args += "%s "%self.QLineEditsAndChecks[self.savedparmsdict[key][0]].text()
+				self.savedparmsdict[key][1] = self.QLineEditsAndChecks[self.savedparmsdict[key][0]].text()
+			else:
+				if self.QLineEditsAndChecks[self.savedparmsdict[key][0]].checkState() == Qt.Checked:
+					args += "--%s "%key
+					self.savedparmsdict[key][1] = self.QLineEditsAndChecks[self.savedparmsdict[key][0]].checkState()
+		cmd1 = cmd1 + args
+
+		args = " "
+		for key in self.w1.savedparmsdict:
+			if type(self.w1.savedparmsdict[key]) != list:
+				continue
+			# print self.savedparmsdict
+			if self.w1.savedparmsdict[key][2]:
+				val_str = self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].text()
+				self.w1.savedparmsdict[key][1] = val_str
+				if val_str != "":
+					args += "--%s=%s "%(key,val_str)
+			else:
+				if self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].checkState() == Qt.Checked:
+					args += "--%s "%key
+					self.w1.savedparmsdict[key][1] = self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].checkState()
+		cmd1 = cmd1 + args
+		self.savedparmsdict['nproc'] = self.nprocedit.text()
+		
+		# np = self.QLineEditsAndChecks[int(self.savedparmsdict["nproc"])].text()
+		np = self.nprocedit.text()
+		
+		if int(str(np)) > 1: 
+			cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
+		
+		if writefile:		
+			(fname,stat)= QInputDialog.getText(self,"Generate Command Line","Enter name of file to save command line in",QLineEdit.Normal,"")
+			if stat:
+				f = open(fname,'a')
+				f.write(cmd1)
+				f.write('\n')
+				f.close()
+		
+		print cmd1
+		self.cmd = cmd1
+		
+	def runsxwindow(self):
+		self.gencmdline_sxwindow(writefile=False)
+		# outfolder=self.savedparmsdict['foldername']
+		outfolder=str(self.savedparmsdict['outdir'])
+		if os.path.exists(outfolder):
+			print "output folder "+outfolder+" already exists!"
+			return
+		process = subprocess.Popen(self.cmd,shell=True)
+		self.emit(QtCore.SIGNAL("process_started"),process.pid)
+		
+	def saveparms(self):		
+		(fname,stat)= QInputDialog.getText(self,"Save Input Parameters","Enter name of file to save parameters in",QLineEdit.Normal,"")
+		if stat:
+			import pickle
+			output=open(fname,'wb')
+			self.gencmdline_sxwindow(writefile=False)
+			pickle.dump((self.savedparmsdict, self.w1.savedparmsdict),output)
+			output.close()
+		
+
+	def repoparms_sxwindow(self):		
+		# repopulate with saved parms
+		(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+		print (fname,stat)
+		
+		if stat:
+			import pickle
+			pkl = open(fname,'rb')
+			# self.savedparmsdict = pickle.load(pkl)
+			(self.savedparmsdict, self.w1.savedparmsdict) = pickle.load(pkl)
+			# print self.savedparmsdict
+			# self.stacknameedit.setText(self.savedparmsdict['stackname'])
+			# self.foldernameedit.setText(self.savedparmsdict['foldername'])
+			for key in self.savedparmsdict:
+				if type(self.savedparmsdict[key]) != list:
+					continue
+				if self.savedparmsdict[key][2]:
+					self.QLineEditsAndChecks[self.savedparmsdict[key][0]].setText(self.savedparmsdict[key][1])
+				else:
+					# print self.savedparmsdict[key]
+					self.QLineEditsAndChecks[self.savedparmsdict[key][0]].setChecked(self.savedparmsdict[key][1] == Qt.Checked)
+			for key in self.w1.savedparmsdict:
+				if type(self.w1.savedparmsdict[key]) != list:
+					continue
+				if self.w1.savedparmsdict[key][2]:
+					self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].setText(self.w1.savedparmsdict[key][1])
+				else:
+					self.w1.QLineEditsAndChecks[self.w1.savedparmsdict[key][0]].setChecked(self.w1.savedparmsdict[key][1] == Qt.Checked)
+		pass	
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
+
+	def choose_file(self):
+		#opens a file browser, showing files only in .hdf format
+		file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF files (*.hdf)")
+		#after the user selected a file, we obtain this filename as a Qstring
+		a=QtCore.QString(file_name)
+		print a
+		#we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+		self.stacknameedit.setText(str(a))
+		
+		#Function choose_file started when  the  open_file of the  Poptwodali window is clicked (same as above but for bdb files(maybe we can combine these two into one function)
+	def choose_file1(self):
+		file_name1 = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "EMAN2DB/", "BDB FILES (*.bdb)" )
+		a=QtCore.QString(file_name1)
+		b=os.path.basename(str(a))
+		c=os.path.splitext(b)[0]
+		d="bdb:"+c
+		print d
+		self.stacknameedit.setText(d)
+
+class Popupadvparams_sxwindow(QWidget):
+	def __init__(self,savedparms):
+		QWidget.__init__(self)
+		
+		self.savedparmsdict=dict()
+		
+		########################################################################################
+		# layout parameters
+		
+		self.y1=10
+		self.yspc = 4
+		
+		self.x1 = 20
+		self.x2 = self.x1+280
+		self.x3 = self.x2+145
+		########################################################################################
+		
+		#Here we just set the window title
+		#self.setWindowTitle('sxali3d advanced parameter selection')
+		#Here we just set a label and its position in the window
+		title1=QtGui.QLabel('<b>sxwindow</b> - set advanced parameters', self)
+		title1.move(self.x1,self.y1)
+		self.y1 = self.y1+25
+		
+		
+		from sxwindow import main as sxwindow_main
+		parser = sxwindow_main(["aa", "--return_options"])
+		
+		
+		QLabels = [None]*len(parser.option_list)
+		self.QLineEditsAndChecks = [None]*len(parser.option_list)
+		for option_iterator in range(2, len(parser.option_list)):
+		# for option_iterator in range(2, 6):
+			if parser.option_list[option_iterator].help == None or \
+				parser.option_list[option_iterator].help == "" or \
+				parser.option_list[option_iterator].help[0] != "<" or \
+				parser.option_list[option_iterator].help[-10:] != "(advanced)":
+				continue
+			label = parser.option_list[option_iterator].help[1:].split(">")[0]
+		
+			QLabels[option_iterator] = QtGui.QLabel(label, self)
+			QLabels[option_iterator].move(self.x1,self.y1)
+		
+			control_is_an_edit_box = parser.option_list[option_iterator].action != "store_true"
+			control_is_for_a_parameter = parser.option_list[option_iterator].action == "LPlFHy3uNTjucRlk"
+			if control_is_an_edit_box:
+				self.QLineEditsAndChecks[option_iterator] = QtGui.QLineEdit(self)
+				# modify_function = self.QLineEditsAndChecks[option_iterator].setText
+				self.QLineEditsAndChecks[option_iterator].setText(str(parser.option_list[option_iterator].default))
+			else:
+				self.QLineEditsAndChecks[option_iterator] = QtGui.QCheckBox("",self)
+				# modify_function = self.QLineEditsAndChecks[option_iterator].setCheckState
+				modify_function = self.QLineEditsAndChecks[option_iterator].setCheckState(parser.option_list[option_iterator].default)
+		
+			self.QLineEditsAndChecks[option_iterator].move(self.x2,self.y1)
+			# self.QLineEdits[option_iterator].setText(self.savedparmsdict[parser.option_list[option_iterator].dest])
+			self.savedparmsdict[parser.option_list[option_iterator].dest] = [option_iterator, str(parser.option_list[option_iterator].default), control_is_an_edit_box, control_is_for_a_parameter]
+			# modify_function(str(parser.option_list[option_iterator].default))
+			self.QLineEditsAndChecks[option_iterator].setToolTip(parser.option_list[option_iterator].help)		
+		
+			self.y1 = self.y1+25
 
 class Popupisac(QWidget):
 
@@ -7983,6 +8335,14 @@ class MainWindow(QtGui.QWidget):
 
 		self.y2 += 30
 
+		self.btn11 = QPushButton("sxwindow", self)
+		self.btn11.move(10, self.y2)
+		#sets an infotip for this Pushbutton
+		self.btn11.setToolTip('Window out particles with known coordinates from a micrograph')
+		self.connect(self.btn11, SIGNAL("clicked()"), self.sxwindow)
+
+		self.y2 += 30
+
 		self.btn10 = QPushButton("sxisac", self)
 		self.btn10.move(10, self.y2)
 		#sets an infotip for this Pushbutton
@@ -8234,6 +8594,23 @@ def kmeansgroups(self):
 			self.w = Popupisac()
 			self.w1 = Popupadvparams_cter_1(self.w.savedparmsdict)
 			#intro_string = "Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0."
+			#self.w2 = Popupcenter(self.w,intro_string)
+			self.w.w1 = self.w1
+			#self.w.w2 = self.w2
+			self.TabWidget = QtGui.QTabWidget()
+			self.TabWidget.insertTab(0,self.w,'Main')
+			self.TabWidget.insertTab(1,self.w1,'Advanced')
+			#self.TabWidget.insertTab(2,self.w2,'Pre-center input stack (Recommended)')
+			self.TabWidget.resize(730,800)
+			self.TabWidget.show()
+
+	def sxwindow(self):
+			##print "Opening a new popup window..."
+			#opens the window Poptwodali, and defines its width and height
+			#The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+			self.w = Popupsxwindow()
+			self.w1 = Popupadvparams_sxwindow(self.w.savedparmsdict)
+			#intro_string = ""
 			#self.w2 = Popupcenter(self.w,intro_string)
 			self.w.w1 = self.w1
 			#self.w.w2 = self.w2
