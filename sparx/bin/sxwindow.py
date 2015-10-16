@@ -95,21 +95,13 @@ def main(args):
 # 	parser1.add_argument()
 
 	progname = os.path.basename(sys.argv[0])
-	# usage = progname + "  [micrographs list] ...  --coords_dir=coords_dir  --coords_suffix=coords_suffix" + \
-	#                                            "  --coords_extension=coords_extension  --coords_format=coords_format" + \
-	#                                            "  --indir=input_dir  --nameroot=nameroot  --micsuffix=micsuffix" + \
-	#                                            "  --outdir=outdir  --outsuffix=outsuffix" + \
-	#                                            "  --importctf=ctf_file  --box_size=box_size  --invert" + \
-	#                                            "  --resample_ratio=resample_ratio --limitctf" + \
-	#                                            "  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror"
-	usage = progname + "  --coords_dir=coords_dir  --coords_suffix=coords_suffix" + \
-	                   "  --coords_extension=coords_extension  --coords_format=coords_format" + \
-	                   "  --indir=input_dir  --nameroot=nameroot  --micsuffix=micsuffix" + \
-	                   "  --outdir=outdir  --outsuffix=outsuffix" + \
-	                   "  --importctf=ctf_file  --box_size=box_size  --invert" + \
-	                   "  --resample_ratio=resample_ratio --limitctf" + \
-	                   "  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror"
-	
+	usage = progname + " micrographs_list  --coords_dir=coords_dir  --coords_suffix=coords_suffix" + \
+	                                          "  --coords_extension=coords_extension  --coords_format=coords_format" + \
+	                                          "  --indir=input_dir  --importctf=ctf_file  --limitctf" + \
+	                                          "  --resample_ratio=resample_ratio  --box_size=box_size" + \
+	                                          "  --outdir=outdir  --outsuffix=outsuffix  --micsuffix=micsuffix" + \
+	                                          "  --nameroot=nameroot  --invert" + \
+	                                          "  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--coords_dir",       type="string",        default=".",       help="<Coordinates Directory> Directory containing files with particle coordinates. (Default: current directory)")
