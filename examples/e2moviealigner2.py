@@ -259,13 +259,13 @@ class MovieAligner:
 		#		print("{}\t( {}, {} )\t( {}, {} )".format(i+1,bd[0,0],bd[1,0],bd[0,1],bd[1,1]))
 		res = differential_evolution(self._compares, bounds, args=(self,), polish=True, maxiter=options.maxiter, popsize=25, strategy='best2bin', mutation=(0.5,1), recombination=0.7, disp=True, tol=0.01)
 		if options.verbose > 6: print(res.message)
-		info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
+		info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}".format(res.fun,res.nit,res.nfev)
 		print(info)
 		print("\nFrame\tTranslation")
 		with open(self.path[:-4]+"_results.txt",'w') as results:
-			results.write(info)
+			results.write(info+"\n")
 			for i,t in enumerate(self.best_translations):
-				info = "{}\t( {}, {} )".format(i+1,t[0],t[1])
+				info = "{}\t( {}, {} )".format(i+1,int(t[0]),int(t[1]))
 				print(info); results.write(info+"\n")
 		self.after = self.save(descriptor="aligned",save_frames=True)
 	
@@ -274,21 +274,20 @@ class MovieAligner:
 		translations = np.asarray(ts).reshape((aligner.hdr['nimg'],2))
 		translations = np.round(translations).astype(int)
 		for frame_num,trans in enumerate(translations):
-			if frame_num != aligner.static_fnum:
-				aligner.translations[frame_num] = trans
-				for reg_num, current_coords in enumerate(aligner._regions[frame_num]): 
-					new_coords = trans #np.add(current_coords,trans)
-					aligner._regions[frame_num][reg_num] = new_coords
-					aligner._stacks[reg_num][frame_num] = new_coords
+			if frame_num != aligner.static_fnum: # keep one frame in place
+				aligner.translations[frame_num] = trans.astype(int) # only allow integral shifts
+				for reg_num in range(len(aligner._regions[frame_num])): 
+					#new_coords = trans #np.add(current_coords,trans)
+					aligner._regions[frame_num][reg_num] = trans
+					aligner._stacks[reg_num][frame_num] = trans
 		energy = aligner.calc_energy()
 		if aligner.verbose:
 			i = str(aligner.iter)
 			b = str(min(aligner.energies))
 			c = str(aligner.energies[-1])
-			#if i > 1: w = str(max(aligner.energies[1:])).ljust(4)
-			#else: w = l
-			#out = "{}\tEnergy: {}\tBest: {}\tWorst: {}\r".format(i,c,b,w)
-			out = "{}\tEnergy: {}\t\tBest: {}\r".format(i,c,b)
+			if i > 1: w = str(max(aligner.energies[1:])).ljust(4)
+			else: w = l
+			out = "{}    Energy: {}    Best: {}    Worst: {}\r".format(i,c,b,w)
 			sys.stdout.write(out)
 			sys.stdout.flush()
 		return energy
