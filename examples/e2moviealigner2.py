@@ -103,7 +103,7 @@ class MovieAligner:
 		for ir in xrange(len(self._regions[0])):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self.iter = 0
-		self.static_fnum = int(self.hdr['nimg']/3)
+		self.static_fnum = int(self.hdr['nimg']/2)
 		self.energies = [np.inf]
 		self.verbose = options.verbose
 		self.plot = options.plot
@@ -278,7 +278,9 @@ class MovieAligner:
 		# 		print("{}\t( {}, {} )\t( {}, {} )".format(i+1,bd[0,0],bd[1,0],bd[0,1],bd[1,1]))
 		#state = np.random.randint(-2,2,size=(self.hdr['nimg'],2)).flatten()
 		#res = minimize(self._compares, state, method='Nelder-Mead', options={'maxiter':options.maxiter,'disp': True}, args=self)
-		res = differential_evolution(self._compares,bounds,args=(self,),polish=False, maxiter=options.maxiter,popsize=options.popsize,disp=True)
+		if options.verbose: disp=True
+		else: disp = False
+		res = differential_evolution(self._compares,bounds,args=(self,),polish=False, maxiter=options.maxiter,popsize=options.popsize,disp=disp)
 		print("\nFrame\tTranslation")
 		with open(self.path[:-4]+"_results.txt",'w') as results:
 			info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
