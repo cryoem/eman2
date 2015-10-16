@@ -159,7 +159,7 @@ def AI( Tracker, HISTORY, chout = False):
 						Tracker["an"] = ""
 						for i in xrange(len(get_input_from_string(Tracker["xr"]))):
 							if(Tracker["anger"] == 0.0 ):
-								Tracker["an"] += "%f  "%round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["nxinit"]))/Tracker["radius"])), 2)
+								Tracker["an"] += "%f  "%r(3*min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"]*Tracker["constants"]["radius"])))), 2), 3.0))
 							else:
 								Tracker["an"] += "%f  "%(3*Tracker["anger"])
 				else:
@@ -191,7 +191,7 @@ def AI( Tracker, HISTORY, chout = False):
 								Tracker["an"] = ""
 								for i in xrange(len(get_input_from_string(Tracker["xr"]))):
 									if(Tracker["anger"] == 0.0 ):
-										Tracker["an"] += "%f  "%round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["nxinit"]))/Tracker["radius"])), 2)
+										Tracker["an"] += "%f  "%r(3*min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"]*Tracker["constants"]["radius"])))), 2), 3.0))
 									else:
 										Tracker["an"] += "%f  "%(3*Tracker["anger"])
 						keepgoing = 1
@@ -1376,7 +1376,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	else:
 		Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 
-	delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["nxinit"]))/Tracker["radius"])), 2), 3.0)
+	delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"]*Tracker["constants"]["radius"])))), 2), 3.0)
 	#if Tracker["constants"]["smear"] : Tracker["smearstep"] = 0.5*delta
 	#  Base smear on current radius, not on the resolution
 	if Tracker["constants"]["smear"] : Tracker["smearstep"] = round(degrees(atan(1.0/float(Tracker["radius"]))), 2)
@@ -2046,7 +2046,8 @@ def main():
 					
 				#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
 				shrinkage = float(Tracker["newnx"])/float(Tracker["constants"]["nnxo"])
-				delta = min(round(degrees(atan(0.5/(float(Tracker["ireachedres"])/float(Tracker["newnx"]))/Tracker["radius"])), 2), 3.0)
+				#delta = min(round(degrees(atan(0.5/(float(Tracker["ireachedres"])/float(Tracker["newnx"]))/Tracker["radius"])), 2), 3.0)
+				delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"]*Tracker["constants"]["radius"])))), 2), 3.0)
 				Tracker["smearstep"] = 0.5*delta
 				compute_volsmeared(projdata, partids, partstack, Tracker, myid, main_node, nproc)
 			else:
