@@ -157,8 +157,8 @@ class MovieAligner:
 		ips = self.ips_ctf_fit[start:stop]
 		cps = self.oned_cps[start:stop]
 		# normalize ips/cps
-		ips/=np.sqrt(ips.dot(ips))
-		cps/=np.sqrt(cps.dot(cps))
+		#ips/=np.sqrt(ips.dot(ips))
+		#cps/=np.sqrt(cps.dot(cps))
 		#filter out low resolution
 		#ramp=np.linspace(0.5,1.25,len(cps))
 		#ramp=np.exp(ramp)
@@ -177,7 +177,8 @@ class MovieAligner:
 		#ips*=ramp*iwt
 		#cps*=ramp*cwt
 		# compute dot product between ips/cps
-		energy = -np.dot(ips,cps)
+		#nauc = np.trapz(cps)/(stop-start)
+		energy = -np.dot(ips,cps)#-nauc
 		if energy < min(self.energies):
 			self.write_cps()
 			self.best_translations = self.translations
@@ -298,7 +299,7 @@ class MovieAligner:
 		for frame_num,trans in enumerate(translations):
 			if frame_num != aligner.static_fnum: # keep one frame in place
 				aligner.translations[frame_num] = trans
-				for reg_num in range(len(aligner._regions[frame_num])): 
+				for reg_num in range(len(aligner._regions[frame_num])):
 					#new_coords = np.add(current_coords,trans)
 					aligner._regions[frame_num][reg_num] = trans
 					aligner._stacks[reg_num][frame_num] = trans
