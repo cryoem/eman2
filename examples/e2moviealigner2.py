@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 from Simplex import Simplex
 from EMAN2 import *
 import numpy as np
 import matplotlib.pyplot as plt
 try:
-	#from scipy.optimize import minimize
 	from scipy.optimize import differential_evolution
 except:
 	print("You must install scipy to use this program.")
@@ -33,11 +32,11 @@ def main():
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=512)
 	parser.add_argument("--maxshift", type=int, help="Set the maximum frame translation distance in pixels.",default=5)
 	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization.",default=2500)
-	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--fixaxes",action="store_true",default=True,help="Tries to identify bad pixels and fill them in with sane values instead")
 	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
 	parser.add_argument('--xybadlines', help="Specify the list of bad pixel coordinates for your detector. Will only be used if --fixbadlines is also specified.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
-	parser.add_argument("--show", action="store_true",help="Show average of movie frames before and after alignment.",default=False)
+	parser.add_argument("--show", action="store_true",help="Show average of movie frames before and after alignment.",default=True)
+	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
@@ -60,47 +59,51 @@ def main():
 		
 		if options.verbose and len(args) > 1: print("Processing {}".format(fname))
 		
-		if options.gain or options.dark or options.gaink2 or options.fixbadlines:
-			if options.verbose: print("Correcting movie frames")
+		if options.gain or options.dark or options.gaink2:
+			if options.verbose: print("Correcting frames")
 			fname = MovieAligner.correct_frames(options,fname)
 		
-		if options.verbose: print("Acquiring alignment parameters")
-		alignment = MovieAligner(fname,bs=options.boxsize,fixaxes=options.fixaxes)
-		if options.verbose: print("Optimizing frame alignment")
+		if options.verbose: print("Acquiring parameters")
+		alignment = MovieAligner(options,fname)
+		
+		if options.verbose: print("Optimizing alignment")
 		alignment.optimize(options)
 		
 		if options.show:
-			br = alignment.before
-			bc = alignment.before.do_fft()
-			ar = alignment.after
-			ac = alignment.after.do_fft()
-			display([br,bc,ar,ac])
+			before = [alignment.before,alignment.before.do_fft()]
+			after = [alignment.after,alignment.after.do_fft()]
+			display(before+after)
 	
 	E2end(pid)
 
 class MovieAligner:
 	
-	def __init__(self, fname, bs,fixaxes=False):
+	def __init__(self, options, fname):
 		self.path = fname
-		self.bs = bs
-		self.fixaxes = fixaxes
+		self.bs = options.boxsize
 		self.hdr = EMData(fname,0,True)
 		self.hdr['nimg'] = EMUtil.get_image_count(fname)
 		self.base = fname.split('.')[0]
+		if options.fixbadlines:
+			options.xybadlines = [map(int,s.split(',')) for s in options.xybadlines]
 		self.frames = []
 		for i in xrange(self.hdr['nimg']):
 			f = EMData(fname,i)
-			if fixaxes: f.process_inplace('filter.xyaxes0',{'x':0,'y':0})
+			if options.fixbadlines:
+				for line in options.xybadlines:
+					coords = map(int,line.split(','))
+					f.process_inplace('math.xybadline',{'xloc':coords[0],'yloc':coords[1]})
+			if options.fixaxes: f.process_inplace('filter.xyaxes0',{'neighbor':0,'x':1,'y':1})
 			self.frames.append(f)
 		self.translations = np.zeros((self.hdr['nimg'],2))
 		self.best_translations = np.zeros((self.hdr['nimg'],2))
 		self.before = self.save(descriptor="unaligned",save_frames=False) 
-		border = bs+50
-		mx = np.arange(border,self.hdr['nx']-border,bs)
-		my = np.arange(border,self.hdr['ny']-border,bs)
+		border = self.bs+50
+		mx = np.arange(border,self.hdr['nx']-border,self.bs)
+		my = np.arange(border,self.hdr['ny']-border,self.bs)
 		self._regions = {}
 		for i in xrange(self.hdr['nimg']): 
-			self._regions[i] = np.array([[x,y] for y in my for x in mx])
+			self._regions[i] = [[x,y] for y in my for x in mx]
 		self._stacks = {}
 		for ir in xrange(len(self._regions[0])):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
@@ -108,6 +111,7 @@ class MovieAligner:
 		self.static_fnum = int(self.hdr['nimg']/3)
 		self.energies = [np.inf]
 		self.verbose = False
+		self.plot = options.plot
 		self.cps_counter = 0
 		self.calc_energy()
 	
@@ -126,7 +130,7 @@ class MovieAligner:
 		self.ips = ips.finish()
 		self.ips.process_inplace("math.sqrt") 
 		self.ips["is_intensity"]=0
-		#self.ips.process_inplace('filter.highpass.gauss',{'cutoff_freq':0.0005})
+		self.ips.process_inplace('filter.highpass.gauss',{'cutoff_freq':0.05})
 		self.ips.process_inplace('math.rotationalaverage')
 		self.real_ips = self.ips.do_ift()
 		self.real_ips['is_intensity'] = 0
@@ -146,7 +150,7 @@ class MovieAligner:
 		self.cps = cps.finish()
 		self.cps.process_inplace('math.sqrt')
 		self.cps["is_intensity"]=0
-		#self.cps.process_inplace('filter.highpass.gauss',{'cutoff_freq':0.0005})
+		self.cps.process_inplace('filter.highpass.gauss',{'cutoff_freq':0.05})
 		self.real_cps = self.cps.do_ift()
 		self.real_cps['is_intensity'] = 0
 		self.oned_cps, self.cps_ctf, self.cps_ctf_fit = self.fit_defocus(self.cps)
@@ -156,17 +160,34 @@ class MovieAligner:
 			self.calc_incoherent_pws()
 			self.write_ips()
 		self.calc_coherent_pws()
+		# get power spectra
 		ips_ctf_fit = np.asarray(self.ips_ctf_fit)
 		oned_cps = np.asarray(self.oned_cps)
-		# normalize
+		# normalize ips/cps
 		ips_ctf_fit/=np.sqrt(ips_ctf_fit.dot(ips_ctf_fit))
 		oned_cps/=np.sqrt(oned_cps.dot(oned_cps))
-		# regularize
-		ips_ctf_fit -= 0.1
-		# compare
-		compared = np.dot(ips_ctf_fit,oned_cps)
-		# scale
-		energy = compared #np.log(1-compared)
+		if self.plot:
+			fig = plt.figure()
+			ax1 = fig.add_subplot(121)
+			ax2 = fig.add_subplot(122)
+			ax1.plot(ips_ctf_fit,label='ips')
+			ax1.plot(oned_cps,label='cps')
+		#filter out low resolution
+		ramp=np.linspace(0,1,len(ips_ctf_fit))
+		ips_ctf_fit*=ramp
+		oned_cps*=ramp
+		cps_weight = 1
+		oned_cps*=ramp*cps_weight
+		if self.plot:
+			#ax2.plot(ramp,label='ramp')
+			ax2.plot(ips_ctf_fit,label='ips * ramp')
+			ax2.plot(oned_cps,label='cps * {} * ramp'.format(cps_weight))
+			ax1.legend()
+			ax2.legend()
+			plt.show()
+			sys.exit(1)
+		# compute dot product between ips/cps
+		energy = np.log(1-np.dot(ips_ctf_fit,oned_cps))
 		if energy < min(self.energies):
 			self.write_cps()
 			self.best_translations = self.translations
@@ -293,9 +314,9 @@ class MovieAligner:
 		avg = Averagers.get('mean')
 		for i,t in enumerate(self.translations):
 			f = self.frames[i].copy()
-			#tf = Transform({'type':'eman','tx':int(round(t[0])),'ty':int(round(t[1]))})
-			#f.transform(tf)
-			f.translate(int(round(t[0])),int(round(t[1])),0)
+			tx = int(round(t[0]))
+			ty = int(round(t[1]))
+			f.translate(tx,ty,0)
 			if save_frames: f.write_image(frame_file,i)
 			avg.add_image(f)
 		average = avg.finish()
@@ -380,15 +401,8 @@ class MovieAligner:
 		hdr = EMData(options.path,0,True)
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
 		else: nd = EMUtil.get_image_count(options.path)
-		step = options.step.split(",")
-		if len(step) == 3: last = int(step[2])
-		else: last = nd
-		first = int(step[0])
-		step  = int(step[1])
-		if options.xybadlines:
-			options.xybadlines = [map(int,s.split(',')) for s in options.xybadlines]
 		if not outfile: outfile = options.path[:-4] + "_corrected.hdf"
-		for i in xrange(first,last,step):
+		for i in xrange(nd):
 			if options.verbose:
 				print "Correcting frame: {}/{}	\r".format(i+1,nd),
 				sys.stdout.flush()
@@ -398,17 +412,11 @@ class MovieAligner:
 			else: im=EMData(options.path,i)
 			if dark: im.sub(dark)
 			if gain: im.mult(gain)
-			if not "corrected" in fname:
-				im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
-				# fixes clear outliers as well as values which were exactly zero
-				im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) 
-			#if options.fixaxes: im.process_inplace('filter.xyaxes0')
-			if options.fixbadlines:
-				for bl in options.xybadlines:
-					# remove detector-specific bad lines
-					im.process_inplace('math.xybadline',{'xloc':bl[0],'yloc':bl[1]}) 
+			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
+			# fixes clear outliers as well as values which were exactly zero
+			im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1}) 
 			im.process_inplace("normalize.edgemean")
-			im.write_image(outfile,i-first)
+			im.write_image(outfile,i)
 		else: outfile = options.path
 		return outfile
 
