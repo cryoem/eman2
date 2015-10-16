@@ -157,9 +157,9 @@ def AI( Tracker, HISTORY, chout = False):
 						Tracker["zoom"] = True
 						Tracker["xr"] , Tracker["ts"] = stepshift(int(Tracker["shifter"]+0.5), nxrsteps = 2)
 						Tracker["an"] = ""
-								for i in xrange(len(get_input_from_string(Tracker["xr"]))):
-									if(Tracker["anger"] == 0.0 ): round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["nxinit"]))/Tracker["radius"])), 2)
-									else:							Tracker["an"] += "%f  "%(3*Tracker["anger"])
+						for i in xrange(len(get_input_from_string(Tracker["xr"]))):
+							if(Tracker["anger"] == 0.0 ): round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["nxinit"]))/Tracker["radius"])), 2)
+							else:							Tracker["an"] += "%f  "%(3*Tracker["anger"])
 				else:
 					Tracker["anger"]   = -1.0
 					Tracker["shifter"] = -1.0
