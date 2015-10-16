@@ -239,10 +239,10 @@ const string TestImageNoiseUniformRand::NAME = "testimage.noise.uniform.rand";
 const string TestImageNoiseGauss::NAME = "testimage.noise.gauss";
 const string TestImageCylinder::NAME = "testimage.cylinder";
 const string CCDNormProcessor::NAME = "filter.ccdnorm";
-//const string WaveletProcessor::NAME = "basis.wavelet";
+const string WaveletProcessor::NAME = "basis.wavelet";
 const string TomoTiltEdgeMaskProcessor::NAME = "tomo.tiltedgemask";
 const string TomoTiltAngleWeightProcessor::NAME = "tomo.tiltangleweight";
-//const string FFTProcessor::NAME = "basis.fft";
+const string FFTProcessor::NAME = "basis.fft";
 const string RadialProcessor::NAME = "mask.radialprofile";
 const string HistogramBin::NAME = "histogram.bin";
 const string ModelEMCylinderProcessor::NAME = "math.model_em_cylinder";
@@ -537,8 +537,8 @@ template <> Factory < Processor >::Factory()
 	force_add<CTF_Processor>();
 	force_add<SHIFTProcessor>();
 
-	force_add<WaveletProcessor>();
-	force_add<FFTProcessor>();
+//	force_add<WaveletProcessor>();
+//	force_add<FFTProcessor>();
 	force_add<RadialProcessor>();
 
 	force_add<DirectionalSumProcessor>();
