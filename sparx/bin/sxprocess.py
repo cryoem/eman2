@@ -326,7 +326,7 @@ def main():
 	# generate adaptive mask from an given 3-Db volue
 	parser.add_option("--adaptive_mask",                    action="store_true",          help="create adavptive 3-D mask from a given volume", default=False)
 	parser.add_option("--nsigma",              	type="float",	default= 1.,     	      help="number of times of sigma of the input volume to obtain the the large density cluster")
-	parser.add_option("--ndilation",            type="int",		default= 3.,     		  help="number of times of dilation applied to the largest cluster of density")
+	parser.add_option("--ndilation",            type="int",		default= 3,     		  help="number of times of dilation applied to the largest cluster of density")
 	parser.add_option("--kernel_size",          type="int",		default= 11,     		  help="convolution kernel for smoothing the edge of the mask")
 	parser.add_option("--gauss_standard_dev",   type="int",		default= 9,     		  help="stanadard deviation value to generate Gaussian edge")
 	 
