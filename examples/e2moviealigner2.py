@@ -31,7 +31,8 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=512)
-	parser.add_argument("--maxshift", type=float, help="Set the maximum radial frame translation distance (in pixels) from the initial frame alignment.",default=5.0)
+	parser.add_argument("--maxshift", type=int, help="Set the maximum frame translation distance in pixels.",default=5)
+	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization.",default=500)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--fixaxes",action="store_true",default=True,help="Tries to identify bad pixels and fill them in with sane values instead")
 	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
@@ -155,14 +156,17 @@ class MovieAligner:
 			self.calc_incoherent_pws()
 			self.write_ips()
 		self.calc_coherent_pws()
-		# get power spectra
 		ips_ctf_fit = np.asarray(self.ips_ctf_fit)
 		oned_cps = np.asarray(self.oned_cps)
 		# normalize
 		ips_ctf_fit/=np.sqrt(ips_ctf_fit.dot(ips_ctf_fit))
 		oned_cps/=np.sqrt(oned_cps.dot(oned_cps))
+		# regularize
+		ips_ctf_fit -= 0.1
 		# compare
-		energy = np.log(1-np.dot(ips_ctf_fit,oned_cps))
+		compared = np.dot(ips_ctf_fit,oned_cps)
+		# scale
+		energy = compared #np.log(1-compared)
 		#c = self.cps.process('normalize.unitlen')
 		#i = self.ips.process('normalize.unitlen')
 		#energy = -EMData.cmp(c,'dot',i)
@@ -253,7 +257,7 @@ class MovieAligner:
 		#	bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
 		#	for i,bd in enumerate(bds):
 		#		print("{}\t( {}, {} )\t( {}, {} )".format(i+1,bd[0,0],bd[1,0],bd[0,1],bd[1,1]))
-		res = differential_evolution(self._compares, bounds, args=(self,), polish=True)
+		res = differential_evolution(self._compares, bounds, args=(self,), polish=True, maxiter=options.maxiter, popsize=25, strategy='best2bin', mutation=(0.5,1), recombination=0.7, disp=True, tol=0.01)
 		if options.verbose > 6: print(res.message)
 		info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
 		print(info)
@@ -278,13 +282,13 @@ class MovieAligner:
 					aligner._stacks[reg_num][frame_num] = new_coords
 		energy = aligner.calc_energy()
 		if aligner.verbose:
-			i = str(aligner.iter).ljust(4)
-			b = str(min(aligner.energies)).ljust(4)
-			c = str(aligner.energies[-1]).ljust(4)
+			i = str(aligner.iter)
+			b = str(min(aligner.energies))
+			c = str(aligner.energies[-1])
 			#if i > 1: w = str(max(aligner.energies[1:])).ljust(4)
 			#else: w = l
 			#out = "{}\tEnergy: {}\tBest: {}\tWorst: {}\r".format(i,c,b,w)
-			out = "{}\tEnergy: {}\tBest: {}\r".format(i,c,b)
+			out = "{}\tEnergy: {}\t\tBest: {}\r".format(i,c,b)
 			sys.stdout.write(out)
 			sys.stdout.flush()
 		return energy
