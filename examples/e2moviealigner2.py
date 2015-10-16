@@ -152,8 +152,8 @@ class MovieAligner:
 			self.write_ips()
 		self.calc_coherent_pws()
 		# get (windowed) 1D power spectra
-		start = 40
-		stop = 120
+		start = len(self.oned_cps)/4
+		stop = 3*len(self.oned_cps)/4
 		ips = self.ips_ctf_fit[start:stop]
 		cps = self.oned_cps[start:stop]
 		# normalize ips/cps
