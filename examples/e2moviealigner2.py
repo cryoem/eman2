@@ -7,8 +7,8 @@ from EMAN2 import *
 import numpy as np
 import matplotlib.pyplot as plt
 try:
-	from scipy.optimize import minimize
-	#from scipy.optimize import differential_evolution
+	#from scipy.optimize import minimize
+	from scipy.optimize import differential_evolution
 except:
 	print("You must install scipy to use this program.")
 	print("To do this, you could use either 'sudo pip install scipy' or 'sudo easy_install scipy'.")
@@ -32,7 +32,7 @@ def main():
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=512)
 	parser.add_argument("--maxshift", type=int, help="Set the maximum frame translation distance in pixels.",default=5)
-	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization.",default=500)
+	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization.",default=1000)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--fixaxes",action="store_true",default=True,help="Tries to identify bad pixels and fill them in with sane values instead")
 	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
@@ -236,33 +236,32 @@ class MovieAligner:
 	
 	def optimize(self, options,bounds=None):
 		if options.verbose: self.verbose = True
-		state = np.random.randint(-3,3,size=(self.hdr['nimg'],2)).flatten()
+		#state = np.random.randint(-3,3,size=(self.hdr['nimg'],2)).flatten()
 		#sm = Simplex(self._compares,state,[1]*len(state),data=self)
 		#minimum, error, iters = sm.minimize(0.01,options.maxiter,monitor=1)
-		res = minimize(self._compares, state, method='Nelder-Mead', options={'maxiter':options.maxiter,'disp': True,'xtol':0.25}, args=self)
-		# if bounds == None:
-# 			ms = options.maxshift
-# 			c1 = self.static_fnum
-# 			c2 = self.hdr['nimg'] - self.static_fnum
-# 			ub1 = [round(ms*((c1+1)-(i+1))/(c1+1),1) for i in range(c1)]
-# 			ub2 = [round(ms*(i+1)/(c2+1),1) for i in range(c2)]
-# 			bounds = []
-# 			for b in ub1+ub2:
-# 				bounds.append((-int(round(b)),int(round(b))))
-# 				bounds.append((-int(round(b)),int(round(b))))
-# 		#if options.verbose > 6:
-# 		#	print("Initializing optimization with the following bounds:")
-# 		#	print("Frame\tLower\t\tUpper")
-# 		#	bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
-# 		#	for i,bd in enumerate(bds):
-# 		#		print("{}\t( {}, {} )\t( {}, {} )".format(i+1,bd[0,0],bd[1,0],bd[0,1],bd[1,1]))
-# 		res = differential_evolution(self._compares, bounds, args=(self,), polish=True, maxiter=options.maxiter, popsize=25, strategy='best2bin', mutation=(0.5,1), recombination=0.7, disp=True, tol=0.01)
-		if options.verbose > 6: print(res.message)
-		info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}".format(res.fun,res.nit,res.nfev)
-		print(info)
+		#res = minimize(self._compares, state, method='Nelder-Mead', options={'maxiter':options.maxiter,'disp': True}, args=self)
+		if bounds == None:
+			ms = options.maxshift
+			c1 = self.static_fnum
+			c2 = self.hdr['nimg'] - self.static_fnum
+			ub1 = [round(ms*((c1+1)-(i+1))/(c1+1),1) for i in range(c1)]
+			ub2 = [round(ms*(i+1)/(c2+1),1) for i in range(c2)]
+			bounds = []
+			for b in ub1+ub2:
+				bounds.append((-int(round(b)),int(round(b))))
+				bounds.append((-int(round(b)),int(round(b))))
+		# if options.verbose > 6:
+		# 	print("Initializing optimization with the following bounds:")
+		# 	print("Frame\tLower\t\tUpper")
+		# 	bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
+		# 	for i,bd in enumerate(bds):
+		# 		print("{}\t( {}, {} )\t( {}, {} )".format(i+1,bd[0,0],bd[1,0],bd[0,1],bd[1,1]))
+		res = differential_evolution(self._compares, bounds, args=(self,), polish=True, maxiter=options.maxiter, popsize=25, strategy='best2bin', mutation=(0.5,1), recombination=0.7, disp=True, tol=0.01)
 		print("\nFrame\tTranslation")
 		with open(self.path[:-4]+"_results.txt",'w') as results:
-			results.write(info+"\n")
+			info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
+			#print(info)
+			results.write(info)
 			for i,t in enumerate(self.best_translations):
 				info = "{}\t( {}, {} )".format(i+1,int(t[0]),int(t[1]))
 				print(info); results.write(info+"\n")
