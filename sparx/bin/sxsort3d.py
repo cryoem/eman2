@@ -108,7 +108,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file,Tracker):
 
 	######
 	Tracker["applyctf"] = False
-	data, old_shifts    = get_shrink_data(Tracker,Tracker["nxinit"],this_data_list_file,Tracker["constants"]["partstack"],myid, main_node, number_of_proc, preshift = True)
+	data, old_shifts    = get_shrink_data_huang(Tracker,Tracker["nxinit"],this_data_list_file,Tracker["constants"]["partstack"],myid, main_node, number_of_proc, preshift = True)
 
 	from time import time	
 
@@ -558,7 +558,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file,Tracker):
 	frequency_low_pass   = Tracker["frequency_low_pass"]
 	######
 	Tracker["applyctf"] = False
-	data, old_shifts =  get_shrink_data(Tracker,Tracker["nxinit"],particle_list_file,partstack,myid,main_node,number_of_proc,preshift=True)
+	data, old_shifts =  get_shrink_data_huang(Tracker,Tracker["nxinit"],particle_list_file,partstack,myid,main_node,number_of_proc,preshift=True)
 	if myid == main_node:
 		if os.path.exists(outdir):  nx = 1
 		else:  nx = 0
@@ -2211,7 +2211,7 @@ def recons_mref(Tracker):
 		if myid ==main_node:
 			write_text_file(Tracker["this_data_list"],particle_list_file)
 		mpi_barrier(MPI_COMM_WORLD)
-		data, old_shifts =  get_shrink_data(Tracker,nxinit,particle_list_file,partstack,myid,main_node,nproc,preshift=True)
+		data, old_shifts =  get_shrink_data_huang(Tracker,nxinit,particle_list_file,partstack,myid,main_node,nproc,preshift=True)
 		#vol=reconstruct_3D(Tracker,data)
 		mpi_barrier(MPI_COMM_WORLD)
 		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],info=None)
@@ -2412,7 +2412,7 @@ def main():
 		#--------------------------------------------------------------------
 		#
 		# Get the pixel size; if none, set to 1.0, and the original image size
-		from utilities import get_shrink_data
+		from utilities import get_shrink_data_huang
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(line,"INITIALIZATION OF Equal-Kmeans & Kmeans Clustering")
@@ -2527,7 +2527,7 @@ def main():
 			write_text_file(l1,partids)
 		mpi_barrier(MPI_COMM_WORLD)
 		#print " AAAAAA ",myid, main_node, nproc
-		data1,old_shifts1 = get_shrink_data(Tracker,Tracker["nxinit"], partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
+		data1,old_shifts1 = get_shrink_data_huang(Tracker,Tracker["nxinit"], partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 		#if myid ==main_node:
 		#	print "  XUXU ",Tracker["constants"]["stack"], Tracker["partstack"], myid, nproc
 		#data1 =  getindexdata(Tracker["constants"]["stack"], "full.txt", Tracker["partstack"], myid, nproc)
@@ -2545,7 +2545,7 @@ def main():
 		if myid == main_node:
 			write_text_file(l2,partids)
 		mpi_barrier(MPI_COMM_WORLD)
-		data2,old_shifts2 = get_shrink_data(Tracker,Tracker["nxinit"], partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
+		data2,old_shifts2 = get_shrink_data_huang(Tracker,Tracker["nxinit"], partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 		vol2 = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data2, symmetry=Tracker["constants"]["sym"], info=None)
 		if myid ==main_node:
 			vol2_file_name = os.path.join(masterdir, "vol2.hdf")
@@ -2654,7 +2654,7 @@ def main():
 			Tracker["this_data_list_file"] = os.path.join(workdir,"stable_class%d.txt"%igrp)
 			if myid ==main_node:
 				write_text_file(Tracker["this_data_list"],Tracker["this_data_list_file"])
-			data,old_shifts = get_shrink_data(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"],Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
+			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"],Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], info=None)
 			ref_vol_list.append(volref)
 			if myid ==main_node:
@@ -2712,7 +2712,7 @@ def main():
 				if myid ==main_node:
 					write_text_file(Tracker["this_data_list"],Tracker["this_data_list_file"])
 				mpi_barrier(MPI_COMM_WORLD)
-				data,old_shifts = get_shrink_data(Tracker,Tracker["nxinit"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], info=None)
 				ref_vol_list.append(volref)
 			ref_vol_list = apply_low_pass_filter(ref_vol_list,Tracker)
