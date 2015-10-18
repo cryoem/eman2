@@ -31,9 +31,9 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=512)
-	parser.add_argument("--maxshift", type=int, help="Set the maximum frame translation distance in pixels.",default=4)
-	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization (N*POPSIZE*2*FRAMES) differential evolution steps.",default=5)
-	parser.add_argument("--popsize", type=int, help="Population size to be used in differential evolution.",default=15)
+	parser.add_argument("--maxshift", type=int, help="Set the maximum frame translation distance in pixels.",default=10)
+	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization (N*POPSIZE*2*FRAMES) differential evolution steps.",default=15)
+	parser.add_argument("--popsize", type=int, help="Population size to be used in differential evolution.",default=25)
 	parser.add_argument("--fixaxes",action="store_true",default=False,help="Tries to identify bad pixels and fill them in with sane values instead")
 	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
 	parser.add_argument('--xybadlines', help="Specify the list of bad pixel coordinates for your detector. Will only be used if --fixbadlines is also specified.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
@@ -103,13 +103,13 @@ class MovieAligner:
 		for ir in xrange(len(self._regions[0])):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self.iter = 0
-		self.static_fnum = int(self.hdr['nimg']/2)
+		self.static_fnum = int(self.hdr['nimg']/3)
 		self.energies = [np.inf]
 		self.verbose = options.verbose
 		self.plot = options.plot
 		self.fixaxes = options.fixaxes
 		self.cps_counter = 0
-		self.low_cutoff = 0.07
+		#self.low_cutoff = 0.07
 		self.calc_energy()
 	
 	def calc_incoherent_pws(self):
@@ -151,21 +151,22 @@ class MovieAligner:
 			self.calc_incoherent_pws()
 			self.write_ips()
 		self.calc_coherent_pws()
+		if self.iter == 0: self.write_cps()
 		# get (windowed) 1D power spectra
-		start = len(self.oned_cps)/4
-		stop = 3*len(self.oned_cps)/4
+		start = int(len(self.oned_cps)*(2./8.))
+		stop = int(len(self.oned_cps)*(5./8.))
+		#filter out low resolution
 		ips = self.ips_ctf_fit[start:stop]
 		cps = self.oned_cps[start:stop]
 		# normalize ips/cps
 		#ips/=np.sqrt(ips.dot(ips))
 		#cps/=np.sqrt(cps.dot(cps))
-		#filter out low resolution
 		#ramp=np.linspace(0.5,1.25,len(cps))
 		#ramp=np.exp(ramp)
 		#iwt = 1.0
 		#cwt = 1.0
 		if self.plot:
-			if self.iter == 0:
+			if self.iter % 50 == 0:
 				plt.figure()
 				plt.plot(ips,label='ips')
 				plt.plot(cps,label='cps')
@@ -174,12 +175,11 @@ class MovieAligner:
 				plt.legend()
 				plt.tight_layout()
 				plt.show()
-		#ips*=ramp*iwt
-		#cps*=ramp*cwt
 		# compute dot product between ips/cps
-		#nauc = np.trapz(cps)/(stop-start)
-		energy = -np.dot(ips,cps)#-nauc
-		if energy < min(self.energies):
+		#print(np.std(cps))
+		#print(np.mean(cps))
+		energy = -np.dot(ips,cps)
+		if energy < min(self.energies) and min(cps) < 0.25: #and np.std(cps) > 0.075
 			self.write_cps()
 			self.best_translations = self.translations
 		self.energies.append(energy)
@@ -191,6 +191,7 @@ class MovieAligner:
 			print("Removing old coherent power spectrum")
 			try: os.remove(self.path[:-4]+"_pws_coherent.hdf")
 			except OSError: pass
+		self.cps[0,0] = 0
 		self.real_cps = self.cps.do_ift()
 		self.real_cps.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':2,'x':1,'y':1})
 		self.real_cps['is_intensity'] = 0
@@ -198,6 +199,7 @@ class MovieAligner:
 		self.cps_counter += 1
 	
 	def write_ips(self):
+		self.ips[0,0] = 0
 		self.real_ips = self.ips.do_ift()
 		self.real_ips.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':2,'x':1,'y':1})
 		self.real_ips['is_intensity'] = 0
@@ -266,17 +268,18 @@ class MovieAligner:
 			c1 = self.static_fnum
 			c2 = self.hdr['nimg'] - self.static_fnum
 			ub1 = [round(ms*((c1+1)-(i+1))/(c1+1),1) for i in range(c1)]
-			ub2 = [round(ms*(i+1)/(c2+1),1) for i in range(c2)]
+			ub2 = [round(ms*(i+1)/(c2+1),1)+1 for i in range(c2)]
 			bounds = []
 			for b in ub1+ub2:
 				bounds.append((-int(round(b)),int(round(b))))
 				bounds.append((-int(round(b)),int(round(b))))
-		# if options.verbose > 6:
-		# 	print("Initializing optimization with the following bounds:")
-		# 	print("Frame\tLower\t\tUpper")
-		# 	bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
-		# 	for i,bd in enumerate(bds):
-		# 		print("{}\t( {}, {} )\t( {}, {} )".format(i+1,bd[0,0],bd[1,0],bd[0,1],bd[1,1]))
+		if options.verbose > 8:
+			print("Initializing optimization with the following bounds:")
+			print("Frame\tMaximum Shift Magnitude")
+			bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
+			for i,bd in enumerate(bds):
+				print("{}\t{}".format(i+1,round(np.sqrt(bd[0,1]**2+bd[1,1]**2),0)))
+			print("")
 		#state = np.random.randint(-2,2,size=(self.hdr['nimg'],2)).flatten()
 		#res = minimize(self._compares, state, method='Nelder-Mead', options={'maxiter':options.maxiter,'disp': True}, args=self)
 		if options.verbose: disp=True
@@ -285,7 +288,6 @@ class MovieAligner:
 		print("\nFrame\tTranslation")
 		with open(self.path[:-4]+"_results.txt",'w') as results:
 			info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
-			#print(info)
 			results.write(info)
 			for i,t in enumerate(self.best_translations):
 				info = "{}\t( {}, {} )".format(i+1,int(t[0]),int(t[1]))
@@ -310,8 +312,8 @@ class MovieAligner:
 			c = str(aligner.energies[-1])
 			if i > 1: w = str(max(aligner.energies[1:])).ljust(4)
 			else: w = l
-			if aligner.verbose: 
-				out = "{}    Energy: {}    Best: {}    Worst: {}\r".format(i,c,b,w)
+			if aligner.verbose:
+				out = "{}  Energy: {}  Best: {}  Worst: {}\r".format(i,c,b,w)
 				sys.stdout.write(out)
 				sys.stdout.flush()
 		return energy
