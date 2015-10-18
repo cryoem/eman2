@@ -6636,9 +6636,9 @@ void FSCFourierProcessor::process_inplace(EMData *image)
 EMData *FSCFourierProcessor::process(EMData const *image)
 {
 	const char *fsp = params["fscfile"];
-	float snrmult = params.set_default("snrmult",2.0f);
+	float snrmult = params.set_default("snrmult",1.5f);
 	float sscale = params.set_default("sscale",1.0f);
-	float maxfreq = params.set_default("sscale",1.0f);
+	float maxfreq = params.set_default("maxfreq",1.0f);
 
 	XYData fsc;
 	fsc.read_file(fsp);
@@ -6652,7 +6652,7 @@ EMData *FSCFourierProcessor::process(EMData const *image)
 		float s=i*nyquist/N;
 		float f=fsc.get_y(i);
 		float snr;
-		if (s>=maxfreq && lf<f) f=lf;
+		if (s>=maxfreq && lf<f) f=lf*.9;
 		if (f<0 && i>2) localav=1;
 		if (localav==1 && i>N-3) f=lf;
 		else if (localav==1) f=(fsc.get_y(i-2)+fsc.get_y(i-1)+fsc.get_y(i)+fsc.get_y(i+1)+fsc.get_y(i+2))/5.0f;
