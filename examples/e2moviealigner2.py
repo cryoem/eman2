@@ -7,8 +7,7 @@ from EMAN2 import *
 import numpy as np
 import matplotlib.pyplot as plt
 try:
-	from scipy.optimize import minimize
-	from scipy.optimize import differential_evolution
+	from scipy import optimize
 except:
 	print("You must install scipy to use this program.")
 	print("To do this, you could use either 'sudo pip install scipy' or 'sudo easy_install scipy'.")
@@ -32,8 +31,11 @@ def main():
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=512)
 	parser.add_argument("--maxshift", type=int, help="Set the maximum frame translation distance in pixels.",default=10)
-	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization (N*POPSIZE*2*FRAMES) differential evolution steps.",default=15)
-	parser.add_argument("--popsize", type=int, help="Population size to be used in differential evolution.",default=25)
+	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization (this is NOT equivalent to function evaluations).",default=25)
+	#parser.add_argument("--stepsize", type=int, help="Set the step size for optimization.",default=1.0)
+	parser.add_argument("--temperature", type=float, help="Set the temperature (rejection criterion) for optimization.",default=0.5)
+	parser.add_argument("--neighbornorm", type=int, help="Set the norm to be used for fixing axes. Default is sqrt(2)",default=np.sqrt(2))
+	#parser.add_argument("--popsize", type=int, help="Population size to be used in differential evolution.",default=25)
 	parser.add_argument("--fixaxes",action="store_true",default=False,help="Tries to identify bad pixels and fill them in with sane values instead")
 	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
 	parser.add_argument('--xybadlines', help="Specify the list of bad pixel coordinates for your detector. Will only be used if --fixbadlines is also specified.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
@@ -83,6 +85,7 @@ class MovieAligner:
 		self.hdr = EMData(fname,0,True)
 		self.hdr['nimg'] = EMUtil.get_image_count(fname)
 		self.base = fname.split('.')[0]
+		self.nnorm = options.neighbornorm
 		self.frames = []
 		for i in xrange(self.hdr['nimg']):
 			f = EMData(fname,i)
@@ -93,21 +96,21 @@ class MovieAligner:
 			self.frames.append(f)
 		self.translations = np.zeros((self.hdr['nimg'],2))
 		self.best_translations = np.zeros((self.hdr['nimg'],2))
+		self.fixaxes = options.fixaxes
 		self.before = self.save(descriptor="unaligned",save_frames=False) 
 		mx = np.arange(self.bs+50,self.hdr['nx']-self.bs+50,self.bs)
 		my = np.arange(self.bs+50,self.hdr['ny']-self.bs+50,self.bs)
 		self._regions = {}
-		for i in xrange(self.hdr['nimg']): 
+		for i in xrange(self.hdr['nimg']):
 			self._regions[i] = [[x,y] for y in my for x in mx]
 		self._stacks = {}
 		for ir in xrange(len(self._regions[0])):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self.iter = 0
-		self.static_fnum = int(self.hdr['nimg']/3)
+		self.static = int(self.hdr['nimg']/3)
 		self.energies = [np.inf]
 		self.verbose = options.verbose
 		self.plot = options.plot
-		self.fixaxes = options.fixaxes
 		self.cps_counter = 0
 		#self.low_cutoff = 0.07
 		self.calc_energy()
@@ -153,8 +156,8 @@ class MovieAligner:
 		self.calc_coherent_pws()
 		if self.iter == 0: self.write_cps()
 		# get (windowed) 1D power spectra
-		start = int(len(self.oned_cps)*(2./8.))
-		stop = int(len(self.oned_cps)*(5./8.))
+		start = int(len(self.oned_cps)*(1./8.))
+		stop = int(len(self.oned_cps)*(7./8.))
 		#filter out low resolution
 		ips = self.ips_ctf_fit[start:stop]
 		cps = self.oned_cps[start:stop]
@@ -179,31 +182,33 @@ class MovieAligner:
 		#print(np.std(cps))
 		#print(np.mean(cps))
 		energy = -np.dot(ips,cps)
-		if energy < min(self.energies) and min(cps) < 0.25: #and np.std(cps) > 0.075
+		if energy < min(self.energies) and min(cps) < 0.25: # if we're subtracting the background, the minima should be ~0
 			self.write_cps()
 			self.best_translations = self.translations
 		self.energies.append(energy)
 		self.iter += 1
 		return energy
 	
-	def write_cps(self):
+	def write_cps(self,fname="_pws_coherent.hdf",n=None):
 		if self.cps_counter == 0:
 			print("Removing old coherent power spectrum")
-			try: os.remove(self.path[:-4]+"_pws_coherent.hdf")
+			try: os.remove(self.path[:-4]+fname)
 			except OSError: pass
 		self.cps[0,0] = 0
 		self.real_cps = self.cps.do_ift()
-		self.real_cps.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':2,'x':1,'y':1})
+		self.real_cps.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':self.nnorm,'x':1,'y':1})
 		self.real_cps['is_intensity'] = 0
-		self.real_cps.write_image(self.path[:-4]+"_pws_coherent.hdf",self.cps_counter)
-		self.cps_counter += 1
+		if n == None:
+			self.real_cps.write_image(self.path[:-4]+fname,self.cps_counter)
+			self.cps_counter += 1
+		else: self.real_cps.write_image(self.path[:-4]+fname,n)
 	
-	def write_ips(self):
+	def write_ips(self,fname="_pws_incoherent.hdf"):
 		self.ips[0,0] = 0
 		self.real_ips = self.ips.do_ift()
-		self.real_ips.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':2,'x':1,'y':1})
+		self.real_ips.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':self.nnorm,'x':1,'y':1})
 		self.real_ips['is_intensity'] = 0
-		self.real_ips.write_image(self.path[:-4]+"_pws_incoherent.hdf",0)
+		self.real_ips.write_image(self.path[:-4]+fname,0)
 	
 	def fit_defocus(self,img):
 		ds=1.0/(img["apix_x"]*self.bs)
@@ -238,7 +243,7 @@ class MovieAligner:
 		curve=np.array(ctf.compute_1d(ns*2,ds,Ctf.CtfType.CTF_AMP)[1:])
 		curve*=curve
 		if self.fixaxes: 
-			img.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':2,'x':1,'y':1})
+			img.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':self.nnorm,'x':1,'y':1})
 			oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
 			oned=np.log10(oned)
 			oned-=min(oned)
@@ -261,30 +266,36 @@ class MovieAligner:
 		return ret,bg
 	
 	def optimize(self, options, bounds=None):
-		#sm = Simplex(self._compares,state,[1]*len(state),data=self)
-		#minimum, error, iters = sm.minimize(0.01,options.maxiter,monitor=1)
+		if options.verbose: disp=True
+		else: disp = False
 		if bounds == None:
 			ms = options.maxshift
-			c1 = self.static_fnum
-			c2 = self.hdr['nimg'] - self.static_fnum
+			c1 = self.static
+			c2 = self.hdr['nimg'] - self.static
 			ub1 = [round(ms*((c1+1)-(i+1))/(c1+1),1) for i in range(c1)]
 			ub2 = [round(ms*(i+1)/(c2+1),1)+1 for i in range(c2)]
 			bounds = []
-			for b in ub1+ub2:
-				bounds.append((-int(round(b)),int(round(b))))
-				bounds.append((-int(round(b)),int(round(b))))
-		if options.verbose > 8:
-			print("Initializing optimization with the following bounds:")
-			print("Frame\tMaximum Shift Magnitude")
-			bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
-			for i,bd in enumerate(bds):
-				print("{}\t{}".format(i+1,round(np.sqrt(bd[0,1]**2+bd[1,1]**2),0)))
-			print("")
-		#state = np.random.randint(-2,2,size=(self.hdr['nimg'],2)).flatten()
-		#res = minimize(self._compares, state, method='Nelder-Mead', options={'maxiter':options.maxiter,'disp': True}, args=self)
-		if options.verbose: disp=True
-		else: disp = False
-		res = differential_evolution(self._compares,bounds,args=(self,),polish=False, maxiter=options.maxiter,popsize=options.popsize,disp=disp)
+			for bound in ub1+ub2:
+				b = int(round(bound))
+				bounds.append((-b,b)) # X
+				bounds.append((-b,b)) # Y
+		init_state = np.random.randint(-4,4,size=(self.hdr['nimg'],2)).flatten()
+		self.bounds = bounds
+		self.init_state = init_state
+		# if options.verbose > 8:
+		# 	print("Initializing optimization with the following bounds:")
+		# 	print("Frame\tMaximum Shift Magnitude")
+		# 	bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
+		# 	for i,bd in enumerate(bds):
+		# 		print("{}\t{}".format(i+1,round(np.sqrt(bd[0,1]**2+bd[1,1]**2),0)))
+		# 	print("")
+		cb = CallBack(self,options)
+		ts = None #TakeStep(self,options)
+		at = None #AcceptTest(self,options)
+		res = optimize.basinhopping(self._compares, init_state, minimizer_kwargs={'method':'Nelder-Mead','args':self}, T=options.temperature, niter=options.maxiter, disp=disp, callback=cb, take_step=ts, accept_test=at)
+		#res = optimize.minimize(self._compares, init_state, method='Nelder-Mead', options={'maxiter':options.maxiter,'disp': True}, args=self)
+		#res = optimize.differential_evolution(self._compares,bounds,args=(self,),polish=False, maxiter=options.maxiter,popsize=15,disp=disp)
+		#info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
 		print("\nFrame\tTranslation")
 		with open(self.path[:-4]+"_results.txt",'w') as results:
 			info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
@@ -299,23 +310,13 @@ class MovieAligner:
 		translations = np.asarray(ts).reshape((aligner.hdr['nimg'],2))
 		translations = np.round(translations).astype(int) # only allow integral shifts
 		for frame_num,trans in enumerate(translations):
-			if frame_num != aligner.static_fnum: # keep one frame in place
+			#if frame_num != aligner.static: # keep one frame in place
+			if not bool(np.all(trans == aligner.translations[frame_num])):
 				aligner.translations[frame_num] = trans
 				for reg_num in range(len(aligner._regions[frame_num])):
-					#new_coords = np.add(current_coords,trans)
 					aligner._regions[frame_num][reg_num] = trans
 					aligner._stacks[reg_num][frame_num] = trans
 		energy = aligner.calc_energy()
-		if aligner.verbose:
-			i = str(aligner.cps_counter)
-			b = str(min(aligner.energies))
-			c = str(aligner.energies[-1])
-			if i > 1: w = str(max(aligner.energies[1:])).ljust(4)
-			else: w = l
-			if aligner.verbose:
-				out = "{}  Energy: {}  Best: {}  Worst: {}\r".format(i,c,b,w)
-				sys.stdout.write(out)
-				sys.stdout.flush()
 		return energy
 	
 	def save(self,descriptor,save_frames=False):
@@ -324,6 +325,8 @@ class MovieAligner:
 		avg = Averagers.get('mean')
 		for i,t in enumerate(self.translations):
 			f = self.frames[i].copy()
+			if self.fixaxes:
+				f.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':self.nnorm,'x':1,'y':1})
 			f.translate(int(round(t[0])),int(round(t[1])),0)
 			if save_frames: f.write_image(frame_file,i)
 			avg.add_image(f)
@@ -427,6 +430,50 @@ class MovieAligner:
 			im.write_image(outfile,i)
 		else: outfile = options.path
 		return outfile
+
+### FOR BASINHOPPING (Similar to annealing):
+
+class TakeStep(object): # Impose soft bounds on the optimization
+	
+	def __init__(self, aligner, options):
+		self.maxshift = options.maxshift
+		self.static = aligner.static
+	
+	def __call__(self, x):
+		step = np.random.uniform(-self.maxshift/2, self.maxshift/2, x.shape).astype(int)
+		step[2*self.static] = 0
+		step[2*self.static+1] = 0
+		return x+step
+
+class AcceptTest(object): # Impose hard bounds on the optimiation
+	
+	def __init__(self, aligner, options):
+		self.xmin = [min(i) for i in aligner.bounds]
+		self.xmax = [max(i) for i in aligner.bounds]
+	
+	def __call__(self, **kwargs):
+		x = kwargs["x_new"]
+		tmax = bool(np.all(x <= self.xmax))
+		tmin = bool(np.all(x >= self.xmin))
+		return tmax and tmin
+
+class CallBack(object):
+	
+	def __init__(self, aligner, options):
+		self.aligner = aligner
+		self.counter = 0
+	
+	def __call__(self,x,fx,accepted):
+		i = str(self.aligner.iter)
+		n = str(self.aligner.cps_counter)
+		b = str(min(self.aligner.energies))
+		w = str(max(self.aligner.energies[1:]))
+		c = str(self.aligner.energies[-1])
+		if self.aligner.verbose: 
+			print("fEvals: {} CPS: {} Energy: {} Accepted: {}".format(i,n,fx,accepted))
+		self.aligner.write_cps(fname="_pws_coherent_callback.hdf",n=self.counter)
+		self.counter += 1
+		#self.aligner.best_translations = self.aligner.translations
 
 if __name__ == "__main__":
 	main()
