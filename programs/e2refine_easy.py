@@ -841,7 +841,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 		maxx=0.01
 
 		# iterate over fsc curves
-		for f in fscs:
+		for fi,f in enumerate(fscs):
 			num=int(f.split("_")[2][:2])
 
 			# read the fsc curve
@@ -862,7 +862,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
 						try:
 							plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),
-								xytext=((lastres*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+								xytext=((lastres*4+d[0][-1])/5.0,0.2+0.05*fi),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
 						except: pass
 						break
 				else : lastres=0
@@ -924,7 +924,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 					lastres.append(d[0][si]*(1.0-frac)+d[0][si-1]*frac)
 					try:
 						plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres[-1]),xy=(lastres[-1],0.143),
-							xytext=((lastres[-1]*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+							xytext=((lastres[-1]*4+d[0][-1])/5.0,0.2+0.05*i),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
 					except: pass
 					break
 

@@ -559,7 +559,10 @@ class EMLocalTaskHandler():
 #					print "Task complete ",p[1]
 					# if we get here, the task completed
 					self.completed.add(p[1])
-					del(EMLocalTaskHandler.allrunning[p[1]])
+					try:
+						del(EMLocalTaskHandler.allrunning[p[1]])
+					except:
+						print "Error: Very strange threading error when trying to delete ",p[1]," Continuing execution, but be wary of any strange results."
 
 			self.running=[i for i in self.running if i[1] not in self.completed]	# remove completed tasks
 
