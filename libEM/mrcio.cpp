@@ -251,7 +251,8 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 
 	const int max_dim = 1 << 20;
 
-	if ((mrcmode >= MRC_UCHAR && mrcmode < MRC_UNKNOWN) &&
+	if ((mrcmode >= MRC_UCHAR &&
+		(mrcmode < MRC_UNKNOWN || mrcmode == MRC_UHEX)) &&
 		(nx > 1 && nx < max_dim) && (ny > 0 && ny < max_dim)
 		 && (nz > 0 && nz < max_dim)) {
 
