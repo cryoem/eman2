@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Author: James Michael Bell, jmbell@bcm.edu, 10/18/2015
+
 import matplotlib
 #matplotlib.use('Agg')
 from Simplex import Simplex
@@ -33,8 +35,8 @@ def main():
 	parser.add_argument("--maxshift", type=int, help="Set the maximum frame translation distance in pixels.",default=10)
 	parser.add_argument("--maxiter", type=int, help="Set the maximum iterations for optimization (this is NOT equivalent to function evaluations).",default=25)
 	#parser.add_argument("--stepsize", type=int, help="Set the step size for optimization.",default=1.0)
-	parser.add_argument("--temperature", type=float, help="Set the temperature (rejection criterion) for optimization.",default=0.5)
-	parser.add_argument("--neighbornorm", type=int, help="Set the norm to be used for fixing axes. Default is sqrt(2)",default=np.sqrt(2))
+	#parser.add_argument("--temperature", type=float, help="Set the temperature (rejection criterion) for optimization.",default=0.5)
+	parser.add_argument("--neighbornorm", type=int, help="Set the norm to be used for fixing axes. Default is 2",default=2)
 	#parser.add_argument("--popsize", type=int, help="Population size to be used in differential evolution.",default=25)
 	parser.add_argument("--fixaxes",action="store_true",default=False,help="Tries to identify bad pixels and fill them in with sane values instead")
 	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
@@ -182,7 +184,8 @@ class MovieAligner:
 		#print(np.std(cps))
 		#print(np.mean(cps))
 		energy = -np.dot(ips,cps)
-		if energy < min(self.energies) and min(cps) < 0.25: # if we're subtracting the background, the minima should be ~0
+		# if we're subtracting the background, the minima should be ~0
+		if energy < min(self.energies) and min(cps) < 0.25: 
 			self.write_cps()
 			self.best_translations = self.translations
 		self.energies.append(energy)
@@ -268,6 +271,7 @@ class MovieAligner:
 	def optimize(self, options, bounds=None):
 		if options.verbose: disp=True
 		else: disp = False
+		
 		if bounds == None:
 			ms = options.maxshift
 			c1 = self.static
@@ -279,9 +283,8 @@ class MovieAligner:
 				b = int(round(bound))
 				bounds.append((-b,b)) # X
 				bounds.append((-b,b)) # Y
-		init_state = np.random.randint(-4,4,size=(self.hdr['nimg'],2)).flatten()
 		self.bounds = bounds
-		self.init_state = init_state
+		
 		# if options.verbose > 8:
 		# 	print("Initializing optimization with the following bounds:")
 		# 	print("Frame\tMaximum Shift Magnitude")
@@ -289,13 +292,19 @@ class MovieAligner:
 		# 	for i,bd in enumerate(bds):
 		# 		print("{}\t{}".format(i+1,round(np.sqrt(bd[0,1]**2+bd[1,1]**2),0)))
 		# 	print("")
-		cb = CallBack(self,options)
+		
+		init_state = np.random.randint(-1,1,size=(self.hdr['nimg'],2)).flatten()
+		self.init_state = init_state
+		
+		scb = SimplexCallBack(self,options)
+		cb = None #CallBack(self,options)
 		ts = None #TakeStep(self,options)
 		at = None #AcceptTest(self,options)
-		res = optimize.basinhopping(self._compares, init_state, minimizer_kwargs={'method':'Nelder-Mead','args':self}, T=options.temperature, niter=options.maxiter, disp=disp, callback=cb, take_step=ts, accept_test=at)
-		#res = optimize.minimize(self._compares, init_state, method='Nelder-Mead', options={'maxiter':options.maxiter,'disp': True}, args=self)
+		
+		#res = optimize.basinhopping(self._compares, init_state, minimizer_kwargs={'method':'Nelder-Mead','args':self,'callback':scb}, T=options.temperature, niter=options.maxiter, disp=disp, callback=cb, take_step=ts, accept_test=at)
 		#res = optimize.differential_evolution(self._compares,bounds,args=(self,),polish=False, maxiter=options.maxiter,popsize=15,disp=disp)
-		#info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
+		res = optimize.minimize(self._compares, init_state, method='Nelder-Mead', callback=scb, options={'maxiter':options.maxiter,'disp': True}, args=self)
+		
 		print("\nFrame\tTranslation")
 		with open(self.path[:-4]+"_results.txt",'w') as results:
 			info = "\nEnergy: {}\nIters: {}\nFunc Evals: {}\n".format(res.fun,res.nit,res.nfev)
@@ -310,12 +319,12 @@ class MovieAligner:
 		translations = np.asarray(ts).reshape((aligner.hdr['nimg'],2))
 		translations = np.round(translations).astype(int) # only allow integral shifts
 		for frame_num,trans in enumerate(translations):
-			#if frame_num != aligner.static: # keep one frame in place
-			if not bool(np.all(trans == aligner.translations[frame_num])):
-				aligner.translations[frame_num] = trans
-				for reg_num in range(len(aligner._regions[frame_num])):
-					aligner._regions[frame_num][reg_num] = trans
-					aligner._stacks[reg_num][frame_num] = trans
+			if frame_num != aligner.static:
+				if not bool(np.all(trans == aligner.translations[frame_num])):
+					aligner.translations[frame_num] = trans
+					for reg_num in range(len(aligner._regions[frame_num])):
+						aligner._regions[frame_num][reg_num] = trans
+						aligner._stacks[reg_num][frame_num] = trans
 		energy = aligner.calc_energy()
 		return energy
 	
@@ -431,8 +440,6 @@ class MovieAligner:
 		else: outfile = options.path
 		return outfile
 
-### FOR BASINHOPPING (Similar to annealing):
-
 class TakeStep(object): # Impose soft bounds on the optimization
 	
 	def __init__(self, aligner, options):
@@ -474,6 +481,24 @@ class CallBack(object):
 		self.aligner.write_cps(fname="_pws_coherent_callback.hdf",n=self.counter)
 		self.counter += 1
 		#self.aligner.best_translations = self.aligner.translations
+
+class SimplexCallBack(object):
+	
+	def __init__(self, aligner, options):
+		self.aligner = aligner
+		self.counter = 0
+	
+	def __call__(self,x):
+		i = str(self.aligner.iter)
+		n = str(self.aligner.cps_counter)
+		b = str(min(self.aligner.energies))
+		w = str(max(self.aligner.energies[1:]))
+		c = str(self.aligner.energies[-1])
+		if self.aligner.verbose: 
+			sys.stdout.write("fEvals: {}  CPS: {}  Energy: {}  Best: {}  Worst: {}\r".format(i,n,c,b,w))
+			sys.stdout.flush()
+		self.aligner.write_cps(fname="_pws_coherent_simplex_callback.hdf",n=self.counter)
+		self.counter += 1
 
 if __name__ == "__main__":
 	main()
