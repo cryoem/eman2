@@ -132,9 +132,9 @@ class EMPlot2DWidget(EMGLWidget):
 		GL.glEnable(GL_DEPTH_TEST)
 
 	def paintGL(self):
-
-		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-
+		try: GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+		except: pass # this is a hack.
+		
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		self.render()
