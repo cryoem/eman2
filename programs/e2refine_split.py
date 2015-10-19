@@ -55,8 +55,8 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--path", default=None, type=str,help="The name of an existing refine_xx folder, where e2refine_easy ran to completion")
-	parser.add_argument("--parallel", default="thread:2", help="Standard parallelism option. Default=thread:2")
+	parser.add_argument("--path", default=None, type=str,help="The name of an existing refine_xx folder, where e2refine_easy ran to completion",guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--parallel", default="thread:2", help="Standard parallelism option. Default=thread:2", guitype='strbox', row=5, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -73,6 +73,7 @@ def main():
 	try:
 		olddb = js_open_dict(options.path+"/0_refine_parms.json")
 		last_map=olddb["last_map"]
+		targetres=olddb["targetres"]
 		last_iter=int(last_map.split("_")[-1][:2])
 		try: 
 			ptcls=olddb["inputavg"]
@@ -282,8 +283,8 @@ def main():
 
 	classout=["{}/classes_{:02d}_split0.hdf".format(options.path,last_iter),"{}/classes_{:02d}_split1.hdf".format(options.path,last_iter)]
 	threedout="{}/threed_{:02d}_split.hdf".format(options.path,last_iter)
-	setout=["sets/split_{}_0.hdf".format(pathnum),"sets/split_{}_1.hdf".format(pathnum)]
-	split=[r.finish(True) for r in recon]
+	setout=["sets/split_{}_0.lst".format(pathnum),"sets/split_{}_1.lst".format(pathnum)]
+	split=[r.finish(True).get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize)) for r in recon]
 	split[0].write_image(threedout,0)
 	split[1].write_image(threedout,1)
 
@@ -313,6 +314,8 @@ def main():
 		os.unlink("sets/split1.lst")
 	except:
 		pass
+
+	launch_childprocess("e2proc3d.py {} {} --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={}".format(threedout,threedout,options.path,last_iter,1.0/targetres))
 
 	E2end(logger)
 

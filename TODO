@@ -1,8 +1,11 @@
 High priority
 2.1
+10/19/15	2-D class-averages with alignment rather than PCA?
+10/19/15	bad particle marking
 10/18/15	gauss_5 falloff?
 10/12/15	mask biased refinement
-10/11/15	remember to check tight masking (make it not so tight?)
+10/12/15	mask biased refinement refine_split
+10/19/15	on mac when pressing up in data set selection widget produces traceback 
 9/30/15		Simple reference based autopicker with downsampling
 9/30/15		Plot selection of data sets
 9/23/15		Seriously, got to do something about centering.

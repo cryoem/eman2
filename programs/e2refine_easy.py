@@ -516,7 +516,18 @@ important to use an angular step which is 90/integer.</p>")
 		else : options.classcmp="ccc"
 
 	if options.pad<nx :
-		options.pad=good_size(nx*1.25)
+		options.pad=good_size(nx*1.7)
+		if options.pad>1024 : 
+			print "Warning: padding for Fourier reconstruction is now {}, meaning quite a lot of memory will \
+be required for reconstructions, and they may be very slow. Padding in Fourier space is largely performed to avoid high-radius \
+Fourier artifacts, and a gradual radial density falloff. If you feel this value is too large, you can manually specify a value \
+with the --pad option.".format(options.pad)
+	else :
+		if options.pad<nx*1.4 :
+			print "Warning: the --pad value you specified is less than 1.4x the box size. We normlly recommend using a --pad \
+value at least 1.5x the box size to avoid Fourier artifacts in the reconstruction, particularly at high radius. If you already \
+have a box which is large compared to the particle, then a smaller value may be fine. Also, if your particle is very large and there \
+are memory concerns, using a smaller pad option may be the only reasonable alternative, though some artifacts will be inevitable."
 
 	##################################
 	### prepare for the run

@@ -177,7 +177,7 @@ def main():
 		amask3d="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
 			thresh=sigmanz*.75,radius=nx/10,shells=options.automaskexpand,gshells=int(options.restarget*1.5/apix),seed=seeds)
 		amask3dtight="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
-			thresh=sigmanz,radius=nx/10,shells=int(options.restarget*1.2/apix),gshells=int(options.restarget*1.2/apix),seed=seeds)
+			thresh=sigmanz*.9,radius=nx/10,shells=int(options.restarget*1.2/apix),gshells=int(options.restarget*1.2/apix),seed=seeds)
 	else:
 		amask3d="--process "+options.automask3d
 		amask3dtight=amask3d

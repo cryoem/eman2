@@ -151,6 +151,9 @@ act as a filter on the names of the algorithms."""
 		else :
 			if len(args)>1 : k=[i for i in l.keys() if args[1] in i]
 			else: k=l.keys()
+			if len(k)==0 :
+				print "Empty list - no items met search criteria"
+				sys.exit(0)
 			maxk=max([len(ii) for ii in k])
 			fmt="%%-%0ds : "%maxk
 			k.sort()

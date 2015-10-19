@@ -224,7 +224,7 @@
 	"ICON": "single_image",
 	"PROGRAM":"e2evalparticles.py",
 	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2evalparticles",
-	"NAME": "Separate Particles By Class (e2evalparticles)",
+	"NAME": "Mark bad particles by class (e2evalparticles)",
 	"NOTELEVEL": "1",
 	"EXPERT": 1,
 	"CHILDREN": []
@@ -281,7 +281,15 @@
         "MODE": "refinement",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refine_easy",
         "PROGRAM": "e2refine_easy.py",
-        "NAME": "Run e2refine_easy",
+        "NAME": "Single map refinement (e2refine_easy)",
+	"NOTELEVEL": "1",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "refine",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refine_split",
+        "PROGRAM": "e2refine_split.py",
+        "NAME": "Split map into two subgroups (e2refine_split)",
 	"NOTELEVEL": "1",
         "CHILDREN": []
       },
@@ -290,9 +298,18 @@
         "MODE": "refinement",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinemulti",
         "PROGRAM": "e2refinemulti.py",
-        "NAME": "e2refinemult - multi-model refinement",
-	"NOTELEVEL": "1",
+        "NAME": "Multiple map refinement (e2refinemulti)",
+        "NOTELEVEL": "1",
         "CHILDREN": []
+      },
+      {
+	"ICON": "single_image",
+	"PROGRAM":"e2evalparticles.py",
+	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2evalparticles",
+	"NAME": "2D Heterogeneity Analysis (e2evalparticles)",
+	"NOTELEVEL": "1",
+	"EXPERT": 1,
+	"CHILDREN": []
       },
       {
 	"ICON": "refine",
