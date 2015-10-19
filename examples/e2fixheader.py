@@ -221,7 +221,8 @@ def fixer(fyle, options):
 		indx=i
 		if fyle[-4:] == '.hdf' or fyle[-4:] == '.mrcs':
 			print "\n(e2fixheader)(fixer) fixing the header of img %d in stack %s" %( indx, fyle )
-			refheader = EMData( options.refheader, i, True ).get_attr_dict()
+			if options.refheader:
+				refheader = EMData( options.refheader, i, True ).get_attr_dict()
 		else:
 			indx=0
 				
