@@ -1,5 +1,6 @@
 High priority
 2.1
+10/19/15	try/except around line 2599 in e2ctf. Related to whole micrograph curve ([8])
 10/19/15	2-D class-averages with alignment rather than PCA?
 10/19/15	bad particle marking
 10/18/15	gauss_5 falloff?

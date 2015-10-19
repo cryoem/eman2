@@ -2150,7 +2150,8 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 	lo=1
 	for i in range(1,len(cc)-1):
 		if (lo or fabs(cc[i])>0.5) and im_1d[i]-bg_1d[i]>0 :
-			ret.append((i*ds,(im_1d[i]-bg_1d[i])/cc[i]**2))
+			try: ret.append((i*ds,(im_1d[i]-bg_1d[i])/cc[i]**2))	# the try/except here is to deal with a problem where cc[i] can mysteriously be 0 sometimes
+			except: pass
 #			ret.append((i*ds,(im_1d[i]-bg_1d[i])/sfact(i*ds)))		# this version removes the structure factor (in theory)
 		if lo and fabs(cc[i])>0.5 : lo=0							# this gets the low frequencies before the first maximum
 
@@ -2596,8 +2597,9 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data((s,lowbgsub),"fg-lowbg",False,True,color=0,linetype=2)
 
 			# This means we have a whole micrograph curve
-			try:
+			try:									# El Capitan seems to have an issue with this block. very mysterious, should come back to it sometime later
 				if len(self.data[val])>8:
+					print self.data[val][8]
 					bgsub2=[self.data[val][8][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 					self.guiplot.set_data((s,bgsub2),"micro-bg",False,True,color=2,linetype=2)
 			except:
