@@ -323,7 +323,8 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 			sys.exit(1)
 	else:
 		try:
-			if options.targetres>12 : randomres=options.targetres*1.5
+			if options.targetres>20 : randomres=options.targetres*1.2
+			elif options.targetres>12 : randomres=options.targetres*1.5
 			else : randomres=options.targetres*2.0
 
 			run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=1.0/(randomres),apix=apix))

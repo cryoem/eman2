@@ -1,10 +1,10 @@
 High priority
 2.1
-10/16/15	default isosurface threshold
+10/18/15	gauss_5 falloff?
 10/12/15	mask biased refinement
 10/11/15	remember to check tight masking (make it not so tight?)
-9/30/15		Plot selection of data sets
 9/30/15		Simple reference based autopicker with downsampling
+9/30/15		Plot selection of data sets
 9/23/15		Seriously, got to do something about centering.
 7/22/12		Counting in filename entry in GUI (was taking a LOOONG time). Fix with new caching system.
 8/2/12		More dimensions in tilt validate
@@ -16,11 +16,9 @@ High priority
 3/6/14		e2classaverage has hardcoded final aligner to reference, but imposes flips when it shouldn't happen
 3/8/14		Found that smaller than recommended angular step can produce slight resolution improvement combined with sep. Need to write new reconstructor with angular smearing in some way to compensate for reduced sampling without over smearing resulting reconstruction.
 3/29/14		e2refinevariance broken ?
-6/12/14		isosurface color on mac (and other machines with older opengl). Why no newer opengl working on mac?
 6/12/14		per particle movie mode alignment
 6/12/14		new particle picker
 6/14/14		e2markbadptcl
-2/4/15		Isosurface coloring in 3d viewer messed up
 6/11/15		fix --prefilt in e2refine_easy
 6/11/15		Add breaksym to tree aigner
 7/17/15		When converting to Relion/Frealign, icos symmetry orientation needs to be adjusted on the map
@@ -109,4 +107,5 @@ Complete
 7/22/12		Same mask for all projections ?
 7/27/12		Can't browse BDB dictionary contents
 9/13		Astigmatism ?
-
+10/18/15	default isosurface threshold adjusted
+10/15	6/12/14		isosurface color on mac (and other machines with older opengl). Why no newer opengl working on mac?

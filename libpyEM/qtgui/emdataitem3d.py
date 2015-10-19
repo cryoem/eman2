@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pyehon
 #
 # Author: Ross Coleman (racolema@bcm.edu)
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)
@@ -657,7 +657,7 @@ class EMVolumeItem3D(EMItem3D):
 		self.shininess = self.colors[self.isocolor]["shininess"]
 
 		self.force_texture_update = True
-		if parent: self.dataChanged()
+		if parent!=None: self.dataChanged()
 
 	# I have added these methods so the inspector can set the color John Flanagan
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
@@ -1271,7 +1271,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		self.ambient = self.colors[self.isocolor]["ambient"]
 		self.shininess = self.colors[self.isocolor]["shininess"]
 
-		if parent: self.dataChanged()
+		if parent!=None: self.dataChanged()
 
 	def getEvalString(self):
 		return "EMIsosurface(),getEvalString"
@@ -1282,16 +1282,19 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		"""
 		data = self.getParent().getData()
 
+
+		#This computes initial threshold. Steven Murray does seem to have much success with this though.
+		if self.isothr!=None: #there was data previously
+			normalized_threshold = (self.isothr - self.mean)/self.sigma
+		else:
+			normalized_threshold = 4.0
+
 		self.minden = data.get_attr("minimum")
 		self.maxden = data.get_attr("maximum")
 		self.mean   = data.get_attr("mean")
 		self.sigma  = data.get_attr("sigma")
 
-		#This computes initial threshold. Steven Murray does seem to have much success with this though.
-		if self.isothr: #there was data previously
-			normalized_threshold = (self.isothr - self.mean)/self.sigma
-		else:
-			normalized_threshold = 3.0
+#		print "$$$ ",normalized_threshold,self.mean,self.sigma
 
 		self.isothr = self.mean+normalized_threshold*self.sigma
 		self.histogram_data = data.calc_hist(256,self.minden, self.maxden)
@@ -1631,6 +1634,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 
 	def setThreshold(self, val):
 		if (self.isothr != val):
+#			print "### ",self.isothr,val
 			self.isothr = val
 #			self.brightness = -val
 

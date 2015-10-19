@@ -4173,7 +4173,9 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 		step/=4.0;
 	}
 
-	image->mult((float)tthr/thr);
+	// We don't adjust the map if we get a negative value
+	if ((float)tthr/thr>0) image->mult((float)tthr/thr);
+	else printf("WARNING: could not normalize map to specified mass.");
 	image->update();
 }
 
