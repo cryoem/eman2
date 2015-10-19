@@ -99,7 +99,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.vbl.addSpacing(5)
 
 		# Selection tools
-		self.wselectg=QtGui.QGroupBox("Select",self)
+		self.wselectg=QtGui.QGroupBox("Class Selection",self)
 		self.wselectg.setFlat(False)
 		self.vbl.addWidget(self.wselectg)
 		self.vbl.addSpacing(5)
@@ -109,7 +109,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.wselallb=QtGui.QPushButton("All")
 		self.gbl0.addWidget(self.wselallb,0,0)
 
-		self.wselnoneb=QtGui.QPushButton("None")
+		self.wselnoneb=QtGui.QPushButton("Clear")
 		self.gbl0.addWidget(self.wselnoneb,0,1)
 
 		self.wselrangeb=QtGui.QPushButton("Range")

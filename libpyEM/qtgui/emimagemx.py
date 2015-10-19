@@ -987,6 +987,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.draw_scroll = True
 			self.scroll_bar.update_target_ypos()
 
+		self.rzonce=True
 
 	def set_density_min(self,val,update_gl=True):
 		self.minden=val

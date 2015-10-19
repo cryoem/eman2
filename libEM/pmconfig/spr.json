@@ -212,6 +212,15 @@
       },
       {
 	"ICON": "single_image",
+	"PROGRAM":"e2evalparticles.py",
+	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2evalparticles",
+	"NAME": "Mark bad particles by class (e2evalparticles)",
+	"NOTELEVEL": "1",
+	"EXPERT": 1,
+	"CHILDREN": []
+      },
+      {
+	"ICON": "single_image",
 	"PROGRAM":"e2refinetorelion2d.py",
 	"WIZARD":"/lib/pmconfig/relion2d.json",
 	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinetorelion2d",
@@ -219,17 +228,7 @@
 	"NOTELEVEL": "1",
 	"EXPERT": 1,
 	"CHILDREN": []
-      },
-      {
-	"ICON": "single_image",
-	"PROGRAM":"e2evalparticles.py",
-	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2evalparticles",
-	"NAME": "Mark bad particles by class (e2evalparticles)",
-	"NOTELEVEL": "1",
-	"EXPERT": 1,
-	"CHILDREN": []
       }
-
     ]
   },
   {
