@@ -1,12 +1,10 @@
 High priority
 2.1
-10/19/15	try/except around line 2599 in e2ctf. Related to whole micrograph curve ([8])
+10/19/15	try/except around line 2599 in e2ctf. Related to whole micrograph curve ([8]), patched
 10/19/15	2-D class-averages with alignment rather than PCA?
 10/19/15	bad particle marking
-10/18/15	gauss_5 falloff?
 10/12/15	mask biased refinement
 10/12/15	mask biased refinement refine_split
-10/19/15	on mac when pressing up in data set selection widget produces traceback 
 9/30/15		Simple reference based autopicker with downsampling
 9/30/15		Plot selection of data sets
 9/23/15		Seriously, got to do something about centering.
@@ -113,3 +111,4 @@ Complete
 9/13		Astigmatism ?
 10/18/15	default isosurface threshold adjusted
 10/15	6/12/14		isosurface color on mac (and other machines with older opengl). Why no newer opengl working on mac?
+10/19/15	10/18/15	gauss_5 falloff?, dealt with this by expanding the --pad amount with some testing
