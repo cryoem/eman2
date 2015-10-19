@@ -134,7 +134,7 @@ class EMPlot2DWidget(EMGLWidget):
 	def paintGL(self):
 		try: GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 		except: pass # this is a hack.
-		
+
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		self.render()
@@ -531,7 +531,8 @@ class EMPlot2DWidget(EMGLWidget):
 
 		if render :
 			glEndList()
-			glCallList(self.main_display_list)
+			try: glCallList(self.main_display_list)
+			except: pass
 
 
 
@@ -2157,7 +2158,7 @@ class EMDataFnPlotter(QtGui.QWidget):
 		QtGui.QWidget.__init__(self, parent)
 
 		self.setWindowTitle("Plotter")
-		
+
 		self.resize(780, 580)
 		self.gbl = QtGui.QGridLayout(self)
 
@@ -2167,15 +2168,15 @@ class EMDataFnPlotter(QtGui.QWidget):
 		self.lplot = QtGui.QLabel("Plot")
 		self.gbl.addWidget(self.plot,1,0)
 
-		if data!=None : 
+		if data!=None :
 			self.plot.set_data(data,"init")
-	
+
 	def closeEvent(self,event):
 		self.plot.closeEvent(event)
-	
+
 	def set_label(self,lbl):
 		self.lplot.setText(lbl)
-	
+
 	def set_data(self, data, key):
 		self.plot.set_data(data,key)
-		
+
