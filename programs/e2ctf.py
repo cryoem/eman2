@@ -2596,9 +2596,12 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data((s,lowbgsub),"fg-lowbg",False,True,color=0,linetype=2)
 
 			# This means we have a whole micrograph curve
-			if len(self.data[val])>8:
-				bgsub2=[self.data[val][8][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
-				self.guiplot.set_data((s,bgsub2),"micro-bg",False,True,color=2,linetype=2)
+			try:
+				if len(self.data[val])>8:
+					bgsub2=[self.data[val][8][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
+					self.guiplot.set_data((s,bgsub2),"micro-bg",False,True,color=2,linetype=2)
+			except:
+				pass
 
 			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
 			fit=[sfact2(s[i])*fit[i]**2 for i in range(len(s))]		# squared * structure factor
