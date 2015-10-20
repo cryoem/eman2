@@ -894,7 +894,7 @@ void EMUtil::get_region_origins(const Region * area, int *p_x0, int *p_y0, int *
 
 double EMUtil::mode_size_product(size_t factor, size_t mode_size)
 {
-	const size_t mode_size_half = 111111111111;
+	const size_t mode_size_half = 11111111;
 
 	double product;
 
@@ -922,7 +922,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	if (mode_size == 0) throw UnexpectedBehaviorException("The mode size was 0?");
 
-	const size_t mode_size_half = 111111111111;
+	const size_t mode_size_half = 11111111;
 
 	unsigned char * cdata = (unsigned char *)vdata;
 

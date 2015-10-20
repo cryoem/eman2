@@ -911,7 +911,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 			// Have MRC packed 8 bit format with 2 4-bit values in each 8-bit byte,
 			// so the mode size is effectively half a byte, signalled by this value:
 
-			modesize = 111111111111;
+			modesize = 11111111;
 		}
 		else {
 			modesize = mode_size;

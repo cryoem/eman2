@@ -219,7 +219,7 @@ namespace EMAN
 									   int *p_z0 = 0, int nz = 1, int image_index = 0);
 
 		/** Return a factor times the mode size, which may be a special value
-		 *  (111111111111) meaning one half, needed for MRC packed 8 bit format.
+		 *  (11111111) meaning one half, needed for MRC packed 8 bit format.
 		 */
 
 		static double mode_size_product(size_t factor, size_t mode_size);
