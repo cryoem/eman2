@@ -164,7 +164,10 @@ def main():
 #	parser.add_argument("--ncoarse", type=int, help="Deprecated. Use --npeakstorefine instead.", default=None)
 
 	parser.add_argument("--npeakstorefine", type=int, default=1, help="Default=1. The number of best coarse alignments to refine in search of the best final alignment.",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
-
+	
+	
+	
+	
 	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=12:dphi=12",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
@@ -235,7 +238,9 @@ def main():
 	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
 
 	(options, args) = parser.parse_args()
-
+	
+	options.goldstandardoff = 'goldstandardoff'
+	
 	try:
 		hdr = EMData(options.input,0,True) #This is done just to test whether the input file exists where it should
 		boxsize = hdr['nx']
@@ -317,6 +322,14 @@ def main():
 	nrefs=0
 	
 	
+	#import types
+	#options.goldstandardoff = types.MethodType( options, 'goldstandardoff' )
+	
+	
+	
+	#setattr(options, 'goldstandardoff')
+	
+	print "options types are", type(options)
 	
 	from e2spt_classaverage import sptRefGen 
 	
@@ -456,8 +469,12 @@ def main():
 
 		ptclnumsdict = {}
 		
-		groupsize = nptcls / ncls
-		
+		try:
+			groupsize = nptcls / ncls
+		except:
+			print "in the abscence of --ref, --nref required"
+			sys.exit()
+			
 		for i in range( ncls):
 
 			ptclist = [j for j in xrange(groupsize*i, groupsize*(i+1))]	
@@ -465,18 +482,36 @@ def main():
 				ptclist = [j for j in xrange(groupsize*i, nptcls) ]
 				#ptclnumsdict.update( { i: ptclist } )
 			
-			ptclnumsdict.update( { 0: ptclist  } )
+			ptclnumsdict.update( { i: ptclist  } )
 		
-			print "ptclnumsdict to send is", ptclnumsdict
-				
-			ret = sptRefGen( options, ptclnumsdict, cmdwp, 1, method=options.refgenmethod, subset4ref=options.subset4ref ) #This returns a dictionary with { klass_indx:img } pairs; klass_indx is always zero in this case though, since we're retrieving one reference at a time
-			refimg = ret[0]
+			print "ptclnumsdict to append is", ptclnumsdict
 			
-			reffile = rootpath + '/' + options.path + '/ref' + str( i ).zfill( len( str( ncls ))) + '.hdf'
+			#originalpath = options.path
 			
-			refimg.write_image( reffile, 0 )
+			#options.path = 'spt_ref' + str(i).zfill( len( str(ncls)))
+			
+			#if options.refgenmethod=='bt':
+			#	options.path = 'spt_btref' + str(i).zfill( len( str(ncls)))
+			#elif options.refgenmethod=='hac':
+			#	options.path = 'spt_hacref' + str(i).zfill( len( str(ncls)))
+			#elif options.refgenmethod=='ssa':
+			#	options.path = 'spt_ssaref' + str(i).zfill( len( str(ncls)))
+			
+			#sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref=0)
 		
-			reffilesrefine.update( {i:reffile} )
+		print "\nfinal ptclnumsdict to send for references generation is", ptclnumsdict
+			
+		ret = sptRefGen( options, ptclnumsdict, cmdwp, 1, method=options.refgenmethod, subset4ref=options.subset4ref ) #This returns a dictionary with { klass_indx:img } pairs; klass_indx is always zero in this case though, since we're retrieving one reference at a time
+		refimg = ret[0]
+		
+		
+		#options.path = originalpath
+		
+		reffile = rootpath + '/' + options.path + '/ref' + str( i ).zfill( len( str( ncls ))) + '.hdf'
+		
+		refimg.write_image( reffile, 0 )
+	
+		reffilesrefine.update( {i:reffile} )
 
 
 	print "There are these many references", len(reffilesrefine)	
