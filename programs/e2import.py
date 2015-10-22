@@ -210,20 +210,27 @@ def main():
 				print("You must specify at least one .star file containing particle coordinates")
 				exit(1)
 			for filename in starfs:
-				print("Importing from {}".format(base_name(filename,nodir=True)))
+				print("Importing from {}.star".format(base_name(filename,nodir=True)))
 				sf = StarFile(filename)
 				hdr = sf.keys()
+				if len(hdr) < 3: 
+					print("Could not parse {}".format(filename))
+					continue
 				mk = "rlnMicrographName"
 				yk = "rlnCoordinateY"
 				xk = "rlnCoordinateX"
-				if mk not in hdr or yk not in hdr or xk not in hdr:
-					print("{} does not follow the RELION header convention for single particle data. To use this program".format(filename))
-					if mk not in hdr: print("Micrograph names should be listed under _rlnMicrographName")
-					if yk not in hdr: print("Y coordinates must be listed under _rlnCoordinateY")
-					if xk not in hdr: print("X coordinates must be listed under _rlnCoordinateX")
-					continue
 				project_micros = os.listdir('micrographs')
-				micros=[i.split('/')[-1] for i in np.unique(sf[mk])]
+				if mk not in hdr or yk not in hdr or xk not in hdr:
+					possible = "{}.hdf".format(base_name(filename.replace('_autopick.star',''),nodir=True))
+					if possible in project_micros:
+						micros = [possible]
+					else:
+						print("{} does not follow the RELION header convention for single particle data. To use this program".format(filename))
+						if mk not in hdr: print("Micrograph names should be listed under _rlnMicrographName")
+						if yk not in hdr: print("Y coordinates must be listed under _rlnCoordinateY")
+						if xk not in hdr: print("X coordinates must be listed under _rlnCoordinateX")
+						continue
+				else: micros=[i.split('/')[-1] for i in np.unique(sf[mk])]
 				if len(micros) == 1:
 					mg = micros[0]
 					boxlist = []
