@@ -57,9 +57,13 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file,Tracker):
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
-	### - ----------------------------------------
+	### - reconstruction parameters - No need to change
 	fourvar   = False
 	debug     = False
+	snr       = 1.0
+	ref_a     = "S"
+	npad      = 2
+	################
 	from logger import Logger,BaseLogger_Files
 	log       = Logger()
 	log   =Logger(BaseLogger_Files())
@@ -82,23 +86,15 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file,Tracker):
 	nassign  = Tracker["constants"]["nassign"]
 	nrefine  = Tracker["constants"]["nrefine"]
 	CTF      = Tracker["constants"]["CTF"]
-	snr      = Tracker["constants"]["snr"]
-	ref_a    = Tracker["constants"]["ref_a"]
 	sym      = Tracker["constants"]["sym"]
-	npad     = Tracker["constants"]["npad"]
 	termprec = Tracker["constants"]["stoprnct"]
 	maskfile = Tracker["constants"] ["mask3D"]
-	focus    = Tracker["constants"]["focus3Dmask"]
 	user_func_name  = Tracker["constants"]["user_func"]
-	frequency_low_pass   = Tracker["frequency_low_pass"]
-
+	frequency_low_pass   = Tracker["low_pass_filter"]
 	###--------------------------
-
 	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "Kmref_ali3d_MPI ", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
-
 	###
-
 	if myid == main_node:	
 		os.mkdir(outdir)
 		import global_def
@@ -107,7 +103,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file,Tracker):
 	mpi_barrier(MPI_COMM_WORLD)
 
 	######
-	Tracker["applyctf"] = False
+	#Tracker["applyctf"] = False
 	data, old_shifts    = get_shrink_data_huang(Tracker,Tracker["nxinit"],this_data_list_file,Tracker["constants"]["partstack"],myid, main_node, number_of_proc, preshift = True)
 
 	from time import time	
@@ -141,11 +137,11 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file,Tracker):
 	last_ring   = int(int(ou)*shrinkage+.5)
 	center      = int(center)
 	image_start, image_end = MPI_start_end(len(Tracker["this_data_list"]), number_of_proc, myid)
-	numref = len(ref_list)
-	nx      = ref_list[0].get_xsize()
+	numref      = len(ref_list)
+	nx          = ref_list[0].get_xsize()
 	if last_ring < 0:       last_ring = nx//2 - 2
-	fscmask = model_circle(last_ring, nx, nx, nx)
-	stack = Tracker["constants"]["stack"]
+	fscmask     = model_circle(last_ring, nx, nx, nx)
+	stack       = Tracker["constants"]["stack"]
 	if myid == main_node:
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -168,7 +164,6 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file,Tracker):
 		log.add("Number of iterations                      : %i"%(lstp*maxit) )
 		log.add("Center type                 : %i"%(center))
 		log.add("CTF correction              : %s"%(CTF))
-		log.add("Signal-to-Noise Ratio       : %f"%(snr))
 		log.add("Reference projection method : %s"%(ref_a))
 		log.add("Symmetry group              : %s"%(sym))
 		log.add("Percentage of change for termination: %f"%(termprec))
@@ -181,8 +176,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file,Tracker):
 		else: 	                                mask3D = maskfile
 	else:  mask3D = model_circle(last_ring, nx, nx, nx)
 
-	numr     = Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D   = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
+	numr       = Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D     = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
 	total_nima = len(Tracker["this_data_list"])
 	nima       = len(data)
 	list_of_particles  =Tracker["this_data_list"]
@@ -202,7 +197,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file,Tracker):
 		from reconstruction import rec3D_MPI
 		from statistics     import varf3d_MPI
 		#  Compute Fourier variance
-		vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec, npad=npad)
+		vol, fscc = rec3D_MPI(data,snr,sym,fscmask,os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec, npad=npad)
 		varf = varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:   
 			varf = 1.0/varf
@@ -420,7 +415,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file,Tracker):
 			#  3D stuff
 			from time import localtime, strftime
 			if CTF: volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
-			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			else:   volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			if myid == main_node:
 				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
 
@@ -438,14 +433,14 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file,Tracker):
 					varf.write_image( os.path.join(outdir,"varf%04d.hdf"%total_iter) )
 
 		if myid == main_node:
-			refdata = [None]*7
+			refdata    = [None]*7
 			refdata[0] = numref
 			refdata[1] = outdir
 			refdata[2] = None
 			refdata[3] = total_iter
 			refdata[4] = varf
 			refdata[5] = mask3D
-			refdata[6] = (runtype=="REFINEMENT") # whether align on 50S, this only happens at refinement step
+			refdata[6] = Tracker["low_pass_filter"]#(runtype=="REFINEMENT") # whether align on 50S, this only happens at refinement step
 			user_func( refdata )
 
 		#  here we  write header info
@@ -521,43 +516,44 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file,Tracker):
 	from mpi            import mpi_reduce, mpi_gatherv, mpi_scatterv, MPI_INT, MPI_SUM
 	from applications import MPI_start_end
 	mpi_comm = MPI_COMM_WORLD
-	#####
+	#####  reconstruction parameters, no need to change.
 	fourvar   = False
+	snr       = 1.0
+	debug     = False
+	ref_a     ="S"
+	npad      =2
+	###########
 	from logger import Logger,BaseLogger_Files
 	log       = Logger()
 	log   =Logger(BaseLogger_Files())
 	log.prefix=outdir+"/"
-	myid      = Tracker["constants"]["myid"]
-	main_node = Tracker["constants"]["main_node"]
-	number_of_proc     = Tracker["constants"]["nproc"]
-	shrinkage = Tracker["shrinkage"]
+	myid           = Tracker["constants"]["myid"]
+	main_node      = Tracker["constants"]["main_node"]
+	number_of_proc = Tracker["constants"]["nproc"]
+	shrinkage      = Tracker["shrinkage"]
 	### input parameters
-	maxit    = Tracker["constants"]["maxit"]
-	ou       = Tracker["constants"]["radius"]
-	ir       = Tracker["constants"]["ir"]
-	rs       = Tracker["constants"]["rs"]
-	xr       = Tracker["constants"]["xr"]
-	yr       = Tracker["constants"]["yr"]
-	ts       = Tracker["constants"]["ts"]
-	delta    = Tracker["constants"]["delta"]
-	an       = Tracker["constants"]["an"]
-	center   = Tracker["constants"]["center"]
-	nassign  = Tracker["constants"]["nassign"]
-	nrefine  = Tracker["constants"]["nrefine"]
-	CTF      = Tracker["constants"]["CTF"]
-	snr      = Tracker["constants"]["snr"]
-	ref_a    = Tracker["constants"]["ref_a"]
-	sym      = Tracker["constants"]["sym"]
-	npad     = Tracker["constants"]["npad"]
-	termprec = Tracker["constants"]["stoprnct"]
-	maskfile = Tracker["constants"] ["mask3D"]
-	focus    = Tracker["constants"]["focus3Dmask"]
-	partstack = Tracker["constants"]["partstack"]
-	debug    = False
+	maxit          = Tracker["constants"]["maxit"]
+	ou             = Tracker["constants"]["radius"]
+	ir             = Tracker["constants"]["ir"]
+	rs             = Tracker["constants"]["rs"]
+	xr             = Tracker["constants"]["xr"]
+	yr             = Tracker["constants"]["yr"]
+	ts             = Tracker["constants"]["ts"]
+	delta          = Tracker["constants"]["delta"]
+	an             = Tracker["constants"]["an"]
+	center         = Tracker["constants"]["center"]
+	nassign        = Tracker["constants"]["nassign"]
+	nrefine        = Tracker["constants"]["nrefine"]
+	CTF            = Tracker["constants"]["CTF"]
+	sym            = Tracker["constants"]["sym"]
+	termprec       = Tracker["constants"]["stoprnct"]
+	maskfile       = Tracker["constants"] ["mask3D"]
+	focus          = Tracker["constants"]["focus3Dmask"]
+	partstack       = Tracker["constants"]["partstack"]
 	user_func_name  = Tracker["constants"]["user_func"]
-	frequency_low_pass   = Tracker["frequency_low_pass"]
+	frequency_low_pass   = Tracker["low_pass_filter"]
 	######
-	Tracker["applyctf"] = False
+	#Tracker["applyctf"] = True # 
 	data, old_shifts =  get_shrink_data_huang(Tracker,Tracker["nxinit"],particle_list_file,partstack,myid,main_node,number_of_proc,preshift=True)
 	if myid == main_node:
 		if os.path.exists(outdir):  nx = 1
@@ -635,8 +631,6 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file,Tracker):
 		log.add("Number of iterations                      : %i"%(lstp*maxit) )
 		log.add("Center type                               : %i"%(center))
 		log.add("CTF correction                            : %s"%(CTF))
-		log.add("Signal-to-Noise Ratio                     : %f"%(snr))
-		log.add("Reference projection method               : %s"%(ref_a))
 		log.add("Symmetry group                            : %s"%(sym))
 		log.add("Percentage of change for termination      : %f"%(termprec))
 		log.add("User function                             : %s"%(user_func_name))
@@ -694,13 +688,14 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file,Tracker):
 			ref_list[iref].write_image(os.path.join(outdir, "vol0000.hdf"), iref)
 		refdata[0] = numref
 		refdata[1] = outdir
-		refdata[2] = Tracker["frequency_low_pass"]
+		refdata[2] = None   #Tracker["frequency_low_pass"]
 		refdata[3] = 0
 		refdata[4] = ref_list
 		refdata[5] = mask3D
-		refdata[6] = False # whether to align on 50S, this only happens at refinement step
+		refdata[6] = Tracker["low_pass_filter"] # whether to align on 50S, this only happens at refinement step
 		user_func(refdata)
-		#vol.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
+		for iref in xrange(numref):
+			ref_list[iref].write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 	mpi_barrier( MPI_COMM_WORLD )
 
 	if CTF:
@@ -1173,11 +1168,11 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file,Tracker):
 			refdata = [None]*7
 			refdata[0] = numref
 			refdata[1] = outdir
-			refdata[2] = frequency_low_pass
+			refdata[2] = None #frequency_low_pass
 			refdata[3] = total_iter
 			refdata[4] = None
 			refdata[5] = mask3D
-			refdata[6] = (runtype=="REFINEMENT") # whether to align on 50S, this only happens at refinement step
+			refdata[6] = Tracker["low_pass_filter"]#(runtype=="REFINEMENT") # whether to align on 50S, this only happens at refinement step
 			user_func(refdata)
 
 		mpi_barrier(MPI_COMM_WORLD)
@@ -1264,10 +1259,11 @@ def prepare_ptp(data_list,K):
 
 def print_dict(dict,theme):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,theme)
-		spaces = "                    "
+		print(line+theme)
+		spaces = "                           "
 		for key, value in sorted( dict.items() ):
-			if(key != "constants"):  print("                    => ", key+spaces[len(key):],":  ",value)
+			if(key != "constants"):  
+				print("                    => "+key+spaces[len(key):]+":  "+str(value))
 """
 def checkstep(item, keepchecking, myid, main_node):
 	from utilities import bcast_number_to_all
@@ -1304,8 +1300,8 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 		if ( nfsc[1][i] < 0.333333333333333333333333):
 			currentres = nfsc[0][i-1]
 			break
-		if(currentres < 0.0):
-			print("  Something wrong with the resolution, cannot continue")
+		#if(currentres < 0.0):
+			#print("  Something wrong with the resolution, cannot continue")
 		currentres = nfsc[0][i-1]
         
         """ this commented previously
@@ -2221,9 +2217,9 @@ def recons_mref(Tracker):
 	return ref_list
 
 def apply_low_pass_filter(refvol,Tracker):
-	from filter import filt_btwl
+	from filter import filt_tanl
 	for iref in xrange(len(refvol)):
-		refvol[iref]=filt_btwl(refvol[iref],Tracker["frequency_low_pass"],Tracker["frequency_low_pass"]+.5)
+		refvol[iref]=filt_tanl(refvol[iref],Tracker["low_pass_filter"],.1)
 	return refvol
 	
 def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
@@ -2255,40 +2251,37 @@ def main():
                 arglist.append( sys.argv[i] )
                 i = i+1
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack  outdir  <mask> --focus=3Dmask --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step " +\
-	" --delta=angular_step --an=angular_neighborhood --center=1 --nassign=reassignment_number --nrefine=alignment_number --maxit=max_iter --stoprnct=percentage_to_stop " + \
-	" --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --resolution  "
+	usage = progname + " stack  outdir  <mask> --focus=3Dmask --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step  --delta=angular_step" +\
+	"--an=angular_neighborhood --maxit=max_iter  --CTF --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=.25 "
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--focus",    type="string",       default=None,             help="3D mask for focused clustering ")
+	parser.add_option("--focus",    type="string",       default=None,         help="3D mask for focused clustering ")
 	parser.add_option("--ir",       type= "int",         default=1, 	       help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--radius",   type= "int",         default="-1",	       help="outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
 	parser.add_option("--maxit",	type= "int",         default=5, 	       help="maximum number of iteration")
 	parser.add_option("--rs",       type= "int",         default="1",	       help="step between rings in rotational correlation >0 (set to 1)" ) 
-	parser.add_option("--xr",       type="string",       default="4 2 1 1 1",      help="range for translation search in x direction, search is +/-xr ")
+	parser.add_option("--xr",       type="string",       default="4 2 1 1 1",  help="range for translation search in x direction, search is +/-xr ")
 	parser.add_option("--yr",       type="string",       default="-1",	       help="range for translation search in y direction, search is +/-yr (default = same as xr)")
-	parser.add_option("--ts",       type="string",       default="0.25",           help="step size of the translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
+	parser.add_option("--ts",       type="string",       default="0.25",       help="step size of the translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
 	parser.add_option("--delta",    type="string",       default="10 6 4  3   2",  help="angular step of reference projections")
 	parser.add_option("--an",       type="string",       default="-1",	       help="angular neighborhood for local searches")
 	parser.add_option("--center",   type="int",          default=0,	               help="0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=0)")
-	parser.add_option("--nassign",  type="int",          default=0, 	       help="number of reassignment iterations performed for each angular step (set to 3) ")
-	parser.add_option("--nrefine",  type="int",          default=1, 	       help="number of alignment iterations performed for each angular step (set to 1) ")
+	parser.add_option("--nassign",  type="int",          default=1, 	       help="number of reassignment iterations performed for each angular step (set to 3) ")
+	parser.add_option("--nrefine",  type="int",          default=0, 	       help="number of alignment iterations performed for each angular step (set to 1) ")
 	parser.add_option("--CTF",      action="store_true", default=False,            help="Consider CTF correction during the alignment ")
-	parser.add_option("--snr",      type="float",        default=1.0,              help="Signal-to-Noise Ratio of the data")   
-	parser.add_option("--stoprnct", type="float",        default=0.0,              help="Minimum percentage of assignment change to stop the program")   
-	parser.add_option("--ref_a",    type="string",       default="S",              help="method for generating the quasi-uniformly distributed projection directions (default S) ")
+	parser.add_option("--stoprnct", type="float",        default=3.0,              help="Minimum percentage of assignment change to stop the program")
 	parser.add_option("--sym",      type="string",       default="c1",             help="symmetry of the structure ")
-	parser.add_option("--function", type="string",       default="ref_ali3dm",     help="name of the reference preparation function")
-	parser.add_option("--npad",     type="int",          default= 2,               help="padding size for 3D reconstruction")
+	parser.add_option("--function", type="string",       default="ref_sort3d",     help="name of the reference preparation function")
 	parser.add_option("--independent", type="int",       default= 3,               help="number of independent run")
-	parser.add_option("--number_of_images_per_group",    type="int",               default=-1,               help="number of groups")
-	parser.add_option("--resolution",  type="float",     default= .40,             help="structure is low-pass-filtered to this resolution for clustering" )
-	parser.add_option("--mode",        type="string",    default="EK_only",        help="mode options: EK_only, Kgroup_guess, auto_search, lpf_search,large_number_run,isac" )
+	parser.add_option("--number_of_images_per_group",    type="int",               default=1000, help="number of groups")
+	parser.add_option("--low_pass_filter",  type="float", default= -1.0,        help="absolute frequency of low-pass filter for 3d sorting on the original image size" )
+	parser.add_option("--nxinit",        type="int",      default=64,               help="initial image size for sorting" )
+	parser.add_option("--unaccounted",   action="store_true", default=False,        help="reconstruct the unaccounted images")
 	#parser.add_option("--importali3d", type="string",    default="",               help="import the xform.projection parameters as the initial configuration for 3-D reconstruction" )
 	#parser.add_option("--Kgroup_guess",  action="store_true",default=False,        help="Guess the possible number of groups existing in one dataset" )
 	#parser.add_option("--frequency_start_search",  type="float",default=.10,       help="start frequency for low pass filter search")
 	#parser.add_option("--frequency_stop_search",   type="float",default=.40,       help="stop frequency for low pass filter search")
 	#parser.add_option("--frequency_search_step",   type="float",default=.02,       help="frequency step for low pass filter search")
-	parser.add_option("--scale_of_number", type="float",default=1.,                 help="scale number to control particle number per group")
+	#parser.add_option("--scale_of_number", type="float",default=1.,                 help="scale number to control particle number per group")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1  or len(args) > 4:
     		print "usage: " + usage
@@ -2310,7 +2303,7 @@ def main():
 		myid      = mpi_comm_rank(MPI_COMM_WORLD)
 		mpi_comm = MPI_COMM_WORLD
 		main_node = 0
-		# import some utilites
+		# import some utilities
 		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast
 		from applications import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
 		from statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum 
@@ -2331,17 +2324,14 @@ def main():
 		Constants["stoprnct"]            = options.stoprnct
 		Constants["number_of_images_per_group"]  = options.number_of_images_per_group
 		Constants["CTF"]                 = options.CTF
-		Constants["npad"]                = options.npad
 		Constants["maxit"]               = options.maxit
 		Constants["ir"]                  = options.ir 
 		Constants["radius"]              = options.radius 
 		Constants["nassign"]             = options.nassign
-		Constants["snr"]                 = options.snr
 		Constants["rs"]                  = options.rs 
 		Constants["xr"]                  = options.xr
 		Constants["yr"]                  = options.yr
 		Constants["ts"]                  = options.ts
-		Constants["ref_a"]               = options.ref_a
 		Constants["delta"]               = options.delta
 		Constants["an"]                  = options.an
 		Constants["sym"]                 = options.sym
@@ -2349,26 +2339,26 @@ def main():
 		Constants["nrefine"]             = options.nrefine
 		#Constants["fourvar"]             = options.fourvar 
 		Constants["user_func"]           = options.function
-		Constants["resolution"]          = options.resolution
+		Constants["low_pass_filter"]     = options.low_pass_filter # enforced low_pass_filter
 		#Constants["debug"]               = options.debug
-		Constants["sign"]                = 1
-		Constants["listfile"]            = ""
-		Constants["xysize"]              =-1
-		Constants["zsize"]               =-1
-		Constants["group"]               =-1
-		Constants["verbose"]             = 0
-		Constants["mode"]                = options.mode
-		#Constants["mpi_comm"]            = mpi_comm
+		#Constants["sign"]                = 1
+		#Constants["listfile"]            = ""
+		#Constants["xysize"]              =-1
+		#Constants["zsize"]               =-1
+		#Constants["group"]               =-1
+		#Constants["verbose"]             = 0
 		Constants["main_log_prefix"]     =args[1]
-		#Constants["importali3d"]         =options.importali3d
-		Constants["myid"]	         = myid
+		#Constants["importali3d"]        =options.importali3d
+		Constants["myid"]	             = myid
 		Constants["main_node"]           =main_node
 		Constants["nproc"]               =nproc
 		Constants["log_main"]            =log_main
+		Constants["nxinit"]              =options.nxinit
+		Constants["unaccounted"]         =options.unaccounted
 		#Constants["frequency_search_step"] = options.frequency_search_step
 		#Constants["frequency_start_search"] = options.frequency_start_search
 		#Constants["frequency_stop_search"] = options.frequency_stop_search
-		Constants["scale_of_number"]    = options.scale_of_number
+		#Constants["scale_of_number"]    = options.scale_of_number
 		# -----------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options
@@ -2376,38 +2366,38 @@ def main():
 		Tracker["constants"]=				Constants
 		Tracker["maxit"]          = Tracker["constants"]["maxit"]
 		Tracker["radius"]         = Tracker["constants"]["radius"]
-		Tracker["xr"]             = ""
-		Tracker["yr"]             = "-1"  # Do not change!
-		Tracker["ts"]             = 1
-		Tracker["an"]             = "-1"
-		Tracker["delta"]          = "2.0"
-		Tracker["zoom"]           = True
-		Tracker["nsoft"]          = 0
-		Tracker["local"]          = False
-		Tracker["PWadjustment"]   = ""
-		Tracker["upscale"]        = 0.5
+		#Tracker["xr"]             = ""
+		#Tracker["yr"]             = "-1"  # Do not change!
+		#Tracker["ts"]             = 1
+		#Tracker["an"]             = "-1"
+		#Tracker["delta"]          = "2.0"
+		#Tracker["zoom"]           = True
+		#Tracker["nsoft"]          = 0
+		#Tracker["local"]          = False
+		#Tracker["PWadjustment"]   = ""
+		#Tracker["upscale"]        = 0.5
 		Tracker["applyctf"]       = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
 		#Tracker["refvol"]         = None
-		Tracker["nxinit"]         = 64
-		Tracker["nxstep"]         = 32
+		Tracker["nxinit"]         = Tracker["constants"]["nxinit"]
+		#Tracker["nxstep"]         = 32
 		Tracker["icurrentres"]    = -1
-		Tracker["ireachedres"]    = -1
-		Tracker["lowpass"]        = 0.4
-		Tracker["falloff"]        = 0.2
+		#Tracker["ireachedres"]    = -1
+		#Tracker["lowpass"]        = 0.4
+		#Tracker["falloff"]        = 0.2
 		#Tracker["inires"]         = options.inires  # Now in A, convert to absolute before using
 		Tracker["fuse_freq"]      = 50  # Now in A, convert to absolute before using
-		Tracker["delpreviousmax"] = False
-		Tracker["anger"]          = -1.0
-		Tracker["shifter"]        = -1.0
-		Tracker["saturatecrit"]   = 0.95
-		Tracker["pixercutoff"]    = 2.0
-		Tracker["directory"]      = ""
-		Tracker["previousoutputdir"] = ""
+		#Tracker["delpreviousmax"] = False
+		#Tracker["anger"]          = -1.0
+		#Tracker["shifter"]        = -1.0
+		#Tracker["saturatecrit"]   = 0.95
+		#Tracker["pixercutoff"]    = 2.0
+		#Tracker["directory"]      = ""
+		#Tracker["previousoutputdir"] = ""
 		#Tracker["eliminated-outliers"] = False
-		Tracker["mainiteration"]  = 0
-		Tracker["movedback"]      = False
+		#Tracker["mainiteration"]  = 0
+		#Tracker["movedback"]      = False
 		#Tracker["state"]          = Tracker["constants"]["states"][0] 
-		Tracker["global_resolution"] =0.0
+		#Tracker["global_resolution"] =0.0
 		Tracker["orgstack"]        = orgstack
 		#--------------------------------------------------------------------
 		#
@@ -2415,11 +2405,11 @@ def main():
 		from utilities import get_shrink_data_huang
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"INITIALIZATION OF Equal-Kmeans & Kmeans Clustering")
+			print(line+"Initialization of 3-D sorting")
 			a = get_im(orgstack)
 			nnxo = a.get_xsize()
 			if( Tracker["nxinit"] > nnxo ):
-				ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxEKclustering",1)
+				ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxsort3d.py",1)
 				nnxo = -1
 			else:
 				if Tracker["constants"]["CTF"]:
@@ -2448,14 +2438,14 @@ def main():
 		if(Tracker["constants"]["radius"]  < 1):
 			Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
 		elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-			ERROR("Particle radius set too large!","sxEKmref_clustering.py",1,myid)
+			ERROR("Particle radius set too large!","sxsort3d.py",1,myid)
 
 ####-----------------------------------------------------------------------------------------
 		# Master directory
 		if myid == main_node:
 			if masterdir =="":
 				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
-				masterdir ="master_EKMREF"+timestring
+				masterdir ="master_sort3d"+timestring
 				li =len(masterdir)
 				cmd="{} {}".format("mkdir", masterdir)
 				cmdexecute(cmd)
@@ -2470,7 +2460,7 @@ def main():
 			masterdir = mpi_bcast(masterdir,li,MPI_CHAR,main_node,MPI_COMM_WORLD)
 			masterdir = string.join(masterdir,"")
 		if myid ==main_node:
-			print_dict(Tracker["constants"], "Permanent settings of 3-D sorting program")
+			print_dict(Tracker["constants"],"Permanent settings of 3-D sorting program")
 		######### create a vstack from input stack to the local stack in masterdir
 		# stack name set to default
 		Tracker["constants"]["stack"] = "bdb:"+masterdir+"/rdata"
@@ -2527,7 +2517,7 @@ def main():
 			write_text_file(l1,partids)
 		mpi_barrier(MPI_COMM_WORLD)
 		#print " AAAAAA ",myid, main_node, nproc
-		data1,old_shifts1 = get_shrink_data_huang(Tracker,Tracker["nxinit"], partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
+		data1,old_shifts1 = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 		#if myid ==main_node:
 		#	print "  XUXU ",Tracker["constants"]["stack"], Tracker["partstack"], myid, nproc
 		#data1 =  getindexdata(Tracker["constants"]["stack"], "full.txt", Tracker["partstack"], myid, nproc)
@@ -2535,7 +2525,7 @@ def main():
 		vol1 = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data1, symmetry=Tracker["constants"]["sym"], info=None)
 		#vol1,fscxxx = rec3D_MPI(data1, symmetry = Tracker["constants"]["sym"], \
 		#	mask3D = None, fsc_curve = None, \
-		#	myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2, smearstep = 0.0)
+		#	myid = myid, main_node = main_node, odd_start = 1, eve_start = 0,finfo = None,npad = 2,smearstep = 0.0)
 		if myid ==main_node:
 			vol1_file_name = os.path.join(masterdir, "vol1.hdf")
 			vol1.write_image(vol1_file_name)
@@ -2545,7 +2535,7 @@ def main():
 		if myid == main_node:
 			write_text_file(l2,partids)
 		mpi_barrier(MPI_COMM_WORLD)
-		data2,old_shifts2 = get_shrink_data_huang(Tracker,Tracker["nxinit"], partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
+		data2,old_shifts2 = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 		vol2 = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data2, symmetry=Tracker["constants"]["sym"], info=None)
 		if myid ==main_node:
 			vol2_file_name = os.path.join(masterdir, "vol2.hdf")
@@ -2554,9 +2544,9 @@ def main():
 		vols=[vol1,vol2]
 		if myid ==main_node:
 			low_pass, falloff,currentres =get_resolution_mrk01(vols,Tracker["constants"]["radius"],\
-			Tracker["nxinit"],masterdir,None)
-			if low_pass >Tracker["constants"]["resolution"]:
-				low_pass= Tracker["constants"]["resolution"]
+			Tracker["constants"]["nnxo"],masterdir,None)
+			if low_pass >Tracker["constants"]["low_pass_filter"]:
+				low_pass= Tracker["constants"]["low_pass_filter"]
 		else:
 			low_pass    =0.0
 			falloff     =0.0
@@ -2565,9 +2555,11 @@ def main():
 		bcast_number_to_all(low_pass,source_node   = main_node)
 		bcast_number_to_all(falloff,source_node    = main_node)
 		Tracker["currentres"]         = currentres
-		Tracker["low_pass"]           = max(low_pass,.25)
+		#Tracker["low_pass"]           = max(low_pass,.25)
 		Tracker["falloff"]            = falloff
-		Tracker["frequency_low_pass"] =Tracker["constants"]["resolution"]
+		if Tracker["constants"]["low_pass_filter"] ==-1.0:
+			Tracker["constants"]["low_pass_filter"] = low_pass/Tracker["shrinkage"] # using low_pass determined from the current resolution. 
+		Tracker["low_pass_filter"] =Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"]
 		if myid ==main_node:
 			log_main.add("The command-line inputs are as following:")
 			log_main.add("**********************************************************")
@@ -2578,10 +2570,23 @@ def main():
 				continue
 		if myid ==main_node:
 			log_main.add("**********************************************************")
+		from filter import filt_tanl
 		### START 3-D sorting
 		if myid ==main_node:
                         log_main.add("----------3-D sorting  program------- ")
-			log_main.add("current resolution %6.3f"%Tracker["currentres"])
+			log_main.add("current resolution %6.3f for images of original size in terms of absolute frequency"%Tracker["currentres"])
+			log_main.add("equivalent to %f Angstrom resolution"%(Tracker["constants"]["pixel_size"]/Tracker["currentres"]))
+			log_main.add("the user provided enforced low_pass_filter is %f"%Tracker["constants"]["low_pass_filter"])
+			log_main.add("equivalent to %f Angstrom resolution"%(Tracker["constants"]["pixel_size"]/Tracker["constants"]["low_pass_filter"]))
+			log_main.add("After shrinkage, the low_pass_filter is %f in terms of absolute frequency"%Tracker["low_pass_filter"])
+			vol1 =get_im(vol1_file_name)
+			vol1 = filt_tanl(vol1, Tracker["low_pass_filter"],.1)
+			volf1_file_name = os.path.join(masterdir, "volf1.hdf")
+			vol1.write_image(volf1_file_name)
+			vol2 =get_im(vol2_file_name)
+			vol2 = filt_tanl(vol2, Tracker["low_pass_filter"],.1)
+			volf2_file_name = os.path.join(masterdir, "volf2.hdf")
+			vol2.write_image(volf2_file_name)
 		mpi_barrier(MPI_COMM_WORLD)
 		from utilities import get_input_from_string
 		delta       = get_input_from_string(Tracker["constants"]["delta"])
@@ -2598,21 +2603,21 @@ def main():
 			log_main.add("total sampled direction %10d  at angle step %6.3f"%(len(n_angles), delta)) 
 			log_main.add("captured sampled directions %10d percentage covered by data  %6.3f"%(nc,float(nc)/len(n_angles)*100))
 		mpi_barrier(MPI_COMM_WORLD)
-		if Tracker["constants"]["number_of_images_per_group"] ==-1: # Estimate number of images per group from delta, and scale up or down by scale_of_number
-			number_of_images_per_group = int(Tracker["constants"]["scale_of_number"]*len(n_angles))
-			if myid == main_node:
-				log_main.add(" Estimate number of images per group from delta and scale up/down by scale_of_number")
-				log_main.add(" number_of_images_per_group %d"%number_of_images_per_group)
-		else:
-			number_of_images_per_group = Tracker["constants"]["number_of_images_per_group"]
-			if myid ==main_node:
-				log_main.add(" User provided number_of_images_per_group %d"%number_of_images_per_group)
+		#if Tracker["constants"]["number_of_images_per_group"] ==-1: # Estimate number of images per group from delta, and scale up or down by scale_of_number
+		#	number_of_images_per_group = int(Tracker["constants"]["scale_of_number"]*len(n_angles))
+		#	if myid == main_node:
+		#		log_main.add(" estimate number of images per group from delta and scale up/down by scale_of_number")
+		#		log_main.add(" number_of_images_per_group %d"%number_of_images_per_group)
+		#else:
+		number_of_images_per_group = Tracker["constants"]["number_of_images_per_group"]
+		if myid ==main_node:
+			log_main.add("user provided number_of_images_per_group %d"%number_of_images_per_group)
 		Tracker["number_of_images_per_group"] = number_of_images_per_group
 		number_of_groups = int(total_stack/number_of_images_per_group)
 		Tracker["number_of_groups"] =  number_of_groups
 		generation     =0
 		partition_dict ={}
-		full_dict     = {}
+		full_dict      ={}
 		workdir =os.path.join(masterdir,"generation%03d"%generation)
 		Tracker["this_dir"] = workdir
 		if myid ==main_node:
@@ -2644,9 +2649,9 @@ def main():
 			ref_vol=apply_low_pass_filter(ref_vol,Tracker)
 			mref_ali3d_EQ_Kmeans(ref_vol,outdir,Tracker["this_particle_text_file"],Tracker)
 			partition_dict[indep_run]=Tracker["this_partition"]
-		Tracker["partition_dict"]   = partition_dict
-		Tracker["total_stack"]      = len(Tracker["this_data_list"])
-		Tracker["this_total_stack"] = Tracker["total_stack"]
+		Tracker["partition_dict"]    = partition_dict
+		Tracker["total_stack"]       = len(Tracker["this_data_list"])
+		Tracker["this_total_stack"]  = Tracker["total_stack"]
 		do_two_way_comparison(Tracker)
 		ref_vol_list = []
 		for igrp in xrange(len(Tracker["two_way_stable_member"])):
@@ -2667,12 +2672,23 @@ def main():
 		Tracker["this_data_list"] =Tracker["this_accounted_list"]
 		outdir  = os.path.join(workdir,"Kmref")  
 		ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,Tracker["this_accounted_text"],Tracker)
+		###
+		if myid ==main_node: vol_list = []
+		for igrp in xrange(number_of_groups):
+			class_file = os.path.join(outdir,"Class%d.txt"%igrp)
+			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
+			if myid ==main_node: vol_list.append(volref)
+			mpi_barrier(MPI_COMM_WORLD)
 		if myid ==main_node:
+			for ivol in xrange(len(vol_list)):
+				vol_list[ivol].write_image(os.path.join(workdir, "vol_of_Classes.hdf"),ivol)
+				filt_tanl(vol_list[ivol],Tracker["constants"]["low_pass_filter"],.1).write_image(os.path.join(workdir, "volf_of_Classes.hdf"),ivol)
 			log_main.add("number of unaccounted particles  %10d"%len(Tracker["this_unaccounted_list"]))
 			log_main.add("number of accounted particles  %10d"%len(Tracker["this_accounted_list"]))
-		Tracker["this_data_list"] =Tracker["this_unaccounted_list"]
-		Tracker["total_stack"]    =len(Tracker["this_data_list"])
-                Tracker["this_total_stack"] = Tracker["total_stack"]
+		Tracker["this_data_list"]    =Tracker["this_unaccounted_list"]
+		Tracker["total_stack"]       =len(Tracker["this_data_list"])
+		Tracker["this_total_stack"]  = Tracker["total_stack"]
 		number_of_groups = int(float(len(Tracker["this_unaccounted_list"]))/number_of_images_per_group)
 		Tracker["number_of_groups"] =  number_of_groups
 		while number_of_groups >=2:
@@ -2707,29 +2723,47 @@ def main():
 			do_two_way_comparison(Tracker)
 			ref_vol_list = []
 			for igrp in xrange(len(Tracker["two_way_stable_member"])):
-				Tracker["this_data_list"] = Tracker["two_way_stable_member"][igrp]
+				Tracker["this_data_list"]      = Tracker["two_way_stable_member"][igrp]
 				Tracker["this_data_list_file"] = os.path.join(workdir,"stable_class%d.txt"%igrp)
 				if myid ==main_node:
 					write_text_file(Tracker["this_data_list"],Tracker["this_data_list_file"])
 				mpi_barrier(MPI_COMM_WORLD)
-				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], info=None)
+				volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
+				if myid == main_node:
+					volref.write_image(os.path.join(workdir,"vol_stable.hdf"),iref)
+				volref = resample(volref,Tracker["shrinkage"])
 				ref_vol_list.append(volref)
-			ref_vol_list = apply_low_pass_filter(ref_vol_list,Tracker)
+				mpi_barrier(MPI_COMM_WORLD)
 			Tracker["this_data_list"] =Tracker["this_accounted_list"]
-			outdir       = os.path.join(workdir,"Kmref")
-			if myid ==main_node:
-				for iref in xrange(len(ref_vol_list)):
-					ref_vol_list[iref].write_image(os.path.join(workdir,"vol_stable.hdf"),iref)
-			mpi_barrier(MPI_COMM_WORLD)
+			outdir                    =os.path.join(workdir,"Kmref")
 			ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,Tracker["this_accounted_text"],Tracker)
+			# calculate the 3-D structure of original image size for each group
+			if myid ==main_node: vol_list = []
+			for igrp in xrange(number_of_groups):
+				class_file = os.path.join(outdir,"Class%d.txt"%igrp)
+				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
+				if myid ==main_node: vol_list.append(volref)
+			mpi_barrier(MPI_COMM_WORLD)
 			if myid ==main_node:
+				for ivol in xrange(len(vol_list)):
+					vol_list[ivol].write_image(os.path.join(workdir, "vol_of_Classes.hdf"),ivol)
+					filt_tanl(vol_list[ivol],Tracker["constants"]["low_pass_filter"],.1).write_image(os.path.join(workdir, "volf_of_Classes.hdf"),ivol)
 				log_main.add("number of unaccounted particles  %10d"%len(Tracker["this_unaccounted_list"]))
 				log_main.add("number of accounted particles  %10d"%len(Tracker["this_accounted_list"]))
+			mpi_barrier(MPI_COMM_WORLD)
 			number_of_groups = int(float(len(Tracker["this_unaccounted_list"]))/number_of_images_per_group)
 			Tracker["number_of_groups"] =  number_of_groups
 			Tracker["this_data_list"]   = Tracker["this_unaccounted_list"]
 			Tracker["total_stack"]      = len(Tracker["this_unaccounted_list"])
+		if Tracker["constants"]["unaccounted"]:
+			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],Tracker["this_unaccounted_text"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
+			volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
+			if myid ==main_node:
+				volref.write_image(os.path.join(workdir, "volf_unaccounted.hdf"))
 		# Finish program
 		mpi_barrier(MPI_COMM_WORLD)
 		from mpi import mpi_finalize
