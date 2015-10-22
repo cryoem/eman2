@@ -168,6 +168,25 @@ def ref_ali3dm( refdata ):
 		v = filt_tanl(v, 0.4, 0.1)
 		v *= mask
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%total_iter), iref)
+		
+def ref_sort3d(refdata):
+	from filter import fit_tanh, filt_tanl
+	from utilities import get_im
+	from fundamentals import rot_shift3D
+	import os
+	numref          = refdata[0]
+	outdir          = refdata[1]
+	fscc            = refdata[2]
+	total_iter      = refdata[3]
+	#varf           = refdata[4]
+	mask            = refdata[5]
+	low_pass_filter = refdata[6]
+	print 'filter every volume at (%f, 0.1)'%low_pass_filter
+	for iref in xrange(numref):
+		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
+		v = filt_tanl(v, low_pass_filter, 0.1)
+		v *= mask
+		v.write_image(os.path.join(outdir, "volf%04d.hdf"%total_iter), iref)
 
 def ref_ali3dm_ali_50S( refdata ):
 	from filter       import fit_tanh, filt_tanl
@@ -1052,6 +1071,7 @@ class factory_class:
 		self.contents["ref_random"]         = ref_random
 		self.contents["ref_ali3d"]          = ref_ali3d
 		self.contents["ref_ali3dm"]         = ref_ali3dm
+		self.contents["ref_sort3d"]         = ref_sort3d
 		self.contents["ref_ali3dm_new"]     = ref_ali3dm_new
 		self.contents["ref_ali3dm_ali_50S"] = ref_ali3dm_ali_50S
 		self.contents["helical"]            = helical
