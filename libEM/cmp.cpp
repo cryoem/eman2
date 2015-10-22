@@ -690,8 +690,11 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
-	if (!image->is_complex() || !with->is_complex())  throw InvalidCallException("Error: TomoWedgeCccCmp requires complex images");
-	if (image->get_xsize()!=with->get_xsize() || image->get_ysize()!=with->get_ysize() || image->get_zsize()!=with->get_zsize())  throw InvalidCallException("Error: TomoWedgeCccCmp requires complex images");
+	EMData *imageo=image;
+	EMData *witho=with;
+	if (!image->is_complex()) image=image->do_fft();
+	if (!with ->is_complex()) with =with ->do_fft();
+	if (image->get_xsize()!=with->get_xsize() || image->get_ysize()!=with->get_ysize() || image->get_zsize()!=with->get_zsize())  throw InvalidCallException("Error: TomoWedgeCccCmp requires same sized images");
 
 	float sigmaimg = params.set_default("sigmaimg",0.5f);
 	float sigmawith = params.set_default("sigmawith",0.5f);
@@ -728,8 +731,11 @@ float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 			}
 		}
 	}
-	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
+	imageo->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
 //	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
+	
+	if (imageo!=image) delete image;
+	if (witho!=with) delete with;
 	
 	if (negative) sum*=-1.0;
 	return float(sum/(sqrt(sumsq1)*sqrt(sumsq2)));
@@ -741,7 +747,10 @@ float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
-	if (!image->is_complex() || !with->is_complex())  throw InvalidCallException("Error: TomoWedgeFscCmp requires complex images");
+	EMData *imageo=image;
+	EMData *witho=with;
+	if (!image->is_complex()) image=image->do_fft();
+	if (!with ->is_complex()) with =with ->do_fft();
 	if (image->get_xsize()!=with->get_xsize() || image->get_ysize()!=with->get_ysize() || image->get_zsize()!=with->get_zsize())  throw InvalidCallException("Error: TomoWedgeFscCmp requires 2 images the same size");
 
 	int nx=image->get_xsize();
@@ -800,6 +809,9 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	}
 	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
 //	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
+
+	if (imageo!=image) delete image;
+	if (witho!=with) delete with;
 	
 	if (negative) sum*=-1.0;
 	return float(sum/(sqrt(sumsq1)*sqrt(sumsq2)));
