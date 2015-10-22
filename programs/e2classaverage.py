@@ -413,6 +413,9 @@ def align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp):
 	# initial alignment
 	if align!=None :
 		ali=ptcl.align(align[0],ref,align[1],aligncmp[0],aligncmp[1])
+	else:
+		ali=ptcl.copy()
+		ali["xform.align2d"]=Transform()
 
 	# refine alignment if requested
 	if ralign!=None:

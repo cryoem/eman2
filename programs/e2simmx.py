@@ -526,7 +526,7 @@ class EMSimTaskDC(JSTask):
 		d = {}
 #		d["sim_data"] = sim_data
 		result_data = []
-		if self.options.has_key("align") and self.options["align"] != None:
+		if self.options.has_key("align") and self.options["align"][0] != None:
 			for i in range(0,6):
 				e = EMData(len(refs),len(ptcls))
 				e.to_zero()
@@ -547,7 +547,7 @@ class EMSimTaskDC(JSTask):
 				rc = c-min_ref_idx # this was a solution to a bug
 				rr = r-min_ptcl_idx # this was a solution to a bug
 				result_data[0].set(rc,rr,comp)
-				if self.options.has_key("align") and self.options["align"] != None:
+				if self.options.has_key("align") and self.options["align"][0] != None:
 					tran = data[1]
 					if tran==None :
 						result_data[1].set(rc,rr,0)
