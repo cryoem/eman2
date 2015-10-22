@@ -181,6 +181,11 @@ def ref_sort3d(refdata):
 	#varf           = refdata[4]
 	mask            = refdata[5]
 	low_pass_filter = refdata[6]
+	import time
+	from time import strftime, localtime
+	theme='filter every volume at (%f, 0.1)'%low_pass_filter
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	print(line+theme)
 	print 'filter every volume at (%f, 0.1)'%low_pass_filter
 	for iref in xrange(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
