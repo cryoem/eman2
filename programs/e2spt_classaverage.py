@@ -199,6 +199,8 @@ def main():
 	
 	parser.add_argument("--notmatchimgs",action='store_true',default=False,help="""Default=True. This option prevents applying filter.match.to to one image so that it matches the other's spectral profile during preprocessing for alignment purposes.""")
 	
+	parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clipali, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
+	
 	parser.add_argument("--preavgproc1",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 	
 	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
@@ -255,18 +257,11 @@ def main():
 	if --resume is not provided.
 	'''
 	
+	options.raw = options.input
+	
 	if options.recompute:
 		options.align = 'rotate_translate_3d_tree'
 	
-	if 'tree' in options.align:
-		options.falign = None
-		options.mask = None
-		options.lowpass = None
-		options.highpass = None
-		options.normproc = None
-		options.lowpassfine = None
-		options.highpassfine = None
-
 	rootpath = os.getcwd()
 
 	if not options.resume:
@@ -365,6 +360,10 @@ def main():
 					sys.exit()
 		#else:
 		#	print "ref is", options.ref
+	
+	
+	options.raw = options.input
+
 					
 	if not options.translateonly:
 		if options.search or options.searchfine:
@@ -415,7 +414,7 @@ def main():
 	ny = ptclshdr["ny"]
 	nz = ptclshdr["nz"]
 	if nx!=ny or ny!=nz :
-		print "ERROR, input volumes are not cubes"
+		print "\nERROR, input volumes are not cubes"
 		sys.exit(1)
 	
 	if options.ref:
@@ -426,12 +425,6 @@ def main():
 			%d, %d, %d""" %(refhdr["nx"], refhdr["ny"], refhdr["nz"],nx, ny, nz)
 			sys.exit(1)
 	
-	#if not options.donotaverage:		
-		#if '.hdf' not in options.output:					
-		#	print "(e2spt_classaverage)(main) - Error in output name. Format must be '.hdf'; make sure you didn't mistake a comma for a dot"
-		#	sys.exit(1)
-	#	pass
-		
 	logger = E2init(sys.argv, options.ppid)
 	
 	'''
@@ -439,30 +432,26 @@ def main():
 	'''
 	cmdwp = writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
 	
-	preprocnameCoarse = preprocnameFine = ''
 	
-	if options.savepreprocessed:
-		dummy = EMData(8,8,8)
-		dummy.to_one()
+	#preprocnameCoarse = preprocnameFine = ''
+	#if options.savepreprocessed:
+	#	dummy = EMData(8,8,8)
+	#	dummy.to_one()
 	
-		preprocnameCoarse = options.input.replace('.hdf','_preprocCoarse.hdf')
-		if options.path not in preprocnameCoarse:
-			preprocnameCoarse = options.path + '/' + preprocnameCoarse
-			
-		preprocnameFine = options.input.replace('.hdf','_preprocFine.hdf')
-		if options.path not in preprocnameFine:
-			preprocnameFine = options.path + '/' + preprocnameFine
+	#	preprocnameCoarse = options.input.replace('.hdf','_preprocCoarse.hdf')
+	#	if options.path not in preprocnameCoarse:
+	#		preprocnameCoarse = options.path + '/' + preprocnameCoarse
+	#		
+	#	preprocnameFine = options.input.replace('.hdf','_preprocFine.hdf')
+	#	if options.path not in preprocnameFine:
+	#		preprocnameFine = options.path + '/' + preprocnameFine
+	#
+	#	for i in range(nptcl):
+	#		dummy.write_image( preprocnameCoarse ,i)
+	#		
+	#		if options.falign and options.falign != 'None' and options.falign != 'none' and 'rotate_symmetry_3d' not in options.align:
+	#			dummy.write_image( preprocnameFine ,i)
 
-		for i in range(nptcl):
-			dummy.write_image( preprocnameCoarse ,i)
-			
-			if options.falign and options.falign != 'None' and options.falign != 'none':
-				dummy.write_image( preprocnameFine ,i)
-				
-	#if options.classmx and options.groups:
-	#	print """ERROR: --groups is used to separate the data arbitrarily into classes.
-	#			It should not be provided if you supply --classmx, and vice versa."""
-	#	sys.exit(1)
 		
 	if nptcl<1 : 
 		print "(e2spt_classaverage)(main) - ERROR : at least 1 particle required in input stack"
@@ -500,6 +489,79 @@ def main():
 	else:
 		etc=''
 
+	
+	
+	if 'tree' in options.align:
+		options.falign = None
+		options.mask = None
+		options.lowpass = None
+		options.highpass = None
+		options.normproc = None
+		options.lowpassfine = None
+		options.highpassfine = None
+		options.preprocess = None
+		options.preprocessfine = None
+		
+	elif not options.nopreprocprefft:
+		
+		if options.mask or options.normproc or options.threshold or options.clipali:		
+			tasks=[]
+			results=[]
+			
+			preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
+			
+			for i in range(nptcl):
+				
+				img = EMData( options.input, i )
+				
+				if options.parallel:
+					task = Preprocprefft3DTask( ["cache",options.input,i], options, i )
+					tasks.append(task)
+			
+				else:
+					pimg = preprocessingprefft( img, options)
+					pimg.write_image( preprocprefftstack, i )
+			
+			
+			if options.parallel and tasks:
+				tids = etc.send_tasks(tasks)
+				if options.verbose: 
+					print "preprocessing %d tasks queued" % (len(tids)) 
+
+		
+			results = get_results_preproc( etc, tids, options.verbose )
+			print "preprocessing results are", results	
+	
+			options.input = preprocprefftstack
+	
+	
+	
+			#cache needs to be reloaded with the new options.input		
+			if options.parallel :
+	
+				if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
+					options.parallel = None
+					etc = None
+		
+				else:
+					print "\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!"
+					print "\n\n"
+					from EMAN2PAR import EMTaskCustomer
+					etc=EMTaskCustomer(options.parallel)
+					pclist=[options.input]
+		
+					if options.ref: 
+						pclist.append(options.ref)
+					etc.precache(pclist)
+			else:
+				etc=''
+		else:
+			#nothing to do
+			pass
+		
+		#turn off this preprocessing if already done
+		options.nopreprocprefft = True
+	
 	if options.inputaliparams: 
 		preOrientationsDict = js_open_dict(options.inputaliparams)
 		
@@ -888,6 +950,8 @@ def main():
 
 			tasks=[]
 			results=[]
+		
+			
 			try:
 				ref = refsdict[ ic ]
 				#if options.parallel: 
@@ -1122,7 +1186,7 @@ def main():
 			print "len results is", len(results)
 			print "should match nptcl", nptcl
 			
-			print "results are", results
+			#print "results are", results
 			
 			for r in results:
 				#if r and r[0]:	
@@ -1896,20 +1960,57 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				hacrefsubdir = 'spthac_ref' + klassidref
 			
 				cmdhac+=' --path=' + hacrefsubdir
-				cmdhac+=' --iter='+str(niterhac)
+				#cmdhac+=' --iter='+str(niterhac)
 				cmdhac+=' --input='+subsetForHacRef
+				#cmdhac+= ' --nopreprocprefft'
+				
+				print "cmdhac is", cmdhac
 				
 				runcmd( options, cmdhac )
 				#cmdhac += ' && mv ' + hacrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForHacRef + ' ' + options.path
 
 				#cmdhac2 = 'mv ' + hacrefsubdir + ' ' + options.path + '/'
 				#runcmd( options, cmdhac2 )
-				os.rename( hacrefsubdir, options.path + '/' + hacrefsubdir)
+				#os.rename( hacrefsubdir, options.path + '/' + hacrefsubdir)
 
 				
 				#cmdhac3 = 'mv ' + subsetForHacRef + ' ' + options.path
 				#runcmd( options, cmdhac3 )
-				os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef)
+				#os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef)
+				
+				
+				
+				try:
+					print "\nmoving hacrefsubdir into path", hacrefsubdir, options.path
+					os.rename( hacrefsubdir, options.path + '/' + hacrefsubdir )
+				except:
+					print "tried moving hacrefsubdir into path but failed", hacrefsubdir, options.path
+					newdirectorycount = '_'.join( hacrefsubdir.split('_')[:-1]) + '_' + str( int(hacrefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					print "newdirectorycount is", newdirectorycount
+					os.rename( hacrefsubdir, options.path + '/' + newdirectorycount )
+				
+				try:
+					os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef )
+				except:
+					newsubsetcount = '_'.join( subsetForHacRef.split('_')[:-1]) + '_' + str( int(subsetForHacRef.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					os.rename( subsetForHacRef, options.path + '/' + newsubsetcount )
+				
+				
+				findir = os.listdir(options.path)
+				if subsetForHacRef in findir:
+					currentdir = os.getcwd()
+					findircurrent = os.listdir(currentdir)
+					if subsetForHacRef in findircurrent:
+						newsubsetcount = '_'.join( subsetForHacRef.split('_')[:-1]) + '_' + str( int(subsetForHacRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+						print "\ntrying to move new subsetForHacRef into path", newsubsetcount, options.path
+						os.rename( subsetForHacRef, options.path + '/' + newsubsetcount )
+					else:
+						print "\nWARNING subsetForHacRef does not exist in current directory", subsetForHacRef
+						
+				else:
+					os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef )
+					print "\nmoving subsetForHacRef into path", subsetForHacRef, options.path
+				
 				
 				if options.verbose:
 					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac
@@ -1950,10 +2051,12 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				ssarefsubdir = 'sptssa_ref' + klassidref
 			
 				ssaelements = []
+				print "\nelements are", elements
 				for ele in elements:
-					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'fine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
+					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
 					#	print "Appended element", ele
 						ssaelements.append(ele)
+						print "appending element",ele
 					#else:
 					#	print "SKIPPED element", ele
 					
@@ -1965,15 +2068,20 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				#	sys.exit()
 				
 				cmdssa = ' '.join(ssaelements)
+				print "before replacing program name, cmdssa is", cmdssa
+
 				cmdssa = cmdssa.replace('e2spt_classaverage','e2symsearch3d')
-			
 				if refinemulti:
+					print "should replace refinemulti"
 					cmdssa = cmdssa.replace('e2spt_refinemulti','e2symsearch3d')
 			
 				cmdssa += ' --input=' + subsetForSsaRef 
 				cmdssa += ' --path=' + ssarefsubdir
 				cmdssa += ' --symmetrize'
 				cmdssa += ' --average'
+				cmdssa+= ' --nopreprocprefft'
+				
+				print "\ncmdssa is", cmdssa
 				
 				runcmd( options, cmdssa )
 				
@@ -1985,12 +2093,32 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 
 				#cmdssa2 = 'mv ' + ssarefsubdir + ' ' + options.path + '/'
 				#runcmd( options, cmdssa2 )
-				os.rename( ssarefsubdir, options.path + '/' + ssarefsubdir)
+				#os.rename( ssarefsubdir, options.path + '/' + ssarefsubdir)
 				
 				
 				#cmdssa3 =  'mv ' + subsetForSsaRef + ' ' + options.path
 				#runcmd( options, cmdssa3 )
-				os.rename( subsetForSsaRef, options.path + '/' + subsetForSsaRef)
+				#os.rename( subsetForSsaRef, options.path + '/' + subsetForSsaRef)
+				
+				
+				try:
+					print "\nmoving ssarefsubdir into path", ssarefsubdir, options.path
+					os.rename( ssarefsubdir, options.path + '/' + ssarefsubdir )
+				except:
+					print "tried moving ssarefsubdir into path but failed", ssarefsubdir, options.path
+					newdirectorycount = '_'.join( ssarefsubdir.split('_')[:-1]) + '_' + str( int(ssarefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					print "newdirectorycount is", newdirectorycount
+					os.rename( ssarefsubdir, options.path + '/' + newdirectorycount )			
+				
+				findir = os.listdir(options.path)
+				if subsetForSsaRef in findir:
+					print "tried moving subsetForSsaRef into path but failed", subsetForSsaRef, options.path
+					newsubsetcount = '_'.join( subsetForSsaRef.split('_')[:-1]) + '_' + str( int(subsetForSsaRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					os.rename( subsetForSsaRef, options.path + '/' + newsubsetcount )
+				else:
+					os.rename( subsetForSsaRef, options.path + '/' + subsetForSsaRef )
+					print "\nmoving subsetForSsaRef into path", subsetForSsaRef, options.path
+				
 				
 				if options.verbose:
 					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa
@@ -2087,8 +2215,9 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				btrefsubdir = 'sptbt_ref' + klassidref		
 			
 				cmdbt+=' --path=' + btrefsubdir
-				cmdbt+=' --iter=' + str( niter )
+				#cmdbt+=' --iter=' + str( niter )
 				cmdbt+=' --input=' + subsetForBTRef
+				#cmdbt+= ' --nopreprocprefft'
 				
 				runcmd( options, cmdbt )
 				
@@ -2105,13 +2234,28 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 			
 				#cmdbt2 = 'mv ' + btrefsubdir + ' ' + options.path + '/' 
 				#runcmd( options, cmdbt2 )
-				os.rename( btrefsubdir, options.path + '/' + btrefsubdir )
 				
+				try:
+					print "\nmoving btrefsubdir into path", btrefsubdir, options.path
+					os.rename( btrefsubdir, options.path + '/' + btrefsubdir )
+				except:
+					print "tried moving btrefsubdir into path but failed", btrefsubdir, options.path
+					newdirectorycount = '_'.join( btrefsubdir.split('_')[:-1]) + '_' + str( int(btrefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					os.rename( btrefsubdir, options.path + '/' + newdirectorycount )
+								
 				
 				#cmdbt3 = 'mv ' + subsetForBTRef + ' ' + options.path
 				#runcmd( options, cmdbt3 )
-				os.rename( subsetForBTRef, options.path + '/' + subsetForBTRef )
 				
+				findir = os.listdir(options.path)
+				if subsetForBTRef in findir:
+					print "tried moving subsetForBTRef into path but failed", subsetForBTRef, options.path
+					newsubsetcount = '_'.join( subsetForBTRef.split('_')[:-1]) + '_' + str( int(subsetForBTRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					os.rename( subsetForBTRef, options.path + '/' + newsubsetcount )
+				else:
+					os.rename( subsetForBTRef, options.path + '/' + subsetForBTRef )
+					print "\nmoving subsetForBTRef into path", subsetForBTRef, options.path
+								
 				
 			
 				#if os.getcwd() not in options.path:
@@ -2155,8 +2299,12 @@ def runcmd(options,cmd):
 	text=p.communicate()	
 	p.stdout.close()
 	
-	if options.verbose > 9:
+	if options.verbose > 8:
 		print "(e2spt_classaverage)(runcmd) done"
+	
+	#if options.verbose > 9:
+	#	print text
+	
 	return
 
 
@@ -2636,20 +2784,24 @@ def sptmakepath(options, stem='spt'):
 
 
 
-def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,finetag=''):
+def preprocfilter(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,finetag=''):
 
 	print "\n(e2spt_classaverage) preprocessing"
 	#print "Mask and its type are", mask, type(mask)
-	if options.mask == 'None' or options.mask  == 'none':
-		options.mask  = None
+	#if options.mask == 'None' or options.mask  == 'none':
+	#	options.mask  = None
+	
 	if options.lowpass  == 'None' or options.lowpass == 'none':
 		options.lowpass = None
+	
 	if options.highpass == 'None' or options.highpass == 'none':
 		options.highpass = None
+	
 	if options.preprocess == 'None' or options.preprocess == 'none':
 		options.preprocess = None
-	if options.threshold == 'None' or options.threshold == 'none':
-		options.threshold = None
+	
+	#if options.threshold == 'None' or options.threshold == 'none':
+	#	options.threshold = None
 	
 	
 	if finetag:
@@ -2669,30 +2821,31 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 		
 	apix = image['apix_x']
 	
-	'''
-	Make the mask first 
-	'''
-	print "masking"
-	maskimg = EMData( int(image["nx"]), int(image["ny"]), int(image["nz"]) )
-	maskimg.to_one()
-	print "Donde creating mask"
+	
+	#'''
+	#Make the mask first 
+	#'''
+	#print "masking"
+	#maskimg = EMData( int(image["nx"]), int(image["ny"]), int(image["nz"]) )
+	#maskimg.to_one()
+	#print "Donde creating mask"
 	
 	
 	simage = image.copy()
 
 
 	
-	if options.mask and options.mask != 'None' and options.mask != 'none':
+	#if options.mask and options.mask != 'None' and options.mask != 'none':
 		#if options.verbose:
-		print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-		maskimg.process_inplace(options.mask[0],options.mask[1])
+	#	print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+	#	maskimg.process_inplace(options.mask[0],options.mask[1])
 		
-		print "(e2spt_classaverage)(preprocessing) --mask provided:", options.mask
+	#	print "(e2spt_classaverage)(preprocessing) --mask provided:", options.mask
 		#mask.write_image(options.path + '/mask.hdf',-1)
 	
-	try:
-		if options.maskfile:
-			maskfileimg = EMData(options.maskfile,0)
+	#try:
+	#	if options.maskfile:
+	#		maskfileimg = EMData(options.maskfile,0)
 		
 			#mx = maskfileimg['nx']
 			#my = maskfileimg['ny']
@@ -2707,31 +2860,31 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 			#r=Region( (2*mxc - mnewsize)/2, (2*myc - mnewsize)/2, (2*mzc - mnewsize)/2, mnewsize , mnewsize , mnewsize)
 			#maskfileimg.clip_inplace( r )
 			
-			if options.clipali or maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
-				maskfileimg = clip3D( maskfileimg, maskimg['nx'] )
+	#		if options.clipali or maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
+	#			maskfileimg = clip3D( maskfileimg, maskimg['nx'] )
 		
 		
-			maskimg.mult( maskfileimg )
+	#		maskimg.mult( maskfileimg )
 			
-			print "A maskfile was multiplied by the mask", options.maskfile
-		else:
-			print "Apparently therewas no --maskfile"
-			pass
-	except:
-		print "\nWarning: Ignore if parameter --maskfile does not exist in the program you ran. Otherwise, something went wrong."
+	#		print "A maskfile was multiplied by the mask", options.maskfile
+	#	else:
+	#		print "Apparently therewas no --maskfile"
+	#		pass
+	#except:
+	#	print "\nWarning: Ignore if parameter --maskfile does not exist in the program you ran. Otherwise, something went wrong."
 
 	
-	'''
-	Set the 'mask' parameter for --normproc if normalize.mask is being used
-	'''
-	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-		print "normproc is", options.normproc, type(options.normproc)
-		if options.normproc[0]=="normalize.mask": 
-			options.normproc[1]["mask"]=maskimg
+	#'''
+	#Set the 'mask' parameter for --normproc if normalize.mask is being used
+	#'''
+	#if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+	#	print "normproc is", options.normproc, type(options.normproc)
+	#	if options.normproc[0]=="normalize.mask": 
+	#		options.normproc[1]["mask"]=maskimg
 	
-	'''
-	Normalize-Mask
-	'''	
+	#'''
+	#Normalize-Mask
+	#'''	
 	#if mask and mask != 'None' and mask != 'none' or options.maskfile:
 	
 	#try:
@@ -2746,28 +2899,28 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 	#except:
 	#	pass
 			
-	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-		simage.process_inplace(options.normproc[0],options.normproc[1])
+	#if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+	#	simage.process_inplace(options.normproc[0],options.normproc[1])
 		#simage.write_image(options.path + '/imgMsk1norm.hdf',-1)
 
-		print "(e2spt_classaverage)(preprocessing) --normproc provided:", options.normproc
+	#	print "(e2spt_classaverage)(preprocessing) --normproc provided:", options.normproc
 	
-	try:
+	#try:
 		#if mask and mask != 'None' and mask != 'none' or options.maskfile:
-		if options.mask or options.maskfile:
-			print "Masking again after normalizing"
-			simage.mult(maskimg)
+	#	if options.mask or options.maskfile:
+	#		print "Masking again after normalizing"
+	#		simage.mult(maskimg)
 			#simage.write_image(options.path + '/imgMsk1normMsk2.hdf',-1)
-	except:
-		pass
+	#except:
+	#	pass
 		
 	#if lowpass or highpass or preprocess or int(shrink) > 1:
 	#	simage = filters(options,simage,preprocess,lowpass,highpass,shrink)
 	#	#simage.write_image(options.path + '/imgMsk1normMsk2Filts.hdf',-1)
 
 
-	if options.threshold and options.threshold != 'None' and options.threshold != 'none':
-		simage.process_inplace(options.threshold[0],options.threshold[1])
+	#if options.threshold and options.threshold != 'None' and options.threshold != 'none':
+	#	simage.process_inplace(options.threshold[0],options.threshold[1])
 		#simage.write_image(options.path + '/imgMsk1normMsk2LpFiltsThr.hdf',-1)
 
 	'''
@@ -2823,6 +2976,7 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 			print "\nWarning: Ignore if parameter --maskfile does not exist in the program you ran. Otherwise, something went wrong."
 	
 	
+	"""
 	preproclst = ''		
 		
 	lines=[]
@@ -2913,6 +3067,148 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 	
 	if options.verbose:
 		print "Done preprocessing ptcl", ptclindx	
+	"""
+	
+	return simage
+	
+
+'''
+CLASS TO PARALLELIZE PREPROCESSING STEPS OCCURRING BEFORE FFT.
+Many preprocessing steps need to be applied only once.
+'''
+class Preprocprefft3DTask(JSTask):
+	"""This is a task object for the parallelism system. It is responsible for preprocessing one 3-D volume, with a variety of options"""
+
+	def __init__(self,image,options,ptclnum):
+	
+		"""image may be an actual EMData object, or ["cache",path,number]."""
+		
+		data={"image":image}
+		
+		JSTask.__init__(self,"PreprocPrefft3d",data,{},"")
+
+		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"falign":options.falign,"faligncmp":options.faligncmp,"shrink":options.shrink,"shrinkfine":options.shrinkfine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
+		self.classoptions={"options":options,"ptclnum":ptclnum}
+	
+	def execute(self,callback=None):
+		"""This preprocesses one volume and returns it."""
+		classoptions = self.classoptions
+		
+		indx = self.data["image"][2]
+		img = EMData(self.data["image"][1],indx)
+		
+		"""
+		CALL the preprocessingprefft function
+		"""
+		
+		print "\n(e2spt_classaverage)(Preprocprefft3DTask) preprocessing image", indx
+		print "calling preprocessingprefft, sending image"
+		
+		preprocimg = preprocessingprefft( img, classoptions['options'] )
+		
+		preprocprefftstack = classoptions['options'].path + '/' + classoptions['options'].input.replace('.hdf','_preproc.hdf')
+		
+		
+		print "returned from preprocessingprefft. saving preprocessed image to", preprocprefftstack
+		preprocimg.write_image( preprocprefftstack, indx)
+		
+		return 1
+
+
+def preprocessingprefft(image,options):
+
+	print "\n(e2spt_classaverage) preprocessing"
+	#print "Mask and its type are", mask, type(mask)
+	if options.mask == 'None' or options.mask  == 'none':
+		options.mask  = None
+	
+	if options.threshold == 'None' or options.threshold == 'none':
+		options.threshold = None
+	
+	if options.normproc == 'None' or options.normproc == 'none':
+		options.normproc = None
+
+	print "\n(e2spt_classaverage) (preprocessingprefft)"
+	
+	simage = image.copy()
+	
+	apix = image['apix_x']
+	
+	'''
+	Make the mask first 
+	'''
+	print "masking"
+	maskimg = EMData( int(image["nx"]), int(image["ny"]), int(image["nz"]) )
+	maskimg.to_one()
+	print "Done creating mask"
+	
+	if options.mask and options.mask != 'None' and options.mask != 'none':
+		#if options.verbose:
+		print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+		maskimg.process_inplace(options.mask[0],options.mask[1])
+		
+		print "(e2spt_classaverage)(preprocessingprefft) --mask provided:", options.mask
+		#mask.write_image(options.path + '/mask.hdf',-1)
+	
+	try:
+		if options.maskfile:
+			maskfileimg = EMData(options.maskfile,0)
+			
+			if options.clipali or maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
+				maskfileimg = clip3D( maskfileimg, maskimg['nx'] )
+		
+			maskimg.mult( maskfileimg )
+			
+			print "A maskfile was multiplied by the mask", options.maskfile
+		else:
+			print "Apparently therewas no --maskfile"
+			pass
+	except:
+		pass
+	
+	'''
+	Set the 'mask' parameter for --normproc if normalize.mask is being used
+	'''
+	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+		print "normproc is", options.normproc, type(options.normproc)
+		if options.normproc[0]=="normalize.mask": 
+			options.normproc[1]["mask"]=maskimg
+	
+	'''
+	Normalize-Mask
+	'''	
+			
+	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+		simage.process_inplace(options.normproc[0],options.normproc[1])
+		#simage.write_image(options.path + '/imgMsk1norm.hdf',-1)
+
+		print "(e2spt_classaverage)(preprocessingprefft) --normproc provided:", options.normproc
+	
+	try:
+		#if mask and mask != 'None' and mask != 'none' or options.maskfile:
+		if options.mask or options.maskfile:
+			print "Masking again after normalizing"
+			simage.mult(maskimg)
+			#simage.write_image(options.path + '/imgMsk1normMsk2.hdf',-1)
+	except:
+		pass
+		
+	'''
+	Any threshold picked visually was based on the original pixels give the original
+	box size; therefore, it needs to be applied before clipping the box
+	'''
+	if options.threshold and options.threshold != 'None' and options.threshold != 'none':
+		simage.process_inplace( options.threshold[0], options.threshold[1] )
+	
+	'''
+	If the box is clipped, you need to make sure rotations won't induce aberrant blank
+	corners; therefore, mask again softly at radius -2
+	'''
+	if options.clipali and options.clipali != 'None' and options.clipali != 'none':
+		if simage['nx'] != options.clipali or simage['ny'] != options.clipali or simage['nz'] != options.clipali:
+			simage = clip3D( simage, options.clipali )
+			
+			simage.process_inplace('mask.soft',{'outer_radius':-4})
 	
 	return simage
 	
@@ -2925,7 +3221,8 @@ def makeAverage(options,ic,results,it=0):
 	if options.goldstandardoff:
 		klassid = ''
 		
-	ptcl_file = options.input
+	#ptcl_file = options.input
+	ptcl_file = options.raw
 	path = options.path
 	#align_params=results
 	averager = options.averager
@@ -3232,6 +3529,52 @@ def makeAverage(options,ic,results,it=0):
 		return [avg,weights]
 
 
+def get_results_preproc(etc,tids,verbose):
+	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
+	aside from the use of options["ptcl"] this is fairly generalizable code. """
+	
+	print "(e2spt_classaverage)(get_results_preproc)"
+	
+	# wait for them to finish and get the results
+	# results for each will just be a list of (qual,Transform) pairs
+	results=[0]*len(tids)		# storage for results
+	ncomplete=0
+	tidsleft=tids[:]
+	
+	print "results len is", len(results)
+	
+	while 1:
+		time.sleep(5)
+		proglist=etc.check_task(tidsleft)
+		nwait=0
+		for i,prog in enumerate(proglist):
+			if prog==-1 : nwait+=1
+			if prog==100 :
+				r = etc.get_results(tidsleft[i])				#Results for a completed task
+				
+				print "r is", r
+				
+				if r:
+					#print "r is", r
+					ptcl=r[0].classoptions["ptclnum"]		#Get the particle number from the task rather than trying to work back to it
+					results[ptcl] = r[1]
+					
+					print "ptcl is", ptcl
+					print "results inside get_results are", results
+										
+				ncomplete+=1
+		
+		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
+		if verbose:
+			print "  %d tasks, %d complete, %d waiting to start        \r"%(len(tids),ncomplete,nwait)
+			sys.stdout.flush()
+	
+		if len(tidsleft)==0: break
+		
+	return results
+
+
+
 def get_results(etc,tids,verbose,nptcls,refmethod=''):
 	'''This will get results for a list of submitted tasks. Won't return until it has all requested results.
 	aside from the use of options["ptcl"] this is fairly generalizable code.'''
@@ -3463,7 +3806,7 @@ class Align3DTask(JSTask):
 			refpreprocess=1
 			
 		if options.verbose:
-			print "\n\n!!!!!!!!!!!!!!!!!!!!!!!!\n(e2spt_classaverage)(Align3DTask) Aligning ",classoptions['label']
+			print "\n\n!!!!!!!!!!!!!!!!!!!!!!!!\n(e2spt_classaverage)(Align3DTask) ",classoptions['label']
 			#print "\n\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!n\n\n\n\n\n\n"
 		
 		
@@ -3634,7 +3977,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 		if reffullsize['nx'] != options.clipali or reffullsize['ny'] != options.clipali or reffullsize['nz'] != options.clipali:
 			reffullsize = clip3D( reffullsize, options.clipali )
-			print "clipping full-sized reference for final tweaking alignment", options.clipali, reffullsize['nx']
+			print "full-sized reference is", options.clipali, reffullsize['nx']
 		
 		
 	print "before refpreprocess, refpreprocess, iter", refpreprocess, iter
@@ -3677,7 +4020,11 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				#print "\nThere IS refpreprocess!"	
 		
 				print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
-				sfixedimage = preprocessing(sfixedimage,options, refindx, savetag ,'yes',round)
+				
+				if not options.nopreprocprefft:
+					sfixedimage = preprocessingprefft(sfixedimage,options)
+				
+				sfixedimage = preprocfilter(sfixedimage,options, refindx, savetag ,'yes',round)
 				print "AFTER preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
 
 			#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
@@ -3694,8 +4041,10 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 				elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
 					print "BEFORE preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
-
-					s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
+					
+					if not options.nopreprocprefft:
+						s2fixedimage = preprocessingprefft(s2fixedimage,options)
+					s2fixedimage = preprocfilter(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
 	
 					print "AFTER preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
 
@@ -3751,8 +4100,11 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 
 			#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
-
-			simage = preprocessing(simage,options,ptclindx, savetagp ,'yes',round)
+			
+			
+			if not options.nopreprocprefft:
+				simage = preprocessingprefft(simage,options)
+			simage = preprocfilter(simage,options,ptclindx, savetagp ,'yes',round)
 
 		#print "preprocessed moving particle has size", simage['nx']
 
@@ -3765,7 +4117,10 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				s2image = simage.copy()
 				#print "PARTICLE fine preprocessing is equal to coarse"
 			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-				s2image = preprocessing(s2image,options,ptclindx, savetagp ,'no',round,'fine')
+				
+				if not options.nopreprocprefft:
+					s2image = preprocessingprefft(s2image,options)
+				s2image = preprocfilter(s2image,options,ptclindx, savetagp ,'no',round,'fine')
 				#print "There was fine preprocessing"
 			#sys.exit()
 		else:
@@ -3873,6 +4228,12 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#print "\nsfixedimage and type", sfixedimage, type(sfixedimage)
 		
 		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
+		print "aligner was", options.align[0]
+		print "with parameters",options.align[1]
+		print "npeaks",options.npeakstorefine
+		print "comparator",options.aligncmp[0]
+		print "results are thus", bestcoarse
+		
 		#except:
 		#	bestcoarse = simage.align(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
 		
@@ -4000,9 +4361,13 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			
 					reffullsizeali = reffullsize.copy()
 					imgfullsizeali = imgfullsize.copy()
-			
-					reffullsizeali = preprocessing(reffullsizeali,options,ptclindx, 'ref' ,'no',round,'noshrink')
-					imgfullsizeali = preprocessing(imgfullsizeali,options,ptclindx, savetagp ,'no',round,'noshrink')
+					
+					if not options.nopreprocprefft:
+						reffullsizeali = preprocessingprefft(reffullsizeali,options)
+						imgfullsizeali = preprocessingprefft(imgfullsizeali,options)
+					
+					reffullsizeali = preprocfilter(reffullsizeali,options,ptclindx, 'ref' ,'no',round,'noshrink')
+					imgfullsizeali = preprocfilter(imgfullsizeali,options,ptclindx, savetagp ,'no',round,'noshrink')
 						
 						
 					print "before alitweak, sizes of img are and apix", imgfullsizeali['nx'], imgfullsizeali['ny'], imgfullsizeali['nz'],imgfullsizeali['apix_x']
@@ -4070,6 +4435,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			if options.verbose:
 				pass
 				#print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
+		else:
+			print "\nno fine alignment", options.falign
 	#else: 
 	#	bestfinal = bestcoarse
 	#	if options.verbose:
@@ -4099,7 +4466,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#print "Inside ALIGNMENT function in e2spt_classaverage, done aligning ",label
 		pass	
 	
-	print "\n(e2spt_classaverage)(alignment)Rreturning from alignment from aligning", label	
+	print "\n(e2spt_classaverage)(alignment) finishing - ", label	
 	
 	#print "\n\n\nRRRRRRRRR\n Returning from alignment", 
 	#print "bestfinal",bestfinal
@@ -4112,6 +4479,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	bestcoarse = sorted(bestcoarse, key=itemgetter('score'))
 	
 	gc.collect() 	#free up unused memory
+	
+	print "(e2spt_classaverage)(alignment) sorted bestcoarse to return", bestcoarse
 	
 	return [bestfinal, bestcoarse]
 	

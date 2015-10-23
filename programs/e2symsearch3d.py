@@ -74,6 +74,8 @@ def main():
 	
 	parser.add_argument("--normproc",type=str,default='',help="""Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 	
+	parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clipali, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
+	
 	parser.add_argument("--threshold",default='',type=str,help="""A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3)
 	
 	parser.add_argument("--preprocess",default='',type=str,help="""Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3)
@@ -161,8 +163,7 @@ def main():
 	
 	if rootpath not in options.path:
 		options.path = rootpath + '/' + options.path
-	
-	from e2spt_classaverage import preprocessing		
+		
 	from EMAN2PAR import EMTaskCustomer
 	from e2spt_classaverage import sptOptionsParser
 
@@ -179,6 +180,59 @@ def main():
 	if options.subset and options.subset < n:
 		n = options.subset
 	
+	
+	
+	options.raw = options.input
+	
+	if not options.nopreprocprefft:
+				
+		from e2spt_classaverage import preprocessingprefft, Preprocprefft3DTask, get_results_preproc
+		
+		print "\n(e2spt_hac.py) (allvsall) Initializing parallelism for preprocessing"
+		if options.parallel:							# Initialize parallelism if being used
+			from EMAN2PAR import EMTaskCustomer
+			etc=EMTaskCustomer(options.parallel)
+			pclist=[options.input]
+			etc.precache(pclist)
+	
+		if options.mask or options.normproc or options.threshold or options.clipali:		
+			tasks=[]
+			results=[]
+	
+			preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
+	
+			for i in range(nptcl):
+		
+				img = EMData( options.input, i )
+		
+				if options.parallel:
+					task = Preprocprefft3DTask( ["cache",options.input,i], options, i )
+					tasks.append(task)
+	
+				else:
+					pimg = preprocessingprefft( img, options)
+					pimg.write_image( preprocprefftstack, i )
+	
+			print "there are these many tasks to send", len(tasks)
+			if options.parallel and tasks:
+				tids = etc.send_tasks(tasks)
+				print "therefore these many tids", len(tids)
+				
+				if options.verbose: 
+					print "%d preprocessing tasks queued"%(len(tids)) 
+
+
+			results = get_results_preproc( etc, tids, options.verbose )
+			
+			print "results are", results
+	
+
+			options.input = preprocprefftstack
+	
+	
+	
+	
+	
 	for i in range(n):
 	
 		print "\nI'll look for symmetry in particle number",i
@@ -186,12 +240,14 @@ def main():
 		volume = EMData(options.input,i)
 		preprocvol = volume.copy()
 		
+		from e2spt_classaverage import preprocfilter
+		
 		#Preprocess volume if any preprocessing options are specified
-		if (options.shrink and options.shrink > 1) or options.mask or options.maskfile or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clipali:
+		if (options.shrink and options.shrink > 1) or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clipali:
 			print "\nHowever, I will first preprocess particle number",i
 			
 			print "\nWill call preprocessing on ptcl",i
-			preprocvol = preprocessing(preprocvol,options,i)
+			preprocvol = preprocfilter(preprocvol,options,i)
 			#preprocessing(s2image,options, ptclindx, savetagp ,'no',round)
 			
 			print "\nDone preprocessing on ptcl",i
@@ -359,7 +415,8 @@ def makeSsaAverage( options, scores, results, it ):
 			if s < thresh:
 				print "Score kept", s
 			indx =  results[ s ][-1]
-			a = EMData( options.input, indx )
+			#a = EMData( options.input, indx )
+			a = EMData( options.raw, indx )
 			
 			if it == options.avgiter -1:
 				a.write_image( options.path + '/kept_ptcls_raw_' + str(it).zfill( len( str( options.avgiter))) + '.hdf', -1 )

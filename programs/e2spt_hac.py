@@ -38,6 +38,7 @@ import sys
 from EMAN2jsondb import JSTask,jsonclasses
 
 
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <output> [options]
@@ -131,6 +132,8 @@ def main():
 	
 	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment. Default=1.""", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 	
+	#parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clipali, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
+	
 	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=12:dphi=12",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	
 	parser.add_argument("--aligncmp",type=str,default="ccc.tomo",help="""Default=ccc.tomo. The comparator used for the --align aligner. Do not specify unless you need to use anotherspecific aligner.""",guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
@@ -200,6 +203,8 @@ def main():
 		
 	(options, args) = parser.parse_args()
 	
+	
+	options.nopreprocprefft = False
 	
 	'''
 	Make the directory where to create the database where the results will be stored
@@ -316,24 +321,106 @@ def main():
 				print "And uodated options.path is", options.path
 				print "************************************"
 
-			if options.savepreprocessed:
-				dummy = EMData(8,8,8)
-				dummy.to_one()
+
+			#if options.savepreprocessed:
+			#	dummy = EMData(8,8,8)
+			#	dummy.to_one()
 				
-				preprocnameCoarse = options.input.replace('.hdf','_preprocCoarse.hdf')
-				if options.path not in preprocnameCoarse:
-					preprocnameCoarse = options.path + '/' + options.input.replace('.hdf','_preprocCoarse.hdf')
+			#	preprocnameCoarse = options.input.replace('.hdf','_preprocCoarse.hdf')
+			#	if options.path not in preprocnameCoarse:
+			#		preprocnameCoarse = options.path + '/' + options.input.replace('.hdf','_preprocCoarse.hdf')
 				
-				preprocnameFine = options.input.replace('.hdf','_preprocFine.hdf')
-				if options.path not in preprocnameFine:
-					preprocnameFine = options.path + '/' + options.input.replace('.hdf','_preprocFine.hdf')
+			#	preprocnameFine = options.input.replace('.hdf','_preprocFine.hdf')
+			#	if options.path not in preprocnameFine:
+			#		preprocnameFine = options.path + '/' + options.input.replace('.hdf','_preprocFine.hdf')
 				
-				print "\n\nPreprocname coarse and fine are", preprocnameCoarse, preprocnameFine
-				for i in range(nptcl):
-					dummy.write_image( preprocnameCoarse ,i)
+			#	print "\n\nPreprocname coarse and fine are", preprocnameCoarse, preprocnameFine
+			#	for i in range(nptcl):
+			#		dummy.write_image( preprocnameCoarse ,i)
 		
-					if options.falign and options.falign != 'None' and options.falign != 'none':
-						dummy.write_image( preprocnameFine ,i)
+			#		if options.falign and options.falign != 'None' and options.falign != 'none':
+			#			dummy.write_image( preprocnameFine ,i)
+				
+			
+			if 'tree' in options.align:
+				options.falign = None
+				options.mask = None
+				options.lowpass = None
+				options.highpass = None
+				options.normproc = None
+				options.lowpassfine = None
+				options.highpassfine = None
+				options.preprocess = None
+				options.preprocessfine = None
+			
+			'''
+			elif not options.nopreprocprefft:
+				
+				from e2spt_classaverage import preprocessingprefft, Preprocprefft3DTask, get_results_preproc
+				
+				print "\n(e2spt_hac.py) (allvsall) Initializing parallelism for preprocessing"
+				if options.parallel:							# Initialize parallelism if being used
+					from EMAN2PAR import EMTaskCustomer
+					etc=EMTaskCustomer(options.parallel)
+					pclist=[options.input]
+					etc.precache(pclist)
+			
+				if options.mask or options.normproc or options.threshold or options.clipali:		
+					tasks=[]
+					results=[]
+			
+					preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
+			
+					for i in range(nptcl):
+				
+						img = EMData( options.input, i )
+				
+						if options.parallel:
+							task = Preprocprefft3DTask( ["cache",options.input,i], options, i )
+							tasks.append(task)
+			
+						else:
+							pimg = preprocessingprefft( img, options)
+							pimg.write_image( preprocprefftstack, i )
+			
+					print "there are these many tasks to send", len(tasks)
+					if options.parallel and tasks:
+						tids = etc.send_tasks(tasks)
+						print "therefore these many tids", len(tids)
+						
+						if options.verbose: 
+							print "%d preprocessing tasks queued"%(len(tids)) 
+
+		
+					results = get_results_preproc( etc, tids, options.verbose )
+					
+					print "results are", results
+			
+	
+					options.input = preprocprefftstack
+			
+					
+					#cache needs to be reloaded with the new options.input	#not for HAC. This is done in the inner avsa function	
+					#if options.parallel :
+	
+					#	if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
+					#		options.parallel = None
+					#		etc = None
+		
+					#	else:
+					#		print "\n\n(e2spt_classaverage)(main) - re-INITIALIZING PARALLELISM after preprocessing!"
+					#		print "\n\n"
+					#		from EMAN2PAR import EMTaskCustomer
+					#		etc=EMTaskCustomer(options.parallel)
+					#		pclist=[options.input]
+		
+					#		if options.ref: 
+					#			pclist.append(options.ref)
+					#		etc.precache(pclist)
+					#else:
+					#	etc=''
+			
+			'''
 			
 			
 			mm = 0
@@ -546,7 +633,7 @@ def allvsall(options):
 		if k== 0:
 			newstack =options.input
 		
-		print "\n\n==================================\n(e2spt_hca.py) Starting iteration %d / %d (worst-case scenario)" % ( k, nptcls-1)
+		print "\n\n==================================\n(e2spt_hac.py) Starting iteration %d / %d (worst-case scenario)" % ( k, nptcls-1)
 		print "==================================\n\n"
 		
 		nnew = len(newptcls)
@@ -557,7 +644,7 @@ def allvsall(options):
 		#	#sys.exit()
 			
 		if k == (int( iters ) - 1) or (nnew + len(oldptcls) ) < 3 :
-			print "\n(e2spt_hac.py) (allvsall) This will be the final round", k
+			print "\n(e2spt_hac.py) (allvsall) This will be the final interation, n=", k
 			if options.saveali:
 				if options.verbose:
 					print "\n(e2spt_hac.py) (allvsall) Saving aligned particles"
@@ -874,7 +961,7 @@ def allvsall(options):
 			
 			if options.minscore and float(options.minscore) > 0.0:		
 				if float(score) > float(scoreFilter):
-					print "\nSkipping a marger because the score is", score
+					print "\nSkipping a merger because the score is", score
 					print "And that's worse (larger, more positive, in EMAN2) than the specified percentage", options.minscore
 					print "Of the best maximum score so far", absoluteMaxScore
 			
@@ -894,9 +981,10 @@ def allvsall(options):
 			ali_info = {}
 			
 			
+			print "\nfiltering for non-tried comparisons, for scores better (below, more negative, which is better) than scoreFilter %f. In addition, multiplicityFilter is %d" %( scoreFilter, multiplicityFilter)
 			if results[z]['ptclA'] not in tried and results[z]['ptclB'] not in tried and score < scoreFilter and not multiplicityFilter:
 				
-				
+				print "computing average"
 				tried.add(results[z]['ptclA'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
 				tried.add(results[z]['ptclB'])							#Add both to "tried" AND "used" 
 				used.add(results[z]['ptclA'])		
@@ -1402,10 +1490,10 @@ class Align3DTaskAVSA(JSTask):
 		CALL the alignment function, which is imported from e2spt_classaverage
 		"""
 		
-		print "Will import alignment"
+		#print "Will import alignment"
 		from e2spt_classaverage import alignment
 				
-		print "I have imported alignment and will call it"
+		#print "I have imported alignment and will call it"
 		
 		#def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 		

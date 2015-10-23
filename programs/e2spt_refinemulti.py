@@ -502,19 +502,22 @@ def main():
 		print "\nfinal ptclnumsdict to send for references generation is", ptclnumsdict
 			
 		ret = sptRefGen( options, ptclnumsdict, cmdwp, 1, method=options.refgenmethod, subset4ref=options.subset4ref ) #This returns a dictionary with { klass_indx:img } pairs; klass_indx is always zero in this case though, since we're retrieving one reference at a time
-		refimg = ret[0]
 		
+		print "\n(e2spt_refmulti)(main) sptRefGen has returned", ret
 		
 		#options.path = originalpath
 		
-		reffile = rootpath + '/' + options.path + '/ref' + str( i ).zfill( len( str( ncls ))) + '.hdf'
+		for i in ret:
 		
-		refimg.write_image( reffile, 0 )
+			reffile = rootpath + '/' + options.path + '/ref' + str( i ).zfill( len( str( ncls ))) + '.hdf'
+			
+			refimg = ret[i]
+			refimg.write_image( reffile, 0 )
 	
-		reffilesrefine.update( {i:reffile} )
+			reffilesrefine.update( {i:reffile} )
 
 
-	print "There are these many references", len(reffilesrefine)	
+	print "\n(e2spt_refinemult)(main) There are these many references", len(reffilesrefine)	
 	#sys.exit()
 	
 	nclstest = len( reffilesrefine )
@@ -606,12 +609,10 @@ def main():
 	else:
 		etc=''
 
-	
-	
 	'''
 	Refine the data against each reference and loop over iterations
 	'''
-	for it in range( options.iter ):
+	for it in range( options.iter+1 ):
 		print "\n\nrefining all references in iteration", it
 		print "\n\n"
 				#The program goes into --path to execute the alignment command; therefore, --input will be one level furtherback
@@ -634,9 +635,12 @@ def main():
 								newreffile = ref.split('_iter')[0] + '_iter' + str(it).zfill( len( str( options.iter ))) + '.hdf'
 							else:
 								newreffile = ref.replace('.hdf','_iter' + str(it).zfill( len( str( options.iter ))) + '.hdf')
-						
+							
+							#if options.saveiter:
 							newref.write_image( newreffile, 0)
-		
+							
+				if it == options.iter:
+					break
 				
 				newreffiles.update({ reftag: newreffile } )
 			
@@ -670,6 +674,8 @@ def main():
 		classmxFile = options.path + '/classmx_' + str( it ).zfill( len (str (options.iter))) + '.hdf'
 		
 		ic = 0
+		print "\nthere are these many refs", len(reffilesrefine)
+		print "these are the refs", reffilesrefine
 		for refindx in reffilesrefine:
 			
 			#results = refineref ( options, reffilesrefine[refindx], nptcls, it )
@@ -726,7 +732,8 @@ def main():
 			and for each reference if using multiple model refinement
 			'''
 			scoresFile = originalCompletePath +'/sptali_rm_' + itertag + '_' + reftag + '.json'
-			jsScores = js_open_dict(scoresFile)			
+			jsScores = js_open_dict(scoresFile)
+			print "\for ref %d nscores file will be %s" %(refindx,scoresFile)			
 			
 			
 			'''
@@ -795,6 +802,9 @@ def main():
 			ic+=1
 		
 		
+		
+			if not options.savesteps:
+				os.remove(reffilesrefine[refindx])
 		
 		print "reftags are", reftags
 			
@@ -993,7 +1003,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 			
 	ptclsAdded = 0
 	for k in klass:
-		print "klass is", klass
+		#print "klass is", klass
 		weight = 1.0
 		if klass and len(klass) > 0:
 			#print "\n\nk in klass is", k

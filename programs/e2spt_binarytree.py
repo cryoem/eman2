@@ -139,7 +139,9 @@ def main():
 	parser.add_argument("--faligncmp",type=str,default="ccc.tomo",help="""Default=ccc.tomo. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
 		
 	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average. Default=mean.tomo.""")
-		
+	
+	#parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clipali, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
+	
 	#parser.add_argument("--keep",type=float,default=1.0,help="""Default=1.0 (all particles kept). The fraction of particles to keep in each class.""", guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
 	#parser.add_argument("--keepsig", action="store_true", default=False,help="""Default=False. Causes the keep argument to be interpreted in standard deviations.""", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
@@ -199,6 +201,8 @@ def main():
 	
 
 	(options, args) = parser.parse_args()
+	
+	options.nopreprocprefft = False
 	
 	
 	'''
@@ -289,6 +293,79 @@ def main():
 		
 	else:
 		etc=''
+	
+	
+	options.raw = options.input
+	
+	if 'tree' in options.align:
+		options.falign = None
+		options.mask = None
+		options.lowpass = None
+		options.highpass = None
+		options.normproc = None
+		options.lowpassfine = None
+		options.highpassfine = None
+		options.preprocess = None
+		options.preprocessfine = None
+
+	'''
+	elif not options.nopreprocprefft:
+		
+		from e2spt_classaverage import preprocessingprefft, Preprocprefft3DTask, get_results_preproc
+		
+		if options.mask or options.normproc or options.threshold or options.clipali:		
+			tasks=[]
+			results=[]
+	
+			preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
+	
+			for i in range(nptcl):
+		
+				img = EMData( options.input, i )
+		
+				if options.parallel:
+					task = Preprocprefft3DTask( ["cache",options.input,i], options, i )
+					tasks.append(task)
+	
+				else:
+					pimg = preprocessingprefft( img, options)
+					pimg.write_image( preprocprefftstack, i )
+	
+	
+			if options.parallel and tasks:
+				tids = etc.send_tasks(tasks)
+				if options.verbose: 
+					print "preprocessing %d tasks queued in class %d iteration %d"%(len(tids)) 
+
+
+			results = get_results_preproc( etc, tids, options.verbose )
+			print "preprocessing results are", results		
+
+			options.input = preprocprefftstack
+		
+		
+			#cache needs to be reloaded with the new options.input		
+			if options.parallel :
+	
+				if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
+					options.parallel = None
+					etc = None
+		
+				else:
+					print "\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!"
+					print "\n\n"
+					from EMAN2PAR import EMTaskCustomer
+					etc=EMTaskCustomer(options.parallel)
+					pclist=[options.input]
+		
+					if options.ref: 
+						pclist.append(options.ref)
+					etc.precache(pclist)
+			else:
+				etc=''
+	
+	'''
+	
 	
 	nptcl=EMUtil.get_image_count(options.input)
 	if nptcl < 1: 
