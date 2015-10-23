@@ -1660,7 +1660,7 @@ def do_two_way_comparison(Tracker):
 			newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[iptp],ptp[jptp])
 			tt =0.
 			if myid ==main_node and iptp<jptp:
-				aline=print_a_line_with_timestamp("Two-way comparison between independent run %3d and %3d"%(iptp,jptp))
+				aline="Two-way comparison between independent run %3d and %3d"%(iptp,jptp)
 				log_main.add(aline)
 			for m in xrange(len(list_stable)):
 				a=list_stable[m]
@@ -2252,7 +2252,7 @@ def main():
                 i = i+1
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack  outdir  <mask> --focus=3Dmask --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step  --delta=angular_step" +\
-	"--an=angular_neighborhood --maxit=max_iter  --CTF --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=.25 "
+	"--an=angular_neighborhood --maxit=max_iter  --CTF --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_frequency=.25 "
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--focus",    type="string",       default=None,         help="3D mask for focused clustering ")
 	parser.add_option("--ir",       type= "int",         default=1, 	       help="inner radius for rotational correlation > 0 (set to 1)")
