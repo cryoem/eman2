@@ -170,11 +170,11 @@ def main():
 	
 	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=12:dphi=12",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 
-	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo.thresh", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 
 	parser.add_argument("--falign",type=str,default="refine_3d_grid:delta=3:range=15:search=2",help="""Default="refine_3d_grid:delta=3:range=15:search=2". This is the second stage aligner used to fine-tune the first alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
 
-	parser.add_argument("--faligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+	parser.add_argument("--faligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo.thresh", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean.tomo")
 
@@ -625,6 +625,7 @@ def main():
 	
 			newreffile = ''
 			for reftag in avgs:
+				print "\nwriting this reftag from avgs", reftag
 				if avgs[ reftag ] and avgs[reftag] != None and avgs[reftag]!='None':
 					newref = avgs[ reftag ]
 					
@@ -860,22 +861,27 @@ def main():
 				ref = ret[0]
 				weights = ret[1]
 				
-				print "returned weights are", weights
+				print "\nreturned weights are", weights
 				
 				if ref:
 					avgsName =  originalCompletePath + '/class_avgs.hdf'
 					if options.savesteps and int( options.iter ) > 1 :
 						avgsName = originalCompletePath + '/class_avgs_iter' + str( it ).zfill( len( str( options.iter ))) + '.hdf'						
 					ref.write_image(avgsName,-1)
+				
+				print "\nappending ref",ref
+				print "to avgs as klass", klass
+				avgs.update({ klass : ref })
+
 			else:
-				print "The klass %d was empty (no particles were assgined to it). You might have too many classes." % ( klassIndx )	
+				print "\nthe klass %d was empty (no particles were assgined to it). You might have too many classes." % ( klassIndx )	
 				#dummyClassAvg=EMData(boxsize,boxsize,boxsize)
 				#dummyClassAvg.to_zero()
 				ret = None
 				ref = None
 				weights = None
 			
-			avgs.update({ klass : ref })
+				avgs.update({ klass : ref })
 		
 			#klassIndx += 1				
 			#os.system(cmd)
