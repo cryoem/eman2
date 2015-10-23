@@ -283,6 +283,10 @@ def main():
 	
 	logger = E2init(sys.argv,options.ppid)	
 	
+	if 'rotate_translate_3d_tree' in options.align:
+		options.falign = 'None'
+		options.normproc = 'None'
+	
 	from e2spt_classaverage import sptParseAligner
 	options = sptParseAligner( options )
 
@@ -624,6 +628,7 @@ def main():
 			#	avgsName = 'classAvgs_iter' + str().zfill( len( str( options.iter ))) + '.hdf'
 	
 			newreffile = ''
+			print "there are these many avgs", len(avgs)
 			for reftag in avgs:
 				print "\nwriting this reftag from avgs", reftag
 				if avgs[ reftag ] and avgs[reftag] != None and avgs[reftag]!='None':
@@ -640,9 +645,9 @@ def main():
 							#if options.saveiter:
 							newref.write_image( newreffile, 0)
 							
-				if it == options.iter:
-					break
-				
+			if it == options.iter:
+				break
+			
 				newreffiles.update({ reftag: newreffile } )
 			
 			reffilesrefine = newreffiles
@@ -897,7 +902,7 @@ def main():
 			
 			
 		
-		print "\n\n\n(e2spt_refinemulti.py) Final Averages are", avgs
+		print "\n\n\n(e2spt_refinemulti.py) final averages are", avgs
 		print "\n\n\n"
 		
 		#print "gout to set value for classmxweights at", ic, ptclindx, weights[ptclindx]
