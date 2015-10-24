@@ -616,6 +616,9 @@ def main():
 	'''
 	Refine the data against each reference and loop over iterations
 	'''
+	
+	classtxtfile = options.path + '/class_membership.txt'
+	
 	for it in range( options.iter+1 ):
 		print "\n\nrefining all references in iteration", it
 		print "\n\n"
@@ -844,6 +847,11 @@ def main():
 		klassesLen = len(classes)
 		print "(e2spt_refinemulti.py) there are these many classes with particles",len(classes)
 		print "classes are", classes
+		
+		
+		f = open( classtxtfile, 'a')
+		f.write('ITERATION ' + str(it) + '\n')
+		
 		for klass in classes:
 			#print "\n\nThe particles and their aliparams, for this class", klass
 			#print "are:", classes[ klass ]
@@ -855,9 +863,17 @@ def main():
 				#ptclnum = int)
 				#ptclTransform = klass[ key ]
 				#ptclsFinal.update({ ptclnum : ptclTransform })
-		
+			
+			f.write('CLASS '+ str(klass) +': ')
 			if classes[ klass ]:
 				print "\n\nsending particles in class %d to averaging" %( klassIndx ) 
+				thisclass = classes[klass]
+				ptclsinthisclass = []
+				for p in thisclass:
+					ptclsinthisclass.append( p[0] )
+				line =','.join( [str(pp) for pp in ptclsinthisclass.sort()] ) + '\n'
+				f.write( line )	
+				
 				print classes[klass]
 				print "\n\n"
 				ret = makeAverage( options, classes[klass], klassIndx, klassesLen, it, finalize, originalCompletePath)
@@ -890,6 +906,8 @@ def main():
 		
 			#klassIndx += 1				
 			#os.system(cmd)
+		
+		f.close()
 		
 		nonNulls=0
 		for avg in avgs:

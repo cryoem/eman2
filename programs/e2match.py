@@ -319,7 +319,7 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	meanshrinkfactor = float( targetApix )/float(img2processApix)
 	#meanshrinkfactor_int = int(round(meanshrinkfactor))
 
-	meanshrinkfactor_int = round(meanshrinkfactor)
+	meanshrinkfactor_int = int(round(meanshrinkfactor))
 		
 	if options.verbose:
 		print "\n(e2match)(preciseshrink) the refStack or --img2match apix is", round(EMData( options.img2match, 0, True)['apix_x'],4)
@@ -341,6 +341,7 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 			print "(e2match)(preciseshrink) the img2process was shrunk, to a first approximation, see", EMData(options.img2process,0,True)['nx']
 	
 		img2processApix = round(EMData( img2processEd, 0 , True)['apix_x'],4)
+		print "its apix is now", img2processApix
 	
 	else:
 		#targetbox = EMData( options.img2match,0,True )['nx']
@@ -352,9 +353,12 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	scaleup = 0
 	scaledown = 0
 	
-	if meanshrinkfactor_int - meanshrinkfactor > 1.0:
+	scalefactor = float( targetApix )/float(img2processApix)
+	
+	
+	if float(scalefactor) < 1.0:
 		scaleup =1
-	elif meanshrinkfactor_int - meanshrinkfactor < 1.0:
+	elif float(scalefactor) > 1.0:
 		scaledown = 1
 	
 	
@@ -368,27 +372,35 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	cmd = 'e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --process=xform.scale:scale=' + str(scalefactor) 
 	
 	'''
-	Only need to add clipping to scaling if the box wasn't clipped before. Boxes need to be clipped first when you're "scaling up the data" (making it bigger) rather than shrinking it
+	Only need to add clipping to scaling if the box wasn't clipped before. Boxes need to be clipped into a bigger box as a separate command when you're "scaling up the data" (making it bigger) rather than shrinking it
 	'''
 	#if int(meanshrinkfactor_int) > 1:
+	
+	print "scale factor is",scalefactor
 	if scaledown:
+		print "scaling down"
 		cmd += ':clip=' + str(targetBox) + ' --apix=' + str(targetApix)
 		cmd += ' && e2fixheaderparam.py --input=' + img2processEd + ' --stem apix --valtype float --stemval ' + str(targetApix)
-		print "meanshrinkfactor_int > 1, it is", meanshrinkfactor_int
+		print "meanshrinkfactor_int > 1.0, it is", meanshrinkfactor_int
 		print "target apix is", targetApix
-		print "cmd is", cmd
+		
 	#elif int(meanshrinkfactor_int) < 1:
 	elif scaleup:
+		print "scaling up"
 		cmd += ' && e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --clip=' + str(targetBox)
 		cmd += ' && e2fixheaderparam.py --input=' + str(img2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
 		print "meanshrinkfactor_int < 1, it is", meanshrinkfactor_int
 		print "target apix is", targetApix
-		print "cmd is", cmd
-	
+		
+	else:
+		cmd += ':clip=' + str(targetBox) + ' --apix=' + str(targetApix)
+		cmd += ' && e2fixheaderparam.py --input=' + img2processEd + ' --stem apix --valtype float --stemval ' + str(targetApix)
+
+	print "cmd is", cmd
 	runcmd( options, cmd )
 	
 		
-	print "Right after, apix is", round(EMData(img2processEd,0,True)['apix_x'],4)
+	print "right after, apix is", round(EMData(img2processEd,0,True)['apix_x'],4)
 
 	#print "(e2match) Feedback from scale and clip is", text
 
