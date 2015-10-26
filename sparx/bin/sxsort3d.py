@@ -1735,9 +1735,9 @@ def do_two_way_comparison(Tracker):
 	stable_class_list = []
 	for istable in xrange(len(Tracker["two_way_stable_member"])):
 		one_class = Tracker["two_way_stable_member"][istable]
-		write_text_file(one_class, "class%d.txt"%istable)
+		#write_text_file(one_class, "class%d.txt"%istable)
 		new_one_class, new_tmp_dict = get_initial_ID(one_class, Tracker["full_ID_dict"])
-		write_text_file(new_one_class, "new_class%d.txt"%istable)
+		#write_text_file(new_one_class, "new_class%d.txt"%istable)
 		stable_class_list.append(new_one_class) 
 	Tracker["two_way_stable_member"] =  stable_class_list 
 	outliers, new_dict1 = get_initial_ID(outliers, Tracker["full_ID_dict"])
@@ -2173,16 +2173,21 @@ def get_sorting_params(Tracker,data):
 	return total_attr_value_list
 		
 def create_random_list(Tracker):
-	from random import shuffle
+	import random
 	myid        = Tracker["constants"]["myid"]
 	main_node   = Tracker["constants"]["main_node"]
 	total_stack = Tracker["total_stack"]
 	from utilities import wrap_mpi_bcast
 	indep_list  =[]
 	import copy
+	SEED= Tracker["constants"]["seed"]
+	if SEED ==-1:
+		import time
+		SEED=int(time.time())
+	random.seed=(SEED)
 	for irandom in xrange(Tracker["constants"]["indep_runs"]):
 		ll=copy.copy(Tracker["this_data_list"])
-		shuffle(ll)
+		random.shuffle(ll)
 		ll = wrap_mpi_bcast(ll, main_node)
 		indep_list.append(ll)
 	Tracker["this_indep_list"]=indep_list
@@ -2251,18 +2256,18 @@ def main():
                 arglist.append( sys.argv[i] )
                 i = i+1
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack  outdir  <mask> --focus=3Dmask --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step  --delta=angular_step" +\
-	"--an=angular_neighborhood --maxit=max_iter  --CTF --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_frequency=.25 "
+	usage = progname + " stack  outdir  <mask> --focus=3Dmask --radius=outer_radius --delta=angular_step" +\
+	"--an=angular_neighborhood --maxit=max_iter  --CTF --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_frequency=.25  --seed=random_seed"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--focus",    type="string",       default=None,         help="3D mask for focused clustering ")
 	parser.add_option("--ir",       type= "int",         default=1, 	       help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--radius",   type= "int",         default="-1",	       help="outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
-	parser.add_option("--maxit",	type= "int",         default=5, 	       help="maximum number of iteration")
+	parser.add_option("--maxit",	type= "int",         default=25, 	       help="maximum number of iteration")
 	parser.add_option("--rs",       type= "int",         default="1",	       help="step between rings in rotational correlation >0 (set to 1)" ) 
-	parser.add_option("--xr",       type="string",       default="4 2 1 1 1",  help="range for translation search in x direction, search is +/-xr ")
+	parser.add_option("--xr",       type="string",       default="1",  help="range for translation search in x direction, search is +/-xr ")
 	parser.add_option("--yr",       type="string",       default="-1",	       help="range for translation search in y direction, search is +/-yr (default = same as xr)")
 	parser.add_option("--ts",       type="string",       default="0.25",       help="step size of the translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
-	parser.add_option("--delta",    type="string",       default="10 6 4  3   2",  help="angular step of reference projections")
+	parser.add_option("--delta",    type="string",       default="2",  help="angular step of reference projections")
 	parser.add_option("--an",       type="string",       default="-1",	       help="angular neighborhood for local searches")
 	parser.add_option("--center",   type="int",          default=0,	               help="0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=0)")
 	parser.add_option("--nassign",  type="int",          default=1, 	       help="number of reassignment iterations performed for each angular step (set to 3) ")
@@ -2276,6 +2281,7 @@ def main():
 	parser.add_option("--low_pass_filter",  type="float", default= -1.0,        help="absolute frequency of low-pass filter for 3d sorting on the original image size" )
 	parser.add_option("--nxinit",        type="int",      default=64,               help="initial image size for sorting" )
 	parser.add_option("--unaccounted",   action="store_true", default=False,        help="reconstruct the unaccounted images")
+	parser.add_option("--seed", type="int", default=-1, help="random seed for create initial random assignment for EQ Kmeans")
 	#parser.add_option("--importali3d", type="string",    default="",               help="import the xform.projection parameters as the initial configuration for 3-D reconstruction" )
 	#parser.add_option("--Kgroup_guess",  action="store_true",default=False,        help="Guess the possible number of groups existing in one dataset" )
 	#parser.add_option("--frequency_start_search",  type="float",default=.10,       help="start frequency for low pass filter search")
@@ -2355,6 +2361,7 @@ def main():
 		Constants["log_main"]            =log_main
 		Constants["nxinit"]              =options.nxinit
 		Constants["unaccounted"]         =options.unaccounted
+		Constants["seed"]                =options.seed
 		#Constants["frequency_search_step"] = options.frequency_search_step
 		#Constants["frequency_start_search"] = options.frequency_start_search
 		#Constants["frequency_stop_search"] = options.frequency_stop_search
