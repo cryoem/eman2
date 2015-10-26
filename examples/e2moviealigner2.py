@@ -4,12 +4,12 @@
 
 import matplotlib
 #matplotlib.use('Agg')
-from Simplex import Simplex
+#from Simplex import Simplex
 from EMAN2 import *
 import numpy as np
 import matplotlib.pyplot as plt
 try:
-	from scipy import optimize
+	import scipy.optimize as spo
 except:
 	print("You must install scipy to use this program.")
 	print("To do this, you could use either 'sudo pip install scipy' or 'sudo easy_install scipy'.")
@@ -74,8 +74,13 @@ def main():
 		
 		if options.verbose: print("Optimizing alignment")
 		alignment.optimize(options)
-		
-		if options.show: display([alignment.before,alignment.after])
+
+		if options.show: 
+			print("Displaying Results")
+			print("0) Unaligned\n1) Aligned")
+			display([alignment.before,alignment.after])
+			print("0) Target\n1) Unaligned Coherent\n2) Aligned Coherent")
+			display([alignment.before.do_fft(),alignment.after.do_fft()])
 	
 	E2end(pid)
 
@@ -105,9 +110,11 @@ class MovieAligner:
 		self._regions = {}
 		for i in xrange(self.hdr['nimg']):
 			self._regions[i] = [[x,y] for y in my for x in mx]
+		self._orig_regions = self._regions
 		self._stacks = {}
 		for ir in xrange(len(self._regions[0])):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
+		self._orig_stacks = self._stacks
 		self.iter = 0
 		self.static = int(self.hdr['nimg']/3)
 		self.energies = [np.inf]
@@ -285,25 +292,25 @@ class MovieAligner:
 				bounds.append((-b,b)) # Y
 		self.bounds = bounds
 		
-		# if options.verbose > 8:
-		# 	print("Initializing optimization with the following bounds:")
-		# 	print("Frame\tMaximum Shift Magnitude")
-		# 	bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
-		# 	for i,bd in enumerate(bds):
-		# 		print("{}\t{}".format(i+1,round(np.sqrt(bd[0,1]**2+bd[1,1]**2),0)))
-		# 	print("")
+		if options.verbose > 8:
+			print("Initializing optimization with the following bounds:")
+			print("Frame\tMaximum Shift Magnitude")
+			bds = np.array(bounds).reshape((self.hdr['nimg'],2,2)).astype(int)
+			for i,bd in enumerate(bds):
+				print("{}\t{}".format(i+1,round(np.sqrt(bd[0,1]**2+bd[1,1]**2),0)))
+			print("")
 		
 		init_state = np.random.randint(-1,1,size=(self.hdr['nimg'],2)).flatten()
 		self.init_state = init_state
 		
-		scb = SimplexCallBack(self,options)
-		cb = None #CallBack(self,options)
-		ts = None #TakeStep(self,options)
-		at = None #AcceptTest(self,options)
+		# cb = None #Callback(self,options)
+		# ts = None #TakeStep(self,options)
+		# at = None #AcceptTest(self,options)
 		
+		res = spo.differential_evolution(self._compares,bounds, args=(self,), polish=False, maxiter=options.maxiter, popsize=15, disp=disp)
+		
+		#res = optimize.minimize(self._compares, init_state, method='Nelder-Mead', callback=scb, options={'maxiter':options.maxiter,'disp': True}, args=self)
 		#res = optimize.basinhopping(self._compares, init_state, minimizer_kwargs={'method':'Nelder-Mead','args':self,'callback':scb}, T=options.temperature, niter=options.maxiter, disp=disp, callback=cb, take_step=ts, accept_test=at)
-		#res = optimize.differential_evolution(self._compares,bounds,args=(self,),polish=False, maxiter=options.maxiter,popsize=15,disp=disp)
-		res = optimize.minimize(self._compares, init_state, method='Nelder-Mead', callback=scb, options={'maxiter':options.maxiter,'disp': True}, args=self)
 		
 		print("\nFrame\tTranslation")
 		with open(self.path[:-4]+"_results.txt",'w') as results:
@@ -323,9 +330,19 @@ class MovieAligner:
 				if not bool(np.all(trans == aligner.translations[frame_num])):
 					aligner.translations[frame_num] = trans
 					for reg_num in range(len(aligner._regions[frame_num])):
-						aligner._regions[frame_num][reg_num] = trans
-						aligner._stacks[reg_num][frame_num] = trans
+						aligner._regions[frame_num][reg_num] = aligner._orig_regions[frame_num][reg_num] + trans
+						aligner._stacks[reg_num][frame_num] = aligner._orig_stacks[reg_num][frame_num] + trans
+						#aligner._regions[frame_num][reg_num] = trans
+						#aligner._stacks[reg_num][frame_num] = trans
 		energy = aligner.calc_energy()
+		if aligner.verbose:
+			i = str(aligner.iter)
+			n = str(aligner.cps_counter)
+			b = str(min(aligner.energies))
+			w = str(max(aligner.energies[1:]))
+			c = str(aligner.energies[-1])
+			sys.stdout.write("fEvals: {}  CPS: {}  Energy: {}  Best: {}  Worst: {}\r".format(i,n,c,b,w))
+		sys.stdout.flush()
 		return energy
 	
 	def save(self,descriptor,save_frames=False):
@@ -440,29 +457,29 @@ class MovieAligner:
 		else: outfile = options.path
 		return outfile
 
-class TakeStep(object): # Impose soft bounds on the optimization
-	
-	def __init__(self, aligner, options):
-		self.maxshift = options.maxshift
-		self.static = aligner.static
-	
-	def __call__(self, x):
-		step = np.random.uniform(-self.maxshift/2, self.maxshift/2, x.shape).astype(int)
-		step[2*self.static] = 0
-		step[2*self.static+1] = 0
-		return x+step
-
-class AcceptTest(object): # Impose hard bounds on the optimiation
-	
-	def __init__(self, aligner, options):
-		self.xmin = [min(i) for i in aligner.bounds]
-		self.xmax = [max(i) for i in aligner.bounds]
-	
-	def __call__(self, **kwargs):
-		x = kwargs["x_new"]
-		tmax = bool(np.all(x <= self.xmax))
-		tmin = bool(np.all(x >= self.xmin))
-		return tmax and tmin
+# class TakeStep(object): # Impose soft bounds on the optimization
+#
+# 	def __init__(self, aligner, options):
+# 		self.maxshift = options.maxshift
+# 		self.static = aligner.static
+#
+# 	def __call__(self, x):
+# 		step = np.random.uniform(-self.maxshift/2, self.maxshift/2, x.shape).astype(int)
+# 		step[2*self.static] = 0
+# 		step[2*self.static+1] = 0
+# 		return x+step
+#
+# class AcceptTest(object): # Impose hard bounds on the optimiation
+#
+# 	def __init__(self, aligner, options):
+# 		self.xmin = [min(i) for i in aligner.bounds]
+# 		self.xmax = [max(i) for i in aligner.bounds]
+#
+# 	def __call__(self, **kwargs):
+# 		x = kwargs["x_new"]
+# 		tmax = bool(np.all(x <= self.xmax))
+# 		tmin = bool(np.all(x >= self.xmin))
+# 		return tmax and tmin
 
 class CallBack(object):
 	
@@ -480,25 +497,24 @@ class CallBack(object):
 			print("fEvals: {} CPS: {} Energy: {} Accepted: {}".format(i,n,fx,accepted))
 		self.aligner.write_cps(fname="_pws_coherent_callback.hdf",n=self.counter)
 		self.counter += 1
-		#self.aligner.best_translations = self.aligner.translations
 
-class SimplexCallBack(object):
-	
-	def __init__(self, aligner, options):
-		self.aligner = aligner
-		self.counter = 0
-	
-	def __call__(self,x):
-		i = str(self.aligner.iter)
-		n = str(self.aligner.cps_counter)
-		b = str(min(self.aligner.energies))
-		w = str(max(self.aligner.energies[1:]))
-		c = str(self.aligner.energies[-1])
-		if self.aligner.verbose: 
-			sys.stdout.write("fEvals: {}  CPS: {}  Energy: {}  Best: {}  Worst: {}\r".format(i,n,c,b,w))
-			sys.stdout.flush()
-		self.aligner.write_cps(fname="_pws_coherent_simplex_callback.hdf",n=self.counter)
-		self.counter += 1
+# class SimplexCallBack(object):
+#
+# 	def __init__(self, aligner, options):
+# 		self.aligner = aligner
+# 		self.counter = 0
+#
+# 	def __call__(self,x):
+# 		i = str(self.aligner.iter)
+# 		n = str(self.aligner.cps_counter)
+# 		b = str(min(self.aligner.energies))
+# 		w = str(max(self.aligner.energies[1:]))
+# 		c = str(self.aligner.energies[-1])
+# 		if self.aligner.verbose:
+# 			sys.stdout.write("fEvals: {}  CPS: {}  Energy: {}  Best: {}  Worst: {}\r".format(i,n,c,b,w))
+# 			sys.stdout.flush()
+# 		self.aligner.write_cps(fname="_pws_coherent_simplex_callback.hdf",n=self.counter)
+# 		self.counter += 1
 
 if __name__ == "__main__":
 	main()
