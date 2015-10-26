@@ -22,6 +22,7 @@ def read_pdb(filename):
 		break
 	
 	
+	
 	count = 0
 	for line in (i for i in lines if i.startswith("ATOM  ")):
 		#latomtype = line[12:15].strip()
@@ -43,18 +44,22 @@ def read_pdb(filename):
 	for i in range(count):
 		pts[i,:]=points[i]
 	
-	return pts,count,atomnumber
+	header=[i for i in lines if i.startswith("HELIX  ")]
+	return pts,count,atomnumber,header
 
-def write_pdb(filename,ncent,color,atomnumber,sheets):
+def write_pdb(filename,ncent,color,atomnumber,sheets,header):
 	shp=ncent.shape
 	if color==None:
 		color=np.zeros(shp[0],float)
 	out = open(filename,"w")
-	nchn=97
+	for i in header:
+		out.write(i)
+		
+	nchn=65
 	chain = chr(nchn)
 	for i in sheets:
 		sht=sheets[i]
-		out.write("SHEET %4d   A 1 ALA a%4d  ALA a%4d  0\n"%(i+1,sht[0],sht[1]))
+		out.write("SHEET %4d   A 1 ALA A%4d  ALA A%4d  0\n"%(i+1,sht[0],sht[1]))
 		
 	count=0
 	for atom in range(shp[0]):
@@ -107,7 +112,7 @@ def main():
 	parser.add_argument("--cutoff", type=float,help="cutoff threshold for sheet score. program will stop when the next highest score is lower than cutoff*std+mean",default=1)
 	(options, args) = parser.parse_args()
 	
-	pts,na,atomnumber=read_pdb(options.pdbin)
+	pts,na,atomnumber,header=read_pdb(options.pdbin)
 	
 	
 	#calculate angle between bond pairs
@@ -215,7 +220,7 @@ def main():
 		
 	
 	print sheets
-	write_pdb(options.output,pts,score,atomnumber,sheets)
+	write_pdb(options.output,pts,score,atomnumber,sheets,header)
 			
 			
 		
