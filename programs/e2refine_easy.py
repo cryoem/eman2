@@ -970,10 +970,14 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 You may consider consulting the EMAN2 mailing list if you cannot figure out what's going wrong</p>""")
 	else:
 		try:
-			if 1.0/lastres>randomres*.9 :
+			if 1.0/lastres[1]>randomres*.9 :
 				append_html("""<p>Unfortunately your final determined resolution of {:1.1f} &Aring; is not sufficiently better than the
 phase randomization resolution of {:1.1f} &Aring; for the 'gold standard' resolution method to be valid. Please do not trust this result.
-You must rerun the refinement with a more conservative initial target resolution (suggest ~{:1.1f}).</p>""".format(1.0/lastres,randomres,1.0/lastres*0.9))
+You must rerun the refinement with a more conservative initial target resolution (suggest ~{:1.1f}).</p>""".format(1.0/lastres[1],randomres,1.0/lastres[1]*0.9))
+			elif 1.0/lastres[1]<options.targetres*.9:
+				append_html("""<p>Your final determined resolution of {:1.1f} &Aring; is higher resolution than your specified target resolution by more than 10%.
+This may cause the FSC curves to have an unusual shape, giving invalid numbers. It also means your reconstruction may be rotationally undersampled. Suggest running
+another refinement with a target resolution slightly higher than {:1.1f} &Aring; to ensure your results are valid</p>""".format(1.0/lastres[1],1.0/lastres[1]))
 			else:
 				append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring;.
 Note that there is always some variability in these determined values based on masking of the map. If the map is masked too tightly,
@@ -982,13 +986,15 @@ it is an indication that something may have gone wrong with the masking. In gene
 avoid these problems. This means that the resolution may be as much as 10% better with somewhat tighter masking, without getting into
 artifact territory. </p>
 
-<p>If you wish to continue this refinement to further improve resolution, the most efficient approach is to use the --startfrom {} option
+<p>If you wish to continue this refinement to further improve resolution, the most efficient approach is to use the --startfrom refine_XX option
 rather than specifying --input and --model. When you use --startfrom, it will not re-randomize the phases. Since you have already achieved
-sufficient resolution to validate the gold-standard approach, continuing to extend this resolution is valid, and more efficient.""".format(1.0/lastres,options.path))
+sufficient resolution to validate the gold-standard approach, continuing to extend this resolution is valid, and more efficient.""".format(1.0/lastres[1]))
 		except:
 			append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring (or {:1.1f} &Aring with a more conservative mask);.
-Since this refinement continued from an existing refinement, it is impossible to tell if the gold-standard criteria have been met, but
+Since this refinement continued from an existing refinement (or something funny happened), it is impossible to tell if the gold-standard criteria have been met, but
 if they were met in the refinement this run continued, then your resolution should still be valid.""".format(1.0/lastres[0],1.0/lastres[1],options.path))
+			traceback.print_exc()
+			print "Note: the above traceback is just a warning for debugging purposes, and can be ignored"
 
 	append_html("""<h2>Explore your results</h2><p>Here are some useful output files to look at:</p><ul>
 <li>Your final 3-D map from this run is {path}/threed_{iter:02d}.hdf</li>
