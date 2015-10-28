@@ -56,7 +56,9 @@ def main():
 	parser.add_argument("--mapwohelix", type=str,help="Write a map without helix density",default=None)
 	parser.add_argument("--dirs", type=int,help="Counting from one direction?",default=0)
 	parser.add_argument("--edgefile", type=str,help="Existing helixes file",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
+	logid=E2init(sys.argv)
 	
 	eg=[]
 	if options.edgefile<>None:
@@ -173,6 +175,7 @@ def main():
 	if options.mapwohelix<>None:
 		atoms.remove_helix_from_map(mrc,hlx)
 		mrc.write_image(options.mapwohelix)
+	E2end(logid)
 
 
 if __name__ == '__main__':

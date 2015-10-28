@@ -110,7 +110,9 @@ def main():
 	parser.add_argument("--nsht", type=int,help="max number of beta sheet strains",default=5)
 	parser.add_argument("--minlen", type=int,help="minimum length of a beta sheet strain",default=5)
 	parser.add_argument("--cutoff", type=float,help="cutoff threshold for sheet score. program will stop when the next highest score is lower than cutoff*std+mean",default=1)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
+	logid=E2init(sys.argv)
 	
 	pts,na,atomnumber,header=read_pdb(options.pdbin)
 	
@@ -222,6 +224,7 @@ def main():
 	print sheets
 	write_pdb(options.output,pts,score,atomnumber,sheets,header)
 			
+	E2end(logid)
 			
 		
 	
