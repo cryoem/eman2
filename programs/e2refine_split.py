@@ -168,6 +168,7 @@ def main():
 	if options.verbose : print "Completed all tasks\nGrouping consistent averages"
 
 	classes.sort(reverse=True)		# we want to start with the largest number of particles
+	apix=classes[2]["apix_x"]
 
 	boxsize=classes[0][2]["ny"]
 	pad=good_size(boxsize*1.5)
@@ -230,6 +231,7 @@ def main():
 			recon[0].insert_slice(b3,c[1],b3n)
 
 	if options.verbose : print "Reconstruction: pass 2"
+	
 	# another pass with the filled reconstruction to make sure our initial assignments were ok
 #	for i,c in enumerate(classes[1:]):
 #		a2=c[2].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))		# first class-average
@@ -283,8 +285,15 @@ def main():
 
 	classout=["{}/classes_{:02d}_split0.hdf".format(options.path,last_iter),"{}/classes_{:02d}_split1.hdf".format(options.path,last_iter)]
 	threedout="{}/threed_{:02d}_split.hdf".format(options.path,last_iter)
+	threedout2="{}/threed_{:02d}_split_filt.hdf".format(options.path,last_iter)
 	setout=["sets/split_{}_0.lst".format(pathnum),"sets/split_{}_1.lst".format(pathnum)]
 	split=[r.finish(True).get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize)) for r in recon]
+	split[0]["apix_x"]=apix
+	split[0]["apix_y"]=apix
+	split[0]["apix_z"]=apix
+	split[1]["apix_x"]=apix
+	split[1]["apix_y"]=apix
+	split[1]["apix_z"]=apix
 	split[0].write_image(threedout,0)
 	split[1].write_image(threedout,1)
 
@@ -315,7 +324,11 @@ def main():
 	except:
 		pass
 
-	launch_childprocess("e2proc3d.py {} {} --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={}".format(threedout,threedout,options.path,last_iter,1.0/targetres))
+	if os.path.exists("strucfac.txt"):
+		launch_childprocess("e2proc3d.py {} {} --setsf strucfac.txt --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={}".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
+	else:
+		print "Missing structure factor, cannot filter properly"
+		launch_childprocess("e2proc3d.py {} {} --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={}".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
 
 	E2end(logger)
 
