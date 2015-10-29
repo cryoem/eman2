@@ -1198,7 +1198,7 @@ class EMPDBFileType(EMFileType):
 		target.show()
 		target.raise_()
 
-	def showChimera(self):
+	def showChimera(self,brws):
 		"""Open in Chimera"""
 		if get_platform() == "Linux":
 			os.system("chimera %s &" % self.path)
