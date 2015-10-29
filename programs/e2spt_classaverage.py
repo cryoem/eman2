@@ -3579,6 +3579,9 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 	'''This will get results for a list of submitted tasks. Won't return until it has all requested results.
 	aside from the use of options["ptcl"] this is fairly generalizable code.'''
 	
+	import gc
+	gc.collect()
+	
 	# wait for them to finish and get the results
 	# results for each will just be a list of (qual,Transform) pairs
 	
@@ -3592,7 +3595,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 	
 	ncomplete=0
 	tidsleft = tids[:]
-	#print "before loop, tidsleft are", tidsleft
+	print "before loop, in get_results, tidsleft are", tidsleft
 	
 	while 1:
 		time.sleep(5)
@@ -3607,7 +3610,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 				
 				#print "r is", r
 				ptcl = r[0].classoptions['ptclnum']			# get the particle number from the task rather than trying to work back to it
-				#print "ptcl is", ptcl
+				print "ptcl is", ptcl
 				#print "results inside get_results are", results
 				
 				
@@ -4096,14 +4099,18 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	if 'rotate_translate_3d_tree' not in options.align[0]:
-	
+		print "not using tree aligner, aligner --align is", options.align
+		print "falign is", options.falign
 		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 
 			#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
 			
 			
 			if not options.nopreprocprefft:
+				print "preprocprefft specified"
 				simage = preprocessingprefft(simage,options)
+			
+			print "prprocfilter specified"
 			simage = preprocfilter(simage,options,ptclindx, savetagp ,'yes',round)
 
 		#print "preprocessed moving particle has size", simage['nx']
