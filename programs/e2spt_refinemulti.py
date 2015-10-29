@@ -80,7 +80,7 @@ def main():
 	
 	parser.add_argument("--ref", type=str, help="""Comma separated list of individual images; e.g. --refs=ref1.hdf,ref2.hdf,ref3.hdf. If a single image is provided, several copies will be made based on the number of references specified through --nref.""", default='')
 	
-	parser.add_argument("--nref", type=int,  default=2, help="""Default=2. (For single reference refinement use e2spt_classaverage.py). Number of references to generate from a single image provided through --ref (random-phase filtered differently), or number of different initial references to generate from scratch from the data set (--input). Default=2""")
+	parser.add_argument("--nref", type=int,  default=3, help="""Default=3. (For single reference refinement use e2spt_classaverage.py). Number of references to generate from a single image provided through --ref (random-phase filtered differently), or number of different initial references to generate from scratch from the data set (--input). Default=2""")
 	
 	parser.add_argument("--refgenmethod", type=str, help="""Method for generating the initial reference(s). Options are 'bt', for binary tree (see e2spt_binarytree.py), 'hac', for hierarchical ascendant classification (see e2spt_hac.py), or 'ssa' for self-symmetry alignment (see e2symsearch3d.py). Default=bt""", default='bt') 
 	
@@ -102,7 +102,7 @@ def main():
 	
 	parser.add_argument("--path",type=str,default='',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'spt_refinemulti'; for example, spt_refinemulti02 will be the directory by default if 'spt_refinemulti01' already exists.""")
 	
-	parser.add_argument("--syms", type=str, help="""List comma-separated symmetries to apply separately on the different references. For example, if you provide --syms=d8,d7 and provide 2 references via --nref=2 or supply two references via --refs=r1.hdf,r2.hdf, d8 symmetry will be applied to the first reference and d7 to the second after each iteration of refinement (the final average in one iteration becomes a reference for the next).""", default='')
+	parser.add_argument("--syms", type=str,help="""List comma-separated symmetries to apply separately on the different references. For example, if you provide --syms=d8,d7 and provide 2 references via --nref=2 or supply two references via --refs=r1.hdf,r2.hdf, d8 symmetry will be applied to the first reference and d7 to the second after each iteration of refinement (the final average in one iteration becomes a reference for the next).""", default='')
 	
 	parser.add_argument("--output", type=str, help="The name of the output class-average stack. MUST be in  .hdf format, since volume stack support is required.", default=None, guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--oneclass", type=int, help="Create only a single class-average. Specify the class number.",default=None)
@@ -621,6 +621,9 @@ def main():
 	
 	classtxtfile = options.path + '/class_membership.txt'
 	
+	previous_classes = {'1':'1'} #we initialize these dictionaries with different values. When identical (further down), the algorithm has converged
+	classes = {'2':'2'}
+	
 	for it in range( options.iter+1 ):
 		print "\n\nrefining all references in iteration", it
 		print "\n\n"
@@ -849,7 +852,7 @@ def main():
 		from operator import itemgetter						
 	
 		print "I've aligned all the particles in the data set to all the references for iter %d and will now classify them from the masterInfo dict" %(it), masterInfo
-	
+		
 		classes = {}			#classes dictionary to store alignment info per class, depending on which reference each particle preferred
 		for reftag in reftags:
 			print "\n\n\n\n\n\n\n\n\nRRRRRRRRRR\nreftag is", reftag
@@ -869,6 +872,49 @@ def main():
 			classes.update({ bestreftag : value })
 			
 	
+		if previous_classes == classes:
+			print "\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING"
+			sys.exit()
+		else:
+			if it > 0:
+				classmems = {}
+				for classid in classes:
+					ptcls = []
+					print "classid",classid,type(classid)
+					print "classes[classid]",classes[classid]
+					for ele in classes[classid]:
+						#print "ele is", ele
+						#print "appending ele[0] to ptcls",ele[0]
+						ptcls.append(ele[0])
+					
+					ptcls.sort()	
+					print "ptcls are", ptcls
+					classmems.update( { classid:ptcls } )
+				
+				pclassmems = {}
+				for pclassid in previous_classes:
+					#print "\npclassid",pclassid,type(pclassid)
+					#print "previous_classes[pclassid]",previous_classes[pclassid]
+					ptcls = []
+					for ele in previous_classes[pclassid]:
+						ptcls.append(ele[0])
+					
+					ptcls.sort()
+					pclassmems.update( { pclassid:ptcls } )
+			
+				
+				print "classmems",classmems
+				print "pclassmems",pclassmems
+			
+				if pclassmems == classmems:
+					print "\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING"
+					sys.exit()
+				else:				
+					if options.verbose > 9:
+						print "previous_classes not equal to classes; therefore, algorithm has not yet converged" 
+						print "previous", pclassmems
+						print "current", classmems
+				
 		#klassIndx = 0
 		klassesLen = len(classes)
 		print "(e2spt_refinemulti.py) there are these many classes with particles",len(classes)
@@ -878,6 +924,7 @@ def main():
 		f = open( classtxtfile, 'a')
 		f.write('ITERATION ' + str(it) + '\n')
 		
+		kkk = 0
 		for klass in classes:
 			#print "\n\nThe particles and their aliparams, for this class", klass
 			#print "are:", classes[ klass ]
@@ -899,6 +946,7 @@ def main():
 				print "\nthisclass is", thisclass
 				for p in thisclass:
 					ptclsinthisclass.append( p[0] )
+					
 				
 				line=''
 				print "\n\n\nfor class %d in iter %d" %( int(klass),it)
@@ -926,7 +974,7 @@ def main():
 					avgsName =  originalCompletePath + '/class_avgs.hdf'
 					if options.savesteps and int( options.iter ) > 1 :
 						avgsName = originalCompletePath + '/class_avgs_iter' + str( it ).zfill( len( str( options.iter ))) + '.hdf'						
-					ref.write_image(avgsName,-1)
+					ref.write_image(avgsName,kkk)
 				
 				#print "\nappending ref",ref
 				print "appending ref %d to avgs as klass %s" % ( int(klassIndx), klass )
@@ -942,8 +990,12 @@ def main():
 			
 				avgs.update({ klass : ref })
 		
+			kkk+=1
 			#klassIndx += 1				
 			#os.system(cmd)
+		
+		
+		previous_classes = classes
 		
 		f.close()
 		
