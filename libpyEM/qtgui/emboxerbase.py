@@ -607,20 +607,24 @@ class ManualBoxingPanel:
 		if self.widget == None:
 			from PyQt4 import QtCore, QtGui, Qt
 			self.widget = QtGui.QWidget()
-			vbl = QtGui.QVBoxLayout(self.widget)
+			vbl = QtGui.QGridLayout(self.widget)
 			vbl.setMargin(0)
-			vbl.setSpacing(6)
+			vbl.setSpacing(10)
 			vbl.setObjectName("vbl")
 			self.auto_center_checkbox = QtGui.QCheckBox("Auto-center")
 			self.clear=QtGui.QPushButton("Clear")
-			vbl.addWidget(self.auto_center_checkbox)
-			vbl.addWidget(self.clear)
+			self.clearfrom = QtGui.QLineEdit(str(-1))
+			vbl.addWidget(self.auto_center_checkbox,1,0)
+			vbl.addWidget(self.clear,2,0)
+			vbl.addWidget(QtGui.QLabel("Clear from #:"),3,0)
+			vbl.addWidget(self.clearfrom,3,1)
+			
 
 			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
 		return self.widget
 
 	def clear_clicked(self,val):
-		self.target().clear_all()
+		self.target().clear_all(int(self.clearfrom.text()))
 
 class EraseTool(EMBoxingTool):
 	'''
@@ -805,8 +809,8 @@ class ManualBoxingTool:
 
 	def mouse_move(self,event): pass
 
-	def clear_all(self):
-		self.target().clear_boxes([ManualBoxingTool.BOX_TYPE],cache=True)
+	def clear_all(self,start=-1):
+		self.target().clear_boxes([ManualBoxingTool.BOX_TYPE], cache=True, startfrom=start)
 
 	def moving_ptcl_established(self,box_num,x,y):
 		box = self.target().get_box(box_num)
@@ -1250,8 +1254,8 @@ class EMBoxList(object):
 
 		return ret
 
-	def clear_boxes(self,types,cache=False):
-		for i in xrange(len(self.boxes)-1,-1,-1):
+	def clear_boxes(self,types,cache=False, startform=-1):
+		for i in xrange(len(self.boxes)-1,startform,-1):
 			if self.boxes[i].type in types:
 				self.boxes.pop(i)
 				self.shapes.pop(i)
@@ -1494,8 +1498,8 @@ class EMBoxerModuleVitals(object):
 		pass
 
 
-	def clear_boxes(self, type, cache=False):
-		self.box_list.clear_boxes(type,cache=cache)
+	def clear_boxes(self, type, cache=False, startfrom = -1):
+		self.box_list.clear_boxes(type,cache,startfrom)
 
 
 	def get_subsample_rate(self):
@@ -1783,8 +1787,8 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		self.load_default_status_msg()
 		return box_num
 
-	def clear_boxes(self, type, cache=False):
-		EMBoxerModuleVitals.clear_boxes(self, type, cache=cache)
+	def clear_boxes(self, type, cache=False, startfrom=-1):
+		EMBoxerModuleVitals.clear_boxes(self, type, cache, startfrom)
 
 		if self.particles_window:
 			self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
