@@ -625,39 +625,60 @@ def main():
 				#The program goes into --path to execute the alignment command; therefore, --input will be one level furtherback
 	
 		if it > 0:
+			
+			if it == options.iter:
+				break
+			
 			newreffiles = {}				
 			#avgsName =  'classAvgs.hdf'
 			#if options.savesteps and int( options.iter ) > 1 :
 			#	avgsName = 'classAvgs_iter' + str().zfill( len( str( options.iter ))) + '.hdf'
-	
+			
 			newreffile = ''
-			print "there are these many avgs", len(avgs)
-			for reftag in avgs:
-				print "\nwriting this reftag from avgs", reftag
+			print "\nin inter %d there are these many avgs %d" %(it, len(avgs))
+			#for reftag in avgs:
+			#	print "\nin iter %d writing avgs from previous iter it-1 %d to this reftag %s from avgs" %(it, it-1, reftag)
+				
+			for refindx in reffilesrefine:
+				reftag = str(refindx)
 				if avgs[ reftag ] and avgs[reftag] != None and avgs[reftag]!='None':
 					newref = avgs[ reftag ]
+					print "\nnewref with refindx %d stats are" %(int(refindx)) 
+					print newref['mean'],newref['mean_nonzero'],newref['sigma']
+							
+					ref = reffilesrefine[refindx]
+					if reftag in ref:
+						if '_iter' in ref:
+							newreffile = ref.split('_iter')[0] + '_iter' + str(it-1).zfill( len( str( options.iter ))) + '.hdf'
+						else:
+							newreffile = ref.replace('.hdf','_iter' + str(it-1).zfill( len( str( options.iter ))) + '.hdf')
 					
-					for refindx in reffilesrefine:
-						ref = reffilesrefine[refindx]
-						if reftag in ref:
-							if '_iter' in ref:
-								newreffile = ref.split('_iter')[0] + '_iter' + str(it).zfill( len( str( options.iter ))) + '.hdf'
-							else:
-								newreffile = ref.replace('.hdf','_iter' + str(it).zfill( len( str( options.iter ))) + '.hdf')
-							
-							#if options.saveiter:
-							newref.write_image( newreffile, 0)
-							
-			if it == options.iter:
-				break
+						#if options.saveiter:
+						print "\n in iter %d newreffile to write is %s" %(it, newreffile)
+						newref.write_image( newreffile, 0)
+					
+						try:
+							newrefhdr = EMData(newreffile,0,True)
+							print "in iter %d reference %s written successfully" %( it, newreffile )
+							print "its header is", newrefhdr.get_attr_dict()
+							print "and files in path are", os.listdir(options.path)
+						except:
+							print "in iter %d writing reference %s failed! why on earth...?" %(it,newreffile)
+							print "files in path are", os.listdir(options.path)
+						
 			
-				newreffiles.update({ reftag: newreffile } )
+					print "adding newreffile %s to newreffiles with reftag %s" %( newreffile, reftag )
+					newreffiles.update({ reftag: newreffile } )
+				else:
+					print "there is no avg in avgs with refindx or reftag %d " %( int(refindx) )
+					print "avgs.keys() are", avgs.keys()
 			
 			reffilesrefine = newreffiles
 			
 			if len(reffilesrefine) < 2:
 				finalize = 1
-				print "(e2spt_refinemulti.py, line 268) All particles preferred one average and therefore multirefine has failed/converged."
+				print "\n(e2spt_refinemulti.py, line 268) all particles preferred one average and therefore multirefine has failed/converged."
+				print "reffilesrefine is", reffilesrefine
 				sys.exit()
 				
 
@@ -685,19 +706,22 @@ def main():
 		ic = 0
 		print "\nthere are these many refs", len(reffilesrefine)
 		print "these are the refs", reffilesrefine
+		
 		for refindx in reffilesrefine:
 			
 			#results = refineref ( options, reffilesrefine[refindx], nptcls, it )
 			
 			
 			tasks = []
-
 			results = []
+			
 			transform = None
 			# loop over volumes
 	
 			#ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
 			reffile = reffilesrefine[refindx]
+			
+			print "\nusing this reffile", reffile
 			'''
 			set up tasks
 			'''
@@ -716,9 +740,9 @@ def main():
 			start alignments (execute tasks)
 			'''
 			if options.parallel:
-				tids=etc.send_tasks(tasks)
+				tids = etc.send_tasks(tasks)
 				if options.verbose: 
-					print "%d tasks queued in seedtree level %d"%(len(tids),i) 
+					print "in iteration %d number of tasks %d queued, to refine reffile %s"%(it,len(tids),reffile) 
 
 				"""Wait for alignments to finish and get results"""
 				results = get_results(etc,tids,options.verbose, nptcls ,'refinemulti')
@@ -742,7 +766,7 @@ def main():
 			'''
 			scoresFile = originalCompletePath +'/sptali_rm_' + itertag + '_' + reftag + '.json'
 			jsScores = js_open_dict(scoresFile)
-			print "\for ref %d nscores file will be %s" %(refindx,scoresFile)			
+			print "\for ref number %d, reffile %s, reftag %s, nscores file will be %s" %( int(refindx),reffile,reftag,scoresFile)			
 			
 			
 			'''
@@ -788,7 +812,7 @@ def main():
 				if ic==0:									#In the first iteration and for the first reference, the ptclID key does not exist; create a dummy to update below in further ic and it iterations.
 					masterInfo.update({ ptclID: [] })
 			
-				print "\n\niteration %d, reference %d, ptclID to update is %s" %( it,ic,ptclID)
+				print "\n\niteration %d, reference number %d, reffile %s, refftag %s, ptclID to update is %s" %( it,ic,reffile,reftag,ptclID)
 				print "infolist to append is", infolist
 				print "BEFORE appending, masterInfo[ ptclID ] is", masterInfo[ ptclID ]
 				print "Of type", type(masterInfo[ ptclID ])
@@ -869,9 +893,21 @@ def main():
 				print "\n\nsending particles in class %d to averaging" %( klassIndx ) 
 				thisclass = classes[klass]
 				ptclsinthisclass = []
+				
+				print "\nthisclass is", thisclass
 				for p in thisclass:
 					ptclsinthisclass.append( p[0] )
-				line =','.join( [str(pp) for pp in ptclsinthisclass.sort()] ) + '\n'
+				
+				line=''
+				print "\n\n\nfor class %d in iter %d" %( int(klass),it)
+				if ptclsinthisclass:
+					print "ptclsinthisclass is and type", ptclsinthisclass, type(ptclsinthisclass)
+					ptclsinthisclass.sort()
+					print "after sorting ptclsinthisclass is", ptclsinthisclass
+					try:
+						line =','.join( [str(pp) for pp in ptclsinthisclass ] ) + '\n'
+					except:
+						print "class might be empty, ptclsinthisclass.sort() is"		
 				f.write( line )	
 				
 				print classes[klass]
@@ -890,8 +926,8 @@ def main():
 						avgsName = originalCompletePath + '/class_avgs_iter' + str( it ).zfill( len( str( options.iter ))) + '.hdf'						
 					ref.write_image(avgsName,-1)
 				
-				print "\nappending ref",ref
-				print "to avgs as klass", klass
+				#print "\nappending ref",ref
+				print "appending ref %d to avgs as klass %s" % ( int(klassIndx), klass )
 				avgs.update({ klass : ref })
 
 			else:
