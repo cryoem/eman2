@@ -4010,6 +4010,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			else:
 				#s2fixedimage = sfixedimage.copy()
 				#s2fixedimage = fixedimage.copy()
+				print "no falign, therefore s2image is None"
 				s2fixedimage = None
 
 
@@ -4067,7 +4068,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if reffullsize:
 			if options.verbose:
 				print "after all preproc, REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter)
-
+	
+	print "done with all ref preprocessing, if any"
+	
 	#########################################
 	#Preprocess the particle or "moving image", only if rotate_translate_3d_tree is not used
 	#########################################
@@ -4099,18 +4102,27 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	if 'rotate_translate_3d_tree' not in options.align[0]:
-		print "not using tree aligner, aligner --align is", options.align
-		print "falign is", options.falign
+		#print "not using tree aligner, aligner --align is", options.align
+		#print "options.threshold",options.threshold
+		#print "options.normproc",options.normproc
+		#print "options.mask",options.mask
+		#print "options.preprocess",options.preprocess
+		#print "options.lowpass",options.lowpass
+		#print "options.shrink",options.shrink
+		
+		
 		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 
 			#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
 			
-			
+			#print "there are some preprocessors"
+			#print "options.nopreprocprefft",options.nopreprocprefft,type(options.nopreprocprefft)
 			if not options.nopreprocprefft:
-				print "preprocprefft specified"
+				#print "preprocprefft NOT specified"
 				simage = preprocessingprefft(simage,options)
 			
-			print "prprocfilter specified"
+			#if options.verbose > 9:
+			#	print "preprocfilter specified"
 			simage = preprocfilter(simage,options,ptclindx, savetagp ,'yes',round)
 
 		#print "preprocessed moving particle has size", simage['nx']
@@ -4119,7 +4131,14 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 
 		#print "options.falign is", options.falign
 
+		else:
+			pass
+			#print "no preproc specified"
+			
+		#print "AAA"
+		
 		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
+			#print "somehow there's falign", options.falign
 			if options.procfinelikecoarse:
 				s2image = simage.copy()
 				#print "PARTICLE fine preprocessing is equal to coarse"
@@ -4134,7 +4153,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			#s2image = simage.copy()
 			#s2image = image.copy()
 			s2image = None
+			#print "no falign, therefore s2image is None"
 
+		#print "BBB"
 		if simage:
 			if options.verbose:
 				print "after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter)
@@ -4146,8 +4167,11 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if imgfullsize:
 			if options.verbose:
 				print "after all preproc, IMGFULLSIZE is of size %d, in iter %d" %( imgfullsize['nx'], iter)
-
+		
+		
+		#print "falign is", options.falign
 	
+	#print "done with all ptcl preprocessing, if any"
 	
 	if sfixedimage['nx'] != simage['nx']:
 		print "ERROR: preprocessed images for coarse alignment not the same size, sfixedimage, simage", sfixedimage['nx'], simage['nx']

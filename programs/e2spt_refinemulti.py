@@ -269,6 +269,8 @@ def main():
 	rootpath = os.getcwd()
 	
 	originalCompletePath = rootpath + '/' + options.path
+	
+	options.nopreprocprefft = False #e2spt_classaverage needs this option to exist, but makes little sense to give it here. preprocessors applied prefft are normalization, thresholding, clipali.
 		
 	if '/' not in options.input:
 		#relativeInput = '../' + options.input
