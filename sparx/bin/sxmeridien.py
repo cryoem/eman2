@@ -2095,7 +2095,8 @@ def main():
 				vol1 = get_im(os.path.join(Tracker["directory"] ,"vol1.hdf"))
 				if( Tracker["nxinit"] == Tracker["constants"]["nnxo"] ):
 					if(Tracker["constants"]["mask3D"] is None):
-						mask = cosinemask(model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],1.0),int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5)-3,5)
+						#  mask has to be of the full size
+						mask = cosinemask(model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],1.0),Tracker["constants"]["radius"]-3,5)
 					else:
 						mask = get_im(Tracker["constants"]["mask3D"])
 					nfsc = fsc(vol0*mask,vol1*mask)
