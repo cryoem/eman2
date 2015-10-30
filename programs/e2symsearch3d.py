@@ -284,7 +284,7 @@ def main():
 		output.write_image( outputstack, -1)
 		
 		#Averaging here only makes sense if all particles are going to be kept. Otherwise, different code is needed (below)
-		if options.average and options.keep == 1.0 and not options.keepsig:
+		if options.average:
 			avgr.add_image( output )
 
 	#Finalize average of all particles if non were set to be excluded. Otherwise, determine the discrimination threshold and then average the particles that pass it.
