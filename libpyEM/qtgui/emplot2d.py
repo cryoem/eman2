@@ -1977,7 +1977,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 	def savePdf(self):
 		"""Saves the contents of the current plot to a pdf"""
-		matplotlib.savefig("plot.pdf")
+		matplotlib.pyplot.savefig("plot.pdf")
 
 	def updPlot(self,s=None):
 		if self.quiet : return
