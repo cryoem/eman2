@@ -249,6 +249,11 @@ def main():
 		# sort by class-average quality
 #		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --byheader=class_ptcl_qual"%(options.path,it,options.path,it))
 
+		try:
+			os.unlink("{}/tmp.hdf".format(options.path))
+			os.unlink("{}/tmp2.hdf".format(options.path))
+		except: pass
+
 		# instead we sort by how much azimuthally varying low resolution contrast we have
 		run("e2stacksort.py %s/allrefs_%02d.hdf %s/tmp.hdf --byheader=eval_contrast_lowres --reverse"%(options.path,it,options.path))
 
@@ -258,10 +263,6 @@ def main():
 
        	# now extract most different refs. ninput eliminates ~2/3 particles with lowest 'quality' from consideration
 #		run("e2stacksort.py %s/allrefs_%02d.hdf %s/aliref_%02d.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc --simalign=rotate_translate_flip"%(options.path,it,options.path,it,ncheck,options.naliref));
-		try:
-			os.unlink("{}/tmp.hdf".format(options.path))
-			os.unlink("{}/tmp2.hdf".format(options.path))
-		except: pass
 	
 		run("e2stacksort.py %s/tmp.hdf %s/tmp2.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc"%(options.path,options.path,it,ncheck,options.naliref))
 		run("e2stacksort.py %s/tmp2.hdf %s/aliref_%02d.hdf --simalign rotate_translate_flip --iterative"%(options.path,options.path,ncheck,options.naliref))		# previous alignment may not have been best for reduced number
