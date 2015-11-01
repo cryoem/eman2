@@ -1,5 +1,6 @@
 High priority
 2.1
+11/01/15	matrix size 1x615 into 96 regions -> 615 jobs!?!? (simmx)
 10/19/15	try/except around line 2599 in e2ctf. Related to whole micrograph curve ([8]), patched
 10/19/15	2-D class-averages with alignment rather than PCA?
 10/19/15	bad particle marking

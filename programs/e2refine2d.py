@@ -257,8 +257,14 @@ def main():
 		ncheck=max(ncheck,options.naliref+2)
 
        	# now extract most different refs. ninput eliminates ~2/3 particles with lowest 'quality' from consideration
-#		run("e2stacksort.py %s/allrefs_%02d.hdf %s/aliref_%02d.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc --simalign=rotate_translate_flip"%(options.path,it,options.path,it,ncheck,options.naliref))
-		run("e2stacksort.py %s/tmp.hdf %s/aliref_%02d.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc"%(options.path,options.path,it,ncheck,options.naliref))
+#		run("e2stacksort.py %s/allrefs_%02d.hdf %s/aliref_%02d.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc --simalign=rotate_translate_flip"%(options.path,it,options.path,it,ncheck,options.naliref));
+		try:
+			os.unlink("{}/tmp.hdf".format(options.path))
+			os.unlink("{}/tmp2.hdf".format(options.path))
+		except: pass
+	
+		run("e2stacksort.py %s/tmp.hdf %s/tmp2.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc"%(options.path,options.path,it,ncheck,options.naliref))
+		run("e2stacksort.py %s/tmp2.hdf %s/aliref_%02d.hdf --simalign rotate_translate_flip --iterative"%(options.path,options.path,it,ncheck,options.naliref))		# previous alignment may not have been best for reduced number
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# We use e2simmx to compute the optimal particle orientations
