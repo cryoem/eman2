@@ -264,7 +264,7 @@ def main():
 		except: pass
 	
 		run("e2stacksort.py %s/tmp.hdf %s/tmp2.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc"%(options.path,options.path,it,ncheck,options.naliref))
-		run("e2stacksort.py %s/tmp2.hdf %s/aliref_%02d.hdf --simalign rotate_translate_flip --iterative"%(options.path,options.path,it,ncheck,options.naliref))		# previous alignment may not have been best for reduced number
+		run("e2stacksort.py %s/tmp2.hdf %s/aliref_%02d.hdf --simalign rotate_translate_flip --iterative"%(options.path,options.path,ncheck,options.naliref))		# previous alignment may not have been best for reduced number
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# We use e2simmx to compute the optimal particle orientations
