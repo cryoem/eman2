@@ -213,7 +213,7 @@ def main():
 				print("Importing from {}.star".format(base_name(filename,nodir=True)))
 				sf = StarFile(filename)
 				hdr = sf.keys()
-				if len(hdr) < 3: 
+				if len(hdr) < 3:
 					print("Could not parse {}".format(filename))
 					continue
 				mk = "rlnMicrographName"
@@ -247,13 +247,14 @@ def main():
 						boxlist = []
 						ptcls = []
 						for i,name in enumerate(sf[mk]):
-							hdf_name = name.split('/')[-1].split('.')[0]+'.hdf'
-							if hdf_name == mg: ptcls.append(i)
+							mgname = name.split('/')[-1].split('.')[0]
+							#print(mgname,hdf_name,mg)
+							if mg[:-4] in mgname: ptcls.append(i)
 						print("Found {} boxes for {}".format(len(ptcls),mg))
 						for p in ptcls:
 							xc = int(sf[xk][p])
 							yc = int(sf[yk][p])
-							boxlist.append([xc,yc,'manual']) # should probably be 'relion' or 'from_star'
+							boxlist.append([xc,yc,'manual'])
 						js_open_dict(info_name(mg,nodir=True))["boxes"]=boxlist
 						if not "{}.hdf".format(base_name(mg,nodir=True)) in project_micros:
 							print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(mg),base_name(mg,nodir=True))
