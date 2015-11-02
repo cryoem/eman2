@@ -815,9 +815,9 @@ def subtomosim(options,ptcls,outname,dimension):
 		result[key]['origin_y'] = 0
 		result[key]['origin_z'] = 0
 		
-		if options.tiltaxis == 'y':
-			tt = Transform({'type':'eman','az':90,'alt':90,'phi':-90})
-			result[key].transform( tt )
+		#if options.tiltaxis == 'y':
+		#	tt = Transform({'type':'eman','az':90,'alt':90,'phi':-90})
+		#	result[key].transform( tt )
 				
 		result[key]['xform.align3d'] = Transform()
 		#finaloutname = finaloutname.replace('_preproc','')
@@ -1025,8 +1025,9 @@ class SubtomoSimTask(JSTask):
 		
 			#Generate the projection orientation for each picture in the tilt series
 			
-			t = Transform({'type':'eman','az':90,'alt':realalt,'phi':-90})
-	
+			#t = Transform({'type':'eman','az':90,'alt':realalt,'phi':-90})		#Correct
+			t = Transform({'type':'eman','az':-90,'alt':realalt,'phi':90})	#Alternative correct, -90 +90 are interchangeable for phi and az
+			#trecon = Transform({'type':'eman','az':0,'alt':realalt,'phi':0}) #Garbage
 			if options.tiltaxis == 'x':
 				t = Transform({'type':'eman','az':0,'alt':realalt,'phi':0})				
 		
