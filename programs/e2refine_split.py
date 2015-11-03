@@ -56,11 +56,16 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--path", default=None, type=str,help="The name of an existing refine_xx folder, where e2refine_easy ran to completion",guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--basisn", default=1,type=int,help="Select which Eigenimage to use for separation. 1 = highest energy. max = 5", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--parallel", default="thread:2", help="Standard parallelism option. Default=thread:2", guitype='strbox', row=5, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
+
+	if options.basisn<1 or options.basisn>5 : 
+		print "Error: basisn must be in the 1-5 range"
+		sys.exit(1)
 
 	if options.path==None:
 		paths=[i for i in os.listdir(".") if "refine_" in i and len(i)==9]
@@ -106,8 +111,8 @@ def main():
 			#print int(classmx[eo][0][0,y])
 			classlists[int(classmx[eo][0][0,y])].append(ptcl)
 	
-	if len(classlists[0])>100 :
-		print "Warning: this program is normally intended for use with downsampled data and fairly coarse angular sampling. If you try to use it with a large number of class-averages you may have a variety of problems, and should insure that your machine has sufficient RAM."
+	#if len(classlists[0])>100 :
+		#print "Warning: this program is normally intended for use with downsampled data and fairly coarse angular sampling. If you try to use it with a large number of class-averages you may have a variety of problems, and should insure that your machine has sufficient RAM."
 		
 
 	# Initialize parallelism
@@ -128,11 +133,11 @@ def main():
 	gc=0
 	ns=[classmx[eo][0]["ny"] for eo in (0,1)]
 	for c,cl in enumerate(classlists):
-		if len(cl)<6 : 
+		if len(cl)<20 : 							# we require at least 20 particles in a class to make the attempt
 #			zero.write_image(classout[0],c)
 #			zero.write_image(classout[1],c)
 			continue
-		tasks.append(ClassSplitTask(ptcls,ns,cl,c,eulers[c],options.verbose-1))
+		tasks.append(ClassSplitTask(ptcls,ns,cl,c,eulers[c],options.basisn,options.verbose-1))
 		gc+=1
 	
 #	for t in tasks: t.execute()
@@ -149,14 +154,16 @@ def main():
 				rslt=etc.get_results(taskids[i])
 				rsltd=rslt[1]
 				cls=rslt[0].options["classnum"]
-				
-				#rsltd["avg1"].write_image(classout[0],cls)
-				#rsltd["avg2"].write_image(classout[1],cls)
-				ncls=rsltd["avg1"]["ptcl_repr"]+rsltd["avg2"]["ptcl_repr"]
-				# note that the 2 results we get back are in arbitrary order!
-				# the next section of code with 3D reconstruction is designed to sort out
-				# which average should be paired with which
-				classes.append([ncls,rsltd["avg1"]["xform.projection"],rsltd["avg1"],rsltd["avg2"]])	# list of (ptcl_repr,xform,avg1,avg2)
+				if rsltd.has_key("failed") :
+					print "Bad average in ",cls
+				else:
+					#rsltd["avg1"].write_image(classout[0],cls)
+					#rsltd["avg2"].write_image(classout[1],cls)
+					ncls=rsltd["avg1"]["ptcl_repr"]+rsltd["avg2"]["ptcl_repr"]
+					# note that the 2 results we get back are in arbitrary order!
+					# the next section of code with 3D reconstruction is designed to sort out
+					# which average should be paired with which
+					classes.append([ncls,rsltd["avg1"]["xform.projection"],rsltd["avg1"],rsltd["avg2"],rsltd["basis"]])	# list of (ptcl_repr,xform,avg1,avg2)
 				
 		taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
 
@@ -283,9 +290,10 @@ def main():
 #		
 	if options.verbose : print "All done, writing output"
 
-	classout=["{}/classes_{:02d}_split0.hdf".format(options.path,last_iter),"{}/classes_{:02d}_split1.hdf".format(options.path,last_iter)]
+	classout=["{}/classes_{:02d}_bas{}_split0.hdf".format(options.path,last_iter,options.basisn),"{}/classes_{:02d}_bas{}_split1.hdf".format(options.path,last_iter,options.basisn)]
+	basisout="{}/classes_{:02d}_basis".format(options.path,last_iter)
 	threedout="{}/threed_{:02d}_split.hdf".format(options.path,last_iter)
-	threedout2="{}/threed_{:02d}_split_filt.hdf".format(options.path,last_iter)
+	threedout2="{}/threed_{:02d}_split_filt_bas{}.hdf".format(options.path,last_iter,options.basisn)
 	setout=["sets/split_{}_0.lst".format(pathnum),"sets/split_{}_1.lst".format(pathnum)]
 	split=[r.finish(True).get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize)) for r in recon]
 	split[0]["apix_x"]=apix
@@ -294,6 +302,8 @@ def main():
 	split[1]["apix_x"]=apix
 	split[1]["apix_y"]=apix
 	split[1]["apix_z"]=apix
+	split[0].process_inplace("mask.soft",{"outer_radius":-8,"width":4})
+	split[1].process_inplace("mask.soft",{"outer_radius":-8,"width":4})
 	split[0].write_image(threedout,0)
 	split[1].write_image(threedout,1)
 
@@ -315,6 +325,11 @@ def main():
 		for p in xrange(0,len(ptcln),2):
 			lstout[1][-1]=lstin[ptcln[p]][ptcln[p+1]]		# wierd syntax, but the -1 here appends
 
+		if options.verbose>2:
+			c[4][0].write_image(basisout+"1.hdf",i)
+			c[4][1].write_image(basisout+"2.hdf",i)
+			c[4][2].write_image(basisout+"3.hdf",i)
+
 	launch_childprocess("e2proclst.py sets/split0.lst --mergesort {}".format(setout[0]))
 	launch_childprocess("e2proclst.py sets/split1.lst --mergesort {}".format(setout[1]))
 
@@ -325,22 +340,23 @@ def main():
 		pass
 
 	if os.path.exists("strucfac.txt"):
-		launch_childprocess("e2proc3d.py {} {} --setsf strucfac.txt --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={}".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
+		launch_childprocess("e2proc3d.py {} {} --setsf strucfac.txt --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
 	else:
 		print "Missing structure factor, cannot filter properly"
-		launch_childprocess("e2proc3d.py {} {} --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={}".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
+		launch_childprocess("e2proc3d.py {} {} --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
 
 	E2end(logger)
 
 class ClassSplitTask(JSTask):
 	"""This task will create a single task-average"""
 
-	def __init__(self,ptclfiles,ns,ptcls,nc,euler,verbose):
+	def __init__(self,ptclfiles,ns,ptcls,nc,euler,basisn,verbose):
 		"""ptclfiles is a list of 2 (even/odd) particle stacks. ns is the number of particles in each of ptcfiles. ptcls is a list of lists containing [eo,ptcl#,Transform]"""
+#		sys.stderr=file("task.err","a")
 		data={"particles1":["cache",ptclfiles[0],(0,ns[0])],"particles2":["cache",ptclfiles[1],(0,ns[1])]}
 		JSTask.__init__(self,"ClassSplit",data,{},"")
 
-		self.options={"particles":ptcls,"classnum":nc,"euler":euler,"verbose":verbose}
+		self.options={"particles":ptcls,"classnum":nc,"euler":euler,"basisn":basisn,"verbose":verbose}
 
 	def execute(self,callback=None):
 		"""This does the actual class-averaging, and returns the result"""
@@ -360,34 +376,59 @@ class ClassSplitTask(JSTask):
 		# read in all particles and append each to element to ptcls
 		avgr=Averagers.get("mean")
 		for p in ptcls: 
-			p.append(EMData(str(files[p[0]]),p[1]).process("xform",{"transform":p[2]}).process("normalize.circlemean",{"radius":-6}).process("mask.soft",{"outer_radius":-8,"width":4}))
+			p.append(EMData(str(files[p[0]]),p[1]).process("xform",{"transform":p[2]})
+				.process("filter.highpass.gauss",{"cutoff_freq":0.01})
+				.process("filter.lowpass.gauss",{"cutoff_freq":0.05})
+				.process("normalize.circlemean",{"radius":-6})
+				.process("mask.soft",{"outer_radius":-8,"width":4}))
 			avgr.add_image(p[3])
 		
 		# Copy each particle minus it's mean value
 		avg=avgr.finish()
 		mask=ptcls[0][-1].copy()
 		mask.to_one()
-		mask.process("mask.soft",{"outer_radius":-8,"width":4})
+#		mask.process("mask.soft",{"outer_radius":-8,"width":4})
+		mask.process("mask.sharp",{"outer_radius":-10})
 		
 		# PCA on the mean-subtracted particles
 		for p in ptcls: 
 			p.append(p[3].copy())
 			p[4].sub(avg)
 
-		pca=Analyzers.get("pca_large",{"nvec":5,"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
+#		print "basis start"
+		pca=Analyzers.get("pca_large",{"nvec":6,"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
 		for p in ptcls: 
-			pca.insert_image(p[4])
-		
+			pca.insert_image(p[4])		# filter to focus on lower resolution differences
 		basis=pca.analyze()
+
+		# Varimax rotation... good idea?
+		#pca2=Analyzers.get("varimax",{"mask":mask})
+		#for im in basis1:
+			#pca2.insert_image(im)
+		
+		#basis=pca2.analyze()
+
+		
+		# if you turn this on multithreaded it will crash sometimes
+		#avg.mult(0.05)	#arbitrary for debugging
+		#avg.write_image("pca.hdf",-1)
+		#basis[0].write_image("pca.hdf",-1)
+		#basis[1].write_image("pca.hdf",-1)
+		#basis[2].write_image("pca.hdf",-1)
+#		print "basis"
 		
 		# at the moment we are just splitting into 2 classes, so we'll use the first eigenvector. A bit worried about defocus coming through, but hopefully ok...
-		dots=[p[3].cmp("ccc",basis[0]) for p in ptcls]
+		dots=[p[3].cmp("ccc",basis[self.options["basisn"]]) for p in ptcls]	# NOTE: we are using the third, not first, basis vector
+		if len(dots)==0:
+			return {"failed":True}
+		dota=sum(dots)/len(dots)
 		
+#		print "average"
 		# we will just use the sign of the dot product to split
 		avgr=[Averagers.get("mean"),Averagers.get("mean")]
 		incl=[[],[]]
 		for i,d in enumerate(dots):
-			if d<0: 
+			if d<dota: 
 				avgr[0].add_image(ptcls[i][3])
 				incl[0].append(ptcls[i][0])
 				incl[0].append(ptcls[i][1])
@@ -402,13 +443,20 @@ class ClassSplitTask(JSTask):
 		if options["verbose"]>0: print "Finish averaging class {}".format(options["classnum"])
 #		if callback!=None : callback(100)
 #		return {"avg":avg,"basis":basis}
-		avg1=avgr[0].finish()
-		avg1["xform.projection"]=options["euler"]
-		avg1["class_eoidxs"]=incl[0]			# contains alternating file # and particle #
-		avg2=avgr[1].finish()
-		avg2["xform.projection"]=options["euler"]
-		avg2["class_eoidxs"]=incl[1]
-		return {"avg1":avg1,"avg2":avg2}
+		try:
+			avg1=avgr[0].finish()
+			avg1["xform.projection"]=options["euler"]
+			avg1["class_eoidxs"]=incl[0]			# contains alternating file # and particle #
+#			print avg1
+			avg2=avgr[1].finish()
+			avg2["xform.projection"]=options["euler"]
+			avg2["class_eoidxs"]=incl[1]
+#			print avg2
+		except:
+			return {"failed":True}
+
+#		print basis
+		return {"avg1":avg1,"avg2":avg2,"basis":basis[:3]}
 
 jsonclasses["ClassSplitTask"]=ClassSplitTask.from_jsondict
 

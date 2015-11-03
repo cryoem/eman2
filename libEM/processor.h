@@ -2906,7 +2906,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("shift", EMObject::FLOAT, "The amount to shift pixel values by before scaling");
+			d.put("shift", EMObject::FLOAT, "The amount to shift pixel values by after scaling");
 			d.put("scale", EMObject::FLOAT, "The scaling factor to be applied to pixel values");
 			return d;
 		}
