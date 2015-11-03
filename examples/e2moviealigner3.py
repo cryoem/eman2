@@ -25,7 +25,7 @@ def main(args):
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image normalization using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image normalization. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=512)
-	parser.add_argument("--maxshift", type=int, help="Set the maximum frame translation distance in pixels.",default=4)
+	parser.add_argument("--maxshift", type=int, help="Set the maximum frame translation distance in pixels.",default=24)
 	parser.add_argument("--step", type=float, help="Set step size for cross coherence calculation.",default=1.0)
 	parser.add_argument("--nnorm", type=float, help="Set the norm to be used for fixing axes. Default is sqrt(2)",default=np.sqrt(2))
 	parser.add_argument("--fixaxes",action="store_true",default=False,help="Tries to identify bad pixels and fill them in with sane values instead")
@@ -103,6 +103,8 @@ def main(args):
 			ips.do_ift().write_image(incfile,1)
 		#ips.process_inplace('filter.highpass.gauss',{'cutoff_pixels':1})
 		
+		ips_fit = fit_ctf(ips)
+		
 		if options.verbose: print("Generating coefficient matrix")
 		A = gen_coeff_matrix(n)
 		#print("A: ({} X {})".format(A.shape[0],A.shape[1]))
@@ -110,32 +112,45 @@ def main(args):
 		if options.verbose: print("Computing ordinate vector components")
 		bx = []
 		by = []
-		pwcc_ctr = 0
+		ccf_xs = []
+		ccf_ys = []
+		ctr = 0
 		for i,(a,b) in enumerate(pairs):
+			
+			# UCSF
 			print2line("{}/{}".format(str(i).rjust(3),npairs))
-			x,y = ccf_ordinate(all_frames[a],all_frames[b],i,fname)
-			#pair = [all_frames[a],all_frames[b]]
-			#pc = PairwiseCoherence(fname,pair,ips,bs=options.boxsize)
-			#x,y,pwcc,cps = pc.maximize(options.maxshift,options.step)
-			#pwcc.write_image('{}_pwcc.hdf'.format(fname[:-4]),pwcc_ctr)
-			#pwcc_ctr+=1
+			ccf_x,ccf_y,ccf = ccf_ordinate(all_frames[a],all_frames[b],i,fname)
+			ccf_xs.append(ccf_x)
+			ccf_ys.append(ccf_y)
+			ccf.write_image('{}_ccf.hdf'.format(fname[:-4]),ctr)
+			
+			# ALTERNATE
+			pair = [all_frames[a],all_frames[b]]
+			pc = PairwiseCoherence(fname,pair,ips_fit,bs=options.boxsize)
+			x,y,pwcc,cps = pc.maximize(options.maxshift,options.step)
+			pwcc.write_image('{}_pwcc.hdf'.format(fname[:-4]),ctr)
+			
 			bx.append(x) # NEED TO CHECK...is x,y from center, allowing for negative translations?
 			by.append(y) # OR is x,y from bottom left so all translations are positive (or negative)?
+			ctr+=1
+		
 		b = np.concatenate([bx,by])
 		#print("b: ({})".format(b.shape[0]))
 		
 		if options.verbose: print("\nOptimizing alignment")
-		results = np.linalg.lstsq(A,b)
-		r = results[0]
+		#results = np.linalg.lstsq(A,b)
+		#r=results[0]
 		#print("r: ({})".format(r.shape[0]))
-		
-		embed()
+		results_x = np.linalg.lstsq(A,bx)
+		results_y = np.linalg.lstsq(A,by)
+		rx = results_y[0]
+		ry = results_y[0]
 		
 		print("\nFrame\tX\tY")
 		avg = Averagers.get('mean')
-		for i,t in enumerate(np.vstack([r[:n],r[n:]]).T):
-			tx = round(t[0],2)
-			ty = round(t[1],2)
+		for i,(tx,ty) in enumerate(zip(rx,ry)):
+			#tx = round(t[0],2)
+			#ty = round(t[1],2)
 			print("{}/{}\t{}\t{}".format(str(i+1).rjust(2),n,tx,ty))
 			f = EMData(fname,i)
 			f.process_inplace('xform',{'transform':Transform({'type':'eman','tx':tx,'ty':ty})})
@@ -146,17 +161,24 @@ def main(args):
 	
 	return
 
+def fit_ctf(ips):
+	# fit defocus, 
+	# subtract background, 
+	#return 2D CTF fit.
+	return ips
+
 def gen_coeff_matrix(n): # N frames
-	A0 = np.zeros([n*(n-1)/2,n])
-	A = np.zeros([n*(n-1)/2,n])
+	m = n*(n-1)/2
+	#A0 = np.zeros([m,n])
+	A = np.zeros([m,n])
 	for i in range(n):
 		a = A[n*i:n*i+n,i:]
 		for row in range(a.shape[0]): 
 			col = row + 1 # include diagonal
 			a[row][:col] = 1
-	Ax0 = np.concatenate([A,A0])
-	Ay0 = np.concatenate([A0,A])
-	return np.hstack([Ax0,Ay0])
+	#Ax0 = np.concatenate([A,A0])
+	#Ay0 = np.concatenate([A0,A])
+	return A #np.hstack([Ax0,Ay0])
 
 def incoherent_pws(frames,bs=512):
 	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
@@ -184,16 +206,16 @@ def incoherent_pws(frames,bs=512):
 def ccf_ordinate(f1,f2,i,fname): # Li (2012)
 	#This is essentially the UCSF aligner. Need to impose B-factor?
 	ccf = f1.calc_ccf(f2)
-	ccf.process_inplace('xform.phaseorigin.tocenter')
-	ccf.write_image('{}_ccf.hdf'.format(fname[:-4]),i)
-	mloc = ccf.calc_max_location()
-	x = ccf.get_xsize()/2-mloc[0]
-	y = ccf.get_ysize()/2-mloc[1]
-	print2line("\t({},{})".format(x,y))
-	#ali = f1.align("translational",f2) # find_ccf_peak
+	#ccf.process_inplace('xform.phaseorigin.tocenter')
+	#ccf.write_image('{}_ccf.hdf'.format(fname[:-4]),i)
+	#mloc = ccf.calc_max_location()
+	#x = ccf.get_xsize()/2-mloc[0]
+	#y = ccf.get_ysize()/2-mloc[1]
+	ali = f1.align("translational",f2) # align to ccf peak
 	#x,y,z = ali.calc_max_location_wrap(-1,-1,-1)
-	#x,y = ali["xform.align2d"].get_trans_2d()
-	return x,y
+	x,y = ali["xform.align2d"].get_trans_2d()
+	print2line("\t\t\t({},{})".format(x,y))
+	return x,y,ccf
 
 class PairwiseCoherence:
 	
