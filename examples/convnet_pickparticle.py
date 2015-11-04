@@ -22,7 +22,6 @@ def main():
 	Look at result_conv0.hdf to see the training result. The images are arranged as (preprocessed particle / first layer output / last layer output ). Idealy last layer output should be gaussian balls for particles, dark for negative samples.
 	If the training results looks good, run "convnet_pickptcls.py --teston [micrograph]" and view testresult.hdf to see the result. Also the boxes can be viewed in e2boxer.py
 	Use "convnet_pickptcls.py --teston [micrograph folder]" to box all micrographs in a folder
-	Note now the input images have to be square for some reason..
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -39,6 +38,9 @@ def main():
 	parser.add_argument("--trainout", action="store_true", default=False ,help="Output the result of the training set")
 	parser.add_argument("--fromlast", action="store_true", default=False ,help="Start from previous pretrained network")
 	parser.add_argument("--teston", type=str,help="test on one image. The image must be square", default=None)
+	parser.add_argument("--boxptcl_noedge", type=int,help="Ignore edge of the micrograph while boxing particles", default=50)
+	parser.add_argument("--boxptcl_boxsep", type=int,help="Minimum seperation for particle picking", default=25)
+	parser.add_argument("--boxptcl_minscore", type=int,help="Minimum score for particle picking", default=.1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -52,13 +54,7 @@ def main():
 		print "Testing on big images, Theano optimizer disabled"
 		import_theano()
 		convnet=load_model(options.pretrainnet)
-		if os.path.isdir(options.teston):
-			lst=os.listdir(options.teston)
-			for mg in lst:
-				print "Boxing particles on ",mg
-				box_particles(convnet,options,os.path.join(options.teston,mg),False)
-		else:
-			box_particles(convnet,options)
+		box_particles(convnet,options)
 		exit()
 	else:
 		os.environ["THEANO_FLAGS"]="optimizer=fast_run"
@@ -210,95 +206,126 @@ def load_model(fname):
 	f.close()
 	return convnet
 	
-def box_particles(convnet,options,tarfile=None,dotest=True):
+def box_particles(convnet,options):
 	
-	if tarfile==None:
-		tarfile=options.teston
+	filelist=[]
+	isfolder=False
+	if os.path.isdir(options.teston):
+		isfolder=True
+		lst=os.listdir(options.teston)
+		for mg in lst:
+			
+			filelist.append(os.path.join(options.teston,mg))
+	else:
+		filelist.append(options.teston)
 	
-	if dotest:
+	if not isfolder:
 		try: os.remove("testresult.hdf")
 		except: pass
-	try:
-		e=EMData(tarfile)
-	except:
-		print "Cannot read file, return"
-		return
 	
-	print "\tPreprocessing image..."
-
-	e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-	e.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
-	e.process_inplace("normalize.edgemean")
-	e.process_inplace("threshold.abovetozero",{"maxval":3})
-	e.process_inplace("threshold.belowtozero",{"minval":-3})
-	eg=100
-	e.process_inplace("mask.zeroedge2d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg})
-	e.div(e["maximum"])
-	ar=[EMNumPy.em2numpy(e)]
-	shape=[e["nx"],e["ny"],e["nz"]]
-	convnet.update_shape((1, 1, shape[0],shape[1]))
-	data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
-	img=data[0].eval().reshape(shape[0],shape[1]).T
-	e = EMNumPy.numpy2em(img.astype("float32"))
-	e.process_inplace("normalize")
-	newshp=convnet.outsize
-	e.scale(float(newshp)/float(shape[0]))
-	e=e.get_clip(Region((shape[0]-newshp)/2,(shape[0]-newshp)/2,newshp,newshp))
-	if dotest: e.write_image("testresult.hdf",-1)
-	#print np.shape(data.get_value())
-	print "\tApplying the convolution net..."
-	test_imgs = theano.function(
-		inputs=[],
-		outputs=convnet.clslayer.hidden,
-		givens={
-			convnet.x: data[0]
-		}
-	)
+	lastshape=-1
+	
+	for tarfile in filelist:
+		print "Boxing particles on ",tarfile
+		try:
+			e=EMData(tarfile)
+		except:
+			print "Cannot read file, return"
+			return
 		
-	img=test_imgs()
-	print np.shape(img)
-	img=img.reshape(convnet.outsize,convnet.outsize).T
-	e = EMNumPy.numpy2em(img.astype("float32"))
-	#print "Post-processing..."
-	#eg=20
-	#e.process_inplace("mask.zeroedge2d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg})
-	e.process_inplace("normalize")
-	#e.process_inplace("threshold.belowtozero",{"minval":0})
-	#e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
-	#e.div(e["maximum"])
-	
-	if dotest: e.write_image("testresult.hdf",-1)
-	
-	###########
-	print "\tBoxing particles.."
-	#e=EMData("testresult.hdf",1)
-	e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-	shape=[e["nx"],e["ny"],e["nz"]]
-	convnet.update_shape((1, 1, shape[0],shape[1]))
-	newshp=convnet.outsize
-	pks=e.peak_ccf(25)
-	#print pks
-	
-	box=[]
-	scale=float(shape[0])/float(newshp)
-	for i in range(0,len(pks),3):
-		print i//3,pks[i]
-		if pks[i]<.1:
-			print i//3, "particles."
-			break
-		box.append([pks[i+1]*scale,pks[i+2]*scale,"manual"])
-	import json
-	jn={}
-	jn["boxes"]=box
-	#print jn
-	#options.teston="testimg.hdf"
-	mn=tarfile.replace('/','-')
-	#n1=mn.rfind('/')+1
-	#mn=mn[n1:]
-	#print mn
-	f = open('info/{n}_info.json'.format(n=mn[:-4]), 'w')
-	json.dump(jn, f, indent=0)
-	f.close()
+		print "\tPreprocessing image..."
+
+		e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
+		e.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
+		e.process_inplace("normalize.edgemean")
+		e.process_inplace("threshold.belowtominval",{"minval":-3, "newval":-3})
+		e.mult(-1)
+		e.process_inplace("threshold.belowtominval",{"minval":-3, "newval":-3})
+		e.mult(-1)
+		eg=options.boxptcl_noedge
+		e.process_inplace("mask.zeroedge2d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg})
+		
+		## make the image square
+		ori_shape=[e["nx"],e["ny"]]
+		if (e["nx"]!=e["ny"]):
+			shape=max(e["nx"],e["ny"])
+			e=e.get_clip(Region((e["nx"]-shape)/2,(e["ny"]-shape)/2,shape,shape))
+		else:
+			shape=e["nx"]
+		
+		e.div(e["maximum"])
+		ar=[EMNumPy.em2numpy(e)]
+		
+		if shape!=lastshape:	## only update when shape changes
+			convnet.update_shape((1, 1, shape,shape))
+			
+			
+		data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
+		img=data[0].eval().reshape(shape,shape).T
+		e = EMNumPy.numpy2em(img.astype("float32"))
+		e.process_inplace("normalize")
+		newshp=convnet.outsize
+		e.scale(float(newshp)/float(shape))
+		ori_shape=[i*(float(newshp)/float(shape)) for i in ori_shape]
+		e=e.get_clip(Region((shape-newshp)/2,(shape-newshp)/2,newshp,newshp))
+		e=e.get_clip(Region((e["nx"]-ori_shape[0])/2,(e["ny"]-ori_shape[1])/2,ori_shape[0],ori_shape[1]))
+		if not isfolder: e.write_image("testresult.hdf",-1)
+
+		
+		print "\tApplying the convolution net..."
+		test_imgs = theano.function(
+			inputs=[],
+			outputs=convnet.clslayer.hidden,
+			givens={
+				convnet.x: data[0]
+			}
+		)
+			
+		img=test_imgs()
+		#print np.shape(img)
+		img=img.reshape(convnet.outsize,convnet.outsize).T
+		e = EMNumPy.numpy2em(img.astype("float32"))
+		#print "Post-processing..."
+		#eg=20
+		#e.process_inplace("mask.zeroedge2d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg})
+		e.process_inplace("normalize")
+		#e.process_inplace("threshold.belowtozero",{"minval":0})
+		#e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
+		#e.div(e["maximum"])
+		e=e.get_clip(Region((e["nx"]-ori_shape[0])/2,(e["ny"]-ori_shape[1])/2,ori_shape[0],ori_shape[1]))
+		if not isfolder: e.write_image("testresult.hdf",-1)
+		
+		###########
+		print "\tBoxing particles.."
+		#e=EMData("testresult.hdf",1)
+		e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
+		#shape=[e["nx"],e["ny"],e["nz"]]
+		#convnet.update_shape((1, 1, shape[0],shape[1]))
+		#newshp=convnet.outsize
+		pks=e.peak_ccf(options.boxptcl_boxsep)
+		#print pks
+		
+		box=[]
+		scale=float(shape)/float(newshp)
+		for i in range(0,len(pks),3):
+			#print i//3,pks[i]
+			if pks[i]<options.boxptcl_minscore:
+				print i//3, "particles."
+				break
+			box.append([pks[i+1]*scale,pks[i+2]*scale,"manual"])
+		import json
+		jn={}
+		jn["boxes"]=box
+		#print jn
+		#options.teston="testimg.hdf"
+		mn=tarfile.replace('/','-')
+		#n1=mn.rfind('/')+1
+		#mn=mn[n1:]
+		#print mn
+		f = open('info/{n}_info.json'.format(n=mn[:-4]), 'w')
+		json.dump(jn, f, indent=0)
+		f.close()
+		lastshape=shape
 
 def load_particles(ptcls, ngtvs=None, ncopy=5):
 	
