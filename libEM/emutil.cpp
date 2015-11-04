@@ -1102,6 +1102,8 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	}
 
 	for (int k = dz0; k < (dz0+zlen); k++) {
+		// k is image/slice number, starting from 0
+
 		if (y_pre_gap > 0) {
 			portable_fseek(file, y_pre_gap, SEEK_CUR);
 		}
@@ -1131,7 +1133,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 				// region considerations add complications
 				// in the flipping scenario (imagic format)
 
-				if (dy0 > 0 ) {
+				if (dy0 > 0) {
 					jj += dy0;
 				}
 			}
@@ -1140,10 +1142,17 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 				if (fread(&cdata[k2 + jj * memory_row_size +
 						  (size_t) mode_size_product(dx0, mode_size)],
 						  area_row_size, 1, file) != 1) {
-					cout << jj << " " << k2 << " " << memory_row_size
-						  << " " << dx0 << " "
-						  << mode_size << " " << area_row_size << " "
-						  << cdata << ftell(file) << "done" << endl;
+
+//					cout << jj << " " << k2 << " " << memory_row_size
+//						  << " " << dx0 << " "
+//						  << mode_size << " " << area_row_size << " "
+//						  << cdata << ftell(file) << "done" << endl;
+
+					cout << "Reached premature end-of-file reading "
+						  << "region from image/slice number " << k
+						  << " of file with " << ftell(file)
+						  << " bytes." << endl;
+
 					throw ImageReadException("Unknownfilename",
 													 "incomplete data read");
 				}
