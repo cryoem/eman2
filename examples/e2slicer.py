@@ -281,7 +281,17 @@ def main():
 					print "I have extracted this orthogonal region", regions[kk]
 					slice = app.get_clip(regions[kk])
 					slice.set_size(x,y,1)
-					slice.write_image(options.path + '/' + os.path.basename( options.input ).replace('.',ptcltag+'_SLICESortho.'),kk)
+					print "ptcl tag is", ptcltag
+					print "slice is", slice , type(slice)
+					
+					outname = options.path + '/' + os.path.basename( options.input ).replace('.',ptcltag+'_SLICESortho.')
+					print "outname is", outname
+					if '.mrc' in outname:
+						outname=outname.replace('.mrc','.hdf')
+						print "new outname is", outname
+					slice.write_image( outname,kk)
+					
+					
 					print "The mean and index are", slice['mean'],kk
 					#k+=1
 				
@@ -315,7 +325,9 @@ def main():
 				outname = options.path + '/' + os.path.basename( options.input ).replace('.',ptcltag+'_SLICESy.')
 			
 				os.system('e2proc2d.py ' + rotvolyname + ' ' + outname + ' --threed2twod')
-			
+	
+	E2end(logger)
+	
 	return()	
 
 if __name__ == '__main__':
