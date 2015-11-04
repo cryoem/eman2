@@ -182,7 +182,7 @@ def main():
 	if options.verbose: print "Boxsize -> {}, padding to {}".format(boxsize,pad)
 		
 	# a pair of reconstructors. we will then simultaneously reconstruct in the pair, and use each to decide on the best target for each particle
-	recon=[Reconstructors.get("fourier",{"size":[pad,pad,pad],"sym":sym}) for i in (0,1)]
+	recon=[Reconstructors.get("fourier",{"size":[pad,pad,pad],"sym":sym,"mode":"gauss_5"}) for i in (0,1)]
 	for r in recon: r.setup()
 	
 	# We insert the first class-average (with the most particles) randomly into reconstructor 1 or 2
@@ -376,12 +376,12 @@ class ClassSplitTask(JSTask):
 		# read in all particles and append each to element to ptcls
 		avgr=Averagers.get("mean")
 		for p in ptcls: 
-			p.append(EMData(str(files[p[0]]),p[1]).process("xform",{"transform":p[2]})
-				.process("filter.highpass.gauss",{"cutoff_freq":0.01})
+			p.append(EMData(str(files[p[0]]),p[1]).process("xform",{"transform":p[2]}))
+			p.append(p[-1].process("filter.highpass.gauss",{"cutoff_freq":0.01})
 				.process("filter.lowpass.gauss",{"cutoff_freq":0.05})
 				.process("normalize.circlemean",{"radius":-6})
 				.process("mask.soft",{"outer_radius":-8,"width":4}))
-			avgr.add_image(p[3])
+			avgr.add_image(p[4])
 		
 		# Copy each particle minus it's mean value
 		avg=avgr.finish()
@@ -391,14 +391,17 @@ class ClassSplitTask(JSTask):
 		mask.process("mask.sharp",{"outer_radius":-10})
 		
 		# PCA on the mean-subtracted particles
+		# At this point p[3] will be the particle in the correct orientation
+		# p[4] will be the filtered/masked particle
+		# p[5] will be the filtered/masked/bg subtr particle
 		for p in ptcls: 
-			p.append(p[3].copy())
-			p[4].sub(avg)
+			p.append(p[4].copy())
+			p[5].sub(avg)
 
 #		print "basis start"
 		pca=Analyzers.get("pca_large",{"nvec":6,"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
 		for p in ptcls: 
-			pca.insert_image(p[4])		# filter to focus on lower resolution differences
+			pca.insert_image(p[5])		# filter to focus on lower resolution differences
 		basis=pca.analyze()
 
 		# Varimax rotation... good idea?
@@ -418,7 +421,7 @@ class ClassSplitTask(JSTask):
 #		print "basis"
 		
 		# at the moment we are just splitting into 2 classes, so we'll use the first eigenvector. A bit worried about defocus coming through, but hopefully ok...
-		dots=[p[3].cmp("ccc",basis[self.options["basisn"]]) for p in ptcls]	# NOTE: we are using the third, not first, basis vector
+		dots=[p[5].cmp("ccc",basis[self.options["basisn"]]) for p in ptcls]	# NOTE: we are using the third, not first, basis vector
 		if len(dots)==0:
 			return {"failed":True}
 		dota=sum(dots)/len(dots)
