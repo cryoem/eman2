@@ -24,8 +24,8 @@ def main():
 	
 	for fname in args:
 		a = np.loadtxt(fname)# './GL1089B-40K-40e-PC6s_0007.box'
-		b = np.zeros_like(a)+options.boxsize
-		c = np.hstack([a,b])
+		b = np.zeros_like(a)
+		c = np.hstack([a-options.boxsize/2,b+options.boxsize])
 		if "boxes" in fname: out = dir+"/"+fname.split('.')[-2][:-6]+".box"
 		else: out = dir+"/"+fname.split('.')[-2]+".box"
 		np.savetxt(out,c,delimiter="\t",fmt="%d")
