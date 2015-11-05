@@ -41,6 +41,7 @@ def main():
 	parser.add_argument("--boxptcl_noedge", type=int,help="Ignore edge of the micrograph while boxing particles", default=50)
 	parser.add_argument("--boxptcl_boxsep", type=int,help="Minimum seperation for particle picking", default=25)
 	parser.add_argument("--boxptcl_minscore", type=int,help="Minimum score for particle picking", default=.1)
+	parser.add_argument("--shrink", type=int,help="Shrink particles", default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -74,7 +75,7 @@ def main():
 		particles=cPickle.load(f)
 		f.close()
 	else:
-		particles=load_particles(args[0],options.ngtvs,options.ncopy)
+		particles=load_particles(args[0],options)
 		f = file("data_training.pkl", 'wb')
 		cPickle.dump(particles, f, protocol=cPickle.HIGHEST_PROTOCOL)
 		f.close()
@@ -211,10 +212,12 @@ def box_particles(convnet,options):
 	filelist=[]
 	isfolder=False
 	if os.path.isdir(options.teston):
+		print "Check files..."
 		isfolder=True
-		lst=os.listdir(options.teston)
+		lst=sorted(os.listdir(options.teston))
+		lst=[i for i in lst if i[0]!="."]
 		for mg in lst:
-			
+			print "  ",mg
 			filelist.append(os.path.join(options.teston,mg))
 	else:
 		filelist.append(options.teston)
@@ -230,8 +233,8 @@ def box_particles(convnet,options):
 		try:
 			e=EMData(tarfile)
 		except:
-			print "Cannot read file, return"
-			return
+			print "Cannot read file, continue"
+			continue
 		
 		print "\tPreprocessing image..."
 
@@ -242,6 +245,10 @@ def box_particles(convnet,options):
 		e.mult(-1)
 		e.process_inplace("threshold.belowtominval",{"minval":-3, "newval":-3})
 		e.mult(-1)
+		
+		if (options.shrink>1):
+			e.process_inplace("math.meanshrink",{"n":options.shrink})
+		
 		eg=options.boxptcl_noedge
 		e.process_inplace("mask.zeroedge2d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg})
 		
@@ -310,9 +317,10 @@ def box_particles(convnet,options):
 		for i in range(0,len(pks),3):
 			#print i//3,pks[i]
 			if pks[i]<options.boxptcl_minscore:
-				print i//3, "particles."
 				break
 			box.append([pks[i+1]*scale,pks[i+2]*scale,"manual"])
+		
+		print "\t{} particles.".format(i//3)
 		import json
 		jn={}
 		jn["boxes"]=box
@@ -327,28 +335,30 @@ def box_particles(convnet,options):
 		f.close()
 		lastshape=shape
 
-def load_particles(ptcls, ngtvs=None, ncopy=5):
+def load_particles(ptcls, options):
 	
 	nptcls=EMUtil.get_image_count(ptcls)
-	if ngtvs==None:
+	if options.ngtvs==None:
 		label=[1]
 	else:
 		label=[1,0]
 		
-	source=[ngtvs,ptcls]
+	source=[options.ngtvs,ptcls]
 	lbs=[] # ptcls are labeled 1, 
 	data=[]
 	for l in label:
 		num=EMUtil.get_image_count(source[l])
 		if l==0:
-			nc=ncopy*nptcls/num
+			nc=options.ncopy*nptcls/num
 		else:
-			nc=ncopy
+			nc=options.ncopy
 		for i in range(num):
 			ptl=EMData(source[l],i)
 			ptl.process_inplace("normalize.edgemean")
 			ptl.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 			ptl.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
+			if (options.shrink>1):
+				ptl.process_inplace("math.meanshrink",{"n":options.shrink})
 			for c in range(nc):
 				tr=Transform()
 				tr.set_rotation({"type":"2d","alpha":random.random()*360.0})
@@ -367,8 +377,8 @@ def load_particles(ptcls, ngtvs=None, ncopy=5):
 	data/=np.max(np.abs(data))
 	lbs=np.asarray(lbs,dtype=theano.config.floatX)
 	
-	header=EMData(ptcls,0,True)
-	shape=[header["nx"],header["ny"],header["nz"]]
+	#header=EMData(ptcls,0,True)
+	shape=[ptl["nx"],ptl["ny"],ptl["nz"]]
 	shared_data = [theano.shared(data,borrow=True),theano.shared(lbs,borrow=True),shape]
 
 	return shared_data
