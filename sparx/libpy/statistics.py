@@ -1940,7 +1940,6 @@ def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 	nz = img1.get_zsize()
 	if( mask == None):  mask = model_circle(nx//2, nx, ny, nz)
 	m = binarize(mask, 0.5)
-	Util.sub_img(m, erosion(m))
 	s1 = Util.infomask(img1, m, True)
 	s2 = Util.infomask(img2, m, True)
 	return fsc((img1-s1[0])*mask, (img2-s2[0])*mask, w, filename)
