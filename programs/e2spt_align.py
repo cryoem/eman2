@@ -8,18 +8,18 @@ import threading
 import Queue
 from sys import argv,exit
 
-def alifn(jsd,fsp,i,a,verbose):
+def alifn(jsd,fsp,i,a,options):
 	t=time.time()
 	b=EMData(fsp,i).do_fft()
 	b.process_inplace("xform.phaseorigin.tocorner")
 
 	# we align backwards due to symmetry
-	if verbose>2 : print "Aligning: ",fsp,i
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c6","sigmathis":0.1,"sigmato":0.1},1)
+	if options.verbose>2 : print "Aligning: ",fsp,i
+	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":0.1},1)
 	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 	jsd.put((fsp,i,c[0]))
-	if verbose>1 : print "{}\t{}\t{}\t{}".format(fsp,i,time.time()-t,c[0]["score"])
+	if options.verbose>1 : print "{}\t{}\t{}\t{}".format(fsp,i,time.time()-t,c[0]["score"])
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -36,6 +36,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 	parser.add_argument("--goldcontinue",action="store_true",help="Will use even/odd refs corresponding to specified reference to continue refining without phase randomizing again",default=False)
 	parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)")
+	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -86,7 +87,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 
 	n=-1
 	N=EMUtil.get_image_count(args[0])
-	thrds=[threading.Thread(target=alifn,args=(jsd,args[0],i,ref[i%2],options.verbose)) for i in xrange(N)]
+	thrds=[threading.Thread(target=alifn,args=(jsd,args[0],i,ref[i%2],options)) for i in xrange(N)]
 
 	# here we run the threads and save the results, no actual alignment done here
 	print len(thrds)," threads"
