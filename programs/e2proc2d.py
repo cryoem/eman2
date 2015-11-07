@@ -870,36 +870,34 @@ def main():
 							#outfile = outfile + "%04d" % i + ".lst"
 							#options.outtype = "lst"
 
-					if options.fixintscaling != None :
-						if options.fixintscaling == "sane" :
-							d["render_min"] = d["mean"]-d["sigma"]*2.5
-							d["render_max"] = d["mean"]+d["sigma"]*2.5
-						elif options.fixintscaling == "noscale":
-							d["render_min"] = 0.0
+					dont_scale = (options.fixintscaling == "noscale")
 
-							if "mrc16bit" in optionlist : d["render_max"] = 65535.0
-							else : d["render_max"] = 255.0
-						else:
-							try:
+					if options.fixintscaling != None and not dont_scale :
+						if options.fixintscaling == "sane" :
+							sca = 2.5
+						else :
+							try :
 								sca = float(options.fixintscaling)
-								d["render_min"] = d["mean"]-d["sigma"]*sca
-								d["render_max"] = d["mean"]+d["sigma"]*sca
-							except:
-								print "Warning: bad fixintscaling option"
+							except :
+								sca = 2.5
+
+								print "Warning: bad fixintscaling value - 2.5 used"
+
+						d["render_min"] = d["mean"] - d["sigma"]*sca
+						d["render_max"] = d["mean"] + d["sigma"]*sca
+
+						min_max_set = True
+					else :
+						min_max_set = False
 
 					#print_iminfo(data, "Final")
 
-					if options.outmode != "float" and \
-						(options.fixintscaling == None or \
-						 options.fixintscaling == "noscale") :
-
+					if options.outmode != "float" or dont_scale :
 	#					if outfile[-4:] != ".hdf" :
 	#						print "WARNING: outmode is not working correctly for non HDF images in"
 	#						print "2.1beta3. We expect to have this fixed in the next few days."
 
-						if options.outnorescale or \
-							options.fixintscaling == "noscale" :
-	
+						if options.outnorescale or dont_scale :
 							# This sets the minimum and maximum values to the range
 							# for the specified type, which should result in no rescaling
 
@@ -927,9 +925,10 @@ def main():
 							if u < v :
 								d["render_min"] = u
 								d["render_max"] = v
-						else:
-							d["render_min"] = d["minimum"]
-							d["render_max"] = d["maximum"]
+						else :
+							if not min_max_set :
+								d["render_min"] = d["minimum"]
+				  				d["render_max"] = d["maximum"]
 
 					if not options.average:	# skip writing the input image to output file
 						# write processed image to file
