@@ -35,7 +35,7 @@ Since VIPER makes use of group of processors working together, it is important f
     version:: show program's version number and exit (SPARX v3.0 (CVS 2015/07/29 09:00:04))
     help:: show this help message and exit
     ir:: IR inner radius for rotational correlation > 0 (set to 1)
-    ou:: OU outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)
+    radius:: RADIUS outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)
     rs:: RS step between rings in rotational correlation >0 (set to 1)
     xr:: XR range for translation search in x direction, search is +/xr (default 0)
     yr:: YR range for translation search in y direction, search is +/yr (default = same as xr)
