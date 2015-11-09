@@ -23,7 +23,10 @@ def main(args):
 	usage = progname + " stack  output_directory  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",   default= 1,                  help="<inner radius> for rotational correlation > 0 (set to 1)")
-	parser.add_option("--ou",       type= "int",   default= -1,                 help="<outer radius> for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
+	parser.add_option("--radius",       type= "int",   default= -1,             help="<outer radius> for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
+	# 'radius' and 'ou' are the same as per Pawel's request; 'ou' is hidden from the user
+	# the 'ou' variable is not changed to 'radius' in the 'sparx' program. This change is at interface level only for sxviper.
+	parser.add_option("--ou",       type= "int",   default= -1,                 help= SUPPRESS_HELP)
 	parser.add_option("--rs",       type= "int",   default= 1,                  help="<step between> rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",       type="string", default= "0",                help="<xr range> for translation search in x direction, search is +/xr (default 0)")
 	parser.add_option("--yr",       type="string", default= "-1",               help="<yr range> for translation search in y direction, search is +/yr (default = same as xr)")
@@ -77,6 +80,9 @@ def main(args):
 
 	log = Logger(BaseLogger_Files())
 
+	# 'radius' and 'ou' are the same as per Pawel's request; 'ou' is hidden from the user
+	# the 'ou' variable is not changed to 'radius' in the 'sparx' program. This change is at interface level only for sxviper.
+	options.ou = options.radius 
 	runs_count = options.nruns
 	mpi_rank = mpi_comm_rank(MPI_COMM_WORLD)
 	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
