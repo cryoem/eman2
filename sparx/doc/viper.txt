@@ -1,0 +1,91 @@
+= Name =
+sxviper - Validated ''ab initio'' 3D structure determination, aka Validation of Individual Parameter Reproducibility. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]. 
+
+= Usage =
+
+
+''usage in command line''
+
+sxviper.py stack  output_directory  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1
+
+
+=== Typical usage ===
+
+sxrviper exists only in MPI version.
+
+''' mpirun --npernode 16 -np 24 --host node1,node2 sxviper.py  stack output_directory --fl=0.25 --radius=30 --xr=2 --moon_elimination=750,4.84 '''
+
+A fast track option, that can be used to choose parameters in the appropriate ranges (for example, obtaining adequate spatial frequency filtering '--fl') is provided below. Since it employs extreme values for some parameters this command can be used only for parameter tuning for the VIPER algorithm. 
+
+''' mpirun --npernode 16 -np 16 --host node1 sxviper.py  stack output_directory --fl=0.25 --radius=30 --xr=1 --nruns=2   --L2threshold=1.0e300  --doga=-1'''
+
+The VIPER program needs MPI environment to work properly. Number of used MPI processes MUST BE a multiple of --nruns (default = 6). 
+
+Since VIPER makes use of group of processors working together, it is important from a time efficiency point of view to have processors within a group being allocated on the same node. This way any data exchange within the group does not use network traffic. The "--npernode" option of mpirun is useful in accomplishing this goal. As shown in the example below when "--npernode" is used  mpi allocates the ranks of the processors sequentially, not moving to the next node until the current one is filled.  If "--npernode" is not used then processors are allocated in a round robin fashion (i.e. jumping to the next node with each allocation). Since in VIPER, groups contain consecutively ranked processors, it is important to provide  "--npernode XX" where XX is the number of processors per node.
+
+{{attachment:npernode_rank.png||width=600}}
+
+
+== Input ==
+    stack:: set of 2-D images in a stack file (format hdf), images have to be squares (''nx''=''ny'', nx, ny denotes the image size)
+    output_directory:: directory name into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results)
+
+    * The parameters preceded with -- are optional and default values are given in parenthesis.  Note '''ir, ou, rs, xr, yr, ts''' are in pixels while '''delta, an''' are in degrees.
+
+    version:: show program's version number and exit (SPARX v3.0 (CVS 2015/07/29 09:00:04))
+    help:: show this help message and exit
+    ir:: IR inner radius for rotational correlation > 0 (set to 1)
+    ou:: OU outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)
+    rs:: RS step between rings in rotational correlation >0 (set to 1)
+    xr:: XR range for translation search in x direction, search is +/xr (default 0)
+    yr:: YR range for translation search in y direction, search is +/yr (default = same as xr)
+    ts:: TS step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional
+    delta:: DELTA angular step of reference projections (default 2)
+    center:: CENTER -1: average shift method; 0: no centering; 1: center of gravity (default=-1)
+    maxit1:: MAXIT1 maximum number of iterations performed for the GA part (set to 400)
+    maxit2:: MAXIT2 maximum number of iterations performed for the finishing up part (set to 50)
+    L2threshold:: L2THRESHOLD Stopping criterion of GA given as a maximum relative dispersion of L2 norms (set to 0.03)
+    ref_a:: REF_A method for generating the quasi-uniformly distributed projection directions (default S)
+    sym:: SYM symmetry of the refined structure
+    nruns:: NRUNS number of quasi-independent runs (default=6)
+    doga:: DOGA do GA when fraction of orientation changes less than 1.0 degrees is at least doga (default=0.1)
+    npad:: NPAD padding size for 3D reconstruction (default=2)
+    fl:: FL cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.25)
+    aa:: AA fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)
+    pwreference:: PWREFERENCE text file with a reference power spectrum (default no power spectrum adjustment)
+    mask3D:: MASK3D 3D mask file (default a sphere)
+    moon_elimination:: MOON_ELIMINATION mass in KDa and resolution in px/A separated by comma, no space
+
+
+== Output ==
+ output_directory:: directory name into which the output files will be written.  If it does not exist, the directory will be created.  If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program . The files will be written to this directory.  The program will write the reconstructed volume of stage1, refvolf2.hdf, and parameters into refparams2.txt. After stage 2, the final volume and parameters will be writton to volf.hdf and params.txt. Other output files are log.txt and previousmax.txt.
+
+
+= Description =
+ * This program uses a user defined projection angle and translation shift to perform 3D reconstruction. The translation shifts, and step are not limited to integer number. For a given delta, the program will perform maxit round refinement. So the final refinement iteration is maxit*(number of delta values) 
+ * For the program to work, attributes xform.projection (Transform object containing three Euler angles and two in-plane shifts) have to be set in the header of each file.  If their values are not known, all should be set to zero.  
+ * The program will start alignment from the current alignment parameters xform.projection stored in file headers. 
+ * The program only change the alignment parameters in their header. The images in stack keep untouched. ( Neither rotated nor shifted. )
+
+= Method =
+
+= Reference =
+
+
+= Author / Maintainer =
+Pawel A. Penczek
+
+= Keywords =
+ category 1:: APPLICATIONS
+
+= Files =
+sparx/bin/sxviper.py
+
+= See also =
+[[sxrviper]]
+
+= Maturity =
+ beta::     works for author, often works for others.
+
+= Bugs =
+Did not discover any yet.
