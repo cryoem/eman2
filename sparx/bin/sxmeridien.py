@@ -687,40 +687,29 @@ def build_defgroups(fi):
 		ocup[i] = stmp.count(sd[i])
 	return  sd, ocup
 
-def compute_sigma(vol, sd, ocup, projdata, partids, partstack, Tracker, myid, main_node, nproc):
+def compute_sigma(sd, ocup, projdata, partids, partstack, Tracker, myid, main_node, nproc):
 	# input stack of particles comes in preshrank
 	#  input stack contains ALL particles
-	nx = projdata[0].get_xsize()
-	if(Tracker["constants"]["mask3D"] is None):
-		mask = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	else:
-		mask = get_im(Tracker["constants"]["mask3D"])
-	if( nx != Tracker["constants"]["nnxo"]):
-		mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
-	nv = vol.get_xsize()
-	if( nv != nx):
-		vol = Util.window(rot_shift3D(vol,scale=float(nx)/float(nv)),nx,nx,nx)
-	volf,kb = prep_vol(vol)
-
-	nv = rops(projdata[0]).get_xsize()
-	mv = Tracker["constants"]["nnxo"]//2+1
-	tsd = model_blank(mv,len(sd))
+	nx = Tracker["constants"]["nnxo"]
+	mx = 2*nx
+	nv = rops(pad(projdata[0],mx,mx,1,0.0)).get_xsize()
+	tsd = model_blank(nv,len(sd))
 	tocp = model_blank(len(sd))
 
+	invg = model_gauss(Tracker["constants"]["radius"],nx,nx)
+	invg /= invg[nx//2,nx//2]
+	invg = model_blank(nx,nx,1,1.0) - invg
+	
+
 	for i in xrange(len(projdata)):
-		phi, theta, psi, sxo, syo = get_params_proj(projdata[i])
-		prj = prgs(volf,kb,[phi, theta, psi, sxo, syo])
 		try:
-			stmp = a.get_attr("ptcl_source_image")
+			stmp = projdata[i].get_attr("ptcl_source_image")
 		except:
-			stmp = a.get_attr("ctf")
+			stmp = projdata[i].get_attr("ctf")
 			stmp = round(stmp.defocus,4)
 		indx = sd.index(stemp)
-		if Tracker["constants"]["CTF"]:
-			ct = projdata[i].get_attr("ctf")
-			sig = rops(filt_ctf(fft(prj),ct)-fft(projdata[i]))
-		else:
-			sig = rops(prj - projdata[i])
+		st = Util.infomask(projdata[i], None, True)
+		sig = rops(pad((projdata[i] - st[0])*invg, mx,mx,1,0.0))
 		for k in xrange(nv):
 			tsd.set_value_at(k,indx,tsd.get_value_at(k,indx)+sig.get_value_at(k))
 		tocp[indx] += 1
@@ -1117,9 +1106,10 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 
 	if(myid == main_node):
 		if(type(stack) == str or ( nz == 1 )):
+			for procid in xrange(2): del fsc[procid][-1]
 			if(nx<Tracker["constants"]["nnxo"]):
 				for procid in xrange(2):
-					for i in xrange(3):
+					for i in xrange(2):
 						for k in xrange(nx/2+1, Tracker["constants"]["nnxo"]/2+1):
 							fsc[procid][i].append(0.0)
 					for k in xrange(Tracker["constants"]["nnxo"]/2+1):
