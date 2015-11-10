@@ -265,6 +265,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=2, xysize=-1,
 				fftvol = model_blank(xysize, xysize, zsize)
 	return fftvol
 
+'''
 # secondrun
 def secondrunrecons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
 	from utilities     import reduce_EMData_to_root, pad, get_params_proj
@@ -384,6 +385,7 @@ def secondrunrecons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None,
 		from utilities import model_blank
 		fftvol = model_blank(imgsize, imgsize, imgsize)
 	return fftvol
+'''
 
 #chc5
 def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
