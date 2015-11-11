@@ -32,8 +32,8 @@ Since VIPER makes use of group of processors working together, it is important f
     radius:: radius of the particle: has to be less than < int(nx/2)-1
 
     * The remaining parameters are optional.
-    xr:: XR range for translation search in x direction: search is +/xr in pixels (default 0)
-    yr:: YR range for translation search in y direction: if omitted will be set to xr, search is +/yr in pixels (default 0)
+    xr:: range for translation search in x direction: search is +/xr in pixels (default 0)
+    yr:: range for translation search in y direction: if omitted will be set to xr, search is +/yr in pixels (default 0)
     mask3D:: 3D mask file: (default sphere)
     moon_elimination:: elimination of disconnected pieces: two arguments: mass in KDa and resolution in px/A separated by comma, no space
 
