@@ -156,6 +156,7 @@ def get_idd_image_entry(image_name,key,db_title="e2boxercache/",dfl=None):
 	'''
 	Using EMAN2 style image dbs has efficiency payoffs in various ways...
 	'''
+	if type(db_title)!=str: return None
 	db=js_open_dict("{}{}.json".format(db_title,base_name(image_name)))
 	try: return db[key]
 	except : return dfl
