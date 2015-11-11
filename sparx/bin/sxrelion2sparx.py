@@ -230,24 +230,13 @@ def main():
 				relion_defocusV = float(tokens_line[relion_dict['_rlnDefocusV'][idx_col] - 1])
 				relion_defocus_angle = float(tokens_line[relion_dict['_rlnDefocusAngle'][idx_col] - 1])
 				
-				# NOTE: 2015/09/14 Toshio Moriya
-				# Corrected CTF paramter conversion from CTFFIND4 to SXCTER format
-				#
-				# # Pawel Article Version (Currently published)
-				# sparx_defocus = (relion_defocusU + relion_defocusV) / (2 * 10000)   # convert format from RELION to SPARX
-				# sparx_astig_amp = (relion_defocusU - relion_defocusV) / (2 * 10000) # convert format from RELION to SPARX
-				# sparx_astig_angle = 45.0 - relion_defocus_angle # convert format from RELION to SPARX
-				# 
-				# Corrected Version 
-				# The oder of subtraction is swapped from ones in the CTER paper (Penczek, 2014).
-				sparx_ctf['defocus'] = (relion_defocusU + relion_defocusV) / (2 * 10000)   # convert format from RELION to SPARX
-				sparx_ctf['astig_amp'] = (relion_defocusV - relion_defocusU) / (2 * 10000) # convert format from RELION to SPARX
+				sparx_ctf['defocus']     = (relion_defocusU + relion_defocusV) / 20000   # convert format from RELION to SPARX
+				sparx_ctf['astig_amp']   = (relion_defocusU - relion_defocusV) / 20000   # convert format from RELION to SPARX
 				sparx_ctf['astig_angle'] = 45.0 - relion_defocus_angle # convert format from RELION to SPARX
 				while sparx_ctf['astig_angle']  >= 180:
 					sparx_ctf['astig_angle'] -= 180
 				while sparx_ctf['astig_angle'] < 0:
 					sparx_ctf['astig_angle'] += 180
-				assert(sparx_ctf['astig_angle'] < 180 and sparx_ctf['astig_angle'] >= 0)
 				
 				sparx_ctf['cs'] = float(tokens_line[relion_dict['_rlnSphericalAberration'][idx_col] - 1])
 				
