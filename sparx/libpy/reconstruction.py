@@ -515,6 +515,123 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	return fftvol
 
 
+def recons3d_4nnw_MPI(myid, prjlist, bckgnoise, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0):
+	"""
+		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
+		Input
+			stack: name of the stack file containing projection data, projections have to be squares
+			list_proj: list of projections to be included in the reconstruction or image iterator
+			snr: Signal-to-Noise Ratio of the data 
+			sign: sign of the CTF 
+			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
+	"""
+	from utilities  import reduce_EMData_to_root, pad
+	from EMAN2      import Reconstructors
+	from utilities  import iterImagesList, set_params_proj
+	from mpi        import MPI_COMM_WORLD
+	import types
+
+	if mpi_comm == None:
+		mpi_comm = MPI_COMM_WORLD
+
+	if type(prjlist) == types.ListType:
+		prjlist = iterImagesList(prjlist)
+	if not prjlist.goToNext():
+		ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
+	imgsize = prjlist.image().get_xsize()
+	if prjlist.image().get_ysize() != imgsize:
+		imgsize = max(imgsize, prjlist.image().get_ysize())
+		dopad = True
+	else:
+		dopad = False
+	prjlist.goToPrev()
+
+	fftvol = EMData()
+
+	if( smearstep > 0.0 ):
+		#if myid == 0:  print "  Setting smear in prepare_recons_ctf"
+		ns = 1
+		smear = []
+		for j in xrange(-ns,ns+1):
+			if( j != 0):
+				for i in xrange(-ns,ns+1):
+					for k in xrange(-ns,ns+1):
+						smear += [i*smearstep,j*smearstep,k*smearstep,1.0]
+		# Deal with theta = 0.0 cases
+		prj = []
+		for i in xrange(-ns,ns+1):
+			for k in xrange(-ns,ns+1):
+				prj.append(i+k)
+		for i in xrange(-2*ns,2*ns+1,1):
+			 smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
+		#if myid == 0:  print "  Smear  ",smear
+		fftvol.set_attr("smear", smear)
+
+	weight = EMData()
+	if (xysize == -1 and zsize == -1 ):
+		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
+		r = Reconstructors.get( "nn4_ctf", params )
+	else:
+		if ( xysize != -1 and zsize != -1):
+			rx = float(xysize)/imgsize
+			ry = float(xysize)/imgsize
+			rz = float(zsize)/imgsize
+		elif( xysize != -1):
+			rx = float(xysize)/imgsize
+			ry = float(xysize)/imgsize
+			rz = 1.0
+		else:
+			rx = 1.0
+			ry = 1.0
+			rz = float(zsize)/imgsize
+		#  There is an error here with sizeprojection  PAP 10/22/2014
+		params = {"size":sizeprojection, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight,"xratio":rx,"yratio":ry,"zratio":rz}
+		r = Reconstructors.get( "nn4_ctf_rect", params )
+	r.setup()
+
+	#if not (info is None):
+	if not (info is None): nimg = 0
+	while prjlist.goToNext():
+		prj = prjlist.image()
+		ml = prj.get_attr('groupindex')#int(prj.get_attr('data_path')[4:8])
+		if dopad:
+			prj = pad(prj, imgsize, imgsize, 1, "circumference")
+		#if params:
+		prj.set_attr("bckgnoise", bckgnoise[bckgnoise[1].index(ml)])
+		insert_slices(r, prj)
+		if not (info is None):
+			nimg += 1
+			info.write(" %4d inserted\n" %(nimg) )
+			info.flush()
+	del pad
+	if not (info is None): 
+		info.write( "begin reduce\n" )
+		info.flush()
+
+	reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
+	reduce_EMData_to_root(weight, myid, comm=mpi_comm)
+
+	if not (info is None): 
+		info.write( "after reduce\n" )
+		info.flush()
+
+	if myid == 0 :
+		dummy = r.finish(True)
+	else:
+		from utilities import model_blank
+		if ( xysize == -1 and zsize == -1 ):
+			fftvol = model_blank(imgsize, imgsize, imgsize)
+		else:
+			if zsize == -1:
+				fftvol = model_blank(xysize, xysize, imgsize)
+			elif xysize == -1:
+				fftvol = model_blank(imgsize, imgsize, zsize)
+			else:
+				fftvol = model_blank(xysize, xysize, zsize)
+	return fftvol
+
+
+
 def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize = -1, zsize = -1 ):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   
@@ -588,21 +705,11 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 	if type(stack_name) == types.StringType:
 		for i in xrange(len(list_proj)):
 			proj.read_image(stack_name, list_proj[i])
-			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-			# active = proj.get_attr_default('active', 1)
-			# if(active == 1):
-			# 	if dopad: 
-			# 		proj = pad(proj, size, size, 1, "circumference")
-			# 	insert_slices(r, proj)
 			if dopad: 
 				proj = pad(proj, size, size, 1, "circumference")
 			insert_slices(r, proj)
 	else:
 		for i in xrange(len(list_proj)):
-			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-			# active = stack_name[list_proj[i]].get_attr_default('active', 1)
-			# if active == 1:
-			# 	insert_slices(r, stack_name[list_proj[i]])
 			insert_slices(r, stack_name[list_proj[i]])
 	dummy = r.finish(True)
 	return fftvol
