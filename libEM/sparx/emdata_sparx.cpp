@@ -1828,14 +1828,14 @@ void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Tr
 }
 
 //  Helper functions for method nn4_ctfw
-// void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* sigmasq2, const Transform& tf, float weight) {
+// void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* bckgnoise, const Transform& tf, float weight) {
 void EMData::onelinenn_ctfw(int j, int n, int n2,
-		          EMData* w, EMData* bi, EMData* c2, EMData* sigmasq2, const Transform& tf, float weight) {
+		          EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight) {
 //std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
-//for (int i = 0; i <= 12; i++)  cout <<"  "<<i<<"  "<<(*sigmasq2)(i)<<endl;
+//for (int i = 0; i <= 12; i++)  cout <<"  "<<i<<"  "<<(*bckgnoise)(i)<<endl;
 	int nnd4 = n*n/4;
 	int jp = (j >= 0) ? j+1 : n+j+1;
-	//for (int i = 0; i<sigmasq2->get_xsize(); i++) cout <<"  "<<i<<"  "<< (*sigmasq2)(i)<<endl;
+	//for (int i = 0; i<bckgnoise->get_xsize(); i++) cout <<"  "<<i<<"  "<< (*bckgnoise)(i)<<endl;
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
 		int r2 = i*i + j*j;
@@ -1865,11 +1865,11 @@ void EMData::onelinenn_ctfw(int j, int n, int n2,
 			if (iyn >= 0) iya = iyn + 1;
 			else          iya = n + iyn + 1;
 
-            // linear interpolation of 1D sigmasq2
+            // linear interpolation of 1D bckgnoise
             float rr = std::sqrt(float(r2));
             int   ir = int(rr);
             float df = rr - float(ir);
-            float mult = (1.0f - df)*(*sigmasq2)(ir) + df*(*sigmasq2)(ir+1);
+            float mult = (1.0f - df)*(*bckgnoise)(ir) + df*(*bckgnoise)(ir+1);
             //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
 			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
 			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
@@ -1995,8 +1995,8 @@ void EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 	EXITFUNC;
 }
 
-// void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* sigmasq2, const Transform& tf, float weight ) {
-void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* sigmasq2, const Transform& tf, float weight ) {
+// void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* bckgnoise, const Transform& tf, float weight ) {
+void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* bckgnoise, const Transform& tf, float weight ) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -2004,7 +2004,7 @@ void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* sigmasq2,
 	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
-	//sigmasq2->set_array_offsets(0,1);
+	//bckgnoise->set_array_offsets(0,1);
 
     // Ctf* ctf = myfft->get_attr("ctf");
     // ctf_store::init( ny, ctf );
@@ -2014,8 +2014,8 @@ void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* sigmasq2,
 	ctf2d2->set_array_offsets(0,1);
 
 	// loop over frequencies in y
-	// for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, sigmasq2, tf, weight);
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, ctf2d2, sigmasq2, tf, weight);
+	// for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, bckgnoise, tf, weight);
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, ctf2d2, bckgnoise, tf, weight);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	ctf2d2->set_array_offsets(ctf2d2_saved_offsets);

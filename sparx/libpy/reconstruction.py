@@ -386,7 +386,7 @@ def secondrunrecons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None,
 		fftvol = model_blank(imgsize, imgsize, imgsize)
 	return fftvol
 '''
-
+'''
 #chc5
 def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
 	from utilities     import reduce_EMData_to_root, pad, get_params_proj
@@ -513,7 +513,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 		from utilities import model_blank
 		fftvol = model_blank(imgsize, imgsize, imgsize)
 	return fftvol
-
+'''
 
 def recons3d_4nnw_MPI(myid, prjlist, bckgnoise, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0):
 	"""
@@ -570,7 +570,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgnoise, snr = 1.0, sign=1, symmetry="c1"
 	weight = EMData()
 	if (xysize == -1 and zsize == -1 ):
 		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
-		r = Reconstructors.get( "nn4_ctf", params )
+		r = Reconstructors.get( "nn4_ctfw", params )
 	else:
 		if ( xysize != -1 and zsize != -1):
 			rx = float(xysize)/imgsize

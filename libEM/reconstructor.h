@@ -1381,7 +1381,7 @@ namespace EMAN
 	  private:
 		EMData* m_volume;
 		EMData* m_wptr;
-		EMData* m_refvol;
+		//EMData* m_refvol;
 		int m_vnx, m_vny, m_vnz;
 		int m_vnzp, m_vnyp, m_vnxp;
 		int m_vnxc, m_vnyc, m_vnzc;
