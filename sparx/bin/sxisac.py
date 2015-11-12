@@ -375,48 +375,25 @@ def main(args):
 				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+				#aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 				p = Util.infomask(aligned_images[im], msk, False)
 				aligned_images[im] -= p[0]
 				p = Util.infomask(aligned_images[im], msk, True)
 				aligned_images[im] /= p[1]
 				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 	elif(shrink_ratio > 1.0):
-		if    newx > target_nx  :
-			msk = model_circle(target_radius, target_nx, target_nx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-		elif  newx == target_nx :
-			msk = model_circle(target_radius, target_nx, target_nx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-		elif  newx < target_nx  :			
-			msk = model_circle(target_radius, nx, nx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+		target_radius = radi
+		msk = model_circle(target_radius, nx, nx)
+		for im in xrange(nima):
+			#  Here we should use only shifts
+			alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+			alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+			aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+			p = Util.infomask(aligned_images[im], msk, False)
+			aligned_images[im] -= p[0]
+			p = Util.infomask(aligned_images[im], msk, True)
+			aligned_images[im] /= p[1]
+			aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 	del msk
 
 	gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
