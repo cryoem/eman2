@@ -6,7 +6,7 @@ sxviper - Validated ''ab initio'' 3D structure determination, aka Validation of 
 
 ''usage in command line''
 
-sxviper.py stack  directory  --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1
+sxviper.py stack  directory  --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range --mask3D=mask3D --moon_elimination=moon_elimination --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1 --nruns=nruns --doga=doga --fl=fl --aa=aa --pwreference=pwreference 
 
 
 === Typical usage ===
@@ -27,15 +27,15 @@ Since VIPER makes use of group of processors working together, it is important f
 
 
 == Input ==
-    stack:: 2D images in a stack file
+    stack:: 2D images in a stack file: (default required string)
 
-    radius:: radius of the particle: has to be less than < int(nx/2)-1
+    radius:: radius of the particle: has to be less than < int(nx/2)-1 (default required int)
 
     * The remaining parameters are optional.
     xr:: range for translation search in x direction: search is +/xr in pixels (default 0)
     yr:: range for translation search in y direction: if omitted will be set to xr, search is +/yr in pixels (default 0)
     mask3D:: 3D mask file: (default sphere)
-    moon_elimination:: elimination of disconnected pieces: two arguments: mass in KDa and resolution in px/A separated by comma, no space
+    moon_elimination:: elimination of disconnected pieces: two arguments: mass in KDa and resolution in px/A separated by comma, no space (default none)
 
     ir:: inner radius for rotational search: > 0 (default 1)
     rs:: step between rings in rotational search: >0 (default 1)
@@ -54,7 +54,7 @@ Since VIPER makes use of group of processors working together, it is important f
     pwreference:: text file with a reference power spectrum: (default none)
 
 == Output ==
-    directory:: output directory name: into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results)
+    directory:: output directory name: into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results) (default required string)
 
 
 = Description =
