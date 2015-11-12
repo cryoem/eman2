@@ -13218,7 +13218,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 	if(myid == 0):
 		if(listfile):
 			from utilities import read_text_file
-			pid_list = map(int, read_text_file(listfile, 0))
+			pid_list = read_text_file(listfile, 0)
 		elif(group > -1):
 			tmp_list = EMUtil.get_all_attributes(prj_stack, 'group')
 			pid_list = []
@@ -13313,9 +13313,11 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
 	from utilities import model_blank, get_im
 	from reconstruction import recons3d_4nnw_MPI
-	prevol = None#get_im("refvol.hdf")
+	bckgnoise = get_im("bkgnoise.hdf")#model_blank(1000,1,1,1.0)
 	print  sym,finfo,npad
-	if CTF: vol = recons3d_4nnw_MPI(myid, prjlist, prevol, sym, finfo, npad)
+	#recons3d_4nnw_MPI(myid, prjlist, bckgnoise, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0):
+
+	if CTF: vol = recons3d_4nnw_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad)
 	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):

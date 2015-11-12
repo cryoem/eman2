@@ -1828,7 +1828,6 @@ void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Tr
 }
 
 //  Helper functions for method nn4_ctfw
-// void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* bckgnoise, const Transform& tf, float weight) {
 void EMData::onelinenn_ctfw(int j, int n, int n2,
 		          EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight) {
 //std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
@@ -1995,7 +1994,6 @@ void EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 	EXITFUNC;
 }
 
-// void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* bckgnoise, const Transform& tf, float weight ) {
 void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* bckgnoise, const Transform& tf, float weight ) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
@@ -2004,7 +2002,8 @@ void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* bckgnoise
 	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
-	//bckgnoise->set_array_offsets(0,1);
+
+	bckgnoise->set_array_offsets(0,1);
 
     // Ctf* ctf = myfft->get_attr("ctf");
     // ctf_store::init( ny, ctf );
@@ -2014,7 +2013,6 @@ void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* bckgnoise
 	ctf2d2->set_array_offsets(0,1);
 
 	// loop over frequencies in y
-	// for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, bckgnoise, tf, weight);
 	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, ctf2d2, bckgnoise, tf, weight);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);

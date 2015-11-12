@@ -3705,10 +3705,10 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 		}
 
 		for (int i = 0; i < size; ++i) ctf2d_ptr[i] *= ctf2d_ptr[i];     // Square 2D CTF
-		
+
 		EMData* bckgnoise;
 		bckgnoise = slice->get_attr("bckgnoise");
-		
+
 		insert_padfft_slice_weighted(padfft, ctf2d, bckgnoise, t, weight);
 
 		checked_delete( ctf2d );  
