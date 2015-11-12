@@ -231,23 +231,23 @@ def main():
 				relion_defocus_angle = float(tokens_line[relion_dict['_rlnDefocusAngle'][idx_col] - 1])
 				
 				sparx_ctf['defocus']     = (relion_defocusU + relion_defocusV) / 20000   # convert format from RELION to SPARX
-				sparx_ctf['astig_amp']   = (relion_defocusU - relion_defocusV) / 20000   # convert format from RELION to SPARX
+				sparx_ctf['astig_amp']   = (-relion_defocusU + relion_defocusV) / 10000   # convert format from RELION to SPARX
 				sparx_ctf['astig_angle'] = 45.0 - relion_defocus_angle # convert format from RELION to SPARX
 				while sparx_ctf['astig_angle']  >= 180:
 					sparx_ctf['astig_angle'] -= 180
 				while sparx_ctf['astig_angle'] < 0:
 					sparx_ctf['astig_angle'] += 180
-				
+
 				sparx_ctf['cs'] = float(tokens_line[relion_dict['_rlnSphericalAberration'][idx_col] - 1])
-				
+
 				relion_det_pix_size = float(tokens_line[relion_dict['_rlnDetectorPixelSize'][idx_col] - 1])
 				relion_mag = float(tokens_line[relion_dict['_rlnMagnification'][idx_col] - 1])
 				sparx_ctf['apix'] = 10000 * relion_det_pix_size / relion_mag # convert um to A
-								
+		
 				relion_amp_contrast = float(tokens_line[relion_dict['_rlnAmplitudeContrast'][idx_col] - 1])
 				sparx_ctf['amp_contrast'] = 100 * relion_amp_contrast # convert to %
 				
-				sparx_ctf['bfactor'] = 0 # RELION does not use B-Factor, so set it zero always
+				sparx_ctf['bfactor'] = 0.0 # RELION does not use B-Factor, so set it zero always
 				
 				# Write to file	
 				file_sparx_stack_ctf.write('%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f \n' % (sparx_ctf['defocus'], sparx_ctf['cs'], sparx_ctf['acc_vol'], sparx_ctf['apix'], sparx_ctf['bfactor'], sparx_ctf['amp_contrast'], sparx_ctf['astig_amp'], sparx_ctf['astig_angle']))
