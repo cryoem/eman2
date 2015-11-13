@@ -589,6 +589,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 		r = Reconstructors.get( "nn4_ctf_rect", params )
 	r.setup()
 
+	from utilities import get_im, read_text_file
 	bckgdata = [get_im("tsd.hdf"),read_text_file("data_stamp.txt")]
 	
 	nnx = bckgdata[0].get_xsize()
