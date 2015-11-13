@@ -4774,7 +4774,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 
 
 	pixer = [0.0]*nima
-	historyofchanges = [0.0, 0.5, 1.0]
+	#historyofchanges = [0.0, 0.5, 1.0]
 	#par_r = [[] for im in list_of_particles ]
 	cs = [0.0]*3
 	total_iter = 0
@@ -4847,6 +4847,8 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
 			else:  list_of_reference_angles = [[1.0,1.0]]
 			for im in xrange(nima):
+				#  Insert high-pass filtration of data[im]
+				###tempdata = Util.window(pad(filt_table(data[im],bckgnoise), mx, mx,1,0.0), nx, nx)
 				if(nsoft == 0):
 					if(an[N_step] == -1):
 						#  In zoom option each projection goes through shift zoom alignment
@@ -4861,15 +4863,19 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 									xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo = finfo, sym=sym)
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft == 1):
+					###tempdata.set_attr("previousmax", data[im].get_attr("previousmax"))
 					peak, pixer[im], number_of_checked_refs, iref = \
 						shc(data[im], refrings, list_of_reference_angles, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo = finfo)
 					if(pixer[im] == 0.0):  par_r[0] += 1
+					###data[im].set_attr("previousmax", tempdata.get_attr("previousmax"))
 				elif(nsoft > 1):
 					#  This is not functional
 					peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, \
 												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym, finfo = finfo)
 					par_r[number_of_peaks] += 1
 					#number_of_checked_refs += checked_refs
+				###data[im].set_attr("xform.projection", tempdata.get_attr("xform.projection"))
+			###del tempdata
 			if(an[N_step] > 0):  del list_of_reference_angles
 			#=========================================================================
 			mpi_barrier(mpi_comm)
@@ -4899,16 +4905,16 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 						terminate = 1
 						log.add("...............")
 						log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images did not find better orientations"%saturatecrit)
+				"""  Have to think about it PAP
 				if( terminate == 0 ):
 					historyofchanges.append(changes)
 					historyofchanges = historyofchanges[:3]
 					historyofchanges.sort()
-					"""  Have to think about it PAP
 					if( (historyofchanges[-1]-historyofchanges[0])/2/(historyofchanges[-1]+historyofchanges[0]) <0.05 ):
 						terminate = 1
 						log.add("...............")
 						log.add(">>>>>>>>>>>>>>>   Will terminate as orientations do not improve anymore")
-					"""
+				"""
 
 				lhist = 20
 				region, histo = hist_list(all_pixer, lhist)
@@ -5362,7 +5368,6 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 					finfo.flush()
 
 				#  Do the 3D
-				#vol = do_volume_mrk01(dataim, Tracker, iteration, mpi_comm)
 				ref_data = [dataim, Tracker, iteration, mpi_comm]
 				user_func = Tracker["constants"] ["user_func"]
 				vol = user_func(ref_data)
@@ -5404,6 +5409,8 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 						previous_defocus = ctf_params.defocus
 						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
+				#  Insert high-pass filtration of data[im]
+				###data[2] = Util.window(pad(filt_table(dataimn[im],bckgnoise), mx, mx,1,0.0), nx, nx)
 				data[2] = dataim[imn]
 				if ts > 0.0:
 					refi = dataim[imn].FourInterpol(nx*2, nx*2, 1, True)

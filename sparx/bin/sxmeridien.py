@@ -661,6 +661,23 @@ def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
 	return h1,h2,h3,u1,u2,u3
 	"""
 
+def getalldata(stack, params, myid, nproc):
+	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
+	else:           ndata = 0
+	ndata = bcast_number_to_all(ndata)
+	if( ndata < nproc):
+		if(myid<ndata):
+			image_start = myid
+			image_end   = myid+1
+		else:
+			image_start = 0
+			image_end   = 1
+	else:
+		image_start, image_end = MPI_start_end(ndata, nproc, myid)
+	data = EMData.read_images(stack, range(image_start, image_end))
+	return data, params[image_start:image_end]
+
+
 def build_defgroups(fi):
 	a = get_im(fi)
 
@@ -675,7 +692,6 @@ def build_defgroups(fi):
 		except:
 			ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
 
-
 	sd = set(stmp)
 	sd = [q for q in sd]
 	sd.sort()
@@ -687,19 +703,37 @@ def build_defgroups(fi):
 		ocup[i] = stmp.count(sd[i])
 	return  sd, ocup
 
-def compute_sigma(sd, ocup, projdata, partids, partstack, Tracker, myid, main_node, nproc):
-	# input stack of particles comes in 
-	projdata = getalldata(stack, myid, nproc)
-	nx = Tracker["constants"]["nnxo"]
+def compute_sigma(partstack, params, Tracker, myid, main_node, nproc):
+	# input stack of particles and text file with all params
+
+	if(myid == main_node):
+		sd,ocup = build_defgroups(fi)
+		nn = len(sd)
+	else: nn = 0
+
+	nn = bcast_number_to_all(nn, main_node)
+
+	if(myid != main_node):
+		sd = [""]*nn
+		ocup = [0]*nn
+
+	for i in xrange(nn):
+		sd[i] = send_string_to_all(sd[i], main_node)
+
+	ocup = bcast_list_to_all(ocup, myid, main_node)
+
+
+	projdata, params = getalldata(partstack, params, myid, nproc)
+	nx = 384  # Tracker["constants"]["nnxo"]
 	mx = 2*nx
 	nv = rops(pad(projdata[0],mx,mx,1,0.0)).get_xsize()
 	tsd = model_blank(nv + nv//2,len(sd))
 	tocp = model_blank(len(sd))
 
-	invg = model_gauss(Tracker["constants"]["radius"],nx,nx)
+	invg = model_gauss(120,nx,nx)  #  Tracker["constants"]["radius"]
 	invg /= invg[nx//2,nx//2]
 	invg = model_blank(nx,nx,1,1.0) - invg
-	
+	mask = model_circle(120,nx,nx)  #  Tracker["constants"]["radius"]
 
 	for i in xrange(len(projdata)):
 		try:
@@ -707,21 +741,22 @@ def compute_sigma(sd, ocup, projdata, partids, partstack, Tracker, myid, main_no
 		except:
 			stmp = projdata[i].get_attr("ctf")
 			stmp = round(stmp.defocus,4)
-		indx = sd.index(stemp)
-		st = Util.infomask(projdata[i], None, True)
-		sig = rops(pad((projdata[i] - st[0])*invg, mx,mx,1,0.0))
+		indx = sd.index(stmp)
+		st = Util.infomask(projdata[i], mask, True)
+		sig = rops(pad(((cyclic_shift(projdata[i], int(round(params[i][-2])), int(round(params[i][-1])) ) - st[0])/st[1])*invg, mx,mx,1,0.0))
 		for k in xrange(nv):
 			tsd.set_value_at(k,indx,tsd.get_value_at(k,indx)+sig.get_value_at(k))
 		tocp[indx] += 1
 
 	reduce_EMData_to_root(tsd, myid, main_node)
-	tocp = mpi_reduce(tocp, len(tocp), MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	reduce_EMData_to_root(tocp, myid, main_node)
 	if( myid == main_node):
-		for i in xrange(len(tocp)):
+		for i in xrange(len(sd)):
 			for k in xrange(nv):
 				tsd.set_value_at(k,i,1.0/(tsd.get_value_at(k,i)/tocp[i]))  # Already inverted
 	bcast_EMData_to_all(tsd, myid, source_node = 0)
-	return tsd
+	return tsd, sd, [int(tocp[i]) for i in xrange(len(sd))]
+
 
 
 def subdict(d,u):
@@ -1235,24 +1270,8 @@ def compute_volsmeared(stack, partids, partstack, Tracker, myid, main_node, npro
 	return round(lowpass,4), round(falloff,4), icurrentres, ares
 	"""
 
-def getalldata(stack, myid, nproc):
-	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
-	else:           ndata = 0
-	ndata = bcast_number_to_all(ndata)
-	if( ndata < nproc):
-		if(myid<ndata):
-			image_start = myid
-			image_end   = myid+1
-		else:
-			image_start = 0
-			image_end   = 1
-	else:
-		image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	data = EMData.read_images(stack, range(image_start, image_end))
-	return data
-
 """
-# move into utilities 09/23/2015
+# moved into utilities 09/23/2015
 def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.

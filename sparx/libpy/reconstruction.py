@@ -520,7 +520,8 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
 			stack: name of the stack file containing projection data, projections have to be squares
-			list_proj: list of projections to be included in the reconstruction or image iterator
+			prjlist: list of projections to be included in the reconstruction or image iterator
+			bckgdata = [get_im("tsd.hdf"),read_text_file("data_stamp.txt")]
 			snr: Signal-to-Noise Ratio of the data 
 			sign: sign of the CTF 
 			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
@@ -589,18 +590,17 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 		r = Reconstructors.get( "nn4_ctf_rect", params )
 	r.setup()
 
-	from utilities import get_im, read_text_file
-	bckgdata = [get_im("tsd.hdf"),read_text_file("data_stamp.txt")]
+	#from utilities import model_blank, get_im, read_text_file
+	#bckgdata = [get_im("tsd.hdf"),read_text_file("data_stamp.txt")]
 	
 	nnx = bckgdata[0].get_xsize()
 	nny = bckgdata[0].get_ysize()
 	bckgnoise = []
 	for i in xrange(nny):
 		prj = model_blank(nnx)
-		for k in xrange(nnx):  prj[k] = bckgdata[k,i]
+		for k in xrange(nnx):  prj[k] = bckgdata[0].get_value_at(k,i)
 		bckgnoise.append(prj)
-	
-	#bckgnoise = bckgdata[0]
+
 	datastamp = bckgdata[1]
 	if not (info is None): nimg = 0
 	while prjlist.goToNext():
