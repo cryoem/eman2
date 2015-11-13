@@ -22,6 +22,13 @@ class SXcmd_token:
 		self.default = ""			# Default value
 		self.type = ""		    	# Type of value
 		self.is_in_io = False		# To check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
+
+class SXkeyword_map:
+	def __init__(self, priority, cmd_token_type):
+		assert priority < 100, "Priority should be lower than 100"
+		# class variables
+		self.priority = priority              # Priority of this keyword. Highest priority is 0. The type of higher priority will be used to avoid the conflict among keywords
+		self.cmd_token_type = cmd_token_type  # Command token value type 
 		
 def main():
 		# The following should be data members of the popupwindow
@@ -44,6 +51,41 @@ def main():
 			
 		file_wiki = open(file_path_wiki,'r')
 		
+		# Define dictionary of keywords:
+		# The dictionary maps command token to special data types
+		# If a command token extracted from 'usage in command line' contains the keyword defined here
+		# the associated special data type will be assigned to this command token.
+		# 
+		# - output      : Line edit box and output info button
+		#                 GUI also checks the existence of output directory/file before execution of the sx*.py
+		#                 GUI abort the execution if the directory/file exists already
+		# - directory   : Line edit box and open directory button
+		# - image       : Line edit box and open file buttons for .hdf and .bdb 
+		# - parameters  : Line edit box and open file button for all file types 
+		# - pdb         : Line edit box and open file button for .pdb 
+		# - function    : Two line edit boxes (function name & file path of the container script)
+		#                 and open file button for .py
+		# 
+		keyword_dict = {}
+		# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
+		keyword_dict["use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
+		# Use priority 1 for output
+		keyword_dict["output"]                      = SXkeyword_map(1, "output")     # output.hdf, output_directory, outputfile
+		keyword_dict["outdir"]                      = SXkeyword_map(1, "output")     # outdir1, outdir2, outdir, --outdir=output_directory
+		keyword_dict["locresvolume"]                = SXkeyword_map(1, "output")     # locresvolume (this contained keyword "volume" also... This is another reason why priority is introduced...)
+		keyword_dict["directory"]                   = SXkeyword_map(1, "output")     # directory
+		# Use priority 2 for others
+		keyword_dict["indir"]                       = SXkeyword_map(2, "directory")  # --indir=input_directory
+		keyword_dict["coords_dir"]                  = SXkeyword_map(2, "directory")  # --coords_dir=coords_directory
+		keyword_dict["stack"]                       = SXkeyword_map(2, "image")      # stack, stack_file, prj_stack
+		keyword_dict["volume"]                      = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, inputvolume
+		keyword_dict["mask"]                        = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask
+		keyword_dict["focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
+		keyword_dict["importctf"]                   = SXkeyword_map(2, "paramters")  # --importctf=ctf_file
+		keyword_dict["pwreference"]                 = SXkeyword_map(2, "paramters")  # --pwreference=pwreference_file
+		keyword_dict["pdb"]                         = SXkeyword_map(2, "pdb")        # input.pdb
+		keyword_dict["function"]                    = SXkeyword_map(2, "function")   # --function=user_function
+				
 		# Define list of target sections for GUI and set current
 		section_lists = []		
 		section_lists.append("= Name ="); section_name = len(section_lists) - 1; 
@@ -83,6 +125,7 @@ def main():
 				if line_wiki[0] == "=": # Assuming the section always starts with "="
 					# Reached the next section (might be not target)
 					current_section += 1 # Update current target section
+					group = group_main   # reset group (subsection) for '== Input ==' and '== Output ==' sections
 					if current_section == len(section_lists):
 						# All target sections are handled
 						current_state = state_done
@@ -119,6 +162,16 @@ def main():
 								key = usage_token.split("=")[0] # Remove characters after '=' if token contains it (i.e. some options)
 								cmd_token.key_base = key.strip("-") # Get key base name by removing prefix ('--' or '-' for option)
 								cmd_token.key_prefix = key[0:len(key) - len(cmd_token.key_base)]
+								# Try to set the special type base on the keyword dictionary
+								best_keyword_map = SXkeyword_map(99, "")
+								for keyword in keyword_dict.keys():
+									if cmd_token.key_base.find(keyword) != -1:
+										# command token contains keyword
+										keyword_map = keyword_dict[keyword]
+										if best_keyword_map.priority > keyword_map.priority:
+											# Update keyword_map to one with a higher priority
+											best_keyword_map = keyword_map
+								cmd_token.type = best_keyword_map.cmd_token_type # If command token does not contains any keywords, its type stays with ""
 								# Register this command token to the list (ordered) and dictionary (unordered)		
 								cmd_token_list.append(cmd_token)
 								cmd_token_dict[cmd_token.key_base] = cmd_token
@@ -176,25 +229,31 @@ def main():
 								assert len(default_tokens) == 2, "Wiki Format Error: Default setting of this line (%s) is invalid. When the value is required, the format should be (Default required DATAT_TYPE)." % line_wiki
 								cmd_token.is_required = True
 								cmd_token.default = ""
-								 # Extract the data type
-								cmd_token.type = default_tokens[1]
+								if not cmd_token.type:
+									# Type is still empty, meaning no special type is assigned
+									# Extract the data type
+									cmd_token.type = default_tokens[1]
 							else: 
 								assert len(default_tokens) == 1, "Wiki Format Error: Default setting of this line (%s) is invalid. The format should be (Default VALUE)." % line_wiki		
 								cmd_token.is_required = False
 								cmd_token.default = default_tokens[0]
-								# Find out the data type from default value
-								try: 
-									int(cmd_token.default)
-									cmd_token.type = "int"
-								except:
-									try:  	 
-										float(cmd_token.default)
-										cmd_token.type = "float"
-									except:  
-										if cmd_token.default == "True" or cmd_token.default == "False":
-											cmd_token.type = "bool"
-										else:
-											cmd_token.type = "string"
+								
+								if not cmd_token.type:
+									# Type is still empty, meaning no special type is assigned
+									# Find out the data type from default value
+									try: 
+										int(cmd_token.default)
+										cmd_token.type = "int"
+									except:
+										try:  	 
+											float(cmd_token.default)
+											cmd_token.type = "float"
+										except:  
+											if cmd_token.default == "True" or cmd_token.default == "False":
+												cmd_token.type = "bool"
+											else:
+												cmd_token.type = "string"
+								# else: keep the special type
 							# Ignore the rest of line ...
 					else:
 						assert False, "Logical Error: This section is invalid. Did you assigne an invalid section?"
