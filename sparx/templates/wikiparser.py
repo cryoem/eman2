@@ -1,0 +1,231 @@
+#!/usr/bin/env python
+# 
+#
+# Author: Toshio Moriya 12/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
+# ========================================================================================
+
+# from EMAN2 import *
+# from sparx import *
+from sys import  *
+import os
+import sys
+
+class SXcmd_token:
+	def __init__(self):
+		# class variables
+		self.key_base = ""		    # key base name of command token (argument or option) in command line
+		self.key_prefix = ""		# key prefix of of command token. None for argument, '--' or '-' for option
+		self.label = ""				# User friendly name of argument or option
+		self.help = ""		    	# Help info
+		self.group = ""				# Tab group: main or advanced
+		self.is_required = False	# Required argument or options. No default value are available 
+		self.default = ""			# Default value
+		self.type = ""		    	# Type of value
+		self.is_in_io = False		# To check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
+		
+def main():
+		# The following should be data members of the popupwindow
+		sxscript = ""
+		short_info = ""
+		mpi_support = False
+		mpi_add_flag = False # NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts 
+		cmd_token_list = [] # The list of command tokens. Need this to keep the order of command tokens
+		cmd_token_dict = {} # The dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
+		
+		# Open wiki document file 
+		# This should be passed as an arguments
+		file_path_wiki = "viper.txt"
+		
+		# NOTE: 2015/11/11 Toshio Moriya
+		# This should be exception. Need to decide if this should be skipped or exit system.
+		if os.path.exists(file_path_wiki) == False:
+			print "ERRROR: Wiki document is not found"
+			sys.exit(-1)
+			
+		file_wiki = open(file_path_wiki,'r')
+		
+		# Define list of target sections for GUI and set current
+		section_lists = []		
+		section_lists.append("= Name ="); section_name = len(section_lists) - 1; 
+		section_lists.append("= Usage ="); section_usage = len(section_lists) - 1; 
+		section_lists.append("=== Typical usage ==="); section_typical = len(section_lists) - 1; 
+		section_lists.append("== Input =="); section_input = len(section_lists) - 1; 
+		section_lists.append("== Output =="); section_output = len(section_lists) - 1; 
+		current_section = section_name
+		
+		# Define list of subsections of input section and set current		
+		group_main = "main"
+		group_advanced = "advanced"
+		group = group_main
+				
+		# Define States and set current
+		state_searching  = 0
+		state_processing = 1
+		state_done = 1
+		current_state = state_searching
+				
+		# Loop through all lines in the wiki document file
+		for line_wiki in file_wiki:
+			# make sure spaces & new line are not included at head and tail of this line
+			line_wiki = line_wiki.strip()  
+
+			if not line_wiki:
+				# This is empty line. Always ignore it regardless of state
+				continue
+				
+			if current_state == state_searching:
+				if line_wiki.find(section_lists[current_section]) != -1:
+					# Found the current target section
+					current_state = state_processing
+				# else: just ignore this line 
+			else:
+				assert current_state == state_processing, "Logical Error: This condition should not happen! State setting must be incorrect."
+				if line_wiki[0] == "=": # Assuming the section always starts with "="
+					# Reached the next section (might be not target)
+					current_section += 1 # Update current target section
+					if current_section == len(section_lists):
+						# All target sections are handled
+						current_state = state_done
+						break
+						
+					if line_wiki.find(section_lists[current_section]) != -1:
+						# Found the current target section
+						assert current_section < len(section_lists), "Logical Error: This condition should not happen! Section setting must be incorrect."
+						current_state = state_processing
+					else:
+						# This section was not the current target. Go back to searching state
+						current_state = state_searching											
+				else:
+					# We are in a target section
+					if current_section == section_name:
+						# Extract the name of sxscript
+						target_operator = "-"
+						item_tail = line_wiki.find(target_operator)
+						assert item_tail != -1, "Wiki Format Error: '= Name =' section should contain only one valid line, and the line should starts from 'sx* - ': %s" % line_wiki
+						sxscript = line_wiki[0:item_tail].strip()
+						# Extract the short info about this sxscript (can be empty)
+						short_info = line_wiki[item_tail + len(target_operator):].strip()							
+					elif current_section == section_usage:
+						# Extract 'usage in command line' to identify each command token is either an argument (no-prefix) or option ('--' prefix)
+						# This information is also used to check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
+						if line_wiki[0:len("sx")] == "sx":
+							usage_token_list = line_wiki.split()
+							assert usage_token_list[0] == sxscript + ".py", "Wiki Format Error: First token should be script name with .py (sx*.py)"
+							# Register arguments and options
+							for usage_token in usage_token_list[1:]:
+								# Allocate memory for new command token
+								cmd_token = SXcmd_token()
+								# Extract key of command token. 
+								key = usage_token.split("=")[0] # Remove characters after '=' if token contains it (i.e. some options)
+								cmd_token.key_base = key.strip("-") # Get key base name by removing prefix ('--' or '-' for option)
+								cmd_token.key_prefix = key[0:len(key) - len(cmd_token.key_base)]
+								# Register this command token to the list (ordered) and dictionary (unordered)		
+								cmd_token_list.append(cmd_token)
+								cmd_token_dict[cmd_token.key_base] = cmd_token
+							# Check if --MPI is used in this script
+							# NOTE: 2015/11/12 Toshio Moriya
+							# The following can be removed when --MPI flag is removed from all sx*.py scripts 
+							if "--MPI" in cmd_token_dict.keys():
+								mpi_support = True
+								mpi_add_flag = True
+							# else: Do nothing.
+						# else: Ignore this line (must be comments).
+					elif current_section == section_typical:
+						target_operator = "mpirun"
+						if mpi_support == False and line_wiki.find(target_operator) != 1:
+							mpi_support = True
+						# else: Ignore this line
+					elif current_section == section_input or current_section == section_output:
+						if line_wiki[0] == "*" and line_wiki.find("optional"):
+							# Reached the option subsection (argument subsection is done)
+							group = group_advanced
+						else:
+							line_buffer = line_wiki
+							# Extract key base name of command token
+							target_operator = "::"
+							item_tail = line_buffer.find(target_operator)
+							if item_tail == -1:
+								print "This line (%s) is missing key base name (maybe comment line?). Ignoring this line..." % 	line_wiki							
+								continue
+							key_base = line_buffer[0:item_tail]
+							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line											
+							# check consistency between 'usage in command line' and this
+							assert key_base in cmd_token_dict.keys(), "Wiki Format Error: Key base (%s) is missing from 'usage in command line' in '= Usage ='." % key_base
+							# Get the reference to the command token object associated with this key base name
+							cmd_token = cmd_token_dict[key_base]
+							assert cmd_token.key_base == key_base, "Logical Error: Registered command token with wrong key base name into the dictionary."
+							cmd_token.is_in_io = True # Set flag to tell this command token is find in input or output section
+							cmd_token.group = group  # Set group of command token according to the current subsection
+							# Extract label of command token
+							target_operator = ":"
+							item_tail = line_buffer.find(target_operator)
+							assert item_tail != -1, "Wiki Format Error: This line (%s) is missing label. Please check the format in Wiki document." % line_wiki									
+							cmd_token.label = line_buffer[0:item_tail]
+							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line	
+							# Extract help of command token before default value
+							target_operator = "(default"
+							item_tail = line_buffer.find(target_operator)
+							assert item_tail != -1, "Wiki Format Error: This line (%s) is missing default setting. Please check the format in Wiki document." % line_wiki									
+							cmd_token.help = line_buffer[0:item_tail]
+							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line	
+							# Extract default value of command token
+							target_operator = ")"
+							item_tail = line_buffer.find(target_operator)
+							default_tokens = line_buffer[0:item_tail].split()
+							if default_tokens[0] == "required":
+								assert len(default_tokens) == 2, "Wiki Format Error: Default setting of this line (%s) is invalid. When the value is required, the format should be (Default required DATAT_TYPE)." % line_wiki
+								cmd_token.is_required = True
+								cmd_token.default = ""
+								 # Extract the data type
+								cmd_token.type = default_tokens[1]
+							else: 
+								assert len(default_tokens) == 1, "Wiki Format Error: Default setting of this line (%s) is invalid. The format should be (Default VALUE)." % line_wiki		
+								cmd_token.is_required = False
+								cmd_token.default = default_tokens[0]
+								# Find out the data type from default value
+								try: 
+									int(cmd_token.default)
+									cmd_token.type = "int"
+								except:
+									try:  	 
+										float(cmd_token.default)
+										cmd_token.type = "float"
+									except:  
+										if cmd_token.default == "True" or cmd_token.default == "False":
+											cmd_token.type = "bool"
+										else:
+											cmd_token.type = "string"
+							# Ignore the rest of line ...
+					else:
+						assert False, "Logical Error: This section is invalid. Did you assigne an invalid section?"
+					
+		assert current_state == state_done, "Wiki Format Error: parser could not extract all information necessary. Please check if the Wiki format has all required sections."
+
+		# Make sure there are no extra arguments or options in 'usage in command line' of '= Usage ='
+		for cmd_token in cmd_token_list:
+			assert cmd_token.is_in_io == True, "Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '= Usage ='." % cmd_token.key_base
+						
+		file_wiki.close()
+		
+		print "Succeed to parsing Wiki document (%s)" % file_path_wiki
+		
+		
+		# For DEBUG
+		print "><><>< DEBUG OUTPUT ><><><"
+		print "------"
+		print "GLOBAL"
+		print "------"
+		print "sxscript           : %s" % sxscript 
+		print "short_info         : %s" % short_info 
+		print "mpi_support        : %s" % mpi_support 
+		print "mpi_add_flag       : %s" % mpi_add_flag 
+		print "len(cmd_token_list): %d" % len(cmd_token_list)
+		print "len(cmd_token_dict): %d" % len(cmd_token_dict)
+		print "--------------"
+		print "cmd_token_list"
+		print "--------------"
+		for cmd_token in cmd_token_list:
+			print "%s%s (group=%s, required=%s, default=%s, type=%s) <%s>" % (cmd_token.key_prefix, cmd_token.key_base, cmd_token.group, cmd_token.is_required, cmd_token.default, cmd_token.type, cmd_token.label),cmd_token.help
+		
+if __name__ == '__main__':
+	main()
