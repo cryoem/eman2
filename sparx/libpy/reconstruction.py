@@ -515,7 +515,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	return fftvol
 '''
 
-def recons3d_4nnw_MPI(myid, prjlist, bckgnoise, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0):
+def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -589,15 +589,38 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgnoise, snr = 1.0, sign=1, symmetry="c1"
 		r = Reconstructors.get( "nn4_ctf_rect", params )
 	r.setup()
 
-	#if not (info is None):
+	bckgdata = [get_im("tsd.hdf"),read_text_file("data_stamp.txt")]
+	
+	nnx = bckgdata[0].get_xsize()
+	nny = bckgdata[0].get_ysize()
+	bckgnoise = []
+	for i in xrange(nny):
+		prj = model_blank(nnx)
+		for k in xrange(nnx):  prj[k] = bckgdata[k,i]
+		bckgnoise.append(prj)
+	
+	#bckgnoise = bckgdata[0]
+	datastamp = bckgdata[1]
 	if not (info is None): nimg = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
-		#ml = prj.get_attr('groupindex')#int(prj.get_attr('data_path')[4:8])
+		try:
+			stmp = prj.get_attr("ptcl_source_image")
+		except:
+			try:
+				stmp = a.get_attr("ctf")
+				stmp = round(stmp.defocus,4)
+			except:
+				ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1, myid)
+		try:
+			indx = datastamp.index(stmp)
+		except:
+			ERROR("Problem with indexing ptcl_source_image.","meridien",1, myid)
+
 		if dopad:
 			prj = pad(prj, imgsize, imgsize, 1, "circumference")
 		#if params:
-		prj.set_attr("bckgnoise", bckgnoise)#[bckgnoise[1].index(ml)])
+		prj.set_attr("bckgnoise", bckgnoise[indx])
 		insert_slices(r, prj)
 		if not (info is None):
 			nimg += 1

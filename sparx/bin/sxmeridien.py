@@ -688,12 +688,12 @@ def build_defgroups(fi):
 	return  sd, ocup
 
 def compute_sigma(sd, ocup, projdata, partids, partstack, Tracker, myid, main_node, nproc):
-	# input stack of particles comes in preshrank
-	#  input stack contains ALL particles
+	# input stack of particles comes in 
+	projdata = getalldata(stack, myid, nproc)
 	nx = Tracker["constants"]["nnxo"]
 	mx = 2*nx
 	nv = rops(pad(projdata[0],mx,mx,1,0.0)).get_xsize()
-	tsd = model_blank(nv,len(sd))
+	tsd = model_blank(nv + nv//2,len(sd))
 	tocp = model_blank(len(sd))
 
 	invg = model_gauss(Tracker["constants"]["radius"],nx,nx)
@@ -713,13 +713,13 @@ def compute_sigma(sd, ocup, projdata, partids, partstack, Tracker, myid, main_no
 		for k in xrange(nv):
 			tsd.set_value_at(k,indx,tsd.get_value_at(k,indx)+sig.get_value_at(k))
 		tocp[indx] += 1
-	
+
 	reduce_EMData_to_root(tsd, myid, main_node)
 	tocp = mpi_reduce(tocp, len(tocp), MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	if( myid == main_node):
 		for i in xrange(len(tocp)):
 			for k in xrange(nv):
-				tsd.set_value_at(k,i,tsd.get_value_at(k,i)/tocp[i])
+				tsd.set_value_at(k,i,1.0/(tsd.get_value_at(k,i)/tocp[i]))  # Already inverted
 	bcast_EMData_to_all(tsd, myid, source_node = 0)
 	return tsd
 
@@ -1238,14 +1238,14 @@ def compute_volsmeared(stack, partids, partstack, Tracker, myid, main_node, npro
 def getalldata(stack, myid, nproc):
 	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
 	else:           ndata = 0
-	ndata = bcast_number_to_all(ndata)	
+	ndata = bcast_number_to_all(ndata)
 	if( ndata < nproc):
 		if(myid<ndata):
 			image_start = myid
 			image_end   = myid+1
 		else:
 			image_start = 0
-			image_end   = 1			
+			image_end   = 1
 	else:
 		image_start, image_end = MPI_start_end(ndata, nproc, myid)
 	data = EMData.read_images(stack, range(image_start, image_end))

@@ -2698,14 +2698,6 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 			mpi_send(mem, len(mem), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 	return gathered_data
 	
-
-def bcast_string_to_all(str_to_send, source_node = 0):
-	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD
-	str_tmp = ""
-	str_TMP = mpi_bcast(str_to_send, len(str_to_send), MPI_INT, source_node, MPI_COMM_WORLD)
-	for i in xrange(len(str_to_send)):  str_tmp += chr(str_TMP[i])
-	return str_tmp
-	
 def send_string_to_all(str_to_send, source_node = 0):
 	from mpi import MPI_COMM_WORLD, MPI_INT, MPI_CHAR, mpi_bcast, mpi_comm_rank 
 
@@ -2715,8 +2707,6 @@ def send_string_to_all(str_to_send, source_node = 0):
 	str_to_send = mpi_bcast(str_to_send,str_to_send_len,MPI_CHAR,source_node,MPI_COMM_WORLD)
 	return "".join(str_to_send)
 
-	
-	
 def bcast_number_to_all(number_to_send, source_node = 0):
 	"""
 		number_to_send has to be pre-defined in each node

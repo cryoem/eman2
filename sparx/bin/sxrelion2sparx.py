@@ -167,11 +167,8 @@ def main():
 	i_relion_item_col = 0   # Counter for number of relion items/columns
 	i_relion_particle = 0   # Counter for number of relion particles/entries, starting from 0
 	i_sprax_particle = 0    # Counter for number of sparx particles/entries, starting from 0
-	
-	# Initialise loop storages
-	if is_enable_create_stack: 
-		img_particle = EMData()
-	
+
+
 	sparx_cter_dict={}           # For CTF parameters in cter format (one entry for each micrograph)
 	sparx_coordinates_dict = {}  # For Coordinate parameters
 	sparx_chunk_dict = {}
@@ -203,7 +200,7 @@ def main():
 			assert((is_found_section == True) & (is_found_loop == True))
 			tokens_line = str_line.split() # print tokens_line
 			n_tokens_line = len(tokens_line)
-					
+
 			# First, check item list and find the column number of each item
 			if str_line.find('_rln') != -1:
 				i_relion_item_col += 1
@@ -220,7 +217,7 @@ def main():
 			elif n_tokens_line == i_relion_item_col:
 				if i_relion_particle % 1000 == 0:
 					print '# Processing RELION entries from %6d to %6d ...' % (i_relion_particle, i_relion_particle + 1000 - 1)
-				
+
 				##### Store CTF related parameters #####
 				# Parse this entry line and covert the parameters from RELION to SPARX formats
 				sparx_ctf = {}
@@ -269,12 +266,12 @@ def main():
 				relion_coordinate_x = int(float(tokens_line[relion_dict['_rlnCoordinateX'][idx_col] - 1]))
 				relion_coordinate_y = int(float(tokens_line[relion_dict['_rlnCoordinateY'][idx_col] - 1]))
 				
-				# No conversion is necessary from relion to sparx foramts
+				# No conversion is necessary from relion to sparx formats
 				if micrograph_basename in sparx_coordinates_dict.keys():
 					sparx_coordinates_dict[micrograph_basename].append([relion_coordinate_x, relion_coordinate_y])
 				else:
 					sparx_coordinates_dict[micrograph_basename] = [[relion_coordinate_x, relion_coordinate_y]]
-				
+
 				
 				##### Store Projection related parameters #####
 				relion_tx = float(tokens_line[relion_dict['_rlnOriginX'][idx_col] - 1])
