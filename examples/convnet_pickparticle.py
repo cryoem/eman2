@@ -313,7 +313,7 @@ def box_particles(convnet,options):
 		#print pks
 		
 		box=[]
-		scale=float(shape)/float(newshp)
+		scale=(float(shape)/float(newshp))*options.shrink
 		for i in range(0,len(pks),3):
 			#print i//3,pks[i]
 			if pks[i]<options.boxptcl_minscore:
