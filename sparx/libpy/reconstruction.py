@@ -538,7 +538,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 	if type(prjlist) == types.ListType:
 		prjlist = iterImagesList(prjlist)
 	if not prjlist.goToNext():
-		ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
+		ERROR("empty input list","recons3d_4nnw_MPI",1)
 	imgsize = prjlist.image().get_xsize()
 	if prjlist.image().get_ysize() != imgsize:
 		imgsize = max(imgsize, prjlist.image().get_ysize())

@@ -1058,12 +1058,148 @@ def do_volume_mrk02(ref_data):
 	return vol
 
 
+def do_volume_mrk03(ref_data):
+	"""
+		data - projections (scattered between cpus) or the volume.  If volume, just do the volume processing
+		options - the same for all cpus
+		return - volume the same for all cpus
+	"""
+	from EMAN2          import Util
+	from mpi            import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+	from filter         import filt_table
+	from reconstruction import recons3d_4nn_MPI, recons3d_4nnw_MPI  #  recons3d_4nn_ctf_MPI
+	from utilities      import bcast_EMData_to_all, bcast_number_to_all, model_blank
+	from fundamentals import rops_table, fftip, fft
+	import types
+
+	# Retrieve the function specific input arguments from ref_data
+	data     = ref_data[0]
+	Tracker  = ref_data[1]
+	iter     = ref_data[2]
+	mpi_comm = ref_data[3]
+	
+	# # For DEBUG
+	# print "Type of data %s" % (type(data))
+	# print "Type of Tracker %s" % (type(Tracker))
+	# print "Type of iter %s" % (type(iter))
+	# print "Type of mpi_comm %s" % (type(mpi_comm))
+	
+	if(mpi_comm == None):  mpi_comm = MPI_COMM_WORLD
+	myid  = mpi_comm_rank(mpi_comm)
+	nproc = mpi_comm_size(mpi_comm)
+	
+	try:     local_filter = Tracker["local_filter"]
+	except:  local_filter = False
+	#=========================================================================
+	# volume reconstruction
+	if( type(data) == types.ListType ):
+		if Tracker["constants"]["CTF"]:
+			#vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
+			#		symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
+			vol = recons3d_4nnw_MPI(myid, data, Tracker["bckgdata"], Tracker["constants"]["snr"], \
+				symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
+		else:
+			vol = recons3d_4nn_MPI    (myid, data,\
+					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm)
+	else:
+		vol = data
+
+	if myid == 0:
+		from morphology import threshold
+		from filter     import filt_tanl, filt_btwl
+		from utilities  import model_circle, get_im
+		import types
+		nx = vol.get_xsize()
+		if(Tracker["constants"]["mask3D"] == None):
+			mask3D = model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
+		elif(Tracker["constants"]["mask3D"] == "auto"):
+			from utilities import adaptive_mask
+			mask3D = adaptive_mask(vol)
+		else:
+			if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
+			nxm = mask3D.get_xsize()
+			if( nx != nxm):
+				from fundamentals import rot_shift3D
+				mask3D = Util.window(rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
+				nxm = mask3D.get_xsize()
+				assert(nx == nxm)
+
+		stat = Util.infomask(vol, mask3D, False)
+		vol -= stat[0]
+		Util.mul_scalar(vol, 1.0/stat[1])
+		vol = threshold(vol)
+		Util.mul_img(vol, mask3D)
+		if not local_filter:
+			if( type(Tracker["lowpass"]) == types.ListType ):
+				vol = fft( filt_table( filt_table(vol, Tracker["lowpass"]), ro) )
+			else:
+				vol = fft( filt_table( filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"]), ro) )
+
+	if local_filter:
+		from morphology import binarize
+		if(myid == 0): nx = mask3D.get_xsize()
+		else:  nx = 0
+		nx = bcast_number_to_all(nx, source_node = 0)
+		#  only main processor needs the two input volumes
+		if(myid == 0):
+			mask = binarize(mask3D, 0.5)
+			locres = get_im(Tracker["local_filter"])
+			lx = locres.get_xsize()
+			if(lx != nx):
+				if(lx < nx):
+					from fundamentals import fdecimate, rot_shift3D
+					mask = Util.window(rot_shift3D(mask,scale=float(lx)/float(nx)),lx,lx,lx)
+					vol = fdecimate(vol, lx,lx,lx)
+				else:  ERROR("local filter cannot be larger than input volume","user function",1)
+			stat = Util.infomask(vol, mask, False)
+			vol -= stat[0]
+			Util.mul_scalar(vol, 1.0/stat[1])
+		else:
+			lx = 0
+			locres = model_blank(1,1,1)
+			vol = model_blank(1,1,1)
+		lx = bcast_number_to_all(lx, source_node = 0)
+		if( myid != 0 ):  mask = model_blank(lx,lx,lx)
+		bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
+		from filter import filterlocal
+		vol = filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
+
+		if myid == 0:
+			if(lx < nx):
+				from fundamentals import fpol
+				vol = fpol(vol, nx,nx,nx)
+			vol = threshold(vol)
+			Util.mul_img(vol, mask3D)
+			del mask3D
+			# vol.write_image('toto%03d.hdf'%iter)
+		else:
+			vol = model_blank(nx,nx,nx)
+	"""
+	else:
+		if myid == 0:
+			#from utilities import write_text_file
+			#write_text_file(rops_table(vol,1),"goo.txt")
+			stat = Util.infomask(vol, mask3D, False)
+			vol -= stat[0]
+			Util.mul_scalar(vol, 1.0/stat[1])
+			vol = threshold(vol)
+			Util.mul_img(vol, mask3D)
+			del mask3D
+			# vol.write_image('toto%03d.hdf'%iter)
+	"""
+	# broadcast volume
+	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	#=========================================================================
+	return vol
+
+
 # rewrote factory dict to provide a flexible interface for providing user functions dynamically.
 #    factory is a class that checks how it's called. static labels are rerouted to the original
 #    functions, new are are routed to build_user_function (provided below), to load from file
 #    and pathname settings....
 # Note: this is a workaround to provide backwards compatibility and to avoid rewriting all functions
-#    using user_functions. this can be removed when this is no longer necessary....
+#    using user_functions. this can be removed when it is no longer necessary....
 
 class factory_class:
 
@@ -1089,8 +1225,9 @@ class factory_class:
 		self.contents["ref_aliB_cone"]      = ref_aliB_cone
 		self.contents["ref_7grp"]           = ref_7grp
 		self.contents["steady"]             = steady
-		self.contents["dovolume"]           = dovolume	 
-		self.contents["do_volume_mrk02"]    = do_volume_mrk02	 
+		self.contents["dovolume"]           = dovolume
+		self.contents["do_volume_mrk02"]    = do_volume_mrk02
+		self.contents["do_volume_mrk03"]    = do_volume_mrk03
 		self.contents["constant"]           = constant	 
 
 	def __getitem__(self,index):

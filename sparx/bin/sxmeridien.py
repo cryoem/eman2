@@ -703,7 +703,7 @@ def build_defgroups(fi):
 		ocup[i] = stmp.count(sd[i])
 	return  sd, ocup
 
-def compute_sigma(partstack, params, Tracker, myid, main_node, nproc):
+def compute_sigma(partstack, paramsname, Tracker, myid, main_node, nproc):
 	# input stack of particles and text file with all params
 
 	if(myid == main_node):
@@ -723,27 +723,44 @@ def compute_sigma(partstack, params, Tracker, myid, main_node, nproc):
 	ocup = bcast_list_to_all(ocup, myid, main_node)
 
 
-	projdata, params = getalldata(partstack, params, myid, nproc)
-	nx = 384  # Tracker["constants"]["nnxo"]
+	#projdata, params = getalldata(partstack, params, myid, nproc)
+
+	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
+	else:           ndata = 0
+	ndata = bcast_number_to_all(ndata)
+	if( ndata < nproc):
+		if(myid<ndata):
+			image_start = myid
+			image_end   = myid+1
+		else:
+			image_start = 0
+			image_end   = 1
+	else:
+		image_start, image_end = MPI_start_end(ndata, nproc, myid)
+	#data = EMData.read_images(stack, range(image_start, image_end))
+	params = read_text_row( paramsname )
+
+	nx = Tracker["constants"]["nnxo"]
 	mx = 2*nx
-	nv = rops(pad(projdata[0],mx,mx,1,0.0)).get_xsize()
+	nv = rops(model_blank(mx,mx)).get_xsize()
 	tsd = model_blank(nv + nv//2,len(sd))
 	tocp = model_blank(len(sd))
 
-	invg = model_gauss(120,nx,nx)  #  Tracker["constants"]["radius"]
+	invg = model_gauss(Tracker["constants"]["radius"],nx,nx)
 	invg /= invg[nx//2,nx//2]
 	invg = model_blank(nx,nx,1,1.0) - invg
-	mask = model_circle(120,nx,nx)  #  Tracker["constants"]["radius"]
+	mask = model_circle(Tracker["constants"]["radius"],nx,nx)
 
-	for i in xrange(len(projdata)):
+	for i in xrange(image_start, image_end):
+		projdata = get_im( stack, i )
 		try:
-			stmp = projdata[i].get_attr("ptcl_source_image")
+			stmp = projdata.get_attr("ptcl_source_image")
 		except:
-			stmp = projdata[i].get_attr("ctf")
+			stmp = projdata.get_attr("ctf")
 			stmp = round(stmp.defocus,4)
 		indx = sd.index(stmp)
-		st = Util.infomask(projdata[i], mask, True)
-		sig = rops(pad(((cyclic_shift(projdata[i], int(round(params[i][-2])), int(round(params[i][-1])) ) - st[0])/st[1])*invg, mx,mx,1,0.0))
+		st = Util.infomask(projdata, mask, True)
+		sig = rops(pad(((cyclic_shift(projdata, int(round(params[i][-2])), int(round(params[i][-1])) ) - st[0])/st[1])*invg, mx,mx,1,0.0))
 		for k in xrange(nv):
 			tsd.set_value_at(k,indx,tsd.get_value_at(k,indx)+sig.get_value_at(k))
 		tocp[indx] += 1
@@ -752,12 +769,14 @@ def compute_sigma(partstack, params, Tracker, myid, main_node, nproc):
 	reduce_EMData_to_root(tocp, myid, main_node)
 	if( myid == main_node):
 		for i in xrange(len(sd)):
-			for k in xrange(nv):
+			tsd.set_value_at(0,i,1.0)
+			for k in xrange(6,nv):
 				tsd.set_value_at(k,i,1.0/(tsd.get_value_at(k,i)/tocp[i]))  # Already inverted
+			qt = tsd.get_value_at(6,i)
+			for k in xrange(1,6):
+				tsd.set_value_at(k,i,qt)
 	bcast_EMData_to_all(tsd, myid, source_node = 0)
-	return tsd, sd, [int(tocp[i]) for i in xrange(len(sd))]
-
-
+	return tsd, sd  #, [int(tocp[i]) for i in xrange(len(sd))]
 
 def subdict(d,u):
 	# substitute values in dictionary d by those given by dictionary u
@@ -780,8 +799,6 @@ def stepali(nxinit, nnxo, irad, nxrsteps = 3):
 		txr = "%d"%txrm
 		tss = "1"
 	return txr, tss
-
-
 
 def stepshift(txrm, nxrsteps = 2):
 
@@ -1505,7 +1522,7 @@ def main():
 	#parser.add_option("--fl",			type="float",	default=0.12,		help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.12)")
 	#parser.add_option("--aa",			type="float",	default=0.1,		help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
 	parser.add_option("--inires",		     type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
-	parser.add_option("--pwreference",	     type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
+	#parser.add_option("--pwreference",	     type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",		     type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
 	parser.add_option("--function",          type="string", default="do_volume_mrk02",  help="name of the reference preparation function (default do_volume_mrk02)")
 
@@ -1549,7 +1566,7 @@ def main():
 	Constants["sym"]          = sym[0].lower() + sym[1:]
 	Constants["npad"]         = 2
 	Constants["center"]       = 0
-	Constants["pwreference"]  = options.pwreference
+	#Constants["pwreference"]  = options.pwreference
 	Constants["smear"]        = options.smear
 	Constants["sausage"]      = options.sausage
 	Constants["restrict_shifts"] = options.restrict_shifts
@@ -1647,6 +1664,7 @@ def main():
 	Tracker["constants"]["nnxo"]         = nnxo
 	Tracker["constants"]["pixel_size"]   = pixel_size
 	Tracker["fuse_freq"]    = fq
+	Tracker["bckgdata"] = [[],[]]
 	del fq, nnxo, pixel_size
 
 	if(Tracker["constants"]["radius"]  < 1):
@@ -1805,6 +1823,13 @@ def main():
 		Tracker["ts"] = "1"
 	Tracker["previousoutputdir"] = initdir
 	subdict( Tracker, {"zoom":True} )
+
+	#  Compute first bckgnoise, projdata stores indexes, to be deleted.
+	Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], projdata = compute_sigma(Tracker["constants"]["stack"], os.path.join(initdir,"params.txt"), Tracker, myid, main_node, nproc)
+	if( myid == 0 ):
+		#  write noise
+		Tracker["bckgnoise"][0].write_image(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
+		write_text_file( [Tracker["bckgnoise"][1], projdata], os.path.join(Constants["masterdir"],"defgroup_stamp.txt"))
 
 	#  remove projdata, if it existed, initialize to nonsense
 	projdata = [[model_blank(1,1)], [model_blank(1,1)]]
@@ -2036,6 +2061,17 @@ def main():
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"params.txt"))
 				del pinids
 			mpi_barrier(MPI_COMM_WORLD)
+
+
+			if( Tracker["mainiteration"] == 1 ):
+				#  Compute bckgnoise after first iteration, procid stores indexes, to be deleted.
+				Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], procid = compute_sigma(Tracker["constants"]["stack"], os.path.join(Tracker["directory"],"params.txt"), Tracker, myid, main_node, nproc)
+				if( myid == 0 ):
+					#  write noise
+					Tracker["bckgnoise"][0].write_image(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
+					write_text_file( [Tracker["bckgnoise"][1], procid], os.path.join(Constants["masterdir"],"defgroup_stamp.txt"))
+				del procid
+
 
 			# The next will have to be decided later, i.e., under which circumstances we should recalculate full size volume.
 			#  Most likely it should be done only when the program terminates.
