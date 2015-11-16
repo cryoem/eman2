@@ -1,0 +1,52 @@
+= Name =
+sxlocres - Compute local resolution in real space within are outlined by the maskfile and within regions wn x wn x wn
+
+= Usage =
+
+''Usage in command lines'':
+
+sxlocres.py firstvolume  secondvolume maskfile outputfile --wn --step --cutoff  --radius  --fsc --MPI
+
+
+== Input ==
+    firstvolume:: first half-volume
+    secondvolume:: second half-volume
+    maskfile:: mask volume outlining the region within which local resolution values will be computed (optional)
+     
+== Output ==
+    outputfile:: the output local resolution volume contains, for each voxel, an [[absolute_frequency_units|absolute frequency]] value for which local resolution at this location drops below the specified cut-off FSC value (only regions specified by the mask film or within a sphere have non-zero values).
+    
+== Options ==
+    wn:: Size of window within which local real-space FSC is computed (default 7)
+    radius :: radius for the mask (pixels)
+    cutoff:: resolution cut-off for FSC (default 0.5)
+    step:: shell step in Fourier size in pixels (default 1.0)
+    fsc:: the name output file that will contain the overall FSC curve computed by rotational averaging of local resolution values (migh be truncated) (default no curve)
+    MPI:: use MPI version
+
+= Description =
+   FSC
+
+
+= Method =
+
+= Reference =
+
+= Author / Maintainer =
+Pawel Penczek
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+sxlocres.py
+
+= See also =
+
+= Maturity =
+
+
+    stable:: works for most people, has been tested; test cases/examples available.
+
+= Bugs =
+None.  It is perfect.
