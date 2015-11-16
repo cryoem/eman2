@@ -1,0 +1,162 @@
+= Name =
+sxisac - Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack  NEW VERSION 07/21/2015
+
+= Usage =
+sxisac.py stack_file --ir=ir --ou=ou --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --img_per_grp=img_per_grp --n_generations=n_generations --restart_section=name_of_restart_section,generation_number --use_latest_master_directory
+
+
+=== Typical usage ===
+
+sxisac exists only in MPI version.
+
+
+'''mpirun -np 176 --host <host list> sxisac.py bdb:data fisac1 --radius=120 --CTF > 1fou &'''
+
+'''mpirun -np 176 --host <host list> sxisac.py bdb:data fisac1 --radius=120 --CTF --restart_section=candidate_class_averages,4  --stop_after_candidates > 1fou &'''
+
+Note ISAC will change the size of input data such they fit into box size 76x76 (see Description below).
+
+The ISAC program needs MPI environment to work properly. Number of used MPI processes MUST BE multiplicity of given indep_run parameter (see parameters list below). 
+
+Depending on the cluster you are running, the way of using MPI will be significantly different. On some clusters,  
+
+ *mpirun -np 32 sxisac.py ...
+
+will be sufficient. On some clusters, one need to specify the host name:
+
+ *mpirun -np 32 --host node1,node2,node3,node4 sxisac.py ...
+
+On some clusters, one need to submit a script to run MPI, please ask your system manager about how to run MPI program on your machine.
+
+Also, different systems have different ways of storing the printout.  On some clusters, printout is automatically saved.  If it is not, it is recommended to use the linux command '''nohup''' to run the program, so that the printout is automatically saved to a textfile nohup.out.  For example:
+
+ *nohup mpirun -np 32 sxisac.py bdb:test --img_per_grp=150 --generation=1
+
+If there is no '''nohup''' on your system, it is recommended to redirect the printout to a textfile.
+
+ *mpirun -np 32 sxisac.py bdb:test --img_per_grp=150 --generation=1 > output.txt
+
+To restart a run that stopped intentionally or unintentionally use the "--restart_section" option.
+
+=== Time and Memory ===
+
+Unfortunately, ISAC program is very time- and memory-consuming.  For example, on my cluster, it takes 15 hours to process 50,000 64x64 particles on 256 processors. Therefore, before embarking on the big dataset, it is recommended to run a test dataset (about 2,000~5,000 particles) first to get a rough idea of timing.  If the timing is beyond acceptable, the first parameter you may want to change is '''max_round''', you may change it to 10 or even 5 with mild effects on the results.
+
+== Input ==
+        stack:: set of 2-D images in a stack file (format must be bdb), images have to be square (''nx''=''ny'')   
+ 	radius:: particle radius  (there is no default, a sensible number has to be provided, units - pixels)
+	img_per_grp:: number of images per class in the ideal case (essentially maximum size of class) (default = 100)
+	CTF:: perform phase flipping of the data using CTF information included in image headers
+
+  * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
+        center_method:: method for centering of global 2D average during initial prealignment of data (default : 7; 0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7)
+ 	ir:: inner ring of the resampling to polar coordinates (default = 1, units - pixels)
+        rs:: ring step of the resampling to polar coordinates (default = 1, units - pixels)
+	ts:: search step of translational search (default = 1.0, units - pixels)
+	maxit:: number of iterations for reference-free alignment  (default = 30)
+	dst:: discrete angle used in within group alignment (default = 90.0)
+	FL:: lowest stopband frequency used in the tangent filter (default = 0.2)
+	FH:: highest stopband frequency used in the tangent filter (default = 0.3)
+	FF:: fall-off of the tangent filter (default = 0.2)
+	init_iter:: number of runs of ab-initio within-cluster alignment for stability evaluation in SAC initialization (default = 3)
+	main_iter:: number of runs of ab-initio within-cluster alignment for stability evaluation in SAC (default = 3)
+	iter_reali:: every iter_reali iterations of SAC stability checking is performed (default = 1)
+	match_first:: number of iterations to run 2-way matching in the first phase (default = 1)
+	max_round:: maximum rounds of generating candidate class averages in the first phase (default = 20)
+	match_second:: number of iterations to run 2-way (or 3-way) matching in the second phase (default = 5)
+	stab_ali:: number of alignments when checking stability (default = 5)
+	thld_err:: the threshold of pixel error when checking stability, equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou) (default = 0.7, units - pixels)
+	indep_run:: specifies the level of m-way matching for reproducibility tests.  The default = 4 will perform full ISAC to 4-way matching. Value indep_run=2 will restrict ISAC to 2-way matching and 3 to 3-way matching.  Note the number of used MPI processes requested in mpirun must be a multiplicity of indep_run.
+	thld_grp:: the threshold of the size of reproducible class (essentially minimum size of class)  (default = 10)
+	n_generations:: program stops when reaching this total number of generations (default = 100)
+	restart_section:: each generation (iteration) contains three sections: "restart", "candidate_class_averages", and "reproducible_class_averages". To restart from a particular step, for example, generation 4 and section "candidate_class_averages" the following option is needed: "--restart_section=candidate_class_averages,4". The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the "--use_latest_master_directory" option can be used. 
+	use_latest_master_directory:: when active, the program looks for the latest directory that starts with the word "master", so the user does not need to provide a directory name
+	stop_after_candidates:: stops after the "candidate_class_averages" section
+
+== Output ==
+
+For each generation of running the program, there are two phases.  The first phase is an exploratory phase. In this phase, we set the criteria to be very  loose and try to find as much candidate class averages as possible. This phase typically should have 10 to 20 rounds (set by '''max_round''', default = 20). The candidate class averages are stored in '''class_averages_candidate_generation_n.hdf'''.   
+
+The second phase is where the actual class averages are generated, it typically have 3~9 iterations (set by '''match_second''', default = 5) of matching. The first half of iterations are 2-way matching, the second half of iterations are 3-way matching, and the last iteration is 4-way matching. In the second phase, three files will be generated:
+
+'''class_averages_generation_n.hdf''' : class averages generated in this generation, there are two attributes associated with each class average which are important. One is '''members''', which stores the particle IDs that are assigned to this class average; the other is '''n_objects''', which stores the number of particles that are assigned to this class average.
+       
+'''generation_n_accounted.txt'''         : IDs of accounted particles in this generation
+
+'''generation_n_unaccounted.txt'''    : IDs of unaccounted particles in this generation
+
+==== Retrieval of images signed to selected group averages ====
+ 1. Open in e2display.py file class_averages.hdf located in the main directory.
+
+ 2. Delete averages whose member particles should not be included in the output. 
+
+ 3. Save the selected subset under a new name,say select1.hdf
+
+ 4. Retrieve IDs of member particles and store them in a text file ohk.txt:
+ . sxprocess.py --isacselect class_averages.hdf ok.txt
+
+ 5. Create a vritual stack containng selected particles:
+ . e2bdb.py bdb:data --makevstack:bdb:select1  --list=ohk.txt
+
+The same steps can be performed on files containing candidate class averages.
+
+==== RCT information retrieval ====
+Let us assume we would want to generate a RCT reconstruction using as a basis group number 12 from ISAC generation number 3.  We have to do the following steps:
+ 1. Retrieve original image numbers in the selected ISAC group.  The output is list3_12.txt, which will contain image numbers in the main stack (bdb:test) and thus of the tilted counterparts in the tilted stack.  First, change directory to the subdirectory of the main run that contains results of the generation 3.  Note bdb:../data is the file in the main output directory containing original (reduced size) particles.
+ .  cd generation_0003
+ .  sxprocess.py  bdb:../data class_averages_generation_3.hdf  list3_12.txt  --isacgroup=12  --params=originalid
+
+ 2. Extract the identified images from the main stack (into subdirectory RCT, has to be created):
+    e2bdb.py bdb:test  --makevstack=bdb:RCT/group3_12  --list=list3_12.txt
+
+ 3.  Extract the class average from the stack (NOTE the awkward numbering of the output file!).
+ . e2proc2d.py --split=12 --first=12 --last=12 class_averages_generation3.hdf  group3_12.hdf
+
+ 4.  Align particles using the corresponding class average from ISAC as a template (please adjust the parameters):
+ .  sxali2d.py bdb:RCT/group3_12 None --ou=28 --xr=3 --ts=1 --maxit=1  --template=group3_12.12.hdf
+
+ 5.  Extract the needed alignment parameters.  The order is phi,sx,sy,mirror.  sx and mirror are used to transfer to tilted images.
+  . sxheader.py  group3_12.12.hdf  --params=xform.align2d  --export=params_group3_12.txt
+
+= Description =
+
+The program will perform the following steps:
+
+ 1. The images in the input stacked will be phase-flipped.
+
+ 2. The data stack will be pre-aligned (output is in subdirectory 2dalignment, in particular it contains the overall 2D average aqfinal.hdf, it is advisable to confirm it is correctly centered).
+
+ 3. The alignment shift parameters will be applied to the input data.
+
+ 4. '''IMPORTANT''': Input aligned images will be resized such that the original user-provided radius will be now 29 and the box size 76.  The data should fit into box size 64, though, so the final outcome can be windowed yo this size.  The pixel size of the modified data is thus (original pixel size)*(original window size)/29.
+
+ 5. The program will iterate through generations of ISAC by alternating:
+
+ 5a. Calculation of candidate class averages.
+
+ 5b. Calculation of validated class averages.  The outcome of these two step is in subdirectory generation_*** (stars replaced by the current generation number).
+
+ 6. The program will terminate when it cannot find any more reproducible class averages.
+
+= Method =
+See the reference below.
+
+= Reference =
+Yang, Z., Fang,  J., Chittuluru, F., Asturias, F. and Penczek, P. A.: Iterative Stable Alignment and Clustering of 2D Transmission Electron Microscope Images, ''Structure'' 20, 237-247, February 8, 2012.
+
+= Author / Maintainer =
+Horatiu Voicu, Zhengfan Yang, Jia Fang, Francisco Asturias, and Pawel A. Penczek
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+sxisac.py,  isac.py
+
+= See also =
+
+= Maturity =
+    beta::     works for author, works for others as far as the author knows.
+
+= Bugs =
+None right now.
