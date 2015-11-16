@@ -1,25 +1,36 @@
 = Name =
- Locally filter input volume based on values within the associated local resolution volume ([[sxlocres.py]]) within area outlined by the maskfile
+sxfilterlocal - Locally filter input volume based on values within the associated local resolution volume ([[sxlocres.py]]) within area outlined by the maskfile.
 
 = Usage =
 
+
 ''Usage in command lines'':
 
-sxfilterlocal.py inputvolume  locresvolume maskfile outputfile   --radius --falloff  --MPI
+sxfilterlocal.py  inputvolume  locresvolume  maskfile  outputfile  --radius=radius  --falloff=falloff  --MPI
+
+
+=== Typical usage ===
+
+sxlocres exists in for both MPI and non-MPI versions.
+
+''' mpirun -np 32 sxfilterlocal.py refinementdir/main002/vol0.hdf locres.hdf locfilt.hdf --radius=28 --MPI '''
 
 
 == Input ==
-    inputvolume:: first half-volume
-    locresvolume:: local resolution volume (as produced by [[sxlocres.py]])
-    maskfile:: mask volume outlining the region within which local filtration will be applied (optional)
+    inputvolume:: input volume: (default required string)
+    locresvolume:: local resolution volume: as produced by [[sxlocres.py]]. (default required string)
+    maskfile:: mask volume: outlining the region within which local filtration will be applied (optional). (default none)
      
-== Output ==
-    outputfile:: locally filtered volume.
+    radius:: radius for the mask in pixels: (default -1)
+    falloff:: fall-off of low-pass filter: program uses [[filt_tanl|tangent low-pass filter]]. unit - [[absolute_frequency_units|absolute frequency units]]. (default 0.1)
     
-== Options ==
-    radius :: radius for the mask (pixels)
-    falloff:: fall-off of the [[filt_tanl|tangent low-pass filter]] used by the program (default 0.1 in  [[absolute_frequency_units|absolute frequency units]])
-    MPI:: use MPI version
+    * The remaining parameters are optional.
+    MPI:: use MPI version: (default False)
+
+
+== Output ==
+    outputfile:: locally filtered volume: (default required string)
+
 
 = Description =
 
