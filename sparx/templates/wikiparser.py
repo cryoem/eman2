@@ -41,7 +41,8 @@ def main():
 		
 		# Open wiki document file 
 		# This should be passed as an arguments
-		file_path_wiki = "viper.txt"
+		# file_path_wiki = "viper.txt"
+		file_path_wiki = "window.txt"
 		
 		# NOTE: 2015/11/11 Toshio Moriya
 		# This should be exception. Need to decide if this should be skipped or exit system.
@@ -224,19 +225,20 @@ def main():
 							# Extract default value of command token
 							target_operator = ")"
 							item_tail = line_buffer.find(target_operator)
-							default_tokens = line_buffer[0:item_tail].split()
-							if default_tokens[0] == "required":
-								assert len(default_tokens) == 2, "Wiki Format Error: Default setting of this line (%s) is invalid. When the value is required, the format should be (Default required DATAT_TYPE)." % line_wiki
+							assert item_tail != -1, "Wiki Format Error: This line (%s) is missing ')' for default setting. Please check the format in Wiki document." % line_wiki	
+							default_value = line_buffer[0:item_tail].strip() # make sure spaces & new line are not included at head and tail
+							if default_value.find("required") != -1:
+								# This is a required command token and should have value type instead of default value
 								cmd_token.is_required = True
 								cmd_token.default = ""
 								if not cmd_token.type:
 									# Type is still empty, meaning no special type is assigned
-									# Extract the data type
-									cmd_token.type = default_tokens[1]
+									# Extract the data type (the rest of line)
+									cmd_token.type = default_value.replace("required", "").strip()
 							else: 
-								assert len(default_tokens) == 1, "Wiki Format Error: Default setting of this line (%s) is invalid. The format should be (Default VALUE)." % line_wiki		
+								# This is not required command token and should have default value
 								cmd_token.is_required = False
-								cmd_token.default = default_tokens[0]
+								cmd_token.default = default_value
 								
 								if not cmd_token.type:
 									# Type is still empty, meaning no special type is assigned
