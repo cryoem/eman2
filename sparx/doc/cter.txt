@@ -1,9 +1,15 @@
 = Name =
-sxcter - automated estimation of CTF parameters with error assessment
+sxcter - Automated estimation of CTF parameters with error assessment
 
 = Usage =
 
-sxcter.py
+sxcter.py  stack  outdir1  outdir2  --indir==indir  --nameroot=nameroot  --micsuffix=micsuffix  --wn=wn  --apix=apix  --Cs=Cs --voltage=voltage  --ac=ac  --kboot=kboot  --MPI  --debug  --overlap_x=overlap_x  --overlap_y=overlap_y  --edge_x=edge_x  --edge_y=edge_y  --f_start  --f_stop
+
+=== Typical usage ===
+
+
+''Process micrographs'':
+
 
 Specify directory and prefix and suffix (type) of micrographs to process through --indir, --nameroot, and --micsuffix
 
@@ -12,6 +18,12 @@ Specify output directories ''pwrot'' and ''partresdir'' as arguments.
 
 
 mpirun -np 16 sxcter.py pwrot partresdir --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --micsuffix=mrc --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
+
+After the program stops, it is advisable to concatenate all output files in partres directory:
+
+cd partres
+
+cat */* >>allctfs.txt
 
 
 ''Process stack'':
@@ -22,38 +34,34 @@ Specify name of stack, output directories ''pwrot'' and ''partresdir'' as argume
 
 sxcter.py bdb:stack pwrot partresdir --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
 
-== Parameters ==
-
-Please see [[Runthrough_helical_example]] for details.    
-
 == Input ==
+	stack:: 2D images in a stack file: (default none)
+	
+	indir:: directory containing micrographs to be processed: (default current directory)
+	nameroot:: prefix of micrographs to be processed: (default none)
+	micsuffix:: a string denoting micrograph type: For example 'mrc', 'hdf', 'ser' ... (default none)
+	wn:: size of window to use: should be slightly larger than particle box size (default 512)
+	apix:: pixel size in angstroms: (default 1.0)
+	Cs:: microscope Cs (spherical aberration): (default 2.0)
+	voltage:: microscope voltage in KV: (default 300.0)
+	ac:: amplitude contrast in percentage: (default 10.0)
 
-  --version::             show program's version number and exit
-
-  -h, --help::            
-  show this help message and exit
-  --indir=INDIR::         
-  Directory containing micrographs to be processed.
-  --nameroot=NAMEROOT::   
-  Prefix of micrographs to be processed.
-  --micsuffix=MICSUFFIX::  A string denoting micrograph type. For example 'mrc', 'hdf', 'ser' ...
-  --wn=WN::               
-  Size of window to use (should be slightly larger than particle box size (default 512)
-  --apix=APIX::           pixel size [Angstrom]
-  --Cs=CS::               Microscope Cs (spherical aberation) [mm]
-  --voltage=VOLTAGE::     Microscope voltage [kV]
-  --ac=AC::               Amplitude contrast (percentage, default=10)
-  --kboot=KBOOT::      Number of defocus estimates for  micrograph used for error assessment (default 16)   
-  --MPI::                 use MPI version
-  --debug::               debug
-  --overlap_x=OVERLAP_X::    overlap x [%]  (default(50%)
-  --overlap_y=OVERLAP_Y::    overlap y  [%]  (default(50%)
-  --edge_x=EDGE_X::    edge x , units pixels
-  --edge_y=EDGE_Y::    edge y , units pixels
-  --f_start=F_START::     starting frequency, units [1/A], (by default determined automatically, or use to remove a central, low frequency peak) 
-  --f_stop=F_STOP::       stop frequency, units [1/A], (by default determined automatically, or use to limit included data to a reasonable resolution)
+	* The remaining parameters are optional.
+	kboot:: number of defocus estimates for micrograph: used for error assessment (default 16)  
+	MPI:: use MPI version: (default False)
+	debug:: debug: (default False)
+	overlap_x:: overlap x in percentage: (default 50)
+	overlap_y:: overlap y in percentage: (default 50)
+	edge_x:: edge x in pixels: (default 0) 
+	edge_y:: edge y in pixels: (default 0)
+	f_start:: starting frequency in 1/A: by default determined automatically (default -1.0)
+	f_stop:: stop frequency in 1/A: by default determined automatically (default -1.0)
 
 == Output ==
+	outdir1:: output directory for rotinf**** files: (default required string)
+	outdir2:: output directory for partres file: (default required string)
+	
+
 CTF parameters are written to a new file ''partres'' in a new directory specified by argument ''partresdir''.<<BR>><<BR>>
 Rotational average are written to directory specified by argument ''pwrot'' as files in the form of rotinf****.<<BR>><<BR>>
 
