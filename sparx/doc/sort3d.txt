@@ -1,27 +1,53 @@
-## page was renamed from my_new_manual_page
 = Name =
-sxsort3d.py-sort out 3-D heterogeneity of 2-D data whose 3-D reconstruction parameters (xform.projection) have been determined already using 3-D sorting protocol I (P1).
+sxsort3d - Sort out 3-D heterogeneity of 2-D data whose 3-D reconstruction parameters (xform.projection) have been determined already using 3-D sorting protocol I (P1).
 
 = Usage =
- mpirun   -np  176  --host n1,n5,n6,n8,n9,n10,n0,n4,n3,n7     sxsort3d.py  bdb:data  sort3d_outdir1   mask.hdf     --focus=ribosome_focus.hdf --chunkdir=/data/n10/pawel/ribosome_frank/ri3/main013    --radius=52   --CTF   --number_of_images_per_group=2000    --low_pass_filter=.125   --stoprnct=5 
- 
+
+
+''usage in command line''
+
+sxsort3d.py  stack  outdir  mask  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --function=user_function  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --seed=random_seed
+
+
+=== Typical usage ===
+
+sxsort3d exists only in MPI version.
+
+''' mpirun -np 176 --host n1,n5,n6,n8,n9,n10,n0,n4,n3,n7 sxsort3d.py bdb:data sort3d_outdir1 mask.hdf --focus=ribosome_focus.hdf --chunkdir=/data/n10/pawel/ribosome_frank/ri3/main013 --radius=52 --CTF --number_of_images_per_group=2000 --low_pass_filter=.125 --stoprnct=5 ''' 
 
 
 == Input ==
-    bdb:data:: input stack file
-    mask.hdf:: mask_file
+    stack:: 2D images in a stack file: (default required string)
+    mask:: 3D mask: (default none)
+
+    focus:: 3D mask for focused clustering: (default none)
+    ir:: inner radius for rotational correlation: > 0. (default 1)
+    radius:: outer radius for rotational correlation: < nx - 1. Please set to the radius of the particle. (default -1)
+    maxit:: maximum number of iteration: (default 25)
+    rs:: step between rings in rotational correlation: > 0. (default 1)
+    xr:: range for translation search in x direction: search is +/-xr. (default 1)
+    yr:: range for translation search in y direction: search is +/-yr By default, same as xr. (default -1)
+    ts:: step size of the translation search: in both directions direction. search is -xr, -xr+ts, 0, xr-ts, xr. (default 0.25)
+    delta:: angular step of reference projections: (default 2)
+    an:: angular neighborhood for local searches: (default -1)
+    center:: centering method: 0 - if you do not want the volume to be centered, 1 - center the volume using cog. (default 0)
+    nassign:: number of reassignment iterations: performed for each angular step. (default 1)
+    nrefine:: number of alignment iterations: performed for each angular step. (default 0)
+    CTF:: Consider CTF correction: during the alignment. (default False) 
+    stoprnct:: Minimum percentage of assignment change to stop the program: (default 3.0) 
+    sym:: point-group symmetry of the structure: (default c1) 
+    function:: name of the reference preparation function: (default ref_sort3d) 
+    independent:: number of independent run: (default 3) 
+    number_of_images_per_group:: number of images per group: critical number defined by user. (default 1000) 
+    low_pass_filter:: absolute frequency of low-pass filter: for 3d sorting on the original image size. (default -1.0)
+    nxinit:: initial image size for sorting: (default 64)
+    unaccounted:: reconstruct the unaccounted images: (default False) 
+    seed:: random seed: for create initial random assignment for EQ Kmeans (default -1) 
+
 
 == Output ==
-    sort3d_outdir :: the master dir that contains multiple subdirectories. There is a log.txt that describes the sequences of computations in the program.
-  
+    outdir:: master output directory: will contain multiple subdirectories. There is a log.txt that describes the sequences of computations in the program. (default required string)
 
-== Options ==
-    --chunkdir:: two chunks of arbitrary assigned data while refined independently during the 3-D reconstruction. .
-    --radius:: radius of the particles
-    --number_of_images_per_group:: number of images in a group, the critical number defined by user.
-    --low_pass_filter:: user defined low pass filter. 
-    --focus:: focus mask.
-    --stopprnct:: percentages of changed number of particles during one cycle.
 
 = Description =
 
