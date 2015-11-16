@@ -1,9 +1,16 @@
 = Name =
-sxwindow.py - window out particles with known coordinates from a micrograph.
-
-'''NOTE: This page is work in progress'''
+sxwindow - Window out particles with known coordinates from a micrograph.
 
 = Usage =
+
+''usage in command line''
+
+sxwindow.py micrographs_list  --coords_dir=coords_dir  --coords_suffix=coords_suffix  --coords_extension=coords_extension  --coords_format=coords_format  --indir=input_dir  --importctf=ctf_file  --limitctf  --resample_ratio=resample_ratio  --box_size=box_size  --outdir=outdir  --outsuffix=outsuffix  --micsuffix=micsuffix  --nameroot=nameroot  --invert  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror
+
+=== Typical usage ===
+
+sxwindow does not support MPI.
+
 ''For all micrographs in current directory'':
 
 sxwindow.py --coords_dir=info --coords_extension=box --coords_format=eman1 --importctf=ctfparams.txt --indir=./ --resample_ratio=0.5 --box_size=64 --nameroot=mic --micsuffix=hdf --outdir=particles --outsuffix=_ptcls --invert --defocuserror=10 --astigmatismerror=8
@@ -12,36 +19,31 @@ sxwindow.py --coords_dir=info --coords_extension=box --coords_format=eman1 --imp
 
 sxwindow.py mic0.hdf mic2.hdf --coords_dir=info --coords_extension=box --coords_format=eman1 --importctf=ctfparams.txt --indir=./ --resample_ratio=0.5 --box_size=64 --nameroot=mic --micsuffix=hdf --outdir=particles --outsuffix=_ptcls --invert --defocuserror=10 --astigmatismerror=8
 
-'''NOTE: The script assumes that a coordinates file has the same name as the associated micrograph except the extension.'''
-
 '''NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.'''
 
-=== Typical usage ===
-
-sxwindow does not support MPI.
-
 == Input ==
- micrograph list:: Input micrographs: if none is specified all files in option --indir are used
+	micrographs_list:: Input micrographs: if none is specified all files in option --indir are used　(default none)
+	
+    indir:: Directory containing input micrographs: (default current directory)
+    nameroot:: Root name (Prefix) of input micrographs: (default none)
+    micsuffix:: File extension of input micrographs: A string denoting micrograph type. (default hdf)
+    coords_dir:: Directory containing input coordinates files: (default current directory)
+    coords_suffix:: Suffix of input coordinates files: For example '_ptcls. (default none)
+    coords_extension:: File extension of input coordinates files: e.g 'box' for eman1, 'json' for eman2, ... (default box)
+    coords_format:: Format of input coordinates file: 'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size. (default eman1)
+    importctf:: File name of sxcter output: (default none)
+    box_size:: xy dimension of square area to be windowed (in pixels): Pixel size after resampling is assumed when resample_ratio < 1.0 (default 256)
+    invert:: Invert image contrast: (recommended for cryo data) (default False)
 
-== Options ==
-    coords_dir:: Coordinates Directory: containing files with particle coordinates. (default current directory)
-    coords_suffix:: Coordinates File Suffix: For example '_ptcls.
-    coords_extension:: File extension of coordinate files: e.g 'box' for eman1, 'json' for eman2, ...
-    coords_format:: Format of coordinates file: 'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size.
-    indir:: Micrograph Directory: containing micrographs to be processed. (default current directory)
-    nameroot:: Root name (Prefix) of micrographs: to be processed. 
-    micsuffix:: Micrograph Extension: A string denoting micrograph type. (default hdf)
-    importctf:: File name with CTF parameters: produced by sxcter.
-    box_size:: x and y dimension in pixels of square area to be windowed: Pixel size after resampling is assumed when resample_ratio < 1.0 (default 256)
-    invert:: Invert image contrast: (recommended for cryo data) (default no contrast inversion)
+    * The remaining parameters are optional.
     resample_ratio:: Ratio of new to old image size (or old to new pixel size) for resampling: Valid range is 0.0 < resample_ratio <= 1.0. (default 1.0)
-    limitctf:: Filter micrographs based on the CTF limit: It requires --importctf. (default no filter)
-    defocuserror::Defocus errror limit: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent. The error is computed as (std dev defocus)/defocus*100%. (default include all irrespective of error values)
-    astigmatismerror:: Astigmatism error limit: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (Default: include all)
+    limitctf:: Filter micrographs based on the CTF limit: It requires --importctf. (default False)
+    defocuserror::Defocus errror limit: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent. The error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)
+    astigmatismerror:: Astigmatism error limit: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (default 360.0)
 
 == Output ==
     outdir:: Output directory: (default current directory)
-    outsuffix:: Suffix for output stack (Default _ptcls)
+    outsuffix:: Suffix for output stack: (default _ptcls)
 
 = Description =
  1. Takes micrographs and coordinates as input and writes windowed out particle images to a stack.
