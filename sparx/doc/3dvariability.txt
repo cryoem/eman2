@@ -1,0 +1,54 @@
+= Name =
+sx3dvariability.py - calculate 3D variability field using a set of aligned 2D projection images as an input. The structures with symmetry require preparing data before calculating variability. The data preparation step would symmetrize the data and output a bdb:sdata for variability calculation.
+
+= Usage =
+''usage in command line''
+
+for asymmetric structure:
+
+mpirun -np 472 sx3dvariability.py stack    --CTF --img_per_grp=100 --fl=0.25 --aa=0.1 --ave3D=vol.hdf --var3D=var_vol.hdf --MPI
+
+for structures that have symmetries:
+
+sx3dvariability.py  stack  --symmetrize  --sym=c2
+
+mpirun -np 472 sx3dvariability.py bdb:sdata  --CTF --img_per_grp=100 --fl=0.25 --aaf=0.1 --ave3D=vol.hdf --var3D=var_vol.hdf --MPI  --sym=c2
+
+
+== Input ==
+    stack:: stack of 2D images with 3D orientation parameters in header and (optionally) CTF information
+    img_per_grp:: number of projections from the angular neighborhood that will be used to estimate 2D variance for each projection data.  The larger the number the less noisy the estimate, but the lower the resolution.  Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume.
+    fl:: the cut-off [[absolute_frequency_units|frequency]] of the low pass [[filt_tanl|filter]] to be applied to 2D data prior to variability calculation (default - no filtration).
+    aa:: the fall-off [[absolute_frequency_units|frequency]] of the low pass [[filt_tanl|filter]] to be applied to 2D data prior to variability calculation (default - no filtration).
+    MPI:: use MPI version
+    symmetrize:: specified in case the input structure has symmetry higher than c1. It is specified together with option --sym in the first step for preparing data. Notice this step can be run with only one CPU and there is no MPI version for it.
+
+
+== Output ==
+    bdb:sdata:: symmetrized data for 3D variability analysis whereas the reconstructed structure has symmetry that is higher than c1. It is output of the first step and input of the second step.  
+    ave3D:: 3D reconstruction computed from projections averaged within respective angular neighborhood.  It should be used to assess the resolvability and possible artifacts of the variability map.
+    var3D:: 3D variability map
+
+= Description =
+It can be slow.
+
+= Method =
+
+= Reference =
+
+= Author / Maintainer =
+Pawel Penczek
+
+= Keywords =
+ category 1:: APPLICATIONS
+
+= Files =
+sx3dvariability.py
+
+= See also =
+
+= Maturity =
+ alpha::     it works.
+
+= Bugs =
+Did not discover any yet.
