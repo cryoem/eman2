@@ -1,0 +1,56 @@
+## page was renamed from my_new_manual_page
+= Name =
+sxsort3d.py-sort out 3-D heterogeneity of 2-D data whose 3-D reconstruction parameters (xform.projection) have been determined already using 3-D sorting protocol I (P1).
+
+= Usage =
+ mpirun   -np  176  --host n1,n5,n6,n8,n9,n10,n0,n4,n3,n7     sxsort3d.py  bdb:data  sort3d_outdir1   mask.hdf     --focus=ribosome_focus.hdf --chunkdir=/data/n10/pawel/ribosome_frank/ri3/main013    --radius=52   --CTF   --number_of_images_per_group=2000    --low_pass_filter=.125   --stoprnct=5 
+ 
+
+
+== Input ==
+    bdb:data:: input stack file
+    mask.hdf:: mask_file
+
+== Output ==
+    sort3d_outdir :: the master dir that contains multiple subdirectories. There is a log.txt that describes the sequences of computations in the program.
+  
+
+== Options ==
+    --chunkdir:: two chunks of arbitrary assigned data while refined independently during the 3-D reconstruction. .
+    --radius:: radius of the particles
+    --number_of_images_per_group:: number of images in a group, the critical number defined by user.
+    --low_pass_filter:: user defined low pass filter. 
+    --focus:: focus mask.
+    --stopprnct:: percentages of changed number of particles during one cycle.
+
+= Description =
+
+The clustering algorithm in the program combines a couple of computational techniques, equal-Kmeans clustering, K-means clustering, and reproducibility of clustering such that it not only has a strong ability but also a high efficiency to sort out heterogeneity of cryo-EM images. The command sxsort3d.py is the protocol I {P1). In this protocol, the user defines the group size and thus defines the number of group K. Then the total data is randomly assigned into K group and an equal-size K-means (size restricted K-means) is carried out. N independent equal-Kmeans runs would give N partition of the K groups assignment. Then two-way comparison of these partitions gives the reproducible number of particles.
+ 
+
+= Method =
+
+= Reference =
+Described by A.Einstein in his first paper on spectrum of radiation
+from a house heater kept at room temperature. Journal of Irreproducible
+Results, 12, 1905, 12-1127.
+
+= Author / Maintainer =
+Zhong Huang
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+  
+= Files =
+applications.py
+
+= See also =
+References to relevant other routines.
+
+= Maturity =
+
+    stable while under development:: Two programs (P1,P2) have been tested on both simulated and experimental ribosome data. For experimental ribosome data, P2 has a reproducible ratio-70-90%. P2 can 100%separate two conformations from the simulated ribosome data that contains 5 conformations. 
+
+= Bugs =
+None.  It is perfect.
