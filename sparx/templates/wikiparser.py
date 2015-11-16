@@ -6,9 +6,9 @@
 
 # from EMAN2 import *
 # from sparx import *
-from sys import  *
 import os
 import sys
+from   global_def import ERROR
 
 class SXcmd_token:
 	def __init__(self):
@@ -25,7 +25,7 @@ class SXcmd_token:
 
 class SXkeyword_map:
 	def __init__(self, priority, cmd_token_type):
-		assert priority < 100, "Priority should be lower than 100"
+		if priority >= 100: ERROR("Priority should be lower than 100", "SXkeyword_map::__init__() in wikiparser")
 		# class variables
 		self.priority = priority              # Priority of this keyword. Highest priority is 0. The type of higher priority will be used to avoid the conflict among keywords
 		self.cmd_token_type = cmd_token_type  # Command token value type 
@@ -41,14 +41,20 @@ def main():
 		
 		# Open wiki document file 
 		# This should be passed as an arguments
-		# file_path_wiki = "viper.txt"
-		file_path_wiki = "window.txt"
+		work_dir = "%s/src/eman2/sparx/doc" % os.environ['EMAN2DIR']
+		# file_path_wiki = "%s/viper.txt" % work_dir
+		# file_path_wiki = "%s/window.txt" % work_dir
+		# file_path_wiki = "%s/cter.txt" % work_dir
+		# file_path_wiki = "%s/isac.txt" % work_dir
+		# file_path_wiki = "%s/meridien.txt" % work_dir
+		# file_path_wiki = "%s/3dvariability.txt" % work_dir
+		# file_path_wiki = "%s/locres.txt" % work_dir
+		# file_path_wiki = "%s/filterlocal.txt" % work_dir
+		file_path_wiki = "%s/sort3d.txt" % work_dir
 		
 		# NOTE: 2015/11/11 Toshio Moriya
 		# This should be exception. Need to decide if this should be skipped or exit system.
-		if os.path.exists(file_path_wiki) == False:
-			print "ERRROR: Wiki document is not found"
-			sys.exit(-1)
+		if os.path.exists(file_path_wiki) == False: ERROR("Rutime Error: Wiki document is not found.", "main() in wikiparser")
 			
 		file_wiki = open(file_path_wiki,'r')
 		
@@ -122,7 +128,7 @@ def main():
 					current_state = state_processing
 				# else: just ignore this line 
 			else:
-				assert current_state == state_processing, "Logical Error: This condition should not happen! State setting must be incorrect."
+				if current_state != state_processing: ERROR("Logical Error: This condition should not happen! State setting must be incorrect.", "main() in wikiparser")
 				if line_wiki[0] == "=": # Assuming the section always starts with "="
 					# Reached the next section (might be not target)
 					current_section += 1 # Update current target section
@@ -134,7 +140,7 @@ def main():
 						
 					if line_wiki.find(section_lists[current_section]) != -1:
 						# Found the current target section
-						assert current_section < len(section_lists), "Logical Error: This condition should not happen! Section setting must be incorrect."
+						if current_section >= len(section_lists): ERROR("Logical Error: This condition should not happen! Section setting must be incorrect.", "main() in wikiparser")
 						current_state = state_processing
 					else:
 						# This section was not the current target. Go back to searching state
@@ -145,7 +151,7 @@ def main():
 						# Extract the name of sxscript
 						target_operator = "-"
 						item_tail = line_wiki.find(target_operator)
-						assert item_tail != -1, "Wiki Format Error: '= Name =' section should contain only one valid line, and the line should starts from 'sx* - ': %s" % line_wiki
+						if item_tail == -1: ERROR("Wiki Format Error: '= Name =' section should contain only one valid line, and the line should starts from 'sx* - ': %s" % line_wiki, "main() in wikiparser")
 						sxscript = line_wiki[0:item_tail].strip()
 						# Extract the short info about this sxscript (can be empty)
 						short_info = line_wiki[item_tail + len(target_operator):].strip()							
@@ -154,7 +160,7 @@ def main():
 						# This information is also used to check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
 						if line_wiki[0:len("sx")] == "sx":
 							usage_token_list = line_wiki.split()
-							assert usage_token_list[0] == sxscript + ".py", "Wiki Format Error: First token should be script name with .py (sx*.py)"
+							if usage_token_list[0] != sxscript + ".py": ERROR("Wiki Format Error: First token should be script name with .py (sx*.py)", "main() in wikiparser")
 							# Register arguments and options
 							for usage_token in usage_token_list[1:]:
 								# Allocate memory for new command token
@@ -198,34 +204,34 @@ def main():
 							# Extract key base name of command token
 							target_operator = "::"
 							item_tail = line_buffer.find(target_operator)
-							if item_tail == -1:
-								print "This line (%s) is missing key base name (maybe comment line?). Ignoring this line..." % 	line_wiki							
+							if item_tail == -1: 
+								ERROR("Warning: This line (%s) is missing key base name (maybe comment line?). Ignoring this line...'."  % 	line_wiki, "main() in wikiparser", action = 0)
 								continue
 							key_base = line_buffer[0:item_tail]
 							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line											
 							# check consistency between 'usage in command line' and this
-							assert key_base in cmd_token_dict.keys(), "Wiki Format Error: Key base (%s) is missing from 'usage in command line' in '= Usage ='." % key_base
+							if key_base not in cmd_token_dict.keys(): ERROR("Wiki Format Error: Key base (%s) is missing from 'usage in command line' in '= Usage ='." % key_base, "main() in wikiparser")
 							# Get the reference to the command token object associated with this key base name
 							cmd_token = cmd_token_dict[key_base]
-							assert cmd_token.key_base == key_base, "Logical Error: Registered command token with wrong key base name into the dictionary."
+							if cmd_token.key_base != key_base: ERROR("Logical Error: Registered command token with wrong key base name into the dictionary.", "main() in wikiparser")
 							cmd_token.is_in_io = True # Set flag to tell this command token is find in input or output section
 							cmd_token.group = group  # Set group of command token according to the current subsection
 							# Extract label of command token
 							target_operator = ":"
 							item_tail = line_buffer.find(target_operator)
-							assert item_tail != -1, "Wiki Format Error: This line (%s) is missing label. Please check the format in Wiki document." % line_wiki									
+							if item_tail == -1: ERROR("Wiki Format Error: This line (%s) is missing label. Please check the format in Wiki document." % line_wiki, "main() in wikiparser")
 							cmd_token.label = line_buffer[0:item_tail]
 							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line	
 							# Extract help of command token before default value
 							target_operator = "(default"
 							item_tail = line_buffer.find(target_operator)
-							assert item_tail != -1, "Wiki Format Error: This line (%s) is missing default setting. Please check the format in Wiki document." % line_wiki									
+							if item_tail == -1: ERROR("Wiki Format Error: This line (%s) is missing default setting. Please check the format in Wiki document." % line_wiki, "main() in wikiparser")
 							cmd_token.help = line_buffer[0:item_tail]
 							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line	
 							# Extract default value of command token
 							target_operator = ")"
 							item_tail = line_buffer.find(target_operator)
-							assert item_tail != -1, "Wiki Format Error: This line (%s) is missing ')' for default setting. Please check the format in Wiki document." % line_wiki	
+							if item_tail == -1: ERROR("Wiki Format Error: This line (%s) is missing ')' for default setting. Please check the format in Wiki document." % line_wiki, "main() in wikiparser")
 							default_value = line_buffer[0:item_tail].strip() # make sure spaces & new line are not included at head and tail
 							if default_value.find("required") != -1:
 								# This is a required command token and should have value type instead of default value
@@ -258,18 +264,18 @@ def main():
 								# else: keep the special type
 							# Ignore the rest of line ...
 					else:
-						assert False, "Logical Error: This section is invalid. Did you assigne an invalid section?"
+						ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "main() in wikiparser")
 					
-		assert current_state == state_done, "Wiki Format Error: parser could not extract all information necessary. Please check if the Wiki format has all required sections."
+		if current_state != state_done: ERROR("Wiki Format Error: parser could not extract all information necessary. Please check if the Wiki format has all required sections.", "main() in wikiparser")
 
 		# Make sure there are no extra arguments or options in 'usage in command line' of '= Usage ='
 		for cmd_token in cmd_token_list:
-			assert cmd_token.is_in_io == True, "Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '= Usage ='." % cmd_token.key_base
-						
+			if cmd_token.is_in_io == False: ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '= Usage ='." % cmd_token.key_base, "main() in wikiparser")
+					
 		file_wiki.close()
 		
 		print "Succeed to parsing Wiki document (%s)" % file_path_wiki
-		
+
 		
 		# For DEBUG
 		print "><><>< DEBUG OUTPUT ><><><"
