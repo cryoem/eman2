@@ -1,0 +1,64 @@
+= Name =
+sxwindow.py - window out particles with known coordinates from a micrograph.
+
+'''NOTE: This page is work in progress'''
+
+= Usage =
+''For all micrographs in current directory'':
+
+sxwindow.py --coords_dir=info --coords_extension=box --coords_format=eman1 --importctf=ctfparams.txt --indir=./ --resample_ratio=0.5 --box_size=64 --nameroot=mic --micsuffix=hdf --outdir=particles --outsuffix=_ptcls --invert --defocuserror=10 --astigmatismerror=8
+
+''For mic0.hdf and mic2.hdf'':
+
+sxwindow.py mic0.hdf mic2.hdf --coords_dir=info --coords_extension=box --coords_format=eman1 --importctf=ctfparams.txt --indir=./ --resample_ratio=0.5 --box_size=64 --nameroot=mic --micsuffix=hdf --outdir=particles --outsuffix=_ptcls --invert --defocuserror=10 --astigmatismerror=8
+
+'''NOTE: The script assumes that a coordinates file has the same name as the associated micrograph except the extension.'''
+
+'''NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.'''
+
+=== Typical usage ===
+
+sxwindow does not support MPI.
+
+== Input ==
+ micrograph list:: Input micrographs: if none is specified all files in option --indir are used
+
+== Options ==
+    coords_dir:: Coordinates Directory: containing files with particle coordinates. (default current directory)
+    coords_suffix:: Coordinates File Suffix: For example '_ptcls.
+    coords_extension:: File extension of coordinate files: e.g 'box' for eman1, 'json' for eman2, ...
+    coords_format:: Format of coordinates file: 'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size.
+    indir:: Micrograph Directory: containing micrographs to be processed. (default current directory)
+    nameroot:: Root name (Prefix) of micrographs: to be processed. 
+    micsuffix:: Micrograph Extension: A string denoting micrograph type. (default hdf)
+    importctf:: File name with CTF parameters: produced by sxcter.
+    box_size:: x and y dimension in pixels of square area to be windowed: Pixel size after resampling is assumed when resample_ratio < 1.0 (default 256)
+    invert:: Invert image contrast: (recommended for cryo data) (default no contrast inversion)
+    resample_ratio:: Ratio of new to old image size (or old to new pixel size) for resampling: Valid range is 0.0 < resample_ratio <= 1.0. (default 1.0)
+    limitctf:: Filter micrographs based on the CTF limit: It requires --importctf. (default no filter)
+    defocuserror::Defocus errror limit: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent. The error is computed as (std dev defocus)/defocus*100%. (default include all irrespective of error values)
+    astigmatismerror:: Astigmatism error limit: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (Default: include all)
+
+== Output ==
+    outdir:: Output directory: (default current directory)
+    outsuffix:: Suffix for output stack (Default _ptcls)
+
+= Description =
+ 1. Takes micrographs and coordinates as input and writes windowed out particle images to a stack.
+ 1. Normalization is done by subtracting the average of the region outside of a circle with radius half of option --box_size.
+ 1. Micrographs are applied a Gaussian high-pass Fourier filter with standard deviation of option --box_size.
+
+= Author / Maintainer =
+T. Durmaz and T.Moriya
+
+= Keywords =
+ category 1:: FUNDAMENTALS, UTILITIES, APPLICATIONS
+
+= Files =
+sxwindow.py
+
+= See also =
+[[http://sparx-em.org/sparxwiki/window|window]], [[http://sparx-em.org/sparxwiki/windowallmic|windowallmic]]
+
+= Maturity =
+ alpha:: in development
