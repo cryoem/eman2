@@ -79,7 +79,9 @@ def main():
 	#parser.add_option("--abs", 			type="float"       ,	default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	#parser.add_option("--squ", 			type="float"       ,	default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances (Default False)")
-	parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
+	parser.add_option("--decimate",     type="float",           default=1.0,                 help=" decimate ratio of images, resample image to a smaller size")
+	parser.add_option("--window",       type="int",             default=0,                   help="reduce images to a small image size without changing pixel_size")
+	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
 	#parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
 	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
 
@@ -188,12 +190,12 @@ def main():
 		if options.VAR and (options.ave2D or options.ave3D or options.var2D): 
 			ERROR("When VAR is set, the program cannot output ave2D, ave3D or var2D", "sx3dvariability", 1, myid)
 			exit()
-		if options.SND and (options.ave2D or options.ave3D):
-			ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3dvariability", 1, myid)
-			exit()
-		if options.nvec > 0 :
-			ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
-			exit()
+		#if options.SND and (options.ave2D or options.ave3D):
+		#	ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3dvariability", 1, myid)
+		#	exit()
+		#if options.nvec > 0 :
+		#	ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
+		#	exit()
 		#if options.nvec > 0 and options.ave3D == None:
 		#	ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", myid=myid)
 		#	exit()
@@ -211,7 +213,7 @@ def main():
 			print_msg("%-70s:  %s\n"%("Input stack", stack))
 	
 		img_per_grp = options.img_per_grp
-		nvec = options.nvec
+		#nvec = options.nvec
 		radiuspca = options.radiuspca
 
 		symbaselen = 0
@@ -248,7 +250,7 @@ def main():
 			print_msg("%-70s:  %d\n"%("Number of projection", nima))
 		
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
-
+		"""
 		if options.SND:
 			from projection		import prep_vol, prgs
 			from statistics		import im_diff
@@ -279,8 +281,23 @@ def main():
 				set_params_proj(diff2, [phi, theta, psi, s2x, s2y])
 				varList.append(diff2)
 			mpi_barrier(MPI_COMM_WORLD)
-		elif options.VAR:
-			varList = EMData.read_images(stack, range(img_begin, img_end))
+		"""
+		if options.VAR:
+			#varList = EMData.read_images(stack, range(img_begin, img_end))
+			from fundamentals import image_decimate 
+			varList = []
+			this_image = EMData()
+			for index_of_particle in xrange(img_begin,img_end):
+				this_image.read_image(stack, index_of_particle)
+				if options.decimate<1 and options.window ==0: 
+					this_image =image_decimate(this_image,decimate)
+				elif options.window>0 and options.decimate<1.:
+						this_image = Util.window(this_image,options.window,options.window,1)
+						this_image =image_decimate(this_image,decimate)
+				elif options.window>0 and options.decimate==1.:
+						this_image = Util.window(this_image,options.window,options.window,1)
+				varList.append(this_image)
+				
 		else:
 			from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
 			from utilities		import set_params_proj, get_params_proj, params_3D_2D, get_params2D, set_params2D, compose_transform2
