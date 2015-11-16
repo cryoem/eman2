@@ -44,11 +44,13 @@ for structures that have symmetries:
     * The remaining parameters are optional.
     VERBOSE:: Long output for debugging: (default False) 
 
+
 == Output ==
     ave2D:: write to the disk a stack of 2D averages: (default No)
     var2D:: write to the disk a stack of 2D variances: (default No)
     ave3D:: write to the disk reconstructed 3D average: 3D reconstruction computed from projections averaged within respective angular neighborhood. It should be used to assess the resolvability and possible artifacts of the variability map. (default No)
     var3D:: compute 3D variability: time consuming! (default No)
+
 
 = Description =
 It can be slow.

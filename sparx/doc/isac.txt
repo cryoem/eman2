@@ -1,8 +1,12 @@
 = Name =
-sxisac - Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack  NEW VERSION 07/21/2015
+sxisac - Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack.  NEW VERSION 07/21/2015.
 
 = Usage =
-sxisac.py stack_file --ir=ir --ou=ou --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --img_per_grp=img_per_grp --n_generations=n_generations --restart_section=name_of_restart_section,generation_number --use_latest_master_directory
+
+
+''usage in command line''
+
+sxisac.py stack_file  output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --restart_section --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_iter=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --n_generations=n_generations --rand_seed=rand_seed --new --debug --use_latest_master_directory --stop_after_candidates
 
 
 === Typical usage ===
@@ -38,42 +42,47 @@ If there is no '''nohup''' on your system, it is recommended to redirect the pri
 
 To restart a run that stopped intentionally or unintentionally use the "--restart_section" option.
 
-=== Time and Memory ===
-
-Unfortunately, ISAC program is very time- and memory-consuming.  For example, on my cluster, it takes 15 hours to process 50,000 64x64 particles on 256 processors. Therefore, before embarking on the big dataset, it is recommended to run a test dataset (about 2,000~5,000 particles) first to get a rough idea of timing.  If the timing is beyond acceptable, the first parameter you may want to change is '''max_round''', you may change it to 10 or even 5 with mild effects on the results.
 
 == Input ==
-        stack:: set of 2-D images in a stack file (format must be bdb), images have to be square (''nx''=''ny'')   
- 	radius:: particle radius  (there is no default, a sensible number has to be provided, units - pixels)
-	img_per_grp:: number of images per class in the ideal case (essentially maximum size of class) (default = 100)
-	CTF:: perform phase flipping of the data using CTF information included in image headers
+    stack_file:: 2-D images in a stack file (format must be bdb): images have to be square (''nx''=''ny'') (default required string)
+    
+    radius:: particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)
+    img_per_grp:: number of images per class: in the ideal case (essentially maximum size of class) (default 100)
+    CTF:: perform phase flipping of the data: using CTF information included in image headers (default False)
+    restart_section:: restart section: each generation (iteration) contains three sections: "restart", "candidate_class_averages", and "reproducible_class_averages". To restart from a particular step, for example, generation 4 and section "candidate_class_averages" the following option is needed: "--restart_section=candidate_class_averages,4". The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the "--use_latest_master_directory" option can be used. (default none) 
 
-  * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
-        center_method:: method for centering of global 2D average during initial prealignment of data (default : 7; 0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7)
- 	ir:: inner ring of the resampling to polar coordinates (default = 1, units - pixels)
-        rs:: ring step of the resampling to polar coordinates (default = 1, units - pixels)
-	ts:: search step of translational search (default = 1.0, units - pixels)
-	maxit:: number of iterations for reference-free alignment  (default = 30)
-	dst:: discrete angle used in within group alignment (default = 90.0)
-	FL:: lowest stopband frequency used in the tangent filter (default = 0.2)
-	FH:: highest stopband frequency used in the tangent filter (default = 0.3)
-	FF:: fall-off of the tangent filter (default = 0.2)
-	init_iter:: number of runs of ab-initio within-cluster alignment for stability evaluation in SAC initialization (default = 3)
-	main_iter:: number of runs of ab-initio within-cluster alignment for stability evaluation in SAC (default = 3)
-	iter_reali:: every iter_reali iterations of SAC stability checking is performed (default = 1)
-	match_first:: number of iterations to run 2-way matching in the first phase (default = 1)
-	max_round:: maximum rounds of generating candidate class averages in the first phase (default = 20)
-	match_second:: number of iterations to run 2-way (or 3-way) matching in the second phase (default = 5)
-	stab_ali:: number of alignments when checking stability (default = 5)
-	thld_err:: the threshold of pixel error when checking stability, equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou) (default = 0.7, units - pixels)
-	indep_run:: specifies the level of m-way matching for reproducibility tests.  The default = 4 will perform full ISAC to 4-way matching. Value indep_run=2 will restrict ISAC to 2-way matching and 3 to 3-way matching.  Note the number of used MPI processes requested in mpirun must be a multiplicity of indep_run.
-	thld_grp:: the threshold of the size of reproducible class (essentially minimum size of class)  (default = 10)
-	n_generations:: program stops when reaching this total number of generations (default = 100)
-	restart_section:: each generation (iteration) contains three sections: "restart", "candidate_class_averages", and "reproducible_class_averages". To restart from a particular step, for example, generation 4 and section "candidate_class_averages" the following option is needed: "--restart_section=candidate_class_averages,4". The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the "--use_latest_master_directory" option can be used. 
-	use_latest_master_directory:: when active, the program looks for the latest directory that starts with the word "master", so the user does not need to provide a directory name
-	stop_after_candidates:: stops after the "candidate_class_averages" section
+    * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
+    ir:: inner ring: of the resampling to polar coordinates. units - pixels (default 1)
+    rs:: ring step: of the resampling to polar coordinates. units - pixels (default 1)
+    xr:: x range: of translational search. By default, set by the program. (default -1)
+    yr:: y range: of translational search. By default, same as xr. (default -1)
+    ts:: search step: of translational search: units - pixels (default 1.0)
+    maxit:: number of iterations for reference-free alignment: (default 30)
+    center_method:: method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default 7)
+    dst:: discrete angle used in within group alignment: (default 90.0)
+    FL:: lowest stopband: frequency used in the tangent filter (default 0.2)
+    FH:: highest stopband: frequency used in the tangent filter (default 0.3)
+    FF:: fall-off of the tangent filter: (default 0.2)
+    init_iter:: SAC initialization iterations: number of runs of ab-initio within-cluster alignment for stability evaluation in SAC initialization (default 3)
+    main_iter:: SAC main iterations: number of runs of ab-initio within-cluster alignment for stability evaluation in SAC (default 3)
+    iter_reali:: SAC stability check interval: every iter_reali iterations of SAC stability checking is performed (default 1)
+    match_first:: number of iterations to run 2-way matching in the first phase: (default 1)
+    max_round:: maximum rounds: of generating candidate class averages in the first phase (default 20)
+    match_second:: number of iterations to run 2-way (or 3-way) matching in the second phase: (default 5)
+    stab_ali:: number of alignments when checking stability: (default 5)
+    thld_err:: threshold of pixel error when checking stability: equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou). units - pixels. (default 0.7)
+    indep_run:: level of m-way matching for reproducibility tests: By default, perform full ISAC to 4-way matching. Value indep_run=2 will restrict ISAC to 2-way matching and 3 to 3-way matching.  Note the number of used MPI processes requested in mpirun must be a multiplicity of indep_run. (default 4)
+    thld_grp:: threshold of the size of reproducible class: essentially minimum size of class (default 10)
+    n_generations::maximum number of generations: program stops when reaching this total number of generations: (default 100)
+    rand_seed:: random seed set before calculations: useful for testing purposes (default none - total randomness)
+    new:: use new code: (default False)
+    debug:: debug info printout: (default False)
+    use_latest_master_directory:: use latest master directory: when active, the program looks for the latest directory that starts with the word "master", so the user does not need to provide a directory name. (default False)
+    stop_after_candidates:: stop after candidates: stops after the "candidate_class_averages" section. (default False)
+
 
 == Output ==
+    output_directory:: output directory name: into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results) (default required string)
 
 For each generation of running the program, there are two phases.  The first phase is an exploratory phase. In this phase, we set the criteria to be very  loose and try to find as much candidate class averages as possible. This phase typically should have 10 to 20 rounds (set by '''max_round''', default = 20). The candidate class averages are stored in '''class_averages_candidate_generation_n.hdf'''.   
 
@@ -84,6 +93,11 @@ The second phase is where the actual class averages are generated, it typically 
 '''generation_n_accounted.txt'''         : IDs of accounted particles in this generation
 
 '''generation_n_unaccounted.txt'''    : IDs of unaccounted particles in this generation
+
+
+=== Time and Memory ===
+
+Unfortunately, ISAC program is very time- and memory-consuming.  For example, on my cluster, it takes 15 hours to process 50,000 64x64 particles on 256 processors. Therefore, before embarking on the big dataset, it is recommended to run a test dataset (about 2,000~5,000 particles) first to get a rough idea of timing.  If the timing is beyond acceptable, the first parameter you may want to change is '''max_round''', you may change it to 10 or even 5 with mild effects on the results.
 
 ==== Retrieval of images signed to selected group averages ====
  1. Open in e2display.py file class_averages.hdf located in the main directory.

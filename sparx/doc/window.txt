@@ -24,16 +24,16 @@ sxwindow.py mic0.hdf mic2.hdf --coords_dir=info --coords_extension=box --coords_
 == Input ==
 	micrographs_list:: Input micrographs: if none is specified all files in option --indir are used　(default none)
 	
-    indir:: Directory containing input micrographs: (default current directory)
-    nameroot:: Root name (Prefix) of input micrographs: (default none)
-    micsuffix:: File extension of input micrographs: A string denoting micrograph type. (default hdf)
-    coords_dir:: Directory containing input coordinates files: (default current directory)
-    coords_suffix:: Suffix of input coordinates files: For example '_ptcls. (default none)
-    coords_extension:: File extension of input coordinates files: e.g 'box' for eman1, 'json' for eman2, ... (default box)
-    coords_format:: Format of input coordinates file: 'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size. (default eman1)
-    importctf:: File name of sxcter output: (default none)
+    indir:: directory containing input micrographs: (default current directory)
+    nameroot:: root name (Prefix) of input micrographs: (default none)
+    micsuffix:: file extension of input micrographs: A string denoting micrograph type. (default hdf)
+    coords_dir:: directory containing input coordinates files: (default current directory)
+    coords_suffix:: suffix of input coordinates files: For example '_ptcls. (default none)
+    coords_extension:: file extension of input coordinates files: e.g 'box' for eman1, 'json' for eman2, ... (default box)
+    coords_format:: format of input coordinates file: 'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size. (default eman1)
+    importctf:: file name of sxcter output: (default none)
     box_size:: xy dimension of square area to be windowed (in pixels): Pixel size after resampling is assumed when resample_ratio < 1.0 (default 256)
-    invert:: Invert image contrast: (recommended for cryo data) (default False)
+    invert:: invert image contrast: (recommended for cryo data) (default False)
 
     * The remaining parameters are optional.
     resample_ratio:: Ratio of new to old image size (or old to new pixel size) for resampling: Valid range is 0.0 < resample_ratio <= 1.0. (default 1.0)
@@ -42,8 +42,8 @@ sxwindow.py mic0.hdf mic2.hdf --coords_dir=info --coords_extension=box --coords_
     astigmatismerror:: Astigmatism error limit: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (default 360.0)
 
 == Output ==
-    outdir:: Output directory: (default current directory)
-    outsuffix:: Suffix for output stack: (default _ptcls)
+    outdir:: output directory: (default current directory)
+    outsuffix:: suffix for output stack: (default _ptcls)
 
 = Description =
  1. Takes micrographs and coordinates as input and writes windowed out particle images to a stack.

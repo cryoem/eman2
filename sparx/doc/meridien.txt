@@ -36,7 +36,8 @@ sxmeridien exists only in MPI version.
 
 == Output ==
     output_directory:: output folder: (default current directory)
-    
+
+
 = Description =
 
 = Author / Maintainer =

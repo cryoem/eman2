@@ -1,11 +1,13 @@
 = Name =
-sxcter - Automated estimation of CTF parameters with error assessment
+sxcter - Automated estimation of CTF parameters with error assessment.
 
 = Usage =
 
 sxcter.py  stack  outdir1  outdir2  --indir==indir  --nameroot=nameroot  --micsuffix=micsuffix  --wn=wn  --apix=apix  --Cs=Cs --voltage=voltage  --ac=ac  --kboot=kboot  --MPI  --debug  --overlap_x=overlap_x  --overlap_y=overlap_y  --edge_x=edge_x  --edge_y=edge_y  --f_start  --f_stop
 
 === Typical usage ===
+
+sxcter exists in for both MPI and non-MPI versions.
 
 
 ''Process micrographs'':
@@ -34,33 +36,34 @@ Specify name of stack, output directories ''pwrot'' and ''partresdir'' as argume
 
 sxcter.py bdb:stack pwrot partresdir --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
 
-== Input ==
-	stack:: 2D images in a stack file: (default none)
-	
-	indir:: directory containing micrographs to be processed: (default current directory)
-	nameroot:: prefix of micrographs to be processed: (default none)
-	micsuffix:: a string denoting micrograph type: For example 'mrc', 'hdf', 'ser' ... (default none)
-	wn:: size of window to use: should be slightly larger than particle box size (default 512)
-	apix:: pixel size in angstroms: (default 1.0)
-	Cs:: microscope Cs (spherical aberration): (default 2.0)
-	voltage:: microscope voltage in KV: (default 300.0)
-	ac:: amplitude contrast in percentage: (default 10.0)
 
-	* The remaining parameters are optional.
-	kboot:: number of defocus estimates for micrograph: used for error assessment (default 16)  
-	MPI:: use MPI version: (default False)
-	debug:: debug: (default False)
-	overlap_x:: overlap x in percentage: (default 50)
-	overlap_y:: overlap y in percentage: (default 50)
-	edge_x:: edge x in pixels: (default 0) 
-	edge_y:: edge y in pixels: (default 0)
-	f_start:: starting frequency in 1/A: by default determined automatically (default -1.0)
-	f_stop:: stop frequency in 1/A: by default determined automatically (default -1.0)
+== Input ==
+    stack:: 2D images in a stack file: (default none)
+    
+    indir:: directory containing micrographs to be processed: (default current directory)
+    nameroot:: prefix of micrographs to be processed: (default none)
+    micsuffix:: a string denoting micrograph type: For example 'mrc', 'hdf', 'ser' ... (default none)
+    wn:: size of window to use: should be slightly larger than particle box size (default 512)
+    apix:: pixel size in angstroms: (default 1.0)
+    Cs:: microscope Cs (spherical aberration): (default 2.0)
+    voltage:: microscope voltage in KV: (default 300.0)
+    ac:: amplitude contrast in percentage: (default 10.0)
+
+    * The remaining parameters are optional.
+    kboot:: number of defocus estimates for micrograph: used for error assessment (default 16)  
+    MPI:: use MPI version: (default False)
+    debug:: debug: (default False)
+    overlap_x:: overlap x in percentage: (default 50)
+    overlap_y:: overlap y in percentage: (default 50)
+    edge_x:: edge x in pixels: (default 0) 
+    edge_y:: edge y in pixels: (default 0)
+    f_start:: starting frequency in 1/A: by default determined automatically (default -1.0)
+    f_stop:: stop frequency in 1/A: by default determined automatically (default -1.0)
+
 
 == Output ==
-	outdir1:: output directory for rotinf**** files: (default required string)
-	outdir2:: output directory for partres file: (default required string)
-	
+    outdir1:: output directory for rotinf**** files: (default required string)
+    outdir2:: output directory for partres file: (default required string)
 
 CTF parameters are written to a new file ''partres'' in a new directory specified by argument ''partresdir''.<<BR>><<BR>>
 Rotational average are written to directory specified by argument ''pwrot'' as files in the form of rotinf****.<<BR>><<BR>>
