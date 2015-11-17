@@ -43,6 +43,44 @@ import	os
 import	sys
 from 	time		import	time
 
+def image_decimate_window_xform_ctf(img,decimation=2,window_size=0,CTF=False):
+        """
+                Window 2D image to FFT-friendly size, apply Butterworth low pass filter,
+                and decimate image by integer factor
+        """
+        from filter       import filt_btwl
+        from fundamentals import smallprime,window2d
+        from utilities    import get_image,get_params_proj,set_params_proj,get_ctf, set_ctf
+        if decimation ==1:
+        	if window_size ==0:
+        		return img
+        	else:
+        		[phi,theta,psi,tx,ty]=get_params_proj(img)
+        		if CTF:ctf_params = get_ctf(img)
+        		new_params =[phi, theta, psi, tx/decimation,ty/decimation]
+        		img = Util.window(img,window_size,window_size,1, 0, 0, 0)
+        		set_params_proj(img,new_params)
+        		if CTF:set_ctf(decimated_image,ctf_params)
+        		return img
+        else:
+        	nz= img.get_zsize()
+        	if( nz > 1):                    ERROR("This command works only for 2-D images", "image_decimate", 1)
+        	if decimation    <= 1  :        ERROR("Improper decimation ratio", "image_decimate", 1)
+        	[phi,theta,psi,tx,ty]=get_params_proj(img)
+        	new_params =[phi,theta,psi,tx/decimation,ty/decimation]
+        	if CTF:
+        		ctf_params=get_ctf(img)
+        		ctf_params[3] *=decimation
+        	frequency_low     = 0.5/decimation-0.02
+        	if frequency_low <= 0 : ERROR("Butterworth passband frequency is too low","image_decimation",1)
+        	frequency_high    = min(0.5/decimation + 0.02, 0.499)
+        	if window_size >0:
+        		img = Util.window(img, window_size, window_size,1, 0, 0, 0)
+        	e = filt_btwl(img,frequency_low,frequency_high)
+        	decimated_image = Util.decimate(e,int(decimation),int(decimation), 1)
+        	set_params_proj(decimated_image,new_params)
+        	if CTF:set_ctf(decimated_image,ctf_params)
+        	return decimated_image
 
 def main():
 
@@ -73,21 +111,19 @@ def main():
 	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
 	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="Long output for debugging")
 	#parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version")
-
 	#parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
 	#parser.add_option("--iter", 		type="int"         ,	default=40   ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
 	#parser.add_option("--abs", 			type="float"       ,	default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	#parser.add_option("--squ", 			type="float"       ,	default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances (Default False)")
-	parser.add_option("--decimate",     type="float",           default=1.0,                 help=" decimate ratio of images, resample image to a smaller size")
-	parser.add_option("--window",       type="int",             default=0,                   help="reduce images to a small image size without changing pixel_size")
+	parser.add_option("--decimate",     type="float",           default=1.0,                 help="image decimate rate, a number large than 1. default is 1")
+	parser.add_option("--window",       type="int",             default=0,                   help="reduce images to a small image size without changing pixel_size. Default value is zero.")
 	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
 	#parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
 	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
-
-
-	(options,args) = parser.parse_args()
 	
+	(options,args) = parser.parse_args()
+	#####
 	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_recv, MPI_COMM_WORLD, MPI_TAG_UB
 	from mpi import mpi_barrier, mpi_reduce, mpi_bcast, mpi_send, MPI_FLOAT, MPI_SUM, MPI_INT, MPI_MAX
 	from applications import MPI_start_end
@@ -101,9 +137,7 @@ def main():
 	#  This is code for handling symmetries by the above program.  To be incorporated. PAP 01/27/2015
 
 	from EMAN2db import db_open_dict
-
-
-
+	
 	if options.symmetrize :
 		try:
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
@@ -161,7 +195,7 @@ def main():
 	else:
 
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
-		myid = mpi_comm_rank(MPI_COMM_WORLD)
+		myid     = mpi_comm_rank(MPI_COMM_WORLD)
 		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 		main_node = 0
 
@@ -202,7 +236,6 @@ def main():
 		import string
 		options.sym = options.sym.lower()
 		 
-
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
@@ -243,6 +276,10 @@ def main():
 		nima = bcast_number_to_all(nima)
 		nx   = bcast_number_to_all(nx)
 		ny   = bcast_number_to_all(ny)
+		Tracker ={}
+		Tracker["nx"]  =nx
+		Tracker["ny"]  =ny
+		Tracker["total_stack"]=nima
 		symbaselen = bcast_number_to_all(symbaselen)
 		if radiuspca == -1: radiuspca = nx/2-2
 
@@ -284,20 +321,11 @@ def main():
 		"""
 		if options.VAR:
 			#varList = EMData.read_images(stack, range(img_begin, img_end))
-			from fundamentals import image_decimate 
 			varList = []
 			this_image = EMData()
 			for index_of_particle in xrange(img_begin,img_end):
-				this_image.read_image(stack, index_of_particle)
-				if options.decimate<1 and options.window ==0: 
-					this_image =image_decimate(this_image,decimate)
-				elif options.window>0 and options.decimate<1.:
-						this_image = Util.window(this_image,options.window,options.window,1)
-						this_image =image_decimate(this_image,decimate)
-				elif options.window>0 and options.decimate==1.:
-						this_image = Util.window(this_image,options.window,options.window,1)
-				varList.append(this_image)
-				
+				this_image.read_image(stack,index_of_particle)
+				varList.append(image_decimate_window_xform_ctf(img,options.decimate,options.window,options.CTF))
 		else:
 			from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
 			from utilities		import set_params_proj, get_params_proj, params_3D_2D, get_params2D, set_params2D, compose_transform2
@@ -381,6 +409,11 @@ def main():
 			if options.VERBOSE: 	print "Begin to read images on processor %d"%(myid)
 			ttt = time()
 			imgdata = EMData.read_images(stack, all_proj)
+			img     = EMdata()
+			imgdata = []
+			for index_of_proj in xrange(len(all_proj)):
+				img.read_image(stack, index_of_proj)
+				imgdata.append(image_decimate_window_xform_ctf(img,options.decimate,options.window,options.CTF))
 			if options.VERBOSE:
 				print "Reading images on processor %d done, time = %.2f"%(myid, time()-ttt)
 				print "On processor %d, we got %d images"%(myid, len(imgdata))
@@ -513,6 +546,7 @@ def main():
 			#  To this point, all averages, variances, and eigenvectors are computed
 
 			if options.ave2D:
+				from fundamentals import fpol
 				if myid == main_node:
 					km = 0
 					for i in xrange(number_of_proc):
@@ -535,7 +569,8 @@ def main():
 								members = mpi_recv(3, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 								ave.set_attr('refprojdir', map(float, members))
 								"""
-								ave.write_image(options.ave2D, km)
+								tmpvol=fpol(ave, Tracker["nx"],Tracker["nx"],Tracker["nx"])								
+								tmpvol.write_image(options.ave2D, km)
 								km += 1
 				else:
 					mpi_send(len(aveList), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
@@ -555,11 +590,13 @@ def main():
 						"""
 
 			if options.ave3D:
+				from fundamentals import fpol
 				if options.VERBOSE:
 					print "Reconstructing 3D average volume"
 				ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad)
 				bcast_EMData_to_all(ave3D, myid)
 				if myid == main_node:
+					avg3D=fpol(avg3D,Tracker["nx"],Tracker["nx"],Tracker["nx"])
 					ave3D.write_image(options.ave3D)
 					print_msg("%-70s:  %s\n"%("Writing to the disk volume reconstructed from averages as", options.ave3D))
 			del ave, var, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList
@@ -609,21 +646,23 @@ def main():
 				del eigList, mask2d
 
 			if options.ave3D: del ave3D
-
 			if options.var2D:
+				from fundamentals import fpol 
 				if myid == main_node:
 					km = 0
 					for i in xrange(number_of_proc):
 						if i == main_node :
 							for im in xrange(len(varList)):
-								varList[im].write_image(options.var2D, km)
+								tmpvol=fpol(varList[im], Tracker["nx"], Tracker["nx"],1)
+								tmpvol.write_image(options.var2D, km)
 								km += 1
 						else:
 							nl = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 							nl = int(nl[0])
 							for im in xrange(nl):
 								ave = recv_EMData(i, im+i+70000)
-								ave.write_image(options.var2D, km)
+								tmpvol=fpol(ave, Tracker["nx"], Tracker["nx"],1)
+								tmpvol.write_image(options.var2D, km)
 								km += 1
 				else:
 					mpi_send(len(varList), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
@@ -642,6 +681,8 @@ def main():
 			res = recons3d_4nn_MPI(myid, varList, symmetry=options.sym, npad=options.npad)
 			#res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)
 			if myid == main_node:
+				from fundamentals import fpol
+				res =fpol(res, Tracker["nx"], Tracker["nx"], Tracker["nx"])
 				res.write_image(options.var3D)
 
 			if myid == main_node:
