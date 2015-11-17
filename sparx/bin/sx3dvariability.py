@@ -56,11 +56,13 @@ def image_decimate_window_xform_ctf(img,decimation=2,window_size=0,CTF=False):
         		return img
         	else:
         		[phi,theta,psi,tx,ty]=get_params_proj(img)
-        		if CTF:ctf_params = get_ctf(img)
+        		if CTF:[defocus,cs,voltage,pixel_size,bfactor,ampconst,dfdiff,dfang] = get_ctf(img)
         		new_params =[phi, theta, psi, tx/decimation,ty/decimation]
         		img = Util.window(img,window_size,window_size,1, 0, 0, 0)
         		set_params_proj(img,new_params)
-        		if CTF:set_ctf(decimated_image,ctf_params)
+        		if CTF:
+					ctf_params=[defocus,cs,voltage,pixel_size*decimation,bfactor,ampconst,dfdiff,dfang]
+					set_ctf(img,ctf_params)
         		return img
         else:
         	nz= img.get_zsize()
@@ -68,9 +70,7 @@ def image_decimate_window_xform_ctf(img,decimation=2,window_size=0,CTF=False):
         	if decimation    <= 1  :        ERROR("Improper decimation ratio", "image_decimate", 1)
         	[phi,theta,psi,tx,ty]=get_params_proj(img)
         	new_params =[phi,theta,psi,tx/decimation,ty/decimation]
-        	if CTF:
-        		ctf_params=get_ctf(img)
-        		ctf_params[3] *=decimation
+        	if CTF:[defocus,cs,voltage,pixel_size,bfactor,ampconst,dfdiff,dfang] = get_ctf(img)
         	frequency_low     = 0.5/decimation-0.02
         	if frequency_low <= 0 : ERROR("Butterworth passband frequency is too low","image_decimation",1)
         	frequency_high    = min(0.5/decimation + 0.02, 0.499)
@@ -79,7 +79,9 @@ def image_decimate_window_xform_ctf(img,decimation=2,window_size=0,CTF=False):
         	e = filt_btwl(img,frequency_low,frequency_high)
         	decimated_image = Util.decimate(e,int(decimation),int(decimation), 1)
         	set_params_proj(decimated_image,new_params)
-        	if CTF:set_ctf(decimated_image,ctf_params)
+        	if CTF:
+        		ctf_params = [defocus,cs,voltage,pixel_size*decimation,bfactor,ampconst,dfdiff,dfang]
+        		set_ctf(decimated_image,ctf_params)
         	return decimated_image
 
 def main():
@@ -119,7 +121,7 @@ def main():
 	parser.add_option("--decimate",     type="float",           default=1.0,                 help="image decimate rate, a number large than 1. default is 1")
 	parser.add_option("--window",       type="int",             default=0,                   help="reduce images to a small image size without changing pixel_size. Default value is zero.")
 	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
-	#parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
+	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
 	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
 	
 	(options,args) = parser.parse_args()
@@ -227,12 +229,12 @@ def main():
 		#if options.SND and (options.ave2D or options.ave3D):
 		#	ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3dvariability", 1, myid)
 		#	exit()
-		#if options.nvec > 0 :
-		#	ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
-		#	exit()
-		#if options.nvec > 0 and options.ave3D == None:
-		#	ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", myid=myid)
-		#	exit()
+		if options.nvec > 0 :
+			ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
+			exit()
+		if options.nvec > 0 and options.ave3D == None:
+			ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", myid=myid)
+			exit()
 		import string
 		options.sym = options.sym.lower()
 		 
@@ -246,7 +248,7 @@ def main():
 			print_msg("%-70s:  %s\n"%("Input stack", stack))
 	
 		img_per_grp = options.img_per_grp
-		#nvec = options.nvec
+		nvec = options.nvec
 		radiuspca = options.radiuspca
 
 		symbaselen = 0
@@ -280,6 +282,17 @@ def main():
 		Tracker["nx"]  =nx
 		Tracker["ny"]  =ny
 		Tracker["total_stack"]=nima
+		if options.decimate==1.:
+			if options.window !=0:
+				nx = options.window
+				ny = options.window
+		else:
+			if options.window ==0:
+				nx = int(nx/options.decimate)
+				ny = int(ny/options.decimate)
+			else:
+				nx = int(options.window/options.decimate)
+				ny = nx
 		symbaselen = bcast_number_to_all(symbaselen)
 		if radiuspca == -1: radiuspca = nx/2-2
 
@@ -408,12 +421,14 @@ def main():
 
 			if options.VERBOSE: 	print "Begin to read images on processor %d"%(myid)
 			ttt = time()
-			imgdata = EMData.read_images(stack, all_proj)
-			img     = EMdata()
+			#imgdata = EMData.read_images(stack, all_proj)
+			img     = EMData()
 			imgdata = []
 			for index_of_proj in xrange(len(all_proj)):
-				img.read_image(stack, index_of_proj)
-				imgdata.append(image_decimate_window_xform_ctf(img,options.decimate,options.window,options.CTF))
+				img.read_image(stack, all_proj[index_of_proj])
+				dmg = image_decimate_window_xform_ctf(img,options.decimate,options.window,options.CTF)
+				#print dmg.get_xsize(), "init"
+				imgdata.append(dmg)
 			if options.VERBOSE:
 				print "Reading images on processor %d done, time = %.2f"%(myid, time()-ttt)
 				print "On processor %d, we got %d images"%(myid, len(imgdata))
@@ -455,8 +470,10 @@ def main():
 						else:            alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, -(180-(phiM-phi)), 0.0, 0.0, 1.0)
 					set_params2D(imgdata[mj], [alpha, sx, sy, mirror, 1.0])
 					grp_imgdata.append(imgdata[mj])
+					#print grp_imgdata[j].get_xsize(), imgdata[mj].get_xsize()
 
 				if not options.no_norm:
+					#print grp_imgdata[j].get_xsize()
 					mask = model_circle(nx/2-2, nx, nx)
 					for k in xrange(img_per_grp):
 						ave, std, minn, maxx = Util.infomask(grp_imgdata[k], mask, False)
@@ -596,7 +613,7 @@ def main():
 				ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad)
 				bcast_EMData_to_all(ave3D, myid)
 				if myid == main_node:
-					avg3D=fpol(avg3D,Tracker["nx"],Tracker["nx"],Tracker["nx"])
+					ave3D=fpol(ave3D,Tracker["nx"],Tracker["nx"],Tracker["nx"])
 					ave3D.write_image(options.ave3D)
 					print_msg("%-70s:  %s\n"%("Writing to the disk volume reconstructed from averages as", options.ave3D))
 			del ave, var, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList
