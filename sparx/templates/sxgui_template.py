@@ -65,21 +65,21 @@ class SXPopup(QWidget):
 		self.TabWidget.resize(730,1080) # self.TabWidget.resize(730,860)
 		self.TabWidget.show()
 		
-	def map_widgets_to_cmd_line(self):
+	def map_widgets_to_sxcmd_line(self):
 		# Add program name to command line
 		sxcmd_line = "%s.py" % self.sxcmd.name
 		
 		# Loop through all command tokens
-		for token in self.token_list:
+		for token in self.sxcmd.token_list:
 			if token.type == 'bool':
-				if token.is_required == True: ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "SXcmd::map_widgets_to_cmd_line() in sxgui.py")
+				if token.is_required == True: ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
 				if (token.widget.checkState() == Qt.Checked) != token.default:
 					sxcmd_line += " %s%s" % (token.key_prefix, token.key_base)
 			else:
 				if token.is_required == True and token.widget.text() == token.default:
-					ERROR("Warning: Token (%s) of command (%s) is required. Please set the value for this token." % (token.key_base, self.name), "SXcmd::map_widgets_to_cmd_line() in sxgui.py", action = 0)
+					ERROR("Warning: Token (%s) of command (%s) is required. Please set the value for this token." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
 					return ""
-									
+				
 				if token.widget.text() != token.default:
 					# For now, using line edit box for the other type
 					sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, token.widget.text())
@@ -91,43 +91,87 @@ class SXPopup(QWidget):
 				# elif token.type == "pdb":
 				# elif token.type == "function":
 				# else:
-				#	if token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer." % line_wiki, "SXTab_main::__init__() in sxgui.py")
+				#	if token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+		
+		return sxcmd_line
+	
+	def generate_cmd_line(self):
+		sxcmd_line = self.map_widgets_to_sxcmd_line()
+		
+		# If mpi is not supported set number of MPI processer (np) to 1
+		np = 1
+		if self.sxcmd.mpi_support:
+			# mpi is supported
+			np = int(str(self.tab_main.mpi_nproc_edit.text()))
+			# NOTE: 2015/10/27 Toshio Moriya
+			# Since we now assume sx*.py exists in only MPI version, always add --MPI flag if necessary
+			# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
+			if self.sxcmd.mpi_add_flag:
+				sxcmd_line += ' --MPI'
+		
+		# Generate command line according to the case
+		cmd_line = ""
+		# Case 1: queue submission is enabled (MPI must be supported)
+		if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+			if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			# Create script for queue submission from a give template
+			if os.path.exists(self.tab_main.qsub_script_edit.text()) != True: ERROR("Run Time Error: Invalid file path for qsub script template.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			file_template = open(self.tab_main.qsub_script_edit.text(),'r')
+			# Extract command line from qsub script template 
+			for line in file_template:
+				if line.find('XXX_SXCMD_LINE_XXX') != -1:
+					cmd_line = line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
+					if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
+						cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
+					if cmd_line.find('XXX_SXMPI_JOB_NAME_XXX') != -1:
+						cmd_line = cmd_line.replace('XXX_SXMPI_JOB_NAME_XXX', str(self.tab_main.qsub_job_name_edit.text()))
+			file_template.close()
+		# Case 2: queue submission is disabled, but MPI is supported
+		elif self.sxcmd.mpi_support:
+			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			# Add MPI execution to command line
+			cmd_line = str(self.tab_main.mpi_cmd_line_edit.text())
+			# If empty string is entered, use a default template
+			if cmd_line == "":
+				cmd_line = 'mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX'
+			if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
+				cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
+			if cmd_line.find('XXX_SXCMD_LINE_XXX') != -1:
+				cmd_line = cmd_line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
+		# Case 3: MPI is not supported
+		else: 
+			if self.sxcmd.mpi_support == True: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			# Use sx command as it is
+			cmd_line = sxcmd_line
+		
+		return cmd_line
+
+	def save_cmd_line(self):
+		cmd_line = self.generate_cmd_line()
+		if cmd_line:
+			file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Generate Command Line", options = QtGui.QFileDialog.DontUseNativeDialog)
+			if file_name_out != '':
+				file_out = open(file_name_out,'w')
+				file_out.write(cmd_line + '\n')
+				file_out.close()
+				print 'Saved the following command to %s:' % file_name_out
+				print cmd_line
+		# else: Do nothing
+	
+	def execute_cmd_line(self):
+		cmd_line = self.generate_cmd_line()
 		
 #		# Add MPI flag only if mpi is supported and number of MPI processer (np) is larger than 1
 #		# NOTE: 2015/10/27 Toshio Moriya
 #		# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
 #		if self.mpi_support and int(str(self.tab_main.mpi_nproc_edit.text())) > 1 and self.mpi_add_flag:
 #			sxcmd_line += ' --MPI'
-
-		return sxcmd_line
-
-	def generate_cmd_line(self):
-	
-		sxcmd_line = self.map_widgets_to_cmd_line()
-		
-		if sxcmd_line:
-			file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Generate Command Line", options = QtGui.QFileDialog.DontUseNativeDialog)
-			if file_name_out != '':
-				file_out = open(file_name_out,'w')
-				file_out.write(sxcmd_line + '\n')
-				file_out.close()
-				print 'Saved the following command to %s:' % file_name_out
-				print sxcmd_line
-
-	def execute_cmd(self):
-		# Set self.sxcmd_line
-		self.map_gui_to_cmd_line()
-		
-		# out_dir = str(self.cmd_token_dict['Output Directory'].gui.text())
-		# if os.path.exists(out_dir):
-		# 	print "Output directory " + out_dir + " already exists!"
-		# 	return
 		
 		# If mpi is not supported set number of MPI processer (np) to 1
 		np = 1
 		if self.mpi_support:
 			np = int(str(self.tab_main.mpi_nproc_edit.text()))
-				
+			
 		# Case 1: queue submission is enabled
 		if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 				
@@ -164,7 +208,6 @@ class SXPopup(QWidget):
 			print self.sxcmd_line
 			print 'Submitted a job by the following command: '
 			print cmd_line
-		
 		# Case 2: queue submission is disabled, but MPI is enabled
 		elif self.mpi_support:
 			assert self.tab_main.qsub_enable_checkbox.checkState() != Qt.Checked
@@ -184,8 +227,21 @@ class SXPopup(QWidget):
 			print 'Executed the following command: '
 			print cmd_line
 		
-		process = subprocess.Popen(cmd_line, shell=True)
-		self.emit(QtCore.SIGNAL("process_started"), process.pid)
+	
+			if sxcmd_line:
+				file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Generate Command Line", options = QtGui.QFileDialog.DontUseNativeDialog)
+				if file_name_out != '':
+					file_out = open(file_name_out,'w')
+					file_out.write(sxcmd_line + '\n')
+					file_out.close()
+					print 'Saved the following command to %s:' % file_name_out
+					print sxcmd_line
+				# out_dir = str(self.cmd_token_dict['Output Directory'].gui.text())
+				# if os.path.exists(out_dir):
+				# 	print "Output directory " + out_dir + " already exists!"
+				# 	return
+				process = subprocess.Popen(cmd_line, shell=True)
+				self.emit(QtCore.SIGNAL("process_started"), process.pid)
 	
 	"""
 	def save_params(self):		
@@ -380,7 +436,7 @@ class SXTab_main(QWidget):
 					# elif cmd_token.type == "pdb":
 					# elif cmd_token.type == "function":
 					# else:
-					#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % 	line_wiki, "SXTab_main::__init__() in sxgui.py")
+					#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 				cmd_token_widget.move(self.x2,self.y2 - 7)
 				cmd_token_widget.setToolTip(cmd_token.help)		
 				cmd_token.widget = cmd_token_widget
@@ -463,7 +519,7 @@ class SXTab_main(QWidget):
 		# self.save_params_btn.move(self.x1-5,  self.y4)
 		self.save_params_btn.move(self.x1-5,  self.y2)
 		self.save_params_btn.setToolTip('Save gui parameter settings')
-#		self.connect(self.save_params_btn, SIGNAL("clicked()"), sxpopup.save_params)
+#		self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxpopup.save_params)
 		
 		# self.y4 = self.y4+30
 		self.y2 = self.y2+30
@@ -472,7 +528,7 @@ class SXTab_main(QWidget):
 		# self.cmd_line_btn.move(self.x1-5,  self.y4)
 		self.cmd_line_btn.move(self.x1-5,  self.y2)
 		self.cmd_line_btn.setToolTip('Generate command line from gui parameter settings')
-		self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxpopup.generate_cmd_line)
+		self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxpopup.save_cmd_line)
 		
 		self.y2 = self.y2+30
 
@@ -483,7 +539,7 @@ class SXTab_main(QWidget):
 		self.execute_btn.setStyleSheet(s)
 		# self.execute_btn.move(self.x5,  self.y5)
 		self.execute_btn.move(self.x5,  self.y2)
-#		self.connect(self.execute_btn, SIGNAL("clicked()"), sxpopupsxpopup.execute_cmd)
+#		self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxpopup.execute_cmd_line)
 
 	def set_widget_enable_state(self, widget, is_enabled):
 		# Set enable state and background color of widget according to enable state
@@ -562,7 +618,7 @@ class SXTab_advance(QWidget):
 					# elif cmd_token.type == "pdb":
 					# elif cmd_token.type == "function":
 					# else:
-					#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % 	line_wiki, "SXTab_main::__init__() in sxgui.py")
+					#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 				cmd_token_widget.move(self.x2,self.y1)
 				cmd_token_widget.setToolTip(cmd_token.help)		
 				cmd_token.widget = cmd_token_widget
