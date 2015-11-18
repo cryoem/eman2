@@ -40,321 +40,250 @@ from EMAN2 import *
 from sparx import *
 from EMAN2_cppwrap import *
 
+# >>>>> START_INSERTION >>>>>
 # ========================================================================================
 class SXcmd_token:
 	def __init__(self):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.key_base = ""		    # key base name of command token (argument or option) in command line
-		self.key_prefix = ""		# key prefix of of command token. None for argument, '--' or '-' for option
-		self.label = ""				# User friendly name of argument or option
-		self.help = ""		    	# Help info
-		self.group = ""				# Tab group: main or advanced
-		self.is_required = False	# Required argument or options. No default value are available 
-		self.default = ""			# Default value
-		self.type = ""		    	# Type of value
-		self.is_in_io = False		# To check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
-		self.widget_list = []		# The list of associated widget instances to this command token
+		self.key_base = ""          # key base name of command token (argument or option) in command line
+		self.key_prefix = ""        # key prefix of of command token. None for argument, '--' or '-' for option
+		self.label = ""             # User friendly name of argument or option
+		self.help = ""              # Help info
+		self.group = ""             # Tab group: main or advanced
+		self.is_required = False    # Required argument or options. No default value are available
+		self.default = ""           # Default value
+		self.type = ""              # Type of value
+		self.is_in_io = False       # <Used only here> To check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
+		self.widget = None          # <Used only in sxgui.py> Widget instances Associating with this command token
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+# ========================================================================================
+class SXcmd:
+	def __init__(self):
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.name = ""              # Name of this command (i.e. name of sx*.py script but without .py extension)
+		self.short_info = ""        # Short description of this command
+		self.mpi_support = False    # Flag to indicate if this command suppors MPI version
+		self.mpi_support = False    # Flag to indicate if this command suppors MPI version
+		self.mpi_add_flag = False   # NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts
+		self.token_list = []        # list of command tokens. Need this to keep the order of command tokens
+		self.token_dict = {}        # dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
-class SXcmd:
-	def __init__(self, wiki_file_path):
-		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		# class variables
-		self.wiki_file_path = wiki_file_path  # File path to wiki documents of this command
-		self.name = ""                        # Name of this command (i.e. name of sx*.py script but without .py extension)
-		self.short_info = ""                  # Short description of this command
-		self.mpi_support = False              # Flag to indicate if this command suppors MPI version
-		self.mpi_add_flag = False             # NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts 
-		self.token_list = []                  # list of command tokens. Need this to keep the order of command tokens
-		self.token_dict = {}                  # dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
-		self.line = ""
-		# self.button_widget = None		      # The list of associated widget instances to this command token
-		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		
-		self.construct_token_list_from_wiki()
+def construct_sxcmd_list():
+	sxcmd_list = []
 
-	# Set self.mpi_support and self.sxcmd_token_list by extracting info from option parser
-	def construct_token_list_from_wiki(self):
-		# Private helper class used only in this function
-		class SXkeyword_map:
-			def __init__(self, priority, token_type):
-				if priority >= 100: ERROR("Priority should be lower than 100", "SXkeyword_map::__init__() in wikiparser")
-				# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-				# class variables
-				self.priority = priority      # Priority of this keyword. Highest priority is 0. The type of higher priority will be used to avoid the conflict among keywords
-				self.token_type = token_type  # Token value type 
-				# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-				
-		# Define dictionary of keywords:
-		# The dictionary maps command token to special data types
-		# If a command token extracted from 'usage in command line' contains the keyword defined here
-		# the associated special data type will be assigned to this command token.
-		# 
-		# - output      : Line edit box and output info button
-		#                 GUI also checks the existence of output directory/file before execution of the sx*.py
-		#                 GUI abort the execution if the directory/file exists already
-		# - directory   : Line edit box and open directory button
-		# - image       : Line edit box and open file buttons for .hdf and .bdb 
-		# - parameters  : Line edit box and open file button for all file types 
-		# - pdb         : Line edit box and open file button for .pdb 
-		# - function    : Two line edit boxes (function name & file path of the container script)
-		#                 and open file button for .py
-		# 
-		keyword_dict = {}
-		# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
-		keyword_dict["use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
-		# Use priority 1 for output
-		keyword_dict["output"]                      = SXkeyword_map(1, "output")     # output.hdf, output_directory, outputfile
-		keyword_dict["outdir"]                      = SXkeyword_map(1, "output")     # outdir1, outdir2, outdir, --outdir=output_directory
-		keyword_dict["locresvolume"]                = SXkeyword_map(1, "output")     # locresvolume (this contained keyword "volume" also... This is another reason why priority is introduced...)
-		keyword_dict["directory"]                   = SXkeyword_map(1, "output")     # directory
-		# Use priority 2 for the others
-		keyword_dict["indir"]                       = SXkeyword_map(2, "directory")  # --indir=input_directory
-		keyword_dict["coords_dir"]                  = SXkeyword_map(2, "directory")  # --coords_dir=coords_directory
-		keyword_dict["stack"]                       = SXkeyword_map(2, "image")      # stack, stack_file, prj_stack
-		keyword_dict["volume"]                      = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, inputvolume
-		keyword_dict["mask"]                        = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask
-		keyword_dict["focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
-		keyword_dict["importctf"]                   = SXkeyword_map(2, "paramters")  # --importctf=ctf_file
-		keyword_dict["pwreference"]                 = SXkeyword_map(2, "paramters")  # --pwreference=pwreference_file
-		keyword_dict["pdb"]                         = SXkeyword_map(2, "pdb")        # input.pdb
-		keyword_dict["function"]                    = SXkeyword_map(2, "function")   # --function=user_function
-				
-		# Define list of target sections for GUI and set current
-		section_lists = []		
-		section_lists.append("= Name ="); section_name = len(section_lists) - 1; 
-		section_lists.append("= Usage ="); section_usage = len(section_lists) - 1; 
-		section_lists.append("=== Typical usage ==="); section_typical = len(section_lists) - 1; 
-		section_lists.append("== Input =="); section_input = len(section_lists) - 1; 
-		section_lists.append("== Output =="); section_output = len(section_lists) - 1; 
-		current_section = section_name
-		
-		# Define list of subsections of input section and set current		
-		group_main = "main"
-		group_advanced = "advanced"
-		group = group_main
-				
-		# Define States and set current
-		state_searching  = 0
-		state_processing = 1
-		state_done = 1
-		current_state = state_searching
-				
-		# NOTE: 2015/11/11 Toshio Moriya
-		# This should be exception. Need to decide if this should be skipped or exit system.
-		if os.path.exists(self.wiki_file_path) == False: ERROR("Rutime Error: Wiki document is not found.", "main() in wikiparser")
-		
-		file_wiki = open(self.wiki_file_path,'r')
-		
-		# Loop through all lines in the wiki document file
-		for line_wiki in file_wiki:
-			# make sure spaces & new line are not included at head and tail of this line
-			line_wiki = line_wiki.strip()  
+	sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True
+	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "outdir1"; token.key_prefix = ""; token.label = "output directory for rotinf**** files"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "outdir2"; token.key_prefix = ""; token.label = "output directory for partres file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "indir"; token.key_prefix = "--"; token.label = "directory containing micrographs to be processed"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.type = "directory"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "nameroot"; token.key_prefix = "--"; token.label = "prefix of micrographs to be processed"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "micsuffix"; token.key_prefix = "--"; token.label = "a string denoting micrograph type"; token.help = "For example 'mrc', 'hdf', 'ser' ... "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "size of window to use"; token.help = "should be slightly larger than particle box size "; token.group = "main"; token.is_required = False; token.default = "512"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "pixel size in angstroms"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "Cs"; token.key_prefix = "--"; token.label = "microscope Cs (spherical aberration)"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "2.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "voltage"; token.key_prefix = "--"; token.label = "microscope voltage in KV"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "300.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ac"; token.key_prefix = "--"; token.label = "amplitude contrast in percentage"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "10.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "kboot"; token.key_prefix = "--"; token.label = "number of defocus estimates for micrograph"; token.help = "used for error assessment "; token.group = "advanced"; token.is_required = False; token.default = "16"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "debug"; token.key_prefix = "--"; token.label = "debug"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "overlap_x"; token.key_prefix = "--"; token.label = "overlap x in percentage"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "50"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "overlap_y"; token.key_prefix = "--"; token.label = "overlap y in percentage"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "50"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "edge_x"; token.key_prefix = "--"; token.label = "edge x in pixels"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "edge_y"; token.key_prefix = "--"; token.label = "edge y in pixels"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "f_start"; token.key_prefix = "--"; token.label = "starting frequency in 1/A"; token.help = "by default determined automatically "; token.group = "advanced"; token.is_required = False; token.default = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "f_stop"; token.key_prefix = "--"; token.label = "stop frequency in 1/A"; token.help = "by default determined automatically "; token.group = "advanced"; token.is_required = False; token.default = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 
-			if not line_wiki:
-				# This is empty line. Always ignore it regardless of state
-				continue
-				
-			if current_state == state_searching:
-				if line_wiki.find(section_lists[current_section]) != -1:
-					# Found the current target section
-					current_state = state_processing
-				# else: just ignore this line 
-			else:
-				if current_state != state_processing: ERROR("Logical Error: This condition should not happen! State setting must be incorrect.", "main() in wikiparser")
-				if line_wiki[0] == "=": # Assuming the section always starts with "="
-					# Reached the next section (might be not target)
-					current_section += 1 # Update current target section
-					group = group_main   # reset group (subsection) for '== Input ==' and '== Output ==' sections
-					if current_section == len(section_lists):
-						# All target sections are handled
-						current_state = state_done
-						break
-						
-					if line_wiki.find(section_lists[current_section]) != -1:
-						# Found the current target section
-						if current_section >= len(section_lists): ERROR("Logical Error: This condition should not happen! Section setting must be incorrect.", "main() in wikiparser")
-						current_state = state_processing
-					else:
-						# This section was not the current target. Go back to searching state
-						current_state = state_searching											
-				else:
-					# We are in a target section
-					if current_section == section_name:
-						# Extract the name of sxscript
-						target_operator = "-"
-						item_tail = line_wiki.find(target_operator)
-						if item_tail == -1: ERROR("Wiki Format Error: '= Name =' section should contain only one valid line, and the line should starts from 'sx* - ': %s" % line_wiki, "main() in wikiparser")
-						self.name = line_wiki[0:item_tail].strip()
-						# Extract the short info about this sxscript (can be empty)
-						self.short_info = line_wiki[item_tail + len(target_operator):].strip()							
-					elif current_section == section_usage:
-						# Extract 'usage in command line' to identify each command token is either an argument (no-prefix) or option ('--' prefix)
-						# This information is also used to check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
-						if line_wiki[0:len("sx")] == "sx":
-							usage_token_list = line_wiki.split()
-							if usage_token_list[0] != self.name + ".py": ERROR("Wiki Format Error: First token should be script name with .py (sx*.py)", "main() in wikiparser")
-							# Register arguments and options
-							for usage_token in usage_token_list[1:]:
-								# Check if --MPI is used in this script
-								# NOTE: 2015/11/12 Toshio Moriya
-								# The following can be removed when --MPI flag is removed from all sx*.py scripts 
-								if usage_token == "--MPI":
-									# ERROR("Warning: The 'usage in command line' contains --MPI flag. The flag will be removed in near future, so ignoring this line...'.", "main() in wikiparser", action = 0)
-									self.mpi_support = True
-									self.mpi_add_flag = True
-									continue
-								# Allocate memory for new command token
-								token = SXcmd_token()
-								# Extract key of command token. 
-								key = usage_token.split("=")[0] # Remove characters after '=' if token contains it (i.e. some options)
-								token.key_base = key.strip("-") # Get key base name by removing prefix ('--' or '-' for option)
-								token.key_prefix = key[0:len(key) - len(token.key_base)]
-								# Try to set the special type base on the keyword dictionary
-								best_keyword_map = SXkeyword_map(99, "")
-								for keyword in keyword_dict.keys():
-									if token.key_base.find(keyword) != -1:
-										# command token contains keyword
-										keyword_map = keyword_dict[keyword]
-										if best_keyword_map.priority > keyword_map.priority:
-											# Update keyword_map to one with a higher priority
-											best_keyword_map = keyword_map
-								token.type = best_keyword_map.token_type # If command token does not contains any keywords, its type stays with ""
-								# Register this command token to the list (ordered) and dictionary (unordered)		
-								self.token_list.append(token)
-								self.token_dict[token.key_base] = token
-						# else: Ignore this line (must be comments).
-					elif current_section == section_typical:
-						target_operator = "mpirun"
-						if self.mpi_support == False and line_wiki.find(target_operator) > 1:
-							self.mpi_support = True
-						# else: Ignore this line
-					elif current_section == section_input or current_section == section_output:
-						if line_wiki[0] == "*" and line_wiki.find("optional"):
-							# Reached the option subsection (argument subsection is done)
-							group = group_advanced
-						else:
-							line_buffer = line_wiki
-							# Extract key base name of command token
-							target_operator = "::"
-							item_tail = line_buffer.find(target_operator)
-							if item_tail == -1: 
-								# ERROR("Warning: This line (%s) is missing key base name (maybe comment line?). Ignoring this line...'."  % (line_wiki), "main() in wikiparser", action = 0)
-								continue
-							key_base = line_buffer[0:item_tail]
-							if key_base == "MPI":
-								# ERROR("Warning: This line (%s) contains MPI flag. The flag will be removed in near future, so ignoring this line...'."  % (line_wiki), "main() in wikiparser", action = 0)
-								if self.mpi_support == False or self.mpi_add_flag == False: ERROR("Logical Error: Since MPI flag is found and the command should support MPI.", "main() in wikiparser")
-								continue
-							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line											
-							# check consistency between 'usage in command line' and this
-							if key_base not in self.token_dict.keys(): ERROR("Wiki Format Error: Key base (%s) is missing from 'usage in command line' in '= Usage ='." % key_base, "main() in wikiparser")
-							# Get the reference to the command token object associated with this key base name
-							token = self.token_dict[key_base]
-							if token.key_base != key_base: ERROR("Logical Error: Registered command token with wrong key base name into the dictionary.", "main() in wikiparser")
-							token.is_in_io = True # Set flag to tell this command token is find in input or output section
-							token.group = group  # Set group of command token according to the current subsection
-							# Extract label of command token
-							target_operator = ":"
-							item_tail = line_buffer.find(target_operator)
-							if item_tail == -1: ERROR("Wiki Format Error: This line (%s) is missing label. Please check the format in Wiki document." % line_wiki, "main() in wikiparser")
-							token.label = line_buffer[0:item_tail]
-							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line	
-							# Extract help of command token before default value
-							target_operator = "(default"
-							item_tail = line_buffer.find(target_operator)
-							if item_tail == -1: ERROR("Wiki Format Error: This line (%s) is missing default setting. Please check the format in Wiki document." % line_wiki, "main() in wikiparser")
-							token.help = line_buffer[0:item_tail]
-							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line	
-							# Extract default value of command token
-							target_operator = ")"
-							item_tail = line_buffer.find(target_operator)
-							if item_tail == -1: ERROR("Wiki Format Error: This line (%s) is missing ')' for default setting. Please check the format in Wiki document." % line_wiki, "main() in wikiparser")
-							default_value = line_buffer[0:item_tail].strip() # make sure spaces & new line are not included at head and tail
-							if default_value.find("required") != -1:
-								# This is a required command token and should have value type instead of default value
-								token.is_required = True
-								token.default = ""
-								if not token.type:
-									# Type is still empty, meaning no special type is assigned
-									# Extract the data type (the rest of line)
-									token.type = default_value.replace("required", "").strip()
-							else: 
-								# This is not required command token and should have default value
-								token.is_required = False
-								token.default = default_value
-								
-								if not token.type:
-									# Type is still empty, meaning no special type is assigned
-									# Find out the data type from default value
-									try: 
-										int(token.default)
-										token.type = "int"
-									except:
-										try:  	 
-											float(token.default)
-											token.type = "float"
-										except:  
-											if token.default == "True":
-												token.default = True # convert the default value to boolean
-												token.type = "bool"
-											elif token.default == "False":
-												token.default = False # convert the default value to boolean
-												token.type = "bool"
-											else:
-												token.type = "string"
-								# else: keep the special type
-							# Ignore the rest of line ...
-					else:
-						ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "main() in wikiparser")
-					
-		if current_state != state_done: ERROR("Wiki Format Error: parser could not extract all information necessary. Please check if the Wiki format has all required sections.", "main() in wikiparser")
+	sxcmd_list.append(sxcmd)
 
-		# Make sure there are no extra arguments or options in 'usage in command line' of '= Usage ='
-		for token in self.token_list:
-			if token.is_in_io == False: ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '= Usage ='." % token.key_base, "main() in wikiparser")
-				
-		file_wiki.close()
-		
-		print "Succeed to parsing Wiki document (%s)" % self.wiki_file_path
-		"""
-		# For DEBUG
-		if self.name == "sxwindow": 
-			print "><><>< DEBUG OUTPUT ><><><"
-			print ""
-			print "------"
-			print "GLOBAL"
-			print "------"
-			print "name            : %s" % self.name 
-			print "short_info      : %s" % self.short_info 
-			print "mpi_support     : %s" % self.mpi_support 
-			print "mpi_add_flag    : %s" % self.mpi_add_flag 
-			print "len(token_list) : %d" % len(self.token_list)
-			print "len(token_dict) : %d" % len(self.token_dict)
-			print ""
-			print "--------------"
-			print "cmd_token_list"
-			print "--------------"
-			for token in self.token_list:
-				print "%s%s (group=%s, required=%s, default=%s, type=%s) <%s>" % (token.key_prefix, token.key_base, token.group, token.is_required, token.default, token.type, token.label),token.help
-			print ""
-		"""
+	sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.short_info = "Window out particles with known coordinates from a micrograph."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False
+	token = SXcmd_token(); token.key_base = "micrographs_list"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "if none is specified all files in option --indir are used "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "coords_dir"; token.key_prefix = "--"; token.label = "directory containing input coordinates files"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.type = "directory"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "coords_suffix"; token.key_prefix = "--"; token.label = "suffix of input coordinates files"; token.help = "For example '_ptcls. "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "coords_extension"; token.key_prefix = "--"; token.label = "file extension of input coordinates files"; token.help = "e.g 'box' for eman1, 'json' for eman2, ... "; token.group = "main"; token.is_required = False; token.default = "box"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "coords_format"; token.key_prefix = "--"; token.label = "format of input coordinates file"; token.help = "'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size. "; token.group = "main"; token.is_required = False; token.default = "eman1"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "indir"; token.key_prefix = "--"; token.label = "directory containing input micrographs"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.type = "directory"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "importctf"; token.key_prefix = "--"; token.label = "file name of sxcter output"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "paramters"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "limitctf"; token.key_prefix = "--"; token.label = "Filter micrographs based on the CTF limit"; token.help = "It requires --importctf. "; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "resample_ratio"; token.key_prefix = "--"; token.label = "Ratio of new to old image size (or old to new pixel size) for resampling"; token.help = "Valid range is 0.0 < resample_ratio <= 1.0. "; token.group = "advanced"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "xy dimension of square area to be windowed (in pixels)"; token.help = "Pixel size after resampling is assumed when resample_ratio < 1.0 "; token.group = "main"; token.is_required = False; token.default = "256"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "outdir"; token.key_prefix = "--"; token.label = "output directory"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "outsuffix"; token.key_prefix = "--"; token.label = "suffix for output stack"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "_ptcls"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "micsuffix"; token.key_prefix = "--"; token.label = "file extension of input micrographs"; token.help = "A string denoting micrograph type. "; token.group = "main"; token.is_required = False; token.default = "hdf"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "nameroot"; token.key_prefix = "--"; token.label = "root name (Prefix) of input micrographs"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "invert"; token.key_prefix = "--"; token.label = "invert image contrast"; token.help = "(recommended for cryo data) "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "defocuserror"; token.key_prefix = "--"; token.label = "Defocus errror limit"; token.help = "exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent. The error is computed as (std dev defocus)/defocus*100%. "; token.group = "advanced"; token.is_required = False; token.default = "1000000.0"; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "astigmatismerror"; token.key_prefix = "--"; token.label = "Astigmatism error limit"; token.help = "Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. "; token.group = "advanced"; token.is_required = False; token.default = "360.0"; token.type = "float"; sxcmd.token_list.append(token)
 
-	def generate_cmd_line(self):
-	
-		self.map_gui_to_cmd_line()
-		
-		file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Generate Command Line", options = QtGui.QFileDialog.DontUseNativeDialog)
-		if file_name_out != '':
-			file_out = open(file_name_out,'w')
-			file_out.write(self.sxcmd_line + '\n')
-			file_out.close()
-			print 'Saved the following command to %s:' % file_name_out
-			print self.sxcmd_line
+	sxcmd_list.append(sxcmd)
 
-	
+	sxcmd = SXcmd(); sxcmd.name = "sxisac"; sxcmd.short_info = "Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack.  NEW VERSION 07/21/2015."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "2-D images in a stack file (format must be bdb)"; token.help = "images have to be square (''nx''=''ny'') "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results) "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "particle radius"; token.help = "there is no default, a sensible number has to be provided, units - pixels "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "number of images per class"; token.help = "in the ideal case (essentially maximum size of class) "; token.group = "main"; token.is_required = False; token.default = "100"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "perform phase flipping of the data"; token.help = "using CTF information included in image headers "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "restart_section"; token.key_prefix = "--"; token.label = "restart section"; token.help = "each generation (iteration) contains three sections: 'restart', 'candidate_class_averages', and 'reproducible_class_averages'. To restart from a particular step, for example, generation 4 and section 'candidate_class_averages' the following option is needed: '--restart_section=candidate_class_averages,4'. The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the '--use_latest_master_directory' option can be used. "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "inner ring"; token.help = "of the resampling to polar coordinates. units - pixels "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "rs"; token.key_prefix = "--"; token.label = "ring step"; token.help = "of the resampling to polar coordinates. units - pixels "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "x range"; token.help = "of translational search. By default, set by the program. "; token.group = "advanced"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "yr"; token.key_prefix = "--"; token.label = "y range"; token.help = "of translational search. By default, same as xr. "; token.group = "advanced"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "search step"; token.help = "of translational search: units - pixels "; token.group = "advanced"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "maxit"; token.key_prefix = "--"; token.label = "number of iterations for reference-free alignment"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "30"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "center_method"; token.key_prefix = "--"; token.label = "method for centering"; token.help = "of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) "; token.group = "advanced"; token.is_required = False; token.default = "7"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "dst"; token.key_prefix = "--"; token.label = "discrete angle used in within group alignment"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "90.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "FL"; token.key_prefix = "--"; token.label = "lowest stopband"; token.help = "frequency used in the tangent filter "; token.group = "advanced"; token.is_required = False; token.default = "0.2"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "FH"; token.key_prefix = "--"; token.label = "highest stopband"; token.help = "frequency used in the tangent filter "; token.group = "advanced"; token.is_required = False; token.default = "0.3"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "FF"; token.key_prefix = "--"; token.label = "fall-off of the tangent filter"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0.2"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "init_iter"; token.key_prefix = "--"; token.label = "SAC initialization iterations"; token.help = "number of runs of ab-initio within-cluster alignment for stability evaluation in SAC initialization "; token.group = "advanced"; token.is_required = False; token.default = "3"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "main_iter"; token.key_prefix = "--"; token.label = "SAC main iterations"; token.help = "number of runs of ab-initio within-cluster alignment for stability evaluation in SAC "; token.group = "advanced"; token.is_required = False; token.default = "3"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "iter_reali"; token.key_prefix = "--"; token.label = "SAC stability check interval"; token.help = "every iter_reali iterations of SAC stability checking is performed "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "match_first"; token.key_prefix = "--"; token.label = "number of iterations to run 2-way matching in the first phase"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "max_round"; token.key_prefix = "--"; token.label = "maximum rounds"; token.help = "of generating candidate class averages in the first phase "; token.group = "advanced"; token.is_required = False; token.default = "20"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "match_second"; token.key_prefix = "--"; token.label = "number of iterations to run 2-way (or 3-way) matching in the second phase"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "5"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "stab_ali"; token.key_prefix = "--"; token.label = "number of alignments when checking stability"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "5"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "thld_err"; token.key_prefix = "--"; token.label = "threshold of pixel error when checking stability"; token.help = "equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou). units - pixels. "; token.group = "advanced"; token.is_required = False; token.default = "0.7"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "indep_run"; token.key_prefix = "--"; token.label = "level of m-way matching for reproducibility tests"; token.help = "By default, perform full ISAC to 4-way matching. Value indep_run=2 will restrict ISAC to 2-way matching and 3 to 3-way matching.  Note the number of used MPI processes requested in mpirun must be a multiplicity of indep_run. "; token.group = "advanced"; token.is_required = False; token.default = "4"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "thld_grp"; token.key_prefix = "--"; token.label = "threshold of the size of reproducible class"; token.help = "essentially minimum size of class "; token.group = "advanced"; token.is_required = False; token.default = "10"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "n_generations"; token.key_prefix = "--"; token.label = "maximum number of generations"; token.help = "program stops when reaching this total number of generations: "; token.group = "advanced"; token.is_required = False; token.default = "100"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "rand_seed"; token.key_prefix = "--"; token.label = "random seed set before calculations"; token.help = "useful for testing purposes "; token.group = "advanced"; token.is_required = False; token.default = "none - total randomness"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "new"; token.key_prefix = "--"; token.label = "use new code"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "debug"; token.key_prefix = "--"; token.label = "debug info printout"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "use_latest_master_directory"; token.key_prefix = "--"; token.label = "use latest master directory"; token.help = "when active, the program looks for the latest directory that starts with the word 'master', so the user does not need to provide a directory name. "; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "stop_after_candidates"; token.key_prefix = "--"; token.label = "stop after candidates"; token.help = "stops after the 'candidate_class_averages' section. "; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+
+	sxcmd_list.append(sxcmd)
+
+	sxcmd = SXcmd(); sxcmd.name = "sxviper"; sxcmd.short_info = "Validated ''ab initio'' 3D structure determination, aka Validation of Individual Parameter Reproducibility. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results) "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "inner radius for rotational search"; token.help = "> 0 "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "radius of the particle"; token.help = "has to be less than < int(nx/2)-1 "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "rs"; token.key_prefix = "--"; token.label = "step between rings in rotational search"; token.help = ">0 "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "range for translation search in x direction"; token.help = "search is +/xr in pixels "; token.group = "advanced"; token.is_required = False; token.default = "0"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "yr"; token.key_prefix = "--"; token.label = "range for translation search in y direction"; token.help = "if omitted will be set to xr, search is +/yr in pixels "; token.group = "advanced"; token.is_required = False; token.default = "0"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask file"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "sphere"; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "moon_elimination"; token.key_prefix = "--"; token.label = "elimination of disconnected pieces"; token.help = "two arguments: mass in KDa and resolution in px/A separated by comma, no space "; token.group = "advanced"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "step size of the translation search in x-y directions"; token.help = "search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional "; token.group = "advanced"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "delta"; token.key_prefix = "--"; token.label = "angular step of reference projections"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "2.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "center"; token.key_prefix = "--"; token.label = "centering of 3D template"; token.help = "average shift method; 0: no centering; 1: center of gravity "; token.group = "advanced"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "maxit1"; token.key_prefix = "--"; token.label = "maximum number of iterations performed for the GA part"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "400"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "maxit2"; token.key_prefix = "--"; token.label = "maximum number of iterations performed for the finishing up part"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "50"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "L2threshold"; token.key_prefix = "--"; token.label = "stopping criterion of GA"; token.help = "given as a maximum relative dispersion of volumes' L2 norms: "; token.group = "advanced"; token.is_required = False; token.default = "0.03"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ref_a"; token.key_prefix = "--"; token.label = "method for generating the quasi-uniformly distributed projection directions"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "S"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "point-group symmetry of the structure"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "c1"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "nruns"; token.key_prefix = "--"; token.label = "GA population"; token.help = "aka number of quasi-independent volumes "; token.group = "advanced"; token.is_required = False; token.default = "6"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "doga"; token.key_prefix = "--"; token.label = "do GA when fraction of orientation changes less than 1.0 degrees is at least doga"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "cut-off frequency applied to the template volume"; token.help = "using a hyperbolic tangent low-pass filter "; token.group = "advanced"; token.is_required = False; token.default = "0.25"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "fall-off of hyperbolic tangent low-pass filter"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "pwreference"; token.key_prefix = "--"; token.label = "text file with a reference power spectrum"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "none"; token.type = "paramters"; sxcmd.token_list.append(token)
+
+	sxcmd_list.append(sxcmd)
+
+	sxcmd = SXcmd(); sxcmd.name = "sxmeridien"; sxcmd.short_info = "Performs 3D structure refinement."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "name of input stack"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output folder"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "initial_volume"; token.key_prefix = ""; token.label = "initial 3D structure"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "particle radius"; token.help = "radius of the structure in pixels. if not sure, set to boxsize/2-2 "; token.group = "main"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "outlier_percentile"; token.key_prefix = "--"; token.label = "percentile above which outliers"; token.help = "are removed every iteration. "; token.group = "main"; token.is_required = False; token.default = "95.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ref_a"; token.key_prefix = "--"; token.label = "method for generating the quasi-uniformly distributed projection directions"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "S"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "point-group symmetry of the structure"; token.help = "cn, dn, where n is multiplicity (for example c5 or d3). "; token.group = "main"; token.is_required = False; token.default = "c1"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "startangles"; token.key_prefix = "--"; token.label = "Use orientation parameters in the input file header"; token.help = "to jumpstart the procedure "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "restrict_shifts"; token.key_prefix = "--"; token.label = "Restrict initial searches for translation"; token.help = "unit - original size pixel. By default, no restriction. "; token.group = "main"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "local_filter"; token.key_prefix = "--"; token.label = "Use local filtration"; token.help = "By default, uses generic tangent filter. "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "smear"; token.key_prefix = "--"; token.label = "Use rotational smear"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "sausage"; token.key_prefix = "--"; token.label = "Sausage-making filter"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "inires"; token.key_prefix = "--"; token.label = "initial resolution"; token.help = "of the initial_volume: unit - angstroms."; token.group = "main"; token.is_required = False; token.default = "25.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "mask3D"; token.key_prefix = "--"; token.label = "3D mask"; token.help = "that defines outline of the structure, preferable with soft edges if not given, set to spherical mask with radius boxsize/2-1. "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "Use CTF"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "name of the reference preparation function"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "do_volume_mrk02"; token.type = "function"; sxcmd.token_list.append(token)
+
+	sxcmd_list.append(sxcmd)
+
+	sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.short_info = "Calculate 3D variability field using a set of aligned 2D projection images as an input. The structures with symmetry require preparing data before calculating variability. The data preparation step would symmetrize the data and output a bdb:sdata for variability calculation."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "stack of 2D images"; token.help = "with 3D orientation parameters in header and (optionally) CTF information "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ave2D"; token.key_prefix = "--"; token.label = "write to the disk a stack of 2D averages"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "No"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "var2D"; token.key_prefix = "--"; token.label = "write to the disk a stack of 2D variances"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "No"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ave3D"; token.key_prefix = "--"; token.label = "write to the disk reconstructed 3D average"; token.help = "3D reconstruction computed from projections averaged within respective angular neighborhood. It should be used to assess the resolvability and possible artifacts of the variability map. "; token.group = "main"; token.is_required = False; token.default = "No"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "var3D"; token.key_prefix = "--"; token.label = "compute 3D variability"; token.help = "time consuming! "; token.group = "main"; token.is_required = False; token.default = "No"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "number of projections"; token.help = "from the angular neighborhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. "; token.group = "main"; token.is_required = False; token.default = "10"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "no_norm"; token.key_prefix = "--"; token.label = "do not use normalization"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "radiusvar"; token.key_prefix = "--"; token.label = "radius for 3D var"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "npad"; token.key_prefix = "--"; token.label = "number of time to pad the original images"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "2"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "point-group symmetry of the structure"; token.help = "specified in case the input structure has symmetry higher than c1. It is specified together with option --sym in the first step for preparing data. Notice this step can be run with only one CPU and there is no MPI version for it. "; token.group = "main"; token.is_required = False; token.default = "c1"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "stop-band frequency of the low pass filter"; token.help = "to be applied to 2D data prior to variability calculation By default, no filtration. "; token.group = "main"; token.is_required = False; token.default = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "fall-off frequency of the low pass filter"; token.help = "to be applied to 2D data prior to variability calculation By default, no filtration. "; token.group = "main"; token.is_required = False; token.default = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "use CFT correction"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "VERBOSE"; token.key_prefix = "--"; token.label = "Long output for debugging"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "VAR"; token.key_prefix = "--"; token.label = "stack on input consists of 2D variances"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "SND"; token.key_prefix = "--"; token.label = "compute squared normalized differences"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "symmetrize"; token.key_prefix = "--"; token.label = "Prepare input stack for handling symmetry"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+
+	sxcmd_list.append(sxcmd)
+
+	sxcmd = SXcmd(); sxcmd.name = "sxlocres"; sxcmd.short_info = "Compute local resolution in real space within are outlined by the maskfile and within regions wn x wn x wn."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True
+	token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "first half-volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "second half-volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "mask volume"; token.help = "outlining the region within which local resolution values will be computed (optional). "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "outputfile"; token.key_prefix = ""; token.label = "output local resolution volume"; token.help = "contains, for each voxel, an [[absolute_frequency_units|absolute frequency]] value for which local resolution at this location drops below the specified cut-off FSC value (only regions specified by the mask film or within a sphere have non-zero values). "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "size of window within which local real-space FSC is computed"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "7"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "step"; token.key_prefix = "--"; token.label = "shell step in Fourier size in pixels"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "cutoff"; token.key_prefix = "--"; token.label = "resolution cut-off for FSC"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0.5"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "radius for the mask in pixels"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "fsc"; token.key_prefix = "--"; token.label = "name output file"; token.help = "that will contain the overall FSC curve computed by rotational averaging of local resolution values (migh be truncated) "; token.group = "main"; token.is_required = False; token.default = "no curve"; token.type = "string"; sxcmd.token_list.append(token)
+
+	sxcmd_list.append(sxcmd)
+
+	sxcmd = SXcmd(); sxcmd.name = "sxfilterlocal"; sxcmd.short_info = "Locally filter input volume based on values within the associated local resolution volume ([[sxlocres.py]]) within area outlined by the maskfile."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True
+	token = SXcmd_token(); token.key_base = "inputvolume"; token.key_prefix = ""; token.label = "input volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "locresvolume"; token.key_prefix = ""; token.label = "local resolution volume"; token.help = "as produced by [[sxlocres.py]]. "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "mask volume"; token.help = "outlining the region within which local filtration will be applied (optional). "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "outputfile"; token.key_prefix = ""; token.label = "locally filtered volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "radius for the mask in pixels"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "falloff"; token.key_prefix = "--"; token.label = "fall-off of low-pass filter"; token.help = "program uses [[filt_tanl|tangent low-pass filter]]. unit - [[absolute_frequency_units|absolute frequency units]]. "; token.group = "main"; token.is_required = False; token.default = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
+
+	sxcmd_list.append(sxcmd)
+
+	sxcmd = SXcmd(); sxcmd.name = "sxsort3d"; sxcmd.short_info = "Sort out 3-D heterogeneity of 2-D data whose 3-D reconstruction parameters (xform.projection) have been determined already using 3-D sorting protocol I (P1)."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "outdir"; token.key_prefix = ""; token.label = "master output directory"; token.help = "will contain multiple subdirectories. There is a log.txt that describes the sequences of computations in the program. "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = ""; token.label = "3D mask"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "focus"; token.key_prefix = "--"; token.label = "3D mask for focused clustering"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "inner radius for rotational correlation"; token.help = "> 0. "; token.group = "main"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "outer radius for rotational correlation"; token.help = "< nx - 1. Please set to the radius of the particle. "; token.group = "main"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "maxit"; token.key_prefix = "--"; token.label = "maximum number of iteration"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "25"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "rs"; token.key_prefix = "--"; token.label = "step between rings in rotational correlation"; token.help = "> 0. "; token.group = "main"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "range for translation search in x direction"; token.help = "search is +/-xr. "; token.group = "main"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "yr"; token.key_prefix = "--"; token.label = "range for translation search in y direction"; token.help = "search is +/-yr By default, same as xr. "; token.group = "main"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ts"; token.key_prefix = "--"; token.label = "step size of the translation search"; token.help = "in both directions direction. search is -xr, -xr+ts, 0, xr-ts, xr. "; token.group = "main"; token.is_required = False; token.default = "0.25"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "delta"; token.key_prefix = "--"; token.label = "angular step of reference projections"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "2"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "an"; token.key_prefix = "--"; token.label = "angular neighborhood for local searches"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "center"; token.key_prefix = "--"; token.label = "centering method"; token.help = "0 - if you do not want the volume to be centered, 1 - center the volume using cog. "; token.group = "main"; token.is_required = False; token.default = "0"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "nassign"; token.key_prefix = "--"; token.label = "number of reassignment iterations"; token.help = "performed for each angular step. "; token.group = "main"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "nrefine"; token.key_prefix = "--"; token.label = "number of alignment iterations"; token.help = "performed for each angular step. "; token.group = "main"; token.is_required = False; token.default = "0"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "Consider CTF correction"; token.help = "during the alignment. "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "stoprnct"; token.key_prefix = "--"; token.label = "Minimum percentage of assignment change to stop the program"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "3.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "point-group symmetry of the structure"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "c1"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "name of the reference preparation function"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "ref_sort3d"; token.type = "function"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "independent"; token.key_prefix = "--"; token.label = "number of independent run"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "3"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "number_of_images_per_group"; token.key_prefix = "--"; token.label = "number of images per group"; token.help = "critical number defined by user. "; token.group = "main"; token.is_required = False; token.default = "1000"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "low_pass_filter"; token.key_prefix = "--"; token.label = "absolute frequency of low-pass filter"; token.help = "for 3d sorting on the original image size. "; token.group = "main"; token.is_required = False; token.default = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "nxinit"; token.key_prefix = "--"; token.label = "initial image size for sorting"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "64"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "unaccounted"; token.key_prefix = "--"; token.label = "reconstruct the unaccounted images"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "seed"; token.key_prefix = "--"; token.label = "random seed"; token.help = "for create initial random assignment for EQ Kmeans "; token.group = "main"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+
+	sxcmd_list.append(sxcmd)
+
+	# Create command token dictionary for each SXcmd instance
+	for sxcmd in sxcmd_list:
+		for token in sxcmd.token_list:
+				sxcmd.token_dict[token.key_base] = token
+
+	return sxcmd_list
+# <<<<< END_INSERTION <<<<<
+
 # ========================================================================================
 # Provides all necessary functionarity
 # tabs only contains gui and knows how to layout them
@@ -377,35 +306,55 @@ class SXPopup(QWidget):
 		self.TabWidget.resize(730,1080) # self.TabWidget.resize(730,860)
 		self.TabWidget.show()
 		
-	def map_gui_to_cmd_line(self):
+	def map_widgets_to_cmd_line(self):
 		# Add program name to command line
-		sxcmd_line = "%s.py" % self.name
+		sxcmd_line = "%s.py" % self.sxcmd.name
 		
 		# Loop through all command tokens
-		for cmd_token in self.cmd_token_list:
-			if cmd_token.type == 'sxtype_arg':
-				assert cmd_token.widget == 'sxwidget_line_edit'
-				assert type(cmd_token.gui) is QtGui.QLineEdit
-				sxcmd_line += " %s" % (cmd_token.gui.text())
-			elif cmd_token.type == 'sxtype_option':
-				if cmd_token.widget == 'sxwidget_line_edit':
-					sxcmd_line += " --%s=%s" % (cmd_token.name, cmd_token.gui.text())
-				elif cmd_token.widget == 'sxwidget_check_box':
-					if cmd_token.gui.checkState() == Qt.Checked:
-						sxcmd_line += " --%s" % (cmd_token.name)
-				else:
-					assert False, 'Unreachable Code!!!'
+		for token in self.token_list:
+			if token.type == 'bool':
+				if token.is_required == True: ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "SXcmd::map_widgets_to_cmd_line() in sxgui.py")
+				if (token.widget.checkState() == Qt.Checked) != token.default:
+					sxcmd_line += " %s%s" % (token.key_prefix, token.key_base)
 			else:
-				assert False, 'Unreachable Code!!!'
+				if token.is_required == True and token.widget.text() == token.default:
+					ERROR("Warning: Token (%s) of command (%s) is required. Please set the value for this token." % (token.key_base, self.name), "SXcmd::map_widgets_to_cmd_line() in sxgui.py", action = 0)
+					return ""
+									
+				if token.widget.text() != token.default:
+					# For now, using line edit box for the other type
+					sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, token.widget.text())
+				
+				# if token.type == "output":
+				# elif token.type == "directory":
+				# elif token.type == "image":
+				# elif token.type == "parameters":
+				# elif token.type == "pdb":
+				# elif token.type == "function":
+				# else:
+				#	if token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer." % line_wiki, "SXTab_main::__init__() in sxgui.py")
 		
-		# Add MPI flag only if mpi is supported and number of MPI processer (np) is larger than 1
-		# NOTE: 2015/10/27 Toshio Moriya
-		# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
-		if self.mpi_support and int(str(self.tab_main.mpi_nproc_edit.text())) > 1 and self.mpi_add_flag:
-			sxcmd_line += ' --MPI'
+#		# Add MPI flag only if mpi is supported and number of MPI processer (np) is larger than 1
+#		# NOTE: 2015/10/27 Toshio Moriya
+#		# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
+#		if self.mpi_support and int(str(self.tab_main.mpi_nproc_edit.text())) > 1 and self.mpi_add_flag:
+#			sxcmd_line += ' --MPI'
 
-		self.sxcmd_line = sxcmd_line
+		return sxcmd_line
+
+	def generate_cmd_line(self):
+	
+		sxcmd_line = self.map_widgets_to_cmd_line()
 		
+		if sxcmd_line:
+			file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Generate Command Line", options = QtGui.QFileDialog.DontUseNativeDialog)
+			if file_name_out != '':
+				file_out = open(file_name_out,'w')
+				file_out.write(sxcmd_line + '\n')
+				file_out.close()
+				print 'Saved the following command to %s:' % file_name_out
+				print sxcmd_line
+
 	def execute_cmd(self):
 		# Set self.sxcmd_line
 		self.map_gui_to_cmd_line()
@@ -608,12 +557,12 @@ class SXPopup(QWidget):
 # ========================================================================================
 class SXTab_main(QWidget):
 
-	def __init__(self, parent = None):
+	def __init__(self, parent):
 		QWidget.__init__(self, parent)
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.sxcmd = parent.sxcmd
+		self.sxpopup = parent
 		
 		# layout parameters
 		self.y1 = 10
@@ -632,12 +581,12 @@ class SXTab_main(QWidget):
 		# # Set the window title
 		# self.setWindowTitle(self.sxcmd.name)
 		# Set a label and its position in this tab
-		temp_label = QtGui.QLabel('<b>%s</b>' % (self.sxcmd.name), self)
+		temp_label = QtGui.QLabel('<b>%s</b>' % (self.sxpopup.sxcmd.name), self)
 		temp_label.move(self.x1,self.y1)
 		# NOTE: 2015/11/17 Toshio Moriya
 		# Necessary to separate '<b>%s</b>' from the information for avoiding to invoke the tag interpretations of string
 		# e.g. < becomes the escape character
-		temp_label = QtGui.QLabel('%s' % (self.sxcmd.short_info), self)
+		temp_label = QtGui.QLabel('%s' % (self.sxpopup.sxcmd.short_info), self)
 		temp_label.setWordWrap(True)
 		temp_label.setFixedWidth(600)
 		temp_label.move(self.x1 + 100, self.y1)
@@ -647,10 +596,10 @@ class SXTab_main(QWidget):
 		self.load_params_btn = QPushButton("Load parameters", self)
 		self.load_params_btn.move(self.x1-5,self.y1)
 		self.load_params_btn.setToolTip('Load gui parameter settings to retrieve a previously-saved one')
-#		self.connect(self.load_params_btn, SIGNAL("clicked()"), parent.load_params)
+#		self.connect(self.load_params_btn, SIGNAL("clicked()"), sxpopup.load_params)
 		
 		# Add widget for editing command args and options
-		for cmd_token in self.sxcmd.token_list:
+		for cmd_token in self.sxpopup.sxcmd.token_list:
 			if cmd_token.group == 'main':			
 				# Create label widget 
 				label_widget = QtGui.QLabel(cmd_token.label, self)
@@ -675,7 +624,7 @@ class SXTab_main(QWidget):
 					#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % 	line_wiki, "SXTab_main::__init__() in sxgui.py")
 				cmd_token_widget.move(self.x2,self.y2 - 7)
 				cmd_token_widget.setToolTip(cmd_token.help)		
-				cmd_token.widget_list.append(cmd_token_widget)
+				cmd_token.widget = cmd_token_widget
 				
 				self.y2 = self.y2+25
 
@@ -702,8 +651,8 @@ class SXTab_main(QWidget):
 		self.y2 =self.y2+25
 		
 		# If MPI is not supported, disable this widget
-		self.set_widget_enable_state(self.mpi_nproc_edit, self.sxcmd.mpi_support)
-		self.set_widget_enable_state(self.mpi_cmd_line_edit, self.sxcmd.mpi_support)
+		self.set_widget_enable_state(self.mpi_nproc_edit, self.sxpopup.sxcmd.mpi_support)
+		self.set_widget_enable_state(self.mpi_cmd_line_edit, self.sxpopup.sxcmd.mpi_support)
 
 		# Add gui components for queue submission (qsub)
 		is_qsub_enabled = False
@@ -720,7 +669,7 @@ class SXTab_main(QWidget):
 		temp_label = QtGui.QLabel('job name', self)
 		temp_label.move(self.x1,self.y2)
 		self.qsub_job_name_edit = QtGui.QLineEdit(self)
-		self.qsub_job_name_edit.setText(self.sxcmd.name)
+		self.qsub_job_name_edit.setText(self.sxpopup.sxcmd.name)
 		self.qsub_job_name_edit.move(self.x2,self.y2)
 		self.qsub_job_name_edit.setToolTip('name of this job')
 
@@ -755,7 +704,7 @@ class SXTab_main(QWidget):
 		# self.save_params_btn.move(self.x1-5,  self.y4)
 		self.save_params_btn.move(self.x1-5,  self.y2)
 		self.save_params_btn.setToolTip('Save gui parameter settings')
-#		self.connect(self.save_params_btn, SIGNAL("clicked()"), parent.save_params)
+#		self.connect(self.save_params_btn, SIGNAL("clicked()"), sxpopup.save_params)
 		
 		# self.y4 = self.y4+30
 		self.y2 = self.y2+30
@@ -764,18 +713,18 @@ class SXTab_main(QWidget):
 		# self.cmd_line_btn.move(self.x1-5,  self.y4)
 		self.cmd_line_btn.move(self.x1-5,  self.y2)
 		self.cmd_line_btn.setToolTip('Generate command line from gui parameter settings')
-#		self.connect(self.cmd_line_btn, SIGNAL("clicked()"), parent.generate_cmd_line)
+		self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxpopup.generate_cmd_line)
 		
 		self.y2 = self.y2+30
 
 		# Add a run button
-		self.execute_btn = QtGui.QPushButton('Run %s' % self.sxcmd.name, self)
+		self.execute_btn = QtGui.QPushButton('Run %s' % self.sxpopup.sxcmd.name, self)
 		# make 3D textured push button look
 		s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 		self.execute_btn.setStyleSheet(s)
 		# self.execute_btn.move(self.x5,  self.y5)
 		self.execute_btn.move(self.x5,  self.y2)
-#		self.connect(self.execute_btn, SIGNAL("clicked()"), parent.execute_cmd)
+#		self.connect(self.execute_btn, SIGNAL("clicked()"), sxpopupsxpopup.execute_cmd)
 
 	def set_widget_enable_state(self, widget, is_enabled):
 		# Set enable state and background color of widget according to enable state
@@ -794,7 +743,7 @@ class SXTab_main(QWidget):
 			is_enabled = True
 		
 		# Set enable state and background color of mpi related widgets
-		if self.sxcmd.mpi_support:
+		if self.sxpopup.sxcmd.mpi_support:
 			self.set_widget_enable_state(self.mpi_cmd_line_edit, not is_enabled)
 		
 		# Set enable state and background color of qsub related widgets
@@ -857,7 +806,7 @@ class SXTab_advance(QWidget):
 					#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % 	line_wiki, "SXTab_main::__init__() in sxgui.py")
 				cmd_token_widget.move(self.x2,self.y1)
 				cmd_token_widget.setToolTip(cmd_token.help)		
-				cmd_token.widget_list.append(cmd_token_widget)
+				cmd_token.widget = cmd_token_widget
 					
 				self.y1 = self.y1+25
 # sx_end
@@ -916,30 +865,14 @@ class MainWindow(QtGui.QWidget):
 		self.connect(self.btn_quit, QtCore.SIGNAL('clicked()'),QtGui.qApp, QtCore.SLOT('quit()'))
 		
 		# --------------------------------------------------------------------------------
-		# Get all necessary informations from wiki documents of sx*.py scripts
+		# SX Commands (sx*.py)
 		# --------------------------------------------------------------------------------
-		# NOTE: 2015/11/17 Toshio Moriya
-		# (1) The path should be corrected, needs to follow the installation
-		# (2) It is desirable to read the wiki documents file path from a setting file for more flexibility 
-		work_dir = "%s/src/eman2/sparx/doc" % os.environ['EMAN2DIR']
-		wiki_file_path_list = []
-		
-		wiki_file_path_list.append("%s/cter.txt" % work_dir)
-		wiki_file_path_list.append("%s/window.txt" % work_dir)
-		wiki_file_path_list.append("%s/isac.txt" % work_dir)
-		wiki_file_path_list.append("%s/viper.txt" % work_dir)
-		wiki_file_path_list.append("%s/meridien.txt" % work_dir)
-		wiki_file_path_list.append("%s/3dvariability.txt" % work_dir)
-		wiki_file_path_list.append("%s/locres.txt" % work_dir)
-		wiki_file_path_list.append("%s/filterlocal.txt" % work_dir)
-		wiki_file_path_list.append("%s/sort3d.txt" % work_dir)
-		
 		self.y2 = 95
 		
-		for wiki_file_path in wiki_file_path_list:
-			# Construct sxscript object associated with this wiki document
-			sxcmd = SXcmd(wiki_file_path)
-			
+		# Construct list of sxscript objects (extracted from associated wiki documents)
+		sxcmd_list = construct_sxcmd_list()
+		
+		for sxcmd in sxcmd_list:
 			# Add buttons for this sx*.py processe
 			temp_btn = QPushButton(sxcmd.name, self)
 			temp_btn.move(10, self.y2)
