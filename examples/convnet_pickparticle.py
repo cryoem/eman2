@@ -50,6 +50,7 @@ def main():
 	options.nkernel=[int(i) for i in options.nkernel.split(',')]
 	options.ksize=[int(i) for i in options.ksize.split(',')]
 	
+	
 	if options.teston!=None:
 		os.environ["THEANO_FLAGS"]="optimizer=None"
 		print "Testing on big images, Theano optimizer disabled"
@@ -62,6 +63,10 @@ def main():
 		import_theano()
 	
 	
+	usegpu=False
+	if theano.config.device.startswith("gpu"):
+		usegpu=True
+		
 	batch_size=options.batch
 	#### Train da with particles first.
 	
@@ -141,13 +146,14 @@ def main():
 			
 	if options.trainout:
 		print "Generating results ..."
-		test_imgs = theano.function(
-			inputs=[index],
-			outputs=convnet.convlayers[0].get_reconstructed_input(),
-			givens={
-				convnet.x: train_set_x[index * batch_size: (index+1) * batch_size]
-			}
-		)
+		if usegpu:
+			test_imgs = theano.function(
+				inputs=[index],
+				outputs=convnet.convlayers[0].get_reconstructed_input(),
+				givens={
+					convnet.x: train_set_x[index * batch_size: (index+1) * batch_size]
+				}
+			)
 		test_cls = theano.function(
 			inputs=[index],
 			outputs=convnet.clslayer.get_image(),
@@ -159,7 +165,7 @@ def main():
 		try:os.remove(fname)
 		except: pass
 		for idi in range(3):
-			rt=test_imgs(idi)
+			if usegpu: rt=test_imgs(idi)
 			mid=test_cls(idi)
 			mid_cent=mid
 			mid_mean=np.mean(mid_cent)
@@ -172,7 +178,7 @@ def main():
 			
 			lb= labels[idi * batch_size: (idi + 1) * batch_size].eval()
 			
-			for t in range(len(rt)):
+			for t in range(len(ipt)):
 				#img=ipt[t].reshape(lth,lth)
 				
 				img=ipt[t].reshape(shape[0],shape[1])
@@ -181,11 +187,12 @@ def main():
 				e["label"]=float(lb[t])
 				e.write_image(fname,-1)
 				
-				img=rt[t].reshape(shape[0],shape[1])
-				e = EMNumPy.numpy2em(img.astype("float32"))
-				e.process_inplace("normalize")
-				e["label"]=float(lb[t])
-				e.write_image(fname,-1)
+				if usegpu:
+					img=rt[t].reshape(shape[0],shape[1])
+					e = EMNumPy.numpy2em(img.astype("float32"))
+					e.process_inplace("normalize")
+					e["label"]=float(lb[t])
+					e.write_image(fname,-1)
 				
 				img=mid[t].reshape(convnet.outsize,convnet.outsize)
 				df=(np.mean(img)-mid_mean)/mid_std

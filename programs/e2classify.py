@@ -62,6 +62,7 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_argument("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
+	parser.add_argument("--noalign",action="store_true",help="Ignore the alignments",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -78,6 +79,7 @@ def main():
 		options.outfile = args[1]
 		
 	error = check(options,True)
+	if (options.noalign): error=False
 	
 	if (options.verbose > 0):
 		if (error):
