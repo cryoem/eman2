@@ -19,7 +19,7 @@ def mref_ali3d_MPI_beta(stack, ref_vol, outdir, maskfile=None, focus = None, max
 			user_func_name="ref_ali3d", npad = 2, debug = False, fourvar=False, termprec = 0.0,\
 			mpi_comm = None, log = None,frequency_low_pass=.4):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
-	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
+	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank, wrap_mpi_bcast
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
