@@ -22,7 +22,7 @@ sxwindow.py mic0.hdf mic2.hdf --coords_dir=info --coords_extension=box --coords_
 '''NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.'''
 
 == Input ==
-	micrographs_list:: Input micrographs: if none is specified all files in option --indir are used　(default none)
+	micrographs_list:: Input micrographs: if none is specified all files in option --indir are used (default none)
 	
     indir:: directory containing input micrographs: (default current directory)
     nameroot:: root name (Prefix) of input micrographs: (default none)
