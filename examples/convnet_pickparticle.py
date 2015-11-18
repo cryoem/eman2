@@ -371,7 +371,7 @@ def load_particles(ptcls, options):
 				tr.set_rotation({"type":"2d","alpha":random.random()*360.0})
 				img=ptl.process("xform",{"transform":tr})
 				
-				img.write_image("tst.hdf",-1)
+				#img.write_image("tst.hdf",-1)
 				ar=EMNumPy.em2numpy(img)
 				data.append(ar.flatten())
 				lbs.append(l)
