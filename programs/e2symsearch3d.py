@@ -201,7 +201,7 @@ def main():
 	
 			preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
 	
-			for i in range(nptcl):
+			for i in range(n):
 		
 				img = EMData( options.input, i )
 		
