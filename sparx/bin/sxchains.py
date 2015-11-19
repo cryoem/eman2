@@ -44,7 +44,7 @@ import  os
 	Traveling salesman problem solved using Simulated Annealing.
 """
 from scipy import *
-from pylab import *
+#from pylab import *
 
 def Distance(i1, i2, lccc):
 	return max(1.0 - lccc[mono(i1,i2)][0], 0.0)
@@ -175,7 +175,7 @@ def tsp(lccc):
 		# Plot
 		#         Plot(city, R, dist)
             
-		print "T=%10.5f , distance= %10.5f , accepted steps= %d" %(T, dist, accepted)
+		###print "T=%10.5f , distance= %10.5f , accepted steps= %d" %(T, dist, accepted)
 		T *= fCool             # The system is cooled down
 		if accepted == 0: break  # If the path does not want to change any more, we can stop
 
@@ -224,11 +224,15 @@ def main():
 	   4.4  New circular code based on pairwise alignments
 			sxprocess.py aclf.hdf chain.hdf circle.hdf --align  --radius=25 --xr=2 --pairwiseccc=lcc.txt
 
+	   4.5  Circular ordering based on pairwise alignments
+			sxprocess.py vols.hdf chain.hdf mask.hdf --dd  --radius=25
+
 
 """
 
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--circular", action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
+	parser.add_option("--dd", action="store_true", help="Circular ordering without adjustment of orientations", default=False)
+	parser.add_option("--circular", action="store_true", help="Select circular ordering (first image has to be similar to the last)", default=False)
 	parser.add_option("--align", action="store_true", help="Compute all pairwise alignments and for the table of their similarities find the best chain", default=False)
 	parser.add_option("--initial", type="int", default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--radius", type="int", default=-1, help="Radius of a circular mask for similarity based ordering")
@@ -245,7 +249,47 @@ def main():
 	global_def.BATCH = True
 
 					
-	if options.align:
+	if options.dd:
+		nargs = len(args)
+		if nargs != 3:
+			print "must provide name of input and two output files!"
+			return
+		stack = args[0]
+		new_stack = args[1]
+
+
+		from utilities import model_circle
+		from statistics import ccc
+		from statistics import mono
+		lend = EMUtil.get_image_count(stack)
+		lccc = [None]*(lend*(lend-1)/2)
+
+		for i in xrange(lend-1):
+			v1 = get_im( stack, i )
+			if( i == 0 and nargs == 2):
+				nx = v1.get_xsize()
+				ny = v1.get_ysize()
+				nz = v1.get_ysize()
+				if options.ou < 1 : radius = nx//2-2
+				else:  radius = options.ou
+				mask = model_circle(radius, nx, ny, nz)
+			else:
+				mask = get_im(args[2])
+				
+			for j in xrange(i+1, lend):
+				lccc[mono(i,j)] = [ccc(v1, get_im( stack, j ), mask), 0]
+
+
+		order = tsp(lccc)
+		if(len(order) != lend):
+			print  " problem with data length"
+			from sys import exit
+			exit()
+		print  "Total sum of cccs :",TotalDistance(order, lccc)
+		print "ordering :",order
+		for i in xrange(lend):  get_im(stack, order[i]).write_image( new_stack, i )
+
+	elif options.align:
 		nargs = len(args)
 		if nargs != 3:
 			print "must provide name of input and two output files!"
