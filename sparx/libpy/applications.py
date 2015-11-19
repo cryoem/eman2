@@ -4848,34 +4848,48 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			else:  list_of_reference_angles = [[1.0,1.0]]
 			for im in xrange(nima):
 				#  Insert high-pass filtration of data[im]
-				###tempdata = Util.window(pad(filt_table(data[im],bckgnoise), mx, mx,1,0.0), nx, nx)
+				try:
+					stmp = data[im].get_attr("ptcl_source_image")
+				except:
+					try:
+						stmp = data[im].get_attr("ctf")
+						stmp = round(stmp.defocus,4)
+					except:
+						ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1, myid)
+				try:
+					indx = Tracker["bckgnoise"][1].index(stmp)
+				except:
+					ERROR("Problem with indexing ptcl_source_image.","meridien",1, myid)
+
+				tempdata = Util.window(pad(filt_table(data[im],[Tracker["bckgnoise"][0][i][indx] for i in xrange(nx)]), mx, mx,1,0.0), nx, nx)
+
 				if(nsoft == 0):
 					if(an[N_step] == -1):
 						#  In zoom option each projection goes through shift zoom alignment
-						if  zoom: peak, pixer[im] = proj_ali_incore_zoom(data[im], refrings, numr, \
+						if  zoom: peak, pixer[im] = proj_ali_incore_zoom(tempdata, refrings, numr, \
 														xrng, yrng, step, sym=sym)
-						else:  peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, \
+						else:  peak, pixer[im] = proj_ali_incore(tempdata, refrings, numr, \
 														xrng[N_step], yrng[N_step], step[N_step], sym=sym)
 					else:
-						if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(data[im], refrings, list_of_reference_angles, numr, \
+						if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(tempdata, refrings, list_of_reference_angles, numr, \
 									xrng, yrng, step, an, finfo = finfo, sym=sym)
-						else:  peak, pixer[im] = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
+						else:  peak, pixer[im] = proj_ali_incore_local(tempdata, refrings, list_of_reference_angles, numr, \
 									xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo = finfo, sym=sym)
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft == 1):
-					###tempdata.set_attr("previousmax", data[im].get_attr("previousmax"))
+					tempdata.set_attr("previousmax", data[im].get_attr("previousmax"))
 					peak, pixer[im], number_of_checked_refs, iref = \
-						shc(data[im], refrings, list_of_reference_angles, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo = finfo)
+						shc(tempdata, refrings, list_of_reference_angles, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo = finfo)
 					if(pixer[im] == 0.0):  par_r[0] += 1
-					###data[im].set_attr("previousmax", tempdata.get_attr("previousmax"))
+					data[im].set_attr("previousmax", tempdata.get_attr("previousmax"))
 				elif(nsoft > 1):
 					#  This is not functional
 					peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, \
 												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym, finfo = finfo)
 					par_r[number_of_peaks] += 1
 					#number_of_checked_refs += checked_refs
-				###data[im].set_attr("xform.projection", tempdata.get_attr("xform.projection"))
-			###del tempdata
+				data[im].set_attr("xform.projection", tempdata.get_attr("xform.projection"))
+			del tempdata
 			if(an[N_step] > 0):  del list_of_reference_angles
 			#=========================================================================
 			mpi_barrier(mpi_comm)
@@ -5075,7 +5089,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 	from filter           import filt_ctf
 	from projection       import prep_vol
 	from fundamentals     import resample
-	from utilities        import bcast_number_to_all, model_circle, get_params_proj, set_params_proj
+	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, wrap_mpi_bcast, wrap_mpi_gatherv
 	from utilities        import get_image, drop_image, file_type, get_im, get_input_from_string, model_blank
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
@@ -7223,7 +7237,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			user_func_name="ref_ali3d", npad = 2, debug = False, fourvar=False, termprec = 0.0,\
 			mpi_comm = None, log = None):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
-	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im
+	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank, wrap_mpi_bcast
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
@@ -7939,7 +7953,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 	      center = -1, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
 	      user_func_name="ref_ali3d", npad = 4, debug = False, fourvar=False, termprec = 0.0, mpi_comm = None, log = None): 
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
-	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im
+	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
@@ -8391,7 +8405,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl, filt_vols
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs, project
-	from utilities      import amoeba_multi_level, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import amoeba_multi_level, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
 	from utilities      import bcast_number_to_all, bcast_list_to_all,get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, get_im
 	from utilities      import model_blank, print_begin_msg, print_msg, print_end_msg, file_type
@@ -8796,7 +8810,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl, filt_vols
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs, project
-	from utilities      import amoeba_multi_level, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import amoeba_multi_level, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
 	from utilities      import bcast_number_to_all, bcast_list_to_all,get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, get_im
 	from utilities      import model_blank, print_begin_msg, print_msg, print_end_msg, file_type
@@ -9417,7 +9431,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 	from alignment        import eqproj_cascaded_ccc
 	from filter           import filt_ctf
 	from projection       import prep_vol
-	from utilities        import bcast_number_to_all, model_circle, get_params_proj, set_params_proj
+	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict
 	from utilities        import get_image, drop_image, file_type
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
@@ -9777,7 +9791,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 	from filter           import filt_ctf
 	from projection       import prep_vol
 	from fundamentals     import resample
-	from utilities        import bcast_number_to_all, model_circle, get_params_proj, set_params_proj
+	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, wrap_mpi_bcast, wrap_mpi_gatherv
 	from utilities        import get_image, drop_image, file_type, get_im, get_input_from_string, model_blank
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI

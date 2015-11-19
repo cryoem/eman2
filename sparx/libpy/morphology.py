@@ -280,15 +280,20 @@ def rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, bfactor, wgh, amp, ang):
 			if( r2 < nr2 ):
 				s = sqrt(r2)/(nc*2*Pixel_size)
 				dfa = defc - astigmamp/2*sin(2*(atan2(y,x) + angrad))
-				u = sqrt( Cst*(defc - sqrt( defc**2 + Cst**2*lam**4*s**4 - 2*Cst*lam**2*s**2*dfa)))/(Cst*lam) * nc*2*Pixel_size
 				#u = sqrt(r2)*sqrt(1.0 -  astigmamp/2./defc*sin(2*(atan2(y,x) - angrad)))
-				#print ix,iy,sqrt(r2),dfa,lam,s,u
-				iu = int(u)
-				du = u - iu
-				lr[iu]    += (1.0-du)*img.get_value_at(ix,iy)
-				lr[iu+1]  +=       du*img.get_value_at(ix,iy)
-				cnt[iu]   += 1.0-du
-				cnt[iu+1] +=     du
+				#print ix,iy,sqrt(r2),defc,dfa,lam,s,u
+				#print  ix,iy,sqrt(r2),defc**2 + Cst**2*lam**4*s**4 - 2*Cst*lam**2*s**2*dfa
+				#print  defc
+				#print  defc - sqrt( defc**2 + Cst**2*lam**4*s**4 - 2*Cst*lam**2*s**2*dfa)
+				try:
+					u = sqrt( Cst*(defc - sqrt( defc**2 + Cst**2*lam**4*s**4 - 2*Cst*lam**2*s**2*dfa)))/(Cst*lam) * nc*2*Pixel_size
+					iu = int(u)
+					du = u - iu
+					lr[iu]    += (1.0-du)*img.get_value_at(ix,iy)
+					lr[iu+1]  +=       du*img.get_value_at(ix,iy)
+					cnt[iu]   += 1.0-du
+					cnt[iu+1] +=     du
+				except:  pass
 	for ix in xrange(nc):  lr[ix] /= max(cnt[ix], 1.0)
 	return lr[:nc]
 
@@ -1876,7 +1881,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 				pwrot2 = rotavg_ctf( model_blank(wn, wn), ad1, Cs, voltage, Pixel_size, 0.0, wgh, bd1, cd1)
 				willdo = True
 			except:
-				print "  Astigmatism amplitude larger than defocus or defocus is negative :",namics[ifi]
+				print "  Astigmatism amplitude larger than defocus or defocus is negative :",namics[ifi],ad1, Cs, voltage, Pixel_size, wgh, bd1, cd1
 				willdo = False
 
 			if(willdo):

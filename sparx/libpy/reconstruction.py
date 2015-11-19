@@ -609,14 +609,14 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 			stmp = prj.get_attr("ptcl_source_image")
 		except:
 			try:
-				stmp = a.get_attr("ctf")
+				stmp = prj.get_attr("ctf")
 				stmp = round(stmp.defocus,4)
 			except:
-				ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1, myid)
+				ERROR("Either ptcl_source_image or ctf has to be present in the header.","recons3d_4nnw_MPI",1, myid)
 		try:
 			indx = datastamp.index(stmp)
 		except:
-			ERROR("Problem with indexing ptcl_source_image.","meridien",1, myid)
+			ERROR("Problem with indexing ptcl_source_image.","recons3d_4nnw_MPI",1, myid)
 
 		if dopad:
 			prj = pad(prj, imgsize, imgsize, 1, "circumference")
