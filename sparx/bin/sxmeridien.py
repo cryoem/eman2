@@ -688,7 +688,7 @@ def build_defgroups(fi):
 		try:
 			stmp = a.get_attr("ctf")
 			stmp = EMUtil.get_all_attributes(fi,"ctf")
-			for i in xrange(len(stmp)):  stmp[i] = round(stmp[i].defocus,4)
+			for i in xrange(len(stmp)):  stmp[i] = stmp[i].defocus
 		except:
 			ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
 
@@ -707,25 +707,38 @@ def compute_sigma(partstack, paramsname, Tracker, myid, main_node, nproc):
 	# input stack of particles and text file with all params
 
 	if(myid == main_node):
-		sd,ocup = build_defgroups(fi)
+		sd,ocup = build_defgroups(partstack)
 		nn = len(sd)
 	else: nn = 0
 
 	nn = bcast_number_to_all(nn, main_node)
 
-	if(myid != main_node):
-		sd = [""]*nn
-		ocup = [0]*nn
+	import types
+	if(myid == main_node):
+		if( type(sd[0]) == str): string = 1
+		else:  string = 0
+	else:  string = 0
+	string = bcast_number_to_all(string, main_node)
+	if( string == 1 ):
+		if(myid != main_node):
+			sd = [""]*nn
+			ocup = [0]*nn
 
-	for i in xrange(nn):
-		sd[i] = send_string_to_all(sd[i], main_node)
+		for i in xrange(nn):
+			sd[i] = send_string_to_all(sd[i], main_node)
+	else:
+		if(myid != main_node):
+			sd = [1.0]*nn
+			ocup = [0]*nn
+		sd = bcast_list_to_all(sd, myid, main_node)
+		for i in xrange(len(sd)):  sd[i] = round(sd[i],4)
 
 	ocup = bcast_list_to_all(ocup, myid, main_node)
 
 
 	#projdata, params = getalldata(partstack, params, myid, nproc)
 
-	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
+	if(myid == 0):  ndata = EMUtil.get_image_count(partstack)
 	else:           ndata = 0
 	ndata = bcast_number_to_all(ndata)
 	if( ndata < nproc):
@@ -752,7 +765,7 @@ def compute_sigma(partstack, paramsname, Tracker, myid, main_node, nproc):
 	mask = model_circle(Tracker["constants"]["radius"],nx,nx)
 
 	for i in xrange(image_start, image_end):
-		projdata = get_im( stack, i )
+		projdata = get_im( partstack, i )
 		try:
 			stmp = projdata.get_attr("ptcl_source_image")
 		except:
@@ -776,7 +789,7 @@ def compute_sigma(partstack, paramsname, Tracker, myid, main_node, nproc):
 			for k in xrange(1,6):
 				tsd.set_value_at(k,i,qt)
 	bcast_EMData_to_all(tsd, myid, source_node = 0)
-	return tsd, sd  #, [int(tocp[i]) for i in xrange(len(sd))]
+	return tsd, sd, [int(tocp[i]) for i in xrange(len(sd))]
 
 def subdict(d,u):
 	# substitute values in dictionary d by those given by dictionary u
@@ -1628,6 +1641,7 @@ def main():
 	Tracker["mainiteration"]  = 0
 	Tracker["movedback"]      = False
 	Tracker["state"]          = Tracker["constants"]["states"][0]
+	Tracker["bckgnoise"]      = [None, None]
 
 	# ------------------------------------------------------------------------------------
 
