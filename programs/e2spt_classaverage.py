@@ -175,7 +175,7 @@ def main():
 		
 	parser.add_argument("--randomizewedge",action="store_true",  default=False,help="""Default=False. This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned""")
 	
-	parser.add_argument("--savepreprocessed",action="store_true",  default=False,help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
+	parser.add_argument("--savepreproc",action="store_true",  default=False,help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
 	
 	parser.add_argument("--autocenter",type=str, default='',help="""WARNING: Experimental. Default=None. Autocenters each averaged pair during initial average generation with --btref and --hacref. Will also autocenter the average of all particles after each iteration of iterative refinement. Options are --autocenter=xform.centerofmass (self descriptive), or --autocenter=xform.centeracf, which applies auto-convolution on the average.""")
 	
@@ -434,7 +434,7 @@ def main():
 	
 	
 	#preprocnameCoarse = preprocnameFine = ''
-	#if options.savepreprocessed:
+	#if options.savepreproc:
 	#	dummy = EMData(8,8,8)
 	#	dummy.to_one()
 	
@@ -511,11 +511,16 @@ def main():
 			preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
 			
 			for i in range(nptcl):
+				dimg = EMData(8,8,8)
+				dimg.to_one()
+				dimg.write_image( preprocprefftstack, i )
+			
+			for i in range(nptcl):
 				
 				img = EMData( options.input, i )
 				
 				if options.parallel:
-					task = Preprocprefft3DTask( ["cache",options.input,i], options, i )
+					task = Preprocprefft3DTask( ["cache",options.input,i], options, i, preprocprefftstack )
 					tasks.append(task)
 			
 				else:
@@ -1947,7 +1952,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 
 				hacelements = []
 				for ele in elements:
-					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele:
+					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
 						hacelements.append(ele)
 			
 				cmdhac = ' '.join(hacelements)
@@ -2053,7 +2058,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				ssaelements = []
 				print "\nelements are", elements
 				for ele in elements:
-					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
+					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
 					#	print "Appended element", ele
 						ssaelements.append(ele)
 						print "appending element",ele
@@ -2195,7 +2200,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				btelements = []
 				#print "elements are", elements
 				for ele in elements:
-					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele:
+					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
 						#print "added ele", ele
 						btelements.append(ele)
 					else:
@@ -2992,14 +2997,14 @@ def preprocfilter(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 		try:
 		
 			#print "Trying to save preprocessed"
-			#print "options.savepreprocessed is", options.savepreprocessed
+			#print "options.savepreproc is", options.savepreproc
 			#print "preproclst is", preproclst
 			#print "ptclindxtag is", ptclindxtag
 			#print "lines are", lines
 			#print "round is", round
 			#print "ptclindx is", ptclindx
 		
-			if options.savepreprocessed and preproclst and ptclindxtag not in lines and round < 1 and ptclindx > -1:
+			if options.savepreproc and preproclst and ptclindxtag not in lines and round < 1 and ptclindx > -1:
 			
 				#print "Saving preprocessed!"
 	
@@ -3051,11 +3056,11 @@ def preprocfilter(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 	
 			#sys.exit()
 		except:
-			if options.savepreprocessed and round == 0:
-				print "\nWARNING: preprocessed particles not saved even though --savepreprocessed is on and this is the first iteration."
+			if options.savepreproc and round == 0:
+				print "\nWARNING: preprocessed particles not saved even though --savepreproc is on and this is the first iteration."
 		
-			#print "DID not try to save preproc, although options.savepreprocessed is"
-			#print "options.savepreprocessed is", options.savepreprocessed
+			#print "DID not try to save preproc, although options.savepreproc is"
+			#print "options.savepreproc is", options.savepreproc
 			#print "preproclst is", preproclst
 			#print "ptclindxtag is", ptclindxtag
 			#print "lines are", lines
@@ -3079,7 +3084,7 @@ Many preprocessing steps need to be applied only once.
 class Preprocprefft3DTask(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for preprocessing one 3-D volume, with a variety of options"""
 
-	def __init__(self,image,options,ptclnum):
+	def __init__(self,image,options,ptclnum,outstack):
 	
 		"""image may be an actual EMData object, or ["cache",path,number]."""
 		
@@ -3088,7 +3093,7 @@ class Preprocprefft3DTask(JSTask):
 		JSTask.__init__(self,"PreprocPrefft3d",data,{},"")
 
 		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"falign":options.falign,"faligncmp":options.faligncmp,"shrink":options.shrink,"shrinkfine":options.shrinkfine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
-		self.classoptions={"options":options,"ptclnum":ptclnum}
+		self.classoptions={"options":options,"ptclnum":ptclnum,"outstack":outstack}
 	
 	def execute(self,callback=None):
 		"""This preprocesses one volume and returns it."""
@@ -3106,11 +3111,26 @@ class Preprocprefft3DTask(JSTask):
 		
 		preprocimg = preprocessingprefft( img, classoptions['options'] )
 		
-		preprocprefftstack = classoptions['options'].path + '/' + classoptions['options'].input.replace('.hdf','_preproc.hdf')
+		#preprocprefftstack = classoptions['options'].path + '/' + classoptions['options'].input.replace('.hdf','_preproc.hdf')
 		
 		
-		print "returned from preprocessingprefft. saving preprocessed image to", preprocprefftstack
-		preprocimg.write_image( preprocprefftstack, indx)
+		print "\n\nreturned from preprocessingprefft (!!!) for ptcl %d" %(classoptions['ptclnum'])
+		print "options.savepreproc is, type", classoptions['options'].savepreproc, type(classoptions['options'].savepreproc)
+		
+		print "preprocimg type is", type(preprocimg)
+		print "header min and max are", preprocimg['maximum'],preprocimg['minimum']
+		print "file to save preproc is", classoptions['outstack']
+		
+		if classoptions['options'].savepreproc and preprocimg:
+			print "\nsaving preproc saving preprocessed image to index %d of file %s" %(indx,classoptions['outstack'] )
+			print "because options.savepreproc is", classoptions['options'].savepreproc
+			preprocimg.write_image( classoptions['outstack'], indx)
+		else:
+			print "\nnot saving preproc image, because options.savepreproc is", classoptions['options'].savepreproc
+		
+		print "\nabout to return from  class Preprocprefft3DTask"
+		
+		del preprocimg
 		
 		return 1
 
@@ -3932,12 +3952,12 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		refindx = -1
 	except:
 		try:
-			ptclindx = int( image['spt_ptcl_indxs'] )							#Deal with --savepreprocessed for e2spt_hac.py
+			ptclindx = int( image['spt_ptcl_indxs'] )							#Deal with --savepreproc for e2spt_hac.py
 			refindx = int( fixedimage['spt_ptcl_indxs'] )
 			#round = int(xformslabel.split('_')[0].replace('round',''))
 		except:
 			try:
-				ptclindx = int( label.split('#')[-1].split(' ')[0] )			#Deal with --savepreprocessed for binary tree initial model building (do NOT savepreprocessed)
+				ptclindx = int( label.split('#')[-1].split(' ')[0] )			#Deal with --savepreproc for binary tree initial model building (do NOT savepreproc)
 				refindx = ptclinx +1
 				round = -1
 				
