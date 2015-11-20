@@ -2697,7 +2697,7 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 			mpi_send(len(mem), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			mpi_send(mem, len(mem), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 	return gathered_data
-	
+
 def send_string_to_all(str_to_send, source_node = 0):
 	from mpi import MPI_COMM_WORLD, MPI_INT, MPI_CHAR, mpi_bcast, mpi_comm_rank 
 

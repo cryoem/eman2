@@ -5090,7 +5090,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 	from filter           import filt_ctf
 	from projection       import prep_vol
 	from fundamentals     import resample
-	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
+	from utilities        import bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, wrap_mpi_bcast, wrap_mpi_gatherv
 	from utilities        import get_image, drop_image, file_type, get_im, get_input_from_string, model_blank
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
@@ -7238,7 +7238,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			user_func_name="ref_ali3d", npad = 2, debug = False, fourvar=False, termprec = 0.0,\
 			mpi_comm = None, log = None):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
-	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
+	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank, wrap_mpi_bcast
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
@@ -7954,7 +7954,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 	      center = -1, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
 	      user_func_name="ref_ali3d", npad = 4, debug = False, fourvar=False, termprec = 0.0, mpi_comm = None, log = None): 
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
-	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
+	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
@@ -8406,7 +8406,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl, filt_vols
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs, project
-	from utilities      import amoeba_multi_level, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import amoeba_multi_level, model_circle, get_arb_params, set_arb_params, drop_spider_doc
 	from utilities      import bcast_number_to_all, bcast_list_to_all,get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, get_im
 	from utilities      import model_blank, print_begin_msg, print_msg, print_end_msg, file_type
@@ -8811,7 +8811,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl, filt_vols
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs, project
-	from utilities      import amoeba_multi_level, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import amoeba_multi_level, model_circle, get_arb_params, set_arb_params, drop_spider_doc
 	from utilities      import bcast_number_to_all, bcast_list_to_all,get_image, drop_image, bcast_EMData_to_all, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, get_im
 	from utilities      import model_blank, print_begin_msg, print_msg, print_end_msg, file_type
@@ -9432,7 +9432,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 	from alignment        import eqproj_cascaded_ccc
 	from filter           import filt_ctf
 	from projection       import prep_vol
-	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
+	from utilities        import bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict
 	from utilities        import get_image, drop_image, file_type
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
@@ -9792,7 +9792,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 	from filter           import filt_ctf
 	from projection       import prep_vol
 	from fundamentals     import resample
-	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
+	from utilities        import bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, wrap_mpi_bcast, wrap_mpi_gatherv
 	from utilities        import get_image, drop_image, file_type, get_im, get_input_from_string, model_blank
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
