@@ -156,7 +156,7 @@ def main():
 		
 	parser.add_argument("--randomizewedge",action="store_true",  default=False,help="""Default=False. This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned""")
 	
-	parser.add_argument("--savepreprocessed",action="store_true",  default=False,help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
+	parser.add_argument("--savepreproc",action="store_true",  default=False,help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
 	
 	parser.add_argument("--autocenter",type=str, default='',help="""Default=None. Autocenters each averaged pair during initial average generation with --btref and --hacref. Will also autocenter the average of all particles after each iteration of iterative refinement. Options are --autocenter=xform.centerofmass (self descriptive), or --autocenter=xform.centeracf, which applies auto-convolution on the average.""")
 	
@@ -322,7 +322,7 @@ def main():
 				print "************************************"
 
 
-			#if options.savepreprocessed:
+			#if options.savepreproc:
 			#	dummy = EMData(8,8,8)
 			#	dummy.to_one()
 				

@@ -508,7 +508,7 @@ def main():
 			tasks=[]
 			results=[]
 			
-			preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
+			preprocprefftstack = options.path + '/' + os.path.basename(options.input).replace('.hdf','_preproc.hdf')
 			
 			for i in range(nptcl):
 				dimg = EMData(8,8,8)
@@ -1919,7 +1919,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				if options.verbose:
 					print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using hierarchical ascendant classification through e2spt_hac.py"
 			
-				subsetForHacRef = 'spthac_refsubset'+ klassidref + '.hdf'
+				subsetForHacRef = 'spthacrefsubset'+ klassidref + '.hdf'
 			
 				i = 0
 				nptclsforref = 10
@@ -1952,7 +1952,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 
 				hacelements = []
 				for ele in elements:
-					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
+					if 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
 						hacelements.append(ele)
 			
 				cmdhac = ' '.join(hacelements)
@@ -1962,7 +1962,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					cmdhac = cmdhac.replace('e2spt_refinemulti','e2spt_hac')
 				
 			
-				hacrefsubdir = 'spthac_ref' + klassidref
+				hacrefsubdir = 'spthacref' + klassidref
 			
 				cmdhac+=' --path=' + hacrefsubdir
 				#cmdhac+=' --iter='+str(niterhac)
@@ -2034,7 +2034,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					--ssaref"""
 				#sys.exit(1)
 			
-				subsetForSsaRef = 'sptssa_refsubset'+ klassidref + '.hdf'
+				subsetForSsaRef = 'sptssarefsubset'+ klassidref + '.hdf'
 			
 				nptclsforref = 10
 				try:
@@ -2053,12 +2053,12 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					a.write_image( subsetForSsaRef, i )
 					i+=1
 			
-				ssarefsubdir = 'sptssa_ref' + klassidref
+				ssarefsubdir = 'sptssaref' + klassidref
 			
 				ssaelements = []
 				print "\nelements are", elements
 				for ele in elements:
-					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
+					if 'fine' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
 					#	print "Appended element", ele
 						ssaelements.append(ele)
 						print "appending element",ele
@@ -2182,7 +2182,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				#	nseed /= 2
 				
 					
-				subsetForBTRef = 'sptbt_refsubset'+ klassidref + '.hdf'
+				subsetForBTRef = 'sptbtrefsubset'+ klassidref + '.hdf'
 			
 				i = 0
 				
@@ -2200,7 +2200,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				btelements = []
 				#print "elements are", elements
 				for ele in elements:
-					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
+					if 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
 						#print "added ele", ele
 						btelements.append(ele)
 					else:
@@ -2217,7 +2217,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					cmdbt = cmdbt.replace('e2spt_refinemulti','e2spt_binarytree')
 			
 			
-				btrefsubdir = 'sptbt_ref' + klassidref		
+				btrefsubdir = 'sptbtref' + klassidref		
 			
 				cmdbt+=' --path=' + btrefsubdir
 				#cmdbt+=' --iter=' + str( niter )

@@ -188,7 +188,7 @@ def main():
 
 	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False)
 	
-	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False)
+	parser.add_argument("--savepreproc",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False)
 	
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
@@ -684,7 +684,7 @@ def main():
 				finalize = 1
 				print "\n(e2spt_refinemulti.py, line 268) all particles preferred one average and therefore multirefine has failed/converged."
 				print "reffilesrefine is", reffilesrefine
-				sys.exit()
+				#sys.exit()
 				
 
 
@@ -717,212 +717,222 @@ def main():
 			#results = refineref ( options, reffilesrefine[refindx], nptcls, it )
 			
 			
-			tasks = []
-			results = []
+			if not finalize:
 			
-			transform = None
-			# loop over volumes
+				tasks = []
+				results = []
+			
+				transform = None
+				# loop over volumes
 	
-			#ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
-			reffile = reffilesrefine[refindx]
+				#ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
+				reffile = reffilesrefine[refindx]
 			
-			print "\nusing this reffile", reffile
-			'''
-			set up tasks
-			'''
-			for i in range( nptcls ):
-				ptclnum = i
+				print "\nusing this reffile", reffile
+				'''
+				set up tasks
+				'''
+				for i in range( nptcls ):
+					ptclnum = i
+					if options.parallel:
+						task=Align3DTask( ["cache", reffile , 0], ["cache",options.input,ptclnum],ptclnum, "ptcl %d in iter %d" % (ptclnum, it), options, transform, it )
+						tasks.append(task)
+					else:
+						#print "No parallelism specified"
+						result=align3Dfunc( ["cache", reffile , 0], ["cache",options.input,ptclnum],ptclnum, "Ptcl %d in iter %d" % (ptclnum, it), options, transform, it )
+						results.append(result['final'])
+
+
+				'''
+				start alignments (execute tasks)
+				'''
 				if options.parallel:
-					task=Align3DTask( ["cache", reffile , 0], ["cache",options.input,ptclnum],ptclnum, "ptcl %d in iter %d" % (ptclnum, it), options, transform, it )
-					tasks.append(task)
-				else:
-					#print "No parallelism specified"
-					result=align3Dfunc( ["cache", reffile , 0], ["cache",options.input,ptclnum],ptclnum, "Ptcl %d in iter %d" % (ptclnum, it), options, transform, it )
-					results.append(result['final'])
+					tids = etc.send_tasks(tasks)
+					if options.verbose: 
+						print "in iteration %d number of tasks %d queued, to refine reffile %s"%(it,len(tids),reffile) 
 
-
-			'''
-			start alignments (execute tasks)
-			'''
-			if options.parallel:
-				tids = etc.send_tasks(tasks)
-				if options.verbose: 
-					print "in iteration %d number of tasks %d queued, to refine reffile %s"%(it,len(tids),reffile) 
-
-				"""Wait for alignments to finish and get results"""
-				results = get_results(etc,tids,options.verbose, nptcls ,'refinemulti')
+					"""Wait for alignments to finish and get results"""
+					results = get_results(etc,tids,options.verbose, nptcls ,'refinemulti')
 			
 			
 				
 				
-			'''
-			Add info per particle for results from all references to a master dictionary, 'masterInfo',
-			and write out results to .json database and classmx files
-			'''
+				'''
+				Add info per particle for results from all references to a master dictionary, 'masterInfo',
+				and write out results to .json database and classmx files
+				'''
 			
-			reftag = str( refindx ).zfill( len( str( len( reffilesrefine ))))
-			reftags.append( reftag )
+				reftag = str( refindx ).zfill( len( str( len( reffilesrefine ))))
+				reftags.append( reftag )
 			
-			itertag = str( it ).zfill( len( str( options.iter )))
+				itertag = str( it ).zfill( len( str( options.iter )))
 			
-			'''
-			Define and open the .json dictionaries where alignment and score values will be stored, for each iteration,
-			and for each reference if using multiple model refinement
-			'''
-			scoresFile = originalCompletePath +'/sptali_rm_' + itertag + '_' + reftag + '.json'
-			jsScores = js_open_dict(scoresFile)
-			print "\for ref number %d, reffile %s, reftag %s, nscores file will be %s" %( int(refindx),reffile,reftag,scoresFile)			
+				'''
+				Define and open the .json dictionaries where alignment and score values will be stored, for each iteration,
+				and for each reference if using multiple model refinement
+				'''
+				scoresFile = originalCompletePath +'/sptali_rm_' + itertag + '_' + reftag + '.json'
+				jsScores = js_open_dict(scoresFile)
+				print "\for ref number %d, reffile %s, reftag %s, nscores file will be %s" %( int(refindx),reffile,reftag,scoresFile)			
 			
 			
-			'''
-			Iterate over alignment results to write them to classmx.hdf and .json files
-			'''
-			print "len results is", len(results)
-			print "should match nptcls", nptcls
+				'''
+				Iterate over alignment results to write them to classmx.hdf and .json files
+				'''
+				print "len results is", len(results)
+				print "should match nptcls", nptcls
 		
-			print "results are", results
-			iii = 0
+				print "results are", results
+				iii = 0
 		
-			classScoresList = [] 
-			for r in results:
+				classScoresList = [] 
+				for r in results:
 				
-				ptclindx = r[1]
+					ptclindx = r[1]
 				
-				score = r[0][0]['score']
-				if options.verbose > 3:
-					print "for particle %d score is %.4f" %(ptclindx,score)
+					score = r[0][0]['score']
+					if options.verbose > 3:
+						print "for particle %d score is %.4f" %(ptclindx,score)
 				
-				classScoresList.append(score)
+					classScoresList.append(score)
 			
-				t = r[0][0]['xform.align3d']
+					t = r[0][0]['xform.align3d']
 			
-				if options.verbose > 3:
-					print "and transform is",t
+					if options.verbose > 3:
+						print "and transform is",t
 		
-				ptclID = 'subtomo_' + str( ptclindx ).zfill( len( str( nptcls ) ) )			
-				aliparams = [t,score]
-				jsScores.setval( ptclID, aliparams )
+					ptclID = 'subtomo_' + str( ptclindx ).zfill( len( str( nptcls ) ) )			
+					aliparams = [t,score]
+					jsScores.setval( ptclID, aliparams )
 				
 		
-				if options.verbose > 3:
-					print "wrote info to .json file"
+					if options.verbose > 3:
+						print "wrote info to .json file"
 			
 			
-				#ptclID = "tomo_" + str(i).zfill( len(str( nptcls )) )
-				ptclScore = float( aliparams[-1] )
-				ptclAliParams = aliparams
+					#ptclID = "tomo_" + str(i).zfill( len(str( nptcls )) )
+					ptclScore = float( aliparams[-1] )
+					ptclAliParams = aliparams
 			
 				
-				infolist = [ ptclScore, ptclAliParams, reftag]
-				if ic==0:									#In the first iteration and for the first reference, the ptclID key does not exist; create a dummy to update below in further ic and it iterations.
-					masterInfo.update({ ptclID: [] })
+					infolist = [ ptclScore, ptclAliParams, reftag]
+					if ic==0:									#In the first iteration and for the first reference, the ptclID key does not exist; create a dummy to update below in further ic and it iterations.
+						masterInfo.update({ ptclID: [] })
 			
-				print "\n\niteration %d, reference number %d, reffile %s, refftag %s, ptclID to update is %s" %( it,ic,reffile,reftag,ptclID)
-				print "infolist to append is", infolist
-				print "BEFORE appending, masterInfo[ ptclID ] is", masterInfo[ ptclID ]
-				print "Of type", type(masterInfo[ ptclID ])
+					print "\n\niteration %d, reference number %d, reffile %s, refftag %s, ptclID to update is %s" %( it,ic,reffile,reftag,ptclID)
+					print "infolist to append is", infolist
+					print "BEFORE appending, masterInfo[ ptclID ] is", masterInfo[ ptclID ]
+					print "Of type", type(masterInfo[ ptclID ])
 			
-				value = masterInfo[ ptclID ]				#Retrieve results from previous alignments against previous references
+					value = masterInfo[ ptclID ]				#Retrieve results from previous alignments against previous references
 				
 				
-				value.append(infolist)						#Append results from aligning against current reference 
+					value.append(infolist)						#Append results from aligning against current reference 
 			
-				#print "Therfore value is", value
-				#print "Of type", type(value)
-				#print "\n\n"
+					#print "Therfore value is", value
+					#print "Of type", type(value)
+					#print "\n\n"
 				
-				masterInfo.update({ ptclID: value })		#Update masterInfo with expanded results. In the end, a particle key under ptclID should have a list with results for as many references as there are
+					masterInfo.update({ ptclID: value })		#Update masterInfo with expanded results. In the end, a particle key under ptclID should have a list with results for as many references as there are
 				
-				print "AFTER appending and updating, masterInfo[ ptclID ] is", masterInfo[ ptclID ]
+					print "AFTER appending and updating, masterInfo[ ptclID ] is", masterInfo[ ptclID ]
 				
 	
 		
-			ic+=1
+				ic+=1
 		
 		
 		
-			if not options.savesteps:
-				os.remove(reffilesrefine[refindx])
+				if not options.savesteps:
+					os.remove(reffilesrefine[refindx])
 		
 		print "reftags are", reftags
 			
 		'''
 		Analyze all results and classify particles based on them
 		'''			
-		from operator import itemgetter						
+		
+		if not finalize:
+			from operator import itemgetter						
 	
-		print "I've aligned all the particles in the data set to all the references for iter %d and will now classify them from the masterInfo dict" %(it), masterInfo
+			print "I've aligned all the particles in the data set to all the references for iter %d and will now classify them from the masterInfo dict" %(it), masterInfo
 		
-		classes = {}			#classes dictionary to store alignment info per class, depending on which reference each particle preferred
-		for reftag in reftags:
-			print "\n\n\n\n\n\n\n\n\nRRRRRRRRRR\nreftag is", reftag
-			classes.update({ reftag : [] })
+			classes = {}			#classes dictionary to store alignment info per class, depending on which reference each particle preferred
+			for reftag in reftags:
+				print "\n\n\n\n\n\n\n\n\nRRRRRRRRRR\nreftag is", reftag
+				classes.update({ reftag : [] })
 	
-		for ele in masterInfo:
-			sortedPtclInfo = sorted( masterInfo[ele], key=itemgetter(0))	#Sorted works because you want the scores from SMALLEST to BIGGEST. Remember, the MORE NEGATIVE (smaller) the better score in EMAN2
-			bestPtclInfo = sortedPtclInfo[0]
+			for ele in masterInfo:
+				sortedPtclInfo = sorted( masterInfo[ele], key=itemgetter(0))	#Sorted works because you want the scores from SMALLEST to BIGGEST. Remember, the MORE NEGATIVE (smaller) the better score in EMAN2
+				bestPtclInfo = sortedPtclInfo[0]
 		
-			bestreftag = bestPtclInfo[-1]	
-			bestAliParams = bestPtclInfo[1]
-			bestScore = bestPtclInfo[0]
+				bestreftag = bestPtclInfo[-1]	
+				bestAliParams = bestPtclInfo[1]
+				bestScore = bestPtclInfo[0]
 		
-			ptclIndx = int( ele.split('_')[-1] )
-			value = classes[ bestreftag ]
-			value.append( [ ptclIndx, bestAliParams, bestScore] )
-			classes.update({ bestreftag : value })
+				ptclIndx = int( ele.split('_')[-1] )
+				value = classes[ bestreftag ]
+				value.append( [ ptclIndx, bestAliParams, bestScore] )
+				classes.update({ bestreftag : value })
 			
 	
-		if previous_classes == classes:
-			print "\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING"
-			sys.exit()
-		else:
-			if it > 0:
-				classmems = {}
-				for classid in classes:
-					ptcls = []
-					print "classid",classid,type(classid)
-					print "classes[classid]",classes[classid]
-					for ele in classes[classid]:
-						#print "ele is", ele
-						#print "appending ele[0] to ptcls",ele[0]
-						ptcls.append(ele[0])
+			if previous_classes == classes:
+				print "\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING"
+				#sys.exit()
+				finalize = 1
+			else:
+				if it > 0:
+					classmems = {}
+					for classid in classes:
+						ptcls = []
+						print "classid",classid,type(classid)
+						print "classes[classid]",classes[classid]
+						for ele in classes[classid]:
+							#print "ele is", ele
+							#print "appending ele[0] to ptcls",ele[0]
+							ptcls.append(ele[0])
 					
-					ptcls.sort()	
-					print "ptcls are", ptcls
-					classmems.update( { classid:ptcls } )
+						ptcls.sort()	
+						print "ptcls are", ptcls
+						classmems.update( { classid:ptcls } )
 				
-				pclassmems = {}
-				for pclassid in previous_classes:
-					#print "\npclassid",pclassid,type(pclassid)
-					#print "previous_classes[pclassid]",previous_classes[pclassid]
-					ptcls = []
-					for ele in previous_classes[pclassid]:
-						ptcls.append(ele[0])
+					pclassmems = {}
+					for pclassid in previous_classes:
+						#print "\npclassid",pclassid,type(pclassid)
+						#print "previous_classes[pclassid]",previous_classes[pclassid]
+						ptcls = []
+						for ele in previous_classes[pclassid]:
+							ptcls.append(ele[0])
 					
-					ptcls.sort()
-					pclassmems.update( { pclassid:ptcls } )
+						ptcls.sort()
+						pclassmems.update( { pclassid:ptcls } )
 			
 				
-				print "classmems",classmems
-				print "pclassmems",pclassmems
+					print "classmems",classmems
+					print "pclassmems",pclassmems
 			
-				if pclassmems == classmems:
-					print "\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING"
-					sys.exit()
-				else:				
-					if options.verbose > 9:
-						print "previous_classes not equal to classes; therefore, algorithm has not yet converged" 
-						print "previous", pclassmems
-						print "current", classmems
+					if pclassmems == classmems:
+						print "\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING"
+						#sys.exit()
+						finalize = 1
+					else:				
+						if options.verbose > 9:
+							print "previous_classes not equal to classes; therefore, algorithm has not yet converged" 
+							print "previous", pclassmems
+							print "current", classmems
 				
-		#klassIndx = 0
-		klassesLen = len(classes)
-		print "(e2spt_refinemulti.py) there are these many classes with particles",len(classes)
-		print "classes are", classes
+			#klassIndx = 0
+			klassesLen = len(classes)
+			print "(e2spt_refinemulti.py) there are these many classes with particles",len(classes)
+			print "classes are", classes
 		
 		
-		f = open( classtxtfile, 'a')
-		f.write('ITERATION ' + str(it) + '\n')
+		
+		if not finalize:
+			f = open( classtxtfile, 'a')
+			f.write('ITERATION ' + str(it) + '\n')
+		
+		
 		
 		kkk = 0
 		for klass in classes:
@@ -937,48 +947,55 @@ def main():
 				#ptclTransform = klass[ key ]
 				#ptclsFinal.update({ ptclnum : ptclTransform })
 			
-			f.write('CLASS '+ str(klass) +': ')
+			if not finalize:
+				f.write('CLASS '+ str(klass) +': ')
+			
 			if classes[ klass ]:
-				print "\n\nsending particles in class %d to averaging" %( klassIndx ) 
-				thisclass = classes[klass]
-				ptclsinthisclass = []
 				
-				print "\nthisclass is", thisclass
-				for p in thisclass:
-					ptclsinthisclass.append( p[0] )
+				if not finalize:
+					print "\n\nsending particles in class %d to averaging" %( klassIndx ) 
+					thisclass = classes[klass]
+					ptclsinthisclass = []
+				
+					print "\nthisclass is", thisclass
+					for p in thisclass:
+						ptclsinthisclass.append( p[0] )
 					
 				
-				line=''
-				print "\n\n\nfor class %d in iter %d" %( int(klass),it)
-				if ptclsinthisclass:
-					print "ptclsinthisclass is and type", ptclsinthisclass, type(ptclsinthisclass)
-					ptclsinthisclass.sort()
-					print "after sorting ptclsinthisclass is", ptclsinthisclass
-					try:
-						line =','.join( [str(pp) for pp in ptclsinthisclass ] ) + '\n'
-					except:
-						print "class might be empty, ptclsinthisclass.sort() is"		
-				f.write( line )	
+					line=''
+					print "\n\n\nfor class %d in iter %d" %( int(klass),it)
+					if ptclsinthisclass:
+						print "ptclsinthisclass is and type", ptclsinthisclass, type(ptclsinthisclass)
+						ptclsinthisclass.sort()
+						print "after sorting ptclsinthisclass is", ptclsinthisclass
+						try:
+							line =','.join( [str(pp) for pp in ptclsinthisclass ] ) + '\n'
+						except:
+							print "class might be empty, ptclsinthisclass.sort() is"		
+					f.write( line )	
 				
-				print classes[klass]
-				print "\n\n"
+					print classes[klass]
+					print "\n\n"
+
 				ret = makeAverage( options, classes[klass], klassIndx, klassesLen, it, finalize, originalCompletePath)
 					
 				#ret = makeAverage(options, ic,results,it)
-				ref = ret[0]
-				weights = ret[1]
 				
-				print "\nreturned weights are", weights
+				if not finalize:
+					ref = ret[0]
+					weights = ret[1]
 				
-				if ref:
-					avgsName =  originalCompletePath + '/class_avgs.hdf'
-					if options.savesteps and int( options.iter ) > 1 :
-						avgsName = originalCompletePath + '/class_avgs_iter' + str( it ).zfill( len( str( options.iter ))) + '.hdf'						
-					ref.write_image(avgsName,kkk)
+					print "\nreturned weights are", weights
 				
-				#print "\nappending ref",ref
-				print "appending ref %d to avgs as klass %s" % ( int(klassIndx), klass )
-				avgs.update({ klass : ref })
+					if ref:
+						avgsName =  originalCompletePath + '/class_avgs.hdf'
+						if options.savesteps and int( options.iter ) > 1 :
+							avgsName = originalCompletePath + '/class_avgs_iter' + str( it ).zfill( len( str( options.iter ))) + '.hdf'						
+						ref.write_image(avgsName,kkk)
+				
+					#print "\nappending ref",ref
+					print "appending ref %d to avgs as klass %s" % ( int(klassIndx), klass )
+					avgs.update({ klass : ref })
 
 			else:
 				print "\nthe klass %d was empty (no particles were assgined to it). You might have too many classes." % ( klassIndx )	
@@ -1067,50 +1084,50 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 		if options.saveali:
 			writeali = 1		#This saves the aligned particles across ALL iterations for HAC -probably shouldn't be done.
 	'''
-	
-			
-	if options.keepsig:
-		# inefficient memory-wise
-		val = sum([ score[-1] for score in klass ])
-		val2 = sum([ score[-1]**2 for score in klass ])
+	thresh=0
+	if not finalize:		
+		if options.keepsig:
+			# inefficient memory-wise
+			val = sum([ score[-1] for score in klass ])
+			val2 = sum([ score[-1]**2 for score in klass ])
 
-		mean = val/len( klass )
-		sig = sqrt( val2 /len(klass) - mean*mean )
-		thresh = mean + sig*options.keep
-		if options.verbose: 
-			print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
+			mean = val/len( klass )
+			sig = sqrt( val2 /len(klass) - mean*mean )
+			thresh = mean + sig*options.keep
+			if options.verbose: 
+				print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
 
-	if options.keep:
-		#print "Len of align_parms is", len(klass)
+		if options.keep:
+			#print "Len of align_parms is", len(klass)
 		
-		for score in klass:
-			if score[-1]:
-				pass
-				#print "\nscore!"
-			else:
-				print "\n(e2pt_refinemulti.py) (makeAverage) the score was 0, see", score[-1] 
-				#print "see, p[0] is", p[0]
-				#sys.exit()
+			for score in klass:
+				if score[-1]:
+					pass
+					#print "\nscore!"
+				else:
+					print "\n(e2pt_refinemulti.py) (makeAverage) the score was 0, see", score[-1] 
+					#print "see, p[0] is", p[0]
+					#sys.exit()
 		
-		val = [ score[-1] for score in klass]
-		val.sort()
-		print "The len of val is", len(val)
-		print "these are the vals", val
-		print "Which shuld be the same as len(klass) see", len(klass)
-		print "The clossest position to threshold value based on keep", options.keep
-		threshIndx =  int (options.keep * len(klass) ) - 1 
-		print "is", threshIndx
+			val = [ score[-1] for score in klass]
+			val.sort()
+			print "The len of val is", len(val)
+			print "these are the vals", val
+			print "Which shuld be the same as len(klass) see", len(klass)
+			print "The clossest position to threshold value based on keep", options.keep
+			threshIndx =  int (options.keep * len(klass) ) - 1 
+			print "is", threshIndx
 		
-		thresh = val[ threshIndx ]
-		if options.verbose: 
-			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
+			thresh = val[ threshIndx ]
+			if options.verbose: 
+				print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
 
-	'''
-	# Make variance image if available
-	variance = EMData( ptcl_file, 0 ).copy_head()
-	if options.averager[0] == 'mean':
-		options.averager[1]['sigma'] = variance
-	'''
+		'''
+		# Make variance image if available
+		variance = EMData( ptcl_file, 0 ).copy_head()
+		if options.averager[0] == 'mean':
+			options.averager[1]['sigma'] = variance
+		'''
 	
 	avgr = Averagers.get(options.averager[0], options.averager[1])
 	included = []
@@ -1119,12 +1136,15 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 			
 	#jsdict = path + '/tomo_xforms.json'
 	#js = js_open_dict(jsdict)
+	
+	
 			
 	ptclsAdded = 0
 	for k in klass:
 		#print "klass is", klass
 		weight = 1.0
 		if klass and len(klass) > 0:
+			
 			#print "\n\nk in klass is", k
 			#print "\nThe index of the particle to add is",k[0]
 			#print "\nAnd this its transform", k[1][0]
@@ -1139,51 +1159,53 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 		
 			#print "I've applied the transform"
 			#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
-		
-			if k[-1] <= thresh: 
 			
-				if options.weighbytiltaxis:
-					px = x = int(ptcl['ptcl_source_coord'][0])
+			if not finalize:
+			
+				if k[-1] <= thresh: 
+			
+					if options.weighbytiltaxis:
+						px = x = int(ptcl['ptcl_source_coord'][0])
 				
-					tiltaxis = int( options.weighbytiltaxis.split(',')[0] )
-					minweight = float( options.weighbytiltaxis.split(',')[1] )
+						tiltaxis = int( options.weighbytiltaxis.split(',')[0] )
+						minweight = float( options.weighbytiltaxis.split(',')[1] )
 				
-					if px > tiltaxis:
-						px = -1 *( px - 2*tiltaxis )	#This puts te particle at the same distance from te tilt axis, but to the left of it.
+						if px > tiltaxis:
+							px = -1 *( px - 2*tiltaxis )	#This puts te particle at the same distance from te tilt axis, but to the left of it.
 						
-					X = tiltaxis				#This models a line in 'weight space' (x, w), that passes through (0, minweight) and ( tiltaxis, maxweight ) 
-					W = 1.0 - minweight
-					slope = W/X
-											#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
-					print "Tiltaxis is", X
-					print "W is", W
-					print "Therefore slope is", slope
+						X = tiltaxis				#This models a line in 'weight space' (x, w), that passes through (0, minweight) and ( tiltaxis, maxweight ) 
+						W = 1.0 - minweight
+						slope = W/X
+												#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
+						print "Tiltaxis is", X
+						print "W is", W
+						print "Therefore slope is", slope
 				
-					dx = tiltaxis - px 
-					#if px > tiltaxis:
-					#	dx = px - tiltaxis
+						dx = tiltaxis - px 
+						#if px > tiltaxis:
+						#	dx = px - tiltaxis
 						
-					taweight = slope * px + minweight 
-					weight = weight * ( taweight )
-					print "tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x)
+						taweight = slope * px + minweight 
+						weight = weight * ( taweight )
+						print "tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x)
 
-				if options.weighbyscore:
-					scoreweight = score / maxscore
-					print "the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore )
-					weight = weight * scoreweight
+					if options.weighbyscore:
+						scoreweight = score / maxscore
+						print "the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore )
+						weight = weight * scoreweight
 			
-				weights.update( {ptclindx:weight} )
+					weights.update( {ptclindx:weight} )
 				
-				print "therefore the final weight for particle %d is %f" %(ptclindx, weight )
+					print "therefore the final weight for particle %d is %f" %(ptclindx, weight )
 				
-				ptcl.mult( weight )
+					ptcl.mult( weight )
 			
 			
 			
 			
-				avgr.add_image(ptcl)
-				included.append(k[0])
-				ptclsAdded += 1
+					avgr.add_image(ptcl)
+					included.append(k[0])
+					ptclsAdded += 1
 
 			#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 		
@@ -1211,55 +1233,57 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 				ptcl.write_image(classStack,-1)	
 	#js.close()
 	
-	if options.verbose: 
-		print "Kept %d / %d particles in average"%(len(included),len(klass))
+	if not finalize:
+		if options.verbose: 
+			print "Kept %d / %d particles in average"%(len(included),len(klass))
 
-	avg=avgr.finish()
-	#if options.symmetry and not options.breaksym:
-	#	avg=avg.process('xform.applysym',{'sym':options.symmetry})
+		avg=avgr.finish()
+		#if options.symmetry and not options.breaksym:
+		#	avg=avg.process('xform.applysym',{'sym':options.symmetry})
 	
-	avg["class_ptcl_idxs"] = included
-	avg["class_ptcl_src"] = options.input
-	avg["spt_multiplicity"] = len(included)
-	avg['spt_ptcl_indxs']=included
+		avg["class_ptcl_idxs"] = included
+		avg["class_ptcl_src"] = options.input
+		avg["spt_multiplicity"] = len(included)
+		avg['spt_ptcl_indxs']=included
 	
-	#if options.averager[0] == 'mean' and variance:
-	#	variance.write_image(path+"/class_varmap.hdf",it)
+		#if options.averager[0] == 'mean' and variance:
+		#	variance.write_image(path+"/class_varmap.hdf",it)
 				
-	if options.autocenter:
-		print "\n\n\n\nYou have selected to autocenter!\n", options.autocenter
+		if options.autocenter:
+			print "\n\n\n\nYou have selected to autocenter!\n", options.autocenter
 		
-		avgac = avg.copy()
-		if options.autocentermask:
-			avgac.process_inplace( options.autocentermask[0],options.autocentermask[1] )
+			avgac = avg.copy()
+			if options.autocentermask:
+				avgac.process_inplace( options.autocentermask[0],options.autocentermask[1] )
 			
-		if options.autocenterpreprocess:
-			apix = avgc['apix_x']
-			halfnyquist = apix*4
-			highpassf = apix*a['nx']/2.0
+			if options.autocenterpreprocess:
+				apix = avgc['apix_x']
+				halfnyquist = apix*4
+				highpassf = apix*a['nx']/2.0
 			
-			avgac.process_inplace( 'filter.highpass.gauss',{'cutoff_freq':highpassf,'apix':apix})
-			avgac.process_inplace( 'filter.lowpass.gauss',{'cutoff_freq':halfnyquist,'apix':apix})
-			avgac.process_inplace( 'math.meanshrink',{'n':2})
+				avgac.process_inplace( 'filter.highpass.gauss',{'cutoff_freq':highpassf,'apix':apix})
+				avgac.process_inplace( 'filter.lowpass.gauss',{'cutoff_freq':halfnyquist,'apix':apix})
+				avgac.process_inplace( 'math.meanshrink',{'n':2})
 			
-		avgac.process_inplace(options.autocenter[0],options.autocenter[1])
+			avgac.process_inplace(options.autocenter[0],options.autocenter[1])
 		
-		tcenter = avgac['xform.align3d']
-		print "Thus the average HAS BEEN be translated like this", tcenter
-		avg.transform(tcenter)
+			tcenter = avgac['xform.align3d']
+			print "Thus the average HAS BEEN be translated like this", tcenter
+			avg.transform(tcenter)
 
-	avg['origin_x']=0
-	avg['origin_y']=0
-	avg['origin_z']=0
+		avg['origin_x']=0
+		avg['origin_y']=0
+		avg['origin_z']=0
 	
 	
-	if ptclsAdded > 0:
-		#avg.write_image(avgsName,klassIndx)
+		if ptclsAdded > 0:
+			#avg.write_image(avgsName,klassIndx)
 		
-		return [avg,weights]
+			return [avg,weights]
+		else:
+			return None,None
 	else:
 		return None,None
-
 
 
 	

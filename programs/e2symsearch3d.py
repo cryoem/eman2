@@ -190,7 +190,7 @@ def main():
 	
 		if options.mask or options.normproc or options.threshold or options.clipali:		
 			
-			preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
+			preprocprefftstack = options.path + '/' + os.path.basename( options.input ).replace('.hdf','_preproc.hdf')
 			
 			#save "dummy" images for preproc images
 			for i in range(n):
@@ -257,11 +257,17 @@ def main():
 		preprocvol = volume.copy()
 				
 		#Preprocess volume if any preprocessing options are specified
+		
+		preprocprefftstack = options.path + '/' + os.path.basename( options.input ).replace('.hdf','_preproc.hdf')
+
 		if (options.shrink and options.shrink > 1) or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clipali:
 			print "\nHowever, I will first preprocess particle number",i
 			
 			print "\nWill call preprocessing on ptcl",i
 			preprocvol = preprocfilter(preprocvol,options,i)
+			
+			if options.savepreproc:
+				preprocvol.write_image( preprocprefftstack, i)
 			#preprocessing(s2image,options, ptclindx, savetagp ,'no',round)
 			
 			print "\nDone preprocessing on ptcl",i
