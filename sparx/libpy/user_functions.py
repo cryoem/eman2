@@ -1132,9 +1132,9 @@ def do_volume_mrk03(ref_data):
 		Util.mul_img(vol, mask3D)
 		if not local_filter:
 			if( type(Tracker["lowpass"]) == types.ListType ):
-				vol = fft( filt_table( filt_table(vol, Tracker["lowpass"]), ro) )
+				vol = filt_table(vol, Tracker["lowpass"])
 			else:
-				vol = fft( filt_table( filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"]), ro) )
+				vol = filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
 
 	if local_filter:
 		from morphology import binarize
