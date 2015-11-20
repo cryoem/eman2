@@ -38,6 +38,7 @@ import os
 from EMAN2jsondb import JSTask,jsonclasses
 import sys
 
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] 
@@ -86,7 +87,7 @@ def main():
 	
 	parser.add_argument("--clipali",type=int,default=0,help="""Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
 		
-	parser.add_argument("--savepreprocessed",action="store_true", default=False, help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
+	parser.add_argument("--savepreproc",action="store_true", default=False, help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
 
 	parser.add_argument("--average",action='store_true',default=False,help="""Default=False. If supplied and a stack is provided through --input, the average of the aligned and/or symmetrized stack will also be saved.""")
 	
@@ -152,7 +153,8 @@ def main():
 	#	os.mkdir(options.path)
 	
 	#Make directory to save results
-	from e2spt_classaverage import sptmakepath
+	from e2spt_classaverage import sptmakepath, preprocessingprefft, Preprocprefft3DTask, get_results_preproc, preprocfilter, sptOptionsParser
+
 	options = sptmakepath(options,'symsearch')
 	
 	if options.nopath:
@@ -164,13 +166,13 @@ def main():
 	if rootpath not in options.path:
 		options.path = rootpath + '/' + options.path
 		
-	from EMAN2PAR import EMTaskCustomer
-	from e2spt_classaverage import sptOptionsParser
+	if options.parallel:
+		from EMAN2PAR import EMTaskCustomer
 
 	options = sptOptionsParser( options )
 	
 	avgr = Averagers.get( options.averager[0], options.averager[1 ])
-	results = {}
+	resultsdict = {}
 	scores=[]
 	
 	outputstack = options.path + '/all_ptcls_ali.hdf'
@@ -185,35 +187,48 @@ def main():
 	options.raw = options.input
 	
 	if not options.nopreprocprefft:
-				
-		from e2spt_classaverage import preprocessingprefft, Preprocprefft3DTask, get_results_preproc
-		
-		print "\n(e2spt_hac.py) (allvsall) Initializing parallelism for preprocessing"
-		if options.parallel:							# Initialize parallelism if being used
-			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel)
-			pclist=[options.input]
-			etc.precache(pclist)
 	
 		if options.mask or options.normproc or options.threshold or options.clipali:		
+			
+			preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
+			
+			#save "dummy" images for preproc images
+			for i in range(n):
+				dimg = EMData(8,8,8)
+				dimg.to_one()
+				dimg.write_image( preprocprefftstack, i )
+			
+			originalsavepreproc = options.savepreproc
+			
+			options.savepreproc=True
+			
+		
+			print "\n(e2spt_hac.py) (allvsall) Initializing parallelism for preprocessing"
+			if options.parallel:							# Initialize parallelism if being used
+				#from EMAN2PAR import EMTaskCustomer
+				etc=EMTaskCustomer(options.parallel)
+				pclist=[options.input]
+				etc.precache(pclist)
+			
+			
 			tasks=[]
 			results=[]
 	
-			preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
+			#preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
 	
 			for i in range(n):
 		
 				img = EMData( options.input, i )
 		
 				if options.parallel:
-					task = Preprocprefft3DTask( ["cache",options.input,i], options, i )
+					task = Preprocprefft3DTask( ["cache",options.input,i], options, i, preprocprefftstack )
 					tasks.append(task)
 	
 				else:
 					pimg = preprocessingprefft( img, options)
 					pimg.write_image( preprocprefftstack, i )
 	
-			print "there are these many tasks to send", len(tasks)
+			print "\nthere are these many tasks to send", len(tasks)
 			if options.parallel and tasks:
 				tids = etc.send_tasks(tasks)
 				print "therefore these many tids", len(tids)
@@ -228,7 +243,8 @@ def main():
 	
 
 			options.input = preprocprefftstack
-	
+			
+			options.savepreproc = originalsavepreproc
 	
 	
 	
@@ -239,9 +255,7 @@ def main():
 		#Load particle and make a copy to modify if preprocessing options are specified
 		volume = EMData(options.input,i)
 		preprocvol = volume.copy()
-		
-		from e2spt_classaverage import preprocfilter
-		
+				
 		#Preprocess volume if any preprocessing options are specified
 		if (options.shrink and options.shrink > 1) or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clipali:
 			print "\nHowever, I will first preprocess particle number",i
@@ -262,7 +276,8 @@ def main():
 		symxform = ret[0]
 		score = ret[1]
 		scores.append( score )
-		results.update( { score:[symxform,i] } )
+		
+		resultsdict.update( { score:[symxform,i] } )
 	
 		print "\nWriting output for best alignment found for particle number",i
 		
@@ -307,15 +322,16 @@ def main():
 			
 			if options.ref:
 				ref = EMData( options.ref, 0 )
-				refComp( options, outputstack, ref, results, '' )
+				refComp( options, outputstack, ref, resultsdict, '' )
 				
 				if options.mirror:
 					ref.process_inplace('xform.mirror',{'axis': options.mirror })
 					refComp( options, outputstack, ref, results, '_vs_mirror')
 			else:
 				ref2compare = final_avg
-				refComp( options, outputstack, final_avg, results, '')	
-			
+				refComp( options, outputstack, final_avg, resultsdict, '')	
+		
+		del final_avg	
 
 	if log:
 		E2end(logid)
@@ -323,27 +339,27 @@ def main():
 	return
 	
 	
-def refComp( options, outputstack, ref2compare, results, mirrortag ):
+def refComp( options, outputstack, ref2compare, resultsdict, mirrortag ):
 	
 	for it in range( options.avgiter ):
 		print "Averaging iteration", it
 		
-		ret = calcScores( outputstack, ref2compare, results )
+		ret = calcScores( outputstack, ref2compare, resultsdict )
 		scores = ret[0]
-		results = ret[1]
+		resultsdict = ret[1]
 		
-		ref2compare = makeSsaAverage( options, scores, results, it )
+		ref2compare = makeSsaAverage( options, scores, resultsdict, it )
 		
 		meanscore = sum(scores)/len(scores)
 						
 		if it == options.avgiter -1:
 			print "Final mean score is", meanscore
-			ref2compare.write_image( options.path + '/final_avg' + mirrotag + '.hdf', 0)
+			ref2compare.write_image( options.path + '/final_avg' + mirrortag + '.hdf', 0)
 	
 	return
 
 
-def calcScores( stack, avg, results):
+def calcScores( stack, avg, resultsdict):
 	
 	newresults = {}
 	
@@ -352,9 +368,9 @@ def calcScores( stack, avg, results):
 	n = EMUtil.get_image_count( stack )
 	
 	i=0
-	for r in results:
+	for r in resultsdict:
 	
-		indx = results[r][-1]
+		indx = resultsdict[r][-1]
 	
 		img = EMData( stack, indx )
 	
@@ -367,7 +383,7 @@ def calcScores( stack, avg, results):
 		img.write_image( stack, indx, EMUtil.ImageType.IMAGE_HDF, True, None, file_mode_map['float'] )
 		scores.append( score )
 		
-		t = results[r][0]
+		t = resultsdict[r][0]
 		
 		newresults.update( { score:[t,indx] } )
 	
@@ -376,7 +392,7 @@ def calcScores( stack, avg, results):
 	return [ scores, newresults ]
 
 
-def makeSsaAverage( options, scores, results, it ):
+def makeSsaAverage( options, scores, resultsdict, it ):
 	thresh = 1.0
 	if options.keep < 1.0 and options.average:
 		print "Len of scores is", len(scores)
@@ -414,14 +430,14 @@ def makeSsaAverage( options, scores, results, it ):
 		for s in scores:
 			if s < thresh:
 				print "Score kept", s
-			indx =  results[ s ][-1]
+			indx =  resultsdict[ s ][-1]
 			#a = EMData( options.input, indx )
 			a = EMData( options.raw, indx )
 			
 			if it == options.avgiter -1:
 				a.write_image( options.path + '/kept_ptcls_raw_' + str(it).zfill( len( str( options.avgiter))) + '.hdf', -1 )
 			
-			t = results[ s ][0]
+			t = resultsdict[ s ][0]
 			a.transform( t )
 			#a = a.process('xform',{'transform':symxform})
 			avgr.add_image( a )
