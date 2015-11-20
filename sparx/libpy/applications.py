@@ -4642,12 +4642,12 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	from alignment       import proj_ali_incore,  proj_ali_incore_zoom,  proj_ali_incore_local, proj_ali_incore_local_zoom
 	from alignment       import shc, center_projections_3D
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
-	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj
+	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj, pad
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
 	from statistics      import hist_list
 	from applications    import MPI_start_end
-	from filter          import filt_ctf
+	from filter          import filt_ctf, filt_table
 	from global_def      import Util
 	from fundamentals    import resample, fshift
 	from multi_shc       import shc_multi
