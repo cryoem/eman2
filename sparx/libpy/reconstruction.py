@@ -528,7 +528,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 	"""
 	from utilities  import reduce_EMData_to_root, pad
 	from EMAN2      import Reconstructors
-	from utilities  import iterImagesList, set_params_proj
+	from utilities  import iterImagesList, set_params_proj, model_blank
 	from mpi        import MPI_COMM_WORLD
 	import types
 

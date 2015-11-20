@@ -4737,6 +4737,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 		nx = mask2D.get_xsize()
 	else:  nx = 0
 	nx  = bcast_number_to_all(nx, source_node = main_node)
+	mx = 2*nx
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
@@ -4861,7 +4862,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 				except:
 					ERROR("Problem with indexing ptcl_source_image.","meridien",1, myid)
 
-				tempdata = Util.window(pad(filt_table(data[im],[Tracker["bckgnoise"][0][i][indx] for i in xrange(nx)]), mx, mx,1,0.0), nx, nx)
+				tempdata = Util.window(pad(filt_table(data[im],[Tracker["bckgnoise"][0][i,indx] for i in xrange(nx)]), mx, mx,1,0.0), nx, nx)
 
 				if(nsoft == 0):
 					if(an[N_step] == -1):

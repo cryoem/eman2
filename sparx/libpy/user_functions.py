@@ -1096,7 +1096,7 @@ def do_volume_mrk03(ref_data):
 		if Tracker["constants"]["CTF"]:
 			#vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
 			#		symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
-			vol = recons3d_4nnw_MPI(myid, data, Tracker["bckgdata"], Tracker["constants"]["snr"], \
+			vol = recons3d_4nnw_MPI(myid, data, Tracker["bckgnoise"], Tracker["constants"]["snr"], \
 				symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
 		else:
 			vol = recons3d_4nn_MPI    (myid, data,\

@@ -1678,7 +1678,7 @@ def main():
 	Tracker["constants"]["nnxo"]         = nnxo
 	Tracker["constants"]["pixel_size"]   = pixel_size
 	Tracker["fuse_freq"]    = fq
-	Tracker["bckgdata"] = [[],[]]
+	Tracker["bckgnoise"] = [[],[]]
 	del fq, nnxo, pixel_size
 
 	if(Tracker["constants"]["radius"]  < 1):
