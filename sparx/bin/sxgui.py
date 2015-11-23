@@ -457,8 +457,8 @@ class SXPopup(QWidget):
 				print cmd_line
 		
 			# Execute the generated command line
-#			process = subprocess.Popen(cmd_line, shell=True)
-#			self.emit(QtCore.SIGNAL("process_started"), process.pid)
+			process = subprocess.Popen(cmd_line, shell=True)
+			self.emit(QtCore.SIGNAL("process_started"), process.pid)
 			
 			# Save the current state of GUI settings
 			if os.path.exists(self.projct_dir) == False:
