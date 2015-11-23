@@ -40,7 +40,6 @@ from EMAN2 import *
 from sparx import *
 from EMAN2_cppwrap import *
 
-# >>>>> START_INSERTION >>>>>
 # ========================================================================================
 class SXcmd_token:
 	def __init__(self):
@@ -51,30 +50,32 @@ class SXcmd_token:
 		self.label = ""             # User friendly name of argument or option
 		self.help = ""              # Help info
 		self.group = ""             # Tab group: main or advanced
-		self.is_required = False    # Required argument or options. No default value are available
+		self.is_required = False    # Required argument or options. No default value are available 
 		self.default = ""           # Default value
 		self.type = ""              # Type of value
 		self.is_in_io = False       # <Used only here> To check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
 		self.widget = None          # <Used only in sxgui.py> Widget instances Associating with this command token
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+
 # ========================================================================================
 class SXcmd:
 	def __init__(self):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.name = ""              # Name of this command (i.e. name of sx*.py script but without .py extension)
-		self.short_info = ""        # Short description of this command
-		self.mpi_support = False    # Flag to indicate if this command suppors MPI version
-		self.mpi_support = False    # Flag to indicate if this command suppors MPI version
-		self.mpi_add_flag = False   # NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts
-		self.token_list = []        # list of command tokens. Need this to keep the order of command tokens
-		self.token_dict = {}        # dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
+		self.name = ""               # Name of this command (i.e. name of sx*.py script but without .py extension)
+		self.short_info = ""         # Short description of this command
+		self.mpi_support = False     # Flag to indicate if this command suppors MPI version
+		self.mpi_add_flag = False    # NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts 
+		self.token_list = []         # list of command tokens. Need this to keep the order of command tokens
+		self.token_dict = {}         # dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-
+		
 # ========================================================================================
 def construct_sxcmd_list():
 	sxcmd_list = []
-
+	
+	# Actual sx commands are inserted into the following section by wikiparser.py.
+	# @@@@@ START_INSERTION @@@@@
 	sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True
 	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "outdir1"; token.key_prefix = ""; token.label = "output directory for rotinf**** files"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
@@ -276,13 +277,14 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
+	# @@@@@ END_INSERTION @@@@@
+	
 	# Create command token dictionary for each SXcmd instance
 	for sxcmd in sxcmd_list:
 		for token in sxcmd.token_list:
 				sxcmd.token_dict[token.key_base] = token
-
+	
 	return sxcmd_list
-# <<<<< END_INSERTION <<<<<
 
 # ========================================================================================
 # Provides all necessary functionarity
@@ -313,7 +315,7 @@ class SXPopup(QWidget):
 		# Loop through all command tokens
 		for token in self.sxcmd.token_list:
 			if token.type == 'bool':
-				if token.is_required == True: ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+				if token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
 				if (token.widget.checkState() == Qt.Checked) != token.default:
 					sxcmd_line += " %s%s" % (token.key_prefix, token.key_base)
 			else:
@@ -323,7 +325,12 @@ class SXPopup(QWidget):
 				
 				if token.widget.text() != token.default:
 					# For now, using line edit box for the other type
-					sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, token.widget.text())
+					if token.key_prefix == "":
+						sxcmd_line += " %s" % (token.widget.text())
+					elif token.key_prefix == "--":
+						sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, token.widget.text())
+					else:
+						ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
 				
 				# if token.type == "output":
 				# elif token.type == "directory":
@@ -433,8 +440,8 @@ class SXPopup(QWidget):
 			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 			print 'Executed the following command: '
 			print cmd_line
-		# process = subprocess.Popen(cmd_line, shell=True)
-		# self.emit(QtCore.SIGNAL("process_started"), process.pid)
+		process = subprocess.Popen(cmd_line, shell=True)
+		self.emit(QtCore.SIGNAL("process_started"), process.pid)
 	
 	def save_cmd_line(self):
 		cmd_line = self.generate_cmd_line()
@@ -448,64 +455,79 @@ class SXPopup(QWidget):
 				print cmd_line
 		# else: Do nothing
 	
-	"""
-	def save_params(self):		
+	def save_params(self):
 		file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Save Parameters", options = QtGui.QFileDialog.DontUseNativeDialog)
 		if file_name_out != '':
 			file_out = open(file_name_out,'w')
 		
 			# Write script name for consistency check upon loading
-			file_out.write('%s \n' % (self.name))	
-
-			# Loop through all command tokens
-			for cmd_token in self.cmd_token_list:
-				val_str = ''
-				if cmd_token.widget == 'sxwidget_line_edit':
-					assert type(cmd_token.gui) is QtGui.QLineEdit
-					val_str = str(cmd_token.gui.text())
-				elif cmd_token.widget == 'sxwidget_check_box':
-					assert type(cmd_token.gui) is QtGui.QCheckBox
-					if cmd_token.gui.checkState() == Qt.Checked:
-						val_str = 'YES'
-					else:
-						val_str = 'NO'
-				else:
-					assert False, 'Unreachable Code!!!'
-				file_out.write('%s == %s \n' % (cmd_token.label, val_str))				
-
+			file_out.write('@@@@@ %s gui setting - ' % (self.sxcmd.name))
+			file_out.write(EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')')
+			file_out.write(' @@@@@ \n')
+			
+			# Define list of (tab) groups
+			group_main = "main"
+			group_advanced = "advanced"
+			
+			# Loop through all states
+			for group in [group_main, group_advanced]:
+				# Loop through all command tokens
+				for cmd_token in self.sxcmd.token_list:
+					if cmd_token.group == group:
+						val_str = ''
+						if cmd_token.type == 'bool':
+							if cmd_token.widget.checkState() == Qt.Checked:
+								val_str = 'YES'
+							else:
+								val_str = 'NO'
+						else:
+							# For now, use line edit box for the other type
+							val_str = str(cmd_token.widget.text())
+							# if cmd_token.type == "output":
+							# elif cmd_token.type == "directory":
+							# elif cmd_token.type == "image":
+							# elif cmd_token.type == "parameters":
+							# elif cmd_token.type == "pdb":
+							# elif cmd_token.type == "function":
+							# else:
+							#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+						if cmd_token.is_required == False:
+							file_out.write('<%s> %s (default %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.default, val_str))
+						else:
+							file_out.write('<%s> %s (default required %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.type, val_str))
+					# else: do nothig
+			
+			# At the end of parameter file...
 			# Write MPI parameters 
-			file_out.write('%s == %s \n' % ('MPI processors', str(self.tab_main.mpi_nproc_edit.text())))		
-			file_out.write('%s == %s \n' % ('MPI Command Line Template', str(self.tab_main.mpi_cmd_line_edit.text())))		
-
+			file_out.write('%s == %s \n' % ('MPI processors', str(self.tab_main.mpi_nproc_edit.text())))
+			file_out.write('%s == %s \n' % ('MPI Command Line Template', str(self.tab_main.mpi_cmd_line_edit.text())))
 			# Write Qsub paramters 
 			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 				val_str = 'YES'
 			else:
 				val_str = 'NO'
 			file_out.write('%s == %s \n' % ('Submit Job to Queue', val_str))	
-			file_out.write('%s == %s \n' % ('Job Name', str(self.tab_main.qsub_job_name_edit.text())))		
-			file_out.write('%s == %s \n' % ('Submission Command', str(self.tab_main.qsub_cmd_edit.text())))		
-			file_out.write('%s == %s \n' % ('Submission Script Template', str(self.tab_main.qsub_script_edit.text())))		
-
+			file_out.write('%s == %s \n' % ('Job Name', str(self.tab_main.qsub_job_name_edit.text())))
+			file_out.write('%s == %s \n' % ('Submission Command', str(self.tab_main.qsub_cmd_edit.text())))
+			file_out.write('%s == %s \n' % ('Submission Script Template', str(self.tab_main.qsub_script_edit.text())))
+			
 			file_out.close()
-	"""
-
-	"""
-	def load_params(self):		
+	
+	def load_params(self):
 		file_name_in = QtGui.QFileDialog.getOpenFileName(self, "Load parameters", options = QtGui.QFileDialog.DontUseNativeDialog)
 		if file_name_in != '':
 			file_in = open(file_name_in,'r')
 		
 			# Check if this parameter file is for this sx script
 			line_in = file_in.readline()
-			if line_in.find(self.sxscript) != -1:
+			if line_in.find('@@@@@ %s gui setting' % (self.sxcmd.name)) != -1:
 				# loop through the other lines
 				for line_in in file_in:
 					# Extract label (which should be left of '=='). Also strip the ending spaces
-					label_in = line_in.split('==')[0].strip() 			
+					label_in = line_in.split('==')[0].strip()
 					# Extract value (which should be right of '=='). Also strip all spaces
 					val_str_in = line_in.split('==')[1].strip() 
-			
+					
 					if label_in == "MPI processors":
 						self.tab_main.mpi_nproc_edit.setText(val_str_in)
 					elif label_in == "MPI Command Line Template":
@@ -523,28 +545,40 @@ class SXPopup(QWidget):
 					elif label_in == "Submission Script Template":
 						self.tab_main.qsub_script_edit.setText(val_str_in)
 					else:
+						# Extract key_base of this command token
+						target_operator = "<"
+						item_tail = label_in.find(target_operator)
+						if item_tail != 0: ERROR("Paramter File Format Error: Command token entry should start from \"%s\" for key base name in line (%s)" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
+						label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
+						target_operator = ">"
+						item_tail = label_in.find(target_operator)
+						if item_tail == -1: ERROR("Paramter File Format Error: Command token entry should have \"%s\" closing key base name in line (%s)" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
+						key_base = label_in[0:item_tail]
 						# Get corresponding cmd_token
-						cmd_token = self.cmd_token_dict[label_in]
-						assert cmd_token.label == label_in
-			
-						# Set gui values
-						if cmd_token.widget == 'sxwidget_line_edit':
-							assert type(cmd_token.gui) is QtGui.QLineEdit
-							cmd_token.gui.setText(val_str_in)
-						elif cmd_token.widget == 'sxwidget_check_box':
-							assert type(cmd_token.gui) is QtGui.QCheckBox
+						if key_base not in self.sxcmd.token_dict.keys(): ERROR("Paramter File Format Error: Command token entry should start from \"%s\" for key base name in line %s" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
+						cmd_token = self.sxcmd.token_dict[key_base]
+						
+						if cmd_token.type == "bool":
+							# construct new widget(s) for this command token
 							if val_str_in == 'YES':
-								cmd_token.gui.setChecked(True)
-							else:
-								assert val_str_in == 'NO'
-								cmd_token.gui.setChecked(False)
+								cmd_token.widget.setChecked(True)
+							else: # val_str_in == 'NO'
+								cmd_token.widget.setChecked(False)
 						else:
-							assert False, 'Unreachable Code!!!'
+							# For now, use line edit box for the other type
+							cmd_token.widget.setText(val_str_in)
+							# if cmd_token.type == "output":
+							# elif cmd_token.type == "directory":
+							# elif cmd_token.type == "image":
+							# elif cmd_token.type == "parameters":
+							# elif cmd_token.type == "pdb":
+							# elif cmd_token.type == "function":
+							# else:
+							#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 			else:
 				QMessageBox.warning(self, 'Fail to load paramters', 'The specified file is not paramter file for %s.' % self.name)
-	
+			
 			file_in.close()
-	"""
 
 	"""
 #	def choose_file(self):
@@ -616,15 +650,15 @@ class SXTab_main(QWidget):
 		self.load_params_btn = QPushButton("Load parameters", self)
 		self.load_params_btn.move(self.x1-5,self.y1)
 		self.load_params_btn.setToolTip('Load gui parameter settings to retrieve a previously-saved one')
-#		self.connect(self.load_params_btn, SIGNAL("clicked()"), sxpopup.load_params)
+		self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxpopup.load_params)
 		
 		# Add widget for editing command args and options
 		for cmd_token in self.sxpopup.sxcmd.token_list:
-			if cmd_token.group == 'main':			
+			if cmd_token.group == 'main':
 				# Create label widget 
 				label_widget = QtGui.QLabel(cmd_token.label, self)
 				label_widget.move(self.x1,self.y2)
-				# Create widget and associate it to this cmd_token 
+				# Create widget and associate it to this cmd_token
 				cmd_token_widget = None
 				if cmd_token.type == "bool":
 					# construct new widget(s) for this command token
@@ -644,13 +678,15 @@ class SXTab_main(QWidget):
 					#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 				cmd_token_widget.move(self.x2,self.y2 - 7)
 				cmd_token_widget.setToolTip(cmd_token.help)		
-				cmd_token.widget = cmd_token_widget
 				
 				self.y2 = self.y2+25
-
+				
+				# Register this widget
+				cmd_token.widget = cmd_token_widget
+				
 		# Add space
 		self.y2 = self.y2+25*1
-
+		
 		# Add gui components for MPI related paramaters if necessary
 		temp_label = QtGui.QLabel('MPI processors', self)
 		temp_label.move(self.x1,self.y2)
@@ -724,7 +760,7 @@ class SXTab_main(QWidget):
 		# self.save_params_btn.move(self.x1-5,  self.y4)
 		self.save_params_btn.move(self.x1-5,  self.y2)
 		self.save_params_btn.setToolTip('Save gui parameter settings')
-#		self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxpopup.save_params)
+		self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxpopup.save_params)
 		
 		# self.y4 = self.y4+30
 		self.y2 = self.y2+30
@@ -826,10 +862,11 @@ class SXTab_advance(QWidget):
 					#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 				cmd_token_widget.move(self.x2,self.y1)
 				cmd_token_widget.setToolTip(cmd_token.help)		
-				cmd_token.widget = cmd_token_widget
-					
+				
 				self.y1 = self.y1+25
-# sx_end
+				
+				# Register this widget
+				cmd_token.widget = cmd_token_widget
 
 # ========================================================================================
 # Layout of the Pop Up window SXPopup_info; started by the function info of the main window
