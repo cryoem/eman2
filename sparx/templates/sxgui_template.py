@@ -95,6 +95,9 @@ class SXPopup(QWidget):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.sxcmd = sxcmd
+		
+		self.projct_dir = "sxgui_settings"
+		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (self.projct_dir, self.sxcmd.name)
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 		self.setWindowTitle(self.sxcmd.name)
@@ -106,6 +109,10 @@ class SXPopup(QWidget):
 		self.TabWidget.insertTab(1,self.tab_advance,'Advanced')
 		self.TabWidget.resize(730,1080) # self.TabWidget.resize(730,860)
 		self.TabWidget.show()
+		
+		# Load the previously saved parameter setting of this sx command
+		if os.path.exists(self.gui_settings_file_path):
+			self.read_params(self.gui_settings_file_path)
 		
 	def map_widgets_to_sxcmd_line(self):
 		# Add program name to command line
@@ -145,51 +152,56 @@ class SXPopup(QWidget):
 	def generate_cmd_line(self):
 		sxcmd_line = self.map_widgets_to_sxcmd_line()
 		
-		# If mpi is not supported set number of MPI processer (np) to 1
-		np = 1
-		if self.sxcmd.mpi_support:
-			# mpi is supported
-			np = int(str(self.tab_main.mpi_nproc_edit.text()))
-			# NOTE: 2015/10/27 Toshio Moriya
-			# Since we now assume sx*.py exists in only MPI version, always add --MPI flag if necessary
-			# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
-			if self.sxcmd.mpi_add_flag:
-				sxcmd_line += ' --MPI'
+		if sxcmd_line:
+			# SX command line is not empty
+			# If mpi is not supported set number of MPI processer (np) to 1
+			np = 1
+			if self.sxcmd.mpi_support:
+				# mpi is supported
+				np = int(str(self.tab_main.mpi_nproc_edit.text()))
+				# NOTE: 2015/10/27 Toshio Moriya
+				# Since we now assume sx*.py exists in only MPI version, always add --MPI flag if necessary
+				# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
+				if self.sxcmd.mpi_add_flag:
+					sxcmd_line += ' --MPI'
 		
-		# Generate command line according to the case
-		cmd_line = ""
-		# Case 1: queue submission is enabled (MPI must be supported)
-		if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
-			if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			# Create script for queue submission from a give template
-			if os.path.exists(self.tab_main.qsub_script_edit.text()) != True: ERROR("Run Time Error: Invalid file path for qsub script template.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			file_template = open(self.tab_main.qsub_script_edit.text(),'r')
-			# Extract command line from qsub script template 
-			for line in file_template:
-				if line.find('XXX_SXCMD_LINE_XXX') != -1:
-					cmd_line = line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
-					if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
-						cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
-					if cmd_line.find('XXX_SXMPI_JOB_NAME_XXX') != -1:
-						cmd_line = cmd_line.replace('XXX_SXMPI_JOB_NAME_XXX', str(self.tab_main.qsub_job_name_edit.text()))
-			file_template.close()
-		# Case 2: queue submission is disabled, but MPI is supported
-		elif self.sxcmd.mpi_support:
-			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			# Add MPI execution to command line
-			cmd_line = str(self.tab_main.mpi_cmd_line_edit.text())
-			# If empty string is entered, use a default template
-			if cmd_line == "":
-				cmd_line = 'mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX'
-			if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
-				cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
-			if cmd_line.find('XXX_SXCMD_LINE_XXX') != -1:
-				cmd_line = cmd_line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
-		# Case 3: MPI is not supported
-		else: 
-			if self.sxcmd.mpi_support == True: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			# Use sx command as it is
-			cmd_line = sxcmd_line
+			# Generate command line according to the case
+			cmd_line = ""
+			# Case 1: queue submission is enabled (MPI must be supported)
+			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+				if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Create script for queue submission from a give template
+				if os.path.exists(self.tab_main.qsub_script_edit.text()) != True: ERROR("Run Time Error: Invalid file path for qsub script template.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				file_template = open(self.tab_main.qsub_script_edit.text(),'r')
+				# Extract command line from qsub script template 
+				for line in file_template:
+					if line.find('XXX_SXCMD_LINE_XXX') != -1:
+						cmd_line = line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
+						if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
+							cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
+						if cmd_line.find('XXX_SXMPI_JOB_NAME_XXX') != -1:
+							cmd_line = cmd_line.replace('XXX_SXMPI_JOB_NAME_XXX', str(self.tab_main.qsub_job_name_edit.text()))
+				file_template.close()
+			# Case 2: queue submission is disabled, but MPI is supported
+			elif self.sxcmd.mpi_support:
+				if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Add MPI execution to command line
+				cmd_line = str(self.tab_main.mpi_cmd_line_edit.text())
+				# If empty string is entered, use a default template
+				if cmd_line == "":
+					cmd_line = 'mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX'
+				if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
+					cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
+				if cmd_line.find('XXX_SXCMD_LINE_XXX') != -1:
+					cmd_line = cmd_line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
+			# Case 3: MPI is not supported
+			else: 
+				if self.sxcmd.mpi_support == True: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Use sx command as it is
+				cmd_line = sxcmd_line
+		else:
+			# SX command line is be empty because an error happens in map_widgets_to_sxcmd_line
+			cmd_line = ""
 		
 		return cmd_line
 	
@@ -200,47 +212,58 @@ class SXPopup(QWidget):
 		# 	return
 		
 		cmd_line = self.generate_cmd_line()
-		# If mpi is not supported set number of MPI processer (np) to 1
-		np = 1
-		if self.sxcmd.mpi_support:
-			np = int(str(self.tab_main.mpi_nproc_edit.text()))
 		
-		# Case 1: queue submission is enabled (MPI must be supported)
-		if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
-			if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			# Create script for queue submission from a give template
-			template_file_path = self.tab_main.qsub_script_edit.text()
-			if os.path.exists(template_file_path) == False: 
-				ERROR("WARNING: Invalid file path for qsub script template (%s)." % (template_file_path), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
-				return
-			file_template = open(self.tab_main.qsub_script_edit.text(),'r')
-			file_name_qsub_script = 'qsub_' + str(self.tab_main.qsub_job_name_edit.text()) + '.sh'
-			file_qsub_script = open(file_name_qsub_script,'w')
-			for line_io in file_template:
-				if line_io.find('XXX_SXCMD_LINE_XXX') != -1:
-					line_io = cmd_line
-				else:
-					if line_io.find('XXX_SXMPI_NPROC_XXX') != -1:
-						line_io = line_io.replace('XXX_SXMPI_NPROC_XXX', str(np))
-					if line_io.find('XXX_SXMPI_JOB_NAME_XXX') != -1:
-						line_io = line_io.replace('XXX_SXMPI_JOB_NAME_XXX', str(self.tab_main.qsub_job_name_edit.text()))
-				file_qsub_script.write(line_io)
-			file_template.close()
-			file_qsub_script.close()
-			# Generate command line for queue submission
-			cmd_line_in_script = cmd_line
-			cmd_line = str(self.tab_main.qsub_cmd_edit.text()) + ' ' + file_name_qsub_script
-			print 'Wrote the following command line in the queue submission script: '
-			print cmd_line_in_script
-			print 'Submitted a job by the following command: '
-			print cmd_line
-		# Case 2: queue submission is disabled, but MPI is supported
-		elif self.sxcmd.mpi_support:
-			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			print 'Executed the following command: '
-			print cmd_line
-		process = subprocess.Popen(cmd_line, shell=True)
-		self.emit(QtCore.SIGNAL("process_started"), process.pid)
+		if cmd_line:
+			# Command line is not empty
+			# If mpi is not supported set number of MPI processer (np) to 1
+			np = 1
+			if self.sxcmd.mpi_support:
+				np = int(str(self.tab_main.mpi_nproc_edit.text()))
+		
+			# Case 1: queue submission is enabled (MPI must be supported)
+			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+				if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Create script for queue submission from a give template
+				template_file_path = self.tab_main.qsub_script_edit.text()
+				if os.path.exists(template_file_path) == False: 
+					ERROR("WARNING: Invalid file path for qsub script template (%s)." % (template_file_path), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
+					return
+				file_template = open(self.tab_main.qsub_script_edit.text(),'r')
+				file_name_qsub_script = 'qsub_' + str(self.tab_main.qsub_job_name_edit.text()) + '.sh'
+				file_qsub_script = open(file_name_qsub_script,'w')
+				for line_io in file_template:
+					if line_io.find('XXX_SXCMD_LINE_XXX') != -1:
+						line_io = cmd_line
+					else:
+						if line_io.find('XXX_SXMPI_NPROC_XXX') != -1:
+							line_io = line_io.replace('XXX_SXMPI_NPROC_XXX', str(np))
+						if line_io.find('XXX_SXMPI_JOB_NAME_XXX') != -1:
+							line_io = line_io.replace('XXX_SXMPI_JOB_NAME_XXX', str(self.tab_main.qsub_job_name_edit.text()))
+					file_qsub_script.write(line_io)
+				file_template.close()
+				file_qsub_script.close()
+				# Generate command line for queue submission
+				cmd_line_in_script = cmd_line
+				cmd_line = str(self.tab_main.qsub_cmd_edit.text()) + ' ' + file_name_qsub_script
+				print 'Wrote the following command line in the queue submission script: '
+				print cmd_line_in_script
+				print 'Submitted a job by the following command: '
+				print cmd_line
+			# Case 2: queue submission is disabled, but MPI is supported
+			else:
+				if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked or self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				print 'Executed the following command: '
+				print cmd_line
+		
+			# Execute the generated command line
+			process = subprocess.Popen(cmd_line, shell=True)
+			self.emit(QtCore.SIGNAL("process_started"), process.pid)
+			
+			# Save the current state of GUI settings
+			if os.path.exists(self.projct_dir) == False:
+				os.mkdir(self.projct_dir)
+			self.write_params(self.gui_settings_file_path)
+		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
 	
 	def save_cmd_line(self):
 		cmd_line = self.generate_cmd_line()
@@ -254,131 +277,137 @@ class SXPopup(QWidget):
 				print cmd_line
 		# else: Do nothing
 	
+	def write_params(self, file_name_out):
+		file_out = open(file_name_out,'w')
+		
+		# Write script name for consistency check upon loading
+		file_out.write('@@@@@ %s gui setting - ' % (self.sxcmd.name))
+		file_out.write(EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')')
+		file_out.write(' @@@@@ \n')
+		
+		# Define list of (tab) groups
+		group_main = "main"
+		group_advanced = "advanced"
+		
+		# Loop through all states
+		for group in [group_main, group_advanced]:
+			# Loop through all command tokens
+			for cmd_token in self.sxcmd.token_list:
+				if cmd_token.group == group:
+					val_str = ''
+					if cmd_token.type == 'bool':
+						if cmd_token.widget.checkState() == Qt.Checked:
+							val_str = 'YES'
+						else:
+							val_str = 'NO'
+					else:
+						# For now, use line edit box for the other type
+						val_str = str(cmd_token.widget.text())
+						# if cmd_token.type == "output":
+						# elif cmd_token.type == "directory":
+						# elif cmd_token.type == "image":
+						# elif cmd_token.type == "parameters":
+						# elif cmd_token.type == "pdb":
+						# elif cmd_token.type == "function":
+						# else:
+						#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+					if cmd_token.is_required == False:
+						file_out.write('<%s> %s (default %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.default, val_str))
+					else:
+						file_out.write('<%s> %s (default required %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.type, val_str))
+				# else: do nothig
+		
+		# At the end of parameter file...
+		# Write MPI parameters 
+		file_out.write('%s == %s \n' % ('MPI processors', str(self.tab_main.mpi_nproc_edit.text())))
+		file_out.write('%s == %s \n' % ('MPI Command Line Template', str(self.tab_main.mpi_cmd_line_edit.text())))
+		# Write Qsub paramters 
+		if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+			val_str = 'YES'
+		else:
+			val_str = 'NO'
+		file_out.write('%s == %s \n' % ('Submit Job to Queue', val_str))	
+		file_out.write('%s == %s \n' % ('Job Name', str(self.tab_main.qsub_job_name_edit.text())))
+		file_out.write('%s == %s \n' % ('Submission Command', str(self.tab_main.qsub_cmd_edit.text())))
+		file_out.write('%s == %s \n' % ('Submission Script Template', str(self.tab_main.qsub_script_edit.text())))
+		
+		file_out.close()
+			
+	def read_params(self, file_name_in):
+		file_in = open(file_name_in,'r')
+	
+		# Check if this parameter file is for this sx script
+		line_in = file_in.readline()
+		if line_in.find('@@@@@ %s gui setting' % (self.sxcmd.name)) != -1:
+			# loop through the other lines
+			for line_in in file_in:
+				# Extract label (which should be left of '=='). Also strip the ending spaces
+				label_in = line_in.split('==')[0].strip()
+				# Extract value (which should be right of '=='). Also strip all spaces
+				val_str_in = line_in.split('==')[1].strip() 
+				
+				if label_in == "MPI processors":
+					self.tab_main.mpi_nproc_edit.setText(val_str_in)
+				elif label_in == "MPI Command Line Template":
+					self.tab_main.mpi_cmd_line_edit.setText(val_str_in)
+				elif label_in == "Submit Job to Queue":
+					if val_str_in == 'YES':
+						self.tab_main.qsub_enable_checkbox.setChecked(True)
+					else:
+						assert val_str_in == 'NO'
+						self.tab_main.qsub_enable_checkbox.setChecked(False)
+				elif label_in == "Job Name":
+					self.tab_main.qsub_job_name_edit.setText(val_str_in)
+				elif label_in == "Submission Command":
+					self.tab_main.qsub_cmd_edit.setText(val_str_in)
+				elif label_in == "Submission Script Template":
+					self.tab_main.qsub_script_edit.setText(val_str_in)
+				else:
+					# Extract key_base of this command token
+					target_operator = "<"
+					item_tail = label_in.find(target_operator)
+					if item_tail != 0: ERROR("Paramter File Format Error: Command token entry should start from \"%s\" for key base name in line (%s)" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
+					label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
+					target_operator = ">"
+					item_tail = label_in.find(target_operator)
+					if item_tail == -1: ERROR("Paramter File Format Error: Command token entry should have \"%s\" closing key base name in line (%s)" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
+					key_base = label_in[0:item_tail]
+					# Get corresponding cmd_token
+					if key_base not in self.sxcmd.token_dict.keys(): ERROR("Paramter File Format Error: Command token entry should start from \"%s\" for key base name in line %s" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
+					cmd_token = self.sxcmd.token_dict[key_base]
+					
+					if cmd_token.type == "bool":
+						# construct new widget(s) for this command token
+						if val_str_in == 'YES':
+							cmd_token.widget.setChecked(True)
+						else: # val_str_in == 'NO'
+							cmd_token.widget.setChecked(False)
+					else:
+						# For now, use line edit box for the other type
+						cmd_token.widget.setText(val_str_in)
+						# if cmd_token.type == "output":
+						# elif cmd_token.type == "directory":
+						# elif cmd_token.type == "image":
+						# elif cmd_token.type == "parameters":
+						# elif cmd_token.type == "pdb":
+						# elif cmd_token.type == "function":
+						# else:
+						#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+		else:
+			QMessageBox.warning(self, 'Fail to load paramters', 'The specified file is not paramter file for %s.' % self.name)
+		
+		file_in.close()
+	
 	def save_params(self):
 		file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Save Parameters", options = QtGui.QFileDialog.DontUseNativeDialog)
 		if file_name_out != '':
-			file_out = open(file_name_out,'w')
-		
-			# Write script name for consistency check upon loading
-			file_out.write('@@@@@ %s gui setting - ' % (self.sxcmd.name))
-			file_out.write(EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')')
-			file_out.write(' @@@@@ \n')
-			
-			# Define list of (tab) groups
-			group_main = "main"
-			group_advanced = "advanced"
-			
-			# Loop through all states
-			for group in [group_main, group_advanced]:
-				# Loop through all command tokens
-				for cmd_token in self.sxcmd.token_list:
-					if cmd_token.group == group:
-						val_str = ''
-						if cmd_token.type == 'bool':
-							if cmd_token.widget.checkState() == Qt.Checked:
-								val_str = 'YES'
-							else:
-								val_str = 'NO'
-						else:
-							# For now, use line edit box for the other type
-							val_str = str(cmd_token.widget.text())
-							# if cmd_token.type == "output":
-							# elif cmd_token.type == "directory":
-							# elif cmd_token.type == "image":
-							# elif cmd_token.type == "parameters":
-							# elif cmd_token.type == "pdb":
-							# elif cmd_token.type == "function":
-							# else:
-							#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
-						if cmd_token.is_required == False:
-							file_out.write('<%s> %s (default %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.default, val_str))
-						else:
-							file_out.write('<%s> %s (default required %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.type, val_str))
-					# else: do nothig
-			
-			# At the end of parameter file...
-			# Write MPI parameters 
-			file_out.write('%s == %s \n' % ('MPI processors', str(self.tab_main.mpi_nproc_edit.text())))
-			file_out.write('%s == %s \n' % ('MPI Command Line Template', str(self.tab_main.mpi_cmd_line_edit.text())))
-			# Write Qsub paramters 
-			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
-				val_str = 'YES'
-			else:
-				val_str = 'NO'
-			file_out.write('%s == %s \n' % ('Submit Job to Queue', val_str))	
-			file_out.write('%s == %s \n' % ('Job Name', str(self.tab_main.qsub_job_name_edit.text())))
-			file_out.write('%s == %s \n' % ('Submission Command', str(self.tab_main.qsub_cmd_edit.text())))
-			file_out.write('%s == %s \n' % ('Submission Script Template', str(self.tab_main.qsub_script_edit.text())))
-			
-			file_out.close()
+			self.write_params(self, file_name_out)
 	
 	def load_params(self):
 		file_name_in = QtGui.QFileDialog.getOpenFileName(self, "Load parameters", options = QtGui.QFileDialog.DontUseNativeDialog)
 		if file_name_in != '':
-			file_in = open(file_name_in,'r')
-		
-			# Check if this parameter file is for this sx script
-			line_in = file_in.readline()
-			if line_in.find('@@@@@ %s gui setting' % (self.sxcmd.name)) != -1:
-				# loop through the other lines
-				for line_in in file_in:
-					# Extract label (which should be left of '=='). Also strip the ending spaces
-					label_in = line_in.split('==')[0].strip()
-					# Extract value (which should be right of '=='). Also strip all spaces
-					val_str_in = line_in.split('==')[1].strip() 
-					
-					if label_in == "MPI processors":
-						self.tab_main.mpi_nproc_edit.setText(val_str_in)
-					elif label_in == "MPI Command Line Template":
-						self.tab_main.mpi_cmd_line_edit.setText(val_str_in)
-					elif label_in == "Submit Job to Queue":
-						if val_str_in == 'YES':
-							self.tab_main.qsub_enable_checkbox.setChecked(True)
-						else:
-							assert val_str_in == 'NO'
-							self.tab_main.qsub_enable_checkbox.setChecked(False)
-					elif label_in == "Job Name":
-						self.tab_main.qsub_job_name_edit.setText(val_str_in)
-					elif label_in == "Submission Command":
-						self.tab_main.qsub_cmd_edit.setText(val_str_in)
-					elif label_in == "Submission Script Template":
-						self.tab_main.qsub_script_edit.setText(val_str_in)
-					else:
-						# Extract key_base of this command token
-						target_operator = "<"
-						item_tail = label_in.find(target_operator)
-						if item_tail != 0: ERROR("Paramter File Format Error: Command token entry should start from \"%s\" for key base name in line (%s)" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
-						label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
-						target_operator = ">"
-						item_tail = label_in.find(target_operator)
-						if item_tail == -1: ERROR("Paramter File Format Error: Command token entry should have \"%s\" closing key base name in line (%s)" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
-						key_base = label_in[0:item_tail]
-						# Get corresponding cmd_token
-						if key_base not in self.sxcmd.token_dict.keys(): ERROR("Paramter File Format Error: Command token entry should start from \"%s\" for key base name in line %s" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
-						cmd_token = self.sxcmd.token_dict[key_base]
-						
-						if cmd_token.type == "bool":
-							# construct new widget(s) for this command token
-							if val_str_in == 'YES':
-								cmd_token.widget.setChecked(True)
-							else: # val_str_in == 'NO'
-								cmd_token.widget.setChecked(False)
-						else:
-							# For now, use line edit box for the other type
-							cmd_token.widget.setText(val_str_in)
-							# if cmd_token.type == "output":
-							# elif cmd_token.type == "directory":
-							# elif cmd_token.type == "image":
-							# elif cmd_token.type == "parameters":
-							# elif cmd_token.type == "pdb":
-							# elif cmd_token.type == "function":
-							# else:
-							#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
-			else:
-				QMessageBox.warning(self, 'Fail to load paramters', 'The specified file is not paramter file for %s.' % self.name)
-			
-			file_in.close()
-
+			read_params(file_name_in)
+	
 	"""
 #	def choose_file(self):
 #		#opens a file browser, showing files only in .hdf format

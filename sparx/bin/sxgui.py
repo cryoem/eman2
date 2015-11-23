@@ -298,7 +298,7 @@ class SXPopup(QWidget):
 		self.sxcmd = sxcmd
 		
 		self.projct_dir = "sxgui_settings"
-		self.gui_settings_file_pattern = "gui_settings_*.txt"
+		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (self.projct_dir, self.sxcmd.name)
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 		self.setWindowTitle(self.sxcmd.name)
@@ -310,6 +310,10 @@ class SXPopup(QWidget):
 		self.TabWidget.insertTab(1,self.tab_advance,'Advanced')
 		self.TabWidget.resize(730,1080) # self.TabWidget.resize(730,860)
 		self.TabWidget.show()
+		
+		# Load the previously saved parameter setting of this sx command
+		if os.path.exists(self.gui_settings_file_path):
+			self.read_params(self.gui_settings_file_path)
 		
 	def map_widgets_to_sxcmd_line(self):
 		# Add program name to command line
@@ -349,51 +353,56 @@ class SXPopup(QWidget):
 	def generate_cmd_line(self):
 		sxcmd_line = self.map_widgets_to_sxcmd_line()
 		
-		# If mpi is not supported set number of MPI processer (np) to 1
-		np = 1
-		if self.sxcmd.mpi_support:
-			# mpi is supported
-			np = int(str(self.tab_main.mpi_nproc_edit.text()))
-			# NOTE: 2015/10/27 Toshio Moriya
-			# Since we now assume sx*.py exists in only MPI version, always add --MPI flag if necessary
-			# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
-			if self.sxcmd.mpi_add_flag:
-				sxcmd_line += ' --MPI'
+		if sxcmd_line:
+			# SX command line is not empty
+			# If mpi is not supported set number of MPI processer (np) to 1
+			np = 1
+			if self.sxcmd.mpi_support:
+				# mpi is supported
+				np = int(str(self.tab_main.mpi_nproc_edit.text()))
+				# NOTE: 2015/10/27 Toshio Moriya
+				# Since we now assume sx*.py exists in only MPI version, always add --MPI flag if necessary
+				# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
+				if self.sxcmd.mpi_add_flag:
+					sxcmd_line += ' --MPI'
 		
-		# Generate command line according to the case
-		cmd_line = ""
-		# Case 1: queue submission is enabled (MPI must be supported)
-		if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
-			if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			# Create script for queue submission from a give template
-			if os.path.exists(self.tab_main.qsub_script_edit.text()) != True: ERROR("Run Time Error: Invalid file path for qsub script template.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			file_template = open(self.tab_main.qsub_script_edit.text(),'r')
-			# Extract command line from qsub script template 
-			for line in file_template:
-				if line.find('XXX_SXCMD_LINE_XXX') != -1:
-					cmd_line = line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
-					if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
-						cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
-					if cmd_line.find('XXX_SXMPI_JOB_NAME_XXX') != -1:
-						cmd_line = cmd_line.replace('XXX_SXMPI_JOB_NAME_XXX', str(self.tab_main.qsub_job_name_edit.text()))
-			file_template.close()
-		# Case 2: queue submission is disabled, but MPI is supported
-		elif self.sxcmd.mpi_support:
-			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			# Add MPI execution to command line
-			cmd_line = str(self.tab_main.mpi_cmd_line_edit.text())
-			# If empty string is entered, use a default template
-			if cmd_line == "":
-				cmd_line = 'mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX'
-			if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
-				cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
-			if cmd_line.find('XXX_SXCMD_LINE_XXX') != -1:
-				cmd_line = cmd_line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
-		# Case 3: MPI is not supported
-		else: 
-			if self.sxcmd.mpi_support == True: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-			# Use sx command as it is
-			cmd_line = sxcmd_line
+			# Generate command line according to the case
+			cmd_line = ""
+			# Case 1: queue submission is enabled (MPI must be supported)
+			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+				if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Create script for queue submission from a give template
+				if os.path.exists(self.tab_main.qsub_script_edit.text()) != True: ERROR("Run Time Error: Invalid file path for qsub script template.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				file_template = open(self.tab_main.qsub_script_edit.text(),'r')
+				# Extract command line from qsub script template 
+				for line in file_template:
+					if line.find('XXX_SXCMD_LINE_XXX') != -1:
+						cmd_line = line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
+						if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
+							cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
+						if cmd_line.find('XXX_SXMPI_JOB_NAME_XXX') != -1:
+							cmd_line = cmd_line.replace('XXX_SXMPI_JOB_NAME_XXX', str(self.tab_main.qsub_job_name_edit.text()))
+				file_template.close()
+			# Case 2: queue submission is disabled, but MPI is supported
+			elif self.sxcmd.mpi_support:
+				if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Add MPI execution to command line
+				cmd_line = str(self.tab_main.mpi_cmd_line_edit.text())
+				# If empty string is entered, use a default template
+				if cmd_line == "":
+					cmd_line = 'mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX'
+				if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
+					cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
+				if cmd_line.find('XXX_SXCMD_LINE_XXX') != -1:
+					cmd_line = cmd_line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
+			# Case 3: MPI is not supported
+			else: 
+				if self.sxcmd.mpi_support == True: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Use sx command as it is
+				cmd_line = sxcmd_line
+		else:
+			# SX command line is be empty because an error happens in map_widgets_to_sxcmd_line
+			cmd_line = ""
 		
 		return cmd_line
 	
@@ -405,8 +414,8 @@ class SXPopup(QWidget):
 		
 		cmd_line = self.generate_cmd_line()
 		
-		# Command line can be empty if error happens in generate_cmd_line
 		if cmd_line:
+			# Command line is not empty
 			# If mpi is not supported set number of MPI processer (np) to 1
 			np = 1
 			if self.sxcmd.mpi_support:
@@ -454,8 +463,8 @@ class SXPopup(QWidget):
 			# Save the current state of GUI settings
 			if os.path.exists(self.projct_dir) == False:
 				os.mkdir(self.projct_dir)
-			gui_settings_file_path = "%s/%s" % (self.projct_dir, self.gui_settings_file_pattern.replace("*", self.sxcmd.name))
-			self.write_params(gui_settings_file_path)
+			self.write_params(self.gui_settings_file_path)
+		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
 	
 	def save_cmd_line(self):
 		cmd_line = self.generate_cmd_line()
