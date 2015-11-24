@@ -102,12 +102,12 @@ class SXPopup(QWidget):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 		self.setWindowTitle(self.sxcmd.name)
-		self.tab_main = SXTab_main(self)
-		self.tab_advance = SXTab_advance(self)
+		self.tab_main = SXTab(self, 'Main')
+		self.tab_advance = SXTab(self, 'Advanced')
 		self.tab_main.w1 = self.tab_advance
 		self.TabWidget = QtGui.QTabWidget()
-		self.TabWidget.insertTab(0,self.tab_main,'Main')
-		self.TabWidget.insertTab(1,self.tab_advance,'Advanced')
+		self.TabWidget.insertTab(0, self.tab_main, self.tab_main.name)
+		self.TabWidget.insertTab(1, self.tab_advance, self.tab_advance.name)
 		self.TabWidget.resize(860,1080) # self.TabWidget.resize(730,860)
 		self.TabWidget.show()
 		
@@ -456,21 +456,19 @@ class SXPopup(QWidget):
 	"""
 
 # ========================================================================================
-class SXTab_main(QWidget):
+class SXTab(QWidget):
 
-	def __init__(self, parent):
+	def __init__(self, parent, name):
 		QWidget.__init__(self, parent)
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
+		self.name = name
 		self.sxpopup = parent
 		
 		# layout parameters
 		self.y1 = 10
-		self.y2 = self.y1 + 95 #self.y2 = self.y1 + 98
-		self.y4 = self.y2 + 450
-		self.y5 = self.y4 + 95
-		self.yspc = 4
+		# self.y2 = self.y1 + 95 #self.y2 = self.y1 + 98
 		
 		self.x1 = 10
 		self.x2 = self.x1 + 500 # self.x2 = self.x1 + 200
@@ -478,33 +476,51 @@ class SXTab_main(QWidget):
 		self.x4 = self.x3 + 100
 		self.x5 = 230
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		tab_group = self.name.lower()
 		
-		# # Set the window title
-		# self.setWindowTitle(self.sxcmd.name)
-		# Set a label and its position in this tab
-		temp_label = QtGui.QLabel('<b>%s</b>' % (self.sxpopup.sxcmd.name), self)
-		temp_label.move(self.x1,self.y1)
-		# NOTE: 2015/11/17 Toshio Moriya
-		# Necessary to separate '<b>%s</b>' from the information for avoiding to invoke the tag interpretations of string
-		# e.g. < becomes the escape character
-		temp_label = QtGui.QLabel('%s' % (self.sxpopup.sxcmd.short_info), self)
-		temp_label.setWordWrap(True)
-		temp_label.setFixedWidth(600)
-		temp_label.move(self.x1 + 100, self.y1)
-		self.y1 += 50
+		if tab_group == "main":
+			# # Set the window title
+			# self.setWindowTitle(self.sxcmd.name)
+			# Set a label and its position in this tab
+			temp_label = QtGui.QLabel('<b>%s</b>' % (self.sxpopup.sxcmd.name), self)
+			temp_label.move(self.x1, self.y1)
+			# NOTE: 2015/11/17 Toshio Moriya
+			# Necessary to separate '<b>%s</b>' from the information for avoiding to invoke the tag interpretations of string
+			# e.g. < becomes the escape character
+			temp_label = QtGui.QLabel('%s' % (self.sxpopup.sxcmd.short_info), self)
+			temp_label.setWordWrap(True)
+			temp_label.setFixedWidth(600)
+			temp_label.move(self.x1 + 100, self.y1)
+			self.y1 += 50
+			
+			# Add load paramater button 
+			self.load_params_btn = QPushButton("Load parameters", self)
+			self.load_params_btn.move(self.x1-5, self.y1)
+			self.load_params_btn.setToolTip('Load gui parameter settings to retrieve a previously-saved one')
+			self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxpopup.load_params)
+			self.y1 += 25
+			
+		elif tab_group == "advanced":
+		# Set the window title
+			#self.setWindowTitle('%s advanced parameter selection' % self.sxcmd.name)
+			# Set a label and its position in this tab
+			temp_label = QtGui.QLabel('<b>%s</b>' % (self.sxpopup.sxcmd.name), self)
+			temp_label.move(self.x1, self.y1)
+			temp_label = QtGui.QLabel('Set advanced parameters', self)
+			temp_label.setWordWrap(True)
+			temp_label.setFixedWidth(600)
+			temp_label.move(self.x1 + 100, self.y1)
+			self.y1 += 25
 		
-		# Add load paramater button 
-		self.load_params_btn = QPushButton("Load parameters", self)
-		self.load_params_btn.move(self.x1-5,self.y1)
-		self.load_params_btn.setToolTip('Load gui parameter settings to retrieve a previously-saved one')
-		self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxpopup.load_params)
+		# Add space
+		self.y1 = self.y1 + 25 * 1
 		
 		# Add widget for editing command args and options
 		for cmd_token in self.sxpopup.sxcmd.token_list:
-			if cmd_token.group == 'main':
+			if cmd_token.group == tab_group:
 				# Create label widget 
 				label_widget = QtGui.QLabel(cmd_token.label, self)
-				label_widget.move(self.x1,self.y2)
+				label_widget.move(self.x1, self.y1)
 				# Create widget and associate it to this cmd_token
 				cmd_token_widget = None
 				if cmd_token.type == "bool":
@@ -517,30 +533,30 @@ class SXTab_main(QWidget):
 						cmd_token_widget.setText(cmd_token.default)
 						file_format = "hdf"
 						temp_btn = QPushButton("Select .%s" % file_format, self)
-						temp_btn.move(self.x3, self.y2 - 12)
+						temp_btn.move(self.x3, self.y1 - 12)
 						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
 						file_format = "bdb"
 						temp_btn = QPushButton("Select .%s" % file_format, self)
-						temp_btn.move(self.x4, self.y2 - 12)
+						temp_btn.move(self.x4, self.y1 - 12)
 						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
 					elif cmd_token.type == "pdb":
 						cmd_token_widget = QtGui.QLineEdit(self)
 						cmd_token_widget.setText(cmd_token.default)
 						file_format = "pdb"
 						temp_btn = QPushButton("Select .%s" % file_format, self)
-						temp_btn.move(self.x3, self.y2 - 12)
+						temp_btn.move(self.x3, self.y1 - 12)
 						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
 					elif cmd_token.type == "parameters":
 						cmd_token_widget = QtGui.QLineEdit(self)
 						cmd_token_widget.setText(cmd_token.default)
 						temp_btn = QPushButton("Select Paramter File", self)
-						temp_btn.move(self.x3, self.y2 - 12)
+						temp_btn.move(self.x3, self.y1 - 12)
 						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget))
 					elif cmd_token.type == "directory":
 						cmd_token_widget = QtGui.QLineEdit(self)
 						cmd_token_widget.setText(cmd_token.default)
 						temp_btn = QPushButton("Select directory", self)
-						temp_btn.move(self.x3, self.y2 - 12)
+						temp_btn.move(self.x3, self.y1 - 12)
 						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_dir, cmd_token_widget))
 					elif cmd_token.type == "function":
 						cmd_token_widget = QtGui.QLineEdit(self)
@@ -553,111 +569,108 @@ class SXTab_main(QWidget):
 						cmd_token_widget = QtGui.QLineEdit(self)
 						cmd_token_widget.setText(cmd_token.default)
 						
-				cmd_token_widget.move(self.x2,self.y2 - 7)
-				cmd_token_widget.setToolTip(cmd_token.help)		
+				cmd_token_widget.move(self.x2,self.y1 - 7)
+				cmd_token_widget.setToolTip(cmd_token.help)
 				
-				self.y2 = self.y2+25
+				self.y1 = self.y1 + 25
 				
 				# Register this widget
 				cmd_token.widget = cmd_token_widget
 				
-		# Add space
-		self.y2 = self.y2+25*1
+		if tab_group == "main":
+			# Add space
+			self.y1 = self.y1 + 25 * 1
 		
-		# Add gui components for MPI related paramaters if necessary
-		temp_label = QtGui.QLabel('MPI processors', self)
-		temp_label.move(self.x1,self.y2)
-		self.mpi_nproc_edit = QtGui.QLineEdit(self)
-		self.mpi_nproc_edit.setText('1')
-		self.mpi_nproc_edit.move(self.x2,self.y2)
-		self.mpi_nproc_edit.setToolTip('The number of processors to use. Default is single processor mode')
+			# Add gui components for MPI related paramaters if necessary
+			temp_label = QtGui.QLabel('MPI processors', self)
+			temp_label.move(self.x1, self.y1)
+			self.mpi_nproc_edit = QtGui.QLineEdit(self)
+			self.mpi_nproc_edit.setText('1')
+			self.mpi_nproc_edit.move(self.x2, self.y1)
+			self.mpi_nproc_edit.setToolTip('The number of processors to use. Default is single processor mode')
 		
-		self.y2 =self.y2+25
+			self.y1 = self.y1 + 25
 
-		temp_label = QtGui.QLabel('MPI command line template', self)
-		temp_label.move(self.x1,self.y2)
-		self.mpi_cmd_line_edit = QtGui.QLineEdit(self)
-		self.mpi_cmd_line_edit.setText('')
-		self.mpi_cmd_line_edit.move(self.x2,self.y2)
-		self.mpi_cmd_line_edit.setToolTip('The template of MPI command line (e.g. "mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX"). If empty, use "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"')
+			temp_label = QtGui.QLabel('MPI command line template', self)
+			temp_label.move(self.x1, self.y1)
+			self.mpi_cmd_line_edit = QtGui.QLineEdit(self)
+			self.mpi_cmd_line_edit.setText('')
+			self.mpi_cmd_line_edit.move(self.x2, self.y1)
+			self.mpi_cmd_line_edit.setToolTip('The template of MPI command line (e.g. "mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX"). If empty, use "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"')
 
-		self.y2 =self.y2+25
+			self.y1 = self.y1 + 25
 		
-		# If MPI is not supported, disable this widget
-		self.set_widget_enable_state(self.mpi_nproc_edit, self.sxpopup.sxcmd.mpi_support)
-		self.set_widget_enable_state(self.mpi_cmd_line_edit, self.sxpopup.sxcmd.mpi_support)
+			# If MPI is not supported, disable this widget
+			self.set_widget_enable_state(self.mpi_nproc_edit, self.sxpopup.sxcmd.mpi_support)
+			self.set_widget_enable_state(self.mpi_cmd_line_edit, self.sxpopup.sxcmd.mpi_support)
 
-		# Add gui components for queue submission (qsub)
-		is_qsub_enabled = False
-		temp_label = QtGui.QLabel('submit job to queue', self)
-		temp_label.move(self.x1,self.y2)
-		self.qsub_enable_checkbox = QtGui.QCheckBox("", self)
-		self.qsub_enable_checkbox.setCheckState(is_qsub_enabled)
-		self.qsub_enable_checkbox.stateChanged.connect(self.set_qsub_enable_state) # To control enable state of the following qsub related widgets
-		self.qsub_enable_checkbox.move(self.x2,self.y2)
-		self.qsub_enable_checkbox.setToolTip('submit job to queue')
+			# Add gui components for queue submission (qsub)
+			is_qsub_enabled = False
+			temp_label = QtGui.QLabel('submit job to queue', self)
+			temp_label.move(self.x1, self.y1)
+			self.qsub_enable_checkbox = QtGui.QCheckBox("", self)
+			self.qsub_enable_checkbox.setCheckState(is_qsub_enabled)
+			self.qsub_enable_checkbox.stateChanged.connect(self.set_qsub_enable_state) # To control enable state of the following qsub related widgets
+			self.qsub_enable_checkbox.move(self.x2, self.y1)
+			self.qsub_enable_checkbox.setToolTip('submit job to queue')
 		
-		self.y2 =self.y2+25
+			self.y1 = self.y1 + 25
 		
-		temp_label = QtGui.QLabel('job name', self)
-		temp_label.move(self.x1,self.y2)
-		self.qsub_job_name_edit = QtGui.QLineEdit(self)
-		self.qsub_job_name_edit.setText(self.sxpopup.sxcmd.name)
-		self.qsub_job_name_edit.move(self.x2,self.y2)
-		self.qsub_job_name_edit.setToolTip('name of this job')
+			temp_label = QtGui.QLabel('job name', self)
+			temp_label.move(self.x1, self.y1)
+			self.qsub_job_name_edit = QtGui.QLineEdit(self)
+			self.qsub_job_name_edit.setText(self.sxpopup.sxcmd.name)
+			self.qsub_job_name_edit.move(self.x2, self.y1)
+			self.qsub_job_name_edit.setToolTip('name of this job')
 
-		self.y2 =self.y2+25
+			self.y1 = self.y1 + 25
 
-		temp_label = QtGui.QLabel('submission command', self)
-		temp_label.move(self.x1,self.y2)
-		self.qsub_cmd_edit = QtGui.QLineEdit(self)
-		self.qsub_cmd_edit.setText('qsub')
-		self.qsub_cmd_edit.move(self.x2,self.y2)
-		self.qsub_cmd_edit.setToolTip('name of submission command to queue job')
+			temp_label = QtGui.QLabel('submission command', self)
+			temp_label.move(self.x1, self.y1)
+			self.qsub_cmd_edit = QtGui.QLineEdit(self)
+			self.qsub_cmd_edit.setText('qsub')
+			self.qsub_cmd_edit.move(self.x2, self.y1)
+			self.qsub_cmd_edit.setToolTip('name of submission command to queue job')
 
-		self.y2 =self.y2+25
+			self.y1 = self.y1 + 25
 
-		temp_label = QtGui.QLabel('submission script template', self)
-		temp_label.move(self.x1,self.y2)
-		self.qsub_script_edit = QtGui.QLineEdit(self)
-		self.qsub_script_edit.setText('msgui_qsub.sh')
-		self.qsub_script_edit.move(self.x2,self.y2)
-		self.qsub_script_edit.setToolTip('file name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh')
+			temp_label = QtGui.QLabel('submission script template', self)
+			temp_label.move(self.x1, self.y1)
+			self.qsub_script_edit = QtGui.QLineEdit(self)
+			self.qsub_script_edit.setText('msgui_qsub.sh')
+			self.qsub_script_edit.move(self.x2, self.y1)
+			self.qsub_script_edit.setToolTip('file name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh')
 
-		self.y2 =self.y2+25
+			self.y1 = self.y1 + 25
 		
-		# Initialize enable state of qsub related widgets
-		self.set_qsub_enable_state()
+			# Initialize enable state of qsub related widgets
+			self.set_qsub_enable_state()
 		
-		# Add space
-		self.y2 = self.y2+25*1
+			# Add space
+			self.y1 = self.y1 + 25 * 1
 
-		# Add save paramater button 
-		self.save_params_btn = QPushButton("Save parameters", self)
-		# self.save_params_btn.move(self.x1-5,  self.y4)
-		self.save_params_btn.move(self.x1-5,  self.y2)
-		self.save_params_btn.setToolTip('Save gui parameter settings')
-		self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxpopup.save_params)
+			# Add save paramater button 
+			self.save_params_btn = QPushButton("Save parameters", self)
+			self.save_params_btn.move(self.x1-5, self.y1)
+			self.save_params_btn.setToolTip('Save gui parameter settings')
+			self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxpopup.save_params)
 		
-		# self.y4 = self.y4+30
-		self.y2 = self.y2+30
+			self.y1 = self.y1 + 30
 
-		self.cmd_line_btn = QPushButton("Generate command line", self)
-		# self.cmd_line_btn.move(self.x1-5,  self.y4)
-		self.cmd_line_btn.move(self.x1-5,  self.y2)
-		self.cmd_line_btn.setToolTip('Generate command line from gui parameter settings')
-		self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxpopup.save_cmd_line)
+			self.cmd_line_btn = QPushButton("Generate command line", self)
+			self.cmd_line_btn.move(self.x1-5, self.y1)
+			self.cmd_line_btn.setToolTip('Generate command line from gui parameter settings')
+			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxpopup.save_cmd_line)
 		
-		self.y2 = self.y2+30
+			self.y1 = self.y1 + 30
 
-		# Add a run button
-		self.execute_btn = QtGui.QPushButton('Run %s' % self.sxpopup.sxcmd.name, self)
-		# make 3D textured push button look
-		s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
-		self.execute_btn.setStyleSheet(s)
-		# self.execute_btn.move(self.x5,  self.y5)
-		self.execute_btn.move(self.x5,  self.y2)
-		self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxpopup.execute_cmd_line)
+			# Add a run button
+			self.execute_btn = QtGui.QPushButton('Run %s' % self.sxpopup.sxcmd.name, self)
+			# make 3D textured push button look
+			s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+			self.execute_btn.setStyleSheet(s)
+			self.execute_btn.move(self.x5, self.y1)
+			self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxpopup.execute_cmd_line)
 
 	def set_widget_enable_state(self, widget, is_enabled):
 		# Set enable state and background color of widget according to enable state
@@ -683,67 +696,6 @@ class SXTab_main(QWidget):
 		self.set_widget_enable_state(self.qsub_job_name_edit, is_enabled)
 		self.set_widget_enable_state(self.qsub_cmd_edit, is_enabled)
 		self.set_widget_enable_state(self.qsub_script_edit, is_enabled)
-		
-# ========================================================================================
-class SXTab_advance(QWidget):
-	def __init__(self, parent = None):
-		QWidget.__init__(self)
-				
-		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		# class variables
-		self.sxcmd = parent.sxcmd
-		
-		# layout parameters
-		self.y1=10
-		self.yspc = 4
-		
-		self.x1 = 20
-		self.x2 = self.x1 + 500 # self.x2 = self.x1+280
-		self.x3 = self.x2 + 145
-		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		
-		# Set the window title
-		#self.setWindowTitle('%s advanced parameter selection' % self.sxcmd.name)
-		# Set a label and its position in this tab
-		temp_label = QtGui.QLabel('<b>%s</b>' % (self.sxcmd.name), self)
-		temp_label.move(self.x1,self.y1)
-		temp_label = QtGui.QLabel('Set advanced parameters', self)
-		temp_label.setWordWrap(True)
-		temp_label.setFixedWidth(600)
-		temp_label.move(self.x1 + 100, self.y1)
-		self.y1 = self.y1+25
-		
-		# Add gui components for editing command args and options
-		for cmd_token in self.sxcmd.token_list:
-			if cmd_token.group == 'advanced':
-				# Create label widget
-				label_widget = QtGui.QLabel(cmd_token.label, self)
-				label_widget.move(self.x1,self.y1)		
-				# Create widget and associate it to this cmd_token 
-				cmd_token_widget = None
-				if cmd_token.type == "bool":
-					# construct new widget(s) for this command token
-					cmd_token_widget = QtGui.QCheckBox("", self)
-					cmd_token_widget.setCheckState(cmd_token.default)
-				else:
-					# For now, use line edit box for the other type
-					cmd_token_widget = QtGui.QLineEdit(self)
-					cmd_token_widget.setText(cmd_token.default)
-					# if cmd_token.type == "output":
-					# elif cmd_token.type == "directory":
-					# elif cmd_token.type == "image":
-					# elif cmd_token.type == "parameters":
-					# elif cmd_token.type == "pdb":
-					# elif cmd_token.type == "function":
-					# else:
-					#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
-				cmd_token_widget.move(self.x2,self.y1)
-				cmd_token_widget.setToolTip(cmd_token.help)		
-				
-				self.y1 = self.y1+25
-				
-				# Register this widget
-				cmd_token.widget = cmd_token_widget
 
 # ========================================================================================
 # Layout of the Pop Up window SXPopup_info; started by the function info of the main window
@@ -801,7 +753,7 @@ class MainWindow(QtGui.QWidget):
 		# --------------------------------------------------------------------------------
 		# SX Commands (sx*.py)
 		# --------------------------------------------------------------------------------
-		self.y2 = 95
+		self.y1 = 95
 		
 		# Construct list of sxscript objects (extracted from associated wiki documents)
 		sxcmd_list = construct_sxcmd_list()
@@ -809,11 +761,11 @@ class MainWindow(QtGui.QWidget):
 		for sxcmd in sxcmd_list:
 			# Add buttons for this sx*.py processe
 			temp_btn = QPushButton(sxcmd.name, self)
-			temp_btn.move(10, self.y2)
+			temp_btn.move(10, self.y1)
 			temp_btn.setToolTip(sxcmd.short_info)
 			self.connect(temp_btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
 
-			self.y2 += 30
+			self.y1 += 30
 			
 		# Set the width and height of the main window
 		self.resize(300,400)
