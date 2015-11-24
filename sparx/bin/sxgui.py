@@ -476,6 +476,11 @@ class SXPopup(QWidget):
 				file_out.close()
 				print 'Saved the following command to %s:' % file_name_out
 				print cmd_line
+				
+				# Save the current state of GUI settings
+				if os.path.exists(self.projct_dir) == False:
+					os.mkdir(self.projct_dir)
+				self.write_params(self.gui_settings_file_path)
 		# else: Do nothing
 	
 	def write_params(self, file_name_out):
