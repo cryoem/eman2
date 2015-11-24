@@ -57,8 +57,8 @@ def construct_token_list_from_wiki(wiki_file_path):
 	keyword_dict["volume"]                      = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, inputvolume
 	keyword_dict["mask"]                        = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask
 	keyword_dict["focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
-	keyword_dict["importctf"]                   = SXkeyword_map(2, "paramters")  # --importctf=ctf_file
-	keyword_dict["pwreference"]                 = SXkeyword_map(2, "paramters")  # --pwreference=pwreference_file
+	keyword_dict["importctf"]                   = SXkeyword_map(2, "parameters") # --importctf=ctf_file
+	keyword_dict["pwreference"]                 = SXkeyword_map(2, "parameters") # --pwreference=pwreference_file
 	keyword_dict["pdb"]                         = SXkeyword_map(2, "pdb")        # input.pdb
 	keyword_dict["function"]                    = SXkeyword_map(2, "function")   # --function=user_function
 			
