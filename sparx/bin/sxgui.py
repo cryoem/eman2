@@ -368,8 +368,8 @@ class SXPopup(QWidget):
 		
 			# Generate command line according to the case
 			cmd_line = ""
-			# Case 1: queue submission is enabled (MPI must be supported)
 			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+				# Case 1: queue submission is enabled (MPI must be supported)
 				if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Create script for queue submission from a give template
 				if os.path.exists(self.tab_main.qsub_script_edit.text()) != True: ERROR("Run Time Error: Invalid file path for qsub script template.", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -383,8 +383,8 @@ class SXPopup(QWidget):
 						if cmd_line.find('XXX_SXMPI_JOB_NAME_XXX') != -1:
 							cmd_line = cmd_line.replace('XXX_SXMPI_JOB_NAME_XXX', str(self.tab_main.qsub_job_name_edit.text()))
 				file_template.close()
-			# Case 2: queue submission is disabled, but MPI is supported
 			elif self.sxcmd.mpi_support:
+				# Case 2: queue submission is disabled, but MPI is supported
 				if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Add MPI execution to command line
 				cmd_line = str(self.tab_main.mpi_cmd_line_edit.text())
@@ -395,9 +395,9 @@ class SXPopup(QWidget):
 					cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
 				if cmd_line.find('XXX_SXCMD_LINE_XXX') != -1:
 					cmd_line = cmd_line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
-			# Case 3: MPI is not supported
 			else: 
-				if self.sxcmd.mpi_support == True: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Case 3: queue submission is disabled, and MPI is not supported
+				if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Use sx command as it is
 				cmd_line = sxcmd_line
 		else:
@@ -416,6 +416,19 @@ class SXPopup(QWidget):
 		
 		if cmd_line:
 			# Command line is not empty
+			
+			# Check existence of outputs
+			for token in self.sxcmd.token_list:
+				if token.type == 'output':
+					if os.path.exists(token.widget.text()):
+						# NOTE: 2015/11/24 Toshio Moriya
+						# This special case needs to be handled with more general method...
+						if self.sxcmd.name == 'sxmeridien':
+							ERROR("Warning: Output Directory/File (%s) already exists. Executing the program with continue mode..." % (token.widget.text()), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
+						else:
+							ERROR("Warning: Output Directory/File (%s) already exists. Please change the name and try it again. Aborting execution..." % (token.widget.text()), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
+							return
+			
 			# If mpi is not supported set number of MPI processer (np) to 1
 			np = 1
 			if self.sxcmd.mpi_support:
