@@ -52,6 +52,7 @@ Since VIPER makes use of group of processors working together, it is important f
     fl:: cut-off frequency applied to the template volume: using a hyperbolic tangent low-pass filter (default 0.25)
     aa:: fall-off of hyperbolic tangent low-pass filter: (default 0.1)
     pwreference:: text file with a reference power spectrum: (default none)
+    debug:: debug info printout: (default False)
 
 
 == Output ==

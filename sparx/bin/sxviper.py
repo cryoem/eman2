@@ -20,38 +20,51 @@ def main(args):
 	from multi_shc import multi_shc
 
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  output_directory  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1"
+	usage = progname + " stack  output_directory  radius --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1"
+	usage += """
+
+stack			2D images in a stack file: (default required string)
+radius			radius of the particle: has to be less than < int(nx/2)-1 (default required int)
+"""
+	
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ir",       type= "int",   default= 1,                  help="<inner radius> for rotational correlation > 0 (set to 1)")
-	parser.add_option("--radius",       type= "int",   default= -1,             help="<outer radius> for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
+	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+	# parser.add_option("--radius",       type= "int",   default= -1,             help="<outer radius> for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
+
+	parser.add_option("--xr", type="string",  default= "0",            help="range for translation search in x direction: search is +/xr in pixels (default 0)")
+	parser.add_option("--yr", type="string",  default= "-1",            help="range for translation search in y direction: if omitted will be set to xr, search is +/yr in pixels (default 0)")
+	parser.add_option("--mask3D", type="string",  default=None,            help="3D mask file: (default sphere)")
+	parser.add_option("--moon_elimination", type="string",  default= "",            help="elimination of disconnected pieces: two arguments: mass in KDa and resolution in px/A separated by comma, no space (default none)")
+	parser.add_option("--ir", type="int",  default= 1,            help="inner radius for rotational search: > 0 (default 1)")
+	
 	# 'radius' and 'ou' are the same as per Pawel's request; 'ou' is hidden from the user
 	# the 'ou' variable is not changed to 'radius' in the 'sparx' program. This change is at interface level only for sxviper.
+	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--ou",       type= "int",   default= -1,                 help= SUPPRESS_HELP)
-	parser.add_option("--rs",       type= "int",   default= 1,                  help="<step between> rings in rotational correlation >0  (set to 1)" ) 
-	parser.add_option("--xr",       type="string", default= "0",                help="<xr range> for translation search in x direction, search is +/xr (default 0)")
-	parser.add_option("--yr",       type="string", default= "-1",               help="<yr range> for translation search in y direction, search is +/yr (default = same as xr)")
-	parser.add_option("--ts",       type="string", default= "1",                help="<ts step size> of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
-	parser.add_option("--delta",    type="string", default= "2",                help="<angular step> of reference projections (default 2)")
-	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
-	parser.add_option("--maxit1",   type="float",  default= 400,                help="maximum number of iterations performed for the GA part (set to 400) ")
-	parser.add_option("--maxit2",   type="float",  default= 50,                 help="maximum number of iterations performed for the finishing up part (set to 50) ")
-	parser.add_option("--L2threshold", type="float",  default= 0.03,            help="Stopping criterion of GA given as a maximum relative dispersion of L2 norms (set to 0.03) ")
-	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
-	parser.add_option("--sym",      type="string", default= "c1",               help="<symmetry> of the refined structure")
+	parser.add_option("--rs", type="int",  default= 1,            help="step between rings in rotational search: >0 (default 1)")
+	parser.add_option("--ts", type="string",  default= "1",            help="step size of the translation search in x-y directions: search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional (default 1.0)")
+	parser.add_option("--delta", type="string",  default= "2",            help="angular step of reference projections: (default 2.0)")
+	parser.add_option("--center", type="float",  default= -1,            help="centering of 3D template: average shift method; 0: no centering; 1: center of gravity (default -1)")
+	parser.add_option("--maxit1", type="float",  default= 400,            help="maximum number of iterations performed for the GA part: (default 400)")
+	parser.add_option("--maxit2", type="float",  default= 50,            help="maximum number of iterations performed for the finishing up part: (default 50)")
+	parser.add_option("--L2threshold", type="float",  default= 0.03,            help="stopping criterion of GA: given as a maximum relative dispersion of volumes' L2 norms: (default 0.03)")
+	parser.add_option("--ref_a", type="string",  default= "S",            help="method for generating the quasi-uniformly distributed projection directions: (default S)")
+	parser.add_option("--sym", type="string",  default= "c1",            help="point-group symmetry of the structure: (default c1)")
 	
 	# parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d by default)")
+	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--function", type="string", default="ref_ali3d",         help= SUPPRESS_HELP)
 	
-	parser.add_option("--nruns",    type="int",    default= 6,                  help="number of quasi-independent runs (default=6)")
-	parser.add_option("--doga",     type="float",  default= 0.1,                help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga (default=0.1)")
+	parser.add_option("--nruns", type="int",  default= 6,            help="GA population: aka number of quasi-independent volumes (default 6)")
+	parser.add_option("--doga", type="float",  default= 0.1,            help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga: (default 0.1)")
+	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
-	parser.add_option("--fl",       type="float",  default=0.25,                help="<cut-off frequency> of hyperbolic tangent low-pass Fourier filter (default 0.25)")
-	parser.add_option("--aa",       type="float",  default=0.1,                 help="<fall-off frequency> of hyperbolic tangent low-pass Fourier filter (default 0.1)")
-	parser.add_option("--pwreference",      type="string",  default="",         help="<power spectrum> reference text file (default no power spectrum adjustment) (advanced)")
-	parser.add_option("--mask3D",      type="string",  default=None,            help="3D mask file (default a sphere)")
-	parser.add_option("--moon_elimination",      type="string",  default="",    help="<moon elimination> mass in KDa and resolution in px/A separated by comma, no space (advanced)")
-	parser.add_option("--debug",          action="store_true", default=False,   help="<debug> info printout (default = False)")
+	parser.add_option("--fl", type="float",  default= 0.25,            help="cut-off frequency applied to the template volume: using a hyperbolic tangent low-pass filter (default 0.25)")
+	parser.add_option("--aa", type="float",  default= 0.1,            help="fall-off of hyperbolic tangent low-pass filter: (default 0.1)")
+	parser.add_option("--pwreference", type="string",  default= "",            help="text file with a reference power spectrum: (default none)")
+	parser.add_option("--debug", action="store_true",  default= False,            help="debug info printout: (default False)")
 	
+	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--return_options", action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)	
 	
 	#parser.add_option("--an",       type="string", default= "-1",               help="NOT USED angular neighborhood for local searches (phi and theta)")
@@ -71,7 +84,7 @@ def main(args):
 		options.moon_elimination = map(float, options.moon_elimination.split(","))
 
 
-	if len(args) < 2 or len(args) > 3:
+	if len(args) < 3 or len(args) > 4:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 		return 1
@@ -82,7 +95,8 @@ def main(args):
 
 	# 'radius' and 'ou' are the same as per Pawel's request; 'ou' is hidden from the user
 	# the 'ou' variable is not changed to 'radius' in the 'sparx' program. This change is at interface level only for sxviper.
-	options.ou = options.radius 
+	# options.ou = options.radius 
+	options.ou = int(args[2]) 
 	runs_count = options.nruns
 	mpi_rank = mpi_comm_rank(MPI_COMM_WORLD)
 	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
