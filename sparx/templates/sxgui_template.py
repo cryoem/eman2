@@ -401,12 +401,12 @@ class SXPopup(QWidget):
 	def save_params(self):
 		file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Save Parameters", options = QtGui.QFileDialog.DontUseNativeDialog)
 		if file_name_out != '':
-			self.write_params(self, file_name_out)
+			self.write_params(file_name_out)
 	
 	def load_params(self):
 		file_name_in = QtGui.QFileDialog.getOpenFileName(self, "Load parameters", options = QtGui.QFileDialog.DontUseNativeDialog)
 		if file_name_in != '':
-			read_params(file_name_in)
+			self.read_params(file_name_in)
 	
 	"""
 #	def choose_file(self):
