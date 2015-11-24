@@ -39,6 +39,7 @@ from subprocess import *
 from EMAN2 import *
 from sparx import *
 from EMAN2_cppwrap import *
+from functools import partial  # Use to connect event-source widget and event handler
 
 # ========================================================================================
 class SXcmd_token:
@@ -106,7 +107,7 @@ def construct_sxcmd_list():
 	token = SXcmd_token(); token.key_base = "coords_extension"; token.key_prefix = "--"; token.label = "file extension of input coordinates files"; token.help = "e.g 'box' for eman1, 'json' for eman2, ... "; token.group = "main"; token.is_required = False; token.default = "box"; token.type = "string"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "coords_format"; token.key_prefix = "--"; token.label = "format of input coordinates file"; token.help = "'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size. "; token.group = "main"; token.is_required = False; token.default = "eman1"; token.type = "string"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "indir"; token.key_prefix = "--"; token.label = "directory containing input micrographs"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.type = "directory"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "importctf"; token.key_prefix = "--"; token.label = "file name of sxcter output"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "paramters"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "importctf"; token.key_prefix = "--"; token.label = "file name of sxcter output"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "limitctf"; token.key_prefix = "--"; token.label = "Filter micrographs based on the CTF limit"; token.help = "It requires --importctf. "; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "resample_ratio"; token.key_prefix = "--"; token.label = "Ratio of new to old image size (or old to new pixel size) for resampling"; token.help = "Valid range is 0.0 < resample_ratio <= 1.0. "; token.group = "advanced"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "xy dimension of square area to be windowed (in pixels)"; token.help = "Pixel size after resampling is assumed when resample_ratio < 1.0 "; token.group = "main"; token.is_required = False; token.default = "256"; token.type = "int"; sxcmd.token_list.append(token)
@@ -179,7 +180,7 @@ def construct_sxcmd_list():
 	token = SXcmd_token(); token.key_base = "doga"; token.key_prefix = "--"; token.label = "do GA when fraction of orientation changes less than 1.0 degrees is at least doga"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "cut-off frequency applied to the template volume"; token.help = "using a hyperbolic tangent low-pass filter "; token.group = "advanced"; token.is_required = False; token.default = "0.25"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "fall-off of hyperbolic tangent low-pass filter"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "pwreference"; token.key_prefix = "--"; token.label = "text file with a reference power spectrum"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "none"; token.type = "paramters"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "pwreference"; token.key_prefix = "--"; token.label = "text file with a reference power spectrum"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
 
 	sxcmd_list.append(sxcmd)
 
@@ -308,7 +309,7 @@ class SXPopup(QWidget):
 		self.TabWidget = QtGui.QTabWidget()
 		self.TabWidget.insertTab(0,self.tab_main,'Main')
 		self.TabWidget.insertTab(1,self.tab_advance,'Advanced')
-		self.TabWidget.resize(730,1080) # self.TabWidget.resize(730,860)
+		self.TabWidget.resize(860,1080) # self.TabWidget.resize(730,860)
 		self.TabWidget.show()
 		
 		# Load the previously saved parameter setting of this sx command
@@ -618,43 +619,43 @@ class SXPopup(QWidget):
 		file_in.close()
 	
 	def save_params(self):
-		file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Save Parameters", options = QtGui.QFileDialog.DontUseNativeDialog)
-		if file_name_out != '':
-			self.write_params(file_name_out)
+		file_path = str(QtGui.QFileDialog.getSaveFileName(self, "Save Parameters", options = QtGui.QFileDialog.DontUseNativeDialog))
+		if file_path != '':
+			self.write_params(file_path)
 	
 	def load_params(self):
-		file_name_in = QtGui.QFileDialog.getOpenFileName(self, "Load parameters", options = QtGui.QFileDialog.DontUseNativeDialog)
-		if file_name_in != '':
-			self.read_params(file_name_in)
+		file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Load parameters", options = QtGui.QFileDialog.DontUseNativeDialog))
+		if file_path != '':
+			self.read_params(file_path)
 	
-	"""
-#	def choose_file(self):
-#		#opens a file browser, showing files only in .hdf format
-#		file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF files (*.hdf)")
-#		#after the user selected a file, we obtain this filename as a Qstring
-#		a=QtCore.QString(file_name)
-#		print a
-#		#we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
-#		self.stacknameedit.setText(str(a))
-	"""
-		
-	"""
-#		#Function choose_file started when  the  open_file of the  Poptwodali window is clicked (same as above but for bdb files(maybe we can combine these two into one function)
-#	def choose_file1(self):
-#		file_name1 = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "EMAN2DB/", "BDB FILES (*.bdb)" )
-#		a=QtCore.QString(file_name1)
-#		b=os.path.basename(str(a))
-#		c=os.path.splitext(b)[0]
-#		d="bdb:"+c
-#		print d
-#		self.stacknameedit.setText(d)
-	"""
-	
+	def select_file(self, target_edit_box, file_format = ""):
+		file_path = ''
+		if file_format == "bdb":
+			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select BDB File", "", "BDB FILES (*.bdb)", options = QtGui.QFileDialog.DontUseNativeDialog))
+			file_path = 'bdb:./' + os.path.relpath(file_path).replace('EMAN2DB/', '#').replace('.bdb', '').replace('/#', '#')
+		else:
+			if file_format:
+				file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), "", "%s files (*.%s)"  % (file_format.upper(), file_format), options = QtGui.QFileDialog.DontUseNativeDialog))
+			else:
+				file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select File", "", "All files (*.*)", options = QtGui.QFileDialog.DontUseNativeDialog))
+			
+			file_path = os.path.relpath(file_path)
+			
+		if file_path != '':
+			# Use relative path. 
+			target_edit_box.setText(file_path)
+				
+	def select_dir(self, target_edit_box):
+		dir_path = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory", "", options = QtGui.QFileDialog.ShowDirsOnly | QtGui.QFileDialog.DontResolveSymlinks | QtGui.QFileDialog.DontUseNativeDialog))
+		if dir_path != '':
+			# Use relative path. 
+			target_edit_box.setText(os.path.relpath(dir_path))
+			
 	"""
 #	def show_output_info(self):
 #		QMessageBox.information(self, "sx* output",'outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program.')
 	"""
-		
+
 # ========================================================================================
 class SXTab_main(QWidget):
 
@@ -674,7 +675,7 @@ class SXTab_main(QWidget):
 		
 		self.x1 = 10
 		self.x2 = self.x1 + 500 # self.x2 = self.x1 + 200
-		self.x3 = self.x2 + 145
+		self.x3 = self.x2 + 135
 		self.x4 = self.x3 + 100
 		self.x5 = 230
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -712,17 +713,47 @@ class SXTab_main(QWidget):
 					cmd_token_widget = QtGui.QCheckBox("", self)
 					cmd_token_widget.setCheckState(cmd_token.default)
 				else:
-					# For now, use line edit box for the other type
-					cmd_token_widget = QtGui.QLineEdit(self)
-					cmd_token_widget.setText(cmd_token.default)
-					# if cmd_token.type == "output":
-					# elif cmd_token.type == "directory":
-					# elif cmd_token.type == "image":
-					# elif cmd_token.type == "parameters":
-					# elif cmd_token.type == "pdb":
-					# elif cmd_token.type == "function":
-					# else:
-					#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+					if cmd_token.type == "image":
+						cmd_token_widget = QtGui.QLineEdit(self)
+						cmd_token_widget.setText(cmd_token.default)
+						file_format = "hdf"
+						temp_btn = QPushButton("Select .%s" % file_format, self)
+						temp_btn.move(self.x3, self.y2 - 12)
+						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
+						file_format = "bdb"
+						temp_btn = QPushButton("Select .%s" % file_format, self)
+						temp_btn.move(self.x4, self.y2 - 12)
+						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
+					elif cmd_token.type == "pdb":
+						cmd_token_widget = QtGui.QLineEdit(self)
+						cmd_token_widget.setText(cmd_token.default)
+						file_format = "pdb"
+						temp_btn = QPushButton("Select .%s" % file_format, self)
+						temp_btn.move(self.x3, self.y2 - 12)
+						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
+					elif cmd_token.type == "parameters":
+						cmd_token_widget = QtGui.QLineEdit(self)
+						cmd_token_widget.setText(cmd_token.default)
+						temp_btn = QPushButton("Select Paramter File", self)
+						temp_btn.move(self.x3, self.y2 - 12)
+						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget))
+					elif cmd_token.type == "directory":
+						cmd_token_widget = QtGui.QLineEdit(self)
+						cmd_token_widget.setText(cmd_token.default)
+						temp_btn = QPushButton("Select directory", self)
+						temp_btn.move(self.x3, self.y2 - 12)
+						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_dir, cmd_token_widget))
+					elif cmd_token.type == "function":
+						cmd_token_widget = QtGui.QLineEdit(self)
+						cmd_token_widget.setText(cmd_token.default)
+					elif cmd_token.type == "output":
+						cmd_token_widget = QtGui.QLineEdit(self)
+						cmd_token_widget.setText(cmd_token.default)
+					else:
+						if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
+						cmd_token_widget = QtGui.QLineEdit(self)
+						cmd_token_widget.setText(cmd_token.default)
+						
 				cmd_token_widget.move(self.x2,self.y2 - 7)
 				cmd_token_widget.setToolTip(cmd_token.help)		
 				
@@ -981,7 +1012,6 @@ class MainWindow(QtGui.QWidget):
 			temp_btn = QPushButton(sxcmd.name, self)
 			temp_btn.move(10, self.y2)
 			temp_btn.setToolTip(sxcmd.short_info)
-			from functools import partial
 			self.connect(temp_btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
 
 			self.y2 += 30
