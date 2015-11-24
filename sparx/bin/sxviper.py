@@ -24,6 +24,7 @@ def main(args):
 	usage += """
 
 stack			2D images in a stack file: (default required string)
+output_directory			name of directory where files will be generated
 radius			radius of the particle: has to be less than < int(nx/2)-1 (default required int)
 """
 	
