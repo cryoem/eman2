@@ -36,12 +36,14 @@ sxsort3d exists only in MPI version.
     CTF:: Consider CTF correction: during the alignment. (default False) 
     stoprnct:: Minimum percentage of assignment change to stop the program: (default 3.0) 
     sym:: point-group symmetry of the structure: (default c1) 
-    function:: name of the reference preparation function: (default ref_sort3d) 
     independent:: number of independent run: (default 3) 
     number_of_images_per_group:: number of images per group: critical number defined by user. (default 1000) 
     low_pass_filter:: absolute frequency of low-pass filter: for 3d sorting on the original image size. (default -1.0)
     nxinit:: initial image size for sorting: (default 64)
     unaccounted:: reconstruct the unaccounted images: (default False) 
+
+    * The remaining parameters are optional.
+    function:: name of the reference preparation function: (default ref_sort3d) 
     seed:: random seed: for create initial random assignment for EQ Kmeans (default -1) 
 
 
