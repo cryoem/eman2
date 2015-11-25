@@ -24,6 +24,8 @@ def construct_token_list_from_wiki(wiki_file_path):
 			self.token_type = token_type  # Token value type 
 			# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	
+	print "Start parsing Wiki document (%s)" % wiki_file_path
+
 	# Allocate memory for new SXcmd instance
 	sxcmd = SXcmd()
 	
@@ -119,7 +121,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 					current_state = state_processing
 				else:
 					# This section was not the current target. Go back to searching state
-					current_state = state_searching											
+					current_state = state_searching
 			else:
 				# We are in a target section
 				if current_section == section_name:
@@ -258,7 +260,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 			
 	file_wiki.close()
 	
-	print "Succeed to parsing Wiki document (%s)" % wiki_file_path
+	print "Succeed to parse Wiki document (%s)" % wiki_file_path
 	
 	"""
 	# For DEBUG
