@@ -77,6 +77,19 @@ def construct_sxcmd_list():
 	
 	# Actual sx commands are inserted into the following section by wikiparser.py.
 	# @@@@@ START_INSERTION @@@@@
+	sxcmd = SXcmd(); sxcmd.name = "sxpdb2em"; sxcmd.short_info = "Convert atomic model (pdb file) into sampled electron density map"; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False
+	token = SXcmd_token(); token.key_base = "input_pdb"; token.key_prefix = ""; token.label = "pdb file with atomic coordinates"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "pdb"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "output_hdf"; token.key_prefix = ""; token.label = "output 3-D electron density map (any EM format)"; token.help = "Attribute pixel_size will be set to the specified value. "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "pixel size (in Angstrom) of the output map"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "box"; token.key_prefix = "--"; token.label = "size of the output map in voxels"; token.help = "If not given, the program will find the minimum box size that includes the structre.  However, in most cases this will result in a rectangular box, i.e., each dimension will be different. "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "het"; token.key_prefix = "--"; token.label = "Include HET atoms in the map"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "center"; token.key_prefix = "--"; token.label = "specify whether to center the atomic model before converting to electron density map (warning"; token.help = "pdb deposited atomic models are not necesserily centered).  Options: c - center using coordinates of atoms; a - center by setting center of gravity to zero (recommended); a triplet x,y,z (no spaces in between) - coordinates (in Angstrom) to be substracted from all the PDB coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume, i.e., (nx/2, ny/2, nz/2). "; token.group = "main"; token.is_required = False; token.default = "n"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "O"; token.key_prefix = "--"; token.label = "apply additional rotation"; token.help = "so the model will appear in O in the same rotation as in chimera. "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "tr0"; token.key_prefix = "--"; token.label = "name of a file containing a 3x4 transformation matrix"; token.help = "to be applied to the PDB coordinates after centering, prior to computing the density map. The translation vector (last column of the matrix) must be specified in Angstrom. If this parameter is omitted, no transformation is applied. "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "quiet"; token.key_prefix = "--"; token.label = "do not print any information to the monitor"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+
+	sxcmd_list.append(sxcmd)
+
 	sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True
 	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "outdir1"; token.key_prefix = ""; token.label = "output directory for rotinf**** files"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
@@ -429,8 +442,7 @@ class SXPopup(QWidget):
 			# Generate command line according to the case
 			cmd_line = ""
 			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
-				# Case 1: queue submission is enabled (MPI must be supported)
-				if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
 				if os.path.exists(self.tab_main.qsub_script_edit.text()) != True: ERROR("Run Time Error: Invalid file path for qsub script template.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				file_template = open(self.tab_main.qsub_script_edit.text(),'r')
@@ -694,6 +706,8 @@ class SXPopup(QWidget):
 				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", '#').replace(".bdb", "").replace("/#", "#")
 		if file_format == "py":
 			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select Python File", "", "PY files (*.py)", options = QtGui.QFileDialog.DontUseNativeDialog))
+		if file_format == "pdb":
+			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select PDB File", "", "PDB files (*.pdb *.pdb1)", options = QtGui.QFileDialog.DontUseNativeDialog))
 		else:
 			if file_format:
 				file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), "", "%s files (*.%s)"  % (file_format.upper(), file_format), options = QtGui.QFileDialog.DontUseNativeDialog))

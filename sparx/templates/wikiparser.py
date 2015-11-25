@@ -326,6 +326,7 @@ def main():
 	# and create gui generation paramter
 	# --------------------------------------------------------------------------------
 	wiki_file_path_list = []
+	wiki_file_path_list.append("../doc/pdb2em.txt")
 	wiki_file_path_list.append("../doc/cter.txt")
 	wiki_file_path_list.append("../doc/window.txt")
 	wiki_file_path_list.append("../doc/isac.txt")
