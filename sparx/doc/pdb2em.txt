@@ -1,22 +1,35 @@
 ## page was renamed from e2pdb2em
 = Name =
-sxpdb2em - convert atomic model (pdb file) into sampled electron density map 
+sxpdb2em - Convert atomic model (pdb file) into sampled electron density map 
 
 = Usage =
-sxpdb2em.py tRNA.pdb tRNA.hdf --apix=2.26 --box=150 --center=c --O --quiet --tr0=<''filename''> --het
+
+''usage in command line''
+
+sxpdb2em.py  input_pdb  output_hdf  --apix=pixel_size  --box=box_size  --het  --center=center  --O  --tr0  --quiet
+
+=== Typical usage ===
+
+sxpdb2em does not support MPI.
+
+sxpdb2em.py  tRNA.pdb  tRNA.hdf  --apix=2.26  --box=150  --center=c  --O  --quiet  --tr0=<''filename''>  --het
 
 == Input ==
-    tRNA.pdb:: pdb file with atomic coordinates.
-    apix:: pixel size (in Angstrom) of the output map.
-    box:: size of the output map in voxels. (If not given, the program will find the minimum box size that includes the structre.  However, in most cases this will result in a rectangular box, i.e., each dimension will be different.)
-    center:: specify whether to center the atomic model before converting to electron density map (warning: pdb deposited atomic models are not necesserily centered).  Options: c - center using coordinates of atoms; a - center by setting center of gravity to zero (recommended); a triplet x,y,z (no spaces in between) - coordinates (in Angstrom) to be substracted from all the PDB coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume, i.e., (nx/2, ny/2, nz/2).
-    O:: apply additional rotation so the model will appear in O in the same rotation as in chimera.
-    het:: Include HET atoms in the map.
-    quiet:: do not print any information to the monitor.
-    tr0:: name of a file containing a 3x4 transformation matrix to be applied to the PDB coordinates after centering, prior to computing the density map. The translation vector (last column of the matrix) must be specified in Angstrom. If this parameter is omitted, no transformation is applied.
+    input_pdb:: pdb file with atomic coordinates: (default required string)
+    
+    apix:: pixel size (in Angstrom) of the output map: (default 1.0)
+    box:: size of the output map in voxels: If not given, the program will find the minimum box size that includes the structre.  However, in most cases this will result in a rectangular box, i.e., each dimension will be different. (default required int)
+    het:: Include HET atoms in the map: (default False)
+    center:: specify whether to center the atomic model before converting to electron density map (warning: pdb deposited atomic models are not necesserily centered).  Options: c - center using coordinates of atoms; a - center by setting center of gravity to zero (recommended); a triplet x,y,z (no spaces in between) - coordinates (in Angstrom) to be substracted from all the PDB coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume, i.e., (nx/2, ny/2, nz/2). (default n)
+    O:: apply additional rotation: so the model will appear in O in the same rotation as in chimera. (default False)
+    tr0:: name of a file containing a 3x4 transformation matrix: to be applied to the PDB coordinates after centering, prior to computing the density map. The translation vector (last column of the matrix) must be specified in Angstrom. If this parameter is omitted, no transformation is applied. (default none)
+
+    * The remaining parameters are optional.
+    quiet:: do not print any information to the monitor: (default False)
+
 
 == Output ==
-    tRNA.hdf:: output 3-D electron density map (any EM format).  Attribute pixel_size will be set to the specified value.
+    output_hdf:: output 3-D electron density map (any EM format): Attribute pixel_size will be set to the specified value. (default required string)
 
 = Description =
 Thre program uses tri-linear interpolation.  Electron densities are taken to be equal to atomic masses.
