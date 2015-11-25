@@ -193,8 +193,7 @@ class SXPopup(QWidget):
 			# Generate command line according to the case
 			cmd_line = ""
 			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
-				# Case 1: queue submission is enabled (MPI must be supported)
-				if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
 				if os.path.exists(self.tab_main.qsub_script_edit.text()) != True: ERROR("Run Time Error: Invalid file path for qsub script template.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				file_template = open(self.tab_main.qsub_script_edit.text(),'r')
@@ -458,6 +457,8 @@ class SXPopup(QWidget):
 				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", '#').replace(".bdb", "").replace("/#", "#")
 		if file_format == "py":
 			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select Python File", "", "PY files (*.py)", options = QtGui.QFileDialog.DontUseNativeDialog))
+		if file_format == "pdb":
+			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select PDB File", "", "PDB files (*.pdb *.pdb1)", options = QtGui.QFileDialog.DontUseNativeDialog))
 		else:
 			if file_format:
 				file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), "", "%s files (*.%s)"  % (file_format.upper(), file_format), options = QtGui.QFileDialog.DontUseNativeDialog))
