@@ -121,12 +121,12 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sxisac"; sxcmd.short_info = "Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack.  NEW VERSION 07/21/2015."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	sxcmd = SXcmd(); sxcmd.name = "sxisac"; sxcmd.short_info = "Iterative Stable Alignment and Clustering (ISAC) of a 2-D image stack."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
 	token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "2-D images in a stack file (format must be bdb)"; token.help = "images have to be square (''nx''=''ny'') "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results) "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "particle radius"; token.help = "there is no default, a sensible number has to be provided, units - pixels "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "number of images per class"; token.help = "in the ideal case (essentially maximum size of class) "; token.group = "main"; token.is_required = False; token.default = "100"; token.type = "int"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "perform phase flipping of the data"; token.help = "using CTF information included in image headers "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "apply phase-flip for CTF correction"; token.help = "if set the data will be phase-flipped using CTF information included in image headers "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "restart_section"; token.key_prefix = "--"; token.label = "restart section"; token.help = "each generation (iteration) contains three sections: 'restart', 'candidate_class_averages', and 'reproducible_class_averages'. To restart from a particular step, for example, generation 4 and section 'candidate_class_averages' the following option is needed: '--restart_section=candidate_class_averages,4'. The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the '--use_latest_master_directory' option can be used. "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "inner ring"; token.help = "of the resampling to polar coordinates. units - pixels "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "rs"; token.key_prefix = "--"; token.label = "ring step"; token.help = "of the resampling to polar coordinates. units - pixels "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.type = "int"; sxcmd.token_list.append(token)
@@ -181,6 +181,7 @@ def construct_sxcmd_list():
 	token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "cut-off frequency applied to the template volume"; token.help = "using a hyperbolic tangent low-pass filter "; token.group = "advanced"; token.is_required = False; token.default = "0.25"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "fall-off of hyperbolic tangent low-pass filter"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "pwreference"; token.key_prefix = "--"; token.label = "text file with a reference power spectrum"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "debug"; token.key_prefix = "--"; token.label = "debug info printout"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 	sxcmd_list.append(sxcmd)
 
@@ -268,13 +269,13 @@ def construct_sxcmd_list():
 	token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "Consider CTF correction"; token.help = "during the alignment. "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "stoprnct"; token.key_prefix = "--"; token.label = "Minimum percentage of assignment change to stop the program"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "3.0"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "point-group symmetry of the structure"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "c1"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "name of the reference preparation function"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "ref_sort3d"; token.type = "function"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "function"; token.key_prefix = "--"; token.label = "name of the reference preparation function"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "ref_sort3d"; token.type = "function"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "independent"; token.key_prefix = "--"; token.label = "number of independent run"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "3"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "number_of_images_per_group"; token.key_prefix = "--"; token.label = "number of images per group"; token.help = "critical number defined by user. "; token.group = "main"; token.is_required = False; token.default = "1000"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "low_pass_filter"; token.key_prefix = "--"; token.label = "absolute frequency of low-pass filter"; token.help = "for 3d sorting on the original image size. "; token.group = "main"; token.is_required = False; token.default = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "nxinit"; token.key_prefix = "--"; token.label = "initial image size for sorting"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "64"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "unaccounted"; token.key_prefix = "--"; token.label = "reconstruct the unaccounted images"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "seed"; token.key_prefix = "--"; token.label = "random seed"; token.help = "for create initial random assignment for EQ Kmeans "; token.group = "main"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "seed"; token.key_prefix = "--"; token.label = "random seed"; token.help = "for create initial random assignment for EQ Kmeans "; token.group = "advanced"; token.is_required = False; token.default = "-1"; token.type = "int"; sxcmd.token_list.append(token)
 
 	sxcmd_list.append(sxcmd)
 
@@ -283,7 +284,16 @@ def construct_sxcmd_list():
 	# Create command token dictionary for each SXcmd instance
 	for sxcmd in sxcmd_list:
 		for token in sxcmd.token_list:
-				sxcmd.token_dict[token.key_base] = token
+			# Handle very special cases
+			if token.type == "function":
+				n_widgets = 2 # function type has two line edit boxes
+				token.label = [token.label, "enter name of external file with .py extension containing user function"]
+				token.help = [token.help, "(leave blank if file is not external to sparx)"]
+				token.default = [token.default, "None"]
+			# else: Do nothing for the other types
+			
+			# Register this to command token dictionary
+			sxcmd.token_dict[token.key_base] = token
 	
 	return sxcmd_list
 
@@ -322,36 +332,51 @@ class SXPopup(QWidget):
 		
 		# Loop through all command tokens
 		for token in self.sxcmd.token_list:
-			if token.type == 'bool':
-				if token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
-				if (token.widget.checkState() == Qt.Checked) != token.default:
-					sxcmd_line += " %s%s" % (token.key_prefix, token.key_base)
+			# First, handle very special cases
+			if token.type == "function":
+				user_func_name_index = 0
+				external_file_path_index = 1
+				user_func_name = str(token.widget[user_func_name_index].text())
+				external_file_path = str(token.widget[external_file_path_index].text())
+				
+				# This is not default value
+				if external_file_path not in ["", token.default[external_file_path_index]]:
+					# Case 1: User specified an exteranl function different from default or empty string
+					if os.path.splitext(external_file_path)[1] != ".py": 
+						ERROR("Warning: Exteranl File Path (%s) should include .py extension." % (external_file_path), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
+						return ""
+					dir_path, file_basename = os.path.split(external_file_path)
+					file_basename = file_basename.replace(".py", "")
+					sxcmd_line += " %s%s=[%s,%s,%s]" % (token.key_prefix, token.key_base, dir_path, file_basename, user_func_name)
+				elif user_func_name != token.default[user_func_name_index]:
+					# Case 2: User specified an internal function different from default
+					sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, user_func_name)
+				# else: User left default value. Do nothing
+			# Then, handle the other cases
 			else:
-				if token.is_required == True and token.widget.text() == token.default:
-					ERROR("Warning: Token (%s) of command (%s) is required. Please set the value for this token." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
-					return ""
+				if token.type == 'bool':
+					if token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+					if (token.widget.checkState() == Qt.Checked) != token.default:
+						sxcmd_line += " %s%s" % (token.key_prefix, token.key_base)
+				else:
+					if token.is_required == True and token.widget.text() == token.default:
+						ERROR("Warning: Token (%s) of command (%s) is required. Please set the value for this token." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
+						return ""
 				
-				if token.widget.text() != token.default:
-					# For now, using line edit box for the other type
-					if token.key_prefix == "":
-						sxcmd_line += " %s" % (token.widget.text())
-					elif token.key_prefix == "--":
-						sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, token.widget.text())
-					else:
-						ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+					if token.widget.text() != token.default:
+						# For now, using line edit box for the other type
+						if token.key_prefix == "":
+							sxcmd_line += " %s" % (token.widget.text())
+						elif token.key_prefix == "--":
+							sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, token.widget.text())
+						else:
+							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
 				
-				# if token.type == "output":
-				# elif token.type == "directory":
-				# elif token.type == "image":
-				# elif token.type == "parameters":
-				# elif token.type == "pdb":
-				# elif token.type == "function":
-				# else:
-				#	if token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 		
 		return sxcmd_line
 	
 	def generate_cmd_line(self):
+		# Generate SX command line 
 		sxcmd_line = self.map_widgets_to_sxcmd_line()
 		
 		if sxcmd_line:
@@ -408,17 +433,12 @@ class SXPopup(QWidget):
 		return cmd_line
 	
 	def execute_cmd_line(self):
-		# out_dir = str(self.cmd_token_dict['Output Directory'].gui.text())
-		# if os.path.exists(out_dir):
-		# 	print "Output directory " + out_dir + " already exists!"
-		# 	return
-		
+		# Generate command line 
 		cmd_line = self.generate_cmd_line()
 		
 		if cmd_line:
 			# Command line is not empty
-			
-			# Check existence of outputs
+			# First, check existence of outputs
 			for token in self.sxcmd.token_list:
 				if token.type == 'output':
 					if os.path.exists(token.widget.text()):
@@ -435,8 +455,8 @@ class SXPopup(QWidget):
 			if self.sxcmd.mpi_support:
 				np = int(str(self.tab_main.mpi_nproc_edit.text()))
 		
-			# Case 1: queue submission is enabled (MPI must be supported)
 			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+				# Case 1: queue submission is enabled (MPI must be supported)
 				if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Create script for queue submission from a give template
 				template_file_path = self.tab_main.qsub_script_edit.text()
@@ -464,8 +484,8 @@ class SXPopup(QWidget):
 				print cmd_line_in_script
 				print 'Submitted a job by the following command: '
 				print cmd_line
-			# Case 2: queue submission is disabled, but MPI is supported
 			else:
+				# Case 2: queue submission is disabled, but MPI is supported
 				if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked or self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				print 'Executed the following command: '
 				print cmd_line
@@ -481,6 +501,7 @@ class SXPopup(QWidget):
 		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
 	
 	def save_cmd_line(self):
+		# Generate command line 
 		cmd_line = self.generate_cmd_line()
 		if cmd_line:
 			file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Generate Command Line", options = QtGui.QFileDialog.DontUseNativeDialog)
@@ -509,34 +530,36 @@ class SXPopup(QWidget):
 		group_main = "main"
 		group_advanced = "advanced"
 		
-		# Loop through all states
+		# Loop through all groups. First write out values of widgets in main tab, then ones in advanced
 		for group in [group_main, group_advanced]:
 			# Loop through all command tokens
 			for cmd_token in self.sxcmd.token_list:
 				if cmd_token.group == group:
-					val_str = ''
-					if cmd_token.type == 'bool':
-						if cmd_token.widget.checkState() == Qt.Checked:
-							val_str = 'YES'
+					# First, handle very special cases
+					if cmd_token.type == "function":
+						# This type has two line edit boxes as a list of widget
+						n_widgets = 2
+						for widget_index in xrange(n_widgets):
+							val_str = str(cmd_token.widget[widget_index].text()) 
+							file_out.write('<%s> %s (default %s) == %s \n' % (cmd_token.key_base, cmd_token.label[widget_index], cmd_token.default[widget_index], val_str))
+					# Then, handle the other cases
+					else:
+						val_str = ''
+						if cmd_token.type == 'bool':
+							if cmd_token.widget.checkState() == Qt.Checked:
+								val_str = 'YES'
+							else:
+								val_str = 'NO'
 						else:
-							val_str = 'NO'
-					else:
-						# For now, use line edit box for the other type
-						val_str = str(cmd_token.widget.text())
-						# if cmd_token.type == "output":
-						# elif cmd_token.type == "directory":
-						# elif cmd_token.type == "image":
-						# elif cmd_token.type == "parameters":
-						# elif cmd_token.type == "pdb":
-						# elif cmd_token.type == "function":
-						# else:
-						#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
-					if cmd_token.is_required == False:
-						file_out.write('<%s> %s (default %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.default, val_str))
-					else:
-						file_out.write('<%s> %s (default required %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.type, val_str))
+							# The other type has only one line edit box
+							val_str = str(cmd_token.widget.text())
+						
+						if cmd_token.is_required == False:
+							file_out.write('<%s> %s (default %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.default, val_str))
+						else:
+							file_out.write('<%s> %s (default required %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.type, val_str))
 				# else: do nothig
-		
+			
 		# At the end of parameter file...
 		# Write MPI parameters 
 		file_out.write('%s == %s \n' % ('MPI processors', str(self.tab_main.mpi_nproc_edit.text())))
@@ -559,7 +582,9 @@ class SXPopup(QWidget):
 		# Check if this parameter file is for this sx script
 		line_in = file_in.readline()
 		if line_in.find('@@@@@ %s gui setting' % (self.sxcmd.name)) != -1:
-			# loop through the other lines
+			n_function_type_lines = 2
+			function_type_line_counter = 0
+			# loop through the rest of lines
 			for line_in in file_in:
 				# Extract label (which should be left of '=='). Also strip the ending spaces
 				label_in = line_in.split('==')[0].strip()
@@ -595,24 +620,23 @@ class SXPopup(QWidget):
 					# Get corresponding cmd_token
 					if key_base not in self.sxcmd.token_dict.keys(): ERROR("Paramter File Format Error: Command token entry should start from \"%s\" for key base name in line %s" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
 					cmd_token = self.sxcmd.token_dict[key_base]
-					
-					if cmd_token.type == "bool":
-						# construct new widget(s) for this command token
-						if val_str_in == 'YES':
-							cmd_token.widget.setChecked(True)
-						else: # val_str_in == 'NO'
-							cmd_token.widget.setChecked(False)
+					# First, handle very special cases
+					if cmd_token.type == "function":
+						cmd_token.widget[function_type_line_counter].setText(val_str_in)
+						function_type_line_counter += 1
+						function_type_line_counter %= n_function_type_lines # function have two line edit boxes
+					# Then, handle the other cases
 					else:
-						# For now, use line edit box for the other type
-						cmd_token.widget.setText(val_str_in)
-						# if cmd_token.type == "output":
-						# elif cmd_token.type == "directory":
-						# elif cmd_token.type == "image":
-						# elif cmd_token.type == "parameters":
-						# elif cmd_token.type == "pdb":
-						# elif cmd_token.type == "function":
-						# else:
-						#	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+						if cmd_token.type == "bool":
+							# construct new widget(s) for this command token
+							if val_str_in == 'YES':
+								cmd_token.widget.setChecked(True)
+							else: # val_str_in == 'NO'
+								cmd_token.widget.setChecked(False)
+						else:
+							# For now, use line edit box for the other type
+							cmd_token.widget.setText(val_str_in)
+						
 		else:
 			QMessageBox.warning(self, 'Fail to load paramters', 'The specified file is not paramter file for %s.' % self.name)
 		
@@ -629,10 +653,13 @@ class SXPopup(QWidget):
 			self.read_params(file_path)
 	
 	def select_file(self, target_edit_box, file_format = ""):
-		file_path = ''
+		file_path = ""
 		if file_format == "bdb":
-			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select BDB File", "", "BDB FILES (*.bdb)", options = QtGui.QFileDialog.DontUseNativeDialog))
-			file_path = 'bdb:./' + os.path.relpath(file_path).replace('EMAN2DB/', '#').replace('.bdb', '').replace('/#', '#')
+			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select BDB File", "", "BDB files (*.bdb)", options = QtGui.QFileDialog.DontUseNativeDialog))
+			if file_path:
+				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", '#').replace(".bdb", "").replace("/#", "#")
+		if file_format == "py":
+			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select Python File", "", "PY files (*.py)", options = QtGui.QFileDialog.DontUseNativeDialog))
 		else:
 			if file_format:
 				file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), "", "%s files (*.%s)"  % (file_format.upper(), file_format), options = QtGui.QFileDialog.DontUseNativeDialog))
@@ -696,7 +723,7 @@ class SXTab(QWidget):
 			
 			# Add load paramater button 
 			self.load_params_btn = QPushButton("Load parameters", self)
-			self.load_params_btn.move(self.x1-5, self.y1)
+			self.load_params_btn.move(self.x1 - 5, self.y1)
 			self.load_params_btn.setToolTip('Load gui parameter settings to retrieve a previously-saved one')
 			self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxpopup.load_params)
 			self.y1 += 25
@@ -719,61 +746,94 @@ class SXTab(QWidget):
 		# Add widget for editing command args and options
 		for cmd_token in self.sxpopup.sxcmd.token_list:
 			if cmd_token.group == tab_group:
-				# Create label widget 
-				label_widget = QtGui.QLabel(cmd_token.label, self)
-				label_widget.move(self.x1, self.y1)
-				# Create widget and associate it to this cmd_token
-				cmd_token_widget = None
-				if cmd_token.type == "bool":
-					# construct new widget(s) for this command token
-					cmd_token_widget = QtGui.QCheckBox("", self)
-					cmd_token_widget.setCheckState(cmd_token.default)
-				else:
-					if cmd_token.type == "image":
-						cmd_token_widget = QtGui.QLineEdit(self)
-						cmd_token_widget.setText(cmd_token.default)
-						file_format = "hdf"
-						temp_btn = QPushButton("Select .%s" % file_format, self)
-						temp_btn.move(self.x3, self.y1 - 12)
-						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
-						file_format = "bdb"
-						temp_btn = QPushButton("Select .%s" % file_format, self)
-						temp_btn.move(self.x4, self.y1 - 12)
-						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
-					elif cmd_token.type == "pdb":
-						cmd_token_widget = QtGui.QLineEdit(self)
-						cmd_token_widget.setText(cmd_token.default)
-						file_format = "pdb"
-						temp_btn = QPushButton("Select .%s" % file_format, self)
-						temp_btn.move(self.x3, self.y1 - 12)
-						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
-					elif cmd_token.type == "parameters":
-						cmd_token_widget = QtGui.QLineEdit(self)
-						cmd_token_widget.setText(cmd_token.default)
-						temp_btn = QPushButton("Select Paramter File", self)
-						temp_btn.move(self.x3, self.y1 - 12)
-						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget))
-					elif cmd_token.type == "directory":
-						cmd_token_widget = QtGui.QLineEdit(self)
-						cmd_token_widget.setText(cmd_token.default)
-						temp_btn = QPushButton("Select directory", self)
-						temp_btn.move(self.x3, self.y1 - 12)
-						self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_dir, cmd_token_widget))
-					elif cmd_token.type == "function":
-						cmd_token_widget = QtGui.QLineEdit(self)
-						cmd_token_widget.setText(cmd_token.default)
-					elif cmd_token.type == "output":
-						cmd_token_widget = QtGui.QLineEdit(self)
-						cmd_token_widget.setText(cmd_token.default)
-					else:
-						if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
-						cmd_token_widget = QtGui.QLineEdit(self)
-						cmd_token_widget.setText(cmd_token.default)
-						
-				cmd_token_widget.move(self.x2,self.y1 - 7)
-				cmd_token_widget.setToolTip(cmd_token.help)
 				
-				self.y1 = self.y1 + 25
+				# First, handle very special cases
+				if cmd_token.type == "function":
+					n_widgets = 2 # function type has two line edit boxes
+					cmd_token_widget = [None] * n_widgets
+					
+					# Create widgets for user function name
+					widget_index = 0
+					label_widget = QtGui.QLabel(cmd_token.label[widget_index], self)
+					label_widget.move(self.x1, self.y1)
+					cmd_token_widget[widget_index] = QtGui.QLineEdit(self)
+					cmd_token_widget[widget_index].setText(cmd_token.default[widget_index])
+					cmd_token_widget[widget_index].move(self.x2,self.y1 - 7)
+					cmd_token_widget[widget_index].setToolTip(cmd_token.help[widget_index])
+					
+					self.y1 = self.y1 + 25
+					
+					# Create widgets for external file path containing above user function
+					widget_index = 1
+					label_widget = QtGui.QLabel(cmd_token.label[widget_index], self)
+					label_widget.move(self.x1, self.y1)
+					label_widget = QtGui.QLabel(cmd_token.help[widget_index], self)
+					label_widget.move(self.x1, self.y1 + 25)
+					cmd_token_widget[widget_index] = QtGui.QLineEdit(self)
+					cmd_token_widget[widget_index].setText(cmd_token.default[widget_index]) # Because default user functions is internal
+					cmd_token_widget[widget_index].move(self.x2,self.y1 - 7)
+					cmd_token_widget[widget_index].setToolTip(cmd_token.help[widget_index])
+					file_format = "py"
+					temp_btn = QPushButton("Select External File", self)
+					temp_btn.move(self.x3, self.y1 - 10)
+					self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget[widget_index], file_format))
+					
+					self.y1 = self.y1 + 25 * 2
+				# Then, handle the other cases
+				else:
+					# Create label widget 
+					label_widget = QtGui.QLabel(cmd_token.label, self)
+					label_widget.move(self.x1, self.y1)
+					
+					# Create widget and associate it to this cmd_token
+					cmd_token_widget = None
+					if cmd_token.type == "bool":
+						# construct new widget(s) for this command token
+						cmd_token_widget = QtGui.QCheckBox("", self)
+						cmd_token_widget.setCheckState(cmd_token.default)
+					else:
+						if cmd_token.type == "image":
+							cmd_token_widget = QtGui.QLineEdit(self)
+							cmd_token_widget.setText(cmd_token.default)
+							file_format = "hdf"
+							temp_btn = QPushButton("Select .%s" % file_format, self)
+							temp_btn.move(self.x3, self.y1 - 12)
+							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
+							file_format = "bdb"
+							temp_btn = QPushButton("Select .%s" % file_format, self)
+							temp_btn.move(self.x4, self.y1 - 12)
+							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "pdb":
+							cmd_token_widget = QtGui.QLineEdit(self)
+							cmd_token_widget.setText(cmd_token.default)
+							file_format = "pdb"
+							temp_btn = QPushButton("Select .%s" % file_format, self)
+							temp_btn.move(self.x3, self.y1 - 12)
+							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "parameters":
+							cmd_token_widget = QtGui.QLineEdit(self)
+							cmd_token_widget.setText(cmd_token.default)
+							temp_btn = QPushButton("Select Paramter File", self)
+							temp_btn.move(self.x3, self.y1 - 12)
+							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget))
+						elif cmd_token.type == "directory":
+							cmd_token_widget = QtGui.QLineEdit(self)
+							cmd_token_widget.setText(cmd_token.default)
+							temp_btn = QPushButton("Select directory", self)
+							temp_btn.move(self.x3, self.y1 - 12)
+							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_dir, cmd_token_widget))
+						elif cmd_token.type == "output":
+							cmd_token_widget = QtGui.QLineEdit(self)
+							cmd_token_widget.setText(cmd_token.default)
+						else:
+							if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
+							cmd_token_widget = QtGui.QLineEdit(self)
+							cmd_token_widget.setText(cmd_token.default)
+						
+					cmd_token_widget.move(self.x2,self.y1 - 7)
+					cmd_token_widget.setToolTip(cmd_token.help)
+				
+					self.y1 = self.y1 + 25
 				
 				# Register this widget
 				cmd_token.widget = cmd_token_widget
@@ -841,6 +901,9 @@ class SXTab(QWidget):
 			self.qsub_script_edit.setText('msgui_qsub.sh')
 			self.qsub_script_edit.move(self.x2, self.y1)
 			self.qsub_script_edit.setToolTip('file name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh')
+			self.qsub_script_open_btn = QPushButton("Select Template File", self)
+			self.qsub_script_open_btn.move(self.x3, self.y1 - 4)
+			self.connect(self.qsub_script_open_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, self.qsub_script_edit))
 
 			self.y1 = self.y1 + 25
 		
@@ -897,6 +960,7 @@ class SXTab(QWidget):
 		self.set_widget_enable_state(self.qsub_job_name_edit, is_enabled)
 		self.set_widget_enable_state(self.qsub_cmd_edit, is_enabled)
 		self.set_widget_enable_state(self.qsub_script_edit, is_enabled)
+		self.set_widget_enable_state(self.qsub_script_open_btn, is_enabled)
 
 # ========================================================================================
 # Layout of the Pop Up window SXPopup_info; started by the function info of the main window
