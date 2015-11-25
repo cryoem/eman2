@@ -7,7 +7,7 @@ sxrviper - Reproducible ''ab initio'' 3D structure determination, aka Reproducib
 
 ''usage in command line''
 
-sxrviper.py  stack  output_directory  radius --ir=inner_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function --moon_elimination --criterion_name --outlier_index_threshold_method --use_latest_master_directory 
+sxrviper.py  stack  output_directory  --ir=inner_radius  --radius=outer_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --L2threshold=0.1  --doga=doga  --ref_a=S  --sym=c1  --n_shc_runs=n_shc_runs  --n_rv_runs=n_rv_runs  --n_v_runs=n_v_runs  --outlier_percentile=outlier_percentile  --iteration_start=iteration_start  --npad=npad --fl=fl  --aa=aa  --pwreference=pwreference  --mask3D=mask3D  --moon_elimination  --criterion_name  --outlier_index_threshold_method  --angle_threshold=angle_threshold
 
 === Typical usage ===
 
@@ -26,16 +26,10 @@ Since RVIPER makes use of group of processors working together, it is important 
 On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 processors. Memory needs are about 0.5GB per processor.
 
 == Input ==
-    stack::  set of 2-D images in a stack file (format hdf), images have to be squares (''nx''=''ny'', nx, ny denotes the image size)
-    output_directory:: directory name into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results)
+    stack:: set of 2-D images in a stack file (format hdf): images have to be squares (''nx''=''ny'', nx, ny denotes the image size) (default required string)
     radius:: radius of the particle: has to be less than < int(nx/2)-1 (default required int)
 
     * The parameters preceded with -- are optional and default values are given in parenthesis.  Note '''ir, ou, rs, xr, yr, ts''' are in pixels while '''delta, an''' are in degrees.
-
-Options:
-
-    version:: show program's version number and exit (current options taken from SPARX v3.0 (CVS 2015/07/29 09:00:04))
-    help:: show this help message and exit
 
     ir:: inner radius for rotational search: > 0 (default 1)
     rs:: step between rings in rotational search: >0 (default 1)
@@ -48,26 +42,27 @@ Options:
     maxit2:: maximum number of iterations performed for the finishing up part: (default 50.0)
     L2threshold:: stopping criterion of GA: given as a maximum relative dispersion of volumes' L2 norms: (default 0.03)
     doga:: do GA when fraction of orientation changes less than 1.0 degrees is at least doga: (default 0.1)
+    n_shc_runs:: number of quasi-independent runs (shc): (default 3)
+    n_rv_runs:: number of rviper iterations: (default 10)
+    n_v_runs:: number of viper runs for each r_viper cycle: (default 3)
+    outlier_percentile:: percentile above which outliers are removed every rviper iteration: (default 95.0)
+    iteration_start:: starting iteration for rviper: 0 means go to the most recent one (default 0)
     ref_a:: method for generating the quasi-uniformly distributed projection directions: (default S)
     sym:: point-group symmetry of the structure: (default c1)
-    n_shc_runs:: number of quasi-independent runs (shc) (default 3)
-    n_rv_runs:: number of rviper iterations (default 10)
-    n_v_runs:: number of viper runs for each r_viper cycle (default 3)
-    outlier_percentile:: percentile above which outliers are removed every rviper iteration (default 95.0)
-    iteration_start:: starting iteration for rviper, 0 means go to the most recent one (default 0)
-    npad:: padding size for 3D reconstruction (default 2)
+    npad:: padding size for 3D reconstruction: (default 2)
     fl:: cut-off frequency applied to the template volume: using a hyperbolic tangent low-pass filter (default 0.25)
     aa:: fall-off of hyperbolic tangent low-pass filter: (default 0.1)    
     pwreference:: text file with a reference power spectrum: (default none)
     mask3D:: 3D mask file: (default sphere)
     moon_elimination:: elimination of disconnected pieces: two arguments: mass in KDa and resolution in px/A separated by comma, no space (default none)
-    criterion_name:: criterion for deciding whether in the current RVIPER iteration the reconstructed volumes have a core set of stable projections: '80th percentile', other options:'fastest increase in the last quartile' (default '80th percentile')
+    criterion_name:: criterion for deciding: whether in the current RVIPER iteration the reconstructed volumes have a core set of stable projections. '80th percentile', other options:'fastest increase in the last quartile' (default '80th percentile')
     outlier_index_threshold_method:: method that decides which images to keep: discontinuity_in_derivative, other options:percentile, angle_measure (default discontinuity_in_derivative)
-    angle_threshold:: angle error above which projections are removed every iteration if 'angle_measure' method is used (default 30)
+    angle_threshold:: angle error: above which projections are removed every iteration if 'angle_measure' method is used. (default 30)
 
 == Output ==
+    output_directory:: directory name into which the results will be written: if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results. (default required string)
 
-output_directory: directory name into which the output files will be written.  If it does not exist, the directory will be created.  If it does exist, the program will continue executing from where it stopped (if it did not already reach the end). The "--use_latest_master_directory" option can be used to choose the most recent directory that starts with "master". 
+If the specified output directory does exist, the program will continue executing from where it stopped (if it did not already reach the end). The "--use_latest_master_directory" option can be used to choose the most recent directory that starts with "master". 
 
 The directory structure generated by sxrviper is shown in the figure below. Each "runXXX" directory contains the output of running the VIPER algorithm (please see [[sxviper]]). The "runXXX" directory contains the reconstructed volume of stage1, refvolf2.hdf, and parameters into refparams2.txt. After stage 2, the final volume and parameters will be written to volf.hdf and params.txt. Other output files are log.txt and previousmax.txt. Each "mainXXX" directory contains the output of "n_v_runs" viper runs (default 3). The number of "mainXXX" directories is given by "n_rv_runs".
 
