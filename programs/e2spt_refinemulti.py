@@ -621,8 +621,11 @@ def main():
 	
 	classtxtfile = options.path + '/class_membership.txt'
 	
-	previous_classes = {'1':'1'} #we initialize these dictionaries with different values. When identical (further down), the algorithm has converged
-	classes = {'2':'2'}
+	previous_classes = {'1':[]} #we initialize two dictionaries with different values. They will be changed/updated as iterations progress. When identical, the algorithm has converged
+	classes = {'2':[]}
+	
+	#import operator
+	from operator import itemgetter	
 	
 	for it in range( options.iter+1 ):
 		print "\n\nrefining all references in iteration", it
@@ -643,16 +646,20 @@ def main():
 			print "\nin inter %d there are these many avgs %d" %(it, len(avgs))
 			#for reftag in avgs:
 			#	print "\nin iter %d writing avgs from previous iter it-1 %d to this reftag %s from avgs" %(it, it-1, reftag)
+			
+			print "\navgs are", avgs
+			print "\nreffilesrefine are", reffilesrefine
 				
 			for refindx in reffilesrefine:
-				reftag = str(refindx)
+				#reftag = str(refindx)
+				reftag = refindx
 				if avgs[ reftag ] and avgs[reftag] != None and avgs[reftag]!='None':
 					newref = avgs[ reftag ]
 					print "\nnewref with refindx %d stats are" %(int(refindx)) 
 					print newref['mean'],newref['mean_nonzero'],newref['sigma']
 							
 					ref = reffilesrefine[refindx]
-					if reftag in ref:
+					if str(reftag) in ref:
 						if '_iter' in ref:
 							newreffile = ref.split('_iter')[0] + '_iter' + str(it-1).zfill( len( str( options.iter ))) + '.hdf'
 						else:
@@ -672,7 +679,7 @@ def main():
 							print "files in path are", os.listdir(options.path)
 						
 			
-					print "adding newreffile %s to newreffiles with reftag %s" %( newreffile, reftag )
+					print "adding newreffile %s to newreffiles with reftag %d" %( newreffile, reftag )
 					newreffiles.update({ reftag: newreffile } )
 				else:
 					print "there is no avg in avgs with refindx or reftag %d " %( int(refindx) )
@@ -852,8 +859,7 @@ def main():
 		Analyze all results and classify particles based on them
 		'''			
 		
-		if not finalize:
-			from operator import itemgetter						
+		if not finalize:					
 	
 			print "I've aligned all the particles in the data set to all the references for iter %d and will now classify them from the masterInfo dict" %(it), masterInfo
 		
@@ -908,8 +914,8 @@ def main():
 						pclassmems.update( { pclassid:ptcls } )
 			
 				
-					print "classmems",classmems
-					print "pclassmems",pclassmems
+					#print "classmems",classmems
+					#print "pclassmems",pclassmems
 			
 					if pclassmems == classmems:
 						print "\nAlgorithm has converged. Two consecutive iterations yielded the same classification. EXITING"
@@ -924,23 +930,32 @@ def main():
 			#klassIndx = 0
 			klassesLen = len(classes)
 			print "(e2spt_refinemulti.py) there are these many classes with particles",len(classes)
-			print "classes are", classes
+			print "\n\nclasses are", classes
 		
 		
 		
 		if not finalize:
 			f = open( classtxtfile, 'a')
-			f.write('ITERATION ' + str(it) + '\n')
-		
+			linei = 'ITERATION ' + str(it) + '\n'
+			if it>0:
+				linei = '\n' + linei
+			f.write( linei )
+				
 		
 		
 		kkk = 0
-		for klass in classes:
+		
+		classes_sorted = sorted( classes.items(), key=itemgetter(0))
+		print "\n\nclasses sorted are", classes_sorted
+		
+		for klass in classes_sorted:
 			#print "\n\nThe particles and their aliparams, for this class", klass
 			#print "are:", classes[ klass ]
-		
-			klassIndx = int( klass.replace('ref','') )
-		
+			print "\nklass is", klass
+			#klassIndx = int( klass.replace('ref','') )
+			
+			klassIndx = int( klass[0] )
+			
 			#ptclsFinal = {}
 			#for key in klass:
 				#ptclnum = int)
@@ -948,13 +963,14 @@ def main():
 				#ptclsFinal.update({ ptclnum : ptclTransform })
 			
 			if not finalize:
-				f.write('CLASS '+ str(klass) +': ')
+				f.write('CLASS '+ str(klassIndx) +': ')
 			
-			if classes[ klass ]:
-				
+			#if classes[ klass ]:
+			if len(klass[1]) > 0 :
 				if not finalize:
 					print "\n\nsending particles in class %d to averaging" %( klassIndx ) 
-					thisclass = classes[klass]
+					#thisclass = classes[klass]
+					thisclass = klass[1]
 					ptclsinthisclass = []
 				
 					print "\nthisclass is", thisclass
@@ -963,22 +979,39 @@ def main():
 					
 				
 					line=''
-					print "\n\n\nfor class %d in iter %d" %( int(klass),it)
+					print "\n\n\nfor class %d in iter %d" %( klassIndx,it)
 					if ptclsinthisclass:
 						print "ptclsinthisclass is and type", ptclsinthisclass, type(ptclsinthisclass)
 						ptclsinthisclass.sort()
-						print "after sorting ptclsinthisclass is", ptclsinthisclass
+						
+						ptclsinpreviousclass = []
+						
+						if str( klassIndx) in previous_classes:
+							previousclass = previous_classes[ str(klassIndx) ]	
+							for p in previousclass:
+								ptclsinpreviousclass.append( p[0] )							
+						else:
+							print "\nprevious_classes[klassIndx] failed because previous_classes is", previous_classes
+							print "while klassIndx is", klassIndx
+						
+						
 						try:
-							line =','.join( [str(pp) for pp in ptclsinthisclass ] ) + '\n'
+							if it == 0:
+								line =','.join( [str(pp) for pp in ptclsinthisclass ] ) + '\n'
+							else:
+								line =','.join( [str(pp) if pp in ptclsinpreviousclass else str(pp)+'*' for pp in ptclsinthisclass ] ) + '\n'
 						except:
+							line = '\n'
 							print "class might be empty, ptclsinthisclass.sort() is"		
+					
+					
 					f.write( line )	
 				
-					print classes[klass]
+					#print classes[klass]
 					print "\n\n"
 
-				ret = makeAverage( options, classes[klass], klassIndx, klassesLen, it, finalize, originalCompletePath)
-					
+				#ret = makeAverage( options, classes[klass], klassIndx, klassesLen, it, finalize, originalCompletePath)
+				ret = makeAverage( options, klass[1], klassIndx, klassesLen, it, finalize, originalCompletePath)
 				#ret = makeAverage(options, ic,results,it)
 				
 				if not finalize:
@@ -995,7 +1028,8 @@ def main():
 				
 					#print "\nappending ref",ref
 					print "appending ref %d to avgs as klass %s" % ( int(klassIndx), klass )
-					avgs.update({ klass : ref })
+					##avgs.update({ klass : ref })
+					avgs.update({ klassIndx : ref })
 
 			else:
 				print "\nthe klass %d was empty (no particles were assgined to it). You might have too many classes." % ( klassIndx )	
@@ -1005,7 +1039,8 @@ def main():
 				ref = None
 				weights = None
 			
-				avgs.update({ klass : ref })
+				avgs.update({ klassIndx : ref })
+				##avgs.update({ klass : ref })
 		
 			kkk+=1
 			#klassIndx += 1				
@@ -1138,12 +1173,12 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 	#js = js_open_dict(jsdict)
 	
 	
-			
+	tmp = 0		
 	ptclsAdded = 0
 	for k in klass:
 		#print "klass is", klass
 		weight = 1.0
-		if klass and len(klass) > 0:
+		if k and len(klass) > 0:
 			
 			#print "\n\nk in klass is", k
 			#print "\nThe index of the particle to add is",k[0]
@@ -1226,11 +1261,19 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 				ptcl['xform.align3d'] = ptclTransform
 			
 				print "\n\nFinal iteration, and options.saveali on, so saving class_ptcls\n\n"
-			
-				classStack = originalCompletePath + "/class" + str( klassIndx ).zfill( len( str (klassesLen))) + "_ptcl.hdf"
-				#print "The class name is", classname
-				#sys.exit()
-				ptcl.write_image(classStack,-1)	
+				
+				tmp = 1
+				
+				ptcl.write_image( originalCompletePath + '/tmp_stack.hdf',-1)	
+	
+	
+	if tmp:
+		classStackFile = "class" + str( klassIndx ).zfill( len( str (klassesLen))) + "_ptcl.hdf"
+		classStackPath = originalCompletePath + "/" + classStackFile 
+		
+		os.rename( originalCompletePath + '/tmp_stack.hdf', classStackPath )
+	
+	
 	#js.close()
 	
 	if not finalize:
