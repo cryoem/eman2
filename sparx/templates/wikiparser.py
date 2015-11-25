@@ -330,6 +330,7 @@ def main():
 	wiki_file_path_list.append("../doc/window.txt")
 	wiki_file_path_list.append("../doc/isac.txt")
 	wiki_file_path_list.append("../doc/viper.txt")
+	wiki_file_path_list.append("../doc/rviper.txt")
 	wiki_file_path_list.append("../doc/meridien.txt")
 	wiki_file_path_list.append("../doc/3dvariability.txt")
 	wiki_file_path_list.append("../doc/locres.txt")
