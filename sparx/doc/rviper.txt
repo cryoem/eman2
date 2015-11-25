@@ -29,7 +29,8 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
     stack:: set of 2-D images in a stack file (format hdf): images have to be squares (''nx''=''ny'', nx, ny denotes the image size) (default required string)
     radius:: radius of the particle: has to be less than < int(nx/2)-1 (default required int)
 
-    * The parameters preceded with -- are optional and default values are given in parenthesis.  Note '''ir, ou, rs, xr, yr, ts''' are in pixels while '''delta, an''' are in degrees.
+    * The remaining parameters are optional.  
+    Note '''ir, ou, rs, xr, yr, ts''' are in pixels while '''delta, an''' are in degrees.
 
     ir:: inner radius for rotational search: > 0 (default 1)
     rs:: step between rings in rotational search: >0 (default 1)
