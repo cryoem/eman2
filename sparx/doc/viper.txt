@@ -6,7 +6,7 @@ sxviper - Validated ''ab initio'' 3D structure determination, aka Validation of 
 
 ''usage in command line''
 
-sxviper.py stack  directory  --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range --mask3D=mask3D --moon_elimination=moon_elimination --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1 --nruns=nruns --doga=doga --fl=fl --aa=aa --pwreference=pwreference 
+sxviper.py stack  directory  --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range --mask3D=mask3D --moon_elimination=moon_elimination --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1 --nruns=nruns --doga=doga --fl=fl --aa=aa --pwreference=pwreference --debug
 
 
 === Typical usage ===
