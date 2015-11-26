@@ -47,6 +47,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 	keyword_dict = {}
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
 	keyword_dict["use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
+	keyword_dict["defocuserror"]                = SXkeyword_map(0, "")           # --defocuserror (contains keyworkd 'focus' but this should be float type)
 	# Use priority 1 for output
 	keyword_dict["output"]                      = SXkeyword_map(1, "output")     # output.hdf, output_directory, outputfile
 	keyword_dict["outdir"]                      = SXkeyword_map(1, "output")     # outdir1, outdir2, outdir, --outdir=output_directory
