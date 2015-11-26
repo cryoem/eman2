@@ -83,25 +83,13 @@ def main():
 	
 	parser.add_header(name="caheader", help="""Options below this label are specific to sptclassaverage""", title="### sptclassaverage options ###", row=3, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
+	
+	'''
+	STANDARD PARAMETERS
+	'''
 	parser.add_argument("--path",type=str,default='spt',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
 	
 	parser.add_argument("--input", type=str, default='',help="""Default=None. The name of the input volume stack. MUST be HDF since volume stack support is required.""", guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	
-	#parser.add_argument("--output", type=str, default='avg.hdf', help="""Default=avg.hdf. The name of the output class-average stack. MUST be HDF since volume stack support is required.""", guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	
-	parser.add_argument("--radius", type=float, default=0, help="""Default=0 (which means it's not used by default). Hydrodynamic radius of the particle in Angstroms. This will be used to automatically calculate the angular steps to use in search of the best alignment. Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels. Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that.""")
-	
-	parser.add_argument("--precision",type=float,default=1.0,help="""Default=1.0. Precision in pixels to use when figuring out alignment parameters automatically using --radius. Precision would be the number of pixels that the the edge of the specimen is moved (rotationally) during the finest sampling, --falign. If precision is 1, then the precision of alignment will be that of the sampling (apix of your images) times the --shrinkfine factor specified.""")
-	
-	parser.add_argument("--search", type=int,default=8,help=""""Default=8. During COARSE alignment, translational search in X, Y and Z, in pixels. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
-	
-	#parser.add_argument("--searchx", type=int,default=8,help=""""Default=0. Not used. During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
-
-	#parser.add_argument("--searchy", type=int,default=8,help=""""Default=8. During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
-
-	#parser.add_argument("--searchz", type=int,default=8,help=""""Default=8. During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
-	
-	parser.add_argument("--searchfine", type=int,default=2,help=""""Default=2. During FINE alignment translational search in X, Y and Z, in pixels. Default=2. This WILL overwrite any search: provided through --falign, EXCEPT if you provide --searchfine=2, which is the default. In general, just avoid providing search twice (through here and through the fine aligner --falign). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
 		
 	parser.add_argument("--iter", type=int, default=1, help="""Default=1. The number of iterations to perform.""", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
 	
@@ -115,74 +103,24 @@ def main():
 	
 	parser.add_argument("--sym", type=str,dest = "sym", default='', help = """Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	
-	parser.add_argument("--mask",type=str,default="mask.soft:outer_radius=-4", help="""Default is mask.soft:outer_radius=-4. Masking processor applied to particles before alignment. IF using --clipali, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--align",type=str,default="rotate_translate_3d_tree",help="""Default is rotate_translate_3d_tree. See e2help.py aligners to see the list of parameters the aligner takes (for example, if there's symmetry, supply --align rotate_translate_3d_tree:sym=icos). This is the aligner used to align particles to the previous class average. Specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	
-	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
-	
-	parser.add_argument("--normproc",type=str, default='normalize.edgemean',help="""Default is 'normalize.edgemean' (see 'e2help.py processors -v 10' at the command line). Normalization processor applied to particles before alignment. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
-	
-	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	
-	parser.add_argument("--preprocess",type=str,default='',help="""Any processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	
-	parser.add_argument("--preprocessfine",type=str,default='',help="""Any processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.""")
-	
-	parser.add_argument("--lowpass",type=str,default='filter.lowpass.gauss:cutoff_freq=0.05',help="""Default=filter.lowpass.gauss:cutoff_freq=0.05. A lowpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	
-	parser.add_argument("--lowpassfine",type=str,default='filter.lowpass.gauss:cutoff_freq=0.1',help="""Default=filter.lowpass.gauss:cutoff_freq=0.1. A lowpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.""")
-
-	parser.add_argument("--highpass",type=str,default='',help="""Default=None. A highpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	
-	parser.add_argument("--highpassfine",type=str,default='',help="""Default=None. A highpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.""")
-
-	parser.add_argument("--shrink", type=int,default=1,help="""Default=1 (no shrinking). Optionally shrink the input volumes by an integer amount for coarse alignment.""", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
-	
-	parser.add_argument("--shrinkfine", type=int,default=1,help="""Default=1 (no shrinking). Optionally shrink the input volumes by an integer amount for refine alignment.""", guitype='intbox', row=5, col=2, rowspan=1, colspan=1, mode='alignment')
-	
-	parser.add_argument("--clipali",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
-	
-	parser.add_argument("--postprocess",type=str,default='',help="""Default=None. A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.""",guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	
-	parser.add_argument("--procfinelikecoarse",action='store_true',default=False,help="""If you supply this parameters, particles for fine alignment will be preprocessed identically to particles for coarse alignment by default. If you supply this, but want specific parameters for preprocessing particles for also supply: fine alignment, nd supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.""")
+	parser.add_argument("--aligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used for the --align aligner. Do not specify unless you need to use another specific aligner.""",guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 	
 	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment.""", default=1, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 	
-	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=16:dphi=16",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
-	
-	parser.add_argument("--aligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used for the --align aligner. Do not specify unless you need to use anotherspecific aligner.""",guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
-
-
-	#parser.add_argument("--ialign",type=str,default="refine_3d_grid:delta=4:range=8:search=4",help="""Default="refine_3d_grid:delta=3:range=8:search=4". This is the second stage aligner used for intermediate alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
-			
-	#parser.add_argument("--ialigncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
-
-	
-	parser.add_argument("--falign",type=str,default="refine_3d_grid:delta=2:range=4:search=2",help="""Default="refine_3d_grid:delta=2:range=4:search=2". This is the second stage aligner used to fine-tune the first alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
-			
-	parser.add_argument("--faligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
-
-	parser.add_argument("--translateonly",action='store_true',default=False,help="""Default=False. This will force the aligner to not do any rotations and thus serves for translational centering. Specify search values through --search, otherwise its default value will be used.""")	
-		
-	parser.add_argument("--filterbyfsc",action='store_true',default=False,help="""If on, this parameter will use dynamic FSC filtering. --lowpass will be used to build initial references if no --ref supplied, then, the FSC between the even and odd initial references will be used to filter the data during preprocessing. If --ref is supplied, --lowpass will be used during the first iteration to align the particles against the reference. Thereafter, the FSC between the most current particle average and the original reference (--ref) will be used in the next iteration.""")
-	
-	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average. Default=mean.tomo.""")
-	
-	parser.add_argument("--inputaliparams",type=str,default="",help="""Default=None. .json file containing a dict of transforms to apply to 'pre-align' the particles.""", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
-	
-	parser.add_argument("--breaksym",action="store_true", default=False,help="""Default=False. Break symmetry. Do not apply symmetrization after averaging, even if searching the asymmetric unit provided through --sym only for alignment. Default=False""", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
-	
-	#parser.add_argument("--groups",type=int,default=0,help="""Default=0 (not used; data not split). This parameter will split the data into a user defined number of groups. For purposes of gold-standard FSC computation later, select --group=2.""")
-		
-	parser.add_argument("--randomizewedge",action="store_true",  default=False,help="""Default=False. This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned""")
-	
 	parser.add_argument("--savepreproc",action="store_true",  default=False,help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
+		
+	parser.add_argument("--clipali",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
+
+	parser.add_argument("--preavgproc1",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 	
-	parser.add_argument("--autocenter",type=str, default='',help="""WARNING: Experimental. Default=None. Autocenters each averaged pair during initial average generation with --btref and --hacref. Will also autocenter the average of all particles after each iteration of iterative refinement. Options are --autocenter=xform.centerofmass (self descriptive), or --autocenter=xform.centeracf, which applies auto-convolution on the average.""")
-	
-	parser.add_argument("--autocentermask",type=str, default='',help="""WARNING: Experimental. Requires --autocenter. Default=None. Masking processor to apply before autocentering. See 'e2help.py processors -v 10' at the command line.""")
-	
-	parser.add_argument("--autocenterpreprocess",action='store_true', default=False,help="""WARNING: Experimental. Requires --autocenter. Default=False. This will apply a highpass filter at a frequency of half the box size times the apix, shrink by 2, and apply a low pass filter at half nyquist frequency to any computed average for autocentering purposes if --autocenter is provided. Default=False.""")
-	
+	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
+
+	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tiltaxis. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
+
+	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
+
 	parser.add_argument("--parallel",default="thread:1",help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
@@ -197,26 +135,11 @@ def main():
 
 	parser.add_argument("--apix",type=float,default=0.0,help="""Default=0.0 (not used). Use this apix value where relevant instead of whatever is in the header of the reference and the particles.""")
 	
-	parser.add_argument("--notmatchimgs",action='store_true',default=False,help="""Default=True. This option prevents applying filter.match.to to one image so that it matches the other's spectral profile during preprocessing for alignment purposes.""")
-	
-	parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clipali, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
-	
-	parser.add_argument("--preavgproc1",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
-	
-	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 
-	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tiltaxis. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
-
-	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
-
-	#parser.add_argument("--automask",action="store_true",help="""Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.""")
 	
-	#parser.add_argument("--resample",action="store_true",help="""If set, will perform bootstrap resampling on the particle data for use in making variance maps.""",default=False)
-
 	'''
 	CLASSAVERAGE SPECIFIC PARAMETERS
 	'''
-	
 	parser.add_argument("--goldstandardoff", action="store_true", default=False, help="""Default=False. This will PREVENT splitting the dataset provided through --input into two groups, and the entire dataset will be refined together. If this parameter is NOT supplied (and thus the refinement is 'gold standard') and --ref is supplied, two copies of the reference will be generated and randomphase-lowpass filtered to the resolution specified through --refrandphase.""")
 
 	parser.add_argument("--classmx", type=str, default='', help="""Default=None. The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.""")
@@ -245,6 +168,109 @@ def main():
 	
 	parser.add_argument("--keepsig", action="store_true", default=False,help="""Default=False. Causes the keep argument to be interpreted in standard deviations.""", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 
+	
+	'''
+	====================
+	ADVANCED PARAMETERS
+	====================
+	'''
+	
+	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average. Default=mean.tomo.""")
+
+	
+	'''
+	PRE-FFT processing parameters
+	'''
+	
+	#parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clipali, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
+
+	parser.add_argument("--shrink", type=int,default=1,help="""Default=1 (no shrinking). Optionally shrink the input volumes by an integer amount for coarse alignment.""", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
+	
+	parser.add_argument("--shrinkfine", type=int,default=1,help="""Default=1 (no shrinking). Optionally shrink the input volumes by an integer amount for refine alignment.""", guitype='intbox', row=5, col=2, rowspan=1, colspan=1, mode='alignment')
+	
+	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	parser.add_argument("--mask",type=str,default='', help="""Default=None. Masking processor applied to particles before alignment. IF using --clipali, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
+	
+	parser.add_argument("--normproc",type=str, default='',help="""Default=None (see 'e2help.py processors -v 10' at the command line). Normalization processor applied to particles before alignment. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
+	
+	
+	'''
+	POST-FFT filtering parameters
+	'''
+	parser.add_argument("--preprocess",type=str,default='',help="""Any processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	parser.add_argument("--preprocessfine",type=str,default='',help="""Any processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.""")
+	
+	parser.add_argument("--lowpass",type=str,default='',help="""Default=None. A lowpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	parser.add_argument("--lowpassfine",type=str,default='',help="""Default=None. A lowpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.""")
+
+	parser.add_argument("--highpass",type=str,default='',help="""Default=None. A highpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	parser.add_argument("--highpassfine",type=str,default='',help="""Default=None. A highpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.""")
+
+	parser.add_argument("--matchimgs",action='store_true',default=False,help="""Default=False. Applies filter.matchto to one image so that it matches the other's spectral profile during preprocessing for pair-wise alignment purposes.""")
+	
+	parser.add_argument("--filterbyfsc",action='store_true',default=False,help="""Default=False. If on, this parameter will use dynamic FSC filtering. --lowpass will be used to build initial references if no --ref supplied, then, the FSC between the even and odd initial references will be used to filter the data during preprocessing. If --ref is supplied, --lowpass will be used during the first iteration to align the particles against the reference. Thereafter, the FSC between the most current particle average and the original reference (--ref) will be used in the next iteration.""")
+
+	
+	'''
+	OTHER advanced parameters
+	'''
+	parser.add_argument("--radius", type=float, default=0, help="""Default=0 (which means it's not used by default). Hydrodynamic radius of the particle in Angstroms. This will be used to automatically calculate the angular steps to use in search of the best alignment. Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels. Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that.""")
+	
+	parser.add_argument("--precision",type=float,default=1.0,help="""Default=1.0. Precision in pixels to use when figuring out alignment parameters automatically using --radius. Precision would be the number of pixels that the the edge of the specimen is moved (rotationally) during the finest sampling, --falign. If precision is 1, then the precision of alignment will be that of the sampling (apix of your images) times the --shrinkfine factor specified.""")
+	
+	parser.add_argument("--search", type=int,default=8,help=""""Default=8. During COARSE alignment, translational search in X, Y and Z, in pixels. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
+	
+	#parser.add_argument("--searchx", type=int,default=8,help=""""Default=0. Not used. During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
+
+	#parser.add_argument("--searchy", type=int,default=8,help=""""Default=8. During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
+
+	#parser.add_argument("--searchz", type=int,default=8,help=""""Default=8. During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
+	
+	parser.add_argument("--searchfine", type=int,default=2,help=""""Default=2. During FINE alignment translational search in X, Y and Z, in pixels. Default=2. This WILL overwrite any search: provided through --falign, EXCEPT if you provide --searchfine=2, which is the default. In general, just avoid providing search twice (through here and through the fine aligner --falign). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
+		
+	
+	parser.add_argument("--postprocess",type=str,default='',help="""Default=None. A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.""",guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	parser.add_argument("--procfinelikecoarse",action='store_true',default=False,help="""If you supply this parameters, particles for fine alignment will be preprocessed identically to particles for coarse alignment by default. If you supply this, but want specific parameters for preprocessing particles for also supply: fine alignment, nd supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.""")
+	
+	
+	parser.add_argument("--falign",type=str,default="refine_3d_grid:delta=2:range=4:search=2",help="""Default="refine_3d_grid:delta=2:range=4:search=2". This is the second stage aligner used to fine-tune the first alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+			
+	parser.add_argument("--faligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
+
+	parser.add_argument("--translateonly",action='store_true',default=False,help="""Default=False. This will force the aligner to not do any rotations and thus serves for translational centering. Specify search values through --search, otherwise its default value will be used.""")	
+		
+	
+	
+	parser.add_argument("--inputaliparams",type=str,default="",help="""Default=None. .json file containing a dict of transforms to apply to 'pre-align' the particles.""", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
+	
+	parser.add_argument("--breaksym",action="store_true", default=False,help="""Default=False. Break symmetry. Do not apply symmetrization after averaging, even if searching the asymmetric unit provided through --sym only for alignment. Default=False""", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
+	
+	#parser.add_argument("--groups",type=int,default=0,help="""Default=0 (not used; data not split). This parameter will split the data into a user defined number of groups. For purposes of gold-standard FSC computation later, select --group=2.""")
+		
+	parser.add_argument("--randomizewedge",action="store_true",  default=False,help="""Default=False. This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned""")
+	
+	
+	parser.add_argument("--autocenter",type=str, default='',help="""WARNING: Experimental. Default=None. Autocenters each averaged pair during initial average generation with --btref and --hacref. Will also autocenter the average of all particles after each iteration of iterative refinement. Options are --autocenter=xform.centerofmass (self descriptive), or --autocenter=xform.centeracf, which applies auto-convolution on the average.""")
+	
+	parser.add_argument("--autocentermask",type=str, default='',help="""WARNING: Experimental. Requires --autocenter. Default=None. Masking processor to apply before autocentering. See 'e2help.py processors -v 10' at the command line.""")
+	
+	parser.add_argument("--autocenterpreprocess",action='store_true', default=False,help="""WARNING: Experimental. Requires --autocenter. Default=False. This will apply a highpass filter at a frequency of half the box size times the apix, shrink by 2, and apply a low pass filter at half nyquist frequency to any computed average for autocentering purposes if --autocenter is provided. Default=False.""")
+	
+	
+	
+	
+	#parser.add_argument("--automask",action="store_true",help="""Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.""")
+	
+	#parser.add_argument("--resample",action="store_true",help="""If set, will perform bootstrap resampling on the particle data for use in making variance maps.""",default=False)
+
+	
 	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
 	
 	(options, args) = parser.parse_args()
@@ -491,81 +517,83 @@ def main():
 
 	
 	
-	if 'tree' in options.align:
-		options.falign = None
-		options.mask = None
-		options.lowpass = None
-		options.highpass = None
-		options.normproc = None
-		options.lowpassfine = None
-		options.highpassfine = None
-		options.preprocess = None
-		options.preprocessfine = None
+	#if 'tree' in options.align:
+	#	options.falign = None
+	#	options.mask = None
+	#	options.lowpass = None
+	#	options.highpass = None
+	#	options.normproc = None
+	#	options.lowpassfine = None
+	#	options.highpassfine = None
+	#	options.preprocess = None
+	#	options.preprocessfine = None
 		
-	elif not options.nopreprocprefft:
+	#else: 
+	if options.mask or options.normproc or options.threshold or options.clipali:		
+		tasks=[]
+		results=[]
 		
-		if options.mask or options.normproc or options.threshold or options.clipali:		
-			tasks=[]
-			results=[]
+		#preprocprefftstack=''
+		#if options.savepreproc:
+		preprocprefftstack = options.path + '/' + os.path.basename(options.input).replace('.hdf','_preproc.hdf')
+	
+		for i in range(nptcl):
+			dimg = EMData(8,8,8)
+			dimg.to_one()
+			dimg.write_image( preprocprefftstack, i )
+	
+		for i in range(nptcl):
 			
-			preprocprefftstack = options.path + '/' + os.path.basename(options.input).replace('.hdf','_preproc.hdf')
+			img = EMData( options.input, i )
 			
-			for i in range(nptcl):
-				dimg = EMData(8,8,8)
-				dimg.to_one()
-				dimg.write_image( preprocprefftstack, i )
-			
-			for i in range(nptcl):
-				
-				img = EMData( options.input, i )
-				
-				if options.parallel:
-					task = Preprocprefft3DTask( ["cache",options.input,i], options, i, preprocprefftstack )
-					tasks.append(task)
-			
-				else:
-					pimg = preprocessingprefft( img, options)
-					pimg.write_image( preprocprefftstack, i )
-			
-			
-			if options.parallel and tasks:
-				tids = etc.send_tasks(tasks)
-				if options.verbose: 
-					print "preprocessing %d tasks queued" % (len(tids)) 
-
+			if options.parallel:
+				task = Preprocprefft3DTask( ["cache",options.input,i], options, i, preprocprefftstack )
+				tasks.append(task)
 		
-			results = get_results_preproc( etc, tids, options.verbose )
-			print "preprocessing results are", results	
-	
-			options.input = preprocprefftstack
-	
-	
-	
-			#cache needs to be reloaded with the new options.input		
-			if options.parallel :
-	
-				if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
-					options.parallel = None
-					etc = None
-		
-				else:
-					print "\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!"
-					print "\n\n"
-					from EMAN2PAR import EMTaskCustomer
-					etc=EMTaskCustomer(options.parallel)
-					pclist=[options.input]
-		
-					if options.ref: 
-						pclist.append(options.ref)
-					etc.precache(pclist)
 			else:
-				etc=''
-		else:
-			#nothing to do
-			pass
+				pimg = preprocessingprefft( img, options)
+
+				if options.savepreproc:
+					pimg.write_image( preprocprefftstack, i )
 		
-		#turn off this preprocessing if already done
-		options.nopreprocprefft = True
+		
+		if options.parallel and tasks:
+			tids = etc.send_tasks(tasks)
+			if options.verbose: 
+				print "preprocessing %d tasks queued" % (len(tids)) 
+
+	
+		results = get_results_preproc( etc, tids, options.verbose )
+		print "\n\n (e2spt_classaverage)(main) preprocessing results are", results	
+		
+		#if options.savepreproc:
+		
+		print "input changing to preprocprefftstack"
+		options.input = preprocprefftstack
+
+		#cache needs to be reloaded with the new options.input		
+		if options.parallel :
+
+			if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
+				options.parallel = None
+				etc = None
+	
+			else:
+				print "\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!"
+				print "\n\n"
+				from EMAN2PAR import EMTaskCustomer
+				etc=EMTaskCustomer(options.parallel)
+				pclist=[options.input]
+	
+				if options.ref: 
+					pclist.append(options.ref)
+				etc.precache(pclist)
+		else:
+			etc=''
+	else:
+		#nothing to do
+		pass
+		
 	
 	if options.inputaliparams: 
 		preOrientationsDict = js_open_dict(options.inputaliparams)
@@ -1603,32 +1631,34 @@ def sptParseAligner( options ):
 			
 	print "\n\nBefore adding and fixing searches, options.falign is", options.falign, type(options.falign)	
 	
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-		if 'search' not in options.falign and 'refine_3d_grid' in options.falign:		
-			options.falign += ':search=' + str( options.searchfine )
+	if options.falign: 
+		if options.falign != 'None' and options.falign != 'none':
+			if 'refine_3d_grid' in options.falign:
+				if 'search' not in options.falign:
+					options.falign += ':search=' + str( options.searchfine )
 			
-		else:
-			searchF = options.falign.split('search=')[-1].split(':')[0]
-			searchfinedefault = 2
+				else:
+					searchF = options.falign.split('search=')[-1].split(':')[0]
+					searchfinedefault = 2
+		
+					if options.searchfine != searchfinedefault:
+					
+						prefix = options.falign.split('search=')[0]
+						trail = options.falign.split('search=')[-1].split(':')[-1]
 			
-			if options.searchfine != searchfinedefault:
-						
-				prefix = options.falign.split('search=')[0]
-				trail = options.falign.split('search=')[-1].split(':')[-1]
-				
-				options.falign =  prefix + 'search=' + str(options.searchfine)
-				
-				if len(trail) > 2 and '=' in trail:
-				
-					options.falign += ':' + trail 
+						options.falign =  prefix + 'search=' + str(options.searchfine)
 			
-				print """\nWARNING: --searchfine is different from search= provided through
-				--falign or its default value of 2. There's no need to specify both, but 
-				if you did, --searchfine takes precedence :-) ."""
-				#sys.exit()
+						if len(trail) > 2 and '=' in trail:
 			
-			elif options.searchfine == searchfinedefault:
-				options.searchfine = searchF	
+							options.falign += ':' + trail 
+		
+						print """\nWARNING: --searchfine is different from search= provided through
+						--falign or its default value of 2. There's no need to specify both, but 
+						if you did, --searchfine takes precedence :-) ."""
+						#sys.exit()
+		
+					elif options.searchfine == searchfinedefault:
+						options.searchfine = searchF	
 	
 	
 	return options
@@ -1813,6 +1843,8 @@ Function to generate the reference either by reading from disk or bootstrapping
 '''
 def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref=0):
 	
+	import glob, shutil
+	
 	refsdict = {}
 	elements = cmdwp.split(' ')
 	
@@ -1920,7 +1952,12 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using hierarchical ascendant classification through e2spt_hac.py"
 			
 				subsetForHacRef = 'spthacrefsubset'+ klassidref + '.hdf'
-			
+				
+				try:
+					os.remove(subsetForHacRef)
+				except:
+					pass
+								
 				i = 0
 				nptclsforref = 10
 				try:
@@ -1963,7 +2000,17 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				
 			
 				hacrefsubdir = 'spthacref' + klassidref
-			
+				
+				
+				try:
+					files=glob.glob(hacrefsubdir+'*')		
+					print "files are", files
+					for path in files: 
+						shutil.rmtree(path)
+				except:
+					pass
+					
+					
 				cmdhac+=' --path=' + hacrefsubdir
 				#cmdhac+=' --iter='+str(niterhac)
 				cmdhac+=' --input='+subsetForHacRef
@@ -2035,7 +2082,13 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				#sys.exit(1)
 			
 				subsetForSsaRef = 'sptssarefsubset'+ klassidref + '.hdf'
-			
+				
+				try:
+					os.remove( subsetForSsaRef )
+				except:
+					pass
+					
+								
 				nptclsforref = 10
 				try:
 					if options.ssaref:
@@ -2054,7 +2107,15 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					i+=1
 			
 				ssarefsubdir = 'sptssaref' + klassidref
-			
+				
+				try:
+					files=glob.glob(ssarefsubdir+'*')
+					for path in files:
+						shutil.rmtree(path)
+				except:
+					pass
+					
+						
 				ssaelements = []
 				print "\nelements are", elements
 				for ele in elements:
@@ -2084,7 +2145,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				cmdssa += ' --path=' + ssarefsubdir
 				cmdssa += ' --symmetrize'
 				cmdssa += ' --average'
-				cmdssa+= ' --nopreprocprefft'
+				#cmdssa+= ' --nopreprocprefft'
 				
 				print "\ncmdssa is", cmdssa
 				
@@ -2183,7 +2244,12 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				
 					
 				subsetForBTRef = 'sptbtrefsubset'+ klassidref + '.hdf'
-			
+				
+				try:
+					os.remove( subsetForBTRef )
+				except:
+					pass
+								
 				i = 0
 				
 				
@@ -2218,7 +2284,15 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 			
 			
 				btrefsubdir = 'sptbtref' + klassidref		
-			
+				
+				try:
+					files=glob.glob(btrefsubdir+'*')
+					for path in files:
+						shutil.rmtree(path)
+				except:
+					pass
+					
+						
 				cmdbt+=' --path=' + btrefsubdir
 				#cmdbt+=' --iter=' + str( niter )
 				cmdbt+=' --input=' + subsetForBTRef
@@ -2255,7 +2329,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				findir = os.listdir(options.path)
 				if subsetForBTRef in findir:
 					print "tried moving subsetForBTRef into path but failed", subsetForBTRef, options.path
-					newsubsetcount = '_'.join( subsetForBTRef.split('_')[:-1]) + '_' + str( int(subsetForBTRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					newsubsetcount = '_'.join( subsetForBTRef.split('_')[:-1]) + '_' + str( int(subsetForBTRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subset exists, add one to the tag count at the end of the subdirectory name
 					os.rename( subsetForBTRef, options.path + '/' + newsubsetcount )
 				else:
 					os.rename( subsetForBTRef, options.path + '/' + subsetForBTRef )
@@ -2703,11 +2777,12 @@ def calcAliStep(options):
 	
 	
 	print "inside calcali options.falign received is", options.falign
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-		#if options.radius:
-		options.falign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=' + str(searchF)
-	else:
-		options.falign = 'None'
+	if options.falign:
+		if options.falign != None and options.falign != 'None' and options.falign != 'none':
+			#if options.radius:
+			options.falign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=' + str(searchF)
+		else:
+			options.falign = 'None'
 		
 	print "and has been set to", options.falign
 	
@@ -2789,13 +2864,11 @@ def sptmakepath(options, stem='spt'):
 
 
 
-def preprocfilter(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,finetag=''):
-
-	print "\n(e2spt_classaverage) preprocessing"
-	#print "Mask and its type are", mask, type(mask)
-	#if options.mask == 'None' or options.mask  == 'none':
-	#	options.mask  = None
+def preprocfilter(image, options, ptclindx=0, tag='ptcls', coarse='yes', round=-1, finetag=''):
 	
+	simage = image.copy()
+	print "\n(e2spt_classaverage) preprocessing"
+
 	if options.lowpass  == 'None' or options.lowpass == 'none':
 		options.lowpass = None
 	
@@ -2804,10 +2877,6 @@ def preprocfilter(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 	
 	if options.preprocess == 'None' or options.preprocess == 'none':
 		options.preprocess = None
-	
-	#if options.threshold == 'None' or options.threshold == 'none':
-	#	options.threshold = None
-	
 	
 	if finetag:
 		try:
@@ -2824,116 +2893,15 @@ def preprocfilter(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 		#print "lowpassfine received is", options.lowpass	
 		pass
 		
-	apix = image['apix_x']
+	apix = simage['apix_x']
 	
-	
-	#'''
-	#Make the mask first 
-	#'''
-	#print "masking"
-	#maskimg = EMData( int(image["nx"]), int(image["ny"]), int(image["nz"]) )
-	#maskimg.to_one()
-	#print "Donde creating mask"
-	
-	
-	simage = image.copy()
-
-
-	
-	#if options.mask and options.mask != 'None' and options.mask != 'none':
-		#if options.verbose:
-	#	print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-	#	maskimg.process_inplace(options.mask[0],options.mask[1])
-		
-	#	print "(e2spt_classaverage)(preprocessing) --mask provided:", options.mask
-		#mask.write_image(options.path + '/mask.hdf',-1)
-	
-	#try:
-	#	if options.maskfile:
-	#		maskfileimg = EMData(options.maskfile,0)
-		
-			#mx = maskfileimg['nx']
-			#my = maskfileimg['ny']
-			#mz = maskfileimg['nz']
-		
-			#mxc = mx/2
-			#myc = my/2
-			#mzc = mz/2
-		
-			#mnewsize = maskimg['nx']
-		
-			#r=Region( (2*mxc - mnewsize)/2, (2*myc - mnewsize)/2, (2*mzc - mnewsize)/2, mnewsize , mnewsize , mnewsize)
-			#maskfileimg.clip_inplace( r )
-			
-	#		if options.clipali or maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
-	#			maskfileimg = clip3D( maskfileimg, maskimg['nx'] )
-		
-		
-	#		maskimg.mult( maskfileimg )
-			
-	#		print "A maskfile was multiplied by the mask", options.maskfile
-	#	else:
-	#		print "Apparently therewas no --maskfile"
-	#		pass
-	#except:
-	#	print "\nWarning: Ignore if parameter --maskfile does not exist in the program you ran. Otherwise, something went wrong."
-
-	
-	#'''
-	#Set the 'mask' parameter for --normproc if normalize.mask is being used
-	#'''
-	#if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-	#	print "normproc is", options.normproc, type(options.normproc)
-	#	if options.normproc[0]=="normalize.mask": 
-	#		options.normproc[1]["mask"]=maskimg
-	
-	#'''
-	#Normalize-Mask
-	#'''	
-	#if mask and mask != 'None' and mask != 'none' or options.maskfile:
-	
-	#try:
-	#	if options.mask or options.maskfile:
-			#if options.shrink:
-			#	maskCoarse = mask.copy()
-			#	maskCoarse.process_inplace('math.meanshrink',{'n':options.shrink})
-	#		print "Masking once"
-			#simage.write_image(options.path + '/imgRawClip.hdf',-1)
-	#		simage.mult(maskimg)
-			#simage.write_image(options.path + '/imgMsk1.hdf',-1)
-	#except:
-	#	pass
-			
-	#if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-	#	simage.process_inplace(options.normproc[0],options.normproc[1])
-		#simage.write_image(options.path + '/imgMsk1norm.hdf',-1)
-
-	#	print "(e2spt_classaverage)(preprocessing) --normproc provided:", options.normproc
-	
-	#try:
-		#if mask and mask != 'None' and mask != 'none' or options.maskfile:
-	#	if options.mask or options.maskfile:
-	#		print "Masking again after normalizing"
-	#		simage.mult(maskimg)
-			#simage.write_image(options.path + '/imgMsk1normMsk2.hdf',-1)
-	#except:
-	#	pass
-		
-	#if lowpass or highpass or preprocess or int(shrink) > 1:
-	#	simage = filters(options,simage,preprocess,lowpass,highpass,shrink)
-	#	#simage.write_image(options.path + '/imgMsk1normMsk2Filts.hdf',-1)
-
-
-	#if options.threshold and options.threshold != 'None' and options.threshold != 'none':
-	#	simage.process_inplace(options.threshold[0],options.threshold[1])
-		#simage.write_image(options.path + '/imgMsk1normMsk2LpFiltsThr.hdf',-1)
 
 	'''
 	#Preprocess, lowpass and/or highpass
 	'''
 	
 	if not finetag:
-		
+		print "(e2spt_classaverage)(preprocessing) trying filters on coarse alignment image"
 		if options.lowpass:
 			print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpass
 			simage.process_inplace(options.lowpass[0],options.lowpass[1])
@@ -2954,6 +2922,7 @@ def preprocfilter(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
 		
 	else:
+		print "(e2spt_classaverage)(preprocessing) trying filters on fine alignment image"
 		try:
 			if options.lowpassfine:
 				print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpassfine
@@ -2978,101 +2947,7 @@ def preprocfilter(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 				#fimage.write_image(options.path + '/imgPrep.hdf',-1)
 		
 		except:
-			print "\nWarning: Ignore if parameter --maskfile does not exist in the program you ran. Otherwise, something went wrong."
-	
-	
-	"""
-	preproclst = ''		
-		
-	lines=[]
-	preproclst = options.path + "/.preproclstfine.txt"	
-	if coarse == 'yes':
-		preproclst = options.path + "/.preproclstcoarse.txt"
-	
-	ptclindxtag = str(ptclindx) + '\n'
-	
-	
-	if tag=='ptcls':
-	
-		try:
-		
-			#print "Trying to save preprocessed"
-			#print "options.savepreproc is", options.savepreproc
-			#print "preproclst is", preproclst
-			#print "ptclindxtag is", ptclindxtag
-			#print "lines are", lines
-			#print "round is", round
-			#print "ptclindx is", ptclindx
-		
-			if options.savepreproc and preproclst and ptclindxtag not in lines and round < 1 and ptclindx > -1:
-			
-				#print "Saving preprocessed!"
-	
-				os.system('touch ' + preproclst)
-				lines = []
-			
-				if preproclst:
-					f=open(preproclst,'r')
-					lines=f.readlines()
-					f.close()
-			
-				#indx=-1
-		
-				#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nParticle indx is", ptclindx
-		
-				#sys.exit() 
-		
-				rootname=options.input.split('/')[-1]
-		
-				#if tag == 'ref':
-				#	rootname = options.ref
-				#	indx=0
-			
-				preprocname = rootname.replace('.hdf','_preprocCoarse.hdf')
-		
-				print "coarse is", coarse
-				#sys.exit()
-		
-				if coarse != 'yes':
-					preprocname = rootname.replace('.hdf','_preprocFine.hdf')
-					print "Saving saved preproc for fine alignment"
-					#sys.exit()
-	
-				if options.path not in preprocname:
-					preprocname = options.path + '/' + preprocname
-		
-				simage.write_image(preprocname,ptclindx)
-		
-				f=open(preproclst,'a')
-				f.write(ptclindxtag)
-				f.close()
-			
-		
-				#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n******************\n*******************\n"
-				#print "Wrote this ptclindxtag", ptclindxtag
-				#print "To this ptclst", preproclst
-				#print "\n******************\n*******************\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-				#sys.exit()
-	
-			#sys.exit()
-		except:
-			if options.savepreproc and round == 0:
-				print "\nWARNING: preprocessed particles not saved even though --savepreproc is on and this is the first iteration."
-		
-			#print "DID not try to save preproc, although options.savepreproc is"
-			#print "options.savepreproc is", options.savepreproc
-			#print "preproclst is", preproclst
-			#print "ptclindxtag is", ptclindxtag
-			#print "lines are", lines
-			#print "round is", round
-			#print "ptclindx is", ptclindx
-		
-			#sys.exit()
-			#pass
-	
-	if options.verbose:
-		print "Done preprocessing ptcl", ptclindx	
-	"""
+			print "filters on fine alignment image failed"
 	
 	return simage
 	
@@ -3109,6 +2984,9 @@ class Preprocprefft3DTask(JSTask):
 		print "\n(e2spt_classaverage)(Preprocprefft3DTask) preprocessing image", indx
 		print "calling preprocessingprefft, sending image"
 		
+		print "img size in preproc class BEFORE preproc function is", img['nx'], img['ny'], img['nz']
+
+		
 		preprocimg = preprocessingprefft( img, classoptions['options'] )
 		
 		#preprocprefftstack = classoptions['options'].path + '/' + classoptions['options'].input.replace('.hdf','_preproc.hdf')
@@ -3119,14 +2997,16 @@ class Preprocprefft3DTask(JSTask):
 		
 		print "preprocimg type is", type(preprocimg)
 		print "header min and max are", preprocimg['maximum'],preprocimg['minimum']
+		print "img size in preproc class AFTER preproc function is", preprocimg['nx'], preprocimg['ny'], preprocimg['nz']
+		
 		print "file to save preproc is", classoptions['outstack']
 		
-		if classoptions['options'].savepreproc and preprocimg:
-			print "\nsaving preproc saving preprocessed image to index %d of file %s" %(indx,classoptions['outstack'] )
-			print "because options.savepreproc is", classoptions['options'].savepreproc
-			preprocimg.write_image( classoptions['outstack'], indx)
-		else:
-			print "\nnot saving preproc image, because options.savepreproc is", classoptions['options'].savepreproc
+		#if classoptions['options'].savepreproc and preprocimg and classoptions['outstack']:
+		print "\nsaving preproc saving preprocessed image to index %d of file %s" %(indx,classoptions['outstack'] )
+		print "because options.savepreproc is", classoptions['options'].savepreproc
+		preprocimg.write_image( classoptions['outstack'], indx)
+		#else:
+		#	print "\nnot saving preproc image, because options.savepreproc is", classoptions['options'].savepreproc
 		
 		print "\nabout to return from  class Preprocprefft3DTask"
 		
@@ -3842,7 +3722,8 @@ class Align3DTask(JSTask):
 		if nptcls == 1:
 			classoptions['ptclnum'] = 0
 		
-		
+		print "\n in alignment class, before alignment function fixedimage and image sizes are", fixedimage['nx'], fixedimage['ny'], fixedimage['nz'], image['nx'], image['ny'], image['nz']
+
 		ret = alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['currentIter'],classoptions['transform'],'e2spt_classaverage',refpreprocess)
 		
 		bestfinal=ret[0]
@@ -3876,9 +3757,6 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	
 	if type(image) is list:
 		image=EMData(image[1],image[2])
-	
-	if not options.notmatchimgs:
-		fixedimage.process_inplace( 'filter.matchto',{'to':image})
 
 	"""
 	CALL the alignment function
@@ -3906,6 +3784,7 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	
 	#print "SENDING reference image in alignment and values are", fixedimage, fixedimage['minimum'],fixedimage['maximum'],fixedimage['sigma'],fixedimage['mean']
 	
+
 	ret=alignment(fixedimage,image,label,options,xformslabel,currentIter,transform,'e2spt_classaverage',refpreprocess)
 
 	bestfinal=ret[0]
@@ -3932,18 +3811,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	from operator import itemgetter	
 	
-	
-	if not options.notmatchimgs:
-		#print "Matching images!"
-		#print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
-			
-		fixedimage.process_inplace( 'filter.matchto',{'to':image})
-	
-	
 	if options.verbose: 
 		print "\n\n!!!!\n(e2spt_classaverage)(alignment)Aligning ",label
 		#print "\n\!!!!!n\n\n\n\n\n\n"
-	
 	
 	round=iter
 	#print "label is", label
@@ -4002,7 +3872,16 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			reffullsize = clip3D( reffullsize, options.clipali )
 			print "full-sized reference is", options.clipali, reffullsize['nx']
 		
-		
+	
+	if options.matchimgs:
+		print "Matching images!"
+		#print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
+		print "their sizes are for fixed and for img",sfixedimage['nx'], sfixedimage['ny'], sfixedimage['nz'], image['nx'], image['ny'], image['nz']
+		try:
+			sfixedimage.process_inplace( 'filter.matchto',{'to':image})
+		except:
+			print "trying to apply filter.matchto, fixedimage and image sizes are", sfixedimage['nx'], sfixedimage['ny'], sfixedimage['nz'], image['nx'], image['ny'], image['nz']
+			
 	print "before refpreprocess, refpreprocess, iter", refpreprocess, iter
 	
 	
@@ -4040,13 +3919,10 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			if 'odd' in label or 'even' in label:
 				savetag = ''
 		
-			if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
+			if options.threshold or options.normproc or options.preprocess or options.lowpass or options.highpass:
 				#print "\nThere IS refpreprocess!"	
 		
 				print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
-				
-				if not options.nopreprocprefft:
-					sfixedimage = preprocessingprefft(sfixedimage,options)
 				
 				sfixedimage = preprocfilter(sfixedimage,options, refindx, savetag ,'yes',round)
 				print "AFTER preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
@@ -4066,8 +3942,6 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
 					print "BEFORE preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
 					
-					if not options.nopreprocprefft:
-						s2fixedimage = preprocessingprefft(s2fixedimage,options)
 					s2fixedimage = preprocfilter(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
 	
 					print "AFTER preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
@@ -4102,7 +3976,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if simage['nx'] != options.clipali or simage['ny'] != options.clipali or simage['nz'] != options.clipali:
 			simage = clip3D( simage, options.clipali )
 			
-			#print "\nclipped simage to", options.clipali, simage['nx']
+			print "\nclipped simage to", options.clipali, simage['nx']
 
 		
 		if s2image['nx'] != options.clipali or s2image['ny'] != options.clipali or s2image['nz'] != options.clipali:
@@ -4111,7 +3985,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if imgfullsize['nx'] != options.clipali or imgfullsize['ny'] != options.clipali or imgfullsize['nz'] != options.clipali:
 			imgfullsize = clip3D( imgfullsize, options.clipali )
 			
-			#print "\nclipped s2image to", options.clipali, s2image['nx']
+			print "\nclipped s2image to", options.clipali, s2image['nx']
 
 	
 	
@@ -4122,7 +3996,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	if 'rotate_translate_3d_tree' not in options.align[0]:
-		#print "not using tree aligner, aligner --align is", options.align
+		print "not using tree aligner, aligner --align is", options.align
 		#print "options.threshold",options.threshold
 		#print "options.normproc",options.normproc
 		#print "options.mask",options.mask
@@ -4131,31 +4005,27 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#print "options.shrink",options.shrink
 		
 		
-		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
+		if options.threshold or options.normproc or options.preprocess or options.lowpass or options.highpass:
 
-			#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
+			print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
 			
-			#print "there are some preprocessors"
-			#print "options.nopreprocprefft",options.nopreprocprefft,type(options.nopreprocprefft)
-			if not options.nopreprocprefft:
-				#print "preprocprefft NOT specified"
-				simage = preprocessingprefft(simage,options)
-			
-			#if options.verbose > 9:
-			#	print "preprocfilter specified"
+			if options.verbose > 9:
+				print "preprocfilter specified"
+				
 			simage = preprocfilter(simage,options,ptclindx, savetagp ,'yes',round)
-
-		#print "preprocessed moving particle has size", simage['nx']
+		else:
+			pass
+		
+		print "preprocessed moving particle has size", simage['nx']
 
 		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 
-		#print "options.falign is", options.falign
+		print "options.falign is", options.falign
 
-		else:
-			pass
+		
 			#print "no preproc specified"
 			
-		#print "AAA"
+		print "AAA"
 		
 		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
 			#print "somehow there's falign", options.falign
@@ -4163,9 +4033,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				s2image = simage.copy()
 				#print "PARTICLE fine preprocessing is equal to coarse"
 			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-				
-				if not options.nopreprocprefft:
-					s2image = preprocessingprefft(s2image,options)
+			
 				s2image = preprocfilter(s2image,options,ptclindx, savetagp ,'no',round,'fine')
 				#print "There was fine preprocessing"
 			#sys.exit()
@@ -4175,7 +4043,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			s2image = None
 			#print "no falign, therefore s2image is None"
 
-		#print "BBB"
+		print "BBB"
 		if simage:
 			if options.verbose:
 				print "after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter)
@@ -4191,7 +4059,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 		#print "falign is", options.falign
 	
-	#print "done with all ptcl preprocessing, if any"
+	print "\ndone with all ptcl preprocessing, if any"
 	
 	if sfixedimage['nx'] != simage['nx']:
 		print "ERROR: preprocessed images for coarse alignment not the same size, sfixedimage, simage", sfixedimage['nx'], simage['nx']
@@ -4412,10 +4280,6 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			
 					reffullsizeali = reffullsize.copy()
 					imgfullsizeali = imgfullsize.copy()
-					
-					if not options.nopreprocprefft:
-						reffullsizeali = preprocessingprefft(reffullsizeali,options)
-						imgfullsizeali = preprocessingprefft(imgfullsizeali,options)
 					
 					reffullsizeali = preprocfilter(reffullsizeali,options,ptclindx, 'ref' ,'no',round,'noshrink')
 					imgfullsizeali = preprocfilter(imgfullsizeali,options,ptclindx, savetagp ,'no',round,'noshrink')
