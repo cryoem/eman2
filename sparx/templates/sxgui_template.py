@@ -453,22 +453,27 @@ class SXPopup(QWidget):
 		file_path = ""
 		if file_format == "bdb":
 			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select BDB File", "", "BDB files (*.bdb)", options = QtGui.QFileDialog.DontUseNativeDialog))
+			# Use relative path. 
 			if file_path:
 				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", '#').replace(".bdb", "").replace("/#", "#")
-		if file_format == "py":
+		elif file_format == "py":
 			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select Python File", "", "PY files (*.py)", options = QtGui.QFileDialog.DontUseNativeDialog))
-		if file_format == "pdb":
+			# Use full path
+		elif file_format == "pdb":
 			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select PDB File", "", "PDB files (*.pdb *.pdb1)", options = QtGui.QFileDialog.DontUseNativeDialog))
+			# Use relative path. 
+			if file_path:
+				file_path = os.path.relpath(file_path)
 		else:
 			if file_format:
 				file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), "", "%s files (*.%s)"  % (file_format.upper(), file_format), options = QtGui.QFileDialog.DontUseNativeDialog))
 			else:
 				file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select File", "", "All files (*.*)", options = QtGui.QFileDialog.DontUseNativeDialog))
-			
-			file_path = os.path.relpath(file_path)
+			# Use relative path. 
+			if file_path:
+				file_path = os.path.relpath(file_path)
 			
 		if file_path != '':
-			# Use relative path. 
 			target_edit_box.setText(file_path)
 				
 	def select_dir(self, target_edit_box):
