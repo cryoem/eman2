@@ -39,6 +39,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 	#                 GUI abort the execution if the directory/file exists already
 	# - directory   : Line edit box and open directory button
 	# - image       : Line edit box and open file buttons for .hdf and .bdb 
+	# - any_image   : Line edit box and open file buttons for all file types (also mrc, tiff, and etc) and .bdb 
 	# - parameters  : Line edit box and open file button for all file types 
 	# - pdb         : Line edit box and open file button for .pdb 
 	# - function    : Two line edit boxes (function name & file path of the container script)
@@ -50,7 +51,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 	keyword_dict["defocuserror"]                = SXkeyword_map(0, "")           # --defocuserror (contains keyworkd 'focus' but this should be float type)
 	# Use priority 1 for output
 	keyword_dict["output"]                      = SXkeyword_map(1, "output")     # output.hdf, output_directory, outputfile
-	keyword_dict["outdir"]                      = SXkeyword_map(1, "output")     # outdir1, outdir2, outdir, --outdir=output_directory
+	keyword_dict["outdir"]                      = SXkeyword_map(1, "output")     # outdir, --outdir=output_directory
 	keyword_dict["locresvolume"]                = SXkeyword_map(1, "output")     # locresvolume (this contained keyword "volume" also... This is another reason why priority is introduced...)
 	keyword_dict["directory"]                   = SXkeyword_map(1, "output")     # directory
 	# Use priority 2 for the others
@@ -60,11 +61,12 @@ def construct_token_list_from_wiki(wiki_file_path):
 	keyword_dict["volume"]                      = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, inputvolume
 	keyword_dict["mask"]                        = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask
 	keyword_dict["focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
+	keyword_dict["input_image"]                 = SXkeyword_map(2, "any_image")  # input_image
 	keyword_dict["importctf"]                   = SXkeyword_map(2, "parameters") # --importctf=ctf_file
 	keyword_dict["pwreference"]                 = SXkeyword_map(2, "parameters") # --pwreference=pwreference_file
 	keyword_dict["pdb"]                         = SXkeyword_map(2, "pdb")        # input.pdb
 	keyword_dict["function"]                    = SXkeyword_map(2, "function")   # --function=user_function
-			
+	
 	# Define list of target sections for GUI and set current
 	section_lists = []		
 	section_lists.append("= Name ="); section_name = len(section_lists) - 1; 
