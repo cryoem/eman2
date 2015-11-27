@@ -1972,7 +1972,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 		from utilities import wrap_mpi_gatherv
 		totresi = wrap_mpi_gatherv(totresi, 0, MPI_COMM_WORLD)
 	if( myid == 0 ):
-		outf = open( os.path.join(outpartres,"partres"), "w")
+		outf = open( os.path.join(outpartres,"partres.txt"), "w")
 		for i in xrange(len(totresi)):
 			for k in xrange(1,len(totresi[i])): outf.write("  %12.5g"%totresi[i][k])
 			outf.write("  %s\n"%totresi[i][0])
@@ -3032,8 +3032,8 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				except:     pwrot1 = [0.0]*lnsb
 				freq = range(lnsb)
 				for i in xrange(len(freq)):  freq[i] = float(i)/nx/Pixel_size
-				#fou = "crfrot/rotinf%05d_%06d"%(ll[0][ifi],ll[1][ifi])
-				fou = "crfrot/rotinf%05d"%(ll[ifi])
+				#fou = "crfrot/rotinf%05d_%06d.txt"%(ll[0][ifi],ll[1][ifi])
+				fou = "crfrot/rotinf%05d.txt"%(ll[ifi])
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
 				write_text_file([range(len(crot1)), freq, pwrot1, crot1, pwrot2, crot2],fou)
 				cmd = "echo "+"    "+namics+"  >>  "+fou
