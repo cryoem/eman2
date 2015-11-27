@@ -90,26 +90,22 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True
-	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "image"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "outdir1"; token.key_prefix = ""; token.label = "output directory for rotinf**** files"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "outdir2"; token.key_prefix = ""; token.label = "output directory for partres file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "indir"; token.key_prefix = "--"; token.label = "directory containing micrographs to be processed"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.type = "directory"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "nameroot"; token.key_prefix = "--"; token.label = "prefix of micrographs to be processed"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "micsuffix"; token.key_prefix = "--"; token.label = "a string denoting micrograph type"; token.help = "For example 'mrc', 'hdf', 'ser' ... "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
+	sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	token = SXcmd_token(); token.key_base = "input_image"; token.key_prefix = ""; token.label = "a set of micrographs (name with wild card *) or 2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "any_image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory"; token.help = "partres file and rotinf**** files: "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "size of window to use"; token.help = "should be slightly larger than particle box size "; token.group = "main"; token.is_required = False; token.default = "512"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "pixel size in angstroms"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "Cs"; token.key_prefix = "--"; token.label = "microscope Cs (spherical aberration)"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "2.0"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "voltage"; token.key_prefix = "--"; token.label = "microscope voltage in KV"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "300.0"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "ac"; token.key_prefix = "--"; token.label = "amplitude contrast in percentage"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "10.0"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "kboot"; token.key_prefix = "--"; token.label = "number of defocus estimates for micrograph"; token.help = "used for error assessment "; token.group = "advanced"; token.is_required = False; token.default = "16"; token.type = "int"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "debug"; token.key_prefix = "--"; token.label = "debug"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "overlap_x"; token.key_prefix = "--"; token.label = "overlap x in percentage"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "50"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "overlap_y"; token.key_prefix = "--"; token.label = "overlap y in percentage"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "50"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "edge_x"; token.key_prefix = "--"; token.label = "edge x in pixels"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "edge_y"; token.key_prefix = "--"; token.label = "edge y in pixels"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "f_start"; token.key_prefix = "--"; token.label = "starting frequency in 1/A"; token.help = "by default determined automatically "; token.group = "advanced"; token.is_required = False; token.default = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "f_stop"; token.key_prefix = "--"; token.label = "stop frequency in 1/A"; token.help = "by default determined automatically "; token.group = "advanced"; token.is_required = False; token.default = "-1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "debug"; token.key_prefix = "--"; token.label = "debug info printout"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 	sxcmd_list.append(sxcmd)
 
@@ -366,7 +362,7 @@ class SXPopup(QWidget):
 		self.TabWidget = QtGui.QTabWidget()
 		self.TabWidget.insertTab(0, self.tab_main, self.tab_main.name)
 		self.TabWidget.insertTab(1, self.tab_advance, self.tab_advance.name)
-		self.TabWidget.resize(860,1080) # self.TabWidget.resize(730,860)
+		self.TabWidget.resize(900,1080) # self.TabWidget.resize(730,860)
 		self.TabWidget.show()
 		
 		# Load the previously saved parameter setting of this sx command
@@ -401,8 +397,8 @@ class SXPopup(QWidget):
 				# else: User left default value. Do nothing
 			# Then, handle the other cases
 			else:
-				if token.type == 'bool':
-					if token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+				if token.type == "bool":
+					if token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
 					if (token.widget.checkState() == Qt.Checked) != token.default:
 						sxcmd_line += " %s%s" % (token.key_prefix, token.key_base)
 				else:
@@ -412,12 +408,19 @@ class SXPopup(QWidget):
 				
 					if token.widget.text() != token.default:
 						# For now, using line edit box for the other type
+						widget_text = str(token.widget.text())
+						if token.type not in ["int", "float"]:
+							# Always enclose the string value with single quotes (')
+							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
+							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
+							widget_text = "\'%s\'" % (widget_text) # then, enclose the string value with single quotes (')
+						
 						if token.key_prefix == "":
-							sxcmd_line += " %s" % (token.widget.text())
+							sxcmd_line += " %s" % (widget_text)
 						elif token.key_prefix == "--":
-							sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, token.widget.text())
+							sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, widget_text)
 						else:
-							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
 				
 		
 		return sxcmd_line
@@ -684,7 +687,7 @@ class SXPopup(QWidget):
 							cmd_token.widget.setText(val_str_in)
 						
 		else:
-			QMessageBox.warning(self, 'Fail to load paramters', 'The specified file is not paramter file for %s.' % self.name)
+			QMessageBox.warning(self, 'Fail to load paramters', 'The specified file is not paramter file for %s.' % self.sxcmd.name)
 		
 		file_in.close()
 	
@@ -855,6 +858,16 @@ class SXTab(QWidget):
 							file_format = "bdb"
 							temp_btn = QPushButton("Select .%s" % file_format, self)
 							temp_btn.move(self.x4, self.y1 - 12)
+							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "any_image":
+							cmd_token_widget = QtGui.QLineEdit(self)
+							cmd_token_widget.setText(cmd_token.default)
+							temp_btn = QPushButton("Select Image File", self)
+							temp_btn.move(self.x3, self.y1 - 12)
+							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget))
+							file_format = "bdb"
+							temp_btn = QPushButton("Select .%s" % file_format, self)
+							temp_btn.move(self.x4 + 40, self.y1 - 12)
 							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
 						elif cmd_token.type == "pdb":
 							cmd_token_widget = QtGui.QLineEdit(self)
