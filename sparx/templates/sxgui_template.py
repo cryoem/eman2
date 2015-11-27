@@ -117,7 +117,7 @@ class SXPopup(QWidget):
 		self.TabWidget = QtGui.QTabWidget()
 		self.TabWidget.insertTab(0, self.tab_main, self.tab_main.name)
 		self.TabWidget.insertTab(1, self.tab_advance, self.tab_advance.name)
-		self.TabWidget.resize(860,1080) # self.TabWidget.resize(730,860)
+		self.TabWidget.resize(900,1080) # self.TabWidget.resize(730,860)
 		self.TabWidget.show()
 		
 		# Load the previously saved parameter setting of this sx command
@@ -152,8 +152,8 @@ class SXPopup(QWidget):
 				# else: User left default value. Do nothing
 			# Then, handle the other cases
 			else:
-				if token.type == 'bool':
-					if token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+				if token.type == "bool":
+					if token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
 					if (token.widget.checkState() == Qt.Checked) != token.default:
 						sxcmd_line += " %s%s" % (token.key_prefix, token.key_base)
 				else:
@@ -163,12 +163,19 @@ class SXPopup(QWidget):
 				
 					if token.widget.text() != token.default:
 						# For now, using line edit box for the other type
+						widget_text = str(token.widget.text())
+						if token.type not in ["int", "float"]:
+							# Always enclose the string value with single quotes (')
+							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
+							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
+							widget_text = "\'%s\'" % (widget_text) # then, enclose the string value with single quotes (')
+						
 						if token.key_prefix == "":
-							sxcmd_line += " %s" % (token.widget.text())
+							sxcmd_line += " %s" % (widget_text)
 						elif token.key_prefix == "--":
-							sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, token.widget.text())
+							sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, widget_text)
 						else:
-							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (token.key_base, self.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
 				
 		
 		return sxcmd_line
@@ -435,7 +442,7 @@ class SXPopup(QWidget):
 							cmd_token.widget.setText(val_str_in)
 						
 		else:
-			QMessageBox.warning(self, 'Fail to load paramters', 'The specified file is not paramter file for %s.' % self.name)
+			QMessageBox.warning(self, 'Fail to load paramters', 'The specified file is not paramter file for %s.' % self.sxcmd.name)
 		
 		file_in.close()
 	
@@ -606,6 +613,16 @@ class SXTab(QWidget):
 							file_format = "bdb"
 							temp_btn = QPushButton("Select .%s" % file_format, self)
 							temp_btn.move(self.x4, self.y1 - 12)
+							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "any_image":
+							cmd_token_widget = QtGui.QLineEdit(self)
+							cmd_token_widget.setText(cmd_token.default)
+							temp_btn = QPushButton("Select Image File", self)
+							temp_btn.move(self.x3, self.y1 - 12)
+							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget))
+							file_format = "bdb"
+							temp_btn = QPushButton("Select .%s" % file_format, self)
+							temp_btn.move(self.x4 + 40, self.y1 - 12)
 							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
 						elif cmd_token.type == "pdb":
 							cmd_token_widget = QtGui.QLineEdit(self)
