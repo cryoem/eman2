@@ -4096,8 +4096,9 @@ EMData* nn4_ctfwReconstructor::finish(bool)
         if( count[ix] > 0.0f )  sigma2[ix] = sigma2[ix]/count[ix];
         cout<<"  sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
     }
+    float fudge = m_refvol->get_attr("fudge");
     // now counter will serve to keep fsc-derived stuff
-    for (ix = 0; ix <= limitres; ix++)  count[ix] = sigma2[ix] * (1.0f - (*m_refvol)(ix))/(*m_refvol)(ix);  //fudge?
+    for (ix = 0; ix <= limitres; ix++)  count[ix] = fudge * sigma2[ix] * (1.0f - (*m_refvol)(ix))/(*m_refvol)(ix);  //fudge?
 	for (ix = 0; ix <= limitres; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
 	// normalize
 	for (iz = 1; iz <= m_vnzp; iz++) {

@@ -562,7 +562,8 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 		refvol = model_blank(bnx,1,1,1.0)
 	refvol.set_attr("fudge", 1.0)
 
-
+	fftvol = EMData()
+	weight = EMData()
 
 	if( smearstep > 0.0 ):
 		#if myid == 0:  print "  Setting smear in prepare_recons_ctf"
@@ -583,8 +584,6 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 		#if myid == 0:  print "  Smear  ",smear
 		fftvol.set_attr("smear", smear)
 
-	fftvol = EMData()
-	weight = EMData()
 	if (xysize == -1 and zsize == -1 ):
 		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
 		r = Reconstructors.get( "nn4_ctfw", params )
