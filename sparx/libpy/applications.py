@@ -13335,7 +13335,8 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
 	from utilities import model_blank, get_im
 	from reconstruction import recons3d_4nnw_MPI
-	bckgnoise = [get_im("bkgnoise.hdf"), read_text_file("defgroup_stamp.txt")]#model_blank(1000,1,1,1.0)
+	from utilities import read_text_file
+	bckgnoise = [get_im("bckgnoise.hdf"), read_text_file("defgroup_stamp.txt")]#model_blank(1000,1,1,1.0)
 	print  sym,finfo,npad
 
 	if CTF: vol = recons3d_4nnw_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad,\

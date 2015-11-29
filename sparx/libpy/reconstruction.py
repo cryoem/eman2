@@ -635,7 +635,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 
 		if dopad:
 			prj = pad(prj, imgsize, imgsize, 1, "circumference")
-		#if params:
+
 		prj.set_attr("bckgnoise", bckgnoise[indx])
 		insert_slices(r, prj)
 		if not (info is None):

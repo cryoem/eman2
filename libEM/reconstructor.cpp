@@ -3628,7 +3628,6 @@ void nn4_ctfwReconstructor::setup( const string& symmetry, int size, int npad, f
 
 	buildFFTVolume();
 	buildNormVolume();
-	cout<<  "   refvol  "<<endl;
 	m_refvol = params["refvol"];
 }
 
@@ -4058,8 +4057,9 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 	int ix,iy,iz;
 	//  refvol carries fsc
 	int  limitres = m_vnyc+1;
-    for (ix = 0; ix <= m_vnyc+1; ix++) {
-		  if( (*m_refvol)(m_vnyc+1-ix) == 0.0f )  limitres = m_vnyc+1-ix;
+    for (ix = 0; ix <= m_vnyc; ix++) {
+    		cout<<"  fsc  "<< ix <<"   "<<m_vnyc<<"   "<<(*m_refvol)(m_vnyc+1-ix)<<endl;
+		  if( (*m_refvol)(m_vnyc+1-ix) == 0.0f )  limitres = m_vnyc-ix;
 	}
 
 
