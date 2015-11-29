@@ -515,7 +515,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	return fftvol
 '''
 
-def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0):
+def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0, fsc = None):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -549,6 +549,18 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 
 	fftvol = EMData()
 
+	#  Do the FSC shtick.
+	bnx     = imgsize*npad//2+1
+	from math import sqrt
+	for i in xrange(len(t)):
+		t[i] = min(max(t[i],0.0), 0.999)
+	t = reshape_1d(t,len(t),npad*len(t))
+	refvol = model_blank(bnx,1,1,0.5)
+	for i in xrange(bnx):  refvol.set_value_at(i,t[i])
+	refvol.set_attr("fudge", 1.0)	
+
+
+
 	if( smearstep > 0.0 ):
 		#if myid == 0:  print "  Setting smear in prepare_recons_ctf"
 		ns = 1
@@ -570,7 +582,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 
 	weight = EMData()
 	if (xysize == -1 and zsize == -1 ):
-		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
+		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
 		r = Reconstructors.get( "nn4_ctfw", params )
 	else:
 		if ( xysize != -1 and zsize != -1):

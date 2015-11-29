@@ -3628,7 +3628,7 @@ void nn4_ctfwReconstructor::setup( const string& symmetry, int size, int npad, f
 
 	buildFFTVolume();
 	buildNormVolume();
-	//m_refvol = params["refvol"];
+	m_refvol = params["refvol"];
 }
 
 void nn4_ctfwReconstructor::buildFFTVolume() {
@@ -3770,7 +3770,7 @@ int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData*
 	}
 	return 0;
 }
-
+#ifdef False
 EMData* nn4_ctfwReconstructor::finish(bool)
 {
 	m_volume->set_array_offsets(0, 1, 1);
@@ -3867,7 +3867,6 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 }
 
 
-#ifdef False
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
@@ -4031,8 +4030,9 @@ for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<" 
 
 	return 0;
 }
+#endif
 
-
+EMData* nn4_ctfwReconstructor::finish(bool)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
@@ -4040,6 +4040,7 @@ for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<" 
 	//m_refvol->set_array_offsets(0, 1, 1);
 	m_volume->symplane0_ctf(m_wptr);
 
+	/*
 	int box = 7;
 	int vol = box*box*box;
 	int kc = (box-1)/2;
@@ -4051,12 +4052,19 @@ for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<" 
 	float max = max3d( kc, pow_a );
 	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	float osnr = 1.0f/m_snr;
+	*/
+
+	int ix,iy,iz;
+	//  refvol carries fsc
+	int  limitres = m_vnyc+1;
+    for (ix = 0; ix <= m_vnyc+1; ix++) {
+		  if( (*m_refvol)(m_vnyc+1-ix) == 0.0f )  limitres = m_vnyc+1-ix;
+	}
 
 
     vector<float> sigma2(m_vnyc+1, 0.0f);
     vector<float> count(m_vnyc+1, 0.0f);
 
-	int ix,iy,iz;
 	// compute sigma2
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
@@ -4068,7 +4076,7 @@ for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<" 
 			    if(ix>0 || (izp>=0 && (iyp>=0 || izp!=0))) {  //Skip Friedel related values
                     float r = std::sqrt(argy + float(ix*ix));
                     int  ir = int(r);
-                    if (ir <= m_vnyc) {
+                    if (ir <= limitres) {
                         float frac = r - float(ir);
                         float qres = 1.0f - frac;
                         float temp = (*m_wptr)(ix,iy,iz);
@@ -4083,101 +4091,41 @@ for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<" 
             }
         }
     }
-    for (ix = 0; ix <= m_vnyc+1; ix++) {
-        if( sigma2[ix] > 0.0f )  sigma2[ix] = count[ix]/sigma2[ix];
-        cout<<"  1/sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
+    for (ix = 0; ix <= limitres; ix++) {
+        if( count[ix] > 0.0f )  sigma2[ix] = sigma2[ix]/count[ix];
+        cout<<"  sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
     }
     // now counter will serve to keep fsc-derived stuff
-	//  refvol carries fsc
-    for (ix = 0; ix <= m_vnyc+1; ix++)
-		  count[ix] = Util::get_max(0.0f, Util::get_min( 0.999f, (*m_refvol)(ix) ) );
-    for (ix = 0; ix <= m_vnyc+1; ix++)  count[ix] = count[ix]/(1.0f - count[ix]) * sigma2[ix];
-    for (ix = 0; ix <= m_vnyc+1; ix++)  {
-        if ( count[ix] >0.0f) count[ix] = 1.0f/count[ix];  //fudge?
-    }
-for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
+    for (ix = 0; ix <= limitres; ix++)  count[ix] = sigma2[ix] * (1.0f - (*m_refvol)(ix))/(*m_refvol)(ix);  //fudge?
+	for (ix = 0; ix <= limitres; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
 	// normalize
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
 		float argz = float(izp*izp);
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
-            float argy = argz + float(iyp*iyp);
+			float argy = argz + float(iyp*iyp);
 			for (ix = 0; ix <= m_vnxc; ix++) {
-                    float r = std::sqrt(argy + float(ix*ix));
-                    int  ir = int(r);
-                    if (ir <= m_vnyc) {
-                        float frac = r - float(ir);
-                        float qres = 1.0f - frac;
-                        osnr = qres*count[ir] + frac*count[ir+1];
-                        if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
-                        //cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
- 					    float tmp=((*m_wptr)(ix,iy,iz)+osnr);
-					    //if( m_varsnr )  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
-					    //else {
-					    //cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<iz<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<osnr<<"  "<<endl;
-					    if(tmp>0.0f) {
-					        tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
-					    /*
-                        int ir = int(freq);
-                        float df = freq - float(ir);
-                        float add = (1.0f - df)*(*m_refvol)(ir) + df*(*m_refvol)(ir+1);
-                        cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<ir<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<add<<"  "<<endl;
-					    tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+add)*m_sign;
-					    */
-					//}
-
-			/*if( false) {//m_weighting == ESTIMATE ) {
-			cout <<  "  ESTIMATE  "  <<endl;
-				int cx = ix;
-				int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
-				int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
-				float sum = 0.0;
-				for( int ii = -kc; ii <= kc; ++ii ) {
-					int nbrcx = cx + ii;
-					if( nbrcx >= m_vnxc ) continue;
-					for( int jj= -kc; jj <= kc; ++jj ) {
-						int nbrcy = cy + jj;
-						if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-						for( int kk = -kc; kk <= kc; ++kk ) {
-							int nbrcz = cz + jj;
-							if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
-							if( nbrcx < 0 ) {
-								nbrcx = -nbrcx;
-								nbrcy = -nbrcy;
-								nbrcz = -nbrcz;
-							}
-
-							int nbrix = nbrcx;
-							int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
-							int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
-							if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0.0 ) {
-								int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
-								sum = sum + pow_a[c];
-					          		  // if(ix%20==0 && iy%20==0 && iz%20==0)
-					           		 //   std::cout << boost::format( "%4d %4d %4d %4d %10.3f" ) % nbrix % nbriy % nbriz % c % sum << std::endl;
-							}
+				float r = std::sqrt(argy + float(ix*ix));
+				int  ir = int(r);
+				if (ir <= limitres) {
+					if ( (*m_wptr)(ix,iy,iz) > 0.0f) {
+						float frac = r - float(ir);
+						float qres = 1.0f - frac;
+						float osnr = qres*count[ir] + frac*count[ir+1];
+						if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
+						//cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
+						float tmp=((*m_wptr)(ix,iy,iz)+osnr);
+						//cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<iz<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<osnr<<"  "<<endl;
+						if(tmp>0.0f) {
+							tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
+							(*m_volume)(2*ix,iy,iz)   *= tmp;
+							(*m_volume)(2*ix+1,iy,iz) *= tmp;
+						} else {
+							(*m_volume)(2*ix,iy,iz)   = 0.0f;
+							(*m_volume)(2*ix+1,iy,iz) = 0.0f;
 						}
 					}
-				}
-				float wght = 1.0f / ( 1.0f - alpha * sum );
-/
-                        if(ix%10==0 && iy%10==0)
-                        {
-                            std::cout << boost::format( "%4d %4d %4d " ) % ix % iy %iz;
-                            std::cout << boost::format( "%10.3f %10.3f %10.3f " )  % tmp % wght % sum;
-                            std::  << boost::format( "%10.3f %10.3e " ) % pow_b[r] % alpha;
-                            std::cout << std::endl;
-                        }
- /
-				tmp = tmp * wght;
-				}*/
-				(*m_volume)(2*ix,iy,iz)   *= tmp;
-				(*m_volume)(2*ix+1,iy,iz) *= tmp;
-				} else {
-				(*m_volume)(2*ix,iy,iz)   = 0.0f;
-				(*m_volume)(2*ix+1,iy,iz) = 0.0f;
-				}
 				}
 			}
 		}
@@ -4192,7 +4140,6 @@ for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<en
 
 	return 0;
 }
-#endif
 
 
 //####################################################################################
