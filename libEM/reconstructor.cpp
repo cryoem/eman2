@@ -3628,6 +3628,7 @@ void nn4_ctfwReconstructor::setup( const string& symmetry, int size, int npad, f
 
 	buildFFTVolume();
 	buildNormVolume();
+	cout<<  "   refvol  "<<endl;
 	m_refvol = params["refvol"];
 }
 

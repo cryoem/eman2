@@ -547,17 +547,19 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 		dopad = False
 	prjlist.goToPrev()
 
-	fftvol = EMData()
-
 	#  Do the FSC shtick.
 	bnx     = imgsize*npad//2+1
-	from math import sqrt
-	for i in xrange(len(t)):
-		t[i] = min(max(t[i],0.0), 0.999)
-	t = reshape_1d(t,len(t),npad*len(t))
-	refvol = model_blank(bnx,1,1,0.5)
-	for i in xrange(bnx):  refvol.set_value_at(i,t[i])
-	refvol.set_attr("fudge", 1.0)	
+	if  fsc:
+		from math import sqrt
+		t = [0.0]*len(fsc)
+		for i in xrange(len(fsc)):
+			t[i] = min(max(fsc[i],0.0), 0.999)
+		t = reshape_1d(t,len(t),npad*len(t))
+		refvol = model_blank(bnx,1,1,0.0)
+		for i in xrange(len(fsc)):  refvol.set_value_at(i,t[i])
+	else:
+		refvol = model_blank(bnx,1,1,1.0)
+	refvol.set_attr("fudge", 1.0)
 
 
 
@@ -580,6 +582,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 		#if myid == 0:  print "  Smear  ",smear
 		fftvol.set_attr("smear", smear)
 
+	fftvol = EMData()
 	weight = EMData()
 	if (xysize == -1 and zsize == -1 ):
 		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}

@@ -13335,11 +13335,11 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
 	from utilities import model_blank, get_im
 	from reconstruction import recons3d_4nnw_MPI
-	bckgnoise = get_im("bkgnoise.hdf")#model_blank(1000,1,1,1.0)
+	bckgnoise = [get_im("bkgnoise.hdf"), read_text_file("defgroup_stamp.txt")]#model_blank(1000,1,1,1.0)
 	print  sym,finfo,npad
-	#recons3d_4nnw_MPI(myid, prjlist, bckgnoise, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0):
 
-	if CTF: vol = recons3d_4nnw_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad)
+	if CTF: vol = recons3d_4nnw_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad,\
+									 smearstep = 0.0, fsc=None)
 	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
