@@ -551,6 +551,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 	bnx     = imgsize*npad//2+1
 	if  fsc:
 		from math import sqrt
+		from utilities import reshape_1d
 		t = [0.0]*len(fsc)
 		for i in xrange(len(fsc)):
 			t[i] = min(max(fsc[i],0.0), 0.999)

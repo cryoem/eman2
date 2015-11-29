@@ -13331,7 +13331,7 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 
 	prjlist = iterImagesStack(prj_stack, pid_list[image_start:image_end])
 	del pid_list
-	print "  NEW  "
+	if myid == 0 :  print "  NEW  "
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
 	from utilities import model_blank, get_im
 	from reconstruction import recons3d_4nnw_MPI

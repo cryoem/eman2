@@ -4127,6 +4127,9 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 							(*m_volume)(2*ix+1,iy,iz) = 0.0f;
 						}
 					}
+				} else {
+					(*m_volume)(2*ix,iy,iz)   = 0.0f;
+					(*m_volume)(2*ix+1,iy,iz) = 0.0f;
 				}
 			}
 		}
