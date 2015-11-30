@@ -333,11 +333,11 @@ def box_particles(convnet,options):
 		jn["boxes"]=box
 		#print jn
 		#options.teston="testimg.hdf"
-		mn=tarfile.replace('/','-')
+		#mn=tarfile.replace('/','-')
 		#n1=mn.rfind('/')+1
 		#mn=mn[n1:]
 		#print mn
-		f = open('info/{n}_info.json'.format(n=mn[:-4]), 'w')
+		f = open(info_name(tarfile), 'w')
 		json.dump(jn, f, indent=0)
 		f.close()
 		lastshape=shape
