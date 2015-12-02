@@ -332,7 +332,7 @@ def main(args):
 				p = Util.infomask(aligned_images[im], msk, True)
 				aligned_images[im] /= p[1]
 		elif  newx < target_nx  :	
-			msk = model_circle(nx//2-2, newx,  newx)
+			msk = model_circle(newx//2-2, newx,  newx)
 			for im in xrange(nima):
 				#  Here we should use only shifts
 				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])

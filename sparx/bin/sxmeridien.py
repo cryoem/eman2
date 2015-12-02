@@ -1415,6 +1415,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	else:
 		Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 
+	###  SOMETHING WRONG with delta HERE?
 	delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"]*Tracker["constants"]["radius"])))), 2), 3.0)
 	#if Tracker["constants"]["smear"] : Tracker["smearstep"] = 0.5*delta
 	#  Base smear on current radius, not on the resolution
