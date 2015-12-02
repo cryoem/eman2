@@ -526,9 +526,9 @@ def main():
 	#	options.lowpassfine = None
 	#	options.highpassfine = None
 	#	options.preprocess = None
-	#	options.preprocessfine = None
-		
+	#	options.preprocessfine = None	
 	#else: 
+	
 	if options.mask or options.normproc or options.threshold or options.clipali:		
 		tasks=[]
 		results=[]
