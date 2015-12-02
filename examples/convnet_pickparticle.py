@@ -247,7 +247,7 @@ def box_particles(convnet,options):
 
 		e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 		e.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
-		e.process_inplace("normalize.edgemean")
+		e.process_inplace("normalize")
 		e.process_inplace("threshold.belowtominval",{"minval":-3, "newval":-3})
 		e.mult(-1)
 		e.process_inplace("threshold.belowtominval",{"minval":-3, "newval":-3})
