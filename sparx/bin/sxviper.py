@@ -33,7 +33,7 @@ directory		output directory name: into which the results will be written (if it 
 	parser.add_option("--xr", type="string",  default= '0',            help="range for translation search in x direction: search is +/xr in pixels (default '0')")
 	parser.add_option("--yr", type="string",  default= '0',            help="range for translation search in y direction: if omitted will be set to xr, search is +/yr in pixels (default '0')")
 	parser.add_option("--mask3D", type="string",  default= None,            help="3D mask file: (default sphere)")
-	parser.add_option("--moon_elimination", type="string",  default= "",            help="elimination of disconnected pieces: two arguments: mass in KDa and resolution in px/A separated by comma, no space (default none)")
+	parser.add_option("--moon_elimination", type="string",  default= "",            help="elimination of disconnected pieces: two arguments: mass in KDa and pixel size in px/A separated by comma, no space (default none)")
 	parser.add_option("--ir", type="int",  default= 1,            help="inner radius for rotational search: > 0 (default 1)")
 	
 	# 'radius' and 'ou' are the same as per Pawel's request; 'ou' is hidden from the user

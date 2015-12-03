@@ -35,7 +35,7 @@ Since VIPER makes use of group of processors working together, it is important f
     xr:: range for translation search in x direction: search is +/xr in pixels (default '0')
     yr:: range for translation search in y direction: if omitted will be set to xr, search is +/yr in pixels (default '0')
     mask3D:: 3D mask file: (default sphere)
-    moon_elimination:: elimination of disconnected pieces: two arguments: mass in KDa and resolution in px/A separated by comma, no space (default none)
+    moon_elimination:: elimination of disconnected pieces: two arguments: mass in KDa and pixel size in px/A separated by comma, no space (default none)
 
     ir:: inner radius for rotational search: > 0 (default 1)
     rs:: step between rings in rotational search: >0 (default 1)

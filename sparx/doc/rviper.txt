@@ -55,7 +55,7 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
     aa:: fall-off of hyperbolic tangent low-pass filter: (default 0.1)    
     pwreference:: text file with a reference power spectrum: (default none)
     mask3D:: 3D mask file: (default sphere)
-    moon_elimination:: elimination of disconnected pieces: two arguments: mass in KDa and resolution in px/A separated by comma, no space (default none)
+    moon_elimination:: elimination of disconnected pieces: two arguments: mass in KDa and pixel size in px/A separated by comma, no space (default none)
     criterion_name:: criterion deciding if volumes have a core set of stable projections: '80th percentile', other options:'fastest increase in the last quartile' (default '80th percentile')
     outlier_index_threshold_method:: method that decides which images to keep: discontinuity_in_derivative, other options:percentile, angle_measure (default discontinuity_in_derivative)
     angle_threshold:: angle threshold for projection removal if using 'angle_measure': (default 30)

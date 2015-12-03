@@ -605,7 +605,7 @@ output_directory: directory name into which the output files will be written.  I
 	parser.add_option("--aa", type="float",  default= 0.1,            help="fall-off of hyperbolic tangent low-pass filter: (default 0.1)")
 	parser.add_option("--pwreference", type="string",  default= "",            help="text file with a reference power spectrum: (default none)")
 	parser.add_option("--mask3D", type="string",  default= None,            help="3D mask file: (default sphere)")
-	parser.add_option("--moon_elimination", type="string",  default= "",            help="elimination of disconnected pieces: two arguments: mass in KDa and resolution in px/A separated by comma, no space (default none)")
+	parser.add_option("--moon_elimination", type="string",  default= "",            help="elimination of disconnected pieces: two arguments: mass in KDa and pixel size in px/A separated by comma, no space (default none)")
 
 	# used for debugging, help is supressed with SUPPRESS_HELP
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
