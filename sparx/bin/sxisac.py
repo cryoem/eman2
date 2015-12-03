@@ -415,7 +415,8 @@ def main(args):
 		%.5f
 		--------
 		To get the pixel size for the isac output the user needs to divide
-		the original pixel size by the above value.
+		the original pixel size by the above value. This info is saved in
+		the following file: README_shrink_ratio.txt
 		"""%shrink_ratio
 		fp.write(output_text); fp.flush() ;fp.close()
 		print output_text
