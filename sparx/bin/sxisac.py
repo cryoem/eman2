@@ -406,6 +406,19 @@ def main(args):
 		DB = db_open_dict(stack_processed_by_ali2d_base__filename)
 		DB.close()
 		
+		fp = open("README_shrink_ratio.txt", "w")
+		output_text = """
+		Since, for processing purposes, isac changes the image dimensions,
+		adjustment of pixel size needs to be made in subsequent steps, (e.g.
+		running sxviper.py). The shrink ratio for this particular isac run is
+		--------
+		%.5f
+		--------
+		To get the pixel size for the isac output the user needs to divide
+		the original pixel size by the above value.
+		"""%shrink_ratio
+		fp.write(output_text); fp.flush() ;fp.close()
+		print output_text
 
 	mpi_barrier(MPI_COMM_WORLD)
 
