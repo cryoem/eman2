@@ -462,7 +462,8 @@ class SXPopup(QWidget):
 			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select BDB File", "", "BDB files (*.bdb)", options = QtGui.QFileDialog.DontUseNativeDialog))
 			# Use relative path. 
 			if file_path:
-				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", '#').replace(".bdb", "").replace("/#", "#")
+				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", '#').replace(".bdb", "")
+				file_path = file_path.replace("/#", "#")
 		elif file_format == "py":
 			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select Python File", "", "PY files (*.py)", options = QtGui.QFileDialog.DontUseNativeDialog))
 			# Use full path
