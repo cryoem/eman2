@@ -152,7 +152,7 @@ def main():
 	
 	parser.add_argument("--refpreprocess",action="store_true",default=False,help="""Default=False. This will preprocess the reference identically to the particles. It is off by default, but it is internally turned on when no reference is supplied. It should probably be off when using a crystal structure (with all positive densities) turned to EM density as an initial model, but it should be on when using an EM map.""")
 	
-	parser.add_argument("--refrandphase", type=float, default=60.0, help="""Default=60.0. Resolution to phase randomize the reference to (or the two copies of the reference if --goldstandardoff is NOT supplied [gold standard refinement is on by default].""")
+	parser.add_argument("--refrandphase", type=float, default=0, help="""Default=0 (off). Resolution to phase randomize the reference to (or the two copies of the reference if --goldstandardoff is NOT supplied [gold standard refinement is on by default].""")
 	
 	parser.add_argument("--hacref",type=int,default=0,help="""Default=0 (not used by default). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_hac.py which does Hierarchical Ascendant Classification (HAC) or 'all vs all' alignments.""") 
 		
@@ -1895,7 +1895,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				ref['apix_y'] = options.apix
 				ref['apix_z'] = options.apix
 			
-			if options.refrandphase:
+			if int(options.refrandphase) > 0:
 				filterfreq =  1.0/float( options.refrandphase )
 				ref.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":filterfreq,"apix":ref['apix_x']})
 						
