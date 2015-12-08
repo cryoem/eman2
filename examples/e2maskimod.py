@@ -28,6 +28,7 @@ def main():
 	mask=data.copy()
 	mask.to_zero()
 	
+	isscatter=False
 	
 	for stk in range(options.stack):
 		
@@ -57,7 +58,7 @@ def main():
 			if ln.startswith("object"):
 				if ci>0 and options.byobj:
 					print "Generating map for object ",ci,"......"
-					
+					isscatter=False
 					outnm=options.output[:-4]+str(ci)+'.hdf'
 					
 					mask.process_inplace("mask.addshells.gauss",{"val1":options.s1, "val2":options.s2})
@@ -74,6 +75,10 @@ def main():
 				ci+=1
 				reading=0
 				#print
+				
+			if ln.startswith("scattered"):
+				isscatter=True
+				
 			if ln.startswith("contour"):
 				lt=ln.split()
 				reading=int(lt[3])
@@ -82,15 +87,20 @@ def main():
 				continue
 				
 			if reading>0:
-				point=[float(i) for i in ln.split()]
 				
 				reading-=1
-				if lastpt[0]>=0:
-					lst=interpolate(lastpt,point)
-					for p in lst:
-						mask.set_value_at(p[0],p[1],p[2],1)
-					#print lst
-				lastpt=point
+				if isscatter:
+					point=[int(round(float(i))) for i in ln.split()]
+					mask.set_value_at(point[0],point[1],point[2],1)
+				
+				else:
+					point=[float(i) for i in ln.split()]
+					if lastpt[0]>=0:
+						lst=interpolate(lastpt,point)
+						for p in lst:
+							mask.set_value_at(p[0],p[1],p[2],1)
+						#print lst
+					lastpt=point
 			
 	
 	mask.process_inplace("mask.addshells.gauss",{"val1":options.s1, "val2":options.s2})
