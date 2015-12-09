@@ -30,9 +30,9 @@
 from global_def import *
 
 def rec2D(  lines, idrange=None, snr=None ):
-	"""Perform a 2D reconstruction on a set of 1D lines using nearest neighbouring reverse FFT algorithm.
-	   Input: a set of 1D lines
-	   Output: a 2D image
+	""" Perform a 2D reconstruction on a set of 1D lines using nearest neighbouring reverse FFT algorithm.
+		Input: a set of 1D lines
+		Output: a 2D image
 	"""
 	from EMAN2 import Reconstructors
 
@@ -41,16 +41,16 @@ def rec2D(  lines, idrange=None, snr=None ):
 
 	size = lines[0].get_xsize();
 
-        if snr is None:
-	    params = {"size":size, "npad":4, "ndim":2}
-        else: 
-	    params = {"size":size, "npad":4, "ndim":2, "snr":snr}
-        
+	if snr is None:
+		params = {"size":size, "npad":4, "ndim":2}
+	else: 
+		params = {"size":size, "npad":4, "ndim":2, "snr":snr}
+
 	r = Reconstructors.get("nn4", params)
 	r.setup()
 
-        if idrange is None:
-           idrange = xrange( len(lines) )
+	if idrange is None:
+		idrange = xrange( len(lines) )
 
 	t = Transform()
 	for i in idrange:
@@ -79,22 +79,22 @@ def insert_slices(reconstructor, proj):
 def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=True, xysize=-1, zsize = -1):
 	"""
 	Perform a 3-D reconstruction using Pawel's FFT Back Projection algorithm.
-	   
+
 	Input:
-	   stack_name - name of the file with projection data.
-	   
-	   list_proj -  list of projections to be used in the reconstruction
+		stack_name - name of the file with projection data.
 
-	   symmetry - Point group of the target molecule (defaults to "C1")
-	   
-	   npad - 
+		list_proj -  list of projections to be used in the reconstruction
 
-	   Angles and shifts are passed in the file header as set_attr. Keywords are phi, theta, psi, sx, sy
+		symmetry - Point group of the target molecule (defaults to "C1")
 
-	   Return:  3D reconstructed volume image
+		npad - 
 
-	   Usage:
-	     vol = recons3d_4nn(filepattern, list_proj, symmetry)
+		Angles and shifts are passed in the file header as set_attr. Keywords are phi, theta, psi, sx, sy
+
+		Return:  3D reconstructed volume image
+
+		Usage:
+			vol = recons3d_4nn(filepattern, list_proj, symmetry)
 	"""
 	import types
 	from EMAN2 import Reconstructors
@@ -139,7 +139,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 			rx = 1.0
 			ry = 1.0
 			rz = float(zsize)/size
-							
+
 		if snr is None:
 			params["sizeprojection"] = size
 			params["xratio"] = rx
@@ -153,7 +153,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 			params["yratio"] = ry
 			params["zratio"] = rz	
 		r = Reconstructors.get("nn4_rect", params)
-		
+
 	r.setup()
 
 	if type(stack_name) == types.StringType:
@@ -580,7 +580,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 			for k in xrange(-ns,ns+1):
 				prj.append(i+k)
 		for i in xrange(-2*ns,2*ns+1,1):
-			 smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
+			smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
 		#if myid == 0:  print "  Smear  ",smear
 		fftvol.set_attr("smear", smear)
 
@@ -607,7 +607,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 
 	#from utilities import model_blank, get_im, read_text_file
 	#bckgdata = [get_im("tsd.hdf"),read_text_file("data_stamp.txt")]
-	
+
 	nnx = bckgdata[0].get_xsize()
 	nny = bckgdata[0].get_ysize()
 	bckgnoise = []
@@ -673,7 +673,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 
 def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize = -1, zsize = -1 ):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
-	   
+
 	   Input:
 	    stack_name - name of the stack file on a disk,
 	                 each image has to have the following attributes set:
@@ -802,7 +802,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 			for k in xrange(-ns,ns+1):
 				prj.append(i+k)
 		for i in xrange(-2*ns,2*ns+1,1):
-			 smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
+			smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
 		#if myid == 0:  print "  Smear  ",smear
 		fftvol.set_attr("smear", smear)
 
@@ -951,7 +951,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 			xform_proj = Transform( dict )
 		else:
 			xform_proj = proj.get_attr( "xform.projection" )
-	
+
 		if mask2D:
 			stats = Util.infomask(proj, mask2D, True)
 			proj -= stats[0]
@@ -1033,7 +1033,7 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 			prj *= mask2D
 		r.insert_slice(prj, xform_proj )
 		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1 END
-		
+
 	#from utilities import info
 	reduce_EMData_to_root(weight,  myid, 0, comm=mpi_comm)
 	reduce_EMData_to_root(fftvol,  myid, 0, comm=mpi_comm)
@@ -1062,15 +1062,15 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 
 
 class memory_store:
-    def __init__(self, npad):
-        self.m_npad = npad
-        self.m_imgs = []
+	def __init__(self, npad):
+		self.m_npad = npad
+		self.m_imgs = []
 
-    def add_image(self, img):
-        self.m_imgs.append(img)
-    
-    def get_image(self, id):
-        return self.m_imgs[id]
+	def add_image(self, img):
+		self.m_imgs.append(img)
+
+	def get_image(self, id):
+		return self.m_imgs[id]
 
 def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npad=4, symmetry="c1", output=-1, CTF=False, snr=1.0, sign=1, myseed=None ):
 	from random import seed
@@ -1107,15 +1107,6 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 	if size != proj.get_ysize():
 		print "Image projections must be square!"
 		return None
-
-	#for j in xrange(nimages):
-	#    proj = EMData()
-	#    proj.read_image(proj_stack, j)
-        #store.add_image( proj )
-
-        #if (j+1) % 1000  == 0 :
-        #    output.write( "%d image read\n" % (j+1) )
-        #    output.flush()
 
 	overall_start = time()
 	for i in xrange(niter):
@@ -1163,9 +1154,9 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 
 				r.insert_slice(img_j, tra_j, mults[j])
 
-        			#[mean,sigma,min,max]= Util.infomask(img_j, None, False)
-        			#output.write( "img %4d %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f\n" % (j, mean, sigma, min, max, phi, theta, psi) )
-        			#output.flush()
+				#[mean,sigma,min,max]= Util.infomask(img_j, None, False)
+				#output.write( "img %4d %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f\n" % (j, mean, sigma, min, max, phi, theta, psi) )
+				#output.flush()
 
 		if not(output is None):
 			output.write( "Finishing... " )
@@ -1200,15 +1191,15 @@ def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_
 	from morphology import threshold_to_minval
 	import types
 	min_allowed_divisor = 0.0001
-	
+
 	if type(projections_stack) is types.StringType:
 		projections = EMData.read_images(projections_stack)
 	else:
 		projections = projections_stack
-	
+
 	if len(projections) == 0:
 		ERROR("Stack of projections cannot be empty", "recons3d_em")
-	
+
 	nx = projections[0].get_xsize()
 	if (projections[0].get_ysize() != nx) or (projections[0].get_zsize() != 1):
 		ERROR("This procedure works only for square images", "recons3d_em")
@@ -1222,7 +1213,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_
 	sphere3D_volume = model_blank(nx,nx,nx).cmp("lod",sphere3D,{"negative":0,"normalize":0})
 	#print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_avg_abs_voxel_change=%f" % (
 	#					nx, radius, len(projections), max_iterations_count, min_avg_abs_voxel_change )
-	
+
 	# ----- create initial solution, calculate weights and normalization image (a)
 	projections_angles = []  # list of lists of angles
 	projections_data   = []  # list of lists of projections' images with weights
@@ -1301,29 +1292,29 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from utilities import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_EMData, recv_EMData
 	min_allowed_divisor = 0.0001
-	
+
 	mpi_n = mpi_comm_size(MPI_COMM_WORLD)
 	mpi_r = mpi_comm_rank(MPI_COMM_WORLD)
-	
+
 	# ----- read projections 
 	if type(projections_stack) is types.StringType:
 		all_projs_count = EMUtil.get_image_count(projections_stack)
 	else:
 		all_projs_count = len(projections_stack)
-	
+
 	if all_projs_count < mpi_n:
 		ERROR("Number of projections cannot be less than number of MPI processes", "recons3d_em")
-	
+
 	projs_begin = (mpi_r * all_projs_count) // mpi_n
 	projs_end = ((mpi_r+1) * all_projs_count) // mpi_n
-	
+
 	if type(projections_stack) is types.StringType:
 		projections = EMData.read_images(projections_stack, range(projs_begin,projs_end))
 	else:
 		#projections = projections_stack[projs_begin:projs_end]
 		projections = projections_stack
 	# ----------------------------------------------
-	
+
 	nx = projections[0].get_xsize()
 	if (projections[0].get_ysize() != nx) or (projections[0].get_zsize() != 1):
 		ERROR("This procedure works only for square images", "recons3d_em")
@@ -1338,7 +1329,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 		print "MPI processes: ", mpi_n
 		print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_norm_absolute_voxel_change=%f" % (
 						nx, radius, all_projs_count, max_iterations_count, min_norm_absolute_voxel_change )	
-	
+
 	# ----- create initial solution, calculate weights and normalization image (a)
 	projections_angles = []  # list of lists of angles
 	projections_data   = []  # list of lists of projections' images with weights
@@ -1573,7 +1564,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 
 	return CUBE
 
-      
+
 def recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1",outstack="bdb:temp"): 
 	"""
 		Weigthed back-projection algorithm.
@@ -1697,9 +1688,9 @@ def recons3d_swbp(A, transform, L, ss, method = "general", const=1.0E4, symmetry
 
 	count = 0
 	for j in xrange(1):
-	  	count += 1   # It has to be there as counting in WTF and WTM start from 1!
-	  	if   (method=="general"):    Util.WTF(B, ss, const, L+1)
-	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
+		count += 1   # It has to be there as counting in WTF and WTM start from 1!
+		if   (method=="general"):    Util.WTF(B, ss, const, L+1)
+		elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
 
 		B.set_attr("xform.projection", transform)
 		Util.BPCQ(B, CUBE, (B.get_ysize()-1)//2)
@@ -1724,9 +1715,9 @@ def weight_swbp(A, L, ss, method = "general", const=1.0E4, symmetry="c1"):
 	B = A.copy()
 	count = 0
 	for j in xrange(1):
-	  	count += 1   # It has to be there as counting in WTF and WTM start from 1!
-	  	if   (method=="general"):    Util.WTF(B, ss, const, L+1)
-	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
+		count += 1   # It has to be there as counting in WTF and WTM start from 1!
+		if   (method=="general"):    Util.WTF(B, ss, const, L+1)
+		elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
 
 	return B
 
@@ -1881,7 +1872,7 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 			for k in xrange(-ns,ns+1):
 				prj.append(i+k)
 		for i in xrange(-2*ns,2*ns+1,1):
-			 smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
+			smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
 		#if myid == 0:  print "  Smear  ",smear
 		fftvol_half.set_attr("smear", smear)
 
@@ -1946,9 +1937,9 @@ def get_image_size( imgdata, myid ):
 	from mpi import mpi_gather, mpi_bcast, MPI_COMM_WORLD, MPI_INT
 	nimg = len(imgdata)
 
-        nimgs = mpi_gather( nimg, 1, MPI_INT, 1, MPI_INT, 0, MPI_COMM_WORLD )
+	nimgs = mpi_gather( nimg, 1, MPI_INT, 1, MPI_INT, 0, MPI_COMM_WORLD )
 
-        if myid==0:
+	if myid==0:
 		src = -1
 		for i in xrange( len(nimgs) ):
 			if int(nimgs[i]) > 0 :
