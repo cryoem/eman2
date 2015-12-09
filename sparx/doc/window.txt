@@ -1,5 +1,5 @@
 = Name =
-sxwindow - Window out particles with known coordinates from a micrograph.
+sxwindow - Micrograph Windowing: Window out particles with known coordinates from a micrograph.
 
 = Usage =
 

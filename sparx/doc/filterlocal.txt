@@ -1,5 +1,5 @@
 = Name =
-sxfilterlocal - Locally filter input volume based on values within the associated local resolution volume ([[sxlocres.py]]) within area outlined by the maskfile.
+sxfilterlocal - 3D Local Filter: Locally filter input volume based on values within the associated local resolution volume ([[sxlocres.py]]) within area outlined by the maskfile.
 
 = Usage =
 

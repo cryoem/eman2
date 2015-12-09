@@ -1,5 +1,5 @@
 = Name =
-sxlocres - Compute local resolution in real space within are outlined by the maskfile and within regions wn x wn x wn.
+sxlocres - Local Resolution Estimation: Compute local resolution in real space within are outlined by the maskfile and within regions wn x wn x wn.
 
 = Usage =
 

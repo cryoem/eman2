@@ -27,7 +27,7 @@ b. Only information in the target sections will be used by the parser (wikiparse
 ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 = Name =
 
-${SXSCRIPT} - ${SHORT_INFO}
+${SXSCRIPT} - ${SXSCRIPT_LABEL}: ${SXSCRIPT_SHORT_INFO}
 
 = Usage =
 
@@ -63,26 +63,33 @@ ${USAGE_IN_COMMAND_LINE}
 ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 ${SXSCRIPT}
-   Name of the sx script file without ".py" extension.
-   e.g. "sxviper"
+	Name of the sx script file without ".py" extension.
+	e.g. "sxviper"
 
-   Used for text of the button in main window.
+	GUI uses this to generate the command line.
+	Used for title in popup window tabs for this sx script.
 
-${SHORT_INFO} 
-   A definition (description) for GUI button. 
-   e.g. "Validated ''ab initio'' 3D structure determination"
+${SXSCRIPT_LABEL}
+	User friendly name of the sx script.
+	e.g. "sxviper"
 
-   Used for a help info of the button and label at the top of main tab.
-   
+	Used for text of the button in main window.
+
+${SXSCRIPT_SHORT_INFO} 
+	A definition (description) for GUI button. 
+	e.g. "Validated ''ab initio'' 3D structure determination"
+
+	Used for a help info of the button and label at the top of main tab.
+
 ${USAGE_IN_COMMAND_LINE}
-   The usage in command line.
-   e.g "sxviper.py stack  directory  --ir=inner_radius --radius=outer_radius"
-   
-   Used to extract command tokens (i.e. arguments and options of the command). 
-   If token includes no prefix, it is assigned as an argument.
-   If token includes prefix of "--" or "-", the parser assume this is an option.
-   The order of command tokens here is also kept in the GUI.
-   The command tokens appears here must exist either in "== Input ==" or "== Output ==" section.
+	The usage in command line.
+	e.g "sxviper.py stack  directory  --ir=inner_radius --radius=outer_radius"
+
+	Used to extract command tokens (i.e. arguments and options of the command). 
+	If token includes no prefix, it is assigned as an argument.
+	If token includes prefix of "--" or "-", the parser assume this is an option.
+	The order of command tokens here is also kept in the GUI.
+	The command tokens appears here must exist either in "== Input ==" or "== Output ==" section.
 
 ${COMMDNA_TOKEN_KEY_BASE}
 	Key base or name of a command token (i.e. arguments and options) without any prefix "--" or "-".

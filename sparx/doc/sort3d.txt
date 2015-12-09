@@ -1,5 +1,5 @@
 = Name =
-sxsort3d - Sort out 3-D heterogeneity of 2-D data whose 3-D reconstruction parameters (xform.projection) have been determined already using 3-D sorting protocol I (P1).
+sxsort3d - 3D Clustering: Sort out 3-D heterogeneity of 2-D data whose 3-D reconstruction parameters (xform.projection) have been determined already using 3-D sorting protocol I (P1).
 
 = Usage =
 

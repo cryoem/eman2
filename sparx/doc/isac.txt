@@ -1,5 +1,5 @@
 = Name =
-sxisac - Iterative Stable Alignment and Clustering (ISAC) of a 2-D image stack.
+sxisac - 2D Clustering: Iterative Stable Alignment and Clustering (ISAC) of a 2-D image stack.
 
 = Usage =
 

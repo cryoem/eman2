@@ -1,6 +1,6 @@
 ## page was renamed from e2pdb2em
 = Name =
-sxpdb2em - Convert atomic model (pdb file) into sampled electron density map 
+sxpdb2em - PDB File Conversion: Convert atomic model (pdb file) into sampled electron density map 
 
 = Usage =
 

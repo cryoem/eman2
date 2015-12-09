@@ -25,7 +25,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 			# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	
 	print "Start parsing Wiki document (%s)" % wiki_file_path
-
+	
 	# Allocate memory for new SXcmd instance
 	sxcmd = SXcmd()
 	
@@ -76,17 +76,17 @@ def construct_token_list_from_wiki(wiki_file_path):
 	section_lists.append("== Output =="); section_output = len(section_lists) - 1; 
 	current_section = section_name
 	
-	# Define list of subsections of input section and set current		
+	# Define list of subsections of input section and set current
 	group_main = "main"
 	group_advanced = "advanced"
 	group = group_main
-			
+	
 	# Define States and set current
 	state_searching  = 0
 	state_processing = 1
 	state_done = 2
 	current_state = state_searching
-			
+	
 	# NOTE: 2015/11/11 Toshio Moriya
 	# This should be exception. Need to decide if this should be skipped or exit system.
 	if os.path.exists(wiki_file_path) == False: ERROR("Rutime Error: Wiki document is not found.", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -97,7 +97,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 	for line_wiki in file_wiki:
 		# make sure spaces & new line are not included at head and tail of this line
 		line_wiki = line_wiki.strip()  
-
+		
 		if not line_wiki:
 			# This is empty line. Always ignore it regardless of state
 			continue
@@ -128,13 +128,20 @@ def construct_token_list_from_wiki(wiki_file_path):
 			else:
 				# We are in a target section
 				if current_section == section_name:
+					line_buffer = line_wiki
 					# Extract the name of sxscript
 					target_operator = "-"
-					item_tail = line_wiki.find(target_operator)
+					item_tail = line_buffer.find(target_operator)
 					if item_tail == -1: ERROR("Wiki Format Error: '= Name =' section should contain only one valid line, and the line should starts from 'sx* - ': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
-					sxcmd.name = line_wiki[0:item_tail].strip()
+					sxcmd.name = line_buffer[0:item_tail].strip()
+					line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
+					# Extract the label of this sxscript
+					target_operator = ":"
+					item_tail = line_buffer.find(target_operator)
+					if item_tail == -1: ERROR("Wiki Format Error: '= Name =' section should contain a label ended with ':' after 'sx* - ': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+					sxcmd.label = line_buffer[0:item_tail].strip()
 					# Extract the short info about this sxscript (can be empty)
-					sxcmd.short_info = line_wiki[item_tail + len(target_operator):].strip()							
+					sxcmd.short_info = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 				elif current_section == section_usage:
 					# Extract 'usage in command line' to identify each command token is either an argument (no-prefix) or option ('--' prefix)
 					# This information is also used to check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
@@ -193,7 +200,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 							# ERROR("Warning: This line (%s) contains MPI flag. The flag will be removed in near future, so ignoring this line...'."  % (line_wiki), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
 							if sxcmd.mpi_support == False or sxcmd.mpi_add_flag == False: ERROR("Logical Error: Since MPI flag is found, the command should support MPI.", "%s in %s" % (__name__, os.path.basename(__file__)))
 							continue
-						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line											
+						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 						# check consistency between 'usage in command line' and this
 						if key_base not in sxcmd.token_dict.keys(): ERROR("Wiki Format Error: Key base (%s) is missing from 'usage in command line' in '= Usage ='." % key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 						# Get the reference to the command token object associated with this key base name
@@ -294,6 +301,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	output_file.write("\t")
 	output_file.write("%s = SXcmd()" % sxcmd_variable_name)
 	output_file.write("; %s.name = \"%s\"" % (sxcmd_variable_name, sxcmd.name)) 
+	output_file.write("; %s.label = \"%s\"" % (sxcmd_variable_name, sxcmd.label)) 
 	output_file.write("; %s.short_info = \"%s\"" % (sxcmd_variable_name, sxcmd.short_info.replace("\"", "'")))
 	output_file.write("; %s.mpi_support = %s" % (sxcmd_variable_name, sxcmd.mpi_support))
 	output_file.write("; %s.mpi_add_flag = %s" % (sxcmd_variable_name, sxcmd.mpi_add_flag))

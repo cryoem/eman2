@@ -64,6 +64,7 @@ class SXcmd:
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.name = ""               # Name of this command (i.e. name of sx*.py script but without .py extension)
+		self.label = ""              # User friendly name of this command
 		self.short_info = ""         # Short description of this command
 		self.mpi_support = False     # Flag to indicate if this command suppors MPI version
 		self.mpi_add_flag = False    # NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts 
@@ -847,7 +848,7 @@ class MainWindow(QtGui.QWidget):
 		
 		for sxcmd in sxcmd_list:
 			# Add buttons for this sx*.py processe
-			temp_btn = QPushButton(sxcmd.name, self)
+			temp_btn = QPushButton(sxcmd.label, self)
 			temp_btn.move(10, self.y1)
 			temp_btn.setToolTip(sxcmd.short_info)
 			self.connect(temp_btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
