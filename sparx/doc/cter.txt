@@ -52,7 +52,7 @@ Specify name of stack (without wild card "*") and output directory as arguments.
 
 
 == Output ==
-    output_directory:: output directory: partres file and rotinf**** files: (default required string)
+    output_directory:: output directory name: into which the partres file and rotinf**** files will be written. The program creates the directory automatically. The directory should not exists upon the execution. (default required string)
 
 Under the directory specified by argument output_directory, 
 (1) CTF parameters are written to ''partres/partres.txt''<<BR>><<BR>>
