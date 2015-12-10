@@ -47,14 +47,14 @@ class SXcmd_token:
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.key_base = ""          # key base name of command token (argument or option) in command line
-		self.key_prefix = ""        # key prefix of of command token. None for argument, '--' or '-' for option
+		self.key_prefix = ""        # key prefix of of command token. None for argument, "--" or "-" for option
 		self.label = ""             # User friendly name of argument or option
 		self.help = ""              # Help info
 		self.group = ""             # Tab group: main or advanced
 		self.is_required = False    # Required argument or options. No default value are available 
 		self.default = ""           # Default value
 		self.type = ""              # Type of value
-		self.is_in_io = False       # <Used only here> To check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
+		self.is_in_io = False       # <Used only here> To check consistency between "usage in command line" and list in "== Input ==" and "== Output ==" sections
 		self.widget = None          # <Used only in sxgui.py> Widget instances Associating with this command token
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
@@ -86,14 +86,14 @@ def construct_sxcmd_list():
 	token = SXcmd_token(); token.key_base = "het"; token.key_prefix = "--"; token.label = "Include HET atoms in the map"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "center"; token.key_prefix = "--"; token.label = "specify whether to center the atomic model"; token.help = "before converting to electron density map (warning: pdb deposited atomic models are not necesserily centered).  Options: c - center using coordinates of atoms; a - center by setting center of gravity to zero (recommended); a triplet x,y,z (no spaces in between) - coordinates (in Angstrom) to be substracted from all the PDB coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume, i.e., (nx/2, ny/2, nz/2). "; token.group = "main"; token.is_required = False; token.default = "n"; token.type = "string"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "O"; token.key_prefix = "--"; token.label = "apply additional rotation"; token.help = "so the model will appear in O in the same rotation as in chimera. "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "tr0"; token.key_prefix = "--"; token.label = "name of a file containing a 3x4 transformation matrix"; token.help = "to be applied to the PDB coordinates after centering, prior to computing the density map. The translation vector (last column of the matrix) must be specified in Angstrom. If this parameter is omitted, no transformation is applied. "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "tr0"; token.key_prefix = "--"; token.label = "name of a file containing a 3x4 transformation matrix"; token.help = "to be applied to the PDB coordinates after centering, prior to computing the density map. The translation vector (last column of the matrix) must be specified in Angstrom. If this parameter is omitted, no transformation is applied. "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "quiet"; token.key_prefix = "--"; token.label = "do not print any information to the monitor"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 	sxcmd_list.append(sxcmd)
 
 	sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.label = "CTF Estimation"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
 	token = SXcmd_token(); token.key_base = "input_image"; token.key_prefix = ""; token.label = "a set of micrographs (name with wild card *) or 2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.type = "any_image"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory"; token.help = "partres file and rotinf**** files: "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the partres file and rotinf**** files will be written. The program creates the directory automatically. The directory should not exists upon the execution. "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "size of window to use"; token.help = "should be slightly larger than particle box size "; token.group = "main"; token.is_required = False; token.default = "512"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "pixel size in angstroms"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "Cs"; token.key_prefix = "--"; token.label = "microscope Cs (spherical aberration)"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "2.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -111,23 +111,17 @@ def construct_sxcmd_list():
 	sxcmd_list.append(sxcmd)
 
 	sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.label = "Micrograph Windowing"; sxcmd.short_info = "Window out particles with known coordinates from a micrograph."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False
-	token = SXcmd_token(); token.key_base = "micrographs_list"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "if none is specified all files in option --indir are used "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "coords_dir"; token.key_prefix = "--"; token.label = "directory containing input coordinates files"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.type = "directory"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "coords_suffix"; token.key_prefix = "--"; token.label = "suffix of input coordinates files"; token.help = "For example '_ptcls. "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "coords_extension"; token.key_prefix = "--"; token.label = "file extension of input coordinates files"; token.help = "e.g 'box' for eman1, 'json' for eman2, ... "; token.group = "main"; token.is_required = False; token.default = "box"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "coords_format"; token.key_prefix = "--"; token.label = "format of input coordinates file"; token.help = "'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size. "; token.group = "main"; token.is_required = False; token.default = "eman1"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "indir"; token.key_prefix = "--"; token.label = "directory containing input micrographs"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.type = "directory"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "importctf"; token.key_prefix = "--"; token.label = "file name of sxcter output"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "limitctf"; token.key_prefix = "--"; token.label = "Filter micrographs based on the CTF limit"; token.help = "It requires --importctf. "; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "resample_ratio"; token.key_prefix = "--"; token.label = "Ratio of new to old image size (or old to new pixel size) for resampling"; token.help = "Valid range is 0.0 < resample_ratio <= 1.0. "; token.group = "advanced"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "xy dimension of square area to be windowed (in pixels)"; token.help = "Pixel size after resampling is assumed when resample_ratio < 1.0 "; token.group = "main"; token.is_required = False; token.default = "256"; token.type = "int"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "outdir"; token.key_prefix = "--"; token.label = "output directory"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.type = "output"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "outsuffix"; token.key_prefix = "--"; token.label = "suffix for output stack"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "_ptcls"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "micsuffix"; token.key_prefix = "--"; token.label = "file extension of input micrographs"; token.help = "A string denoting micrograph type. "; token.group = "main"; token.is_required = False; token.default = "hdf"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "nameroot"; token.key_prefix = "--"; token.label = "root name (Prefix) of input micrographs"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "invert"; token.key_prefix = "--"; token.label = "invert image contrast"; token.help = "(recommended for cryo data) "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "defocuserror"; token.key_prefix = "--"; token.label = "Defocus errror limit"; token.help = "exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent. The error is computed as (std dev defocus)/defocus*100%. "; token.group = "advanced"; token.is_required = False; token.default = "1000000.0"; token.type = "float"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "astigmatismerror"; token.key_prefix = "--"; token.label = "Astigmatism error limit"; token.help = "Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. "; token.group = "advanced"; token.is_required = False; token.default = "360.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "name pattern of input micrographs"; token.help = "use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, or etc). "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "any_image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "input_coordinates_pattern"; token.key_prefix = ""; token.label = "name pattern of input coordinates files"; token.help = "use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, and etc). "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "parameters"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the results will be written. the directory should not exists upon the execution. the program creates it automatically. "; token.group = "main"; token.is_required = True; token.default = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "coordinates_format"; token.key_prefix = "--"; token.label = "format of input coordinates files"; token.help = "'sparx', 'eman1', 'eman2', or 'spider'. the coordinates of sparx, eman2, and spider format is particle center. the coordinates of eman1 format is particle box conner associated with the original box size. "; token.group = "main"; token.is_required = False; token.default = "eman1"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "x and y dimension of square area to be windowed (in pixels)"; token.help = "pixel size after resampling is assumed when resample_ratio < 1.0 "; token.group = "main"; token.is_required = False; token.default = "256"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "invert"; token.key_prefix = "--"; token.label = "invert image contrast"; token.help = "recommended for cryo data "; token.group = "main"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "import_ctf"; token.key_prefix = "--"; token.label = "file name of sxcter output"; token.help = "normally partres.txt "; token.group = "main"; token.is_required = False; token.default = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "limit_ctf"; token.key_prefix = "--"; token.label = "filter micrographs based on the CTF limit"; token.help = "this option requires --import_ctf. "; token.group = "advanced"; token.is_required = False; token.default = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "resample_ratio"; token.key_prefix = "--"; token.label = "ratio of new to old image size (or old to new pixel size) for resampling"; token.help = "Valid range is 0.0 < resample_ratio <= 1.0. "; token.group = "advanced"; token.is_required = False; token.default = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "defocus_error"; token.key_prefix = "--"; token.label = "defocus errror limit"; token.help = "exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocus_error percent. the error is computed as (std dev defocus)/defocus*100%. "; token.group = "advanced"; token.is_required = False; token.default = "1000000.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "astigmatism_error"; token.key_prefix = "--"; token.label = "astigmatism error limit"; token.help = "set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatism_error degrees. "; token.group = "advanced"; token.is_required = False; token.default = "360.0"; token.type = "float"; sxcmd.token_list.append(token)
 
 	sxcmd_list.append(sxcmd)
 
@@ -357,8 +351,8 @@ class SXPopup(QWidget):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 		self.setWindowTitle(self.sxcmd.name)
-		self.tab_main = SXTab(self, 'Main')
-		self.tab_advance = SXTab(self, 'Advanced')
+		self.tab_main = SXTab(self, "Main")
+		self.tab_advance = SXTab(self, "Advanced")
 		self.tab_main.w1 = self.tab_advance
 		self.TabWidget = QtGui.QTabWidget()
 		self.TabWidget.insertTab(0, self.tab_main, self.tab_main.name)
@@ -387,7 +381,7 @@ class SXPopup(QWidget):
 				if external_file_path not in ["", token.default[external_file_path_index]]:
 					# Case 1: User specified an exteranl function different from default or empty string
 					if os.path.splitext(external_file_path)[1] != ".py": 
-						ERROR("Warning: Exteranl File Path (%s) should include .py extension." % (external_file_path), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
+						QMessageBox.warning(self, "Invalid paramter value", "Exteranl File Path (%s) should include the python script extension (.py)." % (external_file_path))
 						return ""
 					dir_path, file_basename = os.path.split(external_file_path)
 					file_basename = file_basename.replace(".py", "")
@@ -404,7 +398,7 @@ class SXPopup(QWidget):
 						sxcmd_line += " %s%s" % (token.key_prefix, token.key_base)
 				else:
 					if token.is_required == True and token.widget.text() == token.default:
-						ERROR("Warning: Token (%s) of command (%s) is required. Please set the value for this token." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
+						QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this token." % (token.key_base, self.sxcmd.name))
 						return ""
 				
 					if token.widget.text() != token.default:
@@ -441,23 +435,26 @@ class SXPopup(QWidget):
 				# Since we now assume sx*.py exists in only MPI version, always add --MPI flag if necessary
 				# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
 				if self.sxcmd.mpi_add_flag:
-					sxcmd_line += ' --MPI'
+					sxcmd_line += " --MPI"
 		
 			# Generate command line according to the case
 			cmd_line = ""
 			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
-				if os.path.exists(self.tab_main.qsub_script_edit.text()) != True: ERROR("Run Time Error: Invalid file path for qsub script template.", "%s in %s" % (__name__, os.path.basename(__file__)))
-				file_template = open(self.tab_main.qsub_script_edit.text(),'r')
+				if os.path.exists(self.tab_main.qsub_script_edit.text()) != True: 
+					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s)." % (self.tab_main.qsub_script_edit.text()))
+					return "" 
+					
+				file_template = open(self.tab_main.qsub_script_edit.text(),"r")
 				# Extract command line from qsub script template 
 				for line in file_template:
-					if line.find('XXX_SXCMD_LINE_XXX') != -1:
-						cmd_line = line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
-						if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
-							cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
-						if cmd_line.find('XXX_SXMPI_JOB_NAME_XXX') != -1:
-							cmd_line = cmd_line.replace('XXX_SXMPI_JOB_NAME_XXX', str(self.tab_main.qsub_job_name_edit.text()))
+					if line.find("XXX_SXCMD_LINE_XXX") != -1:
+						cmd_line = line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
+						if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
+							cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
+						if cmd_line.find("XXX_SXMPI_JOB_NAME_XXX") != -1:
+							cmd_line = cmd_line.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.tab_main.qsub_job_name_edit.text()))
 				file_template.close()
 			elif self.sxcmd.mpi_support:
 				# Case 2: queue submission is disabled, but MPI is supported
@@ -466,11 +463,11 @@ class SXPopup(QWidget):
 				cmd_line = str(self.tab_main.mpi_cmd_line_edit.text())
 				# If empty string is entered, use a default template
 				if cmd_line == "":
-					cmd_line = 'mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX'
-				if cmd_line.find('XXX_SXMPI_NPROC_XXX') != -1:
-					cmd_line = cmd_line.replace('XXX_SXMPI_NPROC_XXX', str(np))
-				if cmd_line.find('XXX_SXCMD_LINE_XXX') != -1:
-					cmd_line = cmd_line.replace('XXX_SXCMD_LINE_XXX', sxcmd_line)
+					cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
+				if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
+					cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
+				if cmd_line.find("XXX_SXCMD_LINE_XXX") != -1:
+					cmd_line = cmd_line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
 			else: 
 				# Case 3: queue submission is disabled, and MPI is not supported
 				if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -490,14 +487,14 @@ class SXPopup(QWidget):
 			# Command line is not empty
 			# First, check existence of outputs
 			for token in self.sxcmd.token_list:
-				if token.type == 'output':
+				if token.type == "output":
 					if os.path.exists(token.widget.text()):
 						# NOTE: 2015/11/24 Toshio Moriya
 						# This special case needs to be handled with more general method...
-						if self.sxcmd.name == 'sxmeridien':
-							ERROR("Warning: Output Directory/File (%s) already exists. Executing the program with continue mode..." % (token.widget.text()), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
+						if self.sxcmd.name in ["sxmeridien"]:
+							QMessageBox.warning(self, "Output Directory/File", "Output Directory/File (%s) already exists. Executing the program with continue mode ..." % (token.widget.text()))
 						else:
-							ERROR("Warning: Output Directory/File (%s) already exists. Please change the name and try it again. Aborting execution..." % (token.widget.text()), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
+							QMessageBox.warning(self, "Output Directory/File", "Output Directory/File (%s) already exists. Please change the name and try it again. Aborting execution ..." % (token.widget.text()))
 							return
 			
 			# If mpi is not supported set number of MPI processer (np) to 1
@@ -506,38 +503,37 @@ class SXPopup(QWidget):
 				np = int(str(self.tab_main.mpi_nproc_edit.text()))
 		
 			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
-				# Case 1: queue submission is enabled (MPI must be supported)
-				if self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for self.sxcmd.mpi_support. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
 				template_file_path = self.tab_main.qsub_script_edit.text()
 				if os.path.exists(template_file_path) == False: 
-					ERROR("WARNING: Invalid file path for qsub script template (%s)." % (template_file_path), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
+					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
 					return
-				file_template = open(self.tab_main.qsub_script_edit.text(),'r')
-				file_name_qsub_script = 'qsub_' + str(self.tab_main.qsub_job_name_edit.text()) + '.sh'
-				file_qsub_script = open(file_name_qsub_script,'w')
+				file_template = open(self.tab_main.qsub_script_edit.text(),"r")
+				file_name_qsub_script = "qsub_" + str(self.tab_main.qsub_job_name_edit.text()) + ".sh"
+				file_qsub_script = open(file_name_qsub_script,"w")
 				for line_io in file_template:
-					if line_io.find('XXX_SXCMD_LINE_XXX') != -1:
+					if line_io.find("XXX_SXCMD_LINE_XXX") != -1:
 						line_io = cmd_line
 					else:
-						if line_io.find('XXX_SXMPI_NPROC_XXX') != -1:
-							line_io = line_io.replace('XXX_SXMPI_NPROC_XXX', str(np))
-						if line_io.find('XXX_SXMPI_JOB_NAME_XXX') != -1:
-							line_io = line_io.replace('XXX_SXMPI_JOB_NAME_XXX', str(self.tab_main.qsub_job_name_edit.text()))
+						if line_io.find("XXX_SXMPI_NPROC_XXX") != -1:
+							line_io = line_io.replace("XXX_SXMPI_NPROC_XXX", str(np))
+						if line_io.find("XXX_SXMPI_JOB_NAME_XXX") != -1:
+							line_io = line_io.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.tab_main.qsub_job_name_edit.text()))
 					file_qsub_script.write(line_io)
 				file_template.close()
 				file_qsub_script.close()
 				# Generate command line for queue submission
 				cmd_line_in_script = cmd_line
-				cmd_line = str(self.tab_main.qsub_cmd_edit.text()) + ' ' + file_name_qsub_script
-				print 'Wrote the following command line in the queue submission script: '
+				cmd_line = str(self.tab_main.qsub_cmd_edit.text()) + " " + file_name_qsub_script
+				print "Wrote the following command line in the queue submission script: "
 				print cmd_line_in_script
-				print 'Submitted a job by the following command: '
+				print "Submitted a job by the following command: "
 				print cmd_line
 			else:
-				# Case 2: queue submission is disabled, but MPI is supported
-				if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked or self.sxcmd.mpi_support == False: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-				print 'Executed the following command: '
+				# Case 2: queue submission is disabled (MPI can be supported or unsupported)
+				if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				print "Executed the following command: "
 				print cmd_line
 		
 			# Execute the generated command line
@@ -555,11 +551,11 @@ class SXPopup(QWidget):
 		cmd_line = self.generate_cmd_line()
 		if cmd_line:
 			file_name_out = QtGui.QFileDialog.getSaveFileName(self, "Generate Command Line", options = QtGui.QFileDialog.DontUseNativeDialog)
-			if file_name_out != '':
-				file_out = open(file_name_out,'w')
-				file_out.write(cmd_line + '\n')
+			if file_name_out != "":
+				file_out = open(file_name_out,"w")
+				file_out.write(cmd_line + "\n")
 				file_out.close()
-				print 'Saved the following command to %s:' % file_name_out
+				print "Saved the following command to %s:" % file_name_out
 				print cmd_line
 				
 				# Save the current state of GUI settings
@@ -569,12 +565,12 @@ class SXPopup(QWidget):
 		# else: Do nothing
 	
 	def write_params(self, file_name_out):
-		file_out = open(file_name_out,'w')
+		file_out = open(file_name_out,"w")
 		
 		# Write script name for consistency check upon loading
-		file_out.write('@@@@@ %s gui setting - ' % (self.sxcmd.name))
-		file_out.write(EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')')
-		file_out.write(' @@@@@ \n')
+		file_out.write("@@@@@ %s gui setting - " % (self.sxcmd.name))
+		file_out.write(EMANVERSION + " (CVS" + CVSDATESTAMP[6:-2] +")")
+		file_out.write(" @@@@@ \n")
 		
 		# Define list of (tab) groups
 		group_main = "main"
@@ -591,65 +587,65 @@ class SXPopup(QWidget):
 						n_widgets = 2
 						for widget_index in xrange(n_widgets):
 							val_str = str(cmd_token.widget[widget_index].text()) 
-							file_out.write('<%s> %s (default %s) == %s \n' % (cmd_token.key_base, cmd_token.label[widget_index], cmd_token.default[widget_index], val_str))
+							file_out.write("<%s> %s (default %s) == %s \n" % (cmd_token.key_base, cmd_token.label[widget_index], cmd_token.default[widget_index], val_str))
 					# Then, handle the other cases
 					else:
-						val_str = ''
-						if cmd_token.type == 'bool':
+						val_str = ""
+						if cmd_token.type == "bool":
 							if cmd_token.widget.checkState() == Qt.Checked:
-								val_str = 'YES'
+								val_str = "YES"
 							else:
-								val_str = 'NO'
+								val_str = "NO"
 						else:
 							# The other type has only one line edit box
 							val_str = str(cmd_token.widget.text())
 						
 						if cmd_token.is_required == False:
-							file_out.write('<%s> %s (default %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.default, val_str))
+							file_out.write("<%s> %s (default %s) == %s \n" % (cmd_token.key_base, cmd_token.label, cmd_token.default, val_str))
 						else:
-							file_out.write('<%s> %s (default required %s) == %s \n' % (cmd_token.key_base, cmd_token.label, cmd_token.type, val_str))
+							file_out.write("<%s> %s (default required %s) == %s \n" % (cmd_token.key_base, cmd_token.label, cmd_token.type, val_str))
 				# else: do nothig
 			
 		# At the end of parameter file...
 		# Write MPI parameters 
-		file_out.write('%s == %s \n' % ('MPI processors', str(self.tab_main.mpi_nproc_edit.text())))
-		file_out.write('%s == %s \n' % ('MPI Command Line Template', str(self.tab_main.mpi_cmd_line_edit.text())))
+		file_out.write("%s == %s \n" % ("MPI processors", str(self.tab_main.mpi_nproc_edit.text())))
+		file_out.write("%s == %s \n" % ("MPI Command Line Template", str(self.tab_main.mpi_cmd_line_edit.text())))
 		# Write Qsub paramters 
 		if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
-			val_str = 'YES'
+			val_str = "YES"
 		else:
-			val_str = 'NO'
-		file_out.write('%s == %s \n' % ('Submit Job to Queue', val_str))	
-		file_out.write('%s == %s \n' % ('Job Name', str(self.tab_main.qsub_job_name_edit.text())))
-		file_out.write('%s == %s \n' % ('Submission Command', str(self.tab_main.qsub_cmd_edit.text())))
-		file_out.write('%s == %s \n' % ('Submission Script Template', str(self.tab_main.qsub_script_edit.text())))
+			val_str = "NO"
+		file_out.write("%s == %s \n" % ("Submit Job to Queue", val_str))	
+		file_out.write("%s == %s \n" % ("Job Name", str(self.tab_main.qsub_job_name_edit.text())))
+		file_out.write("%s == %s \n" % ("Submission Command", str(self.tab_main.qsub_cmd_edit.text())))
+		file_out.write("%s == %s \n" % ("Submission Script Template", str(self.tab_main.qsub_script_edit.text())))
 		
 		file_out.close()
 			
 	def read_params(self, file_name_in):
-		file_in = open(file_name_in,'r')
+		file_in = open(file_name_in,"r")
 	
 		# Check if this parameter file is for this sx script
 		line_in = file_in.readline()
-		if line_in.find('@@@@@ %s gui setting' % (self.sxcmd.name)) != -1:
+		if line_in.find("@@@@@ %s gui setting" % (self.sxcmd.name)) != -1:
 			n_function_type_lines = 2
 			function_type_line_counter = 0
 			# loop through the rest of lines
 			for line_in in file_in:
-				# Extract label (which should be left of '=='). Also strip the ending spaces
-				label_in = line_in.split('==')[0].strip()
-				# Extract value (which should be right of '=='). Also strip all spaces
-				val_str_in = line_in.split('==')[1].strip() 
+				# Extract label (which should be left of "=="). Also strip the ending spaces
+				label_in = line_in.split("==")[0].strip()
+				# Extract value (which should be right of "=="). Also strip all spaces
+				val_str_in = line_in.split("==")[1].strip() 
 				
 				if label_in == "MPI processors":
 					self.tab_main.mpi_nproc_edit.setText(val_str_in)
 				elif label_in == "MPI Command Line Template":
 					self.tab_main.mpi_cmd_line_edit.setText(val_str_in)
 				elif label_in == "Submit Job to Queue":
-					if val_str_in == 'YES':
+					if val_str_in == "YES":
 						self.tab_main.qsub_enable_checkbox.setChecked(True)
 					else:
-						assert val_str_in == 'NO'
+						assert val_str_in == "NO"
 						self.tab_main.qsub_enable_checkbox.setChecked(False)
 				elif label_in == "Job Name":
 					self.tab_main.qsub_job_name_edit.setText(val_str_in)
@@ -661,14 +657,17 @@ class SXPopup(QWidget):
 					# Extract key_base of this command token
 					target_operator = "<"
 					item_tail = label_in.find(target_operator)
-					if item_tail != 0: ERROR("Paramter File Format Error: Command token entry should start from \"%s\" for key base name in line (%s)" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
+					if item_tail != 0: 
+						QMessageBox.warning(self, "Invalid Paramter File Format", "Command token entry should start from \"%s\" for key base name in line (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
 					label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
 					target_operator = ">"
 					item_tail = label_in.find(target_operator)
-					if item_tail == -1: ERROR("Paramter File Format Error: Command token entry should have \"%s\" closing key base name in line (%s)" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
+					if item_tail == -1: 
+						QMessageBox.warning(self, "Invalid Paramter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
 					key_base = label_in[0:item_tail]
 					# Get corresponding cmd_token
-					if key_base not in self.sxcmd.token_dict.keys(): ERROR("Paramter File Format Error: Command token entry should start from \"%s\" for key base name in line %s" % (target_operator, line_in), "%s in %s" % (__name__, os.path.basename(__file__)))
+					if key_base not in self.sxcmd.token_dict.keys(): 
+						QMessageBox.warning(self, "Invalid Paramter File Format", "Invalid base name of command token \"%s\" is found in line (%s). This paramter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in))
 					cmd_token = self.sxcmd.token_dict[key_base]
 					# First, handle very special cases
 					if cmd_token.type == "function":
@@ -679,27 +678,27 @@ class SXPopup(QWidget):
 					else:
 						if cmd_token.type == "bool":
 							# construct new widget(s) for this command token
-							if val_str_in == 'YES':
+							if val_str_in == "YES":
 								cmd_token.widget.setChecked(True)
-							else: # val_str_in == 'NO'
+							else: # val_str_in == "NO"
 								cmd_token.widget.setChecked(False)
 						else:
 							# For now, use line edit box for the other type
 							cmd_token.widget.setText(val_str_in)
 						
 		else:
-			QMessageBox.warning(self, 'Fail to load paramters', 'The specified file is not paramter file for %s.' % self.sxcmd.name)
+			QMessageBox.warning(self, "Fail to load paramters", "The specified file is not paramter file for %s." % self.sxcmd.name)
 		
 		file_in.close()
 	
 	def save_params(self):
 		file_path = str(QtGui.QFileDialog.getSaveFileName(self, "Save Parameters", options = QtGui.QFileDialog.DontUseNativeDialog))
-		if file_path != '':
+		if file_path != "":
 			self.write_params(file_path)
 	
 	def load_params(self):
 		file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Load parameters", options = QtGui.QFileDialog.DontUseNativeDialog))
-		if file_path != '':
+		if file_path != "":
 			self.read_params(file_path)
 	
 	def select_file(self, target_edit_box, file_format = ""):
@@ -708,7 +707,7 @@ class SXPopup(QWidget):
 			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select BDB File", "", "BDB files (*.bdb)", options = QtGui.QFileDialog.DontUseNativeDialog))
 			# Use relative path. 
 			if file_path:
-				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", '#').replace(".bdb", "")
+				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", "#").replace(".bdb", "")
 				file_path = file_path.replace("/#", "#")
 		elif file_format == "py":
 			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select Python File", "", "PY files (*.py)", options = QtGui.QFileDialog.DontUseNativeDialog))
@@ -727,18 +726,18 @@ class SXPopup(QWidget):
 			if file_path:
 				file_path = os.path.relpath(file_path)
 			
-		if file_path != '':
+		if file_path != "":
 			target_edit_box.setText(file_path)
 				
 	def select_dir(self, target_edit_box):
 		dir_path = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory", "", options = QtGui.QFileDialog.ShowDirsOnly | QtGui.QFileDialog.DontResolveSymlinks | QtGui.QFileDialog.DontUseNativeDialog))
-		if dir_path != '':
+		if dir_path != "":
 			# Use relative path. 
 			target_edit_box.setText(os.path.relpath(dir_path))
 			
 	"""
 #	def show_output_info(self):
-#		QMessageBox.information(self, "sx* output",'outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program.')
+#		QMessageBox.information(self, "sx* output","outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program.")
 	"""
 
 # ========================================================================================
@@ -768,12 +767,12 @@ class SXTab(QWidget):
 			# # Set the window title
 			# self.setWindowTitle(self.sxcmd.name)
 			# Set a label and its position in this tab
-			temp_label = QtGui.QLabel('<b>%s</b>' % (self.sxpopup.sxcmd.name), self)
+			temp_label = QtGui.QLabel("<b>%s</b>" % (self.sxpopup.sxcmd.name), self)
 			temp_label.move(self.x1, self.y1)
 			# NOTE: 2015/11/17 Toshio Moriya
-			# Necessary to separate '<b>%s</b>' from the information for avoiding to invoke the tag interpretations of string
+			# Necessary to separate "<b>%s</b>" from the information for avoiding to invoke the tag interpretations of string
 			# e.g. < becomes the escape character
-			temp_label = QtGui.QLabel('%s' % (self.sxpopup.sxcmd.short_info), self)
+			temp_label = QtGui.QLabel("%s" % (self.sxpopup.sxcmd.short_info), self)
 			temp_label.setWordWrap(True)
 			temp_label.setFixedWidth(600)
 			temp_label.move(self.x1 + 100, self.y1)
@@ -782,17 +781,17 @@ class SXTab(QWidget):
 			# Add load paramater button 
 			self.load_params_btn = QPushButton("Load parameters", self)
 			self.load_params_btn.move(self.x1 - 5, self.y1)
-			self.load_params_btn.setToolTip('Load gui parameter settings to retrieve a previously-saved one')
+			self.load_params_btn.setToolTip("Load gui parameter settings to retrieve a previously-saved one")
 			self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxpopup.load_params)
 			self.y1 += 25
 			
 		elif tab_group == "advanced":
 		# Set the window title
-			#self.setWindowTitle('%s advanced parameter selection' % self.sxcmd.name)
+			#self.setWindowTitle("%s advanced parameter selection" % self.sxcmd.name)
 			# Set a label and its position in this tab
-			temp_label = QtGui.QLabel('<b>%s</b>' % (self.sxpopup.sxcmd.name), self)
+			temp_label = QtGui.QLabel("<b>%s</b>" % (self.sxpopup.sxcmd.name), self)
 			temp_label.move(self.x1, self.y1)
-			temp_label = QtGui.QLabel('Set advanced parameters', self)
+			temp_label = QtGui.QLabel("Set advanced parameters", self)
 			temp_label.setWordWrap(True)
 			temp_label.setFixedWidth(600)
 			temp_label.move(self.x1 + 100, self.y1)
@@ -911,21 +910,21 @@ class SXTab(QWidget):
 			self.y1 = self.y1 + 25 * 1
 		
 			# Add gui components for MPI related paramaters if necessary
-			temp_label = QtGui.QLabel('MPI processors', self)
+			temp_label = QtGui.QLabel("MPI processors", self)
 			temp_label.move(self.x1, self.y1)
 			self.mpi_nproc_edit = QtGui.QLineEdit(self)
-			self.mpi_nproc_edit.setText('1')
+			self.mpi_nproc_edit.setText("1")
 			self.mpi_nproc_edit.move(self.x2, self.y1)
-			self.mpi_nproc_edit.setToolTip('The number of processors to use. Default is single processor mode')
+			self.mpi_nproc_edit.setToolTip("The number of processors to use. Default is single processor mode")
 		
 			self.y1 = self.y1 + 25
 
-			temp_label = QtGui.QLabel('MPI command line template', self)
+			temp_label = QtGui.QLabel("MPI command line template", self)
 			temp_label.move(self.x1, self.y1)
 			self.mpi_cmd_line_edit = QtGui.QLineEdit(self)
-			self.mpi_cmd_line_edit.setText('')
+			self.mpi_cmd_line_edit.setText("")
 			self.mpi_cmd_line_edit.move(self.x2, self.y1)
-			self.mpi_cmd_line_edit.setToolTip('The template of MPI command line (e.g. "mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX"). If empty, use "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"')
+			self.mpi_cmd_line_edit.setToolTip("The template of MPI command line (e.g. \"mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX\"). If empty, use \"mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX\"")
 
 			self.y1 = self.y1 + 25
 		
@@ -935,40 +934,40 @@ class SXTab(QWidget):
 
 			# Add gui components for queue submission (qsub)
 			is_qsub_enabled = False
-			temp_label = QtGui.QLabel('submit job to queue', self)
+			temp_label = QtGui.QLabel("submit job to queue", self)
 			temp_label.move(self.x1, self.y1)
 			self.qsub_enable_checkbox = QtGui.QCheckBox("", self)
 			self.qsub_enable_checkbox.setCheckState(is_qsub_enabled)
 			self.qsub_enable_checkbox.stateChanged.connect(self.set_qsub_enable_state) # To control enable state of the following qsub related widgets
 			self.qsub_enable_checkbox.move(self.x2, self.y1)
-			self.qsub_enable_checkbox.setToolTip('submit job to queue')
+			self.qsub_enable_checkbox.setToolTip("submit job to queue")
 		
 			self.y1 = self.y1 + 25
 		
-			temp_label = QtGui.QLabel('job name', self)
+			temp_label = QtGui.QLabel("job name", self)
 			temp_label.move(self.x1, self.y1)
 			self.qsub_job_name_edit = QtGui.QLineEdit(self)
 			self.qsub_job_name_edit.setText(self.sxpopup.sxcmd.name)
 			self.qsub_job_name_edit.move(self.x2, self.y1)
-			self.qsub_job_name_edit.setToolTip('name of this job')
+			self.qsub_job_name_edit.setToolTip("name of this job")
 
 			self.y1 = self.y1 + 25
 
-			temp_label = QtGui.QLabel('submission command', self)
+			temp_label = QtGui.QLabel("submission command", self)
 			temp_label.move(self.x1, self.y1)
 			self.qsub_cmd_edit = QtGui.QLineEdit(self)
-			self.qsub_cmd_edit.setText('qsub')
+			self.qsub_cmd_edit.setText("qsub")
 			self.qsub_cmd_edit.move(self.x2, self.y1)
-			self.qsub_cmd_edit.setToolTip('name of submission command to queue job')
+			self.qsub_cmd_edit.setToolTip("name of submission command to queue job")
 
 			self.y1 = self.y1 + 25
 
-			temp_label = QtGui.QLabel('submission script template', self)
+			temp_label = QtGui.QLabel("submission script template", self)
 			temp_label.move(self.x1, self.y1)
 			self.qsub_script_edit = QtGui.QLineEdit(self)
-			self.qsub_script_edit.setText('msgui_qsub.sh')
+			self.qsub_script_edit.setText("msgui_qsub.sh")
 			self.qsub_script_edit.move(self.x2, self.y1)
-			self.qsub_script_edit.setToolTip('file name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh')
+			self.qsub_script_edit.setToolTip("file name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh)")
 			self.qsub_script_open_btn = QPushButton("Select Template File", self)
 			self.qsub_script_open_btn.move(self.x3, self.y1 - 4)
 			self.connect(self.qsub_script_open_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, self.qsub_script_edit))
@@ -984,20 +983,20 @@ class SXTab(QWidget):
 			# Add save paramater button 
 			self.save_params_btn = QPushButton("Save parameters", self)
 			self.save_params_btn.move(self.x1-5, self.y1)
-			self.save_params_btn.setToolTip('Save gui parameter settings')
+			self.save_params_btn.setToolTip("Save gui parameter settings")
 			self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxpopup.save_params)
 		
 			self.y1 = self.y1 + 30
 
 			self.cmd_line_btn = QPushButton("Generate command line", self)
 			self.cmd_line_btn.move(self.x1-5, self.y1)
-			self.cmd_line_btn.setToolTip('Generate command line from gui parameter settings')
+			self.cmd_line_btn.setToolTip("Generate command line from gui parameter settings")
 			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxpopup.save_cmd_line)
 		
 			self.y1 = self.y1 + 30
 
 			# Add a run button
-			self.execute_btn = QtGui.QPushButton('Run %s' % self.sxpopup.sxcmd.name, self)
+			self.execute_btn = QtGui.QPushButton("Run %s" % self.sxpopup.sxcmd.name, self)
 			# make 3D textured push button look
 			s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 			self.execute_btn.setStyleSheet(s)
@@ -1036,27 +1035,27 @@ class SXPopup_info(QWidget):
 	def __init__(self):
 		QWidget.__init__(self)
 		#Here we just set the window title and  3 different labels, with their positions in the window
-		self.setWindowTitle('Sparx GUI Info Page')
-		title1=QtGui.QLabel('<b>Sparx GUI Prototype</b>', self)
+		self.setWindowTitle("Sparx GUI Info Page")
+		title1=QtGui.QLabel("<b>Sparx GUI Prototype</b>", self)
 		title1.move(10,10)
-		title2=QtGui.QLabel('<b>Authors: Toshio Moriya</b> ', self)
+		title2=QtGui.QLabel("<b>Authors: Toshio Moriya</b> ", self)
 		title2.move(10,40)
-		title3=QtGui.QLabel('For more information visit:\n%s ' % SPARX_DOCUMENTATION_WEBSITE, self)
+		title3=QtGui.QLabel("For more information visit:\n%s " % SPARX_DOCUMENTATION_WEBSITE, self)
 		title3.move(10,70)
 
 # ========================================================================================
 # Main Window (started by class App)
-# This class includes the layout of the main window			
+# This class includes the layout of the main window
 class MainWindow(QtGui.QWidget):
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
 		
-		# self.setStyleSheet('background-image: url("1.png")')
+		# self.setStyleSheet("background-image: url("1.png")")
 		# Set the title of the window
-		self.setWindowTitle('MPI-SPARX GUI (Alpha Version)')
-		self.setAutoFillBackground(True)				
-		palette = QPalette(self)				
-		palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory() + "sxgui.py_main_window_background_image.png")))				
+		self.setWindowTitle("MPI-SPARX GUI (Alpha Version)")
+		self.setAutoFillBackground(True)
+		palette = QPalette(self)
+		palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory() + "sxgui.py_main_window_background_image.png")))
 		# palette.setBrush(QPalette.Background, QBrush(QPixmap("Fig6.png")))
 		# palette.setBrush(QPalette.Background, QBrush(QPixmap("spaxgui02.png")))
 		self.setPalette(palette)
@@ -1065,9 +1064,9 @@ class MainWindow(QtGui.QWidget):
 		# General 
 		# --------------------------------------------------------------------------------
 		# Add title label and set position and font style
-		title=QtGui.QLabel("<span style='font-size:18pt; font-weight:600; color:#aa0000;'><b>PROGRAMS </b></span><span style='font-size:12pt; font-weight:60; color:#aa0000;'>(shift-click for wiki)</span>", self)
+		title=QtGui.QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>", self)
 		title.move(17,47)
-		QtGui.QToolTip.setFont(QtGui.QFont('OldEnglish', 8))
+		QtGui.QToolTip.setFont(QtGui.QFont("OldEnglish", 8))
 
 		# Add Push button to display popup window for info about the application
 		self.btn_info = QPushButton(self)
@@ -1075,13 +1074,13 @@ class MainWindow(QtGui.QWidget):
 		icon = QIcon(get_image_directory() + "sparxicon.png") # Decorates the button with the sparx image
 		self.btn_info.setIcon(icon)
 		self.btn_info.move(5, 5)
-		self.btn_info.setToolTip('Info Page')
+		self.btn_info.setToolTip("Info Page")
 
 		# Add Close button
 		self.btn_quit = QPushButton("Close", self)
-		self.btn_quit.setToolTip('Close SPARX GUI ')
+		self.btn_quit.setToolTip("Close SPARX GUI ")
 		self.btn_quit.move(65, 5)
-		self.connect(self.btn_quit, QtCore.SIGNAL('clicked()'),QtGui.qApp, QtCore.SLOT('quit()'))
+		self.connect(self.btn_quit, QtCore.SIGNAL("clicked()"),QtGui.qApp, QtCore.SLOT("quit()"))
 		
 		# --------------------------------------------------------------------------------
 		# SX Commands (sx*.py)
@@ -1138,7 +1137,7 @@ class App(QApplication):
 		
 	#function byebye (just quit)  
 	def byebye( self ):
-		print' bye bye!'
+		print" bye bye!"
 		self.exit(0)
 
 # ========================================================================================
@@ -1156,9 +1155,9 @@ for single particle analysis."""
 	global options
 	(options, args) = parser.parse_args()
 	global DEMO_mpibdbctf
-	DEMO_mpibdbctf = 'mpibdbctf'
+	DEMO_mpibdbctf = "mpibdbctf"
 	global DEMO_mpibdb
-	DEMO_mpibdb = 'mpibdb'
+	DEMO_mpibdb = "mpibdb"
 	
 	global app
 	app = App(args)
