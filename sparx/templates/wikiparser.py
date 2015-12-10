@@ -48,23 +48,24 @@ def construct_token_list_from_wiki(wiki_file_path):
 	keyword_dict = {}
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
 	keyword_dict["use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
-	keyword_dict["defocuserror"]                = SXkeyword_map(0, "")           # --defocuserror (contains keyworkd 'focus' but this should be float type)
+	keyword_dict["defocus_error"]               = SXkeyword_map(0, "")           # --defocus_error (contains keyworkd 'focus' but this should be float type)
 	# Use priority 1 for output
-	keyword_dict["output"]                      = SXkeyword_map(1, "output")     # output.hdf, output_directory, outputfile
-	keyword_dict["outdir"]                      = SXkeyword_map(1, "output")     # outdir, --outdir=output_directory
+	keyword_dict["output"]                      = SXkeyword_map(1, "output")     # output_hdf, output_directory, outputfile
+	keyword_dict["outdir"]                      = SXkeyword_map(1, "output")     # outdir
 	keyword_dict["locresvolume"]                = SXkeyword_map(1, "output")     # locresvolume (this contained keyword "volume" also... This is another reason why priority is introduced...)
 	keyword_dict["directory"]                   = SXkeyword_map(1, "output")     # directory
 	# Use priority 2 for the others
-	keyword_dict["indir"]                       = SXkeyword_map(2, "directory")  # --indir=input_directory
-	keyword_dict["coords_dir"]                  = SXkeyword_map(2, "directory")  # --coords_dir=coords_directory
 	keyword_dict["stack"]                       = SXkeyword_map(2, "image")      # stack, stack_file, prj_stack
 	keyword_dict["volume"]                      = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, inputvolume
 	keyword_dict["mask"]                        = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask
 	keyword_dict["focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
+	keyword_dict["input_micrograph"]            = SXkeyword_map(2, "any_image")  # input_micrograph_pattern
 	keyword_dict["input_image"]                 = SXkeyword_map(2, "any_image")  # input_image
-	keyword_dict["importctf"]                   = SXkeyword_map(2, "parameters") # --importctf=ctf_file
+	keyword_dict["tr0"]                         = SXkeyword_map(2, "parameters") # --tr0=matrix_file
+	keyword_dict["input_coordinates"]           = SXkeyword_map(2, "parameters") # input_coordinates_pattern
+	keyword_dict["import_ctf"]                  = SXkeyword_map(2, "parameters") # --import_ctf=ctf_file
 	keyword_dict["pwreference"]                 = SXkeyword_map(2, "parameters") # --pwreference=pwreference_file
-	keyword_dict["pdb"]                         = SXkeyword_map(2, "pdb")        # input.pdb
+	keyword_dict["pdb"]                         = SXkeyword_map(2, "pdb")        # input_pdb
 	keyword_dict["function"]                    = SXkeyword_map(2, "function")   # --function=user_function
 	
 	# Define list of target sections for GUI and set current
