@@ -4619,6 +4619,16 @@ def string_found_in_file(myregex, filename):
 			return True
 	return False
 
+def random_string(length_of_randomstring = 16):
+	import random
+	chars=map(chr, range(97, 123)) # a..z
+	chars.extend(map(chr, range(65, 91))) # A..Z
+	chars.extend(map(chr, range(48, 58))) # 0..9
+	random_string = ""
+	for i in xrange(length_of_randomstring):
+		random_string += chars[random.randint(0,len(chars)-1)]
+	return random_string
+
 def get_latest_directory_increment_value(directory_location, directory_name, start_value = 1, myformat = "%03d"):
 	import os
 	dir_count = start_value
