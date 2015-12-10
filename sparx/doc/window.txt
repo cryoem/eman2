@@ -1,54 +1,53 @@
 = Name =
 sxwindow - Micrograph Windowing: Window out particles with known coordinates from a micrograph.
 
+
 = Usage =
 
 ''usage in command line''
 
-sxwindow.py micrographs_list  --coords_dir=coords_dir  --coords_suffix=coords_suffix  --coords_extension=coords_extension  --coords_format=coords_format  --indir=input_dir  --importctf=ctf_file  --limitctf  --resample_ratio=resample_ratio  --box_size=box_size  --outdir=outdir  --outsuffix=outsuffix  --micsuffix=micsuffix  --nameroot=nameroot  --invert  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror
+sxwindow.py  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --invert  --import_ctf=ctf_file  --limit_ctf  --resample_ratio=resample_ratio  --defocus_error=defocus_error  --astigmatism_error=astigmatism_error
+
 
 === Typical usage ===
 
 sxwindow does not support MPI.
 
-''For all micrographs in current directory'':
+Specify name pattern of input micrographs and coordinates files with wild card (*) enclosed by single quotes (') or double quotes (") (Note: sxgui.py automatically adds single quotes (')). Use the wild card (*) to specify the place of micrograph ID (e.g. serial number, time stamp, and etc). 
 
-sxwindow.py --coords_dir=info --coords_extension=box --coords_format=eman1 --importctf=ctfparams.txt --indir=./ --resample_ratio=0.5 --box_size=64 --nameroot=mic --micsuffix=hdf --outdir=particles --outsuffix=_ptcls --invert --defocuserror=10 --astigmatismerror=8
+''' sxwindow.py  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt '''
 
-''For mic0.hdf and mic2.hdf'':
+''' NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1. '''
 
-sxwindow.py mic0.hdf mic2.hdf --coords_dir=info --coords_extension=box --coords_format=eman1 --importctf=ctfparams.txt --indir=./ --resample_ratio=0.5 --box_size=64 --nameroot=mic --micsuffix=hdf --outdir=particles --outsuffix=_ptcls --invert --defocuserror=10 --astigmatismerror=8
+''' NOTE: Passing a list of micrograph names as arguments is not supported since 2015/12/10 '''
 
-'''NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.'''
 
 == Input ==
-	micrographs_list:: Input micrographs: if none is specified all files in option --indir are used (default none)
-	
-    indir:: directory containing input micrographs: (default current directory)
-    nameroot:: root name (Prefix) of input micrographs: (default none)
-    micsuffix:: file extension of input micrographs: A string denoting micrograph type. (default hdf)
-    coords_dir:: directory containing input coordinates files: (default current directory)
-    coords_suffix:: suffix of input coordinates files: For example '_ptcls. (default none)
-    coords_extension:: file extension of input coordinates files: e.g 'box' for eman1, 'json' for eman2, ... (default box)
-    coords_format:: format of input coordinates file: 'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size. (default eman1)
-    importctf:: file name of sxcter output: (default none)
-    box_size:: xy dimension of square area to be windowed (in pixels): Pixel size after resampling is assumed when resample_ratio < 1.0 (default 256)
-    invert:: invert image contrast: (recommended for cryo data) (default False)
+    input_micrograph_pattern:: name pattern of input micrographs: use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, or etc). (default required string)
+    input_coordinates_pattern:: name pattern of input coordinates files: use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, and etc). (default required string)
+    
+    coordinates_format:: format of input coordinates files: 'sparx', 'eman1', 'eman2', or 'spider'. the coordinates of sparx, eman2, and spider format is particle center. the coordinates of eman1 format is particle box conner associated with the original box size. (default eman1)
+    box_size:: x and y dimension of square area to be windowed (in pixels): pixel size after resampling is assumed when resample_ratio < 1.0 (default 256)
+    invert:: invert image contrast: recommended for cryo data (default False)
+    import_ctf:: file name of sxcter output: normally partres.txt (default none)
 
     * The remaining parameters are optional.
-    resample_ratio:: Ratio of new to old image size (or old to new pixel size) for resampling: Valid range is 0.0 < resample_ratio <= 1.0. (default 1.0)
-    limitctf:: Filter micrographs based on the CTF limit: It requires --importctf. (default False)
-    defocuserror::Defocus errror limit: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent. The error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)
-    astigmatismerror:: Astigmatism error limit: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (default 360.0)
+    limit_ctf:: filter micrographs based on the CTF limit: this option requires --import_ctf. (default False)
+    resample_ratio:: ratio of new to old image size (or old to new pixel size) for resampling: Valid range is 0.0 < resample_ratio <= 1.0. (default 1.0)
+    defocus_error::defocus errror limit: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocus_error percent. the error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)
+    astigmatism_error:: astigmatism error limit: set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatism_error degrees. (default 360.0)
+
 
 == Output ==
-    outdir:: output directory: (default current directory)
-    outsuffix:: suffix for output stack: (default _ptcls)
+    output_directory:: output directory name: into which the results will be written. the directory should not exists upon the execution. the program creates it automatically. (default required string)
+
+Under the directory specified by argument output_directory, local stacks (one stack for each micrograph) are written in BDB format image. The file names are micrograph name with "_ptcls" suffix. For example, ''particles/EMAN2DB/mic0_ptcls.bdb'' or ''bdb:particles#mic0_ptcls'' 
+
 
 = Description =
- 1. Takes micrographs and coordinates as input and writes windowed out particle images to a stack.
- 1. Normalization is done by subtracting the average of the region outside of a circle with radius half of option --box_size.
- 1. Micrographs are applied a Gaussian high-pass Fourier filter with standard deviation of option --box_size.
+ 1. Takes micrographs and coordinates as input and writes windowed out particle images to a local stack.
+ 2. Normalization is done by subtracting the average of the region outside of a circle with radius half of option --box_size.
+ 3. Micrographs are applied a Gaussian high-pass Fourier filter with standard deviation of option --box_size.
 
 = Author / Maintainer =
 T. Durmaz and T.Moriya

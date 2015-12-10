@@ -28,403 +28,388 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
+from __future__ import print_function
 import os, sys
 import json
+import glob
 
-from optparse import *
-# from argparse import *
+from optparse import OptionParser, SUPPRESS_HELP
 from EMAN2 import *
 from EMAN2db import *
 from EMAN2jsondb import *
-# from emboxerbase import *
-
 from sparx import *
 
-"""
-This program is used to window particles from a micrograph. The coordinates of the particles are given as input.
-"""
-
-def baseroot(path):
-	return os.path.splitext(os.path.basename(path))[0]
-
-def build_micnames(options, args):
-	# 	Build micrograph basename list
-	extension = options.micsuffix
-	if len(args) > 0:
-		micnames = args
-	else:
-		import glob
-		micnames = glob.glob(os.path.join(options.indir, options.nameroot + "*" + extension))
-
-	micnames = [ baseroot(m) for m in micnames]
-
-	return micnames
-
 def check_options(options, progname):
-	if options.outdir == None:
-		print "\nOutput directory must be specified with option --outdir. Type %s -h for help.\n" % progname
-		sys.exit()
-		
-	if  options.coords_dir == None:
-		print "\nCoordinates directory must be specified with option --coords_dir. Type %s -h for help.\n" % progname
-		sys.exit()
-
-	if  options.coords_extension == None:
-		print "\nExtension of coordinates file must be specified with option --coords_extension. Type %s -h for help.\n" % progname
-		sys.exit()
-
-	if options.coords_format == None:
-		print "\nCoordinate file format must be specified with option --coords_format. Type %s -h for help.\n" % progname
-		sys.exit()
-		
-	if not(options.coords_format.lower() == 'sparx' or options.coords_format.lower() == 'eman1' or options.coords_format.lower() == 'eman2' or options.coords_format.lower() == 'spider'):
-		print "\nInvalid option value: --coords_format=%s. Type %s -h for help.\n" % (options.coords_format.lower(), progname)
-		sys.exit()
-
-	if options.limitctf == True:
-		if options.importctf == None:
-			print "\nCTF parameters (--importctf) must be specified with option --limitctf. Type %s -h for help.\n" % progname
-			sys.exit()
-		
+	if options.coordinates_format.lower() not in ["sparx", "eman1", "eman2", "spider"]:
+		ERROR("Invalid option value: --coordinates_format=%s. Please run %s -h for help." % (options.coordinates_format, progname), "sxwindow", 1)
+		exit()
+	
+	if options.import_ctf:
+		if os.path.exists(options.import_ctf) == False:
+			ERROR("Specified CTER CTF File is not found. Please check --import_ctf option. Run %s -h for help." % (progname), "sxwindow", 1)
+			exit()
+	else:
+		# assert (not options.import_ctf)
+		if options.limit_ctf:
+			ERROR("--limit_ctf option requires valid CTER CTF File (--import_ctf). Please run %s -h for help." % (progname), "sxwindow", 1)
+			exit()
+	
 	if (options.resample_ratio <= 0.0 or options.resample_ratio > 1.0):
-		print "\nInvalid option value: --resample_ratio=%s. Type %s -h for help.\n" % (options.resample_ratio, progname)
-		sys.exit()
+		# assert (not options.import_ctf)
+		ERROR("Invalid option value: --resample_ratio=%s. Please run %s -h for help." % (options.resample_ratio, progname), "sxwindow", 1)
+		exit()
 	
-def main(args):
-# 	parser1 = argparse.ArgumentParser(description='This program is used to window particles from a micrograph. The coordinates of the particles are given as input.')
-# 	parser1.add_argument()
-
+def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " micrographs_list  --coords_dir=coords_dir  --coords_suffix=coords_suffix" + \
-	                                          "  --coords_extension=coords_extension  --coords_format=coords_format" + \
-	                                          "  --indir=input_dir  --importctf=ctf_file  --limitctf" + \
-	                                          "  --resample_ratio=resample_ratio  --box_size=box_size" + \
-	                                          "  --outdir=outdir  --outsuffix=outsuffix  --micsuffix=micsuffix" + \
-	                                          "  --nameroot=nameroot  --invert" + \
-	                                          "  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror"
+	usage = progname + """  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --invert  --import_ctf=ctf_file  --limit_ctf  --resample_ratio=resample_ratio  --defocus_error=defocus_error  --astigmatism_error=astigmatism_error
+	
+Window particles from a micrograph. The coordinates of the particles should be given as input.
+Specify name pattern of input micrographs and coordinates files with wild card (*) enclosed by single quotes (') or double quotes (") 
+(Note: sxgui.py automatically adds single quotes (')). Use the wild card (*) to specify the place of micrograph ID (e.g. serial number, time stamp, and etc). 
+	
+	sxwindow.py  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt
+	
+"""
 	parser = OptionParser(usage, version=SPARXVERSION)
-
-	parser.add_option("--coords_dir",       type="string",        default=".",       help="<Coordinates Directory> Directory containing files with particle coordinates. (Default: current directory)")
-	parser.add_option("--coords_suffix",    type="string",        default="",        help="<Coordinates File Suffix> Suffix of coordinate files. For example '_ptcls'. ")
-	parser.add_option("--coords_extension", type="string",        default="box",     help="<Coordinates File Extension> File extension of coordinate files. e.g 'box' for eman1, 'json' for eman2, ...")
-	parser.add_option("--coords_format",    type="string",        default="eman1",   help="<Coordinates File Format> Format of coordinates file: 'sparx', 'eman1', 'eman2', or 'spider'. The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box conner associated with the original box size.")
-	parser.add_option("--indir",            type="string",        default=".",       help="<Micrograph Directory> Directory containing micrographs to be processed. (Default: current directory)")
-	parser.add_option("--nameroot",         type="string",        default="",        help="<Micrograph Root Name> Root name (Prefix) of micrographs to be processed.")
-	parser.add_option("--micsuffix",        type="string",        default="hdf",     help="<Micrograph Extension > A string denoting micrograph type. (Default 'hdf')")
-	parser.add_option("--outdir",           type="string",        default=".",       help="<Output Directory> Output directory (Default: current directory)")
-	parser.add_option("--outsuffix",        type="string",        default="_ptcls",  help="<Output File Suffix> Suffix for output stack. (Default '_ptcls')")
-	parser.add_option("--importctf",        type="string",        default="",        help="<CTER CTF File> File name with CTF parameters produced by sxcter.") 
-	parser.add_option("--box_size",         type="int",           default=256,       help="<Box Size> x and y dimension in pixels of square area to be windowed. Pixel size after resampling is assumed when resample_ratio < 1.0 (Default 256)")
-	parser.add_option("--invert",           action="store_true",  default=False,     help="<Invert Contrast> Invert image contrast (recommended for cryo data) (Default, no contrast inversion)")
-	parser.add_option("--resample_ratio",   type="float",         default=1.0,       help="<Resample Ratio> Ratio of new to old image size (or old to new pixel size) for resampling. Valid range is 0.0 < resample_ratio <= 1.0. (Default: 1.0)  (advanced)")
-	parser.add_option("--limitctf",         action="store_true",  default=False,     help="<Apply CTF-Limit Filter> Filter micrographs based on the CTF limit. It requires --importctf. (Default: no filter) (advanced)")	
-	parser.add_option("--defocuserror",     type="float",         default=1000000.0, help="<Defocus Error Limit> Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%. (Default: include all irrespective of error values.) (advanced)" )
-	parser.add_option("--astigmatismerror", type="float",         default=360.0,     help="<Astigmatism Error Limit> Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (Default: include all irrespective of error values.)  (advanced)")
+	parser.add_option("--coordinates_format",  type="string",        default="eman1",   help="format of input coordinates files: 'sparx', 'eman1', 'eman2', or 'spider'. the coordinates of sparx, eman2, and spider format is particle center. the coordinates of eman1 format is particle box conner associated with the original box size. (default eman1)")
+	parser.add_option("--box_size",            type="int",           default=256,       help="x and y dimension of square area to be windowed (in pixels): pixel size after resampling is assumed when resample_ratio < 1.0 (default 256)")
+	parser.add_option("--invert",              action="store_true",  default=False,     help="invert image contrast: recommended for cryo data (default False)")
+	parser.add_option("--import_ctf",          type="string",        default="",        help="file name of sxcter output: normally partres.txt (default none)") 
+	parser.add_option("--limit_ctf",           action="store_true",  default=False,     help="filter micrographs based on the CTF limit: this option requires --import_ctf. (default False)")	
+	parser.add_option("--resample_ratio",      type="float",         default=1.0,       help="ratio of new to old image size (or old to new pixel size) for resampling: Valid range is 0.0 < resample_ratio <= 1.0. (default 1.0)")
+	parser.add_option("--defocus_error",       type="float",         default=1000000.0, help="defocus errror limit: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocus_error percent. the error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)" )
+	parser.add_option("--astigmatism_error",   type="float",         default=360.0,     help="astigmatism error limit: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatism_error degrees. (default 360.0)")
 	
-	# must be switched off in production
-	# parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=False)
-	# 
-	# parser.add_option("--restart_section", type="string", default="", help="<restart section name> (no spaces) followed immediately by comma, followed immediately by generation to restart, example: \n--restart_section=candidate_class_averages,1         (Sections: restart, candidate_class_averages, reproducible_class_averages)")
-	# parser.add_option("--stop_after_candidates",          action="store_true", default=False,   help="<stop_after_candidates> stops after the 'candidate_class_averages' section")
-	# 
-	parser.add_option("--return_options", action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)
-
-	(options, args) = parser.parse_args(args)
-
-	if options.return_options:
-		return parser
+	(options, args) = parser.parse_args(sys.argv[1:])
 	
-# 	Set local constants
-	box_size = options.box_size
-	box_half = box_size // 2
-	options.micsuffix = "." + options.micsuffix
-	cterr = [options.defocuserror/100.0, options.astigmatismerror]
+	# Check invalid conditions of arugments
+	if len(args) != 3:
+		print("usage: " + usage)
+		print("Please run %s -h for help." % (progname))
+		return 1
+	# assert (len(args) == 3)
+	
+	mic_pattern = args[0]
+	if mic_pattern.find("*") == -1:
+		ERROR("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (progname), "sxwindow", 1)
+		exit()
+	
+	coords_pattern = args[1]
+	if coords_pattern.find("*") == -1:
+		ERROR("Input coordinates file name pattern must contain wild card (*). Please check input_coordinates_pattern argument. Run %s -h for help." % (progname), "sxwindow", 1)
+		exit()
 		
+	out_dir = args[2]
+	if os.path.exists(out_dir):
+		ERROR("Output directory exists. Please change the name and restart the program.", "sxwindow", 1)
+		exit()
+	# assert (not os.path.exists(out_dir))
+	
+	# Check invalid conditions of options
 	check_options(options, progname)
 	
-	extension_coord = options.coords_suffix + "." + options.coords_extension
+	# Build list of micrograph names
+	mic_name_list = glob.glob(mic_pattern)
+	print("Detected micrograph files  : %6d ..." % (len(mic_name_list)))
+	if len(mic_name_list) == 0:
+		ERROR("No mcicrograph file is found. Please check input_micrograph_pattern argument. Run %s -h for help." % (progname), "sxwindow", 1)
+		exit()
 	
-# 	Build micrograph basename list
-	micnames = build_micnames(options, args)
-	print_msg('Detected micrographs : %6d ...\n' % (len(micnames)))
-	
-# 	If there is no micrographs, exit
-	if len(micnames) == 0:
-		print usage
-		sys.exit()
-	
-# 	Load CTFs
-	n_reject_defocus_error = 0
-	if options.importctf != None:
-		ctfs0 = read_text_row(options.importctf)
-		print_msg('Detected CTF entries : %6d ...\n' % (len(ctfs0)))
+	# Check input_coordinates_pattern argument
+	coords_name_list = glob.glob(coords_pattern)
+	print("Detected coordinates files : %6d ..." % (len(coords_name_list)))
+	if len(coords_name_list) == 0:
+		ERROR("No coordinates file is found. Please check input_coordinates_pattern argument. Run %s -h for help." % (progname), "sxwindow", 1)
+		exit()
+	del coords_name_list # Do not need this anymore
 
-		ctfs={}
-		for i in xrange(len(ctfs0)):
-			ctf=ctfs0[i]
-			basemic = baseroot(ctf[-1])
-			if(ctf[8]/ctf[0] > cterr[0]):
-				print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n' % (ctf[8]/ctf[0], basemic))
+	# Create list of micrograph serial ID
+	# Break micrograph name pattern into prefix and surffix to find the head index of the micrograph serial id
+	mic_tokens = mic_pattern.split('*')
+	# assert (len(mic_tokens) == 2)
+	serial_id_head_index = len(mic_tokens[0])
+	serial_id_list = []
+	# Loop through micrograph names
+	for mic_name in mic_name_list:
+		# Find the tail index of the serial id and extract serial id from the micrograph name
+		serial_id_tail_index = mic_name.index(mic_tokens[1])
+		serial_id = mic_name[serial_id_head_index:serial_id_tail_index]
+		serial_id_list.append(serial_id)
+	# assert (len(serial_id_list) == len(mic_name))
+	del mic_name_list # Do not need this anymore
+	
+	# Load CTFs if necessary
+	if options.import_ctf:
+		# assert (os.path.exists(options.import_ctf))
+		ctf_list = read_text_row(options.import_ctf)
+		print("Detected CTF entries : %6d ..." % (len(ctf_list)))
+		if len(ctf_list) == 0:
+			ERROR("No CTF entry is found in %s. Please check --import_ctf option. Run %s -h for help." % (options.import_ctf, progname), "sxwindow", 1)
+			exit()
+		
+		ctf_dict={}
+		n_reject_defocus_error = 0
+		ctf_error_limit = [options.defocus_error/100.0, options.astigmatism_error]
+		for ctf_params in ctf_list:
+			# assert (len(ctf_params) == 14)
+			# mic_basename is name of micrograph minus the path and extension
+			mic_basename = os.path.splitext(os.path.basename(ctf_params[-1]))[0]  # ctf_params[13:Micrograph name]
+			if(ctf_params[8] / ctf_params[0] > ctf_error_limit[0]): # ctf_params[8:std dev of defocus, 0:defocus] 
+				print("Defocus error %f exceeds the threshold. Micrograph %s is rejected." % (ctf_params[8] / ctf_params[0], mic_basename))
 				n_reject_defocus_error += 1
 			else:
-				if(ctf[10] > cterr[1] ):
-					ctf[6] = 0.0
-					ctf[7] = 0.0
-				ctfs[basemic] = ctf
-		print_msg('Rejected micrographs by defocus error  : %6d ...\n' % (n_reject_defocus_error))
+				if(ctf_params[10] > ctf_error_limit[1]): # ctf_params[10:std dev of ast angle] 
+					ctf_params[6] = 0.0 # ctf_params[6:astigmatism amplitude]
+					ctf_params[7] = 0.0 # ctf_params[7:astigmatism angle]
+				ctf_dict[mic_basename] = ctf_params
+		print("Rejected micrographs by defocus error  : %6d ..." % (n_reject_defocus_error))
+		del ctf_list # Do not need this anymore
 	
-# 	Create circular 2D mask for ...
-	mask = model_circle(box_size//2, box_size, box_size)
-
-# 	Prepare loop variables
-	n_micrographs_process = 0
-	n_micrographs_reject_no_micrograph = 0
-	n_micrographs_reject_no_coordinates = 0
-	n_micrographs_reject_no_cter_entry = 0
-	n_total_coordinates_detect = 0
-	n_total_coordinates_process = 0
-	n_total_coordinates_reject_out_of_boundary = 0
-	cutoffhistogram = []		#@ming compute the histogram for micrographs cut of by ctf limit.
-# 	Loop over micrographs
-	for k in range(len(micnames)):
-		# basename is name of micrograph minus the path and extension
+	# Prepare loop variables
+	mic_basename_pattern = os.path.splitext(os.path.basename(mic_pattern))[0]
+	coords_format = options.coordinates_format.lower()
+	box_size = options.box_size
+	box_half = box_size // 2
+	mask2d = model_circle(box_size//2, box_size, box_size) # Create circular 2D mask to Util.infomask of particle images
+	resample_ratio = options.resample_ratio
+	if options.import_ctf:
+		if options.limit_ctf:
+			cutoff_histogram = []  #@ming compute the histogram for micrographs cut of by ctf_params limit.
+	
+	n_mic_process = 0
+	n_mic_reject_no_coords = 0
+	n_mic_reject_no_cter_entry = 0
+	n_global_coords_detect = 0
+	n_global_coords_process = 0
+	n_global_coords_reject_out_of_boundary = 0
+	# Loop over serial IDs of micrographs
+	for serial_id in serial_id_list:
+		# mic_basename is name of micrograph minus the path and extension
 		# Here, assuming micrograph and coordinates have the same file basename
-		basename = micnames[k]
-		f_mic    = os.path.join(os.path.abspath(options.indir), basename + options.micsuffix)
-		f_info   = os.path.join(options.coords_dir, basename + extension_coord)
-
-# 		CHECKS: BEGIN
-# 		IF micrograph exists
-		if not os.path.exists(f_mic):
-			print_msg('    Cannot read %s. Skipping %s ...\n' % (f_mic, basename))
-			n_micrographs_reject_no_micrograph += 1
+		mic_basename = mic_basename_pattern.replace("*", serial_id)
+		mic_name = mic_pattern.replace("*", serial_id)
+		coords_name = coords_pattern.replace("*", serial_id)
+		
+		# CHECKS: BEGIN
+		# assert (os.path.exists(mic_name))
+		
+		# IF coordinates file exists
+		if not os.path.exists(coords_name):
+			print("    Cannot read %s. Skipping %s ..." % (coords_name, mic_basename))
+			n_mic_reject_no_coords += 1
 			continue
 		
-# 		IF coordinates file exists
-		if not os.path.exists(f_info):
-			print_msg('    Cannot read %s. Skipping %s ...\n' % (f_info, basename))
-			n_micrographs_reject_no_coordinates += 1
-			continue
-		
-# 		IF micrograph is in CTER results
-		if options.importctf != None:
-			if basename not in ctfs:
-				print_msg('    Is not listed in CTER results, skipping %s...\n' % (basename))
-				n_micrographs_reject_no_cter_entry += 1
+		# IF mic is in CTER results
+		if options.import_ctf:
+			if mic_basename not in ctf_dict:
+				print("    Is not listed in CTER results. Skipping %s ..." % (mic_basename))
+				n_mic_reject_no_cter_entry += 1
 				continue
 			else:
-				ctf = ctfs[basename]		
-# 		CHECKS: END
-
-		n_micrographs_process += 1
+				ctf_params = ctf_dict[mic_basename]
+		# CHECKS: END
 		
-		print_msg('\n')
-		print_msg('Processing micrograph %s... Path: %s... Coordinates file %s\n' % (basename, f_mic, f_info))
-	
-# 		Read coordinates according to the specified format and 
-# 		make the coordinates the center of particle image 
-		if options.coords_format.lower() == 'sparx' :
-			coords = read_text_row(f_info)
-		elif options.coords_format.lower() == 'eman1':
-			coords = read_text_row(f_info)
-			for i in range(len(coords)):
-				coords[i] = [coords[i][0] + coords[i][2]//2  ,coords[i][1] + coords[i][3]//2]
-		elif options.coords_format.lower() == 'eman2':
-			coords = js_open_dict(f_info)["boxes"]
-			for i in range(len(coords)):
-				coords[i] = [coords[i][0],coords[i][1]]
-		elif options.coords_format.lower() == 'spider':
-			coords = read_text_row(f_info)
-			for i in range(len(coords)):
-				coords[i] = [coords[i][2] ,coords[i][3]]
-		else:
-			assert(False) # Unreachable code
+		n_mic_process += 1
 		
-# 		Load micrograph from the file
-		immic = get_im(f_mic)
+		print(" ")
+		print("Processing micrograph %s ... Path: %s ... Coordinates file %s" % (mic_basename, mic_name, coords_name))
 		
-# 		Calculate the new pixel size
-		resample_ratio = options.resample_ratio
-		if options.importctf != None:		
-			pixel_size_orig = ctf[3]
+		# Read coordinates according to the specified format and 
+		# make the coordinates the center of particle image 
+		if coords_format == "sparx" :
+			coords_list = read_text_row(coords_name)
+		elif coords_format == "eman1":
+			coords_list = read_text_row(coords_name)
+			for i in xrange(len(coords_list)):
+				coords_list[i] = [(coords_list[i][0] + coords_list[i][2] // 2), (coords_list[i][1] + coords_list[i][3] // 2)]
+		elif coords_format == "eman2":
+			coords_list = js_open_dict(coords_name)["boxes"]
+			for i in xrange(len(coords_list)):
+				coords_list[i] = [coords_list[i][0], coords_list[i][1]]
+		elif coords_format == "spider":
+			coords_list = read_text_row(coords_name)
+			for i in xrange(len(coords_list)):
+				coords_list[i] = [coords_list[i][2], coords_list[i][3]]
+		# else: assert (False) # Unreachable code
+		
+		# Load micrograph from the file
+		mic_img = get_im(mic_name)
+		
+		# Calculate the new pixel size
+		if options.import_ctf:
+			pixel_size_origin = ctf_params[3] # ctf_params[3:pixel size]
 			
 			if resample_ratio < 1.0:
-				assert(resample_ratio > 0.0)
-				new_pixel_size = pixel_size_orig / resample_ratio
-				print_msg('Resample micrograph to pixel size %6.4f and window segments from resampled micrograph\n' % new_pixel_size)
+				# assert (resample_ratio > 0.0)
+				new_pixel_size = pixel_size_origin / resample_ratio
+				print("Resample micrograph to pixel size %6.4f and window segments from resampled micrograph." % new_pixel_size)
 			else:
-				# assert(resample_ratio == 1.0)
-				new_pixel_size = pixel_size_orig
+				# assert (resample_ratio == 1.0)
+				new_pixel_size = pixel_size_origin
 		
-# 			Set ctf along with new pixel size in resampled micrograph
-			ctf[3] = new_pixel_size	
+			# Set ctf along with new pixel size in resampled micrograph
+			ctf_params[3] = new_pixel_size
 		else:
-			assert(options.importctf == None)
+			# assert (not options.import_ctf)
 			if resample_ratio < 1.0:
-				assert(resample_ratio > 0.0)
-				print_msg('Resample micrograph with ratio %6.4f and window segments from resampled micrograph\n' % resample_ratio)
+				# assert (resample_ratio > 0.0)
+				print("Resample micrograph with ratio %6.4f and window segments from resampled micrograph." % resample_ratio)
 			# else:
-			#	assert(resample_ratio == 1.0)
+			#	assert (resample_ratio == 1.0)
+		
+		# Apply filters to micrograph
+		fftip(mic_img)
+		if options.limit_ctf:
+			# assert (options.import_ctf)
+			# Cut off frequency components higher than CTF limit 
+			q1, q2 = ctflimit(box_size, ctf_params[0], ctf_params[1], ctf_params[2], new_pixel_size) # ctf_params[0:defocus, 1:Cs, 2:voltage]
 			
-# 		Apply filters to micrograph
-		fftip(immic)
-		if options.limitctf:
-			assert(options.importctf != None)
-# 			Cut off frequency components higher than CTF limit 
-			q1, q2 = ctflimit(box_size,ctf[0],ctf[1],ctf[2],new_pixel_size)
-			
-# 			This is absolute frequency of the CTF limit in the scale of original micrograph
+			# This is absolute frequency of CTF limit in scale of original micrograph
 			if resample_ratio < 1.0:
-				assert(resample_ratio > 0.0)
-				q1 = resample_ratio * q1 / float(box_size) # q1 = (pixel_size_orig / new_pixel_size) * q1/float(box_size)
+				# assert (resample_ratio > 0.0)
+				q1 = resample_ratio * q1 / float(box_size) # q1 = (pixel_size_origin / new_pixel_size) * q1/float(box_size)
 			else:
-				# assert(resample_ratio == 1.0) -> pixel_size_orig == new_pixel_size -> pixel_size_orig / new_pixel_size == 1.0
+				# assert (resample_ratio == 1.0) -> pixel_size_origin == new_pixel_size -> pixel_size_origin / new_pixel_size == 1.0
 				q1 = q1 / float(box_size)
 			
-			if q1 < 0.5:          #@ming
-				immic = filt_tanl(immic, q1, 0.01)
-				cutoffhistogram.append(q1)
+			if q1 < 0.5:
+				mic_img = filt_tanl(mic_img, q1, 0.01)
+				cutoff_histogram.append(q1)
 		
-# 		Cut off frequency components lower than the box size can express 
-		immic = fft(filt_gaussh( immic, resample_ratio/box_size ))
+		# Cut off frequency components lower than the box size can express 
+		mic_img = fft(filt_gaussh(mic_img, resample_ratio / box_size))
 		
-# 		Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
-# 		after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
-#		NOTE: 2015/04/13 Toshio Moriya
-#		resample() efficiently takes care of the case resample_ratio = 1.0 but
-#		it does not set apix_*. Even though it sets apix_* when resample_ratio < 1.0 ...
-		immic = resample(immic, resample_ratio)
-				
+		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
+		# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
+		# NOTE: 2015/04/13 Toshio Moriya
+		# resample() efficiently takes care of the case resample_ratio = 1.0 but
+		# it does not set apix_*. Even though it sets apix_* when resample_ratio < 1.0 ...
+		mic_img = resample(mic_img, resample_ratio)
+		
 		if options.invert:
-			stt = Util.infomask(immic, None, True)
-			Util.mul_scalar(immic, -1.0)
-			immic += 2*stt[0]
+			mic_stats = Util.infomask(mic_img, None, True) # mic_stat[0:mean, 1:SD, 2:min, 3:max]
+			Util.mul_scalar(mic_img, -1.0)
+			mic_img += 2 * mic_stats[0]
 		
-		if options.importctf != None:
+		if options.import_ctf:
 			from utilities import generate_ctf
-			ctf = generate_ctf(ctf)
-
-# 		Prepare loop variables
-		nx = immic.get_xsize() 
-		ny = immic.get_ysize()
+			ctf_obj = generate_ctf(ctf_params)
+		
+		# Prepare loop variables
+		nx = mic_img.get_xsize() 
+		ny = mic_img.get_ysize()
 		x0 = nx//2
 		y0 = ny//2
-		print_msg('\n')
-		print_msg('Micrograph size := (%6d, %6d)\n' % (nx, ny))
-
-		otcl_images  = "bdb:%s/" % options.outdir + basename + options.outsuffix
-		ind = 0
+		print(" ")
+		print("Micrograph size := (%6d, %6d)." % (nx, ny))
 		
-		n_coordinates_reject_out_of_boundary = 0
-		
-# 		Loop over coordinates
-		for i in range(len(coords)):
-		
-			source_x = int(coords[i][0])
-			source_y = int(coords[i][1])
-					
-			x = source_x		
-			y = source_y
+		n_coords_reject_out_of_boundary = 0
+		local_stack_name  = "bdb:%s#" % out_dir + mic_basename + '_ptcls'
+		local_particle_id = 0 # can be different from coordinates_id
+		# Loop over coordinates
+		for coords_id in xrange(len(coords_list)):
+			
+			x = int(coords_list[coords_id][0])
+			y = int(coords_list[coords_id][1])
 			
 			if resample_ratio < 1.0:
-				assert(resample_ratio > 0.0)
+				# assert (resample_ratio > 0.0)
 				x = int(x * resample_ratio)	
 				y = int(y * resample_ratio)
 			# else:
 			# 	assert(resample_ratio == 1.0)
 				
 			if( (0 <= x - box_half) and ( x + box_half <= nx ) and (0 <= y - box_half) and ( y + box_half <= ny ) ):
-				imw = Util.window(immic, box_size, box_size, 1, x-x0, y-y0)
+				particle_img = Util.window(mic_img, box_size, box_size, 1, x-x0, y-y0)
 			else:
-				print_msg('Coordinates ID = %04d (x = %4d, y = %4d, box_size = %4d) is out of micrograph bound, skipping ....\n' % (i, x, y, box_size))
-				n_coordinates_reject_out_of_boundary += 1
+				print("Coordinates ID = %04d (x = %4d, y = %4d, box_size = %4d) is out of micrograph bound, skipping ..." % (coords_id, x, y, box_size))
+				n_coords_reject_out_of_boundary += 1
 				continue
 			
-			imw = ramp(imw)
-			stat = Util.infomask( imw, mask, False )
-			imw -= stat[0]
-			imw /= stat[1]
-
-#			NOTE: 2015/04/09 Toshio Moriya
-#		    ptcl_source_image might be redundant information ...
-#		    Consider re-organizing header entries...
-			imw.set_attr("ptcl_source_image", f_mic)
-			imw.set_attr("ptcl_source_coord_id", i)
-			imw.set_attr("ptcl_source_coord", [source_x, source_y])
-			imw.set_attr("resample_ratio", resample_ratio)
-						
-#			NOTE: 2015/04/13 Toshio Moriya
-#			apix_* attributes are updated by resample() only when resample_ratio != 1.0
-# 			Let's make sure header info is consistent by setting apix_* = 1.0 
-#			regardless of options, so it is not passed down the processing line
-			imw.set_attr("apix_x", 1.0)
-			imw.set_attr("apix_y", 1.0)
-			imw.set_attr("apix_z", 1.0)			
-			if options.importctf != None:
-				imw.set_attr("ctf",ctf)
-				imw.set_attr("ctf_applied", 0)
-				imw.set_attr("pixel_size_orig", pixel_size_orig)
-				# imw.set_attr("apix_x", new_pixel_size)
-				# imw.set_attr("apix_y", new_pixel_size)
-				# imw.set_attr("apix_z", new_pixel_size)
-#			NOTE: 2015/04/13 Toshio Moriya 
-#			Pawel Comment: Micrograph is not supposed to have CTF header info.
-#			So, let's assume it does not exist & ignore its presence.
-#           Note that resample() "correctly" updates pixel size of CTF header info if it exists
-			# elif (imw.has_ctff()):
-			# 	assert(options.importctf == None)
-			# 	ctf_origin = imw.get_attr("ctf")
-			# 	pixel_size_origin = round(ctf_origin.apix, 5) # Because SXCTER ouputs up to 5 digits 
-			# 	imw.set_attr("apix_x",pixel_size_origin)
-			# 	imw.set_attr("apix_y",pixel_size_origin)
-			# 	imw.set_attr("apix_z",pixel_size_origin)	
+			particle_img = ramp(particle_img)
+			particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
+			particle_img -= particle_stats[0]
+			particle_img /= particle_stats[1]
 			
-			imw.write_image(otcl_images, ind)
-			ind += 1
+			# NOTE: 2015/04/09 Toshio Moriya
+			# ptcl_source_image might be redundant information ...
+			# Consider re-organizing header entries...
+			particle_img.set_attr("ptcl_source_image", mic_name)
+			particle_img.set_attr("ptcl_source_coord_id", coords_id)
+			particle_img.set_attr("ptcl_source_coord", [int(coords_list[coords_id][0]), int(coords_list[coords_id][1])])
+			particle_img.set_attr("resample_ratio", resample_ratio)
+			
+			# NOTE: 2015/04/13 Toshio Moriya
+			# apix_* attributes are updated by resample() only when resample_ratio != 1.0
+			# Let's make sure header info is consistent by setting apix_* = 1.0 
+			# regardless of options, so it is not passed down the processing line
+			particle_img.set_attr("apix_x", 1.0)
+			particle_img.set_attr("apix_y", 1.0)
+			particle_img.set_attr("apix_z", 1.0)
+			if options.import_ctf:
+				particle_img.set_attr("ctf",ctf_obj)
+				particle_img.set_attr("ctf_applied", 0)
+				particle_img.set_attr("pixel_size_origin", pixel_size_origin)
+				# particle_img.set_attr("apix_x", new_pixel_size)
+				# particle_img.set_attr("apix_y", new_pixel_size)
+				# particle_img.set_attr("apix_z", new_pixel_size)
+			# NOTE: 2015/04/13 Toshio Moriya 
+			# Pawel Comment: Micrograph is not supposed to have CTF header info.
+			# So, let's assume it does not exist & ignore its presence.
+			# Note that resample() "correctly" updates pixel size of CTF header info if it exists
+			# elif (particle_img.has_ctff()):
+			# 	assert(not options.import_ctf)
+			# 	ctf_origin = particle_img.get_attr("ctf_obj")
+			# 	pixel_size_origin = round(ctf_origin.apix, 5) # Because SXCTER ouputs up to 5 digits 
+			# 	particle_img.set_attr("apix_x",pixel_size_origin)
+			# 	particle_img.set_attr("apix_y",pixel_size_origin)
+			# 	particle_img.set_attr("apix_z",pixel_size_origin)	
+			
+			particle_img.write_image(local_stack_name, local_particle_id)
+			local_particle_id += 1
 		
-		n_total_coordinates_detect += len(coords)
-		n_total_coordinates_process += ind
-		n_total_coordinates_reject_out_of_boundary += n_coordinates_reject_out_of_boundary
+		n_global_coords_detect += len(coords_list)
+		n_global_coords_process += local_particle_id
+		n_global_coords_reject_out_of_boundary += n_coords_reject_out_of_boundary
 		
-#		Print out the summary of this micrograph
-		print_msg('\n')
-		print_msg('Micrograph summary of coordinates...\n')
-		print_msg('Detected                        : %4d\n' % (len(coords)))
-		print_msg('Processed                       : %4d\n' % (ind))
-		print_msg('Rejected by out of boundary     : %4d\n' % (n_coordinates_reject_out_of_boundary))
+		# Print out the summary of this micrograph
+		print(" ")
+		print("Micrograph summary of coordinates ...")
+		print("Detected                        : %6d" % (len(coords_list)))
+		print("Processed                       : %6d" % (local_particle_id))
+		print("Rejected by out of boundary     : %6d" % (n_coords_reject_out_of_boundary))
 	
-	if options.limitctf:
-#		Print out the summary of CTF-limit filtering
-		print_msg('\n')
-		print_msg('Global summary of CTF-limit filtering (--limitctf) ...\n')
-		print_msg('Percentage of filtered micrographs: %8.2f\n' % (len(cutoffhistogram) * 100.0 / len(micnames)))
+	if options.limit_ctf:
+		# Print out the summary of CTF-limit filtering
+		print(" ")
+		print("Global summary of CTF-limit filtering (--limit_ctf) ...")
+		print("Percentage of filtered micrographs: %8.2f\n" % (len(cutoff_histogram) * 100.0 / len(serial_id_list)))
 		
-		lhist = 10
-		if len(cutoffhistogram) >= lhist:
+		n_bins = 10
+		if len(cutoff_histogram) >= n_bins:
 			from statistics import hist_list
-			region,hist = hist_list(cutoffhistogram, lhist)	
-			print_msg("      Histogram of cut off frequency\n")
-			print_msg("      ERROR       number of frequencies\n")
-			for lhx in xrange(lhist):
-				print_msg(" %14.7f     %7d\n" % (region[lhx], hist[lhx]))  # print_msg(" %10.3f     %7d\n" % (region[lhx], hist[lhx]))  
+			cutoff_region, cutoff_counts = hist_list(cutoff_histogram, n_bins)
+			print("      Histogram of cut-off frequency")
+			print("      cut-off       counts")
+			for bin_id in xrange(n_bins):
+				print(" %14.7f     %7d" % (cutoff_region[bin_id], cutoff_counts[bin_id]))
 		else:
-			print_msg("The number of filtered micrographs (%d) is less than the number of bins (%d). No histogram is produced.\n" % (len(cutoffhistogram), lhist))
-		
-#	Print out the summary of all micrographs
-	print_msg('\n')
-	print_msg('Global summary of micrographs ...\n')
-	print_msg('Detected                        : %6d\n' % (len(micnames)))
-	print_msg('Processed                       : %6d\n' % (n_micrographs_process))
-	print_msg('Rejected by no micrograph file  : %6d\n' % (n_micrographs_reject_no_micrograph))
-	print_msg('Rejected by no coordinates file : %6d\n' % (n_micrographs_reject_no_coordinates))
-	print_msg('Rejected by no CTER entry       : %6d\n' % (n_micrographs_reject_no_cter_entry))
-	print_msg('\n')
-	print_msg('Global summary of coordinates ...\n')
-	print_msg('Detected                        : %6d\n' % (n_total_coordinates_detect))
-	print_msg('Processed                       : %6d\n' % (n_total_coordinates_process))
-	print_msg('Rejected by out of boundary     : %6d\n' % (n_total_coordinates_reject_out_of_boundary))
-	print_msg('\n')
-
-						
-if __name__=='__main__':
-	main(sys.argv[1:])
+			print("The number of filtered micrographs (%d) is less than the number of bins (%d). No histogram is produced." % (len(cutoff_histogram), n_bins))
+	
+	# Print out the summary of all micrographs
+	print(" ")
+	print("Global summary of micrographs ...")
+	print("Detected                        : %6d" % (len(serial_id_list)))
+	print("Processed                       : %6d" % (n_mic_process))
+	print("Rejected by no coordinates file : %6d" % (n_mic_reject_no_coords))
+	print("Rejected by no CTER entry       : %6d" % (n_mic_reject_no_cter_entry))
+	print(" ")
+	print("Global summary of coordinates ...")
+	print("Detected                        : %6d" % (n_global_coords_detect))
+	print("Processed                       : %6d" % (n_global_coords_process))
+	print("Rejected by out of boundary     : %6d" % (n_global_coords_reject_out_of_boundary))
+	print(" ")
+	print("DONE!!!")
+	
+if __name__=="__main__":
+	main()
