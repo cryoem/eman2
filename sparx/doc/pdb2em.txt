@@ -6,7 +6,7 @@ sxpdb2em - PDB File Conversion: Convert atomic model (pdb file) into sampled ele
 
 ''usage in command line''
 
-sxpdb2em.py  input_pdb  output_hdf  --apix=pixel_size  --box=box_size  --het  --center=center  --O  --tr0  --quiet
+sxpdb2em.py  input_pdb  output_hdf  --apix=pixel_size  --box=box_size  --het  --center=center  --O  --tr0=matrix_file  --quiet
 
 === Typical usage ===
 
