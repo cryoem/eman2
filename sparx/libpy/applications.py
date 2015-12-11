@@ -4899,6 +4899,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 				log.add("Time of alignment = %10.1f\n"%(time()-start_time))
 				start_time = time()
 			#=========================================================================
+			#  Pixer errors available here are useless as they are done for shifts on the reduced image size.
 			#output pixel errors, check stop criterion
 			all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)
 			par_r = mpi_reduce(par_r, len(par_r), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
@@ -4913,6 +4914,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 					log.add(msg)
 				log.add("_______________________________________________________")
 				changes = par_r[0]/float(total_nima)
+				"""  Have to think about it PAP
 				if(  changes > saturatecrit ):
 					if( Iter == 1 ):
 						log.add("Will continue even though %4.2f images did not find better orientations"%saturatecrit)
@@ -4920,7 +4922,6 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 						terminate = 1
 						log.add("...............")
 						log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images did not find better orientations"%saturatecrit)
-				"""  Have to think about it PAP
 				if( terminate == 0 ):
 					historyofchanges.append(changes)
 					historyofchanges = historyofchanges[:3]
@@ -4944,6 +4945,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 						if(msg < pixercutoff): lhx += 1
 					lhx = float(lhx)/float(total_nima)
 					log.add(">>> %4.2f images had pixel error <%5.2f"%(lhx,pixercutoff))
+					"""
 					if( lhx > saturatecrit):
 						if( Iter == 1 ):
 							log.add("Will continue even though %4.2f images had pixel error < %5.2f"%(saturatecrit,pixercutoff))
@@ -4951,7 +4953,8 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 							terminate = 1
 							log.add("...............")
 							log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images had pixel error < %5.2f"%(saturatecrit,pixercutoff))
-			terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
+					"""
+			terminate = True  #wrap_mpi_bcast(terminate, main_node, mpi_comm)
 			#=========================================================================
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
@@ -5502,6 +5505,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 				if(region[lhx] > pixercutoff): break
 				im += histo[lhx]
 			lhx = im/float(total_nima)
+			"""
 			if( lhx > saturatecrit):
 				if( iteration == 1 ):
 					log.add("First iteration, will continue even though %4.2f images did not find better orientations"%saturatecrit)
@@ -5509,11 +5513,13 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 					terminate = 1
 					log.add("..............................................................")
 					log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images did not find better orientations"%saturatecrit)
+			"""
 			del region, histo
 		del pixer
-		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, mpi_comm)
-		terminate = int(terminate[0])
-		if terminate:  break
+		#terminate = mpi_bcast(terminate, 1, MPI_INT, 0, mpi_comm)
+		#terminate = int(terminate[0])
+		#if terminate:  break
+		break
 
 	del vol
 	# gather parameters
