@@ -13206,8 +13206,8 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 
 def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1, smearstep = 0.0):
 	if MPI:
-		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
-		#newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
+		# recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
+		newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -13291,7 +13291,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 			finfo.flush()
 
 def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose,xysize, zsize):
-	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI
+	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_rel_4nnw_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all
 	from string         import replace
 	from time           import time
@@ -13333,26 +13333,53 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 		infofile = "progress%04d.txt"%(myid+1)
 		finfo = open( infofile, 'w' )
 
-	image_start, image_end = MPI_start_end(nima, nproc, myid)
 
-	prjlist = iterImagesStack(prj_stack, pid_list[image_start:image_end])
+	####### original
+	# image_start, image_end = MPI_start_end(nima, nproc, myid)
+	# prjlist = iterImagesStack(prj_stack, pid_list[image_start:image_end])
+	
+	####### intermediate
+	# image_start, image_end = MPI_start_end(nima/2, nproc, myid)
+	# image_start2, image_end2 = image_start + nima/2, image_end + nima/2 
+	# 
+	# # prjlist = iterImagesStack(prj_stack, pid_list[image_start:image_end])
+	# 
+	# prjlist = [iterImagesStack(prj_stack, pid_list[image_start:image_end])]
+	# prjlist += [iterImagesStack(prj_stack, pid_list[image_start2:image_end2])]
+	# # prjlist += [iterImagesStack(prj_stack, pid_list[image_start:image_end])]
+	# # prjlist += [iterImagesStack(prj_stack, pid_list[image_start2:image_end2])]
+
+	####### new
+	image_start, image_end = MPI_start_end(nima/2, nproc, myid)
+	image_start2, image_end2 = image_start + nima/2, image_end + nima/2
+	prjlist = [EMData.read_images(prj_stack, range(image_start, image_end))]
+	prjlist += [EMData.read_images(prj_stack, range(image_start2, image_end2))]
+
+
 	del pid_list
 	if myid == 0 :  print "  NEW  "
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
 	from utilities import model_blank, get_im
 	from reconstruction import recons3d_4nnw_MPI
-	from utilities import read_text_file
+	from utilities import read_text_file, read_text_row
 	bckgnoise = [get_im("bckgnoise.hdf"), read_text_file("defgroup_stamp.txt")]#model_blank(1000,1,1,1.0)
 	print  sym,finfo,npad
 
-	if CTF: vol = recons3d_4nnw_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad,\
-									 smearstep = 0.0, fsc=None)
+	# if CTF: vol = recons3d_4nnw_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad,\
+	# 								 smearstep = 0.0, fsc=read_text_row("latest_fsc.txt"))
+	# else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
+	# if CTF: vol = recons3d_4nnw_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad,\
+	# 								 smearstep = 0.0, fsc=None)
+	# else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
+	if CTF: vol1, vol2, _ = recons3d_rel_4nnw_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad,\
+									 smearstep = 0.0)
 	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
 		else:
-			drop_image(vol, vol_stack)
+			drop_image(vol1, vol_stack)
+			drop_image(vol2, "second_" + vol_stack)
 		if not(finfo is None):
 			finfo.write( "result written to " + vol_stack + "\n")
 			finfo.write( "Total time: %10.3f\n" % (time()-time_start) )

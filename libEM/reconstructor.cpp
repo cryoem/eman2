@@ -3597,6 +3597,7 @@ void rel_nn4_ctfwReconstructor::setup()
 
 	m_varsnr = params.has_key("varsnr") ? int(params["varsnr"]) : 0;
 	setup( symmetry, size, npad, snr, sign );
+	m_refvol = params["refvol"];
 
 }
 
