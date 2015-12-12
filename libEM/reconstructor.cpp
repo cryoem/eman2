@@ -4061,52 +4061,57 @@ EMData* rel_nn4_ctfwReconstructor::finish(bool)
 	*/
 
 	int ix,iy,iz;
+	vector<float> count(m_vnyc+1, 0.0f);
 	//  refvol carries fsc
 	int  limitres = m_vnyc+1;
-    for (ix = 0; ix <= m_vnyc; ix++) {
-    		cout<<"  fsc  "<< ix <<"   "<<m_vnyc<<"   "<<(*m_refvol)(m_vnyc+1-ix)<<endl;
-		  if( (*m_refvol)(m_vnyc+1-ix) == 0.0f )  limitres = m_vnyc-ix;
+	if( (*m_refvol)(0) > 0.0f )  { // If fsc is set to zero, it will be straightforward reconstruction with snr = 1
+		for (ix = 0; ix <= m_vnyc; ix++) {
+				cout<<"  fsc  "<< ix <<"   "<<m_vnyc<<"   "<<(*m_refvol)(m_vnyc+1-ix)<<endl;
+			  if( (*m_refvol)(m_vnyc+1-ix) == 0.0f )  limitres = m_vnyc-ix;
+		}
+
+
+		vector<float> sigma2(m_vnyc+1, 0.0f);
+
+		// compute sigma2
+		for (iz = 1; iz <= m_vnzp; iz++) {
+			int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+			float argz = float(izp*izp);
+			for (iy = 1; iy <= m_vnyp; iy++) {
+				int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+				float argy = argz + float(iyp*iyp);
+				for (ix = 0; ix <= m_vnxc; ix++) {
+					if(ix>0 || (izp>=0 && (iyp>=0 || izp!=0))) {  //Skip Friedel related values
+						float r = std::sqrt(argy + float(ix*ix));
+						int  ir = int(r);
+						if (ir <= limitres) {
+							float frac = r - float(ir);
+							float qres = 1.0f - frac;
+							float temp = (*m_wptr)(ix,iy,iz);
+							//cout<<" WEIGHTS "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
+							//cout<<" WEIGHTS "<<ix<<"  "<<iy-1<<"  "<<iz-1<<"  "<<temp<<"  "<<endl;
+							sigma2[ir]   += temp*qres;
+							sigma2[ir+1] += temp*frac;
+							count[ir]    += qres;
+							count[ir+1]  += frac;
+						}
+					}
+				}
+			}
+		}
+		for (ix = 0; ix <= limitres; ix++) {
+			if( count[ix] > 0.0f )  sigma2[ix] = sigma2[ix]/count[ix];
+			cout<<"  sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
+		}
+		float fudge = m_refvol->get_attr("fudge");
+		// now counter will serve to keep fsc-derived stuff
+		for (ix = 0; ix <= limitres; ix++)  count[ix] = fudge * sigma2[ix] * (1.0f - (*m_refvol)(ix))/(*m_refvol)(ix);  //fudge?
+		for (ix = 0; ix <= limitres; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
 	}
 
 
-    vector<float> sigma2(m_vnyc+1, 0.0f);
-    vector<float> count(m_vnyc+1, 0.0f);
-
-	// compute sigma2
-	for (iz = 1; iz <= m_vnzp; iz++) {
-		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
-		float argz = float(izp*izp);
-		for (iy = 1; iy <= m_vnyp; iy++) {
-			int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
-            float argy = argz + float(iyp*iyp);
-			for (ix = 0; ix <= m_vnxc; ix++) {
-			    if(ix>0 || (izp>=0 && (iyp>=0 || izp!=0))) {  //Skip Friedel related values
-                    float r = std::sqrt(argy + float(ix*ix));
-                    int  ir = int(r);
-                    if (ir <= limitres) {
-                        float frac = r - float(ir);
-                        float qres = 1.0f - frac;
-                        float temp = (*m_wptr)(ix,iy,iz);
-                        //cout<<" WEIGHTS "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
-                        //cout<<" WEIGHTS "<<ix<<"  "<<iy-1<<"  "<<iz-1<<"  "<<temp<<"  "<<endl;
-                        sigma2[ir]   += temp*qres;
-                        sigma2[ir+1] += temp*frac;
-                        count[ir]    += qres;
-                        count[ir+1]  += frac;
-                    }
-                }
-            }
-        }
-    }
-    for (ix = 0; ix <= limitres; ix++) {
-        if( count[ix] > 0.0f )  sigma2[ix] = sigma2[ix]/count[ix];
-        cout<<"  sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
-    }
-    float fudge = m_refvol->get_attr("fudge");
-    // now counter will serve to keep fsc-derived stuff
-    for (ix = 0; ix <= limitres; ix++)  count[ix] = fudge * sigma2[ix] * (1.0f - (*m_refvol)(ix))/(*m_refvol)(ix);  //fudge?
-	for (ix = 0; ix <= limitres; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
 	// normalize
+	float osnr = 1.0f;
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
 		float argz = float(izp*izp);
@@ -4118,13 +4123,17 @@ EMData* rel_nn4_ctfwReconstructor::finish(bool)
 				int  ir = int(r);
 				if (ir <= limitres) {
 					if ( (*m_wptr)(ix,iy,iz) > 0.0f) {
-						float frac = r - float(ir);
-						float qres = 1.0f - frac;
-						float osnr = qres*count[ir] + frac*count[ir+1];
-						if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
-						//cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
-						float tmp=((*m_wptr)(ix,iy,iz)+osnr);
+						if( (*m_refvol)(0) > 0.0f ) {
+							float frac = r - float(ir);
+							float qres = 1.0f - frac;
+							osnr = qres*count[ir] + frac*count[ir+1];
+							if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
+							//cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
+						}
+
+						float tmp = ((*m_wptr)(ix,iy,iz)+osnr);
 						//cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<iz<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<osnr<<"  "<<endl;
+
 						if(tmp>0.0f) {
 							tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
 							(*m_volume)(2*ix,iy,iz)   *= tmp;
@@ -4652,53 +4661,59 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 	float osnr = 1.0f/m_snr;
 	*/
 
+
 	int ix,iy,iz;
+	vector<float> count(m_vnyc+1, 0.0f);
 	//  refvol carries fsc
 	int  limitres = m_vnyc+1;
-    for (ix = 0; ix <= m_vnyc; ix++) {
-    		cout<<"  fsc  "<< ix <<"   "<<m_vnyc<<"   "<<(*m_refvol)(m_vnyc+1-ix)<<endl;
-		  if( (*m_refvol)(m_vnyc+1-ix) == 0.0f )  limitres = m_vnyc-ix;
+	if( (*m_refvol)(0) > 0.0f )  { // If fsc is set to zero, it will be straightforward reconstruction with snr = 1
+		for (ix = 0; ix <= m_vnyc; ix++) {
+				cout<<"  fsc  "<< ix <<"   "<<m_vnyc<<"   "<<(*m_refvol)(m_vnyc+1-ix)<<endl;
+			  if( (*m_refvol)(m_vnyc+1-ix) == 0.0f )  limitres = m_vnyc-ix;
+		}
+
+
+		vector<float> sigma2(m_vnyc+1, 0.0f);
+
+		// compute sigma2
+		for (iz = 1; iz <= m_vnzp; iz++) {
+			int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+			float argz = float(izp*izp);
+			for (iy = 1; iy <= m_vnyp; iy++) {
+				int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+				float argy = argz + float(iyp*iyp);
+				for (ix = 0; ix <= m_vnxc; ix++) {
+					if(ix>0 || (izp>=0 && (iyp>=0 || izp!=0))) {  //Skip Friedel related values
+						float r = std::sqrt(argy + float(ix*ix));
+						int  ir = int(r);
+						if (ir <= limitres) {
+							float frac = r - float(ir);
+							float qres = 1.0f - frac;
+							float temp = (*m_wptr)(ix,iy,iz);
+							//cout<<" WEIGHTS "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
+							//cout<<" WEIGHTS "<<ix<<"  "<<iy-1<<"  "<<iz-1<<"  "<<temp<<"  "<<endl;
+							sigma2[ir]   += temp*qres;
+							sigma2[ir+1] += temp*frac;
+							count[ir]    += qres;
+							count[ir+1]  += frac;
+						}
+					}
+				}
+			}
+		}
+		for (ix = 0; ix <= limitres; ix++) {
+			if( count[ix] > 0.0f )  sigma2[ix] = sigma2[ix]/count[ix];
+			cout<<"  sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
+		}
+		float fudge = m_refvol->get_attr("fudge");
+		// now counter will serve to keep fsc-derived stuff
+		for (ix = 0; ix <= limitres; ix++)  count[ix] = fudge * sigma2[ix] * (1.0f - (*m_refvol)(ix))/(*m_refvol)(ix);  //fudge?
+		for (ix = 0; ix <= limitres; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
 	}
 
 
-    vector<float> sigma2(m_vnyc+1, 0.0f);
-    vector<float> count(m_vnyc+1, 0.0f);
-
-	// compute sigma2
-	for (iz = 1; iz <= m_vnzp; iz++) {
-		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
-		float argz = float(izp*izp);
-		for (iy = 1; iy <= m_vnyp; iy++) {
-			int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
-            float argy = argz + float(iyp*iyp);
-			for (ix = 0; ix <= m_vnxc; ix++) {
-			    if(ix>0 || (izp>=0 && (iyp>=0 || izp!=0))) {  //Skip Friedel related values
-                    float r = std::sqrt(argy + float(ix*ix));
-                    int  ir = int(r);
-                    if (ir <= limitres) {
-                        float frac = r - float(ir);
-                        float qres = 1.0f - frac;
-                        float temp = (*m_wptr)(ix,iy,iz);
-                        //cout<<" WEIGHTS "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
-                        //cout<<" WEIGHTS "<<ix<<"  "<<iy-1<<"  "<<iz-1<<"  "<<temp<<"  "<<endl;
-                        sigma2[ir]   += temp*qres;
-                        sigma2[ir+1] += temp*frac;
-                        count[ir]    += qres;
-                        count[ir+1]  += frac;
-                    }
-                }
-            }
-        }
-    }
-    for (ix = 0; ix <= limitres; ix++) {
-        if( count[ix] > 0.0f )  sigma2[ix] = sigma2[ix]/count[ix];
-        cout<<"  sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
-    }
-    float fudge = m_refvol->get_attr("fudge");
-    // now counter will serve to keep fsc-derived stuff
-    for (ix = 0; ix <= limitres; ix++)  count[ix] = fudge * sigma2[ix] * (1.0f - (*m_refvol)(ix))/(*m_refvol)(ix);  //fudge?
-	for (ix = 0; ix <= limitres; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
 	// normalize
+	float osnr = 1.0f;
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
 		float argz = float(izp*izp);
@@ -4710,13 +4725,17 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 				int  ir = int(r);
 				if (ir <= limitres) {
 					if ( (*m_wptr)(ix,iy,iz) > 0.0f) {
-						float frac = r - float(ir);
-						float qres = 1.0f - frac;
-						float osnr = qres*count[ir] + frac*count[ir+1];
-						if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
-						//cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
-						float tmp=((*m_wptr)(ix,iy,iz)+osnr);
+						if( (*m_refvol)(0) > 0.0f ) {
+							float frac = r - float(ir);
+							float qres = 1.0f - frac;
+							osnr = qres*count[ir] + frac*count[ir+1];
+							if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
+							//cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
+						}
+
+						float tmp = ((*m_wptr)(ix,iy,iz)+osnr);
 						//cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<iz<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<osnr<<"  "<<endl;
+
 						if(tmp>0.0f) {
 							tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
 							(*m_volume)(2*ix,iy,iz)   *= tmp;
