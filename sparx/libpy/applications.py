@@ -13373,7 +13373,7 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 	if myid == 0 :
 		drop_image(vol1, "nvol0.hdf")
 		drop_image(vol2, "nvol1.hdf")
-		write_text_file("nfsc.txt")
+		write_text_file(fff,"nfsc.txt")
 		if not(finfo is None):
 			finfo.write( "result written to " + vol_stack + "\n")
 			finfo.write( "Total time: %10.3f\n" % (time()-time_start) )

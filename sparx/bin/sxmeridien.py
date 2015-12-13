@@ -1832,14 +1832,15 @@ def main():
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"fsc.txt"), keepchecking, myid, main_node)
 
 		if doit:
-			vol0,vol1,fsc = recons3d_4nn_ctf_MPI(myid = myid, projdata[0],partstack[1],symmetry = Tracker["constants"]["sym"], \
-								info = None, npad = 2, smearstep = Tracker["smearstep"])
+			vol0,vol1,fsc = recons3d_4nnf_ctf_MPI(myid = myid, [projdata[0],projdata[1]],symmetry = Tracker["constants"]["sym"], \
+								info = None, smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
 				fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
 				fpol(vol1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"vol1.hdf"))
-				for i in xrange(len(fsc),Tracker["constants"]["nnxo"]/2+1):  fsc[i] = 0.0
+				if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
+					for i in xrange(len(fsc),Tracker["constants"]["nnxo"]/2+1):  fsc[i] = 0.0
 				write_text_file( fsc, os.path.join(fscoutputdir,os.path.join(Tracker["directory"] ,"fsc.txt")) )
-			del vol0, vol1
+				del vol0, vol1, fsc
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
 		if  doit:

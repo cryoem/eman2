@@ -739,10 +739,10 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 
 		fftvol = EMData()
 		weight = EMData()
-		fftvol.set_attr("smear", smear)
+		if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
 	
 		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
-		r = Reconstructors.get( "rel_nn4_ctfw", params )
+		r = Reconstructors.get( "nn4_ctfw", params )
 		r.setup()
 
 		for image in list_of_prjlist[iset]:
@@ -792,7 +792,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 		mpi_barrier(mpi_comm)
 
 	if myid == 0:
-		fourier_shell_correlation = fsc(get_im(results_list[0]), fftvol, 1.0, "fsc.txt")[1]
+		fourier_shell_correlation = fsc(get_im(results_list[0]), fftvol, 1.0)[1]
 
 		from math import sqrt
 		from utilities import reshape_1d
@@ -811,14 +811,14 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 			refvol.set_attr("fudge", 1.0)
 			
 			params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
-			r = Reconstructors.get("rel_nn4_ctfw", params)
+			r = Reconstructors.get("nn4_ctfw", params)
 			r.setup()
 			
 			dummy = r.finish(True)
 			ovol.append(fftvol)
 
 
-		cmd = "{} {} {} {} {} {}".format("rm -f", fftvol_file[0], fftvol_file[0], weight_file[1], weight_file[1], results_list[0] )
+		cmd = "{} {} {} {} {} {}".format("rm -f", fftvol_file[0], fftvol_file[1], weight_file[0], weight_file[1], results_list[0] )
 		cmdexecute(cmd)
 
 	mpi_barrier(mpi_comm)
