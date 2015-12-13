@@ -13292,7 +13292,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 
 def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose,xysize, zsize):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
-	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file
+	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file
 	from string         import replace
 	from time           import time
 	from mpi            import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD
@@ -13333,18 +13333,32 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 	"""
 	if(myid == 0):
 		from utilities import read_text_file
-		nima = read_text_file("main000/chunk0.txt")
+		pid_list = read_text_file("main000/chunk0.txt")
+		nima = len(pid_list)
 	else: nima = 0
 	nima = bcast_number_to_all(nima, source_node = 0)
+	if(myid != 0):
+		pid = [-1]*nima
+	pid_list = mpi_bcast(pid_list, nima, MPI_INT, 0, MPI_COMM_WORLD)
+	pid_list = map(int, pid_list)
+	
 	image_start, image_end = MPI_start_end(nima, nproc, myid)
-	prjlist = [EMData.read_images(prj_stack, range(image_start, image_end))]
+	prjlist = [EMData.read_images(prj_stack, pid_list(image_start:image_end))]
+
+
 	if(myid == 0):
 		from utilities import read_text_file
-		nima = read_text_file("main000/chunk1.txt")
+		pid_list = read_text_file("main000/chunk1.txt")
+		nima = len(pid_list)
 	else: nima = 0
 	nima = bcast_number_to_all(nima, source_node = 0)
+	if(myid != 0):
+		pid = [-1]*nima
+	pid_list = mpi_bcast(pid_list, nima, MPI_INT, 0, MPI_COMM_WORLD)
+	pid_list = map(int, pid_list)
+	
 	image_start, image_end = MPI_start_end(nima, nproc, myid)
-	prjlist += [EMData.read_images(prj_stack, range(image_start, image_end))]
+	prjlist += [EMData.read_images(prj_stack, pid_list(image_start:image_end))]
 
 	if myid == 0 :  print "  NEW  "
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
