@@ -736,16 +736,16 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 
 	for iset in xrange(2):
 		if not (info is None): nimg = 0
-		for image in list_of_prjlist[iset]:
-	
-			fftvol = EMData()
-			weight = EMData()
-			fftvol.set_attr("smear", smear)
-		
-			params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
-			r = Reconstructors.get( "rel_nn4_ctfw", params )
-			r.setup()
 
+		fftvol = EMData()
+		weight = EMData()
+		fftvol.set_attr("smear", smear)
+	
+		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
+		r = Reconstructors.get( "rel_nn4_ctfw", params )
+		r.setup()
+
+		for image in list_of_prjlist[iset]:
 			try:
 				#raise ValueError('A very specific thing happened')
 				stmp = image.get_attr("ptcl_source_image")

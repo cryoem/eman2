@@ -13324,15 +13324,15 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 		pid_list = map(int, pid_list)
 	else:
 		if(not pid_list):  pid_list = range(nima)
+	"""
 
 	if verbose==0:
 		finfo = None
 	else:
 		infofile = "progress%04d.txt"%(myid+1)
 		finfo = open( infofile, 'w' )
-	"""
+
 	if(myid == 0):
-		from utilities import read_text_file
 		pid_list = read_text_file("main000/chunk0.txt")
 		nima = len(pid_list)
 	else: nima = 0
@@ -13347,7 +13347,6 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 
 
 	if(myid == 0):
-		from utilities import read_text_file
 		pid_list = read_text_file("main000/chunk1.txt")
 		nima = len(pid_list)
 	else: nima = 0
