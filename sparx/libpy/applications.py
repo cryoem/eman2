@@ -13350,20 +13350,17 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
 	from utilities import model_blank, get_im
 	from reconstruction import recons3d_4nnw_MPI
-	from utilities import read_text_file, read_text_row
+	from utilities import read_text_file, read_text_row, write_text_file
 	bckgnoise = [get_im("bckgnoise.hdf"), read_text_file("defgroup_stamp.txt")]#model_blank(1000,1,1,1.0)
-	print  sym,finfo,npad
+	if myid == 0 :  print  sym,finfo,npad
 
 	if CTF: vol1, vol2, fff = recons3d_rel_4nnw_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad,\
 									 smearstep = 0.0)
 	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
 	if myid == 0 :
-		if(vol_stack[-3:] == "spi"):
-			drop_image(vol, vol_stack, "s")
-		else:
-			drop_image(vol1, vol_stack)
-			drop_image(vol2, "second_" + vol_stack)
-			
+		drop_image(vol1, "nvol0.hdf")
+		drop_image(vol2, "nvol1.hdf")
+		write_text_file("nfsc.txt")
 		if not(finfo is None):
 			finfo.write( "result written to " + vol_stack + "\n")
 			finfo.write( "Total time: %10.3f\n" % (time()-time_start) )
