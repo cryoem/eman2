@@ -13343,7 +13343,7 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 	pid_list = map(int, pid_list)
 	
 	image_start, image_end = MPI_start_end(nima, nproc, myid)
-	prjlist = [EMData.read_images(prj_stack, pid_list(image_start:image_end))]
+	prjlist = [EMData.read_images(prj_stack, pid_list[image_start:image_end])]
 
 
 	if(myid == 0):
@@ -13358,7 +13358,7 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 	pid_list = map(int, pid_list)
 	
 	image_start, image_end = MPI_start_end(nima, nproc, myid)
-	prjlist += [EMData.read_images(prj_stack, pid_list(image_start:image_end))]
+	prjlist += [EMData.read_images(prj_stack, pid_list[image_start:image_end])]
 
 	if myid == 0 :  print "  NEW  "
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
