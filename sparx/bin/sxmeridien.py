@@ -58,7 +58,7 @@ def AI( Tracker, HISTORY, chout = False):
 	else:
 		if(Tracker["mainiteration"] == 2):  Tracker["state"] == "EXHAUSTIVE"
 		#  decide angular step and translations
-		if((Tracker["no_improvement"]=>Tracker["constants"]["limit_improvement"]) and (Tracker["no_shifts"]>=Tracker["constants"]["limit_changes"))
+		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_shifts"]>=Tracker["constants"]["limit_changes"])):
 			Tracker["delta"] = "%f"%(float(Tracker["delta"])/2.0)
 			Tracker["no_improvement"] = 0
 			Tracker["no_shifts"] = 0
@@ -1459,16 +1459,15 @@ def main():
 
 		a = get_im(orgstack)
 		nnxo = a.get_xsize()
+		if Tracker["constants"]["CTF"]:
+			i = a.get_attr('ctf')
+			pixel_size = i.apix
+			fq = pixel_size/Tracker["fuse_freq"]
 		else:
-			if Tracker["constants"]["CTF"]:
-				i = a.get_attr('ctf')
-				pixel_size = i.apix
-				fq = pixel_size/Tracker["fuse_freq"]
-			else:
-				pixel_size = 1.0
-				#  No pixel size, fusing computed as 5 Fourier pixels
-				fq = 5.0/nnxo
-			del a
+			pixel_size = 1.0
+			#  No pixel size, fusing computed as 5 Fourier pixels
+			fq = 5.0/nnxo
+		del a
 	else:
 		nnxo = 0
 		fq = 0.0
@@ -1832,8 +1831,8 @@ def main():
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"fsc.txt"), keepchecking, myid, main_node)
 
 		if doit:
-			vol0,vol1,fsc = recons3d_4nnf_ctf_MPI(myid = myid, [projdata[0],projdata[1]],symmetry = Tracker["constants"]["sym"], \
-								info = None, smearstep = Tracker["smearstep"])
+			vol0,vol1,fsc = recons3d_4nnf_ctf_MPI(myid = myid, list_of_prjlist = [projdata[0],projdata[1]], \
+										symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
 				fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
 				fpol(vol1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"vol1.hdf"))
@@ -1888,17 +1887,19 @@ def main():
 			Tracker["constants"]["best"] = Tracker["mainiteration"]
 			Tracker["no_improvement"] = 0
 			Tracker["no_shifts"] = 0
-		elif( Tracker["mainiteration"] > 1 ):  Tracker["no_improvement"] += 1
-		
-		"  conditions to Terminate HERE!
-					if (old_rottilt_step < 0.75 * acc_rot)
-			{
-				// don't change angular sampling, as it is already fine enough
-				has_fine_enough_angular_sampling = true;
+		elif( Tracker["mainiteration"] > 1 ):
+			Tracker["no_improvement"] += 1
 
+			"""		
+			"  conditions to Terminate HERE!
+						if (old_rottilt_step < 0.75 * acc_rot)
+				{
+					// don't change angular sampling, as it is already fine enough
+					has_fine_enough_angular_sampling = true;
+			"""
 		else:
 			if( myid == main_node ):
-			
+				pass
 
 		#doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"vol0.hdf"), keepchecking, myid, main_node)
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
