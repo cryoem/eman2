@@ -758,7 +758,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 			try:
 				indx = datastamp.index(stmp)
 			except:
-				ERROR("Problem with indexing ptcl_source_image.","recons3d_rel_4nnw_MPI",1, myid)
+				ERROR("Problem with indexing ptcl_source_image.","recons3d_4nnf_MPI",1, myid)
 	
 			image.set_attr("bckgnoise", bckgnoise[indx])
 			insert_slices(r, image)

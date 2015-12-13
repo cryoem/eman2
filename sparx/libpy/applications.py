@@ -13291,7 +13291,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 			finfo.flush()
 
 def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose,xysize, zsize):
-	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_rel_4nnw_MPI
+	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file
 	from string         import replace
 	from time           import time
@@ -13354,7 +13354,7 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 	bckgnoise = [get_im("bckgnoise.hdf"), read_text_file("defgroup_stamp.txt")]#model_blank(1000,1,1,1.0)
 	if myid == 0 :  print  sym,finfo,npad
 
-	if CTF: vol1, vol2, fff = recons3d_rel_4nnw_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad,\
+	if CTF: vol1, vol2, fff = recons3d_4nnf_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad,\
 									 smearstep = 0.0)
 	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
 	if myid == 0 :
