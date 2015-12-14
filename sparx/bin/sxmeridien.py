@@ -1626,7 +1626,7 @@ def main():
 
 	if  filter_by_fsc:
 		#  Prepare initial FSC corresponding to initial resolution
-		[xxx,Tracker["lowpass"]] = tanhfilter(Tracker["constants"]["nnxo"], Tracker["constants"]["inires"], Tracker["falloff"])
+		[xxx,Tracker["lowpass"]] = tanhfilter(Tracker["constants"]["nnxo"], Tracker["constants"]["inires"]/float(Tracker["constants"]["nnxo"]), Tracker["falloff"])
 		if(myid == main_node):
 			write_text_file([xxx,Tracker["lowpass"],Tracker["lowpass"],\
 			[2*Tracker["lowpass"][i]/(1.0+Tracker["lowpass"][i]) for i in xrange(len(Tracker["lowpass"]))]],os.path.join(initdir,"fsc.txt"))

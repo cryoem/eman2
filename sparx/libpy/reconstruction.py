@@ -770,7 +770,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 		if not (info is None): 
 			info.write( "begin reduce\n" )
 			info.flush()
-	
+
 		reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
 		reduce_EMData_to_root(weight, myid, comm=mpi_comm)
 		
@@ -806,14 +806,14 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 			fftvol = get_im(fftvol_file[idx])
 			weight = get_im(weight_file[idx])
 			refvol = model_blank(bnx,1,1,0.0)
-			for i in xrange(len(fourier_shell_correlation)):  
+			for i in xrange(len(fourier_shell_correlation)):
 				refvol.set_value_at(i, t[i])
 			refvol.set_attr("fudge", 1.0)
-			
+
 			params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
 			r = Reconstructors.get("nn4_ctfw", params)
 			r.setup()
-			
+
 			dummy = r.finish(True)
 			ovol.append(fftvol)
 
