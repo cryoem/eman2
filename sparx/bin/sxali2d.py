@@ -123,13 +123,15 @@ def main():
 				number_of_proc = number_of_proc, myid = myid, main_node = main_node, mpi_comm = MPI_COMM_WORLD,\
 				write_headers = True)
 		else:
+			print " Non-MPI is no more in use, try MPI option, please."
+			"""
 			from applications import ali2d
 			ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
 				options.ts, options.nomirror, options.dst, \
 				options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
 				-1, options.function, False, "", options.MPI, \
 				options.template, random_method = options.random_method)
-
+	    	"""
 		global_def.BATCH = False
 
 		if options.MPI:
