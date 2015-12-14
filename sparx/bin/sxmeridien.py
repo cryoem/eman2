@@ -1273,8 +1273,14 @@ def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	print(line,theme)
 	spaces = "                    "
+	exclude = ["constants","bckgnoise"]
 	for key, value in sorted( dict.items() ):
-		if(key != "constants"):  print("                    => ", key+spaces[len(key):],":  ",value)
+		pt = True
+		for ll in exclude:
+			if(key == ll):
+				pt = False
+				break
+		if pt:  print("                    => ", key+spaces[len(key):],":  ",value)
 
 
 # 
@@ -1632,7 +1638,7 @@ def main():
 	#if( Tracker["nxinit"] > Tracker["constants"]["nnxo"] ):
 	#		ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
 
-	Tracker["newnx"] = Tracker["nxinit"]
+	#Tracker["newnx"] = Tracker["nxinit"]
 
 	if( Tracker["constants"]["restrict_shifts"] == -1 ):
 		#  Here we need an algorithm to set things correctly
