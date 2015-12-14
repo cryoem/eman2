@@ -127,7 +127,7 @@ def main():
 			ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
 				options.ts, options.nomirror, options.dst, \
 				options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
-				options.Ng, options.function, options.CUDA, options.GPUID, options.MPI, \
+				-1, options.function, False, "", options.MPI, \
 				options.template, random_method = options.random_method)
 
 		global_def.BATCH = False
