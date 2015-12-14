@@ -98,7 +98,18 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	data = EMData.read_images(stack, list_of_particles)
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
-
+	try:
+		tt = data[0].get_attr("xform.align2d")
+		not_set = False
+	except:
+		print "xform.align2d params are not set yet!"
+		not_set = True
+	if not_set:
+		from utilities import set_params2D
+		for index in xrange(len(data)):
+			p=[0.0, 0.0, 0.0, 0, 1]
+			set_params2D(data[index],p,xform = "xform.align2d")
+			
 	print_msg("Input stack                 : %s\n"%(stack))
 
 	ali2d_data(data, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, \
