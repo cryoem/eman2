@@ -1233,11 +1233,11 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		#  I have to substitute shrinkage
 		oxr = Tracker["xr"]
 		ots = Tracker["ts"]
-		Tracker["xr"] /= shrinkage
-		Tracker["ts"] /= shrinkage
+		Tracker["xr"] = "%f"%(float(Tracker["xr"])*shrinkage)
+		Tracker["ts"] = "%f"%(float(Tracker["ts"])*shrinkage)
 	
 		if(myid == main_node):
-			print(" smear in regular metamove ",Tracker["nxinit"],shrinkage,Tracker["icurrentres"], Tracker["radius"],delta,Tracker["smearstep"])
+			print(" smear in regular metamove ",Tracker["nxinit"],shrinkage,Tracker["icurrentres"], Tracker["radius"],Tracker["delta"],Tracker["smearstep"])
 
 	if(Tracker["delpreviousmax"]):
 		for i in xrange(len(projdata)):
@@ -1341,7 +1341,7 @@ def main():
 	parser.add_option("--inires",		     type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
 	#parser.add_option("--pwreference",	     type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",		     type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
-	parser.add_option("--function",          type="string", default="do_volume_mrk02",  help="name of the reference preparation function (default do_volume_mrk02)")
+	parser.add_option("--function",          type="string", default="do_volume_mrk04",  help="name of the reference preparation function (default do_volume_mrk04)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 
