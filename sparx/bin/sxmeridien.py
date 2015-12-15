@@ -1837,7 +1837,7 @@ def main():
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"fsc.txt"), keepchecking, myid, main_node)
 
 		if doit:
-			vol0,vol1,fsc = recons3d_4nnf_ctf_MPI(myid = myid, list_of_prjlist = [projdata[0],projdata[1]], \
+			vol0,vol1,fsc = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = [projdata[0],projdata[1]], bckgnoise = Tracker["bckgnoise"],\
 										symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
 				fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))

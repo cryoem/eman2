@@ -2265,14 +2265,14 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
 
 	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
-	
+
 	for first_myid_process_that_has_elements_to_process in range(ncpu):
 		sim_start, sim_ref_end = MPI_start_end(num_ref, ncpu, first_myid_process_that_has_elements_to_process)
 		if sim_start != sim_ref_end:
 			break
-	
+
 	myid_process_that_will_broadcast_the_header_info = first_myid_process_that_has_elements_to_process 
-	
+
 	list_to_broadcast = []
 	if myid == myid_process_that_will_broadcast_the_header_info:
 		# used for copying the header and other info
@@ -2336,7 +2336,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 					image_data = reshape(image_data, (nz, ny, nx))
 				elif ny != 1:
 					image_data = reshape(image_data, (ny, nx))
-					
+
 				em_object = EMNumPy.numpy2em(image_data)
 
 				# em_object.set_complex(is_complex)

@@ -4035,7 +4035,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
-	cout <<  "  will set refvol  "  <<endl;
+	//cout <<  "  will set refvol  "  <<endl;
 	//m_refvol->set_array_offsets(0, 1, 1);
 	m_volume->symplane0_ctf(m_wptr);
 
