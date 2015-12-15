@@ -318,7 +318,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 	return keepgoing, reset_data, Tracker
 
 
-def params_changes(currentdir, previousdir, Tracker):
+def params_changes( Tracker ):
 	#  Indexes contain list of images processed - sorted integers, subset of the full range.
 	#  params - contain parameters associated with these images
 	#  Both lists can be of different sizes, so we have to find a common subset
@@ -328,10 +328,10 @@ def params_changes(currentdir, previousdir, Tracker):
 	from math import sqrt
 	import sets
 
-	cids    = read_text_file(os.path.join(currentdir,"indexes.txt"))
-	pids    = read_text_file(os.path.join(previousdir,"indexes.txt"))
-	cparams = read_text_row(os.path.join(currentdir,"params.txt"))
-	pparams = read_text_row(os.path.join(previousdir,"params.txt"))
+	cids    = read_text_file(os.path.join(Tracker["directory"],"indexes.txt"))
+	pids    = read_text_file(os.path.join(Tracker["previousoutputdir"],"indexes.txt"))
+	cparams = read_text_row(os.path.join(Tracker["directory"],"params.txt"))
+	pparams = read_text_row(os.path.join(Tracker["previousoutputdir"],"params.txt"))
 	u = list(set(cids) & set(pids))
 	u.sort()
 	#  Extract common subsets of parameters
@@ -351,7 +351,7 @@ def params_changes(currentdir, previousdir, Tracker):
 	n = len(u)
 	anger       = 0.0
 	shifter     = 0.0
-	if(sym == "c1"):
+	if(Tracker["constants"]["sym"] == "c1"):
 		for i in xrange(n):
 			shifter     += (cp[i][3] - pp[i][3])**2 + (cp[i][4] - pp[i][4])**2
 			t1 = Transform({"type":"spider","phi":pp[i][0],"theta":pp[i][1],"psi":pp[i][2]})
@@ -507,7 +507,7 @@ def build_defgroups(fi):
 		ocup[i] = stmp.count(sd[i])
 	return  sd, ocup
 
-def compute_sigma(partstack, paramsname, Tracker, myid, main_node, nproc):
+def compute_sigma(partstack, paramsname, Tracker, dryrun, myid, main_node, nproc):
 	# input stack of particles and text file with all params
 
 	if(myid == main_node):
@@ -560,39 +560,45 @@ def compute_sigma(partstack, paramsname, Tracker, myid, main_node, nproc):
 	nx = Tracker["constants"]["nnxo"]
 	mx = 2*nx
 	nv = rops(model_blank(mx,mx)).get_xsize()
-	tsd = model_blank(nv + nv//2,len(sd))
-	tocp = model_blank(len(sd))
 
 	invg = model_gauss(Tracker["constants"]["radius"],nx,nx)
 	invg /= invg[nx//2,nx//2]
 	invg = model_blank(nx,nx,1,1.0) - invg
 	mask = model_circle(Tracker["constants"]["radius"],nx,nx)
 
-	for i in xrange(image_start, image_end):
-		projdata = get_im( partstack, i )
-		try:
-			stmp = projdata.get_attr("ptcl_source_image")
-		except:
-			stmp = projdata.get_attr("ctf")
-			stmp = round(stmp.defocus,4)
-		indx = sd.index(stmp)
-		st = Util.infomask(projdata, mask, True)
-		sig = rops(pad(((cyclic_shift(projdata, int(round(params[i][-2])), int(round(params[i][-1])) ) - st[0])/st[1])*invg, mx,mx,1,0.0))
-		for k in xrange(nv):
-			tsd.set_value_at(k,indx,tsd.get_value_at(k,indx)+sig.get_value_at(k))
-		tocp[indx] += 1
+	if  dryrun:
+		tsd = model_blank(nv + nv//2,len(sd), 1, 1.0)
+		tocp = model_blank(len(sd), 1, 1, 1.0)
+		
+	else:
+		tsd = model_blank(nv + nv//2,len(sd))
+		tocp = model_blank(len(sd))
 
-	reduce_EMData_to_root(tsd, myid, main_node)
-	reduce_EMData_to_root(tocp, myid, main_node)
-	if( myid == main_node):
-		for i in xrange(len(sd)):
-			tsd.set_value_at(0,i,1.0)
-			for k in xrange(6,nv):
-				tsd.set_value_at(k,i,1.0/(tsd.get_value_at(k,i)/tocp[i]))  # Already inverted
-			qt = tsd.get_value_at(6,i)
-			for k in xrange(1,6):
-				tsd.set_value_at(k,i,qt)
-	bcast_EMData_to_all(tsd, myid, source_node = 0)
+		for i in xrange(image_start, image_end):
+			projdata = get_im( partstack, i )
+			try:
+				stmp = projdata.get_attr("ptcl_source_image")
+			except:
+				stmp = projdata.get_attr("ctf")
+				stmp = round(stmp.defocus,4)
+			indx = sd.index(stmp)
+			st = Util.infomask(projdata, mask, True)
+			sig = rops(pad(((cyclic_shift(projdata, int(round(params[i][-2])), int(round(params[i][-1])) ) - st[0])/st[1])*invg, mx,mx,1,0.0))
+			for k in xrange(nv):
+				tsd.set_value_at(k,indx,tsd.get_value_at(k,indx)+sig.get_value_at(k))
+			tocp[indx] += 1
+
+		reduce_EMData_to_root(tsd, myid, main_node)
+		reduce_EMData_to_root(tocp, myid, main_node)
+		if( myid == main_node):
+			for i in xrange(len(sd)):
+				tsd.set_value_at(0,i,1.0)
+				for k in xrange(6,nv):
+					tsd.set_value_at(k,i,1.0/(tsd.get_value_at(k,i)/tocp[i]))  # Already inverted
+				qt = tsd.get_value_at(6,i)
+				for k in xrange(1,6):
+					tsd.set_value_at(k,i,qt)
+		bcast_EMData_to_all(tsd, myid, source_node = 0)
 	return tsd, sd, [int(tocp[i]) for i in xrange(len(sd))]
 
 def subdict(d,u):
@@ -1652,7 +1658,7 @@ def main():
 	subdict( Tracker, {"zoom":False} )
 
 	#  Compute first bckgnoise, projdata stores indexes, to be deleted.
-	Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], projdata = compute_sigma(Tracker["constants"]["stack"], os.path.join(initdir,"params.txt"), Tracker, myid, main_node, nproc)
+	Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], projdata = compute_sigma(Tracker["constants"]["stack"], os.path.join(initdir,"params.txt"), Tracker, True, myid, main_node, nproc)
 	if( myid == 0 ):
 		#  write noise
 		Tracker["bckgnoise"][0].write_image(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
@@ -1837,22 +1843,39 @@ def main():
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"fsc.txt"), keepchecking, myid, main_node)
 
 		if doit:
-			vol0,vol1,fsc = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = [projdata[0],projdata[1]], bckgnoise = Tracker["bckgnoise"],\
+			vol0,vol1,fsc = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = [projdata[0],projdata[1]], bckgdata = Tracker["bckgnoise"],\
 										symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
 				fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
+				del vol0
 				fpol(vol1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"vol1.hdf"))
+				del vol1
 				if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-					for i in xrange(len(fsc),Tracker["constants"]["nnxo"]/2+1):  fsc[i] = 0.0
-				write_text_file( fsc, os.path.join(fscoutputdir,os.path.join(Tracker["directory"] ,"fsc.txt")) )
-				del vol0, vol1, fsc
+					for i in xrange(len(fsc),Tracker["constants"]["nnxo"]/2+1):  fsc.append(0.0)
+				write_text_file( fsc, os.path.join(Tracker["directory"] ,"fsc.txt") )
+		else:
+			if(myid == main_node):
+				fsc = read_text_file( os.path.join(Tracker["directory"] ,"fsc.txt") )
+		if(myid == main_node):  i = len(fsc)
+		else:  i = 0
+		i   = bcast_number_to_all(i, source_node = main_node)
+		fsc = mpi_bcast(fsc, i, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+
+		if( myid == main_node):
+			# Carry over chunk information
+			for procid in xrange(2):
+				cmd = "{} {} {}".format("cp -p", os.path.join(Tracker["previousoutputdir"],"chunk%01d.txt"%procid), \
+										os.path.join(Tracker["directory"],"chunk%01d.txt"%procid) )
+				cmdexecute(cmd)
+
+
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
 		if  doit:
 			#  ANALYZE CHANGES IN OUTPUT PARAMETERS WITH RESPECT TO PREVIOUS INTERATION  <><><><><><><><><><><><><><><><><><><><><><><><><><><>
 			#  Compute pixers and store results
 			if(myid == main_node):
-				anger, shifter = params_changes( Tracker["directory"], Tracker["previousoutputdir"], Tracker["constants"]["sym"])
+				anger, shifter = params_changes( Tracker )
 				write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds.txt") )
 			else:
 				anger   = 0.0
@@ -1874,7 +1897,6 @@ def main():
 		Tracker["anger"]   = anger
 		Tracker["shifter"] = shifter
 
-
 		l05 = -1
 		l01 = -1
 		for i in xrange(len(fsc)):
@@ -1886,7 +1908,7 @@ def main():
 				l01 = i-1
 				break
 		l01 = max(l01,-1)
-		maxres = max(i05, Tracker["constants"]["inires"])  # Cannot be lower than initial resolution
+		maxres = max(l05, Tracker["constants"]["inires"])  # Cannot be lower than initial resolution
 		if( Tracker["mainiteration"] == 1 ):  Tracker["ireachedres"] = maxres
 		Tracker["large_at_Nyquist"] = fsc[Tracker["nxinit"]//2] > 0.2
 		if( maxres > Tracker["ireachedres"]):
@@ -1913,7 +1935,7 @@ def main():
 
 		if( Tracker["mainiteration"] == 1 ):
 			#  Compute bckgnoise after first iteration, procid stores indexes, to be deleted.
-			Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], procid = compute_sigma(Tracker["constants"]["stack"], os.path.join(Tracker["directory"],"params.txt"), Tracker, myid, main_node, nproc)
+			Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], procid = compute_sigma(Tracker["constants"]["stack"], os.path.join(Tracker["directory"],"params.txt"), Tracker, False, myid, main_node, nproc)
 			if( myid == 0 ):
 				#  write noise
 				Tracker["bckgnoise"][0].write_image(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
