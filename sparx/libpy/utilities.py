@@ -2300,9 +2300,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 		list_to_broadcast = bcast_list_to_all(list_to_broadcast, myid, myid_process_that_will_broadcast_the_header_info)
 	else:
 		list_to_broadcast = bcast_list_to_all(list_to_broadcast, myid, myid_process_that_will_broadcast_the_header_info)
-		[size_of_one_refring_assumed_common_to_all, nx, ny, nz, is_ri, changecount, is_complex_x, is_complex_ri, apix_x, \ 
-		 apix_y, apix_z, is_complex, is_fftpad, is_fftodd] =\
-		list_to_broadcast
+		[size_of_one_refring_assumed_common_to_all, nx, ny, nz, is_ri, changecount, is_complex_x, is_complex_ri, apix_x, apix_y, apix_z, is_complex, is_fftpad, is_fftodd] = list_to_broadcast
 	
 	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
 		print "Sending refrings: size of data to broadcast is greater than 2GB"

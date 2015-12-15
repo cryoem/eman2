@@ -687,6 +687,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	from mpi        import MPI_COMM_WORLD, mpi_barrier
 	import types
 	from statistics import fsc
+	from reconstruction import rec3D_MPI_with_getting_odd_even_volumes_from_files
 	import datetime
 	
 	if mpi_comm == None:
@@ -796,8 +797,8 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 				fftvol.write_image(reconstructed_vol_files[-1])
 				
 		volall, fsc_from_odd_and_evenlist[iset] = rec3D_MPI_with_getting_odd_even_volumes_from_files(fftvol_file, weight_file, reconstructed_vol_files,\
-		imgsize, snr , symmetry , mask3D = None, fsc_curve = None, myid = myid, main_node = 0, rstep = 1.0, finfo=None, \
-		npad = npad, mpi_comm=None)
+										imgsize, snr , symmetry , mask3D = None, fsc_curve = None,
+										myid = myid, main_node = 0, rstep = 1.0, finfo=None, npad = npad, mpi_comm=None)
 		
 		results_list.append("rvol__%s__idx%d_splits_combined.hdf"%(tmpid, iset))
 		if(iset == 0):  volall.write_image(results_list[-1])
