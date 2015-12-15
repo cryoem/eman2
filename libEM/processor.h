@@ -4195,13 +4195,13 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("npeaks", EMObject::INT, "the number of surrounding peaks allow to >= pixel values");
+			d.put("npeaks", EMObject::INT, "The number of pixels adjacent to the pixel under consideration which may be higher and still be a valid peak. If 0, finds pure peaks");
 			return d;
 		}
 
 		string get_desc() const
 		{
-			return "peak processor -> if npeaks or more surrounding values >= value, value->0";
+			return "Zeros all pixels with adjacent pixels >= the value being considered. That is, it leaves behind only local maxima.";
 		}
 
 		static const string NAME;

@@ -2798,7 +2798,9 @@ class GUIctf(QtGui.QWidget):
 			ssnr="%1.4f"%(sum(ctf.snr)/float(len(ctf.snr)))
 		except:
 			ssnr="?"
-		self.imginfo.setText("%s particles     SNR = %s"%(ptcl,ssnr))
+		try: apix=self.data[val][1].apix
+		except: apix=0
+		self.imginfo.setText("%s particles     SNR = %s   A/pix = %1.2f"%(ptcl,ssnr,apix))
 
 		if self.guiim != None:
 #			print self.data
