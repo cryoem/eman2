@@ -492,7 +492,7 @@ def build_defgroups(fi):
 		try:
 			stmp = a.get_attr("ctf")
 			stmp = EMUtil.get_all_attributes(fi,"ctf")
-			for i in xrange(len(stmp)):  stmp[i] = stmp[i].defocus
+			for i in xrange(len(stmp)):  stmp[i] = round(stmp[i].defocus, 4)
 		except:
 			ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
 
