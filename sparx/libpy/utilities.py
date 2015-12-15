@@ -2277,30 +2277,33 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 	if myid == myid_process_that_will_broadcast_the_header_info:
 		# used for copying the header and other info
 		
-		data = EMNumPy.em2numpy(list_of_em_objects[ref_start])
+		reference_em_object = list_of_em_objects[ref_start]
+		data = EMNumPy.em2numpy(reference_em_object)
 		size_of_one_refring_assumed_common_to_all = data.size
 		
-		reference_em_object = list_of_em_objects[ref_start]
 		nx = reference_em_object.get_xsize()
 		ny = reference_em_object.get_ysize()
 		nz = reference_em_object.get_zsize()
-		# is_complex = reference_em_object.is_complex()
-		is_ri = reference_em_object.is_ri()
-		changecount = reference_em_object.get_attr("changecount")
-		is_complex_x = reference_em_object.is_complex_x()
-		is_complex_ri = reference_em_object.get_attr("is_complex_ri")
-		apix_x = reference_em_object.get_attr("apix_x")
-		apix_y = reference_em_object.get_attr("apix_y")
-		apix_z = reference_em_object.get_attr("apix_z")
-		is_complex = reference_em_object.get_attr_default("is_complex",1)
-		is_fftpad = reference_em_object.get_attr_default("is_fftpad",1)
-		is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz%2)
-		list_to_broadcast = [size_of_one_refring_assumed_common_to_all, nx, ny, nz, is_ri, changecount, is_complex_x, \
-							 is_complex_ri, apix_x, apix_y, apix_z, is_complex, is_fftpad, is_fftodd]
-		list_to_broadcast = bcast_list_to_all(list_to_broadcast, myid, myid_process_that_will_broadcast_the_header_info)
+
+		em_dict = reference_em_object.get_attr_dict()
+		dict_to_send = {"size_of_one_refring_assumed_common_to_all":size_of_one_refring_assumed_common_to_all, \
+						"em_dict":em_dict, "nx":nx, "ny":ny, "nz":nz}
+		
+		try:
+			str_to_send = str(dict_to_send)
+		except:
+			raise ValueError("Could not convert em attribute dictionary to string s that bcast_compacted_EMData_all_to_all can be used.")
+		
+		str_to_send = send_string_to_all(str_to_send)
 	else:
-		list_to_broadcast = bcast_list_to_all(list_to_broadcast, myid, myid_process_that_will_broadcast_the_header_info)
-		[size_of_one_refring_assumed_common_to_all, nx, ny, nz, is_ri, changecount, is_complex_x, is_complex_ri, apix_x, apix_y, apix_z, is_complex, is_fftpad, is_fftodd] = list_to_broadcast
+		str_to_send = send_string_to_all("")
+	
+	dict_received = eval(str_to_send)
+	em_dict = dict_received["em_dict"]
+	nx = dict_received["nx"]
+	ny = dict_received["ny"]
+	nz = dict_received["nz"]
+	size_of_one_refring_assumed_common_to_all = dict_received["size_of_one_refring_assumed_common_to_all"]
 	
 	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
 		print "Sending refrings: size of data to broadcast is greater than 2GB"
@@ -2338,20 +2341,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 					image_data = reshape(image_data, (ny, nx))
 
 				em_object = EMNumPy.numpy2em(image_data)
-
-				# em_object.set_complex(is_complex)
-				em_object.set_ri(is_ri)
-				em_object.set_attr_dict({
-				"changecount":changecount,
-				"is_complex_x":is_complex_x,
-				"is_complex_ri":is_complex_ri,
-				"apix_x":apix_x,
-				"apix_y":apix_y,
-				"apix_z":apix_z,
-				'is_complex':is_complex,
-				'is_fftodd':is_fftodd,
-				'is_fftpad':is_fftpad})
-
+				em_object.set_attr_dict(em_dict)
 				list_of_em_objects[i] = em_object
 
 def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=-1):
