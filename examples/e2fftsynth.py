@@ -124,6 +124,8 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.cbtargfn.addItem("modsin3")
 		self.cbtargfn.addItem("sin low")
 		self.cbtargfn.addItem("doubledelta")
+		self.cbtargfn.addItem("sin bad f")
+		self.cbtargfn.addItem("sin bad f2")
 		self.hbl1.addWidget(self.cbtargfn)
 		
 		# Widget containing valsliders
@@ -226,6 +228,13 @@ class GUIFourierSynth(QtGui.QWidget):
 				self.targfn.to_zero()
 				self.targfn[nx/16]=4.0
 				self.targfn[nx*15/16]=4.0
+
+			elif index==13 : # sin bad f
+				for i in xrange(nx): self.targfn[i]=sin(i*pi/15.5)
+			
+			elif index==14 : # sin bad f2
+				for i in xrange(nx): self.targfn[i]=sin(i*pi/19)
+			
 
 			self.target2sliders()
 		
