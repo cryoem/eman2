@@ -2294,9 +2294,9 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 		except:
 			raise ValueError("Could not convert em attribute dictionary to string s that bcast_compacted_EMData_all_to_all can be used.")
 		
-		str_to_send = send_string_to_all(str_to_send)
-	else:
-		str_to_send = send_string_to_all("")
+	else: str_to_send = ""
+		
+	str_to_send = send_string_to_all(str_to_send, myid_process_that_will_broadcast_the_header_info)
 	
 	dict_received = eval(str_to_send)
 	em_dict = dict_received["em_dict"]
