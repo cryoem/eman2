@@ -2266,15 +2266,14 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 
 	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
 
-	for first_myid_process_that_has_elements_to_process in range(ncpu):
-		sim_start, sim_ref_end = MPI_start_end(num_ref, ncpu, first_myid_process_that_has_elements_to_process)
+	for first_myid_process_that_has_em_elements in range(ncpu):
+		sim_start, sim_ref_end = MPI_start_end(num_ref, ncpu, first_myid_process_that_has_em_elements)
 		if sim_start != sim_ref_end:
 			break
+	else:
+		raise ValueError("No processor contains em objects!")
 
-	myid_process_that_will_broadcast_the_header_info = first_myid_process_that_has_elements_to_process 
-
-	list_to_broadcast = []
-	if myid == myid_process_that_will_broadcast_the_header_info:
+	if myid == first_myid_process_that_has_em_elements:
 		# used for copying the header and other info
 		
 		reference_em_object = list_of_em_objects[ref_start]
@@ -2295,8 +2294,8 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 			raise ValueError("Could not convert em attribute dictionary to string s that bcast_compacted_EMData_all_to_all can be used.")
 		
 	else: str_to_send = ""
-		
-	str_to_send = send_string_to_all(str_to_send, myid_process_that_will_broadcast_the_header_info)
+
+	str_to_send = send_string_to_all(str_to_send, first_myid_process_that_has_em_elements)
 	
 	dict_received = eval(str_to_send)
 	em_dict = dict_received["em_dict"]
@@ -2805,9 +2804,10 @@ def send_string_to_all(str_to_send, source_node = 0):
 
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	str_to_send_len  = len(str_to_send)*int(myid == source_node)
-	str_to_send_len = mpi_bcast(str_to_send_len,1,MPI_INT,0,MPI_COMM_WORLD)[0]
+	str_to_send_len = mpi_bcast(str_to_send_len,1,MPI_INT,source_node,MPI_COMM_WORLD)[0]
 	str_to_send = mpi_bcast(str_to_send,str_to_send_len,MPI_CHAR,source_node,MPI_COMM_WORLD)
 	return "".join(str_to_send)
+
 
 def bcast_number_to_all(number_to_send, source_node = 0):
 	"""
