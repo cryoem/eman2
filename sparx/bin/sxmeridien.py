@@ -1215,7 +1215,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	if filter_by_fsc:
 		#  READ processed FSC.
 		if(myid == main_node):
-			Tracker["lowpass"] = read_text_file(os.path.join(Tracker["previousoutputdir"],"fsc.txt"),2)
+			Tracker["lowpass"] = read_text_file(os.path.join(Tracker["previousoutputdir"],"fsc.txt"))
 			lex = len(Tracker["lowpass"])
 		else:  lex = 0
 		lex = bcast_number_to_all(lex, source_node = main_node)
