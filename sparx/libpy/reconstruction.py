@@ -796,6 +796,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 
 	if myid == 0:
 		fourier_shell_correlation = fsc(get_im(results_list[0]), fftvol, 1.0)[1]
+		fourier_shell_correlation[0] = 1.0
 
 		from math import sqrt
 		from utilities import reshape_1d
