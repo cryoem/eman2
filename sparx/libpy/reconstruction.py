@@ -749,7 +749,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 
 		for image in list_of_prjlist[iset]:
 			try:
-				lll = iset/0
+				#lll = iset/0
 				#raise ValueError('A very specific thing happened')
 				stmp = image.get_attr("ptcl_source_image")
 			except:
