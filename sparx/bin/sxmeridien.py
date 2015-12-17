@@ -1461,6 +1461,7 @@ def main():
 	Tracker["movedback"]      = False
 	Tracker["state"]          = Tracker["constants"]["states"][0]
 	Tracker["bckgnoise"]      = [None, None]
+	Tracker["smearstep"]      = 0.0
 
 	# ------------------------------------------------------------------------------------
 
@@ -1823,7 +1824,19 @@ def main():
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"params.txt"), keepchecking, myid, main_node)
 		if doit:
-			if( myid == main_node ):
+			#  Change to current params
+			partids = [None]*2
+			for procid in xrange(2):  partids[procid] = os.path.join(Tracker["directory"],"chunk%01d.txt"%procid)
+			partstack = [None]*2
+			for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid)
+
+			if( myid == main_node):
+				# Carry over chunk information
+				for procid in xrange(2):
+					cmd = "{} {} {}".format("cp -p", os.path.join(Tracker["previousoutputdir"],"chunk%01d.txt"%procid), \
+											os.path.join(Tracker["directory"],"chunk%01d.txt"%procid) )
+					cmdexecute(cmd)
+
 				pinids = read_text_file(partids[0])  + read_text_file(partids[1])
 				params = read_text_row(partstack[0]) + read_text_row(partstack[1])
 
@@ -1839,11 +1852,24 @@ def main():
 				del pinids
 			mpi_barrier(MPI_COMM_WORLD)
 
-		# 
+		#
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"fsc.txt"), keepchecking, myid, main_node)
 
 		if doit:
-			vol0,vol1,fsc = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = [projdata[0],projdata[1]], bckgdata = Tracker["bckgnoise"],\
+			#  Change to current params
+			partids = [None]*2
+			for procid in xrange(2):  partids[procid] = os.path.join(Tracker["directory"],"chunk%01d.txt"%procid)
+			partstack = [None]*2
+			for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid)
+			Tracker["applyctf"] = False
+			for procid in xrange(2):
+				projdata[procid] = []
+				projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["nxinit"],\
+					partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
+
+			print("  smearstep  ",myid,Tracker["smearstep"])
+
+			vol0,vol1,fsc = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = projdata, bckgdata = Tracker["bckgnoise"],\
 										symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
 				fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
@@ -1860,13 +1886,6 @@ def main():
 		else:  i = 0
 		i   = bcast_number_to_all(i, source_node = main_node)
 		fsc = mpi_bcast(fsc, i, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-
-		if( myid == main_node):
-			# Carry over chunk information
-			for procid in xrange(2):
-				cmd = "{} {} {}".format("cp -p", os.path.join(Tracker["previousoutputdir"],"chunk%01d.txt"%procid), \
-										os.path.join(Tracker["directory"],"chunk%01d.txt"%procid) )
-				cmdexecute(cmd)
 
 
 

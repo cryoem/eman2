@@ -2004,10 +2004,6 @@ void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* bckgnoise
 	myfft->set_array_offsets(0,1);
 
 	bckgnoise->set_array_offsets(0,1);
-
-    // Ctf* ctf = myfft->get_attr("ctf");
-    // ctf_store::init( ny, ctf );
-    // if(ctf) {delete ctf; ctf=0;}
     
 	vector<int> ctf2d2_saved_offsets = ctf2d2->get_array_offsets();
 	ctf2d2->set_array_offsets(0,1);
