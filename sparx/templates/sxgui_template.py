@@ -252,8 +252,11 @@ class SXPopup(QWidget):
 					if os.path.exists(token.widget.text()):
 						# NOTE: 2015/11/24 Toshio Moriya
 						# This special case needs to be handled with more general method...
-						if self.sxcmd.name in ["sxmeridien"]:
-							QMessageBox.warning(self, "Output Directory/File", "Output Directory/File (%s) already exists. Executing the program with continue mode ..." % (token.widget.text()))
+						if self.sxcmd.name in ["sxisac", "sxviper", "sxrviper", "sxmeridien", "sxsort3d"]:
+							reply = QtGui.QMessageBox.question(self, "Output Directory/File", "Output Directory/File (%s) already exists. Do you really want to run the program with continue mode?" % (token.widget.text()), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No)
+							if reply == QtGui.QMessageBox.No:
+								return
+							# else: # Do nothing
 						else:
 							QMessageBox.warning(self, "Output Directory/File", "Output Directory/File (%s) already exists. Please change the name and try it again. Aborting execution ..." % (token.widget.text()))
 							return
