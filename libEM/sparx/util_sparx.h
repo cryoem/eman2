@@ -557,11 +557,11 @@ class FakeKaiserBessel : public KaiserBessel {
 	        Crosrng_msg_s is same as Crosrng_msg except that it only checks straight position
 	        Crosrng_msg_m is same as Crosrng_msg except that it only checks mirrored position
 	  */
-	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg);
+	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg, float delta_psi);
 	static Dict Crosrng_rand_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg, float previous_max, float an, int psi_pos);
 	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
 
-	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
+	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr, float delta_psi);
 	static Dict Crosrng_ms_delta(EMData* circ1, EMData* circ2, vector<int> numr, float delta_start, float delta);
 
 	/**
@@ -885,7 +885,7 @@ public:
 	/* In this version order of rotation/shift is not changed*/
 	static vector<float> multiref_polar_ali_3d(EMData* image, const vector< EMData* >& crefim,
                 vector<float> xrng, vector<float> yrng, float step, string mode,
-                vector< int >numr, float cnx, float cny);
+                vector< int >numr, float cnx, float cny, float delta_psi);
 
 
 	/* This is used in ISAC program to assigning particles equally to grops */
@@ -984,7 +984,7 @@ public:
 	static vector<float> multiref_polar_ali_3d_local(EMData* image, const vector< EMData* >& crefim,
 				vector<vector<float> > list_of_reference_angles,
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
-                vector< int >numr, float cnx, float cny, string sym);
+                vector< int >numr, float cnx, float cny, string sym, float delta_psi);
 
 	/* Returns first match with peak greater than previousmax or the best match in whole space (when there are no peaks > previousmax).
 	 * The reference rings are checked in random order.

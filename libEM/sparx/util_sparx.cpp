@@ -3723,7 +3723,7 @@ void Util::prb1d(double *b, int npoint, float *pos) {
 #define  q(i)            q[i-1]
 #define  b(i)            b[i-1]
 #define  t7(i)           t7[i-1]
-Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg) {
+Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg, float delta_psi) {
 	//  neg = 1 mirrored; otherwise straight
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
@@ -3801,20 +3801,42 @@ c       automatic arrays
 
 	fftr_d(q,ip);
 
+	bool do_delta_psi;
+	int nsteps_delta;
+	if( delta_psi == 0.0f )	do_delta_psi = false;
+	else {
+		do_delta_psi = true;	
+		nsteps_delta = static_cast<int>(360.0/delta_psi + 0.5);
+	}
+
+
 	qn = -1.0e20;
-	for (j=1;j<=maxrin;j++) {
-	   if (q(j) >= qn) {
-		  qn = q(j); jtot = j;
-	   }
-	}
-	for (k=-3; k<=3; k++) {
-		j = (jtot+k+maxrin-1)%maxrin + 1;
-		t7(k+4) = q(j);
-	}
 
-	prb1d(t7,7,&pos);
 
-	tot = (float)jtot + pos;
+	if( do_delta_psi ) {
+		for (int lst=0; lst<=nsteps_delta; lst++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
+			j = 1 + static_cast<int>(lst*360.0/delta_psi + 0.5);
+			if (q(j) >= qn) {
+				qn  = q(j);
+				jtot = j;
+			}
+		}
+		tot = (float)jtot; //(jtot-1)*360.0/delta_psi;
+	} else {
+		for (j=1;j<=maxrin;j++) {
+		   if (q(j) >= qn) {
+			  qn = q(j); jtot = j;
+		   }
+		}
+		for (k=-3; k<=3; k++) {
+			j = (jtot+k+maxrin-1)%maxrin + 1;
+			t7(k+4) = q(j);
+		}
+
+		prb1d(t7,7,&pos);
+
+		tot = (float)jtot + pos;
+	}
 
 	if (q) free(q);
 
@@ -4067,7 +4089,7 @@ c       automatic arrays
 	return  retvals;
 }
 
-Dict Util::Crosrng_ms(EMData* circ1p, EMData* circ2p, vector<int> numr) {
+Dict Util::Crosrng_ms(EMData* circ1p, EMData* circ2p, vector<int> numr, float delta_psi) {
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	int maxrin = numr[numr.size()-1];
@@ -4156,48 +4178,79 @@ c
 			t(j+1) += -t3 - t4;
 		}
 	}
+
+	bool do_delta_psi;
+	int nsteps_delta;
+	if( delta_psi == 0.0f )	do_delta_psi = false;
+	else {
+		do_delta_psi = true;	
+		nsteps_delta = static_cast<int>(360.0/delta_psi + 0.5);
+	}
+
 	//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<"   "<<t(j) <<endl;
 	fftr_d(q,ip);
 
 	qn  = -1.0e20;
-	for (j=1; j<=maxrin; j++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
-		if (q(j) >= qn) {
-			qn  = q(j);
-			jtot = j;
+
+	if( do_delta_psi ) {
+		for (int lst=0; lst<=nsteps_delta; lst++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
+			j = 1 + static_cast<int>(lst*360.0/delta_psi + 0.5);
+			if (q(j) >= qn) {
+				qn  = q(j);
+				jtot = j;
+			}
 		}
+		tot = (float)jtot; //(jtot-1)*360.0/delta_psi;
+	} else {
+		for (j=1; j<=maxrin; j++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
+			if (q(j) >= qn) {
+				qn  = q(j);
+				jtot = j;
+			}
+		}
+
+		for (k=-3; k<=3; k++) {
+			j = ((jtot+k+maxrin-1)%maxrin)+1;
+			t7(k+4) = q(j);
+		}
+
+		// interpolate
+		prb1d(t7,7,&pos);
+		tot = (float)(jtot)+pos;
 	}
-
-	for (k=-3; k<=3; k++) {
-		j = ((jtot+k+maxrin-1)%maxrin)+1;
-		t7(k+4) = q(j);
-	}
-
-	// interpolate
-	prb1d(t7,7,&pos);
-	tot = (float)(jtot)+pos;
-
 	// mirrored
 	fftr_d(t,ip);
 
 	// find angle
 	qm = -1.0e20;
-	for (j=1; j<=maxrin;j++) {//cout <<"  "<<j<<"	"<<t(j) <<endl;
-		if ( t(j) >= qm ) {
-			qm   = t(j);
-			jtot = j;
+
+	if( do_delta_psi ) {
+		for (int lst=0; lst<=nsteps_delta; lst++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
+			j = 1 + static_cast<int>(lst*360.0/delta_psi + 0.5);
+			if ( t(j) >= qm ) {
+				qm   = t(j);
+				jtot = j;
+			}
 		}
+		tmt = (float)jtot; //(jtot-1)*360.0/delta_psi;
+	} else {
+		for (j=1; j<=maxrin;j++) {//cout <<"  "<<j<<"	"<<t(j) <<endl;
+			if ( t(j) >= qm ) {
+				qm   = t(j);
+				jtot = j;
+			}
+		}
+
+		for (k=-3; k<=3; k++)  {
+			j = ((jtot+k+maxrin-1)%maxrin) + 1;
+			t7(k+4) = t(j);
+		}
+
+		// interpolate
+
+		prb1d(t7,7,&pos);
+		tmt = float(jtot) + pos;
 	}
-
-	for (k=-3; k<=3; k++)  {
-		j = ((jtot+k+maxrin-1)%maxrin) + 1;
-		t7(k+4) = t(j);
-	}
-
-	// interpolate
-
-	prb1d(t7,7,&pos);
-	tmt = float(jtot) + pos;
-
 	free(t);
 	free(q);
 
@@ -18768,7 +18821,7 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 			//  compare with all reference images
 			// for iref in xrange(len(crefim)):
 			for ( iref = 0; iref < (int)crefim_len; iref++) {
-				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr, 0.0f);
 				double qn = retvals["qn"];
 				double qm = retvals["qm"];
 				if(qn >= peak || qm >= peak) {
@@ -18806,7 +18859,7 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 
 vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >& crefim,
                 vector<float> xrng, vector<float> yrng, float step, string mode,
-                vector<int>numr, float cnx, float cny) {
+                vector<int>numr, float cnx, float cny, float delta_psi) {
 
     // Manually extract.
 /*    vector< EMAN::EMData* > crefim;
@@ -18842,7 +18895,7 @@ vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >
 			//  compare with all reference images
 			// for iref in xrange(len(crefim)):
 			for ( iref = 0; iref < (int)crefim_len; iref++) {
-				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr, delta_psi);
 				double qn = retvals["qn"];
 				double qm = retvals["qm"];
 			//printf(" ex within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  %4.1f  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn,qm);
@@ -18905,7 +18958,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 			Normalize_ring( cimage, numr );
 			Frngs(cimage, numr);
 			for (int iref = 0; iref < (int)crefim_len; iref++) {
-				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr, 0.0f);
 				double qn = retvals["qn"];
 				double qm = retvals["qm"];
 				if(qn >= peak[iref*5] || qm >= peak[iref*5]) {
@@ -18986,8 +19039,8 @@ vector<float> Util::multiref_polar_ali_2d_peaklist_local(EMData* image, const ve
 				float dot_product = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
 //				if( n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3 >= ant ) {
 				if( abs(dot_product)>=ant ) {
-//					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, 0);
-					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, int(dot_product < 0));
+//					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, 0, 0.0f);
+					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, int(dot_product < 0), 0.0f);
 					const float ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 					const float sx  = -ix;
 					const float sy  = -iy;
@@ -19610,7 +19663,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 						Normalize_ring( cimage, numr );
 						Frngs(cimage, numr);
 						//  compare with all reference images that are on a new list
-						Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
+						Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror, 0.0f);
 						double qn = retvals["qn"];
 
 						if(qn >= peak) {
@@ -19652,7 +19705,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMData* >& crefim,
 				vector<vector<float> > list_of_reference_angles,
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
-                vector<int>numr, float cnx, float cny, string sym) {
+                vector<int>numr, float cnx, float cny, string sym, float delta_psi) {
 	size_t crefim_len = crefim.size();
 	size_t list_of_reference_angles_length = list_of_reference_angles.size();
 	Transform * t = image->get_attr("xform.projection");
@@ -19713,7 +19766,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 					ix = j*step;
 					//  compare with all reference images that are on a new list
 					int compmirror = (iu/crefim_len)%2;
-					Dict retvals = Crosrng_e(crefim[iref], cimages[i+lky][j+lkx], numr, compmirror);
+					Dict retvals = Crosrng_e(crefim[iref], cimages[i+lky][j+lkx], numr, compmirror, delta_psi);
 					double qn = retvals["qn"];
 		//printf(" lo within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn);
 			
@@ -21937,7 +21990,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  10/16/2015  10:15 PM"<<endl;
+	cout <<"  VERSION  12/19/2015  5:40 PM"<<endl;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	EMData * img2 = new EMData();
 	img2->set_size(nx,ny,nz);
