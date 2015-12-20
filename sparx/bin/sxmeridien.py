@@ -1636,8 +1636,8 @@ def main():
 				if( st[0] == 0.0 ):
 					viv += (model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],1.0) - mask33d)*\
 							model_gauss_noise(st[1]/1000.0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-				del mask33d, viv
 				viv.write_image(file_path_viv)
+				del mask33d, viv
 
 		mpi_barrier(MPI_COMM_WORLD)
 
