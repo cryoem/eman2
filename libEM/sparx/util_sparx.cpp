@@ -3806,7 +3806,8 @@ c       automatic arrays
 	if( delta_psi == 0.0f )	do_delta_psi = false;
 	else {
 		do_delta_psi = true;	
-		nsteps_delta = static_cast<int>(360.0/delta_psi + 0.5);
+		nsteps_delta = static_cast<int>(360.0f/delta_psi + 0.5);
+		if( nsteps_delta*delta_psi >= 360.0f )  nsteps-=1;
 	}
 
 
@@ -3815,7 +3816,7 @@ c       automatic arrays
 
 	if( do_delta_psi ) {
 		for (int lst=0; lst<=nsteps_delta; lst++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
-			j = 1 + static_cast<int>(lst*360.0/delta_psi + 0.5);
+			j = 1 + static_cast<int>(maxrin*lst*delta_psi/360.0 + 0.5);
 			if (q(j) >= qn) {
 				qn  = q(j);
 				jtot = j;
@@ -4184,7 +4185,8 @@ c
 	if( delta_psi == 0.0f )	do_delta_psi = false;
 	else {
 		do_delta_psi = true;	
-		nsteps_delta = static_cast<int>(360.0/delta_psi + 0.5);
+		nsteps_delta = static_cast<int>(360.0f/delta_psi + 0.5);
+		if( nsteps_delta*delta_psi >= 360.0f )  nsteps-=1;
 	}
 
 	//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<"   "<<t(j) <<endl;
@@ -4194,7 +4196,7 @@ c
 
 	if( do_delta_psi ) {
 		for (int lst=0; lst<=nsteps_delta; lst++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
-			j = 1 + static_cast<int>(lst*360.0/delta_psi + 0.5);
+			j = 1 + static_cast<int>(maxrin*lst*delta_psi/360.0 + 0.5);
 			if (q(j) >= qn) {
 				qn  = q(j);
 				jtot = j;
@@ -4226,7 +4228,7 @@ c
 
 	if( do_delta_psi ) {
 		for (int lst=0; lst<=nsteps_delta; lst++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
-			j = 1 + static_cast<int>(lst*360.0/delta_psi + 0.5);
+			j = 1 + static_cast<int>(maxrin*lst*delta_psi/360.0 + 0.5);
 			if ( t(j) >= qm ) {
 				qm   = t(j);
 				jtot = j;
