@@ -3807,7 +3807,7 @@ c       automatic arrays
 	else {
 		do_delta_psi = true;	
 		nsteps_delta = static_cast<int>(360.0f/delta_psi + 0.5);
-		if( nsteps_delta*delta_psi >= 360.0f )  nsteps-=1;
+		if( nsteps_delta*delta_psi >= 360.0f )  nsteps_delta-=1;
 	}
 
 
@@ -4186,7 +4186,7 @@ c
 	else {
 		do_delta_psi = true;	
 		nsteps_delta = static_cast<int>(360.0f/delta_psi + 0.5);
-		if( nsteps_delta*delta_psi >= 360.0f )  nsteps-=1;
+		if( nsteps_delta*delta_psi >= 360.0f )  nsteps_delta-=1;
 	}
 
 	//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<"   "<<t(j) <<endl;
