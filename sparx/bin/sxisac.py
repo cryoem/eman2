@@ -69,45 +69,48 @@ def main(args):
 			"  --generation=generation  --rand_seed=rand_seed>" )
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--radius",         type="int",          default=-1,      help="<Particle radius>, it has to be provided.")
-	parser.add_option("--img_per_grp",    type="int",          default=100,     help="<number of images per group> in the ideal case (essentially maximum size of class) (100)")
-	parser.add_option("--CTF",            action="store_true", default=False,   help="<CTF flag>, if set the data will be phase-flipped")
-	parser.add_option("--ir",             type="int",          default=1,       help="<inner ring> of the resampling to polar coordinates (1)")
-	parser.add_option("--rs",             type="int",          default=1,       help="<ring step> of the resampling to polar coordinates (1)")
-	parser.add_option("--xr",             type="int",          default=-1,      help="<x range> of translational search (By default set by the program) (advanced)")
-	parser.add_option("--yr",             type="int",          default=-1,      help="<y range> of translational search (same as xr) (advanced)")
-	parser.add_option("--ts",             type="float",        default=1.0,     help="<search step> of translational search (1.0)")
-	parser.add_option("--maxit",          type="int",          default=30,      help="number of iterations for reference-free alignment (30)")
+	parser.add_option("--radius", type="int",            help="particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)")
+	parser.add_option("--img_per_grp", type="int",  default=100,            help="number of images per class: in the ideal case (essentially maximum size of class) (default 100)")
+	parser.add_option("--CTF", action="store_true",  default=False,            help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)")
+	parser.add_option("--ir", type="int",  default=1,            help="inner ring: of the resampling to polar coordinates. units - pixels (default 1)")
+	parser.add_option("--rs", type="int",  default=1,            help="ring step: of the resampling to polar coordinates. units - pixels (default 1)")
+	parser.add_option("--xr", type="int",  default=-1,            help="x range: of translational search. By default, set by the program. (default -1)")
+	parser.add_option("--yr", type="int",  default=-1,            help="y range: of translational search. By default, same as xr. (default -1)")
+	parser.add_option("--ts", type="float",  default=1.0,            help="search step: of translational search: units - pixels (default 1.0)")
+	parser.add_option("--maxit", type="int",  default=30,            help="number of iterations for reference-free alignment: (default 30)")
 	#parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)")
-	parser.add_option("--center_method",  type="int",          default=7,       help="<Method for centering> of global 2D average during initial prealignment of data (default : 7; 0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7)")
-	parser.add_option("--dst",            type="float",        default=90.0,    help="discrete angle used in within group alignment ")
-	parser.add_option("--FL",             type="float",        default=0.2,     help="<lowest stopband> frequency used in the tangent filter (0.2)")
-	parser.add_option("--FH",             type="float",        default=0.3,     help="<highest stopband> frequency used in the tangent filter (0.3)")
-	parser.add_option("--FF",             type="float",        default=0.2,     help="<fall-off of the tangent> filter (0.2)")
-	parser.add_option("--init_iter",      type="int",          default=3,       help="<init_iter> number of iterations of ISAC program in initialization (3)")
-	parser.add_option("--main_iter",      type="int",          default=3,       help="<main_iter> number of iterations of ISAC program in main part (3)")
-	parser.add_option("--iter_reali",     type="int",          default=1,       help="<iter_reali> number of iterations in ISAC before checking stability (1)")
-	parser.add_option("--match_first",    type="int",          default=1,       help="number of iterations to run 2-way matching in the first phase (1)")
-	parser.add_option("--max_round",      type="int",          default=20,      help="maximum rounds of generating candidate averages in the first phase (20)")
-	parser.add_option("--match_second",   type="int",          default=5,       help="number of iterations to run 2-way (or 3-way) matching in the second phase (5)")
-	parser.add_option("--stab_ali",       type="int",          default=5,       help="number of alignments when checking stability (5)")
-	parser.add_option("--thld_err",       type="float",        default=0.7,     help="the threshold of pixel error when checking stability (0.7)")
-	parser.add_option("--indep_run",      type="int",          default=4,       help="number of independent runs for reproducibility (default=4, only values 2, 3 and 4 are supported (4)")
-	parser.add_option("--thld_grp",       type="int",          default=10,      help="minimum size of class (10)")
-	parser.add_option("--n_generations",     type="int",          default=100,       help="<n_generations> program stops when reaching this total number of generations (advanced)")
+	parser.add_option("--center_method", type="int",  default=7,            help="method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default 7)")
+	parser.add_option("--dst", type="float",  default=90.0,            help="discrete angle used in within group alignment: (default 90.0)")
+	parser.add_option("--FL", type="float",  default=0.2,            help="lowest stopband: frequency used in the tangent filter (default 0.2)")
+	parser.add_option("--FH", type="float",  default=0.3,            help="highest stopband: frequency used in the tangent filter (default 0.3)")
+	parser.add_option("--FF", type="float",  default=0.2,            help="fall-off of the tangent filter: (default 0.2)")
+	parser.add_option("--init_iter", type="int",  default=3,            help="SAC initialization iterations: number of runs of ab-initio within-cluster alignment for stability evaluation in SAC initialization (default 3)")
+	parser.add_option("--main_iter", type="int",  default=3,            help="SAC main iterations: number of runs of ab-initio within-cluster alignment for stability evaluation in SAC (default 3)")
+	parser.add_option("--iter_reali", type="int",  default=1,            help="SAC stability check interval: every iter_reali iterations of SAC stability checking is performed (default 1)")
+	parser.add_option("--match_first", type="int",  default=1,            help="number of iterations to run 2-way matching in the first phase: (default 1)")
+	parser.add_option("--max_round", type="int",  default=20,            help="maximum rounds: of generating candidate class averages in the first phase (default 20)")
+	parser.add_option("--match_second", type="int",  default=5,            help="number of iterations to run 2-way (or 3-way) matching in the second phase: (default 5)")
+	parser.add_option("--stab_ali", type="int",  default=5,            help="number of alignments when checking stability: (default 5)")
+	parser.add_option("--thld_err", type="float",  default=0.7,            help="threshold of pixel error when checking stability: equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou). units - pixels. (default 0.7)")
+	parser.add_option("--indep_run", type="int",  default=4,            help="level of m-way matching for reproducibility tests: By default, perform full ISAC to 4-way matching. Value indep_run=2 will restrict ISAC to 2-way matching and 3 to 3-way matching.  Note the number of used MPI processes requested in mpirun must be a multiplicity of indep_run. (default 4)")
+	parser.add_option("--thld_grp", type="int",  default=10,            help="threshold of the size of reproducible class: essentially minimum size of class (default 10)")
+	parser.add_option("--n_generations", type="int",  default=100,            help="maximum number of generations: program stops when reaching this total number of generations: (default 100)")
 	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
-	parser.add_option("--rand_seed",      type="int",          default=None,    help="random seed set before calculations, useful for testing purposes (default None - total randomness)")
-	parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
-	parser.add_option("--debug",          action="store_true", default=False,   help="debug info printout (default = False)")
+	parser.add_option("--rand_seed", type="int",            help="random seed set before calculations: useful for testing purposes (default total randomness - type int)")
+	parser.add_option("--new", action="store_true",  default=False,            help="use new code: (default False)")
+	parser.add_option("--debug", action="store_true",  default=False,            help="debug info printout: (default False)")
 
 	# must be switched off in production
-	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=False)
+	parser.add_option("--use_latest_master_directory", action="store_true",  default=False,            help="use latest master directory: when active, the program looks for the latest directory that starts with the word 'master', so the user does not need to provide a directory name. (default False)")
 	
-	parser.add_option("--restart_section", type="string", default="", help="<restart section name> (no spaces) followed immediately by comma, followed immediately by generation to restart, example: \n--restart_section=candidate_class_averages,1         (Sections: restart, candidate_class_averages, reproducible_class_averages)")
-	parser.add_option("--stop_after_candidates",          action="store_true", default=False,   help="<stop_after_candidates> stops after the 'candidate_class_averages' section")
+	parser.add_option("--restart_section", type="string",  default=' ',            help="restart section: each generation (iteration) contains three sections: 'restart', 'candidate_class_averages', and 'reproducible_class_averages'. To restart from a particular step, for example, generation 4 and section 'candidate_class_averages' the following option is needed: '--restart_section=candidate_class_averages,4'. The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the '--use_latest_master_directory' option can be used. (default ' ')")
+	parser.add_option("--stop_after_candidates", action="store_true",  default=False,            help="stop after candidates: stops after the 'candidate_class_averages' section. (default False)")
 
+	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--return_options", action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)
+	parser.add_option("--skip_alignment", action="store_true",  default=False,            help="skip alignment step: to be used if images are already aligned. (default False)")
 
+	required_option_list = ['radius']
 	(options, args) = parser.parse_args(args)
 
 	if options.return_options:
@@ -135,6 +138,13 @@ def main(args):
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 
+	# Making sure all required options appeared.
+	for required_option in required_option_list:
+		if not options.__dict__[required_option]:
+			print "\n ==%s== mandatory option is missing.\n"%required_option
+			print "Please run '" + progname + " -h' for detailed options"
+			return 1
+
 	radi  = options.radius
 	center_method  = options.center_method
 	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
@@ -142,7 +152,7 @@ def main(args):
 	
 	use_latest_master_directory = options.use_latest_master_directory
 	stop_after_candidates = options.stop_after_candidates
-	program_state_stack.restart_location_title_from_command_line = options.restart_section
+	# program_state_stack.restart_location_title_from_command_line = options.restart_section
 	
 	from utilities import qw
 	program_state_stack.PROGRAM_STATE_VARIABLES = set(qw("""
@@ -189,7 +199,7 @@ def main(args):
 	masterdir = send_string_to_all(masterdir)
 
 	if myid == 0:
-		if options.restart_section != "":
+		if options.restart_section != " ":
 			if os.path.exists(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE)):
 				stored_stack, stored_state = restore_program_stack_and_state(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE))
 				import re
@@ -286,16 +296,19 @@ def main(args):
 
 	# section ali2d_base
 
-	#  centering method is set to #7
 	params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
-				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
-				"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
+		False, 90.0, center_method, 14, options.CTF, 1.0, False, \
+		"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False, skip_alignment = options.skip_alignment)
 
+	mpi_barrier(MPI_COMM_WORLD)
 	if( myid == main_node ):
-		write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
+		if options.skip_alignment:
+			os.system("rm -rf %s"%init2dir)
+		else:
+			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
 	del params2d
 	mpi_barrier(MPI_COMM_WORLD)
-
+	
 	#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  
 	#  Note images can be also padded, in which case shrink_ratio > 1.
 	shrink_ratio = float(target_radius)/float(radi)

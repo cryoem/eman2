@@ -40,7 +40,7 @@ If there is no '''nohup''' on your system, it is recommended to redirect the pri
 
  *mpirun -np 32 sxisac.py bdb:test --img_per_grp=150 --generation=1 > output.txt
 
-To restart a run that stopped intentionally or unintentionally use the "--restart_section" option.
+To restart a run that stopped intentionally or unintentionally use the '--restart_section' option.
 
 
 == Input ==
@@ -49,7 +49,7 @@ To restart a run that stopped intentionally or unintentionally use the "--restar
     radius:: particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)
     img_per_grp:: number of images per class: in the ideal case (essentially maximum size of class) (default 100)
     CTF:: apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)
-    restart_section:: restart section: each generation (iteration) contains three sections: "restart", "candidate_class_averages", and "reproducible_class_averages". To restart from a particular step, for example, generation 4 and section "candidate_class_averages" the following option is needed: "--restart_section=candidate_class_averages,4". The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the "--use_latest_master_directory" option can be used. (default none) 
+    restart_section:: restart section: each generation (iteration) contains three sections: 'restart', 'candidate_class_averages', and 'reproducible_class_averages'. To restart from a particular step, for example, generation 4 and section 'candidate_class_averages' the following option is needed: '--restart_section=candidate_class_averages,4'. The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the '--use_latest_master_directory' option can be used. (default ' ') 
 
     * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
     ir:: inner ring: of the resampling to polar coordinates. units - pixels (default 1)
@@ -74,11 +74,12 @@ To restart a run that stopped intentionally or unintentionally use the "--restar
     indep_run:: level of m-way matching for reproducibility tests: By default, perform full ISAC to 4-way matching. Value indep_run=2 will restrict ISAC to 2-way matching and 3 to 3-way matching.  Note the number of used MPI processes requested in mpirun must be a multiplicity of indep_run. (default 4)
     thld_grp:: threshold of the size of reproducible class: essentially minimum size of class (default 10)
     n_generations::maximum number of generations: program stops when reaching this total number of generations: (default 100)
-    rand_seed:: random seed set before calculations: useful for testing purposes (default none - total randomness)
+    rand_seed:: random seed set before calculations: useful for testing purposes (default total randomness - type int)
     new:: use new code: (default False)
     debug:: debug info printout: (default False)
-    use_latest_master_directory:: use latest master directory: when active, the program looks for the latest directory that starts with the word "master", so the user does not need to provide a directory name. (default False)
-    stop_after_candidates:: stop after candidates: stops after the "candidate_class_averages" section. (default False)
+    use_latest_master_directory:: use latest master directory: when active, the program looks for the latest directory that starts with the word 'master', so the user does not need to provide a directory name. (default False)
+    stop_after_candidates:: stop after candidates: stops after the 'candidate_class_averages' section. (default False)
+    skip_alignment:: skip alignment step: to be used if images are already aligned. (default False)
 
 
 == Output ==

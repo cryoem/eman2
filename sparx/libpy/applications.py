@@ -848,7 +848,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", \
 			nomirror = False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
 			Fourvar=False, user_func_name="ref_ali2d", random_method = "", log = None, \
-			number_of_proc = 1, myid = 0, main_node = 0, mpi_comm = None, write_headers = False):
+			number_of_proc = 1, myid = 0, main_node = 0, mpi_comm = None, write_headers = False, skip_alignment = False):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
@@ -1008,6 +1008,9 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 			Util.mul_scalar(adw_img, float(Ng-1)/(nima-1))
 			adw_img += float(nima-Ng)/(nima-1)
 	else:  ctf_2_sum = None
+
+	if skip_alignment:
+		return [], data
 
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
@@ -3219,14 +3222,14 @@ def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, ds
 		for im in xrange(nima):
 			# align current image to the reference 
 			if(check_mirror):
-				if delta == 0.0: retvals = Util.Crosrng_ms(cimage, data[im], numr)
+				if delta == 0.0: retvals = Util.Crosrng_ms(cimage, data[im], numr, 0.0)
 				else:            retvals = Util.Crosrng_ms_delta(cimage, data[im], numr, 0.0, delta)
 				qn = retvals["qn"]
 				qm = retvals["qm"]
-		   		if (qn >= qm):
+				if (qn >= qm):
 					ang = ang_n(retvals["tot"], mode, numr[-1])
 					mirror = 0
-		   		else:
+				else:
 					ang = ang_n(retvals["tmt"], mode, numr[-1])
 					mirror = 1
 			else:

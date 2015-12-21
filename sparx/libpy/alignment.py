@@ -613,7 +613,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 			Util.Frngs(cimage, numr)
 			# The following code it used when mirror is considered
 			if delta == 0.0:
-				retvals = Util.Crosrng_ms(crefim, cimage, numr)
+				retvals = Util.Crosrng_ms(crefim, cimage, numr, 0.0)
 			else:
 				retvals = Util.Crosrng_ms_delta(crefim, cimage, numr, 0.0, delta)
 			qn = retvals["qn"]
@@ -671,7 +671,7 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, numr, mode, delta = 0.0):
 	peak = -1.0E23
 	for j in xrange(-lky, rky+1, istep):
 		for i in xrange(-lkx, rkx+1, istep):
-			if delta == 0.0: retvals = Util.Crosrng_ms(crefim, dimage[i+maxrange][j+maxrange], numr)
+			if delta == 0.0: retvals = Util.Crosrng_ms(crefim, dimage[i+maxrange][j+maxrange], numr, 0.0)
 			else:            retvals = Util.Crosrng_ms_delta(crefim, dimage[i+maxrange][j+maxrange], numr, 0.0, delta)
 			qn = retvals["qn"]
 			qm = retvals["qm"]
