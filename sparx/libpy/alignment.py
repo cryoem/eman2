@@ -1513,7 +1513,7 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 
 	return ref_proj_rings
 
-def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1"):
+def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0):
 	from alignment import search_range
 	from EMAN2 import Vec2f
 
@@ -1539,7 +1539,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 			
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d(data, refrings, txrng, tyrng, step, mode, numr, cnx-sxi, cny-syi)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d(data, refrings, txrng, tyrng, step, mode, numr, cnx-sxi, cny-syi, delta_psi)
 	#print ang, sxs, sys, mirror, iref, peak
 	iref = int(iref)
 	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
@@ -1577,7 +1577,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c
 
 	return peak, pixel_error
 
-def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1"):
+def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0):
 	from alignment import search_range
 	from EMAN2 import Vec2f
 
@@ -1605,7 +1605,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym
 		txrng = search_range(nx, ou, sxi, xrng[zi])
 		tyrng = search_range(ny, ou, syi, yrng[zi])
 
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d(data, refrings, txrng, tyrng, step[zi], mode, numr, cnx-sxi, cny-syi)
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d(data, refrings, txrng, tyrng, step[zi], mode, numr, cnx-sxi, cny-syi, delta_psi)
 		#print ang, sxs, sys, mirror, iref, peak
 		iref = int(iref)
 		#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
@@ -1642,7 +1642,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym
 
 	return peak, pixel_error
 
-def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
+def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1', delta_psi = 0.0):
 	from alignment    import search_range
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi, radians
@@ -1669,7 +1669,7 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, 
 		finfo.write("ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1] : %3d  %3d  %3d    %4.1f  %4.1f %3d %3d   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n"%(ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
 		finfo.flush()
 	
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym, delta_psi)
 
 	iref=int(iref)
 	if iref > -1:
@@ -1710,7 +1710,7 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, 
 		return -1.0e23, 0.0
 
 
-def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
+def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1', delta_psi = 0.0):
 	from alignment import search_range
 	from utilities    import compose_transform2
 	#from utilities    import set_params_proj, get_params_proj
@@ -1742,7 +1742,7 @@ def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles, numr, x
 		txrng = search_range(nx, ou, sxi, xrng[zi])
 		tyrng = search_range(ny, ou, syi, yrng[zi])
 
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles, txrng, tyrng, step[zi], ant, mode, numr, cnx-sxi, cny-syi, sym)
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles, txrng, tyrng, step[zi], ant, mode, numr, cnx-sxi, cny-syi, sym, delta_psi)
 
 		iref=int(iref)
 		#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
