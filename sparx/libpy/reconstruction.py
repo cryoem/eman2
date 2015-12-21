@@ -673,7 +673,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 
 
 
-def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, mpi_comm=None, smearstep = 0.0):
+def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, mpi_comm=None, smearstep = 0.0, main_node = 0):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -683,10 +683,13 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 			sign: sign of the CTF
 			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
 	"""
-	from utilities  import reduce_EMData_to_root, random_string, get_im
+	from utilities  import reduce_EMData_to_root, get_im, send_string_to_all
+	from statistics import fsc
+	from utilities  import get_image, send_EMData, recv_EMData
+
 	from EMAN2      import Reconstructors
 	from utilities  import model_blank, cmdexecute
-	from mpi        import MPI_COMM_WORLD, mpi_barrier
+	from mpi        import MPI_COMM_WORLD, mpi_barrier, mpi_comm_size 
 	import types
 	from statistics import fsc
 	import datetime
@@ -732,70 +735,165 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	refvol = model_blank(bnx)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
 	refvol.set_attr("fudge", 1.0)
 
-	results_list = []
+	reconstructed_vols_list = []
 	fftvol_file =[]
 	weight_file = []
+	
 
+	volall_files = []
+	volall = []
+	fscdat_list = []
+	no_of_splits = 2
 	for iset in xrange(2):
-		if not (info is None): nimg = 0
-
-		fftvol = EMData()
-		weight = EMData()
-		if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
+		reconstructed_vol_files = []
+		for iter_no_of_splits in range(no_of_splits):
+			if not (info is None): nimg = 0
 	
-		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
-		r = Reconstructors.get( "nn4_ctfw", params )
-		r.setup()
-
-		for image in list_of_prjlist[iset]:
-			try:
-				#lll = iset/0
-				#raise ValueError('A very specific thing happened')
-				stmp = image.get_attr("ptcl_source_image")
-			except:
-				try:
-					stmp = image.get_attr("ctf")
-					stmp = round(stmp.defocus,4)
-				except:
-					ERROR("Either ptcl_source_image or ctf has to be present in the header.","recons3d_4nnw_MPI    %f"%stmp,1, myid)
-			try:
-				indx = datastamp.index(stmp)
-			except:
-				ERROR("Problem with indexing ptcl_source_image.","recons3d_4nnf_MPI   %f"%stmp,1, myid)
-	
-			image.set_attr("bckgnoise", bckgnoise[indx])
-			insert_slices(r, image)
-			if not (info is None):
-				nimg += 1
-				info.write(" %4d inserted\n" %(nimg) )
-				info.flush()
-
-		if not (info is None): 
-			info.write( "begin reduce\n" )
-			info.flush()
-	
-		reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
-		reduce_EMData_to_root(weight, myid, comm=mpi_comm)
+			fftvol = EMData()
+			weight = EMData()
+			if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
 		
-		if not (info is None): 
-			info.write( "after reduce\n" )
-			info.flush()
+			params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
+			r = Reconstructors.get( "nn4_ctfw", params )
+			r.setup()
 
-		if myid == 0:
-			tmpid = datetime.datetime.now().strftime('%Y-%m-%d--%I-%M-%f')[:-3]
-			fftvol_file.append("fftvol__%s__idx%d.hdf"%(tmpid, iset))
-			weight_file.append("weight__%s__idx%d.hdf"%(tmpid, iset))
-			fftvol.write_image(fftvol_file[-1])
-			weight.write_image(weight_file[-1])
+			for image in list_of_prjlist[iset][slice(iter_no_of_splits,len(list_of_prjlist[iset]), no_of_splits)]:	
+			# for image in list_of_prjlist[iset]:
+				try:
+					# lll = iset/0
+					raise ValueError('A very specific thing happened')
+					stmp = image.get_attr("ptcl_source_image")
+				except:
+					try:
+						stmp = image.get_attr("ctf")
+						stmp = round(stmp.defocus,4)
+					except:
+						ERROR("Either ptcl_source_image or ctf has to be present in the header.","recons3d_4nnw_MPI    %f"%stmp,1, myid)
+				try:
+					indx = datastamp.index(stmp)
+				except:
+					ERROR("Problem with indexing ptcl_source_image.","recons3d_4nnf_MPI   %s"%stmp,1, myid)
 
-			dummy = r.finish(True)
-			results_list.append("rvol__%s__idx%d.hdf"%(tmpid, iset))
-			if(iset == 0):  fftvol.write_image(results_list[-1])
-
+					from mpi import mpi_finalize
+					mpi_finalize()
+					import sys
+					sys.stdout.flush()
+					sys.exit()
+				
+			if not (info is None): 
+				info.write( "begin reduce\n" )
+				info.flush()
+		
+			reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
+			reduce_EMData_to_root(weight, myid, comm=mpi_comm)
+			
+			if not (info is None): 
+				info.write( "after reduce\n" )
+				info.flush()
+	
+			if myid == 0:
+				tmpid = datetime.datetime.now().strftime('%Y-%m-%d--%I-%M-%f')[:-3]
+				fftvol_file.append("fftvol__%s__idx%d_split%d.hdf"%(tmpid, iset, iter_no_of_splits))
+				weight_file.append("weight__%s__idx%d_split%d.hdf"%(tmpid, iset, iter_no_of_splits))
+				fftvol.write_image(fftvol_file[-1])
+				weight.write_image(weight_file[-1])
+				del weight
+	
+				dummy = r.finish(True)
+				### finish returns fftvol, will rename to 
+				# reconstructed_vol_files.append("rvol__%s__idx%d_split%d.hdf"%(tmpid, iset, iter_no_of_splits))
+				# results_list.append("rvol__%s__idx%d.hdf"%(tmpid, iset))
+				# if(iset == 0):  fftvol.write_image(results_list[-1])
+				if(iter_no_of_splits == 0):
+					reconstructed_vol_files.append("rvol__%s__idx%d_split%d.hdf"%(tmpid, iset, iter_no_of_splits))
+					fftvol.write_image(reconstructed_vol_files[-1])
+					del fftvol
+				else:
+					reconstructed_vol_files.append(fftvol)
+	
 		mpi_barrier(mpi_comm)
+			
+		### at this point we calculate V[iset]
+		### fftvol_file = [FE, FO]
+		### weight_file = [WE, WO]
+		### reconstructed_vol_files = [VE(disk), VO(memory)]
+	
+		########################################	
+		### code not tested 2015-12-21--13-01-49 
+		########################################
+		
+		nproc = mpi_comm_size(mpi_comm)
+		assert nproc > 2
+		main_node_odd = main_node
+		main_node_eve = (int(main_node)+nproc-1)%int(nproc)
+		main_node_all = (int(main_node)+nproc//2)%int(nproc)
+
+		tag_voleve     = 1000
+		tag_fftvol_eve = 1001
+		tag_weight_eve = 1002
+
+		tag_fftvol_odd = 1003
+		tag_weight_odd = 1004
+		tag_volall     = 1005
+		
+		fftvol_file = eval(send_string_to_all(str(fftvol_file), source_node = main_node))
+		weight_file = eval(send_string_to_all(str(weight_file), source_node = main_node))
+		
+		fftvol_odd_file, fftvol_eve_file = fftvol_file[-2:]
+		weight_odd_file, weight_eve_file = weight_file[-2:]
+		
+		if myid == main_node_odd:
+			fftvol = get_image( fftvol_odd_file )
+			send_EMData(fftvol, main_node_eve, tag_fftvol_odd, mpi_comm)
+			
+			weight = get_image( weight_odd_file )
+			send_EMData(weight, main_node_all, tag_weight_odd, mpi_comm)
+			# volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+			# volodd = recons_ctf_from_fftvol_using_nn4_ctfw(nx, fftvol, weight, snr, symmetry, npad = npad)
+			volodd = reconstructed_vol_files[1]
+			del fftvol, weight
+			# voleve = recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+			voleve = get_im(reconstructed_vol_files[0])
+			fscdat_list.append(fsc(volodd, voleve, 1.0)[1])
+			del  volodd, voleve
+			
+			# volall.append(recv_EMData(main_node_all, tag_volall, mpi_comm))
+			volall = recv_EMData(main_node_all, tag_volall, mpi_comm)
+			if iset == 0:
+				volall_files.append("volall__%s__idx%d.hdf"%(tmpid, iset))
+				volall.write_image(volall_files[-1])
+			else:
+				volall_files.append(volall)
+				
+		if myid == main_node_eve:
+			ftmp = recv_EMData(main_node_odd, tag_fftvol_odd, mpi_comm)
+			fftvol = get_image( fftvol_eve_file )
+			Util.add_img( ftmp, fftvol )
+
+			send_EMData(ftmp, main_node_all, tag_fftvol_eve, mpi_comm)
+			del ftmp
+			weight = get_image( weight_eve_file )
+			send_EMData(weight, main_node_all, tag_weight_eve, mpi_comm)
+
+			# voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+			# send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
+		if myid == main_node_all:
+			
+
+			fftvol = recv_EMData(main_node_eve, tag_fftvol_eve, mpi_comm)
+			weight = recv_EMData(main_node_odd, tag_weight_odd, mpi_comm)
+			weight_tmp = recv_EMData(main_node_eve, tag_weight_eve, mpi_comm)
+			Util.add_img( weight, weight_tmp )
+
+			weight_tmp = None
+			# volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+			volall = recons_ctf_from_fftvol_using_nn4_ctfw(imgsize, fftvol, weight, snr, symmetry, npad = npad)
+			send_EMData(volall, main_node_odd, tag_volall, mpi_comm)
+
+	### at this point we calculate fourier_shell_correlation for V[0], V[1]
 
 	if myid == 0:
-		fourier_shell_correlation = fsc(get_im(results_list[0]), fftvol, 1.0)[1]
+		fourier_shell_correlation = fsc(get_im(volall_files[0]), volall_files[1], 1.0)[1]
 		fourier_shell_correlation[0] = 1.0
 
 		from math import sqrt
@@ -827,9 +925,9 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 
 	mpi_barrier(mpi_comm)
 	if myid == 0:
-		return ovol[0], ovol[1], fourier_shell_correlation
+		return ovol[0], ovol[1], fourier_shell_correlation, fscdat_list[0], fscdat_list[1]
 	else:
-		return None, None, None
+		return None, None, None, None, None
 
 '''
 def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, mpi_comm=None, smearstep = 0.0):
