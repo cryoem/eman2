@@ -922,6 +922,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 		return None, None, None, None, None
 
 '''
+
 def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, mpi_comm=None, smearstep = 0.0):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
@@ -938,12 +939,11 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	from mpi        import MPI_COMM_WORLD, mpi_barrier
 	import types
 	from statistics import fsc
-	from reconstruction import rec3D_MPI_with_getting_odd_even_volumes_from_files
 	import datetime
 	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
-
+	main_node = 0
 	imgsize = list_of_prjlist[0][0].get_xsize()
 	
 	if( smearstep > 0.0 ):
@@ -979,14 +979,12 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 
 	#  Do the FSC shtick.
 	bnx     = imgsize*npad//2+1
-	refvol = model_blank(bnx)  # fill fsc with zeros so the first reconstruction is done using simple Wiener filter.
+	refvol = model_blank(bnx)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
 	refvol.set_attr("fudge", 1.0)
 
 	results_list = []
 	fftvol_file =[]
 	weight_file = []
-	fsc_from_odd_and_evenlist = [[],[]]
-	
 
 	for iset in xrange(2):
 		if not (info is None): nimg = 0
@@ -999,65 +997,54 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 		r = Reconstructors.get( "nn4_ctfw", params )
 		r.setup()
 
-		reconstructed_vol_files = []
-		no_of_splits = 2
-		for iter_no_of_splits in range(no_of_splits):
-			for image in list_of_prjlist[iset][slice(iter_no_of_splits,len(list_of_prjlist[iset]), no_of_splits)]:
+		for image in list_of_prjlist[iset]:
+			try:
+				#raise ValueError('A very specific thing happened')
+				stmp = image.get_attr("ptcl_source_image")
+			except:
 				try:
-					#raise ValueError('A very specific thing happened')
-					stmp = image.get_attr("ptcl_source_image")
+					stmp = image.get_attr("ctf")
+					stmp = round(stmp.defocus,4)
 				except:
-					try:
-						stmp = image.get_attr("ctf")
-						stmp = round(stmp.defocus,4)
-					except:
-						ERROR("Either ptcl_source_image or ctf has to be present in the header.","recons3d_4nnw_MPI",1, myid)
-				try:
-					indx = datastamp.index(stmp)
-				except:
-					ERROR("Problem with indexing ptcl_source_image.","recons3d_4nnf_MPI",1, myid)
-		
-				image.set_attr("bckgnoise", bckgnoise[indx])
-				insert_slices(r, image)
-				if not (info is None):
-					nimg += 1
-					info.write(" %4d inserted\n" %(nimg) )
-					info.flush()
+					ERROR("Either ptcl_source_image or ctf has to be present in the header.","recons3d_4nnw_MPI",1, myid)
+			try:
+				indx = datastamp.index(stmp)
+			except:
+				ERROR("Problem with indexing ptcl_source_image.","recons3d_4nnf_MPI",1, myid)
 	
-			if not (info is None): 
-				info.write( "begin reduce\n" )
+			image.set_attr("bckgnoise", bckgnoise[indx])
+			insert_slices(r, image)
+			if not (info is None):
+				nimg += 1
+				info.write(" %4d inserted\n" %(nimg) )
 				info.flush()
+
+		if not (info is None): 
+			info.write( "begin reduce\n" )
+			info.flush()
+	
+		reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+		reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 		
-			reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
-			reduce_EMData_to_root(weight, myid, comm=mpi_comm)
-			
-			if not (info is None): 
-				info.write( "after reduce\n" )
-				info.flush()
-	
-			if myid == 0:
-				tmpid = datetime.datetime.now().strftime('%Y-%m-%d--%I-%M-%f')[:-3]
-				fftvol_file.append("fftvol__%s__idx%d_split%d.hdf"%(tmpid, iset, iter_no_of_splits))
-				weight_file.append("weight__%s__idx%d_split%d.hdf"%(tmpid, iset, iter_no_of_splits))
-				fftvol.write_image(fftvol_file[-1])
-				weight.write_image(weight_file[-1])
-	
-				dummy = r.finish(True)
-				reconstructed_vol_files.append("rvol__%s__idx%d_split%d.hdf"%(tmpid, iset, iter_no_of_splits))
-				# if(iset == 0):  fftvol.write_image(results_list[-1])
-				fftvol.write_image(reconstructed_vol_files[-1])
-				
-		volall, fsc_from_odd_and_evenlist[iset] = rec3D_MPI_with_getting_odd_even_volumes_from_files(fftvol_file, weight_file, reconstructed_vol_files,\
-										imgsize, snr , symmetry , mask3D = None, fsc_curve = None,
-										myid = myid, main_node = 0, rstep = 1.0, finfo=None, npad = npad, mpi_comm=None)
-		
-		results_list.append("rvol__%s__idx%d_splits_combined.hdf"%(tmpid, iset))
-		if(iset == 0):  volall.write_image(results_list[-1])
-	
+		if not (info is None): 
+			info.write( "after reduce\n" )
+			info.flush()
+
+		if myid == 0:
+			tmpid = datetime.datetime.now().strftime('%Y-%m-%d--%I-%M-%f')[:-3]
+			fftvol_file.append("fftvol__%s__idx%d.hdf"%(tmpid, iset))
+			weight_file.append("weight__%s__idx%d.hdf"%(tmpid, iset))
+			fftvol.write_image(fftvol_file[-1])
+			weight.write_image(weight_file[-1])
+
+			dummy = r.finish(True)
+			results_list.append("rvol__%s__idx%d.hdf"%(tmpid, iset))
+			if(iset == 0):  fftvol.write_image(results_list[-1])
+
 		mpi_barrier(mpi_comm)
 
 	if myid == 0:
-		fourier_shell_correlation = fsc(get_im(results_list[0]), volall, 1.0)[1]
+		fourier_shell_correlation = fsc(get_im(results_list[0]), fftvol, 1.0)[1]
 
 		from math import sqrt
 		from utilities import reshape_1d
@@ -1071,14 +1058,14 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 			fftvol = get_im(fftvol_file[idx])
 			weight = get_im(weight_file[idx])
 			refvol = model_blank(bnx,1,1,0.0)
-			for i in xrange(len(fourier_shell_correlation)):
+			for i in xrange(len(fourier_shell_correlation)):  
 				refvol.set_value_at(i, t[i])
 			refvol.set_attr("fudge", 1.0)
-
+			
 			params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
 			r = Reconstructors.get("nn4_ctfw", params)
 			r.setup()
-
+			
 			dummy = r.finish(True)
 			ovol.append(fftvol)
 
@@ -1088,9 +1075,9 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 
 	mpi_barrier(mpi_comm)
 	if myid == 0:
-		return ovol[0], ovol[1], fourier_shell_correlation, fsc_from_odd_and_evenlist[0][1], fsc_from_odd_and_evenlist[1][1]
+		return ovol[0], ovol[1], fourier_shell_correlation
 	else:
-		return None, None, None, None, None
+		return None, None, None
 
 def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize = -1, zsize = -1 ):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
