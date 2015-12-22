@@ -672,6 +672,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 	return fftvol
 
 
+'''
 
 def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, mpi_comm=None, smearstep = 0.0, main_node = 0):
 	"""
@@ -801,9 +802,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	
 				dummy = r.finish(True)
 				### finish returns fftvol, will rename to 
-				# reconstructed_vol_files.append("rvol__%s__idx%d_split%d.hdf"%(tmpid, iset, iter_no_of_splits))
-				# results_list.append("rvol__%s__idx%d.hdf"%(tmpid, iset))
-				# if(iset == 0):  fftvol.write_image(results_list[-1])
+
 				if(iter_no_of_splits == 0):
 					reconstructed_vol_files.append("rvol__%s__idx%d_split%d.hdf"%(tmpid, iset, iter_no_of_splits))
 					fftvol.write_image(reconstructed_vol_files[-1])
@@ -845,26 +844,22 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 		if myid == main_node_odd:
 			fftvol = get_image( fftvol_odd_file )
 			send_EMData(fftvol, main_node_eve, tag_fftvol_odd, mpi_comm)
-			
+
 			weight = get_image( weight_odd_file )
 			send_EMData(weight, main_node_all, tag_weight_odd, mpi_comm)
-			# volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
-			# volodd = recons_ctf_from_fftvol_using_nn4_ctfw(nx, fftvol, weight, snr, symmetry, npad = npad)
 			volodd = reconstructed_vol_files[1]
 			del fftvol, weight
-			# voleve = recv_EMData(main_node_eve, tag_voleve, mpi_comm)
 			voleve = get_im(reconstructed_vol_files[0])
 			fscdat_list.append(fsc(volodd, voleve, 1.0)[1])
 			del  volodd, voleve
-			
-			# volall.append(recv_EMData(main_node_all, tag_volall, mpi_comm))
+
 			volall = recv_EMData(main_node_all, tag_volall, mpi_comm)
 			if iset == 0:
 				volall_files.append("volall__%s__idx%d.hdf"%(tmpid, iset))
 				volall.write_image(volall_files[-1])
 			else:
 				volall_files.append(volall)
-				
+
 		if myid == main_node_eve:
 			ftmp = recv_EMData(main_node_odd, tag_fftvol_odd, mpi_comm)
 			fftvol = get_image( fftvol_eve_file )
@@ -875,10 +870,8 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 			weight = get_image( weight_eve_file )
 			send_EMData(weight, main_node_all, tag_weight_eve, mpi_comm)
 
-			# voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
-			# send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
 		if myid == main_node_all:
-			
+
 
 			fftvol = recv_EMData(main_node_eve, tag_fftvol_eve, mpi_comm)
 			weight = recv_EMData(main_node_odd, tag_weight_odd, mpi_comm)
@@ -886,7 +879,6 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 			Util.add_img( weight, weight_tmp )
 
 			weight_tmp = None
-			# volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 			volall = recons_ctf_from_fftvol_using_nn4_ctfw(imgsize, fftvol, weight, snr, symmetry, npad = npad)
 			send_EMData(volall, main_node_odd, tag_volall, mpi_comm)
 
@@ -987,7 +979,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 
 	#  Do the FSC shtick.
 	bnx     = imgsize*npad//2+1
-	refvol = model_blank(bnx)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
+	refvol = model_blank(bnx)  # fill fsc with zeros so the first reconstruction is done using simple Wiener filter.
 	refvol.set_attr("fudge", 1.0)
 
 	results_list = []
@@ -1099,7 +1091,6 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 		return ovol[0], ovol[1], fourier_shell_correlation, fsc_from_odd_and_evenlist[0][1], fsc_from_odd_and_evenlist[1][1]
 	else:
 		return None, None, None, None, None
-'''
 
 def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize = -1, zsize = -1 ):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
