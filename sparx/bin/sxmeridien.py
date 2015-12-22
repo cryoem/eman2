@@ -1405,6 +1405,7 @@ def main():
 	Constants["npad"]         = 2
 	Constants["center"]       = 0
 	#Constants["pwreference"]  = options.pwreference
+	Constants["pwsharpening"]  = False  #  apply 1/sigma2 in proj matching
 	Constants["smear"]        = options.smear
 	Constants["restrict_shifts"] = options.restrict_shifts
 	Constants["local_filter"] = options.local_filter
@@ -1759,12 +1760,6 @@ def main():
 		"""
 
 		if(myid == main_node):
-			print("\n\n\n\n")
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION  #%2d   %s  nxinit, currentres, resolution  %d   %d  %f"%\
-				(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"],  Tracker["currentres"], \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])))
-			print(line,"  mainoutputdir  previousoutputdir  ",Tracker["directory"], Tracker["previousoutputdir"])
 
 			if keepchecking:
 				if(os.path.exists(Tracker["directory"] )):
@@ -1796,6 +1791,19 @@ def main():
 		#mpi_finalize()
 		#exit()
 
+
+		# Update HISTORY
+		HISTORY.append(Tracker.copy())
+		if( Tracker["constants"]["restrict_shifts"] == -1 ):  keepgoing, reset_data, Tracker = AI( Tracker, HISTORY, myid == main_node )
+		else:  keepgoing, reset_data, Tracker = AI_restrict_shifts( Tracker, HISTORY )
+
+		if myid == main_node:
+			print("\n\n\n\n")
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(line,"MAIN ITERATION  #%2d   %s  nxinit, currentres, resolution  %d   %d  %f"%\
+				(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"],  Tracker["currentres"], \
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])))
+
 		#print("RACING  A ",myid)
 		outvol = [os.path.join(Tracker["previousoutputdir"],"vol%01d.hdf"%procid) for procid in xrange(2)]
 
@@ -1808,14 +1816,6 @@ def main():
 				del vol
 
 		mpi_barrier(MPI_COMM_WORLD)
-
-
-		# Update HISTORY
-		HISTORY.append(Tracker.copy())
-		if( Tracker["constants"]["restrict_shifts"] == -1 ):  keepgoing, reset_data, Tracker = AI( Tracker, HISTORY, myid == main_node )
-		else:  keepgoing, reset_data, Tracker = AI_restrict_shifts( Tracker, HISTORY )
-
-		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,Tracker["nxinit"],Tracker["currentres"])
 
 
 		#  REFINEMENT   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -1902,7 +1902,6 @@ def main():
 		fsc = mpi_bcast(fsc, i, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 
 
-
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
 		if  doit:
 			#  ANALYZE CHANGES IN OUTPUT PARAMETERS WITH RESPECT TO PREVIOUS INTERATION  <><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -1970,8 +1969,8 @@ def main():
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 
 
-		if( Tracker["mainiteration"] == 1000 ):
-			#  Compute bckgnoise after first iteration, procid stores indexes, to be deleted.
+		if( Tracker["mainiteration"] == 2 ):
+			#  Compute bckgnoise after second iteration, procid stores indexes, to be deleted.
 			Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], procid = compute_sigma(Tracker["constants"]["stack"], os.path.join(Tracker["directory"],"params.txt"), Tracker, False, myid, main_node, nproc)
 			if( myid == 0 ):
 				#  write noise
