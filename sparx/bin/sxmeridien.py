@@ -1674,7 +1674,7 @@ def main():
 	subdict( Tracker, {"zoom":False} )
 
 	#  Compute first bckgnoise, projdata stores indexes, to be deleted.
-	Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], projdata = compute_sigma(Tracker["constants"]["stack"], os.path.join(initdir,"params.txt"), Tracker, True, myid, main_node, nproc)
+	Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], projdata = compute_sigma(Tracker["constants"]["stack"], os.path.join(initdir,"params.txt"), Tracker, False, myid, main_node, nproc)
 	if( myid == 0 ):
 		#  write noise
 		Tracker["bckgnoise"][0].write_image(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))

@@ -4862,7 +4862,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
 			else:  list_of_reference_angles = [[1.0,1.0]]
 			for im in xrange(nima):
-				if Tracker["constants"]["sharpening"] :
+				if Tracker["constants"]["pwsharpening"] :
 					#  High-pass filtration of data[im]
 					try:
 						stmp = data[im].get_attr("ptcl_source_image")
