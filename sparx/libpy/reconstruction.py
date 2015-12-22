@@ -672,8 +672,8 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 	return fftvol
 
 
-'''
 
+'''
 def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, mpi_comm=None, smearstep = 0.0, main_node = 0):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
@@ -697,7 +697,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
-
+	main_node = 0
 	imgsize = list_of_prjlist[0][0].get_xsize()
 	
 	if( smearstep > 0.0 ):
@@ -775,18 +775,12 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 				except:
 					ERROR("Problem with indexing ptcl_source_image.","recons3d_4nnf_MPI   %s"%stmp,1, myid)
 
-					from mpi import mpi_finalize
-					mpi_finalize()
-					import sys
-					sys.stdout.flush()
-					sys.exit()
-				
 			if not (info is None): 
 				info.write( "begin reduce\n" )
 				info.flush()
 		
-			reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
-			reduce_EMData_to_root(weight, myid, comm=mpi_comm)
+			reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+			reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 			
 			if not (info is None): 
 				info.write( "after reduce\n" )
