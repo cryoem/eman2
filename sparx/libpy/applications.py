@@ -4862,22 +4862,23 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
 			else:  list_of_reference_angles = [[1.0,1.0]]
 			for im in xrange(nima):
-				#  Insert high-pass filtration of data[im]
-				try:
-					stmp = data[im].get_attr("ptcl_source_image")
-				except:
+				if Tracker["constants"]["pwsharpening"] :
+					#  High-pass filtration of data[im]
 					try:
-						stmp = data[im].get_attr("ctf")
-						stmp = round(stmp.defocus,4)
+						stmp = data[im].get_attr("ptcl_source_image")
 					except:
-						ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1, myid)
-				try:
-					indx = Tracker["bckgnoise"][1].index(stmp)
-				except:
-					ERROR("Problem with indexing ptcl_source_image.","meridien",1, myid)
+						try:
+							stmp = data[im].get_attr("ctf")
+							stmp = round(stmp.defocus,4)
+						except:
+							ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1, myid)
+					try:
+						indx = Tracker["bckgnoise"][1].index(stmp)
+					except:
+						ERROR("Problem with indexing ptcl_source_image.","meridien",1, myid)
 
-				tempdata = Util.window(pad(filt_table(data[im],[Tracker["bckgnoise"][0][i,indx] for i in xrange(nx)]), mx, mx,1,0.0), nx, nx)
-
+					tempdata = Util.window(pad(filt_table(data[im],[Tracker["bckgnoise"][0][i,indx] for i in xrange(nx)]), mx, mx,1,0.0), nx, nx)
+				else:  tempdata = data[im].copy()
 				if(nsoft == 0):
 					if(an[N_step] == -1):
 						#  In zoom option each projection goes through shift zoom alignment
