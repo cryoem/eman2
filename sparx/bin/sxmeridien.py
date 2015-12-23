@@ -1440,7 +1440,7 @@ def main():
 	Tracker["yr"]             = "-1"  # Do not change!
 	Tracker["ts"]             = 1
 	Tracker["an"]             = "-1"
-	Tracker["delta"]          = "7.5"  # How to decide it
+	Tracker["delta"]          = "15"#"7.5"  # How to decide it
 	Tracker["zoom"]           = False
 	Tracker["nsoft"]          = 0
 	Tracker["local"]          = False
@@ -1674,12 +1674,13 @@ def main():
 	subdict( Tracker, {"zoom":False} )
 
 	#  Compute first bckgnoise, projdata stores indexes, to be deleted.
+	"""
 	Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], projdata = compute_sigma(Tracker["constants"]["stack"], os.path.join(initdir,"params.txt"), Tracker, False, myid, main_node, nproc)
 	if( myid == 0 ):
 		#  write noise
 		Tracker["bckgnoise"][0].write_image(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
 		write_text_file( [Tracker["bckgnoise"][1], projdata], os.path.join(Constants["masterdir"],"defgroup_stamp.txt"))
-
+	"""
 	#  remove projdata, if it existed, initialize to nonsense
 	projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 	HISTORY = []
@@ -1880,7 +1881,8 @@ def main():
 					projdata[procid] = []
 					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["nxinit"],\
 						partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
-
+			#Tracker["bckgnoise"][0] = get_im(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
+			#Tracker["bckgnoise"][1] = read_text_file(os.path.join(Constants["masterdir"],"defgroup_stamp.txt"))
 			vol0,vol1,fsc = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = projdata, bckgdata = Tracker["bckgnoise"],\
 										symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
@@ -1896,8 +1898,9 @@ def main():
 				fsc = read_text_file( os.path.join(Tracker["directory"] ,"fsc.txt") )
 		if(myid == main_node):  i = len(fsc)
 		else:  i = 0
-		i = bcast_number_to_all(i, source_node = main_node)
+		i   = bcast_number_to_all(i, source_node = main_node)
 		if(myid != main_node):  fsc = [0.0]*i
+	
 		fsc = mpi_bcast(fsc, i, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 
 
