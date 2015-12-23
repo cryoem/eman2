@@ -762,7 +762,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 			# for image in list_of_prjlist[iset]:
 				try:
 					# lll = iset/0
-					raise ValueError('A very specific thing happened')
+					#raise ValueError('A very specific thing happened')
 					stmp = image.get_attr("ptcl_source_image")
 				except:
 					try:
@@ -885,16 +885,17 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 		from math import sqrt
 		from utilities import reshape_1d
 		t = [0.0]*len(fourier_shell_correlation)
-		for i in xrange(len(fourier_shell_correlation)):
-			t[i] = min(max(fourier_shell_correlation[i], 0.0), 0.999)
 		t = reshape_1d(t,len(t),npad*len(t))
+		for i in xrange(len(t):
+			t[i] = min(max(t[i], 0.0), 0.999)
+
 
 		ovol = []
 		for idx in range(2):
 			fftvol = get_im(fftvol_file[idx])
 			weight = get_im(weight_file[idx])
 			refvol = model_blank(bnx,1,1,0.0)
-			for i in xrange(len(fourier_shell_correlation)):  
+			for i in xrange(len(t)):  
 				refvol.set_value_at(i, t[i])
 			refvol.set_attr("fudge", 1.0)
 			
@@ -1043,16 +1044,16 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 		from math import sqrt
 		from utilities import reshape_1d
 		t = [0.0]*len(fourier_shell_correlation)
-		for i in xrange(len(fourier_shell_correlation)):
-			t[i] = min(max(fourier_shell_correlation[i], 0.0), 0.999)
 		t = reshape_1d(t,len(t),npad*len(t))
+		for i in xrange(len(t):
+			t[i] = min(max(t[i], 0.0), 0.999)
 
 		ovol = []
 		for idx in range(2):
 			fftvol = get_im(fftvol_file[idx])
 			weight = get_im(weight_file[idx])
 			refvol = model_blank(bnx,1,1,0.0)
-			for i in xrange(len(fourier_shell_correlation)):  
+			for i in xrange(min(bnx,len(t))):  
 				refvol.set_value_at(i, t[i])
 			refvol.set_attr("fudge", 1.0)
 			
