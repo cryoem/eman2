@@ -1875,13 +1875,11 @@ def main():
 			for procid in xrange(2):  partids[procid] = os.path.join(Tracker["directory"],"chunk%01d.txt"%procid)
 			partstack = [None]*2
 			for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid)
-			"""
-			Tracker["applyctf"] = False
-			for procid in xrange(2):
-				projdata[procid] = []
-				projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["nxinit"],\
-					partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
-			"""
+			if(len(projdata[0]) == 1):
+				for procid in xrange(2):
+					projdata[procid] = []
+					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["nxinit"],\
+						partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
 			vol0,vol1,fsc = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = projdata, bckgdata = Tracker["bckgnoise"],\
 										symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
