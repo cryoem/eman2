@@ -1058,7 +1058,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 			fftvol = get_im(fftvol_file[idx])
 			weight = get_im(weight_file[idx])
 			refvol = model_blank(bnx,1,1,0.0)
-			for i in xrange(len(fourier_shell_correlation)):  
+			for i in xrange(len(min(bnx,len(t)))):  
 				refvol.set_value_at(i, t[i])
 			refvol.set_attr("fudge", 1.0)
 			

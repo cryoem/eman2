@@ -1898,7 +1898,8 @@ def main():
 				fsc = read_text_file( os.path.join(Tracker["directory"] ,"fsc.txt") )
 		if(myid == main_node):  i = len(fsc)
 		else:  i = 0
-		i   = bcast_number_to_all(i, source_node = main_node)
+		i = bcast_number_to_all(i, source_node = main_node)
+		if(myid != main_node):  fsc = [0.0]*i
 		fsc = mpi_bcast(fsc, i, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 
 
