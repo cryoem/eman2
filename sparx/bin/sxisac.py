@@ -303,9 +303,10 @@ def main(args):
 	mpi_barrier(MPI_COMM_WORLD)
 	if( myid == main_node ):
 		if options.skip_alignment:
-			os.system("rm -rf %s"%init2dir)
-		else:
-			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
+			print "========================================="
+			print "Even though there is no alignment step, '%s' params are set to zero for later use."%os.path.join(init2dir, "initial2Dparams.txt")
+			print "========================================="
+		write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
 	del params2d
 	mpi_barrier(MPI_COMM_WORLD)
 	
