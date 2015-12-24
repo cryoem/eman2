@@ -4827,7 +4827,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			if myid == main_node:
 				log.add("ITERATION #%3d,  inner iteration #%3d"%(total_iter, Iter))
 				log.add("Delta = %5.2f, an = %5.2f, xrange = %5d, yrange = %5d, step = %5.2f   %5.2f  %5.2f  %5.2f\n"%\
-							(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step], rmove, rangle1, rangle2))
+							(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step], rshift, rangle1, rangle2))
 				start_time = time()
 
 			#=========================================================================
