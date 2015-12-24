@@ -1045,7 +1045,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 		from utilities import reshape_1d
 		t = [0.0]*len(fourier_shell_correlation)
 		t = reshape_1d(t,len(t),npad*len(t))
-		for i in xrange(len(t):
+		for i in xrange(len(t)):
 			t[i] = min(max(t[i], 0.0), 0.999)
 
 		ovol = []
