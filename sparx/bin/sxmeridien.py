@@ -46,7 +46,7 @@ def AI( Tracker, HISTORY, chout = False):
 	else:							inc += Tracker["nxstep"]
 	tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 
-	if chout : print("  IN AI incoming current res, adjusted current, estimated image size",Tracker["reachedres"],inc,tmp)
+	if chout : print("  IN AI incoming current res, adjusted current, estimated image size",Tracker["currentres"],inc,tmp)
 
 	if( tmp == Tracker["nxinit"] ):  reset_data = False
 	else:
@@ -83,7 +83,7 @@ def AI( Tracker, HISTORY, chout = False):
 
 
 	return keepgoing, reset_data, Tracker
-
+'''
 def AI_restrict_shifts( Tracker, HISTORY ):
 	#  
 	#  Possibilities we will consider:
@@ -326,7 +326,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 
 	Tracker["previousoutputdir"] = Tracker["directory"]
 	return keepgoing, reset_data, Tracker
-
+'''
 
 def params_changes( Tracker ):
 	#  Indexes contain list of images processed - sorted integers, subset of the full range.
@@ -397,7 +397,7 @@ def compute_search_params(shifter, old_range):
 	range = step*ceil(range/step)
 	return range, step
 
-
+'''
 def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
 	#  Indexes contain list of images processed - sorted integers, subset of the full range.
 	#  params - contain parameters associated with these images
@@ -473,7 +473,7 @@ def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
 		u3[i] = u3[i-1]+u2[i]
 	return h1,h2,h3,u1,u2,u3
 	"""
-
+'''
 
 def getalldata(stack, params, myid, nproc):
 	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
@@ -726,6 +726,14 @@ def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 	f = bcast_list_to_all(f, myid, main_node)
 	return f
 
+def out_fsc(f,Tracker):
+	print(" ")
+	print("      FSC  after  iteration#%3d"%Tracker["mainiteration"])
+	print("  %d  %f  %f"%(0,10000.0,f[0])
+	for i in xrange(1,len(f)):
+		print("  %d  %f  %f"%(i,Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i),f[i])
+	print(" ")
+
 '''
 def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	# this function is single processor
@@ -760,7 +768,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 
 	return  round(lowpass,4), round(falloff,4), round(currentres,2)
 '''
-
+'''
 def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 	# this function is single processor
 	nx = vol[0].get_xsize()
@@ -824,7 +832,7 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 	falloff = 0.2
 
 	return  round(lowpass,4), round(falloff,4), currentres, ares, finitres
-
+'''
 '''
 #  This version without smear
 def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, nproc):
@@ -1236,7 +1244,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
-
+	"""
 	if filter_by_fsc:
 		#  READ processed FSC.
 		if(myid == main_node):
@@ -1249,7 +1257,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		Tracker["lowpass"] = map(float, Tracker["lowpass"])
 	else:
 		Tracker["lowpass"] = float(Tracker["currentres"])/float(Tracker["nxinit"])
-
+	"""
 	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
 		Tracker["pixercutoff"] = 0.5
 		Tracker["delta"] = "2.0"
@@ -1301,7 +1309,7 @@ def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	print(line,theme)
 	spaces = "                    "
-	exclude = ["constants","bckgnoise","upscale","delpreviousmax","smearstep","nsoft","saturatecrit","yr","zoom","local_filter","reachedres"]
+	exclude = ["constants","bckgnoise","upscale","delpreviousmax","smearstep","nsoft","saturatecrit","yr","zoom","local_filter","reachedres","lowpass"]
 	for key, value in sorted( dict.items() ):
 		pt = True
 		for ll in exclude:
@@ -1904,24 +1912,25 @@ def main():
 						partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 			#Tracker["bckgnoise"][0] = get_im(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
 			#Tracker["bckgnoise"][1] = read_text_file(os.path.join(Constants["masterdir"],"defgroup_stamp.txt"))
-			vol0,vol1,fsc = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = projdata, bckgdata = Tracker["bckgnoise"],\
+			vol0,vol1,fff = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = projdata, bckgdata = Tracker["bckgnoise"],\
 										symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
-				ref_data = [fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]]
+				ref_data = [fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]
 				user_func = Tracker["constants"]["user_func"]
 				user_func(ref_data).write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
 				del vol0
-				ref_data = [fpol(vol1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]]
+				ref_data = [fpol(vol1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]
 				user_func = Tracker["constants"]["user_func"]
 				user_func(ref_data).write_image(os.path.join(Tracker["directory"] ,"vol1.hdf"))
 				del vol1
 				if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-					for i in xrange(len(fsc),Tracker["constants"]["nnxo"]/2+1):  fff.append(0.0)
+					for i in xrange(len(fff),Tracker["constants"]["nnxo"]/2+1):  fff.append(0.0)
+				out_fsc(fff,Tracker)
 				write_text_file( fff, os.path.join(Tracker["directory"] ,"fsc.txt") )
 		else:
 			if(myid == main_node):
 				fff = read_text_file( os.path.join(Tracker["directory"] ,"fsc.txt") )
-		if(myid == main_node):  i = len(fsc)
+		if(myid == main_node):  i = len(fff)
 		else:  i = 0
 		i   = bcast_number_to_all(i, source_node = main_node)
 		if(myid != main_node):  fff = [0.0]*i
@@ -1967,7 +1976,7 @@ def main():
 		maxres = max(l05, Tracker["constants"]["inires"])  # Cannot be lower than initial resolution
 		if( Tracker["mainiteration"] == 1 ):  Tracker["currentres"] = maxres
 		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		Tracker["large_at_Nyquist"] = fsc[Tracker["nxinit"]//2] > 0.2
+		Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2] > 0.2
 		if( maxres > Tracker["currentres"]):
 			Tracker["constants"]["best"] = Tracker["mainiteration"]
 			Tracker["no_improvement"] = 0
@@ -1995,7 +2004,7 @@ def main():
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 
 		if( Tracker["mainiteration"] == 2 ):
-			doit, keepchecking = checkstep(os.path.join(Tracker["masterdir"] ,"main003"), keepchecking, myid, main_node)
+			doit, keepchecking = checkstep(os.path.join(Tracker["constants`"]["masterdir"] ,"main003"), keepchecking, myid, main_node)
 			if  doit:
 				#  Compute bckgnoise after second iteration, procid stores indexes, to be deleted.
 				Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], procid = compute_sigma(Tracker["constants"]["stack"], os.path.join(Tracker["directory"],"params.txt"), Tracker, False, myid, main_node, nproc)
