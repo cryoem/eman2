@@ -308,7 +308,7 @@ def main(args):
 			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
 	del params2d
 	mpi_barrier(MPI_COMM_WORLD)
-	
+
 	#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  
 	#  Note images can be also padded, in which case shrink_ratio > 1.
 	shrink_ratio = float(target_radius)/float(radi)

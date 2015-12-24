@@ -601,13 +601,26 @@ def compute_sigma(partstack, paramsname, Tracker, dryrun, myid, main_node, nproc
 		reduce_EMData_to_root(tsd, myid, main_node)
 		reduce_EMData_to_root(tocp, myid, main_node)
 		if( myid == main_node):
+			tmp1 = [0.0]*nv
+			tmp2 = [0.0]*nv
 			for i in xrange(len(sd)):
+				for k in xrange(1,nv):
+					tmp1[k] = tsd.get_value_at(k,i)/tocp[i]
+				#  smooth
+				tmp1[0] = tmp1[1]
+				tmp1[-1] = tmp1[-2]
+				for ism in xrange(2):
+					for k in xrange(1,nv-1):  tmp2[k] = (tmp1[k-1]+tmp1[k]+tmp1[k+1])/3.0
+					for k in xrange(1,nv-1):  tmp1[k] = tmp2[k]
 				tsd.set_value_at(0,i,1.0)
+				for k in xrange(1,nv): tsd.set_value_at(k,i,1.0/tmp1[k])
+				"""
 				for k in xrange(6,nv):
 					tsd.set_value_at(k,i,1.0/(tsd.get_value_at(k,i)/tocp[i]))  # Already inverted
 				qt = tsd.get_value_at(6,i)
 				for k in xrange(1,6):
 					tsd.set_value_at(k,i,qt)
+				"""
 		bcast_EMData_to_all(tsd, myid, source_node = 0)
 	return tsd, sd, [int(tocp[i]) for i in xrange(len(sd))]
 
@@ -818,7 +831,7 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 	#  while the code pretends to accept volumes as input, it actually does not.
 	import types
 	vol = [None]*2
-	fsc = [None]*2
+	fff = [None]*2
 	if( type(stack[0]) == list ):
 		nx = stack[0][0].get_xsize()
 		nz = stack[0][0].get_zsize()
@@ -851,12 +864,12 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 				#	Tracker["smearstep"] = 0.5*delta
 				#else:  Tracker["smearstep"] = 0.0
 				from reconstruction import rec3D_MPI
-				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = Tracker["constants"]["sym"], \
+				vol[procid],fff[procid] = rec3D_MPI(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2, smearstep = 0.0)
 			else:
 				from reconstruction import rec3D_MPI_noCTF
-				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = Tracker["constants"]["sym"], \
+				vol[procid],fff[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
@@ -887,14 +900,14 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 				for procid in xrange(2):
 					for i in xrange(3):
 						for k in xrange(nx/2+1, Tracker["constants"]["nnxo"]/2+1):
-							fsc[procid][i].append(0.0)
+							fff[procid][i].append(0.0)
 					for k in xrange(Tracker["constants"]["nnxo"]/2+1):
-						fsc[procid][0][k] = float(k)/Tracker["constants"]["nnxo"]
+						fff[procid][0][k] = float(k)/Tracker["constants"]["nnxo"]
 			for procid in xrange(2):
-				#  Compute adjusted within-fsc as 2*f/(1+f)
-				fsc[procid].append(fsc[procid][1][:])
-				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
-				write_text_file( fsc[procid], os.path.join(Tracker["directory"],"within-fsc%01d.txt"%procid) )
+				#  Compute adjusted within-fff as 2*f/(1+f)
+				fff[procid].append(fff[procid][1][:])
+				for k in xrange(len(fff[procid][1])):  fff[procid][-1][k] = 2*fff[procid][-1][k]/(1.0+fff[procid][-1][k])
+				write_text_file( fff[procid], os.path.join(Tracker["directory"],"within-fff%01d.txt"%procid) )
 
 		lowpass, falloff, currentres, ares, finitres = get_pixel_resolution(Tracker, vol, mask, Tracker["directory"])
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -911,11 +924,12 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 	falloff     = bcast_number_to_all(falloff, source_node = main_node)
 	return round(lowpass,4), round(falloff,4), currentres, ares, finitres
 '''
+'''
 def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, nproc):
 	#  while the code pretends to accept volumes as input, it actually does not.
 	import types
 	vol = [None]*2
-	fsc = [None]*2
+	fff = [None]*2
 	if( type(stack[0]) == list ):
 		nx = stack[0][0].get_xsize()
 		nz = stack[0][0].get_zsize()
@@ -958,12 +972,12 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 				from reconstruction import rec3D_MPI
 				if(myid == main_node):
 					print(" smear in compute_resolution ",nx,shrinkage,Tracker["currentres"], Tracker["radius"],Tracker["smearstep"])
-				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = Tracker["constants"]["sym"], \
+				vol[procid],fff[procid] = rec3D_MPI(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2, smearstep = Tracker["smearstep"])
 			else:
 				from reconstruction import rec3D_MPI_noCTF
-				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = Tracker["constants"]["sym"], \
+				vol[procid],fff[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
@@ -991,19 +1005,19 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 
 	if(myid == main_node):
 		if(type(stack) == str or ( nz == 1 )):
-			for procid in xrange(2): del fsc[procid][-1]
+			for procid in xrange(2): del fff[procid][-1]
 			if(nx<Tracker["constants"]["nnxo"]):
 				for procid in xrange(2):
 					for i in xrange(2):
 						for k in xrange(nx/2+1, Tracker["constants"]["nnxo"]/2+1):
-							fsc[procid][i].append(0.0)
+							fff[procid][i].append(0.0)
 					for k in xrange(Tracker["constants"]["nnxo"]/2+1):
-						fsc[procid][0][k] = float(k)/Tracker["constants"]["nnxo"]
+						fff[procid][0][k] = float(k)/Tracker["constants"]["nnxo"]
 			for procid in xrange(2):
-				#  Compute adjusted within-fsc as 2*f/(1+f)
-				fsc[procid].append(fsc[procid][1][:])
-				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
-				write_text_file( fsc[procid], os.path.join(Tracker["directory"],"within-fsc%01d.txt"%procid) )
+				#  Compute adjusted within-fff as 2*f/(1+f)
+				fff[procid].append(fff[procid][1][:])
+				for k in xrange(len(fff[procid][1])):  fff[procid][-1][k] = 2*fff[procid][-1][k]/(1.0+fff[procid][-1][k])
+				write_text_file( fff[procid], os.path.join(Tracker["directory"],"within-fff%01d.txt"%procid) )
 
 		lowpass, falloff, currentres, ares, finitres = get_pixel_resolution(Tracker, vol, mask, Tracker["directory"])
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -1019,7 +1033,8 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 	lowpass     = bcast_number_to_all(lowpass, source_node = main_node)
 	falloff     = bcast_number_to_all(falloff, source_node = main_node)
 	return round(lowpass,4), round(falloff,4), currentres, ares, finitres
-
+'''
+'''
 def compute_volsmeared(stack, partids, partstack, Tracker, myid, main_node, nproc):
 	#  while the code pretends to accept volumes as input, it actually does not.
 	import types
@@ -1119,7 +1134,7 @@ def compute_volsmeared(stack, partids, partstack, Tracker, myid, main_node, npro
 	falloff     = bcast_number_to_all(falloff, source_node = main_node)
 	return round(lowpass,4), round(falloff,4), currentres, ares
 	"""
-
+'''
 """
 # moved into utilities 09/23/2015
 def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
@@ -1235,9 +1250,6 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	else:
 		Tracker["lowpass"] = float(Tracker["currentres"])/float(Tracker["nxinit"])
 
-	#  Base smear on current radius, not on the resolution
-	if Tracker["constants"]["smear"] : Tracker["smearstep"] = round(degrees(atan(1.0/float(Tracker["radius"]))), 2)
-	else:                              Tracker["smearstep"] = 0.0
 	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
 		Tracker["pixercutoff"] = 0.5
 		Tracker["delta"] = "2.0"
@@ -1355,7 +1367,7 @@ def main():
 	parser.add_option("--startangles",      action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
 	parser.add_option("--restrict_shifts",  type="int",    default= -1,			help="Restrict initial searches for translation [unit - original size pixel] (default=-1, no restriction)")
 	parser.add_option("--local_filter",     action="store_true", default=False,	help="Use local filtration (Default generic tangent filter)")
-	parser.add_option("--smear",            action="store_true", default=False,	help="Use rotational smear")
+	parser.add_option("--smear",            action="store_true", default=True,	help="Do not use rotational smear")
 
 	#options introduced for the do_volume function
 	#parser.add_option("--fl",			type="float",	default=0.12,		help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.12)")
@@ -1547,17 +1559,18 @@ def main():
 		masterdir = mpi_bcast(masterdir,li,MPI_CHAR,main_node,MPI_COMM_WORLD)
 		masterdir = string.join(masterdir,"")
 
+	Tracker["constants"]["masterdir"] = masterdir
 	if(myid == main_node):
 		print_dict(Tracker["constants"], "Permanent settings of meridien")
 
 
 	#  create a vstack from input stack to the local stack in masterdir
 	#  Stack name set to default
-	Tracker["constants"]["stack"] = "bdb:"+masterdir+"/rdata"
+	Tracker["constants"]["stack"] = "bdb:"+Tracker["constants"]["masterdir"]+"/rdata"
 	# Initialization of stacks
 	if(myid == main_node):
 		if keepchecking:
-			if(os.path.exists(os.path.join(masterdir,"EMAN2DB/rdata.bdb"))):  doit = False
+			if(os.path.exists(os.path.join(Tracker["constants"]["masterdir"],"EMAN2DB/rdata.bdb"))):  doit = False
 			else:  doit = True
 		else:  doit = True
 		if  doit:
@@ -1575,7 +1588,7 @@ def main():
 
 	# ------------------------------------------------------------------------------------
 	#  INITIALIZATION
-	initdir = os.path.join(masterdir,"main000")
+	initdir = os.path.join(Tracker["constants"]["masterdir"],"main000")
 
 	# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
@@ -1674,13 +1687,18 @@ def main():
 	subdict( Tracker, {"zoom":False} )
 
 	#  Compute first bckgnoise, projdata stores indexes, to be deleted.
-	"""
-	Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], projdata = compute_sigma(Tracker["constants"]["stack"], os.path.join(initdir,"params.txt"), Tracker, False, myid, main_node, nproc)
-	if( myid == 0 ):
-		#  write noise
-		Tracker["bckgnoise"][0].write_image(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
-		write_text_file( [Tracker["bckgnoise"][1], projdata], os.path.join(Constants["masterdir"],"defgroup_stamp.txt"))
-	"""
+	procid, i = checkstep(os.path.join(Tracker["constants"]["masterdir"] ,"main003"), keepchecking, myid, main_node)
+	if procid:
+		Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], projdata = compute_sigma(Tracker["constants"]["stack"], os.path.join(initdir,"params.txt"), Tracker, False, myid, main_node, nproc)
+		if( myid == 0 ):
+			#  write noise
+			Tracker["bckgnoise"][0].write_image(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
+			write_text_file( [Tracker["bckgnoise"][1], projdata], os.path.join(Constants["masterdir"],"defgroup_stamp.txt"))
+	else:
+		Tracker["bckgnoise"][0] = get_im(os.path.join(Tracker["constants"]["masterdir"],"bckgnoise.hdf"))
+		Tracker["bckgnoise"][1] = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"defgroup_stamp.txt"))
+
+
 	#  remove projdata, if it existed, initialize to nonsense
 	projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 	HISTORY = []
@@ -1696,7 +1714,7 @@ def main():
 		mainiteration += 1
 		Tracker["mainiteration"] = mainiteration
 		#  prepare output directory,  the settings are awkward
-		Tracker["directory"]     = os.path.join(masterdir,"main%03d"%Tracker["mainiteration"])
+		Tracker["directory"]     = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 
 		"""
 		#  First deal with the local filter, if required.
@@ -1788,6 +1806,9 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		doit = bcast_number_to_all(doit, source_node = main_node)
 
+		#  Base smear on resolution
+		if Tracker["constants"]["smear"] : Tracker["smearstep"] = round(degrees(atan(1.0/float(Tracker["currentres"]))), 2)
+		else:                              Tracker["smearstep"] = 0.0
 
 		#mpi_finalize()
 		#exit()
@@ -1886,23 +1907,26 @@ def main():
 			vol0,vol1,fsc = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = projdata, bckgdata = Tracker["bckgnoise"],\
 										symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
-				fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
+				ref_data = [fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]]
+				user_func = Tracker["constants"]["user_func"]
+				user_func(ref_data).write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
 				del vol0
-				fpol(vol1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"vol1.hdf"))
+				ref_data = [fpol(vol1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]]
+				user_func = Tracker["constants"]["user_func"]
+				user_func(ref_data).write_image(os.path.join(Tracker["directory"] ,"vol1.hdf"))
 				del vol1
 				if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-					for i in xrange(len(fsc),Tracker["constants"]["nnxo"]/2+1):  fsc.append(0.0)
-				write_text_file( fsc, os.path.join(Tracker["directory"] ,"fsc.txt") )
+					for i in xrange(len(fsc),Tracker["constants"]["nnxo"]/2+1):  fff.append(0.0)
+				write_text_file( fff, os.path.join(Tracker["directory"] ,"fsc.txt") )
 		else:
 			if(myid == main_node):
-				fsc = read_text_file( os.path.join(Tracker["directory"] ,"fsc.txt") )
+				fff = read_text_file( os.path.join(Tracker["directory"] ,"fsc.txt") )
 		if(myid == main_node):  i = len(fsc)
 		else:  i = 0
 		i   = bcast_number_to_all(i, source_node = main_node)
-		if(myid != main_node):  fsc = [0.0]*i
+		if(myid != main_node):  fff = [0.0]*i
 	
-		fsc = mpi_bcast(fsc, i, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-
+		fff = mpi_bcast(fff, i, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
 		if  doit:
@@ -1931,12 +1955,12 @@ def main():
 
 		l05 = -1
 		l01 = -1
-		for i in xrange(len(fsc)):
-			if(fsc[i] < 0.5):
+		for i in xrange(len(fff)):
+			if(fff[i] < 0.5):
 				l05 = i-1
 				break
-		for i in xrange(len(fsc)):
-			if(fsc[i] < 0.143):
+		for i in xrange(len(fff)):
+			if(fff[i] < 0.143):
 				l01 = i-1
 				break
 		l01 = max(l01,-1)
@@ -1961,24 +1985,30 @@ def main():
 		shifter *= 0.71
 		if( 1.03*anger >= Tracker["anger"] and 1.03*shifter >= Tracker["shifter"] ):	Tracker["no_params_changes"] += 1
 		else:																			Tracker["no_params_changes"] = 0
-		
+
 		if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
 		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
-		
+
 		Tracker["currentres"] = maxres
 
 		#doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"vol0.hdf"), keepchecking, myid, main_node)
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 
-
 		if( Tracker["mainiteration"] == 2 ):
-			#  Compute bckgnoise after second iteration, procid stores indexes, to be deleted.
-			Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], procid = compute_sigma(Tracker["constants"]["stack"], os.path.join(Tracker["directory"],"params.txt"), Tracker, False, myid, main_node, nproc)
-			if( myid == 0 ):
-				#  write noise
-				Tracker["bckgnoise"][0].write_image(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
-				write_text_file( [Tracker["bckgnoise"][1], procid], os.path.join(Constants["masterdir"],"defgroup_stamp.txt"))
-			del procid
+			doit, keepchecking = checkstep(os.path.join(Tracker["masterdir"] ,"main003"), keepchecking, myid, main_node)
+			if  doit:
+				#  Compute bckgnoise after second iteration, procid stores indexes, to be deleted.
+				Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], procid = compute_sigma(Tracker["constants"]["stack"], os.path.join(Tracker["directory"],"params.txt"), Tracker, False, myid, main_node, nproc)
+				if( myid == 0 ):
+					#  write noise
+					Tracker["bckgnoise"][0].write_image(os.path.join(Tracker["constants"]["masterdir"],"bckgnoise.hdf"))
+					write_text_file( [Tracker["bckgnoise"][1], procid], os.path.join(Constants["masterdir"],"defgroup_stamp.txt"))
+				del procid
+			else:
+				# switch to bcast??
+				Tracker["bckgnoise"][0] = get_im(os.path.join(Tracker["constants"]["masterdir"],"bckgnoise.hdf"))
+				Tracker["bckgnoise"][1] = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"defgroup_stamp.txt"))
+				
 
 
 			# The next will have to be decided later, i.e., under which circumstances we should recalculate full size volume.

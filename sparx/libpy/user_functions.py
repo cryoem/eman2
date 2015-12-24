@@ -969,16 +969,11 @@ def do_volume_mrk02(ref_data):
 	import types
 
 	# Retrieve the function specific input arguments from ref_data
+	# Retrieve the function specific input arguments from ref_data
 	data     = ref_data[0]
 	Tracker  = ref_data[1]
-	iter     = ref_data[2]
-	mpi_comm = ref_data[3]
-	
-	# # For DEBUG
-	# print "Type of data %s" % (type(data))
-	# print "Type of Tracker %s" % (type(Tracker))
-	# print "Type of iter %s" % (type(iter))
-	# print "Type of mpi_comm %s" % (type(mpi_comm))
+	myid     = ref_data[2]
+	nproc    = ref_data[3]
 	
 	if(mpi_comm == None):  mpi_comm = MPI_COMM_WORLD
 	myid  = mpi_comm_rank(mpi_comm)
@@ -1141,18 +1136,10 @@ def do_volume_mrk03(ref_data):
 	# Retrieve the function specific input arguments from ref_data
 	data     = ref_data[0]
 	Tracker  = ref_data[1]
-	iter     = ref_data[2]
-	mpi_comm = ref_data[3]
-	
-	# # For DEBUG
-	# print "Type of data %s" % (type(data))
-	# print "Type of Tracker %s" % (type(Tracker))
-	# print "Type of iter %s" % (type(iter))
-	# print "Type of mpi_comm %s" % (type(mpi_comm))
-	
-	if(mpi_comm == None):  mpi_comm = MPI_COMM_WORLD
-	myid  = mpi_comm_rank(mpi_comm)
-	nproc = mpi_comm_size(mpi_comm)
+	myid     = ref_data[2]
+	nproc    = ref_data[3]
+
+	mpi_comm = MPI_COMM_WORLD
 	
 	try:     local_filter = Tracker["local_filter"]
 	except:  local_filter = False
@@ -1185,7 +1172,7 @@ def do_volume_mrk03(ref_data):
 			if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
 			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 			nxm = mask3D.get_xsize()
-			if( nx != nxm):
+			if( nx != nxm ):
 				from fundamentals import rot_shift3D
 				mask3D = Util.window(rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
 				nxm = mask3D.get_xsize()
@@ -1206,7 +1193,7 @@ def do_volume_mrk03(ref_data):
 		from morphology import binarize
 		if(myid == 0): nx = mask3D.get_xsize()
 		else:  nx = 0
-		nx = bcast_number_to_all(nx, source_node = 0)
+		if( nproc > 1 ): nx = bcast_number_to_all(nx, source_node = 0)
 		#  only main processor needs the two input volumes
 		if(myid == 0):
 			mask = binarize(mask3D, 0.5)
@@ -1225,9 +1212,10 @@ def do_volume_mrk03(ref_data):
 			lx = 0
 			locres = model_blank(1,1,1)
 			vol = model_blank(1,1,1)
-		lx = bcast_number_to_all(lx, source_node = 0)
-		if( myid != 0 ):  mask = model_blank(lx,lx,lx)
-		bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
+		if( nproc > 1 ):
+			lx = bcast_number_to_all(lx, source_node = 0)
+			if( myid != 0 ):  mask = model_blank(lx,lx,lx)
+			bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
 		from filter import filterlocal
 		vol = filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
 
@@ -1255,7 +1243,7 @@ def do_volume_mrk03(ref_data):
 			# vol.write_image('toto%03d.hdf'%iter)
 	"""
 	# broadcast volume
-	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	if( nproc > 1 ):  bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
 	return vol
 
@@ -1277,17 +1265,9 @@ def do_volume_mrk04(ref_data):
 	# Retrieve the function specific input arguments from ref_data
 	data     = ref_data[0]
 	Tracker  = ref_data[1]
-	iter     = ref_data[2]
-	mpi_comm = ref_data[3]
+	myid     = ref_data[2]
+	nproc    = ref_data[3]
 	
-	# # For DEBUG
-	# print "Type of data %s" % (type(data))
-	# print "Type of Tracker %s" % (type(Tracker))
-	# print "Type of iter %s" % (type(iter))
-	# print "Type of mpi_comm %s" % (type(mpi_comm))
-	
-	if(mpi_comm == None):  mpi_comm = MPI_COMM_WORLD
-	myid  = mpi_comm_rank(mpi_comm)
 	nproc = mpi_comm_size(mpi_comm)
 	
 	try:     local_filter = Tracker["local_filter"]
@@ -1336,7 +1316,7 @@ def do_volume_mrk04(ref_data):
 		from morphology import binarize
 		if(myid == 0): nx = mask3D.get_xsize()
 		else:  nx = 0
-		nx = bcast_number_to_all(nx, source_node = 0)
+		if( nproc > 1 ):  nx = bcast_number_to_all(nx, source_node = 0)
 		#  only main processor needs the two input volumes
 		if(myid == 0):
 			mask = binarize(mask3D, 0.5)
@@ -1355,9 +1335,10 @@ def do_volume_mrk04(ref_data):
 			lx = 0
 			locres = model_blank(1,1,1)
 			vol = model_blank(1,1,1)
-		lx = bcast_number_to_all(lx, source_node = 0)
-		if( myid != 0 ):  mask = model_blank(lx,lx,lx)
-		bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
+		if( nproc > 1 ):
+			lx = bcast_number_to_all(lx, source_node = 0)
+			if( myid != 0 ):  mask = model_blank(lx,lx,lx)
+			bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
 		from filter import filterlocal
 		vol = filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
 
@@ -1388,7 +1369,7 @@ def do_volume_mrk04(ref_data):
 			# vol.write_image('toto%03d.hdf'%iter)
 		"""
 	# broadcast volume
-	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	if( nproc > 1 ):  bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
 	return vol
 
