@@ -999,6 +999,14 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 		if( random_method == "SHC" ):  data[im].set_attr('previousmax',1.0e-23)
 		if phase_flip:  data[im] = filt_ctf(data[im], data[im].get_attr("ctf"), binary = True)
 
+	if skip_alignment:
+		params = []
+		for im in xrange(nima):  
+			alpha, sx, sy, mirror, scale = get_params2D(data[im])
+			params.append([alpha, sx, sy, mirror])
+		params = wrap_mpi_gatherv(params, main_node, mpi_comm)
+		return params, data
+
 	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 		reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
@@ -1008,9 +1016,6 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 			Util.mul_scalar(adw_img, float(Ng-1)/(nima-1))
 			adw_img += float(nima-Ng)/(nima-1)
 	else:  ctf_2_sum = None
-
-	if skip_alignment:
-		return [], data
 
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
