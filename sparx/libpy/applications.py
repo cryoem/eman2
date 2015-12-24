@@ -4810,23 +4810,23 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			total_iter += 1
 
 
-			rmove   = 0.0
+			rshift  = 0.0
 			rangle1 = 0.0
 			rangle2 = 0.0
 			if Tracker["constants"]["shake"] :
 				if( myid == 0 ):
 					from random import random
-					rmove  = (random() - 0.5)*step[N_step]
+					rshift  = (random() - 0.5)*step[N_step]
 					rangle1 = (random() - 0.5)*delta[N_step]
 					rangle2 = (random() - 0.5)*delta[N_step]
-				rmove   = bcast_number_to_all(rmove, source_node = main_node)
+				rshift  = bcast_number_to_all(rshift, source_node = main_node)
 				rangle1 = bcast_number_to_all(rangle1, source_node = main_node)
 				rangle2 = bcast_number_to_all(rangle2, source_node = main_node)
 
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				log.add("ITERATION #%3d,  inner iteration #%3d"%(total_iter, Iter))
-				log.add("Delta = %5.2f, an = %5.2f, xrange = %5d, yrange = %5d, step = %5.2f   %5.2  %5.2  %5.2\n"%\
+				log.add("Delta = %5.2f, an = %5.2f, xrange = %5d, yrange = %5d, step = %5.2f   %5.2f  %5.2f  %5.2f\n"%\
 							(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step], rmove, rangle1, rangle2))
 				start_time = time()
 
