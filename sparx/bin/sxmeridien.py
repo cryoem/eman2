@@ -729,9 +729,9 @@ def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 def out_fsc(f,Tracker):
 	print(" ")
 	print("      FSC  after  iteration#%3d"%Tracker["mainiteration"])
-	print("  %d  %f  %f"%(0,10000.0,f[0])
+	print("  %4d  %7.1f  %5.3f"%(0,10000.0,f[0]))
 	for i in xrange(1,len(f)):
-		print("  %d  %f  %f"%(i,Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i),f[i])
+		print("  %4d  %7.1f  %5.3f"%(i,Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i),f[i]))
 	print(" ")
 
 '''
@@ -1426,7 +1426,8 @@ def main():
 	Constants["center"]       = 0
 	#Constants["pwreference"]  = options.pwreference
 	Constants["pwsharpening"]  = False  #  apply 1/sigma2 in proj matching
-	Constants["smear"]        = options.smear
+	Constants["smear"]         = options.smear
+	Constants["shake"]         = True  #options.shake  move params every iteration
 	Constants["restrict_shifts"] = options.restrict_shifts
 	Constants["local_filter"] = options.local_filter
 	Constants["CTF"]          = options.CTF
@@ -2004,7 +2005,7 @@ def main():
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 
 		if( Tracker["mainiteration"] == 2 ):
-			doit, keepchecking = checkstep(os.path.join(Tracker["constants`"]["masterdir"] ,"main003"), keepchecking, myid, main_node)
+			doit, keepchecking = checkstep(os.path.join(Tracker["constants"]["masterdir"] ,"main003"), keepchecking, myid, main_node)
 			if  doit:
 				#  Compute bckgnoise after second iteration, procid stores indexes, to be deleted.
 				Tracker["bckgnoise"][0], Tracker["bckgnoise"][1], procid = compute_sigma(Tracker["constants"]["stack"], os.path.join(Tracker["directory"],"params.txt"), Tracker, False, myid, main_node, nproc)
