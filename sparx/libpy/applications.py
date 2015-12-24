@@ -4810,16 +4810,18 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			total_iter += 1
 
 
-			rmove  = 0.0
-			rangle = 0.0
-			if Tracker["Constants"]["shake"] :
+			rmove   = 0.0
+			rangle1 = 0.0
+			rangle2 = 0.0
+			if Tracker["constants"]["shake"] :
 				if( myid == 0 ):
 					from random import random
 					rmove  = (random() - 0.5)*step[N_step]
 					rangle1 = (random() - 0.5)*delta[N_step]
 					rangle2 = (random() - 0.5)*delta[N_step]
-				rmove  = bcast_number_to_all(rmove, source_node = main_node)
-				rangle = bcast_number_to_all(rangle, source_node = main_node)
+				rmove   = bcast_number_to_all(rmove, source_node = main_node)
+				rangle1 = bcast_number_to_all(rangle1, source_node = main_node)
+				rangle2 = bcast_number_to_all(rangle2, source_node = main_node)
 
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
