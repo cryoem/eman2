@@ -930,7 +930,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	"""
 	from utilities  import reduce_EMData_to_root, random_string, get_im
 	from EMAN2      import Reconstructors
-	from utilities  import model_blank, cmdexecute
+	from utilities  import model_blank
 	from mpi        import MPI_COMM_WORLD, mpi_barrier
 	import types
 	from statistics import fsc
@@ -1066,7 +1066,8 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 
 
 		cmd = "{} {} {} {} {} {}".format("rm -f", fftvol_file[0], fftvol_file[1], weight_file[0], weight_file[1], results_list[0] )
-		cmdexecute(cmd)
+		import subprocess
+		outcome = subprocess.call(cmd, shell=True)
 
 	mpi_barrier(mpi_comm)
 	if myid == 0:

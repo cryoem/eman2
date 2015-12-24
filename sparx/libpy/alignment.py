@@ -1231,7 +1231,7 @@ def prep_vol_kb(vol, kb, npad=2):
 
 def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", numr = None, MPI=False, \
 						phiEqpsi = "Zero", kbx = None, kby = None, initial_theta = None, \
-						delta_theta = None):
+						delta_theta = None, initial_phi = None):
 	"""
 		Generate quasi-evenly distributed reference projections converted to rings
 	"""
@@ -1258,11 +1258,18 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 	else:
 		# generate list of Eulerian angles for reference projections
 		#  phi, theta, psi
-		if initial_theta is None:
-			ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+		if initial_theta and initial_phi :
+			ref_angles = even_angles(delta, theta1 = initial_theta, phi1 = initial_phi, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+			print  "  initial angles ",initial_phi,initial_theta
+
 		else:
-			if delta_theta is None: delta_theta = 1.0
-			ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+			if initial_theta is None:
+				ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+			else:
+				if delta_theta is None: delta_theta = 1.0
+				ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+
+
 	wr_four  = ringwe(numr, mode)
 	cnx = nz//2 + 1
 	cny = nz//2 + 1
@@ -1513,7 +1520,7 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 
 	return ref_proj_rings
 
-def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0):
+def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0):
 	from alignment import search_range
 	from EMAN2 import Vec2f
 
@@ -1534,8 +1541,8 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	ou = numr[-3]
-	sxi = round(-dp["tx"],2)
-	syi = round(-dp["ty"],2)
+	sxi = round(-dp["tx"]+rshift,2)
+	syi = round(-dp["ty"]+rshift,2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 			
@@ -1642,7 +1649,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym
 
 	return peak, pixel_error
 
-def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1', delta_psi = 0.0):
+def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1', delta_psi = 0.0, rshift = 0.0):
 	from alignment    import search_range
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi, radians
@@ -1660,8 +1667,8 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, 
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	ou = numr[-3]
-	sxi = round(-dp["tx"],2)
-	syi = round(-dp["ty"],2)
+	sxi = round(-dp["tx"] + rshift, 2)
+	syi = round(-dp["ty"] + rshift, 2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 	if finfo:

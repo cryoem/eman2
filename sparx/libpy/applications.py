@@ -4809,21 +4809,32 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			Iter += 1
 			total_iter += 1
 
+
+			rmove  = 0.0
+			rangle = 0.0
+			if Tracker["Constants"]["shake"] :
+				if( myid == 0 ):
+					from random import random
+					rmove  = (random() - 0.5)*step[N_step]
+					rangle1 = (random() - 0.5)*delta[N_step]
+					rangle2 = (random() - 0.5)*delta[N_step]
+				rmove  = bcast_number_to_all(rmove, source_node = main_node)
+				rangle = bcast_number_to_all(rangle, source_node = main_node)
+
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				log.add("ITERATION #%3d,  inner iteration #%3d"%(total_iter, Iter))
-				log.add("Delta = %5.2f, an = %5.2f, xrange = %5d, yrange = %5d, step = %5.2f\n"%\
-							(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step]))
+				log.add("Delta = %5.2f, an = %5.2f, xrange = %5d, yrange = %5d, step = %5.2f   %5.2  %5.2  %5.2\n"%\
+							(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step], rmove, rangle1, rangle2))
 				start_time = time()
-
-
 
 			#=========================================================================
 			# build references
 			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm, phiEqpsi = "Zero")
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm, \
+						initial_theta = rangle1, initial_phi = rangle2, phiEqpsi = "Zero")
 			del volft, kb
-			#=========================================================================
+			#=========================================================================				
 
 			if myid == main_node:
 				log.add("Time to prepare rings: %10.1f\n" % (time()-start_time))
@@ -4890,12 +4901,12 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 						if  zoom: peak, pixer[im] = proj_ali_incore_zoom(tempdata, refrings, numr, \
 														xrng, yrng, step, sym=sym)
 						else:  peak, pixer[im] = proj_ali_incore(tempdata, refrings, numr, \
-												xrng[N_step], yrng[N_step], step[N_step], sym=sym, delta_psi = delta[N_step])
+												xrng[N_step], yrng[N_step], step[N_step], sym=sym, delta_psi = delta[N_step], rshift = rshift)
 					else:
 						if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(tempdata, refrings, list_of_reference_angles, numr, \
 									xrng, yrng, step, an, finfo = finfo, sym=sym)
 						else:  peak, pixer[im] = proj_ali_incore_local(tempdata, refrings, list_of_reference_angles, numr, \
-									xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo = finfo, sym=sym, delta_psi = delta[N_step])
+									xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo = finfo, sym=sym, delta_psi = delta[N_step], rshift = rshift)
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft == 1):
 					tempdata.set_attr("previousmax", data[im].get_attr("previousmax"))
