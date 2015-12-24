@@ -1130,7 +1130,7 @@ def do_volume_mrk03(ref_data):
 	from filter         import filt_table
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nnw_MPI  #  recons3d_4nn_ctf_MPI
 	from utilities      import bcast_EMData_to_all, bcast_number_to_all, model_blank
-	from fundamentals import rops_table, fftip, fft
+	from fundamentals   import rops_table, fftip, fft
 	import types
 
 	# Retrieve the function specific input arguments from ref_data
@@ -1259,7 +1259,7 @@ def do_volume_mrk04(ref_data):
 	from filter         import filt_table
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities      import bcast_EMData_to_all, bcast_number_to_all, model_blank
-	from fundamentals import rops_table, fftip, fft
+	from fundamentals   import rops_table, fftip, fft
 	import types
 
 	# Retrieve the function specific input arguments from ref_data
@@ -1267,8 +1267,8 @@ def do_volume_mrk04(ref_data):
 	Tracker  = ref_data[1]
 	myid     = ref_data[2]
 	nproc    = ref_data[3]
-	
-	nproc = mpi_comm_size(mpi_comm)
+
+	mpi_comm = MPI_COMM_WORLD
 	
 	try:     local_filter = Tracker["local_filter"]
 	except:  local_filter = False
