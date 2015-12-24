@@ -1260,8 +1260,6 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 		#  phi, theta, psi
 		if initial_theta and initial_phi :
 			ref_angles = even_angles(delta, theta1 = initial_theta, phi1 = initial_phi, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
-			print  "  initial angles ",initial_phi,initial_theta
-
 		else:
 			if initial_theta is None:
 				ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
