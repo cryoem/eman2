@@ -729,7 +729,7 @@ def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 def out_fsc(f,Tracker):
 	print(" ")
 	print("      FSC  after  iteration#%3d"%Tracker["mainiteration"])
-	print("  %4d  %7.1f  %5.3f"%(0,10000.0,f[0]))
+	print("  %4d        %7.2f         %5.3f"%(0,1000.00,f[0]))
 	for i in xrange(1,len(f)):
 		print("  %4d  %7.1f  %5.3f"%(i,Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i),f[i]))
 	print(" ")
@@ -1426,8 +1426,8 @@ def main():
 	Constants["center"]       = 0
 	#Constants["pwreference"]  = options.pwreference
 	Constants["pwsharpening"]  = False  #  apply 1/sigma2 in proj matching
-	Constants["smear"]         = options.smear
-	Constants["shake"]         = True  #options.shake  move params every iteration
+	Constants["smear"]         = False#options.smear
+	Constants["shake"]         = False#True  #options.shake  move params every iteration
 	Constants["restrict_shifts"] = options.restrict_shifts
 	Constants["local_filter"] = options.local_filter
 	Constants["CTF"]          = options.CTF
