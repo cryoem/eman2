@@ -4833,8 +4833,8 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			#=========================================================================
 			# build references
 			# This is silly, but this is how prepare_refrings recognizes they have to be skipped
-			if rangle1 == 0.0 :  rangel1 = None
-			if rangle2 == 0.0 :  rangel1 = None
+			if rangle1 == 0.0 :  rangle1 = None
+			if rangle2 == 0.0 :  rangle2 = None
 			volft, kb = prep_vol(vol)
 			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm, \
 						initial_theta = rangle1, initial_phi = rangle2, phiEqpsi = "Zero")
