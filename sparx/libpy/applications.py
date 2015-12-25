@@ -4904,9 +4904,9 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 					if(an[N_step] == -1):
 						#  In zoom option each projection goes through shift zoom alignment
 						if  zoom: peak, pixer[im] = proj_ali_incore_zoom(tempdata, refrings, numr, \
-														xrng, yrng, step, sym=sym)
+														xrng, yrng, step, finfo = finfo, sym=sym)
 						else:  peak, pixer[im] = proj_ali_incore(tempdata, refrings, numr, \
-												xrng[N_step], yrng[N_step], step[N_step], sym=sym, delta_psi = delta[N_step], rshift = rshift)
+												xrng[N_step], yrng[N_step], step[N_step], finfo = finfo, sym=sym, delta_psi = delta[N_step], rshift = rshift)
 					else:
 						if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(tempdata, refrings, list_of_reference_angles, numr, \
 									xrng, yrng, step, an, finfo = finfo, sym=sym)
