@@ -4826,12 +4826,15 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				log.add("ITERATION #%3d,  inner iteration #%3d"%(total_iter, Iter))
-				log.add("Delta = %5.2f, an = %5.2f, xrange = %5d, yrange = %5d, step = %5.2f   %5.2f  %5.2f  %5.2f\n"%\
+				log.add("Delta = %7.4f, an = %7.4f, xrange = %7.4f, yrange = %7.4f, step = %7.4f   %7.4f  %7.4f  %7.4f\n"%\
 							(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step], rshift, rangle1, rangle2))
 				start_time = time()
 
 			#=========================================================================
 			# build references
+			# This is silly, but this is how prepare_refrings recognizes they have to be skipped
+			if rangle1 == 0.0 :  rangel1 = None
+			if rangle2 == 0.0 :  rangel1 = None
 			volft, kb = prep_vol(vol)
 			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm, \
 						initial_theta = rangle1, initial_phi = rangle2, phiEqpsi = "Zero")
