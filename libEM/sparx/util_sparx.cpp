@@ -18881,6 +18881,9 @@ vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >
 	int lky = int(yrng[0]/step);
 	int rky = int(yrng[1]/step);
 	
+	int circle = max(lkx,max(lky,max(rkx,rky)));
+	circle = circle*circle;
+	
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sxs=0, sys=0;
 	float peak = -1.0E23f;
@@ -18889,34 +18892,38 @@ vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >
 		iy = i * step ;
 		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
-			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-			Normalize_ring( cimage, numr );
+			if( i*i + j*j <= circle ) {
 
-			Frngs(cimage, numr);
-			//  compare with all reference images
-			// for iref in xrange(len(crefim)):
-			for ( iref = 0; iref < (int)crefim_len; iref++) {
-				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr, delta_psi);
-				double qn = retvals["qn"];
-				double qm = retvals["qm"];
-			//printf(" ex within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  %4.1f  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn,qm);
-				if(qn >= peak || qm >= peak) {
-					sxs = -ix;
-					sys = -iy;
-					nref = iref;
-					if (qn >= qm) {
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>(qn);
-						mirror = 0;
-					} else {
-						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>(qm);
-						mirror = 1;
+				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+
+				Normalize_ring( cimage, numr );
+
+				Frngs(cimage, numr);
+				//  compare with all reference images
+				// for iref in xrange(len(crefim)):
+				for ( iref = 0; iref < (int)crefim_len; iref++) {
+					Dict retvals = Crosrng_ms(crefim[iref], cimage, numr, delta_psi);
+					double qn = retvals["qn"];
+					double qm = retvals["qm"];
+				//printf(" ex within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  %4.1f  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn,qm);
+					if(qn >= peak || qm >= peak) {
+						sxs = -ix;
+						sys = -iy;
+						nref = iref;
+						if (qn >= qm) {
+							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>(qn);
+							mirror = 0;
+						} else {
+							ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>(qm);
+							mirror = 1;
+						}
+						//printf(" ex better within loop  %4.1f  %4.1f   %4.1f  %4.1f  \n",sxs,sys,ang,peak);
 					}
-					//printf(" ex better within loop  %4.1f  %4.1f   %4.1f  %4.1f  \n",sxs,sys,ang,peak);
-				}
-			}  delete cimage; cimage = 0;
+				}  delete cimage; cimage = 0;
+			}
 		}	
 	}
 
@@ -19720,6 +19727,11 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	int rky = int(yrng[1]/step);
 	vector< vector<EMData*> > cimages( lky+rky+1, vector<EMData*>(lkx+rkx+1) );
 
+	
+	int circle = max(lkx,max(lky,max(rkx,rky)));
+	circle = circle*circle;
+
+
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sxs=0, sys=0;
 	float peak = -1.0E23f;
@@ -19754,10 +19766,13 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 					iy = i * step ;
 					for (int j = -lkx; j <= rkx; j++) {
 						ix = j*step ;
-						EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-						Normalize_ring( cimage, numr );
-						Frngs(cimage, numr);
-						cimages[i+lky][j+lkx] = cimage;
+
+						if( i*i + j*j <= circle ) {
+							EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+							Normalize_ring( cimage, numr );
+							Frngs(cimage, numr);
+							cimages[i+lky][j+lkx] = cimage;
+						}
 					}
 				}
 			}
@@ -19766,22 +19781,26 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 				iy = i * step ;
 				for (int j = -lkx; j <= rkx; j++) {
 					ix = j*step;
-					//  compare with all reference images that are on a new list
-					int compmirror = (iu/crefim_len)%2;
-					Dict retvals = Crosrng_e(crefim[iref], cimages[i+lky][j+lkx], numr, compmirror, delta_psi);
-					double qn = retvals["qn"];
-		//printf(" lo within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn);
+
+					if( i*i + j*j <= circle ) {
+
+						//  compare with all reference images that are on a new list
+						int compmirror = (iu/crefim_len)%2;
+						Dict retvals = Crosrng_e(crefim[iref], cimages[i+lky][j+lkx], numr, compmirror, delta_psi);
+						double qn = retvals["qn"];
+			//printf(" lo within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn);
 			
-					if(qn >= peak) {
-						sxs = -ix;
-						sys = -iy;
-						nref = iref;
-						mirror = compmirror;
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qn );
-					//printf(" lo better within loop  %4.1f  %4.1f   %4.1f  %4.1f  \n",sxs,sys,ang,peak);
+						if(qn >= peak) {
+							sxs = -ix;
+							sys = -iy;
+							nref = iref;
+							mirror = compmirror;
+							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>( qn );
+						//printf(" lo better within loop  %4.1f  %4.1f   %4.1f  %4.1f  \n",sxs,sys,ang,peak);
+						}
+						//delete cimage; cimage = 0;
 					}
-					//delete cimage; cimage = 0;
 				}
 			}
 		}
