@@ -731,7 +731,7 @@ def out_fsc(f,Tracker):
 	print("      FSC  after  iteration#%3d"%Tracker["mainiteration"])
 	print("  %4d        %7.2f         %5.3f"%(0,1000.00,f[0]))
 	for i in xrange(1,len(f)):
-		print("  %4d  %7.1f  %5.3f"%(i,Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i),f[i]))
+		print("  %4d        %7.2f         %5.3f"%(i,Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i),f[i]))
 	print(" ")
 
 '''
