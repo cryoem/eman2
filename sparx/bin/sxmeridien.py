@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #
-#  12/10/2015
-#  Use spherical/cosine mask to assess resolution.
-#  New metamove protocol
+#  12/26/2015
+#  NOT Use spherical/cosine mask to assess resolution.
+#  Pawel's metamove protocol
 #
 
 
@@ -29,7 +29,127 @@ cushion = 6
 global filter_by_fsc
 filter_by_fsc = True
 
-def AI( Tracker, HISTORY, chout = False):
+
+def AI( Tracker, fff, anger, shifter, HISTORY, chout = False):
+	#  chout - if true, one can print, call the program with, chout = (myid == main_node)
+	#  fff (fsc), anger, shifter are coming from the previous iteration
+	#  
+	#  Possibilities we will consider:
+	#    1.  resolution improved: keep going with current settings.
+	#    2.  resolution stalled and no pwadjust: turn on pwadjust
+	#    3.  resolution stalled and pwadjust: move to the next phase
+	#    4.  resolution decreased: back off and move to the next phase
+	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+	from sys import exit
+	keepgoing = 1
+
+	if(Tracker["mainiteration"] == 1):
+		Tracker["state"] == "INITIAL"
+
+		inc = Tracker["currentres"]
+		Tracker["delpreviousmax"] = False
+		if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
+		else:							inc += Tracker["nxstep"]
+		Tracker["nxinit"] = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
+		reset_data = True
+		#Tracker["lowpass"] = [1.0]*Tracker["constants"]["nnxo"]
+
+
+		Tracker["local"]       = False
+		if not Tracker["applyctf"] :  reset_data  = True
+		Tracker["applyctf"]    = True
+		Tracker["constants"]["best"] = Tracker["mainiteration"]
+	else:
+		if( Tracker["mainiteration"] == 2 ):  Tracker["state"] = "EXHAUSTIVE"
+
+		if  True :  #  This will be a mechanism to do things every so often
+			l05 = -1
+			l01 = -1
+			for i in xrange(len(fff)):
+				if(fff[i] < 0.5):
+					l05 = i-1
+					break
+			for i in xrange(len(fff)):
+				if(fff[i] < 0.143):
+					l01 = i-1
+					break
+			l01 = max(l01,-1)
+			maxres = max(l05, Tracker["constants"]["inires"])  # Cannot be lower than initial resolution
+			if( Tracker["mainiteration"] == 1 ):  Tracker["currentres"] = maxres
+			Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
+			Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2] > 0.2
+			if( maxres > Tracker["currentres"]):
+				Tracker["constants"]["best"] = Tracker["mainiteration"]
+				Tracker["no_improvement"] = 0
+				Tracker["no_params_changes"] = 0
+				"""		
+				"  conditions to Terminate HERE!
+							if (old_rottilt_step < 0.75 * acc_rot)
+					{
+						// don't change angular sampling, as it is already fine enough
+						has_fine_enough_angular_sampling = true;
+				"""
+			else:
+				if( Tracker["mainiteration"] > 1 ):	Tracker["no_improvement"] += 1
+			#  figure changes in params
+			shifter *= 0.71
+			if( 1.03*anger >= Tracker["anger"] and 1.03*shifter >= Tracker["shifter"] ):	Tracker["no_params_changes"] += 1
+			else:																			Tracker["no_params_changes"]  = 0
+
+			if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
+			if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
+
+			Tracker["currentres"] = maxres
+
+
+			inc = Tracker["currentres"]
+			Tracker["delpreviousmax"] = False
+			if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
+			else:							inc += Tracker["nxstep"]
+			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
+
+			if chout : print("  IN AI incoming current res, adjusted current, estimated image size",Tracker["currentres"],inc,tmp)
+
+
+			if( tmp == Tracker["nxinit"] ):  reset_data = False
+			else:
+				reset_data = True
+				Tracker["nxinit"] = tmp
+
+
+			#  decide angular step and translations
+			if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"])):
+				Tracker["delta"] = "%f"%(float(Tracker["delta"])/2.0)
+				range, step = compute_search_params(Tracker["shifter"], float(Tracker["xr"]))
+				Tracker["xr"] = "%f"%range
+				Tracker["ts"] = "%f"%step
+				if chout : print("  IN AI there were no changes, adjust stuff  ",Tracker["delta"],Tracker["xr"],Tracker["ts"])
+				Tracker["no_improvement"] = 0
+				Tracker["no_params_changes"] = 0
+				Tracker["anger"]   = 1.0e23
+				Tracker["shifter"] = 1.0e23
+
+			if( (Tracker["anger"] < 10.0/int(Tracker["constants"]["sym"][1:])) and (Tracker["state"] == "EXHAUSTIVE") ):
+				Tracker["state"] = "RESTRICTED"
+				sh = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+				rd = int(Tracker["constants"]["radius"] * sh +0.5)
+				rl = float(Tracker["currentres"])/float(Tracker["nxinit"])
+				dd = degrees(atan(0.5/rl/rd))
+				Tracker["an"]  = "%f"%(max(Tracker["anger"]*1.25,3*dd))
+		else:
+			l05 = -1
+			for i in xrange(len(fff)):
+				if(fff[i] < 0.5):
+					l05 = i-1
+					break
+			#  We may want to keep track of resolution
+			
+
+
+	return keepgoing, reset_data, Tracker
+
+
+def AI_relion( Tracker, HISTORY, chout = False):
 	#  chout - if true, one can print, call the program with, chout = (myid == main_node)
 	#  
 	#  Possibilities we will consider:
@@ -1383,7 +1503,7 @@ def main():
 	parser.add_option("--inires",		     type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
 	#parser.add_option("--pwreference",	     type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",		     type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
-	parser.add_option("--function",          type="string", default="do_volume_mrk04",  help="name of the reference preparation function (default do_volume_mrk04)")
+	parser.add_option("--function",          type="string", default="do_volume_mrk04",  help="name of the reference preparation function (default do_volume_mrk03)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 
@@ -1480,7 +1600,7 @@ def main():
 	Tracker["no_improvement"] = 0
 	Tracker["no_params_changes"]      = 0
 	Tracker["large_at_Nyquist"] = False
-	Tracker["lowpass"]        = ""
+	Tracker["lowpass"]        = []
 	Tracker["falloff"]        = 0.2
 	Tracker["fuse_freq"]      = 50  # Now in A, convert to absolute before using
 	Tracker["delpreviousmax"] = False
@@ -1715,7 +1835,9 @@ def main():
 
 	# ------------------------------------------------------------------------------------
 	#  MAIN ITERATION
-
+	anger   = 1.e9
+	shifter = 1.e9
+	fff     = None
 	mainiteration = 0
 	keepgoing = 1
 
@@ -1824,9 +1946,9 @@ def main():
 
 
 		# Update HISTORY
-		HISTORY.append(Tracker.copy())
-		if( Tracker["constants"]["restrict_shifts"] == -1 ):  keepgoing, reset_data, Tracker = AI( Tracker, HISTORY, myid == main_node )
+		if( Tracker["constants"]["restrict_shifts"] == -1 ):  keepgoing, reset_data, Tracker = AI( Tracker, fff, anger, shifter, HISTORY, myid == main_node )
 		else:  keepgoing, reset_data, Tracker = AI_restrict_shifts( Tracker, HISTORY )
+		HISTORY.append(Tracker.copy())
 
 		if myid == main_node:
 			print("\n\n\n\n")
@@ -1916,6 +2038,7 @@ def main():
 			vol0,vol1,fff = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = projdata, bckgdata = Tracker["bckgnoise"],\
 										symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
+				Tracker["lowpass"] = [1.0] + [ max((fff[i-1]+fff[i]+fff[i+1])/3.0,0.0) for i in xrange(1,len(fff)-1) ] + [0.0]
 				ref_data = [fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]
 				user_func = Tracker["constants"]["user_func"]
 				user_func(ref_data).write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
@@ -1935,7 +2058,7 @@ def main():
 		else:  i = 0
 		i   = bcast_number_to_all(i, source_node = main_node)
 		if(myid != main_node):  fff = [0.0]*i
-	
+		#  This fsc is carried to the next iteration 	
 		fff = mpi_bcast(fff, i, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
@@ -1960,46 +2083,10 @@ def main():
 			print(line,"Average displacements for angular directions  %6.2f  and shifts %6.1f"%(anger, shifter) )
 			#print(line,"Maximum displacements for angular directions  %6.2f  and shifts %6.1f"%(anger, shifter) )
 
+		#these two are carried to the next iteration
 		anger   = bcast_number_to_all(anger,   source_node = main_node)
 		shifter = bcast_number_to_all(shifter, source_node = main_node)
 
-		l05 = -1
-		l01 = -1
-		for i in xrange(len(fff)):
-			if(fff[i] < 0.5):
-				l05 = i-1
-				break
-		for i in xrange(len(fff)):
-			if(fff[i] < 0.143):
-				l01 = i-1
-				break
-		l01 = max(l01,-1)
-		maxres = max(l05, Tracker["constants"]["inires"])  # Cannot be lower than initial resolution
-		if( Tracker["mainiteration"] == 1 ):  Tracker["currentres"] = maxres
-		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2] > 0.2
-		if( maxres > Tracker["currentres"]):
-			Tracker["constants"]["best"] = Tracker["mainiteration"]
-			Tracker["no_improvement"] = 0
-			Tracker["no_params_changes"] = 0
-			"""		
-			"  conditions to Terminate HERE!
-						if (old_rottilt_step < 0.75 * acc_rot)
-				{
-					// don't change angular sampling, as it is already fine enough
-					has_fine_enough_angular_sampling = true;
-			"""
-		else:
-			if( Tracker["mainiteration"] > 1 ):	Tracker["no_improvement"] += 1
-		#  figure changes in params
-		shifter *= 0.71
-		if( 1.03*anger >= Tracker["anger"] and 1.03*shifter >= Tracker["shifter"] ):	Tracker["no_params_changes"] += 1
-		else:																			Tracker["no_params_changes"] = 0
-
-		if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
-		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
-
-		Tracker["currentres"] = maxres
 
 		#doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"vol0.hdf"), keepchecking, myid, main_node)
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
@@ -2156,8 +2243,9 @@ def main():
 		if( keepgoing == 1 ):
 			Tracker["previousoutputdir"] = Tracker["directory"]
 			if(myid == main_node):
-				print("  Current image dimension l05, l01, maxres, :", \
-				Tracker["nxinit"], l05, l01, Tracker["nxstep"], maxres, Tracker["large_at_Nyquist"], Tracker["no_improvement"],  Tracker["no_params_changes"], anger, shifter)
+				print("  MOVING  ON --------------------------------------------------------------------")
+				#print("  Current image dimension l05, l01, maxres, :", \
+				#Tracker["nxinit"], l05, l01, Tracker["nxstep"], maxres, Tracker["large_at_Nyquist"], Tracker["no_improvement"],  Tracker["no_params_changes"], anger, shifter)
 		else:
 			if(myid == main_node):
 				print("  Terminating  , the best solution is in the directory  %s"%Tracker["constants"]["best"])
