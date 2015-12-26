@@ -1229,7 +1229,6 @@ def do_volume_mrk03(ref_data):
 			# vol.write_image('toto%03d.hdf'%iter)
 		else:
 			vol = model_blank(nx,nx,nx)
-	"""
 	else:
 		if myid == 0:
 			#from utilities import write_text_file
@@ -1241,7 +1240,6 @@ def do_volume_mrk03(ref_data):
 			Util.mul_img(vol, mask3D)
 			del mask3D
 			# vol.write_image('toto%03d.hdf'%iter)
-	"""
 	# broadcast volume
 	if( nproc > 1 ):  bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
