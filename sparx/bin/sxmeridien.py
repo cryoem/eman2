@@ -101,7 +101,6 @@ def AI( Tracker, fff, anger, shifter, HISTORY, chout = False):
 
 			Tracker["currentres"] = maxres
 
-
 			inc = Tracker["currentres"]
 			Tracker["delpreviousmax"] = False
 			if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
@@ -1953,9 +1952,10 @@ def main():
 		if myid == main_node:
 			print("\n\n\n\n")
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION  #%2d   %s  nxinit, currentres, resolution  %d   %d  %f"%\
+			print(line,"MAIN ITERATION  #%2d   %s  nxinit: %3d,   currentres: %3d, resolution: %5.2f, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 				(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"],  Tracker["currentres"], \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])))
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"], \
+				Tracker["delta"], float(Tracker["xr"]), float(Tracker["ts"])  )))
 
 		#print("RACING  A ",myid)
 		outvol = [os.path.join(Tracker["previousoutputdir"],"vol%01d.hdf"%procid) for procid in xrange(2)]
@@ -1987,7 +1987,7 @@ def main():
 				# METAMOVE
 				Tracker = metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
-		#  RESOLUTION  ASSESSMENT  <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+		#  RECONSTRUCTION AND RESOLUTION  ASSESSMENT  <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"params.txt"), keepchecking, myid, main_node)
 		if doit:
@@ -2036,7 +2036,7 @@ def main():
 			#Tracker["bckgnoise"][0] = get_im(os.path.join(Constants["masterdir"],"bckgnoise.hdf"))
 			#Tracker["bckgnoise"][1] = read_text_file(os.path.join(Constants["masterdir"],"defgroup_stamp.txt"))
 			vol0,vol1,fff = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = projdata, bckgdata = Tracker["bckgnoise"],\
-										symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
+										npad = 1, symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
 				Tracker["lowpass"] = [1.0] + [ max((fff[i-1]+fff[i]+fff[i+1])/3.0,0.0) for i in xrange(1,len(fff)-1) ] + [0.0]
 				ref_data = [fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]
