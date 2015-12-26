@@ -1230,7 +1230,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 		"""
 	mpi_barrier(mpi_comm)
 	if myid == 0:
-		return ovol[0], ovol[1], fourier_shell_correlation
+		return results_list[0], results_list[1], fourier_shell_correlation
 	else:
 		return None, None, None
 
