@@ -2041,12 +2041,18 @@ def main():
 				Tracker["lowpass"] = [1.0] + [ max((fff[i-1]+fff[i]+fff[i+1])/3.0,0.0) for i in xrange(1,len(fff)-1) ] + [0.0]
 				ref_data = [fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]
 				user_func = Tracker["constants"]["user_func"]
-				user_func(ref_data).write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
+				vol0, nvol = user_func(ref_data)
+				vol0.write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
 				del vol0
+				nvol.write_image(os.path.join(Tracker["directory"] ,"nvol0.hdf"))
+				del nvol
 				ref_data = [fpol(vol1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]
-				user_func = Tracker["constants"]["user_func"]
-				user_func(ref_data).write_image(os.path.join(Tracker["directory"] ,"vol1.hdf"))
+				vol1,nvol = user_func(ref_data)
+				vol1.write_image(os.path.join(Tracker["directory"] ,"vol1.hdf"))
 				del vol1
+				nvol.write_image(os.path.join(Tracker["directory"] ,"nvol1.hdf"))
+				del nvol
+				ref_data = []
 				if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
 					for i in xrange(len(fff),Tracker["constants"]["nnxo"]/2+1):  fff.append(0.0)
 				out_fsc(fff,Tracker)
