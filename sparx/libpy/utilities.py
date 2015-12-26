@@ -1996,6 +1996,20 @@ def rotate_about_center(alpha, cx, cy):
 	#   return compalpha, comptrans.at(0),comptrans.at(1), compscale
 	return cmp2[0], cmp2[1], cmp2[2], cmp2[3]
 
+def rotate_shift_params(paramsin, transf):
+	# moved from sxprocess.py
+	from EMAN2 import Vec2f
+	t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2],"tx":transf[3],"ty":transf[4],"tz":transf[5],"mirror":0,"scale":1.0})
+	t = t.inverse()
+	cpar = []
+	for params in paramsin:
+		d = Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
+		d.set_trans(Vec2f(-params[3], -params[4]))
+		c = d*t
+		u = c.get_params("spider")
+		cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
+	return cpar
+
 def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.):
 	"""
 		linearly interpolate a 1D power spectrum to required length with required Pixel size
@@ -3229,6 +3243,7 @@ def set_params_proj(ima, p, xform = "xform.projection"):
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
 	t.set_trans(Vec2f(-p[3], -p[4]))
 	ima.set_attr(xform, t)
+
 
 def get_ctf(ima):
 	"""
