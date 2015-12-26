@@ -1234,10 +1234,14 @@ def do_volume_mrk03(ref_data):
 			vol = threshold(vol)
 			# vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
-	if( nproc > 1 ):  bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
-	#  Deal with mask 3D and MPI
-	#=========================================================================
-	return Util.muln_img(vol, mask3D), vol
+	if( nproc > 1 ):
+		bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+		#  Deal with mask 3D and MPI
+		#=========================================================================
+		return  vol, None
+	else:
+		mvol = Util.muln_img(vol, mask3D)
+		return mvol, vol
 
 
 def do_volume_mrk04(ref_data):
