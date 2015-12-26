@@ -1178,11 +1178,6 @@ def do_volume_mrk03(ref_data):
 				nxm = mask3D.get_xsize()
 				assert(nx == nxm)
 
-		stat = Util.infomask(vol, mask3D, False)
-		vol -= stat[0]
-		Util.mul_scalar(vol, 1.0/stat[1])
-		vol = threshold(vol)
-		Util.mul_img(vol, mask3D)
 		if not local_filter:
 			if( type(Tracker["lowpass"]) == types.ListType ):
 				vol = filt_table(vol, Tracker["lowpass"])
@@ -1237,13 +1232,12 @@ def do_volume_mrk03(ref_data):
 			vol -= stat[0]
 			Util.mul_scalar(vol, 1.0/stat[1])
 			vol = threshold(vol)
-			Util.mul_img(vol, mask3D)
-			del mask3D
 			# vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
 	if( nproc > 1 ):  bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	#  Deal with mask 3D and MPI
 	#=========================================================================
-	return vol
+	return Util.muln_img(vol, mask3D), vol
 
 
 def do_volume_mrk04(ref_data):
