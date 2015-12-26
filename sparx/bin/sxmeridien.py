@@ -1502,7 +1502,7 @@ def main():
 	parser.add_option("--inires",		     type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
 	#parser.add_option("--pwreference",	     type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",		     type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
-	parser.add_option("--function",          type="string", default="do_volume_mrk04",  help="name of the reference preparation function (default do_volume_mrk03)")
+	parser.add_option("--function",          type="string", default="do_volume_mrk03",  help="name of the reference preparation function (default do_volume_mrk03)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 
@@ -1954,8 +1954,8 @@ def main():
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(line,"MAIN ITERATION  #%2d   %s  nxinit: %3d,   currentres: %3d, resolution: %5.2f, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 				(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"],  Tracker["currentres"], \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"], \
-				Tracker["delta"], float(Tracker["xr"]), float(Tracker["ts"])  )))
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+				float(Tracker["delta"]), float(Tracker["xr"]), float(Tracker["ts"])  ))
 
 		#print("RACING  A ",myid)
 		outvol = [os.path.join(Tracker["previousoutputdir"],"vol%01d.hdf"%procid) for procid in xrange(2)]
