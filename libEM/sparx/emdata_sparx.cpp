@@ -1879,6 +1879,107 @@ void EMData::onelinenn_ctfw(int j, int n, int n2,
 	}
 }
 
+//  Helper functions for method nn4_ctfw
+void EMData::onelinetr_ctfw(int j, int n, int n2,
+		          EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight) {
+//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+//for (int i = 0; i <= 12; i++)  cout <<"  "<<i<<"  "<<(*bckgnoise)(i)<<endl;
+	int nnd4 = n*n/4 - 1;
+	int jp = (j >= 0) ? j+1 : n+j+1;
+	//for (int i = 0; i<bckgnoise->get_xsize(); i++) cout <<"  "<<i<<"  "<< (*bckgnoise)(i)<<endl;
+	// loop over x
+	for (int i = 0; i <= n2; i++) {
+		int r2 = i*i + j*j;
+		if ( (r2 < nnd4) && !((0 == i) && (j < 0)) ) {
+			float ctf = ctf_store::get_ctf( r2, i, j ); //This is in 2D projection plane
+			float xnew = i*tf[0][0] + j*tf[1][0];
+			float ynew = i*tf[0][1] + j*tf[1][1];
+			float znew = i*tf[0][2] + j*tf[1][2];
+			std::complex<float> btq;
+			if (xnew < 0.) {
+				xnew = -xnew;
+				ynew = -ynew;
+				znew = -znew;
+				btq = conj(bi->cmplx(i,jp));
+			} else  btq = bi->cmplx(i,jp);
+
+            // linear interpolation of 1D bckgnoise
+            float rr = std::sqrt(float(r2));
+            int   ir = int(rr);
+            float df = rr - float(ir);
+            float mult = (1.0f - df)*(*bckgnoise)(ir) + df*(*bckgnoise)(ir+1);
+
+			float c2val = (*c2)(i,jp);
+			std::complex<float> numerator = btq * mult * weight;
+			float denominator = c2val * mult * weight;
+
+
+			int ixn = int(xnew + n) - n;
+			int iyn = int(ynew + n) - n;
+			int izn = int(znew + n) - n;
+
+			float dx = xnew - ixn;
+			float dy = ynew - iyn;
+			float dz = znew - izn;
+			float qdx = 1.0f - dx;
+			float qdy = 1.0f - dy;
+			float qdz = 1.0f - dz;
+
+			float qq000 = qdz * qdy * qdx;
+			float qq001 = qdz * qdy *  dx;
+			float qq010 = qdz *  dy * qdx;
+			float qq011 = qdz *  dy *  dx;
+			float qq100 =  dz * qdy * qdx;
+			float qq101 =  dz * qdy *  dx;
+			float qq110 =  dz *  dy * qdx;
+			float qq111 =  dz *  dy *  dx;
+
+
+
+			int iza, iya;
+			if (iyn >= 0) iya = iyn + 1;
+			else          iya = n + iyn + 1;
+
+			if (izn >= 0)  iza = izn + 1;
+			else           iza = n + izn + 1;
+
+			int ix1 = ixn +1;
+
+			int iy1 = iyn +1;
+			if (iy1 >= 0) iy1 = iy1 + 1;
+			else          iy1 = n + iy1 + 1;
+
+			int iz1 = izn +1;
+			if (iz1 >= 0) iz1 = iz1 + 1;
+			else          iz1 = n + iz1 + 1;
+
+            //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
+			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
+			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
+
+			// numerator
+			cmplx(ixn, iya, iza) += qq000 * numerator;
+			cmplx(ixn, iya, iz1) += qq001 * numerator;
+			cmplx(ixn, iy1, iza) += qq010 * numerator;
+			cmplx(ixn, iy1, iz1) += qq011 * numerator;
+			cmplx(ix1, iya, iza) += qq100 * numerator;
+			cmplx(ix1, iya, iz1) += qq101 * numerator;
+			cmplx(ix1, iy1, iza) += qq110 * numerator;
+			cmplx(ix1, iy1, iz1) += qq111 * numerator;
+			// denominator
+			(*w)(ixn, iya, iza) += qq000 * denominator;
+			(*w)(ixn, iya, iz1) += qq001 * denominator;
+			(*w)(ixn, iy1, iza) += qq010 * denominator;
+			(*w)(ixn, iy1, iz1) += qq011 * denominator;
+			(*w)(ix1, iya, iza) += qq100 * denominator;
+			(*w)(ix1, iya, iz1) += qq101 * denominator;
+			(*w)(ix1, iy1, iza) += qq110 * denominator;
+			(*w)(ix1, iy1, iz1) += qq111 * denominator;
+
+		}
+	}
+}
+
 void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 		          EMData* w, EMData* bi, const Transform& tf, float mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 

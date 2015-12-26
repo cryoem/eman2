@@ -239,6 +239,19 @@ void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform&
 // void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* bckgnoise, const Transform& tf, float weight);
 void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight);
 
+/** Helper function for method nn4_ctfw.
+ *
+ * @param j y fourier index (frequency)
+ * @param n number of real elements.
+ * @param n2 Number of complex elements.
+ * @param w Normalization matrix [0:n2][1:n][1:n]
+ * @param bi Fourier transform matrix [0:n2][1:n]
+ * @param tf Transform reference
+ * @param mult
+ */
+// void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* bckgnoise, const Transform& tf, float weight);
+void onelinetr_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight);
+
 
 /** Nearest Neighbor interpolation.
  *  Modifies the current object.
