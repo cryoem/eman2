@@ -74,7 +74,7 @@ LOGFILE_HANDLE = 0
 IS_LOGFILE_OPEN = False
 '''   SYSTEM FUNCTIONS - please do not change the text below '''
 global SPARXVERSION
-SPARXVERSION = "SPARX v3.0" + ' (CVS' + CVSDATESTAMP[6:-2] +')'
+SPARXVERSION = "SPARX v4.0" + ' (git' + CVSDATESTAMP[6:-2] +')'
 
 global SPARX_DOCUMENTATION_WEBSITE
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
