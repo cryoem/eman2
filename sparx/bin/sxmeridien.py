@@ -2038,15 +2038,17 @@ def main():
 			vol0,vol1,fff = recons3d_4nnf_MPI(myid = myid, list_of_prjlist = projdata, bckgdata = Tracker["bckgnoise"],\
 										npad = 1, symmetry = Tracker["constants"]["sym"], smearstep = Tracker["smearstep"])
 			if( myid == main_node ):
-				Tracker["lowpass"] = [1.0] + [ max((fff[i-1]+fff[i]+fff[i+1])/3.0,0.0) for i in xrange(1,len(fff)-1) ] + [0.0]
-				ref_data = [fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]
 				user_func = Tracker["constants"]["user_func"]
+				Tracker["lowpass"] = [1.0] + [ max((fff[i-1]+fff[i]+fff[i+1])/3.0,0.0) for i in xrange(1,len(fff)-1) ] + [0.0]
+				vol0 = fpol(vol0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+				ref_data = [vol0, Tracker, main_node, 1]
 				vol0, nvol = user_func(ref_data)
 				vol0.write_image(os.path.join(Tracker["directory"] ,"vol0.hdf"))
 				del vol0
 				nvol.write_image(os.path.join(Tracker["directory"] ,"nvol0.hdf"))
 				del nvol
-				ref_data = [fpol(vol1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]), Tracker, main_node, 1]
+				vol1 = fpol(vol1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+				ref_data = [vol1, Tracker, main_node, 1]
 				vol1,nvol = user_func(ref_data)
 				vol1.write_image(os.path.join(Tracker["directory"] ,"vol1.hdf"))
 				del vol1
