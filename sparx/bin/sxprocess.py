@@ -42,21 +42,11 @@ import  os
 
 
 
+"""
+ rotate_shift_params(paramsin, transf) has been moved to utilities
+"""
 
-def rotate_shift_params(paramsin, transf):
-	from EMAN2 import Vec2f
-	t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2],"tx":transf[3],"ty":transf[4],"tz":transf[5],"mirror":0,"scale":1.0})
-	t = t.inverse()
-	cpar = []
-	for params in paramsin:
-		d = Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
-		d.set_trans(Vec2f(-params[3], -params[4]))
-		c = d*t
-		u = c.get_params("spider")
-		cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
-	return cpar
-
-
+from utilities import rotate_shift_params
 
 """
 	Traveling salesman problem solved using Simulated Annealing.

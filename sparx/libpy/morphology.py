@@ -1480,7 +1480,7 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 	x = [0.0]*nr
 	q = min(pws)
 	for i in range(1,nr):
-		pws_log[i] = log(pws[i]/q)
+		pws_log[i] = log(pws[i])  #/q)
 		x[i] = (float(i)/(2*nr)/pixel_size)**2
 	idx_freq_min = 1
 	for i in range(1,nr):
