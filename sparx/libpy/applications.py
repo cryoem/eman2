@@ -4775,6 +4775,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	#  Apply initfl first, meaning true fl has to be preserved
 	#fl = Tracker["lowpass"]
 	#Tracker["lowpass"] = Tracker["initialfl"]
+	"""
 	user_func = Tracker["constants"]["user_func"]
 	if ref_vol:
 		#vol = do_volume_mrk01(ref_vol, Tracker, 0, mpi_comm)
@@ -4784,9 +4785,10 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 		#vol = do_volume_mrk01(data, Tracker, 0, mpi_comm)
 		ref_data = [data, Tracker, 0, mpi_comm]
 		vol = user_func(ref_data)
+	"""
 	#  Restore desired fl
 	#Tracker["lowpass"] = fl
-
+	vol = ref_vol
 	# log
 	if myid == main_node:
 		log.add("Setting of reference 3D reconstruction time = %10.1f\n"%(time()-start_time))
