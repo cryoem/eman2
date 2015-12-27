@@ -4772,9 +4772,6 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 		start_time = time()
 
 	#  Read	template volume if provided or reconstruct it
-	#  Apply initfl first, meaning true fl has to be preserved
-	#fl = Tracker["lowpass"]
-	#Tracker["lowpass"] = Tracker["initialfl"]
 	"""
 	user_func = Tracker["constants"]["user_func"]
 	if ref_vol:
@@ -4786,8 +4783,6 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 		ref_data = [data, Tracker, 0, mpi_comm]
 		vol = user_func(ref_data)
 	"""
-	#  Restore desired fl
-	#Tracker["lowpass"] = fl
 	vol = ref_vol
 	# log
 	if myid == main_node:
@@ -5107,20 +5102,6 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	if myid == main_node:
 		log.add("Finish sali3d_base, nsoft = %1d"%nsoft)
 	return params
-
-
-# MUST RETURN
-# import sys
-# sys.path.insert(0, "~/EMAN2/bin")
-# sys.path.insert(0, "~/EMAN2/lib")
-# print 
-# print sys.path
-# print
-# import development
-# reload(development)
-# from development import sali3d_base_h_01
-# 
-# sali3d_base = sali3d_base_h_01
 
 
 def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, chunk = -1.0, debug = False ):
