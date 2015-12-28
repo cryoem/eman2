@@ -18906,7 +18906,7 @@ vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >
 					Dict retvals = Crosrng_ms(crefim[iref], cimage, numr, delta_psi);
 					double qn = retvals["qn"];
 					double qm = retvals["qm"];
-				//printf(" ex within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  %4.1f  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn,qm);
+				//printf(" ex within loop  %3d  %3d  %3d  %3d     %3d  %7.4f  %3d  %7.4f  %7.1f  %7.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn,qm);
 					if(qn >= peak || qm >= peak) {
 						sxs = -ix;
 						sys = -iy;
