@@ -1914,13 +1914,13 @@ void EMData::onelinetr_ctfw(int j, int n, int n2,
 			float denominator = c2val * mult * weight;
 
 
-			int ixn = int(xnew + n) - n;
-			int iyn = int(ynew + n) - n;
-			int izn = int(znew + n) - n;
+			int ixn = int(xnew + n);
+			int iyn = int(ynew + n);
+			int izn = int(znew + n);
 
-			float dx = xnew - ixn;
-			float dy = ynew - iyn;
-			float dz = znew - izn;
+			float dx = xnew + n - ixn;
+			float dy = ynew + n - iyn;
+			float dz = znew + n - izn;
 			float qdx = 1.0f - dx;
 			float qdy = 1.0f - dy;
 			float qdz = 1.0f - dz;
@@ -1934,6 +1934,9 @@ void EMData::onelinetr_ctfw(int j, int n, int n2,
 			float qq110 =  dz *  dy * qdx;
 			float qq111 =  dz *  dy *  dx;
 
+			ixn -= n;
+			iyn -= n;
+			izn -= n;
 
 
 			int iza, iya;
