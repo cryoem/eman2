@@ -1882,7 +1882,7 @@ void EMData::onelinenn_ctfw(int j, int n, int n2,
 //  Helper functions for method nn4_ctfw
 void EMData::onelinetr_ctfw(int j, int n, int n2,
 		          EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight) {
-//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+//std::cout<<"   onelinetr_ctfw  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 //for (int i = 0; i <= 12; i++)  cout <<"  "<<i<<"  "<<(*bckgnoise)(i)<<endl;
 	int nnd4 = n*n/4 - 1;
 	int jp = (j >= 0) ? j+1 : n+j+1;
@@ -1925,14 +1925,14 @@ void EMData::onelinetr_ctfw(int j, int n, int n2,
 			float qdy = 1.0f - dy;
 			float qdz = 1.0f - dz;
 
-			float qq000 = qdz * qdy * qdx;
-			float qq001 = qdz * qdy *  dx;
-			float qq010 = qdz *  dy * qdx;
-			float qq011 = qdz *  dy *  dx;
-			float qq100 =  dz * qdy * qdx;
-			float qq101 =  dz * qdy *  dx;
-			float qq110 =  dz *  dy * qdx;
-			float qq111 =  dz *  dy *  dx;
+			float qq000 = qdx * qdy * qdz;
+			float qq010 = qdx *  dy * qdz;
+			float qq100 =  dx * qdy * qdz;
+			float qq110 =  dx *  dy * qdz;
+			float qq001 = qdx * qdy *  dz;
+			float qq011 = qdx *  dy *  dz;
+			float qq101 =  dx * qdy *  dz;
+			float qq111 =  dx *  dy *  dz;
 
 			ixn -= n;
 			iyn -= n;
@@ -1962,21 +1962,21 @@ void EMData::onelinetr_ctfw(int j, int n, int n2,
 
 			// numerator
 			cmplx(ixn, iya, iza) += qq000 * numerator;
-			cmplx(ixn, iya, iz1) += qq001 * numerator;
 			cmplx(ixn, iy1, iza) += qq010 * numerator;
-			cmplx(ixn, iy1, iz1) += qq011 * numerator;
 			cmplx(ix1, iya, iza) += qq100 * numerator;
-			cmplx(ix1, iya, iz1) += qq101 * numerator;
 			cmplx(ix1, iy1, iza) += qq110 * numerator;
+			cmplx(ixn, iya, iz1) += qq001 * numerator;
+			cmplx(ixn, iy1, iz1) += qq011 * numerator;
+			cmplx(ix1, iya, iz1) += qq101 * numerator;
 			cmplx(ix1, iy1, iz1) += qq111 * numerator;
 			// denominator
 			(*w)(ixn, iya, iza) += qq000 * denominator;
-			(*w)(ixn, iya, iz1) += qq001 * denominator;
 			(*w)(ixn, iy1, iza) += qq010 * denominator;
-			(*w)(ixn, iy1, iz1) += qq011 * denominator;
-			(*w)(ix1, iya, iza) += qq100 * denominator;
-			(*w)(ix1, iya, iz1) += qq101 * denominator;
 			(*w)(ix1, iy1, iza) += qq110 * denominator;
+			(*w)(ix1, iya, iza) += qq100 * denominator;
+			(*w)(ixn, iya, iz1) += qq001 * denominator;
+			(*w)(ixn, iy1, iz1) += qq011 * denominator;
+			(*w)(ix1, iya, iz1) += qq101 * denominator;
 			(*w)(ix1, iy1, iz1) += qq111 * denominator;
 
 		}
@@ -2113,7 +2113,7 @@ void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* bckgnoise
 	ctf2d2->set_array_offsets(0,1);
 
 	// loop over frequencies in y
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, ctf2d2, bckgnoise, tf, weight);
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinetr_ctfw(iy, ny, nxc, w, myfft, ctf2d2, bckgnoise, tf, weight);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	ctf2d2->set_array_offsets(ctf2d2_saved_offsets);

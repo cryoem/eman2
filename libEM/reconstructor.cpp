@@ -2348,10 +2348,10 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, f
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 
-void circumf( EMData* win , int npad)
+void circumfnn( EMData* win , int npad)
 {
 	float *tw = win->get_data();
-	//  correct for the fall-off
+	//  correct for the fall-off of NN interpolation using sinc functions
 	//  mask and subtract circumference average
 	int ix = win->get_xsize();
 	int iy = win->get_ysize();
@@ -2372,7 +2372,8 @@ void circumf( EMData* win , int npad)
 	sincy[0] = 1.0f;
 	sincz[0] = 1.0f;
 
-	float cdf = M_PI/float(npad*2*ix);
+	//float cdf = M_PI/float(npad*2*ix);
+	float cdf = M_PI/(npad*0.75*ix);
 	for (int i = 1; i <= IP; ++i)  sincx[i] = sin(i*cdf)/(i*cdf);
 	cdf = M_PI/float(npad*2*iy);
 	for (int i = 1; i <= JP; ++i)  sincy[i] = sin(i*cdf)/(i*cdf);
@@ -2420,6 +2421,79 @@ void circumf( EMData* win , int npad)
 
 }
 
+
+void circumftrl( EMData* win , int npad)
+{
+	float *tw = win->get_data();
+	//  correct for the fall-off of tri-linear interpolation using sinc^2 functions
+	//  mask and subtract circumference average
+	int ix = win->get_xsize();
+	int iy = win->get_ysize();
+	int iz = win->get_zsize();
+	int L2 = (ix/2)*(ix/2);
+	int L2P = (ix/2-1)*(ix/2-1);
+
+	int IP = ix/2+1;
+	int JP = iy/2+1;
+	int KP = iz/2+1;
+
+	//  sinc functions tabulated for fall-off
+	float* sincx = new float[IP+1];
+	float* sincy = new float[JP+1];
+	float* sincz = new float[KP+1];
+
+	sincx[0] = 1.0f;
+	sincy[0] = 1.0f;
+	sincz[0] = 1.0f;
+
+	//float cdf = M_PI/float(npad*2*ix);
+	float cdf = M_PI/(npad*0.88*ix);
+	for (int i = 1; i <= IP; ++i)  sincx[i] = pow(sin(i*cdf)/(i*cdf),2);
+	cdf = M_PI/float(npad*2*iy);
+	for (int i = 1; i <= JP; ++i)  sincy[i] = pow(sin(i*cdf)/(i*cdf),2);
+	cdf = M_PI/float(npad*2*iz);
+	for (int i = 1; i <= KP; ++i)  sincz[i] = pow(sin(i*cdf)/(i*cdf),2);
+	for (int k = 1; k <= iz; ++k) {
+		int kkp = abs(k-KP);
+		for (int j = 1; j <= iy; ++j) {
+			cdf = sincy[abs(j- JP)]*sincz[kkp];
+			for (int i = 1; i <= ix; ++i)  tw(i,j,k) /= (sincx[abs(i-IP)]*cdf);
+		}
+	}
+
+	delete[] sincx;
+	delete[] sincy;
+	delete[] sincz;
+
+	float  TNR = 0.0f;
+	size_t m = 0;
+	for (int k = 1; k <= iz; ++k) {
+		for (int j = 1; j <= iy; ++j) {
+			for (int i = 1; i <= ix; ++i) {
+				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR >= (size_t)L2P && LR<=(size_t)L2) {
+					TNR += tw(i,j,k);
+					++m;
+				}
+			}
+		}
+	}
+
+	TNR /=float(m);
+	
+	
+	for (int k = 1; k <= iz; ++k) {
+		for (int j = 1; j <= iy; ++j) {
+			for (int i = 1; i <= ix; ++i) {
+				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
+				else                tw(i,j,k) = 0.0f;
+
+			}
+		}
+	}
+
+}
 
 EMData* nn4Reconstructor::finish(bool) {
 
@@ -2512,7 +2586,7 @@ EMData* nn4Reconstructor::finish(bool) {
 	// EMData* win = m_volume->window_center(m_vnx);
 	int npad = m_volume->get_attr("npad");
 	m_volume->depad();
-	circumf( m_volume, npad );
+	circumfnn( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
 	return 0;
@@ -2775,11 +2849,11 @@ int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform&
 }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-void circumf_rect( EMData* win , int npad)
+void circumfnn_rect( EMData* win , int npad)
 {
 	float *tw = win->get_data();
 	//  correct for the fall-off
-	//  mask and subtract circumference average
+	//  mask and subtract circumfnnerence average
 	int ix = win->get_xsize();
 	int iy = win->get_ysize();
 	int iz = win->get_zsize();
@@ -2946,8 +3020,7 @@ EMData* nn4_rectReconstructor::finish(bool)
 	
  	int npad = m_volume->get_attr("npad");
  	m_volume->depad();
- 	circumf_rect( m_volume, npad );
-	//circumf_rect_new( m_volume, npad,m_xratio,m_yratio);
+ 	circumfnn_rect( m_volume, npad );
  	m_volume->set_array_offsets( 0, 0, 0 );
 
 	return 0;
@@ -3547,7 +3620,7 @@ EMData* nn4_ctfReconstructor::finish(bool)
 	m_volume->do_ift_inplace();
 	int npad = m_volume->get_attr("npad");
 	m_volume->depad();
-	circumf( m_volume, npad );
+	circumfnn( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
 	return 0;
@@ -3854,7 +3927,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 	m_volume->do_ift_inplace();
 	int npad = m_volume->get_attr("npad");
 	m_volume->depad();
-	circumf( m_volume, npad );
+	circumfnn( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
 	return 0;
@@ -4019,7 +4092,7 @@ for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<" 
 	m_volume->do_ift_inplace();
 	int npad = m_volume->get_attr("npad");
 	m_volume->depad();
-	circumf( m_volume, npad );
+	circumfnn( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
 	return 0;
@@ -4144,7 +4217,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 	m_volume->do_ift_inplace();
 	int npad = m_volume->get_attr("npad");
 	m_volume->depad();
-	circumf( m_volume, npad );
+	circumftrl( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
 	return 0;
@@ -4439,7 +4512,7 @@ EMData* nn4_ctf_rectReconstructor::finish(bool)
 	m_volume->do_ift_inplace();
 	int npad = m_volume->get_attr("npad");
 	m_volume->depad();
-	circumf_rect( m_volume, npad );
+	circumfnn_rect( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 	return 0;
 }
