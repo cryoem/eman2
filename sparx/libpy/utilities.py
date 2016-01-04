@@ -1998,7 +1998,7 @@ def rotate_about_center(alpha, cx, cy):
 
 def rotate_shift_params(paramsin, transf):
 	# moved from sxprocess.py
-	if len(paramsin)>3:
+	if len(paramsin[0])>3:
 		from EMAN2 import Vec2f
 		t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2],"tx":transf[3],"ty":transf[4],"tz":transf[5],"mirror":0,"scale":1.0})
 		t = t.inverse()
@@ -2010,11 +2010,11 @@ def rotate_shift_params(paramsin, transf):
 			u = c.get_params("spider")
 			cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
 	else:
-		t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2]
+		t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2]})
 		t = t.inverse()
 		cpar = []
 		for params in paramsin:
-			d = Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}
+			d = Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
 			c = d*t
 			u = c.get_params("spider")
 			cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
