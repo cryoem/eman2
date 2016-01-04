@@ -684,7 +684,12 @@ def compute_sigma(partstack, paramsname, Tracker, dryrun, myid, main_node, nproc
 	else:
 		image_start, image_end = MPI_start_end(ndata, nproc, myid)
 	#data = EMData.read_images(stack, range(image_start, image_end))
-	params = read_text_row( paramsname )
+	if(myid == 0):
+		params = read_text_row( paramsname )
+		params = [params[i][j]  for i in xrange(len(params))   for j in xrange(5)]
+	else:           params = [0.0]*(5*ndata)
+	params = bcast_list_to_all(params, myid, source_node=main_node)
+	params = [[params[i*5+j] for j in xrange(5)] for i in xrange(ndata)]
 
 	nx = Tracker["constants"]["nnxo"]
 	mx = 2*nx
@@ -1330,7 +1335,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	return data, oldshifts
 """
 
-def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
+def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle, rshift, procid, myid, main_node, nproc):
 	from applications import slocal_ali3d_base, sali3d_base
 	from mpi import  mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	#  Takes preshrunk data and does the refinement as specified in Tracker
@@ -1406,7 +1411,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 
 	#  Run alignment command
 	if Tracker["local"] : params = slocal_ali3d_base(projdata, get_im(Tracker["refvol"]), \
-									Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0)
+									Tracker, rangle, rshift, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0)
 	else: params = sali3d_base(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
 
 	if( not (Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL")):
@@ -1460,10 +1465,10 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc
-	#from development import do_volume_mrk01
 	from logger import Logger, BaseLogger_Files
 	import sys
 	import os
+	from random import random
 	import time
 	import socket
 
@@ -1662,6 +1667,9 @@ def main():
 		Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
 	elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
 		ERROR("Particle radius set too large!","sxmeridien",1,myid)
+
+	rangle = 0.0
+	rshift = 0.0
 
 
 	# ------------------------------------------------------------------------------------
@@ -1972,6 +1980,15 @@ def main():
 
 
 		#  REFINEMENT   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+
+		if Tracker["constants"]["shake"] :
+			if(myid == main_node):
+				rangle = random() - 0.5
+				rshift = random() - 0.5
+			rangle = bcast_number_to_all(rangle, source_node = main_node)
+			rshift = bcast_number_to_all(rshift, source_node = main_node)
+			#  Note rshift is inexact as there is rounding in proj_ali_incore
+
 		for procid in xrange(2):
 			coutdir = os.path.join(Tracker["directory"], "loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
@@ -1986,6 +2003,12 @@ def main():
 
 				# METAMOVE
 				Tracker = metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
+				if(myid == main_node):  write_text_row([[rangle, rshift]], Tracker["directory"] ,"randomize_search.txt")
+			else:
+				if(myid == main_node):  [rangle, rshift] = read_text_row( Tracker["directory"] ,"randomize_search.txt")[0]
+				rangle = bcast_number_to_all(rangle, source_node = main_node)
+				rshift = bcast_number_to_all(rshift, source_node = main_node)
+				
 
 		#  RECONSTRUCTION AND RESOLUTION  ASSESSMENT  <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -2074,7 +2097,7 @@ def main():
 			#  ANALYZE CHANGES IN OUTPUT PARAMETERS WITH RESPECT TO PREVIOUS INTERATION  <><><><><><><><><><><><><><><><><><><><><><><><><><><>
 			#  Compute pixers and store results
 			if(myid == main_node):
-				anger, shifter = params_changes( Tracker )
+				anger, shifter = params_changes( Tracker, rangle, rshift )
 				write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds.txt") )
 			else:
 				anger   = 0.0
