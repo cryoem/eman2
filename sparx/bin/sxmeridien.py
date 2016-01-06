@@ -1999,7 +1999,7 @@ def main():
 
 			if  doit:
 				mpi_barrier(MPI_COMM_WORLD)
-				if( reset_data ):
+				if( reset_data or len(projdata[procid])<2 ):
 					projdata[procid] = []
 					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["nxinit"],\
 						partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
