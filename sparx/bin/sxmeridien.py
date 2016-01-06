@@ -447,7 +447,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 	return keepgoing, reset_data, Tracker
 '''
 
-def params_changes( Tracker ):
+def params_changes( Tracker, rangle, rshift ):
 	#  Indexes contain list of images processed - sorted integers, subset of the full range.
 	#  params - contain parameters associated with these images
 	#  Both lists can be of different sizes, so we have to find a common subset
@@ -477,12 +477,15 @@ def params_changes( Tracker ):
 		pp.append(pparams[l])
 		i = l+1
 	del pparams,cparams
+
+	cp = rotate_params(cp, [-rangle,-rangle,-rangle])
+
 	n = len(u)
 	anger       = 0.0
 	shifter     = 0.0
 	if(Tracker["constants"]["sym"] == "c1"):
 		for i in xrange(n):
-			shifter     += (cp[i][3] - pp[i][3])**2 + (cp[i][4] - pp[i][4])**2
+			shifter     += (cp[i][3] - pp[i][3] - rshift)**2 + (cp[i][4] - pp[i][4] - rhift)**2
 			t1 = Transform({"type":"spider","phi":pp[i][0],"theta":pp[i][1],"psi":pp[i][2]})
 			t2 = Transform({"type":"spider","phi":cp[i][0],"theta":cp[i][1],"psi":cp[i][2]})
 			anger       += max_3D_pixel_error(t1, t2, Tracker["constants"]["radius"])
@@ -490,7 +493,7 @@ def params_changes( Tracker ):
 		#from utilities import get_symt
 		#ts = get_symt(sym)
 		for i in xrange(n):
-			shifter += (cp[i][3] - pp[i][3])**2 + (cp[i][4] - pp[i][4])**2
+			shifter += (cp[i][3] - pp[i][3] - rhift)**2 + (cp[i][4] - pp[i][4] - rhift)**2
 			t1 = Transform({"type":"spider","phi":pp[i][0],"theta":pp[i][1],"psi":pp[i][2]})
 			t2 = Transform({"type":"spider","phi":cp[i][0],"theta":cp[i][1],"psi":cp[i][2]})
 			ts = t2.get_sym_proj(Tracker["constants"]["sym"])
@@ -2002,10 +2005,11 @@ def main():
 						partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
 				# METAMOVE
-				Tracker = metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
-				if(myid == main_node):  write_text_row([[rangle, rshift]], Tracker["directory"] ,"randomize_search.txt")
+				Tracker = metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], \
+									coutdir, rangle, rshift, procid, myid, main_node, nproc)
+				if(myid == main_node):  write_text_row([[rangle, rshift]], os.path.join(Tracker["directory"] ,"randomize_search.txt") )
 			else:
-				if(myid == main_node):  [rangle, rshift] = read_text_row( Tracker["directory"] ,"randomize_search.txt")[0]
+				if(myid == main_node):  [rangle, rshift] = read_text_row( os.path.join(Tracker["directory"] ,"randomize_search.txt") )[0]
 				rangle = bcast_number_to_all(rangle, source_node = main_node)
 				rshift = bcast_number_to_all(rshift, source_node = main_node)
 				
@@ -2016,7 +2020,7 @@ def main():
 		if doit:
 			#  Change to current params
 			partids = [None]*2
-			for procid in xrange(2):  partids[procid] = os.path.join(Tracker["directory"],"chunk%01d.txt"%procid)
+			for procid in xrange(2):  partids[procid]   = os.path.join(Tracker["directory"],"chunk%01d.txt"%procid)
 			partstack = [None]*2
 			for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid)
 
