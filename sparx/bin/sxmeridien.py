@@ -478,14 +478,14 @@ def params_changes( Tracker, rangle, rshift ):
 		i = l+1
 	del pparams,cparams
 
-	cp = rotate_params(cp, [-rangle,-rangle,-rangle])
+	cp = rotate_shift_params(cp, [-rangle,-rangle,-rangle, 0.0,0.0,0.0])
 
 	n = len(u)
 	anger       = 0.0
 	shifter     = 0.0
 	if(Tracker["constants"]["sym"] == "c1"):
 		for i in xrange(n):
-			shifter     += (cp[i][3] - pp[i][3] - rshift)**2 + (cp[i][4] - pp[i][4] - rhift)**2
+			shifter     += (cp[i][3] - pp[i][3] - rshift)**2 + (cp[i][4] - pp[i][4] - rshift)**2
 			t1 = Transform({"type":"spider","phi":pp[i][0],"theta":pp[i][1],"psi":pp[i][2]})
 			t2 = Transform({"type":"spider","phi":cp[i][0],"theta":cp[i][1],"psi":cp[i][2]})
 			anger       += max_3D_pixel_error(t1, t2, Tracker["constants"]["radius"])
@@ -493,7 +493,7 @@ def params_changes( Tracker, rangle, rshift ):
 		#from utilities import get_symt
 		#ts = get_symt(sym)
 		for i in xrange(n):
-			shifter += (cp[i][3] - pp[i][3] - rhift)**2 + (cp[i][4] - pp[i][4] - rhift)**2
+			shifter += (cp[i][3] - pp[i][3] - rshift)**2 + (cp[i][4] - pp[i][4] - rshift)**2
 			t1 = Transform({"type":"spider","phi":pp[i][0],"theta":pp[i][1],"psi":pp[i][2]})
 			t2 = Transform({"type":"spider","phi":cp[i][0],"theta":cp[i][1],"psi":cp[i][2]})
 			ts = t2.get_sym_proj(Tracker["constants"]["sym"])
