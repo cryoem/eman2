@@ -1753,7 +1753,7 @@ def main():
 			l2.sort()
 			write_text_file(l1,partids[0])
 			write_text_file(l2,partids[1])
-			
+
 			if(options.startangles):
 				tp_list = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
 				for i in xrange(len(tp_list)):
@@ -1764,14 +1764,14 @@ def main():
 				write_text_row([tp_list[i] for i in l2], partstack[1])
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				print(line,"Executed successfully: Imported initial parameters from the input stack")
-				
+
 			else:
 				write_text_row([[0,0,0,0,0] for i in xrange(len(l1))], partstack[0])
 				write_text_row([[0,0,0,0,0] for i in xrange(len(l2))], partstack[1])
 				write_text_row([[0,0,0,0,0] for i in xrange(len(l1)+len(l2))], os.path.join(initdir,"params.txt"))
-			
+
 			del l1, l2
-				
+
 			# Create reference models for each particle group
 			# make sure the initial volume is not set to zero outside of a mask, as if it is it will crash the program
 			for procid in xrange(2):
