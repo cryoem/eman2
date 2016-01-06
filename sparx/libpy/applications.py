@@ -4644,7 +4644,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	if myid == main_node: print_end_msg("ali3d_MPI")
 
 
-def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = None):
+def sali3d_base(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.0, mpi_comm = None, log = None):
 	"""
 		parameters: list of (all) projections | reference volume is optional, the data is shrank, 
 		  the program does not know anything about shrinking| ...
@@ -4662,6 +4662,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	from alignment       import shc, center_projections_3D
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj, pad
+	from utilities       import even_angles
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
 	from statistics      import hist_list
@@ -4795,7 +4796,8 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	#par_r = [[] for im in list_of_particles ]
 	cs = [0.0]*3
 	total_iter = 0
-	# do the projection matching
+	# do the projection matching,  it has a loop over iterations here, 
+	#  but it can only do one iteration as many settings are done in meridien.  Perturbations are a good example, there is one per each iteration.
 	if zoom: lstp = 1
 	for N_step in xrange(lstp):
 
@@ -4807,36 +4809,27 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			total_iter += 1
 
 
-			rshift  = 0.0
-			rangle1 = 0.0
-			rangle2 = 0.0
-			if Tracker["constants"]["shake"] :
-				if( myid == 0 ):
-					from random import random
-					rshift  = (random() - 0.5)*step[N_step]
-					rangle1 = (random() - 0.5)*delta[N_step]
-					rangle2 = (random() - 0.5)*delta[N_step]
-				rshift  = bcast_number_to_all(rshift, source_node = main_node)
-				rangle1 = bcast_number_to_all(rangle1, source_node = main_node)
-				rangle2 = bcast_number_to_all(rangle2, source_node = main_node)
-
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				log.add("ITERATION #%3d,  inner iteration #%3d"%(total_iter, Iter))
-				log.add("Delta = %7.4f, an = %7.4f, xrange = %7.4f, yrange = %7.4f, step = %7.4f   %7.4f  %7.4f  %7.4f\n"%\
-							(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step], rshift, rangle1, rangle2))
+				log.add("Delta = %7.4f, an = %7.4f, xrange = %7.4f, yrange = %7.4f, step = %7.4f   %7.4f  %7.4ff\n"%\
+							(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step], rshift, rangle))
 				start_time = time()
 
 			#=========================================================================
+			# prepare reference angles
+			ref_angles = even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+			if( rangle > 0.0 ):
+				# shake
+				from utilities import rotate_shift_params
+				ref_angles = rotate_shift_params(anglelist, [ delta[N_step]*rangle, delta[N_step]*rangle, delta[N_step]*rangle,0.0,0.0])
+
+			#=========================================================================
 			# build references
-			# This is silly, but this is how prepare_refrings recognizes they have to be skipped
-			if rangle1 == 0.0 :  rangle1 = None
-			if rangle2 == 0.0 :  rangle2 = None
 			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm, \
-						initial_theta = rangle1, initial_phi = rangle2, phiEqpsi = "Zero")
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_angles, sym, numr, MPI=mpi_comm, phiEqpsi = "Zero")
 			del volft, kb
-			#=========================================================================				
+			#=========================================================================		
 
 			if myid == main_node:
 				log.add("Time to prepare rings: %10.1f\n" % (time()-start_time))
@@ -4903,7 +4896,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 						if  zoom: peak, pixer[im] = proj_ali_incore_zoom(tempdata, refrings, numr, \
 														xrng, yrng, step, finfo = finfo, sym=sym)
 						else:  peak, pixer[im] = proj_ali_incore(tempdata, refrings, numr, \
-												xrng[N_step], yrng[N_step], step[N_step], finfo = finfo, sym=sym, delta_psi = delta[N_step], rshift = rshift)
+												xrng[N_step], yrng[N_step], step[N_step], finfo = finfo, sym=sym, delta_psi = delta[N_step], rshift = rshift*xrng[N_step])
 					else:
 						if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(tempdata, refrings, list_of_reference_angles, numr, \
 									xrng, yrng, step, an, finfo = finfo, sym=sym)
