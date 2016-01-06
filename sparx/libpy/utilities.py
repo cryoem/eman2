@@ -2021,6 +2021,184 @@ def rotate_shift_params(paramsin, transf):
 			#cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
 	return cpar
 
+
+'''
+#  01/06/2016 - This is my recoding of old FORTRAN code with the hope that python's double precission
+#                 will fix the problem of roation of a 0,0,0 direction.  It does not as one neeed psi
+#                 in this case as well.  So, the only choice is to use small theta instead of exact 0,0,0 direction
+def rotate_params(params, transf):
+	matinv = rotmatrix( -transf[2], -transf[1], -transf[0] )
+	n = len(params)
+	cpar = [None]*n
+	for i in xrange(n):
+		d = rotmatrix( params[i][0], params[i][1], params[i][2] )
+		c = mulmat(d,matinv)
+		phi, theta, psi = recmat(c)
+		cpar[i] = [phi, theta, psi]
+	return cpar
+
+
+def rotmatrix(phi,theta,psi):
+	from math import sin,cos,radians
+	rphi   = radians(phi)
+	rtheta = radians(theta)
+	rpsi   = radians(psi)
+	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+
+	mat[0][0] =  cos(rpsi)*cos(rtheta)*cos(rphi) - sin(rpsi)*sin(rphi)
+	mat[1][0] = -sin(rpsi)*cos(rtheta)*cos(rphi) - cos(rpsi)*sin(rphi)
+	mat[2][0] =            sin(rtheta)*cos(rphi)
+
+
+	mat[0][1] =  cos(rpsi)*cos(rtheta)*sin(rphi) + sin(rpsi)*cos(rphi)
+	mat[1][1] = -sin(rpsi)*cos(rtheta)*sin(rphi) + cos(rpsi)*cos(rphi)
+	mat[2][1] =            sin(rtheta)*sin(rphi)
+
+
+	mat[0][2] = -cos(rpsi)*sin(rtheta)
+	mat[1][2] =  sin(rpsi)*sin(rtheta)
+	mat[2][2] =            cos(rtheta)
+	return mat
+
+def mulmat(m1,m2):
+	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+	for i in xrange(3):
+		for j in xrange(3):
+			for k in xrange(3):
+				mat[i][j] += m1[i][k]*m2[k][j]
+			mat[i][j] = round(mat[i][j],8)
+	return mat
+
+def recmat(mat):
+	from math import acos,asin,atan2,degrees,pi
+	def sign(x):
+		if( x >= 0.0 ): return 1
+		else:  return -1
+	"""
+	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+	# limit precision
+	for i in xrange(3):
+		for j in xrange(3):
+			mat[i][j] = inmat[i][j]	
+			#if(abs(inmat[i][j])<1.0e-8):  mat[i][j] = 0.0
+			#else: mat[i][j] = inmat[i][j]
+	for i in xrange(3):
+		for j in xrange(3):  print  "     %14.8f"%mat[i][j],
+		print ""
+	"""
+	if(mat[2][2] == 1.0):
+		theta = 0.0
+		psi = 0.0
+		if( mat[0][0] == 0.0 ):
+			phi = asin(mat[0][1])
+		else:
+			phi = atan2(mat[0][1],mat[0][0])
+	elif(mat[2][2] == -1.0):
+		theta = pi
+		psi = 0.0
+		if(mat[0][0] == 0.0):
+			phi = asin(-mat[0][1])
+		else:
+			phi = atan2(-mat[0][1],-mat[0][0])
+	else:
+		theta = acos(mat[2][2])
+		st = sign(theta)
+		#print theta,st,mat[2][0]
+		if(mat[2][0] == 0.0):
+			if( st != sign(mat[2][1]) ):
+				phi = 1.5*pi
+			else:
+				phi = 0.5*pi
+		else:
+			phi = atan2(st*mat[2][1], st*mat[2][0])
+
+		#print theta,st,mat[0][2],mat[1][2]
+		if(mat[0][2] == 0.0):
+			if( st != sign(mat[1][2]) ):
+				psi = 1.5*pi
+			else:
+				psi = 0.5*pi
+		else:
+			psi = atan2(st*mat[1][2], -st*mat[0][2])
+	pi2 = 2*pi
+	return  degrees(round(phi,10)%pi2),degrees(round(theta,10)%pi2),degrees(round(psi,10)%pi2)
+	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
+	#return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
+'''
+def reduce2asymmetric_D(angles_list,symmetry="d2"):
+	sym_number =int(symmetry[1:])
+	sym_angle  =360./sym_number
+	badb      = 360.0/int(symmetry[1:])/4
+	bade      = 2*badb
+	bbdb      = badb + 360.0/int(symmetry[1:])/2
+	bbde      = bbdb + 360.0/int(symmetry[1:])/4
+	print badb, bade
+	print bbdb, bbde
+	alist =[]
+	for index in xrange(len(angles_list)):
+		if len(angles_list[index]) == 3 :
+			[phi,theta,psi]= angles_list[index]
+		else:
+			[phi,theta,psi,sx,sy] = angles_list[index]
+		if (phi > badb and phi < bade) or phi> bbdb: # only mirror those fall in non-permitted zones
+			phi   = (phi+540.0)%360.0
+			theta = 180.0-theta
+			psi   = (540.0-psi)%360.0
+		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+		ts = t2.get_sym_proj(symmetry)
+		dlist ={}
+		for item in xrange(len(ts)):
+			a         = ts[item]
+			u         = a.get_params("spider")
+			phi       = u["phi"]
+			theta     = u["theta"]
+			psi       = u["psi"]
+			#print qt, badb, bade, bbdb, bbde
+			if theta <=90:
+				if phi<=badb or (phi>=bade and phi<=bbdb):
+					#print phi
+					phi = phi%sym_angle
+					phi = round(phi,3)
+					dlist[phi] = [theta,psi]
+		tlist = dlist.keys()
+		if len(tlist) == 1 :
+			alist.append([index,tlist[0], dlist[tlist[0]][0], dlist[tlist[0]][1]])
+	return alist
+
+def reduce2asymmetric_C(angles_list,symmetry="c1"):
+	sym_number =int(symmetry[1:])
+	sym_angle  =360./sym_number
+	alist      =[]
+	for index in xrange(len(angles_list)):
+		if len(angles_list[index]) == 3:
+			[phi,theta,psi] = angles_list[index]
+		else:
+			[phi,theta,psi,sx,sy] = angles_list[index]
+		if theta > 90.: # mirror back lower hemisphere to upper one
+			phi   = (phi+540.0)%360.0
+			theta = 180.0-theta
+			psi   = (540.0-psi)%360.0
+		phi=phi%sym_angle
+		alist.append([phi,theta,psi])			
+	return alist
+
+def reduce_to_asymmetric_unit(angles_list,symmetry):
+	from string import atoi
+	sym_type   =symmetry[0:1].lower()
+	if sym_type=="c":
+		flist = reduce2asymmetric_C(angles_list,symmetry=symmetry)
+		return flist
+	elif sym_type=="d":
+		new_angleslist1 = reduce2asymmetric_D(angles_list, symmetry=symmetry)
+		tlist = {}
+		for a in new_angleslist1:
+			tlist[a[0]] = [a[1],a[2],a[3]]
+		flist =[]
+		for i in xrange(len(tlist)):
+			flist.append(tlist[i])
+		return flist
+
+
 def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.):
 	"""
 		linearly interpolate a 1D power spectrum to required length with required Pixel size

@@ -4812,17 +4812,21 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				log.add("ITERATION #%3d,  inner iteration #%3d"%(total_iter, Iter))
-				log.add("Delta = %7.4f, an = %7.4f, xrange = %7.4f, yrange = %7.4f, step = %7.4f   %7.4f  %7.4ff\n"%\
+				log.add("Delta = %7.4f, an = %7.4f, xrange = %7.4f, yrange = %7.4f, step = %7.4f   %7.4f  %7.4f\n"%\
 							(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step], rshift, rangle))
 				start_time = time()
 
 			#=========================================================================
 			# prepare reference angles
 			ref_angles = even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+			#  Modify 0,0,0 s it can be properly inverted
+			if( ref_angles[0][0] == 0.0  and ref_angles[0][1] == 0.0 ):
+				ref_angles[0][0] = 0.01
+				ref_angles[0][1] = 0.01
 			if( rangle > 0.0 ):
 				# shake
 				from utilities import rotate_shift_params
-				ref_angles = rotate_shift_params(anglelist, [ delta[N_step]*rangle, delta[N_step]*rangle, delta[N_step]*rangle,0.0,0.0])
+				ref_angles = rotate_shift_params(anglelist, [ delta[N_step]*rangle, delta[N_step]*rangle, delta[N_step]*rangle ])
 
 			#=========================================================================
 			# build references
