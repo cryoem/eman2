@@ -69,13 +69,13 @@ def main():
 	
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="""Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking""", guitype='shrinkbox', row=5, col=0, rowspan=1, colspan=1)
 
-	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2. IF using --clipali, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2. IF using --clip, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3)
 	
 	parser.add_argument("--maskfile",type=str,default='',help="""Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
 	
 	parser.add_argument("--normproc",type=str,default='',help="""Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 	
-	parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clipali, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
+	parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clip, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
 	
 	parser.add_argument("--threshold",default='',type=str,help="""A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3)
 	
@@ -85,7 +85,7 @@ def main():
 	
 	parser.add_argument("--highpass",type=str,default='',help="""A highpass filtering processor (from e2proc3d.py, see e2help.py processors) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3)
 	
-	parser.add_argument("--clipali",type=int,default=0,help="""Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
+	parser.add_argument("--clip",type=int,default=0,help="""Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clip=75""")
 		
 	parser.add_argument("--savepreproc",action="store_true", default=False, help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
 
@@ -153,8 +153,10 @@ def main():
 	#	os.mkdir(options.path)
 	
 	#Make directory to save results
-	from e2spt_classaverage import sptmakepath, preprocessingprefft, Preprocprefft3DTask, get_results_preproc, preprocfilter, sptOptionsParser
-
+	#from e2spt_classaverage import sptmakepath, preprocessingprefft, Preprocprefft3DTask, get_results_preproc, preprocfilter, sptOptionsParser
+	
+	from e2spt_classaverage import sptmakepath, sptOptionsParser 
+	
 	options = sptmakepath(options,'symsearch')
 	
 	if options.nopath:
@@ -186,9 +188,68 @@ def main():
 	
 	options.raw = options.input
 	
+	
+	"""
+	
+	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
+		ret = cmdpreproc( options.input, options, False )
+		if ret: 
+			preprocdone += 1
+		else:
+			print "\n(e2spt_classaverage)(main) preprocessing --input for coarse alignment failed"
+		
+		if options.ref and options.refpreprocess:
+			retref = cmdpreproc( options.ref, options, False )
+			if retref: 
+				preprocdone += 1
+			else:
+				print "\n(e2spt_classaverage)(main) preprocessing --ref for coarse alignment failed"
+		else: 
+			preprocdone += 1
+			
+		'''
+		Use preprocessed particles as input. Flawed, since you can only pass in one stack to
+		alignment, and there could be two (fine and coarse) and the alignment function still
+		decides internally #fix this later (jan/2016)
+		'''
+		options.input = options.path + '/' + ret
+	
+	else:
+		preprocdone += 2
+	
+	
+	if 'rotate_translate_3d_tree' not in options.align and options.falign:
+		if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
+			
+			ret =cmdpreproc( options.input, options, True )
+			if ret: 
+				preprocdone += 1
+			else:
+				print "\n(e2spt_classaverage)(main) preprocessing --input for fne alignment failed"
+		
+			if options.ref and options.refpreprocess:
+				retref = cmdpreproc( options.ref, options, True )
+				if retref: 
+					preprocdone += 1
+				else:
+					print "\n(e2spt_classaverage)(main) preprocessing --ref for fine alignment failed"
+			else:
+				preprocdone += 1
+	else:
+		preprocdone += 2		
+	
+	
+	
+	
+	if preprocdone > 3:
+	
+
+	'''
+	OLD
+	'''
 	if not options.nopreprocprefft:
 	
-		if options.mask or options.normproc or options.threshold or options.clipali:		
+		if options.mask or options.normproc or options.threshold or options.clip:		
 			
 			preprocprefftstack = options.path + '/' + os.path.basename( options.input ).replace('.hdf','_preproc.hdf')
 			
@@ -246,7 +307,7 @@ def main():
 			
 			options.savepreproc = originalsavepreproc
 	
-	
+	"""
 	
 	
 	for i in range(n):
@@ -260,14 +321,20 @@ def main():
 		
 		preprocprefftstack = options.path + '/' + os.path.basename( options.input ).replace('.hdf','_preproc.hdf')
 
-		if (options.shrink and options.shrink > 1) or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clipali:
+		if (options.shrink and options.shrink > 1) or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clip:
 			print "\nHowever, I will first preprocess particle number",i
 			
 			print "\nWill call preprocessing on ptcl",i
-			preprocvol = preprocfilter(preprocvol,options,i)
+			#preprocvol = preprocfilter(preprocvol,options,i)
+				
+			from e2spt_preproc import preprocfunc
 			
-			if options.savepreproc:
-				preprocvol.write_image( preprocprefftstack, i)
+			#preprocvol = preprocfunc(preprocvol,options,i)
+			
+			preprocvol = preprocfunc( preprocvol, options, i, preprocprefftstack )
+			
+			#if options.savepreproc:
+			#	preprocvol.write_image( preprocprefftstack, i)
 			#preprocessing(s2image,options, ptclindx, savetagp ,'no',round)
 			
 			print "\nDone preprocessing on ptcl",i
