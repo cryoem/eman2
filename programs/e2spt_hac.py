@@ -37,7 +37,7 @@ import os
 import sys
 from EMAN2jsondb import JSTask,jsonclasses
 
-
+from e2spt_classaverage import alignment
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -199,7 +199,7 @@ def main():
 	
 	parser.add_argument("--breaksym",action="store_true", default=False,help="""Default=False. Break symmetry. Do not apply symmetrization after averaging, even if searching the asymmetric unit provided through --sym only for alignment. Default=False""", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
-	#parser.add_argument("--groups",type=int,default=0,help="""Default=0 (not used; data not split). This parameter will split the data into a user defined number of groups. For purposes of gold-standard FSC computation later, select --group=2.""")
+	
 		
 	parser.add_argument("--randomizewedge",action="store_true",  default=False,help="""Default=False. This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned""")
 	
@@ -219,6 +219,8 @@ def main():
 	'''
 	HAC-specific parameters
 	'''
+	
+	parser.add_argument("--groups",type=int,default=1,help="""Default=0 (not used; data not split). This parameter will split the data into a user defined number of groups. For purposes of gold-standard FSC computation later, select --group=2.""")
 	
 	parser.add_argument("--clusters",type=int,default=1,help="""Number of clusters to group the data in after the 1st iteration, based on correlation.""")
 	
@@ -1507,18 +1509,17 @@ class Align3DTaskAVSA(JSTask):
 		self.classoptions={"comparison":comparison,"ptclA":ptclA,"ptclB":ptclB,"pAn":pAn,"pBn":pBn,"label":label,"options":options, 'round':round,'iters':iters}
 	
 	def execute(self,callback=None):
-		
 		"""This aligns one volume to a reference and returns the alignment parameters"""
 		classoptions=self.classoptions
 		
 		#options=self.classoptions
+		
 		
 		"""
 		CALL the alignment function, which is imported from e2spt_classaverage
 		"""
 		
 		#print "Will import alignment"
-		from e2spt_classaverage import alignment
 				
 		#print "I have imported alignment and will call it"
 		
@@ -1550,57 +1551,6 @@ class Align3DTaskAVSA(JSTask):
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
 		
-		
-def textwriterinfo(ydata,options,name):
-	if len(ydata) ==0:
-		print "ERROR: Attempting to write an empty text file!"
-		sys.exit()
-	
-	if options.path not in name:
-		name=options.path + '/' + name
-	
-	print "I am in the text writer for this file", name
-	
-	f=open(name,'w')
-	lines=[]
-	for i in range(len(ydata)):
-		line2write = 'comparison#' + str(i) + ' ' + str(ydata[i][-2]) + ' vs ' + str(ydata[i][-1])+ ' score=' + str(ydata[i][0]) + '\n'
-		#print "THe line to write is"
-		lines.append(line2write)
-	
-	#print "Thare are these many lines", len (lines)
-	#print "Cause y data is", len(ydata)
-	#sys.exit()
-	
-	f.writelines(lines)
-	f.close()
-
-	return()
-	
-	
-def textwriter(ydata,options,name,invert=0):
-	
-	if options.path not in name:
-		name=options.path + '/' + name
-	
-	print "I am in the text writer for this file", name
-	
-	f=open(name,'w')
-	lines=[]
-	for i in range(len(ydata)):
-		y=ydata[i]
-		if invert:
-			y*=-1
-			
-		line2write = str(i) + ' ' + str(y) + '\n'
-		#print "THe line to write is"
-		lines.append(line2write)
-	
-	f.writelines(lines)
-	f.close()
-
-	return()
-
 
 def plotter(xaxis,yaxis,options,name,maxX,maxY,invert=1,sort=1):
 	
