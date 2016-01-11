@@ -114,13 +114,13 @@ def main():
 		
 		print "\n(e2spt_preproc)(main) number of particles is", n
 		
-		#dimg = EMData(8,8,8)
-		#dimg.to_one()
+		dimg = EMData(8,8,8)
+		dimg.to_one()
 
-		#for i in range(n):
-		#	dimg.write_image( preprocstack, i )
+		for i in range(n):
+			dimg.write_image( preprocstack, i )
 		
-		#print "\n(e2spt_preproc)(main) wrote dummy ptcls to", preprocstack
+		print "\n(e2spt_preproc)(main) wrote dummy ptcls to", preprocstack
 	
 		
 		print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!"
