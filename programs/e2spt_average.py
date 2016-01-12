@@ -26,6 +26,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.")
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 	parser.add_argument("--simthr", default=-0.1,type=float,help="Similarity is smaller for better 'quality' particles. Specify the highest value to include from e2spt_hist.py. Default -0.1")
+	parser.add_argument("--replace",type=str,default=None,help="Replace the input subtomograms used for alignment with the specified file (used when the aligned particles were masked or filtered)")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -54,7 +55,10 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	jsd=Queue.Queue(0)
 
 	# rotation can be slow, so we actually do it in threads
-	thrds=[threading.Thread(target=rotfn,args=(jsd,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for k in angs.keys() if angs[k]["score"]<=options.simthr]
+	if options.replace != None:
+		thrds=[threading.Thread(target=rotfn,args=(jsd,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for k in angs.keys() if angs[k]["score"]<=options.simthr]
+	else:
+		thrds=[threading.Thread(target=rotfn,args=(jsd,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for k in angs.keys() if angs[k]["score"]<=options.simthr]
 
 	avg=[0,0]
 	avg[0]=Averagers.get("mean.tomo") #,{"save_norm":1})
