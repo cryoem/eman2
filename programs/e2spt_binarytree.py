@@ -48,8 +48,7 @@ def main():
 	Again, 1 will be averaged with 2, 3 with 4, etc... yielding 16 new averages.
 	The algorithm continues until the entire subset (64) has been merged into 1 average.
 	
-	This program depends on e2spt_classaverage.py because it imports the preprocessing 
-	and alignment functions from it.
+	This program imports 'preprocfunc' from e2spt_preproc.py and 'alignment' from e2spt_classaverage.py
 	
 	--mask=mask.sharp:outer_radius=<safe radius>
 	--preprocess=filter.lowpass.gauss:cutoff_freq=<1/resolution in A>
@@ -323,6 +322,7 @@ def main():
 	
 	options.raw = options.input
 	
+	"""
 	if 'tree' in options.align:
 		options.falign = None
 		options.mask = None
@@ -334,64 +334,10 @@ def main():
 		options.preprocess = None
 		options.preprocessfine = None
 
-	'''
-	elif not options.nopreprocprefft:
-		
-		from e2spt_classaverage import preprocessingprefft, Preprocprefft3DTask, get_results_preproc
-		
-		if options.mask or options.normproc or options.threshold or options.clipali:		
-			tasks=[]
-			results=[]
-	
-			preprocprefftstack = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
-	
-			for i in range(nptcl):
-		
-				img = EMData( options.input, i )
-		
-				if options.parallel:
-					task = Preprocprefft3DTask( ["cache",options.input,i], options, i )
-					tasks.append(task)
-	
-				else:
-					pimg = preprocessingprefft( img, options)
-					pimg.write_image( preprocprefftstack, i )
-	
-	
-			if options.parallel and tasks:
-				tids = etc.send_tasks(tasks)
-				if options.verbose: 
-					print "preprocessing %d tasks queued in class %d iteration %d"%(len(tids)) 
-
-
-			results = get_results_preproc( etc, tids, options.verbose )
-			print "preprocessing results are", results		
-
-			options.input = preprocprefftstack
-		
-		
-			#cache needs to be reloaded with the new options.input		
-			if options.parallel :
-	
-				if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
-					options.parallel = None
-					etc = None
-		
-				else:
-					print "\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!"
-					print "\n\n"
-					from EMAN2PAR import EMTaskCustomer
-					etc=EMTaskCustomer(options.parallel)
-					pclist=[options.input]
-		
-					if options.ref: 
-						pclist.append(options.ref)
-					etc.precache(pclist)
-			else:
-				etc=''
-	
-	'''
-	
+	else:
+		from e2spt_classaverage import cmdpreproc
+		cmpreproc( options.input, options, False )
+	"""
 	
 	nptcl=EMUtil.get_image_count(options.input)
 	if nptcl < 1: 
@@ -406,8 +352,9 @@ def main():
 	if options.nseedlimit:
 		nseed=2**int(floor(log( options.nseedlimit , 2)))
 		
-	binaryTreeRef(options,nptclForRef,nseed,-1,etc)
+	#binaryTreeRef(options,nptclForRef,nseed,-1,etc)
 
+	binaryTreeRef(options,nptclForRef,nseed,etc)
 		
 	print "Will end logger"	
 	E2end(logger)
@@ -418,7 +365,7 @@ def main():
 	return
 	
 
-def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
+def binaryTreeRef(options,nptclForRef,nseed,etc):
 	
 	from e2spt_classaverage import Align3DTask,align3Dfunc,get_results
 	
@@ -464,10 +411,11 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 	
 	ii=0
 	
-	seedfile = options.path + '/seedtree_0_cl_' + str(ic) + '.hdf'
+	#seedfile = options.path + '/seedtree_0_cl_' + str(ic) + '.hdf'
 	
-	if ic < 0:
-		seedfile = options.path + '/seedtree_0.hdf'	
+	#if ic < 0:
+	
+	seedfile = options.path + '/seedtree_0.hdf'	
 	
 	#for j in ptclnums[:nseed]:
 	for j in range(nseed):
@@ -475,30 +423,38 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 		emdata.write_image(seedfile,ii)
 		print "have taken particle %d and written it into index %d of the seedfile" %(j,ii)
 		ii+=1
-		if ic >= 0:
-			print "Creating this seed file for this class", seedfile, ic
+		#if ic >= 0:
+		#	print "Creating this seed file for this class", seedfile, ic
+		
+		print "Creating this seed file for this class", seedfile
 	
 	
+	from e2spt_classaverage import cmdpreproc
+	cmpreproc( seedfile, options, False )
+
 	'''
 	#Outer loop covering levels in the converging binary tree
 	'''
 	
 	print "\nnseediter is", nseediter
 	for i in range( nseediter ):
-		infile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i,ic)
-		if ic < 0:
-			infile="%s/seedtree_%d.hdf"%(options.path,i)
-			
-		print "Infile will be", infile
+		#infile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i,ic)
+		#if ic < 0:
 		
-		outfile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i+1,ic)
-		if ic < 0:
-			outfile="%s/seedtree_%d.hdf"%(options.path,i+1)
+		rawinfile = "%s/seedtree_%d.hdf"%(options.path,i)
+		
+		infile="%s/seedtree_%d.hdf"%(options.path,i).replace('.hdf','_preproc.hdf')
+			
+		print "\n(e2spt_binarytree)(binaryTreeRef) Infile will be", infile
+		
+		#outfile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i+1,ic)
+		#if ic < 0:
+		outfile="%s/seedtree_%d.hdf"%(options.path,i+1)
 	
 		if i == nseediter-1:
 			outfile = options.path + '/final_avg.hdf'
 		
-		print "Outfile will be", outfile
+		print "\n(e2spt_binarytree)(binaryTreeRef) Outfile will be", outfile
 	
 		tasks=[]
 		results=[]
@@ -549,11 +505,15 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 					print "Results:" 
 					pprint(results)
 						
-			makeAveragePairs(options,infile,outfile,results)
+			ret = makeAveragePairs(options,infile,outfile,results)
+			
+			if ret:
+				from e2spt_classaverage import cmdpreproc
+				cmpreproc( outfile, options, False )
 		
 		else:
 			print "\nalgorithm converged since infile %s has only one particle, nimgs=%d" %(infile,nptclsinInfile)
-			os.rename( infile, outfile )
+			os.rename( rawinfile, outfile )
 		
 		
 	#ref = EMData( outfile, 0 )		# result of the last iteration
@@ -562,7 +522,7 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 	return
 	
 
-def makeAveragePairs(options,ptcl_file,outfile, results):
+def makeAveragePairs(options, ptcl_file, outfile, results):
 	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
 	
 	current = os.getcwd()
@@ -632,7 +592,7 @@ def makeAveragePairs(options,ptcl_file,outfile, results):
 		
 		ii+=1
 		
-	return
+	return 1
 
 
 if __name__ == '__main__':

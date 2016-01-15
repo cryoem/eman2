@@ -47,7 +47,7 @@ from EMAN2jsondb import JSTask,jsonclasses
 import datetime
 import gc 	#this will be used to free-up unused memory
 
-from e2spt_hac import textwriter
+#from e2spt_hac import textwriter
 
 
 
@@ -85,13 +85,43 @@ def main():
 	
 	
 	'''
+	REQUIRED PARAMETERS
+	'''
+	parser.add_argument("--input", type=str, default='',help="""Default=None. The name of the input volume stack. MUST be HDF since volume stack support is required.""", guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+
+	
+	'''
 	STANDARD PARAMETERS
 	'''
-	parser.add_argument("--path",type=str,default='spt',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
+	parser.add_argument("--apix",type=float,default=0.0,help="""Default=0.0 (not used). Use this apix value where relevant instead of whatever is in the header of the reference and the particles.""")
+
+	parser.add_argument("--align",type=str,default="rotate_translate_3d_tree",help="""Default is rotate_translate_3d_tree. See e2help.py aligners to see the list of parameters the aligner takes (for example, if there's symmetry, supply --align rotate_translate_3d_tree:sym=icos). This is the aligner used to align particles to the previous class average. Specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	
-	parser.add_argument("--input", type=str, default='',help="""Default=None. The name of the input volume stack. MUST be HDF since volume stack support is required.""", guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-		
+	parser.add_argument("--aligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used for the --align aligner. Do not specify unless you need to use another specific aligner.""",guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+	
+	parser.add_argument("--clip",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clip=75""")
+
 	parser.add_argument("--iter", type=int, default=1, help="""Default=1. The number of iterations to perform.""", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
+	
+	parser.add_argument("--path",type=str,default='spt',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.""")
+		
+	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment.""", default=1, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
+			
+	parser.add_argument("--preavgproc1",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
+	
+	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
+
+	parser.add_argument("--parallel",default="thread:1",help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
+			
+	parser.add_argument("--resume",type=str,default='',help="""(Not working currently). sptali_ir.json file that contains alignment information for the particles in the set. If the information is incomplete (i.e., there are less elements in the file than particles in the stack), on the first iteration the program will complete the file by working ONLY on particle indexes that are missing. For subsequent iterations, all the particles will be used.""")
+															
+	parser.add_argument("--plots", action='store_true', default=False,help="""Default=False. Turn this option on to generate a plot of the ccc scores during each iteration in.png format (otherwise only .txt files will be saved). This option will also produce a plot of mean ccc score across iterations. Running on a cluster or via ssh remotely might not support plotting.""")
+
+	parser.add_argument("--savepreproc",action="store_true",  default=False,help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
+	
+	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). Refine only this substet of particles from the stack provided through --input""")
 	
 	parser.add_argument("--savesteps",action="store_true", default=False, help="""Default=False. If set, this will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.""", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
@@ -103,38 +133,11 @@ def main():
 	
 	parser.add_argument("--sym", type=str,dest = "sym", default='', help = """Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	
-	parser.add_argument("--align",type=str,default="rotate_translate_3d_tree",help="""Default is rotate_translate_3d_tree. See e2help.py aligners to see the list of parameters the aligner takes (for example, if there's symmetry, supply --align rotate_translate_3d_tree:sym=icos). This is the aligner used to align particles to the previous class average. Specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
-	
-	parser.add_argument("--aligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used for the --align aligner. Do not specify unless you need to use another specific aligner.""",guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
-	
-	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment.""", default=1, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
-	
-	parser.add_argument("--savepreproc",action="store_true",  default=False,help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
-		
-	parser.add_argument("--clipali",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
-
-	parser.add_argument("--preavgproc1",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
-	
-	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness""")
 
 	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tiltaxis. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
 
 	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
-
-	parser.add_argument("--parallel",default="thread:1",help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	
-	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
-	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness""")
-		
-	parser.add_argument("--resume",type=str,default='',help="""(Not working currently). sptali_ir.json file that contains alignment information for the particles in the set. If the information is incomplete (i.e., there are less elements in the file than particles in the stack), on the first iteration the program will complete the file by working ONLY on particle indexes that are missing. For subsequent iterations, all the particles will be used.""")
-															
-	parser.add_argument("--plots", action='store_true', default=False,help="""Default=False. Turn this option on to generate a plot of the ccc scores during each iteration in.png format (otherwise only .txt files will be saved). This option will also produce a plot of mean ccc score across iterations. Running on a cluster or via ssh remotely might not support plotting.""")
-
-	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). Refine only this substet of particles from the stack provided through --input""")
-
-	parser.add_argument("--apix",type=float,default=0.0,help="""Default=0.0 (not used). Use this apix value where relevant instead of whatever is in the header of the reference and the particles.""")
-	
 
 	
 	'''
@@ -182,7 +185,7 @@ def main():
 	PRE-FFT processing parameters
 	'''
 	
-	#parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clipali, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
+	#parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clip, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
 
 	parser.add_argument("--shrink", type=int,default=1,help="""Default=1 (no shrinking). Optionally shrink the input volumes by an integer amount for coarse alignment.""", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
@@ -190,7 +193,7 @@ def main():
 	
 	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
-	parser.add_argument("--mask",type=str,default='', help="""Default=None. Masking processor applied to particles before alignment. IF using --clipali, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--mask",type=str,default='', help="""Default=None. Masking processor applied to particles before alignment. IF using --clip, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
 	
@@ -240,7 +243,7 @@ def main():
 	parser.add_argument("--procfinelikecoarse",action='store_true',default=False,help="""If you supply this parameters, particles for fine alignment will be preprocessed identically to particles for coarse alignment by default. If you supply this, but want specific parameters for preprocessing particles for also supply: fine alignment, nd supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.""")
 	
 	
-	parser.add_argument("--falign",type=str,default="refine_3d_grid:delta=2:range=4:search=2",help="""Default="refine_3d_grid:delta=2:range=4:search=2". This is the second stage aligner used to fine-tune the first alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+	parser.add_argument("--falign",type=str,default='',help="""Default=None. This is the second stage aligner when the default aligner (rotate_translate_3d_tree) is NOT used. The fine alignment aligner is used to fine-tune the first alignment.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
 			
 	parser.add_argument("--faligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
 
@@ -274,6 +277,28 @@ def main():
 	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
 	
 	(options, args) = parser.parse_args()
+	
+	
+	ptclshdr = EMData(options.input,0,True)
+	nx = ptclshdr["nx"]
+	ny = ptclshdr["ny"]
+	nz = ptclshdr["nz"]
+	if nx!=ny or ny!=nz :
+		print "\nERROR, input volumes are not cubes"
+		sys.exit(1)
+
+	if options.ref:
+	
+		try:
+			refhdr = EMData( options.ref, 0, True )
+			if refhdr["nx"]!=nx or refhdr["ny"]!=ny or refhdr["nz"]!=nz : 
+				print """(e2spt_classaverage)(main). 
+				ERROR: ref volume size %d, %d, %d, not the same as input volume(s)' size, 
+				%d, %d, %d""" %(refhdr["nx"], refhdr["ny"], refhdr["nz"],nx, ny, nz)
+				sys.exit(1)
+		except:
+			print ("\n(e2spt_classaverage)(main) ERROR reading reference %s. Check that the file name is correct and the file is sane" %(options.ref) )
+			sys.exit(1)
 	
 	print "Initially, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
 	
@@ -413,81 +438,188 @@ def main():
 	
 	if options.shrink < options.shrinkfine:
 		options.shrink = options.shrinkfine
-		print "WARNING: It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
+		print "\n(e2spt_classaverage)(main) WARNING: It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
 	
 	print "after fixing searches but before calcali options.falign is", options.falign
 	if options.radius and float(options.radius) > 0.0:
 		#print "(e2spt_classaverage)(main) before calling calcAliStep, options.input is", options.input
 		options = calcAliStep(options)
 	
+	
+	
+	'''
+	PREPROCESS IMAGE/S IN ADVANCE IF OLD ALIGNMENT (PRIOR TO TREE ALIGNER) IS USED
+	'''
+	preprocdone = 0
+	
+	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
+		ret = cmdpreproc( options.input, options, False )
+		if ret: 
+			preprocdone += 1
+		else:
+			print "\n(e2spt_classaverage)(main) preprocessing --input for coarse alignment failed"
+		
+		if options.ref and options.refpreprocess:
+			retref = cmdpreproc( options.ref, options, False )
+			if retref: 
+				preprocdone += 1
+			else:
+				print "\n(e2spt_classaverage)(main) preprocessing --ref for coarse alignment failed"
+		else: 
+			preprocdone += 1
+			
+		'''
+		Use preprocessed particles as input. Flawed, since you can only pass in one stack to
+		alignment, and there could be two (fine and coarse) and the alignment function still
+		decides internally #fix this later (jan/2016)
+		'''
+		options.input = options.path + '/' + ret
+	
+	else:
+		preprocdone += 2
+	
+	
+	if 'rotate_translate_3d_tree' not in options.align and options.falign:
+		if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
+			
+			ret =cmdpreproc( options.input, options, True )
+			if ret: 
+				preprocdone += 1
+			else:
+				print "\n(e2spt_classaverage)(main) preprocessing --input for fne alignment failed"
+		
+			if options.ref and options.refpreprocess:
+				retref = cmdpreproc( options.ref, options, True )
+				if retref: 
+					preprocdone += 1
+				else:
+					print "\n(e2spt_classaverage)(main) preprocessing --ref for fine alignment failed"
+			else:
+				preprocdone += 1
+	else:
+		preprocdone += 2		
+	
+	
+	
+	
+	if preprocdone > 3:
+	
+		"""		
+			
+			preprocstackfine = os.path.basename(options.input).replace('.hdf','_preprocfine.hdf')
+			cmdpreprocfine = 'e2spt_preproc.py --input ' + options.raw + ' --output ' + preprocstackfine
+			
+			cmdpreprocreffine = ''
+			preprocreffine = ''
+		
+			if options.ref and options.refpreprocess:
+				
+				preprocreffine = os.path.basename(options.ref).replace('.hdf','_preprocfine.hdf')
+				cmdpreprocreffine = 'e2spt_preproc.py --input ' + options.ref + ' --output ' + preprocreffine
+
+			if options.mask:
+				cmdpreprocfine += ' --mask ' + options.mask 
+				if options.ref and options.refpreprocess:
+					cmdpreprocreffine += ' --mask ' + options.mask
+				
+			if options.maskfile:
+				cmdpreprocfine += ' --maskfile ' + options.maskfile
+				if options.ref and options.refpreprocess:
+					cmdpreprocreffine += ' --maskfile ' + options.maskfile
+		
+			if options.normproc:
+				cmdpreprocfine += ' --normproc ' + options.normproc
+				if options.ref and options.refpreprocess:
+					cmdpreprocreffine += ' --normproc ' + options.normproc
+
+			if options.threshold:
+				cmdpreprocfine += ' --threshold ' + options.threshold
+				if options.ref and options.refpreprocess:
+					cmdpreprocreffine += ' --threshold ' + options.threshold
+	
+			if options.clip:
+				cmdpreprocfine += ' --clip ' + str(options.clip)
+				if options.ref and options.refpreprocess:
+					cmdpreprocreffine += ' --clip ' + str(options.clip)
+	
+			if options.shrinkfine > 1:
+				cmdpreprocfine += ' --shrinkfine ' + str(options.shrinkfine)
+				if options.ref and options.refpreprocess:
+					cmdpreprocreffine += ' --shrinkfine ' + str(options.shrinkfine)
+	
+			if options.lowpassfine:
+				cmdpreprocfine += ' --lowpassfine ' + options.lowpassfine
+				if options.ref and options.refpreprocess:
+					cmdpreprocreffine += ' --lowpassfine ' + options.lowpassfine
+		
+			if options.highpassfine:
+				cmdpreprocfine += ' --highpassfine ' + options.highpassfine
+				if options.ref and options.refpreprocess:
+					cmdpreprocreffine += ' --highpassfine ' + options.highpassfine
+
+			if options.preprocessfine:
+				cmdpreprocfine += ' --preprocessfine ' + options.preprocessfine
+				if options.ref and options.refpreprocess:
+					cmdpreprocreffine += ' --preprocessfine ' + options.preprocessfine
+			
+		
+			retfine = runcmd( options, cmdpreprocfine )
+	
+			if retfine:
+				input_preprocfine = options.path + '/' + preprocstackfine
+				os.rename( preprocstackfine, input_preprocfine )
+			else:
+				print "\n(e2spt_classaverage)(main) preprocessing particles for fine alignment crashed"
+		
+			if options.ref and options.refpreprocess:	
+				retreffine = runcmd( options, cmdpreprocreffine )	
+				if retreffine:	
+					ref_preprocfine = options.path + '/' + preprocreffine
+					os.rename( preprocreffine, ref_preprocfine )
+					#options.input = input_preproc
+				else:
+					print "\n(e2spt_classaverage)(main) preprocessing reference for fine alignment crashed"
+	"""
+	
+
+	print "\n(e2spt_classaverage)(main) preprocessing completed"
+
 	'''
 	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
 	'''
 	options = sptOptionsParser( options )
-	
+
 	print "after parsing options, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
 	print options.align, type(options.align)
-		
+	
 	if options.resultmx: 
 		print "\nSorry, resultmx not implemented yet"
-	
+
 	#????
 	if options.resultmx != None: 
 		options.storebad = True
-					
-	ptclshdr = EMData(options.input,0,True)
-	nx = ptclshdr["nx"]
-	ny = ptclshdr["ny"]
-	nz = ptclshdr["nz"]
-	if nx!=ny or ny!=nz :
-		print "\nERROR, input volumes are not cubes"
-		sys.exit(1)
+				
 	
-	if options.ref:
-		refhdr = EMData( options.ref, 0, True )
-		if refhdr["nx"]!=nx or refhdr["ny"]!=ny or refhdr["nz"]!=nz : 
-			print """(e2spt_classaverage)(main). 
-			ERROR: ref volume size %d, %d, %d, not the same as input volume(s)' size, 
-			%d, %d, %d""" %(refhdr["nx"], refhdr["ny"], refhdr["nz"],nx, ny, nz)
-			sys.exit(1)
 	
+
 	logger = E2init(sys.argv, options.ppid)
-	
+
 	'''
 	Store parameters in parameters.txt file inside --path
 	'''
 	cmdwp = writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
-	
-	
-	#preprocnameCoarse = preprocnameFine = ''
-	#if options.savepreproc:
-	#	dummy = EMData(8,8,8)
-	#	dummy.to_one()
-	
-	#	preprocnameCoarse = options.input.replace('.hdf','_preprocCoarse.hdf')
-	#	if options.path not in preprocnameCoarse:
-	#		preprocnameCoarse = options.path + '/' + preprocnameCoarse
-	#		
-	#	preprocnameFine = options.input.replace('.hdf','_preprocFine.hdf')
-	#	if options.path not in preprocnameFine:
-	#		preprocnameFine = options.path + '/' + preprocnameFine
-	#
-	#	for i in range(nptcl):
-	#		dummy.write_image( preprocnameCoarse ,i)
-	#		
-	#		if options.falign and options.falign != 'None' and options.falign != 'none' and 'rotate_symmetry_3d' not in options.align:
-	#			dummy.write_image( preprocnameFine ,i)
 
-		
+
+	
 	if nptcl<1 : 
 		print "(e2spt_classaverage)(main) - ERROR : at least 1 particle required in input stack"
 		sys.exit(1)
-		
+	
 	if nptcl==1:
 		if options.iter>1 :
 			print "(e2spt_classaverage)(main) - Error: makes no sense to have iter>1 with one particle"
 			sys.exit(1)
-		
+	
 		if options.keepsig or options.keep!=1.0 :
 			print "(e2spt_classaverage)(main) - Error: do not use --keepsig with one particle, also keep should be 1.0 if specified"
 			sys.exit(1)
@@ -495,207 +627,133 @@ def main():
 	'''
 	Initialize parallelism if being used
 	'''
-	
+
 	if options.parallel :
-	
+
 		if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
 			options.parallel = None
 			etc = None
-		
+	
 		else:
 			print "\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!"
 			print "\n\n"
 			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(options.parallel)
 			pclist=[options.input]
-		
+	
 			if options.ref: 
 				pclist.append(options.ref)
 			etc.precache(pclist)
 	else:
 		etc=''
 
-	
-	
-	#if 'tree' in options.align:
-	#	options.falign = None
-	#	options.mask = None
-	#	options.lowpass = None
-	#	options.highpass = None
-	#	options.normproc = None
-	#	options.lowpassfine = None
-	#	options.highpassfine = None
-	#	options.preprocess = None
-	#	options.preprocessfine = None	
-	#else: 
-	
-	if options.mask or options.normproc or options.threshold or options.clipali:		
-		tasks=[]
-		results=[]
-		
-		#preprocprefftstack=''
-		#if options.savepreproc:
-		preprocprefftstack = options.path + '/' + os.path.basename(options.input).replace('.hdf','_preproc.hdf')
-	
-		for i in range(nptcl):
-			dimg = EMData(8,8,8)
-			dimg.to_one()
-			dimg.write_image( preprocprefftstack, i )
-	
-		for i in range(nptcl):
-			
-			img = EMData( options.input, i )
-			
-			if options.parallel:
-				task = Preprocprefft3DTask( ["cache",options.input,i], options, i, preprocprefftstack )
-				tasks.append(task)
-		
-			else:
-				pimg = preprocessingprefft( img, options)
 
-				if options.savepreproc:
-					pimg.write_image( preprocprefftstack, i )
-		
-		
-		if options.parallel and tasks:
-			tids = etc.send_tasks(tasks)
-			if options.verbose: 
-				print "preprocessing %d tasks queued" % (len(tids)) 
 
 	
-		results = get_results_preproc( etc, tids, options.verbose )
-		print "\n\n (e2spt_classaverage)(main) preprocessing results are", results	
-		
-		#if options.savepreproc:
-		
-		print "input changing to preprocprefftstack"
-		options.input = preprocprefftstack
+	
+	
 
-		#cache needs to be reloaded with the new options.input		
-		if options.parallel :
-
-			if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
-				options.parallel = None
-				etc = None
-	
-			else:
-				print "\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!"
-				print "\n\n"
-				from EMAN2PAR import EMTaskCustomer
-				etc=EMTaskCustomer(options.parallel)
-				pclist=[options.input]
-	
-				if options.ref: 
-					pclist.append(options.ref)
-				etc.precache(pclist)
-		else:
-			etc=''
-	else:
-		#nothing to do
-		pass
-		
-	
 	if options.inputaliparams: 
 		preOrientationsDict = js_open_dict(options.inputaliparams)
-		
+	
 	resumeDict = {}
 	actualNumsDict = {}
 	actualNumsEven = []
 	actualNumsOdd = []
-	
+
 	try:
 		if options.resume: 
 			#print "The resume dict to open is", options.resume
 			resumeDict = js_open_dict( options.resume )
-		
+	
 			#print "Resume dict is", resumeDict
 			for key in resumeDict.keys():
 				#print "\n\nKKKKKKey is", key
-			
+		
 				keyint = int ( key.split('_')[-1] )
 				#print "\n\nkeyint is", keyint
-			
+		
 				if keyint % 2:
 					actualNumsOdd.append( keyint )
 				else:	
 					actualNumsEven.append( keyint )
-		
+	
 			actualNumsDict.update({ 0:actualNumsEven, 1:actualNumsOdd })
-				
+			
 			#print "\nActualNumsDict is", actualNumsDict	
 
 			resumeDict.close()
 	except:
 		pass
-			
+		
 	ncls = 1
-	
+
 	classmxFile = options.path + '/classmx_' + str( 0 ).zfill( len (str (options.iter))) + '.hdf'
-	
+
 	if not options.goldstandardoff and nptcl > 1:
 		ncls = 2
-	
+
 	#C: Read or initialize all classmx images as 2-D EMData files of 2 x N dimensions, where N is the number of particles.
 
 	refsdict = {}
-	
+
 	if options.classmx:
 		print "\n--classmx=",options.classmx
 		classmxFile = options.classmx
 		classmx = EMData.read_images( classmxFile )		# we keep the entire classification matrix in memory, since we need to update it in most cases
 		#ncls = int(classmx[0]["maximum"])
 		#ncls = int( classmx[0]['nx'] )					#In this program, this will always be 1 for non-goldstandard and 2 for gold standard
-		
+	
 		scoresImg = classmx[0]
-		
+	
 		if options.inputaliparams:
 			inputalidict = js_open_dict( options.inputaliparams )
 			numdigits = len( inputalidict.keys()[0].split('_')[-1] )	#keys are of the form 'subtomo_XXX'; we determine how many XXX the keys have
-			
-			
-			
+		
+		
+		
 		for ic in range(ncls):
 			resultsforaverage = {}
-	
+
 			#ptclnums = classmx_ptcls( classmx, ic )
-			
-			
+		
+		
 			#print "x dimension of classmx file is",  scoresImg['nx']
 			#ptclnums = []
 			#for j in range( scoresImg['nx'] ):				#Loop over the number of classes
 			ptclnums=[]									#each of which starts with no particles in it
-			
+		
 			ptclrange = scoresImg['ny']
 			if options.subset:
 				ptclrange = options.subset
-				
+			
 			for i in range( ptclrange ):			#Loop over the number of particles
 				score = scoresImg.get_value_at(ic,i)
 				print "score in classmx is", score
 				if score:
 					print "therefore score is TRUE (should not be if it is 0.0!!!!)"
 					ptclnums.append(i)
-					
-			
+				
+		
 			for indx in ptclnums:
-				
+			
 				score = classmx[0].get_value_at(ic,indx)
-				
+			
 				if float( score ) > -0.000000001:
 					print "\nscore in classmx was empty (positive or zero)"
-					
+				
 					if options.recompute:
 						if not options.inputaliparams:
 							if options.keepsig or options.keep < 1.0:
 								print "\n(e2spt_classaverage)(main) ERROR: if --recompute and --keep (or --keepsig) are provided simulaneously, you must also provide --inputaliparams"
 								sys.exit()
-							
+						
 					if options.inputaliparams:
 						numtag = str( indx ).zfill( numdigits )
 						key = 'subtomo_' + numtag
 						score = inputalidict[ key ][1]
 						print "\nfor subtomo %d, getting score from --inputaliparams, score=%f" %( indx, score )
-					
+				
 				#classnum = classmx[0][indx]
 				'''
 				weight = classmx[1][indx]
@@ -708,7 +766,7 @@ def main():
 				scale = classmx[8][indx]
 				#score = classmx[9][indx]
 				'''
-				
+			
 				weight = classmx[1].get_value_at(ic,indx)
 				tx = classmx[2].get_value_at(ic,indx)
 				ty = classmx[3].get_value_at(ic,indx)
@@ -717,31 +775,31 @@ def main():
 				alt = classmx[6].get_value_at(ic,indx)
 				phi = classmx[7].get_value_at(ic,indx)
 				scale = classmx[8].get_value_at(ic,indx)
-				
+			
 				alitransform = Transform({'type':'eman','az':az,'alt':alt,'phi':phi,'tx':tx,'ty':ty,'tz':tz})
-				
+			
 				if options.inputaliparams:
 					key = 'subtomo_' + numtag
 					transformjson = inputalidict[ key ][0]
-					
+				
 					print "\ntransform classmx is", alitransform
 					print "\nwhereas transform json is", transformjson
-				
-				resultsforaverage.update( { indx:[score,alitransform] } )
 			
+				resultsforaverage.update( { indx:[score,alitransform] } )
+		
 			print "\nic is", ic
 			if ic == 0:
 				print "\nresults for average EVEN are", resultsforaverage
-				
+			
 			if ic == 1:
 				print "\nresults for average ODD are", resultsforaverage
-			
+		
 			ret = makeAverage( options, ic, resultsforaverage, 0 )
 			ref = ret[0]
 			#weights = ret[1]
-			
+		
 			refsdict.update({ ic : ref })	
-			
+		
 			if options.recompute:
 				if ic == 0:
 					ref.write_image( options.path + '/recomp_avg_even.hdf', 0 )
@@ -752,38 +810,38 @@ def main():
 					ref.write_image( options.path + '/avgs_even.hdf', 0 )
 				elif ic == 1:
 					ref.write_image( options.path + '/avgs_odd.hdf', 0 )
-			
+		
 		#try:
 		if refsdict:
 			refeven = refsdict[0]
 			refodd = refsdict[1]
-		
+	
 			fscfile = options.path + '/recompute_fsc.txt'
-			
-			
-			
+		
+		
+		
 			print "options.align is", options.align
 			refsavg = compareEvenOdd( options, refeven, refodd, 2, etc, fscfile, 'initial' ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
-			
+		
 			if options.recompute:
 				refsavg.write_image( options.path + '/recomp_avg.hdf', 0 )
-			
+		
 		else:
 			print "\nERROR: building initial references from classmx failed!"
 
-		
+	
 		if options.inputaliparams:
 			inputalidict.close()
-		
+	
 		if options.recompute:
 			print "recompute finished"
 			sys.exit()	
 	else:
 		options.classmx = classmxFile
-			
+		
 		#C: classmx images are put into a single stack of 2-D images with 9 images in it (0-8)
 		#C: and written out so that the file exists when accessed later by the code
-			
+		
 		classmxScores = EMData(ncls,nptcl)
 		classmxWeights = EMData(ncls,nptcl)
 		classmxXs = EMData(ncls,nptcl)
@@ -795,7 +853,7 @@ def main():
 		classmxScales = EMData(ncls,nptcl)
 
 		classmxScores.to_zero()
-		
+	
 		if not options.goldstandardoff and ncls > 1 and nptcl > 1:
 			for i in range(nptcl):
 				klassid = 0
@@ -803,13 +861,13 @@ def main():
 					klassid = 1
 					#print "\n(e2spt_classaverage)(main) - Particle %d will belong to odd class" %( i )
 					#classmxScores.set_value_at( 1, i, 1.0 )					
-				
+			
 				print "\n(e2spt_classaverage)(main) - Particle %d will belong to classid %d" %( i, klassid )
 				classmxScores.set_value_at( klassid, i, 1.0 )
-					
+				
 		else:
 			classmxScores.to_one() 		#If there's only one class, all particles are in it
-		
+	
 		classmxWeights.to_one() 	#Particles contribute entirely and equally to the class to which they are assigned
 		classmxXs.to_zero()
 		classmxYs.to_zero()
@@ -818,7 +876,7 @@ def main():
 		classmxAlts.to_zero()
 		classmxPhis.to_zero()
 		classmxScales.to_one()		#One means no scaling
-	
+
 		classmxScores.write_image(classmxFile,0)
 		classmxWeights.write_image(classmxFile,1)
 		classmxXs.write_image(classmxFile,2)
@@ -828,13 +886,13 @@ def main():
 		classmxAlts.write_image(classmxFile,6)
 		classmxPhis.write_image(classmxFile,7)	
 		classmxScales.write_image(classmxFile,8)
-			
+		
 	print "\n(e2spt_classaverage)(main) - classmx files initialized."
-			
+		
 	'''		
 	Figure out from the classmx file how many classes there are, and what particle indexes are in each
 	'''	
-	
+
 	ptclnumsdict = {}			#Each class might have a different list of particle numbers. 
 								#We store them in a master dictionary, read only once.
 	if ncls == 1: 
@@ -844,7 +902,7 @@ def main():
 		if options.verbose:
 			#print "\n(e2spt_classaverage)(main) - Read classmx file and its type are", options.classmx, type(classmx)
 			pass
-			
+		
 		#ptclnums = classmx_ptcls(classmx,ic)				# This gets the list from the classmx
 
 		scoresImg = classmx[0]
@@ -855,50 +913,50 @@ def main():
 				score = scoresImg.get_value_at(j,i)
 				if score:								#If a score is non-zero for a [class,ptclindx] position, 
 					ptclnums.append(i)					#in scoresImg, add that ptclindx to the ptclnums list for this class
-					
+				
 			ptclnumsdict.update({ j : ptclnums })
 
-	
+
 	if not options.goldstandardoff:
 		print "\nThe number of classes and their indexes are"
 		for klass in ptclnumsdict:
 			print "Klass is", klass
 			print "Indexes are", ptclnumsdict[ klass ]
-	
+
 	#originalOutput = options.output
-	
-	
+
+
 	if not refsdict:
-		print "\nno classmx provided. Building initial models from scratch"
+		print "\nno classmx provided. Building initial models from scratch or preparing reference (phase randomizing) if --ref provided. --ref is", options.ref
 		refsdict = sptRefGen( options, ptclnumsdict, cmdwp )
-	
+
 		if not refsdict:
 			print "\nERROR: failed to build initial models from scratch"
 			sys.exit()
-		
+	
 	if not options.goldstandardoff and ncls > 1 and nptcl > 1:
-		
+	
 		refeven = refsdict[0]
 		refodd = refsdict[1] 
-			
+		
 		if options.filterbyfsc:
 			fscfile = options.path + '/initialrefs_fsc.txt'
-			
+		
 			if not options.ref:	
 				refsavg = compareEvenOdd( options, refeven, refodd, 2, etc, fscfile, 'initial' ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
-				
+			
 				if options.savesteps:
 					refname = options.path + '/initialrefs_avg.hdf'
 					refsavg.write_image(refname, 0)
-				
+			
 			else:
 				calcFsc( options, refeven, refodd, fscfile )
-			
+		
 			print "options.lowpass and type were", options.lowpass, type( options.lowpass )
 			options.lowpass = ('filter.wiener.byfsc',{ 'fscfile':fscfile })
 			print "Now it is", options.lowpass, type(options.lowpass)
 
-	
+
 	'''
 	We loop over the number of iterations first (opposed to older versions where you refined
 	the classes for a given number of iterations), because at the end of every iteration
@@ -907,56 +965,59 @@ def main():
 	the resolution by aligning the average of class 0 to the average of class 1 and computing the FSC.
 	This FSC is then used to filter the particles and the average during preprocessing.
 	'''
-	
+
 	#ptclshdr = EMData( options.input, 0, True )
-	
+
 	'''
 	This dictionary is used as one measure of convergence. If two consecutive averages have the same values on the header, they are equivalent and the algorithm has converged
 	'''
 	avgshdrs = { 0:[''] }
 	print "Upon initial setup, avgshdrs[0] is",  avgshdrs[0], type( avgshdrs[0] )
-	
+
 	'''
 	This dictionary will store the mean score per class across alignment iterations
 	'''
 	meanScores = { 0:[0] }
-	
+
 	if not options.goldstandardoff and ncls > 1 and nptcl > 1:
 		avgshdrs.update({1:['']})
 		meanScores.update( { 1:[0] } )
 		print "Upon initial setup, avgshdrs[1] is",  avgshdrs[1], type( avgshdrs[1] )
-	
-	
+
+
 	gc.collect()	#free up unused memory
+
+	from e2spt_preproc import preprocfunc
+
 	for it in range( options.iter ):
-	
+
 		if options.verbose: 
 			print "\n(e2spt_classaverage)(main) - ###### Iteration %d/%d"%(it, options.iter)
-	
+
 		classmxFile = options.path + '/classmx_' + str( it ).zfill( len (str (options.iter))) + '.hdf'
-		
+	
 		#weightsMasterDict = {}
-		
+	
 		for ic in range( ncls ):
 			weights = {}
 			if options.verbose:
 				print "Processing class %d/%d"%(ic+1,ncls)
 
 			ptclnums = ptclnumsdict[ ic ]
-			
-			
-			
+		
+		
+		
 			klassid = '_even'
 			if ic == 1:
 				klassid = '_odd'
 			if options.goldstandardoff:
 				klassid = ''
-			
-			
+		
+		
 			print "for klassid", klassid
 			print "ptclnums are", ptclnums
 			print "\n"
-				
+			
 			#if options.savesteps:
 			#	refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
 			#	ref.write_image(refname,-1)
@@ -964,40 +1025,55 @@ def main():
 			#print "\nFor class", ic
 			#print "Particle numbers are", ptclnums		
 			#print "\n"
-			
+		
 			#options.output = originalOutput.replace('.hdf', '_' + str(ic).zfill( len (str (ncls))) + '.hdf')
 			#options.output = originalOutput
-			
-			#if ncls > 1:
-				
-			
-				#options.output = originalOutput.replace('.hdf', klassid + '.hdf')	
 		
+			#if ncls > 1:
+			
+		
+				#options.output = originalOutput.replace('.hdf', klassid + '.hdf')	
+	
 			#resNum = 0
 			resumeDict = {}
-		
+	
 			#for it in range(options.iter):
-			
+		
 			# In 2-D class-averaging, each alignment is fast, so we send each node a class-average to make
 			# in 3-D each alignment is very slow, so we use a single ptcl->ref alignment as a task
 
 			tasks=[]
 			results=[]
+	
+		
+			#try:
+			ref = refsdict[ ic ]
+			#if options.parallel: 
+			ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
+		
+			'''
+			If the reference is preprocessed, write the preprocessed images. While the coarse alignment preprocessed reference is passed by default 
+			(there's no "fine alignment" using the tree aligner), the fine alignment preprocessed reference is accessed internally from the alignment function if needed
+			'''
+			ref2use = options.path + '/' + options.ref.replace('.hdf','_preproc.hdf')
+			if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:	
+				ref = preprocfunc( ref, options, 0, ref2use)
+			
+			if options.falign and 'tree' in options.align[0]:
+				ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
+				if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
+					reffine = preprocfunc( ref, options, 0, ref2usefine)
 		
 			
-			try:
-				ref = refsdict[ ic ]
-				#if options.parallel: 
-				ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
+		
+			#except:
+			#	print "reference is empty"
+			#	print "classmx is", options.classmx
 			
-			except:
-				print "reference is empty"
-				print "classmx is", options.classmx
-				
-				sys.exit()
-			
+			#	sys.exit()
+		
 			# ALL CLIPPING and preprocessing should happen inside the preprocessing function
-			
+		
 			'''
 			Code to 'resume' crashed jobs
 			'''
@@ -1007,25 +1083,25 @@ def main():
 					#resNum += 1
 			except:
 				pass
-					
+				
 			for ptclnum in ptclnums:
 				nptclsinklass =len( ptclnums )
-				
+			
 				try:
 					if actualNums and ptclnum in actualNums:
 						print """Skipping this particle because you provided --resume and the alignment info for this particle is aready present.
 						Info for particle loaded into results""", ptclnum
-					
+				
 						tomoID = "subtomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
-					
+				
 						if tomoID not in resumeDict.keys():
 							print "ERROR: This key is not in the file provided for --resume", tomoID
 							sys.exit() 
-					
-			
+				
+		
 						if len(resumeDict.keys()) > 0:
 							keys = resumeDict.keys()
-						
+					
 							for key in keys:
 								if type(resumeDict[key]) is not list:					 
 									print """ERROR: Your sptali_ir.json file seems to be incomplete. The value for the particle key is a Transform(), but should be a list.
@@ -1035,18 +1111,21 @@ def main():
 									it would be 'subtomo_000'), and the 'value' of each key would be a list with two elements, [ Transform(), score ], where Transform
 									contains the alignment parameters between a particle and the reference, and score the cross correlation score for that alignment.""" 
 									sys.exit()
-							
+						
 						results.append( [ {'xform.align3d': resumeDict[tomoID][0] , 'score':resumeDict[tomoID][1] } ] )
 				except:
 					pass	
-					
+				
 				transform = None					
 				if options.inputaliparams:
 					tomoID = "subtomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
 					transform = preOrientationsDict[tomoID][0]
-					
+				
 					print transform
 					print "Of type", type(transform)
+			
+			
+			
 			
 				if options.parallel:
 					task=Align3DTask(["cache",os.path.join(options.path,"tmpref.hdf"),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
@@ -1055,7 +1134,7 @@ def main():
 					#print "No parallelism specified"
 					result=align3Dfunc(["cache",os.path.join(options.path,"tmpref.hdf"),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
 					results.append(result['final'])
-			
+		
 			# start the alignments running
 			if options.parallel:
 				tids=etc.send_tasks(tasks)
@@ -1066,47 +1145,47 @@ def main():
 				#results=get_results(etc,tids,options.verbose,jsA,len(ptclnums),1)
 				#results=get_results(etc,tids,options.verbose,jsA, nptcl ,1)
 				#def get_results(etc,tids,verbose,nptcls,ref=''):
-				
+			
 				results = filter( None, get_results(etc,tids,options.verbose, nptcl ) )
-				
+			
 				#results = get_results(etc,tids,options.verbose, nptcl )
-				
-				
-				
+			
+			
+			
 			if options.verbose > 2: 
 				print "Results:" 
 				pprint(results)
-						
+					
 			if not options.donotaverage:					
 				#ref = make_average(options,ic,options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 				ref=''
-				
+			
 				'''
 				If there's more than one particle, the reference for the next round will
 				be the average of the aligned particles
 				'''
 				if nptcl > 1:
-				
+			
 					resultsforaverage = {}
 					for r in results:
 						ptclindx = r[1]
 						score = r[0][0]["score"]
 						alitransform = r[0][0]["xform.align3d"]
 						resultsforaverage.update( { ptclindx:[score,alitransform] } )
-					
 				
+			
 					ret = makeAverage(options, ic,resultsforaverage,it)
 					ref = ret[0]
 					weights = ret[1]
-					
+				
 					#weightsid = 'even'
 					#if ic == 1:
 					#	weightsid = 'odd'
 					#if options.goldstandardoff:
 					#	klassid = 'all'
-					
+				
 					#weightsMasterDict.update({ weightsid: weights })
-					
+				
 				else:
 					'''
 					If there's only one particle, the "reference" for the next round will
@@ -1115,20 +1194,20 @@ def main():
 					aligned particle is written out
 					'''
 					ref = EMData( options.input, 0 )
-					
+				
 					print "results len", len(results)
 					print "results[0]", results[0]
 					print "results", results
 					try:
 						ref.process_inplace("xform",{"transform":results[0][0][0]["xform.align3d"]})
-					
+				
 					except:
 						ref.process_inplace("xform",{"transform":results[0][0]["xform.align3d"]})
 
 					ref['origin_x'] = 0
 					ref['origin_y'] = 0
 					ref['origin_z'] = 0
-					
+				
 					if options.postprocess:
 						ppref = ref.copy()
 						maskPP = "mask.sharp:outer_radius=-2"
@@ -1137,228 +1216,228 @@ def main():
 						ppref = postprocess(ppref,maskPP,options.normproc,options.postprocess)
 
 						refnamePP = refname.replace('.hdf', '_postproc.hdf')
-				
+			
 						#ppref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
 						ppref.write_image(refnamePP,it)
-					
+				
 					outname = options.path + '/final_avg.hdf'
 					#if options.output:
 					#	outname = options.path + '/' + options.output
-					
+				
 					ref.write_image( outname , 0)
 					print "Done alignig the only particle in --input to --ref"
 					sys.exit()
-			
+		
 				ref['xform.align3d']=Transform()
 				ref['origin_x'] = 0
 				ref['origin_y'] = 0
 				ref['origin_z'] = 0
-				
+			
 				refsdict.update( { ic:ref } )
 
 				if options.savesteps:
-				
+			
 					#refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
 					refname = options.path + '/avgs' + klassid + '.hdf'
-				
-						
+			
+					
 					ref.write_image( refname, it )
-				
+			
 					#print "\n\nFor the final avg going into class_x.hdf, ali params are", ref['xform.align3d']
-				
+			
 					if options.postprocess:
 						ppref = ref.copy()
 						maskPP = "mask.sharp:outer_radius=-2"
 						maskPP=parsemodopt(maskPP)
-	
+
 						ppref = postprocess(ppref,maskPP,options.normproc,options.postprocess)
 
 						refnamePP = refname.replace('.hdf', '_postproc.hdf')
-					
+				
 						#ppref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
 						ppref.write_image(refnamePP,it)
-				
+			
 				if it == options.iter -1:
-				
+			
 					outname = options.path + '/final_avg.hdf'
 					#if options.output:
 					#	outname = options.path + '/' + options.output
-				
+			
 					ref.write_image( outname , 0 )			
 			elif options.donotaverage: 				#This is used with e2spt_multirefine, where all you need is the alignment info, but not the averages
 				for p in range( nptcl ):
 					weights.update( {p:1.0} )
-				
-				
-				
+			
+			
+			
 			'''
 			Define and open the .json dictionaries where alignment and score values will be stored, for each iteration,
 			and for each reference if using multiple model refinement
 			'''
-			
+		
 			jsAliParamsPath = options.path + '/sptali_ir.json'
-			
-			
+		
+		
 			print "options.refinemultireftag and type are", options.refinemultireftag, type(options.refinemultireftag)
-			
+		
 			if not options.refinemultireftag:
 				jsAliParamsPath = jsAliParamsPath.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
-				
-				
+			
+			
 
 			print "(e2spt_classaverage) This is the .json file to write", jsAliParamsPath
 			jsA = js_open_dict( jsAliParamsPath ) #Write particle orientations to json database.
-			
+		
 			iii = 0
-			
+		
 			classScoresList = [] 
-			
+		
 			'''
 			Iterate over alignment results to write them to classmx.hdf and .json files
 			'''
 			print "len results is", len(results)
 			print "should match nptcl", nptcl
-			
+		
 			#print "results are", results
-			
+		
 			for r in results:
 				#if r and r[0]:	
-				
-				
+			
+			
 				ptclindx = r[1]
-					
+				
 				score = r[0][0]['score']
 				if options.verbose > 3:
 					print "for particle %d score is %.4f" %(ptclindx,score)
-				
+			
 				#classmxScores.set_value_at(ic,iii,score)
 				#posscore = math.fabs(score)
-				
+			
 				classScoresList.append(score)
-				
+			
 				#print "\n\n\n\n\n\n\n\nThe appended positive score is", posscore
 				#weight=1.0
-				
+			
 				if options.verbose > 3:
 					print "classmxWeights img is", classmxWeights['nx'], classmxWeights['ny'], classmxWeights['nz']
-					
+				
 				print "weights is", weights
 				print "gout to set value for classmxweights at", ic, ptclindx, weights[ptclindx]
 				classmxWeights.set_value_at(ic,ptclindx,weights[ptclindx])
-				
+			
 				print "set value for classmxweights at", ic, ptclindx, weights[ptclindx]
-				
+			
 				t = r[0][0]['xform.align3d']
-				
+			
 				if options.verbose > 3:
 					print "and transform is",t
-			
+		
 				xformslabel = 'subtomo_' + str( ptclindx ).zfill( len( str( nptcl ) ) )			
 				jsA.setval( xformslabel, [ t , score ] )
-			
+		
 				if options.verbose > 3:
 					print "wrote info to .json file"
-				
+			
 				if options.saveallpeaks and options.npeakstorefine > 1 and options.falign:
 					scoresCoarse = []
-					
+				
 					rCoarse = r[2]
-					
+				
 					for peak in rCoarse:
 						sc = peak['score']
-						
+					
 						if float( sc ) < 0.0:
 							scoresCoarse.append( sc )
-						
-					meanPeaksScoresCoarse = numpy.mean( scoresCoarse )
 					
+					meanPeaksScoresCoarse = numpy.mean( scoresCoarse )
+				
 					#sigmaPeaksScoresCoarse = 0.0
 					#if len( scoresCoarse ) > 1:
-					
+				
 					sigmaPeaksScoresCoarse = numpy.std( scoresCoarse )
-					
-					
+				
+				
 					if len(scoresCoarse) > 1:
-					
-					
+				
+				
 						jsAliParamsPathCoarseAll = options.path + '/sptali_ir_coarse_allpeaks.json'
-	
+
 						if not options.refinemultireftag:
 							jsAliParamsPathCoarseAll = jsAliParamsPathCoarseAll.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
-	
+
 						jsAcoarseAll = js_open_dict( jsAliParamsPathCoarseAll )
-						
+					
 						pi = 0
-						
+					
 						for peak in rCoarse:
 							tc = peak['xform.align3d']
 							sc = peak['score']
-						
+					
 							if float( sc ) < 0.0:
 								z = ( sc - meanPeaksScoresCoarse ) / sigmaPeaksScoresCoarse
-						
+					
 								print "pi, sc, meanPeaksScoresCoarse, sigmaPeaksScoresCoarse, z", pi, sc, meanPeaksScoresCoarse, sigmaPeaksScoresCoarse, z
-						
+					
 								peaklabel = str( pi ).zfill( len( str(options.npeakstorefine) ) )
-						
+					
 								jsAcoarseAll.setval( xformslabel + '_peak_' + peaklabel , [ tc , 'ccc='+str(sc), 'zscore='+str(z) ] )
 							else:
 								print "Empty score for peak", pi
-						
-							pi += 1	
-						
-						jsAcoarseAll.close()
 					
+							pi += 1	
+					
+						jsAcoarseAll.close()
+				
 					else:
 						print "WARNING: Not enough successful alignments to compute a z-score"
 				else:
 					pass #Only one peak from --npeakstorefine was refined
-						
-				
+					
+			
 				if options.verbose > 3:
 					print "setting classmx"
-						
+					
 				trans=t.get_trans()
 				print "\n\n\nTranslations were", trans
 				print "Therefre the transform was", t
 				rots=t.get_rotation()
-			
+		
 				tx=trans[0]
 				print "Translation in x was", tx
 				classmxXs.set_value_at(ic,ptclindx,tx)
-			
+		
 				ty=trans[1]
 				print "Translation in y was", ty
 				classmxYs.set_value_at(ic,ptclindx,ty)
-			
+		
 				tz=trans[2]
 				print "Translation in z was", tz
 				classmxZs.set_value_at(ic,ptclindx,tz)
-			
+		
 				az=rots['az']
 				classmxAzs.set_value_at(ic,ptclindx,az)
-			
+		
 				alt=rots['alt']
 				classmxAlts.set_value_at(ic,ptclindx,alt)
-			
+		
 				phi=rots['phi']
 				classmxPhis.set_value_at(ic,ptclindx,phi)
-			
+		
 				scale=1.0
 				classmxScales.set_value_at(ic,ptclindx,scale)
 			#else:
 			#	print "Warning!! Aberrant results r[0]", r[0]
 			#	print "and r", r
 			#	sys.exit()
-			
+		
 			iii+=1
-				
-										
+			
+									
 			jsA.close()
 			print "closed .json file"
-			
-			
-			
+		
+		
+		
 			classmxScores.write_image(classmxFile,0)
 			classmxWeights.write_image(classmxFile,1)
 			classmxXs.write_image(classmxFile,2)
@@ -1368,100 +1447,100 @@ def main():
 			classmxAlts.write_image(classmxFile,6)
 			classmxPhis.write_image(classmxFile,7)	
 			classmxScales.write_image(classmxFile,8)
-		
+	
 			meanScore = sum( classScoresList ) / len( classScoresList )
-			
+		
 			if it == 0:
 				meanScores[ic] = [ meanScore ]
 			else:
 				meanScores[ic].append( meanScore )
-			
-			
+		
+		
 			#classScoresList.reverse()
 			maxY = max(classScoresList) + 1
-		
+	
 			plotX = range( len(classScoresList) )
 			maxX = max(plotX) + 1
-		
+	
 			plotName = 'spt_cccs_' + str( it ).zfill( len( str( options.iter ) )) + klassid + '.png'
-			
+		
 			classScoresList2plot = list(classScoresList)
 			classScoresList2plot.sort()
 			classScoresList2plot.reverse()
-			
+		
 			txtname = plotName.replace('.png','.txt')
 			textwriter(classScoresList2plot,options,txtname, invert=1)
-				
+			
 			if options.plots:
 				from e2spt_hac import plotter
-			
-				plotter(plotX, classScoresList2plot, options, plotName, maxX, maxY, 1, sort=1)
-			
-			gc.collect()	 #free up unused memory
-			
-			
 		
+				plotter(plotX, classScoresList2plot, options, plotName, maxX, maxY, 1, sort=1)
+		
+			gc.collect()	 #free up unused memory
+		
+		
+	
 		'''
 		Compare even and odd averages if the user did not provide --goldstandardoff
 		'''
 		if not options.goldstandardoff and len( refsdict ) > 1 and ncls > 1:
 			avgeven = refsdict[0]
 			avgodd = refsdict[1] 
-			
+		
 			print "goldstandardoff is", options.goldstandardoff
 			print "avgshdrs[0] is and type", avgshdrs[0], type(avgshdrs[0])
 			print "avgshdrs[1] is and type", avgshdrs[1], type(avgshdrs[1])
-			
+		
 			#print "avgeven is", avgeven
 			#print "avgodd is", avgodd
-			
+		
 			avgshdrs[0].append( avgeven.get_attr_dict() )
 			avgshdrs[1].append( avgodd.get_attr_dict() )
-			
+		
 			#avgshdrs.update( { 0:avgshdrs[0].append( avgeven.get_attr_dict() ), 1:avgshdrs[1].append( avgodd.get_attr_dict() ) } )
-			
+		
 			if it > 0 and len(avgshdrs[0]) > 1 and len(avgshdrs[1]) > 1:
 				if avgshdrs[0][-1]['mean'] == avgshdrs[0][-2]['mean'] and avgshdrs[1][-1]['mean'] == avgshdrs[0][-2]['mean']:
 					print "Both independent averages have converged!"
 					#os.system('rm ' + options.path + '/tmpref.hdf')
 					os.remove( options.path + '/tmpref.hdf' )
 					sys.exit()
-				
+			
 			fscfile = options.path + '/fsc_' + str(it).zfill( len( str(options.iter))) + '.txt'
-			
+		
 			final_avg = compareEvenOdd(options, avgeven, avgodd, it, etc, fscfile, 'goldstandard'  )
-			
-			
+		
+		
 			if options.savesteps:
 				final_avg.write_image( options.path + '/avgs.hdf' , it)
-	
+
 			if it == options.iter -1 :
-			
+		
 				outname = options.path + '/final_avg.hdf'
 				#if options.output:
 				#	outname = options.path + '/' + options.output
-					
+				
 				final_avg.write_image( outname , 0)
-			
-			
-			
+		
+		
+		
 			try:
 				if options.resume and actualNums:
 					resumeDict.close()
 			except:	
 				pass
-						
+					
 			actualNums = [] 		#Reset this so that when --resume is provided the incomplete jason file is 'fixed' considering the info in actualNums only once
 
-		
+	
 		elif options.goldstandardoff and options.ref:
 			avg = refsdict[0]
-			
+		
 			print "avgshdrs[0] is and type", avgshdrs[0], type(avgshdrs[0])
 			avgshdrs[0].append( avg.get_attr_dict() )
-			
+		
 			#avgshdrs.update( { 0:avgshdrs[0].append( avg.get_attr_dict() ) } )
-			
+		
 			if it > 0 and len(avgshdrs[0]) > 1 :
 				if avgshdrs[0][-1]['mean'] == avgshdrs[0][-2]['mean']:
 					print "The average has converged!"
@@ -1472,30 +1551,30 @@ def main():
 					sys.exit()
 
 			originalref = EMData( options.ref, 0 )
-			
+		
 			fscfile = options.path + '/fsc_' + str(it).zfill( len( str(options.iter))) + '.txt'
 
 			#calcFsc( originalref, avg, fscfile )
-			
+		
 			final_avg = compareEvenOdd( options, originalref, avg, it, etc, fscfile, 'refbased', average=False ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
-			
+		
 			if options.savesteps:
 				final_avg.write_image( options.path + '/avgs.hdf' , it)
-	
+
 			if it == options.iter -1 :
-			
+		
 				outname = options.path + '/final_avg.hdf'
 				final_avg.write_image( outname , 0)
-			
-			
+		
+		
 			if options.filterbyfsc:
 				print "Options.lowpass was and of type", options.lowpass, type( options.lowpass )
 				options.lowpass = ('filter.wiener.byfsc',{ 'fscfile':fscfile })
 				print "Now it is", options.lowpass, type(options.lowpass)
-				
+			
 		ic+=1	
 		#import matplotlib as plt
-		
+	
 	for key in meanScores:
 		scores = meanScores[ key ]
 		klassid = '_even'
@@ -1503,30 +1582,30 @@ def main():
 			klassid = '_odd'
 		if options.goldstandardoff:
 			klassid = ''
-	
+
 		maxY = max(scores) + 1
-		
+	
 		plotX = range( len(scores) )
 		maxX = max(plotX) + 1
-	
+
 		plotName = 'spt_meanccc' + klassid + '.png'
-		
+	
 		scores2plot = list(scores)
 		scores2plot.sort()
 		scores2plot.reverse()
-		
+	
 		txtname = plotName.replace('.png','.txt')
 		textwriter( scores2plot ,options, txtname, invert=1 )
-	
+
 	if options.plots:
 		from e2spt_hac import plotter
-	
+
 		plotter(plotX, scores2plot, options, plotName, maxX, maxY, 1, sort=0)
-		
-		
+	
+	
 	if options.inputaliparams: 
 		preOrientationsDict.close()
-	
+
 	#os.system('rm ' + options.path + '/tmpref.hdf')
 	os.remove( options.path + '/tmpref.hdf' )
 	
@@ -1539,6 +1618,189 @@ def main():
 	
 	
 	return
+
+
+
+'''
+Function to generate preprocessing command which calls e2spt_preproc.py
+'''
+def cmdpreproc( fyle, options, finetag=False ):	
+
+	#from e2spt_preproc import preprocfunc	
+	
+	cmdpreproc = 'e2spt_preproc.py --input ' + fyle
+	
+	if options.parallel:
+		cmdpreproc += ' --parallel ' + options.parallel
+	
+	#if "_preproc.hdf" not in fyle:
+	preprocstack = os.path.basename( fyle ).replace('.hdf','_preproc.hdf')
+	
+	if finetag:
+		#if "_preprocfine.hdf" not in fyle:
+		preprocstack = os.path.basename( fyle ).replace('.hdf','_preprocfine.hdf')
+		
+	
+	#preprocref = ''
+	#cmdpreprocref = ''
+	
+	#if options.ref and options.refpreprocess:
+	#	cmdpreprocref = 'e2spt_preproc.py --input ' + options.ref
+	#	preprocref = os.path.basename(options.ref).replace('.hdf','_preproc.hdf')
+	
+	
+	if options.mask:
+		cmdpreproc += ' --mask ' + options.mask
+		#if options.ref and options.refpreprocess:
+		#	cmdpreprocref += ' --mask ' + options.mask
+	
+	if options.maskfile:
+		cmdpreproc += ' --maskfile ' + options.maskfile 
+		#if options.ref and options.refpreprocess:
+		#	cmdpreprocref += ' --maskfile ' + options.maskfile 
+		
+	if options.normproc:
+		cmdpreproc += ' --normproc ' + options.normproc
+		#if options.ref and options.refpreprocess:
+		#	cmdpreprocref += ' --normproc ' + options.normproc
+		 
+	if options.threshold:
+		cmdpreproc += ' --threshold ' + options.threshold
+		#if options.ref and options.refpreprocess:
+		#	cmdpreprocref += ' --threshold ' + options.threshold
+	
+	if options.clip:
+		cmdpreproc += ' --clip ' + str(options.clip)
+		#if options.ref and options.refpreprocess:
+		#	cmdpreprocref += ' --clip ' + str(options.clip)
+	
+	
+	if not finetag:
+		if options.shrink > 1:
+			cmdpreproc += ' --shrink ' + str(options.shrink)
+			#if options.ref and options.refpreprocess:
+			#	cmdpreprocref += ' --shrink ' + str(options.shrink)
+	
+		if options.lowpass:
+			cmdpreproc += ' --lowpass ' + options.lowpass
+			#if options.ref and options.refpreprocess:
+			#	cmdpreprocref += ' --lowpass ' + options.lowpass
+		
+		if options.highpass:
+			cmdpreproc += ' --highpass ' + options.highpass
+			#if options.ref and options.refpreprocess:
+			#	cmdpreprocref += ' --highpass ' + options.highpass
+
+		if options.preprocess:
+			cmdpreproc += ' --preprocess ' + options.preprocess
+			#if options.ref and options.refpreprocess:
+			#	cmdpreprocref += ' --preprocess ' + options.preprocess
+	
+	elif finetag:
+		if options.shrinkfine > 1:
+			cmdpreproc += ' --shrink ' + str(options.shrinkfine )
+			#if options.ref and options.refpreprocess:
+			#	cmdpreprocref += ' --shrink ' + str(options.shrink)
+	
+		if options.lowpassfine :
+			cmdpreproc += ' --lowpass ' + options.lowpassfine 
+			#if options.ref and options.refpreprocess:
+			#	cmdpreprocref += ' --lowpass ' + options.lowpass
+		
+		if options.highpassfine :
+			cmdpreproc += ' --highpass ' + options.highpassfine 
+			#if options.ref and options.refpreprocess:
+			#	cmdpreprocref += ' --highpass ' + options.highpass
+
+		if options.preprocessfine :
+			cmdpreproc += ' --preprocess ' + options.preprocessfine 
+			#if options.ref and options.refpreprocess:
+			#	cmdpreprocref += ' --preprocess ' + options.preprocess
+	
+		
+	
+	ret = runcmd( options, cmdpreproc )
+	
+	if ret:
+		input_preproc = options.path + '/' + preprocstack
+		os.rename( preprocstack, input_preproc )
+		options.input = input_preproc
+	else:
+		print ("\n(e2spt_classaverage)(cmdpreproc) preprocessing %s for coarase alignment crashed" %( fyle ) )
+		sys.exit(1)
+		
+			
+	#if options.ref and options.refpreprocess:
+	
+	#	retref = runcmd( options, cmdpreprocref )
+		
+	#	if retref:
+	#		ref_preproc = options.path + '/' + preprocref
+	#		os.rename( preprocref, ref_preproc )
+	#	else:
+	#		print "\n(e2spt_classaverage)(main) reference particles for coarase alignment crashed"
+					
+	return preprocstack
+		
+
+
+
+
+
+def textwriterinfo(ydata,options,name):
+	if len(ydata) ==0:
+		print "ERROR: Attempting to write an empty text file!"
+		sys.exit()
+	
+	if options.path not in name:
+		name=options.path + '/' + name
+	
+	print "I am in the text writer for this file", name
+	
+	f=open(name,'w')
+	lines=[]
+	for i in range(len(ydata)):
+		line2write = 'comparison#' + str(i) + ' ' + str(ydata[i][-2]) + ' vs ' + str(ydata[i][-1])+ ' score=' + str(ydata[i][0]) + '\n'
+		#print "THe line to write is"
+		lines.append(line2write)
+	
+	#print "Thare are these many lines", len (lines)
+	#print "Cause y data is", len(ydata)
+	#sys.exit()
+	
+	f.writelines(lines)
+	f.close()
+
+	return()
+	
+	
+def textwriter(ydata,options,name,invert=0):
+	
+	if options.path not in name:
+		name=options.path + '/' + name
+	
+	print "I am in the text writer for this file", name
+	
+	f=open(name,'w')
+	lines=[]
+	for i in range(len(ydata)):
+		y=ydata[i]
+		if invert:
+			y*=-1
+			
+		line2write = str(i) + ' ' + str(y) + '\n'
+		#print "THe line to write is"
+		lines.append(line2write)
+	
+	f.writelines(lines)
+	f.close()
+
+	return()
+
+
+
+
+
 
 
 '''
@@ -1628,8 +1890,11 @@ def sptParseAligner( options ):
 					than this difference. For example: 
 					az0=0:az1=1:daz=2."""
 					sys.exit()
-			
-	print "\n\nBefore adding and fixing searches, options.falign is", options.falign, type(options.falign)	
+		
+	if options.falign:
+		print "\n(e2spt_classaverage)(main) Before adding and fixing searches, options.falign is", options.falign, type(options.falign)	
+	else:
+		print "\n(e2spt_classaverage)(main) no --falign specified"
 	
 	if options.falign: 
 		if options.falign != 'None' and options.falign != 'none':
@@ -1800,13 +2065,13 @@ def calcFsc( options, img1, img2, fscfile ):
 	
 	apix = img1['apix_x']
 	
-	#if options.clipali:
-		#img1fsc = clip3D( img1fsc, options.clipali )
+	#if options.clip:
+		#img1fsc = clip3D( img1fsc, options.clip )
 		#img1fsc.process_inpl
 		
 	#	img1fsc.write_image(options.path +'/vol4fsc1.hdf',0)
 		
-	#	img2fsc = clip3D( img2fsc, options.clipali )
+	#	img2fsc = clip3D( img2fsc, options.clip )
 	#	img2fsc.write_image(options.path +'/vol4fsc2.hdf',0)
 		
 	fsc = img1fsc.calc_fourier_shell_correlation( img2fsc )
@@ -1819,23 +2084,6 @@ def calcFsc( options, img1, img2, fscfile ):
 	return
 
 
-def clip3D( vol, sizex, sizey=0, sizez=0 ):
-	
-	if not sizey:
-		sizey=sizex
-	
-	if not sizez:
-		sizez=sizex
-	
-	volxc = vol['nx']/2
-	volyc = vol['ny']/2
-	volzc = vol['nz']/2
-	
-	Rvol =  Region( (2*volxc - sizex)/2, (2*volyc - sizey)/2, (2*volzc - sizez)/2, sizex , sizey , sizez)
-	vol.clip_inplace( Rvol )
-	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
-	
-	return vol
 
 
 '''
@@ -2384,7 +2632,7 @@ def runcmd(options,cmd):
 	#if options.verbose > 9:
 	#	print text
 	
-	return
+	return 1
 
 
 def sptOptionsParser( options ):
@@ -2864,253 +3112,7 @@ def sptmakepath(options, stem='spt'):
 
 
 
-def preprocfilter(image, options, ptclindx=0, tag='ptcls', coarse='yes', round=-1, finetag=''):
-	
-	simage = image.copy()
-	print "\n(e2spt_classaverage) preprocessing"
 
-	if options.lowpass  == 'None' or options.lowpass == 'none':
-		options.lowpass = None
-	
-	if options.highpass == 'None' or options.highpass == 'none':
-		options.highpass = None
-	
-	if options.preprocess == 'None' or options.preprocess == 'none':
-		options.preprocess = None
-	
-	if finetag:
-		try:
-			if options.lowpassfine  == 'None' or options.lowpassfine == 'none':
-				options.lowpassfine = None
-			if options.highpassfine == 'None' or options.highpassfine == 'none':
-				options.highpassfine = None
-			if options.preprocessfine == 'None' or options.preprocessfine == 'none':
-				options.preprocessfine = None
-		except:
-			print "\nWarning: Ignore if parameters --lowpassfine, --highpassfine, preprocessfine don't exist in the program you ran. Otherwise, something went wrong."
-				
-	if coarse != 'yes':
-		#print "lowpassfine received is", options.lowpass	
-		pass
-		
-	apix = simage['apix_x']
-	
-
-	'''
-	#Preprocess, lowpass and/or highpass
-	'''
-	
-	if not finetag:
-		print "(e2spt_classaverage)(preprocessing) trying filters on coarse alignment image"
-		if options.lowpass:
-			print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpass
-			simage.process_inplace(options.lowpass[0],options.lowpass[1])
-			#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
-	
-		if options.highpass:
-			print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpass
-			simage.process_inplace(options.highpass[0],options.highpass[1])
-			#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
-		
-		if options.shrink and int( options.shrink  ) > 1:
-			print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrink
-			simage.process_inplace("math.meanshrink",{"n":options.shrink })
-		
-		if options.preprocess:
-			print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocess
-			simage.process_inplace(options.preprocess[0],options.preprocess[1])
-			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
-		
-	else:
-		print "(e2spt_classaverage)(preprocessing) trying filters on fine alignment image"
-		try:
-			if options.lowpassfine:
-				print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpassfine
-				simage.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
-				#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
-	
-			if options.highpassfine:
-				print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpassfine
-				simage.process_inplace(options.highpassfine[0],options.highpassfine[1])
-				#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
-		
-		
-			if finetag != 'noshrink':
-				if options.shrinkfine and int( options.shrinkfine  ) > 1 :
-					print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrinkfine
-					simage.process_inplace("math.meanshrink",{"n":options.shrinkfine })
-				#fimage.write_image(options.path + '/imgPrepLpHpSh.hdf',-1)
-			
-			if options.preprocessfine:
-				print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocessfine
-				simage.process_inplace(options.preprocessfine[0],options.preprocessfine[1])
-				#fimage.write_image(options.path + '/imgPrep.hdf',-1)
-		
-		except:
-			print "filters on fine alignment image failed"
-	
-	return simage
-	
-
-'''
-CLASS TO PARALLELIZE PREPROCESSING STEPS OCCURRING BEFORE FFT.
-Many preprocessing steps need to be applied only once.
-'''
-class Preprocprefft3DTask(JSTask):
-	"""This is a task object for the parallelism system. It is responsible for preprocessing one 3-D volume, with a variety of options"""
-
-	def __init__(self,image,options,ptclnum,outstack):
-	
-		"""image may be an actual EMData object, or ["cache",path,number]."""
-		
-		data={"image":image}
-		
-		JSTask.__init__(self,"PreprocPrefft3d",data,{},"")
-
-		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"falign":options.falign,"faligncmp":options.faligncmp,"shrink":options.shrink,"shrinkfine":options.shrinkfine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
-		self.classoptions={"options":options,"ptclnum":ptclnum,"outstack":outstack}
-	
-	def execute(self,callback=None):
-		"""This preprocesses one volume and returns it."""
-		classoptions = self.classoptions
-		
-		indx = self.data["image"][2]
-		img = EMData(self.data["image"][1],indx)
-		
-		"""
-		CALL the preprocessingprefft function
-		"""
-		
-		print "\n(e2spt_classaverage)(Preprocprefft3DTask) preprocessing image", indx
-		print "calling preprocessingprefft, sending image"
-		
-		print "img size in preproc class BEFORE preproc function is", img['nx'], img['ny'], img['nz']
-
-		
-		preprocimg = preprocessingprefft( img, classoptions['options'] )
-		
-		#preprocprefftstack = classoptions['options'].path + '/' + classoptions['options'].input.replace('.hdf','_preproc.hdf')
-		
-		
-		print "\n\nreturned from preprocessingprefft (!!!) for ptcl %d" %(classoptions['ptclnum'])
-		print "options.savepreproc is, type", classoptions['options'].savepreproc, type(classoptions['options'].savepreproc)
-		
-		print "preprocimg type is", type(preprocimg)
-		print "header min and max are", preprocimg['maximum'],preprocimg['minimum']
-		print "img size in preproc class AFTER preproc function is", preprocimg['nx'], preprocimg['ny'], preprocimg['nz']
-		
-		print "file to save preproc is", classoptions['outstack']
-		
-		#if classoptions['options'].savepreproc and preprocimg and classoptions['outstack']:
-		print "\nsaving preproc saving preprocessed image to index %d of file %s" %(indx,classoptions['outstack'] )
-		print "because options.savepreproc is", classoptions['options'].savepreproc
-		preprocimg.write_image( classoptions['outstack'], indx)
-		#else:
-		#	print "\nnot saving preproc image, because options.savepreproc is", classoptions['options'].savepreproc
-		
-		print "\nabout to return from  class Preprocprefft3DTask"
-		
-		del preprocimg
-		
-		return 1
-
-
-def preprocessingprefft(image,options):
-
-	print "\n(e2spt_classaverage) preprocessing"
-	#print "Mask and its type are", mask, type(mask)
-	if options.mask == 'None' or options.mask  == 'none':
-		options.mask  = None
-	
-	if options.threshold == 'None' or options.threshold == 'none':
-		options.threshold = None
-	
-	if options.normproc == 'None' or options.normproc == 'none':
-		options.normproc = None
-
-	print "\n(e2spt_classaverage) (preprocessingprefft)"
-	
-	simage = image.copy()
-	
-	apix = image['apix_x']
-	
-	'''
-	Make the mask first 
-	'''
-	print "masking"
-	maskimg = EMData( int(image["nx"]), int(image["ny"]), int(image["nz"]) )
-	maskimg.to_one()
-	print "Done creating mask"
-	
-	if options.mask and options.mask != 'None' and options.mask != 'none':
-		#if options.verbose:
-		print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-		maskimg.process_inplace(options.mask[0],options.mask[1])
-		
-		print "(e2spt_classaverage)(preprocessingprefft) --mask provided:", options.mask
-		#mask.write_image(options.path + '/mask.hdf',-1)
-	
-	try:
-		if options.maskfile:
-			maskfileimg = EMData(options.maskfile,0)
-			
-			if options.clipali or maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
-				maskfileimg = clip3D( maskfileimg, maskimg['nx'] )
-		
-			maskimg.mult( maskfileimg )
-			
-			print "A maskfile was multiplied by the mask", options.maskfile
-		else:
-			print "Apparently therewas no --maskfile"
-			pass
-	except:
-		pass
-	
-	'''
-	Set the 'mask' parameter for --normproc if normalize.mask is being used
-	'''
-	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-		print "normproc is", options.normproc, type(options.normproc)
-		if options.normproc[0]=="normalize.mask": 
-			options.normproc[1]["mask"]=maskimg
-	
-	'''
-	Normalize-Mask
-	'''	
-			
-	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-		simage.process_inplace(options.normproc[0],options.normproc[1])
-		#simage.write_image(options.path + '/imgMsk1norm.hdf',-1)
-
-		print "(e2spt_classaverage)(preprocessingprefft) --normproc provided:", options.normproc
-	
-	try:
-		#if mask and mask != 'None' and mask != 'none' or options.maskfile:
-		if options.mask or options.maskfile:
-			print "Masking again after normalizing"
-			simage.mult(maskimg)
-			#simage.write_image(options.path + '/imgMsk1normMsk2.hdf',-1)
-	except:
-		pass
-		
-	'''
-	Any threshold picked visually was based on the original pixels give the original
-	box size; therefore, it needs to be applied before clipping the box
-	'''
-	if options.threshold and options.threshold != 'None' and options.threshold != 'none':
-		simage.process_inplace( options.threshold[0], options.threshold[1] )
-	
-	'''
-	If the box is clipped, you need to make sure rotations won't induce aberrant blank
-	corners; therefore, mask again softly at radius -2
-	'''
-	if options.clipali and options.clipali != 'None' and options.clipali != 'none':
-		if simage['nx'] != options.clipali or simage['ny'] != options.clipali or simage['nz'] != options.clipali:
-			simage = clip3D( simage, options.clipali )
-			
-			simage.process_inplace('mask.soft',{'outer_radius':-4})
-	
-	return simage
 	
 
 def makeAverage(options,ic,results,it=0):
@@ -3429,49 +3431,7 @@ def makeAverage(options,ic,results,it=0):
 		return [avg,weights]
 
 
-def get_results_preproc(etc,tids,verbose):
-	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
-	aside from the use of options["ptcl"] this is fairly generalizable code. """
-	
-	print "(e2spt_classaverage)(get_results_preproc)"
-	
-	# wait for them to finish and get the results
-	# results for each will just be a list of (qual,Transform) pairs
-	results=[0]*len(tids)		# storage for results
-	ncomplete=0
-	tidsleft=tids[:]
-	
-	print "results len is", len(results)
-	
-	while 1:
-		time.sleep(5)
-		proglist=etc.check_task(tidsleft)
-		nwait=0
-		for i,prog in enumerate(proglist):
-			if prog==-1 : nwait+=1
-			if prog==100 :
-				r = etc.get_results(tidsleft[i])				#Results for a completed task
-				
-				print "r is", r
-				
-				if r:
-					#print "r is", r
-					ptcl=r[0].classoptions["ptclnum"]		#Get the particle number from the task rather than trying to work back to it
-					results[ptcl] = r[1]
-					
-					print "ptcl is", ptcl
-					print "results inside get_results are", results
-										
-				ncomplete+=1
-		
-		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
-		if verbose:
-			print "  %d tasks, %d complete, %d waiting to start        \r"%(len(tids),ncomplete,nwait)
-			sys.stdout.flush()
-	
-		if len(tidsleft)==0: break
-		
-	return results
+
 
 
 
@@ -3610,6 +3570,105 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 		ampsThresh.write_image(ampsThreshname,-1)	
 	
 	return(mean,sigma,thresh)
+
+
+
+
+
+
+
+
+"""
+def preprocfilter(image, options, ptclindx=0, tag='ptcls', coarse='yes', round=-1, finetag=''):
+	
+	simage = image.copy()
+	print "\n(e2spt_classaverage) preprocessing"
+
+	if options.lowpass  == 'None' or options.lowpass == 'none':
+		options.lowpass = None
+	
+	if options.highpass == 'None' or options.highpass == 'none':
+		options.highpass = None
+	
+	if options.preprocess == 'None' or options.preprocess == 'none':
+		options.preprocess = None
+	
+	if finetag:
+		try:
+			if options.lowpassfine  == 'None' or options.lowpassfine == 'none':
+				options.lowpassfine = None
+			if options.highpassfine == 'None' or options.highpassfine == 'none':
+				options.highpassfine = None
+			if options.preprocessfine == 'None' or options.preprocessfine == 'none':
+				options.preprocessfine = None
+		except:
+			print "\nWarning: Ignore if parameters --lowpassfine, --highpassfine, preprocessfine don't exist in the program you ran. Otherwise, something went wrong."
+				
+	if coarse != 'yes':
+		#print "lowpassfine received is", options.lowpass	
+		pass
+		
+	apix = simage['apix_x']
+	
+
+	'''
+	#Preprocess, lowpass and/or highpass
+	'''
+	
+	if not finetag:
+		print "(e2spt_classaverage)(preprocessing) trying filters on coarse alignment image"
+		if options.lowpass:
+			print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpass
+			simage.process_inplace(options.lowpass[0],options.lowpass[1])
+			#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
+	
+		if options.highpass:
+			print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpass
+			simage.process_inplace(options.highpass[0],options.highpass[1])
+			#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
+		
+		if options.shrink and int( options.shrink  ) > 1:
+			print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrink
+			simage.process_inplace("math.meanshrink",{"n":options.shrink })
+		
+		if options.preprocess:
+			print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocess
+			simage.process_inplace(options.preprocess[0],options.preprocess[1])
+			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
+		
+	else:
+		print "(e2spt_classaverage)(preprocessing) trying filters on fine alignment image"
+		try:
+			if options.lowpassfine:
+				print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpassfine
+				simage.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
+				#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
+	
+			if options.highpassfine:
+				print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpassfine
+				simage.process_inplace(options.highpassfine[0],options.highpassfine[1])
+				#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
+		
+		
+			if finetag != 'noshrink':
+				if options.shrinkfine and int( options.shrinkfine  ) > 1 :
+					print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrinkfine
+					simage.process_inplace("math.meanshrink",{"n":options.shrinkfine })
+				#fimage.write_image(options.path + '/imgPrepLpHpSh.hdf',-1)
+			
+			if options.preprocessfine:
+				print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocessfine
+				simage.process_inplace(options.preprocessfine[0],options.preprocessfine[1])
+				#fimage.write_image(options.path + '/imgPrep.hdf',-1)
+		
+		except:
+			print "filters on fine alignment image failed"
+	
+	return simage
+"""
+
+
+
 
 '''
 CLASS TO PARALLELIZE ALIGNMENTS
@@ -3812,7 +3871,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	from operator import itemgetter	
 	
 	if options.verbose: 
-		print "\n\n!!!!\n(e2spt_classaverage)(alignment)Aligning ",label
+		print "\n\n!!!!\n(e2spt_classaverage)(alignment) Aligning ",label
 		#print "\n\!!!!!n\n\n\n\n\n\n"
 	
 	round=iter
@@ -3838,55 +3897,82 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	#print "Using this ptcl indx in alignment!", ptclindx
-	"""
+	'''	
 	PREPROCESSING CALL 
 	Currently applied to both volumes. Often 'fixedimage' will be a reference, so may need to rethink whether it should be treated identically. 
 	Similar issues in 2-D single particle refinement ... handled differently at the moment
-	"""
-	
+	'''	
 	
 	#########################################
 	#Preprocess the reference or "fixed image", only if rotate_translate_3d_tree is not used
 	#########################################
 	reffullsize = fixedimage.copy()
+	
 	sfixedimage = fixedimage.copy()
+
 	s2fixedimage = fixedimage.copy()
 	
-	print "s2fixedimage starts with size", s2fixedimage['nx']
+	if options.falign and 'rotate_translate_3d_tree' not in options.align[0]:
+		try:
+			s2fixedimage = EMData( options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf'), 0 )
+		except:
+			print ("\n(e2spt_classaverage)(alignment) preprocessed fine refernece not found. Using coarse reference")
+			
+		
+	print "\n(e2spt_classaverage)(alignment) s2fixedimage starts with size", s2fixedimage['nx']
 	#sys.exit()
 	
-	if options.clipali:
-		if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
-			
-			sfixedimage = clip3D( sfixedimage, options.clipali )
-			print "clipping reference for coarse alignment", options.clipali, sfixedimage['nx']
-			#print "\nclipped sfixedimage to", options.clipali, sfixedimage['nx']
-		
-		if s2fixedimage['nx'] != options.clipali or s2fixedimage['ny'] != options.clipali or s2fixedimage['nz'] != options.clipali:
-			s2fixedimage = clip3D( s2fixedimage, options.clipali )
-			print "clipping reference for fine alignment", options.clipali, s2fixedimage['nx']
-			
-			#print "\nclipped s2fixedimage to", options.clipali, s2fixedimage['nx']
-		
-		if reffullsize['nx'] != options.clipali or reffullsize['ny'] != options.clipali or reffullsize['nz'] != options.clipali:
-			reffullsize = clip3D( reffullsize, options.clipali )
-			print "full-sized reference is", options.clipali, reffullsize['nx']
-		
 	
-	if options.matchimgs:
-		print "Matching images!"
-		#print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
-		print "their sizes are for fixed and for img",sfixedimage['nx'], sfixedimage['ny'], sfixedimage['nz'], image['nx'], image['ny'], image['nz']
-		try:
-			sfixedimage.process_inplace( 'filter.matchto',{'to':image})
-		except:
-			print "trying to apply filter.matchto, fixedimage and image sizes are", sfixedimage['nx'], sfixedimage['ny'], sfixedimage['nz'], image['nx'], image['ny'], image['nz']
+	
+	
+	
+	
+	
+	"""
+	if options.clip:
+		if sfixedimage['nx'] != options.clip or sfixedimage['ny'] != options.clip or sfixedimage['nz'] != options.clip:
 			
-	print "before refpreprocess, refpreprocess, iter", refpreprocess, iter
+			sfixedimage = clip3D( sfixedimage, options.clip )
+			print "clipping reference for coarse alignment", options.clip, sfixedimage['nx']
+			#print "\nclipped sfixedimage to", options.clip, sfixedimage['nx']
+		
+		if s2fixedimage['nx'] != options.clip or s2fixedimage['ny'] != options.clip or s2fixedimage['nz'] != options.clip:
+			s2fixedimage = clip3D( s2fixedimage, options.clip )
+			print "clipping reference for fine alignment", options.clip, s2fixedimage['nx']
+			
+			#print "\nclipped s2fixedimage to", options.clip, s2fixedimage['nx']
+		
+		if reffullsize['nx'] != options.clip or reffullsize['ny'] != options.clip or reffullsize['nz'] != options.clip:
+			reffullsize = clip3D( reffullsize, options.clip )
+			print "full-sized reference is", options.clip, reffullsize['nx']
+		
+	"""
+	
+	
+	
+	#if options.matchimgs:
+	#	print "Matching images!"
+	#	#print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
+	#	print "their sizes are for fixed and for img",sfixedimage['nx'], sfixedimage['ny'], sfixedimage['nz'], image['nx'], image['ny'], image['nz']
+	#	
+	#	try:
+	#		sfixedimage.process_inplace( 'filter.matchto',{'to':image})
+	#	except:
+	#		print "\n(e2spt_classaverage)(alignment) trying to apply filter.matchto, fixedimage and image sizes are", sfixedimage['nx'], sfixedimage['ny'], sfixedimage['nz'], image['nx'], image['ny'], image['nz']
+	#	
+	#	
+	#	try:
+	#		s2fixedimage.process_inplace( 'filter.matchto',{'to':image})
+	#	except:
+	#		print "\n(e2spt_classaverage)(alignment) trying to apply filter.matchto, fixedimage and image sizes are", s2fixedimage['nx'], s2fixedimage['ny'], s2fixedimage['nz'], image['nx'], image['ny'], image['nz']
+			
+		
+	print "\n(e2spt_classaverage)(alignment) before refpreprocess, refpreprocess, iter", refpreprocess, iter
 	
 	
 	if 'rotate_translate_3d_tree' not in options.align[0]:	
-	
+		
+		"""
 		if not refpreprocess:
 			print "\nthere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref
 	
@@ -3924,7 +4010,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 				print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
 				
-				sfixedimage = preprocfilter(sfixedimage,options, refindx, savetag ,'yes',round)
+				sfixedimage = preprocfilter(sfixedimage, options, refindx, savetag ,'yes',round)
 				print "AFTER preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
 
 			#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
@@ -3951,41 +4037,58 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				#s2fixedimage = fixedimage.copy()	
 				s2fixedimage = None
 
+		"""
+		
+		
 		if sfixedimage:
 			if options.verbose:
-				print "after all preproc, COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter)
+				print "\n(e2spt_classaverage)(alignment) COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter)
 
 		if s2fixedimage:
 			if options.verbose:
-				print "after all preproc, FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
+				print "\n(e2spt_classaverage)(alignment) FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
 	
 		if reffullsize:
 			if options.verbose:
-				print "after all preproc, REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter)
+				print "\n(e2spt_classaverage)(alignment) REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter)
 	
-	print "done with all ref preprocessing, if any"
+	print "\n(e2spt_classaverage)(alignment) done with all ref preprocessing, if any"
+	
+	
+	
+	
+	
 	
 	#########################################
 	#Preprocess the particle or "moving image", only if rotate_translate_3d_tree is not used
 	#########################################
 	imgfullsize = image.copy()
+	
 	simage = image.copy()
+	
 	s2image = image.copy()
 	
-	if options.clipali:
-		if simage['nx'] != options.clipali or simage['ny'] != options.clipali or simage['nz'] != options.clipali:
-			simage = clip3D( simage, options.clipali )
+	if options.falign and 'rotate_translate_3d_tree' not in options.align[0]:
+		try:
+			s2image = EMData( options.path + '/' + options.input.replace('.hdf','_preprocfine.hdf'), 0 )
+		except:
+			print ("\n(e2spt_classaverage)(alignment) preprocessed fine particles not found. Using coarse particles")
+	
+	"""
+	if options.clip:
+		if simage['nx'] != options.clip or simage['ny'] != options.clip or simage['nz'] != options.clip:
+			simage = clip3D( simage, options.clip )
 			
-			print "\nclipped simage to", options.clipali, simage['nx']
+			print "\nclipped simage to", options.clip, simage['nx']
 
 		
-		if s2image['nx'] != options.clipali or s2image['ny'] != options.clipali or s2image['nz'] != options.clipali:
-			s2image = clip3D( s2image, options.clipali )
+		if s2image['nx'] != options.clip or s2image['ny'] != options.clip or s2image['nz'] != options.clip:
+			s2image = clip3D( s2image, options.clip )
 		
-		if imgfullsize['nx'] != options.clipali or imgfullsize['ny'] != options.clipali or imgfullsize['nz'] != options.clipali:
-			imgfullsize = clip3D( imgfullsize, options.clipali )
+		if imgfullsize['nx'] != options.clip or imgfullsize['ny'] != options.clip or imgfullsize['nz'] != options.clip:
+			imgfullsize = clip3D( imgfullsize, options.clip )
 			
-			print "\nclipped s2image to", options.clipali, s2image['nx']
+			print "\nclipped s2image to", options.clip, s2image['nx']
 
 	
 	
@@ -4044,22 +4147,26 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			#print "no falign, therefore s2image is None"
 
 		print "BBB"
-		if simage:
-			if options.verbose:
-				print "after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter)
+		"""
+		
+	if simage:
+		if options.verbose:
+			print "after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter)
 
-		if s2image:
-			if options.verbose:
-				print "after all preproc, FINE ptcl is of size %d, in iter %d" %( s2image['nx'], iter)	
-	
-		if imgfullsize:
-			if options.verbose:
-				print "after all preproc, IMGFULLSIZE is of size %d, in iter %d" %( imgfullsize['nx'], iter)
+	if s2image:
+		if options.verbose:
+			print "after all preproc, FINE ptcl is of size %d, in iter %d" %( s2image['nx'], iter)	
+
+	if imgfullsize:
+		if options.verbose:
+			print "after all preproc, IMGFULLSIZE is of size %d, in iter %d" %( imgfullsize['nx'], iter)
 		
 		
 		#print "falign is", options.falign
 	
 	print "\ndone with all ptcl preprocessing, if any"
+	
+	
 	
 	if sfixedimage['nx'] != simage['nx']:
 		print "ERROR: preprocessed images for coarse alignment not the same size, sfixedimage, simage", sfixedimage['nx'], simage['nx']
