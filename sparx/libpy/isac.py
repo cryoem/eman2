@@ -933,7 +933,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 		d = mpi_reduce(d, numref*nima, MPI_FLOAT, MPI_SUM, main_node, comm)  #  RETURNS numpy array
 		if myid != main_node:
-		 	del d
+			del d
 		mpi_barrier(comm) # to make sure that slaves freed the matrix d
 
 		if myid == main_node:
