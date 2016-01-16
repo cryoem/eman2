@@ -161,7 +161,40 @@ def prgs(volft, kb, params, kbx=None, kby=None):
 	temp.set_attr_dict({'ctf_applied':0, 'npad':2})
 	temp.depad()
 	return temp
-	
+
+def prgl(volft, params, interpolation_method = 0, return_real = True):
+	"""
+		Name
+			prgl - calculate 2-D projection of a 3-D volume
+		Input
+			vol: input volume, the volume has to be cubic
+			params: input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by sx,sy
+		Output
+			proj: generated 2-D projection
+	"""
+	#  params:  phi, theta, psi, sx, sy
+	from fundamentals import fft
+	from utilities import set_params_proj
+	from EMAN2 import Processor
+
+	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
+	temp = volft.extract_section(R, interpolation_method)
+
+	temp.fft_shuffle()
+	temp.center_origin_fft()
+
+	if(params[3]!=0. or params[4]!=0.):
+		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+				  "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
+		temp=Processor.EMFourierFilter(temp, filt_params)
+	if return_real:
+		temp.do_ift_inplace()
+		temp.set_attr_dict({'ctf_applied':0, 'npad':volft.get_attr("npad")})
+		temp.depad()
+	else:
+		temp.set_attr_dict({'ctf_applied':0, 'npad':volft.get_attr("npad")})
+	set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
+	return temp
 
 def gen_rings_ctf( prjref, nx, ctf, numr):
 	"""
@@ -281,7 +314,7 @@ def prg(volume, params):
 	Mx=volume.get_xsize()
 	My=volume.get_ysize()
 	Mz=volume.get_zsize()
-	if(Mx==Mz&My==Mz):
+	if( Mx==Mz & My==Mz ):
 		volft,kb = prep_vol(volume)
 		return  prgs(volft,kb,params)
 	else:
@@ -289,7 +322,7 @@ def prg(volume, params):
 		return  prgs(volft,kbz,params,kbx,kby) 
 	
 
-def prep_vol(vol):
+def prep_vol(vol, npad = 2, interpolation_method = -1):
 	"""
 		Name
 			prep_vol - prepare the volume for calculation of gridding projections and generate the interpolants.
@@ -301,43 +334,54 @@ def prep_vol(vol):
 			kbx,kby: interpolants along x, y and z direction (tabulated Kaiser-Bessel function) when the volume is rectangular 
 	"""
 	# prepare the volume
-	Mx=vol.get_xsize()
-	My=vol.get_ysize()
-	Mz=vol.get_zsize()
-	K     = 6
-	alpha = 1.75
-	npad  = 2
-	if(Mx==Mz&My==Mz):
-		M     = vol.get_xsize()
-		# padd two times
-		N     = M*npad
-		# support of the window
-		kb    = Util.KaiserBessel(alpha, K, M/2, K/(2.*N), N)
-		volft = vol.copy()
-		volft.divkbsinh(kb)
-		volft = volft.norm_pad(False, npad)
-		volft.do_fft_inplace()
-		volft.center_origin_fft()
-		volft.fft_shuffle()
-		return  volft,kb
+	Mx = vol.get_xsize()
+	My = vol.get_ysize()
+	Mz = vol.get_zsize()
+	#  gridding
+	if interpolation_method == -1:
+		K     = 6
+		alpha = 1.75
+		assert npad  == 2
+		if(Mx==Mz&My==Mz):
+			M     = vol.get_xsize()
+			# padd two times
+			N     = M*npad
+			# support of the window
+			kb    = Util.KaiserBessel(alpha, K, M/2, K/(2.*N), N)
+			volft = vol.copy()
+			volft.divkbsinh(kb)
+			volft = volft.norm_pad(False, npad)
+			volft.do_fft_inplace()
+			volft.center_origin_fft()
+			volft.fft_shuffle()
+			return  volft,kb
+		else:
+			Nx     = Mx*npad
+			Ny     = My*npad
+			Nz     = Mz*npad
+			# support of the window
+			kbx    = Util.KaiserBessel(alpha, K, Mx/2, K/(2.*Nx), Nx)
+			kby    = Util.KaiserBessel(alpha, K, My/2, K/(2.*Ny), Ny)
+			kbz    = Util.KaiserBessel(alpha, K, Mz/2, K/(2.*Nz), Nz)
+			volft = vol.copy()
+			volft.divkbsinh_rect(kbx,kby,kbz)
+			volft = volft.norm_pad(False, npad)
+			volft.do_fft_inplace()
+			volft.center_origin_fft()
+			volft.fft_shuffle()
+			return  volft,kbx,kby,kbz
 	else:
-	
-		# padd two times
-		
-		Nx     = Mx*npad
-		Ny     = My*npad
-		Nz     = Mz*npad
-		# support of the window
-		kbx    = Util.KaiserBessel(alpha, K, Mx/2, K/(2.*Nx), Nx)
-		kby    = Util.KaiserBessel(alpha, K, My/2, K/(2.*Ny), Ny)
-		kbz    = Util.KaiserBessel(alpha, K, Mz/2, K/(2.*Nz), Nz)
-		volft = vol.copy()
-		volft.divkbsinh_rect(kbx,kby,kbz)
-		volft = volft.norm_pad(False, npad)
+		# NN and trilinear
+		assert  interpolation_method >= 0
+		from utilities import pad
+		volft = pad(vol, Mx*npad, My*npad, My*npad, 0.0)
+		volft.div_sinc(interpolation_method)
+		volft = volft.norm_pad(False, 1)
+		volft.set_attr("npad", npad)
 		volft.do_fft_inplace()
 		volft.center_origin_fft()
 		volft.fft_shuffle()
-		return  volft,kbx,kby,kbz
+		return  volft
 		
 
 ###############################################################################################
