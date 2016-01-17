@@ -596,12 +596,12 @@ EMData* EMData::rotavg() {
 	    float apix_y2 = apix_y*apix_y;
 	    float apix_z2 = apix_z*apix_z;
 
-    	set_array_offsets(-nx/2,-ny/2,-nz/2);
+		set_array_offsets(-nx/2,-ny/2,-nz/2);
 
 #ifdef _WIN32
-    	//int rmax = _cpp_min(nx/2 + nx%2, ny/2 + ny%2);
-	    if ( nz == 1 )  rmax = _cpp_min( nx/2 + nx%2, ny/2 + ny%2);
-    	else            rmax = _cpp_min(nx/2 + nx%2, _cpp_min(ny/2 + ny%2, nz/2 + nz%2));
+		//int rmax = _cpp_min(nx/2 + nx%2, ny/2 + ny%2);
+		if ( nz == 1 )  rmax = _cpp_min( nx/2 + nx%2, ny/2 + ny%2);
+		else            rmax = _cpp_min(nx/2 + nx%2, _cpp_min(ny/2 + ny%2, nz/2 + nz%2));
 #else
 	    //int rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
 	    if ( nz == 1 )  rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
@@ -5471,13 +5471,14 @@ void EMData::div_sinc(int interpolate_method) {
 		LOGERR("Real image expected. Input image is complex.");
 		throw ImageFormatException("Real image expected. Input image is complex.");
 	}
+    vector<int> saved_offsets = get_array_offsets();
 	int nx = this->get_xsize();
 	int ny = this->get_ysize();
 	int nz = this->get_zsize();
 	if (nx != ny || ny != nz)
 		throw ImageDimensionException("div_sinc requires ny == nx == nz");
 
-	int IP = nx/2;
+	int IP = nx/2+1;
 
 	//  tabulate sinc function
 	float* sincx = new float[IP];
@@ -5490,13 +5491,16 @@ void EMData::div_sinc(int interpolate_method) {
 		for (int i = 1; i < IP; ++i)  sincx[i] = pow((i*cdf)/sin(i*cdf),2);	
 	}
 
-	for (int k = 0; k < nz; ++k) {
-		int kkp = abs(k-IP);
-		for (int j = 0; j < ny; ++j) {
-			cdf = sincx[abs(j- IP)]*sincx[kkp];
-			for (int i = 0; i < nx; ++i)  (*this)(i,j,k) *= (sincx[abs(i-IP)]*cdf);
+	set_array_offsets(-nx/2,-ny/2,-nz/2);
+
+	for (int k = -nz/2; k < nz/2 + nz%2; k++) {
+		float kkp = sincx[abs(k)];
+		for (int j = -ny/2; j < ny/2 + ny%2; j++) {
+			cdf = sincx[abs(j)]*kkp;
+			for (int i = -nx/2; i < nx/2 + nx%2; i++) (*this)(i,j,k) *= sincx[abs(i)]*cdf;
 		}
 	}
+	set_array_offsets(saved_offsets);
 	update();
 	EXITFUNC;
 }
