@@ -6,7 +6,7 @@ sxisac - 2D Clustering: Iterative Stable Alignment and Clustering (ISAC) of a 2-
 
 ''usage in command line''
 
-sxisac.py stack_file  output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --restart_section --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_iter=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --n_generations=n_generations --rand_seed=rand_seed --new --debug --use_latest_master_directory --stop_after_candidates
+sxisac.py stack_file  output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --restart_section --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_iter=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --n_generations=n_generations --rand_seed=rand_seed --new --debug --use_latest_master_directory --stop_after_candidates --skip_alignment
 
 
 === Typical usage ===
