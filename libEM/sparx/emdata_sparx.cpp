@@ -5542,16 +5542,16 @@ EMData* EMData::extract_section(const Transform& tf, int interpolate_method) {
 				Vec3f nunew = tftrans*nucur;
 				float xnew = nunew[0], ynew = nunew[1], znew = nunew[2];
 				if (xnew*xnew+ynew*ynew+znew*znew <= rim) {
-					bool flip = false;
-					if (xnew < 0.f) {
-						flip = true;
-						xnew = -xnew;
-						ynew = -ynew;
-						znew = -znew;
-					}
 					int ixn = int(Util::round(xnew));
 					int iyn = int(Util::round(ynew));
 					int izn = int(Util::round(znew));
+					bool flip = false;
+					if (ixn < 0) {
+						flip = true;
+						ixn = -ixn;
+						iyn = -iyn;
+						izn = -izn;
+					}
 					if(   ixn >= 0      && ixn <= nhalf-1
 					   && iyn >= -nhalf && iyn <= nhalf-1
 					   && izn >= -nhalf && izn <= nhalf-1) {
