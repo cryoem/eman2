@@ -1475,6 +1475,7 @@ def main():
 	import time
 	import socket
 
+	# 2016-01-19--16-14-38-964  before starting trimming cone integration
 	
 	# ------------------------------------------------------------------------------------
 	# PARSE COMMAND OPTIONS
