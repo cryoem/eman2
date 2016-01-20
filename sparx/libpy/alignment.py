@@ -548,7 +548,7 @@ def ringwe(numr, mode="F"):
 	for i in xrange(0,nring): wr[i] = numr[i*3]*dpi/float(numr[2+i*3])*maxrin/float(numr[2+i*3])
 	return wr
 
-def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
+def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0):
 	"""Determine shift and rotation between image and reference image (refim)
 	   no mirror
 		quadratic interpolation
@@ -572,7 +572,7 @@ def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 			ix = j*step
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
-			retvals = Util.Crosrng_e(crefim, cimage, numr, 0)
+			retvals = Util.Crosrng_e(crefim, cimage, numr, 0, deltapsi)
 			qn = retvals["qn"]
 			if qn >= peak:
 				sx = -ix
@@ -631,7 +631,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 					mirror = 1
 			'''
 			# The following code is used when mirror is not considered
-			retvals = Util.Crosrng_e(crefim, cimage, numr, 0)
+			retvals = Util.Crosrng_e(crefim, cimage, numr, 0,0.0)
 			qn = retvals["qn"]
 			if qn >= peak:
 				sx = -ix
@@ -2790,10 +2790,10 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	for iki in xrange(len(refrings)):
 		#print  "TEMPLATE  ",iki
 		#  Find angle
-		retvals = Util.Crosrng_e(refrings[iki], cimage, numr, 0)
+		retvals = Util.Crosrng_e(refrings[iki], cimage, numr, 0, 0.0)
 		alpha1  = ang_n(retvals["tot"], "H", numr[-1])
 		peak1 	= retvals["qn"]
-		retvals = Util.Crosrng_e(refrings[iki], mimage, numr, 0)
+		retvals = Util.Crosrng_e(refrings[iki], mimage, numr, 0, 0.0)
 		alpha2  = ang_n(retvals["tot"], "H", numr[-1])
 		peak2 	= retvals["qn"]
 		#print  alpha1, peak1
