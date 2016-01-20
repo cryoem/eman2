@@ -47,7 +47,6 @@ Eulerian_Angles = "SPIDER"
 # We read the global seed here. If the user wish to repeat the random results twice,
 # he/she should first set the rand_seed to a fixed number and then run the program twice.
 from   EMAN2   import Util, EMData, EMUtil, Transform
-from   e2version import CVSDATESTAMP
 from   random  import seed
 
 rand_seed = Util.get_randnum_seed()
@@ -74,7 +73,7 @@ LOGFILE_HANDLE = 0
 IS_LOGFILE_OPEN = False
 '''   SYSTEM FUNCTIONS - please do not change the text below '''
 global SPARXVERSION
-SPARXVERSION = "SPARX v4.0" + ' (git' + CVSDATESTAMP[6:-2] +')'
+SPARXVERSION = "SPARX v4.0" + ' (git)'
 
 global SPARX_DOCUMENTATION_WEBSITE
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
