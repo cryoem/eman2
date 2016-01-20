@@ -38,10 +38,10 @@ from subprocess import *
 
 
 EMANVERSION="EMAN 2.12"
-CVSDATESTAMP="$Date$"
+DATESTAMP="BUILD_DATE"
 
 def main():
-	print EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')' 
+	print EMANVERSION + ' (GITHUB: ' + DATESTAMP +')' 
     
 	if sys.platform=='linux2':
 		print 'Your EMAN2 is running on: ', platform.platform(), os.uname()[2], os.uname()[-1]    
