@@ -945,6 +945,8 @@ public:
 	/* Assign projection angles to nearest reference projections  using getfvec*/
 	static vector<int> assign_projangles_f(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles);
 	 
+	static vector<float> get_largest_angles_in_cones(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles); 
+
 	static EMData* fast_3d_box_convolution(EMData *input_volume, int window_size);	 
 
 	/* Assign howmany projection angles to the nearest reference projection */

@@ -3832,6 +3832,44 @@ def cone_ang_f( projangles, phi, tht, ant ):
 			la.append(projangles[i])
 	return la
 
+def cone_ang_f_with_index( projangles, phi, tht, ant ):
+	from utilities import getvec
+	from math import cos, pi, degrees, radians
+	# vec = getvec( phi, tht )
+	vec = getfvec( phi, tht )
+
+	cone = cos(radians(ant))
+	la = []
+	index = []
+	for i in xrange( len(projangles) ):
+		# vecs = getvec( projangles[i][0], projangles[i][1] )
+		vecs = getfvec( projangles[i][0], projangles[i][1] )
+		s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
+		if s >= cone:
+		# if abs(s) >= cone:
+			la.append(projangles[i])
+			index.append(i)
+	return la, index
+
+def cone_ang_with_index( projangles, phi, tht, ant ):
+	from utilities import getvec
+	from math import cos, pi, degrees, radians
+	# vec = getvec( phi, tht )
+	vec = getfvec( phi, tht )
+
+	cone = cos(radians(ant))
+	la = []
+	index = []
+	for i in xrange( len(projangles) ):
+		# vecs = getvec( projangles[i][0], projangles[i][1] )
+		vecs = getfvec( projangles[i][0], projangles[i][1] )
+		s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
+		# if s >= cone:
+		if abs(s) >= cone:
+			la.append(projangles[i] + [i])
+			index.append(i)
+	
+	return la, index
 
 def cone_vectors( normvectors, phi, tht, ant ):
 	from utilities import getvec
@@ -4978,6 +5016,7 @@ def if_error_all_processes_quit_program(error_status):
 		#
 		# print "qqqqqqq:", error_status
 		mpi_finalize()
+		sys.stdout.flush()		
 		sys.exit()
 
 def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
@@ -5398,4 +5437,24 @@ def debug_mpi_bcast(newv, s, t, m, comm):
 	if mpi_comm_rank(comm) == 1:
 		print "Stack info::1::", extract_stack()[-3:]
 	return mpi_bcast(newv, s, t, m, comm)
+
+def print_from_process(process_rank, message):
+	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
+	import os, sys
+	from socket import gethostname
+
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
+
+	if(myid == process_rank):
+		print "MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid()) +\
+			"message:::", message
+	sys.stdout.flush()
 	
+def mpi_exit():
+	from mpi import mpi_finalize
+	import sys
+
+	mpi_finalize()
+	sys.stdout.flush()
+	sys.exit()

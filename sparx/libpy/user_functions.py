@@ -974,6 +974,7 @@ def do_volume_mrk02(ref_data):
 	Tracker  = ref_data[1]
 	myid     = ref_data[2]
 	nproc    = ref_data[3]
+       	mpi_comm = None
 	
 	if(mpi_comm == None):  mpi_comm = MPI_COMM_WORLD
 	myid  = mpi_comm_rank(mpi_comm)
