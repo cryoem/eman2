@@ -3281,3 +3281,277 @@ def rec3D_MPI_noCTF(data, symmetry = "c1", mask3D = None, fsc_curve = None, myid
 
 
 	return model_blank(nx,nx,nx),None
+	
+def prepare_recons_ctf_two_chunks(nx,data,snr,symmetry,myid,main_node_half,chunk_ID,finfo=None,npad=2,mpi_comm=None,smearstep = 0.0):
+	from random     import randint
+	from utilities  import reduce_EMData_to_root
+	from mpi        import mpi_barrier, MPI_COMM_WORLD
+	from EMAN2 import Reconstructors
+
+	if mpi_comm == None:
+		mpi_comm = MPI_COMM_WORLD
+
+	fftvol_half = EMData()
+
+	if( smearstep > 0.0 ):
+		#if myid == 0:  print "  Setting smear in prepare_recons_ctf"
+		ns = 1
+		smear = []
+		for j in xrange(-ns,ns+1):
+			if( j != 0):
+				for i in xrange(-ns,ns+1):
+					for k in xrange(-ns,ns+1):
+						smear += [i*smearstep,j*smearstep,k*smearstep,1.0]
+		# Deal with theta = 0.0 cases
+		prj = []
+		for i in xrange(-ns,ns+1):
+			for k in xrange(-ns,ns+1):
+				prj.append(i+k)
+		for i in xrange(-2*ns,2*ns+1,1):
+			 smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
+		#if myid == 0:  print "  Smear  ",smear
+		fftvol_half.set_attr("smear", smear)
+
+	weight_half = EMData()
+	half_params = {"size":nx, "npad":npad, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol_half, "weight":weight_half}
+	half = Reconstructors.get( "nn4_ctf", half_params )
+	half.setup()
+	for i in xrange(len(data)):
+		if data[i].get_attr("chunk_id") == chunk_ID:
+			xform_proj = data[i].get_attr( "xform.projection" )
+			half.insert_slice(data[i], xform_proj )
+	if not(finfo is None):
+		finfo.write( "begin reduce half\n" )
+		finfo.flush()
+
+	reduce_EMData_to_root(fftvol_half, myid, main_node_half, mpi_comm)
+	reduce_EMData_to_root(weight_half, myid, main_node_half, mpi_comm)
+
+	if not(finfo is None):
+		finfo.write( "after reduce half\n" )
+		finfo.flush()
+
+	if myid == main_node_half:
+		tmpid = randint(0, 1000000) 
+		fftvol_half_file = ("fftvol_half%d.hdf" % tmpid)
+		weight_half_file = ("weight_half%d.hdf" % tmpid)
+		fftvol_half.write_image(fftvol_half_file)
+		weight_half.write_image(weight_half_file)
+	mpi_barrier(mpi_comm)
+
+	fftvol_half = None
+	weight_half = None
+
+	if myid == main_node_half:
+		return fftvol_half_file, weight_half_file
+
+	return None,None
+	
+def rec3D_two_chunks_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, \
+		myid = 0, main_node = 0, rstep = 1.0,finfo=None, \
+		index=-1, npad = 2, mpi_comm=None, smearstep = 0.0):
+	'''
+	  This function is to be called within an MPI program to do a reconstruction on a dataset kept 
+	  in the memory, computes reconstruction and through odd-even, in order to get the resolution
+	'''
+	import os
+	from statistics import fsc_mask
+	from utilities  import model_blank, model_circle, get_image, send_EMData, recv_EMData
+	from mpi        import mpi_comm_size, MPI_COMM_WORLD
+	
+	if mpi_comm == None:
+		mpi_comm = MPI_COMM_WORLD
+	
+	nproc = mpi_comm_size(mpi_comm)
+
+	if nproc==1:
+		assert main_node==0
+		main_node_odd = main_node
+		main_node_eve = main_node
+		main_node_all = main_node
+	elif nproc==2:
+		main_node_odd = main_node
+		main_node_eve = (main_node+1)%2
+		main_node_all = main_node
+
+		tag_voleve     = 1000
+		tag_fftvol_eve = 1001
+		tag_weight_eve = 1002
+	else:
+		#spread CPUs between different nodes to save memory
+		main_node_odd = main_node
+		main_node_eve = (int(main_node)+nproc-1)%int(nproc)
+		main_node_all = (int(main_node)+nproc//2)%int(nproc)
+
+		tag_voleve     = 1000
+		tag_fftvol_eve = 1001
+		tag_weight_eve = 1002
+
+		tag_fftvol_odd = 1003
+		tag_weight_odd = 1004
+		tag_volall     = 1005
+
+
+	if index != -1 :
+		grpdata = []
+		for i in xrange(len(data)):
+			if data[i].get_attr('group') == index:
+				grpdata.append(data[i])
+		imgdata = grpdata
+	else:
+		imgdata = data
+
+	nx = get_image_size(imgdata, myid)
+	if nx == 0:
+		ERROR("Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume", "rec3D", 0)
+		return model_blank( 2, 2, 2 ), None
+
+	fftvol_odd_file,weight_odd_file = prepare_recons_ctf_two_chunks(nx, imgdata, snr, symmetry, myid, main_node_odd, 0, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
+	fftvol_eve_file,weight_eve_file = prepare_recons_ctf_two_chunks(nx, imgdata, snr, symmetry, myid, main_node_eve, 1, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
+	del imgdata
+
+	if nproc == 1:
+		fftvol = get_image(fftvol_odd_file)
+		weight = get_image(weight_odd_file)
+		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+
+		fftvol = get_image(fftvol_eve_file)
+		weight = get_image(weight_eve_file)
+		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+
+		if( not mask3D ):
+			nx = volodd.get_xsize()
+			ny = volodd.get_ysize()
+			nz = volodd.get_zsize()
+			mask3D = model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
+		fscdat = fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
+		del  volodd, voleve, mask3d
+
+		fftvol = get_image( fftvol_odd_file )
+		fftvol_tmp = get_image(fftvol_eve_file)
+		fftvol += fftvol_tmp
+		fftvol_tmp = None
+
+		weight = get_image( weight_odd_file )
+		weight_tmp = get_image(weight_eve_file)
+		weight += weight_tmp
+		weight_tmp = None
+
+		volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file )
+		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file )
+
+		return volall,fscdat
+
+	if nproc == 2:
+		if myid == main_node_odd:
+			fftvol = get_image( fftvol_odd_file )
+			weight = get_image( weight_odd_file )
+			volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+			voleve = recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+			
+			if( not mask3D ):
+				nx = volodd.get_xsize()
+				ny = volodd.get_ysize()
+				nz = volodd.get_zsize()
+				mask3D = model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
+			fscdat = fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
+			del  volodd, voleve, mask3D
+		else:
+			assert myid == main_node_eve
+			fftvol = get_image( fftvol_eve_file )
+			weight = get_image( weight_eve_file )
+			voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+			send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
+
+		if myid == main_node_odd:
+			fftvol = get_image( fftvol_odd_file )
+			fftvol_tmp = recv_EMData( main_node_eve, tag_fftvol_eve, mpi_comm)
+			fftvol += fftvol_tmp
+			fftvol_tmp = None
+
+			weight = get_image( weight_odd_file )
+			weight_tmp = recv_EMData( main_node_eve, tag_weight_eve, mpi_comm)
+			weight += weight_tmp
+			weight_tmp = None
+
+			volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+			os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file )
+
+			return volall,fscdat
+		else:
+			assert myid == main_node_eve
+			fftvol = get_image( fftvol_eve_file )
+			weight = get_image( weight_eve_file )
+			send_EMData(fftvol, main_node_odd, tag_fftvol_eve, mpi_comm)
+			send_EMData(weight, main_node_odd, tag_weight_eve, mpi_comm)
+			os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file )
+			return model_blank(nx,nx,nx), None
+
+	# cases from all other number of processors situations
+	if myid == main_node_odd:
+		fftvol = get_image( fftvol_odd_file )
+		send_EMData(fftvol, main_node_eve, tag_fftvol_odd, mpi_comm)
+
+		if not(finfo is None):
+			finfo.write("fftvol odd sent\n")
+			finfo.flush()
+
+		weight = get_image( weight_odd_file )
+		send_EMData(weight, main_node_all, tag_weight_odd, mpi_comm)
+
+		if not(finfo is None):
+			finfo.write("weight odd sent\n")
+			finfo.flush()
+
+		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+		del fftvol, weight
+		voleve = recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+
+		if( not mask3D ):
+			nx = volodd.get_xsize()
+			ny = volodd.get_ysize()
+			nz = volodd.get_zsize()
+			mask3D = model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
+
+		fscdat = fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
+		del  volodd, voleve, mask3D
+		volall = recv_EMData(main_node_all, tag_volall, mpi_comm)
+		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file )
+		return volall, fscdat
+
+	if myid == main_node_eve:
+		ftmp = recv_EMData(main_node_odd, tag_fftvol_odd, mpi_comm)
+		fftvol = get_image( fftvol_eve_file )
+		Util.add_img( ftmp, fftvol )
+		send_EMData(ftmp, main_node_all, tag_fftvol_eve, mpi_comm)
+		del ftmp
+
+		weight = get_image( weight_eve_file )
+		send_EMData(weight, main_node_all, tag_weight_eve, mpi_comm)
+
+		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+		send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
+		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
+
+		return model_blank(nx,nx,nx), None
+
+
+	if myid == main_node_all:
+		fftvol = recv_EMData(main_node_eve, tag_fftvol_eve, mpi_comm)
+		if not(finfo is None):
+			finfo.write( "fftvol odd received\n" )
+			finfo.flush()
+
+		weight = recv_EMData(main_node_odd, tag_weight_odd, mpi_comm)
+		weight_tmp = recv_EMData(main_node_eve, tag_weight_eve, mpi_comm)
+		Util.add_img( weight, weight_tmp )
+		weight_tmp = None
+
+		volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
+		send_EMData(volall, main_node_odd, tag_volall, mpi_comm)
+
+		return model_blank(nx,nx,nx),None
+
+	return model_blank(nx,nx,nx),None
+
