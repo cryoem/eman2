@@ -2044,7 +2044,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, kb3D
 			
 	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
 
-	if myid == main_node:  print "  Finished :",time()-at
+	###if myid == main_node:  print "  Finished :",time()-at
 
 	mpi_barrier(MPI_COMM_WORLD)
 	simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
