@@ -1341,8 +1341,8 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 
 
 def prepdata_ali3d(projdata, vol, shifts, shrink, myid, main_node, method = "DIRECT", npad = 1, interpol = 1):
-	from alignment import prep_vol
-	from alignment import prepi
+	from projection   import prep_vol
+	from fundamentals import prepi
 	#  Data is CTF-applied and shrank
 	vol = prep_vol(vol,npad,interpol)
 	data = [[] for i in xrange(len(projdata))]
@@ -1423,7 +1423,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle
 		#ots = Tracker["ts"]
 		#Tracker["xr"] = "%f"%(float(Tracker["xr"])*shrinkage)
 		#Tracker["ts"] = "%f"%(float(Tracker["ts"])*shrinkage)
-		refang = even_angles(Tracker["delta"], symmetry=Tracker["constants"]["sym"], theta2=180., method='S', phiEqpsi="Zero")
+		refang = even_angles(float(Tracker["delta"]), symmetry=Tracker["constants"]["sym"], theta2=180., method='S', phiEqpsi="Zero")
 		xr = float(Tracker["xr"])
 		ts = float(Tracker["ts"])
 		k = int(ceil(xr/ts))
@@ -1456,12 +1456,12 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle
 		ref_vol, data = prepdata_ali3d(projdata, ref_vol, shifts, shrinkage, method, myid, main_node)
 		#  delta_psi is the same as delta.
 		if( method == "DIRECT" ):
-			newpar,simis = ali3D_direct(data, ref_vol, refang, Tracker["delta"], shifts, myid, main_node)
+			newpar,simis = ali3D_direct(data, ref_vol, refang, float(Tracker["delta"]), shifts, myid, main_node)
 		else:
 			cnx = Tracker["nxinit"]//2+1
 			numr = Numrinit(1, Tracker["radius"], 1, "F")
 			wr   = ringwe(numr, "F")
-			params,simis = ali3D_gridding(data, ref_vol, refang, Tracker["delta"], shifts, shrinkage, numr, wr, cnx, myid, main_node)
+			params,simis = ali3D_gridding(data, ref_vol, refang, float(Tracker["delta"]), shifts, shrinkage, numr, wr, cnx, myid, main_node)
 		#params = sali3d_base(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
 
 	'''
