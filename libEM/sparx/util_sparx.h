@@ -1085,7 +1085,8 @@ public:
 	static float ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sx, float sy);
 
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
-
+	
+	static void version();
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 
 	static EMData* get_biggest_cluster( EMData* mg );
