@@ -1453,7 +1453,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle
 									Tracker, rangle, rshift, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0)
 	else:
 		method = "DIRECT"
-		ref_vol, data = prepdata_ali3d(projdata, ref_vol, shifts, shrinkage, method, myid, main_node)
+		ref_vol, data = prepdata_ali3d(projdata, ref_vol, shifts, shrinkage, myid, main_node, method)
 		#  delta_psi is the same as delta.
 		if( method == "DIRECT" ):
 			newpar,simis = ali3D_direct(data, ref_vol, refang, float(Tracker["delta"]), shifts, myid, main_node)
