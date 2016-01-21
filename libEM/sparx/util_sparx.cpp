@@ -22083,6 +22083,8 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 { cout <<"  VERSION  01/21/2016  11:40 AM"<<endl;}
+
+
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
 EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
