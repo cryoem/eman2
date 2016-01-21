@@ -375,8 +375,12 @@ class ClassAvTask(JSTask):
 			#avg.process_inplace("normalize.circlemean")
 			#ali=avg.process("threshold.binary",{"value":avg["mean"]+avg["sigma"]*1.5})
 			#ali.process_inplace("xform.centerofmass",{"threshold":0.5})
-			ali=avg.process(self.center)
-			fxf=ali["xform.align2d"]
+			if (self.center=="nocenter"):
+				fxf=Transform()
+			else:
+				ali=avg.process(self.center)
+				fxf=ali["xform.align2d"]
+				
 			if options["verbose"]>0 : print "Final center:",fxf.get_trans_2d()
 			avg1=avg
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,None,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
