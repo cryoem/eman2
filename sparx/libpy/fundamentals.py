@@ -677,17 +677,16 @@ def prepi(image):
 	from EMAN2 import Processor
 
 	M = image.get_xsize()
-# pad two times
+	# pad two times
 	npad = 2
 	N = M*npad
-# support of the window
+	# support of the window
 	K = 6
 	alpha = 1.75
 	r = M/2
 	v = K/2.0/N
 	kb = Util.KaiserBessel(alpha, K, r, v, N)
-	#out = rotshift2dg(image, angle*pi/180., sx, sy, kb,alpha)
-# first pad it with zeros in Fourier space
+	# first pad it with zeros in Fourier space
 	q = image.FourInterpol(N, N, 1, 0)
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 	          "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
@@ -696,6 +695,21 @@ def prepi(image):
 		"cutoff_abs" : 0.25, "dopad" : False}
 	q = Processor.EMFourierFilter(q, params)
 	return fft(q), kb
+
+
+def prep_refim_gridding(refim, wr, numr, mode = "F"):
+	from fundamentals import prepi
+	nx = refim.get_xsize()
+	ny = refim.get_ysize()
+	cnx = nx//2+1
+	cny = ny//2+1
+	#precalculate rings
+	temp,kb = prepi(refim)
+	crefim = Util.Polar2Dmi(temp, cnx, cny, numr, mode, kb)
+	Util.Normalize_ring(crefim, numr)
+	Util.Frngs(crefim, numr)
+	Util.Applyws(crefim, numr, wr)
+	return  crefim,kb
 
 def prepi3D(image):
 	"""
@@ -742,15 +756,15 @@ def prepg(image, kb):
 	from EMAN2 import Processor
 
 	M = image.get_xsize()
-# padd two times
+	# padd two times
 	npad = 2
 	N = M*npad
-# support of the window
+	# support of the window
 	K = 6
 	alpha = 1.75
 	r = M/2
 	v = K/2.0/N
-# first pad it with zeros in Fourier space
+	# first pad it with zeros in Fourier space
 	o = image.FourInterpol(2*M,2*M,1,0)
 	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 		  "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}

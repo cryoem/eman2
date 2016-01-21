@@ -1939,6 +1939,187 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	else:
 		return -1.0e23, 0.0
 
+
+
+def ornq_gridding(image, crefim, shifts, shrink, kb, mode, numr, cnx, cny, deltapsi = 0.0):
+	"""Determine shift and rotation between image and reference image (refim)
+	   no mirror
+	   	input image is preshifted and prepped for gridding
+		gridding interpolation
+		cnx, cny in FORTRAN convention
+	"""
+	#from math import pi, cos, sin, radians
+	from alignment import ang_n
+	#from utilities import info
+	peak = -1.0E23
+	for ll,iq in enumerate(shifts):
+		cimage = Util.Polar2Dmi(image[ll], cnx, cny, numr, mode, kb)
+		Util.Frngs(cimage, numr)
+		retvals = Util.Crosrng_e(crefim, cimage, numr, 0, deltapsi)
+		qn = retvals["qn"]
+		###print  qn,  (360.0-ang_n(retvals["tot"], mode, numr[-1]))%360.0, iq[0]*shrink, iq[1*shrink]
+		if qn >= peak:
+			sx = iq[0]*shrink
+			sy = iq[1]*shrink
+			ang = ang_n(retvals["tot"], mode, numr[-1])
+			peak = qn
+	#print  ang, sx, sy, peak
+	# mirror is returned as zero for consistency
+	mirror = 0
+	#  For 3D work no need to invert
+	"""
+	co =  cos(radians(ang))
+	so = -sin(radians(ang))
+	sxs = sx*co - sy*so
+	sys = sx*so + sy*co
+	"""
+	return  (360.0-ang)%360.0, sx, sy, mirror, peak
+
+
+def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, cnx, myid, main_node, kb3D = None):
+	from projection import prgs,prgl
+	from alignment import ornq_gridding
+	from fundamentals import prep_refim_gridding
+	from utilities import wrap_mpi_gatherv
+	from mpi import mpi_barrier, MPI_COMM_WORLD
+	###from time import time
+	#  Input data has to be CTF-multiplied, preshifted, and prepped for gridding
+	###at = time()
+	nang = len(refang)
+	simis = [-1.0e23]*len(data)
+	newpar = [None]*len(data)
+	for i in xrange(nang):
+		###if myid == main_node:  print "  Angle :",i,time()-at
+		if kb3D:  temp = prgs(volprep, kb3D, [refang[i][0],refang[i][1],0.0, 0.0,0.0])
+		else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],0.0, 0.0,0.0], 1, True)
+		crefim,kb = prep_refim_gridding(temp, wr, numr)
+		for kl,emimage in enumerate(data):
+			psi, sxs, sys, mirror, peak = ornq_gridding(emimage, crefim, shifts, shrink, kb, "F", numr, cnx, cnx, deltapsi = delta_psi)
+			#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
+			if(peak > simis[kl]):
+				#best = i
+				simis[kl]  = peak
+				newpar[kl] = [refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink]
+			
+	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
+
+	###if myid == main_node:  print "  Finished :",time()-at
+
+	mpi_barrier(MPI_COMM_WORLD)
+	simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
+	newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
+	mpi_barrier(MPI_COMM_WORLD)
+	return newpar,simis
+
+
+def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, kb3D = None):
+	from projection import prgs,prgl
+	from utilities import wrap_mpi_gatherv
+	from mpi import mpi_barrier, MPI_COMM_WORLD
+	###from time import time
+	#  Input data has to be CTF-multiplied, preshifted
+	###at = time()
+	npsi = int(360./delta_psi)
+	nang = len(refang)
+	simis = [-1.0e23]*len(data)
+	newpar = [None]*len(data)
+	for i in xrange(nang):
+		###if myid == main_node:  print "  Angle :",i,time()-at
+		for j in xrange(npsi):
+			psi = j*delta_psi
+			if kb3D:  temp = prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0])
+			else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
+			temp.set_attr("is_complex",0)
+			nrmref = sqrt(temp.cmp("dot", temp, dict(negative = 0)))
+			for kl,emimage in enumerate(data):
+				for im in xrange(len(shifts)):
+					peak = temp.cmp("dot", emimage[im], dict(negative = 0))
+					peak /= nrmref
+					#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
+					if(peak > simis[kl]):
+						#best = i
+						simis[kl]  = peak
+						newpar[kl] = [refang[i][0],refang[i][1],psi,shifts[im][0],shifts[im][1]]
+			
+	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
+
+	if myid == main_node:  print "  Finished :",time()-at
+
+	mpi_barrier(MPI_COMM_WORLD)
+	simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
+	newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
+	mpi_barrier(MPI_COMM_WORLD)
+	return newpar,simis
+
+
+
+
+def proj_ali_incore_direct(data, ref_angs, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0):
+	from alignment import search_range
+	from EMAN2 import Vec2f
+
+	if finfo:
+		from utilities    import get_params_proj
+		phi, theta, psi, s2x, s2y = get_params_proj(data)
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
+		finfo.flush()
+
+	mode = "F"
+	#  center is in SPIDER convention
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+
+	#phi, theta, psi, sxo, syo = get_params_proj(data)
+	t1 = data.get_attr("xform.projection")
+	dp = t1.get_params("spider")
+	ou = numr[-3]
+	sxi = round(-dp["tx"]+rshift,2)
+	syi = round(-dp["ty"]+rshift,2)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
+
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d(data, refrings, txrng, tyrng, step, mode, numr, cnx-sxi, cny-syi, delta_psi)
+	#print ang, sxs, sys, mirror, iref, peak
+	iref = int(iref)
+	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+	#  rotation has to be reversed
+	if mirror:
+		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+		theta = 180.0-refrings[iref].get_attr("theta")
+		psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
+	else:
+		phi   = refrings[iref].get_attr("phi")
+		theta = refrings[iref].get_attr("theta")
+		psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
+	s2x   = sxs + sxi
+	s2y   = sys + syi
+	#set_params_proj(data, [phi, theta, psi, s2x, s2y])
+	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+	t2.set_trans(Vec2f(-s2x, -s2y))
+	data.set_attr("xform.projection", t2)
+	data.set_attr("referencenumber", iref)
+	from pixel_error import max_3D_pixel_error
+	ts = t2.get_sym_proj(sym)
+	if(len(ts) > 1):
+		# only do it if it is not c1
+		pixel_error = +1.0e23
+		for ut in ts:
+			# we do not care which position minimizes the error
+			pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+	else:
+		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+	
+
+	if finfo:
+		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+		finfo.flush()
+
+	return peak, pixel_error
+
+
+
 def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=180.0, finfo=None):
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
