@@ -2015,6 +2015,7 @@ def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, c
 def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, kb3D = None):
 	from projection import prgs,prgl
 	from utilities import wrap_mpi_gatherv
+	from math import sqrt
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	###from time import time
 	#  Input data has to be CTF-multiplied, preshifted
