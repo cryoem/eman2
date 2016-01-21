@@ -5241,9 +5241,10 @@ def generate_indices_and_refrings(nima, projangles, volft, kb, nx, delta, an, ra
 	else:	
 		number_of_cones = calculate_number_of_cones(volft, kb, delta, sym, cnx, cny, numr, mode, wr_four)
 		
-		# number_of_cones = 30
-		# number_of_cones = 4
-		# number_of_cones = 1
+		# use at least 10 cones
+		if number_of_cones > 1 and number_of_cones < 10:
+			number_of_cones = 10
+		
 		if( number_of_cones == 1):
 			print "  One cone, i.e., standard code"
 			sys.stdout.flush()			
