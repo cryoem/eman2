@@ -73,7 +73,8 @@ LOGFILE_HANDLE = 0
 IS_LOGFILE_OPEN = False
 '''   SYSTEM FUNCTIONS - please do not change the text below '''
 global SPARXVERSION
-SPARXVERSION = "SPARX v4.0" + ' (git)'
+DATESTAMP="BUILD_DATE"
+SPARXVERSION = "SPARX v4.0" + ' (GITHUB: ' + DATESTAMP +')'
 
 global SPARX_DOCUMENTATION_WEBSITE
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
