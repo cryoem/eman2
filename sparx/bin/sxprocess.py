@@ -274,7 +274,7 @@ def main():
    11. Scale 3D shifts.  The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor
 		sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5
    
-   12. Generate adaptive mask from a given 3-D volume. 
+   12. Generate 3D mask from a given 3-D volume automatically or using threshold provided by user. 
 
 
 """
@@ -319,6 +319,9 @@ def main():
 	parser.add_option("--ndilation",            type="int",		default= 3,     		  help="number of times of dilation applied to the largest cluster of density")
 	parser.add_option("--kernel_size",          type="int",		default= 11,     		  help="convolution kernel for smoothing the edge of the mask")
 	parser.add_option("--gauss_standard_dev",   type="int",		default= 9,     		  help="stanadard deviation value to generate Gaussian edge")
+	parser.add_option("--threshold",   type="float",		default= 9999.,     		  help="threshold provided by user to binarize input volume")
+	parser.add_option("--ne",   type="int",		default= 0,     		  help="number of times to erode the binarized  input image")
+	parser.add_option("--nd",   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
 	 
  	(options, args) = parser.parse_args()
 
@@ -791,13 +794,15 @@ def main():
 		
 	elif options.adaptive_mask:
 		from utilities import get_im
-		from morphology import adaptive_mask
+		from morphology import adaptive_mask, binarize, erosion, dilation
 		nsigma             = options.nsigma
 		ndilation          = options.ndilation
 		kernel_size        = options.kernel_size
 		gauss_standard_dev = options.gauss_standard_dev
 		nargs = len(args)
-		if nargs > 2:
+		if nargs ==0:
+			print " Create 3D mask from a given volume, either automatically or from the user provided threshold."
+		elif nargs > 2:
 			print "Too many inputs are given, try again!"
 			return
 		else:
@@ -805,8 +810,13 @@ def main():
 			input_path, input_file_name = os.path.split(args[0])
 			input_file_name_root,ext=os.path.splitext(input_file_name)
 			if nargs == 2:  mask_file_name = args[1]
-			else:           mask_file_name = "adaptive_mask_for"+input_file_name_root+".hdf" # Only hdf file is output. 
-			mask3d = adaptive_mask(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
+			else:           mask_file_name = "adaptive_mask_for_"+input_file_name_root+".hdf" # Only hdf file is output.
+			if options.threshold !=9999.:
+				mask3d = binarize(inputvol, options.threshold)
+				for i in xrange(options.ne): mask3d = erosion(mask3d)
+				for i in xrange(options.nd): mask3d = dilation(mask3d)
+			else: 
+				mask3d = adaptive_mask(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
 			mask3d.write_image(mask_file_name)
 
 
