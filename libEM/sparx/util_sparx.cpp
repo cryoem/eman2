@@ -19159,11 +19159,11 @@ int Util::nearest_ang(const vector<float>& vecref, float x, float y, float z) {
 
 int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z) {
 
-	float best_v = vecref[0][0]*x+vecref[0][1]*y+vecref[0][2]*z;
+	float best_v = abs(vecref[0][0]*x+vecref[0][1]*y+vecref[0][2]*z);
 	int best_i = 0;
 
 	for (unsigned int i=1; i<vecref.size(); i++) {
-		float v = vecref[i][0]*x+vecref[i][1]*y+vecref[i][2]*z;
+		float v = abs(vecref[i][0]*x+vecref[i][1]*y+vecref[i][2]*z);
 		if (v > best_v) {
 			best_v = v;
 			best_i = i;
@@ -19266,6 +19266,69 @@ EMData* Util::fast_3d_box_convolution(EMData *input_volume, int window_size) {
 	
 	return output_volume;
 }
+
+
+vector<float> Util::get_largest_angles_in_cones(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles) {
+	int length_of_refangles = refangles.size();
+	int length_of_projangles = projangles.size();
+	float pi180 = M_PI/180.0f;
+	
+	vector<int> asg(length_of_projangles);
+	vector<vector<float> > reference_vectors(length_of_refangles, vector<float>(3));
+	vector<float> largest_angles(length_of_refangles, 0.0);
+	
+	for (int i=0; i<length_of_refangles; i++)
+		getfvec(refangles[i][0], refangles[i][1], reference_vectors[i][0], reference_vectors[i][1], reference_vectors[i][2]);
+
+	for (int i=0; i<length_of_projangles; i++) {
+		float x, y, z;
+		getfvec(projangles[i][0], projangles[i][1], x, y, z);
+		asg[i] = nearest_ang_f(reference_vectors, x, y, z);
+		float image_cone_direction_angle = acos(abs(reference_vectors[asg[i]][0]*x + reference_vectors[asg[i]][1]*y + reference_vectors[asg[i]][2]*z))/pi180;
+		if (image_cone_direction_angle > largest_angles[asg[i]])
+		  largest_angles[asg[i]] = image_cone_direction_angle;
+	}
+	return largest_angles;
+}
+
+//solves both
+//vector<float> Util::get_largest_angles_in_cones(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles) {
+//	
+//	
+//	
+//	int length_of_refangles = refangles.size();
+//	int length_of_projangles = projangles.size();
+//	float pi180 = M_PI/180.0f;
+//	
+//	vector<float> results(length_of_projangles + length_of_refangles, 0.0);
+//	vector<int> asg(length_of_projangles);
+//	vector<vector<float> > reference_vectors(length_of_refangles, vector<float>(3));
+//	vector<float> largest_angles(length_of_refangles, 0.0);
+//		
+//	
+//	for (int i=0; i<length_of_refangles; i++)
+//		getfvec(refangles[i][0], refangles[i][1], reference_vectors[i][0], reference_vectors[i][1], reference_vectors[i][2]);
+//
+//	for (int i=0; i<length_of_projangles; i++) {
+//		float x, y, z;
+//		getfvec(projangles[i][0], projangles[i][1], x, y, z);
+//		asg[i] = nearest_ang_f(reference_vectors, x, y, z);
+//		float image_cone_direction_angle = acos(abs(reference_vectors[asg[i]][0]*x + reference_vectors[asg[i]][1]*y + reference_vectors[asg[i]][2]*z))/pi180;
+//		if (image_cone_direction_angle > largest_angles[asg[i]])
+//		  largest_angles[asg[i]] = image_cone_direction_angle;
+//	}
+//	
+//	for (int i=0; i<length_of_projangles; i++) {
+//		results[i] = (float)asg[i]; 
+//	}
+//	for (int i=0; i<length_of_refangles; i++) {
+//		results[i + length_of_projangles] = largest_angles[i]; 
+//	}
+//	
+////	return largest_angles;
+//	return results;
+//}
+
 
 
 vector<int> Util::nearestk_to_refdir(const vector<float>& projangles, const vector<float>& refangles, const int howmany) {
@@ -19715,11 +19778,26 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 				vector<vector<float> > list_of_reference_angles,
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym, float delta_psi) {
-	size_t crefim_len = crefim.size();
+
+	int cone_mode = (list_of_reference_angles[0].size() > 3);
+
+	size_t crefim_len_original_only_from_asymmetric_unit = cone_mode ? list_of_reference_angles[0][5] : crefim.size();
+	assert(crefim_len_original_only_from_asymmetric_unit > 0);
+
 	size_t list_of_reference_angles_length = list_of_reference_angles.size();
 	Transform * t = image->get_attr("xform.projection");
 	int nsym = t->get_nsym(sym);
-	assert(crefim_len == list_of_reference_angles_length/nsym/2);
+
+	if (!cone_mode) 
+	{
+		if (crefim_len_original_only_from_asymmetric_unit != list_of_reference_angles_length/nsym/2)
+		{
+			printf("\n\ncrefim_len_original_only_from_asymmetric_unit(%d) == list_of_reference_angles_length(%d)/nsym(%d)/2\n\n",
+			crefim_len_original_only_from_asymmetric_unit, list_of_reference_angles_length, nsym);
+			fflush(stdout);
+		}	
+		assert(crefim_len_original_only_from_asymmetric_unit == list_of_reference_angles_length/nsym/2);
+	}
 
 	int lkx = int(xrng[0]/step);
 	int rkx = int(xrng[1]/step);
@@ -19732,7 +19810,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	circle = circle*circle;
 
 
-	int   iref, nref=0, mirror=0;
+	int   iref, nref=0, niu=-1, mirror=0;
 	float iy, ix, sxs=0, sys=0;
 	float peak = -1.0E23f;
 	float ang  = 0.0f;
@@ -19747,6 +19825,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	float n3 = cos(theta);
 
 	bool compute_cimages = true;
+	bool process_image = false;
 	for (unsigned iu = 0; iu < list_of_reference_angles_length; iu++) {
 
 		float m_phi   = list_of_reference_angles[iu][0] * qv;
@@ -19758,7 +19837,9 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 		float dot_product = n1*m1 + n2*m2 + n3*m3;
 
 		if(dot_product >= ant) {
-			iref = iu % crefim_len;
+			process_image = true;
+			// iref is the reference to refrings
+			iref = cone_mode ? list_of_reference_angles[iu][4] : iu % crefim_len_original_only_from_asymmetric_unit;
 
 			if( compute_cimages ) {
 				compute_cimages = false;
@@ -19768,10 +19849,10 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 						ix = j*step ;
 
 						if( i*i + j*j <= circle ) {
-							EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-							Normalize_ring( cimage, numr );
-							Frngs(cimage, numr);
-							cimages[i+lky][j+lkx] = cimage;
+                            EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+                            Normalize_ring( cimage, numr );
+                            Frngs(cimage, numr);
+                            cimages[i+lky][j+lkx] = cimage;
 						}
 					}
 				}
@@ -19784,22 +19865,19 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 
 					if( i*i + j*j <= circle ) {
 
-						//  compare with all reference images that are on a new list
-						int compmirror = (iu/crefim_len)%2;
-						Dict retvals = Crosrng_e(crefim[iref], cimages[i+lky][j+lkx], numr, compmirror, delta_psi);
-						double qn = retvals["qn"];
-			//printf(" lo within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn);
-			
-						if(qn >= peak) {
-							sxs = -ix;
-							sys = -iy;
-							nref = iref;
-							mirror = compmirror;
-							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-							peak = static_cast<float>( qn );
-						//printf(" lo better within loop  %4.1f  %4.1f   %4.1f  %4.1f  \n",sxs,sys,ang,peak);
-						}
-						//delete cimage; cimage = 0;
+                        int compmirror = cone_mode ? (((int)list_of_reference_angles[iu][3]/crefim_len_original_only_from_asymmetric_unit)%2) : ((iu/crefim_len_original_only_from_asymmetric_unit)%2);
+                        Dict retvals = Crosrng_e(crefim[iref], cimages[i+lky][j+lkx], numr, compmirror, delta_psi);
+                        double qn = retvals["qn"];
+                        
+                        if(qn >= peak) {
+                            sxs = -ix;
+                            sys = -iy;
+                            nref = iref;
+                            mirror = compmirror;
+                            ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+                            peak = static_cast<float>( qn );
+                        }
+                        //delete cimage; cimage = 0;
 					}
 				}
 			}
@@ -22002,6 +22080,9 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 	return ccc;
 }
 
+
+void Util::version()
+{ cout <<"  VERSION  01/21/2016  11:40 AM"<<endl;}
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
 EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)

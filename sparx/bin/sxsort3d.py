@@ -63,7 +63,7 @@ def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
 	
 def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker): 
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
-	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
+	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank, write_text_file
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
@@ -238,8 +238,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		refdata= [None]*4
 		refdata[0] = ref_list[iref]
 		refdata[1] = Tracker
-		refdata[2] = None
-		refdata[3] = None
+		refdata[2] = Tracker["constants"]["myid"]
+		refdata[3] = Tracker["constants"]["nproc"]
 		volref = user_func(refdata)
 		if myid ==main_node:
 			log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
@@ -457,8 +457,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			refdata    = [None]*4
 			refdata[0] = volref
 			refdata[1] = Tracker
-			refdata[2] = None
-			refdata[3] = None
+			refdata[2] = Tracker["constants"]["myid"]
+			refdata[3] = Tracker["constants"]["nproc"]
 			volref = user_func(refdata)
 			if myid == main_node:volref.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 			del volref
@@ -547,7 +547,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 
 def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
-	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
+	from utilities      import  bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank, wrap_mpi_bcast, write_text_file
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
@@ -755,8 +755,8 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 		set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
 		refdata[0] = ref_list[iref]
 		refdata[1] = Tracker
-		refdata[2] = 0
-		refdata[3] = None
+		refdata[2] = Tracker["constants"]["myid"]
+		refdata[3] = Tracker["constants"]["nproc"]
 		volref = user_func(refdata)
 		if myid == main_node:
 			log.add("%d  low pass filter   %f %f  %d"%(iref,Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
@@ -1192,8 +1192,8 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 			refdata    =[None]*4
 			refdata[0] = volref
 			refdata[1] = Tracker
-			refdata[2] = 0
-			refdata[3] = None
+			refdata[2] = Tracker["constants"]["myid"]
+			refdata[3] = Tracker["constants"]["nproc"] 
 			volref = user_func(refdata)
 			if myid ==main_node:volref.write_image(os.path.join(outdir,"volf%04d.hdf"%(total_iter)),iref)
 			del volref
@@ -1900,7 +1900,7 @@ def count_chunk_members(chunk_dict,one_class):
 	return rate0,rate1,len(one_class)
 	
 def get_two_chunks_from_stack(Tracker):
-	total_chunk = EMUtil.get_all_attributes(Tracker["constants"]["stack"],"chunk_id")
+	total_chunk = EMUtil.get_all_attributes(Tracker["orgstack"],"chunk_id")
 	chunk_one = []
 	chunk_two = []
 	for index_of_total_chunk in xrange(len(total_chunk)):
@@ -1932,7 +1932,7 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 			break
 	lowpass, falloff    = fit_tanh1(adjusted_fsc, 0.01)
 	lowpass             = round(lowpass,4)
-	falloff    =min(.2,falloff)
+	falloff    =min(.1,falloff)
 	falloff             = round(falloff,4)
 	currentres          = round(currentres,2)	
 	Tracker["lowpass"]  = lowpass
@@ -2168,54 +2168,13 @@ def main():
 		Tracker["constants"]["stack"] = "bdb:"+masterdir+"/rdata"
 		Tracker["constants"]["ali3d"] = os.path.join(masterdir, "ali3d_init.txt")
 		Tracker["constants"]["partstack"] =Tracker["constants"]["ali3d"]
-	   	if myid == main_node:
-			if keepchecking:
-				if(os.path.exists(os.path.join(masterdir,"EMAN2DB/rdata.bdb"))):doit = False
-				else:  doit = True
-			else:  doit = True
-			if  doit:
-				if(orgstack[:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
-				else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
-				cmdexecute(cmd)
-				cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["constants"]["stack"])
-				cmdexecute(cmd)
-				cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
-				cmdexecute(cmd)
-				keepchecking = False
-			total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
+		if myid ==main_node:
+			total_stack = EMUtil.get_image_count(Tracker["orgstack"])
 		else:
 			total_stack = 0
-		mpi_barrier(MPI_COMM_WORLD)
 		total_stack = bcast_number_to_all(total_stack, source_node = main_node)
-		Tracker["total_stack"]              = total_stack
-		Tracker["constants"]["total_stack"] = total_stack
-		Tracker["shrinkage"]  = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
-		Tracker["radius"]     = Tracker["constants"]["radius"]*Tracker["shrinkage"]
-		if Tracker["constants"]["mask3D"]:
-			Tracker["mask3D"]=os.path.join(masterdir,"smask.hdf")
-		else:
-			Tracker["mask3D"] = None
-		if Tracker["constants"]["focus3Dmask"]:
-			Tracker["focus3D"]=os.path.join(masterdir,"sfocus.hdf")
-		else:
-			Tracker["focus3D"] = None
-		if myid ==main_node:
-			if Tracker["constants"]["mask3D"]:
-				mask_3D=get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
-				mask_3D.write_image(Tracker["mask3D"])
-			if Tracker["constants"]["focus3Dmask"]:
-				mask_3D=get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
-				mask_3D.write_imgae(Tracker["focus3D"])
-		if Tracker["constants"]["PWadjustment"]:
-			PW_dict={}
-			nxinit_pwsp=sample_down_1D_curve(Tracker["constants"]["nxinit"],Tracker["constants"]["nnxo"],Tracker["constants"]["PWadjustment"])
-			Tracker["nxinit_PW"] = os.path.join(masterdir,"spwp.txt")
-			if myid ==main_node:
-				write_text_file(nxinit_pwsp,Tracker["nxinit_PW"])
-			PW_dict[Tracker["constants"]["nnxo"]]   =Tracker["constants"]["PWadjustment"]
-			PW_dict[Tracker["constants"]["nxinit"]] =Tracker["nxinit_PW"]
-			Tracker["PW_dict"] = PW_dict
 		mpi_barrier(MPI_COMM_WORLD)
+		#####
 		###----------------------------------------------------------------------------------
 		# Initial data analysis and handle two chunk files
 		from random import shuffle
@@ -2227,7 +2186,7 @@ def main():
 		chunk_list = []
 		if Tracker["constants"]["chunkdir"]=="":
 			try:
-				image=get_im(Tracker["constants"]["stack"],0)
+				image=get_im(Tracker["orgstack"],0)
 				image.get_attr("chunk_id") # in case text files are lost, chunk_id could be recorded in image header.
 				chunk_id_exist = True
 			except:
@@ -2257,7 +2216,83 @@ def main():
 				chunk_two = 0
 			chunk_one = wrap_mpi_bcast(chunk_one, main_node)
 			chunk_two = wrap_mpi_bcast(chunk_two, main_node)
+		mpi_barrier(MPI_COMM_WORLD)
 		#################################################################
+		#--- Fill chunk ID into headers
+		if myid ==main_node:
+			image=EMData()
+			image.read_image(Tracker["orgstack"],0)
+			try: 
+				image.get_attr("chunk_id")
+				chunk_id_not_filled = False
+			except:
+				chunk_id_not_filled = True
+			if chunk_id_not_filled:
+				#log_main.add("chunk_id is not in header!")
+				for id_index in chunk_one:
+					image =EMData()
+					image.read_image(Tracker["orgstack"],id_index)
+					image.set_attr("chunk_id",0)
+					write_image(Tracker["orgstack"],image,id_index)
+				for id_index in chunk_two:
+					image =EMData()
+					image.read_image(Tracker["orgstack"],id_index)
+					image.set_attr("chunk_id",1)
+					write_header(Tracker["orgstack"],image,id_index)
+				#
+				log_main.add("chunk_ids have been filled in header!")
+				#log_main.add("chunk_id is already in header!")
+		mpi_barrier(MPI_COMM_WORLD)
+		#############
+	   	if myid == main_node:
+			if keepchecking:
+				if(os.path.exists(os.path.join(masterdir,"EMAN2DB/rdata.bdb"))):doit = False
+				else:  doit = True
+			else:  doit = True
+			if  doit:
+				if(orgstack[:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
+				else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
+				cmdexecute(cmd)
+				cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["constants"]["stack"])
+				cmdexecute(cmd)
+				cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
+				cmdexecute(cmd)
+				keepchecking = False
+			#total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
+			#total_stack = 0
+		mpi_barrier(MPI_COMM_WORLD)
+		#####
+		Tracker["total_stack"]              = total_stack
+		Tracker["constants"]["total_stack"] = total_stack
+		Tracker["shrinkage"]  = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
+		Tracker["radius"]     = Tracker["constants"]["radius"]*Tracker["shrinkage"]
+		if Tracker["constants"]["mask3D"]:
+			Tracker["mask3D"]=os.path.join(masterdir,"smask.hdf")
+		else:
+			Tracker["mask3D"] = None
+		if Tracker["constants"]["focus3Dmask"]:
+			Tracker["focus3D"]=os.path.join(masterdir,"sfocus.hdf")
+		else:
+			Tracker["focus3D"] = None
+		if myid ==main_node:
+			if Tracker["constants"]["mask3D"]:
+				mask_3D=get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
+				mask_3D.write_image(Tracker["mask3D"])
+			if Tracker["constants"]["focus3Dmask"]:
+				mask_3D=get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
+				mask_3D.write_image(Tracker["focus3D"])
+		if Tracker["constants"]["PWadjustment"]:
+			PW_dict={}
+			nxinit_pwsp=sample_down_1D_curve(Tracker["constants"]["nxinit"],Tracker["constants"]["nnxo"],Tracker["constants"]["PWadjustment"])
+			Tracker["nxinit_PW"] = os.path.join(masterdir,"spwp.txt")
+			if myid ==main_node:
+				write_text_file(nxinit_pwsp,Tracker["nxinit_PW"])
+			PW_dict[Tracker["constants"]["nnxo"]]   =Tracker["constants"]["PWadjustment"]
+			PW_dict[Tracker["constants"]["nxinit"]] =Tracker["nxinit_PW"]
+			Tracker["PW_dict"] = PW_dict
+		mpi_barrier(MPI_COMM_WORLD)
+
+		#------------------------------------------------------------------------------
 		for element in chunk_one: chunk_dict[element] = 0
 		for element in chunk_two: chunk_dict[element] = 1
 		chunk_list =[chunk_one, chunk_two]
@@ -2313,7 +2348,7 @@ def main():
 			log_main.add("current resolution %6.3f for images of original size in terms of absolute frequency"%Tracker["currentres"])
 			log_main.add("equivalent to %f Angstrom resolution"%(Tracker["constants"]["pixel_size"]/Tracker["currentres"]/Tracker["shrinkage"]))
 			log_main.add("the user provided enforced low_pass_filter is %f"%Tracker["constants"]["low_pass_filter"])
-			log_main.add("equivalent to %f Angstrom resolution"%(Tracker["constants"]["pixel_size"]/Tracker["constants"]["low_pass_filter"]))
+			#log_main.add("equivalent to %f Angstrom resolution"%(Tracker["constants"]["pixel_size"]/Tracker["constants"]["low_pass_filter"]))
 			for index in xrange(2):
 				vol_file = os.path.join(masterdir,"vol%d.txt"%index)
 				vol = get_im(vol_file_name)
@@ -2414,8 +2449,8 @@ def main():
 			refdata    = [None]*4
 			refdata[0] = ref_vol_list[iref]
 			refdata[1] = Tracker
-			refdata[2] = 0
-			refdata[3] = None
+			refdata[2] = Tracker["constants"]["myid"]
+			refdata[3] = Tracker["constants"]["nproc"]
 			volref = user_func(refdata)
 			if myid ==main_node:
 				volref.write_image(os.path.join(workdir,"volf_stable.hdf"),iref)
@@ -2451,8 +2486,8 @@ def main():
 			refdata =[None]*4
 			refdata[0] = vol_list[ivol]
 			refdata[1] = Tracker
-			refdata[2] = 0
-			refdata[3] = None
+			refdata[2] = Tracker["constants"]["myid"]
+			refdata[3] = Tracker["constants"]["nproc"] 
 			volref = user_func(refdata)
 			if myid ==main_node:
 				volref.write_image(os.path.join(workdir,"volf_of_Classes.hdf"),ivol)
@@ -2522,7 +2557,8 @@ def main():
 			Tracker["this_unaccounted_list"] = complementary
 			if myid ==main_node:
 				log_main.add("the number of particles not processed is %d"%len(complementary))
-			write_text_file(Tracker["this_unaccounted_list"],Tracker["this_unaccounted_text"])
+				write_text_file(Tracker["this_unaccounted_list"],Tracker["this_unaccounted_text"])
+			mpi_barrier(MPI_COMM_WORLD)
 			update_full_dict(complementary,Tracker)
 			vol_list = []
 			for igrp in xrange(number_of_groups):
@@ -2540,8 +2576,8 @@ def main():
 				refdata =[None]*4
 				refdata[0] = vol_list[ivol]
 				refdata[1] = Tracker
-				refdata[2] = 0
-				refdata[3] = None
+				refdata[2] = Tracker["constants"]["myid"]
+				refdata[3] = Tracker["constants"]["nproc"] 
 				volref = user_func(refdata)
 				if myid ==main_node:
 					volref.write_image(os.path.join(workdir, "volf_of_Classes.hdf"),ivol)
@@ -2565,8 +2601,8 @@ def main():
 			refdata =[None]*4
 			refdata[0] = volref
 			refdata[1] = Tracker
-			refdata[2] = 0
-			refdata[3] = None
+			refdata[2] = Tracker["constants"]["myid"]
+			refdata[3] =  Tracker["constants"]["nproc"]
 			volref = user_func(refdata)
 			#volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
 			if myid ==main_node:

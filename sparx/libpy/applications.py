@@ -4740,13 +4740,22 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.
 		total_nima = int(total_nima[0])
 
 
-	if myid == 0:
-		finfo = None
+	if myid == 0 or myid == 5 or myid == 14:
 		"""
+		# finfo = None
 		import os
 		outdir = "./"
-		info_file = os.path.join(outdir, "progress%04d"%myid)
-		finfo = open(info_file, 'w')
+		# info_file = os.path.join(outdir, "progress%04d"%myid)
+		
+		# finfo = open(info_file, 'w')
+		if "filename_first_time" not in sali3d_base.__dict__:
+			import datetime
+			sali3d_base.filename_first_time = os.path.join(outdir, "progress%04d_%s"%(myid, datetime.datetime.now().strftime('%Y-%m-%d--%H-%M-%S-%f')[:-3]))
+			finfo = open(sali3d_base.filename_first_time, "w")
+		else: 
+			finfo = open(sali3d_base.filename_first_time, "a")
+			finfo.write("=======================================================================================\n")
+		# finfo = open(info_file, 'a')
 		"""
 	else:
 		finfo = None
@@ -5099,6 +5108,491 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.
 	if myid == main_node:
 		log.add("Finish sali3d_base, nsoft = %1d"%nsoft)
 	return params
+
+
+
+def sali3d_base_horatio_01(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.0, mpi_comm = None, log = None):	
+	"""
+		parameters: list of (all) projections | reference volume is optional, the data is shrank, 
+		  the program does not know anything about shrinking| ...
+		Data is assumed to be CTF multiplied and the ctf_applied flag to be set.
+		The alignment done depends on nsoft:
+					 nsoft = 0 & an = -1: exhaustive deterministic
+					 nsoft = 0 & an > 0 : local deterministic
+					 nsoft = 1 shc
+					 nsoft >1  shc_multi
+		
+	"""
+
+	from alignment       import Numrinit, prepare_refrings, generate_indices_and_refrings
+	from alignment       import proj_ali_incore,  proj_ali_incore_zoom,  proj_ali_incore_local, proj_ali_incore_local_zoom
+	from alignment       import shc, center_projections_3D, ringwe
+	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank, print_from_process
+	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj, pad
+	from utilities       import even_angles
+	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
+	from projection      import prep_vol
+	from statistics      import hist_list
+	from applications    import MPI_start_end
+	from filter          import filt_ctf, filt_table
+	from global_def      import Util
+	from fundamentals    import resample, fshift
+	from multi_shc       import shc_multi
+	#from development     import do_volume_mrk01
+	import user_functions
+	from EMAN2           import EMUtil, EMData
+	import types
+	from time            import time
+
+	nsoft            = Tracker["nsoft"]
+	saturatecrit     = Tracker["saturatecrit"]
+	pixercutoff      = Tracker["pixercutoff"]
+	zoom             = Tracker["zoom"]
+	center           = Tracker["constants"]["center"]
+	CTF              = Tracker["constants"]["CTF"]
+	ref_a            = Tracker["constants"]["ref_a"]
+	rstep            = Tracker["constants"]["rs"]
+	sym              = Tracker["constants"]["sym"]
+	first_ring       = 1
+	last_ring        = Tracker["radius"]
+	xr               = Tracker["xr"]
+	yr               = Tracker["yr"]
+	ts               = Tracker["ts"]
+	an               = Tracker["an"]
+	delta            = Tracker["delta"]
+	max_iter         = Tracker["maxit"]
+
+	if mpi_comm == None: mpi_comm = MPI_COMM_WORLD
+
+	if log == None:
+		from logger import Logger
+		log = Logger()
+
+	number_of_proc = mpi_comm_size(mpi_comm)
+	myid           = mpi_comm_rank(mpi_comm)
+	main_node      = 0
+
+	if myid == main_node:
+		log.add("Start sali3d_base_h_01, nsoft = %1d"%nsoft)
+
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+	delta       = get_input_from_string(delta)
+	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	if an == "-1":
+		an = [-1] * lstp
+	else:
+		an = get_input_from_string(an)
+
+	if( type(stack) is types.StringType ):
+		if myid == main_node:
+			total_nima = EMUtil.get_image_count( stack )
+		else:
+			total_nima = 0
+		total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
+		list_of_particles = range(total_nima)
+		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
+		# create a list of images for each node
+		list_of_particles = list_of_particles[image_start: image_end]
+		nima = len(list_of_particles)
+
+	else:
+		list_of_particles = range(len(stack))
+		nima = len(list_of_particles)
+		total_nima = len(list_of_particles)
+		total_nima = mpi_reduce(total_nima, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+		total_nima = mpi_bcast(total_nima, 1, MPI_INT, 0, MPI_COMM_WORLD)
+		total_nima = int(total_nima[0])
+
+
+	if myid == 0 or myid == 5 or myid == 14:
+		# finfo = None
+		import os
+		outdir = "./"
+		# info_file = os.path.join(outdir, "progress%04d"%myid)
+		
+		# finfo = open(info_file, 'w')
+		if "filename_first_time" not in sali3d_base_h_01.__dict__:
+			import datetime
+			sali3d_base_h_01.filename_first_time = os.path.join(outdir, "progress%04d_%s"%(myid, datetime.datetime.now().strftime('%Y-%m-%d--%H-%M-%S-%f')[:-3]))
+			finfo = open(sali3d_base_h_01.filename_first_time, 'w')
+		else: 
+			finfo = open(sali3d_base_h_01.filename_first_time, 'a')
+			finfo.write("=======================================================================================\n")
+		# finfo = open(info_file, 'a')
+	else:
+		finfo = None
+
+	if( myid == main_node):
+		if( type(stack) is types.StringType ):  mask2D = get_im(stack, list_of_particles[0])
+		else:                                   mask2D = stack[list_of_particles[0]]
+		nx = mask2D.get_xsize()
+	else:  nx = 0
+	nx  = bcast_number_to_all(nx, source_node = main_node)
+	mx = 2*nx
+	if last_ring < 0:	last_ring = int(nx/2) - 2
+
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
+
+	data = [None]*nima
+	for im in xrange(nima):
+		if( type(stack) is types.StringType ):  data[im] = get_im(stack, list_of_particles[im])
+		else:                                   data[im] = stack[list_of_particles[im]]
+	mpi_barrier(mpi_comm)
+
+
+	if myid == main_node:
+		start_time = time()
+
+	#  Read	template volume if provided or reconstruct it
+	"""
+	user_func = Tracker["constants"]["user_func"]
+	if ref_vol:
+		#vol = do_volume_mrk01(ref_vol, Tracker, 0, mpi_comm)
+		ref_data = [ref_vol, Tracker, 0, mpi_comm]
+		vol = user_func(ref_data)
+	else:
+		#vol = do_volume_mrk01(data, Tracker, 0, mpi_comm)
+		ref_data = [data, Tracker, 0, mpi_comm]
+		vol = user_func(ref_data)
+	"""
+	vol = ref_vol
+	# log
+	if myid == main_node:
+		log.add("Setting of reference 3D reconstruction time = %10.1f\n"%(time()-start_time))
+		start_time = time()
+
+
+	pixer = [0.0]*nima
+	#historyofchanges = [0.0, 0.5, 1.0]
+	#par_r = [[] for im in list_of_particles ]
+	cs = [0.0]*3
+	total_iter = 0
+	# do the projection matching,  it has a loop over iterations here, 
+	#  but it can only do one iteration as many settings are done in meridien.  Perturbations are a good example, there is one per each iteration.
+	if zoom: lstp = 1
+	
+	for N_step in xrange(lstp):
+		# calculate_number_of_cones(volft, kb, delta, sym, cnx, cny, numr, mode, wr_four)
+		cnx = cny = nx//2 + 1
+		# numr = Numrinit(1,15)
+		mode = "F"
+		# wr_four = ringwe(numr, mode)
+		# volft, kb = prep_vol(vol)
+
+		terminate = 0
+		Iter = 0
+		while Iter < max_iter and terminate == 0:
+
+			Iter += 1
+			total_iter += 1
+
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				log.add("ITERATION #%3d,  inner iteration #%3d"%(total_iter, Iter))
+				log.add("Delta = %7.4f, an = %7.4f, xrange = %7.4f, yrange = %7.4f, step = %7.4f   %7.4f  %7.4f\n"%\
+							(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step], rshift, rangle))
+				start_time = time()
+
+
+			#=========================================================================
+			# build references
+			volft, kb = prep_vol(vol)
+			projangles = [[] for i in xrange(nima)]
+			for im in xrange(nima):
+				projangles[im] = get_params_proj(data[im])[:3]
+					
+
+			cone_count = 0
+			# start loop here ZCcw2oL8ZbcGbU		
+			for image_indices, refrings, list_of_reference_angles in generate_indices_and_refrings(nima, projangles, volft, kb, nx, delta[N_step], an[N_step],	rangle, ref_a, sym, numr, MPI=mpi_comm, phiEqpsi = "Zero"):
+				
+				cone_count += 1
+				print "cone_count", cone_count
+
+				if myid == main_node:
+					log.add("Time to prepare rings: %10.1f\n" % (time()-start_time))
+					start_time = time()
+	
+				#=========================================================================
+				#  there is no need for previousmax for deterministic searches
+				if total_iter == 1 and nsoft > 0:
+					if(an[N_step] < 0.0):
+						# adjust params to references, calculate psi+shifts, calculate previousmax
+						# for im in xrange(nima):
+						for im in image_indices:
+							previousmax = data[im].get_attr_default("previousmax", -1.0e23)
+							if(previousmax == -1.0e23):
+								peak, pixer[im] = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
+										xrng[N_step], yrng[N_step], step[N_step], delta[N_step]*2.5, sym = sym)
+								data[im].set_attr("previousmax", peak)
+					else:
+						#  Here it is supposed to be shake and bake for local SHC, but it would have to be signaled somehow
+						for im in xrange(nima):
+							data[im].set_attr("previousmax", -1.0e23)
+					if myid == main_node:
+						log.add("Time to calculate first psi+shifts+previousmax: %10.1f\n" % (time()-start_time))
+						start_time = time()
+				#=========================================================================
+	
+				# cannot have barriers in this loop because some cones might not have images assigned to them! In this case 'image_indices' is empty.
+				# mpi_barrier(mpi_comm)
+				if myid == main_node:  start_time = time()
+				#=========================================================================
+				# alignment
+				#number_of_checked_refs = 0
+				par_r = [0]*max(2,(nsoft+1))
+				if(an[N_step] > 0):
+					pass
+					# these are already calculated by the generator at the top of the loop
+					# generate list of angles
+					# from alignment import generate_list_of_reference_angles_for_search
+					# list_of_reference_angles = \
+					# generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
+				else:  list_of_reference_angles = [[1.0,1.0]]
+				error_status = 0
+				from utilities import if_error_all_processes_quit_program
+
+				# for im in xrange(nima):
+				for im in image_indices:
+					if Tracker["constants"]["pwsharpening"] :
+						#  High-pass filtration of data[im]
+						try:
+							stmp = data[im].get_attr("ptcl_source_image")
+						except:
+							try:
+								stmp = data[im].get_attr("ctf")
+								stmp = round(stmp.defocus,4)
+							except:
+								ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1, myid)
+						try:
+							indx = Tracker["bckgnoise"][1].index(stmp)
+						except:
+							ERROR("Problem with indexing ptcl_source_image.","meridien",1, myid)
+	
+						tempdata = Util.window(pad(filt_table(data[im],[Tracker["bckgnoise"][0][i,indx] for i in xrange(nx)]), mx, mx,1,0.0), nx, nx)
+					else:  tempdata = data[im].copy()
+					if(nsoft == 0):
+						if(an[N_step] == -1):
+							#  In zoom option each projection goes through shift zoom alignment
+							if  zoom: peak, pixer[im] = proj_ali_incore_zoom(tempdata, refrings, numr, \
+															xrng, yrng, step, finfo = finfo, sym=sym)
+							else:  peak, pixer[im] = proj_ali_incore(tempdata, refrings, numr, \
+													xrng[N_step], yrng[N_step], step[N_step], finfo = finfo, sym=sym, delta_psi = delta[N_step], rshift = rshift*xrng[N_step])
+						else:
+							if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(tempdata, refrings, list_of_reference_angles, numr, \
+										xrng, yrng, step, an, finfo = finfo, sym=sym)
+							else:  
+								
+								peak, pixer[im] = proj_ali_incore_local(tempdata, refrings, list_of_reference_angles, numr, \
+										xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo = finfo, sym=sym, delta_psi = delta[N_step], rshift = rshift)
+						if(pixer[im] == 0.0):  par_r[0] += 1
+					elif(nsoft == 1):
+						tempdata.set_attr("previousmax", data[im].get_attr("previousmax"))
+						peak, pixer[im], number_of_checked_refs, iref = \
+							shc(tempdata, refrings, list_of_reference_angles, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo = finfo)
+						if(pixer[im] == 0.0):  par_r[0] += 1
+						data[im].set_attr("previousmax", tempdata.get_attr("previousmax"))
+					elif(nsoft > 1):
+						#  This is not functional
+						peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, \
+													xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym, finfo = finfo)
+						par_r[number_of_peaks] += 1
+						#number_of_checked_refs += checked_refs
+					data[im].set_attr("xform.projection", tempdata.get_attr("xform.projection"))
+				if len(image_indices)>0: del tempdata
+				if(an[N_step] > 0):  del list_of_reference_angles
+				#=========================================================================
+				# if_error_all_processes_quit_program(error_status)
+				# cannot have barriers in this loop because some cones might not have images assigned to them! In this case 'image_indices' is empty.
+				# mpi_barrier(mpi_comm)
+				if myid == main_node:
+					#print  data[0].get_attr_dict()
+					log.add("Time of alignment = %10.1f\n"%(time()-start_time))
+					start_time = time()
+				
+				# end loop here ZCcw2oL8ZbcGbU
+				
+			del volft, kb
+			mpi_barrier(mpi_comm)
+			print_from_process(0, "passed")
+			#=========================================================================
+			#  Pixer errors available here are useless as they are done for shifts on the reduced image size.
+			#output pixel errors, check stop criterion
+			all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)
+			par_r = mpi_reduce(par_r, len(par_r), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+			#total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
+			terminate = 0
+			if myid == main_node:
+				#total_checked_refs = sum(total_checked_refs)
+				if(nsoft < 2):  par_r[1] = total_nima - par_r[0]
+				log.add("=========== Number of better orientations found ==============")
+				for lhx in xrange(len(par_r)):
+					msg = "            %5d     %7d"%(lhx, par_r[lhx])
+					log.add(msg)
+				log.add("_______________________________________________________")
+				changes = par_r[0]/float(total_nima)
+				"""  Have to think about it PAP
+				if(  changes > saturatecrit ):
+					if( Iter == 1 ):
+						log.add("Will continue even though %4.2f images did not find better orientations"%saturatecrit)
+					else:
+						terminate = 1
+						log.add("...............")
+						log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images did not find better orientations"%saturatecrit)
+				if( terminate == 0 ):
+					historyofchanges.append(changes)
+					historyofchanges = historyofchanges[:3]
+					historyofchanges.sort()
+					if( (historyofchanges[-1]-historyofchanges[0])/2/(historyofchanges[-1]+historyofchanges[0]) <0.05 ):
+						terminate = 1
+						log.add("...............")
+						log.add(">>>>>>>>>>>>>>>   Will terminate as orientations do not improve anymore")
+				"""
+
+				lhist = 20
+				region, histo = hist_list(all_pixer, lhist)
+				log.add("=========== Histogram of pixel errors ==============")
+				for lhx in xrange(lhist):
+					msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
+					log.add(msg)
+				log.add("____________________________________________________")
+				if(nsoft<2 and terminate == 0):
+					lhx = 0
+					for msg in all_pixer:
+						if(msg < pixercutoff): lhx += 1
+					lhx = float(lhx)/float(total_nima)
+					log.add(">>> %4.2f images had pixel error <%5.2f"%(lhx,pixercutoff))
+					"""
+					if( lhx > saturatecrit):
+						if( Iter == 1 ):
+							log.add("Will continue even though %4.2f images had pixel error < %5.2f"%(saturatecrit,pixercutoff))
+						else:
+							terminate = 1
+							log.add("...............")
+							log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images had pixel error < %5.2f"%(saturatecrit,pixercutoff))
+					"""
+			terminate = True  #wrap_mpi_bcast(terminate, main_node, mpi_comm)
+			#=========================================================================
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				#print  data[0].get_attr_dict()
+				log.add("Time to compute histograms = %10.1f\n"%(time()-start_time))
+				start_time = time()
+
+
+			#=========================================================================
+			mpi_barrier(mpi_comm)
+			if( terminate or (Iter == max_iter) ):
+				# gather parameters
+				params = []
+				for im in xrange(nima):
+					t = get_params_proj(data[im])
+					params.append( [t[0], t[1], t[2], t[3], t[4]] )
+				params = wrap_mpi_gatherv(params, main_node, mpi_comm)
+			# centering and volume reconstruction if not terminating
+			else:
+				#=========================================================================
+				# centering
+				if center == -1 and sym[0] == 'c':
+					from utilities      import estimate_3D_center_MPI, rotate_3D_shift
+					cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
+					if myid == main_node:
+						msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+						log.add(msg)
+					if int(sym[1]) > 1:
+						cs[0] = cs[1] = 0.0
+						if myid == main_node:
+							log.add("For symmetry group cn (n>1), we only center the volume in z-direction\n")
+					cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, mpi_comm)
+					cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
+					rotate_3D_shift(data, cs)
+				#=========================================================================
+				if myid == main_node:
+					start_time = time()
+				#vol = do_volume_mrk01(data, Tracker, total_iter, mpi_comm)
+				ref_data = [data, Tracker, total_iter, mpi_comm]
+				user_func = Tracker["constants"] ["user_func"]
+				vol = user_func(ref_data)
+				#if myid == main_node:  vol.write_image('soft/smvol%04d.hdf'%total_iter)
+				# log
+				if myid == main_node:
+					log.add("3D reconstruction time = %10.1f\n"%(time()-start_time))
+					start_time = time()
+			#=========================================================================
+
+			"""
+			#=========================================================================
+			if(False):  #total_iter%1 == 5 or terminate):
+				# gather parameters
+				params = []
+				previousmax = []
+				for im in data:
+					t = get_params_proj(im)
+					params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
+					#if(t[3] >0.0 or t[4]>0.0):  print  "  ERRROR  ",t
+					previousmax.append(im.get_attr("previousmax"))
+				assert(nima == len(params))
+				params = wrap_mpi_gatherv(params, 0, mpi_comm)
+				if myid == 0:
+					assert(total_nima == len(params))
+				previousmax = wrap_mpi_gatherv(previousmax, 0, mpi_comm)
+				if myid == main_node:
+					from utilities import write_text_row, write_text_file
+					write_text_row(params, "soft/params%04d.txt"%total_iter)
+					write_text_file(previousmax, "soft/previousmax%04d.txt"%total_iter)
+
+
+				del previousmax, params
+				i = 1
+				while data[0].has_attr("xform.projection" + str(i)):
+					params = []
+					previousmax = []
+					for im in data:
+
+						try:
+							#print  im.get_attr("xform.projection" + str(i))
+							t = get_params_proj(im,"xform.projection" + str(i))
+						except:
+							print " NO XFORM  ",myid, i,im.get_attr('ID')
+							from sys import exit
+							exit()
+
+						params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
+					assert(nima == len(params))
+					params = wrap_mpi_gatherv(params, 0, mpi_comm)
+					if myid == 0:
+						assert(total_nima == len(params))
+					if myid == main_node:
+						write_text_row(params, "soft/params-%04d-%04d.txt"%(i,total_iter))
+					del previousmax, params
+					i+=1
+
+
+			if( ( terminate or (Iter == max_iter) ) and (myid == main_node) ):
+				if( type(stack) is types.StringType ):
+					from EMAN2 import Vec2f, Transform
+					from EMAN2db import db_open_dict
+					DB = db_open_dict(stack)
+					for im in xrange(len(params)):
+						t = Transform({"type":"spider","phi":params[im][0],"theta":params[im][1],"psi":params[im][2]})
+						t.set_trans(Vec2f(-params[im][3], -params[im][4]))
+						DB.set_attr(particle_ids[im], "xform.projection", t)
+					DB.close()
+				else:
+					for im in xrange(len(params)): set_params_proj(stack[particle_ids[im]], params[im])
+			"""
+
+
+	if myid == main_node:
+		log.add("Finish sali3d_base, nsoft = %1d"%nsoft)
+	return params
+
+
+# from development import sali3d_base_h_01
+# sali3d_base = sali3d_base_horatio_01
 
 
 def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, chunk = -1.0, debug = False ):
@@ -13222,9 +13716,9 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 
 def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1, smearstep = 0.0):
 	if MPI:
-		#recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
+		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
 		# newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
-		newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
+		#newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn

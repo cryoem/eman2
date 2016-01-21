@@ -2030,6 +2030,7 @@ def bracket_def(f, dat, x1, h):
 		x1 = x2; x2 = x3
 		f1 = f2; f2 = f3
 	print "Bracket did not find a mimimum"
+	return None, x3
 
 
 def bracket(f, dat, h):

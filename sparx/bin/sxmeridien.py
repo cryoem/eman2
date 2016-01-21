@@ -1508,6 +1508,7 @@ def main():
 	#parser.add_option("--fl",			type="float",	default=0.12,		help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.12)")
 	#parser.add_option("--aa",			type="float",	default=0.1,		help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
 	parser.add_option("--inires",		     type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
+	parser.add_option("--pixel_size",		 type="float",	default=1.0.,		help="Pixel size (default 1A, it only has to be provided if there is no CTF)")
 	#parser.add_option("--pwreference",	     type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",		     type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
 	parser.add_option("--function",          type="string", default="do_volume_mrk03",  help="name of the reference preparation function (default do_volume_mrk03)")
@@ -1562,7 +1563,7 @@ def main():
 	Constants["snr"]          = 1.0
 	Constants["mask3D"]       = options.mask3D
 	Constants["nnxo"]         = -1
-	Constants["pixel_size"]   = 1.0
+	Constants["pixel_size"]   = options.pixel_size
 	Constants["inires"]       = options.inires  # Now in A, convert to absolute before using
 	Constants["refvol"]       = volinit
 	Constants["masterdir"]    = masterdir
@@ -1638,7 +1639,7 @@ def main():
 			pixel_size = i.apix
 			fq = pixel_size/Tracker["fuse_freq"]
 		else:
-			pixel_size = 1.0
+			pixel_size = Tracker["constants"]["pixel_size"]
 			#  No pixel size, fusing computed as 5 Fourier pixels
 			fq = 5.0/nnxo
 		del a

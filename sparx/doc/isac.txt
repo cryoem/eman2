@@ -6,7 +6,7 @@ sxisac - 2D Clustering: Iterative Stable Alignment and Clustering (ISAC) of a 2-
 
 ''usage in command line''
 
-sxisac.py stack_file  output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --restart_section --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_iter=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --n_generations=n_generations --rand_seed=rand_seed --new --debug --use_latest_master_directory --stop_after_candidates
+sxisac.py stack_file  output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --restart_section --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_iter=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --n_generations=n_generations --rand_seed=rand_seed --new --debug --use_latest_master_directory --stop_after_candidates --skip_alignment
 
 
 === Typical usage ===
@@ -18,7 +18,7 @@ sxisac exists only in MPI version.
 
 '''mpirun -np 176 --host <host list> sxisac.py bdb:data fisac1 --radius=120 --CTF --restart_section=candidate_class_averages,4  --stop_after_candidates > 1fou &'''
 
-Note ISAC will change the size of input data such they fit into box size 76x76 (see Description below).
+Note ISAC will change the size of input data such that they fit into box size 76x76 (see Description below).
 
 The ISAC program needs MPI environment to work properly. Number of used MPI processes MUST BE multiplicity of given indep_run parameter (see parameters list below). 
 
@@ -85,11 +85,13 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
 == Output ==
     output_directory:: output directory name: into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results) (default required string)
 
-For each generation of running the program, there are two phases.  The first phase is an exploratory phase. In this phase, we set the criteria to be very  loose and try to find as much candidate class averages as possible. This phase typically should have 10 to 20 rounds (set by '''max_round''', default = 20). The candidate class averages are stored in '''class_averages_candidate_generation_n.hdf'''.   
+For each generation of running the program, there are two phases.  The first phase is an exploratory phase. In this phase, we set the criteria to be very loose and try to find as much candidate class averages as possible. This phase typically should have 10 to 20 rounds (set by '''max_round''', default = 20). The candidate class averages are stored in '''class_averages_candidate_generation_n.hdf'''.
 
 The second phase is where the actual class averages are generated, it typically have 3~9 iterations (set by '''match_second''', default = 5) of matching. The first half of iterations are 2-way matching, the second half of iterations are 3-way matching, and the last iteration is 4-way matching. In the second phase, three files will be generated:
 
 '''class_averages_generation_n.hdf''' : class averages generated in this generation, there are two attributes associated with each class average which are important. One is '''members''', which stores the particle IDs that are assigned to this class average; the other is '''n_objects''', which stores the number of particles that are assigned to this class average.
+
+'''class_averages.hdf''' : class averages file that contains all class averages from all generations.
        
 '''generation_n_accounted.txt'''         : IDs of accounted particles in this generation
 
@@ -143,7 +145,7 @@ The program will perform the following steps:
 
  3. The alignment shift parameters will be applied to the input data.
 
- 4. '''IMPORTANT''': Input aligned images will be resized such that the original user-provided radius will be now 29 and the box size 76.  The data should fit into box size 64, though, so the final outcome can be windowed yo this size.  The pixel size of the modified data is thus (original pixel size)*(original window size)/29.
+ 4. '''IMPORTANT''': Input aligned images will be resized such that the original user-provided radius will be now 29 and the box size 76.  The data should fit into box size 64, though, so the final outcome can be windowed to this size.  The pixel size of the modified data is thus (original pixel size)*(original radius size)/29.
 
  5. The program will iterate through generations of ISAC by alternating:
 

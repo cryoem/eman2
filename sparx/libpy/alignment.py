@@ -548,7 +548,7 @@ def ringwe(numr, mode="F"):
 	for i in xrange(0,nring): wr[i] = numr[i*3]*dpi/float(numr[2+i*3])*maxrin/float(numr[2+i*3])
 	return wr
 
-def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
+def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0):
 	"""Determine shift and rotation between image and reference image (refim)
 	   no mirror
 		quadratic interpolation
@@ -572,7 +572,7 @@ def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 			ix = j*step
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
-			retvals = Util.Crosrng_e(crefim, cimage, numr, 0)
+			retvals = Util.Crosrng_e(crefim, cimage, numr, 0, deltapsi)
 			qn = retvals["qn"]
 			if qn >= peak:
 				sx = -ix
@@ -631,7 +631,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 					mirror = 1
 			'''
 			# The following code is used when mirror is not considered
-			retvals = Util.Crosrng_e(crefim, cimage, numr, 0)
+			retvals = Util.Crosrng_e(crefim, cimage, numr, 0, 0.0)
 			qn = retvals["qn"]
 			if qn >= peak:
 				sx = -ix
@@ -672,7 +672,7 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, numr, mode, delta = 0.0):
 	for j in xrange(-lky, rky+1, istep):
 		for i in xrange(-lkx, rkx+1, istep):
 			if delta == 0.0: retvals = Util.Crosrng_ms(crefim, dimage[i+maxrange][j+maxrange], numr, 0.0)
-			else:            retvals = Util.Crosrng_ms_delta(crefim, dimage[i+maxrange][j+maxrange], numr, 0.0, delta)
+			else:            retvals = Util.Crosrng_ms_delta(crefim, dimage[i+maxrange][j+maxrange], numr, delta)
 			qn = retvals["qn"]
 			qm = retvals["qm"]
 			if (qn >= peak or qm >= peak):
@@ -1680,12 +1680,12 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, 
 	if iref > -1:
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 		if  mirror:
-			phi   = (list_of_reference_angles[iref][0]+540.0)%360.0
-			theta = 180.0-list_of_reference_angles[iref][1]
+			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 		else:			
-			phi   = list_of_reference_angles[iref][0]
-			theta = list_of_reference_angles[iref][1]
+			phi   = refrings[iref].get_attr("phi")
+			theta = refrings[iref].get_attr("theta")
 			psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
 		s2x   = sxs + sxi
 		s2y   = sys + syi
@@ -1757,12 +1757,12 @@ def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles, numr, x
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 			if  mirror:
-				phi   = (list_of_reference_angles[iref][0]+540.0)%360.0
-				theta = 180.0-list_of_reference_angles[iref][1]
+				phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+				theta = 180.0-refrings[iref].get_attr("theta")
 				psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 			else:			
-				phi   = list_of_reference_angles[iref][0]
-				theta = list_of_reference_angles[iref][1]
+				phi   = refrings[iref].get_attr("phi")
+				theta = refrings[iref].get_attr("theta")
 				psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
 			s2x   = sxi + sxs
 			s2y   = syi + sys
@@ -2790,10 +2790,10 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	for iki in xrange(len(refrings)):
 		#print  "TEMPLATE  ",iki
 		#  Find angle
-		retvals = Util.Crosrng_e(refrings[iki], cimage, numr, 0)
+		retvals = Util.Crosrng_e(refrings[iki], cimage, numr, 0, 0.0)
 		alpha1  = ang_n(retvals["tot"], "H", numr[-1])
 		peak1 	= retvals["qn"]
-		retvals = Util.Crosrng_e(refrings[iki], mimage, numr, 0)
+		retvals = Util.Crosrng_e(refrings[iki], mimage, numr, 0, 0.0)
 		alpha2  = ang_n(retvals["tot"], "H", numr[-1])
 		peak2 	= retvals["qn"]
 		#print  alpha1, peak1
@@ -4804,20 +4804,20 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 	
 	list_of_reference_angles = [None]*original_number_of_angles
 	for i in xrange(original_number_of_angles): 
-		list_of_reference_angles[i] = [input_angles[i][0],input_angles[i][1]]
+		list_of_reference_angles[i] = [input_angles[i][0],input_angles[i][1], 0]
 
 	#  add mirror related
-	list_of_reference_angles += [[0.0,0.0] for i in xrange(original_number_of_angles)]
+	list_of_reference_angles += [[0.0,0.0,0.0] for i in xrange(original_number_of_angles)]
 	for i in xrange(original_number_of_angles):
 		list_of_reference_angles[i+original_number_of_angles][0] = (list_of_reference_angles[i][0]+180.0)%360.0
 		list_of_reference_angles[i+original_number_of_angles][1] = 180.0-list_of_reference_angles[i][1]
-		#list_of_reference_angles[i+original_number_of_angles][2] =  list_of_reference_angles[i][2]
+		list_of_reference_angles[i+original_number_of_angles][2] =  list_of_reference_angles[i][2]
 
 	#  add symmetry related
 	if(nsym>1):	
 		number_of_angles_original_and_mirror = len(list_of_reference_angles)
 		for l in xrange(1,nsym):
-			list_of_reference_angles += [[0.0,0.0] for i in xrange(number_of_angles_original_and_mirror)]
+			list_of_reference_angles += [[0.0,0.0,0.0] for i in xrange(number_of_angles_original_and_mirror)]
 
 		for i in xrange(number_of_angles_original_and_mirror):
 			t2 = Transform({"type":"spider","phi":list_of_reference_angles[i][0],"theta":list_of_reference_angles[i][1]})
@@ -4826,7 +4826,344 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 				d = ts[ll].get_params("spider")
 				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][0] = round(d["phi"],5)
 				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][1] = round(d["theta"],5)
-				#list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][2] = round(d["psi"],5)  #  Not needed?
+				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][2] = round(d["psi"],5)  #  Not needed?
 
 	return list_of_reference_angles
 
+
+def reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mirror_info(all_refs_angles, angle_index__to__all_refs_angles_within_asymmetric_unit_plus_mirror_and_symmetries):
+
+	index_of_base_refangles_reduced_to_asymetric_unit_with_mirror_info = \
+		list(set((x%len(all_refs_angles), (x/len(all_refs_angles))%2) for x in angle_index__to__all_refs_angles_within_asymmetric_unit_plus_mirror_and_symmetries))
+
+	#need to eliminate duplicates, but keep the mirror information, so sort by index and then cummulate multiple indices into only one that has the mirror info from all, sorted and filtered through a set
+	
+	index_of_base_refangles_reduced_to_asymetric_unit_with_mirror_info = sorted(index_of_base_refangles_reduced_to_asymetric_unit_with_mirror_info, key = lambda x: x[0])
+	
+	previous_angle_index = -1
+	filtered_refrings_index_angles_with_mirror_info = []
+	all_refs_angles_reduced = []
+	counter = -1
+	for index_of_angle_and_mirror_info in index_of_base_refangles_reduced_to_asymetric_unit_with_mirror_info:
+		if previous_angle_index == index_of_angle_and_mirror_info[0]:
+			new_mirror_info = sorted(list(set(filtered_refrings_index_angles_with_mirror_info[counter][1:] + [index_of_angle_and_mirror_info[1]])))
+			filtered_refrings_index_angles_with_mirror_info[counter]= [index_of_angle_and_mirror_info[0]]
+			filtered_refrings_index_angles_with_mirror_info[counter].extend(new_mirror_info)
+		else:
+			counter += 1
+			all_refs_angles_reduced.append(all_refs_angles[index_of_angle_and_mirror_info[0]])
+			filtered_refrings_index_angles_with_mirror_info.append([index_of_angle_and_mirror_info[0], index_of_angle_and_mirror_info[1]])
+		previous_angle_index = index_of_angle_and_mirror_info[0]
+
+	for info in filtered_refrings_index_angles_with_mirror_info:
+		all_refs_angles_reduced[counter].extend(info[1:])
+
+	return all_refs_angles_reduced
+	# filtered_refrings_index_angles_with_mirror_info
+
+
+########################################################################################################################
+### start: code that supports cone implementation 
+
+def save_object (obj, filename):
+	import cPickle as pickle
+	with open(filename, 'wb') as output:
+		pickle.dump(obj, output, -1)
+
+def load_object(filename):
+	import cPickle as pickle
+	with open(filename, 'rb') as output:
+		obj = pickle.load(output)
+	return obj
+
+def individual_process(file_name_of_pickled_object_for_which_we_want_to_know_the_increase_in_process_memory_size):
+	import gc, psutil, sys, os
+	gc.disable()
+	mem1 = psutil.Process(os.getpid()).get_memory_info()[0]
+	my_object = load_object(file_name_of_pickled_object_for_which_we_want_to_know_the_increase_in_process_memory_size)
+	mem2 = psutil.Process(os.getpid()).get_memory_info()[0]
+	# print "mem2={:,}".format(mem2)
+	# print "mem1={:,}".format(mem1)
+	# print "mem2-mem1={:,}".format(mem2-mem1)
+	sys.stdout.write("%ld"%(mem2-mem1))
+	sys.stdout.flush()
+	gc.enable()
+
+def total_size_of_object_in_memory(my_object):
+	import inspect, os, subprocess
+	from utilities import random_string
+
+	file_name_my_object = random_string()
+	while os.path.exists(file_name_my_object):
+		file_name_my_object = random_string()
+
+	save_object(my_object, file_name_my_object)
+
+	file_name_my_python_code = random_string() + ".py"
+	while os.path.exists(file_name_my_python_code):
+		file_name_my_python_code = random_string() + ".py"
+
+	fp = open(file_name_my_python_code, "w")
+	fp.write("#!/usr/bin/env python\n\n")
+	fp.write("from EMAN2 import *\n")
+	fp.write("from sparx import *\n")
+
+	for line in inspect.getsourcelines(load_object)[0]: fp.write(line)
+	for line in inspect.getsourcelines(individual_process)[0]: fp.write(line)
+	fp.write("individual_process('%s')"%file_name_my_object)
+	fp.close()
+	os.system("chmod +x ./%s"%file_name_my_python_code)
+
+	import sys
+	current_env = os.environ.copy()
+	current_env['PYTHONPATH'] = ':'.join(sys.path)
+	
+	output = 0
+	for i in xrange(10):
+		output += 0.1*int(subprocess.Popen(["./%s"%file_name_my_python_code], stdout = subprocess.PIPE, stderr = subprocess.STDOUT, env = current_env).communicate()[0])
+	os.system("rm ./%s"%file_name_my_python_code)
+	os.system("rm ./%s"%file_name_my_object)
+	return int(output) + 1
+
+
+def determine_maximum_number_of_processes_per_node_from_all_nodes_that_belong_to_the_same_mpi_run():
+	import os, socket
+	from mpi import mpi_barrier, MPI_COMM_WORLD
+
+	hostname = socket.gethostname()
+	file_prefix = "WKDkSGYtLDTW9Nb2Vcu1SpsptFpEIod_mpi_process_count_"
+	os.system("touch %s%s_%d"%(file_prefix, hostname, os.getpid()))
+	mpi_barrier(MPI_COMM_WORLD)
+	import glob
+	list_of_files = glob.glob(file_prefix + "*")
+	mpi_barrier(MPI_COMM_WORLD)
+	hostname_list=[]
+	for fn in list_of_files:
+		hostname_list.append(fn[(len(file_prefix)):(len(file_prefix)+len(hostname))])
+	from collections import Counter
+	counter = Counter(hostname_list)
+	os.system("rm %s%s_%d"%(file_prefix, hostname, os.getpid()))
+	return max(counter.values())
+
+def calculate_number_of_cones(volft, kb, delta, sym, cnx, cny, numr, mode, wr_four):
+
+	import sys
+	from alignment import prepare_refrings, refprojs, Numrinit, ringwe
+	from morphology import bracket_def, goldsearch_astigmatism
+	from applications import computenumberofrefs
+	from utilities import even_angles, assign_projangles, cone_ang, print_from_process
+	
+	
+	LOW_LIMIT_FOR_NUMBER_OF_REFERENCES_THAT_FIT_MEMORY = 100
+	# FRACTION_OF_MEMORY_THAT_CAN_BE_ALLOCATED = 0.9 # do not allocate all available memory
+	# FRACTION_OF_MEMORY_THAT_CAN_BE_ALLOCATED = 0.000125 # yields about 21 cones
+	FRACTION_OF_MEMORY_THAT_CAN_BE_ALLOCATED = 0.000125/4 # yields about 103 cones
+	LEAVE_THIS_FRACTION_OF_TOTAL_MEMORY_UNALLOCATED = 0.05  # for 64GB this represents about 3.2GB
+
+	refsincone= even_angles(delta, symmetry = sym)
+
+	total_number_of_references = len(refsincone)
+
+	try:
+		refrings = refprojs(volft, kb, refsincone[:LOW_LIMIT_FOR_NUMBER_OF_REFERENCES_THAT_FIT_MEMORY], cnx, cny, numr, mode, wr_four )
+	except Exception:
+		print "Not enough memory for allocating LOW_LIMIT_FOR_NUMBER_OF_REFERENCES_THAT_FIT_MEMORY. Exit."
+		sys.exit()
+
+
+	# from total_size_of_object_in_memory import total_size_of_object_in_memory
+	refrings_memory_increase = total_size_of_object_in_memory(refrings)
+	
+	memory_for_one_item = refrings_memory_increase/LOW_LIMIT_FOR_NUMBER_OF_REFERENCES_THAT_FIT_MEMORY + 1
+
+	import psutil
+	machine_memory_that_can_be_allocated = psutil.avail_phymem() - (psutil.TOTAL_PHYMEM*LEAVE_THIS_FRACTION_OF_TOTAL_MEMORY_UNALLOCATED)
+	machine_memory_that_can_be_allocated *= FRACTION_OF_MEMORY_THAT_CAN_BE_ALLOCATED
+
+	error_status = [0]
+	if machine_memory_that_can_be_allocated <= 0:
+		print "Not enough memory for allocating refrings. Exit."
+		error_status = [1]
+		
+	from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
+	from utilities import if_error_all_processes_quit_program
+	error_status = mpi_reduce(error_status, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+	if_error_all_processes_quit_program(error_status)	
+
+	number_of_concurrent_processes_per_node = determine_maximum_number_of_processes_per_node_from_all_nodes_that_belong_to_the_same_mpi_run()
+	number_of_references_that_fit_in_memory = (machine_memory_that_can_be_allocated/number_of_concurrent_processes_per_node)/memory_for_one_item
+
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	number_of_processes = mpi_comm_size(MPI_COMM_WORLD)
+	
+	all_cones_estimates = [0]*number_of_processes
+	from math import ceil
+	all_cones_estimates[myid] = max(int(ceil(total_number_of_references/number_of_references_that_fit_in_memory)),1)
+	
+	mpi_reduce(all_cones_estimates, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+	if myid == 0:
+		number_of_cones_to_return = max(all_cones_estimates)
+	else:
+		number_of_cones_to_return = 0
+		
+	from mpi import mpi_bcast
+	number_of_cones_to_return = mpi_bcast(number_of_cones_to_return, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
+	return number_of_cones_to_return
+
+
+def generate_indices_and_refrings(nima, projangles, volft, kb, nx, delta, an, rangle, ref_a, sym, numr, MPI, phiEqpsi = "Zero"):
+	
+	from alignment import prepare_refrings, refprojs, Numrinit, ringwe, generate_list_of_reference_angles_for_search
+	from alignment import reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mirror_info
+	from morphology import bracket_def, goldsearch_astigmatism
+	from applications import computenumberofrefs
+	from utilities import even_angles, assign_projangles_f, assign_projangles, cone_ang_f
+	from utilities import cone_ang_with_index
+	import sys
+	from projection import prep_vol
+
+	cnx = cny = nx//2 + 1
+	# numr = Numrinit(1,15)
+	mode = "F"
+	wr_four = ringwe(numr, mode)
+
+	if an <= 0.0:
+		#=========================================================================
+		# prepare reference angles
+		ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+		#  Modify 0,0,0 s it can be properly inverted
+		if( ref_angles[0][0] == 0.0  and ref_angles[0][1] == 0.0 ):
+			ref_angles[0][0] = 0.01
+			ref_angles[0][1] = 0.01
+		if( rangle > 0.0 ):
+			# shake
+			from utilities import rotate_shift_params
+			ref_angles = rotate_shift_params(anglelist, [ delta*rangle, delta*rangle, delta*rangle ])
+		
+		#=========================================================================
+		# build references
+		# volft, kb = prep_vol(vol)
+		refrings = prepare_refrings(volft, kb, nx, delta, ref_angles, sym, numr, MPI=MPI, phiEqpsi = "Zero")
+		del volft, kb
+		#=========================================================================		
+
+
+		# refrings = prepare_refrings(volft, kb, nx, delta, ref_a, sym, numr, MPI = False)
+		list_of_reference_angles = \
+			generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)
+		
+		
+		# print "\nexiting through NO CONEs (an < 0.0) generate_indices_and_refrings\n"
+		sys.stdout.flush()
+		yield range(nima), refrings, list_of_reference_angles
+
+	else:	
+		number_of_cones = calculate_number_of_cones(volft, kb, delta, sym, cnx, cny, numr, mode, wr_four)
+		
+		# use at least 10 cones
+		if number_of_cones > 1 and number_of_cones < 10:
+			number_of_cones = 10
+		
+		if( number_of_cones == 1):
+			print "  One cone, i.e., standard code"
+			sys.stdout.flush()			
+			
+			ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+			#  Modify 0,0,0 s it can be properly inverted
+			if( ref_angles[0][0] == 0.0  and ref_angles[0][1] == 0.0 ):
+				ref_angles[0][0] = 0.01
+				ref_angles[0][1] = 0.01
+			if( rangle > 0.0 ):
+				# shake
+				from utilities import rotate_shift_params
+				ref_angles = rotate_shift_params(anglelist, [ delta*rangle, delta*rangle, delta*rangle ])
+			
+			#=========================================================================
+			# build references
+			# volft, kb = prep_vol(vol)
+			refrings = prepare_refrings(volft, kb, nx, delta, ref_angles, sym, numr, MPI, phiEqpsi = "Zero")
+			del volft, kb
+			#=========================================================================		
+	
+	
+			# refrings = prepare_refrings(volft, kb, nx, delta, ref_a, sym, numr, MPI = False)
+			list_of_reference_angles = \
+				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)
+			
+			yield range(nima), refrings, list_of_reference_angles
+
+		else:
+			# delta = 1.29
+			# sym = "c5"
+			# rs = delta; h = 1.0
+			rs = delta; h = 0.1
+			dat = [sym, number_of_cones, "P"]
+			def computenumberofrefs(x, dat):
+				return (len(even_angles(x,symmetry = dat[0])) - dat[1])**2
+	
+			def1, def2 = bracket_def(computenumberofrefs, dat, rs, h)
+			if def1 == None:
+				delta_cone = def2
+			else:
+				delta_cone, val  = goldsearch_astigmatism(computenumberofrefs, dat, def1, def2, tol=1.0)
+			# coneangles = even_angles(delta_cone, theta2=180.0, symmetry = sym, method='P')
+			coneangles = even_angles(delta_cone, symmetry = sym, method='P')
+			# assignments = assign_projangles_f(projangles, coneangles)
+
+			mapped_projangles = [[0.0, 0.0, 0.0] for i in xrange(len(projangles))]
+			
+			for i in xrange(len(projangles)):
+				mapped_projangles[i][1] = projangles[i][1]
+				if projangles[i][1] < 90:
+					mapped_projangles[i][0] = projangles[i][0]%(360/int(sym[1]))
+				else:
+					mapped_projangles[i][0] = ((projangles[i][0]+180)%(360/int(sym[1])) + 180)%360
+					# mapped_projangles[i][0] = (projangles[i][0] + 180)%(360/int(sym[1])) + 180
+
+			#active
+			assignments = assign_projangles(mapped_projangles, coneangles)
+			largest_angles_in_cones = Util.get_largest_angles_in_cones(mapped_projangles, coneangles)
+			
+			number_of_cones = len(coneangles)
+			
+			# I0xDS5gejz3yqarg
+			print "number_of_cones999:", number_of_cones
+			
+			all_refs_angles_within_asymmetric_unit = even_angles(delta, symmetry=sym, method = "S", phiEqpsi = "Zero")
+			len_of_all_refs_angles_within_asymmetric_unit = len(all_refs_angles_within_asymmetric_unit)
+			
+			all_refs_angles_within_asymmetric_unit_plus_mirror_and_symmetries = generate_list_of_reference_angles_for_search(all_refs_angles_within_asymmetric_unit, sym)
+			
+			for k in xrange(len(coneangles)):
+				if(len(assignments[k]) > 0):
+					filtered_refsincone_plus_mirror_and_symmetries_with_original_index, original_index = \
+					cone_ang_with_index(all_refs_angles_within_asymmetric_unit_plus_mirror_and_symmetries, coneangles[k][0], coneangles[k][1], min(largest_angles_in_cones[k] + an/2 + 1.5*delta, 180))
+
+					reduced_original_index = [i % len_of_all_refs_angles_within_asymmetric_unit for i in original_index]
+					set_of_reduced_original_index = sorted(list(set(reduced_original_index)))
+					for i in xrange(len(filtered_refsincone_plus_mirror_and_symmetries_with_original_index)):
+						filtered_refsincone_plus_mirror_and_symmetries_with_original_index[i] += \
+						[set_of_reduced_original_index.index(reduced_original_index[i])]
+					filtered_refsincone_plus_mirror_and_symmetries_with_original_index_and_refrings_index = \
+						filtered_refsincone_plus_mirror_and_symmetries_with_original_index
+					
+					from mpi import MPI_COMM_WORLD, mpi_comm_rank 
+					myid = mpi_comm_rank(MPI_COMM_WORLD)
+					
+					filtered_refsincone_plus_mirror_and_symmetries_with_original_index_and_refrings_index[0].append(len_of_all_refs_angles_within_asymmetric_unit)
+						
+					angles_used_to_generate_refrings = 	[all_refs_angles_within_asymmetric_unit[i] for i in set_of_reduced_original_index]
+					refrings = prepare_refrings(volft, kb, nx, delta, angles_used_to_generate_refrings, sym, numr, MPI = False, phiEqpsi = "Zero")
+					
+					sys.stdout.flush()
+
+					yield assignments[k], refrings, filtered_refsincone_plus_mirror_and_symmetries_with_original_index_and_refrings_index
+				
+				else:
+					yield [],[],[]
+
+
+
+
+### end: code that supports cone implementation
+########################################################################################################################

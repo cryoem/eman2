@@ -2497,7 +2497,7 @@ void circumftrl( EMData* win , int npad)
 
 EMData* nn4Reconstructor::finish(bool) {
 
-        if( m_ndim==3 ) {
+	if( m_ndim == 3 ) {
 		m_volume->symplane0(m_wptr);
 	} else {
 		for( int i=1; i <= m_vnyp; ++i ) {
