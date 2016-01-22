@@ -72,7 +72,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	from random         import randint
 	from filter         import filt_ctf
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from projection     import prep_vol, prgs, project, prgq, gen_rings_ctf
+	from projection     import prep_vol, prgs, prgl, project, prgq, gen_rings_ctf
 	from applications   import MPI_start_end
 	from reconstruction import rec3D_MPI_noCTF,rec3D_two_chunks_MPI
 	import os
@@ -298,7 +298,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			else:
 				volft=model_blank(nx,nx,nx)
 			bcast_EMData_to_all(volft, myid, main_node)
-			volft, kb = prep_vol(volft)
+			#CHANGE_PRGS volft, kb = prep_vol(volft)
+			volft= prep_vol(volft,1,1)
 			if CTF:
 				previous_defocus = -1.0
 				if runtype=="REFINEMENT":
@@ -327,7 +328,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 							if myid == main_node:log.add( "Repeated time to prepare rings: %d" % (time()-rstart_time) );rstart_time = time()
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-					ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
+					#CHANGE_PRGS ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
+					ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
 					if CTF:  ref = filt_ctf( ref, ctf )
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					if not(finfo is None):
@@ -358,7 +360,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 						finfo.flush()
 			if myid == main_node:log.add( "Time to process particles for reference %3d: %d" % (iref, time()-start_time) );start_time = time()
 		del peaks
-		if runtype=="ASSIGNMENT":  del volft, kb, ref
+		if runtype=="ASSIGNMENT":  del volft, ref #kb, ref
 		else:
 			if CTF: del prjref
 			del refrings
@@ -556,7 +558,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	from random         import randint, random
 	from filter         import filt_ctf
 	from utilities      import print_begin_msg, print_end_msg, print_msg, read_text_file
-	from projection     import prep_vol, prgs, project, prgq, gen_rings_ctf
+	from projection     import prep_vol, prgs, prgl, project, prgq, gen_rings_ctf
 	from morphology     import binarize
 	import os
 	import types
@@ -787,7 +789,8 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 		else:
 			vol =  model_blank(nx, nx, nx)
 		bcast_EMData_to_all(vol, myid, main_node)
-		focus, kb = prep_vol(vol)
+		#CHANGE_PRGS focus, kb = prep_vol(vol)
+		focus = prep_vol(vol, 1, 1)
 
 	Niter = int(lstp*maxit*(nassign + nrefine) )
 	for Iter in xrange(Niter):
@@ -820,7 +823,8 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 			if(myid == main_node): volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			else: volft =  model_blank(nx, nx, nx)
 			bcast_EMData_to_all(volft, myid, main_node)
-			volft, kb = prep_vol(volft)
+			#CHANGE_PRGS volft, kb = prep_vol(volft)
+			volft = prep_vol(volft, 1, 1)
 			if CTF:
 				previous_defocus=-1.0
 				if runtype=="REFINEMENT":
@@ -847,9 +851,11 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-					ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
+					#CHANGE_PRGS ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
+					ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
 					if CTF:  ref = filt_ctf( ref, ctf )
-					if(focus != None):  mask2D = binarize( prgs( focus, kb, [phi,tht,psi,-s2x,-s2y]) )  #  Should be precalculated!!
+					#CHANGE_PRGS if(focus != None):  mask2D = binarize( prgs( focus, kb, [phi,tht,psi,-s2x,-s2y]) )  #  Should be precalculated!!
+					if(focus != None):  mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]),1)  #  Should be precalculated!!
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					if not(finfo is None):
 						finfo.write( "ID, iref, peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
@@ -869,7 +875,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 					pixer[iref][im] = pixel_error
 					trans[iref][im] = data[im].get_attr( "xform.projection" )
 			if(myid == 0):log.add( "Time to process particles for reference %3d: %d" % (iref, time()-start_time) );start_time = time()
-		if runtype=="ASSIGNMENT":  del volft, kb, ref
+		if runtype=="ASSIGNMENT":  del volft, ref #kb, ref
 		else:
 			if CTF: del prjref
 			del refrings
@@ -2233,14 +2239,14 @@ def main():
 					image =EMData()
 					image.read_image(Tracker["orgstack"],id_index)
 					image.set_attr("chunk_id",0)
-					write_image(Tracker["orgstack"],image,id_index)
+					write_header(Tracker["orgstack"],image,id_index)
 				for id_index in chunk_two:
 					image =EMData()
 					image.read_image(Tracker["orgstack"],id_index)
 					image.set_attr("chunk_id",1)
 					write_header(Tracker["orgstack"],image,id_index)
 				#
-				log_main.add("chunk_ids have been filled in header!")
+				#log_main.add("chunk_ids have been filled in header!")
 				#log_main.add("chunk_id is already in header!")
 		mpi_barrier(MPI_COMM_WORLD)
 		#############
