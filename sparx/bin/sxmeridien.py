@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #
-#  11/21/2016
+#  12/26/2015
 #  NOT Use spherical/cosine mask to assess resolution.
-#  New alignment procedures.
+#  Pawel's metamove protocol
 #
 
 
@@ -1338,32 +1338,9 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	return data, oldshifts
 """
 
-
-
-def prepdata_ali3d(projdata, vol, shifts, shrink, myid, main_node, method = "DIRECT", npad = 1, interpol = 1):
-	from projection   import prep_vol
-	from fundamentals import prepi
-	#  Data is CTF-applied and shrank
-	vol = prep_vol(vol,npad,interpol)
-	data = [[] for i in xrange(len(projdata))]
-	for kl in xrange(len(projdata)):
-		ds = fft(projdata[kl])
-		for iq in shifts:
-			xx = iq[0]*shrink
-			yy = iq[1]*shrink
-			if( method == "DIRECT" ):
-				dss = fshift(ds,xx,yy)
-				dss.set_attr("is_complex",0)
-			else:
-				dss = fft(fshift(ds,xx,yy))
-				dss,kb = prepi(dss)				
-			data[kl].append(dss)
-	return vol, data
-
-
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle, rshift, procid, myid, main_node, nproc):
 	from applications import slocal_ali3d_base, sali3d_base
-	from mpi import  mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD, MPI_INT, MPI_SUM, mpi_reduce
+	from mpi import  mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
 	#  Will create outputdir
@@ -1371,14 +1348,12 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle
 	from utilities  import get_input_from_string
 	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 	if(myid == main_node):
-		'''
 		#  Create output directory
 		log = Logger(BaseLogger_Files())
 		log.prefix = os.path.join(outputdir)
 		cmd = "mkdir "+log.prefix
 		cmdexecute(cmd)
 		log.prefix += "/"
-		'''
 		ref_vol = get_im(Tracker["refvol"])
 		nnn = ref_vol.get_xsize()
 		if(Tracker["nxinit"] != nnn ):
@@ -1419,30 +1394,19 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle
 			except:  print("no smearstep in Tracker")
 	else:
 		#  I have to substitute shrinkage
-		#oxr = Tracker["xr"]
-		#ots = Tracker["ts"]
-		#Tracker["xr"] = "%f"%(float(Tracker["xr"])*shrinkage)
-		#Tracker["ts"] = "%f"%(float(Tracker["ts"])*shrinkage)
-		refang = even_angles(float(Tracker["delta"]), symmetry=Tracker["constants"]["sym"], theta2=180., method='S', phiEqpsi="Zero")
-		xr = float(Tracker["xr"])
-		ts = float(Tracker["ts"])
-		k = int(ceil(xr/ts))
-		radi = xr**2
-		shifts = []
-		for ix in xrange(-k,k+1,1):
-			for iy in xrange(-k,k+1,1):
-				if(ix*ix+iy*iy <= radi):
-					#print ix,iy
-					shifts.append([ix*ts,iy*ts])
-
+		oxr = Tracker["xr"]
+		ots = Tracker["ts"]
+		Tracker["xr"] = "%f"%(float(Tracker["xr"])*shrinkage)
+		Tracker["ts"] = "%f"%(float(Tracker["ts"])*shrinkage)
+	
 		#if(myid == main_node):
 		#	print(" smear in regular metamove ",Tracker["nxinit"],shrinkage,Tracker["currentres"], Tracker["radius"],Tracker["delta"],Tracker["smearstep"])
-	'''
+
 	if(Tracker["delpreviousmax"]):
 		for i in xrange(len(projdata)):
 			try:  projdata[i].del_attr("previousmax")
 			except:  pass
-	'''
+
 	if(myid == main_node):
 		print_dict(Tracker,"METAMOVE parameters")
 		print("                    =>  partids             :  ",partids)
@@ -1451,46 +1415,20 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle
 	#  Run alignment command
 	if Tracker["local"] : params = slocal_ali3d_base(projdata, get_im(Tracker["refvol"]), \
 									Tracker, rangle, rshift, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0)
-	else:
-		method = "DIRECT"
-		ref_vol, data = prepdata_ali3d(projdata, ref_vol, shifts, shrinkage, myid, main_node, method)
-		#  delta_psi is the same as delta.
-		if( method == "DIRECT" ):
-			params,simis = ali3D_direct(data, ref_vol, refang, float(Tracker["delta"]), shifts, myid, main_node)
-		else:
-			cnx = Tracker["nxinit"]//2+1
-			numr = Numrinit(1, Tracker["radius"], 1, "F")
-			wr   = ringwe(numr, "F")
-			params,simis = ali3D_gridding(data, ref_vol, refang, float(Tracker["delta"]), shifts, shrinkage, numr, wr, cnx, myid, main_node)
-		#  assign params to projdata
-		nima = len(params)
-		nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		nima = int(nima[0])
-		image_start, image_end = MPI_start_end(nima, nproc, myid)
-		for i in xrange(0, image_end-image_start):
-			set_params_proj(projdata[i],[params[i][0],params[i][1],params[i][2],params[i][3]*shrinkage,params[i][4]*shrinkage])
-		mpi_barrier(MPI_COMM_WORLD)
-		#  dissimilarities not used
-		#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
-		params = wrap_mpi_gatherv(params, main_node, MPI_COMM_WORLD)
-		mpi_barrier(MPI_COMM_WORLD)
-		#params = sali3d_base(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
+	else: params = sali3d_base(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
 
-
-	'''
 	if( not (Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL")):
 		Tracker["xr"] = oxr
 		Tracker["ts"] = ots
-	'''
-	#del log
+
+	del log
 	#  store params
 	if(myid == main_node):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"Executed successfully: ","sali3d_base_MPI, nsoft = %d"%Tracker["nsoft"],"  number of images:%7d"%len(params))
-		#for i in xrange(len(params)):
-		#	params[i][3] = params[i][3]/shrinkage# + oldshifts[i][0]
-		#	params[i][4] = params[i][4]/shrinkage# + oldshifts[i][1]
+		for i in xrange(len(params)):
+			params[i][3] = params[i][3]/shrinkage# + oldshifts[i][0]
+			params[i][4] = params[i][4]/shrinkage# + oldshifts[i][1]
 		write_text_row(params, os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid) )
 	return  Tracker
 
@@ -2056,7 +1994,7 @@ def main():
 			#  Note rshift is inexact as there is rounding in proj_ali_incore
 
 		for procid in xrange(2):
-			coutdir = os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid)
+			coutdir = os.path.join(Tracker["directory"], "loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid)
 
