@@ -2005,9 +2005,9 @@ def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, c
 
 	###if myid == main_node:  print "  Finished :",time()-at
 
-	mpi_barrier(MPI_COMM_WORLD)
-	simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
-	newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
+	#mpi_barrier(MPI_COMM_WORLD)
+	#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
+	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar,simis
 
@@ -2046,9 +2046,9 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, kb3D
 
 	###if myid == main_node:  print "  Finished :",time()-at
 
-	mpi_barrier(MPI_COMM_WORLD)
-	simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
-	newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
+	#mpi_barrier(MPI_COMM_WORLD)
+	#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
+	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar,simis
 
