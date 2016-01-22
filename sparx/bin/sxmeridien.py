@@ -1456,20 +1456,25 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle
 		ref_vol, data = prepdata_ali3d(projdata, ref_vol, shifts, shrinkage, myid, main_node, method)
 		#  delta_psi is the same as delta.
 		if( method == "DIRECT" ):
-			newpar,simis = ali3D_direct(data, ref_vol, refang, float(Tracker["delta"]), shifts, myid, main_node)
+			params,simis = ali3D_direct(data, ref_vol, refang, float(Tracker["delta"]), shifts, myid, main_node)
 		else:
 			cnx = Tracker["nxinit"]//2+1
 			numr = Numrinit(1, Tracker["radius"], 1, "F")
 			wr   = ringwe(numr, "F")
 			params,simis = ali3D_gridding(data, ref_vol, refang, float(Tracker["delta"]), shifts, shrinkage, numr, wr, cnx, myid, main_node)
+		#  assign params to projdata
+		image_start, image_end = MPI_start_end(len(params), nproc, myid)
+		for i in xrange(image_start, image_end):
+			set_params_proj(projdata[i-image_start],[params[i][0],params[i][1],params[i][2],params[i][3]*shrinkage,params[i][4]*shrinkage])
 		#params = sali3d_base(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
+
 
 	'''
 	if( not (Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL")):
 		Tracker["xr"] = oxr
 		Tracker["ts"] = ots
 	'''
-	del log
+	#del log
 	#  store params
 	if(myid == main_node):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -2042,7 +2047,7 @@ def main():
 			#  Note rshift is inexact as there is rounding in proj_ali_incore
 
 		for procid in xrange(2):
-			coutdir = os.path.join(Tracker["directory"], "loga%01d"%procid)
+			coutdir = os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid)
 
