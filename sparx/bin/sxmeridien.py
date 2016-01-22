@@ -1363,7 +1363,7 @@ def prepdata_ali3d(projdata, vol, shifts, shrink, myid, main_node, method = "DIR
 
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle, rshift, procid, myid, main_node, nproc):
 	from applications import slocal_ali3d_base, sali3d_base
-	from mpi import  mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	from mpi import  mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD, MPI_INT, MPI_SUM, mpi_reduce
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
 	#  Will create outputdir
@@ -1463,9 +1463,16 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle
 			wr   = ringwe(numr, "F")
 			params,simis = ali3D_gridding(data, ref_vol, refang, float(Tracker["delta"]), shifts, shrinkage, numr, wr, cnx, myid, main_node)
 		#  assign params to projdata
-		image_start, image_end = MPI_start_end(len(params), nproc, myid)
+		nima = len(params)
+		nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		image_start, image_end = MPI_start_end(nima, nproc, myid)
 		for i in xrange(image_start, image_end):
 			set_params_proj(projdata[i-image_start],[params[i][0],params[i][1],params[i][2],params[i][3]*shrinkage,params[i][4]*shrinkage])
+		mpi_barrier(MPI_COMM_WORLD)
+		#  dissimilarities not used
+		#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
+		params = wrap_mpi_gatherv(params, main_node, MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
 		#params = sali3d_base(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
 
 
