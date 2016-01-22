@@ -1465,9 +1465,11 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, rangle
 		#  assign params to projdata
 		nima = len(params)
 		nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		nima = int(nima[0])
 		image_start, image_end = MPI_start_end(nima, nproc, myid)
-		for i in xrange(image_start, image_end):
-			set_params_proj(projdata[i-image_start],[params[i][0],params[i][1],params[i][2],params[i][3]*shrinkage,params[i][4]*shrinkage])
+		for i in xrange(0, image_end-image_start):
+			set_params_proj(projdata[i],[params[i][0],params[i][1],params[i][2],params[i][3]*shrinkage,params[i][4]*shrinkage])
 		mpi_barrier(MPI_COMM_WORLD)
 		#  dissimilarities not used
 		#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
