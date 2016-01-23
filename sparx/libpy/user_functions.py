@@ -1232,7 +1232,7 @@ def do_volume_mrk03(ref_data):
 			stat = Util.infomask(vol, mask3D, False)
 			vol -= stat[0]
 			Util.mul_scalar(vol, 1.0/stat[1])
-			vol = threshold(vol)
+			#vol = threshold(vol)
 			# vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
 	if( nproc > 1 ):
