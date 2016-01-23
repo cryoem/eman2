@@ -764,8 +764,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	empty_group = 1
 	kmref =0
 	while empty_group ==1:
-		if myid ==main_node:
-			log_main.add(" %d     Kmref run"%kmref) 
+		if myid ==main_node: log_main.add(" %d     Kmref run"%kmref) 
 		outdir =os.path.join(workdir, "Kmref%d"%kmref)
 		empty_group, res_classes, data_list = ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,final_list_text_file,Tracker)
 		kmref +=1
@@ -799,7 +798,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 			number_of_ref_class = wrap_mpi_bcast(number_of_ref_class,main_node)
 			mpi_barrier(MPI_COMM_WORLD)
 			ref_vol_list = []
-			if  Tracker["constants"]["mask3D"]: mask3d=get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
+			if  Tracker["constants"]["mask3D"]: mask3D=get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
 			else: mask3D =None
 			Tracker["number_of_ref_class"] = number_of_ref_class
 			for igrp in xrange(len(new_class)):
@@ -815,6 +814,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 			new_class    = []
 			for a in res_classes:
 				if len(a)>=Tracker["constants"]["smallest_group"]:new_class.append(a)
+			if len(new_class) == len(res_classes): break
 	if myid==main_node:
 		log_main.add("Exhaustive Kmeans ends")
 		log_main.add(" %d groups are selected out"%len(new_class))
