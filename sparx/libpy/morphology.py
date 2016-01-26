@@ -1304,7 +1304,7 @@ def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_st
 	#mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
 	return mask
 
-def cosinemask(im, radius = -1, cosine_width = 5):
+def cosinemask(im, radius = -1, cosine_width = 5, bckg = None):
 	"""
 		Apply mask with a cosine fall-off setting values outside of radius_cosine_width to the average computed outside.
 		The fall-off begins from pixel at a distance radius from the center,
@@ -1324,34 +1324,47 @@ def cosinemask(im, radius = -1, cosine_width = 5):
 	cz = nz//2
 	cy = ny//2
 	cx = nx//2
-	u = 0.0
-	s = 0.0
-	for z in xrange(nz):
-		tz = (z-cz)**2
-		for y in xrange(ny):
-			ty = tz + (y-cy)**2
-			for x in xrange(nx):
-				r = sqrt(ty + (x-cx)**2)
-				if(r > radius_p):
-					u += 1.0
-					s += om.get_value_at(x,y,z)
-				elif(r>=radius):
-					temp = (0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width ))
-					u += temp
-					s += om.get_value_at(x,y,z)*temp
-	s /= u
-	for z in xrange(nz):
-		tz = (z-cz)**2
-		for y in xrange(ny):
-			ty = tz + (y-cy)**2
-			for x in xrange(nx):
-				r = sqrt(ty + (x-cx)**2)
-				if(r > radius_p):
-					om.set_value_at_fast(x,y,z, s)
-				elif(r>=radius):
-					temp = (0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width ))
-					om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z) + temp*(s-om.get_value_at(x,y,z)))
-					#om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z)*(0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width )))
+	if bckg:
+		for z in xrange(nz):
+			tz = (z-cz)**2
+			for y in xrange(ny):
+				ty = tz + (y-cy)**2
+				for x in xrange(nx):
+					r = sqrt(ty + (x-cx)**2)
+					if(r > radius_p):
+						om.set_value_at_fast(x,y,z, bckg.get_value_at(x,y,z))
+					elif(r>=radius):
+						temp = (0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width ))
+						om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z) + temp*(bckg.get_value_at(x,y,z)-om.get_value_at(x,y,z)))
+	else:
+		u = 0.0
+		s = 0.0
+		for z in xrange(nz):
+			tz = (z-cz)**2
+			for y in xrange(ny):
+				ty = tz + (y-cy)**2
+				for x in xrange(nx):
+					r = sqrt(ty + (x-cx)**2)
+					if(r > radius_p):
+						u += 1.0
+						s += om.get_value_at(x,y,z)
+					elif(r>=radius):
+						temp = (0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width ))
+						u += temp
+						s += om.get_value_at(x,y,z)*temp
+		s /= u
+		for z in xrange(nz):
+			tz = (z-cz)**2
+			for y in xrange(ny):
+				ty = tz + (y-cy)**2
+				for x in xrange(nx):
+					r = sqrt(ty + (x-cx)**2)
+					if(r > radius_p):
+						om.set_value_at_fast(x,y,z, s)
+					elif(r>=radius):
+						temp = (0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width ))
+						om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z) + temp*(s-om.get_value_at(x,y,z)))
+						#om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z)*(0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width )))
 	return om
 
 '''

@@ -5092,19 +5092,38 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	return data, oldshifts
 
 
-def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
-	# The function will read from stack a subset of images specified in partids
-	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
-	# So, the lengths of partids and partstack are the same.
-	#  The read data is properly distributed among MPI threads.
-	from fundamentals import resample
-	from filter import filt_ctf
+def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_node, nproc, \
+					original_data = None, preshift = False, apply_mask = True, large_memory = True):
+	"""
+	This function will read from stack a subset of images specified in partids
+	   and assign to them parameters from partstack with optional CTF application and shifting of the data.
+	So, the lengths of partids and partstack are the same.
+	  The read data is properly distributed among MPI threads.
+	
+	Flow of data:
+	1. Read images, if there is enough memory, keep them as original_data.
+	2. Read current params
+	3.  Apply shift
+	4.  Normalize outside of the radius
+	5.  Do noise substitution and cosine mask.  (Optional?)
+	6.  Shrink data.
+	7.  Apply CTF.
+	
+	"""
+	#from fundamentals import resample
+	from fundamentals import fdecimate
+	from morphology   import cosinemask
+	from filter       import filt_ctf
 	from applications import MPI_start_end
+	from math import sqrt
 
 	if( myid == main_node ):
 		print "  "
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], Tracker["applyctf"], preshift)
+		if(original_data == None or not large_memory):
+			print  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, Tracker["applyctf"], preshift)
+		else:
+			print  line, "Processing data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, Tracker["applyctf"], preshift)
 		print  "                       stack:      %s\n                       partids:     %s\n                       partstack: %s\n"%(Tracker["constants"]["stack"], partids, partstack)
 	if( myid == main_node ): lpartids = read_text_file(partids)
 	else:  lpartids = 0
@@ -5127,39 +5146,86 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	#  Preprocess the data
 	mask2D  = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	nima = image_end - image_start
-	oldshifts = [[0.0,0.0]]#*nima
+	oldshifts = [[0.0,0.0]]*nima
 	data = [None]*nima
+	if(original_data == None or not large_memory): original_data = [None]*nima
 	shrinkage = nxinit/float(Tracker["constants"]["nnxo"])
-	radius = int(Tracker["constants"]["radius"] * shrinkage +0.5)
+
+	if apply_mask:
+		nnx = bckgdata[0].get_xsize()
+		nny = bckgdata[0].get_ysize()
+		bckgnoise = []
+		for i in xrange(nny):
+			prj = [0.0]*nnx
+			for k in xrange(nnx):
+				qt = bckgdata[i].get_value_at(k,i)
+				if( qt > 0.0 ):  qt = 1.0/sqrt(qt)
+				prj[k] = qt
+			bckgnoise.append(prj)
+		datastamp = bckgdata[1]
+
+
 	#  Note these are in Fortran notation for polar searches
 	#txm = float(nxinit-(nxinit//2+1) - radius -1)
 	#txl = float(2 + radius - nxinit//2+1)
 	txm = float(nxinit-(nxinit//2+1) - radius)
 	txl = float(radius - nxinit//2+1)
 	for im in xrange(nima):
-		data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
+		if(original_data == None or not large_memory):
+			original_data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
+
 		phi,theta,psi,sx,sy = partstack[im][0], partstack[im][1], partstack[im][2], partstack[im][3], partstack[im][4]
+		if preshift:
+			data[im] = fshift(original_data[im], sx, sy)
+			oldshifts[im] = [sx,sy]
+			sx = 0.0
+			sy = 0.0
+		else:  data[im] = original_data[im].copy()
+		st = Util.infomask(data[im], mask2D, False)
+		data[im] -= st[0]
+		data[im] /= st[1]
+
+		if apply_mask:
+			try:
+				stmp = data[im].get_attr("ptcl_source_image")
+			except:
+				try:
+					stmp = data[im].get_attr("ctf")
+					stmp = round(stmp.defocus,4)
+				except:
+					ERROR("Either ptcl_source_image or ctf has to be present in the header.","get_shrink_data",1, myid)
+			try:
+				indx = datastamp.index(stmp)
+			except:
+				ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
+			bckg = model_gauss_noise(1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+			data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
+
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			ctf_params = data[im].get_attr("ctf")
-			st = Util.infomask(data[im], mask2D, False)
-			data[im] -= st[0]
 			data[im] = filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
-		if preshift:
-			data[im] = fshift(data[im], sx, sy)
-			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
-		#oldshifts[im] = [sx,sy]
+			apix = ctf_params.apix
+		else:  apix = Tracker["constants"]["pixel_size"]
+		set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
+
 		#  resample will properly adjusts shifts and pixel size in ctf
-		data[im] = resample(data[im], shrinkage)
+		#data[im] = resample(data[im], shrinkage)
+		#  return Fourier image
+		data[i] = fdecimate(data[i], nxinit, nxinit, 1, False)
+		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
+			ctf_params.apix = apix/shrinkage
+			data[im].set_attr('ctf', ctf_params)
+		else:  data[im].set_attr('apix', apix/shrinkage)
 		#  We have to make sure the shifts are within correct range, shrinkage or not
 		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 		#  For local SHC set anchor
 		#if(nsoft == 1 and an[0] > -1):
 		#  We will always set it to simplify the code
-		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
+		###set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
 	assert( nxinit == data[0].get_xsize() )  #  Just to make sure.
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
-	return data, oldshifts
+	return data, oldshifts, original_data
 
 
 def getindexdata(stack, partids, partstack, myid, nproc):
