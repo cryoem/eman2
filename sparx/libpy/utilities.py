@@ -5169,10 +5169,11 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 	#  Note these are in Fortran notation for polar searches
 	#txm = float(nxinit-(nxinit//2+1) - radius -1)
 	#txl = float(2 + radius - nxinit//2+1)
+	radius = int(Tracker["constants"]["radius"]*shrinkage + 0.5)
 	txm = float(nxinit-(nxinit//2+1) - radius)
 	txl = float(radius - nxinit//2+1)
 	for im in xrange(nima):
-		if(original_data == None or not large_memory):
+		if(original_data[im] == None or not large_memory):
 			original_data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
 
 		phi,theta,psi,sx,sy = partstack[im][0], partstack[im][1], partstack[im][2], partstack[im][3], partstack[im][4]
