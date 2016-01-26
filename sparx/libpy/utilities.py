@@ -5111,9 +5111,9 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 	
 	"""
 	#from fundamentals import resample
-	from fundamentals import fdecimate
-	from morphology   import cosinemask
-	from filter       import filt_ctf
+	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from fundamentals import fdecimate, fshift, fft
+	from filter       import filt_ctf, filt_table
 	from applications import MPI_start_end
 	from math import sqrt
 
@@ -5155,15 +5155,16 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 		nnx = bckgdata[0].get_xsize()
 		nny = bckgdata[0].get_ysize()
 		bckgnoise = []
+		qnx = Tracker["constants"]["nnxo"]/2.0
 		for i in xrange(nny):
 			prj = [0.0]*nnx
-			for k in xrange(nnx):
-				qt = bckgdata[i].get_value_at(k,i)
-				if( qt > 0.0 ):  qt = 1.0/sqrt(qt)
+			for k in xrange(1,nnx):
+				qt = bckgdata[0].get_value_at(k,i)
+				if( qt > 0.0 ):  qt = qnx/sqrt(qt)
 				prj[k] = qt
+			prj[0] = 1.0
 			bckgnoise.append(prj)
 		datastamp = bckgdata[1]
-
 
 	#  Note these are in Fortran notation for polar searches
 	#txm = float(nxinit-(nxinit//2+1) - radius -1)
@@ -5198,8 +5199,13 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 				indx = datastamp.index(stmp)
 			except:
 				ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
-			bckg = model_gauss_noise(1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+			bckg = model_gauss_noise(1,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])*Tracker["constants"]["nnxo"]/sqrt(2.0)
+			bckg.set_attr("is_complex",1)
+			bckg.set_attr("is_fftpad",1)
+			bckg = fft(filt_table(bckg,bckgnoise[indx]))
+			from morphology import cosinemask
 			data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
+
 
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			ctf_params = data[im].get_attr("ctf")
