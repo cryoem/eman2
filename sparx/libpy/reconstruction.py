@@ -1286,7 +1286,7 @@ def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symme
 	bckgnoise = []
 	for i in xrange(1):
 		prj = model_blank(600,1,1,1)
-		#for k in xrange(nnx):  prj[k] = bckgdata[0].get_value_at(k,i)
+		#for k in xrange(nnx):  prj[k] = bckgdata[i].get_value_at(k,i)
 		bckgnoise.append(prj)
 
 	#datastamp = bckgdata[1]
@@ -1325,6 +1325,7 @@ def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symme
 				indx = datastamp.index(stmp)
 			except:
 				ERROR("Problem with indexing ptcl_source_image.","recons3d_4nnf_MPI",1, myid)
+			image.set_attr("bckgnoise", bckgnoise[indx])
 			"""
 			image.set_attr("bckgnoise", bckgnoise[0])
 			insert_slices(r, image)

@@ -5092,7 +5092,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	return data, oldshifts
 
 
-def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, \
+def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_node, nproc, \
 					original_data = None, preshift = False, apply_mask = True, large_memory = True):
 	"""
 	This function will read from stack a subset of images specified in partids
@@ -5115,6 +5115,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	from morphology   import cosinemask
 	from filter       import filt_ctf
 	from applications import MPI_start_end
+	from math import sqrt
 
 	if( myid == main_node ):
 		print "  "
@@ -5147,8 +5148,23 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	nima = image_end - image_start
 	oldshifts = [[0.0,0.0]]*nima
 	data = [None]*nima
+	if(original_data == None or not large_memory): original_data = [None]*nima
 	shrinkage = nxinit/float(Tracker["constants"]["nnxo"])
-	radius = int(Tracker["constants"]["radius"] * shrinkage +0.5)
+
+	if apply_mask:
+		nnx = bckgdata[0].get_xsize()
+		nny = bckgdata[0].get_ysize()
+		bckgnoise = []
+		for i in xrange(nny):
+			prj = [0.0]*nnx
+			for k in xrange(nnx):
+				qt = bckgdata[i].get_value_at(k,i)
+				if( qt > 0.0 ):  qt = 1.0/sqrt(qt)
+				prj[k] = qt
+			bckgnoise.append(prj)
+		datastamp = bckgdata[1]
+
+
 	#  Note these are in Fortran notation for polar searches
 	#txm = float(nxinit-(nxinit//2+1) - radius -1)
 	#txl = float(2 + radius - nxinit//2+1)
@@ -5170,6 +5186,18 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 		data[im] /= st[1]
 
 		if apply_mask:
+			try:
+				stmp = data[im].get_attr("ptcl_source_image")
+			except:
+				try:
+					stmp = data[im].get_attr("ctf")
+					stmp = round(stmp.defocus,4)
+				except:
+					ERROR("Either ptcl_source_image or ctf has to be present in the header.","get_shrink_data",1, myid)
+			try:
+				indx = datastamp.index(stmp)
+			except:
+				ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
 			bckg = model_gauss_noise(1,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 			data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
 
@@ -5186,7 +5214,9 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 		#  return Fourier image
 		data[i] = fdecimate(data[i], nxinit, nxinit, 1, False)
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
-			ctf_params.apix
+			ctf_params.apix = apix/shrinkage
+			data[im].set_attr('ctf', ctf_params)
+		else:  data[im].set_attr('apix', apix/shrinkage)
 		#  We have to make sure the shifts are within correct range, shrinkage or not
 		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 		#  For local SHC set anchor
@@ -5195,7 +5225,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 		###set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
 	assert( nxinit == data[0].get_xsize() )  #  Just to make sure.
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
-	return data, oldshifts
+	return data, oldshifts, original_data
 
 
 def getindexdata(stack, partids, partstack, myid, nproc):
