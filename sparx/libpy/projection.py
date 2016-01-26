@@ -54,8 +54,6 @@ def project(volume, params, radius=-1):
 		proj=Processor.EMFourierFilter(proj, params2)
 		#proj = rot_shift2D(proj, sx = params[3], sy = params[4], interpolation_method = "linear")
 	set_params_proj(proj, [params[0], params[1], params[2], -params[3], -params[4]])
-	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-	# proj.set_attr_dict({'active':1, 'ctf_applied':0})
 	proj.set_attr_dict({ 'ctf_applied':0})
 	return  proj
 
@@ -80,8 +78,6 @@ def prl(vol, params, radius, stack = None):
         	proj = vol.project("pawel", myparams)
 		if(params[i][3]!=0. or params[i][4]!=0.): proj = rot_shift2D(proj, sx = params[i][3], sy = params[i][4], interpolation_method = "linear")
 		proj.set_attr_dict({'phi':params[i][0], 'theta':params[i][1], 'psi':params[i][2], 's2x':-params[i][3], 's2y':-params[i][4]})
-		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# proj.set_attr_dict({'active':1, 'ctf_applied':0})
 		proj.set_attr_dict({ 'ctf_applied':0})
 		
 		if(stack):
@@ -110,8 +106,6 @@ def prj(vol, params, stack = None):
 	for i in xrange(len(params)):
 		proj = prgs(volft, kb, params[i])
 		set_params_proj(proj, [params[i][0], params[i][1], params[i][2], -params[i][3], -params[i][4]])
-		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# proj.set_attr_dict({'active':1, 'ctf_applied':0})
 		proj.set_attr_dict({ 'ctf_applied':0})
 		
 		if(stack):
@@ -156,8 +150,6 @@ def prgs(volft, kb, params, kbx=None, kby=None):
 		temp=Processor.EMFourierFilter(temp, filt_params)
 	temp.do_ift_inplace()
 	set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
-	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1	
-	# temp.set_attr_dict({'active':1, 'ctf_applied':0, 'npad':2})
 	temp.set_attr_dict({'ctf_applied':0, 'npad':2})
 	temp.depad()
 	return temp
@@ -609,8 +601,6 @@ def cml_export_struc(stack, outdir, irun, Ori):
 		data = get_im(stack, i)
 		p = [Ori[4*i], Ori[4*i+1], Ori[4*i+2], 0.0, 0.0]
 		set_params_proj(data, p)
-		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# data.set_attr('active', 1)
 		data.write_image(outdir + '/structure_%03i.hdf' % irun, i)
 
 		# prepare angles to plot

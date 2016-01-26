@@ -396,18 +396,44 @@ def main(args):
 				aligned_images[im] /= p[1]
 				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 	elif(shrink_ratio > 1.0):
-		target_radius = radi
-		msk = model_circle(target_radius, nx, nx)
-		for im in xrange(nima):
-			#  Here we should use only shifts
-			alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-			alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-			aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-			p = Util.infomask(aligned_images[im], msk, False)
-			aligned_images[im] -= p[0]
-			p = Util.infomask(aligned_images[im], msk, True)
-			aligned_images[im] /= p[1]
-			aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+		if    newx > target_nx  :
+			msk = model_circle(target_radius, target_nx, target_nx)
+			for im in xrange(nima):
+				#  Here we should use only shifts
+				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+				aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
+				p = Util.infomask(aligned_images[im], msk, False)
+				aligned_images[im] -= p[0]
+				p = Util.infomask(aligned_images[im], msk, True)
+				aligned_images[im] /= p[1]
+		elif  newx == target_nx :
+			msk = model_circle(target_radius, target_nx, target_nx)
+			for im in xrange(nima):
+				#  Here we should use only shifts
+				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+				p = Util.infomask(aligned_images[im], msk, False)
+				aligned_images[im] -= p[0]
+				p = Util.infomask(aligned_images[im], msk, True)
+				aligned_images[im] /= p[1]
+		elif  newx < target_nx  :
+			msk = model_circle(newx//2-2, newx,  newx)
+			for im in xrange(nima):
+				#  Here we should use only shifts
+				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+				p = Util.infomask(aligned_images[im], msk, False)
+				aligned_images[im] -= p[0]
+				p = Util.infomask(aligned_images[im], msk, True)
+				aligned_images[im] /= p[1]
+				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 	del msk
 
 	gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
@@ -419,19 +445,20 @@ def main(args):
 		from EMAN2db import db_open_dict
 		DB = db_open_dict(stack_processed_by_ali2d_base__filename)
 		DB.close()
-		
-		fp = open("README_shrink_ratio.txt", "w")
+
+		fp = open(os.path.join(masterdir,"README_shrink_ratio.txt"), "w")
 		output_text = """
 		Since, for processing purposes, isac changes the image dimensions,
 		adjustment of pixel size needs to be made in subsequent steps, (e.g.
 		running sxviper.py). The shrink ratio for this particular isac run is
 		--------
 		%.5f
+		%.5f
 		--------
 		To get the pixel size for the isac output the user needs to divide
 		the original pixel size by the above value. This info is saved in
 		the following file: README_shrink_ratio.txt
-		"""%shrink_ratio
+		"""%(shrink_ratio, radi)
 		fp.write(output_text); fp.flush() ;fp.close()
 		print output_text
 
@@ -581,7 +608,7 @@ def main(args):
 
 		if (myid == main_node):
 			cmdexecute("rm -f class_averages.hdf")
-			cpy(["generation_%04d/class_averages_generation_%d.hdf"%(i,i) for i in xrange(1, isac_generation)], "class_averages.hdf")
+			cpy(["generation_%04d/class_averages_generation_%d.hdf"%(i,i) for i in xrange(1, isac_generation + 1)], "class_averages.hdf")
 
 		# program_state_stack.restart_location_title = "stopped_program2"
 		# program_state_stack(locals(), getframeinfo(currentframe()))

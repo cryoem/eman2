@@ -945,6 +945,8 @@ public:
 	/* Assign projection angles to nearest reference projections  using getfvec*/
 	static vector<int> assign_projangles_f(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles);
 	 
+	static vector<float> get_largest_angles_in_cones(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles); 
+
 	static EMData* fast_3d_box_convolution(EMData *input_volume, int window_size);	 
 
 	/* Assign howmany projection angles to the nearest reference projection */
@@ -1083,7 +1085,8 @@ public:
 	static float ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sx, float sy);
 
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
-
+	
+	static void version();
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 
 	static EMData* get_biggest_cluster( EMData* mg );

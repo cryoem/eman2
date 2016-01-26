@@ -974,6 +974,7 @@ def do_volume_mrk02(ref_data):
 	Tracker  = ref_data[1]
 	myid     = ref_data[2]
 	nproc    = ref_data[3]
+       	mpi_comm = None
 	
 	if(mpi_comm == None):  mpi_comm = MPI_COMM_WORLD
 	myid  = mpi_comm_rank(mpi_comm)
@@ -1231,7 +1232,7 @@ def do_volume_mrk03(ref_data):
 			stat = Util.infomask(vol, mask3D, False)
 			vol -= stat[0]
 			Util.mul_scalar(vol, 1.0/stat[1])
-			vol = threshold(vol)
+			#vol = threshold(vol)
 			# vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
 	if( nproc > 1 ):

@@ -5493,11 +5493,21 @@ void EMData::div_sinc(int interpolate_method) {
 
 	set_array_offsets(-nx/2,-ny/2,-nz/2);
 
+/*
 	for (int k = -nz/2; k < nz/2 + nz%2; k++) {
 		float kkp = sincx[abs(k)];
 		for (int j = -ny/2; j < ny/2 + ny%2; j++) {
 			cdf = sincx[abs(j)]*kkp;
 			for (int i = -nx/2; i < nx/2 + nx%2; i++) (*this)(i,j,k) *= sincx[abs(i)]*cdf;
+		}
+	}
+*/
+	for (int k = -nz/2; k < nz/2 + nz%2; k++) {
+		for (int j = -ny/2; j < ny/2 + ny%2; j++) {
+			for (int i = -nx/2; i < nx/2 + nx%2; i++) {
+				float  rrr = std::sqrt(k*k+j*j+float(i*i));
+				if(rrr>0.0f)  (*this)(i,j,k) *= pow((rrr*cdf)/sin(rrr*cdf),2);
+			}
 		}
 	}
 	set_array_offsets(saved_offsets);
