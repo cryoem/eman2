@@ -1261,18 +1261,21 @@ def getalldata(stack, myid, nproc):
 	data = EMData.read_images(stack, range(image_start, image_end))
 	return data
 
-"""
-# move into utilities 09/23/2015
-def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
+
+def get_shrink_data_old(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
 	#  The read data is properly distributed among MPI threads.
+	from fundamentals import resample
+	from filter import filt_ctf
+	from applications import MPI_start_end
+
 	if( myid == main_node ):
-		print("    ")
+		print "  "
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], Tracker["applyctf"], preshift) )
-		print("                       stack:      %s\n                       partids:     %s\n                       partstack: %s\n"%(Tracker["constants"]["stack"], partids, partstack) )
+		print  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], Tracker["applyctf"], preshift)
+		print  "                       stack:      %s\n                       partids:     %s\n                       partstack: %s\n"%(Tracker["constants"]["stack"], partids, partstack)
 	if( myid == main_node ): lpartids = read_text_file(partids)
 	else:  lpartids = 0
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
@@ -1327,7 +1330,6 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	assert( nxinit == data[0].get_xsize() )  #  Just to make sure.
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
-"""
 
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
 	from applications import slocal_ali3d_base, sali3d_base
@@ -1448,7 +1450,7 @@ def print_dict(dict,theme):
 #
 def main():
 
-	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle, get_shrink_data
+	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle, get_shrink_data_old
 	import user_functions
 	from applications import MPI_start_end
 	from optparse import OptionParser
@@ -1935,7 +1937,7 @@ def main():
 				mpi_barrier(MPI_COMM_WORLD)
 				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
 					projdata[procid] = []
-					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["nxinit"],\
+					projdata[procid], oldshifts[procid] = get_shrink_data_old(Tracker, Tracker["nxinit"],\
 						partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
 				# METAMOVE
@@ -1958,7 +1960,7 @@ def main():
 					projdata = [[],[]]
 					for procid in xrange(2):
 						#  The data is read with shrinking to nxinit
-						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, nxinit,\
+						projdata[procid], oldshifts[procid] = get_shrink_data_old(Tracker, nxinit,\
 									partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
 				newlowpass, newfalloff, icurrentres, ares, finitres = compute_resolution(projdata, partids, partstack, \
@@ -2041,7 +2043,7 @@ def main():
 				if(Tracker["newnx"] != projdata[procid][0].get_xsize() ):
 					projdata = [[],[]]
 					for procid in xrange(2):
-						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["newnx"],\
+						projdata[procid], oldshifts[procid] = get_shrink_data_old(Tracker, Tracker["newnx"],\
 									partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 					
 				#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
