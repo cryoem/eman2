@@ -5155,12 +5155,11 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 		nnx = bckgdata[0].get_xsize()
 		nny = bckgdata[0].get_ysize()
 		bckgnoise = []
-		qnx = Tracker["constants"]["nnxo"]/2.0
 		for i in xrange(nny):
 			prj = [0.0]*nnx
 			for k in xrange(1,nnx):
 				qt = bckgdata[0].get_value_at(k,i)
-				if( qt > 0.0 ):  qt = qnx/sqrt(qt)
+				if( qt > 0.0 ):  qt = Tracker["constants"]["nnxo"]/sqrt(qt)
 				prj[k] = qt
 			prj[0] = 1.0
 			bckgnoise.append(prj)
