@@ -5200,29 +5200,30 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 				indx = datastamp.index(stmp)
 			except:
 				ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
-			bckg = model_gauss_noise(1,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])*Tracker["constants"]["nnxo"]/sqrt(2.0)
+			bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])*Tracker["constants"]["nnxo"]/sqrt(2.0)
 			bckg.set_attr("is_complex",1)
 			bckg.set_attr("is_fftpad",1)
 			bckg = fft(filt_table(bckg,bckgnoise[indx]))
 			from morphology import cosinemask
 			data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
 
-
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
-			ctf_params = data[im].get_attr("ctf")
-			data[im] = filt_ctf(data[im], ctf_params)
+			data[im] = filt_ctf(data[im], data[im].get_attr("ctf"))
 			data[im].set_attr('ctf_applied', 1)
-			apix = ctf_params.apix
 		else:  apix = Tracker["constants"]["pixel_size"]
 		set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 
 		#  resample will properly adjusts shifts and pixel size in ctf
 		#data[im] = resample(data[im], shrinkage)
 		#  return Fourier image
-		data[i] = fdecimate(data[i], nxinit, nxinit, 1, False)
-		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
+		data[im] = fdecimate(data[im], nxinit, nxinit, 1, False)
+		try:
+			ctf_params = original_data[im].get_attr("ctf")
 			ctf_params.apix = apix/shrinkage
 			data[im].set_attr('ctf', ctf_params)
+		except:  pass
+		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
+			pass
 		else:  data[im].set_attr('apix', apix/shrinkage)
 		#  We have to make sure the shifts are within correct range, shrinkage or not
 		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
