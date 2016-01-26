@@ -5093,7 +5093,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 
 
 def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_node, nproc, \
-					original_data = None, preshift = False, apply_mask = True, large_memory = True):
+					original_data = None, return_real = False, preshift = False, apply_mask = True, large_memory = True):
 	"""
 	This function will read from stack a subset of images specified in partids
 	   and assign to them parameters from partstack with optional CTF application and shifting of the data.
@@ -5216,7 +5216,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 		#  resample will properly adjusts shifts and pixel size in ctf
 		#data[im] = resample(data[im], shrinkage)
 		#  return Fourier image
-		data[im] = fdecimate(data[im], nxinit, nxinit, 1, False)
+		data[im] = fdecimate(data[im], nxinit, nxinit, 1, return_real)
 		try:
 			ctf_params = original_data[im].get_attr("ctf")
 			ctf_params.apix = apix/shrinkage
