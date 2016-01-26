@@ -608,7 +608,7 @@ def main(args):
 
 		if (myid == main_node):
 			cmdexecute("rm -f class_averages.hdf")
-			cpy(["generation_%04d/class_averages_generation_%d.hdf"%(i,i) for i in xrange(1, isac_generation)], "class_averages.hdf")
+			cpy(["generation_%04d/class_averages_generation_%d.hdf"%(i,i) for i in xrange(1, isac_generation + 1)], "class_averages.hdf")
 
 		# program_state_stack.restart_location_title = "stopped_program2"
 		# program_state_stack(locals(), getframeinfo(currentframe()))
