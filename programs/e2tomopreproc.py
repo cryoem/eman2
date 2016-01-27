@@ -65,7 +65,7 @@ def main():
 			
 	#parser.add_argument("--apix",type=float,default=0.0,help="""True apix of images to be written on final stack.""")
 	
-	parser.add_argument("--shrink", type=float,default=0,help="""Default=0 (no shrinking). Can use decimal numbers, larger than 1.0. Optionally shrink the images by this factor. Uses processor math.fft.resample.""")
+	parser.add_argument("--shrink", type=float,default=0.0,help="""Default=0.0 (no shrinking). Can use decimal numbers, larger than 1.0. Optionally shrink the images by this factor. Uses processor math.fft.resample.""")
 		
 	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold processor applied to each image.""")
 	
@@ -137,27 +137,35 @@ def main():
 	originalextension = options.input.split('.')[-1]
 	
 	angles = {}
-	if options.maskbyangle:
-		if not options.tltfile:
-			print "\n(e2tomopreproc)(main) ERROR: --maskbyangle requires --tltfile"
-			sys.exit(1)
-			
-		else:
-			f = open( options.tltfile, 'r' )
-			lines = f.readlines()
-			f.close()
-			#print "lines in tlt file are", lines
-			k=0
-			for line in lines:
-				line = line.replace('\t','').replace('\n','')
+	#if options.maskbyangle:
+	if not options.tltfile:
+		print "\n(e2tomopreproc)(main) ERROR: --maskbyangle requires --tltfile"
+		sys.exit(1)
 		
-				if line:
-					angle = float(line)
-					angles.update( { k:angle } )
-					if options.verbose:
-						print "appending angle", angle
-					k+=1
+	else:
+		f = open( options.tltfile, 'r' )
+		lines = f.readlines()
+		print "\nnumber of lines read from --tltfile", len(lines)
+		f.close()
+		#print "lines in tlt file are", lines
+		k=0
+		for line in lines:
+			line = line.replace('\t','').replace('\n','')
 	
+			if line:
+				angle = float(line)
+				angles.update( { k:angle } )
+				if options.verbose:
+					print "appending angle", angle
+				k+=1
+		if len(angles) < 2:
+			print "\nERROR: something went terribly wrong with parsing the --tltlfile. This program does not work on single images"
+			sys.exit()
+
+	if len(angles) < 2:
+		print "\nERROR: (second angle check) something went terribly wrong with parsing the --tltlfile. This program does not work on single images"
+		sys.exit()
+				
 	mrcstack = options.path + '/' + options.input
 	
 	if '.hdf' in options.input[-5:]:
@@ -246,6 +254,10 @@ def main():
 			lowpassres = nyquist/options.lowpassfrac
 			print "\n(e2spt_preproc)(main) and final lowpass resolution", lowpassres
 			options.lowpassfrac = 1.0/(lowpassres)
+			if float(options.shrink) > 1.0:
+				options.lowpassfrac /= float(options.shrink)
+			
+				
 			print "and the final lowpass frequency will be", options.lowpassfrac
 
 		kk=0
@@ -441,7 +453,7 @@ class TomoPreproc2DTask(JSTask):
 			
 		if options.shrink:
 			print "adding shrink"
-			cmd += ' --process math.fft.resample=' + str(options.shrink)
+			cmd += ' --process math.fft.resample:n=' + str(options.shrink)
 		
 		if options.verbose:
 			print "\n(e2tomopreproc)(class) cmd", cmd
