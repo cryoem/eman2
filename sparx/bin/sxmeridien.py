@@ -1332,7 +1332,7 @@ def get_shrink_data_old(Tracker, nxinit, partids, partstack, myid, main_node, np
 	return data, oldshifts
 
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
-	from applications import slocal_ali3d_base, sali3d_base
+	from applications import slocal_ali3d_base_old, sali3d_base_old
 	from mpi import  mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
@@ -1412,9 +1412,9 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		print("                    =>  partstack           :  ",partstack)
 
 	#  Run alignment command
-	if Tracker["local"] : params = slocal_ali3d_base(projdata, get_im(Tracker["refvol"]), \
+	if Tracker["local"] : params = slocal_ali3d_base_old(projdata, get_im(Tracker["refvol"]), \
 									Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0)
-	else: params = sali3d_base(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
+	else: params = sali3d_base_old(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
 
 	del log
 	#  store params
