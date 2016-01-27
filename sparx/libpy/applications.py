@@ -13717,7 +13717,7 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1, smearstep = 0.0):
 	if MPI:
 		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
-		# newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
+		#newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
 		#newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
 		return
 
@@ -13881,6 +13881,18 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	bckgnoise = [get_im("bckgnoise.hdf"), read_text_file("defgroup_stamp.txt")]#model_blank(1000,1,1,1.0)
 	if myid == 0 :  print  sym,finfo,npad
 	"""
+	"""
+	from fundamentals import fdecimate
+	from utilities import get_params_proj,set_params_proj
+	scale = 384./54.
+	for i in xrange(len(prjlist)):
+		prjlist[k][i] = fdecimate(prjlist[i],54,54)
+		ctf_params = prjlist[i].get_attr("ctf")
+		ctf_params.apix *= scale
+		prjlist[i].set_attr('ctf', ctf_params)
+		phi,theta,psi,sx,sy = get_params_proj(prjlist[i])
+		set_params_proj(prjlist[i],[phi,theta,psi,sx/scale,sy/scale])
+	"""			
 	from reconstruction import recons3d_4nnfs_MPI
 	#if CTF: vol1, vol2, fff = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
 	if CTF: vol1 = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
@@ -13939,7 +13951,8 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 		finfo = open( infofile, 'w' )
 
 	if(myid == 0):
-		pid_list = read_text_file("main000/chunk0.txt")
+		#pid_list = read_text_file("main000/chunk0.txt")
+		pid_list = read_text_file("main000/indexes.txt")
 		nima = len(pid_list)
 	else: nima = 0
 	nima = bcast_number_to_all(nima, source_node = 0)
@@ -13953,7 +13966,8 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 
 
 	if(myid == 0):
-		pid_list = read_text_file("main000/chunk1.txt")
+		#pid_list = read_text_file("main000/chunk1.txt")
+		pid_list = range(320)
 		nima = len(pid_list)
 	else: nima = 0
 	nima = bcast_number_to_all(nima, source_node = 0)
@@ -13965,6 +13979,18 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 	image_start, image_end = MPI_start_end(nima, nproc, myid)
 	prjlist += [EMData.read_images(prj_stack, pid_list[image_start:image_end])]
 
+	from fundamentals import fdecimate
+	from utilities import get_params_proj,set_params_proj
+	scale = 384./54.
+	for k in xrange(2):
+		for i in xrange(len(prjlist[k])):
+			prjlist[k][i] = fdecimate(prjlist[k][i],54,54)
+			ctf_params = prjlist[k][i].get_attr("ctf")
+			ctf_params.apix *= scale
+			prjlist[k][i].set_attr('ctf', ctf_params)
+			phi,theta,psi,sx,sy = get_params_proj(prjlist[k][i])
+			set_params_proj(prjlist[k][i],[phi,theta,psi,sx/scale,sy/scale])
+			
 	if myid == 0 :  print "  NEW  "
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
 	from utilities import model_blank, get_im
