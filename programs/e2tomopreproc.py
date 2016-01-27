@@ -65,7 +65,7 @@ def main():
 			
 	#parser.add_argument("--apix",type=float,default=0.0,help="""True apix of images to be written on final stack.""")
 	
-	parser.add_argument("--shrink", type=float,default=0,help="""Default=0 (no shrinking). Can use decimal numbers, larger than 1.0. Optionally shrink the images by this factor. Uses processor math.fft.resample.""")
+	parser.add_argument("--shrink", type=float,default=0.0,help="""Default=0.0 (no shrinking). Can use decimal numbers, larger than 1.0. Optionally shrink the images by this factor. Uses processor math.fft.resample.""")
 		
 	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold processor applied to each image.""")
 	
@@ -254,6 +254,10 @@ def main():
 			lowpassres = nyquist/options.lowpassfrac
 			print "\n(e2spt_preproc)(main) and final lowpass resolution", lowpassres
 			options.lowpassfrac = 1.0/(lowpassres)
+			if float(options.shrink) > 1.0:
+				options.lowpassfrac /= float(options.shrink)
+			
+				
 			print "and the final lowpass frequency will be", options.lowpassfrac
 
 		kk=0
@@ -449,7 +453,7 @@ class TomoPreproc2DTask(JSTask):
 			
 		if options.shrink:
 			print "adding shrink"
-			cmd += ' --process math.fft.resample=' + str(options.shrink)
+			cmd += ' --process math.fft.resample:n=' + str(options.shrink)
 		
 		if options.verbose:
 			print "\n(e2tomopreproc)(class) cmd", cmd
