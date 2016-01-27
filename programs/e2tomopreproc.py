@@ -453,7 +453,7 @@ class TomoPreproc2DTask(JSTask):
 			
 		if options.shrink:
 			print "adding shrink"
-			cmd += ' --process math.fft.resample=' + str(options.shrink)
+			cmd += ' --process math.fft.resample:n=' + str(options.shrink)
 		
 		if options.verbose:
 			print "\n(e2tomopreproc)(class) cmd", cmd
