@@ -764,7 +764,8 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	empty_group = 1
 	kmref =0
 	while empty_group ==1:
-		if myid ==main_node: log_main.add(" %d     Kmref run"%kmref) 
+		if myid ==main_node:
+			log_main.add(" %d     Kmref run"%kmref) 
 		outdir =os.path.join(workdir, "Kmref%d"%kmref)
 		empty_group, res_classes, data_list = ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,final_list_text_file,Tracker)
 		kmref +=1
@@ -814,7 +815,6 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 			new_class    = []
 			for a in res_classes:
 				if len(a)>=Tracker["constants"]["smallest_group"]:new_class.append(a)
-			if len(new_class) == len(res_classes): break
 	if myid==main_node:
 		log_main.add("Exhaustive Kmeans ends")
 		log_main.add(" %d groups are selected out"%len(new_class))
@@ -2307,7 +2307,7 @@ def main():
 	parser.add_option("--focus",    type="string",       default=None,         help="3D mask for focused clustering ")
 	parser.add_option("--ir",       type= "int",         default=1, 	       help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--radius",   type= "int",         default="-1",	       help="outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
-	parser.add_option("--maxit",	type= "int",         default=40, 	       help="maximum number of iteration")
+	parser.add_option("--maxit",	type= "int",         default=50, 	       help="maximum number of iteration")
 	parser.add_option("--rs",       type= "int",         default="1",	       help="step between rings in rotational correlation >0 (set to 1)" ) 
 	parser.add_option("--xr",       type="string",       default="1",  help="range for translation search in x direction, search is +/-xr ")
 	parser.add_option("--yr",       type="string",       default="-1",	       help="range for translation search in y direction, search is +/-yr (default = same as xr)")
@@ -2954,7 +2954,7 @@ def main():
 				write_text_file(reproduced_groups[index_of_reproduced_groups],name_of_class_file)
 			log_main.add("-------start to reconstruct reproduced volumes individully to orignal size-----------")
 		mpi_barrier(MPI_COMM_WORLD)
-		if Tracker["constants"]["mask3D"]: mask_3d=get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
+		if Tracker["constants"]["mask3D"]: mask_3d=get_shrink_3dmask(Tracker["constants"]["nnxo"],Tracker["constants"]["mask3D"])
 		else: mask_3d = None
 		for igrp in xrange(len(reproduced_groups)):
 			name_of_class_file = os.path.join(masterdir, "P2_final_class%d.txt"%igrp)
