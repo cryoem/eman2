@@ -137,27 +137,35 @@ def main():
 	originalextension = options.input.split('.')[-1]
 	
 	angles = {}
-	if options.maskbyangle:
-		if not options.tltfile:
-			print "\n(e2tomopreproc)(main) ERROR: --maskbyangle requires --tltfile"
-			sys.exit(1)
-			
-		else:
-			f = open( options.tltfile, 'r' )
-			lines = f.readlines()
-			f.close()
-			#print "lines in tlt file are", lines
-			k=0
-			for line in lines:
-				line = line.replace('\t','').replace('\n','')
+	#if options.maskbyangle:
+	if not options.tltfile:
+		print "\n(e2tomopreproc)(main) ERROR: --maskbyangle requires --tltfile"
+		sys.exit(1)
 		
-				if line:
-					angle = float(line)
-					angles.update( { k:angle } )
-					if options.verbose:
-						print "appending angle", angle
-					k+=1
+	else:
+		f = open( options.tltfile, 'r' )
+		lines = f.readlines()
+		print "\nnumber of lines read from --tltfile", len(lines)
+		f.close()
+		#print "lines in tlt file are", lines
+		k=0
+		for line in lines:
+			line = line.replace('\t','').replace('\n','')
 	
+			if line:
+				angle = float(line)
+				angles.update( { k:angle } )
+				if options.verbose:
+					print "appending angle", angle
+				k+=1
+		if len(angles) < 2:
+			print "\nERROR: something went terribly wrong with parsing the --tltlfile. This program does not work on single images"
+			sys.exit()
+
+	if len(angles) < 2:
+		print "\nERROR: (second angle check) something went terribly wrong with parsing the --tltlfile. This program does not work on single images"
+		sys.exit()
+				
 	mrcstack = options.path + '/' + options.input
 	
 	if '.hdf' in options.input[-5:]:
