@@ -82,10 +82,26 @@ def main():
 	
 	parser.add_argument("--clip",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary.""")
 	
+	parser.add_argument("--nopath",action='store_true',default=False,help="""If supplied, this option will save results in the directory where the command is run. A directory to store the results will not be made.""")
+
+	parser.add_argument("--path",type=str,default='sptpreproc',help="""Default=spt. Directory to store results in. The default is a numbered series of directories containing the prefix 'sptpreproc'; for example, sptpreproc_02 will be the directory by default if 'sptpreproc_01' already exists.""")
+
 	
 	(options, args) = parser.parse_args()
 	
 	logger = E2init(sys.argv, options.ppid)
+	print "\n(e2spt_preproc)(main) started log"
+	
+	
+	
+	from e2spt_classaverage import sptmakepath
+	
+	if options.path and not options.nopath:
+	
+		options = sptmakepath(options,'sptpreproc')
+	
+	
+	
 	
 	if not options.input:
 		try:
@@ -97,34 +113,55 @@ def main():
 		
 		preprocstack =  str(os.path.basename(options.input).replace('.hdf','_preproc.hdf'))
 		
+		if options.path and not options.nopath:
+			preprocstack = options.path + '/' + preprocstack
+		
 		if options.output:
 			if '.hdf' in options.output[-4:]:
 				preprocstack = options.output
 			else:
 				print "\n(e2spt_preproc)(main) ERROR: '.hdf' must be the last four characters of the output filename."
 			
-		print "\n(e2spt_preproc)(main) output stack will be", preprocstack
+		print "\n(e2spt_preproc)(main) output stack will be %s" %( preprocstack)
 
 		n = 0
 		try:
 			n = EMUtil.get_image_count( options.input )
 		except:
-			print "\n(e2spt_preproc)(main) ERROR: --input stack seems to be invalid" 
+			print "\n(e2spt_preproc)(main) ERROR: --input stack seems to be invalid"
 			sys.exit()
 		
-		print "\n(e2spt_preproc)(main) number of particles is", n
+		print "\n(e2spt_preproc)(main) number of particles is %d" %( n) 
 		
-		dimg = EMData(8,8,8)
-		dimg.to_one()
+		
+		c = os.getcwd()
+		
+		findir = os.listdir( c )
+		
+		if preprocstack not in findir:
+		
+			dimg = EMData(8,8,8)
+			dimg.to_one()
 
-		for i in range(n):
-			dimg.write_image( preprocstack, i )
+			for i in range(n):
+				dimg.write_image( preprocstack, i )
 		
-		print "\n(e2spt_preproc)(main) wrote dummy ptcls to", preprocstack
+		else:
+			print "\n(e2spt_preproc)(main) WARNING: a file with the name of the output stack %s is already in the current directory and will be DELETED" %( preprocstack )
+			os.remove( preprocstack )
+			
+			dimg = EMData(8,8,8)
+			dimg.to_one()
+
+			for i in range(n):
+				dimg.write_image( preprocstack, i )
+		
+		if options.verbose:
+			print "\n(e2spt_preproc)(main) wrote dummy ptcls to %s" %( preprocstack)
 	
 		
-		print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!"
-		print "\n"
+		print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n"
+		
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
 		pclist=[options.input]
@@ -162,11 +199,11 @@ def main():
 
 	
 		results = get_results( etc, tids, options )
-		print "\n(e2spt_preproc)(main) preprocessing results are", results	
+		#print "\n(e2spt_preproc)(main) preprocessing results are", results	
 		
 		
-		print "\n(e2spt_preproc)(main) input changing to preprocstack"
-		options.input = preprocstack
+		#print "\n(e2spt_preproc)(main) input changing to preprocstack"
+		#options.input = preprocstack
 
 		#cache needs to be reloaded with the new options.input		
 		
@@ -180,8 +217,7 @@ def main():
 
 
 '''
-CLASS TO PARALLELIZE PREPROCESSING STEPS OCCURRING BEFORE FFT.
-Many preprocessing steps need to be applied only once.
+CLASS TO PARALLELIZE PREPROCESSING
 '''
 
 
@@ -198,7 +234,6 @@ class Preproc3DTask(JSTask):
 		self.classoptions={"options":options,"ptclnum":ptclnum,"outname":outname}
 	
 	def execute(self,callback=None):
-		'''This simulates a subtomogram and saves projections before and after adding noise if instructed to.'''
 		classoptions=self.classoptions
 		options=self.classoptions['options']
 		outname = self.classoptions['outname']
@@ -214,7 +249,8 @@ class Preproc3DTask(JSTask):
 			
 		#simage = self.data['image']
 		
-		print "in class, outname and i are", outname, i
+		if options.verbose:
+			print "in class, outname %s and i=%d " %(outname, i)
 		
 		
 		preprocfunc( simage, options, i, outname )
@@ -222,121 +258,138 @@ class Preproc3DTask(JSTask):
 		return
 
 
-def preprocfunc( simage, options, i, outname, simulation=False ):
+def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False ):
 		
-		print "\n(e2spt_preproc) preprocessing"
-	
-	
-		apix = simage['apix_x']
-		
-		print "apix is", apix
-		
-		'''
-		Make the mask first 
-		'''
-		print "masking"
-		maskimg = EMData( int(simage["nx"]), int(simage["ny"]), int(simage["nz"]) )
-		maskimg.to_one()
-		print "Done creating mask"
+		if options.verbose:
+			print "\n(e2spt_preproc) preprocessing particle", i
 	
 		
-		if options.mask and options.mask != 'None' and options.mask != 'none':
-			#if options.verbose:
-			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-			maskimg.process_inplace(options.mask[0],options.mask[1])
 		
-			print "(e2spt_classaverage)(preprocessingprefft) --mask provided:", options.mask
-			#mask.write_image(options.path + '/mask.hdf',-1)
+		
+		if not resizeonly:
+		
+			apix = simage['apix_x']
+		
+			if options.verbose > 9:
+				print "\n(e2spt_preproc)(preprocfunc)apix is %f" % (apix)
+		
+			'''
+			Make the mask first 
+			'''
+			if options.verbose > 9:
+				print "\n(e2spt_preproc)(preprocfunc) masking particle", i
+		
+			maskimg = EMData( int(simage["nx"]), int(simage["ny"]), int(simage["nz"]) )
+			maskimg.to_one()
+			print "\n(e2spt_preproc)(preprocfunc) done creating mask"
 	
-		try:
-			if options.maskfile:
-				maskfileimg = EMData(options.maskfile,0)
+		
+			if options.mask and options.mask != 'None' and options.mask != 'none':
+				#if options.verbose:
+				#print "\n(e2spt_preproc)(preprocfunc) this is the mask I will apply: %s,%s" %(options.mask[0],options.mask[1]) 
+				print "masking"
+				maskimg.process_inplace(options.mask[0],options.mask[1])
+		
+				#print ("\n(e2spt_preproc)(preprocfunc) --mask provided: %s" %( options.mask))
+				#mask.write_image(options.path + '/mask.hdf',-1)
+	
+			try:
+				if options.maskfile:
+					maskfileimg = EMData(options.maskfile,0)
 			
-				if options.clip or maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
-					maskfileimg = clip3D( maskfileimg, maskimg['nx'] )
+					if maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
+						maskfileimg = clip3D( maskfileimg, maskimg['nx'] )
 		
-				maskimg.mult( maskfileimg )
-			
-				print "A maskfile was multiplied by the mask", options.maskfile
-			else:
-				print "Apparently therewas no --maskfile"
+					maskimg.mult( maskfileimg )
+				
+					if options.verbose > 9:
+						print "including --maskfile in mask"
+					#print "\n(e2spt_preproc)(preprocfunc)a maskfile was multiplied by the mask %s" %( options.maskfile) 
+				else:
+					if options.verbose > 9:
+						print "\n(e2spt_preproc)(preprocfunc) apparently therewas no --maskfile"
+					#pass
+			except:
 				pass
-		except:
-			pass
 		
 		
-		'''
-		Set the 'mask' parameter for --normproc if normalize.mask is being used
-		'''
-		if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-			print "normproc is", options.normproc, type(options.normproc)
-			if options.normproc[0]=="normalize.mask": 
-				options.normproc[1]["mask"]=maskimg
+			'''
+			Set the 'mask' parameter for --normproc if normalize.mask is being used
+			'''
+			if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+				#print "normproc is %s" %(options.normproc[0]) 
+				if options.normproc[0]=="normalize.mask": 
+					options.normproc[1]["mask"]=maskimg
 	
-		'''
-		Normalize-Mask
-		'''	
+			'''
+			Normalize-Mask
+			'''	
 			
-		if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-			simage.process_inplace(options.normproc[0],options.normproc[1])
-			#simage.write_image(options.path + '/imgMsk1norm.hdf',-1)
+			if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+				simage.process_inplace(options.normproc[0],options.normproc[1])
+				#simage.write_image(options.path + '/imgMsk1norm.hdf',-1)
+				print "normalizing"
+				#print "\n(e2spt_preproc)(preprocfunc) --normproc provided: %s" %( str(options.normproc[0]) ) 
+	
+			try:
+				#if mask and mask != 'None' and mask != 'none' or options.maskfile:
+				if options.mask or options.maskfile:
+					if options.verbose > 9:
+						print "\n(e2spt_preproc)(preprocfunc) masking again after normalizing"
+					simage.mult(maskimg)
+					#simage.write_image(options.path + '/imgMsk1normMsk2.hdf',-1)
+			except:
+				pass
+		
+			'''
+			Any threshold picked visually was based on the original pixels give the original
+			box size; therefore, it needs to be applied before clipping the box
+			'''
+			if options.threshold and options.threshold != 'None' and options.threshold != 'none':
+				if options.verbose > 9:
+					print "\n(e2spt_preproc)(preprocfunc) --thresholding provided"
+				simage.process_inplace( options.threshold[0], options.threshold[1] )
+	
+			if options.shrink  == 'None' or options.shrink == 'none':
+				options.shrink = None
+		
+			if options.lowpass  == 'None' or options.lowpass == 'none':
+				options.lowpass = None
+	
+			if options.highpass == 'None' or options.highpass == 'none':
+				options.highpass = None
+	
+			if options.preprocess == 'None' or options.preprocess == 'none':
+				options.preprocess = None
 
-			print "(e2spt_classaverage)(preprocessingprefft) --normproc provided:", options.normproc
-	
-		try:
-			#if mask and mask != 'None' and mask != 'none' or options.maskfile:
-			if options.mask or options.maskfile:
-				print "Masking again after normalizing"
-				simage.mult(maskimg)
-				#simage.write_image(options.path + '/imgMsk1normMsk2.hdf',-1)
-		except:
-			pass
 		
-		'''
-		Any threshold picked visually was based on the original pixels give the original
-		box size; therefore, it needs to be applied before clipping the box
-		'''
-		if options.threshold and options.threshold != 'None' and options.threshold != 'none':
-			simage.process_inplace( options.threshold[0], options.threshold[1] )
-	
-		if options.shrink  == 'None' or options.shrink == 'none':
-			options.shrink = None
 		
-		if options.lowpass  == 'None' or options.lowpass == 'none':
-			options.lowpass = None
-	
-		if options.highpass == 'None' or options.highpass == 'none':
-			options.highpass = None
-	
-		if options.preprocess == 'None' or options.preprocess == 'none':
-			options.preprocess = None
+			if options.lowpass:
+				if options.verbose > 9:
+					print "lowpassing particle",i
+				#print "\n(e2spt_preproc)(preprocfunc) --lowpass provided: %s, %s" %( options.lowpass[0],options.lowpass[1]) 
+				simage.process_inplace(options.lowpass[0],options.lowpass[1])
+				#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
 
-		
-		
-		if options.lowpass:
-			print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpass
-			simage.process_inplace(options.lowpass[0],options.lowpass[1])
-			#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
-
-		if options.highpass:
-			print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpass
-			simage.process_inplace(options.highpass[0],options.highpass[1])
-			#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
+			if options.highpass:
+				if options.verbose > 9:
+					print "highpassing particle",i 
+				#print "\n(e2spt_preproc)(preprocfunc) --highpass provided: %s, %s" %( options.highpass[0],options.highpass[1]) 
+				simage.process_inplace(options.highpass[0],options.highpass[1])
+				#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
 	
-		if options.preprocess:
-			print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocess
-			simage.process_inplace(options.preprocess[0],options.preprocess[1])
-			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
+			if options.preprocess:
+				if options.verbose > 9:
+					print "preprocessing particle",i
+				#print "\n(e2spt_preproc)(preprocfunc) --preprocess provided: %s, %s" %( options.preprocess[0],options.preprocess[1])
+				simage.process_inplace(options.preprocess[0],options.preprocess[1])
+				#fimage.write_image(options.path + '/imgPrep.hdf',-1)
 		
-		
-		if options.shrink and int( options.shrink  ) > 1:
-			print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrink
-			simage.process_inplace("math.fft.resample",{"n":options.shrink })
 		
 		
 		'''
 		If the box is clipped, you need to make sure rotations won't induce aberrant blank
-		corners; therefore, mask again softly at radius -4
+		corners; therefore, mask again softly at radius -4, independently of whatever --mask might have been provided or not
 		'''
 		if options.clip and options.clip != 'None' and options.clip != 'none':
 			#if simage['nx'] != options.clip or simage['ny'] != options.clip or simage['nz'] != options.clip:
@@ -353,15 +406,27 @@ def preprocfunc( simage, options, i, outname, simulation=False ):
 				
 			simage.process_inplace('mask.soft',{'outer_radius':-4})
 		
+		
+		
+		if options.shrink and int( options.shrink  ) > 1:
+			if options.verbose > 9:
+				print "shrinking particle", i
+			#print "\n(e2spt_preproc)(preprocfunc)--shrink provided: %d" %(options.shrink)
+			simage.process_inplace("math.fft.resample",{"n":options.shrink })
+		
+		
 		try:
 			if options.output:
-				print "\n(e2spt_preproc)(preprocfunc) outname and i are", options.output, i
+				if options.verbose > 9:
+					print "\n(e2spt_preproc)(preprocfunc) outname  %s and i=%d"  % (options.output, i)
 				simage.write_image( outname, i )
 			else:
-				print "\n(e2spt_preproc)(preprocfunc) no --output provided. Default outname and i are", outname, i
+				if options.verbose > 9:
+					print "\n(e2spt_preproc)(preprocfunc) no --output provided. Default outname %s and i=%d  " % ( outname, i) 
 				simage.write_image( outname, i )
 		except:
-			print "\n(e2spt_preproc)(preprocfunc) parameter --output probably doesn't exist in program calling this function. default outname and i are", outname, i
+			if options.verbose > 9:	
+				print "\n(e2spt_preproc)(preprocfunc) parameter --output probably doesn't exist in program calling this function. default outname %s and i=%d " %( outname , i) 
 			simage.write_image( outname, i )
 			
 			
@@ -461,7 +526,7 @@ def get_results(etc,tids,options):
 		
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
 		if options.verbose:
-			print "  %d tasks, %d complete, %d waiting to start        \r"%(len(tids),ncomplete,nwait)
+			print ("%d tasks, %d complete, %d waiting to start \r" % (len(tids),ncomplete,nwait))
 			sys.stdout.flush()
 	
 		if len(tidsleft)==0: break
