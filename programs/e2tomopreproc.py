@@ -158,11 +158,23 @@ def main():
 						print "appending angle", angle
 					k+=1
 	
+	mrcstack = options.path + '/' + options.input
 	
-	mrcstack = options.path + '/' + options.input.replace('.hdf','.mrc')
-	mrcstack = options.path + '/' + options.input.replace('.mrcs','.mrc')
-	mrcstack = options.path + '/' + options.input.replace('.st','.mrc')	
-	mrcstack = options.path + '/' + options.input.replace('.ali','.mrc')
+	if '.hdf' in options.input[-5:]:
+		print "replacing .hdf extension"
+		mrcstack = options.path + '/' + options.input.replace('.hdf','.mrc')
+	
+	if '.mrcs' in options.input[-5:]:
+		print "replacing .mrcs extension"
+		mrcstack = options.path + '/' + options.input.replace('.mrcs','.mrc')
+	
+	if '.st' in options.input[-5:]:
+		print "replacing .st extension"
+		mrcstack = options.path + '/' + options.input.replace('.st','.mrc')	
+
+	if '.ali' in options.input[-5:]:
+		print "replacing .ali extension"
+		mrcstack = options.path + '/' + options.input.replace('.ali','.mrc')
 	
 	#go = 0
 		
@@ -170,9 +182,9 @@ def main():
 	
 	
 	#if go:
-	
+	print "mrcstack is",mrcstack
 	outname = mrcstack.replace('.mrc','_UNSTACKED.mrc')
-
+	print "therefore, outname is", outname
 	#outname = outname.replace('.mrc','.mrcs')
 
 	cmd = 'e2proc2d.py ' + options.input + ' ' + outname + ' --unstacking --threed2twod'
