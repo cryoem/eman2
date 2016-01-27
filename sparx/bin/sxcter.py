@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.7
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -33,106 +33,132 @@
 import global_def
 from   global_def import *
 
-
 def main():
 	import os
 	import sys
 	from optparse import OptionParser
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
+	
 	progname = os.path.basename(arglist[0])
-	usage = progname + """ stack outdir1 outdir2 --indir --nameroot --micsuffix --wn --apix --Cs --voltage --ac --kboot --MPI
-
-	Process micrographs:
+	usage = progname + """  input_image  output_directory  --wn  --apix  --Cs  --voltage  --ac  --kboot  --overlap_x  --overlap_y  --edge_x  --edge_y  --f_start  --f_stop  --MPI  --debug
 	
-		Specify directory and prefix and suffix (type) of micrographs to process through --indir, --nameroot, and --micsuffix
-		Specify output directories pwrot and partres as arguments.
+	Process a set of micrographs:
+	
+		Specify micrograph name with wild card (*) enclosed by single quotes (') or double quotes (") (Note: sxgui.py automatically adds single quotes (')). 
+		The wild card (*) has to be in front of the extension. The extension must be 3 letter long excluding dot (.).
+		Specify output directory as an argument.
 		
-			mpirun -np 16 sxcter.py pwrot partres --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --micsuffix=mrc --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
-		After the program stops, it is advisable to concatenate all output files in partres directory:
-		cd partres
-		cat */* >>allctfs.txt
-
-	Process stack:
+			mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
+			
+	Process a stack:
 	
-		Specify name of stack and output directories as arguments.
-			sxcter.py bdb:stack pwrot partres --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
-
+		Specify name of stack (without wild card "*") and output directory as arguments. 
+			sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
 	
 	"""
-	parser = OptionParser(usage,version=SPARXVERSION)
-	
-	parser.add_option("--indir",            	  type="string",		    default= ".",     				 help="Directory containing micrographs to be processed.")
-	parser.add_option("--nameroot",          	  type="string",		    default="",     				 help="Prefix of micrographs to be processed.")
-	parser.add_option("--micsuffix",              type=str,                 default="",                      help="A string denoting micrograph type. For example 'mrc', 'hdf', 'ser' ...")
-	parser.add_option("--wn",				  	  type="int",				default=512, 					 help="Size of window to use (should be slightly larger than particle box size, default 512)")
-	
-	parser.add_option("--apix",               	  type="float",			 	default= -1,               	     help="pixel size in Angstroms (default 1.0)")   
-	parser.add_option("--Cs",               	  type="float",			 	default= 2.0,               	 help="Microscope Cs (spherical aberation, default 2.0)")
-	parser.add_option("--voltage",				  type="float",				default=300.0, 					 help="Microscope voltage in KV (default 300.0)")
-	parser.add_option("--ac",					  type="float",				default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
-	parser.add_option("--kboot",				  type="int",				default=16, 					 help="kboot (default 16)")
-	parser.add_option("--MPI",               	  action="store_true",   	default=False,              	 help="use MPI version")
-	parser.add_option("--debug",               	  action="store_true",   	default=False,              	 help="debug")
-	parser.add_option("--overlap_x",			  type="int",				default=50, 					 help="overlap x (default 50%)")
-	parser.add_option("--overlap_y",			  type="int",				default=50, 					 help="overlap y (default 50%)")
-	parser.add_option("--edge_x",			  	  type="int",				default=0, 					     help="edge x (default 0)")
-	parser.add_option("--edge_y",			      type="int",				default=0, 					     help="edge y (default 0)")
-	parser.add_option("--f_start",                type="float",			 	default=-1.0,               	 help="starting frequency, units [1/A], (by default determined automatically)")   
-	parser.add_option("--f_stop",                 type="float",			 	default=-1.0,               	 help="stop frequency, units [1/A], (by default determined automatically)")
+	parser = OptionParser(usage, version=SPARXVERSION)
+	parser.add_option("--wn",         type="int",           default=512,    help="size of window to use: should be slightly larger than particle box size (default 512)")
+	parser.add_option("--apix",       type="float",         default= -1,    help="pixel size in angstroms: (default 1.0)")
+	parser.add_option("--Cs",         type="float",         default= 2.0,   help="microscope Cs (spherical aberration): (default 2.0)")
+	parser.add_option("--voltage",    type="float",         default=300.0,  help="microscope voltage in KV: (default 300.0)")
+	parser.add_option("--ac",         type="float",         default=10.0,   help="amplitude contrast in percentage: (default 10.0)")
+	parser.add_option("--kboot",      type="int",           default=16,     help="number of defocus estimates for micrograph: used for error assessment (default 16)")
+	parser.add_option("--overlap_x",  type="int",           default=50,     help="overlap x in percentage: (default 50)")
+	parser.add_option("--overlap_y",  type="int",           default=50,     help="overlap y in percentage: (default 50)")
+	parser.add_option("--edge_x",     type="int",           default=0,      help="edge x in pixels: (default 0)")
+	parser.add_option("--edge_y",     type="int",           default=0,      help="edge y in pixels: (default 0)")
+	parser.add_option("--f_start",    type="float",         default=-1.0,   help="starting frequency in 1/A: by default determined automatically (default -1.0)")
+	parser.add_option("--f_stop",     type="float",         default=-1.0,   help="stop frequency in 1/A: by default determined automatically (default -1.0)")
+	parser.add_option("--MPI",        action="store_true",  default=False,  help="use MPI version (default False)")
+	parser.add_option("--debug",      action="store_true",  default=False,  help="debug info printout: (default False)")
 
 	(options, args) = parser.parse_args(arglist[1:])
 	
-	if len(args) <2 or len(args) > 3:
+	if len(args) != 2:
 		print "see usage " + usage
 		sys.exit()
-	
-	stack = None
-	
-	if len(args) == 3:
-		if options.MPI:
-			ERROR("Please use single processor version if specifying a stack", "sxcter", 1)
-			sys.exit()
-		stack = args[0]
-		out1 = args[1]
-		out2 = args[2]
-		
-	elif len(args) == 2:
-		out1 = args[0]
-		out2 = args[1]
-		if options.micsuffix == "" or options.nameroot == "":
-			ERROR("Micrograph prefix and suffix (type) have to be specified", "sxcter", 1)
-			sys.exit()
-	else:
-		ERROR("Incorrect number of parameters","sxcter",1)
 	
 	if options.apix < 0:
 		ERROR("Pixel size has to be specified", "sxcter", 1)
 		sys.exit()
 	
+	input_image = args[0]
+	# NOTE: 2015/11/27 Toshio Moriya
+	# Require single quotes (') or double quotes (") for input_image so that
+	# sys.argv does not automatically expand wild card and create a list of file names
+	if input_image.find("*") != -1:
+		# This is a micrograph file name pattern because the string contains wild card "*"
+		stack = None
+		micrograph_name = input_image
+		indir, basename = os.path.split(input_image)
+		nameroot, micsuffix = os.path.splitext(basename)
+		
+		if nameroot[-1] != "*":
+			ERROR("input image file name for micrograph name (%s) must contain wild card * in front of the extension." % micrograph_name, "sxcter", 1)
+			sys.exit()
+		
+		if micsuffix[0] != ".":
+			ERROR("input image file name for micrograph name (%s) must contain extension." % micrograph_name, "sxcter", 1)
+			sys.exit()
+		
+		# cter() will take care of the other error case of image image
+		
+		if not indir:
+			# For input directory path, interpretate empty string as a current directory
+			# Necessary to avoid error of os.listdir("") called by cter() in morphology.py
+			indir = '.'
+		
+		nameroot = nameroot[:-1]
+		
+	else: 
+		if options.MPI:
+			ERROR("Please use single processor version if specifying a stack", "sxcter", 1)
+			sys.exit()
+		
+		# This is a stack file name because the string does NOT contains wild card "*"
+		stack = input_image
+		indir = "."
+		nameroot = ""
+		micsuffix = ""
+		
+	output_directory = args[1]
+	if os.path.exists(output_directory):
+		ERROR('Output directory exists, please change the name and restart the program', "sxcter", 1)
+		sys.exit()
+	
+	out1 = "%s/pwrot" % (output_directory)
+	out2 = "%s/partres" % (output_directory)
+	# cter() will take care of the error case of output directory
+	
 	if options.MPI:
-		from mpi import mpi_init, mpi_finalize
+		from mpi import mpi_init, MPI_COMM_WORLD, mpi_comm_rank, mpi_barrier
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
-
+		if mpi_comm_rank(MPI_COMM_WORLD) == 0: 
+			os.mkdir(output_directory)
+		mpi_barrier(MPI_COMM_WORLD)
+	else:
+		os.mkdir(output_directory)
+	
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
-
+	
 	from morphology import cter
 	global_def.BATCH = True
-
-	cter(stack, out1, out2, options.indir, options.nameroot, options.micsuffix, options.wn, \
+	
+	cter(stack, out1, out2, indir, nameroot, micsuffix, options.wn, \
 		f_start=options.f_start, f_stop=options.f_stop, voltage=options.voltage, Pixel_size=options.apix, \
 		Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, \
 		overlap_x = options.overlap_x, overlap_y = options.overlap_y, edge_x = options.edge_x, \
 		edge_y = options.edge_y, guimic=None)
-
+	
 	global_def.BATCH = False
-
+	
 	if options.MPI:
 		from mpi import mpi_finalize
 		mpi_finalize()
-
+	
 if __name__ == "__main__":
 	main()
