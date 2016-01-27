@@ -5159,7 +5159,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 			prj = [0.0]*nnx
 			for k in xrange(1,nnx):
 				qt = bckgdata[0].get_value_at(k,i)
-				if( qt > 0.0 ):  qt = Tracker["constants"]["nnxo"]/sqrt(qt)
+				if( qt > 0.0 ):  qt = 1./sqrt(qt)
 				prj[k] = qt
 			prj[0] = 1.0
 			bckgnoise.append(prj)
@@ -5199,7 +5199,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 				indx = datastamp.index(stmp)
 			except:
 				ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
-			bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])*Tracker["constants"]["nnxo"]/sqrt(2.0)
+			bckg = model_gauss_noise(Tracker["constants"]["nnxo"]**2/2.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
 			bckg.set_attr("is_complex",1)
 			bckg.set_attr("is_fftpad",1)
 			bckg = fft(filt_table(bckg,bckgnoise[indx]))
