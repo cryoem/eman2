@@ -1,7 +1,7 @@
 #!/usr/bin/env python																																																																																																																																																																																																																																																																																																																			#!/usr/bin/python2.7
 
 #====================
-#Author: Jesus Galaz-Montoya 2/20/2013 , Last update: September/09/2014
+#Author: Jesus Galaz-Montoya 2/20/2013 , Last update: January/15/2016
 #====================
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -168,6 +168,8 @@ def main():
 
 	options.path = os.getcwd() + '/' + options.path
 	
+	tiltstoexclude = options.exclude.split(',')	
+	
 	if options.stem2stack and options.tiltstep == 0.0:
 		print "ERROR: --tiltstep required when using --stem2stack"
 		sys.exit()
@@ -188,6 +190,30 @@ def main():
 	elif options.restack:
 		if options.tltfile:
 			restacker( options )
+			angles = getangles( options, True )			#Second parameter enforces to keep the 'raw order' of the input file. Otherwise, this function returns angles from -tiltrange to +tiltrange if --negativetiltseries is supplied; from +tiltrange to -tiltrange otherwise
+
+			#finalangles = list(angles)
+			#anglestoexclude = []
+			
+			print "\n\nthere are these many angles", len(angles)
+			#if tiltstoexclude:
+			#	for tilt in tiltstoexclude:
+			#		anglestoexclude.append( angles[ int(tilt) ] )
+			#		finalangles.remove( angles[ int(tilt) ] )
+			#	#for ax in anglestoexclude:
+			#	#	finalangles.remove( ax )
+			#
+			#	print "\n\nthere are these many angles to exclude",len(anglestoexclude)
+			#	print "\nexcluded angles",anglestoexclude
+			#	
+			#	#finalangles = list( set(angles) - set(anglestoexclude) )
+				
+				
+			#print "\nthere are these many final angles",len(finalangles)
+			#print "\nfinal angles are", finalangles
+		
+			
+			writetlt(angles,options,True)
 		else:
 			print "ERROR: --tltfile required when using --restack"
 			sys.exit()
@@ -215,7 +241,7 @@ def main():
 		
 		print "\nOutstack is", outstackhdf
 		
-		tiltstoexclude = options.exclude.split(',')				
+					
 		
 		#orderedindexes = []
 		#for index in intiltsdict:
@@ -380,19 +406,21 @@ def findtiltimgfiles( options ):
 	return intilts
 
 
-def getangles( options ):
+def getangles( options, raworder=False ):
 	
 	angles = []
 	if options.tltfile:
 		f = open( options.tltfile, 'r' )
 		lines = f.readlines()
 		f.close()
-		
+		#print "lines in tlt file are", lines
 		for line in lines:
 			line = line.replace('\t','').replace('\n','')
 		
-		if line:
-			angles.append( float(line) )
+			if line:
+				angle = float(line)
+				angles.append( angle )
+				print "appending angle", 
 	else:
 		#angles = [a for a in xrange( options.lowesttilt, options.highesttilt, options.tiltstep )]
 		
@@ -405,7 +433,7 @@ def getangles( options ):
 	angles.sort()
 	print "\n(e2spt_tiltstacker.py)(getangles) AFTER sorting, angles are", angles
 	
-	if not options.negativetiltseries:
+	if not options.negativetiltseries and not raworder:
 		angles.reverse()
 		print "\n(e2spt_tiltstacker.py)(getangles) AFTER REVERSING, angles are", angles
 	
@@ -414,25 +442,33 @@ def getangles( options ):
 	return angles
 
 
-def writetlt( angles, options ):
+def writetlt( angles, options, raworder=False ):
 	
+	print "(writetlt) these many angles", len(angles)
 	angless = list( angles )
-	angless.sort()
-	if not options.negativetiltseries:
+	
+	if not raworder:
+		angless.sort()
+	
+	if not options.negativetiltseries and not raworder:
 		angless.reverse()
 		
 	f = open( options.path + '/stack.rawtlt','w')
 	lines = []
 	
 	k=0
+	anglestoexclude = []
 	tiltstoexclude = options.exclude.split(',')				
 	for a in angless:
 		if str(k) not in tiltstoexclude:
 			line = str(a) + '\n'
 			lines.append( line )
+		else:
+			anglestoexclude.append( angless[k] )
 		
 		k+=1
-		
+	print "\nthese many angles excluded",len(anglestoexclude)
+	print "\nexcluded angles",anglestoexclude	
 	f.writelines( lines )
 	f.close()
 		
@@ -459,7 +495,7 @@ def organizetilts( intilts, options ):
 	
 	if not options.tltfile:
 		
-		writetlt( angles, options )
+		
 		if options.bidirectional:
 			
 			
@@ -485,8 +521,11 @@ def organizetilts( intilts, options ):
 			print "\n(organizetilts) Ordered angles are", orderedangles
 			print "\n(organizetilts) Because firsthalf is", firsthalf
 			print "\n(organizetilts) and secondhalf is", secondhalf
+			
+			writetlt( orderedangles, options )
 	
-	#else:
+	else:
+		writetlt( angles, options )
 	
 	angles.sort()
 	if not options.negativetiltseries:			#Change angles to go from +tiltrange to -tiltrange if that's the order of the images
@@ -629,6 +668,8 @@ def restacker( options ):
 	if options.exclude or options.include:
 		lst = makeimglist( options.restack, options )
 		cmdre += ' --list=' + lst
+	
+	
 		
 	cmdre += ' && mv ' + tmp + ' ' + outname
 	
