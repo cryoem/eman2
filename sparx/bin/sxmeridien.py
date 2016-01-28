@@ -1,4 +1,4 @@
-#!/home/demoSparx/sparx_releases/eman2.12/EMAN2/extlib/bin/python
+#!/usr/bin/env python
 #
 #  10/06/2015
 #  Use spherical/cosine mask to assess resolution.
@@ -1117,6 +1117,7 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 
 	if(myid == main_node):
 		if(type(stack) == str or ( nz == 1 )):
+			for procid in xrange(2):  fsc[procid][1][0] = 1.0
 			if(nx<Tracker["constants"]["nnxo"]):
 				for procid in xrange(2):
 					for i in xrange(3):
@@ -1272,10 +1273,10 @@ def get_shrink_data_old(Tracker, nxinit, partids, partstack, myid, main_node, np
 	from applications import MPI_start_end
 
 	if( myid == main_node ):
-		print "  "
+		print( "  ")
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], Tracker["applyctf"], preshift)
-		print  "                       stack:      %s\n                       partids:     %s\n                       partstack: %s\n"%(Tracker["constants"]["stack"], partids, partstack)
+		print(  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], Tracker["applyctf"], preshift))
+		print(  "                       stack:      %s\n                       partids:     %s\n                       partstack: %s\n"%(Tracker["constants"]["stack"], partids, partstack))
 	if( myid == main_node ): lpartids = read_text_file(partids)
 	else:  lpartids = 0
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
@@ -1332,7 +1333,7 @@ def get_shrink_data_old(Tracker, nxinit, partids, partstack, myid, main_node, np
 	return data, oldshifts
 
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
-	from applications import slocal_ali3d_base, sali3d_base
+	from applications import slocal_ali3d_base_old, sali3d_base_old
 	from mpi import  mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
@@ -1412,9 +1413,9 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		print("                    =>  partstack           :  ",partstack)
 
 	#  Run alignment command
-	if Tracker["local"] : params = slocal_ali3d_base(projdata, get_im(Tracker["refvol"]), \
+	if Tracker["local"] : params = slocal_ali3d_base_old(projdata, get_im(Tracker["refvol"]), \
 									Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0)
-	else: params = sali3d_base(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
+	else: params = sali3d_base_old(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
 
 	del log
 	#  store params
@@ -1450,7 +1451,7 @@ def print_dict(dict,theme):
 #
 def main():
 
-	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle, get_shrink_data_old
+	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
 	import user_functions
 	from applications import MPI_start_end
 	from optparse import OptionParser

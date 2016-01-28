@@ -2447,7 +2447,7 @@ void circumftrl( EMData* win , int npad)
 	sincz[0] = 1.0f;
 
 	//float cdf = M_PI/float(npad*2*ix);
-	float cdf = M_PI/(npad*0.88*ix);
+	float cdf = 1.4f*M_PI/(npad*ix);
 	for (int i = 1; i <= IP; ++i)  sincx[i] = pow(sin(i*cdf)/(i*cdf),2);
 	cdf = M_PI/float(npad*2*iy);
 	for (int i = 1; i <= JP; ++i)  sincy[i] = pow(sin(i*cdf)/(i*cdf),2);

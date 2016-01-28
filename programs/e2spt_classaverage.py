@@ -279,27 +279,16 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	
-	ptclshdr = EMData(options.input,0,True)
-	nx = ptclshdr["nx"]
-	ny = ptclshdr["ny"]
-	nz = ptclshdr["nz"]
-	if nx!=ny or ny!=nz :
-		print "\nERROR, input volumes are not cubes"
-		sys.exit(1)
+	
+	if options.shrink < options.shrinkfine:
+		options.shrink = options.shrinkfine
+		print "\n(e2spt_classaverage)(main) WARNING: It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
+		
+	checksaneimagesize( options, options.input )
 
 	if options.ref:
-	
-		try:
-			refhdr = EMData( options.ref, 0, True )
-			if refhdr["nx"]!=nx or refhdr["ny"]!=ny or refhdr["nz"]!=nz : 
-				print """(e2spt_classaverage)(main). 
-				ERROR: ref volume size %d, %d, %d, not the same as input volume(s)' size, 
-				%d, %d, %d""" %(refhdr["nx"], refhdr["ny"], refhdr["nz"],nx, ny, nz)
-				sys.exit(1)
-		except:
-			print ("\n(e2spt_classaverage)(main) ERROR reading reference %s. Check that the file name is correct and the file is sane" %(options.ref) )
-			sys.exit(1)
-	
+		checksaneimagesize( options, options.input, options.ref )
+
 	print "Initially, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
 	
 	'''
@@ -436,9 +425,7 @@ def main():
 		#if options.searchz:
 		#	options.align += ':searchz=' + str(options.searchz)
 	
-	if options.shrink < options.shrinkfine:
-		options.shrink = options.shrinkfine
-		print "\n(e2spt_classaverage)(main) WARNING: It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
+	
 	
 	print "after fixing searches but before calcali options.falign is", options.falign
 	if options.radius and float(options.radius) > 0.0:
@@ -448,7 +435,7 @@ def main():
 	
 	
 	'''
-	PREPROCESS IMAGE/S IN ADVANCE IF OLD ALIGNMENT (PRIOR TO TREE ALIGNER) IS USED
+	PREPROCESS IMAGE/S IN ADVANCE
 	'''
 	preprocdone = 0
 	
@@ -456,9 +443,21 @@ def main():
 		ret = cmdpreproc( options.input, options, False )
 		if ret: 
 			preprocdone += 1
+			'''
+			Use preprocessed particles as input. Flawed, since you can only pass in one stack to
+			alignment, and there could be two (fine and coarse) and the alignment function still
+			decides internally #fix this later (jan/2016)
+			'''
+			options.input = options.path + '/' + ret
+		
 		else:
 			print "\n(e2spt_classaverage)(main) preprocessing --input for coarse alignment failed"
 		
+		"""
+		--ref needs to be preprocessed every iteration because it is updated every iteration. no point preprocessing it here
+		"""
+		
+		"""
 		if options.ref and options.refpreprocess:
 			retref = cmdpreproc( options.ref, options, False )
 			if retref: 
@@ -467,27 +466,30 @@ def main():
 				print "\n(e2spt_classaverage)(main) preprocessing --ref for coarse alignment failed"
 		else: 
 			preprocdone += 1
-			
-		'''
-		Use preprocessed particles as input. Flawed, since you can only pass in one stack to
-		alignment, and there could be two (fine and coarse) and the alignment function still
-		decides internally #fix this later (jan/2016)
-		'''
-		options.input = options.path + '/' + ret
+		"""
+		
 	
 	else:
-		preprocdone += 2
+		preprocdone += 1
 	
-	
+	'''
+	PREPROCESS IMAGE/S IN ADVANCE for *"FINE"* alignment IF tree aligner is not used
+	'''
 	if 'rotate_translate_3d_tree' not in options.align and options.falign:
 		if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
 			
-			ret =cmdpreproc( options.input, options, True )
+			ret = cmdpreproc( options.input, options, True ) #True tells the function that particles need to be preprocessed for fine alignment
 			if ret: 
 				preprocdone += 1
 			else:
-				print "\n(e2spt_classaverage)(main) preprocessing --input for fne alignment failed"
-		
+				print "\n(e2spt_classaverage)(main) preprocessing --input for fine alignment failed"
+			
+			
+			"""
+			--ref needs to be preprocessed every iteration because it is updated every iteration. no point preprocessing it here
+			"""
+			
+			"""
 			if options.ref and options.refpreprocess:
 				retref = cmdpreproc( options.ref, options, True )
 				if retref: 
@@ -496,13 +498,15 @@ def main():
 					print "\n(e2spt_classaverage)(main) preprocessing --ref for fine alignment failed"
 			else:
 				preprocdone += 1
+			"""
+			
 	else:
-		preprocdone += 2		
+		preprocdone += 1		
 	
 	
 	
 	
-	if preprocdone > 3:
+	#if preprocdone > 1:
 	
 		"""		
 			
@@ -990,7 +994,10 @@ def main():
 	from e2spt_preproc import preprocfunc
 
 	for it in range( options.iter ):
-
+		
+		if it > 0:
+			options.refpreprocess = True
+		
 		if options.verbose: 
 			print "\n(e2spt_classaverage)(main) - ###### Iteration %d/%d"%(it, options.iter)
 
@@ -1049,21 +1056,69 @@ def main():
 			#try:
 			ref = refsdict[ ic ]
 			#if options.parallel: 
-			ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
+			
+			tmpref = os.path.join(options.path,"tmpref.hdf")
+			
+			ref.write_image( tmpref, 0 )
 		
 			'''
 			If the reference is preprocessed, write the preprocessed images. While the coarse alignment preprocessed reference is passed by default 
 			(there's no "fine alignment" using the tree aligner), the fine alignment preprocessed reference is accessed internally from the alignment function if needed
 			'''
-			ref2use = options.path + '/' + options.ref.replace('.hdf','_preproc.hdf')
-			if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:	
-				ref = preprocfunc( ref, options, 0, ref2use)
 			
-			if options.falign and 'tree' in options.align[0]:
-				ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
-				if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
-					reffine = preprocfunc( ref, options, 0, ref2usefine)
-		
+			ref2use = tmpref
+			ref2usefine = tmpref
+			
+			if options.refpreprocess:
+			
+				#ref2use = options.path + '/' + options.ref.replace('.hdf','_preproc.hdf')
+				
+				
+				if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:	
+					
+					ref2use = tmpref.replace('.hdf','_preproc.hdf')
+					ref = preprocfunc( ref, options, 0, ref2use )
+			
+				if options.falign and 'tree' not in options.align[0]:
+					#ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
+					
+					if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
+						origlowpass = options.lowpass
+						orighighpass = options.highpass
+						origpreproc = options.preproc
+						origshrink = options.shrink
+						
+						options.lowpass = options.lowpassfine
+						options.highpass = options.highpassfine
+						options.preprocess = options.preprocessfine
+						options.shrink = options.shrinkfine
+						
+						ref2usefine = tmpref.replace('.hdf','_preprocfine.hdf')
+						reffine = preprocfunc( ref, options, 0, ref2usefine)
+						
+						options.lowpass = origlowpass
+						options.highpass = orighighpass
+						options.preprocess = origpreproc
+						options.shrink = origshrink
+			else:
+				#ref2use = options.path + '/' + options.ref.replace('.hdf','_preproc.hdf')
+				if options.clip or (options.shrink > 1):
+					ref2use = tmpref.replace('.hdf','_preproc.hdf')
+					ref = preprocfunc( ref, options, 0, ref2use, False, True ) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
+				
+				if options.falign and 'tree' not in options.align[0]:
+					#ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
+					if options.clip or (options.shrinkfine > 1):
+						
+						origshrink = options.shrink
+						options.shrink = options.shrinkfine
+
+						ref2usefine = tmpref.replace('.hdf','_preprocfine.hdf')						
+						reffine = preprocfunc( ref, options, 0, ref2usefine, False, True) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
+						
+						options.shrink = origshrink
+				
+				
 			
 		
 			#except:
@@ -1128,11 +1183,13 @@ def main():
 			
 			
 				if options.parallel:
-					task=Align3DTask(["cache",os.path.join(options.path,"tmpref.hdf"),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
+					#task=Align3DTask(["cache",os.path.join(options.path,"tmpref.hdf"),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
+					task=Align3DTask(["cache",os.path.join(options.path,ref2use),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
 					tasks.append(task)
 				else:
 					#print "No parallelism specified"
-					result=align3Dfunc(["cache",os.path.join(options.path,"tmpref.hdf"),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
+					#result=align3Dfunc(["cache",os.path.join(options.path,"tmpref.hdf"),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
+					result=align3Dfunc(["cache",os.path.join(options.path,ref2use),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
 					results.append(result['final'])
 		
 			# start the alignments running
@@ -1512,11 +1569,11 @@ def main():
 		
 		
 			if options.savesteps:
-				final_avg.write_image( options.path + '/avgs.hdf' , it)
+				final_avg.write_image( options.path + '/avgs_ali2ref.hdf' , it)
 
 			if it == options.iter -1 :
 		
-				outname = options.path + '/final_avg.hdf'
+				outname = options.path + '/final_avg_ali2ref.hdf'
 				#if options.output:
 				#	outname = options.path + '/' + options.output
 				
@@ -1536,7 +1593,7 @@ def main():
 		elif options.goldstandardoff and options.ref:
 			avg = refsdict[0]
 		
-			print "avgshdrs[0] is and type", avgshdrs[0], type(avgshdrs[0])
+			#print "avgshdrs[0] is and type", avgshdrs[0], type(avgshdrs[0])
 			avgshdrs[0].append( avg.get_attr_dict() )
 		
 			#avgshdrs.update( { 0:avgshdrs[0].append( avg.get_attr_dict() ) } )
@@ -1544,7 +1601,7 @@ def main():
 			if it > 0 and len(avgshdrs[0]) > 1 :
 				if avgshdrs[0][-1]['mean'] == avgshdrs[0][-2]['mean']:
 					print "The average has converged!"
-					outname = options.path + '/final_avg.hdf'
+					outname = options.path + '/final_avg_ali2ref.hdf'
 					avg.write_image( outname , 0)
 					#os.system('rm ' + options.path + '/tmpref.hdf')
 					os.remove( options.path + '/tmpref.hdf' )
@@ -1557,14 +1614,15 @@ def main():
 			#calcFsc( originalref, avg, fscfile )
 		
 			final_avg = compareEvenOdd( options, originalref, avg, it, etc, fscfile, 'refbased', average=False ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
-		
-			if options.savesteps:
-				final_avg.write_image( options.path + '/avgs.hdf' , it)
+			
+			if not options.sym:
+				if options.savesteps:
+					final_avg.write_image( options.path + '/avgs_ali2ref.hdf' , it)
 
-			if it == options.iter -1 :
+				if it == options.iter -1 :
 		
-				outname = options.path + '/final_avg.hdf'
-				final_avg.write_image( outname , 0)
+					outname = options.path + '/final_avg_ali2ref.hdf'
+					final_avg.write_image( outname , 0)
 		
 		
 			if options.filterbyfsc:
@@ -1622,13 +1680,66 @@ def main():
 
 
 '''
+Function to check whether images are cubed and even, and to check whether input and ref match in size
+'''
+def checksaneimagesize( options, stack1, stack2=''):
+	
+	stacks = [stack1]
+	if stack2:
+		stacks.append( stack2 )
+		
+	for stack in stacks:
+	
+		try:
+			print "(try) stack is", stack
+			stackhdr = EMData( stack, 0, True )
+			nx = stackhdr["nx"]
+			ny = stackhdr["ny"]
+			nz = stackhdr["nz"]
+		
+			if nx!=ny or ny!=nz or nx!=nz:
+				print ("\n(e2spt_classaverage)(checksaneimagesize) ERROR: stack %s must contain volumes that are cubes (nx=ny=nz). The size of the images in stack %s is nx=%d, ny=%d, nz=%d" %(stack,nx,ny,nz))
+				sys.exit(1)
+			
+			if nx % 2 or ny % 2 or nz %2:
+				print ("\n(e2spt_classaverage)(checksaneimagesize) ERROR: volumes in stack %s must be even sized. The size of the images provided is nx=%d, ny=%d, nz=%d" %(nx,ny,nz))
+				print ("while I could resize the images for you on the fly, results will be less murky if you're explicitly aware that the particles need resizing. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing 'newsize' to be an even number (e.g., 1 pixel smaller than the current boxsize). Then rerun e2spt_classaverage with the resized stack as --input.") 
+				print sys.exit()
+			elif options.shrink:
+				if nx/options.shrink %2 or ny/options.shrink %2 or nz/options.shrink %2:
+					print ("\n(e2spt_classaverage)(checksaneimagesize) --shrink is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrink, nx/options.shrink %2 ,ny/options.shrink %2 ,nz/options.shrink %2 ))
+					sys.exit(1)
+			
+			elif options.shrinkfine:
+				if nx/options.shrinkfine %2 or ny/options.shrinkfine %2 or nz/options.shrinkfine %2:
+					print ("\n(e2spt_classaverage)(checksaneimagesize) --shrinkfine is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrinkfine, nx/options.shrinkfine %2 ,ny/options.shrinkfine %2 ,nz/options.shrinkfine %2 ))
+					sys.exit(1)
+		except:
+			print "(except) stack is", stack
+			stackhdr = EMData( stack, 0, True )
+			print "header stack1hdr is", stack1hdr
+			print ("\n(e2spt_classaverage)(checksaneimagesize) ERROR reading stack %s. Check that the file name is correct and the file is sane" %(stack) )
+			sys.exit(1)
+	
+	
+	if stack2:
+		stack1hdr = EMData( stack1, 0, True )
+		stack2hdr = EMData( stack2, 0, True )
+		if stack2hdr["nx"]!=stack1hdr["nx"] or stack2hdr["ny"]!=stack1hdr["nx"] or stack2hdr["nz"]!=stack1hdr["nx"]: 
+			print """(e2spt_classaverage)(checksaneimagesize). ERROR: the size of stack %s is x1=%d, y1=%d, z1=%d, is not the same as the size of stack %s, x2=%d, y2=%d, z2=%d""" %(stack2, stack2hdr["nx"], stack2hdr["ny"], stack2hdr["nz"], stack1, stack1hdr["nx"], stack1hdr["nx"], stack1hdr["nx"])
+			sys.exit(1)
+		
+	return
+	
+
+'''
 Function to generate preprocessing command which calls e2spt_preproc.py
 '''
 def cmdpreproc( fyle, options, finetag=False ):	
 
 	#from e2spt_preproc import preprocfunc	
 	
-	cmdpreproc = 'e2spt_preproc.py --input ' + fyle
+	cmdpreproc = 'e2spt_preproc.py --input ' + fyle + ' --nopath'
 	
 	if options.parallel:
 		cmdpreproc += ' --parallel ' + options.parallel
@@ -1723,6 +1834,8 @@ def cmdpreproc( fyle, options, finetag=False ):
 	
 	if ret:
 		input_preproc = options.path + '/' + preprocstack
+		
+		print "\npreprocstack %s will be %s" %(preprocstack, input_preproc)
 		os.rename( preprocstack, input_preproc )
 		options.input = input_preproc
 	else:
@@ -1813,7 +1926,7 @@ def sptParseAligner( options ):
 	if options.align and 'rotate' in options.align:
 		#print "There's options.align", options.align
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
-			if 'rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align:
+			if 'rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align or 'rotate_translate_3d_tree' in options.align:
 				options.align += ':sym=' + str( options.sym )
 			#print "And there's sym", options.sym
 			
@@ -2004,9 +2117,9 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 		#apix = final_avg['apix_x']
 		
 	if not average:
-		finalA = avgeven.copy()
+		finalA = avgodd.copy()	#avgeven contains the reference. avgodd contains the new average, which needs to be aligned to avgeven (if no symmetry is provided)
 	
-	if options.sym and not options.sym :
+	if options.sym and not options.breaksym :
 		finalA = finalA.process('xform.applysym',{'sym':options.sym})
 	
 	calcFsc( options, avgeven, avgodd, fscfile )
@@ -4051,13 +4164,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if reffullsize:
 			if options.verbose:
 				print "\n(e2spt_classaverage)(alignment) REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter)
-	
-	print "\n(e2spt_classaverage)(alignment) done with all ref preprocessing, if any"
-	
-	
-	
-	
-	
+		
 	
 	#########################################
 	#Preprocess the particle or "moving image", only if rotate_translate_3d_tree is not used
@@ -4163,8 +4270,6 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 		
 		#print "falign is", options.falign
-	
-	print "\ndone with all ptcl preprocessing, if any"
 	
 	
 	

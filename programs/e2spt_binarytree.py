@@ -230,6 +230,13 @@ def main():
 	options.nopreprocprefft = False
 	
 	
+	if options.shrink < options.shrinkfine:
+		options.shrink = options.shrinkfine
+		print "\n(e2spt_binarytree)(main) it makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
+	
+	from e2spt_classaverage import checksaneimagesize	
+	checksaneimagesize( options, options.input )
+	
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
@@ -264,10 +271,6 @@ def main():
 	If --radius of the particle is provided, we calculate the optimal alignment steps for 
 	coarse and fine alignment rounds using --shrink and --shrinkfine options and apix info
 	'''
-	
-	if options.shrink < options.shrinkfine:
-		options.shrink = options.shrinkfine
-		print "It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
 	
 	if options.radius:
 		from e2spt_classaverage import calcAliStep
