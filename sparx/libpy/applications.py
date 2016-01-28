@@ -21387,7 +21387,7 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 	from filter           import filt_ctf
 	from projection       import prep_vol
 	from fundamentals     import resample
-	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
+	from utilities        import bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, wrap_mpi_bcast, wrap_mpi_gatherv
 	from utilities        import get_image, drop_image, file_type, get_im, get_input_from_string, model_blank
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
