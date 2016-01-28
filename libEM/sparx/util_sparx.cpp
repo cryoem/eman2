@@ -22083,7 +22083,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  01/21/2016  11:40 AM"<<endl;}
+{ cout <<"  VERSION  01/28/2016  11:40 AM"<<endl;}
 
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
@@ -22563,16 +22563,16 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	EMData* cmasked = new EMData();
 	cmasked->set_size( nx, ny, nz );
 	cmasked = img->copy_head();
-	int cz = int(nz/2.);
-	int cy = int(ny/2.);
-	int cx = int(nx/2.);
-	int img_dim=img->get_ndim();
-	if (radius<0)
+	int cz = nz/2;
+	int cy = ny/2;
+	int cx = nx/2;
+	int img_dim = img->get_ndim();
+	if (radius<0 )
 	{
 		switch (img_dim)
 		{
 			case(1):
-	    		radius =int(nx/2.)-cosine_width;
+	    		radius = nx/2 - cosine_width;
 			break;
 			case(2):
 				radius = int(std::min(nx,ny)/2.)-cosine_width;
@@ -22582,7 +22582,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 			break;
 		}
 	}		 
-	int radius_p = radius +cosine_width;
+	int radius_p = radius + cosine_width;
 	if (bckg != NULL )
 	{
 	  	for (int iz=0; iz<nz; iz++)
@@ -22596,14 +22596,14 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	  					 {
 	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
 	  						if (r>=radius_p)
-	  					  		(*cmasked) (ix,iy,iz)=(*bckg)(ix,iy,iz);
+	  					  		(*cmasked)(ix,iy,iz) = (*bckg)(ix,iy,iz);
 							if (r>=radius && r<radius_p)
 							{
-								float temp = (.5+.5*cos(pi*(radius_p-r)/cosine_width));
-								(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz)+temp*((*bckg)(ix,iy,iz)-(*img)(ix,iy,iz));
+								float temp = (0.5+0.5*cos(pi*(radius_p-r)/cosine_width));
+								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*((*bckg)(ix,iy,iz)-(*img)(ix,iy,iz));
 							}
 							if (r<radius)
-								(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz);
+								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 							}
 						}
 					}
@@ -22623,21 +22623,21 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
 	  						if (r>=radius_p)
 	  							{	
-	  								u +=1.0;
+	  								u +=1.0f;
 	  								s +=(*img)(ix,iy,iz);
 	  							}
 							if ( r>=radius && r<radius_p)
 								{
-									float temp = (.5+.5*cos(quadpi*(radius_p-r)/cosine_width));
-									u +=temp;
-									s +=(*img)(ix,iy,iz)*temp;
+									float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
+									u += temp;
+									s += (*img)(ix,iy,iz)*temp;
 								}
 							if (r<radius)
-								(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz);
+								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 							}
 						}
 				}
-		s /=u;
+		s /= u;
 		for (int iz=0; iz<nz; iz++)
 			{
 	  		    int tz =(iz-cz)*(iz-cz);
@@ -22652,10 +22652,10 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 								if (r>=radius && r<radius_p)
 									{
 								  		float temp = (.5+.5*cos(quadpi*(radius_p-r)/cosine_width));
-								  		(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz)+temp*(s-(*img)(ix,iy,iz));
+								  		(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s-(*img)(ix,iy,iz));
 									}
 									if (r<radius)
-								    (*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz);
+								    (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 						}
 				}
 			}
