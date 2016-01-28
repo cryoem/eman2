@@ -1117,7 +1117,7 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 
 	if(myid == main_node):
 		if(type(stack) == str or ( nz == 1 )):
-			for procid in xrange(2):  fsc[procid][0] = 1.0
+			for procid in xrange(2):  fsc[procid][1][0] = 1.0
 			if(nx<Tracker["constants"]["nnxo"]):
 				for procid in xrange(2):
 					for i in xrange(3):
