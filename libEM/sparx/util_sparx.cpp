@@ -22596,16 +22596,13 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	  					 {
 	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
 	  						if (r>=radius_p)
-	  					  		//(*cmasked) (ix,iy,iz)=(*bckg)(ix,iy,iz);
-	  					  		(*cmasked) (ix,iy,iz)= 0.0;
+	  					  		(*cmasked) (ix,iy,iz)=(*bckg)(ix,iy,iz);
 							if (r>=radius && r<radius_p)
 							{
 								float temp = (.5+.5*cos(pi*(radius_p-r)/cosine_width));
-								(*cmasked) (ix,iy,iz)= 0.0;
+								(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz)+temp*((*bckg)(ix,iy,iz)-(*img)(ix,iy,iz));
 							}
-								//(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz)+temp*((*bckg)(ix,iy,iz)-(*img)(ix,iy,iz));
 							if (r<radius)
-								//std::cout<<"  "<<(*img)(ix,iy,iz)<<std::endl;
 								(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz);
 							}
 						}

@@ -763,7 +763,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	workdir = Tracker["this_dir"]
 	empty_group = 1
 	kmref =0
-	while empty_group ==1:
+	while empty_group ==1 and kmref<=5:
 		if myid ==main_node:
 			log_main.add(" %d     Kmref run"%kmref) 
 		outdir =os.path.join(workdir, "Kmref%d"%kmref)
