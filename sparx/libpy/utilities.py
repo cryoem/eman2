@@ -5220,7 +5220,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 			bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])*Tracker["constants"]["nnxo"]/sqrt(2.0)
 			bckg.set_attr("is_complex",1)
 			bckg.set_attr("is_fftpad",1)
-			bckg = fft(filt_table(bckg,bckgnoise[indx]))
+			bckg = fft(filt_table(bckg,bckgnoise))
 			from morphology import cosinemask
 			data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
 						
