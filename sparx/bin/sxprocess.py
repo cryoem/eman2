@@ -433,7 +433,8 @@ def main():
 		if nargs < 2:
 			ERROR("must provide name of input and output file!", "pw", 1)
 			return
-		from utilities import get_im, rops_table, write_text_file
+		from utilities import get_im, write_text_file
+		from fundamentals import rops_table
 		d = get_im(args[0])
 		ndim = d.get_ndim()
 		if ndim ==3:
