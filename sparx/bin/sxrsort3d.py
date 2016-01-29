@@ -2360,7 +2360,8 @@ def main():
 	parser.add_option("--chunkdir", type="string", default="", help="chunkdir for computing margin of error")
 	parser.add_option("--sausage",   action="store_true", default=False,        help="way of filter volume")
 	parser.add_option("--PWadjustment", type="string", default=None, help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
-	parser.add_option("--upscale", type=float, default=0.5, help=" scaling parameter to adjust the power spectrum of EM volumes")
+	parser.add_option("--upscale", type="float", default=0.5, help=" scaling parameter to adjust the power spectrum of EM volumes")
+	parser.add_option("--wn", type="int", default=0, help="optimal window size for data processing")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1  or len(args) > 4:
     		print "usage: " + usage
@@ -2433,7 +2434,8 @@ def main():
 		Constants["sausage"]             =options.sausage
 		Constants["chunkdir"]            =options.chunkdir 
 		Constants["PWadjustment"]        =options.PWadjustment
-		Constants["upscale"]             =options.upscale 
+		Constants["upscale"]             =options.upscale
+		Constants["wn"]                  =options.wn 
 		#Constants["frequency_stop_search"] = options.frequency_stop_search
 		#Constants["scale_of_number"]    = options.scale_of_number
 		# -------------------------------------------------------------
@@ -2511,7 +2513,11 @@ def main():
 			exit()
 		pixel_size                           = bcast_number_to_all(pixel_size, source_node = main_node)
 		fq                                   = bcast_number_to_all(fq, source_node = main_node)
-		Tracker["constants"]["nnxo"]         = nnxo
+		if Tracker["constants"]["wun"]==0:
+			Tracker["constants"]["nnxo"] = nnxo
+		else:
+			Tracker["constants"]["nnxo"] = Tracker["constants"]["wn"]
+			nnxo= Tracker["constants"]["wn"]
 		Tracker["constants"]["pixel_size"]   = pixel_size
 		Tracker["fuse_freq"]                 = fq
 		del fq, nnxo, pixel_size
