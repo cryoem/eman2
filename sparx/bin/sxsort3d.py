@@ -619,6 +619,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	else:
 		Tracker["PWadjustment"]=None	
 	####################################################
+	from time import sleep
 	while not os.path.exists(particle_list_file):
 		#print  " my_id",myid
 		sleep(2)
@@ -1815,6 +1816,7 @@ def get_number_of_groups(total_particles,number_of_images_per_group, round_off=.
 
 def recons_mref(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
+	from time import sleep
 	myid             = Tracker["constants"]["myid"]
 	main_node        = Tracker["constants"]["main_node"]
 	nproc            = Tracker["constants"]["nproc"]
