@@ -22581,7 +22581,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				radius = int(std::min(std::min(nx,ny),nz)/2.) - cosine_width;
 			break;
 		}
-	}		 
+	}
 	int radius_p = radius + cosine_width;
 	if (bckg != NULL )
 	{
