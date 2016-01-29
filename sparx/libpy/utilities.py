@@ -5153,7 +5153,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 	data = [None]*nima
 	if(original_data == None or not large_memory): original_data = [None]*nima
 	shrinkage = nxinit/float(Tracker["constants"]["nnxo"])
-	
+
 
 	#  Note these are in Fortran notation for polar searches
 	#txm = float(nxinit-(nxinit//2+1) - radius -1)
@@ -5161,7 +5161,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 	radius = int(Tracker["constants"]["radius"]*shrinkage + 0.5)
 	txm = float(nxinit-(nxinit//2+1) - radius)
 	txl = float(radius - nxinit//2+1)
-	
+
 	if bckgdata :
 		nnx = bckgdata[0].get_xsize()
 		nny = bckgdata[0].get_ysize()
@@ -5210,7 +5210,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 			
 			data[im].set_attr("bckgnoise",oneover[indx])
 			if apply_mask:
-				bckg = model_gauss_noise(Tracker["constants"]["nnxo"]**2/2.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+				bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
 				bckg.set_attr("is_complex",1)
 				bckg.set_attr("is_fftpad",1)
 				bckg = fft(filt_table(bckg,bckgnoise[indx]))
@@ -5223,7 +5223,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 		else:
 			#  if no bckgnoise, do simple masking instead
 			if apply_mask:  data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"] )
-			
+
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			data[im] = filt_ctf(data[im], data[im].get_attr("ctf"))
 			data[im].set_attr('ctf_applied', 1)
