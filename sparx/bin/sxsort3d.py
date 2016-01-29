@@ -1997,7 +1997,8 @@ def main():
 	parser.add_option("--sausage",   action="store_true", default=False,        help="way of filter volume")
 	parser.add_option("--chunkdir", type="string", default="", help="chunkdir for computing margin of error")
 	parser.add_option("--PWadjustment", type="string", default="", help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
-	parser.add_option("--upscale", type=float, default=0.5, help=" scaling parameter to adjust the power spectrum of EM volumes")
+	parser.add_option("--upscale", type="float", default=0.5, help=" scaling parameter to adjust the power spectrum of EM volumes")
+	parser.add_option("--wn", type="int", default=0, help="optimal window size for data processing")
 	#parser.add_option("--importali3d", type="string",    default="",               help="import the xform.projection parameters as the initial configuration for 3-D reconstruction" )
 	#parser.add_option("--Kgroup_guess",  action="store_true",default=False,        help="Guess the possible number of groups existing in one dataset" )
 	#parser.add_option("--frequency_start_search",  type="float",default=.10,       help="start frequency for low pass filter search")
@@ -2076,7 +2077,8 @@ def main():
 		Constants["sausage"]             =options.sausage
 		Constants["chunkdir"]            =options.chunkdir
 		Constants["PWadjustment"]        =options.PWadjustment
-		Constants["upscale"]             =options.upscale 
+		Constants["upscale"]             =options.upscale
+		Constants["wn"]                  =options.wn 
 		# -----------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options
@@ -2150,8 +2152,12 @@ def main():
 			exit()
 		pixel_size = bcast_number_to_all(pixel_size, source_node = main_node)
 		fq         = bcast_number_to_all(fq, source_node = main_node)
-		Tracker["constants"]["nnxo"]         = nnxo
-		Tracker["constants"]["pixel_size"]   = pixel_size
+		if Tracker["constants"]["wn"]==0:
+			Tracker["constants"]["nnxo"]         = nnxo
+		else:
+			Tracker["constants"]["nnxo"]          = Tracker["constants"]["wn"]
+			nnxo     =  Tracker["constants"]["nnxo"]
+		Tracker["constants"]["pixel_size"]      = pixel_size
 		Tracker["fuse_freq"]    = fq
 		del fq, nnxo, pixel_size
 		if(Tracker["constants"]["radius"]  < 1):
