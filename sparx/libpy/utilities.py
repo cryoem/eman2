@@ -5087,14 +5087,14 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 		if window_particle:
 			mx = data[im].get_xsize()//2-Tracker["constants"]["nnxo"]//2
 			my = data[im].get_ysize()//2-Tracker["constants"]["nnxo"]//2
-			data[im] = data[im].get_clip(Region(mx,my,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+			data[im] = data[im].get_clip(Region(mx,my,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]))
 			data[im].set_attr('ctf_applied', 1)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 		#oldshifts[im] = [sx,sy]
 		#  resample will properly adjusts shifts and pixel size in ctf
 		data[im] = resample(data[im], shrinkage)
 		#  We have to make sure the shifts are within correct range, shrinkage or not
-		#set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
+		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 		#  For local SHC set anchor
 		#if(nsoft == 1 and an[0] > -1):
 		#  We will always set it to simplify the code
