@@ -5185,7 +5185,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 			for k in xrange(1,nnx): prj[k] = bckgdata[0].get_value_at(k,i)
 			oneover.append(prj)
 			for k in xrange(1,nnx):
-				if( prj[k] > 0.0 ):  qt = 1.0/sqrt(prj[k])
+				if( prj[k] > 0.0 ):  prj[k] = 1.0/sqrt(prj[k])
 			bckgnoise.append(prj)
 
 		datastamp = bckgdata[1]
