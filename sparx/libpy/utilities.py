@@ -5069,6 +5069,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 		if im ==0:
 			if data[im].get_xsize() > Tracker["constants"]["nnxo"]:
 				window_particle =True
+				from EMAN2 import Region
 			else:
 				window_particle =False
 		phi,theta,psi,sx,sy = partstack[lpartids[im]][0], partstack[lpartids[im]][1], partstack[lpartids[im]][2], partstack[lpartids[im]][3], partstack[lpartids[im]][4]
@@ -5084,7 +5085,9 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 			sx = 0.0
 			sy = 0.0
 		if window_particle:
-			data[im] = Util.window(data[im],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+			mx = data[im].get_xsize()//2-Tracker["constants"]["nnxo"]//2
+			my = data[im].get_ysize()//2-Tracker["constants"]["nnxo"]//2
+			data[im] = data[im].get_clip(Region(mx,my,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 			data[im].set_attr('ctf_applied', 1)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 		#oldshifts[im] = [sx,sy]
