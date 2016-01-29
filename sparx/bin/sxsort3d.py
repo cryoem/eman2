@@ -79,6 +79,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
+	from time import sleep
 	### - reconstruction parameters - No need to change
 	fourvar   = False
 	debug     = False
