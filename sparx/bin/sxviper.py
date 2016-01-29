@@ -28,40 +28,40 @@ directory		output directory name: into which the results will be written (if it 
 """
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--radius", type="int",            help="radius of the particle: has to be less than < int(nx/2)-1 (default required int)")
+	parser.add_option("--radius",                type="int",           help="radius of the particle: has to be less than < int(nx/2)-1 (default required int)")
 
-	parser.add_option("--xr", type="string",  default='0',            help="range for translation search in x direction: search is +/xr in pixels (default '0')")
-	parser.add_option("--yr", type="string",  default='0',            help="range for translation search in y direction: if omitted will be set to xr, search is +/yr in pixels (default '0')")
-	parser.add_option("--mask3D", type="string",  default=None,            help="3D mask file: (default sphere)")
-	parser.add_option("--moon_elimination", type="string",  default='',            help="elimination of disconnected pieces: two arguments: mass in KDa and pixel size in px/A separated by comma, no space (default none)")
-	parser.add_option("--ir", type="int",  default=1,            help="inner radius for rotational search: > 0 (default 1)")
+	parser.add_option("--xr",                    type="string",        default='0',        help="range for translation search in x direction: search is +/xr in pixels (default '0')")
+	parser.add_option("--yr",                    type="string",        default='0',        help="range for translation search in y direction: if omitted will be set to xr, search is +/yr in pixels (default '0')")
+	parser.add_option("--mask3D",                type="string",        default=None,       help="3D mask file: (default sphere)")
+	parser.add_option("--moon_elimination",      type="string",        default='',         help="elimination of disconnected pieces: two arguments: mass in KDa and pixel size in px/A separated by comma, no space (default none)")
+	parser.add_option("--ir",                    type="int",           default=1,          help="inner radius for rotational search: > 0 (default 1)")
 	
 	# 'radius' and 'ou' are the same as per Pawel's request; 'ou' is hidden from the user
 	# the 'ou' variable is not changed to 'radius' in the 'sparx' program. This change is at interface level only for sxviper.
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--ou",       type= "int",   default= -1,                 help= SUPPRESS_HELP)
-	parser.add_option("--rs", type="int",  default=1,            help="step between rings in rotational search: >0 (default 1)")
-	parser.add_option("--ts", type="string",  default='1.0',            help="step size of the translation search in x-y directions: search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional (default '1.0')")
-	parser.add_option("--delta", type="string",  default='2.0',            help="angular step of reference projections: (default '2.0')")
-	parser.add_option("--center", type="float",  default=-1.0,            help="centering of 3D template: average shift method; 0: no centering; 1: center of gravity (default -1.0)")
-	parser.add_option("--maxit1", type="float",  default=400.0,            help="maximum number of iterations performed for the GA part: (default 400.0)")
-	parser.add_option("--maxit2", type="float",  default=50.0,            help="maximum number of iterations performed for the finishing up part: (default 50.0)")
-	parser.add_option("--L2threshold", type="float",  default=0.03,            help="stopping criterion of GA: given as a maximum relative dispersion of volumes' L2 norms: (default 0.03)")
-	parser.add_option("--ref_a", type="string",  default='S',            help="method for generating the quasi-uniformly distributed projection directions: (default S)")
-	parser.add_option("--sym", type="string",  default='c1',            help="point-group symmetry of the structure: (default c1)")
+	parser.add_option("--rs",                    type="int",           default=1,          help="step between rings in rotational search: >0 (default 1)")
+	parser.add_option("--ts",                    type="string",        default='1.0',      help="step size of the translation search in x-y directions: search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional (default '1.0')")
+	parser.add_option("--delta",                 type="string",        default='2.0',      help="angular step of reference projections: (default '2.0')")
+	parser.add_option("--center",                type="float",         default=-1.0,       help="centering of 3D template: average shift method; 0: no centering; 1: center of gravity (default -1.0)")
+	parser.add_option("--maxit1",                type="int",           default=400,        help="maximum number of iterations performed for the GA part: (default 400)")
+	parser.add_option("--maxit2",                type="int",           default=50,         help="maximum number of iterations performed for the finishing up part: (default 50)")
+	parser.add_option("--L2threshold",           type="float",         default=0.03,       help="stopping criterion of GA: given as a maximum relative dispersion of volumes' L2 norms: (default 0.03)")
+	parser.add_option("--ref_a",                 type="string",        default='S',        help="method for generating the quasi-uniformly distributed projection directions: (default S)")
+	parser.add_option("--sym",                   type="string",        default='c1',       help="point-group symmetry of the structure: (default c1)")
 	
 	# parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d by default)")
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--function", type="string", default="ref_ali3d",         help= SUPPRESS_HELP)
 	
-	parser.add_option("--nruns", type="int",  default=6,            help="GA population: aka number of quasi-independent volumes (default 6)")
-	parser.add_option("--doga", type="float",  default=0.1,            help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga: (default 0.1)")
+	parser.add_option("--nruns",                 type="int",           default=6,          help="GA population: aka number of quasi-independent volumes (default 6)")
+	parser.add_option("--doga",                  type="float",         default=0.1,        help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga: (default 0.1)")
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
-	parser.add_option("--fl", type="float",  default=0.25,            help="cut-off frequency applied to the template volume: using a hyperbolic tangent low-pass filter (default 0.25)")
-	parser.add_option("--aa", type="float",  default=0.1,            help="fall-off of hyperbolic tangent low-pass filter: (default 0.1)")
-	parser.add_option("--pwreference", type="string",  default='',            help="text file with a reference power spectrum: (default none)")
-	parser.add_option("--debug", action="store_true",  default=False,            help="debug info printout: (default False)")
+	parser.add_option("--fl",                    type="float",         default=0.25,       help="cut-off frequency applied to the template volume: using a hyperbolic tangent low-pass filter (default 0.25)")
+	parser.add_option("--aa",                    type="float",         default=0.1,        help="fall-off of hyperbolic tangent low-pass filter: (default 0.1)")
+	parser.add_option("--pwreference",           type="string",        default='',         help="text file with a reference power spectrum: (default none)")
+	parser.add_option("--debug",                 action="store_true",  default=False,      help="debug info printout: (default False)")
 	
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--return_options", action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)	

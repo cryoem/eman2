@@ -5087,6 +5087,8 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 		#if(nsoft == 1 and an[0] > -1):
 		#  We will always set it to simplify the code
 		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
+		chunk_id_state = data[im].get_attr_default("chunk_id",None)
+		if chunk_id_state == None: data[im].set_attr("chunk_id",Tracker["chunk_dict"][ lpartids[im]])
 	assert( nxinit == data[0].get_xsize() )  #  Just to make sure.
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
