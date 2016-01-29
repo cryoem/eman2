@@ -5240,7 +5240,6 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 			data[im] = filt_ctf(data[im], data[im].get_attr("ctf"))
 			data[im].set_attr('ctf_applied', 1)
 		else:  apix = Tracker["constants"]["pixel_size"]
-		set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 
 		#  resample will properly adjusts shifts and pixel size in ctf
 		#data[im] = resample(data[im], shrinkage)
@@ -5248,7 +5247,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 		data[im] = fdecimate(data[im], nxinit, nxinit, 1, return_real)
 		try:
 			ctf_params = original_data[im].get_attr("ctf")
-			ctf_params.apix = apix/shrinkage
+			ctf_params.apix = ctf_params.apix/shrinkage
 			data[im].set_attr('ctf', ctf_params)
 		except:  pass
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
