@@ -5103,7 +5103,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	return data, oldshifts
 
 
-def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_node, nproc, \
+def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid = 0, main_node = 0, nproc = 1, \
 					original_data = None, return_real = False, preshift = False, apply_mask = True, large_memory = True):
 	"""
 	This function will read from stack a subset of images specified in partids
@@ -5126,7 +5126,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 	from fundamentals import fdecimate, fshift, fft
 	from filter       import filt_ctf, filt_table
 	from applications import MPI_start_end
-	from math import sqrt
+	from math         import sqrt
 	
 
 	if( myid == main_node ):
@@ -5171,21 +5171,22 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 	txm = float(nxinit-(nxinit//2+1) - radius)
 	txl = float(radius - nxinit//2+1)
 	
-	"""
-	nnx = bckgdata[0].get_xsize()
-	nny = bckgdata[0].get_ysize()
-	bckgnoise = []
-	for i in xrange(nny):
-		prj = [0.0]*nnx
-		for k in xrange(1,nnx):
-			qt = bckgdata[0].get_value_at(k,i)
-			if( qt > 0.0 ):  qt = Tracker["constants"]["nnxo"]/sqrt(qt)
-			prj[k] = qt
-		prj[0] = 1.0
-		bckgnoise.append(prj)
-	"""
-	datastamp = bckgdata[1]
-	nnx = bckgdata[0].get_xsize()
+	if bckgdata :
+		nnx = bckgdata[0].get_xsize()
+		nny = bckgdata[0].get_ysize()
+		bckgnoise = []
+		oneover = []
+		for i in xrange(nny):
+			prj = [0.0]*nnx
+			prj[0] = 1.0
+			for k in xrange(1,nnx): prj[k] = bckgdata[0].get_value_at(k,i)
+			oneover.append(prj)
+			for k in xrange(1,nnx):
+				if( prj[k] > 0.0 ):  qt = 1.0/sqrt(prj[k])
+			bckgnoise.append(prj)
+
+		datastamp = bckgdata[1]
+
 	for im in xrange(nima):
 		if(original_data[im] == None or not large_memory):
 			original_data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
@@ -5200,41 +5201,38 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 		st = Util.infomask(data[im], mask2D, False)
 		data[im] -= st[0]
 		data[im] /= st[1]
-		noise_in_header = img.get_attr_default("bcknoise", None)
-		if bckgdata[0]== None and data[im].get_attr_default("bckgnoise", None):
-			data[im].delete_attr("bcknoise")		
-		try:
-			stmp = data[im].get_attr("ptcl_source_image")
-		except:
+		if data[im].get_attr_default("bckgnoise", None) :  data[im].delete_attr("bckgnoise")
+		#  Do bckgnoise if exists
+		if bckgdata:
 			try:
-				stmp = data[im].get_attr("ctf")
-				stmp = round(stmp.defocus,4)
+				stmp = data[im].get_attr("ptcl_source_image")
 			except:
-				ERROR("Either ptcl_source_image or ctf has to be present in the header.","get_shrink_data",1, myid)
-		try:
-			indx = datastamp.index(stmp)
-		except:
-			ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
+				try:
+					stmp = data[im].get_attr("ctf")
+					stmp = round(stmp.defocus,4)
+				except:
+					ERROR("Either ptcl_source_image or ctf has to be present in the header.","get_shrink_data",1, myid)
+			try:
+				indx = datastamp.index(stmp)
+			except:
+				ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
 			
-		noise_in_header = img.get_attr_default("bckgnoise", None)
-		if noise_in_header == None:
-			bckgnoise = [0.0]*nnx
-			for k in xrange(1,nnx):
-				bcknoise[k]=bckgdata[0].get_value_at(k,indx)
-			data[im].set_attr("bckgnoise",bckgnoise)
-		if apply_mask:
-			bckgnoise = data[im].get_attr("bckgnoise")
-			for index in xrange(len(bckgnoise)):
-				if index==0: bckgnoise[index] =1.
-				else: 
-					if bckgnoise[index] >0.: bckgnoise[index] = Tracker["constants"]["nnxo"]/sqrt(bckgnoise[index])
-			bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])*Tracker["constants"]["nnxo"]/sqrt(2.0)
-			bckg.set_attr("is_complex",1)
-			bckg.set_attr("is_fftpad",1)
-			bckg = fft(filt_table(bckg,bckgnoise))
-			from morphology import cosinemask
-			data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
-						
+			data[im].set_attr("bckgnoise",oneover[indx])
+			if apply_mask:
+				bckg = model_gauss_noise(Tracker["constants"]["nnxo"]**2/2.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+				bckg.set_attr("is_complex",1)
+				bckg.set_attr("is_fftpad",1)
+				bckg = fft(filt_table(bckg,bckgnoise[indx]))
+				#  Normalize bckg noise in real space, only region actually used.
+				st = Util.infomask(bckg, mask2D, False)
+				bckg -= st[0]
+				bckg /= st[1]
+				from morphology import cosinemask
+				data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
+		else:
+			#  if no bckgnoise, do simple masking instead
+			if apply_mask:  data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"] )
+			
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			data[im] = filt_ctf(data[im], data[im].get_attr("ctf"))
 			data[im].set_attr('ctf_applied', 1)
