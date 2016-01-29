@@ -5192,7 +5192,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 		st = Util.infomask(data[im], mask2D, False)
 		data[im] -= st[0]
 		data[im] /= st[1]
-		if img.get_attr_default("bckgnoise", None) :  data[im].delete_attr("bckgnoise")
+		if data[im].get_attr_default("bckgnoise", None) :  data[im].delete_attr("bckgnoise")
 		#  Do bckgnoise if exists
 		if bckgdata:
 			try:
