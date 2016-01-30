@@ -2513,7 +2513,7 @@ def main():
 			exit()
 		pixel_size                           = bcast_number_to_all(pixel_size, source_node = main_node)
 		fq                                   = bcast_number_to_all(fq, source_node = main_node)
-		if Tracker["constants"]["wun"]==0:
+		if Tracker["constants"]["wn"]==0:
 			Tracker["constants"]["nnxo"] = nnxo
 		else:
 			Tracker["constants"]["nnxo"] = Tracker["constants"]["wn"]
