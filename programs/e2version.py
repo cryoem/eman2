@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Grant Tang  
+# Author: Grant Tang
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -41,14 +41,14 @@ EMANVERSION="EMAN 2.12"
 DATESTAMP="BUILD_DATE"
 
 def main():
-	print EMANVERSION + ' (GITHUB: ' + DATESTAMP +')' 
-    
+	print(EMANVERSION + ' (GITHUB: ' + DATESTAMP +')')
+
 	if sys.platform=='linux2':
-		print 'Your EMAN2 is running on: ', platform.platform(), os.uname()[2], os.uname()[-1]    
+		print('Your EMAN2 is running on: {} {}'.format(platform.platform(), os.uname()[2], os.uname()[-1]))
 
 	elif sys.platform=='darwin':
-		print 'Your EMAN2 is running on: Mac OS', platform.mac_ver()[0], platform.mac_ver()[2]
-        
+		print('Your EMAN2 is running on: Mac OS {} {}'.format(platform.mac_ver()[0], platform.mac_ver()[2]))
+
 	elif sys.platform=='win32':
 		ver = sys.getwindowsversion()
 		ver_format = ver[3], ver[0], ver[1]
@@ -63,20 +63,20 @@ def main():
 					(2, 6, 0): '2008',
 					(2, 6, 1): '7'
 				}
-		
+
 		if win_version.has_key(ver_format):
 			winsysver = 'Windows' + ' ' + win_version[ver_format]
 		else:
 			winsysver = 'Windows'
-    	
+
 		if 'PROGRAMFILES(X86)' in os.environ:
 			winsystype = '64bit'
 		else:
 			winsystype = '32bit'
-    	
-		print 'Your EMAN2 is running on: ', winsysver, winsystype
-    	
-	print 'Your Python version is: ', os.sys.version.split()[0]
+
+		print('Your EMAN2 is running on: {} {}'.format(winsysver, winsystype))
+
+	print('Your Python version is: ', os.sys.version.split()[0])
 
 if __name__== "__main__":
 	main()
