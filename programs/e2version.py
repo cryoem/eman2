@@ -76,7 +76,7 @@ def main():
 
 		print('Your EMAN2 is running on: {} {}'.format(winsysver, winsystype))
 
-	print('Your Python version is: ', os.sys.version.split()[0])
+	print('Your Python version is: {}'.format(os.sys.version.split()[0]))
 
 if __name__== "__main__":
 	main()
