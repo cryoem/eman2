@@ -2011,11 +2011,11 @@ def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, c
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar,simis
 
-def prepare_refproj(ref_vol, refang, delta_psi = 1.0, mempercpu = 1.e9, kb3D = None):
+def prepare_refproj(volprep, refang, delta_psi = 1.0, mempercpu = 1.e9, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
 	from math import sqrt
-	ny = ref_vol.get_ysize()
+	ny = volprep.get_ysize()
 	if kb3D:  ny /= 2
 	npsi = int(360./delta_psi)
 	nang = len(refang)
@@ -2038,7 +2038,7 @@ def prepare_refproj(ref_vol, refang, delta_psi = 1.0, mempercpu = 1.e9, kb3D = N
 	return refproj
 
 
-def ali3D_direct(data, volprep, refang, refproj, delta_psi, shifts, myid, main_node, kb3D = None):
+def ali3D_direct(data, volprep, refproj, refang, delta_psi, shifts, myid, main_node, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
 	from utilities import wrap_mpi_gatherv
