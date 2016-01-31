@@ -2011,9 +2011,36 @@ def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, c
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar,simis
 
-
-def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, kb3D = None):
+def prepare_refproj(ref_vol, refang, delta_psi = 1.0, mempercpu = 1.e9, kb3D = None):
 	from projection import prgs,prgl
+	from fundamentals import fft
+	from math import sqrt
+	ny = ref_vol.get_ysize()
+	if kb3D:  ny /= 2
+	npsi = int(360./delta_psi)
+	nang = len(refang)
+	
+	if( (4.0*(ny+2)*ny)*nang*npsi < mempercpu ):
+		refproj = []
+		nrefproj = 0
+		for i in xrange(nang):
+			###if myid == main_node:  print "  Angle :",i,time()-at
+			for j in xrange(npsi):
+				psi = j*delta_psi
+				if kb3D:  temp = prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0])
+				else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
+				temp.set_attr("is_complex",0)
+				nrmref = sqrt(temp.cmp("dot", temp, dict(negative = 0)))
+				refproj.append([temp, nrmref])
+				nrefproj += 1
+	else:
+		refproj = None
+	return refproj
+
+
+def ali3D_direct(data, volprep, refang, refproj, delta_psi, shifts, myid, main_node, kb3D = None):
+	from projection import prgs,prgl
+	from fundamentals import fft
 	from utilities import wrap_mpi_gatherv
 	from math import sqrt
 	from mpi import mpi_barrier, MPI_COMM_WORLD
@@ -2024,14 +2051,21 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, kb3D
 	nang = len(refang)
 	simis = [-1.0e23]*len(data)
 	newpar = [None]*len(data)
+	if refproj: nrefproj = 0
 	for i in xrange(nang):
 		###if myid == main_node:  print "  Angle :",i,time()-at
 		for j in xrange(npsi):
 			psi = j*delta_psi
-			if kb3D:  temp = prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0])
-			else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
-			temp.set_attr("is_complex",0)
-			nrmref = sqrt(temp.cmp("dot", temp, dict(negative = 0)))
+			if refproj :
+				temp   = refproj[nrefproj][0]
+				nrmref = refproj[nrefproj][1]
+				nrefproj += 1
+			else:
+				if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
+				else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
+				temp.set_attr("is_complex",0)
+				nrmref = sqrt(temp.cmp("dot", temp, dict(negative = 0)))
+				
 			for kl,emimage in enumerate(data):
 				for im in xrange(len(shifts)):
 					peak = temp.cmp("dot", emimage[im], dict(negative = 0))
