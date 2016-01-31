@@ -1105,46 +1105,6 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
-	/** Performs a morphological opening operation on an image.
-	 *
-	 *@author James Michael Bell
-	 *@date 06/27/2015
-	 */
-	class BinaryOpeningProcessor: public Processor
-	{
-	 public:
-		BinaryOpeningProcessor() {}
-
-		string get_name() const
-		{
-			return NAME;
-		}
-
-		virtual EMData* process(const EMData * const image);
-		
-		void process_inplace(EMData *image);
-
-		static Processor *NEW()
-		{
-			return new BinaryOpeningProcessor();
-		}
-
-		string get_desc() const
-		{
-			return "Performs a morphological k-pixel opening of a (binary) 2D image.";
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
-			return d;
-		}
-
-		static const string NAME;
-	};
-
-
 	/** Performs a morphological closing operation on an image.
 	 *
 	 *@author James Michael Bell
@@ -1167,6 +1127,46 @@ The basic design of EMAN Processors: <br>\
 		static Processor *NEW()
 		{
 			return new BinaryClosingProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Performs a morphological k-pixel opening of a (binary) 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+
+	/** Performs a morphological opening operation on an image.
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class BinaryOpeningProcessor: public Processor
+	{
+	 public:
+		BinaryOpeningProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new BinaryOpeningProcessor();
 		}
 
 		string get_desc() const
