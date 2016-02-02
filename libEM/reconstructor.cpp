@@ -2372,12 +2372,15 @@ void circumfnn( EMData* win , int npad)
 	sincy[0] = 1.0f;
 	sincz[0] = 1.0f;
 
-	//float cdf = M_PI/float(npad*2*ix);
-	float cdf = M_PI/(npad*0.75*ix);
+	float cor;
+	if( npad == 1 )  cor = 1.0;
+	else  cor = 4.0;
+
+	float cdf = M_PI/(cor*ix);
 	for (int i = 1; i <= IP; ++i)  sincx[i] = sin(i*cdf)/(i*cdf);
-	cdf = M_PI/float(npad*2*iy);
+	cdf = M_PI/(cor*iy);
 	for (int i = 1; i <= JP; ++i)  sincy[i] = sin(i*cdf)/(i*cdf);
-	cdf = M_PI/float(npad*2*iz);
+	cdf = M_PI/(cor*iz);
 	for (int i = 1; i <= KP; ++i)  sincz[i] = sin(i*cdf)/(i*cdf);
 	for (int k = 1; k <= iz; ++k) {
 		int kkp = abs(k-KP);
@@ -2446,12 +2449,16 @@ void circumftrl( EMData* win , int npad)
 	sincy[0] = 1.0f;
 	sincz[0] = 1.0f;
 
-	//float cdf = M_PI/float(npad*2*ix);
-	float cdf = 1.4f*M_PI/(npad*ix);
+	float cor;
+	if( npad == 1 )  cor = 1.0;
+	else  cor = 4.0;
+
+	float cdf = M_PI/(cor*ix);
 	for (int i = 1; i <= IP; ++i)  sincx[i] = pow(sin(i*cdf)/(i*cdf),2);
-	cdf = M_PI/float(npad*2*iy);
+	for (int i = 1; i <= IP; ++i)  cout<<1.0/sincx[i]<<endl;
+	cdf = M_PI/(cor*iy);
 	for (int i = 1; i <= JP; ++i)  sincy[i] = pow(sin(i*cdf)/(i*cdf),2);
-	cdf = M_PI/float(npad*2*iz);
+	cdf = M_PI/(cor*iz);
 	for (int i = 1; i <= KP; ++i)  sincz[i] = pow(sin(i*cdf)/(i*cdf),2);
 	for (int k = 1; k <= iz; ++k) {
 		int kkp = abs(k-KP);
@@ -2528,15 +2535,12 @@ EMData* nn4Reconstructor::finish(bool) {
 		float max = max2d( kc, pow_a );
 		alpha = ( 1.0f - 1.0f/(float)ara ) / max;
 	}
-
 	int ix,iy,iz;
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
-					float tmp;
-					tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+m_osnr);
-
+					float tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+m_osnr);
 					if( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
@@ -2571,6 +2575,7 @@ EMData* nn4Reconstructor::finish(bool) {
 						float wght = 1.0f / ( 1.0f - alpha * sum );
 						tmp = tmp * wght;
 					}
+//cout<<" mvol "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<(*m_volume)(2*ix,iy,iz)<<"  "<<(*m_volume)(2*ix+1,iy,iz)<<"  "<<tmp<<"  "<<m_osnr<<endl;
 					(*m_volume)(2*ix,iy,iz)   *= tmp;
 					(*m_volume)(2*ix+1,iy,iz) *= tmp;
 				}
@@ -3636,9 +3641,9 @@ nn4_ctfwReconstructor::nn4_ctfwReconstructor()
 	m_wptr    = NULL;
 }
 
-nn4_ctfwReconstructor::nn4_ctfwReconstructor( const string& symmetry, int size, int npad, float snr, int sign )
+nn4_ctfwReconstructor::nn4_ctfwReconstructor( const string& symmetry, int size, int npad, float snr, int sign, int do_ctf )
 {
-	setup( symmetry, size, npad, snr, sign );
+	setup( symmetry, size, npad, snr, sign, do_ctf );
 }
 
 nn4_ctfwReconstructor::~nn4_ctfwReconstructor()
@@ -3661,20 +3666,19 @@ void nn4_ctfwReconstructor::setup()
 	string symmetry = params.has_key("symmetry")? params["symmetry"].to_str() : "c1";
 
 	float snr = params["snr"];
+	int do_ctf = params["do_ctf"];
 
 	m_varsnr = params.has_key("varsnr") ? int(params["varsnr"]) : 0;
-	setup( symmetry, size, npad, snr, sign );
+	setup( symmetry, size, npad, snr, sign, do_ctf );
 
 }
 
-void nn4_ctfwReconstructor::setup( const string& symmetry, int size, int npad, float snr, int sign )
+void nn4_ctfwReconstructor::setup( const string& symmetry, int size, int npad, float snr, int sign, int do_ctf )
 {
 	m_weighting = ESTIMATE;
 	if( params.has_key("weighting") ) {
 		if( int( params["weighting"])==0 ) m_weighting = NONE;
 	}
-
-
 
 	m_wghta = 0.2f;
 	m_wghtb = 0.004f;
@@ -3683,6 +3687,7 @@ void nn4_ctfwReconstructor::setup( const string& symmetry, int size, int npad, f
 	m_npad = npad;
 	m_sign = sign;
 	m_nsym = Transform::get_nsym(m_symmetry);
+	m_do_ctf = do_ctf;
 
 	m_snr = snr;
 
@@ -3701,6 +3706,7 @@ void nn4_ctfwReconstructor::setup( const string& symmetry, int size, int npad, f
 	buildFFTVolume();
 	buildNormVolume();
 	m_refvol = params["refvol"];
+
 }
 
 void nn4_ctfwReconstructor::buildFFTVolume() {
@@ -3742,12 +3748,14 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 		return 1;
 	}
 	if(weight >0.0f) {
+	//cout<<"  insert_slice "<<m_do_ctf<<endl;
+		/*
 		int buffed = slice->get_attr_default( "buffed", 0 );
 			if( buffed > 0 ) {
 				insert_buffed_slice( slice, weight );
 				return 0;
 			}
-
+		*/
 		int padffted= slice->get_attr_default("padffted", 0);
 		if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
 			{
@@ -3761,22 +3769,33 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 		if( padffted != 0 ) padfft = new EMData(*slice);
 		else                padfft = padfft_slice( slice, t, m_npad );
 
-		float tmp = padfft->get_attr_default("ctf_applied", 0);
-		int   ctf_applied = (int) tmp;
+		EMData* ctf2d = NULL;
+		if( m_do_ctf == 1 ) {
+			float tmp = padfft->get_attr_default("ctf_applied", 0);
+			int   ctf_applied = (int) tmp;
 
-		// Generate 2D CTF (EMData object)
-    	ctf_store_real::init( padfft->get_ysize(), padfft->get_attr( "ctf" ) );
-    	EMData* ctf2d = ctf_store_real::get_ctf_real(); //This is in 2D projection plane
+			// Generate 2D CTF (EMData object)
+			ctf_store_real::init( padfft->get_ysize(), padfft->get_attr( "ctf" ) );
+			ctf2d = ctf_store_real::get_ctf_real(); //This is in 2D projection plane
 
-		int nx=ctf2d->get_xsize(),ny=ctf2d->get_ysize(),nz=ctf2d->get_zsize();
-		float *ctf2d_ptr  = ctf2d->get_data();
+			int nx=ctf2d->get_xsize(),ny=ctf2d->get_ysize(),nz=ctf2d->get_zsize();
+			float *ctf2d_ptr  = ctf2d->get_data();
 
-		size_t size = (size_t)nx*ny*nz;
-		if (!ctf_applied) {
-			for (int i = 0; i < size; ++i) padfft->cmplx(i) *= ctf2d_ptr[i]; // Multiply padfft by CTF
+			size_t size = (size_t)nx*ny*nz;
+			if (!ctf_applied) {
+				for (int i = 0; i < size; ++i) padfft->cmplx(i) *= ctf2d_ptr[i]; // Multiply padfft by CTF
+			}
+
+			for (int i = 0; i < size; ++i) ctf2d_ptr[i] *= ctf2d_ptr[i];     // Square 2D CTF
+		} else {
+			int nx=padfft->get_xsize(),ny=padfft->get_ysize(),nz=padfft->get_zsize();
+			//cout<<"  size of padfft "<<nx<<"   "<<ny<<"   "<<nz<<endl;
+			ctf2d = new EMData();
+			ctf2d->set_size(nx/2,ny,nz);
+			float *ctf2d_ptr  = ctf2d->get_data();
+			size_t size = (size_t)nx*ny*nz/2;
+			for (int i = 0; i < size; ++i) ctf2d_ptr[i] = 1.0;
 		}
-
-		for (int i = 0; i < size; ++i) ctf2d_ptr[i] *= ctf2d_ptr[i];     // Square 2D CTF
 
 		EMData* bckgnoise;
 		bckgnoise = slice->get_attr("bckgnoise");
@@ -3786,30 +3805,6 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 		checked_delete( ctf2d );  
 		checked_delete( padfft );
 
-	}
-	return 0;
-}
-
-
-int nn4_ctfwReconstructor::insert_buffed_slice( const EMData* buffed, float weight )
-{
-	const float* bufdata = buffed->get_data();
-	float* cdata = m_volume->get_data();
-	float* wdata = m_wptr->get_data();
-
-	int npoint = buffed->get_xsize()/4;
-	for( int i=0; i < npoint; ++i ) {
-
-		int pos2 = int( bufdata[4*i] );
-		int pos1 = pos2 * 2;
-		cdata[pos1  ] += bufdata[4*i+1]*weight;
-		cdata[pos1+1] += bufdata[4*i+2]*weight;
-		wdata[pos2  ] += bufdata[4*i+3]*weight;
-/*
-        std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
-        std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
-        std::cout << pos2 << " " << bufdata[5*i+4] << std::endl;
- */
 	}
 	return 0;
 }
@@ -3831,12 +3826,163 @@ int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData*
 		if (abc_list_len == 0)
 			m_volume->nn_ctfw(m_wptr, padfft, ctf2d2, bckgnoise, tsym[isym], weight);
 		else
-			for (int i = 0; i < abc_list_len; i += 4) {
+			for (int i = 0; i < abc_list_len; i += 4) 
 				m_volume->nn_ctfw(m_wptr, padfft, ctf2d2, bckgnoise, tsym[isym] * Transform(Dict("type", "SPIDER", "phi",  abc_list[i], "theta", abc_list[i+1], "psi", abc_list[i+2])), weight * abc_list[i+3]);
-			}
 	}
 	return 0;
 }
+
+
+EMData* nn4_ctfwReconstructor::finish(bool)
+{
+	m_volume->set_array_offsets(0, 1, 1);
+	m_wptr->set_array_offsets(0, 1, 1);
+	//cout <<  "  will set refvol  "  <<endl;
+	//m_refvol->set_array_offsets(0, 1, 1);
+	m_volume->symplane0_ctf(m_wptr);
+
+	/*
+	int box = 7;
+	int vol = box*box*box;
+	int kc = (box-1)/2;
+	vector< float > pow_a( 3*kc+1, 1.0 );
+	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
+	pow_a[3*kc]=0.0;
+
+
+	float max = max3d( kc, pow_a );
+	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
+	float osnr = 1.0f/m_snr;
+	*/
+
+
+	int ix,iy,iz;
+	vector<float> count(m_vnyc+1, 0.0f);
+	//  refvol carries fsc
+	int  limitres = m_vnyc-1;
+	if( (*m_refvol)(0) > 0.0f )  { // If fsc is set to zero, it will be straightforward reconstruction with snr = 1
+		for (ix = 0; ix < m_vnyc; ix++) {
+				cout<<"  fsc  "<< ix <<"   "<<m_vnyc<<"   "<<(*m_refvol)(m_vnyc+1-ix)<<endl;
+			  if( (*m_refvol)(m_vnyc-ix) == 0.0f )  limitres = m_vnyc-ix;
+		}
+
+
+		vector<float> sigma2(m_vnyc+1, 0.0f);
+
+		// compute sigma2
+		for (iz = 1; iz <= m_vnzp; iz++) {
+			int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+			float argz = float(izp*izp);
+			for (iy = 1; iy <= m_vnyp; iy++) {
+				int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+				float argy = argz + float(iyp*iyp);
+				for (ix = 0; ix <= m_vnxc; ix++) {
+					if(ix>0 || (izp>=0 && (iyp>=0 || izp!=0))) {  //Skip Friedel related values
+						float r = std::sqrt(argy + float(ix*ix));
+						int  ir = int(r);
+						if (ir <= limitres) {
+							float frac = r - float(ir);
+							float qres = 1.0f - frac;
+							float temp = (*m_wptr)(ix,iy,iz);
+							//cout<<" WEIGHTS "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
+							//cout<<" WEIGHTS "<<ix<<"  "<<iy-1<<"  "<<iz-1<<"  "<<temp<<"  "<<endl;
+							sigma2[ir]   += temp*qres;
+							sigma2[ir+1] += temp*frac;
+							count[ir]    += qres;
+							count[ir+1]  += frac;
+						}
+					}
+				}
+			}
+		}
+		for (ix = 0; ix <= limitres; ix++) {
+			if( count[ix] > 0.0f )  sigma2[ix] = sigma2[ix]/count[ix];
+			//cout<<"  sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
+		}
+		float fudge = m_refvol->get_attr("fudge");
+		// now counter will serve to keep fsc-derived stuff
+		for (ix = 0; ix <= limitres; ix++)  count[ix] = fudge * sigma2[ix] * (1.0f - (*m_refvol)(ix))/(*m_refvol)(ix);  //fudge?
+		//for (ix = 0; ix <= limitres; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
+	}
+
+
+	// normalize
+	float osnr = 1.0f;
+	for (iz = 1; iz <= m_vnzp; iz++) {
+		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+		float argz = float(izp*izp);
+		for (iy = 1; iy <= m_vnyp; iy++) {
+			int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+			float argy = argz + float(iyp*iyp);
+			for (ix = 0; ix <= m_vnxc; ix++) {
+				float r = std::sqrt(argy + float(ix*ix));
+				int  ir = int(r);
+				if (ir <= limitres) {
+					if ( (*m_wptr)(ix,iy,iz) > 0.0f) {
+						if( (*m_refvol)(0) > 0.0f && ir > -1) {
+							float frac = r - float(ir);
+							float qres = 1.0f - frac;
+							osnr = qres*count[ir] + frac*count[ir+1];
+							if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
+							//cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
+						}  else osnr = 1.0f;
+
+						float tmp = ((*m_wptr)(ix,iy,iz)+osnr);
+
+						if(tmp>0.0f) {
+							tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
+						//cout<<" mvol "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<(*m_volume)(2*ix,iy,iz)<<"  "<<(*m_volume)(2*ix+1,iy,iz)<<"  "<<tmp<<"  "<<osnr<<endl;
+							(*m_volume)(2*ix,iy,iz)   *= tmp;
+							(*m_volume)(2*ix+1,iy,iz) *= tmp;
+						} else {
+							(*m_volume)(2*ix,iy,iz)   = 0.0f;
+							(*m_volume)(2*ix+1,iy,iz) = 0.0f;
+						}
+					}
+				} else {
+					(*m_volume)(2*ix,iy,iz)   = 0.0f;
+					(*m_volume)(2*ix+1,iy,iz) = 0.0f;
+				}
+			}
+		}
+	}
+
+	// back fft
+	m_volume->do_ift_inplace();
+	int npad = m_volume->get_attr("npad");
+	m_volume->depad();
+	circumftrl( m_volume, npad );
+	m_volume->set_array_offsets( 0, 0, 0 );
+
+	return 0;
+}
+
+
+
+/*
+int nn4_ctfwReconstructor::insert_buffed_slice( const EMData* buffed, float weight )
+{
+	const float* bufdata = buffed->get_data();
+	float* cdata = m_volume->get_data();
+	float* wdata = m_wptr->get_data();
+
+	int npoint = buffed->get_xsize()/4;
+	for( int i=0; i < npoint; ++i ) {
+
+		int pos2 = int( bufdata[4*i] );
+		int pos1 = pos2 * 2;
+		cdata[pos1  ] += bufdata[4*i+1]*weight;
+		cdata[pos1+1] += bufdata[4*i+2]*weight;
+		wdata[pos2  ] += bufdata[4*i+3]*weight;
+
+        //std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
+        //std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
+        //std::cout << pos2 << " " << bufdata[5*i+4] << std::endl;
+ 
+	}
+	return 0;
+}
+*/
 #ifdef False
 EMData* nn4_ctfwReconstructor::finish(bool)
 {
@@ -4098,130 +4244,6 @@ for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<" 
 	return 0;
 }
 #endif
-
-EMData* nn4_ctfwReconstructor::finish(bool)
-{
-	m_volume->set_array_offsets(0, 1, 1);
-	m_wptr->set_array_offsets(0, 1, 1);
-	//cout <<  "  will set refvol  "  <<endl;
-	//m_refvol->set_array_offsets(0, 1, 1);
-	m_volume->symplane0_ctf(m_wptr);
-
-	/*
-	int box = 7;
-	int vol = box*box*box;
-	int kc = (box-1)/2;
-	vector< float > pow_a( 3*kc+1, 1.0 );
-	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
-	pow_a[3*kc]=0.0;
-
-
-	float max = max3d( kc, pow_a );
-	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
-	float osnr = 1.0f/m_snr;
-	*/
-
-
-	int ix,iy,iz;
-	vector<float> count(m_vnyc+1, 0.0f);
-	//  refvol carries fsc
-	int  limitres = m_vnyc-1;
-	if( (*m_refvol)(0) > 0.0f )  { // If fsc is set to zero, it will be straightforward reconstruction with snr = 1
-		for (ix = 0; ix < m_vnyc; ix++) {
-				//cout<<"  fsc  "<< ix <<"   "<<m_vnyc<<"   "<<(*m_refvol)(m_vnyc+1-ix)<<endl;
-			  if( (*m_refvol)(m_vnyc-ix) == 0.0f )  limitres = m_vnyc-ix;
-		}
-
-
-		vector<float> sigma2(m_vnyc+1, 0.0f);
-
-		// compute sigma2
-		for (iz = 1; iz <= m_vnzp; iz++) {
-			int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
-			float argz = float(izp*izp);
-			for (iy = 1; iy <= m_vnyp; iy++) {
-				int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
-				float argy = argz + float(iyp*iyp);
-				for (ix = 0; ix <= m_vnxc; ix++) {
-					if(ix>0 || (izp>=0 && (iyp>=0 || izp!=0))) {  //Skip Friedel related values
-						float r = std::sqrt(argy + float(ix*ix));
-						int  ir = int(r);
-						if (ir <= limitres) {
-							float frac = r - float(ir);
-							float qres = 1.0f - frac;
-							float temp = (*m_wptr)(ix,iy,iz);
-							//cout<<" WEIGHTS "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
-							//cout<<" WEIGHTS "<<ix<<"  "<<iy-1<<"  "<<iz-1<<"  "<<temp<<"  "<<endl;
-							sigma2[ir]   += temp*qres;
-							sigma2[ir+1] += temp*frac;
-							count[ir]    += qres;
-							count[ir+1]  += frac;
-						}
-					}
-				}
-			}
-		}
-		for (ix = 0; ix <= limitres; ix++) {
-			if( count[ix] > 0.0f )  sigma2[ix] = sigma2[ix]/count[ix];
-			//cout<<"  sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
-		}
-		float fudge = m_refvol->get_attr("fudge");
-		// now counter will serve to keep fsc-derived stuff
-		for (ix = 0; ix <= limitres; ix++)  count[ix] = fudge * sigma2[ix] * (1.0f - (*m_refvol)(ix))/(*m_refvol)(ix);  //fudge?
-		//for (ix = 0; ix <= limitres; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
-	}
-
-
-	// normalize
-	float osnr = 1.0f;
-	for (iz = 1; iz <= m_vnzp; iz++) {
-		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
-		float argz = float(izp*izp);
-		for (iy = 1; iy <= m_vnyp; iy++) {
-			int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
-			float argy = argz + float(iyp*iyp);
-			for (ix = 0; ix <= m_vnxc; ix++) {
-				float r = std::sqrt(argy + float(ix*ix));
-				int  ir = int(r);
-				if (ir <= limitres) {
-					if ( (*m_wptr)(ix,iy,iz) > 0.0f) {
-						if( (*m_refvol)(0) > 0.0f && ir > -1) {
-							float frac = r - float(ir);
-							float qres = 1.0f - frac;
-							osnr = qres*count[ir] + frac*count[ir+1];
-							if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
-							//cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
-						}  else osnr = 1.0f;
-
-						float tmp = ((*m_wptr)(ix,iy,iz)+osnr);
-						//cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<iz<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<osnr<<"  "<<endl;
-
-						if(tmp>0.0f) {
-							tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
-							(*m_volume)(2*ix,iy,iz)   *= tmp;
-							(*m_volume)(2*ix+1,iy,iz) *= tmp;
-						} else {
-							(*m_volume)(2*ix,iy,iz)   = 0.0f;
-							(*m_volume)(2*ix+1,iy,iz) = 0.0f;
-						}
-					}
-				} else {
-					(*m_volume)(2*ix,iy,iz)   = 0.0f;
-					(*m_volume)(2*ix+1,iy,iz) = 0.0f;
-				}
-			}
-		}
-	}
-
-	// back fft
-	m_volume->do_ift_inplace();
-	int npad = m_volume->get_attr("npad");
-	m_volume->depad();
-	circumftrl( m_volume, npad );
-	m_volume->set_array_offsets( 0, 0, 0 );
-
-	return 0;
-}
 
 
 //####################################################################################

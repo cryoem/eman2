@@ -1318,7 +1318,7 @@ namespace EMAN
 	  public:
 		nn4_ctfwReconstructor();
 
-		nn4_ctfwReconstructor( const string& symmetry, int size, int npad, float snr, int sign );
+		nn4_ctfwReconstructor( const string& symmetry, int size, int npad, float snr, int sign, int do_ctf );
 
 		virtual ~nn4_ctfwReconstructor();
 
@@ -1366,15 +1366,16 @@ namespace EMAN
 			d.put("refvol",		EMObject::EMDATA);
 			d.put("weighting",  EMObject::INT);
 			d.put("varsnr",     EMObject::INT);
+			d.put("do_ctf",     EMObject::INT);
 			return d;
 		}
 
-		void setup( const string& symmetry, int size, int npad, float snr, int sign );
+		void setup( const string& symmetry, int size, int npad, float snr, int sign, int do_ctf );
 
 		int insert_padfft_slice_weighted( EMData* padfft, EMData* ctf2d2, EMData* sigmasq2, const Transform& trans, const float weight);
 
 		//  It appears here one could add extra functions  int insert_buffed_slice( const EMData* buffer, float mult );
-		int insert_buffed_slice( const EMData* buffer, float mult );
+		//int insert_buffed_slice( const EMData* buffer, float mult );
 
 		static const string NAME;
 
@@ -1382,17 +1383,18 @@ namespace EMAN
 		EMData* m_volume;
 		EMData* m_wptr;
 		EMData* m_refvol;
-		int m_vnx, m_vny, m_vnz;
-		int m_vnzp, m_vnyp, m_vnxp;
-		int m_vnxc, m_vnyc, m_vnzc;
-		int m_npad;
-		int m_sign;
-		int m_varsnr;
-		int m_weighting;
-		float m_wghta, m_wghtb;
-		float m_snr;
+		int    m_vnx, m_vny, m_vnz;
+		int    m_vnzp, m_vnyp, m_vnxp;
+		int    m_vnxc, m_vnyc, m_vnzc;
+		int    m_npad;
+		int    m_sign;
+		int    m_varsnr;
+		int    m_weighting;
+		float  m_wghta, m_wghtb;
+		float  m_snr;
 		string m_symmetry;
-		int m_nsym;
+		int    m_nsym;
+		int    m_do_ctf;
 
 		void buildFFTVolume();
 		void buildNormVolume();
