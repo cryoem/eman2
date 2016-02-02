@@ -22083,7 +22083,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  01/28/2016  11:40 AM"<<endl;}
+{ cout <<"  VERSION  02/02/2016  16:08 PM"<<endl;}
 
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
