@@ -1212,7 +1212,7 @@ def volume_reconstruction(data, options, mpi_comm):
 	#=========================================================================
 	# volume reconstruction
 	if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
-	else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=sym, npad=npad, mpi_comm=mpi_comm)
+	else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=sym, snr=snr, npad=npad, mpi_comm=mpi_comm)
 
 	if myid == 0:
 		nx = data[0].get_xsize()
@@ -2789,7 +2789,7 @@ def do_volume(data, options, iter, mpi_comm):
 	# volume reconstruction
 	if( type(data) == types.ListType ):
 		if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
-		else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=sym, npad=npad, mpi_comm=mpi_comm)
+		else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=sym, snr=snr, npad=npad, mpi_comm=mpi_comm)
 	else:
 		vol = data
 

@@ -4284,9 +4284,9 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				rotate_3D_shift(data, [-cs[0], -cs[1], -cs[2]])
 
 			if CTF:   vol1 = recons3d_4nn_ctf(data, range(0, nima, 2), snr, 1, sym)
-			else:	   vol1 = recons3d_4nn(data, range(0, nima, 2), sym)
+			else:	   vol1 = recons3d_4nn(data, range(0, nima, 2), sym, snr = snr)
 			if CTF:   vol2 = recons3d_4nn_ctf(data, range(1, nima, 2), snr, 1, sym)
-			else:	   vol2 = recons3d_4nn(data, range(1, nima, 2), sym)
+			else:	   vol2 = recons3d_4nn(data, range(1, nima, 2), sym, snr = snr)
 
 			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)))
 			del vol1
@@ -4294,7 +4294,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 			# calculate new and improved 3D
 			if CTF:  vol = recons3d_4nn_ctf(data, range(nima), snr, 1, sym)
-			else:	 vol = recons3d_4nn(data, range(nima), sym)
+			else:	 vol = recons3d_4nn(data, range(nima), sym, snr = snr)
 			# store the reference volume
 			drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
 			ref_data[2] = vol
@@ -7719,15 +7719,15 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 			print_msg("Group number : %i"%(iref) + ",  number of objects: %i\n"%(len(list_p)))
 			#  3D stuff
 			if(CTF): vodd = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
-			else:    vodd = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+			else:    vodd = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym, snr = snr)
 			if(CTF): veve = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
-			else:    veve = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+			else:    veve = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym, snr = snr)
 
 			fscc[iref] = fsc_mask(vodd, veve, mask3D, 1.0, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)))
 			
 			# calculate new and improved 3D
 			if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, sym)
-			else:	 volref = recons3d_4nn(data, list_p, sym)
+			else:	 volref = recons3d_4nn(data, list_p, sym, snr = snr)
 			volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 			
 
@@ -9851,10 +9851,10 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 			# compute updated 3D at the beginning of each chunk
 			#  3D stuff
 			if CTF: vol1 = recons3d_4nn_ctf(dataim, range(0, nima, 2), snr, 1, sym)
-			else:	   vol1 = recons3d_4nn(dataim, range(0, nima, 2), sym)
+			else:	   vol1 = recons3d_4nn(dataim, range(0, nima, 2), sym, snr = snr)
 
 			if CTF: vol2 = recons3d_4nn_ctf(dataim, range(1, nima, 2), snr, 1, sym)
-			else:	   vol2 = recons3d_4nn(dataim, range(1, nima, 2), sym)
+			else:	   vol2 = recons3d_4nn(dataim, range(1, nima, 2), sym, snr = snr)
 
 	    		# resolution
 			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(iteration*n_of_chunks+ic+1)))
@@ -9863,7 +9863,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 
 			# calculate new and improved 3D
 			if CTF: vol = recons3d_4nn_ctf(dataim, range(nima), snr, 1, sym)
-			else:	   vol = recons3d_4nn(dataim, range(nima), sym)
+			else:	   vol = recons3d_4nn(dataim, range(nima), sym, snr = snr)
 
 			# store the reference volume
 			drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(iteration*n_of_chunks+ic+1)))
@@ -11694,7 +11694,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				start_time = time()
 
 			if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = nx, zsize = zsize)
-			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = nx, zsize = zsize)
+			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = nx, zsize = zsize)
 
 			if myid == main_node:
 				print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
@@ -12440,7 +12440,7 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				start_time = time()
 
 			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
-			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize)
+			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
 
 			if myid == main_node:
 				print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
@@ -13717,8 +13717,8 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1, smearstep = 0.0):
 	if MPI:
 		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
-		#newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
-		#newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
+		##newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
+		###newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -13736,7 +13736,7 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 		del tmp_list
 
 	if CTF: vol = recons3d_4nn_ctf(prj_stack, pid_list, snr, 1, sym, verbose, npad, xysize=xysize, zsize=zsize)
-	else:   vol = recons3d_4nn(prj_stack,  pid_list, sym, npad, xysize=xysize, zsize = zsize)
+	else:   vol = recons3d_4nn(prj_stack,  pid_list, sym, npad, snr = snr, xysize=xysize, zsize = zsize)
 	if(vol_stack[-3:] == "spi"):
 		drop_image(vol, vol_stack, "s")
 	else:
@@ -13790,7 +13790,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 	del pid_list
 
 	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad, xysize, zsize, smearstep = smearstep)
-	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
+	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, snr, npad, xysize, zsize)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
@@ -13895,11 +13895,14 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	"""			
 	from reconstruction import recons3d_4nnfs_MPI
 	#if CTF: vol1, vol2, fff = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
-	if CTF: vol1 = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
-									 smearstep = 0.0)
-	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
+	vol = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
+									 smearstep = 0.0, CTF = CTF)
 	if myid == 0 :
-		drop_image(vol1, "nvol0.hdf")
+		if(vol_stack[-3:] == "spi"):
+			drop_image(vol, vol_stack, "s")
+		else:
+			drop_image(vol, vol_stack)
+		#drop_image(vol1, "nvol0.hdf")
 		#drop_image(vol2, "nvol1.hdf")
 		#write_text_file(fff,"nfsc.txt")
 		if not(finfo is None):
@@ -14001,7 +14004,7 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 
 	if CTF: vol1, vol2, fff = recons3d_4nnf_MPI(myid, prjlist, bckgnoise, symmetry = sym, info = finfo, npad = npad,\
 									 smearstep = 0.0)
-	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
+	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, snr, npad, xysize, zsize)
 	if myid == 0 :
 		drop_image(vol1, "nvol0.hdf")
 		drop_image(vol2, "nvol1.hdf")
@@ -14040,11 +14043,11 @@ def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym
 		del volodd, voleve
 		volall = recons3d_4nn_ctf(prj_stack, pid_list,                                          snr, 1, sym, verbose, npad)
 	else:
-		volodd = recons3d_4nn(prj_stack, [ pid_list[i] for i in xrange(0, len(pid_list), 2) ], sym, npad)
-		voleve = recons3d_4nn(prj_stack, [ pid_list[i] for i in xrange(1, len(pid_list), 2) ], sym, npad)
+		volodd = recons3d_4nn(prj_stack, [ pid_list[i] for i in xrange(0, len(pid_list), 2) ], sym, npad, snr = snr)
+		voleve = recons3d_4nn(prj_stack, [ pid_list[i] for i in xrange(1, len(pid_list), 2) ], sym, npad, snr = snr)
 		t = fsc_mask( volodd, voleve, mask, filename=fsc_file)
 		del volodd, voleve
-		volall = recons3d_4nn(prj_stack, pid_list,                                          sym, npad)
+		volall = recons3d_4nn(prj_stack, pid_list,                                          sym, npad, snr = snr)
 	if(vol_stack[-3:] == "spi"):
 		drop_image(volall, vol_stack, "s")
 	else:
@@ -14146,7 +14149,7 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 		if CTF:
 			snr = 1.0e20
 			vol = recons3d_4nn_ctf(stack, range(nima), snr, sign, sym)
-		else:   vol = recons3d_4nn(stack, range(nima), sym)
+		else:   vol = recons3d_4nn(stack, range(nima), sym, snr = snr)
 	else:
 		vol = get_im(reference_structure)
 
@@ -14266,8 +14269,8 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 			if myid == 0 : vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
 			else :  	     recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
 		else:
-			if myid == 0 : vol = recons3d_4nn_MPI(myid, prjlist, sym)
-			else:		     recons3d_4nn_MPI(myid, prjlist, sym)
+			if myid == 0 : vol = recons3d_4nn_MPI(myid, prjlist, sym, snr=snr)
+			else:		     recons3d_4nn_MPI(myid, prjlist, sym, snr = snr)
 	else:
 		if myid == 0: vol = get_im(reference_structure)
 
@@ -15599,7 +15602,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 			bcast_EMData_to_all( refvol, myid )
 		else:
 			if CTF:   refvol = recons3d_4nn_ctf( imgdata, range(len(imgdata)), snr, 1, sym)
-			else:	   refvol = recons3d_4nn( imgdata, range(len(imgdata)), sym)
+			else:	   refvol = recons3d_4nn( imgdata, range(len(imgdata)), sym, snr = snr)
 		if myid==0:
 			refvol.write_image( vol_file )
 		if(verbose == 1):
@@ -15680,7 +15683,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 			bcast_EMData_to_all( refvol, myid )
 		else:
 			if CTF:   refvol = recons3d_4nn_ctf( imgdata, range(len(imgdata)), snr, 1, sym)
-			else:	   refvol = recons3d_4nn( imgdata, range(len(imgdata)), sym)
+			else:	   refvol = recons3d_4nn( imgdata, range(len(imgdata)), sym, snr = snr)
 		if(verbose == 1):
 			info.write( 'reconstruction finished\n' )
 			info.flush()
@@ -17446,7 +17449,7 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 			start_time = time()
 
 		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
-		else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize)
+		else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
 
 		if myid == main_node:
 			print_msg("3D reconstruction time = %d\n"%(time()-start_time))
@@ -17475,7 +17478,7 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 			k += 1
 
 	if CTF:  vol_even = recons3d_4nn_ctf_MPI(myid, td, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
-	else:    vol_even = recons3d_4nn_MPI(myid, td, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize)
+	else:    vol_even = recons3d_4nn_MPI(myid, td, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
 
 	ndat = 0
 	for i in xrange(1, nfils, 2): ndat += len(filaments[i])
@@ -17487,7 +17490,7 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 			k += 1
 
 	if CTF:  vol_odd = recons3d_4nn_ctf_MPI(myid, td, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
-	else:    vol_odd = recons3d_4nn_MPI(myid, td, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize)
+	else:    vol_odd = recons3d_4nn_MPI(myid, td, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
 
 	del td
 
@@ -18168,7 +18171,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=7
 			if CTF:
 				fullvol0 = recons3d_4nn_ctf(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2)
 			else:
-				fullvol0 = recons3d_4nn(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2)
+				fullvol0 = recons3d_4nn(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2, snr = snr)
 
 			fullvol0 = fullvol0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 			fullvol0 = sym_vol(fullvol0, symmetry=sym)
@@ -18584,7 +18587,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		#if myid == main_node:
 		#	print_msg("Time of alignment = %\n"%(time()-astart_time));start_time = time()
 		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
-		else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
+		else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
 		if myid == main_node:
 			print_msg("3D reconstruction time = %d\n"%(time()-start_time));start_time = time()
 
@@ -19048,7 +19051,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 			if (Iter-1) % search_iter == 0 :
 
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
-				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
+				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
 
 				if myid == main_node:
 					print_msg("3D reconstruction time = %d\n"%(time()-start_time))
@@ -19551,7 +19554,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 			if (Iter-1) % search_iter == 0 :
 
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
-				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
+				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
 
 				if myid == main_node:
 					print_msg("3D reconstruction time = %d\n"%(time()-start_time))
@@ -19952,7 +19955,7 @@ def localhelicon_MPInew_fullrefproj(stack, ref_vol, outdir, seg_ny, maskfile, ir
 			if (Iter-1) % search_iter == 0:
 
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
-				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
+				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
 
 				if myid == main_node:
 					print_msg("3D reconstruction time = %d\n"%(time()-start_time))
@@ -20346,7 +20349,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 			if (Iter-1) % search_iter == 0:
 
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
-				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
+				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
 
 				if myid == main_node:
 					print_msg("3D reconstruction time = %d\n"%(time()-start_time))

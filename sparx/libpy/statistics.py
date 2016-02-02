@@ -1822,9 +1822,9 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 				reference_structure = model_blank(nx, nx, nx)
 		else  :
 			if myid == 0 :
-				reference_structure = recons3d_4nn_MPI(myid, prjlist, sym, mpi_comm=mpi_comm)
+				reference_structure = recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
 			else :
-				recons3d_4nn_MPI(myid, prjlist, sym, mpi_comm=mpi_comm)
+				recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
 				reference_structure = model_blank(nx, nx, nx)
 		bcast_EMData_to_all(reference_structure, myid, 0, mpi_comm)
 	#if myid == 0:  reference_structure.write_image("refer.hdf",0)

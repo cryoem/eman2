@@ -5219,7 +5219,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 				indx = datastamp.index(stmp)
 			except:
 				ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
-			
+
 			data[im].set_attr("bckgnoise",oneover[indx])
 			if apply_mask:
 				bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
