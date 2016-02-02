@@ -5496,20 +5496,20 @@ void EMData::div_sinc(int interpolate_method) {
 	int nz = this->get_zsize();
 	if (nx != ny || ny != nz)
 		throw ImageDimensionException("div_sinc requires ny == nx == nz");
-
+	float cdf = M_PI/nx;
+/*
 	int IP = nx/2+1;
 
 	//  tabulate sinc function
 	float* sincx = new float[IP];
 	sincx[0] = 1.0f;
-	float cdf = M_PI/nx;
 	//  It is 1/sinc
 	if(interpolate_method == 0) {
 		for (int i = 1; i < IP; ++i)  sincx[i] = (i*cdf)/sin(i*cdf);
 	} else {
 		for (int i = 1; i < IP; ++i)  sincx[i] = pow((i*cdf)/sin(i*cdf),2);	
 	}
-
+*/
 	set_array_offsets(-nx/2,-ny/2,-nz/2);
 
 /*
@@ -5525,7 +5525,10 @@ void EMData::div_sinc(int interpolate_method) {
 		for (int j = -ny/2; j < ny/2 + ny%2; j++) {
 			for (int i = -nx/2; i < nx/2 + nx%2; i++) {
 				float  rrr = std::sqrt(k*k+j*j+float(i*i));
-				if(rrr>0.0f)  (*this)(i,j,k) *= pow((rrr*cdf)/sin(rrr*cdf),2);
+				if(rrr>0.0f)  {
+					if( interpolate_method == 1 ) (*this)(i,j,k) *= pow((rrr*cdf)/sin(rrr*cdf),2);
+					else  (*this)(i,j,k) *= (rrr*cdf)/sin(rrr*cdf);
+				}
 			}
 		}
 	}

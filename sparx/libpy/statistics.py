@@ -109,7 +109,7 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 	Util.mul_scalar(ave, 1.0 /float(nima) )
 	return ave, (var - ave*ave*nima)/(nima-1)
 
-def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0e23, dopa = True):
+def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0, dopa = True):
 	'''
 	
 	INPUT
