@@ -932,7 +932,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	
 	if myid == main_node:
 		log.add("Input stack                 : %s"%(stack))
-		log.add("Number of images            : %d"%(nima))
+		log.add("Number of images            : %d"%(total_nima))
 		log.add("Output directory            : %s"%(outdir))
 		log.add("Inner radius                : %i"%(first_ring))
 		log.add("Outer radius                : %i"%(last_ring))
