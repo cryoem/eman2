@@ -1205,11 +1205,12 @@ EMData* EMData::average_circ_sub() const
 void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf)
 {
         //std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+	int nnd4 = n*n/4;
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	//for(int i = 0; i <= 2; i++){{for(int l = 0; l <= 2; l++) std::cout<<"  "<<tf[l][i];}std::cout<<std::endl;};std::cout<<std::endl;
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
-        	if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
+        	if (((i*i+j*j) < nnd4) && !((0 == i) && (j < 0))) {
 //        if ( !((0 == i) && (j < 0))) {
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
@@ -1233,6 +1234,8 @@ void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Tra
 
 			if (iyn >= 0) iya = iyn + 1;
 			else	      iya = n + iyn + 1;
+
+            //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<< btq<<endl;
 
 			cmplx(ixn,iya,iza) += btq;
 			//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
@@ -1839,7 +1842,6 @@ void EMData::onelinenn_ctfw(int j, int n, int n2,
 	for (int i = 0; i <= n2; i++) {
 		int r2 = i*i + j*j;
 		if ( (r2 < nnd4) && !((0 == i) && (j < 0)) ) {
-			float ctf = ctf_store::get_ctf( r2, i, j ); //This is in 2D projection plane
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
@@ -1872,8 +1874,8 @@ void EMData::onelinenn_ctfw(int j, int n, int n2,
             //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
 			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
 			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
-			cmplx(ixn, iya, iza) += btq * mult * weight;
-			(*w)(ixn, iya, iza) += c2val * mult * weight;
+			cmplx(ixn, iya, iza) +=  btq * mult * weight;
+			(*w)(ixn, iya, iza)  += c2val * mult * weight;
 
 		}
 	}
@@ -1884,14 +1886,13 @@ void EMData::onelinetr_ctfw(int j, int n, int n2,
 		          EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight) {
 //std::cout<<"   onelinetr_ctfw  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 //for (int i = 0; i <= 12; i++)  cout <<"  "<<i<<"  "<<(*bckgnoise)(i)<<endl;
-	int nnd4 = n*n/4 - 1;
+	int nnd4 = n*n/4;
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	//for (int i = 0; i<bckgnoise->get_xsize(); i++) cout <<"  "<<i<<"  "<< (*bckgnoise)(i)<<endl;
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
 		int r2 = i*i + j*j;
 		if ( (r2 < nnd4) && !((0 == i) && (j < 0)) ) {
-			float ctf = ctf_store::get_ctf( r2, i, j ); //This is in 2D projection plane
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
@@ -1939,6 +1940,23 @@ void EMData::onelinetr_ctfw(int j, int n, int n2,
 			izn -= n;
 
 
+
+/*
+			int iza, iya;
+			if (izn >= 0)  iza = izn + 1;
+			else           iza = n + izn + 1;
+
+			if (iyn >= 0) iya = iyn + 1;
+			else          iya = n + iyn + 1;
+
+            cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<c2val<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
+			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
+			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
+			cmplx(ixn, iya, iza) +=  btq * mult * weight;
+			(*w)(ixn, iya, iza)  += c2val * mult * weight;
+*/
+
+
 			int iza, iya;
 			if (iyn >= 0) iya = iyn + 1;
 			else          iya = n + iyn + 1;
@@ -1978,6 +1996,7 @@ void EMData::onelinetr_ctfw(int j, int n, int n2,
 			(*w)(ixn, iy1, iz1) += qq011 * denominator;
 			(*w)(ix1, iya, iz1) += qq101 * denominator;
 			(*w)(ix1, iy1, iz1) += qq111 * denominator;
+
 
 		}
 	}
