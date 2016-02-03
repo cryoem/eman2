@@ -685,6 +685,8 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("diff_between_matrix_of_3D_parameters_angles", &EMAN::Util::diff_between_matrix_of_3D_parameters_angles, args("all_params", "rotations"), "")
 		.def("max_clique", &EMAN::Util::max_clique, args("edges"), "")
 		.def("box_convolution", &EMAN::Util::box_convolution, return_value_policy< manage_new_object >(), args("input_volume", "window_size"), "")
+		.def("bessel0", &EMAN::Util::bessel0, args("r", "a", "alpha"), "")
+		.staticmethod("bessel0")
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")
