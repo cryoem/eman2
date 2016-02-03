@@ -12,10 +12,11 @@ resulty=[]
 for i in range(2,30):
 	csum=0
 	n=0
-	for ang in arange(0,2*pi,2*pi/i):
+	for ang in arange(360.0/i,360.0,360.0/i):
 		imc=img.copy()
 		imc.rotate(ang,0,0)
-		csum+=imc.cmp("frc",img)
+#		display((imc,img))
+		csum+=imc.cmp("ccc",img,{"negative":0})
 		n+=1
 		
 	resultx.append(i)
@@ -24,6 +25,6 @@ for i in range(2,30):
 
 
 # This is a plot of peak values vs peak location
-plot(resultx,resulty)
+plot((resultx,resulty))
 
 

@@ -57,7 +57,8 @@ def main():
 
 	parser.add_argument("--path", default=None, type=str,help="The name of an existing refine_xx folder, where e2refine_easy ran to completion",guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--basisn", default=1,type=int,help="Select which Eigenimage to use for separation. 1 = highest energy. max = 5", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--parallel", default="thread:2", help="Standard parallelism option. Default=thread:2", guitype='strbox', row=5, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--mask", default=None, help="Optional 3D mask to focus the classification", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=5, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--parallel", default="thread:2", help="Standard parallelism option. Default=thread:2", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -128,6 +129,12 @@ def main():
 	projin="{}/projections_{:02d}_even.hdf".format(options.path,last_iter)
 	eulers=[EMData(projin,i,True)["xform.projection"] for i in xrange(ncls)]
 	
+	# Prepare mask if specified
+	if options.mask!=None:
+		mask=EMData(options.mask)
+		
+	else : mask=None
+	
 	# prepare tasks
 	tasks=[]
 	gc=0
@@ -137,7 +144,10 @@ def main():
 #			zero.write_image(classout[0],c)
 #			zero.write_image(classout[1],c)
 			continue
-		tasks.append(ClassSplitTask(ptcls,ns,cl,c,eulers[c],options.basisn,options.verbose-1))
+		if mask!=None :
+			maskp=mask.project("standard",eulers[c])
+		else: maskp=None
+		tasks.append(ClassSplitTask(ptcls,ns,cl,c,eulers[c],maskp,options.basisn,options.verbose-1))
 		gc+=1
 	
 #	for t in tasks: t.execute()
@@ -290,11 +300,13 @@ def main():
 #		
 	if options.verbose : print "All done, writing output"
 
-	classout=["{}/classes_{:02d}_bas{}_split0.hdf".format(options.path,last_iter,options.basisn),"{}/classes_{:02d}_bas{}_split1.hdf".format(options.path,last_iter,options.basisn)]
-	basisout="{}/classes_{:02d}_basis".format(options.path,last_iter)
-	threedout="{}/threed_{:02d}_split.hdf".format(options.path,last_iter)
-	threedout2="{}/threed_{:02d}_split_filt_bas{}.hdf".format(options.path,last_iter,options.basisn)
-	setout=["sets/split_{}_0.lst".format(pathnum),"sets/split_{}_1.lst".format(pathnum)]
+	if mask!=None: msk="_msk"
+	else: msk=""
+	classout=["{}/classes_{:02d}_bas{}{}_split0.hdf".format(options.path,last_iter,options.basisn,msk),"{}/classes_{:02d}_bas{}_split1.hdf".format(options.path,last_iter,options.basisn,msk)]
+	basisout="{}/classes_{:02d}{}_basis".format(options.path,last_iter,msk)
+	threedout="{}/threed_{:02d}{}_split.hdf".format(options.path,last_iter,msk)
+	threedout2="{}/threed_{:02d}{}_split_filt_bas{}.hdf".format(options.path,last_iter,msk,options.basisn)
+	setout=["sets/split_{}{}_0.lst".format(pathnum,msk),"sets/split_{}{}_1.lst".format(pathnum,msk)]
 	split=[r.finish(True).get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize)) for r in recon]
 	split[0]["apix_x"]=apix
 	split[0]["apix_y"]=apix
@@ -350,13 +362,13 @@ def main():
 class ClassSplitTask(JSTask):
 	"""This task will create a single task-average"""
 
-	def __init__(self,ptclfiles,ns,ptcls,nc,euler,basisn,verbose):
+	def __init__(self,ptclfiles,ns,ptcls,nc,euler,mask,basisn,verbose):
 		"""ptclfiles is a list of 2 (even/odd) particle stacks. ns is the number of particles in each of ptcfiles. ptcls is a list of lists containing [eo,ptcl#,Transform]"""
 #		sys.stderr=file("task.err","a")
 		data={"particles1":["cache",ptclfiles[0],(0,ns[0])],"particles2":["cache",ptclfiles[1],(0,ns[1])]}
 		JSTask.__init__(self,"ClassSplit",data,{},"")
 
-		self.options={"particles":ptcls,"classnum":nc,"euler":euler,"basisn":basisn,"verbose":verbose}
+		self.options={"particles":ptcls,"classnum":nc,"euler":euler,"basisn":basisn,"mask":mask,"verbose":verbose}
 
 	def execute(self,callback=None):
 		"""This does the actual class-averaging, and returns the result"""
@@ -385,10 +397,6 @@ class ClassSplitTask(JSTask):
 		
 		# Copy each particle minus it's mean value
 		avg=avgr.finish()
-		mask=ptcls[0][-1].copy()
-		mask.to_one()
-#		mask.process("mask.soft",{"outer_radius":-8,"width":4})
-		mask.process("mask.sharp",{"outer_radius":-10})
 		
 		# PCA on the mean-subtracted particles
 		# At this point p[3] will be the particle in the correct orientation
@@ -397,6 +405,14 @@ class ClassSplitTask(JSTask):
 		for p in ptcls: 
 			p.append(p[4].copy())
 			p[5].sub(avg)
+
+		if options["mask"]==None:
+			mask=ptcls[0][-1].copy()
+			mask.to_one()
+#			mask.process("mask.soft",{"outer_radius":-8,"width":4})
+			mask.process("mask.sharp",{"outer_radius":-10})
+		else:
+			mask=options["mask"]
 
 #		print "basis start"
 		pca=Analyzers.get("pca_large",{"nvec":6,"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
@@ -421,7 +437,7 @@ class ClassSplitTask(JSTask):
 #		print "basis"
 		
 		# at the moment we are just splitting into 2 classes, so we'll use the first eigenvector. A bit worried about defocus coming through, but hopefully ok...
-		dots=[p[5].cmp("ccc",basis[self.options["basisn"]]) for p in ptcls]	# NOTE: we are using the third, not first, basis vector
+		dots=[p[5].cmp("ccc",basis[self.options["basisn"]]) for p in ptcls]	# NOTE: basis number is passed in as an option, may not be #1 or #3 (default)
 		if len(dots)==0:
 			return {"failed":True}
 		dota=sum(dots)/len(dots)
