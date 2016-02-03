@@ -53,6 +53,7 @@ def main():
 	parser.add_argument("--lenthr", type=int,help="length threshold of helixes",default=13)
 	parser.add_argument("--minlen", type=int,help="minimun length helixes",default=10)
 	parser.add_argument("--denthr", type=float,help="density threshold of helixes",default=4)
+	parser.add_argument("--angthr", type=float,help="bond angle threshold of helixes",default=.01)
 	parser.add_argument("--mapwohelix", type=str,help="Write a map without helix density",default=None)
 	parser.add_argument("--dirs", type=int,help="Counting from one direction?",default=0)
 	parser.add_argument("--edgefile", type=str,help="Existing helixes file",default=None)
@@ -119,12 +120,12 @@ def main():
 		ang=acos(a)
 		#print i,ang
 		if inhlx<0:
-			if abs(ang-1.585)<.01:
+			if abs(ang-1.585)<options.angthr:
 				inhlx=i
 				inp=p2
 		else:
-			if abs(ang-1.585)>.01:
-				if i-inhlx>5:
+			if abs(ang-1.585)>options.angthr:
+				if i-inhlx>options.minlen:
 					hlx.extend([inhlx,i,inp[0],inp[1],inp[2],p2[0],p2[1],p2[2]])
 				inhlx=-1
 		

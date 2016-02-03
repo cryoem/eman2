@@ -1310,6 +1310,8 @@ def cosinemask(im, radius = -1, cosine_width = 5, bckg = None):
 		The fall-off begins from pixel at a distance radius from the center,
 		i.e., mask(radius) = 1 and mask(radius+cosine_width)=0.
 	"""
+	#return  Util.cosinemask(im, radius, cosine_width, bckg)
+	#"""
 	from utilities import model_blank
 	from math import cos, sqrt, pi
 	nx = im.get_xsize()
@@ -1366,7 +1368,7 @@ def cosinemask(im, radius = -1, cosine_width = 5, bckg = None):
 						om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z) + temp*(s-om.get_value_at(x,y,z)))
 						#om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z)*(0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width )))
 	return om
-
+	#"""
 '''
 
 def get_biggest_cluster(mg):
@@ -1519,14 +1521,14 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 		x[i] = (float(i)/(2*nr)/pixel_size)**2
 	idx_freq_min = 1
 	for i in range(1,nr):
-		if(x[i] < freq_min**2):
+		if(x[i] > freq_min**2):
 			idx_freq_min = i
 			break
 
 	idx_freq_max = 1
 	for i in range(1,nr):
+		idx_freq_max = i
 		if(x[i] > freq_max**2):
-			idx_freq_max = i
 			break
 
 	B, s = linreg(x[idx_freq_min:idx_freq_max], pws_log[idx_freq_min:idx_freq_max])

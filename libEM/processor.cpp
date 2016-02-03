@@ -284,8 +284,8 @@ const string PruneSkeletonProcessor::NAME = "morph.prune";
 const string ManhattanDistanceProcessor::NAME = "math.distance.manhattan";
 const string BinaryDilationProcessor::NAME = "morph.dilate.binary";
 const string BinaryErosionProcessor::NAME = "morph.erode.binary";
-const string BinaryOpeningProcessor::NAME = "morph.open.binary";
-const string BinaryClosingProcessor::NAME = "morph.close.binary";
+const string BinaryClosingProcessor::NAME = "morph.open.binary";
+const string BinaryOpeningProcessor::NAME = "morph.close.binary";
 const string BinaryMorphGradientProcessor::NAME = "morph.gradient.binary";
 const string BinaryExternalGradientProcessor::NAME = "morph.ext_grad.binary";
 const string BinaryInternalGradientProcessor::NAME = "morph.int_grad.binary";
@@ -560,8 +560,8 @@ template <> Factory < Processor >::Factory()
 	force_add<ManhattanDistanceProcessor>();
 	force_add<BinaryDilationProcessor>();
 	force_add<BinaryErosionProcessor>();
-	force_add<BinaryOpeningProcessor>();
 	force_add<BinaryClosingProcessor>();
+	force_add<BinaryOpeningProcessor>();
 	force_add<BinaryMorphGradientProcessor>();
 	force_add<BinaryExternalGradientProcessor>();
 	force_add<BinaryInternalGradientProcessor>();
@@ -13172,21 +13172,6 @@ void BinaryErosionProcessor::process_inplace(EMData *image)
 }
 
 
-EMData* BinaryOpeningProcessor::process(const EMData* const image)
-{
-	EMData* proc = image->copy();
-	proc->process_inplace("morph.open.binary",params);
-	return proc;
-}
-
-void BinaryOpeningProcessor::process_inplace(EMData *image)
-{
-	int k=params.set_default("k",1);
-	image->process_inplace("morph.dilate.binary",params);
-	image->process_inplace("morph.erode.binary",params);
-}
-
-
 EMData* BinaryClosingProcessor::process(const EMData* const image)
 {
 	EMData* proc = image->copy();
@@ -13195,6 +13180,21 @@ EMData* BinaryClosingProcessor::process(const EMData* const image)
 }
 
 void BinaryClosingProcessor::process_inplace(EMData *image)
+{
+	int k=params.set_default("k",1);
+	image->process_inplace("morph.dilate.binary",params);
+	image->process_inplace("morph.erode.binary",params);
+}
+
+
+EMData* BinaryOpeningProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("morph.open.binary",params);
+	return proc;
+}
+
+void BinaryOpeningProcessor::process_inplace(EMData *image)
 {
 	int k=params.set_default("k",1);
 	image->process_inplace("morph.erode.binary",params);

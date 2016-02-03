@@ -176,7 +176,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	return fftvol
 
 
-def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None):
+def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, snr = 1.0, npad=2, xysize=-1, zsize=-1, mpi_comm=None):
 	from utilities  import reduce_EMData_to_root, pad
 	from EMAN2      import Reconstructors
 	from utilities  import iterImagesList
@@ -203,7 +203,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=2, xysize=-1,
 	fftvol = EMData()		
 	weight = EMData()
 	if (xysize == -1 and zsize == -1 ):
-		params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
+		params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight, "snr":snr}
 		r = Reconstructors.get( "nn4", params )
 	else:
 		if ( xysize != -1 and zsize != -1):
@@ -1234,7 +1234,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	else:
 		return None, None, None
 
-def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, mpi_comm=None, smearstep = 0.0):
+def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, mpi_comm=None, smearstep = 0.0, CTF = True):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -1286,7 +1286,7 @@ def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symme
 	bckgnoise = []
 	for i in xrange(1):
 		prj = model_blank(600,1,1,1)
-		#for k in xrange(nnx):  prj[k] = bckgdata[0].get_value_at(k,i)
+		#for k in xrange(nnx):  prj[k] = bckgdata[i].get_value_at(k,i)
 		bckgnoise.append(prj)
 
 	#datastamp = bckgdata[1]
@@ -1300,14 +1300,17 @@ def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symme
 	fftvol_file =[]
 	weight_file = []
 
+	if CTF: do_ctf = 1
+	else:   do_ctf = 0
+
 	for iset in xrange(1):
 		if not (info is None): nimg = 0
 
 		fftvol = EMData()
 		weight = EMData()
 		if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
-	
-		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
+
+		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 		r = Reconstructors.get( "nn4_ctfw", params )
 		r.setup()
 		for image in list_of_prjlist[iset]:
@@ -1325,6 +1328,7 @@ def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symme
 				indx = datastamp.index(stmp)
 			except:
 				ERROR("Problem with indexing ptcl_source_image.","recons3d_4nnf_MPI",1, myid)
+			image.set_attr("bckgnoise", bckgnoise[indx])
 			"""
 			image.set_attr("bckgnoise", bckgnoise[0])
 			insert_slices(r, image)

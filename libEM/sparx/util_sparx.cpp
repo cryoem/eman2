@@ -55,6 +55,7 @@ using namespace EMAN;
 #include "emassert.h"
 #include "randnum.h"
 #include "mcqd.h"
+#include <algorithm>
 
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
@@ -22082,7 +22083,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  01/21/2016  11:40 AM"<<endl;}
+{ cout <<"  VERSION  02/02/2016  16:08 PM"<<endl;}
 
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
@@ -22551,9 +22552,118 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 	ctf_img1->update();
 	return ctf_img1;
 }
+		
+#define		quadpi	 	 	3.141592653589793238462643383279502884197 
+EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg)
+{  
 
-
-
+   	int nx = img->get_xsize();
+	int ny = img->get_ysize();
+	int nz = img->get_zsize();
+	EMData* cmasked = new EMData();
+	cmasked->set_size( nx, ny, nz );
+	cmasked = img->copy_head();
+	int cz = nz/2;
+	int cy = ny/2;
+	int cx = nx/2;
+	int img_dim = img->get_ndim();
+	if (radius<0 )
+	{
+		switch (img_dim)
+		{
+			case(1):
+	    		radius = nx/2 - cosine_width;
+			break;
+			case(2):
+				radius = int(std::min(nx,ny)/2.)-cosine_width;
+			break;
+			case(3):
+				radius = int(std::min(std::min(nx,ny),nz)/2.) - cosine_width;
+			break;
+		}
+	}
+	int radius_p = radius + cosine_width;
+	if (bckg != NULL )
+	{
+	  	for (int iz=0; iz<nz; iz++)
+	  		{
+	  			int tz =(iz-cz)*(iz-cz);
+	  			for (int iy=0; iy<ny; iy++)
+	  				{
+	  					int ty=tz+(iy-cy)*(iy-cy);
+	  					
+	  					for (int ix =0; ix<nx; ix++)
+	  					 {
+	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
+	  						if (r>=radius_p)
+	  					  		(*cmasked)(ix,iy,iz) = (*bckg)(ix,iy,iz);
+							if (r>=radius && r<radius_p)
+							{
+								float temp = (0.5+0.5*cos(pi*(radius_p-r)/cosine_width));
+								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*((*bckg)(ix,iy,iz)-(*img)(ix,iy,iz));
+							}
+							if (r<radius)
+								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
+							}
+						}
+					}
+		}
+	else
+	{
+		float u =0.0;
+		float s =0.0;
+	  	for (int iz=0; iz<nz; iz++)
+	  		{
+	  			int tz =(iz-cz)*(iz-cz);
+	  			for (int iy=0; iy<ny; iy++)
+	  				{
+	  					int ty=tz+(iy-cy)*(iy-cy);
+	  					for (int ix=0; ix<nx; ix++)
+	  					{
+	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
+	  						if (r>=radius_p)
+	  							{	
+	  								u +=1.0f;
+	  								s +=(*img)(ix,iy,iz);
+	  							}
+							if ( r>=radius && r<radius_p)
+								{
+									float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
+									u += temp;
+									s += (*img)(ix,iy,iz)*temp;
+								}
+							if (r<radius)
+								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
+							}
+						}
+				}
+		s /= u;
+		for (int iz=0; iz<nz; iz++)
+			{
+	  		    int tz =(iz-cz)*(iz-cz);
+	  			for (int iy=0; iy<ny; iy++)
+	  			  {
+	  				    int ty=tz+(iy-cy)*(iy-cy);
+	  				    for (int ix=0; ix<nx; ix++)
+	  				    {
+	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
+	  							if (r>=radius_p)
+									(*cmasked) (ix,iy,iz)=s;
+								if (r>=radius && r<radius_p)
+									{
+								  		float temp = (.5+.5*cos(quadpi*(radius_p-r)/cosine_width));
+								  		(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s-(*img)(ix,iy,iz));
+									}
+									if (r<radius)
+								    (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
+						}
+				}
+			}
+	}
+	cmasked->update();
+	return cmasked;
+}
+#undef quadpi
 /*
 #define  cent(i)     out[i+N]
 #define  assign(i)   out[i]

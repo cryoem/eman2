@@ -36,11 +36,13 @@ from   global_def import *
 def main():
 	import os
 	import sys
-	from optparse import OptionParser, SUPPRESS_HELP
-	from mpi import mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_size, mpi_comm_rank, mpi_barrier
+	from optparse import OptionParser
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	
-	progname = os.path.basename(sys.argv[0])
-	usage = progname + """  input_image  output_directory  --wn  --apix  --Cs  --voltage  --ac  --kboot  --overlap_x  --overlap_y  --edge_x  --edge_y  --f_start  --f_stop  --debug
+	progname = os.path.basename(arglist[0])
+	usage = progname + """  input_image  output_directory  --wn  --apix  --Cs  --voltage  --ac  --kboot  --overlap_x  --overlap_y  --edge_x  --edge_y  --f_start  --f_stop  --MPI  --debug
 	
 	Process a set of micrographs:
 	
@@ -48,7 +50,7 @@ def main():
 		The wild card (*) has to be in front of the extension. The extension must be 3 letter long excluding dot (.).
 		Specify output directory as an argument.
 		
-			mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
+			mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
 			
 	Process a stack:
 	
@@ -69,25 +71,18 @@ def main():
 	parser.add_option("--edge_y",     type="int",           default=0,      help="edge y in pixels: (default 0)")
 	parser.add_option("--f_start",    type="float",         default=-1.0,   help="starting frequency in 1/A: by default determined automatically (default -1.0)")
 	parser.add_option("--f_stop",     type="float",         default=-1.0,   help="stop frequency in 1/A: by default determined automatically (default -1.0)")
+	parser.add_option("--MPI",        action="store_true",  default=False,  help="use MPI version (default False)")
 	parser.add_option("--debug",      action="store_true",  default=False,  help="debug info printout: (default False)")
 
-	(options, args) = parser.parse_args(sys.argv[1:])
+	(options, args) = parser.parse_args(arglist[1:])
 	
-	# Initialize MPI related variables
-	mpi_init(0, [])
-	nproc     = mpi_comm_size(MPI_COMM_WORLD)
-	myid      = mpi_comm_rank(MPI_COMM_WORLD)
-	main_node = 0
-
 	if len(args) != 2:
-		if myid == main_node: print "see usage " + usage
-		mpi_finalize()
-		exit()
+		print "see usage " + usage
+		sys.exit()
 	
 	if options.apix < 0:
-		if myid == main_node: ERROR("Pixel size has to be specified", "sxcter", 1, myid)
-		mpi_finalize()
-		exit()
+		ERROR("Pixel size has to be specified", "sxcter", 1)
+		sys.exit()
 	
 	input_image = args[0]
 	# NOTE: 2015/11/27 Toshio Moriya
@@ -96,20 +91,17 @@ def main():
 	if input_image.find("*") != -1:
 		# This is a micrograph file name pattern because the string contains wild card "*"
 		stack = None
-		MPI_support = True # Always use MPI version of cter() when it is micrographs
 		micrograph_name = input_image
 		indir, basename = os.path.split(input_image)
 		nameroot, micsuffix = os.path.splitext(basename)
 		
 		if nameroot[-1] != "*":
-			if myid == main_node: ERROR("input image file name for micrograph name (%s) must contain wild card * in front of the extension." % micrograph_name, "sxcter", 1, myid)
-			mpi_finalize()
-			exit()
+			ERROR("input image file name for micrograph name (%s) must contain wild card * in front of the extension." % micrograph_name, "sxcter", 1)
+			sys.exit()
 		
 		if micsuffix[0] != ".":
-			if myid == main_node: ERROR("input image file name for micrograph name (%s) must contain extension." % micrograph_name, "sxcter", 1, myid)
-			mpi_finalize()
-			exit()
+			ERROR("input image file name for micrograph name (%s) must contain extension." % micrograph_name, "sxcter", 1)
+			sys.exit()
 		
 		# cter() will take care of the other error case of image image
 		
@@ -121,32 +113,33 @@ def main():
 		nameroot = nameroot[:-1]
 		
 	else: 
+		if options.MPI:
+			ERROR("Please use single processor version if specifying a stack", "sxcter", 1)
+			sys.exit()
+		
 		# This is a stack file name because the string does NOT contains wild card "*"
 		stack = input_image
-		MPI_support = False # Always use non MPI version of cter() when it is stack
 		indir = "."
 		nameroot = ""
 		micsuffix = ""
 		
-		if nproc > 1: 
-			if myid == main_node: ERROR("Please use '-np 1'. Stack mode supports only single processor version"  "sxcter", 1, myid)
-			mpi_finalize()
-			exit()
-	
 	output_directory = args[1]
 	if os.path.exists(output_directory):
-		if myid == main_node: ERROR('Output directory exists, please change the name and restart the program', "sxcter", 1, myid)
-		mpi_finalize()
-		exit()
-	mpi_barrier(MPI_COMM_WORLD)
+		ERROR('Output directory exists, please change the name and restart the program', "sxcter", 1)
+		sys.exit()
 	
-	if myid == main_node: 
-		os.mkdir(output_directory)
-	mpi_barrier(MPI_COMM_WORLD)
-			
 	out1 = "%s/pwrot" % (output_directory)
 	out2 = "%s/partres" % (output_directory)
 	# cter() will take care of the error case of output directory
+	
+	if options.MPI:
+		from mpi import mpi_init, MPI_COMM_WORLD, mpi_comm_rank, mpi_barrier
+		sys.argv = mpi_init(len(sys.argv), sys.argv)
+		if mpi_comm_rank(MPI_COMM_WORLD) == 0: 
+			os.mkdir(output_directory)
+		mpi_barrier(MPI_COMM_WORLD)
+	else:
+		os.mkdir(output_directory)
 	
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
@@ -157,13 +150,15 @@ def main():
 	
 	cter(stack, out1, out2, indir, nameroot, micsuffix, options.wn, \
 		f_start=options.f_start, f_stop=options.f_stop, voltage=options.voltage, Pixel_size=options.apix, \
-		Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=MPI_support, DEBug = options.debug, \
+		Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, \
 		overlap_x = options.overlap_x, overlap_y = options.overlap_y, edge_x = options.edge_x, \
 		edge_y = options.edge_y, guimic=None)
 	
 	global_def.BATCH = False
 	
-	mpi_finalize()
+	if options.MPI:
+		from mpi import mpi_finalize
+		mpi_finalize()
 	
 if __name__ == "__main__":
 	main()
