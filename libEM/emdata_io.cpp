@@ -158,6 +158,7 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 			int ori_nx = nx = attr_dict["nx"];
 			int ori_ny = ny = attr_dict["ny"];
 			int ori_nz = nz = attr_dict["nz"];
+			if (!fast) ori_nz-=ori_nz%binfactor;	// makes sure Z is a multiple of binfactor, hack to fix the poor logic in the original routine
 			attr_dict.erase("nx");
 			attr_dict.erase("ny");
 			attr_dict.erase("nz");
@@ -176,10 +177,11 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 			float percent = 0.1f;
 			for(int k = 0; k < ori_nz; k+=binfactor){
 				if(k > ori_nz*percent){
-					cout << float(k)/float(ori_nz) << "% Done!" << endl;
+					printf("%1.0f % Done\n",100.0*float(k)/float(ori_nz));
 					percent+=0.1f;
 				}
 				// read in a slice region
+//				printf("%d %d %d %d\n",k,ori_nx,ori_ny,zbin);
 				const Region* binregion = new Region(0,0,k,ori_nx,ori_ny,zbin);
 				tempdata->read_image(filename, 0, false, binregion);
 				// shrink the slice

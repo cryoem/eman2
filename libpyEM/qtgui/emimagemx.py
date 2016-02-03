@@ -791,67 +791,21 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		m1    = -1.0e10
 		nav   = 0
 
-		stp = max(len(self.data)/32, 1)
+		d=self.data[0]
+		if d["nx"]*d["ny"]*d["nz"]>1000000: nrep=5
+		elif d["nx"]*d["ny"]*d["nz"]>100000 : nrep=16
+		else: nrep=64
+		stp = max(len(self.data)/nrep, 1)
 
 		for i in range(0, len(self.data), stp) : # we check ~32 images randomly spaced in the set
-			try: d = self.data.get_image_header(i)
-			except: pass
-			
-			#print "\n"
-			#print d["maximum"]
-			#print "d=", d
-			
-			if d == None :
-				continue
+			d=self.data[i]
 
-			try :
-				ave = d["mean"]
-			except :
-				ave = None
-
-			try :
-				dev = d["sigma"]
-			except :
-				dev = None
-
-			try :
-				mnv = d["minimum"]
-			except :
-				mnv = None
-
-			try :
-				mxv = d["maximum"]
-			except :
-				mxv = None
-
-			if mnv == None :
-				try :
-					mnv = d["MRC.minimum"]
-				except :
-					mnv = None
-
-			if mxv == None :
-				try :
-					mxv = d["MRC.maximum"]
-				except :
-					mxv = None
-
-			if ave == None or dev == None or mnv == None or mxv == None :
-				continue
-
-			mean  += ave
+			mean  += d["mean"]
 			nav   += 1
-			sigma  = max(sigma, dev)
-			m0     = min(m0, mnv)
-			m1     = max(m1, mxv)
+			sigma  = max(sigma, d["sigma"])
+			m0     = min(m0, d["minimum"])
+			m1     = max(m1, d["maximum"])
 
-#			try:
-#				mean += d["mean"]
-#				nav  += 1
-#				sigma = max(sigma, d["sigma"])
-#				m0    = min(m0, d["minimum"])
-#				m1    = max(m1, d["maximum"])
-#			except : pass
 
 		#print "\n mn=", mn, "mx=", mx, "m0=", m0, "m1=", m1
 
@@ -863,15 +817,15 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		else:
 			mean /= float(nav)
 
-		try :
-			if ((filename.split('.')[-1] == "dm4") and (m0 == 1.0e10)) :
-				data  = EMData(filename)
-				m0    = data.get_attr("minimum")
-				m1    = data.get_attr("maximum")
-				mean  = data.get_attr("mean")
-				sigma = data.get_attr("sigma")
-		except :
-			pass 
+		#try :
+			#if ((filename.split('.')[-1] == "dm4") and (m0 == 1.0e10)) :
+				#data  = EMData(filename)
+				#m0    = data.get_attr("minimum")
+				#m1    = data.get_attr("maximum")
+				#mean  = data.get_attr("mean")
+				#sigma = data.get_attr("sigma")
+		#except :
+			#pass 
 		
 		if self.auto_contrast :
 			mn = max(m0, mean - 3.0*sigma)

@@ -109,7 +109,7 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 	Util.mul_scalar(ave, 1.0 /float(nima) )
 	return ave, (var - ave*ave*nima)/(nima-1)
 
-def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0e23, dopa = True):
+def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0, dopa = True):
 	'''
 	
 	INPUT
@@ -1822,9 +1822,9 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 				reference_structure = model_blank(nx, nx, nx)
 		else  :
 			if myid == 0 :
-				reference_structure = recons3d_4nn_MPI(myid, prjlist, sym, mpi_comm=mpi_comm)
+				reference_structure = recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
 			else :
-				recons3d_4nn_MPI(myid, prjlist, sym, mpi_comm=mpi_comm)
+				recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
 				reference_structure = model_blank(nx, nx, nx)
 		bcast_EMData_to_all(reference_structure, myid, 0, mpi_comm)
 	#if myid == 0:  reference_structure.write_image("refer.hdf",0)

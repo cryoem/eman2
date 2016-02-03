@@ -1,5 +1,10 @@
 High priority
 2.1
+2/2/16		Make sure split particles in e2refinesplit are being split correctly (matching maps)
+2/2/16		tiled display of 2d image stack from MRCS file has funny contrast (C.J.)
+2/2/16		slice view in 3d contrast doesn't adjust well for maps with strange density ranges (Pawel)
+2/1/16		e2spt_average uses unmasked FSC for filter
+2/1/16		e2spt_wedgefill option to use unaligned input particles, or something similar
 11/01/15	matrix size 1x615 into 96 regions -> 615 jobs!?!? (simmx)
 10/19/15	try/except around line 2599 in e2ctf. Related to whole micrograph curve ([8]), patched
 10/19/15	2-D class-averages with alignment rather than PCA?
