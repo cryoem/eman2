@@ -2455,7 +2455,6 @@ void circumftrl( EMData* win , int npad)
 
 	float cdf = M_PI/(cor*ix);
 	for (int i = 1; i <= IP; ++i)  sincx[i] = pow(sin(i*cdf)/(i*cdf),2);
-	for (int i = 1; i <= IP; ++i)  cout<<1.0/sincx[i]<<endl;
 	cdf = M_PI/(cor*iy);
 	for (int i = 1; i <= JP; ++i)  sincy[i] = pow(sin(i*cdf)/(i*cdf),2);
 	cdf = M_PI/(cor*iz);
@@ -3925,7 +3924,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 							osnr = qres*count[ir] + frac*count[ir+1];
 							if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
 							//cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
-						}  else osnr = 1.0f;
+						}  else osnr = 0.0f;
 
 						float tmp = ((*m_wptr)(ix,iy,iz)+osnr);
 
@@ -3956,6 +3955,40 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 
 	return 0;
 }
+
+/*
+// For postprocessing only multiply by +/- 1
+						if(tmp>0.0f) {
+							int mum = (-2*((ix+iy+iz)%2)+1);
+						//cout<<" mvol "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<(*m_volume)(2*ix,iy,iz)<<"  "<<(*m_volume)(2*ix+1,iy,iz)<<"  "<<tmp<<"  "<<osnr<<endl;
+							(*m_volume)(2*ix,iy,iz)   *= mum;
+							(*m_volume)(2*ix+1,iy,iz) *= mum;
+							(*m_wptr)(ix,iy,iz) *= mum;
+						} else {
+							(*m_volume)(2*ix,iy,iz)   = 0.0f;
+							(*m_volume)(2*ix+1,iy,iz) = 0.0f;
+						}
+					}
+				} else {
+					(*m_volume)(2*ix,iy,iz)   = 0.0f;
+					(*m_volume)(2*ix+1,iy,iz) = 0.0f;
+				}
+			}
+		}
+	}
+
+	// back fft
+	m_volume->do_ift_inplace();
+	int npad = m_volume->get_attr("npad");
+	m_volume->depad();
+	circumftrl( m_volume, npad );
+	m_volume->set_array_offsets( 0, 0, 0 );
+
+	return 0;
+}
+*/
+
+
 
 
 
