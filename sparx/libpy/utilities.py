@@ -2799,6 +2799,7 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	from numpy import concatenate, shape, array, split
 	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	from numpy import reshape
+	from mpi import mpi_recv, mpi_send, mpi_barrier
 
 	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
 
@@ -2807,6 +2808,7 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	ref_start, ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
 	ref_end -= ref_start
 	ref_start = 0
+	tag_for_send_receive = 123456
 	
 	# used for copying the header
 	reference_em_object = list_of_em_objects_for_myid_process[ref_start]
@@ -2847,13 +2849,12 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 
 		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
 		
-		from mpi import mpi_recv, mpi_send, MPI_TAG_UB, mpi_barrier
 		if myid == 0:
 			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
-			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, MPI_TAG_UB, MPI_COMM_WORLD)
+			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, tag_for_send_receive, MPI_COMM_WORLD)
 		elif sender_id == myid:
 			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, tag_for_send_receive, MPI_COMM_WORLD)
 		
 		mpi_barrier(MPI_COMM_WORLD)
 
