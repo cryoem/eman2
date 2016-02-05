@@ -44,7 +44,7 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + """  input_image  output_directory  --wn  --apix  --Cs  --voltage  --ac  --kboot  --overlap_x  --overlap_y  --edge_x  --edge_y  --f_start  --f_stop  --MPI  --debug
 	
-	Process a set of micrographs:
+	Micrograph Mode - Process a set of micrographs:
 	
 		Specify micrograph name with wild card (*) enclosed by single quotes (') or double quotes (") (Note: sxgui.py automatically adds single quotes (')). 
 		The wild card (*) has to be in front of the extension. The extension must be 3 letter long excluding dot (.).
@@ -52,7 +52,7 @@ def main():
 		
 			mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
 			
-	Process a stack:
+	Stack Mode - Process a stack:
 	
 		Specify name of stack (without wild card "*") and output directory as arguments. 
 			sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
