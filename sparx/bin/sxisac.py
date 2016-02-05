@@ -124,15 +124,12 @@ def main(args):
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
+	global_def.BATCH = True
 	
 	from isac import iter_isac
-	global_def.BATCH = True
 
-	global_def.BATCH = True
-	
 	command_line_provided_stack_filename = args[0]
-	global_def.BATCH = True
-
+	
 	main_node = 0
 	mpi_init(0, [])
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -463,8 +460,6 @@ def main(args):
 		print output_text
 
 	mpi_barrier(MPI_COMM_WORLD)
-
-	global_def.BATCH = True
 
 	os.chdir(masterdir)
 

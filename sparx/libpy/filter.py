@@ -842,7 +842,7 @@ def filt_vols( vols, fscs, mask3D ):
 def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
-	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
+	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
 	from utilities import bcast_number_to_all, bcast_list_to_all, model_blank, bcast_EMData_to_all, reduce_EMData_to_root
 	from morphology import threshold_outside
 	from filter import filt_tanl
