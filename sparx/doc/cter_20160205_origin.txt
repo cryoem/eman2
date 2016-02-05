@@ -1,39 +1,48 @@
 = Name =
 sxcter - CTF Estimation: Automated estimation of CTF parameters with error assessment.
 
-
 = Usage =
 
-
-''usage in command line''
-
-sxcter.py  input_image  output_directory  --wn  --apix  --Cs  --voltage  --ac  --kboot  --overlap_x  --overlap_y  --edge_x  --edge_y  --f_start  --f_stop  --MPI  --debug  
-
+sxcter.py  stack  outdir1  outdir2  --indir==indir  --nameroot=nameroot  --micsuffix=micsuffix  --wn=wn  --apix=apix  --Cs=Cs --voltage=voltage  --ac=ac  --kboot=kboot  --MPI  --debug  --overlap_x=overlap_x  --overlap_y=overlap_y  --edge_x=edge_x  --edge_y=edge_y  --f_start  --f_stop
 
 === Typical usage ===
 
 sxcter exists in for both MPI and non-MPI versions.
 
 
-''Micrograph Mode - Process a set of micrographs'':
-
-Specify micrograph name with wild card (*) enclosed by single quotes (') or double quotes (") (Note: sxgui.py automatically adds single quotes (')). The wild card (*) must be in front of the extension. The extension has to be 3 letter long excluding dot (.).
-
-Specify output directory as an argument.
-
-''' mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI ''' 
+''Process micrographs'':
 
 
-''Stack Mode - Process a stack'':
+Specify directory and prefix and suffix (type) of micrographs to process through --indir, --nameroot, and --micsuffix
 
-Specify name of stack (without wild card "*") and output directory as arguments. Use single processor for stack mode. 
 
-''' sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 ''' 
+Specify output directories ''pwrot'' and ''partresdir'' as arguments.
+
+
+mpirun -np 16 sxcter.py pwrot partresdir --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --micsuffix=mrc --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
+
+After the program stops, it is advisable to concatenate all output files in partres directory:
+
+cd partres
+
+cat */* >>allctfs.txt
+
+
+''Process stack'':
+
+
+Specify name of stack, output directories ''pwrot'' and ''partresdir'' as arguments.
+
+
+sxcter.py bdb:stack pwrot partresdir --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
 
 
 == Input ==
-    input_image:: a set of micrographs (name with wild card *) or 2D images in a stack file: (default required string)
+    stack:: 2D images in a stack file: (default none)
     
+    indir:: directory containing micrographs to be processed: (default current directory)
+    nameroot:: prefix of micrographs to be processed: (default none)
+    micsuffix:: a string denoting micrograph type: For example 'mrc', 'hdf', 'ser' ... (default none)
     wn:: size of window to use: should be slightly larger than particle box size (default 512)
     apix:: pixel size in angstroms: (default 1.0)
     Cs:: microscope Cs (spherical aberration): (default 2.0)
@@ -41,24 +50,25 @@ Specify name of stack (without wild card "*") and output directory as arguments.
     ac:: amplitude contrast in percentage: (default 10.0)
 
     * The remaining parameters are optional.
-    kboot:: number of defocus estimates for micrograph: used for error assessment (default 16)
+    kboot:: number of defocus estimates for micrograph: used for error assessment (default 16)  
+    MPI:: use MPI version: (default False)
+    debug:: debug: (default False)
     overlap_x:: overlap x in percentage: (default 50)
     overlap_y:: overlap y in percentage: (default 50)
-    edge_x:: edge x in pixels: (default 0)
+    edge_x:: edge x in pixels: (default 0) 
     edge_y:: edge y in pixels: (default 0)
     f_start:: starting frequency in 1/A: by default determined automatically (default -1.0)
     f_stop:: stop frequency in 1/A: by default determined automatically (default -1.0)
-    MPI:: use MPI version: (default False)
-    debug:: debug info printout: (default False)
+
 
 == Output ==
-    output_directory:: output directory name: into which the partres file and rotinf**** files will be written. The program creates the directory automatically. The directory should not exists upon the execution. (default required string)
+    outdir1:: output directory for rotinf**** files: (default required string)
+    outdir2:: output directory for partres file: (default required string)
 
-Under the directory specified by argument output_directory, 
-(1) CTF parameters are written to ''partres/partres.txt''<<BR>><<BR>>
-(2) Rotational averages are written to ''pwrot/rotinf****.txt''.<<BR>><<BR>>
+CTF parameters are written to a new file ''partres'' in a new directory specified by argument ''partresdir''.<<BR>><<BR>>
+Rotational average are written to directory specified by argument ''pwrot'' as files in the form of rotinf****.<<BR>><<BR>>
 
-File ''partres.txt'' contains 14 columns with the following information:<<BR>><<BR>>
+File ''partres'' contains 14 columns with the following information:<<BR>><<BR>>
 
 
 || Column || Parameter ||
@@ -78,7 +88,7 @@ File ''partres.txt'' contains 14 columns with the following information:<<BR>><<
 || 14 || Micrograph name ||
 
 <<BR>><<BR>>
-Files ''rotinf****.txt'' contain 6 columns with the following information:<<BR>><<BR>>
+Files ''rotinf****'' contain 6 columns with the following information:<<BR>><<BR>>
 
 
 || Column || Parameter ||
@@ -89,33 +99,27 @@ Files ''rotinf****.txt'' contain 6 columns with the following information:<<BR>>
 || 5 || experimental rotational average (with astigmatism) ||
 || 6 || fitted rotational average (with astigmatism) ||
 
-
 == Description ==
 
 ''''This is work in progress  11/30/2013''''
 
-
 == Author / Maintainer ==
 Pawel A. Penczek
-
 
 === Attachments ===
 80S ribosome determined using 35,198 projection images collected with a 300 kV Tecnai Polara (FEI) equipped with the K2 Summit DED camera.  Resolution of the the large subunit is 3.84 Å (using FSC with 0.5 cut-off criterion). [[attachment:80SK2.mrc.gz]] ('''Warning''': file size is 21MB.)
 
-
 == Keywords ==
     category 1:: APPLICATIONS
-
 
 == Files ==
 sxcter.py
 
-
 === See also ===
 References to relevant other routines.
 
-
 === Maturity ===
+
     beta::     works for author, often works for others.
 
 === Bugs ===
