@@ -493,6 +493,9 @@ void FourierReconstructor::setup()
 	ny2=ny/2;
 	nz2=nz/2;
 
+#ifdef RECONDEBUG
+	for (int i=0; i<125; i++) ddata[i]=dnorm[i]=0.0;
+#endif
 
 	// Adjust nx if for Fourier transform even odd issues
 	bool is_fftodd = (nx % 2 == 1);
@@ -1006,7 +1009,7 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 					dt[0]+=gg*rdata[idx];
 					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
 					dt[2]+=norm[idx/2];
-					normsum+=gg;				
+					normsum+=gg;
 				}
 			}
 		}
@@ -1031,6 +1034,20 @@ EMData *FourierReconstructor::finish(bool doift)
 	
 	bool sqrtnorm=params.set_default("sqrtnorm",false);
 	normalize_threed(sqrtnorm);
+	
+// This compares single precision sum to double precision sum near the origin
+#ifdef RECONDEBUG
+	for (int k=0; k<5; k++) {
+		for (int j=0; j<5; j++) {
+			for (int i=0; i<5; i++) {
+				int idx=i*2+j*10+k*50;
+				ddata[idx]/=dnorm[idx];
+				ddata[idx+1]/=dnorm[idx+1];
+				printf("%d %d %d   %1.4lg\t%1.4g     %1.4lg\t%1.4g\n",i,j,k,ddata[idx],image->get_value_at(i*2,j,k),ddata[idx+1],image->get_value_at(i*2+1,j,k));
+			}
+		}
+	}
+#endif
 	
 // 	tmp_data->write_image("density.mrc");
 
