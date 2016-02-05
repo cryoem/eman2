@@ -79,6 +79,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
+	from time import sleep
 	### - reconstruction parameters - No need to change
 	fourvar   = False
 	debug     = False
@@ -134,6 +135,10 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	mpi_barrier(MPI_COMM_WORLD)
 	######
 	#Tracker["applyctf"] = False
+	while not os.path.exists(this_data_list_file):
+		#print  " my_id",myid
+		sleep(2)
+	mpi_barrier(MPI_COMM_WORLD)	
 	data, old_shifts    = get_shrink_data_huang(Tracker,Tracker["nxinit"],this_data_list_file,Tracker["constants"]["partstack"],myid, main_node, number_of_proc, preshift = True)
 	from time import time	
 
@@ -615,6 +620,11 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	else:
 		Tracker["PWadjustment"]=None	
 	####################################################
+	from time import sleep
+	while not os.path.exists(particle_list_file):
+		#print  " my_id",myid
+		sleep(2)
+	mpi_barrier(MPI_COMM_WORLD)	
 	#Tracker["applyctf"] = True # 
 	data, old_shifts =  get_shrink_data_huang(Tracker,Tracker["nxinit"],particle_list_file,partstack,myid,main_node,number_of_proc,preshift=True)
 	if myid == main_node:
@@ -765,7 +775,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 			volref.write_image(os.path.join(outdir,"volf0000.hdf"),iref)
 	mpi_barrier( MPI_COMM_WORLD )
 	if CTF:
-		if(data[0].get_attr_default("ctf_applied",0) > 0):  ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
+		#if(data[0].get_attr_default("ctf_applied",0) > 0):  ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
@@ -1807,6 +1817,7 @@ def get_number_of_groups(total_particles,number_of_images_per_group, round_off=.
 
 def recons_mref(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
+	from time import sleep
 	myid             = Tracker["constants"]["myid"]
 	main_node        = Tracker["constants"]["main_node"]
 	nproc            = Tracker["constants"]["nproc"]
@@ -1987,7 +1998,8 @@ def main():
 	parser.add_option("--sausage",   action="store_true", default=False,        help="way of filter volume")
 	parser.add_option("--chunkdir", type="string", default="", help="chunkdir for computing margin of error")
 	parser.add_option("--PWadjustment", type="string", default="", help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
-	parser.add_option("--upscale", type=float, default=0.5, help=" scaling parameter to adjust the power spectrum of EM volumes")
+	parser.add_option("--upscale", type="float", default=0.5, help=" scaling parameter to adjust the power spectrum of EM volumes")
+	parser.add_option("--wn", type="int", default=0, help="optimal window size for data processing")
 	#parser.add_option("--importali3d", type="string",    default="",               help="import the xform.projection parameters as the initial configuration for 3-D reconstruction" )
 	#parser.add_option("--Kgroup_guess",  action="store_true",default=False,        help="Guess the possible number of groups existing in one dataset" )
 	#parser.add_option("--frequency_start_search",  type="float",default=.10,       help="start frequency for low pass filter search")
@@ -2009,7 +2021,7 @@ def main():
 		masterdir                       =args[1]
 		global_def.BATCH = True
 		#---initialize MPI related variables
-		from mpi import mpi_init, mpi_comm_size, MPI_COMM_WORLD, mpi_comm_rank,mpi_barrier,mpi_bcast, mpi_bcast, MPI_INT
+		from mpi import mpi_init, mpi_comm_size, MPI_COMM_WORLD, mpi_comm_rank,mpi_barrier,mpi_bcast, mpi_bcast, MPI_INT,MPI_CHAR
 		sys.argv = mpi_init(len(sys.argv),sys.argv)
 		nproc    = mpi_comm_size(MPI_COMM_WORLD)
 		myid     = mpi_comm_rank(MPI_COMM_WORLD)
@@ -2066,7 +2078,8 @@ def main():
 		Constants["sausage"]             =options.sausage
 		Constants["chunkdir"]            =options.chunkdir
 		Constants["PWadjustment"]        =options.PWadjustment
-		Constants["upscale"]             =options.upscale 
+		Constants["upscale"]             =options.upscale
+		Constants["wn"]                  =options.wn 
 		# -----------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options
@@ -2140,8 +2153,12 @@ def main():
 			exit()
 		pixel_size = bcast_number_to_all(pixel_size, source_node = main_node)
 		fq         = bcast_number_to_all(fq, source_node = main_node)
-		Tracker["constants"]["nnxo"]         = nnxo
-		Tracker["constants"]["pixel_size"]   = pixel_size
+		if Tracker["constants"]["wn"]==0:
+			Tracker["constants"]["nnxo"]         = nnxo
+		else:
+			Tracker["constants"]["nnxo"]          = Tracker["constants"]["wn"]
+			nnxo     =  Tracker["constants"]["nnxo"]
+		Tracker["constants"]["pixel_size"]      = pixel_size
 		Tracker["fuse_freq"]    = fq
 		del fq, nnxo, pixel_size
 		if(Tracker["constants"]["radius"]  < 1):
@@ -2154,18 +2171,15 @@ def main():
 			if masterdir =="":
 				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 				masterdir ="master_sort3d"+timestring
-				li =len(masterdir)
-				cmd="{} {}".format("mkdir", masterdir)
-				cmdexecute(cmd)
-			else:
-				li = 0
-				keepchecking =1			
+			li =len(masterdir)
+			cmd="{} {}".format("mkdir", masterdir)
+			cmdexecute(cmd)
 		else:
 			li=0
-			keepchecking =1
 		li = mpi_bcast(li,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
 		if li>0:
 			masterdir = mpi_bcast(masterdir,li,MPI_CHAR,main_node,MPI_COMM_WORLD)
+			import string
 			masterdir = string.join(masterdir,"")
 		if myid ==main_node:
 			print_dict(Tracker["constants"],"Permanent settings of 3-D sorting program")
@@ -2180,6 +2194,13 @@ def main():
 			total_stack = 0
 		total_stack = bcast_number_to_all(total_stack, source_node = main_node)
 		mpi_barrier(MPI_COMM_WORLD)
+		from time import sleep
+		while not os.path.exists(masterdir):
+				print  "Node ",myid,"  waiting..."
+				sleep(5)
+		mpi_barrier(MPI_COMM_WORLD)
+		if myid == main_node:
+			log_main.add("sort3d starts in "+masterdir)
 		#####
 		###----------------------------------------------------------------------------------
 		# Initial data analysis and handle two chunk files
@@ -2191,14 +2212,21 @@ def main():
 		chunk_dict = {}
 		chunk_list = []
 		if Tracker["constants"]["chunkdir"]=="":
-			try:
+			chunk_id_exist = 0
+			if myid ==main_node:
 				image=get_im(Tracker["orgstack"],0)
-				image.get_attr("chunk_id") # in case text files are lost, chunk_id could be recorded in image header.
-				chunk_id_exist = True
-			except:
-				chunk_id_exist = False
+				chunk_id_in_header = image.get_attr_default("chunk_id", None) # in case text files are lost, chunk_id could be recorded in image header
+				if chunk_id_in_header == None:
+					chunk_id_exist = 0
+				else:
+					chunk_id_exist = 1
+			chunk_id_exist =bcast_number_to_all(chunk_id_exist, source_node=main_node)
 			if chunk_id_exist:
-				chunk_one, chunk_two=get_two_chunks_from_stack(Tracker)
+				if myid ==main_node:
+					chunk_one, chunk_two=get_two_chunks_from_stack(Tracker)
+				else:
+					chunk_one = 0
+					chunk_two = 0
 			else:
 				if myid ==main_node:
 					ll=range(total_stack)
@@ -2211,8 +2239,8 @@ def main():
 				else:
 					chunk_one = 0
 					chunk_two = 0
-				chunk_one = wrap_mpi_bcast(chunk_one, main_node)
-				chunk_two = wrap_mpi_bcast(chunk_two, main_node)
+			chunk_one = wrap_mpi_bcast(chunk_one, main_node)
+			chunk_two = wrap_mpi_bcast(chunk_two, main_node)
 		else: 
 			if myid == main_node:
 				chunk_one = read_text_file(os.path.join(Tracker["constants"]["chunkdir"],"chunk0.txt"))
@@ -2225,16 +2253,13 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		#################################################################
 		#--- Fill chunk ID into headers
+		"""
 		if myid ==main_node:
 			image=EMData()
 			image.read_image(Tracker["orgstack"],0)
-			try: 
-				image.get_attr("chunk_id")
-				chunk_id_not_filled = False
-			except:
-				chunk_id_not_filled = True
-			if chunk_id_not_filled:
-				#log_main.add("chunk_id is not in header!")
+			chunk_id_filled = image.get_attr_default("chunk_id", None)
+			if chunk_id_filled is None:
+				log_main.add("chunk_id is not in header!")
 				for id_index in chunk_one:
 					image =EMData()
 					image.read_image(Tracker["orgstack"],id_index)
@@ -2245,11 +2270,13 @@ def main():
 					image.read_image(Tracker["orgstack"],id_index)
 					image.set_attr("chunk_id",1)
 					write_header(Tracker["orgstack"],image,id_index)
-				#
-				#log_main.add("chunk_ids have been filled in header!")
-				#log_main.add("chunk_id is already in header!")
+				log_main.add("chunk_ids have been filled in header!")
+			else:
+				log_main.add("chunk_id is already in header!")
+		"""
 		mpi_barrier(MPI_COMM_WORLD)
 		#############
+		keepchecking =1
 	   	if myid == main_node:
 			if keepchecking:
 				if(os.path.exists(os.path.join(masterdir,"EMAN2DB/rdata.bdb"))):doit = False
@@ -2433,12 +2460,17 @@ def main():
 		do_two_way_comparison(Tracker)
 		###############################
 		ref_vol_list = []
+		from time import sleep
 		number_of_ref_class = []
 		for igrp in xrange(len(Tracker["two_way_stable_member"])):
 			Tracker["this_data_list"]      = Tracker["two_way_stable_member"][igrp]
 			Tracker["this_data_list_file"] = os.path.join(workdir,"stable_class%d.txt"%igrp)
 			if myid ==main_node:
 				write_text_file(Tracker["this_data_list"],Tracker["this_data_list_file"])
+			while not os.path.exists(Tracker["this_data_list_file"]):
+				#print  " my_id",myid
+				sleep(2)
+			mpi_barrier(MPI_COMM_WORLD)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"],Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], info=None)
 			ref_vol_list.append(volref)
@@ -2476,6 +2508,10 @@ def main():
 		number_of_ref_class= []
 		for igrp in xrange(number_of_groups):
 			class_file = os.path.join(outdir,"Class%d.txt"%igrp)
+			while not os.path.exists(class_file):
+				print  " my_id",myid
+				sleep(2)
+			mpi_barrier(MPI_COMM_WORLD)
 			npergroup=read_text_file(class_file)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
@@ -2569,6 +2605,10 @@ def main():
 			vol_list = []
 			for igrp in xrange(number_of_groups):
 				class_file = os.path.join(outdir,"Class%d.txt"%igrp)
+				while not os.path.exists(class_file):
+					#print  " my_id",myid
+					sleep(2)
+				mpi_barrier(MPI_COMM_WORLD)
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
 				vol_list.append(volref)
@@ -2597,6 +2637,10 @@ def main():
 			Tracker["this_data_list"]   = Tracker["this_unaccounted_list"]
 			Tracker["total_stack"]      = len(Tracker["this_unaccounted_list"])
 		if Tracker["constants"]["unaccounted"]:
+			while not os.path.exists(Tracker["this_unaccounted_text"]):
+				#print  " my_id",myid
+				sleep(2)
+			mpi_barrier(MPI_COMM_WORLD)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],Tracker["this_unaccounted_text"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
 			nx_of_image=volref.get_xsize()

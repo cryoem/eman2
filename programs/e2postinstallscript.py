@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-#
-# Author: Grant Tang
-# Copyright (c) 2000-2006 Baylor College of Medicine
+# Muyuan Chen 2016-01
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -30,53 +28,21 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
 import os
-import sys
-import platform
-from subprocess import *
+import time
 
+### replacing the timestamp in e2version.py
+now_time = time.ctime()
+emandir= os.getenv("EMAN2DIR")
+e2ver=open("{}/bin/e2version.py".format(emandir),'r')
+lines=e2ver.readlines()
+e2ver.close()
 
-EMANVERSION="EMAN 2.12"
-DATESTAMP="BUILD_DATE"
+e2ver=open("{}/bin/e2version.py".format(emandir),'w')
+for l in lines:
+	e2ver.write(l.replace("BUILD_DATE",now_time))
+e2ver.close()
 
-def main():
-	print(EMANVERSION + ' (GITHUB: ' + DATESTAMP +')')
-
-	if sys.platform=='linux2':
-		print('Your EMAN2 is running on: {} {}'.format(platform.platform(), os.uname()[2], os.uname()[-1]))
-
-	elif sys.platform=='darwin':
-		print('Your EMAN2 is running on: Mac OS {} {}'.format(platform.mac_ver()[0], platform.mac_ver()[2]))
-
-	elif sys.platform=='win32':
-		ver = sys.getwindowsversion()
-		ver_format = ver[3], ver[0], ver[1]
-		win_version = {
-					(1, 4, 0): '95',
-					(1, 4, 10): '98',
-					(1, 4, 90): 'ME',
-					(2, 4, 0): 'NT',
-					(2, 5, 0): '2000',
-					(2, 5, 1): 'XP',
-					(2, 5, 2): '2003',
-					(2, 6, 0): '2008',
-					(2, 6, 1): '7'
-				}
-
-		if win_version.has_key(ver_format):
-			winsysver = 'Windows' + ' ' + win_version[ver_format]
-		else:
-			winsysver = 'Windows'
-
-		if 'PROGRAMFILES(X86)' in os.environ:
-			winsystype = '64bit'
-		else:
-			winsystype = '32bit'
-
-		print('Your EMAN2 is running on: {} {}'.format(winsysver, winsystype))
-
-	print('Your Python version is: {}'.format(os.sys.version.split()[0]))
-
-if __name__== "__main__":
-	main()
+### remove this file since we do not want user to run this script after installation
+try: os.remove("{}/bin/e2postinstallscript.py".format(emandir))
+except: pass

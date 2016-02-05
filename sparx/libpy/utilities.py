@@ -2643,6 +2643,143 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 
 				list_of_em_objects[i] = em_object
 
+
+
+def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_all_em_objects_distributed_across_processes, list_of_em_objects_for_myid_process, myid, comm=-1):
+
+	"""
+	
+	The assumption in <<gather_compacted_EMData_to_root>> is that each processor
+	calculates part of the list of elements and then each processor sends
+	its results to the root
+
+	Therefore, each processor has access to the header. If we assume that the
+	attributes of interest from the header are the same for all elements then
+	we can copy the header and no mpi message is necessary for the
+	header.
+
+	"""
+	from applications import MPI_start_end
+	from EMAN2 import EMNumPy
+	from numpy import concatenate, shape, array, split
+	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	from numpy import reshape
+
+	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+
+	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+
+	ref_start, ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
+	ref_end -= ref_start
+	ref_start = 0
+	
+	# used for copying the header
+	reference_em_object = list_of_em_objects_for_myid_process[ref_start]
+	try:
+		
+		str_to_send = str(reference_em_object.get_attr_dict())
+
+		# print "\nFFFFFFFFFFFFFF\n\n", reference_em_object.get_attr_dict(), "\n\n\n"
+		# from mpi import mpi_finalize
+		# mpi_finalize()
+		# import sys
+		# sys.stdout.flush()
+		# sys.exit()
+	except:
+		raise ValueError("Could not convert em attribute dictionary to string s that gather_compacted_EMData_to_root_with_header_info_for_each_image can be used.")
+
+
+	nx = reference_em_object.get_xsize()
+	ny = reference_em_object.get_ysize()
+	nz = reference_em_object.get_zsize()
+
+	# # is_complex = reference_em_object.is_complex()
+	# is_ri = reference_em_object.is_ri()
+	# changecount = reference_em_object.get_attr("changecount")
+	# is_complex_x = reference_em_object.is_complex_x()
+	# is_complex_ri = reference_em_object.get_attr("is_complex_ri")
+	# apix_x = reference_em_object.get_attr("apix_x")
+	# apix_y = reference_em_object.get_attr("apix_y")
+	# apix_z = reference_em_object.get_attr("apix_z")
+	# is_complex = reference_em_object.get_attr_default("is_complex",1)
+	# is_fftpad = reference_em_object.get_attr_default("is_fftpad",1)
+	# is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz%2)
+	
+	data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
+	size_of_one_refring_assumed_common_to_all = data.size
+	
+	# n = shape(data)
+	# size_of_one_refring_assumed_common_to_all = 1
+	# for i in n: size_of_one_refring_assumed_common_to_all *= i
+
+	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
+		print "Sending refrings: size of data to broadcast is greater than 2GB"
+
+	for sender_id in range(1,ncpu):
+		if sender_id == myid:
+			data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])  #array([], dtype = 'float32')
+			str_to_send = str(list_of_em_objects_for_myid_process[ref_start].get_attr_dict())
+			em_dict_to_send_list = [list_of_em_objects_for_myid_process[ref_start].get_attr_dict()]
+			for i in xrange(ref_start+1,ref_end):
+				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])])
+				# str_to_send += str(list_of_em_objects_for_myid_process[i].get_attr_dict())
+				em_dict_to_send_list.append(list_of_em_objects_for_myid_process[i].get_attr_dict())
+				
+		else:
+			data = array([], dtype = 'float32')
+
+		sender_ref_start, sender_ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, sender_id)
+
+		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
+		
+		from mpi import mpi_recv, mpi_send, MPI_TAG_UB, mpi_barrier
+		if myid == 0:
+			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
+			str_to_receive = wrap_mpi_recv(sender_id)
+			em_dict_list = eval(str_to_receive)
+			# print "em_dict_list", em_dict_list
+			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, MPI_TAG_UB, MPI_COMM_WORLD)
+		elif sender_id == myid:
+			wrap_mpi_send(str(em_dict_to_send_list), 0)
+			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
+			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+		
+		mpi_barrier(MPI_COMM_WORLD)
+
+		# if myid != sender_id:
+		if myid == 0:
+			for i in xrange(sender_ref_start, sender_ref_end):
+				offset_ring = sender_ref_start
+				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
+				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
+				image_data = data[start_p:end_p]
+
+				if int(nz) != 1:
+					image_data = reshape(image_data, (nz, ny, nx))
+				elif ny != 1:
+					image_data = reshape(image_data, (ny, nx))
+					
+				em_object = EMNumPy.numpy2em(image_data)
+				em_object.set_attr_dict(em_dict_list[i - sender_ref_start])
+
+				# # em_object.set_complex(is_complex)
+				# em_object.set_ri(is_ri)
+				# em_object.set_attr_dict({
+				# "changecount":changecount,
+				# "is_complex_x":is_complex_x,
+				# "is_complex_ri":is_complex_ri,
+				# "apix_x":apix_x,
+				# "apix_y":apix_y,
+				# "apix_z":apix_z,
+				# 'is_complex':is_complex,
+				# 'is_fftodd':is_fftodd,
+				# 'is_fftpad':is_fftpad})
+
+				# list_of_em_objects[i] = em_object
+				list_of_em_objects_for_myid_process.append(em_object)
+				
+		mpi_barrier(MPI_COMM_WORLD)
+
 def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_processes, list_of_em_objects_for_myid_process, myid, comm=-1):
 
 	"""
@@ -5066,6 +5203,12 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	txl = float(radius - nxinit//2+1)
 	for im in xrange(nima):
 		data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
+		if im ==0:
+			if data[im].get_xsize() > Tracker["constants"]["nnxo"]:
+				window_particle =True
+				from EMAN2 import Region
+			else:
+				window_particle =False
 		phi,theta,psi,sx,sy = partstack[lpartids[im]][0], partstack[lpartids[im]][1], partstack[lpartids[im]][2], partstack[lpartids[im]][3], partstack[lpartids[im]][4]
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			ctf_params = data[im].get_attr("ctf")
@@ -5073,11 +5216,17 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 			data[im] -= st[0]
 			data[im] = filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
-		if preshift:
+		if preshift:# always true
 			data[im] = fshift(data[im], sx, sy)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 			sx = 0.0
 			sy = 0.0
+		if window_particle:
+			mx = data[im].get_xsize()//2-Tracker["constants"]["nnxo"]//2
+			my = data[im].get_ysize()//2-Tracker["constants"]["nnxo"]//2
+			data[im] = data[im].get_clip(Region(mx,my,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]))
+			data[im].set_attr('ctf_applied', 1)
+			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 		#oldshifts[im] = [sx,sy]
 		#  resample will properly adjusts shifts and pixel size in ctf
 		data[im] = resample(data[im], shrinkage)
@@ -5087,12 +5236,14 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 		#if(nsoft == 1 and an[0] > -1):
 		#  We will always set it to simplify the code
 		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
+		chunk_id_state = data[im].get_attr_default("chunk_id",None)
+		if chunk_id_state == None: data[im].set_attr("chunk_id",Tracker["chunk_dict"][ lpartids[im]])
 	assert( nxinit == data[0].get_xsize() )  #  Just to make sure.
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
 
 
-def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_node, nproc, \
+def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid = 0, main_node = 0, nproc = 1, \
 					original_data = None, return_real = False, preshift = False, apply_mask = True, large_memory = True):
 	"""
 	This function will read from stack a subset of images specified in partids
@@ -5115,7 +5266,8 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 	from fundamentals import fdecimate, fshift, fft
 	from filter       import filt_ctf, filt_table
 	from applications import MPI_start_end
-	from math import sqrt
+	from math         import sqrt
+	
 
 	if( myid == main_node ):
 		print "  "
@@ -5151,19 +5303,6 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 	if(original_data == None or not large_memory): original_data = [None]*nima
 	shrinkage = nxinit/float(Tracker["constants"]["nnxo"])
 
-	if apply_mask:
-		nnx = bckgdata[0].get_xsize()
-		nny = bckgdata[0].get_ysize()
-		bckgnoise = []
-		for i in xrange(nny):
-			prj = [0.0]*nnx
-			for k in xrange(1,nnx):
-				qt = bckgdata[0].get_value_at(k,i)
-				if( qt > 0.0 ):  qt = 1./sqrt(qt)
-				prj[k] = qt
-			prj[0] = 1.0
-			bckgnoise.append(prj)
-		datastamp = bckgdata[1]
 
 	#  Note these are in Fortran notation for polar searches
 	#txm = float(nxinit-(nxinit//2+1) - radius -1)
@@ -5171,6 +5310,23 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 	radius = int(Tracker["constants"]["radius"]*shrinkage + 0.5)
 	txm = float(nxinit-(nxinit//2+1) - radius)
 	txl = float(radius - nxinit//2+1)
+
+	if bckgdata :
+		nnx = bckgdata[0].get_xsize()
+		nny = bckgdata[0].get_ysize()
+		bckgnoise = []
+		oneover = []
+		for i in xrange(nny):
+			prj = [0.0]*nnx
+			prj[0] = 1.0
+			for k in xrange(1,nnx): prj[k] = bckgdata[0].get_value_at(k,i)
+			oneover.append(prj)
+			for k in xrange(1,nnx):
+				if( prj[k] > 0.0 ):  prj[k] = 1.0/sqrt(prj[k])
+			bckgnoise.append(prj)
+
+		datastamp = bckgdata[1]
+
 	for im in xrange(nima):
 		if(original_data[im] == None or not large_memory):
 			original_data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
@@ -5185,8 +5341,9 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 		st = Util.infomask(data[im], mask2D, False)
 		data[im] -= st[0]
 		data[im] /= st[1]
-
-		if apply_mask:
+		if data[im].get_attr_default("bckgnoise", None) :  data[im].delete_attr("bckgnoise")
+		#  Do bckgnoise if exists
+		if bckgdata:
 			try:
 				stmp = data[im].get_attr("ptcl_source_image")
 			except:
@@ -5199,18 +5356,27 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 				indx = datastamp.index(stmp)
 			except:
 				ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
-			bckg = model_gauss_noise(Tracker["constants"]["nnxo"]**2/2.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
-			bckg.set_attr("is_complex",1)
-			bckg.set_attr("is_fftpad",1)
-			bckg = fft(filt_table(bckg,bckgnoise[indx]))
-			from morphology import cosinemask
-			data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
+
+			data[im].set_attr("bckgnoise",oneover[indx])
+			if apply_mask:
+				bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+				bckg.set_attr("is_complex",1)
+				bckg.set_attr("is_fftpad",1)
+				bckg = fft(filt_table(bckg,bckgnoise[indx]))
+				#  Normalize bckg noise in real space, only region actually used.
+				st = Util.infomask(bckg, mask2D, False)
+				bckg -= st[0]
+				bckg /= st[1]
+				from morphology import cosinemask
+				data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
+		else:
+			#  if no bckgnoise, do simple masking instead
+			if apply_mask:  data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"] )
 
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			data[im] = filt_ctf(data[im], data[im].get_attr("ctf"))
 			data[im].set_attr('ctf_applied', 1)
 		else:  apix = Tracker["constants"]["pixel_size"]
-		set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 
 		#  resample will properly adjusts shifts and pixel size in ctf
 		#data[im] = resample(data[im], shrinkage)
@@ -5218,7 +5384,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata, myid, main_no
 		data[im] = fdecimate(data[im], nxinit, nxinit, 1, return_real)
 		try:
 			ctf_params = original_data[im].get_attr("ctf")
-			ctf_params.apix = apix/shrinkage
+			ctf_params.apix = ctf_params.apix/shrinkage
 			data[im].set_attr('ctf', ctf_params)
 		except:  pass
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):

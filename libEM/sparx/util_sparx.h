@@ -1174,6 +1174,9 @@ public:
 	static std::vector<int> max_clique(std::vector<int> edges);
 
 	static EMData* box_convolution(EMData* img, int w);
+/*    Bessel function */
 
+static float bessel0(float r, float a, float alpha);
+static inline double bessi0(double x);
 
 #endif	//util__sparx_h__

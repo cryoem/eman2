@@ -226,7 +226,7 @@ def main():
 	    The window size will change accordingly.
 		sxprocess input.hdf output.hdf  --changesize --ratio=0.5
 
-	3.  Compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
+	3.  Compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes or a 3-D volume.
 		sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
 
 	4.  Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
@@ -433,30 +433,36 @@ def main():
 		if nargs < 2:
 			ERROR("must provide name of input and output file!", "pw", 1)
 			return
-		from utilities import get_im
+		from utilities import get_im, write_text_file
+		from fundamentals import rops_table
 		d = get_im(args[0])
-		nx = d.get_xsize()
-		ny = d.get_ysize()
-		if nargs ==3: mask = get_im(args[2])
-		wn = int(options.wn)
-		if wn == -1:
-			wn = max(nx, ny)
+		ndim = d.get_ndim()
+		if ndim ==3:
+			pw = rops_table(d)
+			write_text_file(pw, args[1])			
 		else:
-			if( (wn<nx) or (wn<ny) ):  ERROR("window size cannot be smaller than the image size","pw",1)
-		n = EMUtil.get_image_count(args[0])
-		from utilities import model_blank, model_circle, pad
-		from EMAN2 import periodogram
-		p = model_blank(wn,wn)
+			nx = d.get_xsize()
+			ny = d.get_ysize()
+			if nargs ==3: mask = get_im(args[2])
+			wn = int(options.wn)
+			if wn == -1:
+				wn = max(nx, ny)
+			else:
+				if( (wn<nx) or (wn<ny) ):  ERROR("window size cannot be smaller than the image size","pw",1)
+			n = EMUtil.get_image_count(args[0])
+			from utilities import model_blank, model_circle, pad
+			from EMAN2 import periodogram
+			p = model_blank(wn,wn)
 		
-		for i in xrange(n):
-			d = get_im(args[0], i)
-			if nargs==3:
-				d *=mask
-			st = Util.infomask(d, None, True)
-			d -= st[0]
-			p += periodogram(pad(d, wn, wn, 1, 0.))
-		p /= n
-		p.write_image(args[1])
+			for i in xrange(n):
+				d = get_im(args[0], i)
+				if nargs==3:
+					d *=mask
+				st = Util.infomask(d, None, True)
+				d -= st[0]
+				p += periodogram(pad(d, wn, wn, 1, 0.))
+			p /= n
+			p.write_image(args[1])
 
 	elif options.adjpw:
 

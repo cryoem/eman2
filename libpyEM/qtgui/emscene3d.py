@@ -2735,7 +2735,44 @@ class EMSGNodeInspector(EMItem3DInspector):
 	"""
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
+		if name=="All Objects":
+			tabwidget = QtGui.QWidget()
+			gridbox = QtGui.QGridLayout()
+			
+			EMSGNodeInspector.addExtraTabAllObjects(self, gridbox)
+			
+			tabwidget.setLayout(gridbox)
+			self.addTab(tabwidget, "misc")
 		
+	def addExtraTabAllObjects(self,gridbox):
+		self.getthresh = QtGui.QLabel("Iso-threshod")
+		self.isothr_box=QtGui.QLineEdit("0.0")
+		gridbox.addWidget(self.getthresh, 1, 0, 1, 1)
+		gridbox.addWidget(self.isothr_box, 1, 1, 1, 1)
+		QtCore.QObject.connect(self.isothr_box,QtCore.SIGNAL("returnPressed()"),self._on_change_threshold)
+		#QtCore.QObject.connect(self.getthresh, QtCore.SIGNAL("clicked()"), self._on_get_thresh)
+		
+	def _on_change_threshold(self):
+		try:
+			value = float(self.isothr_box.text())
+		except:
+			return
+		for c in  self.item3d().getChildren():
+			for iso in c.getChildren():
+				try:
+					iso.setThreshold(value)
+					#iso.updateSceneGraph()
+				except: pass
+		
+	#def _on_get_thresh(self):
+		##print value,
+		#mx=[]
+		#mn=[]
+		#for c in  self.item3d().getChildren():
+			#mx.append(c.data["maximum"])
+			#mn.append(c.data["minimum"])
+		#self.isothr_slider.setRange(min(mn),max(mx))
+
 	def addControls(self, gridbox):
 		super(EMSGNodeInspector, self).addControls(gridbox)
 		buttonframe = QtGui.QFrame()

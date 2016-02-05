@@ -22083,7 +22083,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  01/21/2016  11:40 AM"<<endl;}
+{ cout <<"  VERSION  02/02/2016  16:08 PM"<<endl;}
 
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
@@ -22563,16 +22563,16 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	EMData* cmasked = new EMData();
 	cmasked->set_size( nx, ny, nz );
 	cmasked = img->copy_head();
-	int cz = int(nz/2.);
-	int cy = int(ny/2.);
-	int cx = int(nx/2.);
-	int img_dim=img->get_ndim();
-	if (radius<0)
+	int cz = nz/2;
+	int cy = ny/2;
+	int cx = nx/2;
+	int img_dim = img->get_ndim();
+	if (radius<0 )
 	{
 		switch (img_dim)
 		{
 			case(1):
-	    		radius =int(nx/2.)-cosine_width;
+	    		radius = nx/2 - cosine_width;
 			break;
 			case(2):
 				radius = int(std::min(nx,ny)/2.)-cosine_width;
@@ -22581,8 +22581,8 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				radius = int(std::min(std::min(nx,ny),nz)/2.) - cosine_width;
 			break;
 		}
-	}		 
-	int radius_p = radius +cosine_width;
+	}
+	int radius_p = radius + cosine_width;
 	if (bckg != NULL )
 	{
 	  	for (int iz=0; iz<nz; iz++)
@@ -22596,17 +22596,14 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	  					 {
 	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
 	  						if (r>=radius_p)
-	  					  		//(*cmasked) (ix,iy,iz)=(*bckg)(ix,iy,iz);
-	  					  		(*cmasked) (ix,iy,iz)= 0.0;
+	  					  		(*cmasked)(ix,iy,iz) = (*bckg)(ix,iy,iz);
 							if (r>=radius && r<radius_p)
 							{
-								float temp = (.5+.5*cos(pi*(radius_p-r)/cosine_width));
-								(*cmasked) (ix,iy,iz)= 0.0;
+								float temp = (0.5+0.5*cos(pi*(radius_p-r)/cosine_width));
+								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*((*bckg)(ix,iy,iz)-(*img)(ix,iy,iz));
 							}
-								//(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz)+temp*((*bckg)(ix,iy,iz)-(*img)(ix,iy,iz));
 							if (r<radius)
-								//std::cout<<"  "<<(*img)(ix,iy,iz)<<std::endl;
-								(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz);
+								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 							}
 						}
 					}
@@ -22626,21 +22623,21 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
 	  						if (r>=radius_p)
 	  							{	
-	  								u +=1.0;
+	  								u +=1.0f;
 	  								s +=(*img)(ix,iy,iz);
 	  							}
 							if ( r>=radius && r<radius_p)
 								{
-									float temp = (.5+.5*cos(quadpi*(radius_p-r)/cosine_width));
-									u +=temp;
-									s +=(*img)(ix,iy,iz)*temp;
+									float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
+									u += temp;
+									s += (*img)(ix,iy,iz)*temp;
 								}
 							if (r<radius)
-								(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz);
+								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 							}
 						}
 				}
-		s /=u;
+		s /= u;
 		for (int iz=0; iz<nz; iz++)
 			{
 	  		    int tz =(iz-cz)*(iz-cz);
@@ -22655,10 +22652,10 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 								if (r>=radius && r<radius_p)
 									{
 								  		float temp = (.5+.5*cos(quadpi*(radius_p-r)/cosine_width));
-								  		(*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz)+temp*(s-(*img)(ix,iy,iz));
+								  		(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s-(*img)(ix,iy,iz));
 									}
 									if (r<radius)
-								    (*cmasked) (ix,iy,iz)= (*img)(ix,iy,iz);
+								    (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 						}
 				}
 			}
@@ -24805,4 +24802,39 @@ EMData* Util::box_convolution(EMData* img, int w)
 	return img2;
 }
 #undef img2_ptr
+
+double Util::bessi0(double x)
+{
+    double y, ax, ans;
+    if ((ax = fabs(x)) < 3.75)
+    {
+        y = x / 3.75;
+        y *= y;
+        ans = 1.0 + y * (3.5156229 + y * (3.0899424 + y * (1.2067492+ y * (0.2659732 + y * (0.360768e-1 + y * 0.45813e-2)))));
+    }
+    else
+    {
+        y = 3.75 / ax;
+        ans = (exp(ax) / sqrt(ax)) * (0.39894228 + y * (0.1328592e-1+ y * (0.225319e-2 + y * (-0.157565e-2 + y * (0.916281e-2+ y * (-0.2057706e-1 + y * (0.2635537e-1 + y * (-0.1647633e-1 + y * 0.392377e-2))))))));
+    }
+    return ans;
+}
+float Util::bessel0(float r, float a, float alpha)
+{
+    double rda, rdas, arg;
+    rda = (double) (r / a);
+    rdas = rda * rda;
+    if (rdas <= 1.0)
+    {
+        arg = (double)alpha * sqrt(1.0 - rdas);
+        float w = (float) (bessi0(arg) /(float)bessi0(alpha));
+        return w;
+    }
+    else 
+      {
+    	float w =0.0;
+    	return w;
+     }
+}
+
 
