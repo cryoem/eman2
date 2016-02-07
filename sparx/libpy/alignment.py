@@ -2046,6 +2046,14 @@ def ali3D_direct(data, volprep, refproj, refang, delta_psi, shifts, myid, main_n
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	###from time import time
 	#  Input data has to be CTF-multiplied, preshifted
+	#  Output - newpar, see structure
+	#  newpar = [[i,[None], 0.0,0.0,[None]] for i in xrange(10)]
+	#  newpar = [[params],[],... len(data)]
+	#  params = [particleID, [phi,theta,psi,sx,sy], bestsimilarity, worstsimilarity,[imageallparams]]]
+	#  imageallparams = [[[phi, theta, psi],[[sx,sy,similarity],[],...  number of shifts]], [], [] ...  (number of proj directions)*(number of psis) ]
+	#  To sort:
+	#   from operator import itemgetter, attrgetter, methodcaller
+	#   params.sort(key=itemgetter(2))
 	###at = time()
 	npsi = int(360./delta_psi)
 	nang = len(refang)
@@ -2075,7 +2083,7 @@ def ali3D_direct(data, volprep, refproj, refang, delta_psi, shifts, myid, main_n
 						#best = i
 						simis[kl]  = peak
 						newpar[kl] = [refang[i][0],refang[i][1],psi,shifts[im][0],shifts[im][1]]
-			
+
 	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
 
 	###if myid == main_node:  print "  Finished :",time()-at
