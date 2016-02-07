@@ -2097,9 +2097,9 @@ EMData *BackProjectionReconstructor::finish(bool)
 
 EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int npad )
 {
-        int nx = slice->get_xsize();
+	int nx = slice->get_xsize();
 	int ny = slice->get_ysize();
-        int ndim = (ny==1) ? 1 : 2;
+	int ndim = (ny==1) ? 1 : 2;
 
 	if( ndim==2 && nx!=ny )
 	{
