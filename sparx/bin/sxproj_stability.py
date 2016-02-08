@@ -53,6 +53,7 @@ stack. If indeed only one stack is desired, one could use sxcpy.py to concatenat
 stacks into one stack.
 '''
 from	global_def 	import *
+from global_def import SPARX_MPI_TAG_UNIVERSAL
 
 def main():
 	import	global_def
@@ -83,7 +84,7 @@ def main():
 
 	(options,args) = parser.parse_args()
 	
-	from mpi          import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD, MPI_TAG_UB
+	from mpi          import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 	from mpi          import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
 	from applications import MPI_start_end, within_group_refinement, ali2d_ras
 	from pixel_error  import multi_align_stability
@@ -180,12 +181,12 @@ def main():
 			if proc_to_stay == main_node:
 				if myid == main_node: 	proj_list.append(proj_list_all[i])
 			elif myid == main_node:
-				mpi_send(len(proj_list_all[i]), 1, MPI_INT, proc_to_stay, MPI_TAG_UB, MPI_COMM_WORLD)
-				mpi_send(proj_list_all[i], len(proj_list_all[i]), MPI_INT, proc_to_stay, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(len(proj_list_all[i]), 1, MPI_INT, proc_to_stay, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				mpi_send(proj_list_all[i], len(proj_list_all[i]), MPI_INT, proc_to_stay, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			elif myid == proc_to_stay:
-				img_per_grp = mpi_recv(1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				img_per_grp = mpi_recv(1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 				img_per_grp = int(img_per_grp[0])
-				temp = mpi_recv(img_per_grp, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				temp = mpi_recv(img_per_grp, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 				proj_list.append(map(int, temp))
 				del temp
 			mpi_barrier(MPI_COMM_WORLD)
@@ -389,34 +390,34 @@ def main():
 					aveList[im].write_image(args[1], km)
 					km += 1
 			else:
-				nl = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+				nl = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 				nl = int(nl[0])
 				for im in xrange(nl):
 					ave = recv_EMData(i, im+i+70000)
-					nm = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					nm = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					nm = int(nm[0])
-					members = mpi_recv(nm, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					members = mpi_recv(nm, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					ave.set_attr('members', map(int, members))
-					members = mpi_recv(nm, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					members = mpi_recv(nm, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					ave.set_attr('pixerr', map(float, members))
-					members = mpi_recv(3, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					members = mpi_recv(3, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					ave.set_attr('refprojdir', map(float, members))
 					ave.write_image(args[1], km)
 					km += 1
 	else:
-		mpi_send(len(aveList), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		mpi_send(len(aveList), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 		for im in xrange(len(aveList)):
 			send_EMData(aveList[im], main_node,im+myid+70000)
 			members = aveList[im].get_attr('members')
-			mpi_send(len(members), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(members, len(members), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(len(members), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(members, len(members), MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			members = aveList[im].get_attr('pixerr')
-			mpi_send(members, len(members), MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(members, len(members), MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			try:
 				members = aveList[im].get_attr('refprojdir')
-				mpi_send(members, 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(members, 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			except:
-				mpi_send([-999.0,-999.0,-999.0], 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send([-999.0,-999.0,-999.0], 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 	global_def.BATCH = False
 	mpi_barrier(MPI_COMM_WORLD)

@@ -493,6 +493,9 @@ void FourierReconstructor::setup()
 	ny2=ny/2;
 	nz2=nz/2;
 
+#ifdef RECONDEBUG
+	for (int i=0; i<125; i++) ddata[i]=dnorm[i]=0.0;
+#endif
 
 	// Adjust nx if for Fourier transform even odd issues
 	bool is_fftodd = (nx % 2 == 1);
@@ -1006,7 +1009,7 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 					dt[0]+=gg*rdata[idx];
 					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
 					dt[2]+=norm[idx/2];
-					normsum+=gg;				
+					normsum+=gg;
 				}
 			}
 		}
@@ -1031,6 +1034,20 @@ EMData *FourierReconstructor::finish(bool doift)
 	
 	bool sqrtnorm=params.set_default("sqrtnorm",false);
 	normalize_threed(sqrtnorm);
+	
+// This compares single precision sum to double precision sum near the origin
+#ifdef RECONDEBUG
+	for (int k=0; k<5; k++) {
+		for (int j=0; j<5; j++) {
+			for (int i=0; i<5; i++) {
+				int idx=i*2+j*10+k*50;
+				ddata[idx]/=dnorm[idx];
+				ddata[idx+1]/=dnorm[idx+1];
+				printf("%d %d %d   %1.4lg\t%1.4g     %1.4lg\t%1.4g\n",i,j,k,ddata[idx],image->get_value_at(i*2,j,k),ddata[idx+1],image->get_value_at(i*2+1,j,k));
+			}
+		}
+	}
+#endif
 	
 // 	tmp_data->write_image("density.mrc");
 
@@ -2080,9 +2097,9 @@ EMData *BackProjectionReconstructor::finish(bool)
 
 EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int npad )
 {
-        int nx = slice->get_xsize();
+	int nx = slice->get_xsize();
 	int ny = slice->get_ysize();
-        int ndim = (ny==1) ? 1 : 2;
+	int ndim = (ny==1) ? 1 : 2;
 
 	if( ndim==2 && nx!=ny )
 	{
@@ -2455,7 +2472,6 @@ void circumftrl( EMData* win , int npad)
 
 	float cdf = M_PI/(cor*ix);
 	for (int i = 1; i <= IP; ++i)  sincx[i] = pow(sin(i*cdf)/(i*cdf),2);
-	for (int i = 1; i <= IP; ++i)  cout<<1.0/sincx[i]<<endl;
 	cdf = M_PI/(cor*iy);
 	for (int i = 1; i <= JP; ++i)  sincy[i] = pow(sin(i*cdf)/(i*cdf),2);
 	cdf = M_PI/(cor*iz);
@@ -3925,7 +3941,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 							osnr = qres*count[ir] + frac*count[ir+1];
 							if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
 							//cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
-						}  else osnr = 1.0f;
+						}  else osnr = 0.0f;
 
 						float tmp = ((*m_wptr)(ix,iy,iz)+osnr);
 
@@ -3956,6 +3972,40 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 
 	return 0;
 }
+
+/*
+// For postprocessing only multiply by +/- 1
+						if(tmp>0.0f) {
+							int mum = (-2*((ix+iy+iz)%2)+1);
+						//cout<<" mvol "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<(*m_volume)(2*ix,iy,iz)<<"  "<<(*m_volume)(2*ix+1,iy,iz)<<"  "<<tmp<<"  "<<osnr<<endl;
+							(*m_volume)(2*ix,iy,iz)   *= mum;
+							(*m_volume)(2*ix+1,iy,iz) *= mum;
+							(*m_wptr)(ix,iy,iz) *= mum;
+						} else {
+							(*m_volume)(2*ix,iy,iz)   = 0.0f;
+							(*m_volume)(2*ix+1,iy,iz) = 0.0f;
+						}
+					}
+				} else {
+					(*m_volume)(2*ix,iy,iz)   = 0.0f;
+					(*m_volume)(2*ix+1,iy,iz) = 0.0f;
+				}
+			}
+		}
+	}
+
+	// back fft
+	m_volume->do_ift_inplace();
+	int npad = m_volume->get_attr("npad");
+	m_volume->depad();
+	circumftrl( m_volume, npad );
+	m_volume->set_array_offsets( 0, 0, 0 );
+
+	return 0;
+}
+*/
+
+
 
 
 

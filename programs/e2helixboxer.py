@@ -556,6 +556,7 @@ def db_get_helices_dict(micrograph_filepath, helix_width = None):
 	helices_dict = {}
 	for coords in box_coords_list:
 		if helix_width:
+			coords=list(coords)
 			coords[4] = helix_width
 		helix = get_helix_from_coords(micrograph, *coords)
 		helix["ptcl_source_image"] = micrograph_filepath

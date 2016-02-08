@@ -2732,17 +2732,17 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 
 		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
 		
-		from mpi import mpi_recv, mpi_send, MPI_TAG_UB, mpi_barrier
+		from mpi import mpi_recv, mpi_send, mpi_barrier
 		if myid == 0:
 			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
 			str_to_receive = wrap_mpi_recv(sender_id)
 			em_dict_list = eval(str_to_receive)
 			# print "em_dict_list", em_dict_list
-			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, MPI_TAG_UB, MPI_COMM_WORLD)
+			data = mpi_recv(sender_size_of_refrings, MPI_FLOAT, sender_id, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 		elif sender_id == myid:
 			wrap_mpi_send(str(em_dict_to_send_list), 0)
 			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 		
 		mpi_barrier(MPI_COMM_WORLD)
 
@@ -2799,6 +2799,7 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	from numpy import concatenate, shape, array, split
 	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	from numpy import reshape
+	from mpi import mpi_recv, mpi_send, mpi_barrier
 
 	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
 
@@ -2807,6 +2808,7 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	ref_start, ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
 	ref_end -= ref_start
 	ref_start = 0
+	tag_for_send_receive = 123456
 	
 	# used for copying the header
 	reference_em_object = list_of_em_objects_for_myid_process[ref_start]
@@ -2847,13 +2849,12 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 
 		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
 		
-		from mpi import mpi_recv, mpi_send, MPI_TAG_UB, mpi_barrier
 		if myid == 0:
 			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
-			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, MPI_TAG_UB, MPI_COMM_WORLD)
+			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, tag_for_send_receive, MPI_COMM_WORLD)
 		elif sender_id == myid:
 			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, tag_for_send_receive, MPI_COMM_WORLD)
 		
 		mpi_barrier(MPI_COMM_WORLD)
 
@@ -3112,7 +3113,7 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 	Gather the a list of EMData on all nodes to the main node, we assume the list has the same length on each node.
 											It is a dangerous assumption, it will have to be changed  07/10/2015
 	"""
-	from mpi import MPI_COMM_WORLD, MPI_INT, MPI_TAG_UB
+	from mpi import MPI_COMM_WORLD, MPI_INT
 	from mpi import mpi_send, mpi_recv	
 
 	l = len(data)
@@ -3126,8 +3127,8 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 			else:
 				for k in xrange(l):
 					im = recv_EMData(i, i*l+k)
-					mem_len = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
-					members = mpi_recv(int(mem_len[0]), MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					mem_len = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					members = mpi_recv(int(mem_len[0]), MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					members = map(int, members)
 					im.set_attr('members', members)
 					gathered_data.append(im)
@@ -3135,8 +3136,8 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 		for k in xrange(l):
 			send_EMData(data[k], main_node, myid*l+k)
 			mem = data[k].get_attr('members')
-			mpi_send(len(mem), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(mem, len(mem), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(len(mem), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(mem, len(mem), MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	return gathered_data
 
 def send_string_to_all(str_to_send, source_node = 0):
@@ -3267,13 +3268,13 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 	import types
 	from utilities import get_arb_params
 	from mpi 	   import mpi_send
-	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
+	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
 
 	#  This function is called from a node other than the main node
 
 	if comm == -1: comm = MPI_COMM_WORLD
 	TransType = type(Transform())
-	mpi_send([image_start, image_end], 2, MPI_INT, main_node, MPI_TAG_UB, comm)
+	mpi_send([image_start, image_end], 2, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
 	nvalue = []
 	for im in xrange(image_start, image_end):
 		value = get_arb_params(data[im-image_start], list_params)
@@ -3284,7 +3285,7 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 				m = value[il].get_matrix()
 				assert (len(m)==12)
 				for f in m: nvalue.append(f)
-	mpi_send(nvalue, len(nvalue), MPI_FLOAT, main_node, MPI_TAG_UB, comm)
+	mpi_send(nvalue, len(nvalue), MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
 
 def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
 	import types

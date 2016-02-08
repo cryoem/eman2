@@ -78,6 +78,10 @@ from e2version import DATESTAMP
 
 SPARXVERSION = "SPARX v4.0" + ' (GITHUB: ' + DATESTAMP +')'
 
+global SPARX_MPI_TAG_UNIVERSAL
+SPARX_MPI_TAG_UNIVERSAL = 123456
+# from global_def import SPARX_MPI_TAG_UNIVERSAL
+
 global SPARX_DOCUMENTATION_WEBSITE
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
 

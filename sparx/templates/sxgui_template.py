@@ -93,6 +93,14 @@ def construct_sxcmd_list():
 			
 			# Register this to command token dictionary
 			sxcmd.token_dict[token.key_base] = token
+		
+		# NOTE: 2016/02/05 Toshio Moriya
+		# Handle Exceptional cases due to the limitation of software design 
+		# In future, we should remove these exception handling by reviewing software design
+		if sxcmd.name == "sxfilterlocal":
+			assert(sxcmd.token_dict["locresvolume"].key_base == "locresvolume")
+			assert(sxcmd.token_dict["locresvolume"].type == "output")
+			sxcmd.token_dict["locresvolume"].type = "image"
 	
 	return sxcmd_list
 

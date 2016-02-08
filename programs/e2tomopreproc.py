@@ -261,6 +261,7 @@ def main():
 			print "and the final lowpass frequency will be", options.lowpassfrac
 
 		kk=0
+		imgs.sort()
 		for img in imgs:
 
 			task = TomoPreproc2DTask( img, options, angles[kk] )

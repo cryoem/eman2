@@ -34,6 +34,7 @@ import global_def
 from   global_def import *
 from EMAN2 import *
 from sparx import *
+from global_def import SPARX_MPI_TAG_UNIVERSAL
 
 def main():
 	import os
@@ -70,7 +71,7 @@ def main():
 	if options.MPI:
 		from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 		from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
-		from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
+		from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
 		sys.argv = mpi_init(len(sys.argv),sys.argv)		
 	
 		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)

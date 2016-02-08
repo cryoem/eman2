@@ -1,7 +1,6 @@
 High priority
 2.1
 2/2/16		Make sure split particles in e2refinesplit are being split correctly (matching maps)
-2/2/16		tiled display of 2d image stack from MRCS file has funny contrast (C.J.)
 2/2/16		slice view in 3d contrast doesn't adjust well for maps with strange density ranges (Pawel)
 2/1/16		e2spt_average uses unmasked FSC for filter
 2/1/16		e2spt_wedgefill option to use unaligned input particles, or something similar
@@ -118,3 +117,4 @@ Complete
 10/18/15	default isosurface threshold adjusted
 10/15	6/12/14		isosurface color on mac (and other machines with older opengl). Why no newer opengl working on mac?
 10/19/15	10/18/15	gauss_5 falloff?, dealt with this by expanding the --pad amount with some testing
+2/2/16		2/3/16		tiled display of 2d image stack from MRCS file has funny contrast (C.J.)
