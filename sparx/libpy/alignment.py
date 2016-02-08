@@ -2011,6 +2011,7 @@ def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, c
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar,simis
 
+'''
 def prepare_refproj(volprep, refang, delta_psi = 1.0, mempercpu = 1.e9, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
@@ -2036,9 +2037,9 @@ def prepare_refproj(volprep, refang, delta_psi = 1.0, mempercpu = 1.e9, kb3D = N
 	else:
 		refproj = None
 	return refproj
+'''
 
-
-def ali3D_direct(data, volprep, refproj, refang, delta_psi, shifts, myid, main_node, kb3D = None):
+def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
 	from utilities import wrap_mpi_gatherv
@@ -2049,40 +2050,37 @@ def ali3D_direct(data, volprep, refproj, refang, delta_psi, shifts, myid, main_n
 	#  Output - newpar, see structure
 	#  newpar = [[i,[None], 0.0,0.0,[None]] for i in xrange(10)]
 	#  newpar = [[params],[],... len(data)]
-	#  params = [particleID, [phi,theta,psi,sx,sy], bestsimilarity, worstsimilarity,[imageallparams]]]
-	#  imageallparams = [[[phi, theta, psi],[[sx,sy,similarity],[],...  number of shifts]], [], [] ...  (number of proj directions)*(number of psis) ]
+	#  params = [particleID, [phi,theta,psi,ishift], bestsimilarity, worstsimilarity,[imageallparams]]]
+	#  imageallparams = [[[phi, theta, psi],[[ishift,similarity],[],...  number of shifts]], [], [] ...  (number of proj directions)*(number of psis) ]
 	#  To sort:
 	#   from operator import itemgetter, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
 	###at = time()
 	npsi = int(360./delta_psi)
 	nang = len(refang)
-	simis = [-1.0e23]*len(data)
-	newpar = [None]*len(data)
-	if refproj: nrefproj = 0
+	#newpar = [None]*len(data)
+	newpar = [[i,[None], -1.0,1.0e23,[]] for i in xrange(len(data))]
+	iang = -1
 	for i in xrange(nang):
 		###if myid == main_node:  print "  Angle :",i,time()-at
 		for j in xrange(npsi):
+			iang += 1
 			psi = j*delta_psi
-			if refproj :
-				temp   = refproj[nrefproj][0]
-				nrmref = refproj[nrefproj][1]
-				nrefproj += 1
-			else:
-				if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
-				else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
-				temp.set_attr("is_complex",0)
-				nrmref = sqrt(temp.cmp("dot", temp, dict(negative = 0)))
-				
+			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
+			else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
+			temp.set_attr("is_complex",0)
+			nrmref = sqrt(temp.cmp("dot", temp, dict(negative = 0)))
+			newpar[kl][-1].append([[refang[i][0],refang[i][1],psi],[]])
 			for kl,emimage in enumerate(data):
 				for im in xrange(len(shifts)):
 					peak = temp.cmp("dot", emimage[im], dict(negative = 0))
 					peak /= nrmref
 					#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
-					if(peak > simis[kl]):
-						#best = i
-						simis[kl]  = peak
-						newpar[kl] = [refang[i][0],refang[i][1],psi,shifts[im][0],shifts[im][1]]
+					newpar[kl][-1][-1].append([im, peak])
+					if( peak > newpar[kl][2] ):
+						newpar[kl][2] = peak
+						newpar[kl][1] = [refang[i][0],refang[i][1],psi,im]
+					if( peak < newpar[kl][3]):  newpar[kl][3] = peak
 
 	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
 
@@ -2092,7 +2090,7 @@ def ali3D_direct(data, volprep, refproj, refang, delta_psi, shifts, myid, main_n
 	#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
 	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
-	return newpar,simis
+	return newpar
 
 
 
