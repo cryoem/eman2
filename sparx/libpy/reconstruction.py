@@ -1323,7 +1323,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
-	for image in prjlist[iset]:
+	for image in prjlist:
 		#image.set_attr("bckgnoise", bckgnoise[0])
 		insert_slices(r, image)
 		if not (info is None):
