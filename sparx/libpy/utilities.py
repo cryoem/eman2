@@ -5243,9 +5243,9 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
 
-
+'''
 def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid = 0, main_node = 0, nproc = 1, \
-					original_data = None, return_real = False, preshift = False, apply_mask = True, large_memory = True):
+					original_data = None, return_real = False, preshift = False, apply_mask = True, compute_sigma2  False, large_memory = True):
 	"""
 	This function will read from stack a subset of images specified in partids
 	   and assign to them parameters from partstack with optional CTF application and shifting of the data.
@@ -5401,7 +5401,6 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts, original_data
 
-
 def getindexdata(stack, partids, partstack, myid, nproc):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack
@@ -5430,7 +5429,7 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	for i in xrange(len(partstack)):
 		set_params_proj(data[i], partstack[i])
 	return data
-
+'''
 
 def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_of_vars = [], write_or_append = "w", 
 	vars_that_will_show_only_size = []):
