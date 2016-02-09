@@ -2068,7 +2068,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	npsi = int(360./delta_psi)
 	nang = len(refang)
 	#newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
-	newpar = [[i, 1.0e23, [] for i in xrange(len(data))]
+	newpar = [[i, 1.0e23, []] for i in xrange(len(data))]
 	for i in xrange(nang):
 		if myid == main_node:  print "  Angle :",i,time()-at
 		iang = i*100000000
@@ -2100,7 +2100,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 					if( peak < newpar[kl][1]):  newpar[kl][1] = peak
 		for kl in xrange(len(data)):
 			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
-			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1])]
+			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]
 
 		
 	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
