@@ -1310,8 +1310,8 @@ def cosinemask(im, radius = -1, cosine_width = 5, bckg = None):
 		The fall-off begins from pixel at a distance radius from the center,
 		i.e., mask(radius) = 1 and mask(radius+cosine_width)=0.
 	"""
-	#return  Util.cosinemask(im, radius, cosine_width, bckg)
-	#"""
+	return  Util.cosinemask(im, radius, cosine_width, bckg)
+'''
 	from utilities import model_blank
 	from math import cos, sqrt, pi
 	nx = im.get_xsize()
@@ -1368,7 +1368,7 @@ def cosinemask(im, radius = -1, cosine_width = 5, bckg = None):
 						om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z) + temp*(s-om.get_value_at(x,y,z)))
 						#om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z)*(0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width )))
 	return om
-	#"""
+	"""
 '''
 
 def get_biggest_cluster(mg):
@@ -1489,7 +1489,6 @@ def refine_with_mask(vol):
 	#drop_image(mask,"m2.spi","s")
 	vol *= mask
 	return vol
-'''
 
 
 
