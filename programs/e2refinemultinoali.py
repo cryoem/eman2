@@ -36,13 +36,15 @@ import json
 
 def main():
 	
-	usage="""muticlass_noalign.py 
+	usage="""muticlass_noalign.py --model model1.hdf,model2.hdf --oldpath refine_01
 	Perform a 3d classification like e2refine_multi using the orientation of each particle in an e2refine_easy"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--newpath", type=str,help="path for the classificaton", default="newrefine_01")
-	parser.add_argument("--oldpath", type=str,help="path for the original refinement", default="refine_01")
-	parser.add_argument("--model", type=str,help="model file for classification", default=None)
-	parser.add_argument("--threads", type=int,help="threads", default=12)
+	parser.add_argument("--newpath", type=str,help="Path for the classificaton. Default = newrefine_XX", default=None)
+	parser.add_argument("--oldpath", type=str,help="Path for the original refinement", default="refine_01")
+	parser.add_argument("--model", type=str,help="Model files for classification. With multiple file input, particle set is classified based on the similarity to each model. With only one input model, particle set is split to half.", default=None)
+	parser.add_argument("--simcmp",type=str,help="Default=ccc. The name of a 'cmp' to be used in comparing the aligned images", default="ccc")
+	parser.add_argument("--mask",type=str,help="Name of the mask file. The mask is applied to the input models.", default=None)
+	parser.add_argument("--threads", type=int,help="Number of threads. MPI is not supported yet.", default=12)
 	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -56,15 +58,20 @@ def main():
 	if len(inputmodel)==1:
 		multimodel=False
 		print "One input model. Split the data by half accroding to the similarity to the input model..."
-	elif len(inputmodel)==2:
+	else:
 		multimodel=True
 		print "Two input models. Perform multi-model refinement using existing alignment..."
-	else:
-		print "Not implemented yet..."
 	
+	### make new folder
+	if options.newpath == None:
+		fls=[int(i[-2:]) for i in os.listdir(".") if i[:10]=="newrefine_" and len(i)==12 and str.isdigit(i[-2:])]
+		if len(fls)==0 : fls=[0]
+		options.newpath = "newrefine_{:02d}".format(max(fls)+1)
+	
+	print "Working directory: {}".format(options.newpath)
 	try: os.mkdir(options.newpath)
 	except: 
-		print "New path exist. Overwrite..."
+		print "New path {} exist. Overwrite...".format(options.newpath)
 		pass
 	
 	
@@ -72,26 +79,31 @@ def main():
 	with open(options.oldpath+"/0_refine_parms.json") as json_file:    
 		db = json.load(json_file)
 	db=parse_json(db.copy())
-	
+	options.simcmp=parsemodopt(options.simcmp)
 	
 	### copy the model to the new folder
-	input_eo_order={0:"even",1:"odd"}
+	print "Preprocessing the input models..."
+	if options.mask:
+		options.mask="--multfile {}".format(options.mask)
+	else:
+		options.mask=""
+		
 	if multimodel:
 		models=range(len(inputmodel))
-		
 		for m in models:
 			outfile="{path}/model_input_{k}.hdf".format(path=options.newpath, k=m)
-			run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db["apix"]))
+			run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db["apix"],mask=options.mask))
+			inputmodel[m]=outfile
 		
 	
 	else:
 		models=[0,1]
 		outfile="{path}/model_input.hdf".format(path=options.newpath)
-		run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=inputmodel[0],out=outfile,freq=1.0/(db["targetres"]*2),apix=db["apix"]))
+		run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[0],out=outfile,freq=1.0/(db["targetres"]*2),apix=db["apix"],mask=options.mask))
+		inputmodel[m]=outfile
 		
 		
-	### make projections first, and use this for both even and odd
-	
+	### make projections first, and use this for both even and odd	
 	print "Making projections..."
 	if multimodel:
 		projfile=[]
@@ -104,6 +116,8 @@ def main():
 	
 	output_3d={}
 	output_cls={}
+	input_eo_order={0:"even",1:"odd"}
+	### even/odd loop
 	for eoid,eo in input_eo_order.items():
 		
 		oldmapfile=str(db["last_{}".format(eo)])
@@ -123,7 +137,7 @@ def main():
 		output_cls[eo]=classout
 
 		### get alignment from classmx file and calculate similarity
-		print "calculating similarity..."
+		print "Calculating similarity matrix..."
 		cmxcls=EMData(clsmx,0)
 		cmxtx=EMData(clsmx,2)
 		cmxty=EMData(clsmx,3)
@@ -138,7 +152,7 @@ def main():
 			c=int(cmxcls[0,i])
 			tr=Transform({"type":"2d","alpha":cmxalpha[0,i],"mirror":int(cmxmirror[0,i]),"tx":cmxtx[0,i],"ty":cmxty[0,i]})
 			pjs=[projs[k][c] for k in range(len(projfile))]
-			xforms.append({"ptclfile":ptclfile,"proj":pjs,"idx":i,"xform":tr})
+			xforms.append({"ptclfile":ptclfile,"proj":pjs,"idx":i,"xform":tr,"cmp":options.simcmp})
 		
 		pool = Pool()
 		corr=pool.map_async(do_compare, xforms)
@@ -150,18 +164,19 @@ def main():
 			time.sleep(2)
 		corr=corr.get()
 		np.savetxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo),corr)
-		
 		#corr=np.loadtxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo))
+		
 		### classification 
-		print "Classifying..."
+		print "Classifying particles..."
 		cmxtmp=cmxcls.copy()
 		cmxtmp.to_zero()
 		cmxtmp.sub(1)
-		cmxout=[cmxtmp.copy(), cmxtmp.copy()]
+		cmxout=[cmxtmp.copy() for s in models]
 		
 		
 		
 		if multimodel:
+			### simply classify
 			cls=np.argmin(corr,1)
 			print eo,[float(sum(cls==k))/float(npt) for k in models]
 			for i in range(npt):
@@ -172,7 +187,7 @@ def main():
 					else:
 						cmxout[s][0,i]=-1
 		else:
-			
+			### one model input, split the data to two halves
 			for c in range(ncls):
 				ss=[]
 				ns=0
@@ -204,7 +219,8 @@ def main():
 				e=EMData(clsmx,i)
 				e.write_image(newclsmx[s],i)
 		
-		print "class averaging..."
+		
+		print "Making class average and 3d map..."
 		for s in models:	
 			### class average
 			run("e2classaverage.py --input {inputfile} --classmx {clsmx} --decayedge --storebad --output {clsout} --ref {proj} --iter {classiter} -f --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} --parallel thread:{thrd}".format(
@@ -274,7 +290,7 @@ def do_compare(data):
 	e.transform(data["xform"])
 	ret=[]
 	for pj in data["proj"]:
-		ret.append(e.cmp("ccc",pj))
+		ret.append(e.cmp(data["cmp"][0],pj,data["cmp"][1]))
 	return ret
 	
 

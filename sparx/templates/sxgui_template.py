@@ -481,6 +481,9 @@ class SXPopup(QWidget):
 			if file_path:
 				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", "#").replace(".bdb", "")
 				file_path = file_path.replace("/#", "#")
+				# If the input directory is the current directory, use the simplified DBD file path format
+				if file_path.find(".#") != -1:
+					file_path = file_path.replace(".#", "")
 		elif file_format == "py":
 			file_path = str(QtGui.QFileDialog.getOpenFileName(self, "Select Python File", "", "PY files (*.py)", options = QtGui.QFileDialog.DontUseNativeDialog))
 			# Use full path
@@ -641,6 +644,13 @@ class SXTab(QWidget):
 							file_format = "bdb"
 							temp_btn = QPushButton("Select .%s" % file_format, self)
 							temp_btn.move(self.x4 + 40, self.y1 - 12)
+							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "bdb":
+							cmd_token_widget = QtGui.QLineEdit(self)
+							cmd_token_widget.setText(cmd_token.default)
+							file_format = "bdb"
+							temp_btn = QPushButton("Select .%s" % file_format, self)
+							temp_btn.move(self.x3 + 40, self.y1 - 12)
 							self.connect(temp_btn, QtCore.SIGNAL("clicked()"), partial(self.sxpopup.select_file, cmd_token_widget, file_format))
 						elif cmd_token.type == "pdb":
 							cmd_token_widget = QtGui.QLineEdit(self)
