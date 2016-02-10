@@ -461,12 +461,13 @@ def main(args):
 			fp.write(output_text); fp.flush() ;fp.close()
 			print output_text
 	else:
-		print "Skipping 2d alignment since it was alredy done!"
+		if( myid == main_node ):
+			print "Skipping 2d alignment since it was alredy done!"
 
 	mpi_barrier(MPI_COMM_WORLD)
 
 	os.chdir(masterdir)
-
+	
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:
 		pass

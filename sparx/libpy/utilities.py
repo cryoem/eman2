@@ -5574,7 +5574,11 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 			program_state_stack.track_state = [dict() for i in xrange(len(program_state_stack.track_stack))]
 			program_state_stack.track_state[-1] = current_state
 
+			file_name_of_saved_state_contains_information = False
 			if (os.path.exists(file_name_of_saved_state)):
+				statinfo = os.stat(file_name_of_saved_state)
+				file_name_of_saved_state_contains_information = statinfo.st_size > 0 
+			if file_name_of_saved_state_contains_information:
 				program_state_stack.saved_stack, \
 				program_state_stack.saved_state = restore_program_stack_and_state(file_name_of_saved_state)
 				program_state_stack.start_executing = START_EXECUTING_FALSE
