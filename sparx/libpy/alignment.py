@@ -2078,10 +2078,10 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
 			else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
 			temp.set_attr("is_complex",0)
-			nrmref = sqrt(temp.cmp("dot", temp, dict(negative = 0)))
+			nrmref = sqrt(Util.innerproduct(temp, temp))
 			for kl,emimage in enumerate(data):
 				for im in xrange(len(shifts)):
-					peak = temp.cmp("dot", emimage[im], dict(negative = 0))
+					peak = Util.innerproduct(temp, emimage[im])
 					peak /= nrmref
 					#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
 					newpar[kl][-1].append([im + iangpsi, peak])
