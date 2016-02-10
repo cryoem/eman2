@@ -293,6 +293,8 @@ const string BinaryTopHatProcessor::NAME = "morph.tophat.binary";
 const string BinaryBlackHatProcessor::NAME = "morph.blackhat.binary";
 const string GrowSkeletonProcessor::NAME = "morph.grow";
 const string FixSignProcessor::NAME = "math.fixmode";
+const string ZThicknessProcessor::NAME = "misc.zthick";
+const string ReplaceValuefromListProcessor::NAME = "misc.colorlabel";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -567,6 +569,8 @@ template <> Factory < Processor >::Factory()
 	force_add<BinaryInternalGradientProcessor>();
 	force_add<BinaryTopHatProcessor>();
 	force_add<BinaryBlackHatProcessor>();
+	force_add<ZThicknessProcessor>();
+	force_add<ReplaceValuefromListProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -12469,8 +12473,7 @@ EMData* CircularAverageBinarizeProcessor::process(const EMData* const image)  //
 			}
 		}
 	}
-	delete
-	dx;
+	delete dx;
 	delete dy;
 	return bwmap;
 
@@ -13284,6 +13287,52 @@ void BinaryBlackHatProcessor::process_inplace(EMData *image)
 	delete close;
 }
 
+EMData* ZThicknessProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("misc.zthick",params);
+	return proc;
+}
+
+void ZThicknessProcessor::process_inplace(EMData *image)
+{
+	float thresh=params.set_default("thresh",0);
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	for (int i=0; i<nx; i++) {
+		for (int j=0; j<ny; j++) {
+			// depth
+			int dep=0, starti=0;
+			bool counting=false;
+			for (int k=0; k<nz; k++) {
+				if (image->get_value_at(i,j,k)>thresh){
+					if (!counting){
+						// start counting
+						starti=k;
+						dep=0;
+						counting=true;
+					}
+					dep++;
+				}
+				else{
+					if (counting){
+						counting=false;
+						// go back and set the voxels to the depth value
+						for (int u=starti; u<k; u++){
+							image->set_value_at_fast(i,j,u,dep);
+// 							printf("%d,%d,%d,%d\n", i,j,u,dep);
+
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	
+}
 
 #ifdef SPARX_USING_CUDA
 
