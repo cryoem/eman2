@@ -22083,7 +22083,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  02/02/2016  16:08 PM"<<endl;}
+{ cout <<"  VERSION  02/09/2016  06:08 PM"<<endl;}
 
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
@@ -24683,6 +24683,25 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 	}
 	delete [] conn;
 	return result;
+}
+
+
+float Util::innerproduct(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img || !img1) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img += img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float ip = 0.0f;
+	for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+	return ip;
 }
 
 
