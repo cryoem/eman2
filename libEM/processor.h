@@ -4196,6 +4196,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		{
 			TypeDict d;
 			d.put("npeaks", EMObject::INT, "The number of pixels adjacent to the pixel under consideration which may be higher and still be a valid peak. If 0, finds pure peaks");
+			d.put("usemean", EMObject::BOOL, "Count all pixels with value higher than the mean of adjacent pixels as peaks. Overwrite npeaks.");
 			return d;
 		}
 
@@ -4209,18 +4210,32 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 	  protected:
 		void process_pixel(float *pixel, const float *data, int n) const
 		{
-			int r = 0;
+			if (params["usemean"]){
+				float mean=0;
+				for (int i = 0; i < n; i++)
+				{
+					mean+=data[i];
+				}
 
-			for (int i = 0; i < n; i++)
-			{
-				if (data[i] >= *pixel) {
-					r++;
+				if (*pixel < mean/float(n))
+				{
+					*pixel = 0;
 				}
 			}
+			else{
+				int r = 0;
 
-			if (r > npeaks)
-			{
-				*pixel = 0;
+				for (int i = 0; i < n; i++)
+				{
+					if (data[i] >= *pixel) {
+						r++;
+					}
+				}
+
+				if (r > npeaks)
+				{
+					*pixel = 0;
+				}
 			}
 		}
 	  private:
@@ -8779,6 +8794,80 @@ correction is not possible, this will allow you to approximate the correction to
 		static const string NAME;
 	};
 	
+	/**  Calculate the z thickness of each pixel in a binarized 3d image
+	 *   @author: Muyuan Chen
+	 *   @date: 02/2016
+	 */	
+	class ZThicknessProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new ZThicknessProcessor();
+		}
+		string get_desc() const
+		{
+			return "Calculate the z thickness of each pixel in a binarized 3d image.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh", EMObject::FLOAT, "Threshold for binarization");
+			return d;
+		}
+		static const string NAME;
+	};
+	
+	/** Replace the value of each pixel with a value in a given array.
+	 * i.e. given an array of [3,7,9], pixels with value of 0 will become 3, 1 becomes 7, 2 becomes 9.
+	 *   @author: Muyuan Chen
+	 *   @date: 02/2016
+	 */
+	class ReplaceValuefromListProcessor:public RealPixelProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new ReplaceValuefromListProcessor();
+		}
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("num", EMObject::INT, "Length of the array.");
+			d.put("colorlst", EMObject::FLOATARRAY, "Array of values to replace.");
+			return d;
+		}
+		static const string NAME;
+
+	  protected:
+		void process_pixel(float *x) const
+		{
+			int num=params["num"];
+			vector < float >lst =params["colorlst"];
+			if (*x<num){
+				*x=lst[int(*x)];
+			}
+			else{
+				*x=0;
+			}
+		}
+
+		string get_desc() const
+		{
+			return "Replace the value of each pixel with a value in a given array, i.e. given an array of [3,7,9], pixels with value of 0 will become 3, 1 becomes 7, 2 becomes 9. The input image has to be int, or it will be round down. Values exceed the length of array are set to zero. Designed for labeled image coloring.";
+		}
+	};
 	
 #ifdef SPARX_USING_CUDA
 	/* class MPI CUDA kmeans processor
