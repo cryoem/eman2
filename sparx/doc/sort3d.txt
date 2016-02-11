@@ -1,5 +1,5 @@
 = Name =
-sxsort3d - 3D Clustering: Sort out 3-D heterogeneity of 2-D data whose 3-D reconstruction parameters (xform.projection) have been determined already using 3-D sorting protocol I (P1).
+sxsort3d - 3D Clustering Protocol I (P1): Sort out 3D heterogeneity based on the reproducible members of K-means and Equal K-means classification. It runs after 3D refinement where the alignment parameters (xform.projection) are determined.
 
 = Usage =
 
@@ -25,11 +25,11 @@ sxsort3d exists only in MPI version.
     radius:: outer radius for rotational correlation: < nx - 1. Please set to the radius of the particle. (default -1)
     maxit:: maximum number of iteration: (default 25)
     rs:: step between rings in rotational correlation: > 0. (default 1)
-    xr:: range for translation search in x direction: search is +/-xr. (default 1)
-    yr:: range for translation search in y direction: search is +/-yr By default, same as xr. (default -1)
-    ts:: step size of the translation search: in both directions direction. search is -xr, -xr+ts, 0, xr-ts, xr. (default 0.25)
-    delta:: angular step of reference projections: (default 2)
-    an:: angular neighborhood for local searches: (default -1)
+    xr:: range for translation search in x direction: search is +/-xr. (default '1')
+    yr:: range for translation search in y direction: search is +/-yr. By default, same as xr. (default '-1')
+    ts:: step size of the translation search: in both directions direction. search is -xr, -xr+ts, 0, xr-ts, xr. (default '0.25')
+    delta:: angular step of reference projections: (default '2')
+    an:: angular neighborhood for local searches: (default '-1')
     center:: centering method: 0 - if you do not want the volume to be centered, 1 - center the volume using cog. (default 0)
     nassign:: number of reassignment iterations: performed for each angular step. (default 1)
     nrefine:: number of alignment iterations: performed for each angular step. (default 0)
@@ -46,8 +46,8 @@ sxsort3d exists only in MPI version.
     function:: name of the reference preparation function: (default do_volume_mrk02) 
     seed:: random seed: for create initial random assignment for EQ Kmeans (default -1) 
     smallest_group:: minimum members for identified group: (default 500) 
-    sausage:: way of filter volume: (default False) 
     chunkdir:: chunkdir for computing margin of error: (default none) 
+    sausage:: way of filter volume: (default False) 
     PWadjustment:: 1-D power spectrum of PDB file: used for EM volume power spectrum correction (default none) 
     upscale:: scaling parameter to adjust the power spectrum: of EM volumes (default 0.5) 
     wn:: optimal window size for data processing: of EM volumes (default 0) 
@@ -60,7 +60,7 @@ sxsort3d exists only in MPI version.
 = Description =
 
 The clustering algorithm in the program combines a couple of computational techniques, equal-Kmeans clustering, K-means clustering, and reproducibility of clustering such that it not only has a strong ability but also a high efficiency to sort out heterogeneity of cryo-EM images. The command sxsort3d.py is the protocol I {P1). In this protocol, the user defines the group size and thus defines the number of group K. Then the total data is randomly assigned into K group and an equal-size K-means (size restricted K-means) is carried out. N independent equal-Kmeans runs would give N partition of the K groups assignment. Then two-way comparison of these partitions gives the reproducible number of particles.
- 
+
 
 = Method =
 
@@ -75,12 +75,11 @@ Zhong Huang
 = Keywords =
     category 1:: APPLICATIONS
 
-  
 = Files =
 applications.py
 
 = See also =
-References to relevant other routines.
+[[http://sparx-em.org/sparxwiki/sxrsort3d|sxrsort3d]]
 
 = Maturity =
 
