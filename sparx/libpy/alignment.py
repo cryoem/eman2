@@ -2011,6 +2011,7 @@ def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, c
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar,simis
 
+'''
 def prepare_refproj(volprep, refang, delta_psi = 1.0, mempercpu = 1.e9, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
@@ -2036,55 +2037,79 @@ def prepare_refproj(volprep, refang, delta_psi = 1.0, mempercpu = 1.e9, kb3D = N
 	else:
 		refproj = None
 	return refproj
+'''
 
-
-def ali3D_direct(data, volprep, refproj, refang, delta_psi, shifts, myid, main_node, kb3D = None):
+def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lentop = 1000, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
 	from utilities import wrap_mpi_gatherv
 	from math import sqrt
 	from mpi import mpi_barrier, MPI_COMM_WORLD
-	###from time import time
+	from time import time
 	#  Input data has to be CTF-multiplied, preshifted
-	###at = time()
+	#  Output - newpar, see structure
+	#    newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	#    newpar = [[params],[],... len(data)]
+	#    params = [particleID, worstsimilarity,[imageallparams]]]
+	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+	#  Coding of orientations:
+	#    hash = ang*100000000 + lpsi*1000 + ishift
+	#    ishift = hash%1000
+	#    ipsi = (hash/1000)%100000000
+	#    iang  = hash/100000000
+	#  To get best matching for particle #kl:
+	#     hash_best = newpar[kl][-1][0][0]
+	#     best_sim  = newpar[kl][-1][0][1]
+	#  To sort:
+	from operator import itemgetter#, attrgetter, methodcaller
+	#   params.sort(key=itemgetter(2))
+
+	at = time()
 	npsi = int(360./delta_psi)
 	nang = len(refang)
-	simis = [-1.0e23]*len(data)
-	newpar = [None]*len(data)
-	if refproj: nrefproj = 0
+	#newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	newpar = [[i, 1.0e23, []] for i in xrange(len(data))]
 	for i in xrange(nang):
-		###if myid == main_node:  print "  Angle :",i,time()-at
+		if myid == main_node:  print "  Angle :",i,time()-at
+		iang = i*100000000
 		for j in xrange(npsi):
+			iangpsi = j*1000 + iang
 			psi = j*delta_psi
-			if refproj :
-				temp   = refproj[nrefproj][0]
-				nrmref = refproj[nrefproj][1]
-				nrefproj += 1
-			else:
-				if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
-				else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
-				temp.set_attr("is_complex",0)
-				nrmref = sqrt(temp.cmp("dot", temp, dict(negative = 0)))
-				
+			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
+			else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
+			temp.set_attr("is_complex",0)
+			nrmref = sqrt(Util.innerproduct(temp, temp))
 			for kl,emimage in enumerate(data):
 				for im in xrange(len(shifts)):
-					peak = temp.cmp("dot", emimage[im], dict(negative = 0))
+					peak = Util.innerproduct(temp, emimage[im])
 					peak /= nrmref
 					#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
-					if(peak > simis[kl]):
-						#best = i
-						simis[kl]  = peak
-						newpar[kl] = [refang[i][0],refang[i][1],psi,shifts[im][0],shifts[im][1]]
-			
+					newpar[kl][-1].append([im + iangpsi, peak])
+					#newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
+					#del newpar[kl][-1][-1]
+					'''
+					toto = -1
+					for k in xrange(lentop):
+						if(peak > newpar[kl][-1][k][1]):
+							toto = k
+							break
+					if( toto == 0 ):  newpar[kl][-1] = [[im + iangpsi, peak]] + newpar[kl][-1][:lentop-1]
+					elif(toto > 0 ):  newpar[kl][-1] = newpar[kl][-1][:toto-1] + [[im + iangpsi, peak]] + newpar[kl][-1][toto:lentop-1]
+					'''
+					#  Store the worst one
+					if( peak < newpar[kl][1]):  newpar[kl][1] = peak
+		for kl in xrange(len(data)):
+			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
+			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]
+
+		
 	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
-
 	###if myid == main_node:  print "  Finished :",time()-at
-
 	#mpi_barrier(MPI_COMM_WORLD)
 	#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
 	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
-	return newpar,simis
+	return newpar
 
 
 

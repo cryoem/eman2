@@ -33,6 +33,8 @@
  *
  * */
 
+//#define RECONDEBUG		// This is used to add some data objects for debugging reconstructors, it should normally be commented out!
+
 #ifndef eman_reconstructor_h__
 #define eman_reconstructor_h__ 1
 #include <fstream>
@@ -241,6 +243,10 @@ namespace EMAN
 			int subx0;
 			int suby0;
 			int subz0;
+			
+#ifdef RECONDEBUG
+			double ddata[250],dnorm[250];
+#endif
 
 		protected:
 			/** Free allocated memorys 

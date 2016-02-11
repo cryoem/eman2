@@ -493,6 +493,9 @@ void FourierReconstructor::setup()
 	ny2=ny/2;
 	nz2=nz/2;
 
+#ifdef RECONDEBUG
+	for (int i=0; i<125; i++) ddata[i]=dnorm[i]=0.0;
+#endif
 
 	// Adjust nx if for Fourier transform even odd issues
 	bool is_fftodd = (nx % 2 == 1);
@@ -1006,7 +1009,7 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 					dt[0]+=gg*rdata[idx];
 					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
 					dt[2]+=norm[idx/2];
-					normsum+=gg;				
+					normsum+=gg;
 				}
 			}
 		}
@@ -1031,6 +1034,20 @@ EMData *FourierReconstructor::finish(bool doift)
 	
 	bool sqrtnorm=params.set_default("sqrtnorm",false);
 	normalize_threed(sqrtnorm);
+	
+// This compares single precision sum to double precision sum near the origin
+#ifdef RECONDEBUG
+	for (int k=0; k<5; k++) {
+		for (int j=0; j<5; j++) {
+			for (int i=0; i<5; i++) {
+				int idx=i*2+j*10+k*50;
+				ddata[idx]/=dnorm[idx];
+				ddata[idx+1]/=dnorm[idx+1];
+				printf("%d %d %d   %1.4lg\t%1.4g     %1.4lg\t%1.4g\n",i,j,k,ddata[idx],image->get_value_at(i*2,j,k),ddata[idx+1],image->get_value_at(i*2+1,j,k));
+			}
+		}
+	}
+#endif
 	
 // 	tmp_data->write_image("density.mrc");
 
@@ -2080,38 +2097,41 @@ EMData *BackProjectionReconstructor::finish(bool)
 
 EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int npad )
 {
-        int nx = slice->get_xsize();
+	int nx = slice->get_xsize();
 	int ny = slice->get_ysize();
-        int ndim = (ny==1) ? 1 : 2;
+	int padffted= slice->get_attr_default("padffted", 0);
+	int ndim = (ny==1) ? 1 : 2;
+	int extension = 2*padffted;  //  If 2, it means it is a Fourier file.
 
-	if( ndim==2 && nx!=ny )
+	if( ndim==2 && (nx-extension)!=ny )
 	{
 		// FIXME: What kind of exception should we throw here?
 		throw std::runtime_error("Tried to padfft a 2D slice which is not square.");
 	}
 
-	// process 2D slice or 1D line -- subtract the average outside of the circle, zero-pad, fft extend, and fft
-	EMData* temp = slice->average_circ_sub();
+	EMData* padfftslice = NULL;
+	if( padffted == 0) {
+		// process 2D slice or 1D line -- subtract the average outside of the circle, zero-pad, fft extend, and fft
+		EMData* temp = slice->average_circ_sub();
 
-	Assert( temp != NULL );
-	EMData* zeropadded = temp->norm_pad( false, npad );
-	Assert( zeropadded != NULL );
-	checked_delete( temp );
+		padfftslice = temp->norm_pad( false, npad );
+		checked_delete( temp );
 
-    zeropadded->do_fft_inplace();
-	EMData* padfftslice = zeropadded;
+		padfftslice->do_fft_inplace();
+	} else {
+		padfftslice = new EMData(*slice);
+	}
 
 	// shift the projection
 	Vec2f trans = t.get_trans_2d();
 	float sx = -trans[0];
 	float sy = -trans[1];
-	if(sx != 0.0f || sy != 0.0)
-		padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
+	if(sx != 0.0f || sy != 0.0) padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
 
-        int remove = slice->get_attr_default("remove", 0);
-        padfftslice->set_attr( "remove", remove );
+	int remove = slice->get_attr_default("remove", 0);
+	padfftslice->set_attr( "remove", remove );
 
-      	padfftslice->center_origin_fft();
+	padfftslice->center_origin_fft();
 	return padfftslice;
 }
 
@@ -2298,10 +2318,8 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t
 		}
 	}
 	if( weight > 0.0f )  {
-		EMData* padfft = NULL;
 
-		if( padffted != 0 ) padfft = new EMData(*slice);
-		else                padfft = padfft_slice( slice, t,  m_npad );
+		EMData* padfft = padfft_slice( slice, t,  m_npad );
 
 		if( m_ndim==3 ) {
 			insert_padfft_slice( padfft, t, weight );
@@ -2742,34 +2760,28 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 		return 1;
 	}
 
-        int padffted= slice->get_attr_default( "padffted", 0 );
-        if( m_ndim==3 ) {
+	int padffted= slice->get_attr_default( "padffted", 0 );
+	if( m_ndim==3 ) {
 		if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_sizeofprojection)  ) {
-			
 			// FIXME: Why doesn't this throw an exception?
 			LOGERR("Tried to insert a slice that is the wrong size.");
 			return 1;
 		}
-        } 
-       if (m_ndim==2) {
-		Assert( m_ndim==2 );
+	} 
+	if (m_ndim==2) {
 		if( slice->get_ysize() !=1 ) {
 			LOGERR( "for 2D reconstruction, a line is excepted" );
-        		return 1;
+			return 1;
 		}
 	}
 	if( weight > 0.0f )  {
 
-		EMData* padfft = NULL;
-
-		if( padffted != 0 ) padfft = new EMData(*slice);
-		else                padfft = padfft_slice( slice, t,  m_npad );
+		EMData* padfft = padfft_slice( slice, t,  m_npad );
 		
 		//Assert( mult > 0 );
 
-			if( m_ndim==3 ) {
+		if( m_ndim==3 ) {
 			insert_padfft_slice( padfft, t, weight );		
-		
 		} else {
 			float ellipse_length,ellipse_step,cos_alpha,sin_alpha;
 			int ellipse_length_int;
@@ -2785,11 +2797,10 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 			loop_range=ellipse_length_int;
 			cos_alpha=temp1/ellipse_length;
 			sin_alpha=temp2/ellipse_length;
-			if(m_count%100==0)
-					{
+			if(m_count%100==0) {
 				std::cout<<"#############################################################"<<std::endl;
 				std::cout<<"line insert start=="<<m_count<<std::endl;
-				std::cout<<"ellipse lenth=="<<ellipse_length_int<<"ellips step=="<<ellipse_step<<std::endl;
+				std::cout<<"ellipse length=="<<ellipse_length_int<<"ellips step=="<<ellipse_step<<std::endl;
 				std::cout<<"loop_range"<<loop_range<<std::endl;
 							std::cout<<"x and y ratio=="<<m_xratio<<"  "<<m_yratio<<std::endl;
 				std::cout<<"cos sin of alpha=="<<cos(alpha)<<"   "<<sin(alpha)<<std::endl;
@@ -2798,10 +2809,6 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 				std::cout<<"prjection maximum==="<<loop_range*ellipse_step<<"ideal maximum"<<m_sizeofprojection*m_npad/2<<std::endl;
 				std::cout<<"x_size=="<<m_volume->get_xsize()<<"y_size=="<<m_volume->get_ysize()<<std::endl;
 				std::cout<<"#############################################################"<<std::endl;
-
-
-						
-
 			}
 			for(int i=0; i <=loop_range; ++i ) {
 				float xnew = i*cos_alpha;
@@ -2834,7 +2841,7 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 		}
 		checked_delete( padfft );
 		return 0;
-	}
+	} else return 0;
 }
 
 
@@ -3151,16 +3158,13 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 			return 1;
 		}
 
-		EMData* padfft = NULL;
-
-		if( padffted != 0 ) padfft = new EMData(*slice);
-		else		    padfft = padfft_slice( slice, t, m_npad );
+		EMData* padfft = padfft_slice( slice, t, m_npad );
 
 		insert_padfft_slice( padfft, t, weight );
 
 		checked_delete( padfft );
 		return 0;
-	}
+	} else return 0;
 }
 
 int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float weight )
@@ -3450,17 +3454,13 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 			}
 
 		int padffted= slice->get_attr_default("padffted", 0);
-		if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
-			{
+		if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
 			// FIXME: Why doesn't this throw an exception?
 			LOGERR("Tried to insert a slice that is the wrong size.");
 			return 1;
 		}
 
-		EMData* padfft = NULL;
-
-		if( padffted != 0 ) padfft = new EMData(*slice);
-		else                padfft = padfft_slice( slice, t, m_npad );
+		EMData* padfft = padfft_slice( slice, t, m_npad );
 
 		float tmp = padfft->get_attr_default("ctf_applied", 0);
 		int   ctf_applied = (int) tmp;
@@ -3747,7 +3747,7 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 		return 1;
 	}
 	if(weight >0.0f) {
-	//cout<<"  insert_slice "<<m_do_ctf<<endl;
+		//cout<<"  insert_slice "<<m_do_ctf<<endl;
 		/*
 		int buffed = slice->get_attr_default( "buffed", 0 );
 			if( buffed > 0 ) {
@@ -3755,18 +3755,7 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 				return 0;
 			}
 		*/
-		int padffted= slice->get_attr_default("padffted", 0);
-		if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
-			{
-			// FIXME: Why doesn't this throw an exception?
-			LOGERR("Tried to insert a slice that is the wrong size.");
-			return 1;
-		}
-
-		EMData* padfft = NULL;
-
-		if( padffted != 0 ) padfft = new EMData(*slice);
-		else                padfft = padfft_slice( slice, t, m_npad );
+		EMData* padfft = padfft_slice( slice, t, m_npad );;
 
 		EMData* ctf2d = NULL;
 		if( m_do_ctf == 1 ) {
@@ -4429,10 +4418,7 @@ int nn4_ctf_rectReconstructor::insert_slice(const EMData* const slice, const Tra
 			return 1;
 		}
 
-		EMData* padfft = NULL;
-
-		if( padffted != 0 ) padfft = new EMData(*slice);
-		else                padfft = padfft_slice( slice, t, m_npad );
+		EMData* padfft = padfft_slice( slice, t, m_npad );
 
 		insert_padfft_slice( padfft, t, weight );
 
@@ -4707,10 +4693,7 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 			LOGERR("Tried to insert a slice that is the wrong size.");
 			return 1;
 		}
-		EMData* padfft = NULL;
-
-		if( padffted != 0 )  padfft = new EMData(*slice);
-		else                 padfft = padfft_slice( slice, t, m_npad );
+		EMData* padfft = padfft_slice( slice, t, m_npad );
 
 		insert_padfft_slice( padfft, t, weight );
 
@@ -5228,108 +5211,95 @@ void file_store::get_image( int id, EMData* padfft )
     if( m_phis.size() == 0 ) {
         ifstream m_txt_ifs( m_txt_file.c_str() );
 
-	if( !m_txt_ifs )
+		if( !m_txt_ifs ) std::cerr << "Error: file " << m_txt_file << " does not exist" << std::endl;
+
+
+		string line;
+		std::getline( m_txt_ifs, line );
+
+		float first, defocus, phi, theta, psi;
+
+
+
+		while( m_txt_ifs >> first ) {
+
+			if( m_ctf ) {
+				m_Cs = first;
+				m_txt_ifs >> m_pixel >> m_voltage;
+				m_txt_ifs >> m_ctf_applied >> m_amp_contrast;
+				m_txt_ifs >> defocus >> phi >> theta >> psi;
+				m_defocuses.push_back( defocus );
+			} else {
+				phi = first;
+				m_txt_ifs >> theta >> psi;
+			}
+
+			m_txt_ifs >> m_x_out >> m_y_out >> m_z_out >> m_totsize;
+			m_phis.push_back( phi );
+			m_thetas.push_back( theta );
+			m_psis.push_back( psi );
+		}
+	}
+
+	Assert( m_ihandle != NULL );
+
+	std::istream::off_type offset = id*sizeof(float)*m_totsize;
+	Assert( offset >= 0 );
+
+	if( offset > 0 ) m_ihandle->seekg(offset, std::ios::beg);
+
+
+	if( m_ihandle->bad() )
 	{
-            std::cerr << "Error: file " << m_txt_file << " does not exist" << std::endl;
-        }
+		std::cout << "bad while fetching id, offset: " << id << " " << offset << std::endl;
+		throw std::logic_error( "bad happen" );
+	}
 
-	string line;
-	std::getline( m_txt_ifs, line );
+	if( m_ihandle->fail() )
+	{
+		std::cout << "fail while fetching id, offset, curoff: " << id << " " << offset << std::endl;
+		throw std::logic_error( "fail happen" );
+	}
 
-        float first, defocus, phi, theta, psi;
+	if( m_ihandle->eof() )
+	{
+		std::cout << "eof while fetching id, offset: " << id << " " << offset << std::endl;
+		throw std::logic_error( "eof happen" );
+	}
 
+	if( padfft->get_xsize() != m_x_out ||
+		padfft->get_ysize() != m_y_out ||
+		padfft->get_zsize() != m_z_out )
+	{
+		padfft->set_size(m_x_out, m_y_out, m_z_out);
+	}
 
+	char* data = (char*)(padfft->get_data());
+	m_ihandle->read( data, sizeof(float)*m_totsize );
+	padfft->update();
 
-        while( m_txt_ifs >> first ) {
+	if( m_ctf ) {
+		padfft->set_attr( "Cs", m_Cs );
+		padfft->set_attr( "Pixel_size", m_pixel );
+		padfft->set_attr( "voltage", m_voltage );
+		padfft->set_attr( "ctf_applied", m_ctf_applied );
+		padfft->set_attr( "amp_contrast", m_amp_contrast );
+		padfft->set_attr( "defocus", m_defocuses[id] );
+	}
 
-            if( m_ctf )
-            {
-                m_Cs = first;
-                m_txt_ifs >> m_pixel >> m_voltage;
-                m_txt_ifs >> m_ctf_applied >> m_amp_contrast;
-                m_txt_ifs >> defocus >> phi >> theta >> psi;
-                m_defocuses.push_back( defocus );
-            }
-            else
-            {
-                phi = first;
-                m_txt_ifs >> theta >> psi;
-            }
-
-            m_txt_ifs >> m_x_out >> m_y_out >> m_z_out >> m_totsize;
-            m_phis.push_back( phi );
-            m_thetas.push_back( theta );
-            m_psis.push_back( psi );
-        }
-    }
-
-    Assert( m_ihandle != NULL );
-
-    std::istream::off_type offset = id*sizeof(float)*m_totsize;
-    Assert( offset >= 0 );
-
-    if( offset > 0 )
-    {
-        m_ihandle->seekg(offset, std::ios::beg);
-    }
-
-    if( m_ihandle->bad() )
-    {
-        std::cout << "bad while fetching id, offset: " << id << " " << offset << std::endl;
-        throw std::logic_error( "bad happen" );
-    }
-
-    if( m_ihandle->fail() )
-    {
-        std::cout << "fail while fetching id, offset, curoff: " << id << " " << offset << std::endl;
-        throw std::logic_error( "fail happen" );
-    }
-
-    if( m_ihandle->eof() )
-    {
-        std::cout << "eof while fetching id, offset: " << id << " " << offset << std::endl;
-        throw std::logic_error( "eof happen" );
-    }
-
-    if( padfft->get_xsize() != m_x_out ||
-        padfft->get_ysize() != m_y_out ||
-        padfft->get_zsize() != m_z_out )
-    {
-        padfft->set_size(m_x_out, m_y_out, m_z_out);
-    }
-
-    char* data = (char*)(padfft->get_data());
-    m_ihandle->read( data, sizeof(float)*m_totsize );
-    padfft->update();
-
-    if( m_ctf )
-    {
-        padfft->set_attr( "Cs", m_Cs );
-        padfft->set_attr( "Pixel_size", m_pixel );
-        padfft->set_attr( "voltage", m_voltage );
-        padfft->set_attr( "ctf_applied", m_ctf_applied );
-        padfft->set_attr( "amp_contrast", m_amp_contrast );
-        padfft->set_attr( "defocus", m_defocuses[id] );
-    }
-
-    padfft->set_attr( "padffted", 1 );
-    padfft->set_attr( "phi", m_phis[id] );
-    padfft->set_attr( "theta", m_thetas[id] );
-    padfft->set_attr( "psi", m_psis[id] );
+	padfft->set_attr( "padffted", 1 );
+	padfft->set_attr( "phi", m_phis[id] );
+	padfft->set_attr( "theta", m_thetas[id] );
+	padfft->set_attr( "psi", m_psis[id] );
 
 }
 
 void file_store::restart( )
 {
-    if( m_ihandle == NULL )
-    {
-        m_ihandle = shared_ptr< ifstream >( new ifstream(m_bin_file.c_str(), std::ios::in | std::ios::binary) );
-    }
+    if( m_ihandle == NULL ) m_ihandle = shared_ptr< ifstream >( new ifstream(m_bin_file.c_str(), std::ios::in | std::ios::binary) );
 
-    if( m_ihandle->bad() || m_ihandle->fail() || m_ihandle->eof() )
-    {
-        m_ihandle->open( m_bin_file.c_str(), std::ios::binary );
-    }
+
+    if( m_ihandle->bad() || m_ihandle->fail() || m_ihandle->eof() ) m_ihandle->open( m_bin_file.c_str(), std::ios::binary );
 
     m_ihandle->seekg( 0, std::ios::beg );
 }

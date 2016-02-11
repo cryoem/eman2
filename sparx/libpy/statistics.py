@@ -1948,7 +1948,7 @@ def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
-	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
+	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
 	from fundamentals import fft
 	from utilities import model_blank, bcast_EMData_to_all, recv_EMData, send_EMData, bcast_number_to_all, info
 	from filter import filt_tophatb
@@ -2033,7 +2033,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 				if(k != main_node):
 					#print " start receiving",myid,i
 					tag_node = k+1001
-					dis = mpi_recv(2, MPI_FLOAT, k, MPI_TAG_UB, MPI_COMM_WORLD)
+					dis = mpi_recv(2, MPI_FLOAT, k, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					#print  "received ",myid,dis
 					tmp3 = recv_EMData(k, tag_node)
 					#print  "received ",myid
@@ -2064,7 +2064,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 		else:
 			tag_node = myid+1001
 			#print   "sent from", myid,dis
-			mpi_send(dis, 2, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(dis, 2, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			#print   "sending EMD from", myid
 			send_EMData(tmp3, main_node, tag_node)
 			#print   "sent EMD from",myid
@@ -3468,7 +3468,7 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 	
 	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
 	from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
-	from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send, MPI_TAG_UB
+	from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send
 	from utilities  import bcast_number_to_all, recv_EMData, send_EMData
 
 	#print "my id ==", myid, " assign [10:20] ", assign[10:20], " Je===", Je, "Cls==",Cls[ 'n' ], " Ji==", Cls['Ji']
@@ -3476,10 +3476,10 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 	if myid == main_node:
 		je_return = [0.0]*(ncpu)
 		for n1 in xrange(ncpu):
-			if n1 != main_node: je_return[n1]	=	mpi_recv(1,MPI_FLOAT, n1, MPI_TAG_UB, MPI_COMM_WORLD)
+			if n1 != main_node: je_return[n1]	=	mpi_recv(1, MPI_FLOAT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
  			else:               je_return[main_node]  = Je
 	else:
-		mpi_send(Je, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		mpi_send(Je, 1, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	n_best = -1
 	if(myid == main_node):
 		je_return = map(float, je_return)
@@ -3503,11 +3503,11 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 		if myid == main_node:
 			assign_return = [0]*(N)
 			if n_best == main_node: assign_return[0:N-1] = assign[0:N-1] 
-			else: assign_return = mpi_recv(N,MPI_INT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+			else: assign_return = mpi_recv(N, MPI_INT, n_best, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 		else:
 			if n_best == myid:
-				mpi_send(assign, N, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(assign, N, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 		if myid == main_node:	
 			r_Cls={}
@@ -3522,21 +3522,21 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 
 			if n_best == main_node: r_Cls['n'] = Cls['n'] 
 			else:
-				r_Cls['n'] = mpi_recv(K,MPI_INT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+				r_Cls['n'] = mpi_recv(K, MPI_INT, n_best, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 				r_Cls['n'] = map(int, r_Cls['n'])
 
 		else:
 			if n_best == myid:
-				mpi_send(Cls['n'], K, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(Cls['n'], K, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 		# get 'Ji'
 		if myid == main_node:
 
 			if n_best == main_node: r_Cls['Ji'] = Cls['Ji'] 
-			else: r_Cls['Ji'] = mpi_recv(K,MPI_FLOAT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+			else: r_Cls['Ji'] = mpi_recv(K, MPI_FLOAT, n_best, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 		else:
 			if n_best == myid:
-				mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 
 		for k in xrange( K):
@@ -3578,7 +3578,7 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 	
 	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
 	from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
-	from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send, MPI_TAG_UB
+	from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send
 	from utilities  import bcast_number_to_all, recv_EMData, send_EMData
 	
 	
@@ -3589,10 +3589,10 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 	'''if myid == main_node:
 		je_return = [0.0]*(ncpu)
 		for n1 in xrange(ncpu):
-			if n1 != main_node: je_return[n1]	=	mpi_recv(1,MPI_FLOAT, n1, MPI_TAG_UB, MPI_COMM_WORLD)
+			if n1 != main_node: je_return[n1]	=	mpi_recv(1,MPI_FLOAT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
  			else:               je_return[main_node]  = Je
 	else:
-		mpi_send(Je, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)'''
+		mpi_send(Je, 1, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)'''
 		
 	if  myid == main_node:
 		r_assign = []
@@ -3604,9 +3604,9 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			if n == main_node:
 				r_assign[ n ] = assign
 			else:
-				r_assign[ n ] = mpi_recv(N,MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+				r_assign[ n ] = mpi_recv(N, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	else:
-		mpi_send(assign, N, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		mpi_send(assign, N, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 		
 	
 	if  myid == main_node:
@@ -3631,11 +3631,11 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			if n == main_node:
 				(r_cls[n])['n'] = Cls['n']
 			else:
-				(r_cls[n])['n'] = mpi_recv(K,MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+				(r_cls[n])['n'] = mpi_recv(K, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 		
 		else:
 			if myid == n:
-				mpi_send(Cls['n'], K, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)	
+				mpi_send(Cls['n'], K, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)	
 		mpi_barrier(MPI_COMM_WORLD)
 	'''if myid == main_node:
 		for n in xrange( ncpu ):
@@ -3645,9 +3645,9 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			if n == main_node:
 				(r_cls[n])['Ji'] = Cls['Ji']
 			else:
-				(r_cls[n])['Ji'] = mpi_recv(K,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+				(r_cls[n])['Ji'] = mpi_recv(K, MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	else:
-		mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 		
 
 	for k in xrange( K):	
@@ -5280,7 +5280,7 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 	from statistics   import k_means_open_im, k_means_criterion, k_means_headlog
 	from statistics   import k_means_cla_MPI, k_means_SSE_MPI
 	from applications import MPI_start_end
-	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD, mpi_bcast, MPI_INT, mpi_send, mpi_recv, MPI_TAG_UB
+	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD, mpi_bcast, MPI_INT, mpi_send, mpi_recv
 	import sys, os, time
 	from utilities import bcast_number_to_all
 
@@ -5341,9 +5341,9 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node:
 			for n1 in xrange(ncpu):
-				if n1 != main_node: mpi_send(n_best, 1, MPI_INT, n1, MPI_TAG_UB, MPI_COMM_WORLD) 
+				if n1 != main_node: mpi_send(n_best, 1, MPI_INT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD) 
  				else:               n_best_get  = n_best
-		else: n_best_get	=	mpi_recv(1,MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		else: n_best_get	=	mpi_recv(1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 		n_best_get = int(n_best_get)
 		mpi_barrier(MPI_COMM_WORLD)
 		#print "myid==",myid," n_best==", n_best_get
@@ -6595,7 +6595,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 # added argument num_first_matches (jia)
 def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, maxit = 1e9, flagnorm = False, num_first_matches=1):
 	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
-	from mpi         import mpi_bcast, MPI_FLOAT, MPI_INT, mpi_send, mpi_recv, MPI_TAG_UB
+	from mpi         import mpi_bcast, MPI_FLOAT, MPI_INT, mpi_send, mpi_recv
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, running_time
 	from utilities   import model_blank, get_image, get_im, file_type
 	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_init_open_im, k_means_open_im
@@ -6672,10 +6672,10 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	if myid == main_node:
 		je_return = [0.0]*(ncpu)
 		for n1 in xrange(ncpu):
-			if n1 != main_node: je_return[n1]	=	mpi_recv(1,MPI_FLOAT, n1, MPI_TAG_UB, MPI_COMM_WORLD)
+			if n1 != main_node: je_return[n1]	=	mpi_recv(1, MPI_FLOAT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
  			else:               je_return[main_node]  = Je
 	else:
-		mpi_send(Je, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		mpi_send(Je, 1, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 	
 	n_best = 0
@@ -6687,9 +6687,9 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	mpi_barrier(MPI_COMM_WORLD)
 	if myid == main_node:
 		for n1 in xrange(ncpu):
-			if n1 != main_node: mpi_send(n_best, 1, MPI_INT, n1, MPI_TAG_UB, MPI_COMM_WORLD) 
+			if n1 != main_node: mpi_send(n_best, 1, MPI_INT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD) 
  			else:               n_best  = n_best
-	else: n_best	=	mpi_recv(1,MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+	else: n_best	=	mpi_recv(1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	n_best = int(n_best)		
 	#print "myid ==", myid, "n_best==", n_best
 	mpi_barrier( MPI_COMM_WORLD )

@@ -60,7 +60,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 	keyword_dict["mask"]                        = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask
 	keyword_dict["focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
 	keyword_dict["input_micrograph"]            = SXkeyword_map(2, "any_image")  # input_micrograph_pattern
-	keyword_dict["input_image"]                 = SXkeyword_map(2, "any_image")  # input_image
+	keyword_dict["input_image"]                 = SXkeyword_map(2, "bdb")        # input_image
 	keyword_dict["tr0"]                         = SXkeyword_map(2, "parameters") # --tr0=matrix_file
 	keyword_dict["input_coordinates"]           = SXkeyword_map(2, "parameters") # input_coordinates_pattern
 	keyword_dict["import_ctf"]                  = SXkeyword_map(2, "parameters") # --import_ctf=ctf_file
@@ -349,6 +349,7 @@ def main():
 	wiki_file_path_list.append("../doc/locres.txt")
 	wiki_file_path_list.append("../doc/filterlocal.txt")
 	wiki_file_path_list.append("../doc/sort3d.txt")
+	wiki_file_path_list.append("../doc/rsort3d.txt")
 	
 	sxgui_template_file_path = "sxgui_template.py"
 	

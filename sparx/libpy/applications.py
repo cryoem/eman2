@@ -2248,7 +2248,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	import sys
 	from mpi 	  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
-	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
+	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -2426,12 +2426,12 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 			if myid == main_node:
 				for n in xrange(number_of_proc):
 					if n != main_node:
-						ln =  mpi_recv(1, MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
-						lis = mpi_recv(ln[0], MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+						ln =  mpi_recv(1, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+						lis = mpi_recv(ln[0], MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						for l in xrange(ln[0]): assign[j].append(int(lis[l]))
 			else:
-				mpi_send(len(assign[j]), 1,MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-				mpi_send(assign[j], len(assign[j]), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(len(assign[j]), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				mpi_send(assign[j], len(assign[j]), MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 		if myid == main_node:
 			# replace the name of the stack with reference with the current one
@@ -11067,7 +11067,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
+	from mpi            import mpi_recv,  mpi_send
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
@@ -11660,13 +11660,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
 			m = 5
-			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
+			from mpi import mpi_recv, mpi_send, MPI_COMM_WORLD, MPI_FLOAT
 			if myid == main_node:
 				
 				fexp = open(os.path.join(outdir, "parameters_%04d_%04d.txt"%(N_step+1,Iter)),"w")
 				for n in xrange(number_of_proc):
 					if n!=main_node:
-						t = mpi_recv(recvcount[n]*m,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+						t = mpi_recv(recvcount[n] * m, MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						for i in xrange(recvcount[n]):
 							for j in xrange(m):
 								fexp.write(" %15.5f  "%t[j+i*m])
@@ -11687,7 +11687,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 					t = get_params_proj(data[i])
 					for j in xrange(m):
 						nvalue[j + i*m] = t[j]
-				mpi_send(nvalue, recvcount[myid]*m, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(nvalue, recvcount[myid] * m, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 				del nvalue
 			if myid == main_node:
 				print_msg("Time to write parameters = %d\n"%(time()-start_time))
@@ -11742,10 +11742,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 
 				if myid == main_node:
 					for n in xrange(number_of_proc):
-						if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2*(recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+						if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2 * (recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						else:    list_dps = lprms[2*recvpara[2*0]:2*recvpara[2*0+1]]
 				else:
-					list_dps = mpi_recv((para_end-para_start)*2, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+					list_dps = mpi_recv((para_end-para_start) * 2, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 				list_dps = map(float, list_dps)
 
@@ -11757,10 +11757,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				if myid == main_node:
 					list_return = [0.0]*(3*number_of_proc)
 					for n in xrange(number_of_proc):
-						if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+						if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3, MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
  						else:              list_return[3*main_node:3*main_node+3]  = local_pos[:]
 				else:
-					mpi_send(local_pos, 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+					mpi_send(local_pos, 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 				if myid == main_node:	
 					maxvalue = list_return[2]
@@ -11831,7 +11831,7 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
+	from mpi            import mpi_recv,  mpi_send
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
@@ -12406,13 +12406,13 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
 			m = 5
-			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
+			from mpi import mpi_recv, mpi_send, MPI_COMM_WORLD, MPI_FLOAT
 			if myid == main_node:
 				
 				fexp = open(os.path.join(outdir, "parameters_%04d_%04d.txt"%(N_step+1,Iter)),"w")
 				for n in xrange(number_of_proc):
 					if n!=main_node:
-						t = mpi_recv(recvcount[n]*m,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+						t = mpi_recv(recvcount[n]*m,MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						for i in xrange(recvcount[n]):
 							for j in xrange(m):
 								fexp.write(" %15.5f  "%t[j+i*m])
@@ -12433,7 +12433,7 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 					t = get_params_proj(data[i])
 					for j in xrange(m):
 						nvalue[j + i*m] = t[j]
-				mpi_send(nvalue, recvcount[myid]*m, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(nvalue, recvcount[myid]*m, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 				del nvalue
 			if myid == main_node:
 				print_msg("Time to write parameters = %d\n"%(time()-start_time))
@@ -12488,10 +12488,10 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 
 				if myid == main_node:
 					for n in xrange(number_of_proc):
-						if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2*(recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+						if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2*(recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						else:    list_dps = lprms[2*recvpara[2*0]:2*recvpara[2*0+1]]
 				else:
-					list_dps = mpi_recv((para_end-para_start)*2, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+					list_dps = mpi_recv((para_end-para_start)*2, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 				list_dps = map(float, list_dps)
 
@@ -12503,10 +12503,10 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				if myid == main_node:
 					list_return = [0.0]*(3*number_of_proc)
 					for n in xrange(number_of_proc):
-						if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+						if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3,MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
  						else:              list_return[3*main_node:3*main_node+3]  = local_pos[:]
 				else:
-					mpi_send(local_pos, 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+					mpi_send(local_pos, 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 				if myid == main_node:	
 					maxvalue = list_return[2]
@@ -15703,7 +15703,7 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 	if(myid == 0):
 		foutput = open( os.path.join(outdir,"weights.txt"), "w" )
 	if  MPI:
-		from mpi import MPI_INT, MPI_TAG_UB, mpi_recv, mpi_send
+		from mpi import MPI_INT, mpi_recv, mpi_send
 		if myid == 0:
 			ltot = 0
 			base = 0
@@ -15711,14 +15711,14 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 				if(iq == 0):
 					ltot = spill_out(ltot, base, pred, 1, foutput)
 				else:
-					lend = mpi_recv(1, MPI_INT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
+					lend = mpi_recv(1, MPI_INT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					lend = int(lend[0])
-					pred = mpi_recv(lend, MPI_FLOAT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
+					pred = mpi_recv(lend, MPI_FLOAT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					ltot = spill_out(ltot, base, pred, 1, foutput)
 				base += len(pred)
 		else:
-			mpi_send([len(pred)], 1, MPI_INT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(pred, len(pred), MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send([len(pred)], 1, MPI_INT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(pred, len(pred), MPI_FLOAT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	else:
 		ltot = 0
 		base = 0
@@ -16177,7 +16177,7 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 			d.append( exp_vol.cmp( "ccc", eigvols[j], {"negative":0, "mask":m} )*eigvals[j] )
 
 	if  MPI:
-		from mpi import MPI_INT, MPI_FLOAT, MPI_TAG_UB, MPI_COMM_WORLD, mpi_recv, mpi_send
+		from mpi import MPI_INT, MPI_FLOAT, MPI_COMM_WORLD, mpi_recv, mpi_send
 		if myid == 0:
 			ltot = 0
 			base = 0
@@ -16185,14 +16185,14 @@ def factcoords_vol( vol_stacks, avgvol_stack, eigvol_stack, prefix, rad = -1, ne
 				if(iq == 0):
 					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				else:
-					lend = mpi_recv(1, MPI_INT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
+					lend = mpi_recv(1, MPI_INT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					lend = int(lend[0])
-					d = mpi_recv(lend, MPI_FLOAT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
+					d = mpi_recv(lend, MPI_FLOAT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				base += len(d)/neigvol
 		else:
-			mpi_send([len(d)], 1, MPI_INT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(d, len(d), MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send([len(d)], 1, MPI_INT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(d, len(d), MPI_FLOAT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	else:
 		ltot = 0
 		base = 0
@@ -16267,7 +16267,7 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 			d.append( diff.cmp( "ccc", ref_eigprj, {"negative":0, "mask":m} ))#*eigvals[j] )
         		#print  i,j,d[-1]
 	if  MPI:
-		from mpi import MPI_INT, MPI_FLOAT, MPI_TAG_UB, MPI_COMM_WORLD, mpi_recv, mpi_send
+		from mpi import MPI_INT, MPI_FLOAT, MPI_COMM_WORLD, mpi_recv, mpi_send
 		if myid == 0:
 			ltot = 0
 			base = 0
@@ -16275,14 +16275,14 @@ def factcoords_prj( prj_stacks, avgvol_stack, eigvol_stack, prefix, rad, neigvol
 				if(iq == 0):
 					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				else:
-					lend = mpi_recv(1, MPI_INT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
+					lend = mpi_recv(1, MPI_INT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					lend = int(lend[0])
-					d = mpi_recv(lend, MPI_FLOAT, iq, MPI_TAG_UB, MPI_COMM_WORLD)
+					d = mpi_recv(lend, MPI_FLOAT, iq, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					ltot = spill_out(ltot, base, d, neigvol, foutput)
 				base += len(d)/neigvol
 		else:
-			mpi_send([len(d)], 1, MPI_INT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(d, len(d), MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send([len(d)], 1, MPI_INT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(d, len(d), MPI_FLOAT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	else:
 		ltot = 0
 		base = 0
@@ -16337,7 +16337,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	if MPI:
 		from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
 		from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
-		from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send, MPI_TAG_UB
+		from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send
 		from utilities  import bcast_number_to_all, recv_EMData, send_EMData
 		
 	if CUDA:
@@ -17522,7 +17522,7 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 
 def diskali_MPI(stack, ref_vol, outdir, maskfile, dp, dphi, pixel_size, user_func_name, zstep=1.0, fract=0.67, rmax=70, rmin=0, \
 					 CTF=False, maxit=1, sym = "c1"):
-	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, MPI_INT, MPI_TAG_UB, MPI_FLOAT, mpi_recv, mpi_send
+	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, MPI_INT, mpi_recv, mpi_send
 	from utilities        import get_params_proj, read_text_row, model_cylinder,pad, set_params3D, get_params3D, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image, bcast_EMData_to_all, model_blank
 	from utilities        import send_attr_dict, file_type, sym_vol, get_image
 	from fundamentals     import resample, rot_shift3D
@@ -17809,7 +17809,7 @@ def diskali_MPI(stack, ref_vol, outdir, maskfile, dp, dphi, pixel_size, user_fun
 	mpi_barrier(MPI_COMM_WORLD)
 
 	# write out headers, under MPI writing has to be done sequentially
-	from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
+	from mpi import mpi_recv, mpi_send, MPI_COMM_WORLD, MPI_FLOAT
 	par_str = ['xform.projection', 'ID']
 	if myid == main_node:
 		if(file_type(stack) == "bdb"):
@@ -18008,7 +18008,7 @@ def match_pixel_rise(dz,px, nz=-1, ndisk=-1, rele=0.1, stop=900000):
 	return -1.0, -1.0
 
 def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=70, rmin=0, CTF=False, user_func_name = "helical", sym = "c1", dskfilename='bdb:disks', maxerror=0.01, new_pixel_size = -1, do_match_pixel_rise=False):
-	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, MPI_INT, MPI_TAG_UB, MPI_FLOAT, mpi_recv, mpi_send, mpi_reduce, MPI_MAX
+	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, MPI_INT, MPI_FLOAT, mpi_recv, mpi_send, mpi_reduce, MPI_MAX
 	from utilities        import get_params_proj, read_text_row, model_cylinder,pad, set_params3D, get_params3D, model_blank, drop_image
 	from utilities        import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, bcast_EMData_to_all, send_EMData, recv_EMData, bcast_list_to_all
 	from utilities        import send_attr_dict, file_type, sym_vol, get_im, chunks_distribution
@@ -18191,7 +18191,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=7
 		if(myid == main_node):
 			for i in xrange(nproc):
 				if(i != main_node):
-					didfil = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					didfil = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					didfil = int(didfil[0])
 					if(didfil == 1):
 						fil = recv_EMData(i, ivol+i+70000)
@@ -18206,7 +18206,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=7
 						#print outvol, filatable[main_node][ivol]
 						outvol += 1
 		else:
-			mpi_send(gotfil, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(gotfil, 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			if(gotfil == 1):
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
 
@@ -18618,7 +18618,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	from pixel_error    import max_3D_pixel_error, ordersegments
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
+	from mpi            import mpi_recv,  mpi_send
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
@@ -19078,7 +19078,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 			mpi_barrier(MPI_COMM_WORLD)
 
 			# write out headers, under MPI writing has to be done sequentially
-			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
+			from mpi import mpi_recv, mpi_send, MPI_COMM_WORLD, MPI_FLOAT
 			par_str = ['xform.projection', 'ID','pixerr']
 			if myid == main_node:
 				if(file_type(stack) == "bdb"):
@@ -19110,7 +19110,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 	from pixel_error    import max_3D_pixel_error, ordersegments
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
+	from mpi            import mpi_recv,  mpi_send
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
@@ -19581,7 +19581,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 			mpi_barrier(MPI_COMM_WORLD)
 
 			# write out headers, under MPI writing has to be done sequentially
-			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
+			from mpi import mpi_recv, mpi_send, MPI_COMM_WORLD, MPI_FLOAT
 			par_str = ['xform.projection', 'ID','pixerr']
 			if myid == main_node:
 				if(file_type(stack) == "bdb"):
@@ -19615,7 +19615,7 @@ def localhelicon_MPInew_fullrefproj(stack, ref_vol, outdir, seg_ny, maskfile, ir
 	from pixel_error    import max_3D_pixel_error, ordersegments
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
+	from mpi            import mpi_recv,  mpi_send
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
@@ -19982,7 +19982,7 @@ def localhelicon_MPInew_fullrefproj(stack, ref_vol, outdir, seg_ny, maskfile, ir
 			mpi_barrier(MPI_COMM_WORLD)
 
 			# write out headers, under MPI writing has to be done sequentially
-			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
+			from mpi import mpi_recv, mpi_send, MPI_COMM_WORLD, MPI_FLOAT
 			par_str = ['xform.projection', 'ID','pixerr']
 			if myid == main_node:
 				if(file_type(stack) == "bdb"):
@@ -20016,7 +20016,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	from pixel_error    import max_3D_pixel_error, ordersegments
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
+	from mpi            import mpi_recv,  mpi_send
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
@@ -20376,7 +20376,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 			mpi_barrier(MPI_COMM_WORLD)
 
 			# write out headers, under MPI writing has to be done sequentially
-			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
+			from mpi import mpi_recv, mpi_send, MPI_COMM_WORLD, MPI_FLOAT
 			par_str = ['xform.projection', 'ID','pixerr']
 			if myid == main_node:
 				if(file_type(stack) == "bdb"):
@@ -20792,7 +20792,7 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
+	from mpi            import mpi_recv,  mpi_send
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
@@ -20885,10 +20885,10 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 
 	if myid == main_node:
 		for n in xrange(number_of_proc):
-			if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2*(recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+			if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2 * (recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			else:            list_dps = lprms[2*recvpara[2*0]:2*recvpara[2*0+1]]
 	else:
-		list_dps = mpi_recv((para_end-para_start)*2, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		list_dps = mpi_recv((para_end-para_start) * 2, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 	list_dps = map(float, list_dps)
 
@@ -20900,10 +20900,10 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 	if myid == main_node:
 		list_return = [0.0]*(3*number_of_proc)
 		for n in xrange(number_of_proc):
-			if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+			if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3, MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 			else:              list_return[3*main_node:3*main_node+3]  = local_pos[:]
 	else:
-		mpi_send(local_pos, 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		mpi_send(local_pos, 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 
 	if myid == main_node:	
 		maxvalue = list_return[2]

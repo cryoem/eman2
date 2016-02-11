@@ -1234,7 +1234,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	else:
 		return None, None, None
 
-def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, mpi_comm=None, smearstep = 0.0, CTF = True):
+def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = None, info=None, npad=2, mpi_comm=None, smearstep = 0.0, CTF = True):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -1255,8 +1255,8 @@ def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symme
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 	main_node = 0
-	imgsize = list_of_prjlist[0][0].get_xsize()
-	
+	imgsize = prjlist[0].get_xsize()
+	'''
 	if( smearstep > 0.0 ):
 		#if myid == 0:  print "  Setting smear in prepare_recons_ctf"
 		ns = 1
@@ -1274,7 +1274,7 @@ def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symme
 		for i in xrange(-2*ns,2*ns+1,1):
 			smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
 		#if myid == 0:  print "  Smear  ",smear
-
+	'''
 	#from utilities import model_blank, get_im, read_text_file
 	#bckgdata = [get_im("tsd.hdf"),read_text_file("data_stamp.txt")]
 
@@ -1283,17 +1283,28 @@ def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symme
 	nnx = bckgdata[0].get_xsize()
 	nny = bckgdata[0].get_ysize()
 	"""
+	'''
 	bckgnoise = []
 	for i in xrange(1):
 		prj = model_blank(600,1,1,1)
 		#for k in xrange(nnx):  prj[k] = bckgdata[i].get_value_at(k,i)
 		bckgnoise.append(prj)
-
+	'''
 	#datastamp = bckgdata[1]
 
 	#  Do the FSC shtick.
-	bnx     = imgsize*npad//2+1
-	refvol = model_blank(bnx)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
+	if cfsc:
+		bnx     = len(cfsc)*npad
+		refvol  = model_blank(bnx)
+		if(npad > 1):
+			from utilities import reshape_1d
+			bfsc = reshape1D(cfsc, len(cfsc), bnx)
+			for i in xrange(bnx):  refvol[i] = bfsc[i]
+			del bfsc
+		else:  refvol[i] = cfsc[i]
+	else:
+		bnx    = imgsize*npad//2+1
+		refvol = model_blank(bnx)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
 	refvol.set_attr("fudge", 1.0)
 
 	results_list = []
@@ -1303,102 +1314,50 @@ def recons3d_4nnfs_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symme
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
 
-	for iset in xrange(1):
-		if not (info is None): nimg = 0
+	if not (info is None): nimg = 0
 
-		fftvol = EMData()
-		weight = EMData()
-		if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
+	fftvol = EMData()
+	weight = EMData()
+	if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
 
-		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
-		r = Reconstructors.get( "nn4_ctfw", params )
-		r.setup()
-		for image in list_of_prjlist[iset]:
-			"""
-			try:
-				#raise ValueError('A very specific thing happened')
-				stmp = image.get_attr("ptcl_source_image")
-			except:
-				try:
-					stmp = image.get_attr("ctf")
-					stmp = round(stmp.defocus,4)
-				except:
-					ERROR("Either ptcl_source_image or ctf has to be present in the header.","recons3d_4nnw_MPI",1, myid)
-			try:
-				indx = datastamp.index(stmp)
-			except:
-				ERROR("Problem with indexing ptcl_source_image.","recons3d_4nnf_MPI",1, myid)
-			image.set_attr("bckgnoise", bckgnoise[indx])
-			"""
-			image.set_attr("bckgnoise", bckgnoise[0])
-			insert_slices(r, image)
-			if not (info is None):
-				nimg += 1
-				info.write(" %4d inserted\n" %(nimg) )
-				info.flush()
-
-		if not (info is None): 
-			info.write( "begin reduce\n" )
+	params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
+	r = Reconstructors.get( "nn4_ctfw", params )
+	r.setup()
+	for image in prjlist:
+		#image.set_attr("bckgnoise", bckgnoise[0])
+		insert_slices(r, image)
+		if not (info is None):
+			nimg += 1
+			info.write(" %4d inserted\n" %(nimg) )
 			info.flush()
+
+	if not (info is None): 
+		info.write( "begin reduce\n" )
+		info.flush()
+
+	reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 	
-		reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
-		reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
-		
-		if not (info is None): 
-			info.write( "after reduce\n" )
-			info.flush()
-
-		if myid == 0:
-			"""
-			tmpid = datetime.datetime.now().strftime('%Y-%m-%d--%I-%M-%f')[:-3]
-			fftvol_file.append("fftvol__%s__idx%d.hdf"%(tmpid, iset))
-			weight_file.append("weight__%s__idx%d.hdf"%(tmpid, iset))
-			fftvol.write_image(fftvol_file[-1])
-			weight.write_image(weight_file[-1])
-			"""
-			dummy = r.finish(True)
-			results_list.append(fftvol)
-			#if(iset == 0):  fftvol.write_image(results_list[-1])
-
-		mpi_barrier(mpi_comm)
-
-	"""
+	if not (info is None): 
+		info.write( "after reduce\n" )
+		info.flush()
 
 	if myid == 0:
-		fourier_shell_correlation = fsc(results_list[0], results_list[1], 1.0)[1]
-		from math import sqrt
-		from utilities import reshape_1d
-		t = [0.0]*len(fourier_shell_correlation)
-		t = reshape_1d(t,len(t),npad*len(t))
-		for i in xrange(len(t)):
-			t[i] = min(max(t[i], 0.0), 0.999)
+		"""
+		tmpid = datetime.datetime.now().strftime('%Y-%m-%d--%I-%M-%f')[:-3]
+		fftvol_file.append("fftvol__%s__idx%d.hdf"%(tmpid, iset))
+		weight_file.append("weight__%s__idx%d.hdf"%(tmpid, iset))
+		fftvol.write_image(fftvol_file[-1])
+		weight.write_image(weight_file[-1])
+		"""
+		dummy = r.finish(True)
+		#if(iset == 0):  fftvol.write_image(results_list[-1])
 
-		ovol = []
-		for idx in range(2):
-			fftvol = get_im(fftvol_file[idx])
-			weight = get_im(weight_file[idx])
-			refvol = model_blank(bnx,1,1,0.0)
-			for i in xrange(min(bnx,len(t))):  
-				refvol.set_value_at(i, t[i])
-			refvol.set_attr("fudge", 1.0)
-			
-			params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight}
-			r = Reconstructors.get("nn4_ctfw", params)
-			r.setup()
-			
-			dummy = r.finish(True)
-			ovol.append(fftvol)
-
-
-		cmd = "{} {} {} {} {} {}".format("rm -f", fftvol_file[0], fftvol_file[1], weight_file[0], weight_file[1], results_list[0] )
-		import subprocess
-		outcome = subprocess.call(cmd, shell=True)
-	"""
 	mpi_barrier(mpi_comm)
 	if myid == 0:
-		return results_list[0]#, results_list[1], fourier_shell_correlation
+		return fftvol
 	else:
-		return None, None, None
+		return None
 
 
 def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize = -1, zsize = -1 ):

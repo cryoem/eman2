@@ -28,6 +28,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from global_def import SPARX_MPI_TAG_UNIVERSAL
+
 def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
 			  match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, \
 			  generation, candidatesexist = False, random_seed=None, new = False):
@@ -734,7 +736,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	from random	      import seed, randint, jumpahead
 	from mpi		  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi		  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
-	from mpi		  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
+	from mpi		  import MPI_SUM, MPI_FLOAT, MPI_INT
 	from numpy        import zeros, float32
 	from time         import localtime, strftime
 	import os
@@ -1195,15 +1197,15 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					done_on_node = j%number_of_proc
 					if done_on_node != main_node:
 						if myid == main_node:
-							mem_len = mpi_recv(1, MPI_INT, done_on_node, MPI_TAG_UB, comm)
+							mem_len = mpi_recv(1, MPI_INT, done_on_node, SPARX_MPI_TAG_UNIVERSAL, comm)
 							mem_len = int(mem_len[0])
-							members = mpi_recv(mem_len, MPI_INT, done_on_node, MPI_TAG_UB, comm)
+							members = mpi_recv(mem_len, MPI_INT, done_on_node, SPARX_MPI_TAG_UNIVERSAL, comm)
 							members = map(int, members)
 							refi[j].set_attr_dict({'members': members,'n_objects': mem_len})
 						elif myid == done_on_node:
 							members = refi[j].get_attr('members')
-							mpi_send(len(members), 1, MPI_INT, main_node, MPI_TAG_UB, comm)
-							mpi_send(members, len(members), MPI_INT, main_node, MPI_TAG_UB, comm)
+							mpi_send(len(members), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
+							mpi_send(members, len(members), MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
 			###if myid == main_node:  print "within group alignment done. ", localtime()[0:5]
 			###if myid == main_node:
 			###	print  "  WRITING refrealigned  for color:",color
@@ -1245,7 +1247,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
 								dst, maxit, FH, FF, alimethod, comm):
 	from applications import within_group_refinement
-	from mpi		  import mpi_comm_size, mpi_comm_rank, mpi_barrier, mpi_bcast, mpi_send, mpi_recv, MPI_FLOAT, MPI_TAG_UB
+	from mpi		  import mpi_comm_size, mpi_comm_rank, mpi_barrier, mpi_bcast, mpi_send, mpi_recv, MPI_FLOAT
 	from pixel_error  import multi_align_stability
 	from utilities	import get_params2D, set_params2D, model_blank
 	from filter	   import filt_tanl
@@ -1305,9 +1307,9 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 			if src_proc_id == trg_proc_id:
 				continue
 			if myid == src_proc_id:
-				mpi_send(grp_run_to_ali_params[ig][ii], 4*grp_size, MPI_FLOAT, trg_proc_id, MPI_TAG_UB, comm)
+				mpi_send(grp_run_to_ali_params[ig][ii], 4*grp_size, MPI_FLOAT, trg_proc_id, SPARX_MPI_TAG_UNIVERSAL, comm)
 			if myid == trg_proc_id:
-				grp_run_to_ali_params[ig][ii] = mpi_recv(4*grp_size, MPI_FLOAT, src_proc_id, MPI_TAG_UB, comm)
+				grp_run_to_ali_params[ig][ii] = mpi_recv(4*grp_size, MPI_FLOAT, src_proc_id, SPARX_MPI_TAG_UNIVERSAL, comm)
 				grp_run_to_ali_params[ig][ii] = map(float, grp_run_to_ali_params[ig][ii])
 
 	for ig in xrange(numref):
