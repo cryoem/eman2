@@ -349,6 +349,7 @@ def main():
 	wiki_file_path_list.append("../doc/locres.txt")
 	wiki_file_path_list.append("../doc/filterlocal.txt")
 	wiki_file_path_list.append("../doc/sort3d.txt")
+	wiki_file_path_list.append("../doc/rsort3d.txt")
 	
 	sxgui_template_file_path = "sxgui_template.py"
 	
