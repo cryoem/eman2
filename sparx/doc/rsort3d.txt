@@ -1,0 +1,85 @@
+## page was renamed from sxsort3d_P2
+## page was renamed from my_new_manual_page
+= Name =
+sxrsort3d.py - sort out 3-D heterogeneity based on the reproducible members of K-means and Equal K-means classification. It runs after 3-D refinement where the alignment parameters (xform.projection) are determined.
+
+= Usage =
+
+'' usage in command line''
+
+sxrsort3d.py stack output_directory   --radius=88 --number_of_images_per_group=11000    --chunkdir=./  --previous_run1=sort3d1  --previous_run2=sort3d2
+
+=== Typical usage ===
+
+sxrsort3d.py exists only in MPI version
+
+mpirun -np 176 --host n1,n5,n6,n8,n9,n10,n0,n4,n3,n7 sxrsort3d.py  bdb:data rsort3d  mask.hdf    --radius=88 --maxit=25 --independent=3 --CTF --number_of_images_per_group=11000 --low_pass_filter=.20 --chunkdir=./ --sym=c4 --PWadjustment=pwrec.tx  --previous_run1=sort3d1  --previous_run2=sort3d2
+
+=== Time and Memory ===
+On lonestar cluster of TACC, using 264 cpus, it takes about 2 hours and 23 minutes to accomplish 95953 128x128 images for one sxsort3d.py independent run, 2 hours 24 minutes to accomplish one independent sxrsort3d.py run with number_of_images_per_group set as 30000. 
+
+== Input ==
+    bdb:data:: input visual 2-D stack file
+    radius:: radius of the protein particles in pixel, (no default value)
+    mask.hdf::  global mask file, this is optional (default is None)
+    number_of_images_per_group:: number of images in a group, a critical number defined by user. (default is 2000)
+    PWadjustment:: PDB reference power spectrum used for adjusting power spectra of EM volumes. (default is None)
+    previous_run1:: the master directory of the first sxsort3d.py run.  (No default)
+    previous_run2:: the master directory of the second sxsort3d.py run. (No default)
+    CTF:: CTF flag, specify it when CTF correction is required. (default is false)
+    smallest_group:: The minimum number of particles of a group. (default is 500)
+    sym:: symmetry of the protein:(default is c1)
+    nxinit:: image size for starting sorting program. (default is 64)
+    focus:: focus mask. ( default is None)
+    chunkdir:: two chunks of arbitrary assigned data while refined independently during the 3-D reconstruction: (by default the program generates it internally)
+
+    * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
+    independent:: independent runs of equal-Kmeans clustering: (default is 3 )
+    low_pass_filter:: user defined low pass filter, related to the original image size and in absolute frequency. (default is auto mode) 
+    aa:: fall-off of the hyperbolic tangent low-pass filter: (default 0.1)
+    stopprnct:: the minimum percentages of changed number of particles for stopping program (default is 3%)
+    upscale:: the scaling factor to adjust the power spectrum of EM volumes: (default is 0.5)
+    maxiter:: maximum iteration number for equal K-means and K-means clustering: (default is 25)
+    sausage:: the way of filtering reference volume:(default is false)
+    nrefine:: number of refinement for each angular step: (default is 0)
+    nassign:: number of assignment during one iteration cycle:(default is 1)
+    delta:: angular step of the reference projections:(default is 2)
+    an:: angular neighborhood for local search:(default is -1)
+    function:: name of the reference preparation function:(default is do_volume_mrk02)
+    center:: an integer for checking the centering during the sorting,1 using cog to check: (default is 0, not check) 
+    unaccounted:: specify it if checking reconstruction by the unaccounted images: (default is false)
+  
+== Output ==
+    rsort3:: output master directory that contains multiple subdirectories and a log file termed as "log.txt", which records the sequences of major computational operations.
+   
+= Description =
+sxrsort3d.py finds out stable members by carrying out two-way comparison of two independent sxsort3d.py runs.
+
+For small tested datasets (real and simulated ribosome data around 10K particles), it gives 70%-90% reproducibility. However, this rate also depends on the choice of number of images per group and number of particles in the smallest group.
+
+= Method =
+K-means, equal K-means, reproducibility, two-way comparison.
+= Reference =
+Not published yet.
+
+= Author / Maintainer =
+
+Zhong Huang
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+
+= Files =
+applications.py
+
+= See also =
+
+[[http://sparx-em.org/sparxwiki/sxsort3d|sxsort3d]]
+
+= Maturity =
+
+    stable while under development:: works for most people, has been tested; test cases/examples available.
+
+= Bugs =
+None.  It is perfect.
