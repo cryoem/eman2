@@ -224,7 +224,7 @@ def main(args):
 		else:
 			isac_generation_from_command_line = -1
 	
-	program_state_stack(locals(), getframeinfo(currentframe()), os.path.join(masterdir,NAME_OF_JSON_STATE_FILE))	
+	program_state_stack(locals(), getframeinfo(currentframe()), os.path.join(masterdir,NAME_OF_JSON_STATE_FILE))
 
 	stack_processed_by_ali2d_base__filename = send_string_to_all(stack_processed_by_ali2d_base__filename)
 	stack_processed_by_ali2d_base__filename__without_master_dir = \
@@ -255,214 +255,219 @@ def main(args):
 	nxrsteps = 4
 	
 	init2dir = os.path.join(masterdir,"2dalignment")
-
-	if(myid == 0):
-		import subprocess
-		from logger import Logger, BaseLogger_Files
-		#  Create output directory
-		log2d = Logger(BaseLogger_Files())
-		log2d.prefix = os.path.join(init2dir)
-		cmd = "mkdir -p "+log2d.prefix
-		outcome = subprocess.call(cmd, shell=True)
-		log2d.prefix += "/"
-		# outcome = subprocess.call("sxheader.py  "+command_line_provided_stack_filename+"   --params=xform.align2d  --zero", shell=True)
+	
+	if not os.path.exists(os.path.join(init2dir, "initial2Dparams.txt")):
+	
+		if(myid == 0):
+			import subprocess
+			from logger import Logger, BaseLogger_Files
+			#  Create output directory
+			log2d = Logger(BaseLogger_Files())
+			log2d.prefix = os.path.join(init2dir)
+			cmd = "mkdir -p "+log2d.prefix
+			outcome = subprocess.call(cmd, shell=True)
+			log2d.prefix += "/"
+			# outcome = subprocess.call("sxheader.py  "+command_line_provided_stack_filename+"   --params=xform.align2d  --zero", shell=True)
+		else:
+			outcome = 0
+			log2d = None
+	
+		if(myid == main_node):
+			a = get_im(command_line_provided_stack_filename)
+			nnxo = a.get_xsize()
+		else:
+			nnxo = 0
+		nnxo = bcast_number_to_all(nnxo, source_node = main_node)
+	
+		txrm = (nnxo - 2*(radi+1))//2
+		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
+		if(txrm/nxrsteps>0):
+			tss = ""
+			txr = ""
+			while(txrm/nxrsteps>0):
+				tts=txrm/nxrsteps
+				tss += "  %d"%tts
+				txr += "  %d"%(tts*nxrsteps)
+				txrm =txrm//2
+		else:
+			tss = "1"
+			txr = "%d"%txrm
+	
+		# section ali2d_base
+	
+		params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
+			False, 90.0, center_method, 14, options.CTF, 1.0, False, \
+			"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False, skip_alignment = options.skip_alignment)
+	
+		mpi_barrier(MPI_COMM_WORLD)
+		if( myid == main_node ):
+			if options.skip_alignment:
+				print "========================================="
+				print "Even though there is no alignment step, '%s' params are set to zero for later use."%os.path.join(init2dir, "initial2Dparams.txt")
+				print "========================================="
+			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
+		del params2d
+		mpi_barrier(MPI_COMM_WORLD)
+	
+		#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  
+		#  Note images can be also padded, in which case shrink_ratio > 1.
+		shrink_ratio = float(target_radius)/float(radi)
+		nx = aligned_images[0].get_xsize()
+		nima = len(aligned_images)
+		newx = int(nx*shrink_ratio + 0.5)
+	
+		from fundamentals import rot_shift2D, resample
+		from utilities import pad, combine_params2
+		if(shrink_ratio < 1.0):
+			if    newx > target_nx  :
+				msk = model_circle(target_radius, target_nx, target_nx)
+				for im in xrange(nima):
+					#  Here we should use only shifts
+					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
+					p = Util.infomask(aligned_images[im], msk, False)
+					aligned_images[im] -= p[0]
+					p = Util.infomask(aligned_images[im], msk, True)
+					aligned_images[im] /= p[1]
+			elif  newx == target_nx :
+				msk = model_circle(target_radius, target_nx, target_nx)
+				for im in xrange(nima):
+					#  Here we should use only shifts
+					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+					p = Util.infomask(aligned_images[im], msk, False)
+					aligned_images[im] -= p[0]
+					p = Util.infomask(aligned_images[im], msk, True)
+					aligned_images[im] /= p[1]
+			elif  newx < target_nx  :	
+				msk = model_circle(newx//2-2, newx,  newx)
+				for im in xrange(nima):
+					#  Here we should use only shifts
+					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+					p = Util.infomask(aligned_images[im], msk, False)
+					aligned_images[im] -= p[0]
+					p = Util.infomask(aligned_images[im], msk, True)
+					aligned_images[im] /= p[1]
+					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+		elif(shrink_ratio == 1.0):
+			if    newx > target_nx  :
+				msk = model_circle(target_radius, target_nx, target_nx)
+				for im in xrange(nima):
+					#  Here we should use only shifts
+					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
+					p = Util.infomask(aligned_images[im], msk, False)
+					aligned_images[im] -= p[0]
+					p = Util.infomask(aligned_images[im], msk, True)
+					aligned_images[im] /= p[1]
+			elif  newx == target_nx :
+				msk = model_circle(target_radius, target_nx, target_nx)
+				for im in xrange(nima):
+					#  Here we should use only shifts
+					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					p = Util.infomask(aligned_images[im], msk, False)
+					aligned_images[im] -= p[0]
+					p = Util.infomask(aligned_images[im], msk, True)
+					aligned_images[im] /= p[1]
+			elif  newx < target_nx  :			
+				msk = model_circle(newx//2-2, newx,  newx)
+				for im in xrange(nima):
+					#  Here we should use only shifts
+					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					#aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+					p = Util.infomask(aligned_images[im], msk, False)
+					aligned_images[im] -= p[0]
+					p = Util.infomask(aligned_images[im], msk, True)
+					aligned_images[im] /= p[1]
+					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+		elif(shrink_ratio > 1.0):
+			if    newx > target_nx  :
+				msk = model_circle(target_radius, target_nx, target_nx)
+				for im in xrange(nima):
+					#  Here we should use only shifts
+					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
+					p = Util.infomask(aligned_images[im], msk, False)
+					aligned_images[im] -= p[0]
+					p = Util.infomask(aligned_images[im], msk, True)
+					aligned_images[im] /= p[1]
+			elif  newx == target_nx :
+				msk = model_circle(target_radius, target_nx, target_nx)
+				for im in xrange(nima):
+					#  Here we should use only shifts
+					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+					p = Util.infomask(aligned_images[im], msk, False)
+					aligned_images[im] -= p[0]
+					p = Util.infomask(aligned_images[im], msk, True)
+					aligned_images[im] /= p[1]
+			elif  newx < target_nx  :
+				msk = model_circle(newx//2-2, newx,  newx)
+				for im in xrange(nima):
+					#  Here we should use only shifts
+					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+					p = Util.infomask(aligned_images[im], msk, False)
+					aligned_images[im] -= p[0]
+					p = Util.infomask(aligned_images[im], msk, True)
+					aligned_images[im] /= p[1]
+					aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+		del msk
+	
+		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
+		number_of_images_in_stack = bcast_number_to_all(number_of_images_in_stack, source_node = main_node)
+	
+		if( myid == main_node ):
+			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename,i)
+			#  It has to be explicitly closed
+			from EMAN2db import db_open_dict
+			DB = db_open_dict(stack_processed_by_ali2d_base__filename)
+			DB.close()
+	
+			fp = open(os.path.join(masterdir,"README_shrink_ratio.txt"), "w")
+			output_text = """
+			Since, for processing purposes, isac changes the image dimensions,
+			adjustment of pixel size needs to be made in subsequent steps, (e.g.
+			running sxviper.py). The shrink ratio for this particular isac run is
+			--------
+			%.5f
+			%.5f
+			--------
+			To get the pixel size for the isac output the user needs to divide
+			the original pixel size by the above value. This info is saved in
+			the following file: README_shrink_ratio.txt
+			"""%(shrink_ratio, radi)
+			fp.write(output_text); fp.flush() ;fp.close()
+			print output_text
 	else:
-		outcome = 0
-		log2d = None
-
-	if(myid == main_node):
-		a = get_im(command_line_provided_stack_filename)
-		nnxo = a.get_xsize()
-	else:
-		nnxo = 0
-	nnxo = bcast_number_to_all(nnxo, source_node = main_node)
-
-	txrm = (nnxo - 2*(radi+1))//2
-	if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
-	if(txrm/nxrsteps>0):
-		tss = ""
-		txr = ""
-		while(txrm/nxrsteps>0):
-			tts=txrm/nxrsteps
-			tss += "  %d"%tts
-			txr += "  %d"%(tts*nxrsteps)
-			txrm =txrm//2
-	else:
-		tss = "1"
-		txr = "%d"%txrm
-
-	# section ali2d_base
-
-	params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
-		False, 90.0, center_method, 14, options.CTF, 1.0, False, \
-		"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False, skip_alignment = options.skip_alignment)
-
-	mpi_barrier(MPI_COMM_WORLD)
-	if( myid == main_node ):
-		if options.skip_alignment:
-			print "========================================="
-			print "Even though there is no alignment step, '%s' params are set to zero for later use."%os.path.join(init2dir, "initial2Dparams.txt")
-			print "========================================="
-		write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
-	del params2d
-	mpi_barrier(MPI_COMM_WORLD)
-
-	#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  
-	#  Note images can be also padded, in which case shrink_ratio > 1.
-	shrink_ratio = float(target_radius)/float(radi)
-	nx = aligned_images[0].get_xsize()
-	nima = len(aligned_images)
-	newx = int(nx*shrink_ratio + 0.5)
-
-	from fundamentals import rot_shift2D, resample
-	from utilities import pad, combine_params2
-	if(shrink_ratio < 1.0):
-		if    newx > target_nx  :
-			msk = model_circle(target_radius, target_nx, target_nx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-				aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-		elif  newx == target_nx :
-			msk = model_circle(target_radius, target_nx, target_nx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-		elif  newx < target_nx  :	
-			msk = model_circle(newx//2-2, newx,  newx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
-	elif(shrink_ratio == 1.0):
-		if    newx > target_nx  :
-			msk = model_circle(target_radius, target_nx, target_nx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-		elif  newx == target_nx :
-			msk = model_circle(target_radius, target_nx, target_nx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-		elif  newx < target_nx  :			
-			msk = model_circle(newx//2-2, newx,  newx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				#aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
-	elif(shrink_ratio > 1.0):
-		if    newx > target_nx  :
-			msk = model_circle(target_radius, target_nx, target_nx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-				aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-		elif  newx == target_nx :
-			msk = model_circle(target_radius, target_nx, target_nx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-		elif  newx < target_nx  :
-			msk = model_circle(newx//2-2, newx,  newx)
-			for im in xrange(nima):
-				#  Here we should use only shifts
-				alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-				alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-				aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]
-				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
-	del msk
-
-	gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
-	number_of_images_in_stack = bcast_number_to_all(number_of_images_in_stack, source_node = main_node)
-
-	if( myid == main_node ):
-		for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename,i)
-		#  It has to be explicitly closed
-		from EMAN2db import db_open_dict
-		DB = db_open_dict(stack_processed_by_ali2d_base__filename)
-		DB.close()
-
-		fp = open(os.path.join(masterdir,"README_shrink_ratio.txt"), "w")
-		output_text = """
-		Since, for processing purposes, isac changes the image dimensions,
-		adjustment of pixel size needs to be made in subsequent steps, (e.g.
-		running sxviper.py). The shrink ratio for this particular isac run is
-		--------
-		%.5f
-		%.5f
-		--------
-		To get the pixel size for the isac output the user needs to divide
-		the original pixel size by the above value. This info is saved in
-		the following file: README_shrink_ratio.txt
-		"""%(shrink_ratio, radi)
-		fp.write(output_text); fp.flush() ;fp.close()
-		print output_text
+		if( myid == main_node ):
+			print "Skipping 2d alignment since it was alredy done!"
 
 	mpi_barrier(MPI_COMM_WORLD)
 
 	os.chdir(masterdir)
-
+	
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:
 		pass

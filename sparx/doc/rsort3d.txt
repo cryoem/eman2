@@ -1,0 +1,94 @@
+= Name =
+sxrsort3d - 3D Clustering Protocol II (P2): Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters (xform.projection) have been determined already using 3D sorting protocol I (P1).
+
+= Usage =
+
+
+'' usage in command line''
+
+sxrsort3d.py  stack  outdir  mask  --previous_run1=run1_directory   --previous_run2=run2_directory  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --function=user_function  --seed=random_seed  --smallest_group=smallest_group  --group_size_for_unaccounted=group_size_for_unaccounted  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --upscale=upscale  --wn=wn
+
+
+=== Typical usage ===
+
+sxrsort3d.py exists only in MPI version
+
+''' mpirun -np 176 --host n1,n5,n6,n8,n9,n10,n0,n4,n3,n7 sxrsort3d.py bdb:data rsort3d mask.hdf --previous_run1=sort3d1 --previous_run2=sort3d2 --radius=88 --maxit=25 --independent=3 --CTF --number_of_images_per_group=11000 --low_pass_filter=.20 --chunkdir=./ --sym=c4 --PWadjustment=pwrec.txt ''' 
+
+=== Time and Memory ===
+On lonestar cluster of TACC, using 264 cpus, it takes about 2 hours and 23 minutes to accomplish 95953 128x128 images for one sxsort3d.py independent run, 2 hours 24 minutes to accomplish one independent sxrsort3d.py run with number_of_images_per_group set as 30000. 
+
+== Input ==
+    stack:: input visual 2D stack file: (default required string)
+    mask:: global 3D mask: this is optional. (default none)
+    previous_run1:: master directory of first sxsort3d.py run: (default required string)
+    previous_run2:: master directory of second sxsort3d.py run: (default required string)
+
+    focus:: 3D mask for focused clustering: (default none)
+    ir:: inner radius for rotational correlation: > 0 (default 1)
+    radius:: radius of the protein particles in pixel: Please set to the radius of the particle. (default -1)
+    maxit:: maximum number of iteration: (default 50)
+    rs:: step between rings in rotational correlation: > 0. (default 1)
+    xr:: range for translation search in x direction: search is +/-xr. (default '1')
+    yr:: range for translation search in y direction: search is +/-yr. By default, same as xr. (default '-1')
+    ts:: step size of the translation search: in both directions direction. search is -xr, -xr+ts, 0, xr-ts, xr. (default '0.25')
+    delta:: angular step of the reference projections: (default '2')
+    an:: angular neighborhood for local search:(default '-1')
+    center:: centering method: 0 - if you do not want the volume to be centered, 1 - center the volume using cog. (default 0)
+    nassign:: number of assignment during one iteration cycle: (default 1)
+    nrefine:: number of alignment iterations: performed for each angular step. (default 0)
+    CTF:: Consider CTF correction: during the alignment. (default False) 
+    stoprnct:: Minimum percentage of assignment change to stop the program: (default 3.0) 
+    sym:: point-group symmetry of the structure: (default c1) 
+    independent:: number of independent run of equal-Kmeans clustering: (default 3) 
+    number_of_images_per_group:: number of images per group: critical number defined by user. (default 1000) 
+    low_pass_filter:: absolute frequency of low-pass filter: for 3d sorting on the original image size. (default -1.0)
+    nxinit:: initial image size for sorting: (default 64)
+    unaccounted:: reconstruct the unaccounted images: (default False) 
+
+    * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
+    function:: name of the reference preparation function: (default do_volume_mrk02) 
+    seed:: random seed: for create initial random assignment for EQ Kmeans (default -1) 
+    smallest_group:: minimum members for identified group: (default 500) 
+    group_size_for_unaccounted:: group size for unaccounted particles: (default none) 
+    chunkdir:: chunkdir for computing margin of error: two chunks of arbitrary assigned data while refined independently during the 3-D reconstruction: By default the program generates it internally. (default none)
+    sausage:: the way of filtering reference volume:(default False)
+    PWadjustment:: 1-D power spectrum of PDB file: used for EM volume power spectrum correction (default none) 
+    upscale:: scaling parameter to adjust the power spectrum: of EM volumes (default 0.5) 
+    wn:: optimal window size for data processing: of EM volumes (default 0) 
+
+
+== Output ==
+    outdir:: output master directory: that contains multiple subdirectories and a log file termed as "log.txt", which records the sequences of major computational operations. (default required string)
+
+
+= Description =
+sxrsort3d.py finds out stable members by carrying out two-way comparison of two independent sxsort3d.py runs.
+
+For small tested datasets (real and simulated ribosome data around 10K particles), it gives 70%-90% reproducibility. However, this rate also depends on the choice of number of images per group and number of particles in the smallest group.
+
+= Method =
+K-means, equal K-means, reproducibility, two-way comparison.
+
+= Reference =
+Not published yet.
+
+= Author / Maintainer =
+Zhong Huang
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+applications.py
+
+= See also =
+
+[[http://sparx-em.org/sparxwiki/sxsort3d|sxsort3d]]
+
+= Maturity =
+
+    stable while under development:: works for most people, has been tested; test cases/examples available.
+
+= Bugs =
+None.  It is perfect.

@@ -205,7 +205,37 @@ class SXPopup(QWidget):
 				# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
 				if self.sxcmd.mpi_add_flag:
 					sxcmd_line += " --MPI"
-		
+					
+				# NOTE: 2016/02/11 Toshio Moriya
+				# Ideally, the following exceptional cases should not handled in here 
+				# because it will remove the generality from the software design
+				required_key_base = None
+				if self.sxcmd.name == "sxisac":
+					required_key_base = "indep_run"
+				elif self.sxcmd.name == "sxviper":
+					required_key_base = "nruns"
+				elif self.sxcmd.name == "sxrviper":
+					required_key_base = "n_shc_runs"
+				# else: # Do nothing
+				
+				if required_key_base != None:
+					required_divisor = int(str(self.sxcmd.token_dict[required_key_base].widget.text()))
+					required_label =  self.sxcmd.token_dict[required_key_base].label
+					if required_divisor == 0:
+						QMessageBox.warning(self, "Invalid paramter value", "\"%s\" must be larger than 0. Please check the setting" % (required_label))
+						return "" 
+					
+					valid_np = np
+					if valid_np % required_divisor != 0:
+						if valid_np < required_divisor:
+							valid_np = required_divisor
+						else:
+							valid_np = valid_np - (valid_np % required_divisor)
+						QMessageBox.warning(self, "Invalid paramter value", "The number of \"MPI processes\" (%d) is invalid. It MUST BE multiplicity of \"%s\" (%d). Please check the setting. A close valid number is %d." % (np, required_label, required_divisor,valid_np))
+						return "" 
+							
+			# else: assert(np == 1) # because the "MPI Processes" is disabled for sx*.py process which does not support mpi
+				
 			# Generate command line according to the case
 			cmd_line = ""
 			if self.tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
@@ -341,7 +371,8 @@ class SXPopup(QWidget):
 		
 		# Write script name for consistency check upon loading
 		file_out.write("@@@@@ %s gui setting - " % (self.sxcmd.name))
-		file_out.write(EMANVERSION + " (CVS" + CVSDATESTAMP[6:-2] +")")
+		# file_out.write(EMANVERSION + " (CVS" + CVSDATESTAMP[6:-2] +")")
+		file_out.write(EMANVERSION + " (GITHUB: " + DATESTAMP +")" )
 		file_out.write(" @@@@@ \n")
 		
 		# Define list of (tab) groups
