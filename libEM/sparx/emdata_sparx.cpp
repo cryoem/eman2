@@ -2005,7 +2005,7 @@ void EMData::onelinetr_ctfw(int j, int n, int n2,
 void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 		          EMData* w, EMData* bi, const Transform& tf, float mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
-        int remove = bi->get_attr_default( "remove", 0 );
+	int remove = bi->get_attr_default( "remove", 0 );
 
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
@@ -2357,8 +2357,8 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 	std::complex<float> c1;
 	int nxyz = sizeofprojection*npad;
 	Ctf* ctf = myfft->get_attr( "ctf" );
-        ctf_store_new::init( nxyz, ctf );
-        if(ctf) {delete ctf; ctf=0;}
+	ctf_store_new::init( nxyz, ctf );
+	if(ctf) {delete ctf; ctf=0;}
 	int remove = myfft->get_attr_default( "remove", 0 );
 
 	float r2=0.25f*sizeofprojection*npad*sizeofprojection*npad;
