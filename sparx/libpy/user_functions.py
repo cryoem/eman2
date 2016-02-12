@@ -1410,9 +1410,9 @@ def do_volume_mrk05(ref_data):
 	stat = Util.infomask(vol, mask3D, False)
 	vol -= stat[0]
 	Util.mul_scalar(vol, 1.0/stat[1])
-	Util.mul_img(vol, mask3D)
+	
 	#=========================================================================
-	return vol
+	return Util.muln_img(vol, mask3D), vol
 
 
 
