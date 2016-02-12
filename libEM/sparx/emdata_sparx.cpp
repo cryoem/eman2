@@ -1904,11 +1904,11 @@ void EMData::onelinetr_ctfw(int j, int n, int n2,
 				btq = conj(bi->cmplx(i,jp));
 			} else  btq = bi->cmplx(i,jp);
 
-            // linear interpolation of 1D bckgnoise
-            float rr = std::sqrt(float(r2));
-            int   ir = int(rr);
-            float df = rr - float(ir);
-            float mult = (1.0f - df)*(*bckgnoise)(ir) + df*(*bckgnoise)(ir+1);
+			// linear interpolation of 1D bckgnoise
+			float rr = std::sqrt(float(r2));
+			int   ir = int(rr);
+			float df = rr - float(ir);
+			float mult = (1.0f - df)*(*bckgnoise)(ir) + df*(*bckgnoise)(ir+1);
 
 			float c2val = (*c2)(i,jp);
 			std::complex<float> numerator = btq * mult * weight;
