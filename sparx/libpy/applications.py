@@ -13896,7 +13896,7 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	from utilities import model_blank
 	m = model_blank(600,1,1,1.0)
 	for i in xrange(len(prjlist)):
-		prjlist[i].set_attr("bckgnoise",1)
+		prjlist[i].set_attr("bckgnoise",m)
 	from reconstruction import recons3d_4nnfs_MPI
 	#if CTF: vol1, vol2, fff = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
 	vol = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, npad = npad,\
