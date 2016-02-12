@@ -1255,7 +1255,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 	main_node = 0
-	imgsize = prjlist[0].get_xsize()
+	imgsize = prjlist[0].get_ysize()  # It can be Fourier, so take y-size
 	'''
 	if( smearstep > 0.0 ):
 		#if myid == 0:  print "  Setting smear in prepare_recons_ctf"
