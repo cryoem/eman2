@@ -2070,7 +2070,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	#newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
 	newpar = [[i, 1.0e23, []] for i in xrange(len(data))]
 	for i in xrange(nang):
-		if myid == main_node:  print "  Angle :",i,time()-at
+		#if myid == main_node:  print "  Angle :",i,time()-at
 		iang = i*100000000
 		for j in xrange(npsi):
 			iangpsi = j*1000 + iang
