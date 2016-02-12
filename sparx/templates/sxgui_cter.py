@@ -779,8 +779,8 @@ class SXGuiCter(QtGui.QWidget):
 			QtGui.QMessageBox.warning(None,"Warning","Invalid file extension for CTER CTF File (%s). The file extension must be \".txt\"." % (file_path))
 			return
 		
-		if os.path.dirname(file_path)[-1*len("partresdir"):] != "partresdir":
-			QtGui.QMessageBox.warning(None,"Warning","Invalid file path for CTER CTF File (%s). The file must be in \"partresdir\" directory." % (file_path))
+		if os.path.dirname(file_path)[-1*len("partres"):] != "partres":
+			QtGui.QMessageBox.warning(None,"Warning","Invalid file path for CTER CTF File (%s). The file must be in \"partres\" directory." % (file_path))
 			return
 		
 		new_entry_list = read_text_row(file_path)
@@ -811,8 +811,8 @@ class SXGuiCter(QtGui.QWidget):
 				new_entry_list[cter_id][self.idx_cter_error_ctf] = cter_limit_freq
 			
 				# Set associated pwrot file path 
-				assert file_path.find("partresdir") != -1
-				cter_pwrot_dir = os.path.dirname(file_path).replace("partresdir", "pwrot")
+				assert os.path.dirname(file_path).find("partres") != -1
+				cter_pwrot_dir = os.path.dirname(file_path).replace("partres", "pwrot")
 				new_cter_pwrot_file_path = os.path.join(cter_pwrot_dir, "rotinf%04d.txt" % new_entry_list[cter_id][self.idx_cter_id])
 				new_entry_list[cter_id][self.idx_cter_pwrot_name] = new_cter_pwrot_file_path
 			
@@ -923,8 +923,12 @@ class SXGuiCter(QtGui.QWidget):
 		n_bin = 1
 		if len(self.cter_entry_list) < self.curentryperbin:
 			self.curentryperbin = len(self.cter_entry_list)
-			self.vsentryperbin.set(self.curentryperbin)
-			self.vsentryperbin.setRange(1,len(self.cter_entry_list))
+			self.vsentryperbin.setValue(self.curentryperbin)
+			# self.vsentryperbin.setRange(1,len(self.cter_entry_list))
+		elif self.curentryperbin < 1:
+			self.curentryperbin = 1
+			self.vsentryperbin.setValue(self.curentryperbin)
+			# self.vsentryperbin.setRange(1,len(self.cter_entry_list))
 		n_bin = len(self.cter_entry_list)/ self.curentryperbin
 		assert len(val_list) >= n_bin
 		assert n_bin > 0
@@ -1623,7 +1627,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		assert(os.path.basename(self.cter_partres_file_path).find("partres") != -1)
 		assert(self.cter_partres_file_path[-1*len(".txt"):] == ".txt")
-		assert(os.path.dirname(self.cter_partres_file_path)[-1*len("partresdir"):] == "partresdir")
+		assert(os.path.dirname(self.cter_partres_file_path)[-1*len("partres"):] == "partres")
 		
 		file_suffix = self.vfilesuffix.getValue()
 		file_path_out_select = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_partres_select.txt" % (file_suffix))

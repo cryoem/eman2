@@ -127,7 +127,7 @@ def main():
 	
 	parser.add_argument("--saveali",action="store_true", default=False, help="""Default=False. If set, this will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.""", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
-	parser.add_argument("--saveallalign",action="store_true", default=False, help="""Default=False. If set, this will save the alignment parameters after each iteration""", guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--saveallalign",action="store_true", default=False, help="""Default=False. If set, this will save an aligned stack of particles for each iteration""", guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
 	parser.add_argument("--saveallpeaks",action="store_true", default=False, help="""Default=False. If set, this will save the alignment information and score for all examined peaks --npeakstorefine during coarse alignment.""")
 	
@@ -1251,19 +1251,31 @@ def main():
 					aligned particle is written out
 					'''
 					ref = EMData( options.input, 0 )
-				
-					print "results len", len(results)
-					print "results[0]", results[0]
-					print "results", results
-					try:
-						ref.process_inplace("xform",{"transform":results[0][0][0]["xform.align3d"]})
-				
-					except:
-						ref.process_inplace("xform",{"transform":results[0][0]["xform.align3d"]})
-
+					
+					ref['xform.align3d']=Transform()
 					ref['origin_x'] = 0
 					ref['origin_y'] = 0
 					ref['origin_z'] = 0
+					
+					print "results len", len(results)
+					print "results[0]", results[0]
+					print "results", results
+					t = Transform()
+					score = 100000000000
+					try:
+						t = results[0][0][0]["xform.align3d"]
+						score = results[0][0][0]['score']
+						
+						ref.process_inplace("xform",{"transform":t})
+						ref['xform.align3d'] = t
+						
+					
+					except:
+						t = results[0][0]["xform.align3d"]
+						score = results[0][0]['score']
+						
+						ref.process_inplace("xform",{"transform":t})
+						ref['xform.align3d'] = t
 				
 					if options.postprocess:
 						ppref = ref.copy()
@@ -1282,13 +1294,18 @@ def main():
 					#	outname = options.path + '/' + options.output
 				
 					ref.write_image( outname , 0)
-					print "Done alignig the only particle in --input to --ref"
+					
+					jsAliParamsPath = options.path + '/sptali_ir.json'
+					jsA = js_open_dict( jsAliParamsPath )
+					
+					xformslabel = 'subtomo_' + str( 0 ).zfill( len( str( nptcl ) ) )			
+					jsA.setval( xformslabel, [ t , score ] )
+					jsA.close()
+					
+					print "Done aligning the only particle in --input to --ref"
 					sys.exit()
 		
-				ref['xform.align3d']=Transform()
-				ref['origin_x'] = 0
-				ref['origin_y'] = 0
-				ref['origin_z'] = 0
+				
 			
 				refsdict.update( { ic:ref } )
 
