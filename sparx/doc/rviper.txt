@@ -27,7 +27,9 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
 
 == Input ==
     stack:: set of 2-D images in a stack file (format hdf): images have to be squares (''nx''=''ny'', nx, ny denotes the image size) (default required string)
+
     radius:: radius of the particle: has to be less than < int(nx/2)-1 (default required int)
+    sym:: point-group symmetry of the structure: (default c1)
 
     * The remaining parameters are optional.  
     Note '''ir, ou, rs, xr, yr, ts''' are in pixels while '''delta, an''' are in degrees.
@@ -49,7 +51,6 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
     outlier_percentile:: percentile above which outliers are removed every rviper iteration: (default 95.0)
     iteration_start:: starting iteration for rviper: 0 means go to the most recent one (default 0)
     ref_a:: method for generating the quasi-uniformly distributed projection directions: (default S)
-    sym:: point-group symmetry of the structure: (default c1)
     npad:: padding size for 3D reconstruction: (default 2)
     fl:: cut-off frequency applied to the template volume: using a hyperbolic tangent low-pass filter (default 0.25)
     aa:: fall-off of hyperbolic tangent low-pass filter: (default 0.1)    
