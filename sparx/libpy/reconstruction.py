@@ -1307,6 +1307,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 		refvol = model_blank(bnx)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
 	refvol.set_attr("fudge", 1.0)
 
+
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
 
@@ -1320,12 +1321,15 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	for image in prjlist:
-		#image.set_attr("bckgnoise", bckgnoise[0])
+		if( npad > 1 ):
+			b = image.get_attr("bckgnoise")
+			ln = b.get_ysize()
+			tb = model_blank(2*ln)
+			for i in xrange(ln):
+				tb[2*i] = b[i]
+				tb[2*i+1) = (b[i]+b[i+1])*0.5
+			image.set_attr("bckgnoise",tb)
 		insert_slices(r, image)
-		if not (finfo is None):
-			nimg += 1
-			finfo.write(" %4d inserted\n" %(nimg) )
-			finfo.flush()
 
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )
