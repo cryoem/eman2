@@ -1327,7 +1327,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 			tb = model_blank(2*ln)
 			for i in xrange(ln):
 				tb[2*i] = b[i]
-				tb[2*i+1) = (b[i]+b[i+1])*0.5
+				tb[2*i+1] = (b[i]+b[i+1])*0.5
 			image.set_attr("bckgnoise",tb)
 		insert_slices(r, image)
 
