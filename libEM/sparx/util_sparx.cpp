@@ -24856,4 +24856,112 @@ float Util::bessel0(float r, float a, float alpha)
      }
 }
 
+void Util::euler_direction2angles(vector <float> v0, float &alpha, float &beta)
+{
+    float abs_ca, sb, cb;
+    float aux_alpha;
+    float aux_beta;
+    float error, newerror;
+ //   float const FLT_EPSILON =1.19209e-07;
+    std::vector<float> v_aux(3);
+    std::vector<float> v(3);
+    v =v0;
+    float vsum = 0.0; 
+    for (int i=0; i<3; i++)
+		vsum +=v[i]*v[i];
+	vsum = sqrt(vsum);
+	if ( vsum!=0.0)
+		for (int i=0; i<3; i++)
+			v[i] /=vsum;
+	else
+		std::cout<<" zero vector "<<std::endl;
+    cb = v[2];
+
+    if (abs((cb)) > 0.999847695)/*one degree */
+    {
+        std::cerr << "\nWARNING: Routine Euler_direction2angles is not reliable\n"
+        "for small tilt angles. Up to 0.001 deg it should be OK\n"
+        "for most applications but you never know";
+    }
+
+    if (abs((cb - 1.)) < FLT_EPSILON)
+    {
+        alpha = 0.;
+        beta = 0.;
+    }
+    else
+    {/*1*/
+        aux_beta = acos(cb); /* beta between 0 and PI */
+        sb = sin(aux_beta);
+        abs_ca = abs(v[0]) / sb;
+        if (abs((abs_ca - 1.)) < FLT_EPSILON)
+            aux_alpha = 0.;
+        else
+            aux_alpha = acos(abs_ca);
+
+        v_aux[0] = sin(aux_beta) * cos(aux_alpha);
+        v_aux[1] = sin(aux_beta) * sin(aux_alpha);
+        v_aux[2] = cos(aux_beta);
+        
+        newerror = 0.0;
+        for (int i=0;i<3;i++)
+        newerror +=v[i]*v_aux[i];
+        newerror =abs(newerror-1.);
+        
+        alpha = aux_alpha;
+        beta = aux_beta;
+
+        v_aux[0] = sin(aux_beta) * cos(-1. * aux_alpha);
+        v_aux[1] = sin(aux_beta) * sin(-1. * aux_alpha);
+        v_aux[2] = cos(aux_beta);
+        
+        newerror = 0.0;
+        for (int i=0;i<3;i++)
+        newerror +=v[i]*v_aux[i];
+        newerror =abs(newerror-1.);
+        if (error > newerror)
+        {
+            alpha = -1. * aux_alpha;
+            beta  = aux_beta;
+            error = newerror;
+        }
+
+        v_aux[0] = sin(-aux_beta) * cos(-1. * aux_alpha);
+        v_aux[1] = sin(-aux_beta) * sin(-1. * aux_alpha);
+        v_aux[2] = cos(-aux_beta);
+        
+        newerror = 0.0;
+        for (int i=0;i<3;i++)
+        newerror +=v[i]*v_aux[i];
+        newerror =abs(newerror-1.);
+        
+        
+        if (error > newerror)
+        {
+            alpha = -1. * aux_alpha;
+            beta  = -1. * aux_beta;
+            error = newerror;
+        }
+
+        v_aux[0] = sin(-aux_beta) * cos(aux_alpha);
+        v_aux[1] = sin(-aux_beta) * sin(aux_alpha);
+        v_aux[2] = cos(-aux_beta);
+
+        newerror = 0.0;
+        for (int i=0;i<3;i++)
+        newerror +=v[i]*v_aux[i];
+        newerror =abs(newerror-1.);
+        
+        
+        if (error > newerror)
+        {
+            alpha = aux_alpha;
+            beta  = -1. * aux_beta;
+            error = newerror;
+        }
+    }/*else 1 end*/
+    beta  =beta/180.*M_PI;
+    alpha =alpha/180.*M_PI;
+}/*Eulerdirection2angles end*/
+
 
