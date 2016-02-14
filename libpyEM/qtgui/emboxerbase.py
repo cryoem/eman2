@@ -1458,7 +1458,10 @@ class EMBoxList(object):
 			j+=1
 
 
-	def write_coordinates(self,input_file_name,out_file_name,box_size):
+	def write_coordinates(self,input_file_name,out_file_name,box_size,noedges=False):
+		hdr=EMData(input_file_name,0,True)
+		xsize=hdr["nx"]
+		ysize=hdr["ny"]
 		f = open(out_file_name,'w')
 		if out_file_name.endswith('json'):
 			# Write .json file
@@ -1470,6 +1473,8 @@ class EMBoxList(object):
 		else:
 			# Write .box file
 			for box in self.boxes:
+				if noedges :
+					if box[0]-box_size/2<0 or box[1]-box_size/2<0 or box[0]+box_size/2>=xsize or box[1]+box_size/2>=ysize : continue
 				xc = box.x-box_size/2
 				yc = box.y-box_size/2
 				f.write(str(int(xc))+'\t'+str(int(yc))+'\t'+str(box_size)+'\t'+str(box_size)+'\n')
