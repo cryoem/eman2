@@ -325,6 +325,7 @@ def main(args):
 					params2d[i][0] = 0.0
 					params2d[i][1] = sx
 					params2d[i][2] = sy
+					params2d[i][3] = 0
 					#set_params2D(aligned_images[i],[0.0, sx,sy,0.,1.0])
 
 	
