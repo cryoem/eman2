@@ -848,7 +848,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", \
 			nomirror = False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
 			Fourvar=False, user_func_name="ref_ali2d", random_method = "", log = None, \
-			number_of_proc = 1, myid = 0, main_node = 0, mpi_comm = None, write_headers = False, skip_alignment = False):
+			number_of_proc = 1, myid = 0, main_node = 0, mpi_comm = None, write_headers = False):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
@@ -895,21 +895,34 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	import types
 	if( type(stack) is types.StringType ):
-		if myid == main_node:	print "stack:::::::", stack ; total_nima = EMUtil.get_image_count(stack)
-		else:					total_nima = 0
-	total_nima = bcast_number_to_all(total_nima, source_node = main_node)
-	list_of_particles = range(total_nima)
+		if myid == main_node:
+			print "stack:::::::", stack ; total_nima = EMUtil.get_image_count(stack)
+			total_nima = bcast_number_to_all(total_nima, source_node = main_node)
+		else:
+			total_nima = 0
+		total_nima = bcase_number_to_all(total_nima)
+		list_of_particles = range(total_nima)
 
-	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
-	list_of_particles = list_of_particles[image_start: image_end]
-	nima = len(list_of_particles)
+		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
+		list_of_particles = list_of_particles[image_start:image_end]
+		nima = len(list_of_particles)
+		data = EMData.read_images(stack, list_of_particles)
+
+	else:
+		data = stack
+		total_nima = len(data)
+		total_nima = mpi_reduce(total_nima, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+		total_nima = mpi_bcast(total_nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		list_of_particles = range(total_nima)
+		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
+		list_of_particles = list_of_particles[image_start:image_end]
+		nima = len(list_of_particles)
+		assert( nima == len(data))
 
 	# read nx and ctf_app (if CTF) and broadcast to all nodes
 	if myid == main_node:
-		ima = EMData()
-		ima.read_image(stack, list_of_particles[0], True)
-		nx = ima.get_xsize()
-		if CTF:	ctf_app = ima.get_attr_default('ctf_applied', 0)
+		nx = data[0].get_xsize()
+		if CTF:	ctf_app = data[0].get_attr_default('ctf_applied', 0)
 		del ima
 	else:
 		nx = 0
@@ -975,7 +988,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	cny  = cnx
 	if  random_method == "SCF":		mode = "H"
 	else: 							mode = "F"
-	data = []
+
 	if CTF:
 		from filter import filt_ctf
 		from morphology   import ctf_img
@@ -983,8 +996,6 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
 		ctf_2_sum = None
-
-	data = EMData.read_images(stack, list_of_particles)
 
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
@@ -998,14 +1009,6 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 			Util.add_img_abs(ctf_abs_sum, ctfimg)
 		if( random_method == "SHC" ):  data[im].set_attr('previousmax',1.0e-23)
 		if phase_flip:  data[im] = filt_ctf(data[im], data[im].get_attr("ctf"), binary = True)
-
-	if skip_alignment:
-		params = []
-		for im in xrange(nima):  
-			alpha, sx, sy, mirror, scale = get_params2D(data[im])
-			params.append([alpha, sx, sy, mirror])
-		params = wrap_mpi_gatherv(params, main_node, mpi_comm)
-		return params, data
 
 	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
@@ -1175,6 +1178,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 					log.add("\n\n")
 
 	if myid == main_node and outdir:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
+	'''
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(mpi_comm)
 	if write_headers:
@@ -1188,16 +1192,16 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				from utilities import recv_attr_dict
 				recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 		else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
-
+	'''
 	params = []
 	for im in xrange(nima):  
 		alpha, sx, sy, mirror, scale = get_params2D(data[im])
 		params.append([alpha, sx, sy, mirror])
-	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
+	#params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 
 	if myid == main_node: log.add("Finished ali2d_base")
 
-	return params, data
+	return params#, data
 
 '''
 def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, \
