@@ -2055,7 +2055,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	#  Coding of orientations:
 	#    hash = ang*100000000 + lpsi*1000 + ishift
 	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000000
+	#    ipsi = (hash/1000)%100000
 	#    iang  = hash/100000000
 	#  To get best matching for particle #kl:
 	#     hash_best = newpar[kl][-1][0][0]

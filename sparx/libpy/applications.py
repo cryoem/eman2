@@ -897,10 +897,9 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	if( type(stack) is types.StringType ):
 		if myid == main_node:
 			print "stack:::::::", stack ; total_nima = EMUtil.get_image_count(stack)
-			total_nima = bcast_number_to_all(total_nima, source_node = main_node)
 		else:
 			total_nima = 0
-		total_nima = bcase_number_to_all(total_nima)
+		total_nima = bcast_number_to_all(total_nima)
 		list_of_particles = range(total_nima)
 
 		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
