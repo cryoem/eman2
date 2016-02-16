@@ -1316,8 +1316,10 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	fftvol = EMData()
 	weight = EMData()
 	if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
-
-	params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
+	#  We have to trick the setup so for Fourier padded input data creates volumes of correct size
+	if( prjlist[0].get_attr("is_complex") and prjlist[0].get_attr("npad") >1 ):  i=npad
+	else: i = 1
+	params = {"size":imgsize/i, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	for image in prjlist:
