@@ -2022,9 +2022,8 @@ def rotate_shift_params(paramsin, transf):
 	return cpar
 
 
-'''
 #  01/06/2016 - This is my recoding of old FORTRAN code with the hope that python's double precission
-#                 will fix the problem of roation of a 0,0,0 direction.  It does not as one neeed psi
+#                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeed psi
 #                 in this case as well.  So, the only choice is to use small theta instead of exact 0,0,0 direction
 def rotate_params(params, transf):
 	matinv = rotmatrix( -transf[2], -transf[1], -transf[0] )
@@ -2124,7 +2123,7 @@ def recmat(mat):
 	return  degrees(round(phi,10)%pi2),degrees(round(theta,10)%pi2),degrees(round(psi,10)%pi2)
 	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
 	#return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
-'''
+
 def reduce2asymmetric_D(angles_list,symmetry="d2"):
 	sym_number =int(symmetry[1:])
 	sym_angle  =360./sym_number
