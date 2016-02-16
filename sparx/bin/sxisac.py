@@ -291,11 +291,11 @@ def main(args):
 			#  We assume the target radius will be 29, and xr = 1.  
 			shrink_ratio = float(target_radius)/float(radi)
 
-			for i in xrange(len(original_images)):
+			for im in xrange(len(original_images)):
 				if(shrink_ratio != 1.0):
 					original_images[im]  = resample(original_images[im], shrink_ratio)
 
-			nx = aligned_images[0].get_xsize()
+			nx = original_images[0].get_xsize()
 
 			txrm = (nx - 2*(target_radius+1))//2
 			if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
@@ -325,12 +325,13 @@ def main(args):
 					params2d[i][0] = 0.0
 					params2d[i][1] = sx
 					params2d[i][2] = sy
+					params2d[i][3] = 0
 					#set_params2D(aligned_images[i],[0.0, sx,sy,0.,1.0])
 
 	
 		mpi_barrier(MPI_COMM_WORLD)
 		tmp = params2d[:]
-		tmp = wrap_mpi_gatherv(tmp, main_node, mpi_comm)
+		tmp = wrap_mpi_gatherv(tmp, main_node, MPI_COMM_WORLD)
 		if( myid == main_node ):		
 			if options.skip_alignment:
 				print "========================================="
