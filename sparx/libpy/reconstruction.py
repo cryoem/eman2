@@ -1323,7 +1323,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	for image in prjlist:
 		if( npad > 1 ):
 			b = image.get_attr("bckgnoise")
-			ln = b.get_ysize()
+			ln = b.get_xsize()
 			tb = model_blank(2*ln)
 			for i in xrange(ln):
 				tb[2*i] = b[i]

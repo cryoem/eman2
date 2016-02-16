@@ -1177,7 +1177,6 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 					log.add("\n\n")
 
 	if myid == main_node and outdir:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
-	'''
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(mpi_comm)
 	if write_headers:
@@ -1191,7 +1190,6 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				from utilities import recv_attr_dict
 				recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 		else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
-	'''
 	params = []
 	for im in xrange(nima):  
 		alpha, sx, sy, mirror, scale = get_params2D(data[im])
