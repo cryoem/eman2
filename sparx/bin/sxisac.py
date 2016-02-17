@@ -70,6 +70,8 @@ def main(args):
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--radius",                type="int",           help="particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)")
+	parser.add_option("--target_radius",         type="int",           default=29,        help="target particle radius: (default 29)")
+	parser.add_option("--target_nx",             type="int",           default=76,        help="target particle image size: (default 76)")
 	parser.add_option("--img_per_grp",           type="int",           default=100,        help="number of images per class: in the ideal case (essentially maximum size of class) (default 100)")
 	parser.add_option("--CTF",                   action="store_true",  default=False,      help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)")
 	parser.add_option("--ir",                    type="int",           default=1,          help="inner ring: of the resampling to polar coordinates. units - pixels (default 1)")
@@ -145,6 +147,8 @@ def main(args):
 			return 1
 
 	radi  = options.radius
+	target_radius  = options.target_radius
+	target_nx  = options.target_nx
 	center_method  = options.center_method
 	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
 
@@ -235,14 +239,15 @@ def main(args):
 	#  PARAMETERS OF THE PROCEDURE
 	if( options.xr == -1 ):
 		#  Default values
-		target_nx = 76
-		target_radius = 29
+		# target_nx = 76
+		# target_radius = 29
 		target_xr = 1
 	else:  #  nx//2
 		#  Check below!
 		target_xr = options.xr
-		target_nx = 76 + target_xr - 1 # subtract one, which is default
-		target_radius = 29
+		# target_nx = 76 + target_xr - 1 # subtract one, which is default
+		target_nx += target_xr - 1 # subtract one, which is default
+		# target_radius = 29
 
 	mpi_barrier(MPI_COMM_WORLD)
 
