@@ -873,7 +873,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
 
-	ftp = file_type(stack)
+	# ftp = file_type(stack)
 
 	if myid == main_node:
 		import global_def
@@ -899,7 +899,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 			print "stack:::::::", stack ; total_nima = EMUtil.get_image_count(stack)
 		else:
 			total_nima = 0
-		total_nima = bcast_number_to_all(total_nima)
+		total_nima = bcast_number_to_all(total_nima)[0]
 		list_of_particles = range(total_nima)
 
 		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
@@ -911,7 +911,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 		data = stack
 		total_nima = len(data)
 		total_nima = mpi_reduce(total_nima, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
-		total_nima = mpi_bcast(total_nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		total_nima = mpi_bcast(total_nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)[0]
 		list_of_particles = range(total_nima)
 		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 		list_of_particles = list_of_particles[image_start:image_end]
@@ -922,7 +922,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	if myid == main_node:
 		nx = data[0].get_xsize()
 		if CTF:	ctf_app = data[0].get_attr_default('ctf_applied', 0)
-		del ima
+		# del ima
 	else:
 		nx = 0
 		if CTF:	ctf_app = 0
@@ -1051,6 +1051,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 			ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
 			reduce_EMData_to_root(ave1, myid, main_node)
 			reduce_EMData_to_root(ave2, myid, main_node)
+			sys.stdout.flush()
 			if myid == main_node:
 				log.add("Iteration #%4d"%(total_iter))
 				msg = "X range = %5.2f   Y range = %5.2f   Step = %5.2f"%(xrng[N_step], yrng[N_step], step[N_step])
@@ -1058,9 +1059,11 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				if CTF: 
 					tavg_Ng = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
 					tavg    = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
-				else:	 tavg = (ave1+ave2)/total_nima
+				else:	 
+					tavg = (ave1+ave2)/total_nima
 				if outdir:
 					tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
+					
 					if CTF:
 						tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
 					frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))

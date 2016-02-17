@@ -248,6 +248,7 @@ def main(args):
 
 	# Initialization of stacks
 	if(myid == main_node):
+		print "command_line_provided_stack_filename", command_line_provided_stack_filename
 		number_of_images_in_stack = EMUtil.get_image_count(command_line_provided_stack_filename)
 	else:
 		number_of_images_in_stack = 0
@@ -258,7 +259,13 @@ def main(args):
 	
 	init2dir = os.path.join(masterdir,"2dalignment")
 	
-	if not os.path.exists(os.path.join(init2dir, "initial2Dparams.txt")):
+	# from mpi import mpi_finalize
+	# mpi_finalize()
+	# sys.stdout.flush()
+	# sys.exit()
+	
+	
+	if not os.path.exists(os.path.join(init2dir, "Finished_initial_2d_alignment.txt")):
 	
 		if(myid == 0):
 			import subprocess
@@ -284,7 +291,7 @@ def main(args):
 		image_start, image_end = MPI_start_end(number_of_images_in_stack, nproc, myid)
 
 		if options.skip_alignment:
-			params2d= [[0.0,0.0,0.0,0] for i in xrange(image_start_image_end)]
+			params2d = [[0.0,0.0,0.0,0] for i in xrange(image_start, image_end)]
 		else:
 
 			original_images = EMData.read_images(command_line_provided_stack_filename, range(image_start,image_end))
@@ -296,6 +303,7 @@ def main(args):
 					original_images[im]  = resample(original_images[im], shrink_ratio)
 
 			nx = original_images[0].get_xsize()
+			# nx = int(nx*shrink_ratio + 0.5)
 
 			txrm = (nx - 2*(target_radius+1))//2
 			if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
@@ -310,25 +318,37 @@ def main(args):
 			else:
 				tss = "1"
 				txr = "%d"%txrm
+			
+			# print "nx, txr, txrm, tss", nx, txr, txrm, tss
+		# from mpi import mpi_finalize
+		# mpi_finalize()
+		# sys.stdout.flush()
+		# sys.exit()
+
+
 
 			# section ali2d_base
 
-			params2d = ali2d_base(original_images, init2dir, None, 1, radi, 1, txr, txr, tss, \
+			params2d = ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
 				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
 				"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
+			
+			
+			
+			
+			
 			del original_images
-			if( myid == main_node ):
-				for i in xrange(len(params2d)):
-					alpha, sx, sy, mirror = combine_params2(0, params2d[i][1],params2d[i][2], 0, -params2d[i][0], 0, 0, 0)
-					sx /= shrink_ratio
-					sy /= shrink_ratio
-					params2d[i][0] = 0.0
-					params2d[i][1] = sx
-					params2d[i][2] = sy
-					params2d[i][3] = 0
-					#set_params2D(aligned_images[i],[0.0, sx,sy,0.,1.0])
+			
+			for i in xrange(len(params2d)):
+				alpha, sx, sy, mirror = combine_params2(0, params2d[i][1],params2d[i][2], 0, -params2d[i][0], 0, 0, 0)
+				sx /= shrink_ratio
+				sy /= shrink_ratio
+				params2d[i][0] = 0.0
+				params2d[i][1] = sx
+				params2d[i][2] = sy
+				params2d[i][3] = 0
+				#set_params2D(aligned_images[i],[0.0, sx,sy,0.,1.0])
 
-	
 		mpi_barrier(MPI_COMM_WORLD)
 		tmp = params2d[:]
 		tmp = wrap_mpi_gatherv(tmp, main_node, MPI_COMM_WORLD)
@@ -344,19 +364,26 @@ def main(args):
 		#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  
 		#  Note images can be also padded, in which case shrink_ratio > 1.
 		shrink_ratio = float(target_radius)/float(radi)
+		
+		aligned_images = EMData.read_images(command_line_provided_stack_filename, range(image_start,image_end))
 		nx = aligned_images[0].get_xsize()
 		nima = len(aligned_images)
 		newx = int(nx*shrink_ratio + 0.5)
 
-		aligned_images = EMData.read_images(command_line_provided_stack_filename, range(image_start,image_end))
-		nima = len(aligned_images)
+
+		
+		while not os.path.exists(os.path.join(init2dir, "initial2Dparams.txt")):
+			import time
+			time.sleep(1)
+		mpi_barrier(MPI_COMM_WORLD)
+		
 		params = read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
 		params = params[image_start:image_end]
 
 
 		msk = model_circle(radi, nx, nx)
 		for im in xrange(nima):
-			st = Util.infomask(aligned_images[im], mask, False)
+			st = Util.infomask(aligned_images[im], msk, False)
 			aligned_images[im] -= st[0]
 			if options.CTF:
 				aligned_images[im] = filt_ctf(aligned_images[im], aligned_images[im].get_attr("ctf"), binary = True)
@@ -504,11 +531,19 @@ def main(args):
 			"""%(shrink_ratio, radi)
 			fp.write(output_text); fp.flush() ;fp.close()
 			print output_text
+			fp = open(os.path.join(init2dir, "Finished_initial_2d_alignment.txt"), "w"); fp.flush() ;fp.close()
 	else:
 		if( myid == main_node ):
 			print "Skipping 2d alignment since it was alredy done!"
 
 	mpi_barrier(MPI_COMM_WORLD)
+	
+	
+	# from mpi import mpi_finalize
+	# mpi_finalize()
+	# sys.stdout.flush()
+	# sys.exit()
+	
 
 	os.chdir(masterdir)
 	
