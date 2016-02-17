@@ -37,9 +37,11 @@ from EMAN2jsondb import JSTask,jsonclasses
 import sys
 from sys import argv
 
+from shutil import copyfile
+
 def main():
 
-	usage = """e2tomopreproc.py <options> . 
+	usage = """e2tomopreproc.py <imgs> <options> . 
 	This program takes a tiltseries ('.st' or '.ali' file from IMOD) and applies preprocessing operations to them, such as lowpass, highpass, masking, etc.
 	The options should be supplied in "--option=value" format, replacing "option" for a valid option name, and "value" for an acceptable value for that option. 
 	"""
@@ -51,13 +53,15 @@ def main():
 		for example, tomopreproc_02 will be the directory by default if 'tomopreproc_01' 
 		already exists.""")
 	
-	parser.add_argument("--input",type=str,default='',help=""""tiltseries to process. redundant with --tiltseries""")
+	parser.add_pos_argument(name="stack_files",default="",help="List building material (sets) here.")
+	
+	parser.add_argument("--input",type=str,default='',help=""""tiltseries to process. redundant with --tiltseries, or with providing images as arguments (separated by a space: e2tomopreproc.py stack1.hdf stack2.hdf), but --input takes precedence.""")
 	
 	parser.add_argument("--tiltseries",type=str,default='',help=""""tiltseries to process. redundant with --input""")
 
 	parser.add_argument("--tltfile",type=str,default='',help="""".tlt file containing the tilt angles for --tiltseries""")
 	
-	parser.add_argument("--outmode", type=str, default="float", help="""All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported: float, int8, int16, int32, uint8, uint16, uint32. Values are rescaled to fill MIN-MAX range.""")
+	parser.add_argument("--outmode", type=str, default='', help="""All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported: float, int8, int16, int32, uint8, uint16, uint32. Values are rescaled to fill MIN-MAX range.""")
 	
 	parser.add_argument("--dontcleanup", action='store_true', default=False, help="""If specified, intermediate files will be kept.""")
 	
@@ -83,9 +87,9 @@ def main():
 	
 	parser.add_argument("--preprocess",type=str,default='',help="""Any processor (see 'e2help.py processors -v 10' at the command line) to be applied to each image.""")
 	
-	parser.add_argument("--lowpassfrac",type=float,default=0.6666,help="""Default=0.6666. Fraction of Nyquist to lowpass at. The processor used is filter.lowpass.tanh""")
+	parser.add_argument("--lowpassfrac",type=float,default=0.0,help="""Default=0.0 (not used). Fraction of Nyquist to lowpass at. The processor used is filter.lowpass.tanh""")
 	
-	parser.add_argument("--highpasspix",type=int,default=1,help="""Default=1. Number of Fourier pixels to apply highpass filter at. The processor used is filter.highpass.gauss.""")
+	parser.add_argument("--highpasspix",type=int,default=0,help="""Default=0 (not used). Number of Fourier pixels to apply highpass filter at. The processor used is filter.highpass.gauss.""")
 	
 	parser.add_argument("--parallel",type=str, default="thread:1", help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
 	
@@ -96,8 +100,6 @@ def main():
 	parser.add_argument("--prenadsigma",type=int, default=0, help="""Default=0. Requires IMOD to be installed. Used to apply prenad filtering to a tiltseries. This is the --sigma parameter in IMOD's preNAD program (initial sigma for 'smoothing structure tensor').""")
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
-	
-	
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -111,255 +113,335 @@ def main():
 	
 	options = sptmakepath(options,'tomopreproc')
 	
+	#print "args are",args
 
+	infiles = []
 	if not options.input:
-		try:
-			options.input = sys.argv[1]
-		except:
-			
-			if options.tiltseries:
-				options.input = options.tiltseries
+		#try:
+		#	infiles.append( sys.argv[1] )
+		#except:
+		if options.tiltseries:
+			infiles.append( options.tiltseries )
+		else:
+			if args:
+				print "copying args to infiles"
+				infiles = list(args)
+				print "infiles are", infiles
 			else:
-				print "\n(e2tomopreproc)(main) ERROR: must provide input file as first argument or via --tiltseries or --input"
+				print "\n(e2tomopreproc)(main) ERROR: must provide input files as arguments or via the --input or --tiltseries parameters."
 
 
-	if options.input:
+	if infiles:
 		print "\n(e2tomopreproc)(main) identified --input", options.input
 		#print " .ali in options.input[:-4]", '.ali' in options.input[-4:]
 		#print "options.input[-4] is", options.input[-4:]
 		
-		if '.ali' in options.input[-4:] or '.st' in options.input[-3:] or '.mrc' in options.input[-4:] or '.mrcs' in options.input[-5:] or '.hdf' in options.input[-4:]:
-			pass
-		else:
-			print "\n(e2tomopreproc)(main) ERROR: invalid image extension %s. Must use .st, .ali, .hdf, .mrc or .mrcs" %(options.input.split('.')[-1])
-			sys.exit(1)
-	
-	originalextension = options.input.split('.')[-1]
-	
-	angles = {}
-	#if options.maskbyangle:
-	if not options.tltfile:
-		print "\n(e2tomopreproc)(main) ERROR: --maskbyangle requires --tltfile"
+		for infile in infiles:
+			if '.ali' in infile[-4:] or '.st' in infile[-3:] or '.mrc' in infile[-4:] or '.mrcs' in infile[-5:] or '.hdf' in infile[-4:]:
+				pass
+			else:
+				print "\n(e2tomopreproc)(main) ERROR: invalid image extension %s for image %s. Extension must be .st, .ali, .hdf, .mrc or .mrcs" %(options.input.split('.')[-1], infile)
+				sys.exit(1)
+	else:
+		print "\n(e2tomopreproc)(main) ERROR: no images found/provided"
 		sys.exit(1)
 		
-	else:
-		f = open( options.tltfile, 'r' )
-		lines = f.readlines()
-		print "\nnumber of lines read from --tltfile", len(lines)
-		f.close()
-		#print "lines in tlt file are", lines
-		k=0
-		for line in lines:
-			line = line.replace('\t','').replace('\n','')
+	originalextension = infiles[0].split('.')[-1]
 	
-			if line:
-				angle = float(line)
-				angles.update( { k:angle } )
-				if options.verbose:
-					print "appending angle", angle
-				k+=1
-		if len(angles) < 2:
-			print "\nERROR: something went terribly wrong with parsing the --tltlfile. This program does not work on single images"
-			sys.exit()
-
-	if len(angles) < 2:
-		print "\nERROR: (second angle check) something went terribly wrong with parsing the --tltlfile. This program does not work on single images"
-		sys.exit()
-				
-	mrcstack = options.path + '/' + options.input
+	angles = {}
+	if options.maskbyangle or (options.prenadminite and options.prenadmaxite and options.prenadsigma):
 	
-	if '.hdf' in options.input[-5:]:
-		print "replacing .hdf extension"
-		mrcstack = options.path + '/' + options.input.replace('.hdf','.mrc')
-	
-	if '.mrcs' in options.input[-5:]:
-		print "replacing .mrcs extension"
-		mrcstack = options.path + '/' + options.input.replace('.mrcs','.mrc')
-	
-	if '.st' in options.input[-5:]:
-		print "replacing .st extension"
-		mrcstack = options.path + '/' + options.input.replace('.st','.mrc')	
-
-	if '.ali' in options.input[-5:]:
-		print "replacing .ali extension"
-		mrcstack = options.path + '/' + options.input.replace('.ali','.mrc')
-	
-	#go = 0
+		if not options.tltfile:
+			print "\n(e2tomopreproc)(main) ERROR: --maskbyangle and --prenad parameters require --tltfile"
+			sys.exit(1)
 		
-			
+		else:
+			f = open( options.tltfile, 'r' )
+			lines = f.readlines()
+			print "\nnumber of lines read from --tltfile", len(lines)
+			f.close()
+			#print "lines in tlt file are", lines
+			k=0
+			for line in lines:
+				line = line.replace('\t','').replace('\n','')
 	
-	
-	#if go:
-	print "mrcstack is",mrcstack
-	outname = mrcstack.replace('.mrc','_UNSTACKED.mrc')
-	print "therefore, outname is", outname
-	#outname = outname.replace('.mrc','.mrcs')
+				if line:
+					angle = float(line)
+					angles.update( { k:angle } )
+					if options.verbose:
+						print "appending angle", angle
+					k+=1
+			if len(angles) < 2:
+				print "\nERROR: something went terribly wrong with parsing the --tltlfile. This program does not work on single images"
+				sys.exit()
 
-	cmd = 'e2proc2d.py ' + options.input + ' ' + outname + ' --unstacking --threed2twod'
-
-	#from shutil import copyfile
-	#copyfile(options.input, outname)
-	#print "copied input to", outname
-
-	if options.outmode:
-		cmd += ' --outmode=' + options.outmode
-
-	if options.verbose:
-		cmd += ' --verbose=' + str(options.verbose)
-		print "\ncommand to unstack original input tiltseries is", cmd	
-
-	print "\n(e2tomopreproc)(main) unstacking command is", cmd
-
-	p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	#p = subprocess.Popen( cmd , shell=True, stdout=subprocess.PIPE)
-
-	text = p.communicate()	
-	#p.stdout.close()
-
-	p.wait()
-
-	if p.returncode == 0:
-
-		imgs = []
-		c = os.getcwd() + '/' + options.path 
-		findir = os.listdir( os.getcwd() + '/' + options.path )
-
-		print "\n(e2tomopreproc)(main) directory to look for images is", c	
-		for f in findir:
-			#if '.mrcs' in f:
-			if "_UNSTACKED" in f:
-				imgs.append( options.path + '/' +f )
-
-		print "\n(e2spt_preproc)(main) found these many images", len( imgs )		
-
-		print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n"
-
-		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer(options.parallel)
-		pclist=[options.input]
-
-		etc.precache(pclist)
-		print "\n(e2spt_preproc)(main) - precaching --input"
-
-		tasks=[]
-		results=[]
-
-		if options.lowpassfrac:
-			hdr = EMData( imgs[0], 0, True )
-			apix = hdr['apix_x']
-			print "\n(e2spt_preproc)(main) apix is",apix
-			nyquist = 2.0 * apix
-			print "\n(e2spt_preproc)(main) therefore nyquist resolution is", nyquist
-			print
-			lowpassres = nyquist/options.lowpassfrac
-			print "\n(e2spt_preproc)(main) and final lowpass resolution", lowpassres
-			options.lowpassfrac = 1.0/(lowpassres)
-			if float(options.shrink) > 1.0:
-				options.lowpassfrac /= float(options.shrink)
-			
+		if len(angles) < 2:
+			print "\nERROR: (second angle check) something went terribly wrong with parsing the --tltlfile. This program does not work on single images"
+			sys.exit()
 				
-			print "and the final lowpass frequency will be", options.lowpassfrac
-
-		kk=0
-		imgs.sort()
-		for img in imgs:
-
-			task = TomoPreproc2DTask( img, options, angles[kk] )
-			tasks.append(task)
-			kk+=1
-
-		#if tasks:
-		tids = etc.send_tasks(tasks)
-		if options.verbose: 
-			print "\n(e2spt_preproc)(main) preprocessing %d tasks queued" % (len(tids)) 
-
-		results = get_results( etc, tids, options )
-
-
-		print "\n(e2tomopreproc)(main) these many images have been processsed",len(results)
-
-		imgspreproc = []
-		findir = os.listdir( os.getcwd() + '/' + options.path )
-
-		outfile = mrcstack.replace('.mrc','_final.mrcs')
 	
-		print "\n\n\noutfile is", outfile
 	
-		for f in findir:
-			if "_preproc.mrc" in f:
-				print "found preprocessed image", f
-				imgspreproc.append( options.path + '/' + f )
+	
+	
+	print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n"
+
+	from EMAN2PAR import EMTaskCustomer
+	etc=EMTaskCustomer(options.parallel)
+	pclist=[options.input]
+
+	etc.precache(pclist)
+	print "\n(e2spt_preproc)(main) - precaching --input"
+
+	tasks=[]
+	results=[]
+	
+	mrcstacks = []
+	print "there are these many infiles to loop over", len(infiles)
+
+
+
+	if options.lowpassfrac:
+		hdr = EMData( infiles[0], 0, True )
+		apix = hdr['apix_x']
+		print "\n(e2spt_preproc)(main) apix is",apix
+		nyquist = 2.0 * apix
+		print "\n(e2spt_preproc)(main) therefore nyquist resolution is", nyquist
+		print
+		lowpassres = nyquist/options.lowpassfrac
+		
+		options.lowpassfrac = 1.0/(lowpassres)
+		if float(options.shrink) > 1.0:
+			options.lowpassfrac /= float(options.shrink)
+			
+			print "there's shrinking", options.shrink
+			lowpassres = nyquist/options.lowpassfrac
+
+		print "\n(e2spt_preproc)(main) and final lowpass frequency is", options.lowpassfrac
+
+		print "corresponding to lowpassres of",lowpassres
+
+	for infile in infiles:
+	
+		mrcstack = options.path + '/' + infile
+		print "infile is", infile
+		print "infile[-5:] is ", infile[-5:]
+		if '.hdf' in infile[-5:]:
+			print "replacing .hdf extension"
+			mrcstack = options.path + '/' + infile.replace('.hdf','.mrc')
+	
+		if '.mrcs' in infile[-5:]:
+			print "replacing .mrcs extension"
+			mrcstack = options.path + '/' + infile.replace('.mrcs','.mrc')
+	
+		if '.st' in infile[-5:]:
+			print "replacing .st extension"
+			mrcstack = options.path + '/' + infile.replace('.st','.mrc')	
+
+		if '.ali' in infile[-5:]:
+			print "replacing .ali extension"
+			mrcstack = options.path + '/' + infile.replace('.ali','.mrc')
+			
+		if '.tif' in infile[-5:]:
+			print "replacing .ali extension"
+			mrcstack = options.path + '/' + infile.replace('.tif','.mrc')
+	
+		#go = 0
+		#if go:
+		print "mrcstack is",mrcstack
+		
+		#outname = outname.replace('.mrc','.mrcs')
+	
+		mrcstacks.append( mrcstack )
+		
+		go = 0
+		if options.maskbyangle:
+			outname = mrcstack.replace('.mrc','_UNSTACKED.mrc')
+			print "therefore, outname is", outname
+	
+			cmd = 'e2proc2d.py ' + infile + ' ' + outname + ' --unstacking --threed2twod'
+
+			#from shutil import copyfile
+			#copyfile(options.input, outname)
+			#print "copied input to", outname
+
+			if options.outmode:
+				cmd += ' --outmode=' + options.outmode
+
+			if options.verbose:
+				cmd += ' --verbose=' + str(options.verbose)
+				print "\ncommand to unstack original input tiltseries is", cmd	
+
+			print "\n(e2tomopreproc)(main) unstacking command is", cmd
+
+			p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			#p = subprocess.Popen( cmd , shell=True, stdout=subprocess.PIPE)
+
+			text = p.communicate()	
+			#p.stdout.close()
+
+			p.wait()
+		
+			if p.returncode == 0:
+				go = 1
+		else:
+			go = 1
+	
+		
+		if go:
+
+			imgs = []
+			if options.maskbyangle:
+				c = os.getcwd() + '/' + options.path 
+				findir = os.listdir( os.getcwd() + '/' + options.path )
+
+				print "\n(e2tomopreproc)(main) directory to look for images is", c	
+				for f in findir:
+					#if '.mrcs' in f:
+					if "_UNSTACKED" in f:
+						imgs.append( options.path + '/' +f )
+
+				kk=0
+				imgs.sort()
+				print "\n(e2spt_preproc)(main) found these many images", len( imgs )		
+
+				for img in imgs:
+					#task=None
+
+					#if options.maskbyangle:
+					outimage = img.replace('.mrc','_preproc.mrc')
+					task = TomoPreproc2DTask( img, options, angles[kk], outimage )
+					tasks.append(task)
+					kk+=1
 			else:
-				print "this file is NOT a preprocessed image", f
+				outimage = options.path + '/' + infile.replace('.mrc','_preproc.mrcs')
+				task = TomoPreproc2DTask( infile, options, 0, outimage )
+				tasks.append(task)
+				
+					
+			#else:
+			#	newmrcs = mrcstack.replace('.mrc','.mrcs')
+			#	print "copying file %s to %s" %(infile,newmrcs)
+			#	copyfile( infile, newmrcs  )
+			#	imgs.append( newmrcs )
+			
+			
 
-		imgspreproc.sort()
+			
 
-		print "\n(e2tomopreproc)(main) these many preprocessed images loaded for restacking", len(imgspreproc)
+				
+				#print "and the final lowpass frequency will be", options.lowpassfrac
 
-		for f in imgspreproc:	
+			
+
+			
+	tids = etc.send_tasks(tasks)
+	if options.verbose: 
+		print "\n(e2spt_preproc)(main) preprocessing %d tasks queued" % (len(tids)) 
+
+	results = get_results( etc, tids, options )
+
+	print "\n(e2tomopreproc)(main) these many images have been processsed",len(results)
+
+	
+	imgspreproc = []
+	findir = os.listdir( os.getcwd() + '/' + options.path )
+	
+	#for mrcstack in mrcstacks:
+
+
+	for f in findir:
+		if "_preproc.mrc" in f:
+			print "found preprocessed image", f
+			imgspreproc.append( options.path + '/' + f )
+		else:
+			print "this file is NOT a preprocessed image", f
+
+	imgspreproc.sort()
+
+	print "\n(e2tomopreproc)(main) these many preprocessed images loaded", len(imgspreproc)
+	
+	finalfiles=[]
+	
+	if options.maskbyangle:
+		
+		outfile = mrcstack.replace('.mrc','.mrcs')
+		print "for RESTACKING"
+		print "\n\n\noutfile is", outfile
+
+		for f in imgspreproc:
+			print "appending image %s to outfile %s" %(f,outfile)			
 			cmd = 'e2proc2d.py ' + f + ' ' + outfile
 			if options.outmode:
 				cmd += ' --outmode=' + options.outmode
-		
+
 			if options.verbose:
 				cmd += ' --verbose ' + str(options.verbose)
-		
+
 			print "\ncmd is with .mrcs outputformat is", cmd
 			print "becauase outfile is",outfile	
 			p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			text = p.communicate()	
-			p.stdout.close()			
-		
+			p.stdout.close()		
+	
 		finaloutput = outfile.replace('.mrcs', '.' + originalextension)
 		os.rename( outfile, finaloutput )
+		
+		finalfiles.append( finaloutput )
+	else:
+		finalfiles = list( imgspreproc )
+	
+	
+	for finalf in finalfiles:
+		if not options.tltfile:
+			break
 	
 		if options.normalizeimod:
 			try:
-				cmd = 'newstack ' + finaloutput + ' ' + finaloutput + ' --float 2'
+				cmd = 'newstack ' + finalf + ' ' + finalf + ' --float 2'
 				print "normalizeimod cmd is", cmd
 				p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 				text = p.communicate()	
 				p.wait()
 			except:
 				print "\nERROR: --normalizeimod skipped. Doesn't seem like IMOD is installed on this machine"		
-		
-		if not options.dontcleanup:
+
+		if not options.dontcleanup and options.maskbyangle:
 			purge( options.path, '_preproc.mrc')
 			purge( options.path, '_UNSTACKED')	
 			purge( options.path, '~')
 		
-		if options.prenadminite or options.prenadmaxite or options.prenadsigma:
-			
-			if options.prenadminite and options.prenadmaxite and options.prenadsigma:
-				cmd = 'prenad -input ' + finaloutput + ' -output ' + finaloutput.replace('.'+originalextension, '_prenad.' + originalextension) + ' -minite ' + str(options.prenadminite) + ' -maxite ' + str(options.prenadmaxite) + ' -sigma ' + str(options.prenadsigma) + ' -angles ' + options.tltfile 
-				if options.verbose:
-					print "\n(e2tomopreproc)(main) prenad cmd to run is", cmd
-				try:
-					p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-					text = p.communicate()	
-					p.wait()
-				except:
-					print "\nERROR: check that a version of IMOD containing the preNAD program is correctly installed on this machine"
-			
-			
-			else:
-				if options.prenadminite:
-					if not options.prenadmaxite:
-						print "\nERROR: --prenadmaxite required with --prenadminite"
-					if not options.prenadsigma:
-						print "\nERROR: --prenadsigma required with --prenadminite"
-		
-				if options.prenadmaxite:
-					if not options.prenadminite:
-						print "\nERROR: --prenadminite required with --prenadmaxite"
-					if not options.prenadsigma:
-						print "\nERROR: --prenadsigma required with --prenadmaxite"
-				
-				if options.prenadsigma:
-					if not options.prenadminite:
-						print "\nERROR: --prenadminite required with --prenadsigma"
-					if not options.prenadmaxite:
-						print "\nERROR: --prenadmaxite required with --prenadsigma"
+		if options.tltfile:
+			if options.prenadminite or options.prenadmaxite or options.prenadsigma:
+
+				if options.prenadminite and options.prenadmaxite and options.prenadsigma:
+					cmd = 'preNAD -input ' + finalf + ' -output ' + finalf.replace('.'+originalextension, '_prenad.' + originalextension) + ' -minite ' + str(options.prenadminite) + ' -maxite ' + str(options.prenadmaxite) + ' -sigma ' + str(options.prenadsigma) + ' -angles ' + options.tltfile 
+					if options.verbose:
+						print "\n(e2tomopreproc)(main) prenad cmd to run is", cmd
+					try:
+						p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+						text = p.communicate()	
+						p.wait()
+					except:
+						print "\nERROR: check that a version of IMOD containing the preNAD program is correctly installed on this machine"
+
+				else:
+					if options.prenadminite:
+						if not options.prenadmaxite:
+							print "\nERROR: --prenadmaxite required with --prenadminite"
+						if not options.prenadsigma:
+							print "\nERROR: --prenadsigma required with --prenadminite"
+
+					if options.prenadmaxite:
+						if not options.prenadminite:
+							print "\nERROR: --prenadminite required with --prenadmaxite"
+						if not options.prenadsigma:
+							print "\nERROR: --prenadsigma required with --prenadmaxite"
+
+					if options.prenadsigma:
+						if not options.prenadminite:
+							print "\nERROR: --prenadminite required with --prenadsigma"
+						if not options.prenadmaxite:
+							print "\nERROR: --prenadmaxite required with --prenadsigma"
 					
 		
 	E2end(logger)	
@@ -382,63 +464,79 @@ class TomoPreproc2DTask(JSTask):
 	'''This is a task object for the parallelism system. It is responsible for preprocessing a 2-D image in a tiltseries, with a variety of options'''
 
 
-	def __init__(self, image, options, angle):
+	def __init__(self, image, options, angle, outimage):
 	
 		data={"image":image}
 		
 		JSTask.__init__(self,"TomoPreproc2d",data,{},"")
 
-		self.classoptions={"options":options, "angle":angle }
+		self.classoptions={"options":options, "angle":angle,"outimage":outimage }
 	
 	def execute(self,callback=None):
 		
 		options = self.classoptions['options']
 		angle = self.classoptions['angle']
+		outimage = self.classoptions['outimage']
 		
 		image = self.data["image"]
 		
 		if options.verbose:
 			print "\n(e2tomopreproc)(class), image is", image
 		
-		cmd = 'e2proc2d.py ' + image + ' ' + image.replace('.mrc','_preproc.mrc')
+		hdr=EMData(image,0,True)
+		nx=hdr['nx']
+		ny=hdr['ny']
+		nz=hdr['nz']
+		print "original nx,ny,nz are",nx,ny,nz
 		
+		#cmd = 'e2proc2d.py ' + image + ' ' + image.replace('.mrc','_preproc.mrc')
+
+		#if nz < 2:
+		#cmd = 'e2proc2d.py ' + image + ' ' + image.replace('.mrcs','_preproc.mrcs')
+		#
+		cmd = 'e2proc2d.py ' + image + ' ' + outimage
+
+		if '.mrcs' in outimage:
+				cmd += ' --threed2twod'
+		#if nz > 1:
+		#		cmd += ' --threed2threed'
 		#print "cmd is", cmd
 		
 		
 		if options.outmode:
-			#print "adding outmode"
+			print "adding outmode"
 			cmd += ' --outmode ' + options.outmode
 	
 		if options.normproc:
-			#print "adding normproc"
+			print "adding normproc"
 			cmd += ' --process ' + options.normproc
 									
 		if options.threshold:
-			#print "adding threshold"
+			print "adding threshold"
 			cmd += ' --process ' + options.threshold	
 		
 		if options.lowpassfrac:
-			#print "adding lowpassfrac"
+			print "adding lowpassfrac"
 			cmd += ' --process filter.lowpass.tanh:cutoff_freq=' + str(options.lowpassfrac)	
 
 		if options.highpasspix:
-			#print "adding highpasspix"
+			print "adding highpasspix"
 			cmd += ' --process filter.highpass.gauss:cutoff_pixels=' + str(options.highpasspix)	
 		
 		if options.preprocess:
-			#print "adding preprocess"
+			print "adding preprocess"
 			cmd += ' --process ' + options.preprocess		
 		
 		if options.maskbyangle:	
-			#print "adding maskbyangle"
+			print "adding maskbyangle"
 			cmd += ' --process tomo.tiltedgemask:angle=' + str(angle) + ':gauss_falloff=' + str(options.maskbyanglefalloff) + ':gauss_sigma=' + str(options.maskbyanglesigma)
 	
 		if options.mask:
-			#print "adding mask"
+			print "adding mask"
 			cmd += ' --process ' + options.mask	
 		
 		if options.clip:
-			#print "adding clip"
+			print "adding clip"
 			clips = options.clip.split(',')
 			print "clips", clips
 		
