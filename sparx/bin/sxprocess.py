@@ -862,7 +862,7 @@ def main():
 			#### FSC weighting sqrt((2.*fsc)/(1+fsc));
 			fil = len(frc[1])*[None]
 			for i in xrange(len(fil)):
-				if frc[1][i]>=.13:
+				if frc[1][i]>=.143:
 					tmp = frc[1][i]
 				else:
 					tmp = 0.0
