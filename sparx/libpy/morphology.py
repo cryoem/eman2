@@ -1531,7 +1531,7 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 			break
 
 	B, s = linreg(x[idx_freq_min:idx_freq_max], pws_log[idx_freq_min:idx_freq_max])
-	print  B,s
+	#print  B,s
 
 	ff = [0.0]*nr
 	from math import exp
