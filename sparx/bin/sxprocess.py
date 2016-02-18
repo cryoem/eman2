@@ -839,6 +839,7 @@ def main():
 		from morphology   import compute_bfactor
 		from statistics   import fsc
 		from filter       import filt_table, filt_gaussinv
+		nargs = len(args)
 		e1   = get_im(args[0])
 		e2   = get_im(args[1])
 		m    = get_im(args[2])
