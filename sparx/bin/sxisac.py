@@ -70,8 +70,8 @@ def main(args):
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--radius",                type="int",           help="particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)")
-	parser.add_option("--target_radius",         type="int",           default=29,        help="target particle radius: (default 29)")
-	parser.add_option("--target_nx",             type="int",           default=76,        help="target particle image size: (default 76)")
+	parser.add_option("--target_radius",         type="int",           default=29,         help="target particle radius: actual particle radius on which isac will process data. Images will be shrinked/enlarged to achieve this radius (default 29)")
+	parser.add_option("--target_nx",             type="int",           default=76,         help="target particle image size: actual image size on which isac will process data. Images will be shrinked/enlarged according to target particle radius and then cut/padded to achieve target_nx size. When xr > 0, the final image size for isac processing is 'target_nx + xr'  (default 76)")
 	parser.add_option("--img_per_grp",           type="int",           default=100,        help="number of images per class: in the ideal case (essentially maximum size of class) (default 100)")
 	parser.add_option("--CTF",                   action="store_true",  default=False,      help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)")
 	parser.add_option("--ir",                    type="int",           default=1,          help="inner ring: of the resampling to polar coordinates. units - pixels (default 1)")

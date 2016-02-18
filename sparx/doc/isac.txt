@@ -49,12 +49,14 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
     radius:: particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)
     img_per_grp:: number of images per class: in the ideal case (essentially maximum size of class) (default 100)
     CTF:: apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)
-    restart_section:: restart section: each generation (iteration) contains three sections: 'restart', 'candidate_class_averages', and 'reproducible_class_averages'. To restart from a particular step, for example, generation 4 and section 'candidate_class_averages' the following option is needed: '--restart_section=candidate_class_averages,4'. The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the '--use_latest_master_directory' option can be used. (default ' ') 
+    restart_section:: restart section: each generation (iteration) contains three sections: 'restart', 'candidate_class_averages', and 'reproducible_class_averages'. To restart from a particular step, for example, generation 4 and section 'candidate_class_averages' the following option is needed: '--restart_section=candidate_class_averages,4'. The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the '--use_latest_master_directory' option can be used. (default ' ')
+    target_radius:: target particle radius: actual particle radius on which isac will process data. Images will be shrinked/enlarged to achieve this radius (default 29)
+    target_nx:: target particle image size: actual image size on which isac will process data. Images will be shrinked/enlarged according to target particle radius and then cut/padded to achieve target_nx size. When xr > 0, the final image size for isac processing is 'target_nx + xr'  (default 76)
+    xr:: x range: of translational search. By default, set by the program. (default -1)
 
     * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
     ir:: inner ring: of the resampling to polar coordinates. units - pixels (default 1)
     rs:: ring step: of the resampling to polar coordinates. units - pixels (default 1)
-    xr:: x range: of translational search. By default, set by the program. (default -1)
     yr:: y range: of translational search. By default, same as xr. (default -1)
     ts:: search step: of translational search: units - pixels (default 1.0)
     maxit:: number of iterations for reference-free alignment: (default 30)
