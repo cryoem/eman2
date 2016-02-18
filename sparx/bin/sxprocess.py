@@ -837,7 +837,7 @@ def main():
 		from fundamentals import rot_avg_table
 		from morphology   import compute_bfactor
 		from statistics   import fsc
-		from filter       import filter_table, filt_gaussinv
+		from filter       import filt_table, filt_gaussinv
 		e1   = get_im(args[0])
 		e2   = get_im(args[1])
 		m    = get_im(args[2])
