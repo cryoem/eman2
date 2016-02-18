@@ -850,7 +850,7 @@ def main():
 		from filter       import filt_table, filt_gaussinv
 		from EMAN2 import periodogram
 		e1   = get_im(args[0],0)
-		if e1.get_zsize()=1
+		if e1.get_zsize()==1:
 			nimage = EMUtil.get_image_count(args[0])
 			if options.mask !=None: m = get_im(options.mask)
 			else: m = None
