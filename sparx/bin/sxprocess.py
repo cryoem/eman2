@@ -839,6 +839,7 @@ def main():
 		from morphology   import compute_bfactor,power
 		from statistics   import fsc
 		from filter       import filt_table, filt_gaussinv
+		from EMAN2 import periodogram
 		nargs = len(args)
 		e1   = get_im(args[0])
 		e2   = get_im(args[1])
