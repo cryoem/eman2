@@ -43,21 +43,14 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <output> [options]
 	
-	This program depends on e2spt_classaverage.py because it imports the preprocessing and alignment functions from it.
+	This program depends on e2spt_classaverage.py because it imports the alignment function from it.
 	
-	STILL HEAVILY UNDER DEVELOPMENT.
-	This program produces a final average of a dataset (and mutually exclusive classes of a given size [in terms of a minimum # of particles in each class]),
+	This program produces a final average of a dataset (or mutually exclusive classes of a given size [in terms of a minimum # of particles in each class]),
 	where all particles have been subjected to all vs all alignments and hierarchical ascendent classification.
 	
-	See the e2spt Users Guide downloadable in PDF format from the EMAN2 Wiki for an explanation of this procedure.
+	Look for "spt" in the EMAN2 Wiki for tips on how to run a sensible command.
 
-	Three pre-processing operations are provided: mask, normproc and preprocess. They are executed in that order. Each takes
-	a generic <processor>:<parm>=<value>:...  string. While you could provide any valid processor for any of these options, if
-	the mask processor does not produce a valid mask, then the default normalization will fail. It is recommended that you
-	specify the following, unless you really know what you're doing:
-	
-	--mask=mask.sharp:outer_radius=<safe radius>
-	--preprocess=filter.lowpass.gauss:cutoff_freq=<1/resolution in A>
+	There should be no need to supply any preprocessing parameters, unless you're doing fancy/complicated things and default options don't yield the expected results.
 	"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
