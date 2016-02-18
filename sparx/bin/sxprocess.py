@@ -326,11 +326,16 @@ def main():
 	parser.add_option("--threshold",            type="float",	default= 9999.,           help="threshold provided by user to binarize input volume")
 	parser.add_option("--ne",                   type="int",		default= 0,     		  help="number of times to erode the binarized  input image")
 	parser.add_option("--nd",                   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
-	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes", default=False)
-	parser.add_option("--fsc_weighted",         action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes", default=False)
-	parser.add_option("--pixel_size",           type="float",                             help="pixel size of the data", default=1.0)
-	parser.add_option("--window_stack",                    action="store_true",           help="window stack images using a smaller window size", default=False)
-	parser.add_option("--box",           type="int",		default= 0,  help="the new window size ") 
+	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
+	parser.add_option("--fsc_weighted",         action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes")
+	parser.add_option("--low_pass_filter",      action="store_true",      default=False,  help="postprocess unfiltered odd, even 3-D volumes")
+	parser.add_option("--ff",                   type="float", default=.25,                help="low pass filter stop band frequency in absolute unit")
+	parser.add_option("--aa",                   type="float", default=.1,                 help="low pass filter falloff" )
+	parser.add_option("--mask",           type="string",                                  help="input mask file",  default=None)
+	parser.add_option("--output",         type="string",                                  help="output file name", default=None)
+	parser.add_option("--pixel_size",     type="float",                                   help="pixel size of the data", default=1.0)
+	parser.add_option("--window_stack",                     action="store_true",          help="window stack images using a smaller window size", default=False)
+	parser.add_option("--box",           type="int",		default= 0,                   help="the new window size ") 
  	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
@@ -842,20 +847,16 @@ def main():
 		from EMAN2 import periodogram
 		nargs = len(args)
 		e1   = get_im(args[0])
-		e2   = get_im(args[1])
-		if nargs>2:
-			m    = get_im(args[2])
-		else: 
-			m =None
+		if nargs >1: e2   = get_im(args[1])
+		if options.mask !=None: m = get_im(options.mask)
+		else: m =None
 		pixel_size = options.pixel_size
-		if nargs>3:
-			output = args[3]
-		else:
-			output ="postprocessed.hdf"
+		if options.output ==None: output ="postprocessed.hdf"
+		else: output = options.output
 		from math import sqrt
 		if m !=None:
 			e1 *=m
-			e2 *=m
+			if nargs >1 :e2 *=m
 		if options.fsc_weighted:
 			frc = fsc(e1,e2,1)
 			## FSC is done on masked two images
@@ -867,7 +868,7 @@ def main():
 				else:
 					tmp = 0.0
 				fil[i] = sqrt(2.*tmp/(1.+tmp))
-		e1 +=e2
+		if nargs>1: e1 +=e2
 		if options.fsc_weighted: e1=filt_table(e1,fil) 
 		guinerline = rot_avg_table(power(periodogram(e1),.5))
 		freq_max   =  1/(2.*pixel_size)
@@ -875,7 +876,11 @@ def main():
 		b,junk=compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
 		tmp = b/pixel_size**2
 		sigma_of_inverse=sqrt(2./tmp)
-		filt_gaussinv(e1,sigma_of_inverse).write_image(output)
+		e1 = filt_gaussinv(e1,sigma_of_inverse)
+		if options.low_pass_filter:
+			from filter       import filt_tanl
+			e1 =filt_tanl(e1,options.ff, options.aa)
+		e1.write_image(output)
 		 
 	elif options.window_stack:
 		nargs = len(args)
