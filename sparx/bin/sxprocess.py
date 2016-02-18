@@ -275,7 +275,10 @@ def main():
 		sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5
    
    12. Generate 3D mask from a given 3-D volume automatically or using threshold provided by user.
-   13. Winow stack file -reduce size of images without changing the pixel size. 
+   
+   13. Postprocess two final unfiltered volumes: calculate FSC with provided mask; weight summed volume with FSC; estimate B-factor from FSC weighted summed two volumes; apply negative B-factor to the weighted volume. 
+   
+   14. Winow stack file -reduce size of images without changing the pixel size. 
 
 
 """
@@ -315,14 +318,16 @@ def main():
 	parser.add_option("--scale",              	type="float", 		default=-1.0,      		  help="Divide shifts in the input 3D orientation parameters text file by the scale factor.")
 	
 	# generate adaptive mask from an given 3-Db volue
-	parser.add_option("--adaptive_mask",                    action="store_true",          help="create adavptive 3-D mask from a given volume", default=False)
+	parser.add_option("--adaptive_mask",        action="store_true",                      help="create adavptive 3-D mask from a given volume", default=False)
 	parser.add_option("--nsigma",              	type="float",	default= 1.,     	      help="number of times of sigma of the input volume to obtain the the large density cluster")
 	parser.add_option("--ndilation",            type="int",		default= 3,     		  help="number of times of dilation applied to the largest cluster of density")
 	parser.add_option("--kernel_size",          type="int",		default= 11,     		  help="convolution kernel for smoothing the edge of the mask")
 	parser.add_option("--gauss_standard_dev",   type="int",		default= 9,     		  help="stanadard deviation value to generate Gaussian edge")
-	parser.add_option("--threshold",   type="float",		default= 9999.,     		  help="threshold provided by user to binarize input volume")
-	parser.add_option("--ne",   type="int",		default= 0,     		  help="number of times to erode the binarized  input image")
-	parser.add_option("--nd",   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
+	parser.add_option("--threshold",            type="float",	default= 9999.,           help="threshold provided by user to binarize input volume")
+	parser.add_option("--ne",                   type="int",		default= 0,     		  help="number of times to erode the binarized  input image")
+	parser.add_option("--nd",                   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
+	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes", default=False)
+	parser.add_option("--fsc_weighted",          action="store_true",                     help="postprocess unfiltered odd, even 3-D volumes", default=False)
 	parser.add_option("--window_stack",                    action="store_true",          help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",           type="int",		default= 0,  help="the new window size ") 
  	(options, args) = parser.parse_args()
@@ -826,7 +831,38 @@ def main():
 			else: 
 				mask3d = adaptive_mask(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
 			mask3d.write_image(mask_file_name)
-	
+	elif options.postprocessing:
+		e1   = get_im(args[0])
+		e2   = get_im(args[1])
+		m    = get_im(args[2])
+		pixel_size = options.pixel_size
+		if nargs>3:
+			output = args[3]
+		else:
+			output ="postprocessed.hdf"
+		from math import sqrt
+		e1 *=m
+		e2 *=m
+		frc = fsc(e1,e2,1)
+		## FSC is done on masked two images
+		#### FSC weighting sqrt((2.*fsc)/(1+fsc));
+		fil = len(frc[1])*[None]
+		for i in xrange(len(fil)):
+			if frc[1][i]>=.13:
+				tmp = frc[1][i]
+			else:
+				tmp = 0.0
+			fil[i] = sqrt(2.*tmp/(1.+tmp))
+		e1 +=e2
+		if options.fsc_weighted: e1=filt_table(e1,fil) 
+		guinerline = rot_avg_table(power(periodogram(e1),.5))
+		freq_max   =  1/(2.*pixel_size)
+		freq_min   =  1./10.
+		b,junk=compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
+		tmp = b/pixel_size**2
+		sigma_of_inverse=sqrt(2./tmp)
+		filt_gaussinv(e1,sigma_of_inverse).write_image(output)
+		 
 	elif options.window_stack:
 		nargs = len(args)
 		if nargs ==0:
