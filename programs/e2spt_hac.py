@@ -922,6 +922,7 @@ def allvsall(options):
 		#from e2figureplot import textwriter
 		#textwriterinfo(plotX, compsInfo, options, plotName.replace('.png','_info.txt') )
 		
+		from e2spt_classaverage import textwriter, textwriterinfo
 		textwriter(plotY, options, plotName.replace('.png','.txt'), invert=1 )
 
 		if options.verbose:
