@@ -327,8 +327,9 @@ def main():
 	parser.add_option("--ne",                   type="int",		default= 0,     		  help="number of times to erode the binarized  input image")
 	parser.add_option("--nd",                   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
 	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes", default=False)
-	parser.add_option("--fsc_weighted",          action="store_true",                     help="postprocess unfiltered odd, even 3-D volumes", default=False)
-	parser.add_option("--window_stack",                    action="store_true",          help="window stack images using a smaller window size", default=False)
+	parser.add_option("--fsc_weighted",         action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes", default=False)
+	parser.add_option("--pixel_size",           type="float",                             help="pixel size of the data", default=1.0)
+	parser.add_option("--window_stack",                    action="store_true",           help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",           type="int",		default= 0,  help="the new window size ") 
  	(options, args) = parser.parse_args()
 
