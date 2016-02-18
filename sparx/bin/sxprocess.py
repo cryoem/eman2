@@ -831,7 +831,13 @@ def main():
 			else: 
 				mask3d = adaptive_mask(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
 			mask3d.write_image(mask_file_name)
+			
 	elif options.postprocess:
+		from utilities    import get_im
+		from fundamentals import rot_avg_table
+		from morphology   import compute_bfactor
+		from statistics   import fsc
+		from filter       import filter_table, filt_gaussinv
 		e1   = get_im(args[0])
 		e2   = get_im(args[1])
 		m    = get_im(args[2])
@@ -843,16 +849,17 @@ def main():
 		from math import sqrt
 		e1 *=m
 		e2 *=m
-		frc = fsc(e1,e2,1)
-		## FSC is done on masked two images
-		#### FSC weighting sqrt((2.*fsc)/(1+fsc));
-		fil = len(frc[1])*[None]
-		for i in xrange(len(fil)):
-			if frc[1][i]>=.13:
-				tmp = frc[1][i]
-			else:
-				tmp = 0.0
-			fil[i] = sqrt(2.*tmp/(1.+tmp))
+		if options.fsc_weighted:
+			frc = fsc(e1,e2,1)
+			## FSC is done on masked two images
+			#### FSC weighting sqrt((2.*fsc)/(1+fsc));
+			fil = len(frc[1])*[None]
+			for i in xrange(len(fil)):
+				if frc[1][i]>=.13:
+					tmp = frc[1][i]
+				else:
+					tmp = 0.0
+				fil[i] = sqrt(2.*tmp/(1.+tmp))
 		e1 +=e2
 		if options.fsc_weighted: e1=filt_table(e1,fil) 
 		guinerline = rot_avg_table(power(periodogram(e1),.5))
