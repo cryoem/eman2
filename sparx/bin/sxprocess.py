@@ -831,7 +831,7 @@ def main():
 			else: 
 				mask3d = adaptive_mask(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
 			mask3d.write_image(mask_file_name)
-	elif options.postprocessing:
+	elif options.postprocess:
 		e1   = get_im(args[0])
 		e2   = get_im(args[1])
 		m    = get_im(args[2])
