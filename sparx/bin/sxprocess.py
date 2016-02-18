@@ -843,15 +843,19 @@ def main():
 		nargs = len(args)
 		e1   = get_im(args[0])
 		e2   = get_im(args[1])
-		m    = get_im(args[2])
+		if nargs>2:
+			m    = get_im(args[2])
+		else: 
+			m =None
 		pixel_size = options.pixel_size
 		if nargs>3:
 			output = args[3]
 		else:
 			output ="postprocessed.hdf"
 		from math import sqrt
-		e1 *=m
-		e2 *=m
+		if m !=None:
+			e1 *=m
+			e2 *=m
 		if options.fsc_weighted:
 			frc = fsc(e1,e2,1)
 			## FSC is done on masked two images
