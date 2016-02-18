@@ -836,7 +836,7 @@ def main():
 	elif options.postprocess:
 		from utilities    import get_im
 		from fundamentals import rot_avg_table
-		from morphology   import compute_bfactor
+		from morphology   import compute_bfactor,power
 		from statistics   import fsc
 		from filter       import filt_table, filt_gaussinv
 		nargs = len(args)
