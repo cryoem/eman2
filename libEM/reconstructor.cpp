@@ -3821,7 +3821,7 @@ int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData*
 }
 
 
-EMData* nn4_ctfwReconstructor::finish(bool)
+EMData* nn4_ctfwReconstructor::finish(bool compensate)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
@@ -3940,7 +3940,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 	m_volume->do_ift_inplace();
 	int npad = m_volume->get_attr("npad");
 	m_volume->depad();
-	circumftrl( m_volume, npad );
+	if( compensate )  circumftrl( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
 	return 0;
