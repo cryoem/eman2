@@ -870,8 +870,8 @@ def main():
 				e1.write_image(options.output)							
 		else:
 			nargs = len(args)
-			e1   = get_im(args[0])
-			if nargs >1: e2   = get_im(args[1])
+			e1    = get_im(args[0])
+			if nargs >1: e2 = get_im(args[1])
 			if options.mask !=None: m = get_im(options.mask)
 			else: m =None
 			pixel_size = options.pixel_size
@@ -885,20 +885,18 @@ def main():
 				#### FSC weighting sqrt((2.*fsc)/(1+fsc));
 				fil = len(frc[1])*[None]
 				for i in xrange(len(fil)):
-					if frc[1][i]>=options.FSC_cutoff:
-						tmp = frc[1][i]
-					else:
-						tmp = 0.0
+					if frc[1][i]>=options.FSC_cutoff: tmp = frc[1][i]
+					else: tmp = 0.0
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 			if nargs>1: e1 +=e2
 			if options.fsc_weighted: e1=filt_table(e1,fil) 
 			guinerline = rot_avg_table(power(periodogram(e1),.5))
-			freq_max   =  1/(2.*pixel_size)
-			freq_min   =  1./options.B_start
-			b,junk=compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
-			tmp = b/pixel_size**2
+			freq_max   = 1/(2.*pixel_size)
+			freq_min   = 1./options.B_start
+			b,junk     = compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
+			tmp        = b/pixel_size**2
 			sigma_of_inverse=sqrt(2./tmp)
-			e1 = filt_gaussinv(e1,sigma_of_inverse)
+			e1  = filt_gaussinv(e1,sigma_of_inverse)
 			if options.low_pass_filter:
 				from filter       import filt_tanl
 				e1 =filt_tanl(e1,options.ff, options.aa)
