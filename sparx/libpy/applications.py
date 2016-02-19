@@ -13818,6 +13818,7 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 	time_start = time()
 	if(myid == 0):
+		print "  news "
 		if(listfile):
 			from utilities import read_text_file
 			pid_list = read_text_file(listfile, 0)
@@ -13900,8 +13901,8 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	from fundamentals import fft
 	for i in xrange(len(prjlist)):
 		prjlist[i] = fft(prjlist[i])
-		prjlist[im].set_attr("padffted",1)
-		prjlist[im].set_attr("npad",1)
+		prjlist[i].set_attr("padffted",1)
+		prjlist[i].set_attr("npad",1)
 
 	from utilities import model_blank
 	m = model_blank(600,1,1,1.0)
