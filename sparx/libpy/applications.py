@@ -13894,13 +13894,18 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		phi,theta,psi,sx,sy = get_params_proj(prjlist[i])
 		set_params_proj(prjlist[i],[phi,theta,psi,sx/scale,sy/scale])
 	"""
+	for i in xrange(len(prjlist)):
+		prjlist[i] = fft(prjlist[i])
+		prjlist[im].set_attr("padffted",1)
+		prjlist[im].set_attr("npad",1)
+
 	from utilities import model_blank
 	m = model_blank(600,1,1,1.0)
 	for i in xrange(len(prjlist)):
 		prjlist[i].set_attr("bckgnoise",m)
 	from reconstruction import recons3d_4nnfs_MPI
 	#if CTF: vol1, vol2, fff = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
-	vol = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, npad = npad, smearstep = 0.0, CTF = CTF)
+	vol = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, npad = npad, smearstep = 0.0, CTF = CTF, compensate = True)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")

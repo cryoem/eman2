@@ -2022,8 +2022,9 @@ def rotate_shift_params(paramsin, transf):
 	return cpar
 
 
+'''
 #  01/06/2016 - This is my recoding of old FORTRAN code with the hope that python's double precission
-#                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeeds psi
+#                 will fix the problem of roation of a 0,0,0 direction.  It does not as one neeed psi
 #                 in this case as well.  So, the only choice is to use small theta instead of exact 0,0,0 direction
 def rotate_params(params, transf):
 	matinv = rotmatrix( -transf[2], -transf[1], -transf[0] )
@@ -2123,7 +2124,7 @@ def recmat(mat):
 	return  degrees(round(phi,10)%pi2),degrees(round(theta,10)%pi2),degrees(round(psi,10)%pi2)
 	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
 	#return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
-
+'''
 def reduce2asymmetric_D(angles_list,symmetry="d2"):
 	sym_number =int(symmetry[1:])
 	sym_angle  =360./sym_number
@@ -2731,17 +2732,17 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 
 		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
 		
-		from mpi import mpi_recv, mpi_send, mpi_barrier
+		from mpi import mpi_recv, mpi_send, MPI_TAG_UB, mpi_barrier
 		if myid == 0:
 			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
 			str_to_receive = wrap_mpi_recv(sender_id)
 			em_dict_list = eval(str_to_receive)
 			# print "em_dict_list", em_dict_list
-			data = mpi_recv(sender_size_of_refrings, MPI_FLOAT, sender_id, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, MPI_TAG_UB, MPI_COMM_WORLD)
 		elif sender_id == myid:
 			wrap_mpi_send(str(em_dict_to_send_list), 0)
 			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
 		
 		mpi_barrier(MPI_COMM_WORLD)
 
@@ -2798,7 +2799,6 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	from numpy import concatenate, shape, array, split
 	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	from numpy import reshape
-	from mpi import mpi_recv, mpi_send, mpi_barrier
 
 	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
 
@@ -2807,7 +2807,6 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	ref_start, ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
 	ref_end -= ref_start
 	ref_start = 0
-	tag_for_send_receive = 123456
 	
 	# used for copying the header
 	reference_em_object = list_of_em_objects_for_myid_process[ref_start]
@@ -2848,12 +2847,13 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 
 		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
 		
+		from mpi import mpi_recv, mpi_send, MPI_TAG_UB, mpi_barrier
 		if myid == 0:
 			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
-			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, tag_for_send_receive, MPI_COMM_WORLD)
+			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, MPI_TAG_UB, MPI_COMM_WORLD)
 		elif sender_id == myid:
 			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, tag_for_send_receive, MPI_COMM_WORLD)
+			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
 		
 		mpi_barrier(MPI_COMM_WORLD)
 
@@ -3112,7 +3112,7 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 	Gather the a list of EMData on all nodes to the main node, we assume the list has the same length on each node.
 											It is a dangerous assumption, it will have to be changed  07/10/2015
 	"""
-	from mpi import MPI_COMM_WORLD, MPI_INT
+	from mpi import MPI_COMM_WORLD, MPI_INT, MPI_TAG_UB
 	from mpi import mpi_send, mpi_recv	
 
 	l = len(data)
@@ -3126,8 +3126,8 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 			else:
 				for k in xrange(l):
 					im = recv_EMData(i, i*l+k)
-					mem_len = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-					members = mpi_recv(int(mem_len[0]), MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					mem_len = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					members = mpi_recv(int(mem_len[0]), MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 					members = map(int, members)
 					im.set_attr('members', members)
 					gathered_data.append(im)
@@ -3135,8 +3135,8 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 		for k in xrange(l):
 			send_EMData(data[k], main_node, myid*l+k)
 			mem = data[k].get_attr('members')
-			mpi_send(len(mem), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-			mpi_send(mem, len(mem), MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi_send(len(mem), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(mem, len(mem), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 	return gathered_data
 
 def send_string_to_all(str_to_send, source_node = 0):
@@ -3267,13 +3267,13 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 	import types
 	from utilities import get_arb_params
 	from mpi 	   import mpi_send
-	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
+	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
 
 	#  This function is called from a node other than the main node
 
 	if comm == -1: comm = MPI_COMM_WORLD
 	TransType = type(Transform())
-	mpi_send([image_start, image_end], 2, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
+	mpi_send([image_start, image_end], 2, MPI_INT, main_node, MPI_TAG_UB, comm)
 	nvalue = []
 	for im in xrange(image_start, image_end):
 		value = get_arb_params(data[im-image_start], list_params)
@@ -3284,7 +3284,7 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 				m = value[il].get_matrix()
 				assert (len(m)==12)
 				for f in m: nvalue.append(f)
-	mpi_send(nvalue, len(nvalue), MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
+	mpi_send(nvalue, len(nvalue), MPI_FLOAT, main_node, MPI_TAG_UB, comm)
 
 def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
 	import types
@@ -5242,7 +5242,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
 
-'''
+
 def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid = 0, main_node = 0, nproc = 1, \
 					original_data = None, return_real = False, preshift = False, apply_mask = True, large_memory = True):
 	"""
@@ -5356,7 +5356,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 				indx = datastamp.index(stmp)
 			except:
 				ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
-
+			
 			data[im].set_attr("bckgnoise",oneover[indx])
 			if apply_mask:
 				bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
@@ -5400,6 +5400,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts, original_data
 
+
 def getindexdata(stack, partids, partstack, myid, nproc):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack
@@ -5428,7 +5429,7 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	for i in xrange(len(partstack)):
 		set_params_proj(data[i], partstack[i])
 	return data
-'''
+
 
 def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_of_vars = [], write_or_append = "w", 
 	vars_that_will_show_only_size = []):
@@ -5573,11 +5574,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 			program_state_stack.track_state = [dict() for i in xrange(len(program_state_stack.track_stack))]
 			program_state_stack.track_state[-1] = current_state
 
-			file_name_of_saved_state_contains_information = False
 			if (os.path.exists(file_name_of_saved_state)):
-				statinfo = os.stat(file_name_of_saved_state)
-				file_name_of_saved_state_contains_information = statinfo.st_size > 0 
-			if file_name_of_saved_state_contains_information:
 				program_state_stack.saved_stack, \
 				program_state_stack.saved_state = restore_program_stack_and_state(file_name_of_saved_state)
 				program_state_stack.start_executing = START_EXECUTING_FALSE
