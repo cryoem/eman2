@@ -621,6 +621,9 @@ class SXTab(QWidget):
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, cmd_token_widget_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, cmd_token_button_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, cmd_token_button_min_width)
+		# Give the columns of token label a higher priority to stretch relative to the others
+		for col_span in xrange(token_label_col_span):
+			grid_layout.setColumnStretch(grid_row_origin+col_span, grid_layout.columnStretch(grid_row_origin+col_span)+1)
 		
 		# Define the tab frame within the tab layout
 #		tab_frame = QFrame(self)
@@ -1213,9 +1216,9 @@ class MainWindow(QWidget):
 		
 		# Add title label and set position and font style
 #		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>", self)
-		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>")
+		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:16pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>")
 #		title.move(17,47)
-		QToolTip.setFont(QFont("OldEnglish", 8)) 
+#		QToolTip.setFont(QFont("OldEnglish", 8)) 
 		
 		grid_layout.addWidget(title, grid_row, grid_col_origin, title_row_span, title_col_span)
 		
@@ -1237,9 +1240,8 @@ class MainWindow(QWidget):
 			# sxcmd.button.setCheckable(True) # NOTE: 2016/02/18 Toshio Moriya: With this setting, we can not move the focus to the unchecked butttons... PyQt bug?
 #			sxcmd.button.move(10, self.y1)
 			sxcmd.button.setToolTip(sxcmd.short_info)
-#			sxcmd.button.setStyleSheet("QPushButton:!enabled{font: bold; color:green; border-color:red; border-width:2px;}")
-#			custom_style = "QPushButton:!enabled {font: bold; color:red; }"
-#			sxcmd.button.setStyleSheet(custom_style)
+#			sxcmd.button.setStyleSheet("QPushButton:!enabled{font: bold; color:green; border-color:red; border-width:2px;}") 
+#			sxcmd.button.setStyleSheet("QPushButton:!enabled {font: bold; color:red; }")
 			
 			self.cmd_button_group.addButton(sxcmd.button)
 			grid_layout.addWidget(sxcmd.button, grid_row, grid_col_origin, cmd_button_row_span, cmd_button_col_span)
@@ -1282,7 +1284,7 @@ class MainWindow(QWidget):
 			self.cur_sxcmd.widget.show()
 #			assert(self.cur_sxcmd.button.isEnabled() == True)
 #			self.cur_sxcmd.button.setEnabled(False)
-			# custom_style = "QPushButton {font: bold; color:#8D0; }"
+#			custom_style = "QPushButton {font: bold; color:#8D0; }"
 			custom_style = "QPushButton {font: bold; color:blue; }"
 			self.cur_sxcmd.button.setStyleSheet(custom_style)
 			
@@ -1350,6 +1352,33 @@ for single particle analysis."""
 	global app
 	app = App(args)
 	app.setWindowIcon(QIcon(get_image_directory()+"sparxicon.png"))
+	
+	app_font = app.font()
+	app_font_info = QFontInfo(app.font())
+	# # MRK_DEBUG: Check the default system font
+	# print "MRK_DEBUG: app_font_info.style()      = ", app_font_info.style()
+	# print "MRK_DEBUG: app_font_info.styleHint()  = ", app_font_info.styleHint()
+	# print "MRK_DEBUG: app_font_info.styleName()  = ", app_font_info.styleName()
+	# print "MRK_DEBUG: app_font_info.family()     = ", app_font_info.family()
+	# print "MRK_DEBUG: app_font_info.fixedPitch() = ", app_font_info.fixedPitch()
+	# print "MRK_DEBUG: app_font_info.pixelSize()  = ", app_font_info.pixelSize()
+	# print "MRK_DEBUG: app_font_info.pointSize()  = ", app_font_info.pointSize()
+	# print "MRK_DEBUG: app_font_info.pointSizeF() = ", app_font_info.pointSizeF()
+	# print "MRK_DEBUG: app_font_info.bold ()      = ", app_font_info.bold()
+	# print "MRK_DEBUG: app_font_info.italic()     = ", app_font_info.italic()
+	# NOTE: 2019/02/19 Toshio Moriya
+	# The following method of changing font size works with Linux.
+	# However, it does not work Mac OSX. The text of widget classes below won't change,
+	# still showing the default font size:
+	# QPushButton, QLable, Window Title, and QToolTip
+	app_font.setPointSize(app_font_info.pointSize()+1) # app_font.setPointSize(13) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
+	app.setFont(app_font)
+	
+	
+	# app.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
+	# app.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
+	# app.setStyleSheet("QToolTip {font-size:14pt; color:white; padding:2px; border-width:2px; border-style:solid; border-radius:20px; background-color: black; border: 1px solid white;}");
+	app.setStyleSheet("QToolTip {font-size:%dpt;}" % (app_font_info.pointSize()+1));
 	
 	app.main.show()
 	app.main.raise_()
