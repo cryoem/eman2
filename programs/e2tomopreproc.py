@@ -53,7 +53,7 @@ def main():
 		for example, tomopreproc_02 will be the directory by default if 'tomopreproc_01' 
 		already exists.""")
 	
-	parser.add_pos_argument(name="stack_files",default="",help="List building material (sets) here.")
+	parser.add_pos_argument(name="stack_files",default="",help="Stacks or images to process.")
 	
 	parser.add_argument("--input",type=str,default='',help=""""tiltseries to process. redundant with --tiltseries, or with providing images as arguments (separated by a space: e2tomopreproc.py stack1.hdf stack2.hdf), but --input takes precedence.""")
 	

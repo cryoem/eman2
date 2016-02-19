@@ -44,24 +44,25 @@ def main():
 	
 	progname = os.path.basename(sys.argv[0])
 	usage = """Must be run in the directory containing the stack(s)/particle(s) whose header 
-	is to be modified. e2fixheaderparam.py --input=stack_to_fix --output=fixed_stack_name 
+	is to be modified. e2fixheaderparam.py imgs.hdf --input=stack_to_fix --output=fixed_stack_name 
 	--params=param1:value1,param2:value2... --type=type_of_parameters. 
-	This programs fix values for any parameter on the header of an HDF file or a stack of 
+	This program fixes values for any parameter on the header of an HDF file or a stack of 
 	HDF files or an MRC file. ADDING new parameters, such as through --addfilename, or any
 	parameters supplied through --params=parameter:value,parameter:value,.... that are not
-	already in the header, will force HDF format on the output."""
+	already in the header, will enforce HDF format on the output."""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
+	parser.add_pos_argument(name="stack_files",default="",help="Stacks or images to process.")
+
 	parser.add_argument("--refheader",type=str,help="""If supplied, the header of this image
 		will be copied to the header of all images in --input.""")
 	
-	parser.add_argument("--input", type=str, help="""File or stack for which to fix header 
-		parameters. To indicate multiple files with a common string, use *.
-		For example, if you want to process all the .mrc files in a given directory, 
-		supply options.input=*.mrc. To process all files containing 'this' and 'that' in any part of the filename, supply --input=this*that.
-		To process all files containing 'esto', 'eso' and 'aquello' in any part of the filename, supply --input=esto*eso*aquello.
-		So on and so forth.""", default='')
+	parser.add_argument("--input", type=str, default='',help="""File or stack for which to fix header 
+		parameters. To indicate multiple files, do not use --input. Simply provide the program name
+		followed by the string common to all files to process and *, followed by all parameters of interest.
+		For example, to process all .mrc files in a directory, you would run e2fixheader.py *.mrc <parameters>. 
+		""")
 	
 	parser.add_argument("--output", type=str, help="""File to write the fixed stack to. 
 		If not provided, the stack in --input will be overwritten.""", default='')
@@ -91,9 +92,9 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	
-	if not options.input:
-		print "ERROR: You must supply an input image."
-		sys.exit()
+	#if not options.input:
+	#	print "ERROR: You must supply an input image."
+	#	sys.exit()
 	
 	t=[]
 	tags=[]
@@ -110,43 +111,58 @@ def main():
 	
 	files2process = []
 	
-	if '*' in options.input:
-		ts = options.input.split('*')
-		for t in ts:
-			if t:
-				tags.append( t )		
-		
-		current = os.getcwd()
-		findir = os.listdir( current )
-		
-		ntags = len(tags)
 	
-		
-		for f in findir:
-			proceed=0
-			for tag in tags:
-				if tag in f:
-					proceed+=1
-		
-			if '*' in options.input and int(proceed) == int(ntags):
-				#options.input = f
-				inputextension = f.split('.')[-1]
-				if inputextension in f:
-					files2process.append( f )
-					print "\nFile appended!", f
-				else:
-					print "\nERROR: invalid image %s. You must supply .hdf,.mrc,.mrcs,.st,.ali or .rec files" %(f)
-					sys.exit(1)
+	if options.input:
+		files2process.append(options.input)
+		#if '*' in options.input:
+		#	ts = options.input.split('*')
+		#	for t in ts:
+		#		if t:
+		#			tags.append( t )		
+		#	
+		#	current = os.getcwd()
+		#	findir = os.listdir( current )
+		#	
+		#	ntags = len(tags)
+		#
+		#	
+		#	for f in findir:
+		#		proceed=0
+		#		for tag in tags:
+		#			if tag in f:
+		#				proceed+=1
+		#	
+		#		if '*' in options.input and int(proceed) == int(ntags):
+		#			#options.input = f
+		#			inputextension = f.split('.')[-1]
+		#			if inputextension in f:
+		#				files2process.append( f )
+		#				print "\nFile appended!", f
+		#			else:
+		#				print "\nERROR: invalid image %s. You must supply .hdf,.mrc,.mrcs,.st,.ali or .rec files" %(f)
+		#				sys.exit(1)
+		#else:
+		#	inputextension = options.input.split('.')[-1]
+		#	if inputextension in options.input:
+		#		files2process.append( options.input )
+		#	else:
+		#		print "\nERROR: invalid image %s. You must supply .hdf,.mrc,.mrcs,.st,.ali or .rec files" %(options.input)
+		#		sys.exit(1)
 	else:
-		inputextension = options.input.split('.')[-1]
-		if inputextension in options.input:
-			files2process.append( options.input )
+		if args:
+			files2process = args
 		else:
-			print "\nERROR: invalid image %s. You must supply .hdf,.mrc,.mrcs,.st,.ali or .rec files" %(options.input)
+			print "ERROR: supply imgs to process directly as arguments, or a single file through --input"
 			sys.exit(1)
-			
+
 	k=0
 	for fyle in files2process:
+		extension = '.'+fyle.split('.')[-1]
+		print "extension is",extension
+		if extension not in formats:
+				print "ERROR: invalid file %s" %(fyle)
+				sys.exit(1)
+
 		if originaloutput:
 			if len(files2process) > 1:
 				options.output = outputbase.split('.')[0] + str(k).zfill( len(files2process) ) + '.' +  outputbase.split('.')[-1]
@@ -235,6 +251,7 @@ def fixer(fyle, options):
 		
 		aux1 = 0
 		aux2 = 0
+		aux3 = 0
 		
 		if options.refheader:
 			if refheader:
@@ -298,6 +315,8 @@ def fixer(fyle, options):
 							aux1=1
 							imgHdr[p] = v
 							print "\nNew value %s for previous parameter %s" %(v,p)
+						else:
+							print "new value is identical to previous parameters",v,previousParam
 				
 					print "\n\nThe params to add are", p2add
 					if p and p in p2add:
@@ -350,17 +369,18 @@ def fixer(fyle, options):
 						#print "Found stem in param!"
 						if options.valtype:
 							v=valtyper(options,v)
+							#print "returned from valtyper, val, type",v,type(v)
 				
 						imgHdr[param]=v
 						aux3=1
 				
-				if aux3 !=0:
+				if aux3:
 					if not options.output:
 						outputformat = fyle.split('.')[-1]
 					
-						if '.hdf' in fyle[-4:]:
+						if '.hdf' in fyle.split('.')[-1]:
 							imgHdr.write_image(fyle,indx,EMUtil.ImageType.IMAGE_HDF,True)				
-						elif fyle[-4:] in nonhdfformats:
+						elif fyle.split('.')[-1] in nonhdfformats:
 							imgHdr.write_image(fyle,-1,EMUtil.ImageType.IMAGE_MRC, True, None, EMUtil.EMDataType.EM_SHORT)
 						else:
 							print "ERROR: Only MRC (.mrc, .rec, .ali, .st) and HDF (.hdf) formats supported."
@@ -395,7 +415,10 @@ def valtyper(options,v):
 	if options.valtype == 'int':
 		v=int(v)
 	if options.valtype == 'float':
-		v=float(v)
+		#v=int(float("{0:.2f}".format( round( float(v),2) ) )*100.00)/100.00
+		print "converting v",v
+		v=round(float(v),2)
+		print "converted",v
 	if options.valtype == 'list':
 		v=list(v)
 	return(v)
