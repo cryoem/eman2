@@ -13897,6 +13897,7 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		phi,theta,psi,sx,sy = get_params_proj(prjlist[i])
 		set_params_proj(prjlist[i],[phi,theta,psi,sx/scale,sy/scale])
 	"""
+	from fundamentals import fft
 	for i in xrange(len(prjlist)):
 		prjlist[i] = fft(prjlist[i])
 		prjlist[im].set_attr("padffted",1)
