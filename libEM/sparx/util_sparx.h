@@ -1180,5 +1180,5 @@ public:
 
 static float bessel0(float r, float a, float alpha);
 static inline double bessi0(double x);
-static void euler_direction2angles(vector<float>v, float &alpha, float &alpha);
+static void euler_direction2angles(vector<float>v, float &alpha, float &beta);
 #endif	//util__sparx_h__

@@ -49,8 +49,10 @@ from EMAN2 import *
 from math import *
 import os
 import sys
+import traceback
 
-atomdefs={'H':(1.0,1.00794),'C':(6.0,12.0107),'A':(7.0,14.00674),'N':(7.0,14.00674),'O':(8.0,15.9994),'P':(15.0,30.973761),
+# HO is a hydrogen attached to an oxygen. 'W' is water (infrequently found)
+atomdefs={'H':(1.0,1.00794),'HO':(1.0,1.00794),'C':(6.0,12.0107),'A':(7.0,14.00674),'N':(7.0,14.00674),'O':(8.0,15.9994),'P':(15.0,30.973761),'K':(19.0,39.0983),
 	'S':(16.0,32.066),'W':(18.0,1.00794*2.0+15.9994),'AU':(79.0,196.96655) }
 
 def main():
@@ -121,9 +123,17 @@ def main():
 				if chains and not (line[21] in chains) : continue
 			
 				try:
-					a=line[12:14].strip()
 					aseq=int(line[6:11].strip())
+				except:
+					aseq=-1
+
+				try:
 					resol=int(line[22:26].strip())
+				except:
+					resol=10
+
+				try:
+					a=line[12:14].strip().translate(None,"0123456789")
 	
 					x=float(line[30:38])
 					y=float(line[38:46])
@@ -213,9 +223,17 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 			if chains and not (line[21] in chains) : continue
 			
 			try:
-				a=line[12:14].strip()
 				aseq=int(line[6:11].strip())
+			except:
+				aseq=-1
+
+			try:
 				resol=int(line[22:26].strip())
+			except:
+				resol=10
+
+			try:
+				a=line[12:14].strip().translate(None,"0123456789'")
 	
 				x=float(line[30:38])
 				y=float(line[38:46])
@@ -305,7 +323,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 			sys.stdout.flush()
 		try:
 			# This insertion strategy ensures the output is centered.
-			elec=atomdefs[a[0].upper()][0]
+			elec=atomdefs[a[0].translate(None,"0123456789").upper()][0]
 			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
 		except: print "Skipping %d '%s'"%(i,a[0])		
 	if not quiet: print '\r   %d\nConversion complete'%len(atoms)		

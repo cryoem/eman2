@@ -70,6 +70,8 @@ def main(args):
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--radius",                type="int",           help="particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)")
+	parser.add_option("--target_radius",         type="int",           default=29,         help="target particle radius: actual particle radius on which isac will process data. Images will be shrinked/enlarged to achieve this radius (default 29)")
+	parser.add_option("--target_nx",             type="int",           default=76,         help="target particle image size: actual image size on which isac will process data. Images will be shrinked/enlarged according to target particle radius and then cut/padded to achieve target_nx size. When xr > 0, the final image size for isac processing is 'target_nx + xr'  (default 76)")
 	parser.add_option("--img_per_grp",           type="int",           default=100,        help="number of images per class: in the ideal case (essentially maximum size of class) (default 100)")
 	parser.add_option("--CTF",                   action="store_true",  default=False,      help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)")
 	parser.add_option("--ir",                    type="int",           default=1,          help="inner ring: of the resampling to polar coordinates. units - pixels (default 1)")
@@ -127,6 +129,8 @@ def main(args):
 	global_def.BATCH = True
 	
 	from isac import iter_isac
+	from fundamentals import rot_shift2D, resample
+	from utilities import pad, combine_params2
 
 	command_line_provided_stack_filename = args[0]
 	
@@ -143,6 +147,8 @@ def main(args):
 			return 1
 
 	radi  = options.radius
+	target_radius  = options.target_radius
+	target_nx  = options.target_nx
 	center_method  = options.center_method
 	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
 
@@ -233,19 +239,21 @@ def main(args):
 	#  PARAMETERS OF THE PROCEDURE
 	if( options.xr == -1 ):
 		#  Default values
-		target_nx = 76
-		target_radius = 29
+		# target_nx = 76
+		# target_radius = 29
 		target_xr = 1
 	else:  #  nx//2
 		#  Check below!
 		target_xr = options.xr
-		target_nx = 76 + target_xr - 1 # subtract one, which is default
-		target_radius = 29
+		# target_nx = 76 + target_xr - 1 # subtract one, which is default
+		target_nx += target_xr - 1 # subtract one, which is default
+		# target_radius = 29
 
 	mpi_barrier(MPI_COMM_WORLD)
 
 	# Initialization of stacks
 	if(myid == main_node):
+		print "command_line_provided_stack_filename", command_line_provided_stack_filename
 		number_of_images_in_stack = EMUtil.get_image_count(command_line_provided_stack_filename)
 	else:
 		number_of_images_in_stack = 0
@@ -256,7 +264,13 @@ def main(args):
 	
 	init2dir = os.path.join(masterdir,"2dalignment")
 	
-	if not os.path.exists(os.path.join(init2dir, "initial2Dparams.txt")):
+	# from mpi import mpi_finalize
+	# mpi_finalize()
+	# sys.stdout.flush()
+	# sys.exit()
+	
+	
+	if not os.path.exists(os.path.join(init2dir, "Finished_initial_2d_alignment.txt")):
 	
 		if(myid == 0):
 			import subprocess
@@ -271,61 +285,123 @@ def main(args):
 		else:
 			outcome = 0
 			log2d = None
-	
+
 		if(myid == main_node):
 			a = get_im(command_line_provided_stack_filename)
 			nnxo = a.get_xsize()
 		else:
 			nnxo = 0
 		nnxo = bcast_number_to_all(nnxo, source_node = main_node)
-	
-		txrm = (nnxo - 2*(radi+1))//2
-		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
-		if(txrm/nxrsteps>0):
-			tss = ""
-			txr = ""
-			while(txrm/nxrsteps>0):
-				tts=txrm/nxrsteps
-				tss += "  %d"%tts
-				txr += "  %d"%(tts*nxrsteps)
-				txrm =txrm//2
+
+		image_start, image_end = MPI_start_end(number_of_images_in_stack, nproc, myid)
+
+		if options.skip_alignment:
+			params2d = [[0.0,0.0,0.0,0] for i in xrange(image_start, image_end)]
 		else:
-			tss = "1"
-			txr = "%d"%txrm
-	
-		# section ali2d_base
-	
-		params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
-			False, 90.0, center_method, 14, options.CTF, 1.0, False, \
-			"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False, skip_alignment = options.skip_alignment)
-	
+
+			original_images = EMData.read_images(command_line_provided_stack_filename, range(image_start,image_end))
+			#  We assume the target radius will be 29, and xr = 1.  
+			shrink_ratio = float(target_radius)/float(radi)
+
+			for im in xrange(len(original_images)):
+				if(shrink_ratio != 1.0):
+					original_images[im]  = resample(original_images[im], shrink_ratio)
+
+			nx = original_images[0].get_xsize()
+			# nx = int(nx*shrink_ratio + 0.5)
+
+			txrm = (nx - 2*(target_radius+1))//2
+			if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
+			if(txrm/nxrsteps>0):
+				tss = ""
+				txr = ""
+				while(txrm/nxrsteps>0):
+					tts=txrm/nxrsteps
+					tss += "  %d"%tts
+					txr += "  %d"%(tts*nxrsteps)
+					txrm =txrm//2
+			else:
+				tss = "1"
+				txr = "%d"%txrm
+			
+			# print "nx, txr, txrm, tss", nx, txr, txrm, tss
+		# from mpi import mpi_finalize
+		# mpi_finalize()
+		# sys.stdout.flush()
+		# sys.exit()
+
+
+
+			# section ali2d_base
+
+			params2d = ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
+				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
+				"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
+			
+			
+			
+			
+			
+			del original_images
+			
+			for i in xrange(len(params2d)):
+				alpha, sx, sy, mirror = combine_params2(0, params2d[i][1],params2d[i][2], 0, -params2d[i][0], 0, 0, 0)
+				sx /= shrink_ratio
+				sy /= shrink_ratio
+				params2d[i][0] = 0.0
+				params2d[i][1] = sx
+				params2d[i][2] = sy
+				params2d[i][3] = 0
+				#set_params2D(aligned_images[i],[0.0, sx,sy,0.,1.0])
+
 		mpi_barrier(MPI_COMM_WORLD)
-		if( myid == main_node ):
+		tmp = params2d[:]
+		tmp = wrap_mpi_gatherv(tmp, main_node, MPI_COMM_WORLD)
+		if( myid == main_node ):		
 			if options.skip_alignment:
 				print "========================================="
 				print "Even though there is no alignment step, '%s' params are set to zero for later use."%os.path.join(init2dir, "initial2Dparams.txt")
 				print "========================================="
-			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
-		del params2d
+			write_text_row(tmp,os.path.join(init2dir, "initial2Dparams.txt"))
+		del tmp
 		mpi_barrier(MPI_COMM_WORLD)
 	
 		#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  
 		#  Note images can be also padded, in which case shrink_ratio > 1.
 		shrink_ratio = float(target_radius)/float(radi)
+		
+		aligned_images = EMData.read_images(command_line_provided_stack_filename, range(image_start,image_end))
 		nx = aligned_images[0].get_xsize()
 		nima = len(aligned_images)
 		newx = int(nx*shrink_ratio + 0.5)
+
+
+		
+		while not os.path.exists(os.path.join(init2dir, "initial2Dparams.txt")):
+			import time
+			time.sleep(1)
+		mpi_barrier(MPI_COMM_WORLD)
+		
+		params = read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
+		params = params[image_start:image_end]
+
+
+		msk = model_circle(radi, nx, nx)
+		for im in xrange(nima):
+			st = Util.infomask(aligned_images[im], msk, False)
+			aligned_images[im] -= st[0]
+			if options.CTF:
+				aligned_images[im] = filt_ctf(aligned_images[im], aligned_images[im].get_attr("ctf"), binary = True)
 	
-		from fundamentals import rot_shift2D, resample
-		from utilities import pad, combine_params2
 		if(shrink_ratio < 1.0):
 			if    newx > target_nx  :
 				msk = model_circle(target_radius, target_nx, target_nx)
 				for im in xrange(nima):
 					#  Here we should use only shifts
-					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					#aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
 					p = Util.infomask(aligned_images[im], msk, False)
@@ -336,9 +412,9 @@ def main(args):
 				msk = model_circle(target_radius, target_nx, target_nx)
 				for im in xrange(nima):
 					#  Here we should use only shifts
-					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 					p = Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
@@ -348,9 +424,9 @@ def main(args):
 				msk = model_circle(newx//2-2, newx,  newx)
 				for im in xrange(nima):
 					#  Here we should use only shifts
-					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 					p = Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
@@ -362,9 +438,9 @@ def main(args):
 				msk = model_circle(target_radius, target_nx, target_nx)
 				for im in xrange(nima):
 					#  Here we should use only shifts
-					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
 					p = Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
@@ -374,9 +450,9 @@ def main(args):
 				msk = model_circle(target_radius, target_nx, target_nx)
 				for im in xrange(nima):
 					#  Here we should use only shifts
-					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					p = Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
 					p = Util.infomask(aligned_images[im], msk, True)
@@ -385,9 +461,9 @@ def main(args):
 				msk = model_circle(newx//2-2, newx,  newx)
 				for im in xrange(nima):
 					#  Here we should use only shifts
-					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					#aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 					p = Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
@@ -399,9 +475,9 @@ def main(args):
 				msk = model_circle(target_radius, target_nx, target_nx)
 				for im in xrange(nima):
 					#  Here we should use only shifts
-					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 					aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
 					p = Util.infomask(aligned_images[im], msk, False)
@@ -412,9 +488,9 @@ def main(args):
 				msk = model_circle(target_radius, target_nx, target_nx)
 				for im in xrange(nima):
 					#  Here we should use only shifts
-					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 					p = Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
@@ -424,9 +500,9 @@ def main(args):
 				msk = model_circle(newx//2-2, newx,  newx)
 				for im in xrange(nima):
 					#  Here we should use only shifts
-					alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-					alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
+					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
+					aligned_images[im] = rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 					p = Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
@@ -460,11 +536,19 @@ def main(args):
 			"""%(shrink_ratio, radi)
 			fp.write(output_text); fp.flush() ;fp.close()
 			print output_text
+			fp = open(os.path.join(init2dir, "Finished_initial_2d_alignment.txt"), "w"); fp.flush() ;fp.close()
 	else:
 		if( myid == main_node ):
 			print "Skipping 2d alignment since it was alredy done!"
 
 	mpi_barrier(MPI_COMM_WORLD)
+	
+	
+	# from mpi import mpi_finalize
+	# mpi_finalize()
+	# sys.stdout.flush()
+	# sys.exit()
+	
 
 	os.chdir(masterdir)
 	

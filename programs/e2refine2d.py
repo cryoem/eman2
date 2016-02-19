@@ -207,7 +207,8 @@ def main():
 		# classify the subspace vectors
 #		try: db_remove_dict(path+"#classmx_00")
 #		except: pass
-		run("e2classifykmeans.py %s --original=%s --mininclass=2 --ncls=%d --clsmx=%s/classmx_00.hdf --minchange=%d --onein %s %s"%(inputproj,options.input,options.ncls,options.path,options.minchange,excludestr,fastseed))
+		# we limit the initial classification to 50 classes, since we are restricting the number of particles
+		run("e2classifykmeans.py %s --original=%s --mininclass=2 --ncls=%d --clsmx=%s/classmx_00.hdf --minchange=%d --onein %s %s"%(inputproj,options.input,min(50,options.ncls),options.path,options.minchange,excludestr,fastseed))
 
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
