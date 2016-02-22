@@ -2130,8 +2130,9 @@ EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int n
 
 	int remove = slice->get_attr_default("remove", 0);
 	padfftslice->set_attr( "remove", remove );
-
+//padfftslice->set_attr( "is_fftodd", 1 );
 	padfftslice->center_origin_fft();
+//padfftslice->set_attr( "is_fftodd", 0 );
 	return padfftslice;
 }
 
@@ -3718,6 +3719,8 @@ void nn4_ctfwReconstructor::buildFFTVolume() {
 		m_volume->to_zero();
 	}
 
+	if ( m_vnxp % 2 == 0 )  m_volume->set_fftodd(0);
+	else                    m_volume->set_fftodd(1);
 	m_volume->set_nxc(m_vnxp/2);
 	m_volume->set_complex(true);
 	m_volume->set_ri(true);
@@ -3919,10 +3922,9 @@ EMData* nn4_ctfwReconstructor::finish(bool compensate)
 						float tmp = ((*m_wptr)(ix,iy,iz)+osnr);
 
 						if(tmp>0.0f) {
-							tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
 						//cout<<" mvol "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<(*m_volume)(2*ix,iy,iz)<<"  "<<(*m_volume)(2*ix+1,iy,iz)<<"  "<<tmp<<"  "<<osnr<<endl;
-							(*m_volume)(2*ix,iy,iz)   *= tmp;
-							(*m_volume)(2*ix+1,iy,iz) *= tmp;
+							(*m_volume)(2*ix,iy,iz)   /= tmp;
+							(*m_volume)(2*ix+1,iy,iz) /= tmp;
 						} else {
 							(*m_volume)(2*ix,iy,iz)   = 0.0f;
 							(*m_volume)(2*ix+1,iy,iz) = 0.0f;
@@ -3936,11 +3938,12 @@ EMData* nn4_ctfwReconstructor::finish(bool compensate)
 		}
 	}
 
+	m_volume->center_origin_fft();
 	// back fft
 	m_volume->do_ift_inplace();
 	int npad = m_volume->get_attr("npad");
 	m_volume->depad();
-	if( compensate )  circumftrl( m_volume, npad );
+	//if( compensate )  circumftrl( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
 	return 0;
