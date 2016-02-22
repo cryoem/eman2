@@ -1882,9 +1882,9 @@ void EMData::onelinenn_ctfw(int j, int n, int n2,
 }
 
 //  Helper functions for method nn4_ctfw with tri-linear interpolation
-void EMData::onelinetr_ctfw(int j, int n, int n2,
+void EMData::onelinetr_ctfw(int j, int bign, int n, int n2,
 		          EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight) {
-//std::cout<<"   onelinetr_ctfw  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+//std::cout<<"   onelinetr_ctfw  "<<j<<"  "<<n<<"   "<<bign<<"  "<<n<<"  "<<n2<<std::endl;
 //for (int i = 0; i <= 12; i++)  cout <<"  "<<i<<"  "<<(*bckgnoise)(i)<<endl;
 	int nnd4 = n*n/4;
 	int jp = (j >= 0) ? j+1 : n+j+1;
@@ -1955,26 +1955,34 @@ void EMData::onelinetr_ctfw(int j, int n, int n2,
 			cmplx(ixn, iya, iza) +=  btq * mult * weight;
 			(*w)(ixn, iya, iza)  += c2val * mult * weight;
 */
-
+//cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<ixn<<"  "<<iyn<<"  "<<izn<<"  "<<n<<endl;
 
 			int iza, iya;
 			if (iyn >= 0) iya = iyn + 1;
-			else          iya = n + iyn + 1;
+			else          iya = bign + iyn + 1;
 
 			if (izn >= 0)  iza = izn + 1;
-			else           iza = n + izn + 1;
+			else           iza = bign + izn + 1;
 
-			int ix1 = ixn +1;
+			int ix1 = ixn + 1;
 
+                        int iy1 = iya + 1;
+                        if (iy1 > bign) iy1 -= bign;
+
+                        int iz1 = iza + 1;
+                        if (iz1 > bign) iz1 -= bign;
+
+
+/*
 			int iy1 = iyn +1;
 			if (iy1 >= 0) iy1 = iy1 + 1;
-			else          iy1 = n + iy1 + 1;
+			else          iy1 = bign + iy1 + 1;
 
 			int iz1 = izn +1;
 			if (iz1 >= 0) iz1 = iz1 + 1;
-			else          iz1 = n + iz1 + 1;
-
-            //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
+			else          iz1 = bign + iz1 + 1;
+*/
+            //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
 			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
 			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
 
@@ -2130,9 +2138,12 @@ void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* bckgnoise
     
 	vector<int> ctf2d2_saved_offsets = ctf2d2->get_array_offsets();
 	ctf2d2->set_array_offsets(0,1);
-
+	int mynx = myfft->get_xsize();
+	mynx /= 2;
+	int myny = myfft->get_ysize();
+	cout<<"  dimensions in nn_ctfw  "<<nxc<<"   "<<ny<<"   "<<mynx<<"   "<<myny<<endl;
 	// loop over frequencies in y
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinetr_ctfw(iy, ny, nxc, w, myfft, ctf2d2, bckgnoise, tf, weight);
+	for (int iy = -myny/2 + 1; iy <= myny/2; iy++) onelinetr_ctfw(iy, ny, myny, mynx, w, myfft, ctf2d2, bckgnoise, tf, weight);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	ctf2d2->set_array_offsets(ctf2d2_saved_offsets);
@@ -7485,6 +7496,8 @@ void EMData::center_origin_fft()
 	int nxc = nx/2;
 
 	if (is_fftodd()) {
+
+cout<<"  center_origin_fft odd volume dimensions  "<<nxc<<"   "<<ny<<"  "<<nz<<endl;
 		for (int iz = 1; iz <= nz; iz++) {
 			for (int iy = 1; iy <= ny; iy++) {
 				for (int ix = 0; ix < nxc; ix++) {
@@ -7496,6 +7509,8 @@ void EMData::center_origin_fft()
 			}
 		}
 	} else {
+
+cout<<"  center_origin_fft dimensions  "<<nxc<<"   "<<ny<<"  "<<nz<<endl;
 		for (int iz = 1; iz <= nz; iz++) {
 			for (int iy = 1; iy <= ny; iy++) {
 				for (int ix = 0; ix < nxc; ix++) {

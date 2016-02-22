@@ -250,7 +250,7 @@ void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, EMD
  * @param mult
  */
 // void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* bckgnoise, const Transform& tf, float weight);
-void onelinetr_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight);
+void onelinetr_ctfw(int j, int bign, int n, int n2, EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight);
 
 
 /** Nearest Neighbor interpolation.
