@@ -3419,6 +3419,8 @@ void nn4_ctfReconstructor::buildFFTVolume() {
 		m_volume->to_zero();
 	}
 
+	if ( m_vnxp % 2 == 0 )  m_volume->set_fftodd(0);
+	else                    m_volume->set_fftodd(1);
 	m_volume->set_nxc(m_vnxp/2);
 	m_volume->set_complex(true);
 	m_volume->set_ri(true);
