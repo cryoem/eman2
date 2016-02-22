@@ -1319,7 +1319,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	#  We have to trick the setup so for Fourier padded input data creates volumes of correct size
 	if( prjlist[0].get_attr("is_complex") and prjlist[0].get_attr("npad") >1 ):  i=npad
 	else: i = 1
-	if target_size <0 )  : jot = imgsize/i
+	if( target_size <0 )  : jot = imgsize/i
 	elif(target_size >= imgsize):  jot = target_size
 	else:  ERROR("Target volume size too small",recons3d_4nnfs_MPI,1 ,myid)
 	params = {"size":jot, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
@@ -1342,7 +1342,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 
 	reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
 	reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
-	
+
 	if not (finfo is None): 
 		finfo.write( "after reduce\n" )
 		finfo.flush()
