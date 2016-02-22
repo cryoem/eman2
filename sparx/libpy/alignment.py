@@ -3278,6 +3278,65 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	bang, bsx, bsy, i = inverse_transform2(bang, bsx, bsy)
 	return bang, bsx, bsy, ama
 
+def align2d_direct3_testing(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, ou = -1):
+	from fundamentals import fft, rot_shift2D, ccf, mirror
+	from utilities import peak_search, model_circle, model_blank, inverse_transform2, combine_params2
+	from math import radians, sin, cos
+	
+	nx = input_images[0].get_xsize()
+	if(ou<0):  ou = nx//2-1
+	mask = model_circle(ou,nx,nx)
+	nk = int(psimax/psistep)
+	nm = 2*nk+1
+	nc = nk + 1
+	refs = [None]*nm*2
+	for i in xrange(nm):
+		refs[2*i] = [fft(rot_shift2D(refim, (i-nc)*psistep)*mask), fft(rot_shift2D(refim, (i-nc)*psistep, 0, 0, 1)*mask)]
+		refs[2*i+1] = [fft(rot_shift2D(refim, (i-nc)*psistep+180.0)*mask), fft(rot_shift2D(refim, (i-nc)*psistep+180.0, 0, 0, 1)*mask)]
+
+	results = []
+	mir = 0
+	for image in input_images:
+		ims = fft(image)
+		ama = -1.e23
+		bang = 0.
+		bsx = 0.
+		bsy = 0.
+		for i in xrange(1,nm*2):
+			for mirror_flag in [0, 1]:
+				c = ccf(ims, refs[i][mirror_flag])
+				#c.write_image('rer.hdf')
+				#exit()
+				w = Util.window(c,2*xrng+1,2*yrng+1)
+				pp =peak_search(w)[0]
+				px = int(pp[4])
+				py = int(pp[5])
+				if( pp[0] == 1.0 and px == 0 and py == 0):
+					pass #XSH, YSH, PEAKV = 0.,0.,0.
+				else:
+					ww = model_blank(3,3)
+					ux = int(pp[1])
+					uy = int(pp[2])
+					for k in xrange(3):
+						for l in xrange(3):
+							ww[k,l] = w[k+ux-1,l+uy-1]
+					XSH, YSH, PEAKV = parabl(ww)
+					#print i,pp[-1],XSH, YSH,px+XSH, py+YSH, PEAKV
+					if(PEAKV >ama):
+						ama = PEAKV
+						bsx = px+round(XSH,2)
+						bsy = py+round(YSH,2)
+						bang = i
+						mir = mirror_flag
+		# returned parameters have to be inverted
+		bang = (bang//2-nc)*psistep + 180.*(bang%2)
+		# print bang,bsx,bsy
+		bang, bsx, bsy, mir = inverse_transform2(bang, bsx, bsy, mir)
+		results.append([bang, bsx, bsy, mir, ama])
+
+	return results
+
+
 def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	from fundamentals import fft, rot_shift2D, ccf
 	from utilities import model_blank, model_circle, peak_search, compose_transform2, inverse_transform2
