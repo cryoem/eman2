@@ -13898,11 +13898,20 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		phi,theta,psi,sx,sy = get_params_proj(prjlist[i])
 		set_params_proj(prjlist[i],[phi,theta,psi,sx/scale,sy/scale])
 	"""
-	from fundamentals import fft
+
+	from fundamentals import fft,fshift
+	from utilities import get_params_proj,set_params_proj
 	for i in xrange(len(prjlist)):
+		#phi,theta,psi,sxs,sys = get_params_proj(prjlist[i])
+
 		prjlist[i] = fft(prjlist[i])
+		#prjlist[i] = fshift(prjlist[i],sxs,sys)
 		prjlist[i].set_attr("padffted",1)
 		prjlist[i].set_attr("npad",1)
+		#set_params_proj(prjlist[i] ,[phi,theta,psi,0.0,0.0])
+
+
+
 
 	from utilities import model_blank
 	m = model_blank(600,1,1,1.0)
