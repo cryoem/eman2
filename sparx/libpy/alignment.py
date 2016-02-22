@@ -3278,9 +3278,10 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	bang, bsx, bsy, i = inverse_transform2(bang, bsx, bsy)
 	return bang, bsx, bsy, ama
 
-def align2d_direct3_testing(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, ou = -1):
+def align2d_direct3_testing(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, ou = -1, CTF = None):
 	from fundamentals import fft, rot_shift2D, ccf, mirror
-	from utilities import peak_search, model_circle, model_blank, inverse_transform2, combine_params2
+	from filter       import filt_ctf
+	from utilities    import peak_search, model_circle, model_blank, inverse_transform2, combine_params2
 	from math import radians, sin, cos
 	
 	nx = input_images[0].get_xsize()
@@ -3291,18 +3292,22 @@ def align2d_direct3_testing(input_images, refim, xrng=1, yrng=1, psimax=180, psi
 	nc = nk + 1
 	refs = [None]*nm*2
 	for i in xrange(nm):
-		refs[2*i] = [fft(rot_shift2D(refim, (i-nc)*psistep)*mask), fft(rot_shift2D(refim, (i-nc)*psistep, 0, 0, 1)*mask)]
-		refs[2*i+1] = [fft(rot_shift2D(refim, (i-nc)*psistep+180.0)*mask), fft(rot_shift2D(refim, (i-nc)*psistep+180.0, 0, 0, 1)*mask)]
+		temp = rot_shift2D(refim, (i-nc)*psistep)*mask
+		refs[2*i] = [fft(temp), fft(mirror(temp))]
+		temp = rot_shift2D(refim, (i-nc)*psistep+180.0)*mask
+		refs[2*i+1] = [fft(temp), fft(mirror(temp))]
+	del temp
 
 	results = []
 	mir = 0
 	for image in input_images:
-		ims = fft(image)
+		if CTF:  ims = filt_ctf(fft(image), image.get_attr("ctf"))
+		else:    ims = fft(image)
 		ama = -1.e23
 		bang = 0.
 		bsx = 0.
 		bsy = 0.
-		for i in xrange(1,nm*2):
+		for i in xrange(nm*2):
 			for mirror_flag in [0, 1]:
 				c = ccf(ims, refs[i][mirror_flag])
 				#c.write_image('rer.hdf')
