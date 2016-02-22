@@ -13898,11 +13898,20 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		phi,theta,psi,sx,sy = get_params_proj(prjlist[i])
 		set_params_proj(prjlist[i],[phi,theta,psi,sx/scale,sy/scale])
 	"""
-	from fundamentals import fft
+
+	from fundamentals import fft,fshift
+	from utilities import get_params_proj,set_params_proj
 	for i in xrange(len(prjlist)):
+		#phi,theta,psi,sxs,sys = get_params_proj(prjlist[i])
+
 		prjlist[i] = fft(prjlist[i])
+		#prjlist[i] = fshift(prjlist[i],sxs,sys)
 		prjlist[i].set_attr("padffted",1)
 		prjlist[i].set_attr("npad",1)
+		#set_params_proj(prjlist[i] ,[phi,theta,psi,0.0,0.0])
+
+
+
 
 	from utilities import model_blank
 	m = model_blank(600,1,1,1.0)
@@ -13910,7 +13919,7 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		prjlist[i].set_attr("bckgnoise",m)
 	from reconstruction import recons3d_4nnfs_MPI
 	#if CTF: vol1, vol2, fff = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
-	vol = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, npad = npad, smearstep = 0.0, CTF = CTF, compensate = True)
+	vol = recons3d_4nnfs_MPI(myid, prjlist, cfsc = None, symmetry = sym, npad = npad, smearstep = 0.0, CTF = CTF, compensate = True)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
