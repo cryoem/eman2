@@ -2023,7 +2023,7 @@ def rotate_shift_params(paramsin, transf):
 
 
 #  01/06/2016 - This is my recoding of old FORTRAN code with the hope that python's double precission
-#                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeed psi
+#                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeeds psi
 #                 in this case as well.  So, the only choice is to use small theta instead of exact 0,0,0 direction
 def rotate_params(params, transf):
 	matinv = rotmatrix( -transf[2], -transf[1], -transf[0] )
@@ -5244,7 +5244,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 
 '''
 def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid = 0, main_node = 0, nproc = 1, \
-					original_data = None, return_real = False, preshift = False, apply_mask = True, compute_sigma2  False, large_memory = True):
+					original_data = None, return_real = False, preshift = False, apply_mask = True, large_memory = True):
 	"""
 	This function will read from stack a subset of images specified in partids
 	   and assign to them parameters from partstack with optional CTF application and shifting of the data.

@@ -1234,7 +1234,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	else:
 		return None, None, None
 
-def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = None, finfo=None, npad=2, mpi_comm=None, smearstep = 0.0, CTF = True):
+def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = None, finfo=None, npad=2, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = True, target_size=-1):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -1319,7 +1319,10 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	#  We have to trick the setup so for Fourier padded input data creates volumes of correct size
 	if( prjlist[0].get_attr("is_complex") and prjlist[0].get_attr("npad") >1 ):  i=npad
 	else: i = 1
-	params = {"size":imgsize/i, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
+	if target_size <0 )  : jot = imgsize/i
+	elif(target_size >= imgsize):  jot = target_size
+	else:  ERROR("Target volume size too small",recons3d_4nnfs_MPI,1 ,myid)
+	params = {"size":jot, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	for image in prjlist:
@@ -1345,7 +1348,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 		finfo.flush()
 
 	if myid == 0:
-		dummy = r.finish(True)
+		dummy = r.finish(compensate)
 
 	mpi_barrier(mpi_comm)
 	if myid == 0:

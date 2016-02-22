@@ -2130,8 +2130,9 @@ EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int n
 
 	int remove = slice->get_attr_default("remove", 0);
 	padfftslice->set_attr( "remove", remove );
-
+//padfftslice->set_attr( "is_fftodd", 1 );
 	padfftslice->center_origin_fft();
+//padfftslice->set_attr( "is_fftodd", 0 );
 	return padfftslice;
 }
 
@@ -3418,6 +3419,8 @@ void nn4_ctfReconstructor::buildFFTVolume() {
 		m_volume->to_zero();
 	}
 
+	if ( m_vnxp % 2 == 0 )  m_volume->set_fftodd(0);
+	else                    m_volume->set_fftodd(1);
 	m_volume->set_nxc(m_vnxp/2);
 	m_volume->set_complex(true);
 	m_volume->set_ri(true);
@@ -3718,6 +3721,8 @@ void nn4_ctfwReconstructor::buildFFTVolume() {
 		m_volume->to_zero();
 	}
 
+	if ( m_vnxp % 2 == 0 )  m_volume->set_fftodd(0);
+	else                    m_volume->set_fftodd(1);
 	m_volume->set_nxc(m_vnxp/2);
 	m_volume->set_complex(true);
 	m_volume->set_ri(true);
@@ -3821,7 +3826,7 @@ int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData*
 }
 
 
-EMData* nn4_ctfwReconstructor::finish(bool)
+EMData* nn4_ctfwReconstructor::finish(bool compensate)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
@@ -3919,10 +3924,9 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 						float tmp = ((*m_wptr)(ix,iy,iz)+osnr);
 
 						if(tmp>0.0f) {
-							tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
 						//cout<<" mvol "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<(*m_volume)(2*ix,iy,iz)<<"  "<<(*m_volume)(2*ix+1,iy,iz)<<"  "<<tmp<<"  "<<osnr<<endl;
-							(*m_volume)(2*ix,iy,iz)   *= tmp;
-							(*m_volume)(2*ix+1,iy,iz) *= tmp;
+							(*m_volume)(2*ix,iy,iz)   /= tmp;
+							(*m_volume)(2*ix+1,iy,iz) /= tmp;
 						} else {
 							(*m_volume)(2*ix,iy,iz)   = 0.0f;
 							(*m_volume)(2*ix+1,iy,iz) = 0.0f;
@@ -3936,11 +3940,12 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 		}
 	}
 
+	m_volume->center_origin_fft();
 	// back fft
 	m_volume->do_ift_inplace();
 	int npad = m_volume->get_attr("npad");
 	m_volume->depad();
-	circumftrl( m_volume, npad );
+	if( compensate )  circumftrl( m_volume, npad );
 	m_volume->set_array_offsets( 0, 0, 0 );
 
 	return 0;
@@ -4152,7 +4157,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
     }
     for (ix = 0; ix <= m_vnyc+1; ix++) {
         if( sigma2[ix] > 0.0f )  sigma2[ix] = count[ix]/sigma2[ix];
-        cout<<"  1/sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
+        //cout<<"  1/sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
     }
     // now counter will serve to keep fsc-derived stuff
 	//  refvol carries fsc
@@ -4163,7 +4168,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
     for (ix = 0; ix <= m_vnyc+1; ix++)  {
         if ( count[ix] >0.0f) count[ix] = fudge/count[ix];  //fudge?
     }
-for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<"  m_wptr  "<<(*m_wptr)(ix,1,1)<<endl;
+//for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<"  m_wptr  "<<(*m_wptr)(ix,1,1)<<endl;
 
 	// normalize
 	for (iz = 1; iz <= m_vnzp; iz++) {
