@@ -2111,7 +2111,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar
 
-def ali3D_direct_pdf(data, volprep, refang, delta_psi, shifts, myid, main_node, prior_pdf_dict, lentop = 1000, kb3D = None):
+def ali3D_direct_pdf(data, volprep, refang, delta_psi, shifts, myid, main_node, lentop = 1000, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
 	from utilities import wrap_mpi_gatherv
@@ -2127,7 +2127,7 @@ def ali3D_direct_pdf(data, volprep, refang, delta_psi, shifts, myid, main_node, 
 	#  Coding of orientations:
 	#    hash = ang*100000000 + lpsi*1000 + ishift
 	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000000
+	#    ipsi = (hash/1000)%100000
 	#    iang  = hash/100000000
 	#  To get best matching for particle #kl:
 	#     hash_best = newpar[kl][-1][0][0]
@@ -2152,9 +2152,6 @@ def ali3D_direct_pdf(data, volprep, refang, delta_psi, shifts, myid, main_node, 
 			temp.set_attr("is_complex",0)
 			nrmref = sqrt(Util.innerproduct(temp, temp))
 			for kl,emimage in enumerate(data):
-				pdf_orie = prior_pdf_dict[kl][0]
-				pdf_psi  = prior_pdf_dict[kl][2]
-				pdf_direction = pdf_orie[i]*pdf_psi[j]
 				for im in xrange(len(shifts)):
 					peak = Util.innerproduct(temp, emimage[im])
 					peak /= nrmref
@@ -2185,7 +2182,6 @@ def ali3D_direct_pdf(data, volprep, refang, delta_psi, shifts, myid, main_node, 
 	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar
-
 
 
 def proj_ali_incore_direct(data, ref_angs, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0):
