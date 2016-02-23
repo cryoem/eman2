@@ -2130,8 +2130,9 @@ EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int n
 
 	int remove = slice->get_attr_default("remove", 0);
 	padfftslice->set_attr( "remove", remove );
-
+//padfftslice->set_attr( "is_fftodd", 1 );
 	padfftslice->center_origin_fft();
+//padfftslice->set_attr( "is_fftodd", 0 );
 	return padfftslice;
 }
 
@@ -3825,7 +3826,7 @@ int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData*
 }
 
 
-EMData* nn4_ctfwReconstructor::finish(bool compensate)
+EMData* nn4_ctfwReconstructor::finish(bool compensate, bool do_invert)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
@@ -3922,15 +3923,16 @@ EMData* nn4_ctfwReconstructor::finish(bool compensate)
 
 						float tmp = ((*m_wptr)(ix,iy,iz)+osnr);
 
-						if(tmp>0.0f) {
-							tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
-						//cout<<" mvol "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<(*m_volume)(2*ix,iy,iz)<<"  "<<(*m_volume)(2*ix+1,iy,iz)<<"  "<<tmp<<"  "<<osnr<<endl;
-							(*m_volume)(2*ix,iy,iz)   *= tmp;
-							(*m_volume)(2*ix+1,iy,iz) *= tmp;
-						} else {
-							(*m_volume)(2*ix,iy,iz)   = 0.0f;
-							(*m_volume)(2*ix+1,iy,iz) = 0.0f;
-						}
+						if(do_invert){
+							if(tmp>0.0f) {
+							//cout<<" mvol "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<(*m_volume)(2*ix,iy,iz)<<"  "<<(*m_volume)(2*ix+1,iy,iz)<<"  "<<tmp<<"  "<<osnr<<endl;
+								(*m_volume)(2*ix,iy,iz)   /= tmp;
+								(*m_volume)(2*ix+1,iy,iz) /= tmp;
+							} else {
+								(*m_volume)(2*ix,iy,iz)   = 0.0f;
+								(*m_volume)(2*ix+1,iy,iz) = 0.0f;
+							}
+						}  else (*m_wptr)(ix,iy,iz) = tmp;
 					}
 				} else {
 					(*m_volume)(2*ix,iy,iz)   = 0.0f;
@@ -3940,76 +3942,21 @@ EMData* nn4_ctfwReconstructor::finish(bool compensate)
 		}
 	}
 
-	// back fft
-	m_volume->do_ift_inplace();
-	int npad = m_volume->get_attr("npad");
-	m_volume->depad();
-	if( compensate )  circumftrl( m_volume, npad );
-	m_volume->set_array_offsets( 0, 0, 0 );
-
-	return 0;
-}
-
-/*
-// For postprocessing only multiply by +/- 1
-						if(tmp>0.0f) {
-							int mum = (-2*((ix+iy+iz)%2)+1);
-						//cout<<" mvol "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<(*m_volume)(2*ix,iy,iz)<<"  "<<(*m_volume)(2*ix+1,iy,iz)<<"  "<<tmp<<"  "<<osnr<<endl;
-							(*m_volume)(2*ix,iy,iz)   *= mum;
-							(*m_volume)(2*ix+1,iy,iz) *= mum;
-							(*m_wptr)(ix,iy,iz) *= mum;
-						} else {
-							(*m_volume)(2*ix,iy,iz)   = 0.0f;
-							(*m_volume)(2*ix+1,iy,iz) = 0.0f;
-						}
-					}
-				} else {
-					(*m_volume)(2*ix,iy,iz)   = 0.0f;
-					(*m_volume)(2*ix+1,iy,iz) = 0.0f;
-				}
-			}
-		}
+	if(do_invert)  {
+		m_volume->center_origin_fft();
+		// back fft
+		m_volume->do_ift_inplace();
+		int npad = m_volume->get_attr("npad");
+		m_volume->depad();
+		if( compensate )  circumftrl( m_volume, npad );
+		m_volume->set_array_offsets( 0, 0, 0 );
 	}
 
-	// back fft
-	m_volume->do_ift_inplace();
-	int npad = m_volume->get_attr("npad");
-	m_volume->depad();
-	circumftrl( m_volume, npad );
-	m_volume->set_array_offsets( 0, 0, 0 );
-
 	return 0;
 }
-*/
 
 
 
-
-
-/*
-int nn4_ctfwReconstructor::insert_buffed_slice( const EMData* buffed, float weight )
-{
-	const float* bufdata = buffed->get_data();
-	float* cdata = m_volume->get_data();
-	float* wdata = m_wptr->get_data();
-
-	int npoint = buffed->get_xsize()/4;
-	for( int i=0; i < npoint; ++i ) {
-
-		int pos2 = int( bufdata[4*i] );
-		int pos1 = pos2 * 2;
-		cdata[pos1  ] += bufdata[4*i+1]*weight;
-		cdata[pos1+1] += bufdata[4*i+2]*weight;
-		wdata[pos2  ] += bufdata[4*i+3]*weight;
-
-        //std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
-        //std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
-        //std::cout << pos2 << " " << bufdata[5*i+4] << std::endl;
- 
-	}
-	return 0;
-}
-*/
 #ifdef False
 EMData* nn4_ctfwReconstructor::finish(bool)
 {
@@ -4156,7 +4103,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
     }
     for (ix = 0; ix <= m_vnyc+1; ix++) {
         if( sigma2[ix] > 0.0f )  sigma2[ix] = count[ix]/sigma2[ix];
-        cout<<"  1/sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
+        //cout<<"  1/sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
     }
     // now counter will serve to keep fsc-derived stuff
 	//  refvol carries fsc
@@ -4167,7 +4114,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
     for (ix = 0; ix <= m_vnyc+1; ix++)  {
         if ( count[ix] >0.0f) count[ix] = fudge/count[ix];  //fudge?
     }
-for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<"  m_wptr  "<<(*m_wptr)(ix,1,1)<<endl;
+//for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<"  m_wptr  "<<(*m_wptr)(ix,1,1)<<endl;
 
 	// normalize
 	for (iz = 1; iz <= m_vnzp; iz++) {
