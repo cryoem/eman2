@@ -69,6 +69,13 @@ def main():
 		If not specified, all valid EM imagefiles in the current directory will be put into 
 		an .st stack.""")
 	
+	parser.add_argument("--anglesindxinfilename",type=int,default=None,help="""Default=None. The filename of the images will be split at any occurence of 
+		the following delimiters: '_','-',',',' ' (the last one is a blank space). Provide the index (position) of the angle in the split filename.
+		For example, if the filename of an image is "my_specimen-oct-10-2015_-50_deg-from_k2 camera.mrc", it will be split
+		into ['my','specimen','oct','10','2015','','50','deg','from','k2','camera','mrc']. The angle '-50', is at position 6 (starting from 0). Therefore,
+		you would provide --anglesindxinfilename=6, assuming all images to be stacked/processed are similarly named. No worries about the minus sign 
+		disappearing. The program will look at whether there's a minus sign immediately preceeding the position where the angle info is.""")
+
 	parser.add_argument("--tltfile",type=str,default='',help="""".tlt file IF unstacking an
 		aligned tilt series with --unstack=<stackfile> or restacking a tiltseries with
 		--restack=<stackfile>""")
@@ -170,9 +177,11 @@ def main():
 	
 	tiltstoexclude = options.exclude.split(',')	
 	
-	if options.stem2stack and options.tiltstep == 0.0:
-		print "ERROR: --tiltstep required when using --stem2stack"
-		sys.exit()
+	if options.stem2stack:
+		if not options.anglesindxinfilename: 
+			if not options.tiltstep:
+				print "ERROR: --tiltstep required when using --stem2stack, unless --anglesindxinfilename is provided"
+				sys.exit()
 	
 	if options.lowesttilt == 0.0 and options.tiltrange:
 		options.lowesttilt = -1 * options.tiltrange
@@ -383,26 +392,28 @@ def findtiltimgfiles( options ):
 	
 	intilts = []
 	#k=0
-	
+	extensions = ['dm3','DM3','mrc','MRC','mrcs','MRCS','hdf','HDF','tif','TIF']
 	if options.stem2stack:
 		intilt = ''	
 		for f in filesindir:
 			if options.stem2stack in f:
 				if '.txt' not in f and '.db' not in f:
 					print "potential tilt image", f
-					if '.dm3' in f[-4:] or '.DM3' in f[-4:] or '.tif' in f[-4:] or '.TIF' in f[-4:] or '.MRC' in f[-4:] or '.mrc' in f[-4:] or '.hdf' in f[-4:]: 
+					#if 'dm3' in f.split('.')[-1] or 'DM3' in f.split('.')[-1] or 'tif' in f.split('.')[-1] or 'TIF' in f.split('.')[-1] or 'MRC' in f.split('.')[-1] or 'mrc' in f.split('.')[-1] or 'hdf' in f.split('.')[-1] or 'mrcs' in f.split('.')[-1] or 'MRCS' in in f.split('.')[-1]: 
+					if f.split('.')[-1] in extensions:
 						print "\nvalid file", f
 						intilt = f
 						if intilt:
 							intilts.append( intilt )
 					else:
-						print "format not valid. Needs to be .mrc, .hdf, .dm3, or .tif"
+						print "extension not valid. Needs to be .mrc, .mrcs, .hdf, .dm3, .tif"
 					
 					#k will serve to compensate for damage.
 					#It indicates the order in which data collection occured
 	print "\n(e2spt_tiltstacker.py)(findtiltimgfiles) These many img files were found", len( intilts )		
 	intilts.sort()
 	print "\nand they've been sorted"
+		
 	return intilts
 
 
@@ -421,9 +432,9 @@ def getangles( options, raworder=False ):
 				angle = float(line)
 				angles.append( angle )
 				print "appending angle", 
-	else:
+
 		#angles = [a for a in xrange( options.lowesttilt, options.highesttilt, options.tiltstep )]
-		
+	else:	
 		
 		print "There was no .tlt file so I'll generate the angles using lowesttilt=%f, highesttilt=%f, tiltstep=%f" % (options.lowesttilt, options.highesttilt, options.tiltstep)
 		generate = floatrange( options.lowesttilt, options.highesttilt, options.tiltstep )
@@ -478,129 +489,178 @@ def writetlt( angles, options, raworder=False ):
 def organizetilts( intilts, options ):
 	
 	intiltsdict = {}
-	angles = getangles( options )			#This returns angles from -tiltrange to +tiltrange if --negativetiltseries is supplied; from +tiltrange to -tiltrange otherwise
-	orderedangles = list( angles )
-	
-	#print "\n(organizetilts) angles are", angles
-	
-	zeroangle = min( [ math.fabs(a) for a in angles] )		#Find the angle closest to 0 tilt, in the middle of the tiltseries
-	indexminangle = None
-	try:
-		indexminangle = angles.index( zeroangle )			#The middle angle (0 tilt) could have been positive
-		zeroangle = angles[ indexminangle ]
-	except:
-		indexminangle = angles.index( -1*zeroangle )		#Or negative. Either way, we find its index in the list of angles
-		zeroangle = angles[ indexminangle ]
+	angles = []
+	if options.anglesindxinfilename:
+		collectionindex=0
+		anglesdict = {}
+		for intilt in intilts:
+			parsedname = intilt.replace(',',' ').replace('-',' ').replace('_',' ').split()
+			#dividerstoadd = options.anglesindxinfilename - 1
+			charsum = 0
+			for i in range(options.anglesindxinfilename):
+				charsum += len(parsedname[i])
+			charsum += i
 
-	
-	if not options.tltfile:
+			sign = intilt[charsum]
+			print "by position, sign is",sign
+			angle = float(parsedname[options.anglesindxinfilename])
+			sign2 = intilt.split(str(angle))[0][-1]
+			print "by other means, sign2 is",sign2
+			if sign2 == '-':
+				angle *= -1
+			angles.append( angle )
+			anglesdict.update({angle:[intilt,collectionindex]})
 		
 		
-		if options.bidirectional:
-			
-			
-			print "\nzeroangle=%f, indexminangle=%d" %( zeroangle, indexminangle )
-			if not options.negativetiltseries:
-				print "\nNegative tilt series is OFF. This is a POSITIVE tilt series"
-				secondhalf = angles[ indexminangle: len(angles) ]	#This goes from zero to lowest tilta angles, i.e., -tiltrange
-				#print "Firsthalf is", firsthalf
-				#print "because angles are", angles
-				firsthalf =  angles[ 0:indexminangle ]				#This should go from most positive angle or +tiltrange to zero (without including it)
-				#secondhalf.sort()									#We order this list to go from 0-tiltstep to the most negative angle, -tiltrange
-				#secondhalf.reverse()
-			
-			elif options.negativetiltseries:
-				print "T\nhis is a NEGATIVE tiltseries"
-				firsthalf = angles[ 0:indexminangle+1 ]				#This goes from the most negative angle to zero (INCLUDING it)
-				#firsthalf.sort()									#We order this list to go from 0 to -tiltrange
-				#firsthalf.reverse()
-				
-				secondhalf = angles[ indexminangle+1: len(angles) ]	#This goes from 0+tiltstep to the most positive angle, that is, +tiltrange
-			
-			orderedangles = firsthalf + secondhalf
-			print "\n(organizetilts) Ordered angles are", orderedangles
-			print "\n(organizetilts) Because firsthalf is", firsthalf
-			print "\n(organizetilts) and secondhalf is", secondhalf
-			
-			writetlt( orderedangles, options )
-	
-	else:
-		writetlt( angles, options )
-	
-	angles.sort()
-	if not options.negativetiltseries:			#Change angles to go from +tiltrange to -tiltrange if that's the order of the images
-		#orderedangles.sort()
-		#orderedangles.reverse()
-		
-		#angles.sort()
-		angles.reverse()
-		
-		#print "However, after reversal, they are", orderedangles
-		#print "and angles are", angles
-			
-	
-		
-	if len( intilts ) != len( orderedangles ):
-		
-		if not options.stackregardless:	
-			print """\n(e2spt_tiltstacker.py)(organizetilts) ERROR: Number of tilt angles 
-			and tilt images is not equal."""
-			print """Number of tilt angles = %d ; number of tilt images = %d """ % ( len( orderedangles ), len( intilts ) )
-			sys.exit()
+		if options.negativetiltseries:
+			angles.sort()
 		else:
-			print """\n(e2spt_tiltstacker.py)(organizetilts) WARNING: Number of tilt angles 
-			and tilt images is not equal. Stacking nevertheless since you provided --stackregardless""", options.stackregardless
-			print """Number of tilt angles = %d ; number of tilt images = %d """ % ( len( orderedangles ), len( intilts ) )
-			
-	
-	tiltstoexclude = options.exclude.split(',')
-	
-	indexesintiltseries = range(len(angles))
-	collectionindexes = range(len(angles))
-	
-	print "options.bidirectional is", options.bidirectional
-	print "indexminangle is", indexminangle
+			angles.sort()
+			angles.reverse()
 
-	if options.bidirectional and indexminangle != None:
-		firstrange = range(0,indexminangle+1)
-		secondrange = range(indexminangle+1,len(angles))			
-		
-		collectionindexes = []
-		collectionindexes = list(firstrange) + list(secondrange)
-		
-		
-		firstrange.sort()
-		firstrange.reverse()
-		
-		indexesintiltseries = []
-		indexesintiltseries = list(firstrange) + list(secondrange)
-		
-		
-		
-		
-	print "collection indexes are", collectionindexes
-	print "indexes in tiltseries are", indexesintiltseries
-		
-		
-	for k in range(len(intilts)):
-		
-		try:
-			tiltangle = orderedangles[k]
-			#indexintiltseries = angles.index( orderedangles[k] )
-		
-			indexintiltseries = indexesintiltseries[k]
-			collectionindex = collectionindexes[k]
-		except:
-			if options.stackregardless:
-				tiltangle = orderedangles[k-1] + orderedangles[k-1] - orderedangles[k-2]
-				indexintiltseries = indexesintiltseries[k-1] + indexesintiltseries[k-1] - indexesintiltseries[k-2]
-				collectionindex = collectionindexes[k-1] + collectionindexes[k-1] - collectionindexes[k-2]
+		writetlt( angles, options )
+
+		kkkk=0
+		finalangles = []
+		tiltstoexclude = options.exclude.split(',')
+
+		print 'anglesdict is', anglesdict
+
+		for angle in angles:
+			indexintiltseries = kkkk
 			
-				
-		if indexintiltseries not in tiltstoexclude and str(indexintiltseries) not in tiltstoexclude:
+			#{ indexintiltseries:[ imgile, angle, collectionindx]} 
+			if str(kkkk) not in tiltstoexclude:
+				intiltsdict.update( { indexintiltseries:[ anglesdict[angle][0], angle, anglesdict[angle][1] ]} )
+				kkkk+=1
+				finalangles.append(angle)
+		angles=list(finalangles)
+
+	else:
+		angles = getangles( options )			#This returns angles from -tiltrange to +tiltrange if --negativetiltseries is supplied; from +tiltrange to -tiltrange otherwise
+	
+		orderedangles = list( angles )
 		
-			intiltsdict.update( { indexintiltseries:[ intilts[k],tiltangle,collectionindex ]} )
-			print "\nadded collectionIndex=%d, tiltangle=%f, indexintiltseries=%d" % ( collectionindex, tiltangle, indexintiltseries )
+		#print "\n(organizetilts) angles are", angles
+		
+		zeroangle = min( [ math.fabs(a) for a in angles] )		#Find the angle closest to 0 tilt, in the middle of the tiltseries
+		indexminangle = None
+		try:
+			indexminangle = angles.index( zeroangle )			#The middle angle (0 tilt) could have been positive
+			zeroangle = angles[ indexminangle ]
+		except:
+			indexminangle = angles.index( -1*zeroangle )		#Or negative. Either way, we find its index in the list of angles
+			zeroangle = angles[ indexminangle ]
+
+		
+		if not options.tltfile:
+			
+			
+			if options.bidirectional:
+				
+				
+				print "\nzeroangle=%f, indexminangle=%d" %( zeroangle, indexminangle )
+				if not options.negativetiltseries:
+					print "\nNegative tilt series is OFF. This is a POSITIVE tilt series"
+					secondhalf = angles[ indexminangle: len(angles) ]	#This goes from zero to lowest tilta angles, i.e., -tiltrange
+					#print "Firsthalf is", firsthalf
+					#print "because angles are", angles
+					firsthalf =  angles[ 0:indexminangle ]				#This should go from most positive angle or +tiltrange to zero (without including it)
+					#secondhalf.sort()									#We order this list to go from 0-tiltstep to the most negative angle, -tiltrange
+					#secondhalf.reverse()
+				
+				elif options.negativetiltseries:
+					print "T\nhis is a NEGATIVE tiltseries"
+					firsthalf = angles[ 0:indexminangle+1 ]				#This goes from the most negative angle to zero (INCLUDING it)
+					#firsthalf.sort()									#We order this list to go from 0 to -tiltrange
+					#firsthalf.reverse()
+					
+					secondhalf = angles[ indexminangle+1: len(angles) ]	#This goes from 0+tiltstep to the most positive angle, that is, +tiltrange
+				
+				orderedangles = firsthalf + secondhalf
+				print "\n(organizetilts) Ordered angles are", orderedangles
+				print "\n(organizetilts) Because firsthalf is", firsthalf
+				print "\n(organizetilts) and secondhalf is", secondhalf
+				
+				writetlt( orderedangles, options )
+		
+		else:
+			writetlt( angles, options )
+	
+		angles.sort()
+		if not options.negativetiltseries:			#Change angles to go from +tiltrange to -tiltrange if that's the order of the images
+			#orderedangles.sort()
+			#orderedangles.reverse()
+			
+			#angles.sort()
+			angles.reverse()
+			
+			#print "However, after reversal, they are", orderedangles
+			#print "and angles are", angles
+				
+		
+			
+		if len( intilts ) != len( orderedangles ):
+			
+			if not options.stackregardless:	
+				print """\n(e2spt_tiltstacker.py)(organizetilts) ERROR: Number of tilt angles 
+				and tilt images is not equal."""
+				print """Number of tilt angles = %d ; number of tilt images = %d """ % ( len( orderedangles ), len( intilts ) )
+				sys.exit()
+			else:
+				print """\n(e2spt_tiltstacker.py)(organizetilts) WARNING: Number of tilt angles 
+				and tilt images is not equal. Stacking nevertheless since you provided --stackregardless""", options.stackregardless
+				print """Number of tilt angles = %d ; number of tilt images = %d """ % ( len( orderedangles ), len( intilts ) )
+				
+		
+		tiltstoexclude = options.exclude.split(',')
+		
+		indexesintiltseries = range(len(angles))
+		collectionindexes = range(len(angles))
+		
+		print "options.bidirectional is", options.bidirectional
+		print "indexminangle is", indexminangle
+
+		if options.bidirectional and indexminangle != None:
+			firstrange = range(0,indexminangle+1)
+			secondrange = range(indexminangle+1,len(angles))			
+			
+			collectionindexes = []
+			collectionindexes = list(firstrange) + list(secondrange)
+			
+			
+			firstrange.sort()
+			firstrange.reverse()
+			
+			indexesintiltseries = []
+			indexesintiltseries = list(firstrange) + list(secondrange)
+			
+			
+			
+			
+		print "collection indexes are", collectionindexes
+		print "indexes in tiltseries are", indexesintiltseries
+			
+			
+		for k in range(len(intilts)):
+			
+			try:
+				tiltangle = orderedangles[k]
+				#indexintiltseries = angles.index( orderedangles[k] )
+			
+				indexintiltseries = indexesintiltseries[k]
+				collectionindex = collectionindexes[k]
+			except:
+				if options.stackregardless:
+					tiltangle = orderedangles[k-1] + orderedangles[k-1] - orderedangles[k-2]
+					indexintiltseries = indexesintiltseries[k-1] + indexesintiltseries[k-1] - indexesintiltseries[k-2]
+					collectionindex = collectionindexes[k-1] + collectionindexes[k-1] - collectionindexes[k-2]
+				
+					
+			if indexintiltseries not in tiltstoexclude and str(indexintiltseries) not in tiltstoexclude:
+			
+				intiltsdict.update( { indexintiltseries:[ intilts[k],tiltangle,collectionindex ]} )
+				print "\nadded collectionIndex=%d, tiltangle=%f, indexintiltseries=%d" % ( collectionindex, tiltangle, indexintiltseries )
  				
 	return intiltsdict
 
