@@ -196,16 +196,10 @@ def main(args):
 ########################################################################################################################
 ### start: 2. align original images to class averages from isac using exhaustive search (class averages from isac have original image numbers)
 
-	# since most likely we are accessing a large file in a random access fashion
-	# each process waits its turn to read from disk
-	if myid > main_node:
-		_ = wrap_mpi_recv(myid - 1)
 	original_images_grouped_by_class_averages = [None]*class_averages_nima
 	for class_avg_img_iter in xrange(class_averages_nima):
 		original_images_id_list_associated_with_this_class = class_average_images[class_avg_img_iter].get_attr("members")
 		original_images_grouped_by_class_averages[class_avg_img_iter] = EMData.read_images(command_line_provided_stack_filename, original_images_id_list_associated_with_this_class)
-	if myid < nproc - 1:
-		wrap_mpi_send(1, myid + 1, comm)
 
 	if myid == main_node:
 		ima = EMData()
