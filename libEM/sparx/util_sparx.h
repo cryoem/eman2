@@ -830,6 +830,10 @@ costlist, int* curbranch);
 	static EMData* squaren_img(EMData* img);
 	/* img /= Re(img1) with zero check  */
 	static EMData* divn_filter(EMData* img, EMData* img1);
+	/* out = img /= img1 with zero check , img is complex, img1 real */
+	static EMData* divn_cbyr(EMData* img, EMData* img1);
+	/* img /= img1 with zero check , img is complex, img1 real */
+	static void div_cbyr(EMData* img, EMData* img1);
 
 	/* img += scalar * img1 */
 	static void mad_scalar(EMData* img, EMData* img1, float scalar);

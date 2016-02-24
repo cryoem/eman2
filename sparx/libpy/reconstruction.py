@@ -1357,7 +1357,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 
 	mpi_barrier(mpi_comm)
 
-	if return_both:
+	if True:
 		if myid == 0: return fftvol,weight,refvol
 		else: return None, None
 	else:
