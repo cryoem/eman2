@@ -3201,10 +3201,11 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	bang, bsx, bsy, i = inverse_transform2(bang, bsx, bsy)
 	return bang, bsx, bsy, ama
 
-def align2d_direct3_testing(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, ou = -1, CTF = None):
+
+def align2d_direct3(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, ou = -1, CTF = None):
 	from fundamentals import fft, rot_shift2D, ccf, mirror
 	from filter       import filt_ctf
-	from utilities    import peak_search, model_circle, model_blank, inverse_transform2, combine_params2
+	from utilities    import peak_search, model_circle, model_blank, inverse_transform2
 	from math import radians, sin, cos
 	
 	nx = input_images[0].get_xsize()
@@ -3233,8 +3234,6 @@ def align2d_direct3_testing(input_images, refim, xrng=1, yrng=1, psimax=180, psi
 		for i in xrange(nm*2):
 			for mirror_flag in [0, 1]:
 				c = ccf(ims, refs[i][mirror_flag])
-				#c.write_image('rer.hdf')
-				#exit()
 				w = Util.window(c,2*xrng+1,2*yrng+1)
 				pp =peak_search(w)[0]
 				px = int(pp[4])
@@ -3258,10 +3257,8 @@ def align2d_direct3_testing(input_images, refim, xrng=1, yrng=1, psimax=180, psi
 						mir = mirror_flag
 		# returned parameters have to be inverted
 		bang = (bang//2-nc)*psistep + 180.*(bang%2)
-		# print bang,bsx,bsy
-		bang, bsx, bsy, mir = inverse_transform2(bang, bsx, bsy, mir)
+		bang, bsx, bsy, _ = inverse_transform2(bang, (1 - 2*mir)*bsx, bsy, mir)
 		results.append([bang, bsx, bsy, mir, ama])
-
 	return results
 
 

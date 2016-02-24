@@ -5135,26 +5135,32 @@ def if_error_all_processes_quit_program(error_status):
 	from traceback import extract_stack
 	import sys, copy
 	from mpi import mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+	
+	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	
+	if error_status != None:
+		error_status_info = error_status
+		error_status = 1
+	else:
+		error_status = 0
 
 	# print "error_status1:", error_status
 	error_status = mpi_bcast(error_status, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	error_status = int(error_status[0])
 
 	if error_status > 0:
-		# if report_message:
-		# 	from utilities import program_state_stack
-		# 	from inspect import currentframe, getframeinfo
-		# 	program_state_stack(locals(), getframeinfo(currentframe()), last_call="___%s"%report_message)
-	
-		# if mpi_comm_rank(MPI_COMM_WORLD) == 0:
-		# 	print "Stack INFO -0-:", extract_stack()[-3:]
-		# if mpi_comm_rank(MPI_COMM_WORLD) == 1:
-		# 	print "Stack INFO -1-:", extract_stack()[-3:]
-		#
-		# print "qqqqqqq:", error_status
+		if myid == 0:
+			frameinfo = error_status_info[1] 
+			print "***********************************"
+			print "** Error:", error_status_info[0]
+			print "***********************************"
+			# print "** Location:", frameinfo.filename + "  --  " + str(frameinfo.lineno)
+			print "** Location:", frameinfo.filename + ":" + str(frameinfo.lineno)
+			print "***********************************"
 		mpi_finalize()
 		sys.stdout.flush()		
-		sys.exit()
+		sys.exit(1)
 
 def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
 	# The function will read from stack a subset of images specified in partids

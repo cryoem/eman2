@@ -101,3 +101,9 @@ def ERROR(message, where, action = 1, myid = 0):
 	if action and BATCH:
 		from sys import exit
 		exit()
+
+
+
+from inspect import currentframe, getframeinfo
+# frameinfo = getframeinfo(currentframe())
+# print frameinfo.filename, frameinfo.lineno
