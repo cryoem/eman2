@@ -2330,20 +2330,20 @@ def main():
 	usage = progname + " stack  outdir  <mask> --focus=3Dmask --radius=outer_radius --delta=angular_step" +\
 	"--an=angular_neighborhood --maxit=max_iter  --CTF --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_frequency=.25  --seed=random_seed"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--focus",    type="string",       default='',                help="3D mask for focused clustering ")
-	parser.add_option("--ir",       type= "int",         default= 1, 	            help="inner radius for rotational correlation > 0 (set to 1)")
-	parser.add_option("--radius",   type= "int",         default=-1,	            help="outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
-	parser.add_option("--maxit",	type= "int",         default=50, 	            help="maximum number of iteration")
-	parser.add_option("--rs",       type= "int",         default=1,	                help="step between rings in rotational correlation >0 (set to 1)" ) 
-	parser.add_option("--xr",       type="string",       default='1',               help="range for translation search in x direction, search is +/-xr ")
-	parser.add_option("--yr",       type="string",       default='-1',	            help="range for translation search in y direction, search is +/-yr (default = same as xr)")
-	parser.add_option("--ts",       type="string",       default='0.25',            help="step size of the translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
-	parser.add_option("--delta",    type="string",       default='2',               help="angular step of reference projections")
-	parser.add_option("--an",       type="string",       default='-1',	            help="angular neighborhood for local searches")
-	parser.add_option("--center",   type="int",          default=0,	                help="0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=0)")
-	parser.add_option("--nassign",  type="int",          default=1, 	            help="number of reassignment iterations performed for each angular step (set to 3) ")
-	parser.add_option("--nrefine",  type="int",          default=0, 	            help="number of alignment iterations performed for each angular step (set to 1) ")
-	parser.add_option("--CTF",      action="store_true", default=False,             help="Consider CTF correction during the alignment ")
+	parser.add_option("--focus",         type="string",       default='',                help="3D mask for focused clustering ")
+	parser.add_option("--ir",            type= "int",         default= 1, 	            help="inner radius for rotational correlation > 0 (set to 1)")
+	parser.add_option("--radius",        type= "int",         default=-1,	            help="outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
+	parser.add_option("--maxit",	     type= "int",         default=50, 	            help="maximum number of iteration")
+	parser.add_option("--rs",            type= "int",         default=1,	                help="step between rings in rotational correlation >0 (set to 1)" ) 
+	parser.add_option("--xr",            type="string",       default='1',               help="range for translation search in x direction, search is +/-xr ")
+	parser.add_option("--yr",            type="string",       default='-1',	            help="range for translation search in y direction, search is +/-yr (default = same as xr)")
+	parser.add_option("--ts",            type="string",       default='0.25',            help="step size of the translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
+	parser.add_option("--delta",         type="string",       default='2',               help="angular step of reference projections")
+	parser.add_option("--an",            type="string",       default='-1',	            help="angular neighborhood for local searches")
+	parser.add_option("--center",        type="int",          default=0,	                help="0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=0)")
+	parser.add_option("--nassign",       type="int",          default=1, 	            help="number of reassignment iterations performed for each angular step (set to 3) ")
+	parser.add_option("--nrefine",         type="int",          default=0, 	            help="number of alignment iterations performed for each angular step (set to 1) ")
+	parser.add_option("--CTF",             action="store_true", default=False,             help="Consider CTF correction during the alignment ")
 	parser.add_option("--stoprnct",        type="float",        default=3.0,               help="Minimum percentage of assignment change to stop the program")
 	parser.add_option("--sym",             type="string",       default='c1',              help="symmetry of the structure ")
 	parser.add_option("--function",        type="string",       default='do_volume_mrk02', help="name of the reference preparation function")
@@ -2546,6 +2546,11 @@ def main():
 			masterdir = string.join(masterdir,"")
 		if myid ==main_node:
 			print_dict(Tracker["constants"],"Permanent settings of 3-D sorting program")
+		from time import sleep
+		while not os.path.exists(masterdir):  # Be sure each proc is able to access the created dir
+				print  "Node ",myid,"  waiting..."
+				sleep(5)
+		mpi_barrier(MPI_COMM_WORLD)
 		######### create a vstack from input stack to the local stack in masterdir
 		# stack name set to default
 		Tracker["constants"]["stack"]     = "bdb:"+masterdir+"/rdata"
@@ -2684,7 +2689,7 @@ def main():
 			partids= os.path.join(masterdir,"chunk%d.txt"%index)
 			while not os.path.exists(partids):
 				#print  " my_id",myid
-				sleep(2)
+				sleep(3)
 			mpi_barrier(MPI_COMM_WORLD)
 			data1,old_shifts1 = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 			vol1 = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data1,symmetry=Tracker["constants"]["sym"],info=None)
@@ -2801,6 +2806,10 @@ def main():
 					log_main.add(" the number to be processed in this generation is %d"%len(list_to_be_processed))
 					cmd="{} {}".format("mkdir",workdir)
 					cmdexecute(cmd)
+				from time import sleep
+				while not os.path.exists(workdir):
+					print  "Node ",myid,"  waiting..."
+					sleep(5)
 				mpi_barrier(MPI_COMM_WORLD)
 				Tracker["number_of_groups"]       = number_of_groups
 				Tracker["this_data_list"]         = list_to_be_processed # leftover of P1 runs
@@ -2817,6 +2826,10 @@ def main():
 					this_particle_text_file = os.path.join(workdir,"independent_list_%03d.txt"%indep_run) # for get_shrink_data
 					if myid ==main_node:
 						write_text_file(list_to_be_processed,this_particle_text_file)
+					from time import sleep
+					while not os.path.exists(this_particle_text_file):
+						print  "Node ",myid,"  waiting..."
+						sleep(5)
 					mpi_barrier(MPI_COMM_WORLD)
 					outdir = os.path.join(workdir, "EQ_Kmeans%03d"%indep_run)
 					#ref_vol= apply_low_pass_filter(ref_vol,Tracker)

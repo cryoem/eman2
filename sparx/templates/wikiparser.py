@@ -49,6 +49,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
 	keyword_dict["use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
 	keyword_dict["defocus_error"]               = SXkeyword_map(0, "")           # --defocus_error (contains keyworkd 'focus' but this should be float type)
+	keyword_dict["stack_file"]                  = SXkeyword_map(2, "bdb")        # stack_file (contains keyworkd 'stack' but this should be bdb type)
 	# Use priority 1 for output
 	keyword_dict["output"]                      = SXkeyword_map(1, "output")     # output_hdf, output_directory, outputfile
 	keyword_dict["outdir"]                      = SXkeyword_map(1, "output")     # outdir
@@ -60,7 +61,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 	keyword_dict["mask"]                        = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask
 	keyword_dict["focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
 	keyword_dict["input_micrograph"]            = SXkeyword_map(2, "any_image")  # input_micrograph_pattern
-	keyword_dict["input_image"]                 = SXkeyword_map(2, "bdb")        # input_image
+	keyword_dict["input_image"]                 = SXkeyword_map(2, "any_image")  # input_image
 	keyword_dict["tr0"]                         = SXkeyword_map(2, "parameters") # --tr0=matrix_file
 	keyword_dict["input_coordinates"]           = SXkeyword_map(2, "parameters") # input_coordinates_pattern
 	keyword_dict["import_ctf"]                  = SXkeyword_map(2, "parameters") # --import_ctf=ctf_file
@@ -341,7 +342,8 @@ def main():
 	wiki_file_path_list.append("../doc/pdb2em.txt")
 	wiki_file_path_list.append("../doc/cter.txt")
 	wiki_file_path_list.append("../doc/window.txt")
-	wiki_file_path_list.append("../doc/isac.txt")
+	# wiki_file_path_list.append("../doc/isac.txt")
+	wiki_file_path_list.append("../doc/isac_latest_release.txt")
 	wiki_file_path_list.append("../doc/viper.txt")
 	wiki_file_path_list.append("../doc/rviper.txt")
 	wiki_file_path_list.append("../doc/meridien.txt")

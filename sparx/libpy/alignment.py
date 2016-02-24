@@ -2111,83 +2111,6 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar
 
-def ali3D_direct_pdf(data, volprep, refang, delta_psi, shifts, myid, main_node, prior_pdf_dict, lentop = 1000, kb3D = None):
-	from projection import prgs,prgl
-	from fundamentals import fft
-	from utilities import wrap_mpi_gatherv
-	from math import sqrt
-	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from time import time
-	#  Input data has to be CTF-multiplied, preshifted
-	#  Output - newpar, see structure
-	#    newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
-	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, worstsimilarity,[imageallparams]]]
-	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
-	#  Coding of orientations:
-	#    hash = ang*100000000 + lpsi*1000 + ishift
-	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000000
-	#    iang  = hash/100000000
-	#  To get best matching for particle #kl:
-	#     hash_best = newpar[kl][-1][0][0]
-	#     best_sim  = newpar[kl][-1][0][1]
-	#  To sort:
-	from operator import itemgetter#, attrgetter, methodcaller
-	#   params.sort(key=itemgetter(2))
-
-	at = time()
-	npsi = int(360./delta_psi)
-	nang = len(refang)
-	#newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
-	newpar = [[i, 1.0e23, []] for i in xrange(len(data))]
-	for i in xrange(nang):
-		#if myid == main_node:  print "  Angle :",i,time()-at
-		iang = i*100000000
-		for j in xrange(npsi):
-			iangpsi = j*1000 + iang
-			psi = j*delta_psi
-			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
-			else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
-			temp.set_attr("is_complex",0)
-			nrmref = sqrt(Util.innerproduct(temp, temp))
-			for kl,emimage in enumerate(data):
-				pdf_orie = prior_pdf_dict[kl][0]
-				pdf_psi  = prior_pdf_dict[kl][2]
-				pdf_direction = pdf_orie[i]*pdf_psi[j]
-				for im in xrange(len(shifts)):
-					peak = Util.innerproduct(temp, emimage[im])
-					peak /= nrmref
-					#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
-					newpar[kl][-1].append([im + iangpsi, peak])
-					#newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
-					#del newpar[kl][-1][-1]
-					'''
-					toto = -1
-					for k in xrange(lentop):
-						if(peak > newpar[kl][-1][k][1]):
-							toto = k
-							break
-					if( toto == 0 ):  newpar[kl][-1] = [[im + iangpsi, peak]] + newpar[kl][-1][:lentop-1]
-					elif(toto > 0 ):  newpar[kl][-1] = newpar[kl][-1][:toto-1] + [[im + iangpsi, peak]] + newpar[kl][-1][toto:lentop-1]
-					'''
-					#  Store the worst one
-					if( peak < newpar[kl][1]):  newpar[kl][1] = peak
-		for kl in xrange(len(data)):
-			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
-			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]
-
-		
-	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
-	###if myid == main_node:  print "  Finished :",time()-at
-	#mpi_barrier(MPI_COMM_WORLD)
-	#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
-	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
-	mpi_barrier(MPI_COMM_WORLD)
-	return newpar
-
-
-
 def proj_ali_incore_direct(data, ref_angs, numr, xrng, yrng, step, finfo=None, sym = "c1", delta_psi = 0.0, rshift = 0.0):
 	from alignment import search_range
 	from EMAN2 import Vec2f
@@ -3278,10 +3201,11 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	bang, bsx, bsy, i = inverse_transform2(bang, bsx, bsy)
 	return bang, bsx, bsy, ama
 
-def align2d_direct3_testing(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, ou = -1, CTF = None):
+
+def align2d_direct3(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, ou = -1, CTF = None):
 	from fundamentals import fft, rot_shift2D, ccf, mirror
 	from filter       import filt_ctf
-	from utilities    import peak_search, model_circle, model_blank, inverse_transform2, combine_params2
+	from utilities    import peak_search, model_circle, model_blank, inverse_transform2
 	from math import radians, sin, cos
 	
 	nx = input_images[0].get_xsize()
@@ -3310,8 +3234,6 @@ def align2d_direct3_testing(input_images, refim, xrng=1, yrng=1, psimax=180, psi
 		for i in xrange(nm*2):
 			for mirror_flag in [0, 1]:
 				c = ccf(ims, refs[i][mirror_flag])
-				#c.write_image('rer.hdf')
-				#exit()
 				w = Util.window(c,2*xrng+1,2*yrng+1)
 				pp =peak_search(w)[0]
 				px = int(pp[4])
@@ -3335,10 +3257,8 @@ def align2d_direct3_testing(input_images, refim, xrng=1, yrng=1, psimax=180, psi
 						mir = mirror_flag
 		# returned parameters have to be inverted
 		bang = (bang//2-nc)*psistep + 180.*(bang%2)
-		# print bang,bsx,bsy
-		bang, bsx, bsy, mir = inverse_transform2(bang, bsx, bsy, mir)
+		bang, bsx, bsy, _ = inverse_transform2(bang, (1 - 2*mir)*bsx, bsy, mir)
 		results.append([bang, bsx, bsy, mir, ama])
-
 	return results
 
 
