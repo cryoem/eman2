@@ -1073,9 +1073,9 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file,Tracker):
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
 
-	if(focus != None):
+	if(Tracker["constants"]["focus3Dmask"] != None):
 		if(myid == main_node):
-			vol = get_shrink_3dmask(Tracker["nxinit"],focus)
+			vol = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
 		else:
 			vol =  model_blank(nx, nx, nx)
 		bcast_EMData_to_all(vol, myid, main_node)
@@ -2319,7 +2319,7 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 	except:
 		Tracker["lowpass"] = lowpass
 	try:
-		Tracker["falloff"]  =min(falloff,Tracker["falloff"]
+		Tracker["falloff"]  =min(falloff,Tracker["falloff"])
 	except:
 		Tracker["falloff"]  =falloff
 
