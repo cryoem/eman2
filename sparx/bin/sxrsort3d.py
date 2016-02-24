@@ -435,15 +435,18 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	else:
 		varf = None
 	refdata        =[None]*4
+	
+	lowpass=.5
 	for  iref in xrange(numref):
 		set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
-		
+		lowpass=min(lowpass, Tracker["lowpass"])
+	Tracker["lowpass"]=lowpass
 	for iref in xrange(numref):
 		refdata[0] = ref_list[iref]
 		refdata[1] = Tracker
 		refdata[2] = Tracker["constants"]["myid"]
 		refdata[3] = Tracker["constants"]["nproc"]
-		volref = user_func(refdata)
+		volref     = user_func(refdata)
 		filter_min = -999999.
 		if myid ==main_node:
 			log.add("%d reference low pass filter is %f  %f    %d"%(iref, Tracker["lowpass"], Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
@@ -2312,22 +2315,11 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 	lowpass, falloff    = fit_tanh1(adjusted_fsc, 0.01)
 	lowpass             = round(lowpass,4)
 	if Tracker["constants"]["myid"] ==Tracker["constants"]["main_node"]:
-		Tracker["constants"]["log_main"].add("the determined low pass filter is %5.3f"%lowpass) 
-	
-	falloff    =min(.1,falloff)
+		Tracker["constants"]["log_main"].add("the determined low pass filter is %5.3f"%lowpass) 	
 	falloff             = round(falloff,4)
 	currentres          = round(currentres,2)
-	
-	try:	
-		Tracker["lowpass"]  = min(Tracker["lowpass"],lowpass)
-	except:
-		Tracker["lowpass"] = lowpass
-	try:
-		Tracker["falloff"]  =min(falloff,Tracker["falloff"])
-	except:
-		Tracker["falloff"]  =falloff
-	if Tracker["constants"]["myid"] ==Tracker["constants"]["main_node"]:
-		Tracker["constants"]["log_main"].add("the final used low pass filter is %5.3f"%Tracker["lowpass"]) 
+	Tracker["lowpass"] = lowpass
+	Tracker["falloff"]  =falloff
 
 def main():
 	from time import sleep
