@@ -2542,11 +2542,11 @@ def main():
 				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 				masterdir ="master_sort3d"+timestring
 				li =len(masterdir)
-				cmd="{} {}".format("mkdir", masterdir)
-				cmdexecute(cmd)
 			else:
 				li = 0
-				keepchecking =1			
+				keepchecking =1
+			cmd="{} {}".format("mkdir", masterdir)
+			cmdexecute(cmd)			
 		else:
 			li=0
 			keepchecking =1
