@@ -1294,7 +1294,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 
 	#  Do the FSC shtick.
 	if cfsc:
-		bnx     = len(cfsc)*npad
+		bnx     = len(cfsc)*npad*2
 		refvol  = model_blank(bnx)
 		if(npad > 1):
 			from utilities import reshape_1d
@@ -1303,7 +1303,8 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 			del bfsc
 		else:  refvol[i] = cfsc[i]
 	else:
-		bnx    = imgsize*npad//2+1
+		#  Set refvol to longer array so in finish it can be used to return regularization part
+		bnx    = imgsize*npad
 		refvol = model_blank(bnx)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
 	refvol.set_attr("fudge", 1.0)
 
@@ -1316,13 +1317,15 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	fftvol = EMData()
 	weight = EMData()
 	if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
+	"""
 	#  We have to trick the setup so for Fourier padded input data creates volumes of correct size
 	if( prjlist[0].get_attr("is_complex") and prjlist[0].get_attr("npad") >1 ):  i=npad
 	else: i = 1
 	if( target_size <0 )  : jot = imgsize/i
 	elif(target_size >= imgsize):  jot = target_size
 	else:  ERROR("Target volume size too small",recons3d_4nnfs_MPI,1 ,myid)
-	params = {"size":jot, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
+	"""
+	params = {"size":target_size, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	for image in prjlist:
@@ -1347,14 +1350,19 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 		finfo.write( "after reduce\n" )
 		finfo.flush()
 
+
 	if myid == 0:
+		#  Here se
 		dummy = r.finish(compensate)
 
 	mpi_barrier(mpi_comm)
-	if myid == 0:
-		return fftvol
+
+	if return_both:
+		if myid == 0: return fftvol,weight,refvol
+		else: return None, None
 	else:
-		return None
+		if myid == 0: return fftvol
+		else: return None, None
 
 
 def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize = -1, zsize = -1 ):

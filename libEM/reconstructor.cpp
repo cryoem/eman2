@@ -3667,10 +3667,9 @@ void nn4_ctfwReconstructor::setup()
 	int sign = 1;
 	string symmetry = params.has_key("symmetry")? params["symmetry"].to_str() : "c1";
 
-	float snr = params["snr"];
+	float  snr = params["snr"];
 	int do_ctf = params["do_ctf"];
 
-	m_varsnr = params.has_key("varsnr") ? int(params["varsnr"]) : 0;
 	setup( symmetry, size, npad, snr, sign, do_ctf );
 
 }
@@ -3697,9 +3696,12 @@ void nn4_ctfwReconstructor::setup( const string& symmetry, int size, int npad, f
 	m_vny = size;
 	m_vnz = size;
 
-	m_vnxp = size*npad;
-	m_vnyp = size*npad;
-	m_vnzp = size*npad;
+	//m_vnxp = size*npad;
+	//m_vnyp = size*npad;
+	//m_vnzp = size*npad;
+	m_vnxp = size;
+	m_vnyp = size;
+	m_vnzp = size;
 
 	m_vnxc = m_vnxp/2;
 	m_vnyc = m_vnyp/2;
@@ -3760,7 +3762,7 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 				return 0;
 			}
 		*/
-		EMData* padfft = padfft_slice( slice, t, m_npad );;
+		EMData* padfft = padfft_slice( slice, t, m_npad );
 
 		EMData* ctf2d = NULL;
 		if( m_do_ctf == 1 ) {
@@ -3779,7 +3781,7 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 				for (int i = 0; i < size; ++i) padfft->cmplx(i) *= ctf2d_ptr[i]; // Multiply padfft by CTF
 			}
 
-			for (int i = 0; i < size; ++i) ctf2d_ptr[i] *= ctf2d_ptr[i];     // Square 2D CTF
+			for (int i = 0; i < size; ++i) ctf2d_ptr[i] *= ctf2d_ptr[i];     // Squared 2D CTF
 		} else {
 			int nx=padfft->get_xsize(),ny=padfft->get_ysize(),nz=padfft->get_zsize();
 			//cout<<"  size of padfft "<<nx<<"   "<<ny<<"   "<<nz<<endl;
@@ -3795,7 +3797,7 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 
 		insert_padfft_slice_weighted(padfft, ctf2d, bckgnoise, t, weight);
 
-		checked_delete( ctf2d );  
+		checked_delete( ctf2d );
 		checked_delete( padfft );
 
 	}
@@ -3817,23 +3819,24 @@ int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData*
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
 	for (unsigned int isym=0; isym < tsym.size(); isym++) {
 		if (abc_list_len == 0)
-			m_volume->nn_ctfw(m_wptr, padfft, ctf2d2, bckgnoise, tsym[isym], weight);
+			m_volume->nn_ctfw(m_wptr, padfft, ctf2d2, m_npad, bckgnoise, tsym[isym], weight);
 		else
 			for (int i = 0; i < abc_list_len; i += 4) 
-				m_volume->nn_ctfw(m_wptr, padfft, ctf2d2, bckgnoise, tsym[isym] * Transform(Dict("type", "SPIDER", "phi",  abc_list[i], "theta", abc_list[i+1], "psi", abc_list[i+2])), weight * abc_list[i+3]);
+				m_volume->nn_ctfw(m_wptr, padfft, ctf2d2, m_npad, bckgnoise, tsym[isym] * Transform(Dict("type", "SPIDER", "phi",  abc_list[i], "theta", abc_list[i+1], "psi", abc_list[i+2])), weight * abc_list[i+3]);
 	}
 	return 0;
 }
 
 
-EMData* nn4_ctfwReconstructor::finish(bool compensate, bool do_invert)
+EMData* nn4_ctfwReconstructor::finish(bool compensate)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
 	//cout <<  "  will set refvol  "  <<endl;
-	//m_refvol->set_array_offsets(0, 1, 1);
+	m_refvol->set_array_offsets(0, 1, 1);
 	m_volume->symplane0_ctf(m_wptr);
-
+	bool do_invert = false;
+	bool refvol_present = (*m_refvol)(0) > 0.0f ;
 	/*
 	int box = 7;
 	int vol = box*box*box;
@@ -3850,19 +3853,20 @@ EMData* nn4_ctfwReconstructor::finish(bool compensate, bool do_invert)
 
 
 	int ix,iy,iz;
-	vector<float> count(m_vnyc+1, 0.0f);
 	//  refvol carries fsc
 	int  limitres = m_vnyc-1;
-	if( (*m_refvol)(0) > 0.0f )  { // If fsc is set to zero, it will be straightforward reconstruction with snr = 1
+	if( refvol_present )  { // If fsc is set to zero, it will be straightforward reconstruction with snr = 1
 		for (ix = 0; ix < m_vnyc; ix++) {
 				//cout<<"  fsc  "<< m_vnyc-ix-1 <<"   "<<m_vnyc<<"   "<<(*m_refvol)(m_vnyc-ix-1)<<endl;
 			  if( (*m_refvol)(m_vnyc-ix-1) == 0.0f )  limitres = m_vnyc-ix-2;
 		}
+	} else {
 //cout<<"   limitres   "<<limitres<<endl;
 
+		vector<float> count(m_vnyc+1, 0.0f);
 		vector<float> sigma2(m_vnyc+1, 0.0f);
 
-		// compute sigma2
+		//  compute sigma2
 		for (iz = 1; iz <= m_vnzp; iz++) {
 			int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
 			float argz = float(izp*izp);
@@ -3888,20 +3892,24 @@ EMData* nn4_ctfwReconstructor::finish(bool compensate, bool do_invert)
 				}
 			}
 		}
-		for (ix = 0; ix <= limitres; ix++) {
-			if( count[ix] > 0.0f )  sigma2[ix] = sigma2[ix]/count[ix];
+		for (ix = 0; ix <= m_vnyc; ix++) {
+			if( count[ix] > 0.0f )  (*m_refvol)(ix) = sigma2[ix]/count[ix];
 			//cout<<"  sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
 		}
+		/*
+		#  This part will have to be done on python level.
 		float fudge = m_refvol->get_attr("fudge");
 		// now counter will serve to keep fsc-derived stuff
 		for (ix = 0; ix <= limitres; ix++)  count[ix] = fudge * sigma2[ix] * (1.0f - (*m_refvol)(ix))/(*m_refvol)(ix);  //fudge?
 		count[limitres+1] = count[limitres];
 		//for (ix = 0; ix <= limitres+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
+		*/
+	
 	}
 
 
 	// normalize
-	float osnr = 1.0f;
+	float osnr = 0.0f;
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
 		float argz = float(izp*izp);
@@ -3913,10 +3921,10 @@ EMData* nn4_ctfwReconstructor::finish(bool compensate, bool do_invert)
 				int  ir = int(r);
 				if (ir <= limitres) {
 					if ( (*m_wptr)(ix,iy,iz) > 0.0f) {
-						if( (*m_refvol)(0) > 0.0f && ir > -1) {
+						if( refvol_present && ir > -1) {
 							float frac = r - float(ir);
 							float qres = 1.0f - frac;
-							osnr = qres*count[ir] + frac*count[ir+1];
+							osnr = qres*(*m_refvol)(ir) + frac*(*m_refvol)(ir+1);
 							//if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
 							//cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<ir<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
 						}  else osnr = 0.0f;
