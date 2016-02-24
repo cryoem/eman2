@@ -18402,6 +18402,65 @@ EMData* Util::divn_filter(EMData* img, EMData* img1)
 	return img2;
 }
 
+EMData* Util::divn_cbyr(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img /= img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float *img2_ptr = img2->get_data();
+	if(img->is_complex()) {
+		for (size_t i=0; i<size; i+=2) {
+			int k = i/2;
+			if(img1_ptr[k] > 1.e-6f) {
+				img2_ptr[i]   = img_ptr[i]  /img1_ptr[k];
+				img2_ptr[i+1] = img_ptr[i+1]/img1_ptr[k];
+			} else img2_ptr[i] = img2_ptr[i+1] = 0.0f;
+		}
+	} else  throw ImageFormatException("Only Fourier image allowed");
+
+	img2->update();
+
+	EXITFUNC;
+	return img2;
+}
+
+void Util::div_cbyr(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img /= img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	if(img->is_complex()) {
+		for (size_t i=0; i<size; i+=2) {
+			int k = i/2;
+			if(img1_ptr[k] > 1.e-6f) {
+				img_ptr[i]   /= img1_ptr[k];
+				img_ptr[i+1] /= img1_ptr[k];
+			} else img_ptr[i] = img_ptr[i+1] = 0.0f;
+		}
+	} else  throw ImageFormatException("Only Fourier image allowed");
+
+	img->update();
+
+	EXITFUNC;
+}
+
 void Util::mul_scalar(EMData* img, float scalar)
 {
 	ENTERFUNC;
@@ -22083,8 +22142,10 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  02/17/2016  11:53 AM "<<endl;}
+{ cout <<"  VERSION  02/24/2016  2:53 PM "<<endl;}
 
+void Util::version2()
+{ cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;}
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]

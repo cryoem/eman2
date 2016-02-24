@@ -249,8 +249,7 @@ void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, EMD
  * @param tf Transform reference
  * @param mult
  */
-// void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* bckgnoise, const Transform& tf, float weight);
-void onelinetr_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight);
+void onelinetr_ctfw(int j, int bign, int n, int n2, int npad, EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight);
 
 
 /** Nearest Neighbor interpolation.
@@ -317,7 +316,7 @@ void symplane0_rect(EMData* w);
  * @param mult
  */
 //void nn_ctfw(EMData* w, EMData* myfft, EMData* bckgnoise, const Transform& tf, float weight);
-void nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* bckgnoise, const Transform& tf, float weight);
+void nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, int npad, EMData* bckgnoise, const Transform& tf, float weight);
 
 
 /** Symmetrize volume in real space.

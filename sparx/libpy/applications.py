@@ -13722,7 +13722,7 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 	if MPI:
 		###recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
 		##newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
-		newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
+		newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -13807,7 +13807,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 
 
 
-def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose,xysize, zsize):
+def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file
 	from string         import replace
@@ -13818,6 +13818,7 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 	time_start = time()
 	if(myid == 0):
+		print "  news "
 		if(listfile):
 			from utilities import read_text_file
 			pid_list = read_text_file(listfile, 0)
@@ -13897,18 +13898,35 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		phi,theta,psi,sx,sy = get_params_proj(prjlist[i])
 		set_params_proj(prjlist[i],[phi,theta,psi,sx/scale,sy/scale])
 	"""
+	nnnx = ((prjlist[0].get_ysize())*2+3)
+	from fundamentals import fft,fshift
+	from utilities import get_params_proj,set_params_proj
+	for i in xrange(len(prjlist)):
+		#phi,theta,psi,sxs,sys = get_params_proj(prjlist[i])
+
+		prjlist[i] = fft(prjlist[i])
+		#prjlist[i] = fshift(prjlist[i],sxs,sys)
+		prjlist[i].set_attr("padffted",1)
+		prjlist[i].set_attr("npad",1)
+		#set_params_proj(prjlist[i] ,[phi,theta,psi,0.0,0.0])
+
+
+
+
 	from utilities import model_blank
 	m = model_blank(600,1,1,1.0)
 	for i in xrange(len(prjlist)):
 		prjlist[i].set_attr("bckgnoise",m)
 	from reconstruction import recons3d_4nnfs_MPI
 	#if CTF: vol1, vol2, fff = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
-	vol = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, npad = npad, smearstep = 0.0, CTF = CTF)
+	vol,wei,reg = recons3d_4nnfs_MPI(myid, prjlist, cfsc = None, symmetry = sym, npad = npad, smearstep = 0.0, CTF = CTF, compensate = True, target_size = nnnx)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
 		else:
-			drop_image(vol, vol_stack)
+			drop_image(fft(vol), vol_stack)
+			wei.write_image("w"+vol_stack)
+			reg.write_image("r"+vol_stack)
 		#drop_image(vol1, "nvol0.hdf")
 		#drop_image(vol2, "nvol1.hdf")
 		#write_text_file(fff,"nfsc.txt")

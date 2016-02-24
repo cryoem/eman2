@@ -1341,7 +1341,7 @@ namespace EMAN
 		*/
 		virtual int insert_slice(const EMData* const slice, const Transform & euler, const float weight);
 
-		virtual EMData *finish(bool doift=true);
+		virtual EMData *finish(bool compensate=true);
 
 		virtual string get_name() const
 		{

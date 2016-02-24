@@ -103,9 +103,53 @@ def construct_sxcmd_list():
 			assert(sxcmd.token_dict["locresvolume"].key_base == "locresvolume")
 			assert(sxcmd.token_dict["locresvolume"].type == "output")
 			sxcmd.token_dict["locresvolume"].type = "image"
-	
+			
 	return sxcmd_list
 
+# ========================================================================================
+class SXconst:
+	def __init__(self):
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.key = ""               # <Used only in sxgui.py> key of constant parameter
+		self.label = ""             # <Used only in sxgui.py> User friendly name of constant parameter
+		self.help = ""              # <Used only in sxgui.py> Help info
+		self.default = ""           # <Used only in sxgui.py> Default value
+		self.type = ""              # <Used only in sxgui.py> Type of value
+		self.widget = None          # <Used only in sxgui.py> Widget instance associating with this constant parameter
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+
+# ========================================================================================
+class SXconst_set:
+	def __init__(self):
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.name = ""               # <Used only in sxgui.py> Name of this constant parameter set
+		self.label = ""              # <Used only in sxgui.py> User friendly name of this set
+		self.short_info = ""         # <Used only in sxgui.py> Short description of this set
+		self.list = []               # <Used only in sxgui.py> list of constant parameters. Need this to keep the order of constant parameters
+		self.dict = {}               # <Used only in sxgui.py> dictionary of constant parameters, organised by key of constant parameters. Easy to access a constant parameters but looses their order
+		self.button = None           # <Used only in sxgui.py> QPushButton button instance associating with this set
+		self.widget = None           # <Used only in sxgui.py> Widget instance associating with this set
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		
+
+# ========================================================================================
+def construct_sxconst_set():
+	
+	# Create project constant set 
+	sxconst_set = SXconst_set(); sxconst_set.name = "Project Constant Settings"; sxconst_set.label = "Project Constant Settings"; sxconst_set.short_info = "These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
+	sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.default = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "protein molecular mass"; sxconst.help = "in kDa"; sxconst.default = "0.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "protein particle radius"; sxconst.help = "in pixel"; sxconst.default = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "imaging configrations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configrations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.default = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "micrograph pixel size"; sxconst.help = "in angstrom/pixel"; sxconst.default = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "win"; sxconst.label = "CTF window size "; sxconst.help = "in pixel. it should be slightly larger than particle box size"; sxconst.default = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "box"; sxconst.label = "particle box size"; sxconst.help = " in pixel/voxel"; sxconst.default = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "point-group symmetry"; sxconst.help = ""; sxconst.default = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	
+	return sxconst_set
+	
 # ========================================================================================
 class SXWidetConst:
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -113,11 +157,17 @@ class SXWidetConst:
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	grid_margin = 12 # grid_margin = 8
 	grid_spacing = 6
-	sxcmd_bg_color = QColor(195, 195, 230, 175) # Blueish Transparent
 	# main_bg_color = QColor(200, 200, 255) # Blueish 
+	sxconst_set_bg_color = QColor(195, 195, 230) # Blueish Non-Transparent
+	sxcmd_bg_color = QColor(195, 195, 230, 240) # sxcmd_bg_color = QColor(195, 195, 230, 175) # Blueish Transparent
+	
+	sxconst_set_min_width = 300 # Best for Linux
+	sxconst_set_min_height = 940
+	
 	sxcmd_button_min_width = 240
-	sxcmd_min_width = 900
-	sxcmd_min_height = 900
+	# sxcmd_min_width = 900 # Best for MAC OSX
+	sxcmd_min_width = 940 # Best for Linux
+	sxcmd_min_height = 940
 	
 # ========================================================================================
 # Provides all necessary functionarity
@@ -153,9 +203,9 @@ class SXCmdWidget(QWidget):
 		self.tab_widget.insertTab(0, self.sxtab_main, self.sxtab_main.name)
 		self.tab_widget.insertTab(1, self.sxtab_advance, self.sxtab_advance.name)
 		# self.tab_widget.setAutoFillBackground(True)
-		# widget_palette = self.tab_widget.palette()
-		# widget_palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxcmd_bg_color))
-		# self.tab_widget.setPalette(widget_palette)
+		# palette = self.tab_widget.palette()
+		# palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxcmd_bg_color))
+		# self.tab_widget.setPalette(palette)
 #		self.tab_widget.resize(880,860) # self.tab_widget.resize(900,1080)
 #		self.tab_widget.show()
 		grid_layout.addWidget(self.tab_widget, 0, 0)
@@ -601,7 +651,7 @@ class SXTab(QWidget):
 		grid_row_origin = 0; grid_col_origin = 0
 		title_row_span = 1; title_col_span = 2
 		short_info_row_span = 1; short_info_col_span = 5
-		function_button_row_span = 1; function_button_col_span = 2
+		func_btn_row_span = 1; func_btn_col_span = 2
 		token_label_row_span = 1; token_label_col_span = 4
 		token_widget_row_span = 1; token_widget_col_span = 1
 		cmd_frame_row_span = 32; cmd_frame_col_span = 7
@@ -610,8 +660,9 @@ class SXTab(QWidget):
 		title_label_min_height = 80
 		short_info_min_width = 360
 		short_info_min_height = 80
-		function_button_min_width = 150
-		cmd_token_label_min_width = 460
+		func_btn_min_width = 150
+		# cmd_token_label_min_width = 460 # Best for MAC OSX
+		cmd_token_label_min_width = 560 # Best for Linux
 		cmd_token_widget_min_width = 120
 		cmd_token_button_min_width = 120
 		
@@ -621,6 +672,9 @@ class SXTab(QWidget):
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, cmd_token_widget_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, cmd_token_button_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, cmd_token_button_min_width)
+		# # Give the columns of token label a higher priority to stretch relative to the others
+		# for col_span in xrange(token_label_col_span):
+		# 	grid_layout.setColumnStretch(grid_row_origin + col_span, grid_layout.columnStretch(grid_row_origin+col_span) + 1)
 		
 		# Define the tab frame within the tab layout
 #		tab_frame = QFrame(self)
@@ -651,8 +705,8 @@ class SXTab(QWidget):
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
-			# temp_label.setFixedWidth(600)
-			# temp_label.setFixedHeight(80)
+#			temp_label.setFixedWidth(600)
+#			temp_label.setFixedHeight(80)
 #			temp_label.move(self.x1 + 100, self.y1)
 			grid_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 #			self.y1 += 50
@@ -663,10 +717,10 @@ class SXTab(QWidget):
 #			self.load_params_btn = QPushButton("Load parameters", self)
 			self.load_params_btn = QPushButton("Load parameters")
 #			self.load_params_btn.move(self.x1 - 5, self.y1)
-			self.load_params_btn.setMinimumWidth(function_button_min_width)
+			self.load_params_btn.setMinimumWidth(func_btn_min_width)
 			self.load_params_btn.setToolTip("Load gui parameter settings to retrieve a previously-saved one")
 			self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.load_params)
-			grid_layout.addWidget(self.load_params_btn, grid_row, grid_col_origin, function_button_row_span, function_button_col_span)
+			grid_layout.addWidget(self.load_params_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 #			self.y1 += 25
 			
 		elif tab_group == "advanced":
@@ -679,6 +733,7 @@ class SXTab(QWidget):
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
 			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
+			
 			temp_label = QLabel("Set advanced parameters", self)
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
@@ -1010,10 +1065,10 @@ class SXTab(QWidget):
 #			self.save_params_btn = QPushButton("Save parameters", self)
 			self.save_params_btn = QPushButton("Save parameters")
 #			self.save_params_btn.move(self.x1-5, self.y1)
-			self.save_params_btn.setMinimumWidth(function_button_min_width)
+			self.save_params_btn.setMinimumWidth(func_btn_min_width)
 			self.save_params_btn.setToolTip("Save gui parameter settings")
 			self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_params)
-			grid_layout.addWidget(self.save_params_btn, grid_row, grid_col_origin, function_button_row_span, function_button_col_span)
+			grid_layout.addWidget(self.save_params_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 			
 #			self.y1 = self.y1 + 30
 			grid_row += 1
@@ -1021,24 +1076,24 @@ class SXTab(QWidget):
 #			self.cmd_line_btn = QPushButton("Generate command line", self)
 			self.cmd_line_btn = QPushButton("Generate command line")
 #			self.cmd_line_btn.move(self.x1-5, self.y1)
-			self.cmd_line_btn.setMinimumWidth(function_button_min_width)
+			self.cmd_line_btn.setMinimumWidth(func_btn_min_width)
 			self.cmd_line_btn.setToolTip("Generate command line from gui parameter settings")
 			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_cmd_line)
-			grid_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin, function_button_row_span, function_button_col_span)
+			grid_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 			
 			# self.y1 = self.y1 + 30
 			grid_row += 1
 			
 			# Add a run button
-			# self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.name, self)
+#			self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.name, self)
 			self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.name)
 			# make 3D textured push button look
 			custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 			self.execute_btn.setStyleSheet(custom_style)
 #			self.execute_btn.move(self.x5, self.y1)
-			self.cmd_line_btn.setMinimumWidth(function_button_min_width)
+			self.execute_btn.setMinimumWidth(func_btn_min_width)
 			self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxcmdwidget.execute_cmd_line)
-			grid_layout.addWidget(self.execute_btn, grid_row, grid_col_origin + function_button_col_span, function_button_row_span, function_button_col_span)
+			grid_layout.addWidget(self.execute_btn, grid_row, grid_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
 
 	def set_text_entry_widget_enable_state(self, widget, is_enabled):
 		# Set enable state and background color of text entry widget according to enable state
@@ -1050,9 +1105,9 @@ class SXTab(QWidget):
 			# bg_color = default_palette.color(QPalette.Disabled, QPalette.Button) # For button
 		
 		widget.setEnabled(is_enabled)
-		widget_palette = widget.palette()
-		widget_palette.setColor(widget.backgroundRole(), bg_color)
-		widget.setPalette(widget_palette)
+		palette = widget.palette()
+		palette.setColor(widget.backgroundRole(), bg_color)
+		widget.setPalette(palette)
 		
 	def set_qsub_enable_state(self):
 		is_enabled = False
@@ -1070,6 +1125,182 @@ class SXTab(QWidget):
 		self.qsub_script_open_btn.setEnabled(is_enabled)
 
 # ========================================================================================
+class SXConstSetWidget(QWidget):
+	def __init__(self, sxconst_set, parent=None):
+		super(SXConstSetWidget, self).__init__(parent)
+		
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.sxconst_set = sxconst_set
+		
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# Set the window title
+		self.setWindowTitle(self.sxconst_set.name)
+		
+		# Best setting for MAC OSX
+		self.resize(SXWidetConst.sxconst_set_min_width + SXWidetConst.grid_margin * 5, SXWidetConst.sxconst_set_min_height + SXWidetConst.grid_margin * 2)
+		# Best setting for Linux
+		# self.resize(SXWidetConst.sxconst_set_min_width + SXWidetConst.grid_margin * 5, SXWidetConst.sxconst_set_min_height + SXWidetConst.grid_margin * 2)
+		
+#		# Set the background color of this widget
+#		self.setAutoFillBackground(True)
+#		palette = QPalette(self)
+#		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxconst_set_bg_color))
+#		self.setPalette(palette)
+		
+		global_row_origin = 0; global_col_origin = 0
+		global_row_span = 4; global_col_span = 1
+		
+		header_row_origin = 0; header_col_origin = 0
+		title_row_span = 1; title_col_span = 1
+		short_info_row_span = 1; short_info_col_span = 1
+		title_min_width = 300
+		short_info_min_width = 300
+		short_info_min_height = 80
+		
+		const_set_row_origin = 0; const_set_col_origin = 0
+		const_label_row_span = 1; const_label_col_span = 1
+		const_widget_row_span = 1; const_widget_col_span = 1
+		const_label_min_width = 150
+		const_widget_min_width = const_label_min_width
+		
+		btn_row_origin = 0; btn_col_origin = 0
+		func_btn_row_span = 1; func_btn_col_span = 1
+		register_btn_row_span = 1; register_btn_col_span = 2
+		func_btn_min_width = 150
+		
+		box_layout = QVBoxLayout(self)
+		box_layout.setContentsMargins(0,0,0,0)
+		box_layout.setSpacing(0)
+		scroll_area = QScrollArea()
+		scroll_area.setWidgetResizable(True)
+		scroll_area_widgets = QWidget(scroll_area)
+		
+		# Set the background color of scroll area
+		scroll_area_widgets.setAutoFillBackground(True)
+		palette = QPalette()
+		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxconst_set_bg_color))
+		scroll_area_widgets.setPalette(palette)
+		
+		scroll_area.setWidget(scroll_area_widgets)
+		box_layout.addWidget(scroll_area)
+		
+		# global_layout = QGridLayout()
+		global_layout = QGridLayout(scroll_area_widgets)
+		global_layout.setMargin(SXWidetConst.grid_margin)
+		global_layout.setSpacing(SXWidetConst.grid_spacing)
+		global_layout.setRowStretch(global_row_span - 1, global_layout.rowStretch(global_row_origin) + 1)
+		
+		header_layout = QGridLayout()
+		header_layout.setMargin(SXWidetConst.grid_margin)
+		header_layout.setSpacing(SXWidetConst.grid_spacing)
+		
+		const_set_layout = QGridLayout()
+		const_set_layout.setMargin(SXWidetConst.grid_margin)
+		const_set_layout.setSpacing(SXWidetConst.grid_spacing)
+		
+		btn_layout = QGridLayout()
+		btn_layout.setMargin(SXWidetConst.grid_margin)
+		btn_layout.setSpacing(SXWidetConst.grid_spacing * 2)
+		
+		# # Define the frame within the widget layout
+		# widget_frame = QFrame()
+		# # widget_frame.setFrameStyle(QFrame.StyledPanel)
+		# global_layout.addWidget(widget_frame, global_row_origin, global_col_origin, global_row_span, global_col_span)
+		
+		global_grid_row = global_row_origin
+		
+		# Start add title widgets to the grid layout
+		header_grid_row = header_row_origin
+		
+		# Set a label and its position in this tab
+		temp_label = QLabel("<b>%s</b>" % (self.sxconst_set.name))
+		temp_label.setMinimumWidth(title_min_width)
+		header_layout.addWidget(temp_label, header_grid_row, header_col_origin, title_row_span, title_col_span)
+		
+		header_grid_row += 1
+		
+		# NOTE: 2015/11/17 Toshio Moriya
+		# Necessary to separate "<b>%s</b>" from the information for avoiding to invoke the tag interpretations of string
+		# e.g. < becomes the escape character
+		temp_label = QLabel("%s" % (self.sxconst_set.short_info))
+		temp_label.setWordWrap(True)
+		temp_label.setMinimumWidth(short_info_min_width)
+		temp_label.setMinimumHeight(short_info_min_height)
+		header_layout.addWidget(temp_label, header_grid_row, header_col_origin, short_info_row_span, short_info_col_span)
+		
+		# Add const set grid layout to global layout
+		global_layout.addLayout(header_layout, global_grid_row, global_col_origin)
+		global_grid_row += 1
+		
+		# Start add project parameter constant widgets to the grid layout
+		const_set_grid_row = const_set_row_origin
+		
+		# Add widget for editing command args and options
+		for sxconst in self.sxconst_set.list:
+			# Create label widget 
+			temp_label = QLabel(sxconst.label)
+			temp_label.setMinimumWidth(const_label_min_width)
+			const_set_layout.addWidget(temp_label, const_set_grid_row, const_set_col_origin, const_label_row_span, const_label_col_span)
+			
+			# Create widget and associate it to this cmd_token
+			sxconst_widget = QLineEdit()
+			sxconst_widget.setMinimumWidth(const_widget_min_width)
+			sxconst_widget.setText(sxconst.default)
+			const_set_layout.addWidget(sxconst_widget, const_set_grid_row, const_set_row_origin + const_label_col_span, const_widget_row_span, const_widget_col_span)
+			
+			sxconst_widget.setToolTip(sxconst.help)
+			
+			const_set_grid_row += 1
+			
+			# Register this widget
+			sxconst.widget = sxconst_widget
+		
+		# Add const set grid layout to global layout
+		global_layout.addLayout(const_set_layout, global_grid_row, global_col_origin)
+		global_grid_row += 1
+		
+		# Start add buttons to the grid layout
+		btn_grid_row = btn_row_origin
+		
+		# Add a register button
+		self.execute_btn = QPushButton("Register constants")
+		# make 3D textured push button look
+		custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+		self.execute_btn.setStyleSheet(custom_style)
+		self.execute_btn.setMinimumWidth(func_btn_min_width * register_btn_col_span)
+###		self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxcmdwidget.execute_cmd_line)
+		btn_layout.addWidget(self.execute_btn, btn_grid_row, btn_col_origin, register_btn_row_span, register_btn_col_span)
+		
+		btn_grid_row += 1
+		
+		# Add save paramater button 
+		self.save_params_btn = QPushButton("Save parameters")
+		self.save_params_btn.setMinimumWidth(func_btn_min_width)
+		self.save_params_btn.setToolTip("Save gui parameter settings")
+###		self.connect(self.save_params_btn, SIGNAL("clicked()"), self.save_params)
+		btn_layout.addWidget(self.save_params_btn, btn_grid_row, btn_col_origin, func_btn_row_span, func_btn_col_span)
+		
+		# Add load paramater button 
+		self.load_params_btn = QPushButton("Load parameters")
+		self.load_params_btn.setMinimumWidth(func_btn_min_width)
+		self.load_params_btn.setToolTip("Load gui parameter settings to retrieve a previously-saved one")
+###		self.connect(self.load_params_btn, SIGNAL("clicked()"), self.load_params)
+		btn_layout.addWidget(self.load_params_btn, btn_grid_row, btn_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
+		
+		btn_grid_row += 1
+		
+		# Add a close button
+		self.close_btn = QPushButton("Close")
+		self.close_btn.setMinimumWidth(func_btn_min_width)
+		self.close_btn.setToolTip("Close this window")
+		self.connect(self.close_btn, SIGNAL("clicked()"), self.close)
+		btn_layout.addWidget(self.close_btn, btn_grid_row, btn_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
+		
+		# Add button grid layout to global layout
+		global_layout.addLayout(btn_layout, global_grid_row, global_col_origin)
+		
+# ========================================================================================
 # Layout of the Pop Up window SXPopup_info; started by the function info of the main window
 class SXPopup_info(QWidget):
 	def __init__(self, parent = None):
@@ -1078,10 +1309,16 @@ class SXPopup_info(QWidget):
 		#Here we just set the window title and  3 different labels, with their positions in the window
 		self.setWindowTitle("SPHIRE GUI Info Page")
 		
+		# Set the background color of this widget
+		self.setAutoFillBackground(True)
+		palette = QPalette(self)
+		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxconst_set_bg_color))
+		self.setPalette(palette)
+		
 		label_row_span = 1; label_col_span = 3
 		close_row_span = 1; close_col_span = 1
 		spacer_min_width = 12
-
+		
 		grid_layout = QGridLayout(self)
 		grid_layout.setMargin(SXWidetConst.grid_margin)
 		grid_layout.setSpacing(SXWidetConst.grid_spacing)
@@ -1117,10 +1354,14 @@ class MainWindow(QWidget):
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
+		self.sxconst_set = None
 		self.sxcmd_list = []
 		self.cur_sxcmd = None
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		
+		# Construct list of sxscript objects (extracted from associated wiki documents)
+		self.sxconst_set = construct_sxconst_set()
 		
 		# Construct list of sxscript objects (extracted from associated wiki documents)
 		self.sxcmd_list = construct_sxcmd_list()
@@ -1129,12 +1370,17 @@ class MainWindow(QWidget):
 		# Set the title of the window
 		self.setWindowTitle("SPHIRE GUI (Alpha Version)")
 		
-		# Set the background color of main window
-		self.setAutoFillBackground(True)
-		palette = QPalette()
-		# palette.setBrush(QPalette.Background, QBrush(SXWidetConst.main_bg_color))
-		palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory() + "sxgui.py_main_window_background_image.png")))
-		self.setPalette(palette)
+		# Best setting for MAC OSX
+		# self.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_button_min_width + SXWidetConst.grid_margin * (7 + 1), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
+		# Best setting for Linux
+		self.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_button_min_width + SXWidetConst.grid_margin * (7 + 7), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
+		
+#		# Set the background color of main window
+#		self.setAutoFillBackground(True)
+#		palette = QPalette()
+#		# palette.setBrush(QPalette.Background, QBrush(SXWidetConst.main_bg_color))
+#		palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory() + "sxgui.py_main_window_background_image.png")))
+#		self.setPalette(palette)
 		
 #		# Set the width and height of the main window
 #		self.resize(880,860) # self.resize(995,1080)
@@ -1149,40 +1395,63 @@ class MainWindow(QWidget):
 #		pic_frame.setPalette(palette)
 #		# pic_frame.show()
 		
-		# Set grid layout
+		# Set scroll area and grid layout
 		grid_row_origin = 0; grid_col_origin = 0
 		
-		# cmd_button_frame_row_span = 32; cmd_button_frame_col_span = 2
+#		cmd_button_frame_row_span = 32; cmd_button_frame_col_span = 2
 		
 		icon_row_span = 1; icon_col_span = 1; close_row_span = 1; close_col_span = 1
 		title_row_span = 1; title_col_span = 2
 		cmd_button_row_span = 1; cmd_button_col_span = 2
 		cmd_settings_row_span = 32; cmd_settings_col_span = 1
 		
-		icon_min_width = 120
-		close_min_width = 120
+		icon_min_width = SXWidetConst.sxcmd_button_min_width // 2
+		close_min_width = SXWidetConst.sxcmd_button_min_width // 2
+		
 		cmd_min_width = SXWidetConst.sxcmd_min_width + SXWidetConst.grid_margin * 4
 		cmd_min_height = SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 4
 		
-		grid_layout = QGridLayout(self)
+		box_layout = QVBoxLayout(self)
+		box_layout.setContentsMargins(0,0,0,0)
+		box_layout.setSpacing(0)
+		scroll_area = QScrollArea()
+		scroll_area.setWidgetResizable(True)
+#		scroll_area.setStyleSheet("background-color:transparent;"); 
+		scroll_area_widgets = QWidget(scroll_area)
+#		scroll_area_widgets.setStyleSheet("background-color:transparent;"); 
+
+		# Set the background color of scroll area
+		scroll_area_widgets.setAutoFillBackground(True)
+		palette = QPalette()
+		# palette.setBrush(QPalette.Background, QBrush(SXWidetConst.main_bg_color))
+		palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory() + "sxgui.py_main_window_background_image.png")))
+		scroll_area_widgets.setPalette(palette)
+		
+		scroll_area.setWidget(scroll_area_widgets)
+		box_layout.addWidget(scroll_area)
+		
+#		grid_layout = QGridLayout(self)
+		grid_layout = QGridLayout(scroll_area_widgets)
 		grid_layout.setMargin(SXWidetConst.grid_margin)
 		grid_layout.setSpacing(SXWidetConst.grid_spacing)
 		grid_layout.setColumnMinimumWidth(0, icon_min_width)
 		grid_layout.setColumnMinimumWidth(1, close_min_width)
 		grid_layout.setColumnMinimumWidth(2, cmd_min_width)
+		# Give the command setting area a higher priority to stretch relative to the others
+		grid_layout.setColumnStretch(grid_col_origin + cmd_button_col_span, grid_layout.columnStretch(grid_col_origin + cmd_button_col_span) + 1)
 		
-#		# Define the command button frame within the global layout
-#		cmd_button_frame = QFrame()
-#		# cmd_button_frame.resize(240,860)
-#		# cmd_button_frame.setFrameStyle(QFrame.StyledPanel)
-#		grid_layout.addWidget(cmd_button_frame, grid_row_origin, grid_col_origin, cmd_button_frame_row_span, cmd_button_frame_col_span)
+		# # Define the command button frame within the global layout
+		# cmd_button_frame = QFrame()
+		# cmd_button_frame.resize(SXWidetConst.sxcmd_button_min_width, SXWidetConst.sxcmd_min_height)
+		# cmd_button_frame.setFrameStyle(QFrame.StyledPanel)
+		# grid_layout.addWidget(cmd_button_frame, grid_row_origin, grid_col_origin, cmd_settings_row_span, cmd_button_col_span)
 		
-#		# Define the command settings frame within the global layout
-#		cmd_settings_frame = QFrame()
-#		cmd_settings_frame.resize(880,860)
-#		cmd_settings_frame.move(240, 0)
-#		# cmd_settings_frame.setFrameStyle(QFrame.StyledPanel)
-#		grid_layout.addWidget(cmd_settings_frame, grid_row_origin, grid_col_origin + cmd_button_frame_col_span, cmd_settings_frame_row_span, cmd_settings_frame_col_span)
+		# # Define the command settings frame within the global layout
+		# cmd_settings_frame = QFrame()
+		# cmd_settings_frame.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.grid_margin * 11, SXWidetConst.sxcmd_min_height)
+#		# cmd_settings_frame.move(240, 0)
+		# cmd_settings_frame.setFrameStyle(QFrame.StyledPanel)
+		# grid_layout.addWidget(cmd_settings_frame, grid_row_origin, grid_col_origin + cmd_button_col_span, cmd_settings_row_span, cmd_settings_col_span)
 		
 		# Start add widgets to the grid layout
 		grid_row = grid_row_origin
@@ -1206,17 +1475,38 @@ class MainWindow(QWidget):
 		self.btn_quit = QPushButton("Close")
 		self.btn_quit.setToolTip("Close SPHIRE GUI ")
 #		self.btn_quit.move(65, 5)
-		grid_layout.addWidget(self.btn_quit, grid_row, grid_col_origin+icon_col_span, close_row_span, close_col_span)
+		grid_layout.addWidget(self.btn_quit, grid_row, grid_col_origin + icon_col_span, close_row_span, close_col_span)
 		self.connect(self.btn_quit, SIGNAL("clicked()"),qApp, SLOT("quit()"))
 		
 		grid_row += 1
 		
 		# Add title label and set position and font style
-#		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>", self)
-		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>")
-#		title.move(17,47)
-		QToolTip.setFont(QFont("OldEnglish", 8)) 
+		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROJECT SETTINGS </b></span>")
+		grid_layout.addWidget(title, grid_row, grid_col_origin, title_row_span, title_col_span)
 		
+		grid_row += 1
+		
+		# Add project parameter constant set associated button
+		self.sxconst_set.button = QPushButton(self.sxconst_set.label)
+		self.sxconst_set.button.setToolTip(self.sxconst_set.short_info)
+		grid_layout.addWidget(self.sxconst_set.button, grid_row, grid_col_origin, cmd_button_row_span, cmd_button_col_span)
+		
+		# Create SXConstSetWidget
+		self.sxconst_set.widget = SXConstSetWidget(self.sxconst_set)
+		self.sxconst_set.widget.hide()
+#		grid_layout.addWidget(self.sxconst_set.widget, grid_row_origin, grid_col_origin+cmd_button_col_span, cmd_settings_row_span, cmd_settings_col_span)
+		
+		# connect widget signals
+		self.connect(self.sxconst_set.button, SIGNAL("clicked()"), self.handle_sxconst_set_btn_event)
+		
+		grid_row += 1
+		
+		# Add title label and set position and font style
+		# title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>", self)
+		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>")
+#		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:16pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>")
+#		title.move(17,47)
+#		QToolTip.setFont(QFont("OldEnglish", 8)) 
 		grid_layout.addWidget(title, grid_row, grid_col_origin, title_row_span, title_col_span)
 		
 		grid_row += 1
@@ -1230,6 +1520,7 @@ class MainWindow(QWidget):
 		self.cmd_button_group = QButtonGroup()
 		# self.cmd_button_group.setExclusive(True) # NOTE: 2016/02/18 Toshio Moriya: Without QPushButton.setCheckable(True). This does not do anything. Let manually do this
 		
+		# Add SX Commands (sx*.py) associated widgets
 		for sxcmd in self.sxcmd_list:
 			# Add buttons for this sx*.py processe
 #			sxcmd.button = QPushButton(sxcmd.label, self)
@@ -1237,9 +1528,8 @@ class MainWindow(QWidget):
 			# sxcmd.button.setCheckable(True) # NOTE: 2016/02/18 Toshio Moriya: With this setting, we can not move the focus to the unchecked butttons... PyQt bug?
 #			sxcmd.button.move(10, self.y1)
 			sxcmd.button.setToolTip(sxcmd.short_info)
-#			sxcmd.button.setStyleSheet("QPushButton:!enabled{font: bold; color:green; border-color:red; border-width:2px;}")
-#			custom_style = "QPushButton:!enabled {font: bold; color:red; }"
-#			sxcmd.button.setStyleSheet(custom_style)
+#			sxcmd.button.setStyleSheet("QPushButton:!enabled{font: bold; color:green; border-color:red; border-width:2px;}") 
+#			sxcmd.button.setStyleSheet("QPushButton:!enabled {font: bold; color:red; }")
 			
 			self.cmd_button_group.addButton(sxcmd.button)
 			grid_layout.addWidget(sxcmd.button, grid_row, grid_col_origin, cmd_button_row_span, cmd_button_col_span)
@@ -1256,6 +1546,12 @@ class MainWindow(QWidget):
 			
 			# self.y1 += 30
 			grid_row += 1
+
+	# Click actions: The following functions are associated with the click event of push buttons (btn##) on the main window. 
+	def handle_sxconst_set_btn_event(self):
+		self.sxconst_set.widget.move(self.pos())
+		self.sxconst_set.widget.show()
+		
 		
 	# Click actions: The following functions are associated with the click event of push buttons (btn##) on the main window. 
 	def handle_sxcmd_btn_event(self, sxcmd):
@@ -1282,7 +1578,7 @@ class MainWindow(QWidget):
 			self.cur_sxcmd.widget.show()
 #			assert(self.cur_sxcmd.button.isEnabled() == True)
 #			self.cur_sxcmd.button.setEnabled(False)
-			# custom_style = "QPushButton {font: bold; color:#8D0; }"
+#			custom_style = "QPushButton {font: bold; color:#8D0; }"
 			custom_style = "QPushButton {font: bold; color:blue; }"
 			self.cur_sxcmd.button.setStyleSheet(custom_style)
 			
@@ -1293,6 +1589,7 @@ class MainWindow(QWidget):
 		# The layout of the SXPopup_info window is defined in class SXPopup_info(QWidget Window)
 		self.sxpopup_info = SXPopup_info()
 		# self.sxpopup_info.resize(300,200) # sxpopup_info.resize(250,200)
+		self.sxpopup_info.move(self.pos())
 		self.sxpopup_info.show()
 
 # ========================================================================================
@@ -1316,7 +1613,17 @@ class App(QApplication):
 		
 		# Define the main window (class MainWindow)
 		self.main = MainWindow()
-		self.main.resize(SXWidetConst.sxcmd_min_width+SXWidetConst.sxcmd_button_min_width+SXWidetConst.grid_margin*5,SXWidetConst.sxcmd_min_height+SXWidetConst.grid_margin*2)
+#		# Best setting for MAC OSX
+#		# self.main.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_button_min_width + SXWidetConst.grid_margin * (7 + 1), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
+#		# Best setting for Linux
+#		self.main.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_button_min_width + SXWidetConst.grid_margin * (7 + 7), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
+		
+		# main_size = self.main.minimumSizeHint();
+		# desktop = self.desktop();
+		# screen_rect = desktop.screenGeometry();
+		# self.main.move((screen_rect.width()/2) - (main_size.width()/2), (screen_rect.height()/2) - (main_size.height()/2));
+		self.main.move(0, 0);
+		
 		# Define that when all windows are closed, function byebye of class App will be started
 		self.connect(self, SIGNAL("lastWindowClosed()"), self.byebye )
 		# Show main window
@@ -1350,6 +1657,37 @@ for single particle analysis."""
 	global app
 	app = App(args)
 	app.setWindowIcon(QIcon(get_image_directory()+"sparxicon.png"))
+	
+	app_font = app.font()
+	app_font_info = QFontInfo(app.font())
+	new_point_size = app_font_info.pointSize() + 1
+	# # MRK_DEBUG: Check the default system font
+	# print "MRK_DEBUG: app_font_info.style()      = ", app_font_info.style()
+	# print "MRK_DEBUG: app_font_info.styleHint()  = ", app_font_info.styleHint()
+	# print "MRK_DEBUG: app_font_info.styleName()  = ", app_font_info.styleName()
+	# print "MRK_DEBUG: app_font_info.family()     = ", app_font_info.family()
+	# print "MRK_DEBUG: app_font_info.fixedPitch() = ", app_font_info.fixedPitch()
+	# print "MRK_DEBUG: app_font_info.pixelSize()  = ", app_font_info.pixelSize()
+	# print "MRK_DEBUG: app_font_info.pointSize()  = ", app_font_info.pointSize()
+	# print "MRK_DEBUG: app_font_info.pointSizeF() = ", app_font_info.pointSizeF()
+	# print "MRK_DEBUG: app_font_info.bold ()      = ", app_font_info.bold()
+	# print "MRK_DEBUG: app_font_info.italic()     = ", app_font_info.italic()
+	# 
+	# NOTE: 2019/02/19 Toshio Moriya
+	# The following method of changing font size works with Linux.
+	# However, it does not work Mac OSX. The text of widget classes below won't change,
+	# still showing the default font size:
+	# QPushButton, QLable, Window Title, and QToolTip
+	# 
+	app_font.setPointSize(new_point_size) # app_font.setPointSize(13) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
+	app.setFont(app_font)
+	
+	# app.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
+	# app.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
+	# app.setStyleSheet("QToolTip {font-size:14pt; color:white; padding:2px; border-width:2px; border-style:solid; border-radius:20px; background-color: black; border: 1px solid white;}");
+	app.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
+#	app.setStyleSheet("QScrollArea {background-color: transparent;}");
+#	app.setStyleSheet("QScrollArea > QWidget > QWidget {background-color: transparent;}");
 	
 	app.main.show()
 	app.main.raise_()
