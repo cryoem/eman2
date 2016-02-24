@@ -2311,9 +2311,13 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 			break
 	lowpass, falloff    = fit_tanh1(adjusted_fsc, 0.01)
 	lowpass             = round(lowpass,4)
+	if Tracker["constants"]["myid"] ==Tracker["constants"]["main_node"]:
+		Tracker["constants"]["log_main"].add("the determined low pass filter is %5.3f"%lowpass) 
+	
 	falloff    =min(.1,falloff)
 	falloff             = round(falloff,4)
 	currentres          = round(currentres,2)
+	
 	try:	
 		Tracker["lowpass"]  = min(Tracker["lowpass"],lowpass)
 	except:
@@ -2322,6 +2326,8 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 		Tracker["falloff"]  =min(falloff,Tracker["falloff"])
 	except:
 		Tracker["falloff"]  =falloff
+	if Tracker["constants"]["myid"] ==Tracker["constants"]["main_node"]:
+		Tracker["constants"]["log_main"].add("the final used low pass filter is %5.3f"%Tracler["lowpass"]) 
 
 def main():
 	from time import sleep
