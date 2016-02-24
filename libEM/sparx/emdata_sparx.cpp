@@ -1915,13 +1915,13 @@ void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
 			float denominator = c2val * mult * weight;
 
 
-			int ixn = int(xnew + n);
-			int iyn = int(ynew + n);
-			int izn = int(znew + n);
+			int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+			int iyn = int(ynew + bign);
+			int izn = int(znew + bign);
 
-			float dx = xnew + n - ixn;
-			float dy = ynew + n - iyn;
-			float dz = znew + n - izn;
+			float dx = xnew + bign - ixn;
+			float dy = ynew + bign - iyn;
+			float dz = znew + bign - izn;
 			float qdx = 1.0f - dx;
 			float qdy = 1.0f - dy;
 			float qdz = 1.0f - dz;
@@ -1935,9 +1935,9 @@ void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
 			float qq101 =  dx * qdy *  dz;
 			float qq111 =  dx *  dy *  dz;
 
-			ixn -= n;
-			iyn -= n;
-			izn -= n;
+			ixn -= bign;
+			iyn -= bign;
+			izn -= bign;
 
 
 
@@ -1959,7 +1959,7 @@ void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
 
 			int iza, iya;
 			if (iyn >= 0) iya = iyn + 1;
-			else          iya = bign + iyn + 1;
+			else          iya = bign + iyn + 1;  // Here bign has correct meaning
 
 			if (izn >= 0)  iza = izn + 1;
 			else           iza = bign + izn + 1;
@@ -2127,7 +2127,7 @@ void EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 
 void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, int npad, EMData* bckgnoise, const Transform& tf, float weight ) {
 	ENTERFUNC;
-	int nxc = attr_dict["nxc"]; // # of complex elements along x
+	//int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
 	vector<int> saved_offsets = get_array_offsets();
 	vector<int> myfft_saved_offsets = myfft->get_array_offsets();

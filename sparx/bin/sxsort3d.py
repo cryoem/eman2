@@ -238,8 +238,14 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			varf.write_image( os.path.join(outdir,"varf0000.hdf") )
 	else:
 		varf = None
+		
+	lowpass=.5
 	for  iref in xrange(numref):
 		set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
+		lowpass=min(lowpass, Tracker["lowpass"])
+	Tracker["lowpass"]=lowpass	
+	for  iref in xrange(numref):
+		#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
 		refdata= [None]*4
 		refdata[0] = ref_list[iref]
 		refdata[1] = Tracker
@@ -447,6 +453,13 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		if fourvar and runtype=="REFINEMENT":
 			sumvol = model_blank(nx, nx, nx)
 		sart_time = time()
+	
+		lowpass=.5
+		for  iref in xrange(numref):
+			set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
+		lowpass=min(lowpass, Tracker["lowpass"])
+		Tracker["lowpass"]=lowpass
+		
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
@@ -458,7 +471,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			if myid == main_node:
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 				if fourvar and runtype=="REFINEMENT":sumvol += volref
-			set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],ngroup[iref],Tracker)
+			#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],ngroup[iref],Tracker)
 			if myid==main_node:
 				log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],ngroup[iref]))
 			refdata    = [None]*4

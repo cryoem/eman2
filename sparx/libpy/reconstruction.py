@@ -1352,17 +1352,17 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 
 
 	if myid == 0:
-		#  Here se
+		#  
 		dummy = r.finish(compensate)
 
 	mpi_barrier(mpi_comm)
 
 	if True:
 		if myid == 0: return fftvol,weight,refvol
-		else: return None, None
+		else: return None, None, None
 	else:
 		if myid == 0: return fftvol
-		else: return None, None
+		else: return None
 
 
 def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize = -1, zsize = -1 ):
