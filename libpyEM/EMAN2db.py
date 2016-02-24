@@ -373,14 +373,14 @@ def db_emd_init(self,*parms):
 			try: self.read_image_c(*parms)			# this handles Region reading, which isn't supported in the C++ constructor
 			except:
 				traceback.print_exc()
-				print "Error reading: ",parms
-				sys.exit(1)
+				print "Error reading: ",parms," (if the program does not crash, this may be normal)"
+				raise Exception
 		else : 
 			try: self.__initc(*parms)
 			except:
 				traceback.print_exc()
-				print "Error reading: ",parms
-				sys.exit(1)
+				print "Error reading: ",parms," (if the program does not crash, this may be normal)"
+				raise Exception
 		return
 
 EMData.__initc=EMData.__init__

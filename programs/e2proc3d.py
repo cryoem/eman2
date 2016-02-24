@@ -456,7 +456,8 @@ def main():
 				for key in param_dict.keys():
 					if str(param_dict[key]).find('bdb:')!=-1 or not str(param_dict[key]).isdigit():
 						try:
-							param_dict[key] = EMData(param_dict[key])
+							if  os.path.is_file(param_dict[key]) :
+								param_dict[key] = EMData(param_dict[key])
 						except:
 							pass
 
@@ -510,12 +511,20 @@ def main():
 					sys.exit(1)
 				nsym=int(options.alignctod[0][1:])
 				angrange=360.0/nsym		# probably more than necessary, but we'll do it anyway...
-				astep=180.0/pi*atan(2.0/data["nx"])
+				astep=360.0/pi*atan(2.0/data["nx"])
 				nstep=int(angrange/astep)
 				
 				best=(1e23,0)
 				for azi in xrange(nstep):
 					az=azi*astep
+					datad=data.process("xform",{"transform":Transform({"type":"eman","alt":180.0,"az":az})})	# rotate 180, then about z
+					c=data.cmp("ccc",datad)
+					best=min(best,(c,az))
+					if options.verbose: print azi,az,c,best
+
+				bcen=best[1]
+				for azi in xrange(-4,5):
+					az=bcen+azi*astep/4.0
 					datad=data.process("xform",{"transform":Transform({"type":"eman","alt":180.0,"az":az})})	# rotate 180, then about z
 					c=data.cmp("ccc",datad)
 					best=min(best,(c,az))
