@@ -2327,7 +2327,7 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 	except:
 		Tracker["falloff"]  =falloff
 	if Tracker["constants"]["myid"] ==Tracker["constants"]["main_node"]:
-		Tracker["constants"]["log_main"].add("the final used low pass filter is %5.3f"%Tracler["lowpass"]) 
+		Tracker["constants"]["log_main"].add("the final used low pass filter is %5.3f"%Tracker["lowpass"]) 
 
 def main():
 	from time import sleep
@@ -2807,6 +2807,7 @@ def main():
 				log_main.add("user provided number_of_images_per_group %d"%number_of_images_per_group)
 				cmd="{} {}".format("mkdir",P2_run_dir)
 				cmdexecute(cmd)
+			mpi_barrier(MPI_COMM_WORLD)
 			Tracker["number_of_images_per_group"] = number_of_images_per_group
 			number_of_groups                      = get_number_of_groups(total_stack,number_of_images_per_group)
 			generation                            = 0
@@ -2825,11 +2826,14 @@ def main():
 					log_main.add(" the number to be processed in this generation is %d"%len(list_to_be_processed))
 					cmd="{} {}".format("mkdir",workdir)
 					cmdexecute(cmd)
+				mpi_barrier(MPI_COMM_WORLD)
+				"""
 				from time import sleep
 				while not os.path.exists(workdir):
 					print  "Node ",myid,"  waiting..."
 					sleep(5)
 				mpi_barrier(MPI_COMM_WORLD)
+				"""
 				Tracker["number_of_groups"]       = number_of_groups
 				Tracker["this_data_list"]         = list_to_be_processed # leftover of P1 runs
 				Tracker["total_stack"]            = len(list_to_be_processed)
