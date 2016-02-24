@@ -1765,7 +1765,7 @@ def do_two_way_comparison(Tracker):
 	main_node         =Tracker["constants"]["main_node"]
 	log_main          =Tracker["constants"]["log_main"]
 	total_stack       =Tracker["this_total_stack"]
-	workdir          =Tracker["this_dir"]
+	workdir           =Tracker["this_dir"]
 	number_of_groups  =Tracker["number_of_groups"]
 	######
 	if myid ==main_node:
@@ -2325,7 +2325,7 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 	falloff             = round(falloff,4)
 	currentres          = round(currentres,2)
 	Tracker["lowpass"] = lowpass
-	Tracker["falloff"]  =falloff
+	Tracker["falloff"]  =min(Tracker["falloff"],falloff)
 
 def main():
 	from time import sleep
@@ -2782,12 +2782,10 @@ def main():
 			log_main.add("captured sampled directions %10d percentage covered by data  %6.3f"%(nc,float(nc)/len(n_angles)*100))
 		mpi_barrier(MPI_COMM_WORLD)
 		#########################################################################################################################
-		#if Tracker["constants"]["number_of_images_per_group"] ==-1: # Estimate number of images per group from delta, and scale up or down by scale_of_number
+		#if Tracker["constants"]["number_of_images_per_group"] ==-1: # Estimate number of images per group from delta, and scale up 
+		#    or down by scale_of_number
 		#	number_of_images_per_group = int(Tracker["constants"]["scale_of_number"]*len(n_angles))
-		#	if myid == main_node:
-		#		log_main.add(" estimate number of images per group from delta and scale up/down by scale_of_number")
-		#		log_main.add(" number_of_images_per_group %d"%number_of_images_per_group)
-		#else:
+		#
 		#########################################################################################################################P2
 		P2_partitions        =[]
 		number_of_P2_runs    =2  # Notice P2 start from two P1 runs
@@ -2818,20 +2816,13 @@ def main():
 				workdir             = os.path.join(P2_run_dir,"generation%03d"%generation)
 				Tracker["this_dir"] = workdir
 				if myid ==main_node:
+					cmd="{} {}".format("mkdir",workdir)
+					cmdexecute(cmd)
 					log_main.add("---- generation         %5d"%generation)
 					log_main.add("number of images per group is set as %d"%number_of_images_per_group)
 					log_main.add("the initial number of groups is  %10d "%number_of_groups)
 					log_main.add(" the number to be processed in this generation is %d"%len(list_to_be_processed))
-					cmd="{} {}".format("mkdir",workdir)
-					cmdexecute(cmd)
 				mpi_barrier(MPI_COMM_WORLD)
-				"""
-				from time import sleep
-				while not os.path.exists(workdir):
-					print  "Node ",myid,"  waiting..."
-					sleep(5)
-				mpi_barrier(MPI_COMM_WORLD)
-				"""
 				Tracker["number_of_groups"]       = number_of_groups
 				Tracker["this_data_list"]         = list_to_be_processed # leftover of P1 runs
 				Tracker["total_stack"]            = len(list_to_be_processed)
@@ -2951,7 +2942,7 @@ def main():
 				del list_to_be_processed
 				list_to_be_processed = copy.deepcopy(complementary)
 				number_of_groups                 = get_number_of_groups(len(list_to_be_processed),number_of_images_per_group)
-				Tracker["number_of_groups"]      =  number_of_groups
+				Tracker["number_of_groups"]      = number_of_groups
 				mpi_barrier(MPI_COMM_WORLD)
 #############################################################################################################################
 			### this is only done once
@@ -3047,10 +3038,10 @@ def main():
 		else: mask_3d = None
 		for igrp in xrange(len(reproduced_groups)):
 			name_of_class_file = os.path.join(masterdir, "P2_final_class%d.txt"%igrp)
-			while not os.path.exists(name_of_class_file):
-				#print  " my_id",myid
-				sleep(2)
-			mpi_barrier(MPI_COMM_WORLD)
+			#while not os.path.exists(name_of_class_file):
+			#	#print  " my_id",myid
+			#	sleep(2)
+			#mpi_barrier(MPI_COMM_WORLD)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],name_of_class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 			#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], info=None)
 			if Tracker["constants"]["CTF"]: 
@@ -3068,7 +3059,7 @@ def main():
 			else:Tracker["PWadjustment"]=Tracker["constants"]["PWadjustment"]	
 			lowpass, falloff = fit_tanh1(fscc,0.01)
 			lowpass=round(lowpass,4)
-			falloff=round(min(.2,falloff),4)
+			falloff=round(min(.1,falloff),4)
 			Tracker["lowpass"]=lowpass
 			Tracker["falloff"]=falloff
 			refdata    =[None]*4
