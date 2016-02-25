@@ -214,6 +214,19 @@ void symplane1(EMData* norm, EMData* norm2);
  */
 void symplane2(EMData* norm, EMData* norm2, EMData* norm3);
 
+
+/** Symmetrize plane 0
+ *  Modifies the current object.
+ *
+ * @param w Normalization data.
+ */
+void symplane0_ctf(EMData* w);
+void symplane0_odd(EMData* w);
+void symplane0_rect(EMData* w);
+
+
+
+
 /** Helper function for method nn4_ctf.
  *
  * @param j y fourier index (frequency)
@@ -294,16 +307,6 @@ void onelinenn_ctf_exists(int j, int n, int n2, EMData* w, EMData* bi, EMData* c
 void nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float mult );
 
 void nn_ctf_exists(EMData* w, EMData* myfft, EMData* ctf2d2, const Transform& tf, float weight);
-
-/** Symmetrize plane 0
- *  Modifies the current object.
- *
- * @param w Normalization data.
- */
-void symplane0_ctf(EMData* w);
-void symplane0_rect(EMData* w);
-
-
 
 /** Helper functions for method nn4_ctf.
  *

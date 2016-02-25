@@ -13919,7 +13919,7 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		prjlist[i].set_attr("bckgnoise",m)
 	from reconstruction import recons3d_4nnfs_MPI
 	#if CTF: vol1, vol2, fff = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
-	vol,wei,reg = recons3d_4nnfs_MPI(myid, prjlist, cfsc = None, symmetry = sym, npad = npad, smearstep = 0.0, CTF = CTF, compensate = True, target_size = nnnx)
+	vol,wei,reg = recons3d_4nnfs_MPI(myid, prjlist, cfsc = None, symmetry = sym, CTF = CTF, compensate = True, target_size = nnnx)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")

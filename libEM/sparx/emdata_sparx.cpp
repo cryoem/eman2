@@ -1686,6 +1686,119 @@ void EMData::symplane2(EMData* wptr, EMData* wptr2, EMData* wptr3) {
 	EXITFUNC;
 }
 
+
+void EMData::symplane0_ctf(EMData* w) {
+	ENTERFUNC;
+	int nxc = attr_dict["nxc"];
+	int n = nxc*2;
+
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,1,1);
+	for (int iza = 2; iza <= nxc; iza++) {
+		for (int iya = 2; iya <= nxc; iya++) {
+			cmplx(0,iya,iza) += conj(cmplx(0,n-iya+2,n-iza+2));
+			(*w)(0,iya,iza) += (*w)(0,n-iya+2,n-iza+2);
+			cmplx(0,n-iya+2,n-iza+2) = conj(cmplx(0,iya,iza));
+			(*w)(0,n-iya+2,n-iza+2) = (*w)(0,iya,iza);
+			cmplx(0,n-iya+2,iza) += conj(cmplx(0,iya,n-iza+2));
+			(*w)(0,n-iya+2,iza) += (*w)(0,iya,n-iza+2);
+			cmplx(0,iya,n-iza+2) = conj(cmplx(0,n-iya+2,iza));
+			(*w)(0,iya,n-iza+2) = (*w)(0,n-iya+2,iza);
+		}
+	}
+	for (int iya = 2; iya <= nxc; iya++) {
+		cmplx(0,iya,1) += conj(cmplx(0,n-iya+2,1));
+		(*w)(0,iya,1) += (*w)(0,n-iya+2,1);
+		cmplx(0,n-iya+2,1) = conj(cmplx(0,iya,1));
+		(*w)(0,n-iya+2,1) = (*w)(0,iya,1);
+	}
+	for (int iza = 2; iza <= nxc; iza++) {
+		cmplx(0,1,iza) += conj(cmplx(0,1,n-iza+2));
+		(*w)(0,1,iza) += (*w)(0,1,n-iza+2);
+		cmplx(0,1,n-iza+2) = conj(cmplx(0,1,iza));
+		(*w)(0,1,n-iza+2) = (*w)(0,1,iza);
+	}
+	set_array_offsets(saved_offsets);
+	EXITFUNC;
+}
+
+
+void EMData::symplane0_odd(EMData* w) {
+	ENTERFUNC;
+	ny=get_ysize();
+	nz=get_zsize();
+	if( ny != nz ) {
+		LOGERR("symplane0_odd requires ny = nz.");
+		throw InvalidValueException(ny, "symplane0_odd requires ny = nz.");
+	}
+	int nyh = ny/2;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	vector<int> saved_offsets_w = w->get_array_offsets();
+	w->set_array_offsets(0,0,0);
+	for (int iza = 1; iza <= nyh; iza++) {
+		for (int iya = 1; iya < ny; iya++) {
+			cmplx(0,iya,iza) += conj(cmplx(0,ny-iya,nz-iza));
+			(*w)(0,iya,iza) += (*w)(0,ny-iya,nz-iza);
+			cmplx(0,ny-iya,nz-iza) = conj(cmplx(0,iya,iza));
+			(*w)(0,ny-iya,nz-iza) = (*w)(0,iya,iza);
+		}
+	}
+	for (int iya = 1; iya <= nyh; iya++) {
+		cmplx(0,iya,0) += conj(cmplx(0,ny-iya,0));
+		(*w)(0,iya,0) += (*w)(0,ny-iya,0);
+		cmplx(0,ny-iya,1) = conj(cmplx(0,iya,0));
+		(*w)(0,ny-iya,1) = (*w)(0,iya,0);
+		cmplx(0,0,iya) += conj(cmplx(0,0,ny-iya));
+		(*w)(0,0,iya) += (*w)(0,0,ny-iya);
+		cmplx(0,0,nz-iya) = conj(cmplx(0,0,iya));
+		(*w)(0,0,nz-iya) = (*w)(0,0,iya);
+	}
+	set_array_offsets(saved_offsets);
+	w->set_array_offsets(saved_offsets_w);
+	EXITFUNC;
+}
+
+
+void EMData::symplane0_rect(EMData* w) {
+	ENTERFUNC;
+	nx=get_xsize();
+	ny=get_ysize();
+	nz=get_zsize();
+	int nzc=nz/2;
+	int nyc=ny/2;
+	
+	// let's treat the local data as a matrix
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,1,1);
+	for (int iza = 2; iza <= nzc; iza++) {
+		for (int iya = 2; iya <= nyc; iya++) {
+			cmplx(0,iya,iza) += conj(cmplx(0,ny-iya+2,nz-iza+2));
+			(*w)(0,iya,iza) += (*w)(0,ny-iya+2,nz-iza+2);
+			cmplx(0,ny-iya+2,nz-iza+2) = conj(cmplx(0,iya,iza));
+			(*w)(0,ny-iya+2,nz-iza+2) = (*w)(0,iya,iza);
+			cmplx(0,ny-iya+2,iza) += conj(cmplx(0,iya,nz-iza+2));
+			(*w)(0,ny-iya+2,iza) += (*w)(0,iya,nz-iza+2);
+			cmplx(0,iya,nz-iza+2) = conj(cmplx(0,ny-iya+2,iza));
+			(*w)(0,iya,nz-iza+2) = (*w)(0,ny-iya+2,iza);
+		}
+	}
+	for (int iya = 2; iya <= nyc; iya++) {
+		cmplx(0,iya,1) += conj(cmplx(0,ny-iya+2,1));
+		(*w)(0,iya,1) += (*w)(0,ny-iya+2,1);
+		cmplx(0,ny-iya+2,1) = conj(cmplx(0,iya,1));
+		(*w)(0,ny-iya+2,1) = (*w)(0,iya,1);
+	}
+	for (int iza = 2; iza <= nzc; iza++) {
+		cmplx(0,1,iza) += conj(cmplx(0,1,nz-iza+2));
+		(*w)(0,1,iza) += (*w)(0,1,nz-iza+2);
+		cmplx(0,1,nz-iza+2) = conj(cmplx(0,1,iza));
+		(*w)(0,1,nz-iza+2) = (*w)(0,1,iza);
+	}
+	EXITFUNC;
+}
+
+
 class ctf_store
 {
 public:
@@ -2687,78 +2800,6 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 	myfft->set_array_offsets(myfft_saved_offsets);
 	EXITFUNC;
 }*/
-
-void EMData::symplane0_ctf(EMData* w) {
-	ENTERFUNC;
-	int nxc = attr_dict["nxc"];
-	int n = nxc*2;
-	// let's treat the local data as a matrix
-	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(0,1,1);
-	for (int iza = 2; iza <= nxc; iza++) {
-		for (int iya = 2; iya <= nxc; iya++) {
-			cmplx(0,iya,iza) += conj(cmplx(0,n-iya+2,n-iza+2));
-			(*w)(0,iya,iza) += (*w)(0,n-iya+2,n-iza+2);
-			cmplx(0,n-iya+2,n-iza+2) = conj(cmplx(0,iya,iza));
-			(*w)(0,n-iya+2,n-iza+2) = (*w)(0,iya,iza);
-			cmplx(0,n-iya+2,iza) += conj(cmplx(0,iya,n-iza+2));
-			(*w)(0,n-iya+2,iza) += (*w)(0,iya,n-iza+2);
-			cmplx(0,iya,n-iza+2) = conj(cmplx(0,n-iya+2,iza));
-			(*w)(0,iya,n-iza+2) = (*w)(0,n-iya+2,iza);
-		}
-	}
-	for (int iya = 2; iya <= nxc; iya++) {
-		cmplx(0,iya,1) += conj(cmplx(0,n-iya+2,1));
-		(*w)(0,iya,1) += (*w)(0,n-iya+2,1);
-		cmplx(0,n-iya+2,1) = conj(cmplx(0,iya,1));
-		(*w)(0,n-iya+2,1) = (*w)(0,iya,1);
-	}
-	for (int iza = 2; iza <= nxc; iza++) {
-		cmplx(0,1,iza) += conj(cmplx(0,1,n-iza+2));
-		(*w)(0,1,iza) += (*w)(0,1,n-iza+2);
-		cmplx(0,1,n-iza+2) = conj(cmplx(0,1,iza));
-		(*w)(0,1,n-iza+2) = (*w)(0,1,iza);
-	}
-	EXITFUNC;
-}
-
-void EMData::symplane0_rect(EMData* w) {
-	ENTERFUNC;
-	nx=get_xsize();
-	ny=get_ysize();
-	nz=get_zsize();
-	int nzc=nz/2;
-	int nyc=ny/2;
-	
-	// let's treat the local data as a matrix
-	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(0,1,1);
-	for (int iza = 2; iza <= nzc; iza++) {
-		for (int iya = 2; iya <= nyc; iya++) {
-			cmplx(0,iya,iza) += conj(cmplx(0,ny-iya+2,nz-iza+2));
-			(*w)(0,iya,iza) += (*w)(0,ny-iya+2,nz-iza+2);
-			cmplx(0,ny-iya+2,nz-iza+2) = conj(cmplx(0,iya,iza));
-			(*w)(0,ny-iya+2,nz-iza+2) = (*w)(0,iya,iza);
-			cmplx(0,ny-iya+2,iza) += conj(cmplx(0,iya,nz-iza+2));
-			(*w)(0,ny-iya+2,iza) += (*w)(0,iya,nz-iza+2);
-			cmplx(0,iya,nz-iza+2) = conj(cmplx(0,ny-iya+2,iza));
-			(*w)(0,iya,nz-iza+2) = (*w)(0,ny-iya+2,iza);
-		}
-	}
-	for (int iya = 2; iya <= nyc; iya++) {
-		cmplx(0,iya,1) += conj(cmplx(0,ny-iya+2,1));
-		(*w)(0,iya,1) += (*w)(0,ny-iya+2,1);
-		cmplx(0,ny-iya+2,1) = conj(cmplx(0,iya,1));
-		(*w)(0,ny-iya+2,1) = (*w)(0,iya,1);
-	}
-	for (int iza = 2; iza <= nzc; iza++) {
-		cmplx(0,1,iza) += conj(cmplx(0,1,nz-iza+2));
-		(*w)(0,1,iza) += (*w)(0,1,nz-iza+2);
-		cmplx(0,1,nz-iza+2) = conj(cmplx(0,1,iza));
-		(*w)(0,1,nz-iza+2) = (*w)(0,1,iza);
-	}
-	EXITFUNC;
-}
 
 EMData* EMData::rot_scale_trans2D(float angDeg, float delx, float dely, float scale) { // quadratic, no background, 2D
 	float ang=angDeg*M_PI/180.0f;
