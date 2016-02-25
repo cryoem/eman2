@@ -2373,8 +2373,10 @@ def main():
 		bcast_number_to_all(falloff,source_node    = main_node)
 		Tracker["currentres"]         = currentres
 		Tracker["falloff"]            = falloff
-		if Tracker["constants"]["low_pass_filter"] ==-1.0:Tracker["constants"]["low_pass_filter"]=low_pass*Tracker["shrinkage"]
-		Tracker["low_pass_filter"] =Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"]
+		if Tracker["constants"]["low_pass_filter"] ==-1.0:
+			Tracker["constants"]["low_pass_filter"]=low_pass/Tracker["shrinkage"]
+		else:
+			Tracker["low_pass_filter"] =Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"]
 		Tracker["lowpass"]         =Tracker["low_pass_filter"]
 		Tracker["falloff"]         =.1
 		Tracker["global_fsc"]      = os.path.join(masterdir, "fsc.txt")
