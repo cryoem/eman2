@@ -22,6 +22,8 @@ def main():
 	
 	parser.add_argument("--radius",type=int,default=0,help="""Radius of the particle in pixels.""")
 	
+	parser.add_argument('--cshrink', type=float, default=1.0, help="""If the coordinates are from a shrunk tomogram, provide the shrinking factor here so that the plot will be at the correct scale.""")
+	
 	parser.add_argument("--apix",type=float,default=0.0,help="""Apix of the data to which the coordinates in --files or --stacks correspond. MUST provide this for --files if --units is provided.""")
 	
 	parser.add_argument("--path",type=str,default='',help="""Default=None.""")
@@ -126,13 +128,20 @@ def main():
 			ff.close()
 		
 			for line in lines:
-				parsed = line.replace('\n','').split(' ')
+				print "line is", line
+				parsed = line.replace('\n','').replace('\t',' ').split()
+				print "parsed is", parsed
 				x = float( parsed[0] )
 				y = float( parsed[1] )
 				z = 0
 				if len(parsed) > 2:
 					z = float( parsed[2] )
-			
+				
+				if options.cshrink > 1.0:
+					x *= options.cshrink
+					y *= options.cshrink
+					z *= options.cshrink
+				
 				if options.units in aunits:
 					x = x*apix
 					y = y*apix
@@ -351,7 +360,9 @@ def main():
 				plt.clf()
 			
 			
-
+		'''
+		This means all files had x,y,z coordinates so I just make all xz, yz and xy plots by default
+		'''
 		if data3count == len( filesdata ):
 			
 			for data in filesdata:
@@ -400,53 +411,31 @@ def main():
 				plt.savefig(singleplotname)
 				plt.clf()
 			
-	'''		
-				tag = '_xz'
-				plotter( data1, data2, xaxislabel, zaxislabel )
-				
-				if not options.singleplot:
-					plotname = options.path + '/' + os.path.splitext( os.path.basename(data) )[0] + tag + '.png'
-					plt.savefig( plotname )
-					plt.clf()
-				
-				tag = '_yz'
-				plotter( data2, data3, xaxislabel, zaxislabel )
-				
-				if not options.singleplot:
-					plotname = options.path + '/' + os.path.splitext( os.path.basename(data) )[0] + tag + '.png'
-					plt.savefig( plotname )
-					plt.clf()
 			
-			if data3 and options.singleplot:
-					
-				
-		if options.singleplot:
-			singleplotname = options.path + '/stacks_plot_XY.png'
-			plt.savefig(singleplotname)
-			plt.clf()
-	
-	
-		zplot=0
-		for data in filesdata:
-			zdata = filesdata[ data ][2]
-			if zdata:
+			for data in filesdata:
 				ydata = filesdata[ data ][1]
-							
-				plotter( ys, zs, yaxislabel, zaxislabel )
+				zdata = filesdata[ data ][2]
+				filesname = os.path.splitext( os.path.basename(data) )[0]
+				tag = '_xy'
+				title = filesname + tag	
+				options.fit = False
+				squareplot = True
+				plotter( options, xdata, ydata, xaxislabel, yaxislabel, title, pad, squareplot )
 		
 				if not options.singleplot:
-					plotname = options.path + '/' + os.path.splitext( os.path.basename(data) )[0] + '.png'
+					plotname = title + '.png'
+					if options.path:
+						plotname = options.path + '/' + plotname
 					plt.savefig( plotname )
 					plt.clf()
-				
-				zplot+=1
-			
-		if zplot:
+	
 			if options.singleplot:
-				singleplotname = options.path + '/stacks_plot_XZ.png'
+				singleplotname = 'files_plot_xy.png'
+				if options.path:
+					singleplotname = options.path + '/' +singleplotname
+				
 				plt.savefig(singleplotname)
 				plt.clf()
-	'''
 
 	E2end(logger)
 	sys.stdout.flush()
@@ -454,7 +443,7 @@ def main():
 	return
 
 
-def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0):
+def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0,squareplot=False):
 	print "\npad is", pad
 	import matplotlib
 
@@ -479,13 +468,22 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0):
 	
 	fig = plt.figure(figsize=(30, 5))
 	
+	if squareplot:
+		fig = plt.figure(figsize=(30, 30))
+		matplotlib.rc('xtick', labelsize=24) 
+		matplotlib.rc('ytick', labelsize=24) 
+		
+	
 	plt.axis('equal')
 	
 	ax = fig.add_subplot(111)
 	
 	ax.get_xaxis().tick_bottom()
 	ax.get_yaxis().tick_left()
-	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
+	#ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
+	
+	ax.tick_params(axis='both',reset=False,which='both')
+
 	
 	#print "max y is", max(yaxis)
 	#pylab.ylim([0,max(yaxis)+ 100])
@@ -502,6 +500,7 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0):
 	miny = min(yaxis)
 	
 	print "\nmax y is", maxy
+	print "\nmin y is", miny
 	ylim1 = miny - pad
 	ylim2 = maxy + pad
 	
@@ -573,6 +572,12 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0):
 	ax.set_ylabel(yaxislabel, fontsize=18, fontweight='bold')
 	ax.set_title(title, fontsize=18, fontweight='bold')
 	
+	if squareplot:
+		ax.set_xlabel(xaxislabel, fontsize=24, fontweight='bold')
+		ax.set_ylabel(yaxislabel, fontsize=24, fontweight='bold')
+		ax.set_title(title, fontsize=24, fontweight='bold')
+	
+	
 	
 	#plt.scatter(xaxis,yaxis,alpha=1,zorder=1,s=20,color='k')
 	centerdistribution = plt.scatter(xaxis,yaxis,alpha=1,zorder=1,s=20,color='k')
@@ -610,11 +615,13 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0):
 			for x, y in zip(xaxis, yaxis):
 				circle = pylab.Circle( (x,y), radius = rad, facecolor='none',edgecolor='b', alpha=0.3, linewidth=3)
 				axes.add_patch(circle)
-				
-			if not options.fit:
-				plt.legend( [circle,(circle)],[deltazlabel] )
 			
-			else:
+			print "squareplot is", squareplot	
+			if not options.fit:
+				if not squareplot:
+					plt.legend( [circle,(circle)],[deltazlabel] )
+			
+			elif options.fit:
 				plt.legend( [circle,fitline],[deltazlabel,anglelabel],loc=2 )
 		else:
 			print "\nERROR: --plotparticleradii requires --radius"

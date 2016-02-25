@@ -1,7 +1,8 @@
 #!/usr/bin/python2.7
 
-#
-# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz-Montoya (updates/enhancements/fixes), LAST: July/08/2015
+# LAST update: Feb/2016
+# Author: Steven Ludtke  2/8/2011 (rewritten)
+# Author: Jesus Galaz-Montoya, all command line functionality + updates/enhancements/fixes.
 # Author: John Flanagan  9/7/2011 (helixboxer)
 # Copyright (c) 2011- Baylor College of Medicine
 #
@@ -61,7 +62,7 @@ def main():
 
 	parser.add_header(name="tbheader", help='Options below this label are specific to e2spt_boxer', title="### e2spt_boxer options ###", row=1, col=0, rowspan=1, colspan=3, mode="boxing")
 	parser.add_pos_argument(name="tomogram",help="The tomogram to use for boxing.", default="", guitype='filebox', browser="EMTomoDataTable(withmodal=True,multiselect=False)",  row=0, col=0, rowspan=1, colspan=3, mode="boxing")
-	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=32)
+	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=0)
 
 	parser.add_argument("--centerbox", action="store_true", default=False, help="""DEPRECATED.
 		Will apply xform.centerofmass to the boxed subvolumes before the final extraction.""")
@@ -105,7 +106,7 @@ def main():
 
 	parser.add_argument('--coords', type=str, default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line.')
 
-	parser.add_argument('--cshrink', type=float, default=1.0, help='''WARNING: The coordinates file gets written on the scale of the input tomogram. This means that if you supply the raw, unbinned tomogram to e2pt_boxer but also say --shrink at the command line, a temporary tomogram will be created for particle localization, but the coordinates file will contain the full-size coordinates. If, on the other hand, you pre-shrink the tomogram with another tool (e2proc3d.py or binvol in IMOD), the coordinates in the coordinates file will be shrunk. It is in such case that you would use --cshrink to specifies the factor by which to multiply the coordinates in the coordinates file, so that they can be at the same scale as the RAW tomogram (or whatever tomogram you intend for the particles to be extracted from).\nFor example, provide --cshrink=2 if the coordinates are on a 2K x 2K scale because you used a 2K x 2K tomogram to find the particles,\nbut you want to extract the subvolumes from a UN-shrunk 4K x 4K tomogram.''')
+	parser.add_argument('--cshrink', type=int, default=1, help='''WARNING: The coordinates file gets written on the scale of the input tomogram. This means that if you supply the raw, unbinned tomogram to e2pt_boxer but also say --shrink at the command line, a temporary tomogram will be created for particle localization, but the coordinates file will contain the full-size coordinates. If, on the other hand, you pre-shrink the tomogram with another tool (e2proc3d.py or binvol in IMOD), the coordinates in the coordinates file will be shrunk. It is in such case that you would use --cshrink to specifies the factor by which to multiply the coordinates in the coordinates file, so that they can be at the same scale as the RAW tomogram (or whatever tomogram you intend for the particles to be extracted from).\nFor example, provide --cshrink=2 if the coordinates are on a 2K x 2K scale because you used a 2K x 2K tomogram to find the particles,\nbut you want to extract the subvolumes from a UN-shrunk 4K x 4K tomogram.''')
 
 	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-volumes 
 		from the coordinates file you want to extract; e.g, if you specify 10, the first 10 
@@ -202,8 +203,12 @@ def main():
 
 			if options.apix:
 				thisapix = options.apix
-
-			boxer = EMTomoBoxer(app,data=img,datafile=None,yshort=options.yshort,apix=thisapix,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=None,normalize=options.normproc)
+			
+			box = 32
+			if options.boxsize:
+				box = options.boxsize
+			
+			boxer = EMTomoBoxer(app,data=img,datafile=None,yshort=options.yshort,apix=thisapix,boxsize=box,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=None,normalize=options.normproc)
 		else :
 	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
 			img=args[0]
@@ -268,8 +273,11 @@ def main():
 
 			if options.apix:
 				thisapix = options.apix
-
-			boxer=EMTomoBoxer(app,data=None,datafile=img,yshort=options.yshort,apix=thisapix,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=modd,normalize=options.normproc)
+			box = 32
+			if options.boxsize:
+				box = options.boxsize
+			
+			boxer=EMTomoBoxer(app,data=None,datafile=img,yshort=options.yshort,apix=thisapix,boxsize=box,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=modd,normalize=options.normproc)
 
 			#boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=None,normalize=options.normproc)
 
@@ -441,16 +449,20 @@ It allows for extraction of smaller sub-sets too.
 """
 def commandline_tomoboxer(tomogram,options):
 
+	if not options.boxsize:
+		print "\nERROR: --boxsize required"
+		sys.exit()
+		
 	clines = open(options.coords,'r').readlines()
-	set = len(clines)
+	cset = len(clines)
 
 	if options.subset:
-		if options.subset > set:
-			print "WARNING: The total amount of lines in the coordinates files is LESS that the subset of particles to box you specified; therefore, ALL particles will be extracted"
+		if options.subset > cset:
+			print "WARNING: The total amount of lines in the coordinates files is LESS than the subset of particles to box you specified; therefore, ALL particles will be extracted"
 		else:
-			set=options.subset
+			cset=options.subset
 
-	print "The size of the set of sub-volumes to extract is", set
+	print "The size of the set of sub-volumes to extract is", cset
 
 	k=-1
 	name = options.output
@@ -466,7 +478,17 @@ def commandline_tomoboxer(tomogram,options):
 		avgr=Averagers.get('mean.tomo')
 
 	jj=0
-	for i in range(set):
+	
+	#coordsdict = {}
+	xs = []
+	ys = []
+	zs = []
+	
+	apix = EMData( tomogram, 0, True )['apix_x']
+	if options.apix:
+		apix = options.apix
+	
+	for i in range(cset):
 
 		#Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates
 		clines[i] = clines[i].replace(", ",' ')
@@ -482,9 +504,16 @@ def commandline_tomoboxer(tomogram,options):
 		clines[i] = clines[i].split()
 
 		x = int( float(clines[i][0]) )
+		xs.append( x )
+		
 		y = int( float(clines[i][1]) )
+		ys.append( y )
+		
 		z = int( float(clines[i][2]) )
-
+		zs.append( z )
+		
+		#coordsdict.update({i:[x,y,z]})
+		
 		print "The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
 		if options.swapyz:
@@ -532,9 +561,9 @@ def commandline_tomoboxer(tomogram,options):
 				else:
 					nameSingle = name
 					if '.hdf' in name:
-						nameSingle = name.replace('.hdf', '_' + str(jj).zfill(len(str(set))) + '.hdf')
+						nameSingle = name.replace('.hdf', '_' + str(jj).zfill(len(str(cset))) + '.hdf')
 					elif '.mrc' in name:
-						nameSingle = name.replace('.mrc', '_' + str(jj).zfill(len(str(set))) + '.mrc')
+						nameSingle = name.replace('.mrc', '_' + str(jj).zfill(len(str(cset))) + '.mrc')
 					#e['spt_originalstack']= nameSingle
 					e.write_image(nameSingle,0)
 
@@ -572,7 +601,38 @@ def commandline_tomoboxer(tomogram,options):
 		else:
 			print "\nThe particles averaged into nothing; see", type(avg)
 
-	return()
+	radius = options.boxsize/4.0	#the particle's diameter is boxsize/2
+	
+	#if options.cshrink:
+	#	radius /= options.cshrink
+	
+	cmd = 'e2spt_icethicknessplot.py --plotparticleradii --fit --apix ' + str( apix ) + ' --radius ' + str( int(radius) ) + ' --files ' + options.coords
+	
+	if options.cshrink:
+		cmd += ' --cshrink ' + str( int(options.cshrink) )
+	
+	runcmd( options, cmd )
+	
+	
+	return
+
+
+def runcmd(options,cmd):
+	if options.verbose > 8:
+		print "(e2spt_classaverage)(runcmd) running command", cmd
+	
+	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	text=p.communicate()	
+	p.stdout.close()
+	
+	if options.verbose > 8:
+		print "(e2spt_classaverage)(runcmd) done"
+	
+	#if options.verbose > 9:
+	#	print text
+	
+	return 1
+
 
 
 class EMAverageViewer(QtGui.QWidget):
