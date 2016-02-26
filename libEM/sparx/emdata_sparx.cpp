@@ -2950,21 +2950,21 @@ EMData::rot_scale_trans(const Transform &RA) {
 		set_array_offsets(saved_offsets);
 		return ret;
 	} else {
-//		 This begins the 3D version tri-linear interpolation.
+	//		 This begins the 3D version tri-linear interpolation.
 
-	float delx = translations.at(0);
-	float dely = translations.at(1);
-	float delz = translations.at(2);
-	delx = restrict2(delx, nx);
-	dely = restrict2(dely, ny);
-	delz = restrict2(delz, nz);
-	int xc = nx/2;
-	int yc = ny/2;
-	int zc = nz/2;
-//         shifted center for rotation
-	float shiftxc = xc + delx;
-	float shiftyc = yc + dely;
-	float shiftzc = zc + delz;
+		float delx = translations.at(0);
+		float dely = translations.at(1);
+		float delz = translations.at(2);
+		delx = restrict2(delx, nx);
+		dely = restrict2(dely, ny);
+		delz = restrict2(delz, nz);
+		int xc = nx/2;
+		int yc = ny/2;
+		int zc = nz/2;
+	//         shifted center for rotation
+		float shiftxc = xc + delx;
+		float shiftyc = yc + dely;
+		float shiftzc = zc + delz;
 
 		for (int iz = 0; iz < nz; iz++) {
 			float z = float(iz) - shiftzc;
@@ -3030,124 +3030,8 @@ EMData::rot_scale_trans(const Transform &RA) {
 
 		set_array_offsets(saved_offsets);
 		return ret;
-
-/*     This entire section has to go somewhere for quadratic 3D interpolation PAP 12/29/07
-//		 This begins the 3D version triquadratic interpolation.
-
-	float delx = translations.at(0);
-	float dely = translations.at(1);
-	float delz = translations.at(2);
-	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
-	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
-	if(dely >= 0.0f) { delz = fmod(delz, float(nz));} else {delz = -fmod(-delz, float(nz));}
-	int xc = nx/2;
-	int yc = ny/2;
-	int zc = nz/2;
-//         shifted center for rotation
-	float shiftxc = xc + delx;
-	float shiftyc = yc + dely;
-	float shiftzc = zc + delz;
-//                  set up array to use later
-//
-		int xArr[27];
-		int yArr[27];
-		int zArr[27];
-		float fdata[27];
-
-		for (int iL=0; iL<27 ; iL++){  // need this indexing array later
-			xArr[iL]  =  (int) (fmod((float)iL,3.0f) - 1.0f);
-			yArr[iL]  =  (int)( fmod( ((float) (iL/3) ),3.0f)- 1.0f);
-			zArr[iL]  = ((int) (iL/9)  ) -1;
-//			printf("iL=%d, \t xArr=%d, \t yArr=%d, \t zArr=%d \n",iL, xArr[iL],yArr[iL],zArr[iL]);
-		}
-
-//		for (int iz = 0; iz < nz; iz++) {for (int iy = 0; iy < ny; iy++) {for (int ix = 0; ix < nx; ix++) {
-//		      (*ret)(ix,iy,iz) = 0;}}}   // initialize returned data
-
-		for (int iz = 0; iz < nz; iz++) {
-			float z = float(iz) - shiftzc;
-			float xoldz = z*RAinv[0][2]+xc;
-			float yoldz = z*RAinv[1][2]+yc;
-			float zoldz = z*RAinv[2][2]+zc;
-			for (int iy = 0; iy < ny; iy++) {
-				float y = float(iy) - shiftyc;
-				float xoldzy = xoldz + y*RAinv[0][1] ;
-				float yoldzy = yoldz + y*RAinv[1][1] ;
-				float zoldzy = zoldz + y*RAinv[2][1] ;
-				for (int ix = 0; ix < nx; ix++) {
-					float x = float(ix) - shiftxc;
-					float xold = xoldzy + x*RAinv[0][0] ;
-					float yold = yoldzy + x*RAinv[1][0] ;
-					float zold = zoldzy + x*RAinv[2][0] ;
-
-
-				if (xold < 0.0f) xold = fmod((int(xold/float(nx))+1)*nx-xold, float(nx));
-				else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-				if (yold < 0.0f) yold =fmod((int(yold/float(ny))+1)*ny-yold, float(ny));
-				else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
-				if (zold < 0.0f) zold =fmod((int(zold/float(nz))+1)*nz-zold, float(nz));
-				else if (zold > (float) (nz-1) ) zold = fmod(zold, float(nz));
-
-				//  what follows does not accelerate the code; moreover, I doubt it is correct PAP 12/29/07
-				//while ( xold >= (float)(nx) )  xold -= nx;
-				//while ( xold < 0.0f )         xold += nx;
-				//while ( yold >= (float)(ny) )  yold -= ny;
-				//while ( yold < 0.0f )         yold += ny;
-				//while ( zold >= (float)(nz) )  zold -= nz;
-				//while ( zold < 0.0f )         zold += nz;
-
-//         This is currently coded the way  SPIDER coded it,
-//            changing floor to round  in the next 3 lines below may be better
-//					int IOX = (int) floor(xold); // This is the center of the array
-//					int IOY = (int) floor(yold ); // In the next loop we interpolate
-//					int IOZ = (int) floor(zold ); //  If floor is used dx is positive
-					int IOX = int(xold);
-					int IOY = int(yold);
-					int IOZ = int(zold);
-
-					float dx = xold-IOX; //remainder(xold,1);  //  now |dx| <= .5
-					float dy = yold-IOY; //remainder(yold,1);
-					float dz = zold-IOZ; //remainder(zold,1);
-
-//					printf(" IOX=%d \t IOY=%d \t IOZ=%d \n", IOX, IOY, IOZ);
-//					if (IOX>=0 && IOX<nx  && IOY>=0 && IOY < ny && IOZ >= 0 && IOZ < nz ) {
-//                                      	ROTATED POSITION IS INSIDE OF VOLUME
-//						FIND INTENSITIES ON 3x3x3 COORDINATE GRID;
-//                                     Solution is wrapped
-						for  (int iL=0; iL<27 ; iL++){
-							int xCoor = (int) fmod(IOX+xArr[iL] + nx + .0001f, (float) nx);
-							int yCoor = (int) fmod(IOY+yArr[iL] + ny + .0001f, (float) ny);
-							int zCoor = (int) fmod(IOZ+zArr[iL] + nz + .0001f, (float) nz);
-							fdata[iL] = (*this)( xCoor, yCoor ,zCoor );
-//							if (iy==iz && iz==0){printf(" fdata=%f \n", fdata[iL]);}
-//						}
-					}
-
-					(*ret)(ix,iy,iz) = Util::triquad(dx, dy, dz, fdata);
-//					(*ret)(ix,iy,iz) = Util:: trilinear_interpolate(fdata[13],fdata[14],fdata[16],
-//											fdata[17],fdata[22],fdata[23],
-//											fdata[25],fdata[26],dx, dy, dz);
-//	p1 iL=13,   xArr= 0,         yArr= 0,         zArr= 0
-//	p2 iL=14,   xArr= 1,         yArr= 0,         zArr= 0
-//	p3 iL=16,   xArr= 0,         yArr= 1,         zArr= 0
-//	p4 iL=17,   xArr= 1,         yArr= 1,         zArr= 0
-//	p5 iL=22,   xArr= 0,         yArr= 0,         zArr= 1
-//	p6 iL=23,   xArr= 1,         yArr= 0,         zArr= 1
-//	p7 iL=25,   xArr= 0,         yArr= 1,         zArr= 1
-//	p8 iL=26,   xArr= 1,         yArr= 1,         zArr= 1
-
-
-
-				} //ends x loop
-			} // ends y loop
-		} // ends z loop
-
-		set_array_offsets(saved_offsets);
-		return ret;
-*/
 	}
 }
-#undef  in
 
 // new function added for background option
 #define in(i,j,k)          in[i+(j+(k*ny))*(size_t)nx]
@@ -3627,6 +3511,174 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 	if (t) free(t);
 	set_array_offsets(saved_offsets);
 	return ret;
+}
+
+
+
+
+
+EMData*
+EMData::rot_fvol(const Transform &RA) {
+
+	EMData* ret = copy_head();
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	ret->set_array_offsets(0,0,0);
+	Transform RAinv = RA;//.inverse();
+
+	if (1 >= ny)  throw ImageDimensionException("Can't frotate 1D image");
+	if (nz < 2) {
+		throw ImageDimensionException("Can't frotate 2D image");
+		/*
+		float  p1, p2, p3, p4;
+		float delx = translations.at(0);
+		float dely = translations.at(1);
+		delx = restrict2(delx, nx);
+		dely = restrict2(dely, ny);
+		int xc = nx/2;
+		int yc = ny/2;
+	//         shifted center for rotation
+		float shiftxc = xc + delx;
+		float shiftyc = yc + dely;
+		for (int iy = 0; iy < ny; iy++) {
+			float y = float(iy) - shiftyc;
+			float ysang = y*RAinv[0][1]+xc;
+			float ycang = y*RAinv[1][1]+yc;
+			for (int ix = 0; ix < nx; ix++) {
+				float x = float(ix) - shiftxc;
+				float xold = x*RAinv[0][0] + ysang;
+				float yold = x*RAinv[1][0] + ycang;
+
+				xold = restrict1(xold, nx);
+				yold = restrict1(yold, ny);
+
+				int xfloor = int(xold);
+				int yfloor = int(yold);
+				float t = xold-xfloor;
+				float u = yold-yfloor;
+				if(xfloor == nx -1 && yfloor == ny -1) {
+
+				    p1 =in[xfloor   + yfloor*ny];
+					p2 =in[ yfloor*ny];
+					p3 =in[0];
+					p4 =in[xfloor];
+				} else if(xfloor == nx - 1) {
+
+					p1 =in[xfloor   + yfloor*ny];
+					p2 =in[           yfloor*ny];
+					p3 =in[          (yfloor+1)*ny];
+					p4 =in[xfloor   + (yfloor+1)*ny];
+				} else if(yfloor == ny - 1) {
+
+					p1 =in[xfloor   + yfloor*ny];
+					p2 =in[xfloor+1 + yfloor*ny];
+					p3 =in[xfloor+1 ];
+					p4 =in[xfloor   ];
+				} else {
+					p1 =in[xfloor   + yfloor*ny];
+					p2 =in[xfloor+1 + yfloor*ny];
+					p3 =in[xfloor+1 + (yfloor+1)*ny];
+					p4 =in[xfloor   + (yfloor+1)*ny];
+				}
+				(*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
+			} //ends x loop
+		} // ends y loop
+		set_array_offsets(saved_offsets);
+		return ret;*/
+	} else {
+//		 This begins the 3D version tri-linear interpolation.
+		if(is_complex())  {
+			bool iodd = get_attr("is_fftodd");
+			int xc = nx/2;
+			int yc = ny/2;
+			int zc = nz/2;
+			int bign = 2*zc;
+			float rm2 = (yc-1)*(yc-1);
+
+			for (int iz = -zc + 1-nz&2; iz < zc; iz++) {
+				float xnewz = iz*RAinv[0][2];
+				float ynewz = iz*RAinv[1][2];
+				float znewz = iz*RAinv[2][2];
+				for (int iy = -yc + 1-ny%2; iy < yc; iy++) {
+					float xnewzy = xnewz + iy*RAinv[0][1] ;
+					float ynewzy = ynewz + iy*RAinv[1][1] ;
+					float znewzy = znewz + iy*RAinv[2][1] ;
+					for (int ix = 0; ix < nx; ix++) {
+						float xnew = xnewzy + ix*RAinv[0][0] ;
+						float ynew = ynewzy + ix*RAinv[1][0] ;
+						float znew = znewzy + ix*RAinv[2][0] ;
+						if(xnew*xnew + ynew+ynew + znew*znew <= rm2 ) {
+							std::complex<float> btq;
+							int itz = iz;
+							if( itz < 0 ) itz += nz;
+							int ity = iy;
+							if( ity < 0 ) ity += ny;
+							if (xnew < 0.) {
+								xnew = -xnew;
+								ynew = -ynew;
+								znew = -znew;
+								btq = conj(cmplx(ix,ity,itz));
+							} else  btq = cmplx(ix,ity,itz);
+
+
+							int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+							int iyn = int(ynew + bign);
+							int izn = int(znew + bign);
+
+							float dx = xnew + bign - ixn;
+							float dy = ynew + bign - iyn;
+							float dz = znew + bign - izn;
+							float qdx = 1.0f - dx;
+							float qdy = 1.0f - dy;
+							float qdz = 1.0f - dz;
+
+							float qq000 = qdx * qdy * qdz;
+							float qq010 = qdx *  dy * qdz;
+							float qq100 =  dx * qdy * qdz;
+							float qq110 =  dx *  dy * qdz;
+							float qq001 = qdx * qdy *  dz;
+							float qq011 = qdx *  dy *  dz;
+							float qq101 =  dx * qdy *  dz;
+							float qq111 =  dx *  dy *  dz;
+
+							ixn -= bign;
+							iyn -= bign;
+							izn -= bign;
+
+							int iza = izn;
+							if (izn < 0)  iza += nz;
+
+							int iya = iyn;
+							if (iyn < 0)  iya += ny;
+
+
+							int ix1 = ixn + 1;
+
+							int iz1 = iza + 1;
+							if (iz1 >= nz) iz1 -= nz;
+
+							int iy1 = iya + 1;
+							if (iy1 >= bign) iy1 -= ny;
+
+							ret->cmplx(ixn, iya, iza) += qq000 * btq;
+							ret->cmplx(ixn, iy1, iza) += qq010 * btq;
+							ret->cmplx(ix1, iya, iza) += qq100 * btq;
+							ret->cmplx(ix1, iy1, iza) += qq110 * btq;
+							ret->cmplx(ixn, iya, iz1) += qq001 * btq;
+							ret->cmplx(ixn, iy1, iz1) += qq011 * btq;
+							ret->cmplx(ix1, iya, iz1) += qq101 * btq;
+							ret->cmplx(ix1, iy1, iz1) += qq111 * btq;
+
+						}
+					} //ends x loop
+				} // ends y loop
+			} // ends z loop
+		} else {
+			// Real Fourier volume
+		}
+		set_array_offsets(saved_offsets);
+		return ret;
+	}
 }
 
 EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {

@@ -18175,6 +18175,117 @@ L12:
 ################################################################################################*/
 
 
+#define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*nx]
+#define out_ptr(i,j,k)  out_ptr[i+(j+(k*yn))*xn]
+#define w_ptr(i,j,k)    w_ptr[i+(j+(k*yn))*xn]
+
+EMData* Util::shrinkfvol(EMData* img, int npad)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ==============   Shrink Fourier volume, either real or complex   ================ */
+
+	int nx=img->get_xsize(),  ny=img->get_ysize(),  nz=img->get_zsize();
+	int	yn = 2*(((ny-3)/2)/npad)+ 3;
+	int zn = 2*(((nz-3)/2)/npad)+ 3;
+	int xn, xx, xt, kk, kc, jj, jc, ii;
+	bool iodd = false;
+	float *img_ptr  = img->get_data();
+	EMData *out   = new EMData();
+	EMData *w   = new EMData();
+	int cmpx = img->is_complex();
+	if(cmpx) {
+		iodd = img->get_attr("is_fftodd");
+		img->set_attr("is_complex", 0);
+		xn = 2*((((nx-2+iodd)-3)/2)/npad) + 3;
+		xx = nx/2;
+		xt = xn/2;
+		out->set_size(xn+2-iodd, yn, zn);
+		w->set_size((xn+2-iodd)/2, yn, zn);
+
+	} else {
+		xn = 2*(((nx-3)/2)/npad)+ 3;
+		xx = nx;
+		xt = xn;
+		out->set_size(xn, yn, zn);	
+		w->set_size(xn, yn, zn);
+	}
+	out->to_zero();
+	float *out_ptr = out->get_data();
+
+	w->to_zero();
+	float *w_ptr = w->get_data();
+	int zh = nz/2;
+	int yh = ny/2;
+	for(int k=-zh; k<=zh; k++) {
+		if( k < 0 )  kc = k+nz;
+		else         kc = k;
+		kk = int(round(float(k)/npad));
+		if( kk < 0 )  kk += zn;
+		//cout<<" k "<<  k<<"  "<<  kc<<"  "<<  kk<<endl;
+		for(int j=-yh; j<=yh; j++) {
+			if( j < 0 )  jc = j+ny;
+			else         jc = j;
+			jj = int(round(float(j)/npad));
+			if( jj < 0 )  jj += yn;
+			//cout<<" j "<<  j<<"  "<<  jc<<"  "<<  jj<<endl;
+			for(int i=0; i<xx; i++) {
+				ii = int(round(float(i)/npad));
+				//cout<<" all "<<  i<<"  "<<  jc<<"  "<<  kc<<"  "<<  ii<<"  "<<  jj<<"  "<<  kk<<"  "<<nx<<"  "<<xn+2-iodd<<endl;
+				/*cout<<"  "<<  img_ptr(i,jc,kc)<<endl;
+				cout<<"  "<<  out_ptr(ii,jj,kk)<<endl;
+				cout<<"  "<<  w_ptr(ii,jj,kk)<<endl;*/
+				if( cmpx ) {
+					size_t imgp = 2*i+(jc+(kc*ny))*nx;
+					size_t outp = 2*ii+(jj+(kk*yn))*(xn+2-iodd);
+					cout<<" cmpx "<<  imgp<<"  "<<  outp<<endl;
+					out_ptr[outp]   += img_ptr[imgp];
+					out_ptr[outp+1] += img_ptr[imgp+1];
+					w_ptr[ii+(jj+(kk*yn))*(xn+2-iodd)/2] += 1.0f;
+				}  else  {
+					out_ptr(ii,jj,kk) += img_ptr(i,jc,kc);
+					w_ptr(ii,jj,kk) += 1.0f;
+				}
+			}
+		}
+	}
+
+	if( cmpx ) {
+		for(size_t i=0; i<(xn+2-iodd)/2*yn*zn; i++) {
+			if( w_ptr[i] > 0.0 ) {
+				out_ptr[2*i]   /= w_ptr[i];
+				out_ptr[2*i+1] /= w_ptr[i];
+			} else {
+				out_ptr[2*i]=0.0;
+				out_ptr[2*i+1]=0.0;
+			}
+		}
+	} else {
+		for(size_t i=0; i<xt*yn*zn; i++) {
+			if( w_ptr[i] > 0.0 )  out_ptr[i] /= w_ptr[i];
+			else                  out_ptr[i]=0.0;
+		}
+	}
+	delete w; w = 0;
+	if( cmpx ) {
+		out->set_complex(true);
+		out->set_fftodd(iodd);
+		out->set_ri(true);
+		img->set_attr("is_complex", 1);
+	}
+	out->update();
+	EXITFUNC;
+	return out;
+}
+
+#undef img_ptr
+#undef out_ptr
+#undef w_ptr
+
+
 EMData* Util::mult_scalar(EMData* img, float scalar)
 {
 	ENTERFUNC;

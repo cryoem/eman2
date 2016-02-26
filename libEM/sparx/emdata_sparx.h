@@ -407,7 +407,7 @@ static inline float restrict2(float x, int nx) {
 	return x;
 }
 
-
+EMData* rot_fvol(const Transform &RA);
 
 /** euclidean distance between two line
  * @param sinoj
