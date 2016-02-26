@@ -19963,7 +19963,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	{
 		if (crefim_len_original_only_from_asymmetric_unit != list_of_reference_angles_length/nsym/2)
 		{
-			printf("\n\ncrefim_len_original_only_from_asymmetric_unit(%d) == list_of_reference_angles_length(%d)/nsym(%d)/2\n\n",
+			printf("\n\ncrefim_len_original_only_from_asymmetric_unit(%lu) == list_of_reference_angles_length(%lu)/nsym(%d)/2\n\n",
 			crefim_len_original_only_from_asymmetric_unit, list_of_reference_angles_length, nsym);
 			fflush(stdout);
 		}	
