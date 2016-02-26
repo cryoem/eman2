@@ -46,31 +46,47 @@ def construct_token_list_from_wiki(wiki_file_path):
 	#                 and open file button for .py
 	# 
 	keyword_dict = {}
+	
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
-	keyword_dict["use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
-	keyword_dict["defocus_error"]               = SXkeyword_map(0, "")           # --defocus_error (contains keyworkd 'focus' but this should be float type)
-	keyword_dict["stack_file"]                  = SXkeyword_map(2, "bdb")        # stack_file (contains keyworkd 'stack' but this should be bdb type)
+	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
+	keyword_dict["stack_file"]                    = SXkeyword_map(2, "bdb")        # stack_file (contains keyworkd 'stack' but this should be bdb type)
 	# Use priority 1 for output
-	keyword_dict["output"]                      = SXkeyword_map(1, "output")     # output_hdf, output_directory, outputfile
-	keyword_dict["outdir"]                      = SXkeyword_map(1, "output")     # outdir
-	keyword_dict["locresvolume"]                = SXkeyword_map(1, "output")     # locresvolume (this contained keyword "volume" also... This is another reason why priority is introduced...)
-	keyword_dict["directory"]                   = SXkeyword_map(1, "output")     # directory
+	keyword_dict["output"]                        = SXkeyword_map(1, "output")     # output_hdf, output_directory, outputfile
+	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")     # outdir
+	keyword_dict["locresvolume"]                  = SXkeyword_map(1, "output")     # locresvolume (this contained keyword "volume" also... This is another reason why priority is introduced...)
+	keyword_dict["directory"]                     = SXkeyword_map(1, "output")     # directory
 	# Use priority 2 for the others
-	keyword_dict["stack"]                       = SXkeyword_map(2, "image")      # stack, stack_file, prj_stack
-	keyword_dict["volume"]                      = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, inputvolume
-	keyword_dict["mask"]                        = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask
-	keyword_dict["focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
-	keyword_dict["input_micrograph"]            = SXkeyword_map(2, "any_image")  # input_micrograph_pattern
-	keyword_dict["input_image"]                 = SXkeyword_map(2, "any_image")  # input_image
-	keyword_dict["tr0"]                         = SXkeyword_map(2, "parameters") # --tr0=matrix_file
-	keyword_dict["input_coordinates"]           = SXkeyword_map(2, "parameters") # input_coordinates_pattern
-	keyword_dict["import_ctf"]                  = SXkeyword_map(2, "parameters") # --import_ctf=ctf_file
-	keyword_dict["pwreference"]                 = SXkeyword_map(2, "parameters") # --pwreference=pwreference_file
-	keyword_dict["pdb"]                         = SXkeyword_map(2, "pdb")        # input_pdb
-	keyword_dict["function"]                    = SXkeyword_map(2, "function")   # --function=user_function
+	keyword_dict["stack"]                         = SXkeyword_map(2, "image")      # stack, prj_stack
+	keyword_dict["volume"]                        = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, inputvolume
+	keyword_dict["mask"]                          = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask
+	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
+	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")  # input_micrograph_pattern
+	keyword_dict["input_image"]                   = SXkeyword_map(2, "any_image")  # input_image
+	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters") # --tr0=matrix_file
+	keyword_dict["input_coordinates"]             = SXkeyword_map(2, "parameters") # input_coordinates_pattern
+	keyword_dict["--import_ctf"]                  = SXkeyword_map(2, "parameters") # --import_ctf=ctf_file
+	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters") # --pwreference=pwreference 
+	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")        # input_pdb
+	keyword_dict["--function"]                    = SXkeyword_map(2, "function")   # --function=user_function
+	
+	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")       # --apix=pixel_size, --apix 
+	keyword_dict["--wn"]                          = SXkeyword_map(2, "ctfwin")     # --wn
+	keyword_dict["--box"]                         = SXkeyword_map(2, "box")        # --box=box_size, --box_size=box_size
+	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")     # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
+	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")        # --sym=c1, --sym=c1, --sym=c1, --sym=symmetry, --sym=c1, --sym=c4
+	
+	# NOTE: 2016/02/23 Toshio Moriya
+	# Below might be useful to include
+	# reference power spectrum? --pwreference of viper, --pwreference of rviper, --PWadjustment of sort3d, --PWadjustment of rsort3d
+	#
+	# Below must be exceptional cases
+	# --wn of locres, sort3d, & rsort3d; same as ctfwin?
+	# --radiusvar of 3dvariability; same as radius?
+	# --radius of locres & filterlocal; same as radius? 
+	#
 	
 	# Define list of target sections for GUI and set current
-	section_lists = []		
+	section_lists = []
 	section_lists.append("= Name ="); section_name = len(section_lists) - 1; 
 	section_lists.append("= Usage ="); section_usage = len(section_lists) - 1; 
 	section_lists.append("=== Typical usage ==="); section_typical = len(section_lists) - 1; 
@@ -169,7 +185,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 							# Try to set the special type base on the keyword dictionary
 							best_keyword_map = SXkeyword_map(99, "")
 							for keyword in keyword_dict.keys():
-								if token.key_base.find(keyword) != -1:
+								if key.find(keyword) != -1:
 									# command token contains keyword
 									keyword_map = keyword_dict[keyword]
 									if best_keyword_map.priority > keyword_map.priority:
@@ -260,6 +276,8 @@ def construct_token_list_from_wiki(wiki_file_path):
 										else:
 											token.type = "string"
 							# else: keep the special type
+						# Initialise restore value with default value
+						token.restore = token.default
 						# Ignore the rest of line ...
 				else:
 					ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -320,10 +338,13 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		output_file.write("; token.is_required = %s" % token.is_required)
 		if token.is_required:
 			output_file.write("; token.default = \"\"")
+			output_file.write("; token.restore = \"\"")
 		elif token.type == "bool":
 			output_file.write("; token.default = %s" % token.default)
+			output_file.write("; token.restore = %s" % token.restore)
 		else:
 			output_file.write("; token.default = \"%s\"" % token.default)
+			output_file.write("; token.restore = \"%s\"" % token.restore)
 		output_file.write("; token.type = \"%s\"" % token.type)
 		# output_file.write("; token.is_in_io = %s" % token.is_in_io)
 		
