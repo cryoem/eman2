@@ -15,3 +15,7 @@ install_manifest.txt
 *.ipynb_checkpoints/
 *.pyc
 
+# EMAN2 libs
+lib/
+libpy*.dylib
+
