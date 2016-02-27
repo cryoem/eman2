@@ -1161,11 +1161,15 @@ EMData* EMData::symfvol(string symString) {
 	int nsym = Transform::get_nsym(symString); // number of symmetries
 	Transform sym;
 	// set up output volume
+	//cout<<"  "<<nx<<"  "<<ny<<"  "<<nz<<"  "<<is_complex()<<endl;
 	EMData *svol = copy_head();
+	svol->set_size(nx, ny, nz);
 	svol->to_zero();
+	//cout<<" svol "<<svol->get_xsize()<<"  "<<svol->get_ysize()<<"  "<<svol->get_zsize()<<"  "<<svol->is_complex()<<endl;
 	// actual work -- loop over symmetries and symmetrize
 	for (int isym = 0; isym < nsym; isym++) {
 		Transform rm = sym.get_sym(symString, isym);
+		//cout<<"  wil rot fvol  "<<isym<<"  "<<svol->get_xsize()<<endl;
 		EMData* symcopy = this -> rot_fvol(rm);
 		*svol += (*symcopy);
 		delete symcopy;
@@ -3553,9 +3557,9 @@ EMData::rot_fvol(const Transform &RA) {
 			int xc = nx/2;
 			int yc = ny/2;
 			int zc = nz/2;
-			int bign = 2*zc;
+			int bign = 2*nz;
 			float rm2 = (xc-1)*(xc-1);
-
+//cout<<"  "<<nx<<"  "<<ny<<"  "<<nz<<"  "<<xc<<"  "<<yc<<"  "<<zc<<"  "<<bign<<"  "<<rm2<<endl;
 			for (int iz = -zc + 1-nz%2; iz < zc; iz++) {
 				float xnewz = iz*RAinv[0][2];
 				float ynewz = iz*RAinv[1][2];
@@ -3616,21 +3620,29 @@ EMData::rot_fvol(const Transform &RA) {
 
 
 							int ix1 = ixn + 1;
+							if( ix1 < xc) {
+								int iz1 = iza + 1;
+								if (iz1 >= nz) iz1 -= nz;
 
-							int iz1 = iza + 1;
-							if (iz1 >= nz) iz1 -= nz;
+								int iy1 = iya + 1;
+								if (iy1 >= ny) iy1 -= ny;
+	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
+	//if(ixn<0 or ixn >=xc)  cout<<"  error   ixn  "<<ixn<<endl;
+	//if(ix1<0 or ix1 >=xc){  cout<<"  error   ix1  "<<ix1<<endl;cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;}
+	//if(iya<0 or iya >=ny)  cout<<"  error   iya  "<<iya<<endl;
+	//if(iy1<0 or iy1 >=ny)  cout<<"  error   iy1  "<<iy1<<endl;
+	//if(iza<0 or iza >=nz)  cout<<"  error   iza  "<<iza<<endl;
+	//if(iz1<0 or iz1 >=nz)  cout<<"  error   iz1  "<<iz1<<endl;
+								std::complex<float> btq = qq000 * cmplx(ixn, iya, iza) + qq010 * cmplx(ixn, iy1, iza) + qq100 * cmplx(ix1, iya, iza)
+										+ qq110 * cmplx(ix1, iy1, iza) + qq001 * cmplx(ixn, iya, iz1) + qq011 * cmplx(ixn, iy1, iz1)
+										+ qq101 * cmplx(ix1, iya, iz1) + qq111 * cmplx(ix1, iy1, iz1);
 
-							int iy1 = iya + 1;
-							if (iy1 >= ny) iy1 -= ny;
-//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
-//btq = cmplx(ixn, iya, iza);
-
-							std::complex<float> btq = qq000 * cmplx(ixn, iya, iza) + qq010 * cmplx(ixn, iy1, iza) + qq100 * cmplx(ix1, iya, iza)
-									+ qq110 * cmplx(ix1, iy1, iza) + qq001 * cmplx(ixn, iya, iz1) + qq011 * cmplx(ixn, iy1, iz1)
-									+ qq101 * cmplx(ix1, iya, iz1) + qq111 * cmplx(ix1, iy1, iz1);
-
-							if( flipin )  ret->cmplx(ix,ity,itz) = conj(btq);
-							else  ret->cmplx(ix,ity,itz) = btq;
+	//if(ix<0 or ix >=xc)  cout<<"  error   ix  "<<ix<<endl;
+	//if(ity<0 or ity >=ny)  cout<<"  error   ity  "<<ity<<endl;
+	//if(itz<0 or itz >=nz)  cout<<"  error   itz  "<<itz<<endl;
+								if( flipin )  ret->cmplx(ix,ity,itz) = conj(btq);
+								else  ret->cmplx(ix,ity,itz) = btq;
+							}
 
 						}
 					} //ends x loop
@@ -3701,19 +3713,19 @@ EMData::rot_fvol(const Transform &RA) {
 
 
 							int ix1 = ixn + 1;
+							if( ix1 < nx)  {
+								int iz1 = iza + 1;
+								if (iz1 >= nz) iz1 -= nz;
 
-							int iz1 = iza + 1;
-							if (iz1 >= nz) iz1 -= nz;
+								int iy1 = iya + 1;
+								if (iy1 >= ny) iy1 -= ny;
+	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
+	//btq = cmplx(ixn, iya, iza);
 
-							int iy1 = iya + 1;
-							if (iy1 >= ny) iy1 -= ny;
-//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
-//btq = cmplx(ixn, iya, iza);
-
-							(*ret)(ix,ity,itz) = qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
-									+ qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
-									+ qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
-
+								(*ret)(ix,ity,itz) = qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
+										+ qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
+										+ qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
+							}
 
 						}
 					} //ends x loop
