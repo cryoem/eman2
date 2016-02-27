@@ -330,6 +330,14 @@ void nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, int npad, EMData* bckgnoi
  */
 EMData* symvol(string symmetry);
 
+/** Symmetrize volume in Fourier space.
+ *
+ *  @param[in] symmetry Point group of the target volume.
+ *
+ *  @return New symmetrized volume object.
+ */
+EMData* symfvol(string symmetry);
+
 
 /** Rotate-Shift-Scale-Circulantly image
  *
