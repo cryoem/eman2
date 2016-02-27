@@ -1,0 +1,17 @@
+# CMAKE
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+# ECLIPSE and other IDEs
+.project
+.cproject
+*.pydevproject
+
+# Python
+*.ipynb_checkpoints/
+*.pyc
+
