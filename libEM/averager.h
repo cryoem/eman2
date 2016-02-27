@@ -532,11 +532,51 @@ namespace EMAN
 		int nimg;
 	};
 
+	/** 
+	* VarianceAverager computes the pixel-wise variance of a list of images.
+        */
+        class VarianceAverager:public Averager
+	{
+	  public:
+		VarianceAverager();
+
+		void add_image( EMData * image);
+		EMData * finish();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Pixel-wise variance of images";
+		}
+
+		static Averager *NEW()
+		{
+			return new VarianceAverager();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+
+		virtual void mult(const float&) { }
+
+		static const string NAME;
+		
+	private:
+		EMData *mean;
+		int nimg;
+	};
+
 	template <> Factory < Averager >::Factory();
 
 	void dump_averagers();
 	map<string, vector<string> > dump_averagers_list();
 }
-
 
 #endif
