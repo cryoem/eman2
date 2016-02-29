@@ -2942,7 +2942,7 @@ EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
 
 //	EMData* ret = copy_head();
 
-	if (ret == NULL) EMData* ret = copy_head();
+	if (ret == NULL) ret = copy_head();
 	
 	float *in = this->get_data();
 	vector<int> saved_offsets = get_array_offsets();
