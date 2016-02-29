@@ -1155,32 +1155,6 @@ EMData* EMData::symvol(string symString) {
 	EXITFUNC;
 	return svol;
 }
-/*
-EMData* EMData::symfvol(string symString, int radius) {
-	ENTERFUNC;
-	int nsym = Transform::get_nsym(symString); // number of symmetries
-	Transform sym;
-	// set up output volume
-	//cout<<"  "<<nx<<"  "<<ny<<"  "<<nz<<"  "<<is_complex()<<endl;
-	EMData *svol = copy_head();
-	svol->set_size(nx, ny, nz);
-	svol->to_zero();
-	if( radius < 1 )  radius = nx/2;
-	//cout<<" svol "<<svol->get_xsize()<<"  "<<svol->get_ysize()<<"  "<<svol->get_zsize()<<"  "<<svol->is_complex()<<endl;
-	// actual work -- loop over symmetries and symmetrize
-	for (int isym = 0; isym < nsym; isym++) {
-		Transform rm = sym.get_sym(symString, isym);
-		//cout<<"  wil rot fvol  "<<isym<<"  "<<svol->get_xsize()<<endl;
-		EMData* symcopy = this -> rot_fvol(rm, NULL, radius);
-		*svol += (*symcopy);
-		delete symcopy;
-	}
-	*svol /=  ((float) nsym);
-	svol->update();
-	EXITFUNC;
-	return svol;
-}
-*/
 
 EMData* EMData::symfvol(string symString, int radius) {
 	ENTERFUNC;
@@ -1191,6 +1165,8 @@ EMData* EMData::symfvol(string symString, int radius) {
 	EMData *svol = copy_head();
 	svol->set_size(nx, ny, nz);
 	svol->to_zero();
+	svol->set_array_offsets(0,0,0);
+	this->set_array_offsets(0,0,0);
 	if( radius < 1 )  radius = nx/2;
 	//cout<<" svol "<<svol->get_xsize()<<"  "<<svol->get_ysize()<<"  "<<svol->get_zsize()<<"  "<<svol->is_complex()<<endl;
 	// actual work -- loop over symmetries and symmetrize
@@ -1198,6 +1174,7 @@ EMData* EMData::symfvol(string symString, int radius) {
 		Transform rm = sym.get_sym(symString, isym);
 		//cout<<"  wil rot fvol  "<<isym<<"  "<<svol->get_xsize()<<endl;
 		this -> rot_fvol(rm, svol, radius);
+		cout<<"  svol  "<<isym<<"   "<<nsym<<"   "<<(*this)(2,0,0)<<"   "<<(*svol)(2,0,0)<<endl;
 	}
 	*svol /=  ((float) nsym);
 	svol->update();
@@ -3580,8 +3557,8 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
     if (ret == NULL) {
         ret = copy_head();
 	    ret->to_zero();
-	    ret->set_array_offsets(0,0,0);
     }
+	ret->set_array_offsets(0,0,0);
     
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
