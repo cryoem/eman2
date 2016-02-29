@@ -336,7 +336,7 @@ EMData* symvol(string symmetry);
  *
  *  @return New symmetrized volume object.
  */
-EMData* symfvol(string symmetry);
+EMData* symfvol(string symmetry, int radius = -1);
 
 
 /** Rotate-Shift-Scale-Circulantly image
@@ -416,8 +416,7 @@ static inline float restrict2(float x, int nx) {
 	return x;
 }
 
-//EMData* rot_fvol(const Transform &RA);
-EMData* rot_fvol(const Transform &RA, EMData* ret = NULL);
+EMData* rot_fvol(const Transform &RA, EMData* ret = NULL, int radius = -1);
 
 /** euclidean distance between two line
  * @param sinoj

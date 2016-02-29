@@ -1155,8 +1155,8 @@ EMData* EMData::symvol(string symString) {
 	EXITFUNC;
 	return svol;
 }
-
-EMData* EMData::symfvol(string symString) {
+/*
+EMData* EMData::symfvol(string symString, int radius) {
 	ENTERFUNC;
 	int nsym = Transform::get_nsym(symString); // number of symmetries
 	Transform sym;
@@ -1165,14 +1165,39 @@ EMData* EMData::symfvol(string symString) {
 	EMData *svol = copy_head();
 	svol->set_size(nx, ny, nz);
 	svol->to_zero();
+	if( radius < 1 )  radius = nx/2;
 	//cout<<" svol "<<svol->get_xsize()<<"  "<<svol->get_ysize()<<"  "<<svol->get_zsize()<<"  "<<svol->is_complex()<<endl;
 	// actual work -- loop over symmetries and symmetrize
 	for (int isym = 0; isym < nsym; isym++) {
 		Transform rm = sym.get_sym(symString, isym);
 		//cout<<"  wil rot fvol  "<<isym<<"  "<<svol->get_xsize()<<endl;
-		EMData* symcopy = this -> rot_fvol(rm);
+		EMData* symcopy = this -> rot_fvol(rm, NULL, radius);
 		*svol += (*symcopy);
 		delete symcopy;
+	}
+	*svol /=  ((float) nsym);
+	svol->update();
+	EXITFUNC;
+	return svol;
+}
+*/
+
+EMData* EMData::symfvol(string symString, int radius) {
+	ENTERFUNC;
+	int nsym = Transform::get_nsym(symString); // number of symmetries
+	Transform sym;
+	// set up output volume
+	//cout<<"  "<<nx<<"  "<<ny<<"  "<<nz<<"  "<<is_complex()<<endl;
+	EMData *svol = copy_head();
+	svol->set_size(nx, ny, nz);
+	svol->to_zero();
+	if( radius < 1 )  radius = nx/2;
+	//cout<<" svol "<<svol->get_xsize()<<"  "<<svol->get_ysize()<<"  "<<svol->get_zsize()<<"  "<<svol->is_complex()<<endl;
+	// actual work -- loop over symmetries and symmetrize
+	for (int isym = 0; isym < nsym; isym++) {
+		Transform rm = sym.get_sym(symString, isym);
+		//cout<<"  wil rot fvol  "<<isym<<"  "<<svol->get_xsize()<<endl;
+		this -> rot_fvol(rm, svol, radius);
 	}
 	*svol /=  ((float) nsym);
 	svol->update();
@@ -3547,7 +3572,7 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 }
 
 EMData*
-EMData::rot_fvol(const Transform &RA, EMData* ret) {
+EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 //EMData::rot_fvol(const Transform &RA) {
 // Note data has to be shifted to corners by n/2
 //	EMData* ret = copy_head();
@@ -3566,6 +3591,8 @@ EMData::rot_fvol(const Transform &RA, EMData* ret) {
 	if (nz < 2) {
 		throw ImageDimensionException("Can't frotate 2D image");
 	} else {
+		if( radius < 1 ) radius = nx/2;
+		float rm2 = (radius-1)*(radius-1);
 //		 This begins the 3D version tri-linear interpolation.
 		if(is_complex())  {
 			bool iodd = get_attr("is_fftodd");
@@ -3573,7 +3600,6 @@ EMData::rot_fvol(const Transform &RA, EMData* ret) {
 			int yc = ny/2;
 			int zc = nz/2;
 			int bign = 2*nz;
-			float rm2 = (xc-1)*(xc-1);
 //cout<<"  "<<nx<<"  "<<ny<<"  "<<nz<<"  "<<xc<<"  "<<yc<<"  "<<zc<<"  "<<bign<<"  "<<rm2<<endl;
 			for (int iz = -zc + 1-nz%2; iz < zc; iz++) {
 				float xnewz = iz*RAinv[0][2];
@@ -3668,7 +3694,6 @@ EMData::rot_fvol(const Transform &RA, EMData* ret) {
 			int yc = ny/2;
 			int zc = nz/2;
 			int bign = 2*zc;
-			float rm2 = (xc-1)*(xc-1);
 
 			for (int iz = -zc + 1-nz%2; iz < zc; iz++) {
 				float xnewz = iz*RAinv[0][2];
