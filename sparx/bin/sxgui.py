@@ -31,15 +31,15 @@
 
 import sys
 import os
-from global_def import *
+from subprocess import *
+from functools import partial  # Use to connect event-source widget and event handler
 from PyQt4.Qt import *
 from PyQt4 import QtGui
 from PyQt4 import QtCore
-from subprocess import *
 from EMAN2 import *
-from sparx import *
 from EMAN2_cppwrap import *
-from functools import partial  # Use to connect event-source widget and event handler
+from global_def import *
+from sparx import *
 
 # ========================================================================================
 class SXcmd_token:
@@ -62,7 +62,7 @@ class SXcmd_token:
 
 # ========================================================================================
 class SXcmd:
-	def __init__(self):
+	def __init__(self, type = ""):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.name = ""               # Name of this command (i.e. name of sx*.py script but without .py extension)
@@ -70,32 +70,20 @@ class SXcmd:
 		self.short_info = ""         # Short description of this command
 		self.mpi_support = False     # Flag to indicate if this command suppors MPI version
 		self.mpi_add_flag = False    # DESIGN_NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts 
+		self.type = type             # Type of this command; pipe (pipeline), util (utility)
 		self.token_list = []         # list of command tokens. Need this to keep the order of command tokens
 		self.token_dict = {}         # dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
-		self.button = None           # <Used only in sxgui.py> QPushButton button instance associating with this command
+		self.btn = None              # <Used only in sxgui.py> QPushButton button instance associating with this command
 		self.widget = None           # <Used only in sxgui.py> SXCmdWidget instance associating with this command
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		
+
 # ========================================================================================
 def construct_sxcmd_list():
 	sxcmd_list = []
 	
 	# Actual sx commands are inserted into the following section by wikiparser.py.
 	# @@@@@ START_INSERTION @@@@@
-	sxcmd = SXcmd(); sxcmd.name = "sxpdb2em"; sxcmd.label = "PDB File Conversion"; sxcmd.short_info = "Convert atomic model (pdb file) into sampled electron density map"; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False
-	token = SXcmd_token(); token.key_base = "input_pdb"; token.key_prefix = ""; token.label = "pdb file with atomic coordinates"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "pdb"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "output_hdf"; token.key_prefix = ""; token.label = "output 3-D electron density map (any EM format)"; token.help = "Attribute pixel_size will be set to the specified value. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "pixel size (in Angstrom) of the output map"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "box"; token.key_prefix = "--"; token.label = "size of the output map in voxels"; token.help = "If not given, the program will find the minimum box size that includes the structre.  However, in most cases this will result in a rectangular box, i.e., each dimension will be different. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "box"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "het"; token.key_prefix = "--"; token.label = "Include HET atoms in the map"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "center"; token.key_prefix = "--"; token.label = "specify whether to center the atomic model"; token.help = "before converting to electron density map (warning: pdb deposited atomic models are not necesserily centered).  Options: c - center using coordinates of atoms; a - center by setting center of gravity to zero (recommended); a triplet x,y,z (no spaces in between) - coordinates (in Angstrom) to be substracted from all the PDB coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume, i.e., (nx/2, ny/2, nz/2). "; token.group = "main"; token.is_required = False; token.default = "n"; token.restore = "n"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "O"; token.key_prefix = "--"; token.label = "apply additional rotation"; token.help = "so the model will appear in O in the same rotation as in chimera. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "tr0"; token.key_prefix = "--"; token.label = "name of a file containing a 3x4 transformation matrix"; token.help = "to be applied to the PDB coordinates after centering, prior to computing the density map. The translation vector (last column of the matrix) must be specified in Angstrom. If this parameter is omitted, no transformation is applied. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "quiet"; token.key_prefix = "--"; token.label = "do not print any information to the monitor"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-
-	sxcmd_list.append(sxcmd)
-
-	sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.label = "CTF Estimation"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True
+	sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.label = "CTF Estimation"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.type = "pipe"
 	token = SXcmd_token(); token.key_base = "input_image"; token.key_prefix = ""; token.label = "a set of micrographs (name with wild card *) or 2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the partres file and rotinf**** files will be written. The program creates the directory automatically. The directory should not exists upon the execution. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "size of window to use"; token.help = "should be slightly larger than particle box size "; token.group = "main"; token.is_required = False; token.default = "512"; token.restore = "512"; token.type = "ctfwin"; sxcmd.token_list.append(token)
@@ -114,7 +102,7 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.label = "Micrograph Windowing"; sxcmd.short_info = "Window out particles with known coordinates from a micrograph."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False
+	sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.label = "Micrograph Windowing"; sxcmd.short_info = "Window out particles with known coordinates from a micrograph."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.type = "pipe"
 	token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "name pattern of input micrographs"; token.help = "use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, or etc). "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "input_coordinates_pattern"; token.key_prefix = ""; token.label = "name pattern of input coordinates files"; token.help = "use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, and etc). "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the results will be written. the directory should not exists upon the execution. the program creates it automatically. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
@@ -129,7 +117,7 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sxisac"; sxcmd.label = "2D Clustering"; sxcmd.short_info = "Iterative Stable Alignment and Clustering (ISAC) of a 2-D image stack."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	sxcmd = SXcmd(); sxcmd.name = "sxisac"; sxcmd.label = "2D Clustering"; sxcmd.short_info = "Iterative Stable Alignment and Clustering (ISAC) of a 2-D image stack."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.type = "pipe"
 	token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "2-D images in a stack file (format must be bdb)"; token.help = "images have to be square (''nx''=''ny'') "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results) "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "particle radius"; token.help = "there is no default, a sensible number has to be provided, units - pixels "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "radius"; sxcmd.token_list.append(token)
@@ -167,7 +155,7 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sxviper"; sxcmd.label = "Initial 3D Modeling Old"; sxcmd.short_info = "Validated ''ab initio'' 3D structure determination, aka Validation of Individual Parameter Reproducibility. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	sxcmd = SXcmd(); sxcmd.name = "sxviper"; sxcmd.label = "Initial 3D Modeling Old"; sxcmd.short_info = "Validated ''ab initio'' 3D structure determination, aka Validation of Individual Parameter Reproducibility. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.type = "pipe"
 	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results) "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "inner radius for rotational search"; token.help = "> 0 "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
@@ -194,7 +182,7 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sxrviper"; sxcmd.label = "Initial 3D Modeling New"; sxcmd.short_info = "Reproducible ''ab initio'' 3D structure determination, aka Reproducible VIPER.  The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	sxcmd = SXcmd(); sxcmd.name = "sxrviper"; sxcmd.label = "Initial 3D Modeling New"; sxcmd.short_info = "Reproducible ''ab initio'' 3D structure determination, aka Reproducible VIPER.  The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.type = "pipe"
 	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "set of 2-D images in a stack file (format hdf)"; token.help = "images have to be squares (''nx''=''ny'', nx, ny denotes the image size) "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "directory name into which the results will be written"; token.help = "if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "inner radius for rotational search"; token.help = "> 0 "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
@@ -228,7 +216,7 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sxmeridien"; sxcmd.label = "Automatic 3D Refinement"; sxcmd.short_info = "Performs 3D structure refinement."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	sxcmd = SXcmd(); sxcmd.name = "sxmeridien"; sxcmd.label = "Automatic 3D Refinement"; sxcmd.short_info = "Performs 3D structure refinement."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.type = "pipe"
 	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "name of input stack"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output folder"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.restore = "current directory"; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "initial_volume"; token.key_prefix = ""; token.label = "initial 3D structure"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
@@ -248,28 +236,7 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.label = "3D Variablity"; sxcmd.short_info = "Calculate 3D variability field using a set of aligned 2D projection images as an input. The structures with symmetry require preparing data before calculating variability. The data preparation step would symmetrize the data and output a bdb:sdata for variability calculation."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
-	token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "stack of 2D images"; token.help = "with 3D orientation parameters in header and (optionally) CTF information "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "ave2D"; token.key_prefix = "--"; token.label = "write to the disk a stack of 2D averages"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "No"; token.restore = "No"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "var2D"; token.key_prefix = "--"; token.label = "write to the disk a stack of 2D variances"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "No"; token.restore = "No"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "ave3D"; token.key_prefix = "--"; token.label = "write to the disk reconstructed 3D average"; token.help = "3D reconstruction computed from projections averaged within respective angular neighborhood. It should be used to assess the resolvability and possible artifacts of the variability map. "; token.group = "main"; token.is_required = False; token.default = "No"; token.restore = "No"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "var3D"; token.key_prefix = "--"; token.label = "compute 3D variability"; token.help = "time consuming! "; token.group = "main"; token.is_required = False; token.default = "No"; token.restore = "No"; token.type = "string"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "number of projections"; token.help = "from the angular neighborhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. "; token.group = "main"; token.is_required = False; token.default = "10"; token.restore = "10"; token.type = "int"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "no_norm"; token.key_prefix = "--"; token.label = "do not use normalization"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "radiusvar"; token.key_prefix = "--"; token.label = "radius for 3D var"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "npad"; token.key_prefix = "--"; token.label = "number of time to pad the original images"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "2"; token.restore = "2"; token.type = "int"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "point-group symmetry of the structure"; token.help = "specified in case the input structure has symmetry higher than c1. It is specified together with option --sym in the first step for preparing data. Notice this step can be run with only one CPU and there is no MPI version for it. "; token.group = "advanced"; token.is_required = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "stop-band frequency of the low pass filter"; token.help = "to be applied to 2D data prior to variability calculation By default, no filtration. "; token.group = "main"; token.is_required = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "fall-off frequency of the low pass filter"; token.help = "to be applied to 2D data prior to variability calculation By default, no filtration. "; token.group = "main"; token.is_required = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "use CFT correction"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "VERBOSE"; token.key_prefix = "--"; token.label = "Long output for debugging"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "VAR"; token.key_prefix = "--"; token.label = "stack on input consists of 2D variances"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "SND"; token.key_prefix = "--"; token.label = "compute squared normalized differences"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "symmetrize"; token.key_prefix = "--"; token.label = "Prepare input stack for handling symmetry"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "False"; token.restore = "False"; token.type = "sym"; sxcmd.token_list.append(token)
-
-	sxcmd_list.append(sxcmd)
-
-	sxcmd = SXcmd(); sxcmd.name = "sxlocres"; sxcmd.label = "Local Resolution Estimation"; sxcmd.short_info = "Compute local resolution in real space within are outlined by the maskfile and within regions wn x wn x wn."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True
+	sxcmd = SXcmd(); sxcmd.name = "sxlocres"; sxcmd.label = "Local Resolution Estimation"; sxcmd.short_info = "Compute local resolution in real space within are outlined by the maskfile and within regions wn x wn x wn."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.type = "pipe"
 	token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "first half-volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "second half-volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "mask volume"; token.help = "outlining the region within which local resolution values will be computed (optional). "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
@@ -282,7 +249,7 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sxfilterlocal"; sxcmd.label = "3D Local Filter"; sxcmd.short_info = "Locally filter input volume based on values within the associated local resolution volume ([[sxlocres.py]]) within area outlined by the maskfile."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True
+	sxcmd = SXcmd(); sxcmd.name = "sxfilterlocal"; sxcmd.label = "3D Local Filter"; sxcmd.short_info = "Locally filter input volume based on values within the associated local resolution volume ([[sxlocres.py]]) within area outlined by the maskfile."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.type = "pipe"
 	token = SXcmd_token(); token.key_base = "inputvolume"; token.key_prefix = ""; token.label = "input volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "locresvolume"; token.key_prefix = ""; token.label = "local resolution volume"; token.help = "as produced by [[sxlocres.py]]. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "mask volume"; token.help = "outlining the region within which local filtration will be applied (optional). "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
@@ -292,7 +259,7 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sxsort3d"; sxcmd.label = "3D Clustering Protocol I (P1)"; sxcmd.short_info = "Sort out 3D heterogeneity based on the reproducible members of K-means and Equal K-means classification. It runs after 3D refinement where the alignment parameters (xform.projection) are determined."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	sxcmd = SXcmd(); sxcmd.name = "sxsort3d"; sxcmd.label = "3D Clustering Protocol I (P1)"; sxcmd.short_info = "Sort out 3D heterogeneity based on the reproducible members of K-means and Equal K-means classification. It runs after 3D refinement where the alignment parameters (xform.projection) are determined."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.type = "pipe"
 	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "2D images in a stack file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "outdir"; token.key_prefix = ""; token.label = "master output directory"; token.help = "will contain multiple subdirectories. There is a log.txt that describes the sequences of computations in the program. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = ""; token.label = "3D mask"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
@@ -328,7 +295,7 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
-	sxcmd = SXcmd(); sxcmd.name = "sxrsort3d"; sxcmd.label = "3D Clustering Protocol II (P2)"; sxcmd.short_info = "Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters (xform.projection) have been determined already using 3D sorting protocol I (P1)."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False
+	sxcmd = SXcmd(); sxcmd.name = "sxrsort3d"; sxcmd.label = "3D Clustering Protocol II (P2)"; sxcmd.short_info = "Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters (xform.projection) have been determined already using 3D sorting protocol I (P1)."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.type = "pipe"
 	token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "input visual 2D stack file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "outdir"; token.key_prefix = ""; token.label = "output master directory"; token.help = "that contains multiple subdirectories and a log file termed as 'log.txt', which records the sequences of major computational operations. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = ""; token.label = "global 3D mask"; token.help = "this is optional. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
@@ -367,22 +334,56 @@ def construct_sxcmd_list():
 
 	sxcmd_list.append(sxcmd)
 
+	sxcmd = SXcmd(); sxcmd.name = "sxpdb2em"; sxcmd.label = "PDB File Conversion"; sxcmd.short_info = "Convert atomic model (pdb file) into sampled electron density map"; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.type = "util"
+	token = SXcmd_token(); token.key_base = "input_pdb"; token.key_prefix = ""; token.label = "pdb file with atomic coordinates"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "pdb"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "output_hdf"; token.key_prefix = ""; token.label = "output 3-D electron density map (any EM format)"; token.help = "Attribute pixel_size will be set to the specified value. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "pixel size (in Angstrom) of the output map"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "box"; token.key_prefix = "--"; token.label = "size of the output map in voxels"; token.help = "If not given, the program will find the minimum box size that includes the structre.  However, in most cases this will result in a rectangular box, i.e., each dimension will be different. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "box"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "het"; token.key_prefix = "--"; token.label = "Include HET atoms in the map"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "center"; token.key_prefix = "--"; token.label = "specify whether to center the atomic model"; token.help = "before converting to electron density map (warning: pdb deposited atomic models are not necesserily centered).  Options: c - center using coordinates of atoms; a - center by setting center of gravity to zero (recommended); a triplet x,y,z (no spaces in between) - coordinates (in Angstrom) to be substracted from all the PDB coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume, i.e., (nx/2, ny/2, nz/2). "; token.group = "main"; token.is_required = False; token.default = "n"; token.restore = "n"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "O"; token.key_prefix = "--"; token.label = "apply additional rotation"; token.help = "so the model will appear in O in the same rotation as in chimera. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "tr0"; token.key_prefix = "--"; token.label = "name of a file containing a 3x4 transformation matrix"; token.help = "to be applied to the PDB coordinates after centering, prior to computing the density map. The translation vector (last column of the matrix) must be specified in Angstrom. If this parameter is omitted, no transformation is applied. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "quiet"; token.key_prefix = "--"; token.label = "do not print any information to the monitor"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+
+	sxcmd_list.append(sxcmd)
+
+	sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.label = "3D Variablity"; sxcmd.short_info = "Calculate 3D variability field using a set of aligned 2D projection images as an input. The structures with symmetry require preparing data before calculating variability. The data preparation step would symmetrize the data and output a bdb:sdata for variability calculation."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.type = "util"
+	token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "stack of 2D images"; token.help = "with 3D orientation parameters in header and (optionally) CTF information "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ave2D"; token.key_prefix = "--"; token.label = "write to the disk a stack of 2D averages"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "No"; token.restore = "No"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "var2D"; token.key_prefix = "--"; token.label = "write to the disk a stack of 2D variances"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "No"; token.restore = "No"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ave3D"; token.key_prefix = "--"; token.label = "write to the disk reconstructed 3D average"; token.help = "3D reconstruction computed from projections averaged within respective angular neighborhood. It should be used to assess the resolvability and possible artifacts of the variability map. "; token.group = "main"; token.is_required = False; token.default = "No"; token.restore = "No"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "var3D"; token.key_prefix = "--"; token.label = "compute 3D variability"; token.help = "time consuming! "; token.group = "main"; token.is_required = False; token.default = "No"; token.restore = "No"; token.type = "string"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "number of projections"; token.help = "from the angular neighborhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. "; token.group = "main"; token.is_required = False; token.default = "10"; token.restore = "10"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "no_norm"; token.key_prefix = "--"; token.label = "do not use normalization"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "radiusvar"; token.key_prefix = "--"; token.label = "radius for 3D var"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "npad"; token.key_prefix = "--"; token.label = "number of time to pad the original images"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "2"; token.restore = "2"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "point-group symmetry of the structure"; token.help = "specified in case the input structure has symmetry higher than c1. It is specified together with option --sym in the first step for preparing data. Notice this step can be run with only one CPU and there is no MPI version for it. "; token.group = "advanced"; token.is_required = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "stop-band frequency of the low pass filter"; token.help = "to be applied to 2D data prior to variability calculation By default, no filtration. "; token.group = "main"; token.is_required = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "fall-off frequency of the low pass filter"; token.help = "to be applied to 2D data prior to variability calculation By default, no filtration. "; token.group = "main"; token.is_required = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "use CFT correction"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "VERBOSE"; token.key_prefix = "--"; token.label = "Long output for debugging"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "VAR"; token.key_prefix = "--"; token.label = "stack on input consists of 2D variances"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "SND"; token.key_prefix = "--"; token.label = "compute squared normalized differences"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "symmetrize"; token.key_prefix = "--"; token.label = "Prepare input stack for handling symmetry"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "False"; token.restore = "False"; token.type = "sym"; sxcmd.token_list.append(token)
+
+	sxcmd_list.append(sxcmd)
+
 	# @@@@@ END_INSERTION @@@@@
 	
 	# Create command token dictionary for each SXcmd instance
 	for sxcmd in sxcmd_list:
-		for token in sxcmd.token_list:
+		for sxcmd_token in sxcmd.token_list:
 			# Handle very special cases
-			if token.type == "function":
+			if sxcmd_token.type == "function":
 				n_widgets = 2 # function type has two line edit boxes
-				token.label = [token.label, "enter name of external file with .py extension containing user function"]
-				token.help = [token.help, "(leave blank if file is not external to sphire)"]
-				token.default = [token.default, "None"]
-				token.restore = token.default
+				sxcmd_token.label = [sxcmd_token.label, "enter name of external file with .py extension containing user function"]
+				sxcmd_token.help = [sxcmd_token.help, "(leave blank if file is not external to sphire)"]
+				sxcmd_token.default = [sxcmd_token.default, "None"]
+				sxcmd_token.restore = sxcmd_token.default
 			# else: Do nothing for the other types
 			
 			# Register this to command token dictionary
-			sxcmd.token_dict[token.key_base] = token
+			sxcmd.token_dict[sxcmd_token.key_base] = sxcmd_token
 		
 		# DESIGN_NOTE: 2016/02/05 Toshio Moriya
 		# Handle exceptional cases due to the limitation of software design 
@@ -395,7 +396,7 @@ def construct_sxcmd_list():
 			assert(sxcmd.token_dict["wn"].key_base == "wn")
 			assert(sxcmd.token_dict["wn"].type == "ctfwin")
 			sxcmd.token_dict["wn"].type = "int"
-			
+	
 	return sxcmd_list
 
 # ========================================================================================
@@ -422,16 +423,15 @@ class SXconst_set:
 		self.short_info = ""         # <Used only in sxgui.py> Short description of this set
 		self.list = []               # <Used only in sxgui.py> list of constant parameters. Need this to keep the order of constant parameters
 		self.dict = {}               # <Used only in sxgui.py> dictionary of constant parameters, organised by key of constant parameters. Easy to access a constant parameters but looses their order
-		self.button = None           # <Used only in sxgui.py> QPushButton button instance associating with this set
-		self.widget = None           # <Used only in sxgui.py> Widget instance associating with this set
+		self.btn = None              # <Used only in sxgui.py> QPushButton button instance associating with this set
+		self.window = None           # <Used only in sxgui.py> Widget instance associating with this set
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		
 
 # ========================================================================================
 def construct_sxconst_set():
 	
 	# Create project constant set 
-	sxconst_set = SXconst_set(); sxconst_set.name = "Project Constant Settings"; sxconst_set.label = "Project Constant Settings"; sxconst_set.short_info = "Set constant values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
+	sxconst_set = SXconst_set(); sxconst_set.name = "Project Constants"; sxconst_set.label = "Project Constants"; sxconst_set.short_info = "Set constant values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
 	sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "micrograph pixel size"; sxconst.help = "in angstrom/pixel"; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "ctfwin"; sxconst.label = "CTF window size "; sxconst.help = "in pixel. it should be slightly larger than particle box size"; sxconst.register = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
@@ -444,31 +444,42 @@ def construct_sxconst_set():
 	return sxconst_set
 	
 # ========================================================================================
-class SXWidetConst:
+class SXLookFeelConst:
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# static class variables
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	default_bg_color = QColor(195, 195, 230) # Blueish Non-Transparent
+	sxcmd_widget_bg_color = QColor(195, 195, 230, 240) # sxcmd_widget_bg_color = QColor(195, 195, 230, 175) # Blueish Transparent
+	
 	grid_margin = 12 # grid_margin = 8
 	grid_spacing = 6
-	# main_bg_color = QColor(200, 200, 255) # Blueish 
-	sxconst_set_bg_color = QColor(195, 195, 230) # Blueish Non-Transparent
-	sxcmd_bg_color = QColor(195, 195, 230, 240) # sxcmd_bg_color = QColor(195, 195, 230, 175) # Blueish Transparent
 	
-	sxcmd_btn_min_width = 240
-	# sxcmd_min_width = 1080 # Best for MAC OSX
-	# sxcmd_min_height = 1080 # Best for MAC OSX
-	sxcmd_min_width = 1140 # Best for Linux
-	sxcmd_min_height = 1080 # Best for Linux
+	sxcmd_select_area_min_width = 240
+	# sxcmd_widget_area_min_width = 1080 # Best for MAC OSX
+	# sxcmd_widget_area_min_height = 1080 # Best for MAC OSX
+	sxcmd_widget_area_min_width = 1140 # Best for Linux
+	sxcmd_widget_area_min_height = 1080 # Best for Linux
 	
-	# sxconst_set_min_width = 440 # Best for Mac OSX
-	sxconst_set_min_width = 460 # Best for Linux
-	sxconst_set_min_height = sxcmd_min_height
+	# sxconst_set_area_min_width = 440 # Best for Mac OSX
+	sxconst_set_area_min_width = 460 # Best for Linux
+	sxconst_set_area_min_height = sxcmd_widget_area_min_height
+	
+	# sxconst_set_window_width = sxconst_set_area_min_width + grid_margin * 5 # Best setting for MAC OSX
+	sxconst_set_window_width = sxconst_set_area_min_width + grid_margin * 5 # Best setting for Linux
+	sxconst_set_window_height = sxconst_set_area_min_height + grid_margin * 2
+	
+	# sxmain_window_width = sxcmd_widget_area_min_width + sxcmd_select_area_min_width + grid_margin * (7 + 1) # Best setting for MAC OSX
+	sxmain_window_width = sxcmd_widget_area_min_width + sxcmd_select_area_min_width + grid_margin * (7 + 7) # Best setting for Linux
+	sxmain_window_height = sxcmd_widget_area_min_height + grid_margin * 2
+	
+	sxutil_window_width = sxmain_window_width
+	sxutil_window_height = sxmain_window_height
 	
 	project_dir = "sxgui_settings"
-	
+
 # ========================================================================================
 # Provides all necessary functionarity
-# tabs only contains gui and knows how to layout them
+# tabs only provides widgets and knows how to layout them
 class SXCmdWidget(QWidget):
 	def __init__(self, sxconst_set, sxcmd, parent = None):
 		super(SXCmdWidget, self).__init__(parent)
@@ -477,31 +488,33 @@ class SXCmdWidget(QWidget):
 		# class variables
 		self.sxconst_set = sxconst_set
 		self.sxcmd = sxcmd
+		self.sxcmd_tab_main = None
+		self.sxcmd_tab_advance = None
 		
-		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (SXWidetConst.project_dir, self.sxcmd.name)
+		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (SXLookFeelConst.project_dir, self.sxcmd.name)
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 		# Set grid layout
 		grid_layout = QGridLayout(self)
-		# grid_layout.setMargin(SXWidetConst.grid_margin)
-		# grid_layout.setSpacing(SXWidetConst.grid_spacing)
-
+		# grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		# grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
+		
 		self.setAutoFillBackground(True)
 		palette = QPalette(self)
-		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxcmd_bg_color))
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxcmd_widget_bg_color))
 		self.setPalette(palette)
 		
 		# self.setWindowTitle(self.sxcmd.name)
-		self.sxtab_main = SXTab("Main", self)
-		self.sxtab_advance = SXTab("Advanced", self)
-#		self.sxtab_main.w1 = self.sxtab_advance
+		self.sxcmd_tab_main = SXCmdTab("Main", self)
+		self.sxcmd_tab_advance = SXCmdTab("Advanced", self)
+#		self.sxcmd_tab_main.w1 = self.sxcmd_tab_advance
 # 		self.tab_widget = QTabWidget(self)
 		self.tab_widget = QTabWidget()
-		self.tab_widget.insertTab(0, self.sxtab_main, self.sxtab_main.name)
-		self.tab_widget.insertTab(1, self.sxtab_advance, self.sxtab_advance.name)
+		self.tab_widget.insertTab(0, self.sxcmd_tab_main, self.sxcmd_tab_main.name)
+		self.tab_widget.insertTab(1, self.sxcmd_tab_advance, self.sxcmd_tab_advance.name)
 		# self.tab_widget.setAutoFillBackground(True)
 		# palette = self.tab_widget.palette()
-		# palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxcmd_bg_color))
+		# palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxcmd_widget_bg_color))
 		# self.tab_widget.setPalette(palette)
 #		self.tab_widget.resize(880,860) # self.tab_widget.resize(900,1080)
 #		self.tab_widget.show()
@@ -510,59 +523,59 @@ class SXCmdWidget(QWidget):
 		# Load the previously saved parameter setting of this sx command
 		if os.path.exists(self.gui_settings_file_path):
 			self.read_params(self.gui_settings_file_path)
-		
+	
 	def map_widgets_to_sxcmd_line(self):
 		# Add program name to command line
 		sxcmd_line = "%s.py" % self.sxcmd.name
 		
 		# Loop through all command tokens
-		for token in self.sxcmd.token_list:
+		for sxcmd_token in self.sxcmd.token_list:
 			# First, handle very special cases
-			if token.type == "function":
+			if sxcmd_token.type == "function":
 				user_func_name_index = 0
 				external_file_path_index = 1
-				user_func_name = str(token.widget[user_func_name_index].text())
-				external_file_path = str(token.widget[external_file_path_index].text())
+				user_func_name = str(sxcmd_token.widget[user_func_name_index].text())
+				external_file_path = str(sxcmd_token.widget[external_file_path_index].text())
 				
 				# This is not default value
-				if external_file_path not in ["", token.default[external_file_path_index]]:
+				if external_file_path not in ["", sxcmd_token.default[external_file_path_index]]:
 					# Case 1: User specified an exteranl function different from default or empty string
 					if os.path.splitext(external_file_path)[1] != ".py": 
 						QMessageBox.warning(self, "Invalid paramter value", "Exteranl File Path (%s) should include the python script extension (.py)." % (external_file_path))
 						return ""
 					dir_path, file_basename = os.path.split(external_file_path)
 					file_basename = file_basename.replace(".py", "")
-					sxcmd_line += " %s%s=[%s,%s,%s]" % (token.key_prefix, token.key_base, dir_path, file_basename, user_func_name)
-				elif user_func_name != token.default[user_func_name_index]:
+					sxcmd_line += " %s%s=[%s,%s,%s]" % (sxcmd_token.key_prefix, sxcmd_token.key_base, dir_path, file_basename, user_func_name)
+				elif user_func_name != sxcmd_token.default[user_func_name_index]:
 					# Case 2: User specified an internal function different from default
-					sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, user_func_name)
+					sxcmd_line += " %s%s=%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base, user_func_name)
 				# else: User left default value. Do nothing
 			# Then, handle the other cases//
 			else:
-				if token.type == "bool":
-					if token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
-					if (token.widget.checkState() == Qt.Checked) != token.default:
-						sxcmd_line += " %s%s" % (token.key_prefix, token.key_base)
+				if sxcmd_token.type == "bool":
+					if sxcmd_token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+					if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default:
+						sxcmd_line += " %s%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base)
 				else:
-					if token.is_required == True and token.widget.text() == token.default:
-						QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this token." % (token.key_base, self.sxcmd.name))
+					if sxcmd_token.is_required == True and sxcmd_token.widget.text() == sxcmd_token.default:
+						QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.key_base, self.sxcmd.name))
 						return ""
 				
-					if token.widget.text() != token.default:
+					if sxcmd_token.widget.text() != sxcmd_token.default:
 						# For now, using line edit box for the other type
-						widget_text = str(token.widget.text())
-						if token.type not in ["int", "float"]:
+						widget_text = str(sxcmd_token.widget.text())
+						if sxcmd_token.type not in ["int", "float"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
 							widget_text = "\'%s\'" % (widget_text) # then, enclose the string value with single quotes (')
 						
-						if token.key_prefix == "":
+						if sxcmd_token.key_prefix == "":
 							sxcmd_line += " %s" % (widget_text)
-						elif token.key_prefix == "--":
-							sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, widget_text)
+						elif sxcmd_token.key_prefix == "--":
+							sxcmd_line += " %s%s=%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base, widget_text)
 						else:
-							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
 				
 		
 		return sxcmd_line
@@ -577,7 +590,7 @@ class SXCmdWidget(QWidget):
 			np = 1
 			if self.sxcmd.mpi_support:
 				# mpi is supported
-				np = int(str(self.sxtab_main.mpi_nproc_edit.text()))
+				np = int(str(self.sxcmd_tab_main.mpi_nproc_edit.text()))
 				# DESIGN_NOTE: 2015/10/27 Toshio Moriya
 				# Since we now assume sx*.py exists in only MPI version, always add --MPI flag if necessary
 				# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
@@ -616,14 +629,14 @@ class SXCmdWidget(QWidget):
 				
 			# Generate command line according to the case
 			cmd_line = ""
-			if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+			if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
-				if os.path.exists(self.sxtab_main.qsub_script_edit.text()) != True: 
-					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s)." % (self.sxtab_main.qsub_script_edit.text()))
+				if os.path.exists(self.sxcmd_tab_main.qsub_script_edit.text()) != True: 
+					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s)." % (self.sxcmd_tab_main.qsub_script_edit.text()))
 					return "" 
 					
-				file_template = open(self.sxtab_main.qsub_script_edit.text(),"r")
+				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
 				# Extract command line from qsub script template 
 				for line in file_template:
 					if line.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -631,13 +644,13 @@ class SXCmdWidget(QWidget):
 						if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 							cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
 						if cmd_line.find("XXX_SXMPI_JOB_NAME_XXX") != -1:
-							cmd_line = cmd_line.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.sxtab_main.qsub_job_name_edit.text()))
+							cmd_line = cmd_line.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.sxcmd_tab_main.qsub_job_name_edit.text()))
 				file_template.close()
 			elif self.sxcmd.mpi_support:
 				# Case 2: queue submission is disabled, but MPI is supported
-				if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxtab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Add MPI execution to command line
-				cmd_line = str(self.sxtab_main.mpi_cmd_line_edit.text())
+				cmd_line = str(self.sxcmd_tab_main.mpi_cmd_line_edit.text())
 				# If empty string is entered, use a default template
 				if cmd_line == "":
 					cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
@@ -647,7 +660,7 @@ class SXCmdWidget(QWidget):
 					cmd_line = cmd_line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
 			else: 
 				# Case 3: queue submission is disabled, and MPI is not supported
-				if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxtab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Use sx command as it is
 				cmd_line = sxcmd_line
 		else:
@@ -663,34 +676,34 @@ class SXCmdWidget(QWidget):
 		if cmd_line:
 			# Command line is not empty
 			# First, check existence of outputs
-			for token in self.sxcmd.token_list:
-				if token.type == "output":
-					if os.path.exists(token.widget.text()):
+			for sxcmd_token in self.sxcmd.token_list:
+				if sxcmd_token.type == "output":
+					if os.path.exists(sxcmd_token.widget.text()):
 						# DESIGN_NOTE: 2015/11/24 Toshio Moriya
 						# This special case needs to be handled with more general method...
 						if self.sxcmd.name in ["sxisac", "sxviper", "sxrviper", "sxmeridien", "sxsort3d"]:
-							reply = QMessageBox.question(self, "Output Directory/File", "Output Directory/File (%s) already exists. Do you really want to run the program with continue mode?" % (token.widget.text()), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+							reply = QMessageBox.question(self, "Output Directory/File", "Output Directory/File (%s) already exists. Do you really want to run the program with continue mode?" % (sxcmd_token.widget.text()), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 							if reply == QMessageBox.No:
 								return
 							# else: # Do nothing
 						else:
-							QMessageBox.warning(self, "Output Directory/File", "Output Directory/File (%s) already exists. Please change the name and try it again. Aborting execution ..." % (token.widget.text()))
+							QMessageBox.warning(self, "Output Directory/File", "Output Directory/File (%s) already exists. Please change the name and try it again. Aborting execution ..." % (sxcmd_token.widget.text()))
 							return
 			
 			# If mpi is not supported set number of MPI processer (np) to 1
 			np = 1
 			if self.sxcmd.mpi_support:
-				np = int(str(self.sxtab_main.mpi_nproc_edit.text()))
-		
-			if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+				np = int(str(self.sxcmd_tab_main.mpi_nproc_edit.text()))
+			
+			if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
-				template_file_path = self.sxtab_main.qsub_script_edit.text()
+				template_file_path = self.sxcmd_tab_main.qsub_script_edit.text()
 				if os.path.exists(template_file_path) == False: 
 					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
 					return
-				file_template = open(self.sxtab_main.qsub_script_edit.text(),"r")
-				file_name_qsub_script = "qsub_" + str(self.sxtab_main.qsub_job_name_edit.text()) + ".sh"
+				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
+				file_name_qsub_script = "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh"
 				file_qsub_script = open(file_name_qsub_script,"w")
 				for line_io in file_template:
 					if line_io.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -699,20 +712,20 @@ class SXCmdWidget(QWidget):
 						if line_io.find("XXX_SXMPI_NPROC_XXX") != -1:
 							line_io = line_io.replace("XXX_SXMPI_NPROC_XXX", str(np))
 						if line_io.find("XXX_SXMPI_JOB_NAME_XXX") != -1:
-							line_io = line_io.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.sxtab_main.qsub_job_name_edit.text()))
+							line_io = line_io.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.sxcmd_tab_main.qsub_job_name_edit.text()))
 					file_qsub_script.write(line_io)
 				file_template.close()
 				file_qsub_script.close()
 				# Generate command line for queue submission
 				cmd_line_in_script = cmd_line
-				cmd_line = str(self.sxtab_main.qsub_cmd_edit.text()) + " " + file_name_qsub_script
+				cmd_line = str(self.sxcmd_tab_main.qsub_cmd_edit.text()) + " " + file_name_qsub_script
 				print "Wrote the following command line in the queue submission script: "
 				print cmd_line_in_script
 				print "Submitted a job by the following command: "
 				print cmd_line
 			else:
 				# Case 2: queue submission is disabled (MPI can be supported or unsupported)
-				if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxtab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				print "Executed the following command: "
 				print cmd_line
 		
@@ -721,8 +734,8 @@ class SXCmdWidget(QWidget):
 			self.emit(SIGNAL("process_started"), process.pid)
 			
 			# Save the current state of GUI settings
-			if os.path.exists(SXWidetConst.project_dir) == False:
-				os.mkdir(SXWidetConst.project_dir)
+			if os.path.exists(SXLookFeelConst.project_dir) == False:
+				os.mkdir(SXLookFeelConst.project_dir)
 			self.write_params(self.gui_settings_file_path)
 		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
 	
@@ -739,8 +752,8 @@ class SXCmdWidget(QWidget):
 				print cmd_line
 				
 				# Save the current state of GUI settings
-				if os.path.exists(SXWidetConst.project_dir) == False:
-					os.mkdir(SXWidetConst.project_dir)
+				if os.path.exists(SXLookFeelConst.project_dir) == False:
+					os.mkdir(SXLookFeelConst.project_dir)
 				self.write_params(self.gui_settings_file_path)
 		# else: Do nothing
 	
@@ -789,20 +802,20 @@ class SXCmdWidget(QWidget):
 			
 		# At the end of parameter file...
 		# Write MPI parameters 
-		file_out.write("%s == %s \n" % ("MPI processors", str(self.sxtab_main.mpi_nproc_edit.text())))
-		file_out.write("%s == %s \n" % ("MPI Command Line Template", str(self.sxtab_main.mpi_cmd_line_edit.text())))
+		file_out.write("%s == %s \n" % ("MPI processors", str(self.sxcmd_tab_main.mpi_nproc_edit.text())))
+		file_out.write("%s == %s \n" % ("MPI Command Line Template", str(self.sxcmd_tab_main.mpi_cmd_line_edit.text())))
 		# Write Qsub paramters 
-		if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+		if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 			val_str = "YES"
 		else:
 			val_str = "NO"
 		file_out.write("%s == %s \n" % ("Submit Job to Queue", val_str))	
-		file_out.write("%s == %s \n" % ("Job Name", str(self.sxtab_main.qsub_job_name_edit.text())))
-		file_out.write("%s == %s \n" % ("Submission Command", str(self.sxtab_main.qsub_cmd_edit.text())))
-		file_out.write("%s == %s \n" % ("Submission Script Template", str(self.sxtab_main.qsub_script_edit.text())))
+		file_out.write("%s == %s \n" % ("Job Name", str(self.sxcmd_tab_main.qsub_job_name_edit.text())))
+		file_out.write("%s == %s \n" % ("Submission Command", str(self.sxcmd_tab_main.qsub_cmd_edit.text())))
+		file_out.write("%s == %s \n" % ("Submission Script Template", str(self.sxcmd_tab_main.qsub_script_edit.text())))
 		
 		file_out.close()
-			
+	
 	def read_params(self, file_path_in):
 		file_in = open(file_path_in,"r")
 	
@@ -819,21 +832,21 @@ class SXCmdWidget(QWidget):
 				val_str_in = line_in.split("==")[1].strip() 
 				
 				if label_in == "MPI processors":
-					self.sxtab_main.mpi_nproc_edit.setText(val_str_in)
+					self.sxcmd_tab_main.mpi_nproc_edit.setText(val_str_in)
 				elif label_in == "MPI Command Line Template":
-					self.sxtab_main.mpi_cmd_line_edit.setText(val_str_in)
+					self.sxcmd_tab_main.mpi_cmd_line_edit.setText(val_str_in)
 				elif label_in == "Submit Job to Queue":
 					if val_str_in == "YES":
-						self.sxtab_main.qsub_enable_checkbox.setChecked(True)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(True)
 					else:
 						assert val_str_in == "NO"
-						self.sxtab_main.qsub_enable_checkbox.setChecked(False)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(False)
 				elif label_in == "Job Name":
-					self.sxtab_main.qsub_job_name_edit.setText(val_str_in)
+					self.sxcmd_tab_main.qsub_job_name_edit.setText(val_str_in)
 				elif label_in == "Submission Command":
-					self.sxtab_main.qsub_cmd_edit.setText(val_str_in)
+					self.sxcmd_tab_main.qsub_cmd_edit.setText(val_str_in)
 				elif label_in == "Submission Script Template":
-					self.sxtab_main.qsub_script_edit.setText(val_str_in)
+					self.sxcmd_tab_main.qsub_script_edit.setText(val_str_in)
 				else:
 					# Extract key_base of this command token
 					target_operator = "<"
@@ -912,22 +925,22 @@ class SXCmdWidget(QWidget):
 			
 		if file_path != "":
 			target_widget.setText(file_path)
-				
+	
 	def select_dir(self, target_widget):
 		dir_path = str(QFileDialog.getExistingDirectory(self, "Select Directory", "", options = QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog))
 		if dir_path != "":
 			# Use relative path. 
 			target_widget.setText(os.path.relpath(dir_path))
-			
+	
 	"""
 #	def show_output_info(self):
 #		QMessageBox.information(self, "sx* output","outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program.")
 	"""
 
 # ========================================================================================
-class SXTab(QWidget):
+class SXCmdTab(QWidget):
 	def __init__(self, name, parent=None):
-		super(SXTab, self).__init__(parent)
+		super(SXCmdTab, self).__init__(parent)
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
@@ -968,8 +981,8 @@ class SXTab(QWidget):
 		token_widget_min_width = 120
 		
 		grid_layout = QGridLayout(self)
-		grid_layout.setMargin(SXWidetConst.grid_margin)
-		grid_layout.setSpacing(SXWidetConst.grid_spacing)
+		grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
@@ -1107,7 +1120,7 @@ class SXTab(QWidget):
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 					
 					self.connect(cmd_token_restore_widget[widget_index], SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token, widget_index))
-
+					
 					file_format = "py"
 #					temp_btn = QPushButton("Select Script", self)
 					temp_btn = QPushButton("Select Script")
@@ -1300,12 +1313,12 @@ class SXTab(QWidget):
 				# Register this widget
 				cmd_token.widget = cmd_token_widget
 				cmd_token.restore_widget = cmd_token_restore_widget
-				
+		
 		if tab_group == "main":
 			# Add space
 #			self.y1 = self.y1 + 25 * 1
 			grid_row += 1
-		
+			
 			# Add gui components for MPI related paramaters
 #			temp_label = QLabel("MPI processors", self)
 			temp_label = QLabel("MPI processors")
@@ -1340,11 +1353,11 @@ class SXTab(QWidget):
 			
 #			self.y1 = self.y1 + 25
 			grid_row += 1
-		
+			
 			# If MPI is not supported, disable this widget
 			self.set_text_entry_widget_enable_state(self.mpi_nproc_edit, self.sxcmdwidget.sxcmd.mpi_support)
 			self.set_text_entry_widget_enable_state(self.mpi_cmd_line_edit, self.sxcmdwidget.sxcmd.mpi_support)
-
+			
 			# Add gui components for queue submission (qsub)
 			is_qsub_enabled = False
 #			temp_label = QLabel("submit job to queue", self)
@@ -1422,7 +1435,7 @@ class SXTab(QWidget):
 			
 #			self.y1 = self.y1 + 25
 			grid_row += 1
-		
+			
 			# Initialize enable state of qsub related widgets
 			self.set_qsub_enable_state()
 			
@@ -1464,7 +1477,7 @@ class SXTab(QWidget):
 			self.execute_btn.setToolTip("run %s and automatically save gui parameter settings" % self.sxcmdwidget.sxcmd.name)
 			self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxcmdwidget.execute_cmd_line)
 			grid_layout.addWidget(self.execute_btn, grid_row, grid_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
-
+	
 	def set_text_entry_widget_enable_state(self, widget, is_enabled):
 		# Set enable state and background color of text entry widget according to enable state
 		default_palette = QPalette()
@@ -1478,7 +1491,7 @@ class SXTab(QWidget):
 		palette = widget.palette()
 		palette.setColor(widget.backgroundRole(), bg_color)
 		widget.setPalette(palette)
-		
+	
 	def set_qsub_enable_state(self):
 		is_enabled = False
 		if self.qsub_enable_checkbox.checkState() == Qt.Checked:
@@ -1506,32 +1519,27 @@ class SXTab(QWidget):
 					sxcmd_token.widget.setChecked(False)
 			else:
 				sxcmd_token.widget.setText("%s" % sxcmd_token.restore)
-			
 
 # ========================================================================================
-class SXConstSetWidget(QWidget):
+class SXConstSetWindow(QWidget):
 	def __init__(self, sxconst_set, sxcmd_list, parent=None):
-		super(SXConstSetWidget, self).__init__(parent)
+		super(SXConstSetWindow, self).__init__(parent)
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.sxconst_set = sxconst_set
 		self.sxcmd_list = sxcmd_list
 		
-		self.gui_settings_file_path = "%s/gui_settings_project_consts.txt" % (SXWidetConst.project_dir)
+		self.gui_settings_file_path = "%s/gui_settings_project_consts.txt" % (SXLookFeelConst.project_dir)
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		# Set the window title
+		# Set the window title and size
 		self.setWindowTitle(self.sxconst_set.name)
-		
-		# Best setting for MAC OSX
-		self.resize(SXWidetConst.sxconst_set_min_width + SXWidetConst.grid_margin * 5, SXWidetConst.sxconst_set_min_height + SXWidetConst.grid_margin * 2)
-		# Best setting for Linux
-		# self.resize(SXWidetConst.sxconst_set_min_width + SXWidetConst.grid_margin * 5, SXWidetConst.sxconst_set_min_height + SXWidetConst.grid_margin * 2)
+		self.resize(SXLookFeelConst.sxconst_set_window_width, SXLookFeelConst.sxconst_set_window_height)
 		
 #		# Set the background color of this widget
 #		self.setAutoFillBackground(True)
 #		palette = QPalette(self)
-#		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxconst_set_bg_color))
+#		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 #		self.setPalette(palette)
 		
 		global_row_origin = 0; global_col_origin = 0
@@ -1567,29 +1575,29 @@ class SXConstSetWidget(QWidget):
 		# Set the background color of scroll area
 		scroll_area_widgets.setAutoFillBackground(True)
 		palette = QPalette()
-		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxconst_set_bg_color))
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 		scroll_area_widgets.setPalette(palette)
 		
 		scroll_area.setWidget(scroll_area_widgets)
 		box_layout.addWidget(scroll_area)
 		
-		# global_layout = QGridLayout()
+#		global_layout = QGridLayout()
 		global_layout = QGridLayout(scroll_area_widgets)
-		global_layout.setMargin(SXWidetConst.grid_margin)
-		global_layout.setSpacing(SXWidetConst.grid_spacing)
+		global_layout.setMargin(SXLookFeelConst.grid_margin)
+		global_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		global_layout.setRowStretch(global_row_span - 1, global_layout.rowStretch(global_row_origin) + 1)
 		
 		header_layout = QGridLayout()
-		header_layout.setMargin(SXWidetConst.grid_margin)
-		header_layout.setSpacing(SXWidetConst.grid_spacing)
+		header_layout.setMargin(SXLookFeelConst.grid_margin)
+		header_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		
 		const_set_layout = QGridLayout()
-		const_set_layout.setMargin(SXWidetConst.grid_margin)
-		const_set_layout.setSpacing(SXWidetConst.grid_spacing)
+		const_set_layout.setMargin(SXLookFeelConst.grid_margin)
+		const_set_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		
 		btn_layout = QGridLayout()
-		btn_layout.setMargin(SXWidetConst.grid_margin)
-		btn_layout.setSpacing(SXWidetConst.grid_spacing * 2)
+		btn_layout.setMargin(SXLookFeelConst.grid_margin)
+		btn_layout.setSpacing(SXLookFeelConst.grid_spacing * 2)
 		
 		# # Define the frame within the widget layout
 		# widget_frame = QFrame()
@@ -1720,10 +1728,10 @@ class SXConstSetWidget(QWidget):
 					# print "MRK_DEBUG: %s, %s, %s, %s, %s" % (sxcmd.name, cmd_token.key_base, cmd_token.type, cmd_token.default, cmd_token.restore)
 		
 		# Save the current state of GUI settings
-		if os.path.exists(SXWidetConst.project_dir) == False:
-			os.mkdir(SXWidetConst.project_dir)
+		if os.path.exists(SXLookFeelConst.project_dir) == False:
+			os.mkdir(SXLookFeelConst.project_dir)
 		self.write_consts(self.gui_settings_file_path)
-			
+	
 	def write_consts(self, file_path_out):
 		file_out = open(file_path_out,"w")
 		
@@ -1740,10 +1748,10 @@ class SXConstSetWidget(QWidget):
 			file_out.write("<%s> %s (registered %s) == %s \n" % (sxconst.key, sxconst.label, sxconst.register, val_str))
 			
 		file_out.close()
-
+	
 	def read_consts(self, file_path_in):
 		file_in = open(file_path_in,"r")
-	
+		
 		# Check if this parameter file is for this sx script
 		line_in = file_in.readline()
 		if line_in.find("@@@@@ project constants gui setting") != -1:
@@ -1777,22 +1785,22 @@ class SXConstSetWidget(QWidget):
 			QMessageBox.warning(self, "Fail to load project constants", "The specified file is not project constants file.")
 		
 		file_in.close()
-		
+	
 	def save_consts(self):
 		file_path_out = str(QFileDialog.getSaveFileName(self, "Save constants", options = QFileDialog.DontUseNativeDialog))
 		if file_path_out != "":
 			self.write_consts(file_path_out)
-
+	
 	def load_consts(self):
 		file_path_in = str(QFileDialog.getOpenFileName(self, "Load constants", options = QFileDialog.DontUseNativeDialog))
 		if file_path_in != "":
 			self.read_consts(file_path_in)
 
 # ========================================================================================
-# Layout of the Pop Up window SXPopup_info; started by the function info of the main window
-class SXPopup_info(QWidget):
+# Layout of the Pop Up window SXInfoWindow; started by the function info of the main window
+class SXInfoWindow(QWidget):
 	def __init__(self, parent = None):
-		super(SXPopup_info, self).__init__(parent)
+		super(SXInfoWindow, self).__init__(parent)
 		
 		#Here we just set the window title and  3 different labels, with their positions in the window
 		self.setWindowTitle("SPHIRE GUI Info Page")
@@ -1800,7 +1808,7 @@ class SXPopup_info(QWidget):
 		# Set the background color of this widget
 		self.setAutoFillBackground(True)
 		palette = QPalette(self)
-		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxconst_set_bg_color))
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 		self.setPalette(palette)
 		
 		label_row_span = 1; label_col_span = 3
@@ -1808,8 +1816,8 @@ class SXPopup_info(QWidget):
 		spacer_min_width = 12
 		
 		grid_layout = QGridLayout(self)
-		grid_layout.setMargin(SXWidetConst.grid_margin)
-		grid_layout.setSpacing(SXWidetConst.grid_spacing)
+		grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		
 		grid_col = 0
 		grid_row = 0; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
@@ -1831,42 +1839,158 @@ class SXPopup_info(QWidget):
 		grid_row += 1; close_btn = QPushButton("Close")
 		self.connect(close_btn, SIGNAL("clicked()"), self.close)
 		grid_layout.addWidget(close_btn, grid_row, grid_col + 1, close_row_span, close_col_span)
-		
 
 # ========================================================================================
-# Main Window (started by class App)
-# This class includes the layout of the main window
-class MainWindow(QWidget):
-	def __init__(self, parent = None):
-		super(MainWindow, self).__init__(parent)
+# Utility Window (opened by class SXMainWindow)
+# This class includes the layout of the utility window
+class SXUtilWindow(QWidget):
+	def __init__(self, sxconst_set, sxcmd_list, title= "Utility" , parent = None):
+		super(SXUtilWindow, self).__init__(parent)
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.sxconst_set = None
-		self.sxcmd_list = []
+		self.sxconst_set = sxconst_set
+		self.sxcmd_list = sxcmd_list
 		self.cur_sxcmd = None
-		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		
-		# Construct list of sxscript objects (extracted from associated wiki documents)
-		self.sxconst_set = construct_sxconst_set()
-		
-		# Construct list of sxscript objects (extracted from associated wiki documents)
-		self.sxcmd_list = construct_sxcmd_list()
-		
-		# self.setStyleSheet("background-image: url("1.png")")
-		# Set the title of the window
-		self.setWindowTitle("SPHIRE GUI (Alpha Version)")
-		
-		# Best setting for MAC OSX
-		# self.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_btn_min_width + SXWidetConst.grid_margin * (7 + 1), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
-		# Best setting for Linux
-		self.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_btn_min_width + SXWidetConst.grid_margin * (7 + 7), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
+		# Set the window title and size
+		self.setWindowTitle(title)
+		self.resize(SXLookFeelConst.sxutil_window_width, SXLookFeelConst.sxutil_window_height)
 		
 #		# Set the background color of main window
 #		self.setAutoFillBackground(True)
 #		palette = QPalette()
-#		# palette.setBrush(QPalette.Background, QBrush(SXWidetConst.main_bg_color))
+#		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
+#		self.setPalette(palette)
+		
+		# Set scroll area and grid layout
+		grid_row_origin = 0; grid_col_origin = 0
+		
+		close_row_span = 1; close_col_span = 1
+		title_row_span = 1; title_col_span = 1
+		cmd_btn_row_span = 1; cmd_btn_col_span = 1
+		cmd_settings_row_span = 32; cmd_settings_col_span = 1
+		
+		close_btn_min_width = SXLookFeelConst.sxcmd_select_area_min_width
+		
+		cmd_min_width = SXLookFeelConst.sxcmd_widget_area_min_width + SXLookFeelConst.grid_margin * 4
+		cmd_min_height = SXLookFeelConst.sxcmd_widget_area_min_height + SXLookFeelConst.grid_margin * 4
+		
+		box_layout = QVBoxLayout(self)
+		box_layout.setContentsMargins(0,0,0,0)
+		box_layout.setSpacing(0)
+		scroll_area = QScrollArea()
+		scroll_area.setWidgetResizable(True)
+		scroll_area_widgets = QWidget(scroll_area)
+		
+		# Set the background color of scroll area
+		scroll_area_widgets.setAutoFillBackground(True)
+		palette = QPalette()
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
+		scroll_area_widgets.setPalette(palette)
+		
+		scroll_area.setWidget(scroll_area_widgets)
+		box_layout.addWidget(scroll_area)
+		
+		grid_layout = QGridLayout(scroll_area_widgets)
+		grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
+		grid_layout.setColumnMinimumWidth(0, close_btn_min_width)
+		grid_layout.setColumnMinimumWidth(1, cmd_min_width)
+		# Give the command setting area a higher priority to stretch relative to the others
+		grid_layout.setColumnStretch(grid_col_origin + cmd_btn_col_span, grid_layout.columnStretch(grid_col_origin + cmd_btn_col_span) + 1)
+		
+		# Start add widgets to the grid layout
+		grid_row = grid_row_origin
+		
+		# --------------------------------------------------------------------------------
+		# General 
+		# --------------------------------------------------------------------------------
+		# Add Close button
+		close_btn = QPushButton("Close")
+		close_btn.setToolTip("close Utility Tool Window")
+		grid_layout.addWidget(close_btn, grid_row, grid_col_origin, close_row_span, close_col_span)
+		self.connect(close_btn, SIGNAL("clicked()"), self.close)
+		
+		grid_row += 1
+		
+		# --------------------------------------------------------------------------------
+		# Add SX Commands (sx*.py) associated widgets
+		# --------------------------------------------------------------------------------
+		# Add title label and set position and font style
+		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>Utilities </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>")
+		grid_layout.addWidget(title, grid_row, grid_col_origin, title_row_span, title_col_span)
+		
+		grid_row += 1
+		
+		self.cmd_btn_group = QButtonGroup()
+		
+		# Add SX Commands (sx*.py) associated widgets
+		for sxcmd in self.sxcmd_list:
+			if sxcmd.type == "util":
+				sxcmd.btn = QPushButton(sxcmd.label)
+				sxcmd.btn.setToolTip(sxcmd.short_info)
+			
+				self.cmd_btn_group.addButton(sxcmd.btn)
+				grid_layout.addWidget(sxcmd.btn, grid_row, grid_col_origin, cmd_btn_row_span, cmd_btn_col_span)
+			
+				# Create SXCmdWidget for this sx*.py processe
+				sxcmd.widget = SXCmdWidget(self.sxconst_set, sxcmd)
+				sxcmd.widget.hide()
+				grid_layout.addWidget(sxcmd.widget, grid_row_origin, grid_col_origin+cmd_btn_col_span, cmd_settings_row_span, cmd_settings_col_span)
+			
+				# connect widget signals
+				self.connect(sxcmd.btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
+			
+				grid_row += 1
+	
+	def handle_sxcmd_btn_event(self, sxcmd):
+		modifiers = QApplication.keyboardModifiers()
+		if modifiers == Qt.ShiftModifier:
+			os.system("python -m webbrowser %s%s" % (SPARX_DOCUMENTATION_WEBSITE, sxcmd.name))
+			return
+		
+		if self.cur_sxcmd == sxcmd: return
+		
+		if self.cur_sxcmd != None:
+			assert(self.cur_sxcmd.widget.isVisible() == True)
+			self.cur_sxcmd.widget.hide()
+			custom_style = "QPushButton {color:black; }"
+			self.cur_sxcmd.btn.setStyleSheet(custom_style)
+			
+		self.cur_sxcmd = sxcmd
+		
+		if self.cur_sxcmd != None:
+			assert(self.cur_sxcmd.widget.isVisible() == False)
+			self.cur_sxcmd.widget.show()
+			custom_style = "QPushButton {font: bold; color:blue; }"
+			self.cur_sxcmd.btn.setStyleSheet(custom_style)
+
+# ========================================================================================
+# Main Window (started by class SXApplication)
+class SXMainWindow(QWidget):
+	def __init__(self, sxconst_set, sxcmd_list, parent = None):
+		super(SXMainWindow, self).__init__(parent)
+		
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.sxconst_set = sxconst_set
+		self.sxcmd_list = sxcmd_list
+		self.cur_sxcmd = None
+		
+		self.sxinfo_window = None
+		self.sxutil_window = None
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# Set the window title and size
+		self.setWindowTitle("SPHIRE GUI (Alpha Version)")
+		self.resize(SXLookFeelConst.sxmain_window_width, SXLookFeelConst.sxmain_window_height)
+		
+		# self.setStyleSheet("background-image: url("1.png")")
+		
+#		# Set the background color of main window
+#		self.setAutoFillBackground(True)
+#		palette = QPalette()
+#		# palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 #		palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory() + "sxgui.py_main_window_background_image.png")))
 #		self.setPalette(palette)
 		
@@ -1893,11 +2017,11 @@ class MainWindow(QWidget):
 		cmd_btn_row_span = 1; cmd_btn_col_span = 2
 		cmd_settings_row_span = 32; cmd_settings_col_span = 1
 		
-		icon_min_width = SXWidetConst.sxcmd_btn_min_width // 2
-		close_min_width = SXWidetConst.sxcmd_btn_min_width // 2
+		icon_min_width = SXLookFeelConst.sxcmd_select_area_min_width // 2
+		close_min_width = SXLookFeelConst.sxcmd_select_area_min_width // 2
 		
-		cmd_min_width = SXWidetConst.sxcmd_min_width + SXWidetConst.grid_margin * 4
-		cmd_min_height = SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 4
+		cmd_min_width = SXLookFeelConst.sxcmd_widget_area_min_width + SXLookFeelConst.grid_margin * 4
+		cmd_min_height = SXLookFeelConst.sxcmd_widget_area_min_height + SXLookFeelConst.grid_margin * 4
 		
 		box_layout = QVBoxLayout(self)
 		box_layout.setContentsMargins(0,0,0,0)
@@ -1907,11 +2031,11 @@ class MainWindow(QWidget):
 #		scroll_area.setStyleSheet("background-color:transparent;"); 
 		scroll_area_widgets = QWidget(scroll_area)
 #		scroll_area_widgets.setStyleSheet("background-color:transparent;"); 
-
+		
 		# Set the background color of scroll area
 		scroll_area_widgets.setAutoFillBackground(True)
 		palette = QPalette()
-		# palette.setBrush(QPalette.Background, QBrush(SXWidetConst.main_bg_color))
+		# palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 		palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory() + "sxgui.py_main_window_background_image.png")))
 		scroll_area_widgets.setPalette(palette)
 		
@@ -1920,8 +2044,8 @@ class MainWindow(QWidget):
 		
 #		grid_layout = QGridLayout(self)
 		grid_layout = QGridLayout(scroll_area_widgets)
-		grid_layout.setMargin(SXWidetConst.grid_margin)
-		grid_layout.setSpacing(SXWidetConst.grid_spacing)
+		grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		grid_layout.setColumnMinimumWidth(0, icon_min_width)
 		grid_layout.setColumnMinimumWidth(1, close_min_width)
 		grid_layout.setColumnMinimumWidth(2, cmd_min_width)
@@ -1930,13 +2054,13 @@ class MainWindow(QWidget):
 		
 		# # Define the command button frame within the global layout
 		# cmd_btn_frame = QFrame()
-		# cmd_btn_frame.resize(SXWidetConst.sxcmd_btn_min_width, SXWidetConst.sxcmd_min_height)
+		# cmd_btn_frame.resize(SXLookFeelConst.sxcmd_select_area_min_width, SXLookFeelConst.sxcmd_widget_area_min_height)
 		# cmd_btn_frame.setFrameStyle(QFrame.StyledPanel)
 		# grid_layout.addWidget(cmd_btn_frame, grid_row_origin, grid_col_origin, cmd_settings_row_span, cmd_btn_col_span)
 		
 		# # Define the command settings frame within the global layout
 		# cmd_settings_frame = QFrame()
-		# cmd_settings_frame.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.grid_margin * 11, SXWidetConst.sxcmd_min_height)
+		# cmd_settings_frame.resize(SXLookFeelConst.sxcmd_widget_area_min_width + SXLookFeelConst.grid_margin * 11, SXLookFeelConst.sxcmd_widget_area_min_height)
 #		# cmd_settings_frame.move(240, 0)
 		# cmd_settings_frame.setFrameStyle(QFrame.StyledPanel)
 		# grid_layout.addWidget(cmd_settings_frame, grid_row_origin, grid_col_origin + cmd_btn_col_span, cmd_settings_row_span, cmd_settings_col_span)
@@ -1947,10 +2071,9 @@ class MainWindow(QWidget):
 		# --------------------------------------------------------------------------------
 		# General 
 		# --------------------------------------------------------------------------------
-		
-		# Create SXPopup_info
-		self.sxpopup_info = SXPopup_info()
-		self.sxpopup_info.hide()
+		# Create SXInfoWindow
+		self.sxinfo_window = SXInfoWindow()
+		self.sxinfo_window.hide()
 		
 		# Add Push button to display popup window for info about the application
 #		self.btn_info = QPushButton(self)
@@ -1965,9 +2088,9 @@ class MainWindow(QWidget):
 		self.connect(self.btn_info, SIGNAL("clicked()"), self.handle_info_btn_event)
 		
 		# Add Close button
-#		self.btn_quit = QPushButton("Close", self)
-		self.btn_quit = QPushButton("Close")
-		self.btn_quit.setToolTip("close SPHIRE GUI ")
+#		self.btn_quit = QPushButton("Quit", self)
+		self.btn_quit = QPushButton("Quit")
+		self.btn_quit.setToolTip("quit SPHIRE GUI ")
 #		self.btn_quit.move(65, 5)
 		grid_layout.addWidget(self.btn_quit, grid_row, grid_col_origin + icon_col_span, close_row_span, close_col_span)
 		self.connect(self.btn_quit, SIGNAL("clicked()"),qApp, SLOT("quit()"))
@@ -1980,21 +2103,23 @@ class MainWindow(QWidget):
 		
 		grid_row += 1
 		
-		# Create SXConstSetWidget
-		self.sxconst_set.widget = SXConstSetWidget(self.sxconst_set, self.sxcmd_list)
-		self.sxconst_set.widget.hide()
+		# Create SXConstSetWindow
+		self.sxconst_set.window = SXConstSetWindow(self.sxconst_set, self.sxcmd_list)
+		self.sxconst_set.window.hide()
 		
 		# Add project parameter constant set associated button
-		self.sxconst_set.button = QPushButton(self.sxconst_set.label)
-		self.sxconst_set.button.setToolTip(self.sxconst_set.short_info)
-		grid_layout.addWidget(self.sxconst_set.button, grid_row, grid_col_origin, cmd_btn_row_span, cmd_btn_col_span)
+		self.sxconst_set.btn = QPushButton("Open %s Window" % self.sxconst_set.label)
+		self.sxconst_set.btn.setToolTip(self.sxconst_set.short_info)
+		grid_layout.addWidget(self.sxconst_set.btn, grid_row, grid_col_origin, cmd_btn_row_span, cmd_btn_col_span)
 		
 		# connect widget signals
-		self.connect(self.sxconst_set.button, SIGNAL("clicked()"), self.handle_sxconst_set_btn_event)
+		self.connect(self.sxconst_set.btn, SIGNAL("clicked()"), self.handle_sxconst_set_btn_event)
 		
-
 		grid_row += 1
 		
+		# --------------------------------------------------------------------------------
+		# Add Pipeline SX Commands (sx*.py) associated widgets
+		# --------------------------------------------------------------------------------
 		# Add title label and set position and font style
 		# title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>", self)
 		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>")
@@ -2005,9 +2130,6 @@ class MainWindow(QWidget):
 		
 		grid_row += 1
 		
-		# --------------------------------------------------------------------------------
-		# Add SX Commands (sx*.py) associated widgets
-		# --------------------------------------------------------------------------------
 #		self.y1 = 95
 		
 #		self.cmd_btn_group = QButtonGroup(self)
@@ -2016,60 +2138,95 @@ class MainWindow(QWidget):
 		
 		# Add SX Commands (sx*.py) associated widgets
 		for sxcmd in self.sxcmd_list:
-			# Add buttons for this sx*.py processe
-#			sxcmd.button = QPushButton(sxcmd.label, self)
-			sxcmd.button = QPushButton(sxcmd.label)
-			# sxcmd.button.setCheckable(True) # NOTE: 2016/02/18 Toshio Moriya: With this setting, we can not move the focus to the unchecked butttons... PyQt bug?
-#			sxcmd.button.move(10, self.y1)
-			sxcmd.button.setToolTip(sxcmd.short_info)
-#			sxcmd.button.setStyleSheet("QPushButton:!enabled{font: bold; color:green; border-color:red; border-width:2px;}") 
-#			sxcmd.button.setStyleSheet("QPushButton:!enabled {font: bold; color:red; }")
-			
-			self.cmd_btn_group.addButton(sxcmd.button)
-			grid_layout.addWidget(sxcmd.button, grid_row, grid_col_origin, cmd_btn_row_span, cmd_btn_col_span)
-			
-			# Create SXCmdWidget for this sx*.py processe
-#			sxcmd_widget = SXCmdWidget(sxcmd, self)
-			sxcmd.widget = SXCmdWidget(self.sxconst_set, sxcmd)
-#			sxcmd.widget.move(300, 0)
-			sxcmd.widget.hide()
-			grid_layout.addWidget(sxcmd.widget, grid_row_origin, grid_col_origin+cmd_btn_col_span, cmd_settings_row_span, cmd_settings_col_span)
-			
-			# connect widget signals
-			self.connect(sxcmd.button, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
-			
-			# self.y1 += 30
-			grid_row += 1
+			if sxcmd.type == "pipe":
+				# Add buttons for this sx*.py processe
+	#			sxcmd.btn = QPushButton(sxcmd.label, self)
+				sxcmd.btn = QPushButton(sxcmd.label)
+				# sxcmd.btn.setCheckable(True) # NOTE: 2016/02/18 Toshio Moriya: With this setting, we can not move the focus to the unchecked butttons... PyQt bug?
+	#			sxcmd.btn.move(10, self.y1)
+				sxcmd.btn.setToolTip(sxcmd.short_info)
+	#			sxcmd.btn.setStyleSheet("QPushButton:!enabled{font: bold; color:green; border-color:red; border-width:2px;}") 
+	#			sxcmd.btn.setStyleSheet("QPushButton:!enabled {font: bold; color:red; }")
+				
+				self.cmd_btn_group.addButton(sxcmd.btn)
+				grid_layout.addWidget(sxcmd.btn, grid_row, grid_col_origin, cmd_btn_row_span, cmd_btn_col_span)
+				
+				# Create SXCmdWidget for this sx*.py processe
+	#			sxcmd_widget = SXCmdWidget(sxcmd, self)
+				sxcmd.widget = SXCmdWidget(self.sxconst_set, sxcmd)
+	#			sxcmd.widget.move(300, 0)
+				sxcmd.widget.hide()
+				grid_layout.addWidget(sxcmd.widget, grid_row_origin, grid_col_origin+cmd_btn_col_span, cmd_settings_row_span, cmd_settings_col_span)
+				
+				# connect widget signals
+				self.connect(sxcmd.btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
+				
+				# self.y1 += 30
+				grid_row += 1
+			# else: assert(sxcmd.type == "util") # Skip all utility commands
 		
+		# --------------------------------------------------------------------------------
+		# Create Utility SX Commands (sx*.py) related widgets
+		# --------------------------------------------------------------------------------
+		# Add title label and set position and font style
+		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>UTILITIES </b></span>")
+		grid_layout.addWidget(title, grid_row, grid_col_origin, title_row_span, title_col_span)
+		
+		grid_row += 1
+		
+		# Create Utility Window
+		self.sxutil_window = SXUtilWindow(self.sxconst_set, self.sxcmd_list)
+		self.sxutil_window.hide()
+		
+		# Add all utilities button
+		self.all_utils_btn = QPushButton("Open Utility Window")
+		self.all_utils_btn.setToolTip("open utility window")
+		grid_layout.addWidget(self.all_utils_btn, grid_row, grid_col_origin, cmd_btn_row_span, cmd_btn_col_span)
+		
+		# connect widget signals
+		self.connect(self.all_utils_btn, SIGNAL("clicked()"), self.handle_all_utils_btn_event)
+		
+		# --------------------------------------------------------------------------------
 		# Register constant parameter set upon initialization
-		self.sxconst_set.widget.register_const_set()
+		# --------------------------------------------------------------------------------
+		self.sxconst_set.window.register_const_set()
 	
 	#This is the function info, which is being started when the Pushbutton btn_info of the main window is being clicked
 	def handle_info_btn_event(self):
-		if self.sxpopup_info.isVisible():
-			self.sxpopup_info.raise_()
+		if self.sxinfo_window.isVisible():
+			self.sxinfo_window.raise_()
+			self.sxinfo_window.activateWindow()
 			return
 			
 		# print "Opening a new popup window..."
-		# Opens the window SXPopup_info, and defines its width and height
-		# The layout of the SXPopup_info window is defined in class SXPopup_info(QWidget Window)
-		# self.sxpopup_info = SXPopup_info()
-		# self.sxpopup_info.resize(300,200) # sxpopup_info.resize(250,200)
-		self.sxpopup_info.move(self.pos())
-		self.sxpopup_info.show()
-		self.sxpopup_info.raise_()
-
-	# Click actions: The following functions are associated with the click event of push buttons (btn##) on the main window. 
+		# Opens the window SXInfoWindow, and defines its width and height
+		# The layout of the SXInfoWindow window is defined in class SXInfoWindow(QWidget Window)
+		# self.sxinfo_window = SXInfoWindow()
+		# self.sxinfo_window.resize(300,200) # sxinfo_window.resize(250,200)
+		self.sxinfo_window.move(self.pos())
+		self.sxinfo_window.show()
+		self.sxinfo_window.raise_()
+	
 	def handle_sxconst_set_btn_event(self):
-		if self.sxconst_set.widget.isVisible():
-			self.sxconst_set.widget.raise_()
+		if self.sxconst_set.window.isVisible():
+			self.sxconst_set.window.raise_()
+			self.sxconst_set.window.activateWindow()
 			return
 		
-		self.sxconst_set.widget.move(self.pos())
-		self.sxconst_set.widget.show()
-		self.sxconst_set.widget.raise_()
+		self.sxconst_set.window.move(self.pos() - QPoint(SXLookFeelConst.sxconst_set_window_width, 0))
+		self.sxconst_set.window.show()
+		self.sxconst_set.window.raise_()
+	
+	def handle_all_utils_btn_event(self):
+		if self.sxutil_window.isVisible():
+			self.sxutil_window.raise_()
+			self.sxutil_window.activateWindow()
+			return
 		
-	# Click actions: The following functions are associated with the click event of push buttons (btn##) on the main window. 
+		self.sxutil_window.move(self.pos() + QPoint(SXLookFeelConst.sxcmd_select_area_min_width + SXLookFeelConst.grid_margin * 2, 0))
+		self.sxutil_window.show()
+		self.sxutil_window.raise_()
+	
 	def handle_sxcmd_btn_event(self, sxcmd):
 		modifiers = QApplication.keyboardModifiers()
 		if modifiers == Qt.ShiftModifier:
@@ -2081,29 +2238,34 @@ class MainWindow(QWidget):
 		if self.cur_sxcmd != None:
 			assert(self.cur_sxcmd.widget.isVisible() == True)
 			self.cur_sxcmd.widget.hide()
-#			assert(self.cur_sxcmd.button.isEnabled() == False)
-#			self.cur_sxcmd.button.setEnabled(True)
+#			assert(self.cur_sxcmd.btn.isEnabled() == False)
+#			self.cur_sxcmd.btn.setEnabled(True)
 			# custom_style = "QPushButton {color:#000; }"
 			custom_style = "QPushButton {color:black; }"
-			self.cur_sxcmd.button.setStyleSheet(custom_style)
+			self.cur_sxcmd.btn.setStyleSheet(custom_style)
 			
 		self.cur_sxcmd = sxcmd
 		
 		if self.cur_sxcmd != None:
 			assert(self.cur_sxcmd.widget.isVisible() == False)
 			self.cur_sxcmd.widget.show()
-#			assert(self.cur_sxcmd.button.isEnabled() == True)
-#			self.cur_sxcmd.button.setEnabled(False)
+#			assert(self.cur_sxcmd.btn.isEnabled() == True)
+#			self.cur_sxcmd.btn.setEnabled(False)
 #			custom_style = "QPushButton {font: bold; color:#8D0; }"
 			custom_style = "QPushButton {font: bold; color:blue; }"
-			self.cur_sxcmd.button.setStyleSheet(custom_style)
-			
+			self.cur_sxcmd.btn.setStyleSheet(custom_style)
+
 # ========================================================================================
-#  This is the main class of the program
-class App(QApplication):
+class SXApplication(QApplication):
 	def __init__(self, *args):
-		QApplication.__init__(self, *args)
+#		QApplication.__init__(self, *args)
+		super(SXApplication, self).__init__(*args)
 		
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.sxmain_window = None
+		
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		"""
 		style=QtGui.QStyleFactory.create("Cleanlooks")
 		if style==None:
@@ -2117,24 +2279,30 @@ class App(QApplication):
 		if style!=None: self.setStyle(style)
 		"""
 		
-		# Define the main window (class MainWindow)
-		self.main = MainWindow()
-#		# Best setting for MAC OSX
-#		# self.main.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_btn_min_width + SXWidetConst.grid_margin * (7 + 1), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
-#		# Best setting for Linux
-#		self.main.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_btn_min_width + SXWidetConst.grid_margin * (7 + 7), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
+		# Construct list of sxscript objects (extracted from associated wiki documents)
+		sxconst_set = construct_sxconst_set()
 		
-		# main_size = self.main.minimumSizeHint();
+		# Construct list of sxscript objects (extracted from associated wiki documents)
+		sxcmd_list = construct_sxcmd_list()
+		
+		# Define the main window (class SXMainWindow)
+		self.sxmain_window = SXMainWindow(sxconst_set, sxcmd_list)
+#		# Best setting for MAC OSX
+#		# self.sxmain_window.resize(SXLookFeelConst.sxcmd_widget_area_min_width + SXLookFeelConst.sxcmd_select_area_min_width + SXLookFeelConst.grid_margin * (7 + 1), SXLookFeelConst.sxcmd_widget_area_min_height + SXLookFeelConst.grid_margin * 2)
+#		# Best setting for Linux
+#		self.sxmain_window.resize(SXLookFeelConst.sxcmd_widget_area_min_width + SXLookFeelConst.sxcmd_select_area_min_width + SXLookFeelConst.grid_margin * (7 + 7), SXLookFeelConst.sxcmd_widget_area_min_height + SXLookFeelConst.grid_margin * 2)
+		
+		# main_size = self.sxmain_window.minimumSizeHint();
 		# desktop = self.desktop();
 		# screen_rect = desktop.screenGeometry();
-		# self.main.move((screen_rect.width()/2) - (main_size.width()/2), (screen_rect.height()/2) - (main_size.height()/2));
-		self.main.move(0, 0);
+		# self.sxmain_window.move((screen_rect.width()/2) - (main_size.width()/2), (screen_rect.height()/2) - (main_size.height()/2));
+		self.sxmain_window.move(QPoint(SXLookFeelConst.sxconst_set_window_width, 0));
 		
-		# Define that when all windows are closed, function byebye of class App will be started
+		# Define that when all windows are closed, function byebye of class SXApplication will be started
 		self.connect(self, SIGNAL("lastWindowClosed()"), self.byebye )
 		# Show main window
-		self.main.show()
-		self.main.raise_()
+		self.sxmain_window.show()
+		self.sxmain_window.raise_()
 		
 	#function byebye (just quit)  
 	def byebye( self ):
@@ -2142,30 +2310,29 @@ class App(QApplication):
 		self.exit(0)
 
 # ========================================================================================
-#  Necessary for execution of the program
 def main(args):
-	from optparse import OptionParser
-	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <image>
-		
-Automatic and manual particle selection. This version is specifically aimed at square boxes
-for single particle analysis."""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-
-	parser.add_option("--demo", type="string", default="",   help="Name of the demo whose input parameters should be used to initialize the GUI fields: --demo=mpibdb means the input parameters in demo/mpi_bdb will be used, --demo=mpibdbctf means the input parameters in demo/mpi_bdb_ctf will be used")
-	global options
-	(options, args) = parser.parse_args()
-	global DEMO_mpibdbctf
-	DEMO_mpibdbctf = "mpibdbctf"
-	global DEMO_mpibdb
-	DEMO_mpibdb = "mpibdb"
+#	from optparse import OptionParser
+#	progname = os.path.basename(sys.argv[0])
+#	usage = """%prog [options] <image>
+#	
+#Automatic and manual particle selection. This version is specifically aimed at square boxes
+#for single particle analysis."""
+#	parser = OptionParser(usage=usage,version=EMANVERSION)
+#	
+#	parser.add_option("--demo", type="string", default="",   help="Name of the demo whose input parameters should be used to initialize the GUI fields: --demo=mpibdb means the input parameters in demo/mpi_bdb will be used, --demo=mpibdbctf means the input parameters in demo/mpi_bdb_ctf will be used")
+#	global options
+#	(options, args) = parser.parse_args()
+#	global DEMO_mpibdbctf
+#	DEMO_mpibdbctf = "mpibdbctf"
+#	global DEMO_mpibdb
+#	DEMO_mpibdb = "mpibdb"
 	
-	global app
-	app = App(args)
-	app.setWindowIcon(QIcon(get_image_directory()+"sparxicon.png"))
+#	global sxapplication
+	sxapplication = SXApplication(args)
+	sxapplication.setWindowIcon(QIcon(get_image_directory()+"sparxicon.png"))
 	
-	app_font = app.font()
-	app_font_info = QFontInfo(app.font())
+	app_font = sxapplication.font()
+	app_font_info = QFontInfo(sxapplication.font())
 	new_point_size = app_font_info.pointSize() + 1
 	# # MRK_DEBUG: Check the default system font
 	# print "MRK_DEBUG: app_font_info.style()      = ", app_font_info.style()
@@ -2186,18 +2353,18 @@ for single particle analysis."""
 	# QPushButton, QLable, Window Title, and QToolTip
 	# 
 	app_font.setPointSize(new_point_size) # app_font.setPointSize(13) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
-	app.setFont(app_font)
+	sxapplication.setFont(app_font)
 	
-	# app.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
-	# app.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
-	# app.setStyleSheet("QToolTip {font-size:14pt; color:white; padding:2px; border-width:2px; border-style:solid; border-radius:20px; background-color: black; border: 1px solid white;}");
-	app.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
-#	app.setStyleSheet("QScrollArea {background-color: transparent;}");
-#	app.setStyleSheet("QScrollArea > QWidget > QWidget {background-color: transparent;}");
+	# sxapplication.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
+	# sxapplication.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
+	# sxapplication.setStyleSheet("QToolTip {font-size:14pt; color:white; padding:2px; border-width:2px; border-style:solid; border-radius:20px; background-color: black; border: 1px solid white;}");
+	sxapplication.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
+#	sxapplication.setStyleSheet("QScrollArea {background-color: transparent;}");
+#	sxapplication.setStyleSheet("QScrollArea > QWidget > QWidget {background-color: transparent;}");
 	
-	app.main.show()
-	app.main.raise_()
-	app.exec_()
+	sxapplication.sxmain_window.show()
+	sxapplication.sxmain_window.raise_()
+	sxapplication.exec_()
 
 # ========================================================================================
 if __name__ == "__main__":
