@@ -2919,6 +2919,8 @@ EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
 
 //	EMData* ret = copy_head();
 
+    int ret_is_initially_null = ret == NULL; 
+
 	if (ret == NULL) ret = copy_head();
 	
 	float *in = this->get_data();
@@ -2979,7 +2981,8 @@ EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
 					p3 =in[xfloor+1 + (yfloor+1)*ny];
 					p4 =in[xfloor   + (yfloor+1)*ny];
 				}
-				(*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
+				if (ret_is_initially_null) (*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
+				else (*ret)(ix,iy) += p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
 			} //ends x loop
 		} // ends y loop
 		set_array_offsets(saved_offsets);
@@ -3058,7 +3061,8 @@ EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
 					float a8 = in(IOXp1,IOY,IOZ) + in(IOX,IOYp1,IOZ)+ in(IOX,IOY,IOZp1)
 							- in(IOX,IOY,IOZ)- in(IOXp1,IOYp1,IOZ) - in(IOXp1,IOY,IOZp1)
 							- in(IOX,IOYp1,IOZp1) + in(IOXp1,IOYp1,IOZp1);
-					(*ret)(ix,iy,iz) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+					if (ret_is_initially_null) (*ret)(ix,iy,iz) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+					else (*ret)(ix,iy,iz) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
 				} //ends x loop
 			} // ends y loop
 		} // ends z loop
@@ -3554,6 +3558,8 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 // Note data has to be shifted to corners by n/2
 //	EMData* ret = copy_head();
 
+    int ret_is_initially_null = ret == NULL;
+
     if (ret == NULL) {
         ret = copy_head();
 	    ret->to_zero();
@@ -3658,8 +3664,15 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 	//if(ix<0 or ix >=xc)  cout<<"  error   ix  "<<ix<<endl;
 	//if(ity<0 or ity >=ny)  cout<<"  error   ity  "<<ity<<endl;
 	//if(itz<0 or itz >=nz)  cout<<"  error   itz  "<<itz<<endl;
-								if( flipin )  ret->cmplx(ix,ity,itz) = conj(btq);
-								else  ret->cmplx(ix,ity,itz) = btq;
+	
+	                            if (ret_is_initially_null){
+                                    if( flipin )  ret->cmplx(ix,ity,itz) = conj(btq);
+                                    else  ret->cmplx(ix,ity,itz) = btq;
+	                            }
+	                            else{
+                                    if( flipin )  ret->cmplx(ix,ity,itz) += conj(btq);
+                                    else  ret->cmplx(ix,ity,itz) += btq;
+	                            }
 							}
 
 						}
@@ -3739,9 +3752,15 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
 	//btq = cmplx(ixn, iya, iza);
 
-								(*ret)(ix,ity,itz) = qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
-										+ qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
-										+ qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
+                                if (ret_is_initially_null)
+                                    (*ret)(ix,ity,itz) = qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
+                                            + qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
+                                            + qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
+                                else
+                                    (*ret)(ix,ity,itz) += qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
+                                            + qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
+                                            + qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
+                                
 							}
 
 						}
