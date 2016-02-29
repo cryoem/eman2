@@ -196,7 +196,7 @@ def main(args):
 		filename = os.path.basename(filename)
 		stack_processed_by_ali2d_base__filename  = "bdb:" + os.path.join(masterdir, filename )
 		stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + filename
-	if_error_all_processes_quit_program(error_status)
+	if_error_then_all_processes_exit_program(error_status)
 
 	# send masterdir to all processes
 	masterdir = send_string_to_all(masterdir)

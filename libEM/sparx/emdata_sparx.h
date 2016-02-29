@@ -381,7 +381,8 @@ EMData* rot_scale_trans2D_background(float ang, float delx = 0.0f, float dely = 
  *  @exception ImageDimensionException can not rotate 1 D image
  *  @return New rotated/shifted/scaled image
 	 */
-EMData* rot_scale_trans(const Transform &RA);
+//EMData* rot_scale_trans(const Transform &RA);
+EMData* rot_scale_trans(const Transform &RA, EMData* ret = NULL);
 
 /** Rotate-Shift-Scale image
  *
@@ -415,7 +416,8 @@ static inline float restrict2(float x, int nx) {
 	return x;
 }
 
-EMData* rot_fvol(const Transform &RA);
+//EMData* rot_fvol(const Transform &RA);
+EMData* rot_fvol(const Transform &RA, EMData* ret = NULL);
 
 /** euclidean distance between two line
  * @param sinoj

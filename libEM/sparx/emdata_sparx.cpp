@@ -2912,9 +2912,13 @@ EMData* EMData::rot_scale_trans2D_background(float angDeg, float delx, float del
 
 #define in(i,j,k)          in[i+(j+(k*ny))*(size_t)nx]
 EMData*
-EMData::rot_scale_trans(const Transform &RA) {
+EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
+//EMData::rot_scale_trans(const Transform &RA) {
 
-	EMData* ret = copy_head();
+//	EMData* ret = copy_head();
+
+	if (ret == NULL) EMData* ret = copy_head();
+	
 	float *in = this->get_data();
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
@@ -3543,13 +3547,19 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 }
 
 EMData*
-EMData::rot_fvol(const Transform &RA) {
+EMData::rot_fvol(const Transform &RA, EMData* ret) {
+//EMData::rot_fvol(const Transform &RA) {
 // Note data has to be shifted to corners by n/2
-	EMData* ret = copy_head();
-	ret->to_zero();
+//	EMData* ret = copy_head();
+
+    if (ret == NULL) {
+        ret = copy_head();
+	    ret->to_zero();
+	    ret->set_array_offsets(0,0,0);
+    }
+    
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
-	ret->set_array_offsets(0,0,0);
 	Transform RAinv = RA.inverse();
 
 	if (1 >= ny)  throw ImageDimensionException("Can't frotate 1D image");
