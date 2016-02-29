@@ -19,3 +19,7 @@ install_manifest.txt
 lib/
 libpy*.dylib
 
+# horatio's .gitignore options
+.idea/
+CVS/
+
