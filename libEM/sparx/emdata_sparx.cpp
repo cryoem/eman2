@@ -1156,6 +1156,30 @@ EMData* EMData::symvol(string symString) {
 	return svol;
 }
 
+EMData* EMData::symfvol(string symString) {
+	ENTERFUNC;
+	int nsym = Transform::get_nsym(symString); // number of symmetries
+	Transform sym;
+	// set up output volume
+	//cout<<"  "<<nx<<"  "<<ny<<"  "<<nz<<"  "<<is_complex()<<endl;
+	EMData *svol = copy_head();
+	svol->set_size(nx, ny, nz);
+	svol->to_zero();
+	//cout<<" svol "<<svol->get_xsize()<<"  "<<svol->get_ysize()<<"  "<<svol->get_zsize()<<"  "<<svol->is_complex()<<endl;
+	// actual work -- loop over symmetries and symmetrize
+	for (int isym = 0; isym < nsym; isym++) {
+		Transform rm = sym.get_sym(symString, isym);
+		//cout<<"  wil rot fvol  "<<isym<<"  "<<svol->get_xsize()<<endl;
+		EMData* symcopy = this -> rot_fvol(rm);
+		*svol += (*symcopy);
+		delete symcopy;
+	}
+	*svol /=  ((float) nsym);
+	svol->update();
+	EXITFUNC;
+	return svol;
+}
+
 #define proj(ix,iy,iz)  proj[ix-1+(iy-1+(iz-1)*ny)*(size_t)nx]
 #define pnewimg(ix,iy,iz)  pnewimg[ix-1+(iy-1+(iz-1)*ny)*(size_t)nx]
 EMData* EMData::average_circ_sub() const
@@ -3513,78 +3537,19 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 	return ret;
 }
 
-
-
-
-
 EMData*
 EMData::rot_fvol(const Transform &RA) {
-
+// Note data has to be shifted to corners by n/2
 	EMData* ret = copy_head();
+	ret->to_zero();
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	ret->set_array_offsets(0,0,0);
-	Transform RAinv = RA;//.inverse();
+	Transform RAinv = RA.inverse();
 
 	if (1 >= ny)  throw ImageDimensionException("Can't frotate 1D image");
 	if (nz < 2) {
 		throw ImageDimensionException("Can't frotate 2D image");
-		/*
-		float  p1, p2, p3, p4;
-		float delx = translations.at(0);
-		float dely = translations.at(1);
-		delx = restrict2(delx, nx);
-		dely = restrict2(dely, ny);
-		int xc = nx/2;
-		int yc = ny/2;
-	//         shifted center for rotation
-		float shiftxc = xc + delx;
-		float shiftyc = yc + dely;
-		for (int iy = 0; iy < ny; iy++) {
-			float y = float(iy) - shiftyc;
-			float ysang = y*RAinv[0][1]+xc;
-			float ycang = y*RAinv[1][1]+yc;
-			for (int ix = 0; ix < nx; ix++) {
-				float x = float(ix) - shiftxc;
-				float xold = x*RAinv[0][0] + ysang;
-				float yold = x*RAinv[1][0] + ycang;
-
-				xold = restrict1(xold, nx);
-				yold = restrict1(yold, ny);
-
-				int xfloor = int(xold);
-				int yfloor = int(yold);
-				float t = xold-xfloor;
-				float u = yold-yfloor;
-				if(xfloor == nx -1 && yfloor == ny -1) {
-
-				    p1 =in[xfloor   + yfloor*ny];
-					p2 =in[ yfloor*ny];
-					p3 =in[0];
-					p4 =in[xfloor];
-				} else if(xfloor == nx - 1) {
-
-					p1 =in[xfloor   + yfloor*ny];
-					p2 =in[           yfloor*ny];
-					p3 =in[          (yfloor+1)*ny];
-					p4 =in[xfloor   + (yfloor+1)*ny];
-				} else if(yfloor == ny - 1) {
-
-					p1 =in[xfloor   + yfloor*ny];
-					p2 =in[xfloor+1 + yfloor*ny];
-					p3 =in[xfloor+1 ];
-					p4 =in[xfloor   ];
-				} else {
-					p1 =in[xfloor   + yfloor*ny];
-					p2 =in[xfloor+1 + yfloor*ny];
-					p3 =in[xfloor+1 + (yfloor+1)*ny];
-					p4 =in[xfloor   + (yfloor+1)*ny];
-				}
-				(*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
-			} //ends x loop
-		} // ends y loop
-		set_array_offsets(saved_offsets);
-		return ret;*/
 	} else {
 //		 This begins the 3D version tri-linear interpolation.
 		if(is_complex())  {
@@ -3592,39 +3557,41 @@ EMData::rot_fvol(const Transform &RA) {
 			int xc = nx/2;
 			int yc = ny/2;
 			int zc = nz/2;
-			int bign = 2*zc;
-			float rm2 = (yc-1)*(yc-1);
-
-			for (int iz = -zc + 1-nz&2; iz < zc; iz++) {
+			int bign = 2*nz;
+			float rm2 = (xc-1)*(xc-1);
+//cout<<"  "<<nx<<"  "<<ny<<"  "<<nz<<"  "<<xc<<"  "<<yc<<"  "<<zc<<"  "<<bign<<"  "<<rm2<<endl;
+			for (int iz = -zc + 1-nz%2; iz < zc; iz++) {
 				float xnewz = iz*RAinv[0][2];
 				float ynewz = iz*RAinv[1][2];
 				float znewz = iz*RAinv[2][2];
 				for (int iy = -yc + 1-ny%2; iy < yc; iy++) {
-					float xnewzy = xnewz + iy*RAinv[0][1] ;
-					float ynewzy = ynewz + iy*RAinv[1][1] ;
-					float znewzy = znewz + iy*RAinv[2][1] ;
-					for (int ix = 0; ix < nx; ix++) {
-						float xnew = xnewzy + ix*RAinv[0][0] ;
-						float ynew = ynewzy + ix*RAinv[1][0] ;
-						float znew = znewzy + ix*RAinv[2][0] ;
+					float xnewzy = xnewz + iy*RAinv[0][1];
+					float ynewzy = ynewz + iy*RAinv[1][1];
+					float znewzy = znewz + iy*RAinv[2][1];
+					for (int ix = 0; ix < xc; ix++) {
+						float xnew = xnewzy + ix*RAinv[0][0];
+						float ynew = ynewzy + ix*RAinv[1][0];
+						float znew = znewzy + ix*RAinv[2][0];
+//cout<<"   Before if "<<xnew*xnew + ynew+ynew + znew*znew<<"  "<<rm2<<"  "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<endl;
 						if(xnew*xnew + ynew+ynew + znew*znew <= rm2 ) {
-							std::complex<float> btq;
+
 							int itz = iz;
 							if( itz < 0 ) itz += nz;
 							int ity = iy;
 							if( ity < 0 ) ity += ny;
+
+							bool flipin;
 							if (xnew < 0.) {
 								xnew = -xnew;
 								ynew = -ynew;
 								znew = -znew;
-								btq = conj(cmplx(ix,ity,itz));
-							} else  btq = cmplx(ix,ity,itz);
+								flipin = true;
+							} else  flipin = false;
 
 
 							int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
 							int iyn = int(ynew + bign);
 							int izn = int(znew + bign);
-
 							float dx = xnew + bign - ixn;
 							float dy = ynew + bign - iyn;
 							float dz = znew + bign - izn;
@@ -3653,28 +3620,117 @@ EMData::rot_fvol(const Transform &RA) {
 
 
 							int ix1 = ixn + 1;
+							if( ix1 < xc) {
+								int iz1 = iza + 1;
+								if (iz1 >= nz) iz1 -= nz;
 
-							int iz1 = iza + 1;
-							if (iz1 >= nz) iz1 -= nz;
+								int iy1 = iya + 1;
+								if (iy1 >= ny) iy1 -= ny;
+	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
+	//if(ixn<0 or ixn >=xc)  cout<<"  error   ixn  "<<ixn<<endl;
+	//if(ix1<0 or ix1 >=xc){  cout<<"  error   ix1  "<<ix1<<endl;cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;}
+	//if(iya<0 or iya >=ny)  cout<<"  error   iya  "<<iya<<endl;
+	//if(iy1<0 or iy1 >=ny)  cout<<"  error   iy1  "<<iy1<<endl;
+	//if(iza<0 or iza >=nz)  cout<<"  error   iza  "<<iza<<endl;
+	//if(iz1<0 or iz1 >=nz)  cout<<"  error   iz1  "<<iz1<<endl;
+								std::complex<float> btq = qq000 * cmplx(ixn, iya, iza) + qq010 * cmplx(ixn, iy1, iza) + qq100 * cmplx(ix1, iya, iza)
+										+ qq110 * cmplx(ix1, iy1, iza) + qq001 * cmplx(ixn, iya, iz1) + qq011 * cmplx(ixn, iy1, iz1)
+										+ qq101 * cmplx(ix1, iya, iz1) + qq111 * cmplx(ix1, iy1, iz1);
 
-							int iy1 = iya + 1;
-							if (iy1 >= bign) iy1 -= ny;
-
-							ret->cmplx(ixn, iya, iza) += qq000 * btq;
-							ret->cmplx(ixn, iy1, iza) += qq010 * btq;
-							ret->cmplx(ix1, iya, iza) += qq100 * btq;
-							ret->cmplx(ix1, iy1, iza) += qq110 * btq;
-							ret->cmplx(ixn, iya, iz1) += qq001 * btq;
-							ret->cmplx(ixn, iy1, iz1) += qq011 * btq;
-							ret->cmplx(ix1, iya, iz1) += qq101 * btq;
-							ret->cmplx(ix1, iy1, iz1) += qq111 * btq;
+	//if(ix<0 or ix >=xc)  cout<<"  error   ix  "<<ix<<endl;
+	//if(ity<0 or ity >=ny)  cout<<"  error   ity  "<<ity<<endl;
+	//if(itz<0 or itz >=nz)  cout<<"  error   itz  "<<itz<<endl;
+								if( flipin )  ret->cmplx(ix,ity,itz) = conj(btq);
+								else  ret->cmplx(ix,ity,itz) = btq;
+							}
 
 						}
 					} //ends x loop
 				} // ends y loop
 			} // ends z loop
 		} else {
-			// Real Fourier volume
+			int xc = nx/2;
+			int yc = ny/2;
+			int zc = nz/2;
+			int bign = 2*zc;
+			float rm2 = (xc-1)*(xc-1);
+
+			for (int iz = -zc + 1-nz%2; iz < zc; iz++) {
+				float xnewz = iz*RAinv[0][2];
+				float ynewz = iz*RAinv[1][2];
+				float znewz = iz*RAinv[2][2];
+				for (int iy = -yc + 1-ny%2; iy < yc; iy++) {
+					float xnewzy = xnewz + iy*RAinv[0][1];
+					float ynewzy = ynewz + iy*RAinv[1][1];
+					float znewzy = znewz + iy*RAinv[2][1];
+					for (int ix = 0; ix < nx; ix++) {
+						float xnew = xnewzy + ix*RAinv[0][0];
+						float ynew = ynewzy + ix*RAinv[1][0];
+						float znew = znewzy + ix*RAinv[2][0];
+//cout<<"   Before if "<<xnew*xnew + ynew+ynew + znew*znew<<"  "<<rm2<<"  "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<endl;
+						if(xnew*xnew + ynew+ynew + znew*znew <= rm2 ) {
+
+							int itz = iz;
+							if( itz < 0 ) itz += nz;
+							int ity = iy;
+							if( ity < 0 ) ity += ny;
+
+							if (xnew < 0.) {
+								xnew = -xnew;
+								ynew = -ynew;
+								znew = -znew;
+							}
+
+
+							int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+							int iyn = int(ynew + bign);
+							int izn = int(znew + bign);
+							float dx = xnew + bign - ixn;
+							float dy = ynew + bign - iyn;
+							float dz = znew + bign - izn;
+							float qdx = 1.0f - dx;
+							float qdy = 1.0f - dy;
+							float qdz = 1.0f - dz;
+
+							float qq000 = qdx * qdy * qdz;
+							float qq010 = qdx *  dy * qdz;
+							float qq100 =  dx * qdy * qdz;
+							float qq110 =  dx *  dy * qdz;
+							float qq001 = qdx * qdy *  dz;
+							float qq011 = qdx *  dy *  dz;
+							float qq101 =  dx * qdy *  dz;
+							float qq111 =  dx *  dy *  dz;
+
+							ixn -= bign;
+							iyn -= bign;
+							izn -= bign;
+
+							int iza = izn;
+							if (izn < 0)  iza += nz;
+
+							int iya = iyn;
+							if (iyn < 0)  iya += ny;
+
+
+							int ix1 = ixn + 1;
+							if( ix1 < nx)  {
+								int iz1 = iza + 1;
+								if (iz1 >= nz) iz1 -= nz;
+
+								int iy1 = iya + 1;
+								if (iy1 >= ny) iy1 -= ny;
+	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
+	//btq = cmplx(ixn, iya, iza);
+
+								(*ret)(ix,ity,itz) = qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
+										+ qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
+										+ qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
+							}
+
+						}
+					} //ends x loop
+				} // ends y loop
+			} // ends z loop
 		}
 		set_array_offsets(saved_offsets);
 		return ret;

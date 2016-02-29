@@ -13,7 +13,16 @@ from global_def import ERROR
 from sxgui_template import SXcmd_token, SXcmd
 
 # ========================================================================================
-def construct_token_list_from_wiki(wiki_file_path):
+class SXcmd_config:
+	def __init__(self, wiki="", type=""):
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.wiki = wiki # Wiki document file path
+		self.type = type # Type of this command; pipe (pipeline), util (utility)
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+
+# ========================================================================================
+def construct_token_list_from_wiki(cmd_config):
 	# Private helper class used only in this function
 	class SXkeyword_map:
 		def __init__(self, priority, token_type):
@@ -24,16 +33,17 @@ def construct_token_list_from_wiki(wiki_file_path):
 			self.token_type = token_type  # Token value type 
 			# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	
-	print "Start parsing Wiki document (%s)" % wiki_file_path
+	print "Start parsing Wiki document (%s as %s command) " % (cmd_config.wiki, cmd_config.type)
 	
 	# Allocate memory for new SXcmd instance
-	sxcmd = SXcmd()
+	sxcmd = SXcmd(cmd_config.type)
 	
 	# Define dictionary of keywords:
 	# The dictionary maps command token to special data types
 	# If a command token extracted from 'usage in command line' contains the keyword defined here
 	# the associated special data type will be assigned to this command token.
 	# 
+	# - bdb         : Line edit box and open file button for .bdb 
 	# - output      : Line edit box and output info button
 	#                 GUI also checks the existence of output directory/file before execution of the sx*.py
 	#                 GUI abort the execution if the directory/file exists already
@@ -45,6 +55,13 @@ def construct_token_list_from_wiki(wiki_file_path):
 	# - function    : Two line edit boxes (function name & file path of the container script)
 	#                 and open file button for .py
 	# 
+	# - apix        : Project constant - float type
+	# - wn          : Project constant - int type
+	# - box         : Project constant - int type
+	# - radius      : Project constant - int type
+	# - sym         : Project constant - formatted string type
+	#
+	
 	keyword_dict = {}
 	
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
@@ -107,9 +124,9 @@ def construct_token_list_from_wiki(wiki_file_path):
 	
 	# NOTE: 2015/11/11 Toshio Moriya
 	# This should be exception. Need to decide if this should be skipped or exit system.
-	if os.path.exists(wiki_file_path) == False: ERROR("Rutime Error: Wiki document is not found.", "%s in %s" % (__name__, os.path.basename(__file__)))
+	if os.path.exists(cmd_config.wiki) == False: ERROR("Rutime Error: Wiki document is not found.", "%s in %s" % (__name__, os.path.basename(__file__)))
 	
-	file_wiki = open(wiki_file_path,'r')
+	file_wiki = open(cmd_config.wiki,'r')
 	
 	# Loop through all lines in the wiki document file
 	for line_wiki in file_wiki:
@@ -290,7 +307,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 			
 	file_wiki.close()
 	
-	print "Succeed to parse Wiki document (%s)" % wiki_file_path
+	print "Succeed to parse Wiki document (%s as %s command)" % (cmd_config.wiki, cmd_config.type)
 	
 	"""
 	# For DEBUG
@@ -301,9 +318,11 @@ def construct_token_list_from_wiki(wiki_file_path):
 		print "GLOBAL"
 		print "------"
 		print "name            : %s" % sxcmd.name 
+		print "label           : %s" % sxcmd.label 
 		print "short_info      : %s" % sxcmd.short_info 
 		print "mpi_support     : %s" % sxcmd.mpi_support 
 		print "mpi_add_flag    : %s" % sxcmd.mpi_add_flag 
+		print "type            : %s" % sxcmd.type 
 		print "len(token_list) : %d" % len(sxcmd.token_list)
 		print "len(token_dict) : %d" % len(sxcmd.token_dict)
 		print ""
@@ -311,7 +330,7 @@ def construct_token_list_from_wiki(wiki_file_path):
 		print "cmd_token_list"
 		print "--------------"
 		for token in sxcmd.token_list:
-			print "%s%s (group=%s, required=%s, default=%s, type=%s) <%s>" % (token.key_prefix, token.key_base, token.group, token.is_required, token.default, token.type, token.label),token.help
+			print "%s%s (group=%s, required=%s, default=%s, type=%s, restore=%s) <%s>" % (token.key_prefix, token.key_base, token.group, token.is_required, token.default, token.type, token.restore, token.label, token.help)
 		print ""
 	"""
 	
@@ -325,6 +344,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	output_file.write("; %s.short_info = \"%s\"" % (sxcmd_variable_name, sxcmd.short_info.replace("\"", "'")))
 	output_file.write("; %s.mpi_support = %s" % (sxcmd_variable_name, sxcmd.mpi_support))
 	output_file.write("; %s.mpi_add_flag = %s" % (sxcmd_variable_name, sxcmd.mpi_add_flag))
+	output_file.write("; %s.type = \"%s\"" % (sxcmd_variable_name, sxcmd.type))
 	output_file.write("\n")
 	
 	for token in sxcmd.token_list:
@@ -359,20 +379,22 @@ def main():
 	# Get all necessary informations from wiki documents of sx*.py scripts
 	# and create gui generation paramter
 	# --------------------------------------------------------------------------------
-	wiki_file_path_list = []
-	wiki_file_path_list.append("../doc/pdb2em.txt")
-	wiki_file_path_list.append("../doc/cter.txt")
-	wiki_file_path_list.append("../doc/window.txt")
-	# wiki_file_path_list.append("../doc/isac.txt")
-	wiki_file_path_list.append("../doc/isac_latest_release.txt")
-	wiki_file_path_list.append("../doc/viper.txt")
-	wiki_file_path_list.append("../doc/rviper.txt")
-	wiki_file_path_list.append("../doc/meridien.txt")
-	wiki_file_path_list.append("../doc/3dvariability.txt")
-	wiki_file_path_list.append("../doc/locres.txt")
-	wiki_file_path_list.append("../doc/filterlocal.txt")
-	wiki_file_path_list.append("../doc/sort3d.txt")
-	wiki_file_path_list.append("../doc/rsort3d.txt")
+	cmd_config_list = []
+	# Pipeline commands
+	cmd_config_list.append(SXcmd_config("../doc/cter.txt", "pipe"))
+	cmd_config_list.append(SXcmd_config("../doc/window.txt", "pipe"))
+	# cmd_config_list.append(SXcmd_config("../doc/isac.txt", "pipe"))
+	cmd_config_list.append(SXcmd_config("../doc/isac_latest_release.txt", "pipe"))
+	cmd_config_list.append(SXcmd_config("../doc/viper.txt", "pipe"))
+	cmd_config_list.append(SXcmd_config("../doc/rviper.txt", "pipe"))
+	cmd_config_list.append(SXcmd_config("../doc/meridien.txt", "pipe"))
+	cmd_config_list.append(SXcmd_config("../doc/locres.txt", "pipe"))
+	cmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "pipe"))
+	cmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "pipe"))
+	cmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "pipe"))
+	# Utility commands
+	cmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "util"))
+	cmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util"))
 	
 	sxgui_template_file_path = "sxgui_template.py"
 	
@@ -388,16 +410,16 @@ def main():
 	state_template  = 0
 	state_insertion = 1
 	current_state = state_template
-
+	
 	for line in sxgui_template_file:
 		output_file.write(line)
 		if current_state == state_template:
 			if line.find("# @@@@@ START_INSERTION @@@@@") != -1:
 				current_state = state_insertion
 				sxcmd_variable_name = "sxcmd"
-				for wiki_file_path in wiki_file_path_list:
+				for cmd_config in cmd_config_list:
 					# Construct sxscript object associated with this wiki document
-					sxcmd = construct_token_list_from_wiki(wiki_file_path)
+					sxcmd = construct_token_list_from_wiki(cmd_config)
 					insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name)
 					output_file.write("\n")
 					output_file.write("\tsxcmd_list.append(%s)\n" % sxcmd_variable_name)
