@@ -2101,12 +2101,12 @@ EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int n
 	int ny = slice->get_ysize();
 	int padffted= slice->get_attr_default("padffted", 0);
 	int ndim = (ny==1) ? 1 : 2;
-	int extension = 2*padffted;  //  If 2, it means it is a Fourier file.
+	int iext = slice->is_fftodd();
+	int extension = (2-iext)*padffted;  //  If 2, it means it is a Fourier file.
 
-	if( ndim==2 && (nx-extension)!=ny )
-	{
-		// FIXME: What kind of exception should we throw here?
-		throw std::runtime_error("Tried to padfft a 2D slice which is not square.");
+	if( ndim==2 && (nx-extension)!=ny ) {
+		LOGERR("Input image must be square!");
+		throw ImageDimensionException("Input image must be square!");
 	}
 
 	EMData* padfftslice = NULL;
@@ -2130,9 +2130,7 @@ EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int n
 
 	int remove = slice->get_attr_default("remove", 0);
 	padfftslice->set_attr( "remove", remove );
-//padfftslice->set_attr( "is_fftodd", 1 );
 	padfftslice->center_origin_fft();
-//padfftslice->set_attr( "is_fftodd", 0 );
 	return padfftslice;
 }
 
@@ -3754,7 +3752,6 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 		return 1;
 	}
 	if(weight >0.0f) {
-		//cout<<"  insert_slice "<<m_do_ctf<<endl;
 		/*
 		int buffed = slice->get_attr_default( "buffed", 0 );
 			if( buffed > 0 ) {
@@ -3784,7 +3781,6 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 			for (int i = 0; i < size; ++i) ctf2d_ptr[i] *= ctf2d_ptr[i];     // Squared 2D CTF
 		} else {
 			int nx=padfft->get_xsize(),ny=padfft->get_ysize(),nz=padfft->get_zsize();
-			//cout<<"  size of padfft "<<nx<<"   "<<ny<<"   "<<nz<<endl;
 			ctf2d = new EMData();
 			ctf2d->set_size(nx/2,ny,nz);
 			float *ctf2d_ptr  = ctf2d->get_data();
@@ -3810,8 +3806,7 @@ int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData*
 
 	vector<float> abc_list;
 	int abc_list_len = 0;	
-	if (m_volume->has_attr("smear"))
-	{
+	if (m_volume->has_attr("smear")) {
 		abc_list = m_volume->get_attr("smear");
 		abc_list_len = abc_list.size();
 	}
@@ -3834,7 +3829,8 @@ EMData* nn4_ctfwReconstructor::finish(bool compensate)
 	m_wptr->set_array_offsets(0, 1, 1);
 	//cout <<  "  will set refvol  "  <<endl;
 	m_refvol->set_array_offsets(0, 1, 1);
-	m_volume->symplane0_ctf(m_wptr);
+	if(m_volume->is_fftodd())	m_volume->symplane0_odd(m_wptr);
+	else						m_volume->symplane0_ctf(m_wptr);
 	bool do_invert = false;
 	bool refvol_present = (*m_refvol)(0) > 0.0f ;
 	/*

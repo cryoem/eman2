@@ -1156,6 +1156,30 @@ EMData* EMData::symvol(string symString) {
 	return svol;
 }
 
+EMData* EMData::symfvol(string symString) {
+	ENTERFUNC;
+	int nsym = Transform::get_nsym(symString); // number of symmetries
+	Transform sym;
+	// set up output volume
+	//cout<<"  "<<nx<<"  "<<ny<<"  "<<nz<<"  "<<is_complex()<<endl;
+	EMData *svol = copy_head();
+	svol->set_size(nx, ny, nz);
+	svol->to_zero();
+	//cout<<" svol "<<svol->get_xsize()<<"  "<<svol->get_ysize()<<"  "<<svol->get_zsize()<<"  "<<svol->is_complex()<<endl;
+	// actual work -- loop over symmetries and symmetrize
+	for (int isym = 0; isym < nsym; isym++) {
+		Transform rm = sym.get_sym(symString, isym);
+		//cout<<"  wil rot fvol  "<<isym<<"  "<<svol->get_xsize()<<endl;
+		EMData* symcopy = this -> rot_fvol(rm);
+		*svol += (*symcopy);
+		delete symcopy;
+	}
+	*svol /=  ((float) nsym);
+	svol->update();
+	EXITFUNC;
+	return svol;
+}
+
 #define proj(ix,iy,iz)  proj[ix-1+(iy-1+(iz-1)*ny)*(size_t)nx]
 #define pnewimg(ix,iy,iz)  pnewimg[ix-1+(iy-1+(iz-1)*ny)*(size_t)nx]
 EMData* EMData::average_circ_sub() const
@@ -1685,6 +1709,119 @@ void EMData::symplane2(EMData* wptr, EMData* wptr2, EMData* wptr3) {
 	}
 	EXITFUNC;
 }
+
+
+void EMData::symplane0_ctf(EMData* w) {
+	ENTERFUNC;
+	int nxc = attr_dict["nxc"];
+	int n = nxc*2;
+
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,1,1);
+	for (int iza = 2; iza <= nxc; iza++) {
+		for (int iya = 2; iya <= nxc; iya++) {
+			cmplx(0,iya,iza) += conj(cmplx(0,n-iya+2,n-iza+2));
+			(*w)(0,iya,iza) += (*w)(0,n-iya+2,n-iza+2);
+			cmplx(0,n-iya+2,n-iza+2) = conj(cmplx(0,iya,iza));
+			(*w)(0,n-iya+2,n-iza+2) = (*w)(0,iya,iza);
+			cmplx(0,n-iya+2,iza) += conj(cmplx(0,iya,n-iza+2));
+			(*w)(0,n-iya+2,iza) += (*w)(0,iya,n-iza+2);
+			cmplx(0,iya,n-iza+2) = conj(cmplx(0,n-iya+2,iza));
+			(*w)(0,iya,n-iza+2) = (*w)(0,n-iya+2,iza);
+		}
+	}
+	for (int iya = 2; iya <= nxc; iya++) {
+		cmplx(0,iya,1) += conj(cmplx(0,n-iya+2,1));
+		(*w)(0,iya,1) += (*w)(0,n-iya+2,1);
+		cmplx(0,n-iya+2,1) = conj(cmplx(0,iya,1));
+		(*w)(0,n-iya+2,1) = (*w)(0,iya,1);
+	}
+	for (int iza = 2; iza <= nxc; iza++) {
+		cmplx(0,1,iza) += conj(cmplx(0,1,n-iza+2));
+		(*w)(0,1,iza) += (*w)(0,1,n-iza+2);
+		cmplx(0,1,n-iza+2) = conj(cmplx(0,1,iza));
+		(*w)(0,1,n-iza+2) = (*w)(0,1,iza);
+	}
+	set_array_offsets(saved_offsets);
+	EXITFUNC;
+}
+
+
+void EMData::symplane0_odd(EMData* w) {
+	ENTERFUNC;
+	ny=get_ysize();
+	nz=get_zsize();
+	if( ny != nz ) {
+		LOGERR("symplane0_odd requires ny = nz.");
+		throw InvalidValueException(ny, "symplane0_odd requires ny = nz.");
+	}
+	int nyh = ny/2;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	vector<int> saved_offsets_w = w->get_array_offsets();
+	w->set_array_offsets(0,0,0);
+	for (int iza = 1; iza <= nyh; iza++) {
+		for (int iya = 1; iya < ny; iya++) {
+			cmplx(0,iya,iza) += conj(cmplx(0,ny-iya,nz-iza));
+			(*w)(0,iya,iza) += (*w)(0,ny-iya,nz-iza);
+			cmplx(0,ny-iya,nz-iza) = conj(cmplx(0,iya,iza));
+			(*w)(0,ny-iya,nz-iza) = (*w)(0,iya,iza);
+		}
+	}
+	for (int iya = 1; iya <= nyh; iya++) {
+		cmplx(0,iya,0) += conj(cmplx(0,ny-iya,0));
+		(*w)(0,iya,0) += (*w)(0,ny-iya,0);
+		cmplx(0,ny-iya,1) = conj(cmplx(0,iya,0));
+		(*w)(0,ny-iya,1) = (*w)(0,iya,0);
+		cmplx(0,0,iya) += conj(cmplx(0,0,ny-iya));
+		(*w)(0,0,iya) += (*w)(0,0,ny-iya);
+		cmplx(0,0,nz-iya) = conj(cmplx(0,0,iya));
+		(*w)(0,0,nz-iya) = (*w)(0,0,iya);
+	}
+	set_array_offsets(saved_offsets);
+	w->set_array_offsets(saved_offsets_w);
+	EXITFUNC;
+}
+
+
+void EMData::symplane0_rect(EMData* w) {
+	ENTERFUNC;
+	nx=get_xsize();
+	ny=get_ysize();
+	nz=get_zsize();
+	int nzc=nz/2;
+	int nyc=ny/2;
+	
+	// let's treat the local data as a matrix
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,1,1);
+	for (int iza = 2; iza <= nzc; iza++) {
+		for (int iya = 2; iya <= nyc; iya++) {
+			cmplx(0,iya,iza) += conj(cmplx(0,ny-iya+2,nz-iza+2));
+			(*w)(0,iya,iza) += (*w)(0,ny-iya+2,nz-iza+2);
+			cmplx(0,ny-iya+2,nz-iza+2) = conj(cmplx(0,iya,iza));
+			(*w)(0,ny-iya+2,nz-iza+2) = (*w)(0,iya,iza);
+			cmplx(0,ny-iya+2,iza) += conj(cmplx(0,iya,nz-iza+2));
+			(*w)(0,ny-iya+2,iza) += (*w)(0,iya,nz-iza+2);
+			cmplx(0,iya,nz-iza+2) = conj(cmplx(0,ny-iya+2,iza));
+			(*w)(0,iya,nz-iza+2) = (*w)(0,ny-iya+2,iza);
+		}
+	}
+	for (int iya = 2; iya <= nyc; iya++) {
+		cmplx(0,iya,1) += conj(cmplx(0,ny-iya+2,1));
+		(*w)(0,iya,1) += (*w)(0,ny-iya+2,1);
+		cmplx(0,ny-iya+2,1) = conj(cmplx(0,iya,1));
+		(*w)(0,ny-iya+2,1) = (*w)(0,iya,1);
+	}
+	for (int iza = 2; iza <= nzc; iza++) {
+		cmplx(0,1,iza) += conj(cmplx(0,1,nz-iza+2));
+		(*w)(0,1,iza) += (*w)(0,1,nz-iza+2);
+		cmplx(0,1,nz-iza+2) = conj(cmplx(0,1,iza));
+		(*w)(0,1,nz-iza+2) = (*w)(0,1,iza);
+	}
+	EXITFUNC;
+}
+
 
 class ctf_store
 {
@@ -2688,78 +2825,6 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 	EXITFUNC;
 }*/
 
-void EMData::symplane0_ctf(EMData* w) {
-	ENTERFUNC;
-	int nxc = attr_dict["nxc"];
-	int n = nxc*2;
-	// let's treat the local data as a matrix
-	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(0,1,1);
-	for (int iza = 2; iza <= nxc; iza++) {
-		for (int iya = 2; iya <= nxc; iya++) {
-			cmplx(0,iya,iza) += conj(cmplx(0,n-iya+2,n-iza+2));
-			(*w)(0,iya,iza) += (*w)(0,n-iya+2,n-iza+2);
-			cmplx(0,n-iya+2,n-iza+2) = conj(cmplx(0,iya,iza));
-			(*w)(0,n-iya+2,n-iza+2) = (*w)(0,iya,iza);
-			cmplx(0,n-iya+2,iza) += conj(cmplx(0,iya,n-iza+2));
-			(*w)(0,n-iya+2,iza) += (*w)(0,iya,n-iza+2);
-			cmplx(0,iya,n-iza+2) = conj(cmplx(0,n-iya+2,iza));
-			(*w)(0,iya,n-iza+2) = (*w)(0,n-iya+2,iza);
-		}
-	}
-	for (int iya = 2; iya <= nxc; iya++) {
-		cmplx(0,iya,1) += conj(cmplx(0,n-iya+2,1));
-		(*w)(0,iya,1) += (*w)(0,n-iya+2,1);
-		cmplx(0,n-iya+2,1) = conj(cmplx(0,iya,1));
-		(*w)(0,n-iya+2,1) = (*w)(0,iya,1);
-	}
-	for (int iza = 2; iza <= nxc; iza++) {
-		cmplx(0,1,iza) += conj(cmplx(0,1,n-iza+2));
-		(*w)(0,1,iza) += (*w)(0,1,n-iza+2);
-		cmplx(0,1,n-iza+2) = conj(cmplx(0,1,iza));
-		(*w)(0,1,n-iza+2) = (*w)(0,1,iza);
-	}
-	EXITFUNC;
-}
-
-void EMData::symplane0_rect(EMData* w) {
-	ENTERFUNC;
-	nx=get_xsize();
-	ny=get_ysize();
-	nz=get_zsize();
-	int nzc=nz/2;
-	int nyc=ny/2;
-	
-	// let's treat the local data as a matrix
-	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(0,1,1);
-	for (int iza = 2; iza <= nzc; iza++) {
-		for (int iya = 2; iya <= nyc; iya++) {
-			cmplx(0,iya,iza) += conj(cmplx(0,ny-iya+2,nz-iza+2));
-			(*w)(0,iya,iza) += (*w)(0,ny-iya+2,nz-iza+2);
-			cmplx(0,ny-iya+2,nz-iza+2) = conj(cmplx(0,iya,iza));
-			(*w)(0,ny-iya+2,nz-iza+2) = (*w)(0,iya,iza);
-			cmplx(0,ny-iya+2,iza) += conj(cmplx(0,iya,nz-iza+2));
-			(*w)(0,ny-iya+2,iza) += (*w)(0,iya,nz-iza+2);
-			cmplx(0,iya,nz-iza+2) = conj(cmplx(0,ny-iya+2,iza));
-			(*w)(0,iya,nz-iza+2) = (*w)(0,ny-iya+2,iza);
-		}
-	}
-	for (int iya = 2; iya <= nyc; iya++) {
-		cmplx(0,iya,1) += conj(cmplx(0,ny-iya+2,1));
-		(*w)(0,iya,1) += (*w)(0,ny-iya+2,1);
-		cmplx(0,ny-iya+2,1) = conj(cmplx(0,iya,1));
-		(*w)(0,ny-iya+2,1) = (*w)(0,iya,1);
-	}
-	for (int iza = 2; iza <= nzc; iza++) {
-		cmplx(0,1,iza) += conj(cmplx(0,1,nz-iza+2));
-		(*w)(0,1,iza) += (*w)(0,1,nz-iza+2);
-		cmplx(0,1,nz-iza+2) = conj(cmplx(0,1,iza));
-		(*w)(0,1,nz-iza+2) = (*w)(0,1,iza);
-	}
-	EXITFUNC;
-}
-
 EMData* EMData::rot_scale_trans2D(float angDeg, float delx, float dely, float scale) { // quadratic, no background, 2D
 	float ang=angDeg*M_PI/180.0f;
 	if (1 >= ny)
@@ -2842,9 +2907,13 @@ EMData* EMData::rot_scale_trans2D_background(float angDeg, float delx, float del
 
 #define in(i,j,k)          in[i+(j+(k*ny))*(size_t)nx]
 EMData*
-EMData::rot_scale_trans(const Transform &RA) {
+EMData::rot_scale_trans(const Transform &RA, EMData* ret) {
+//EMData::rot_scale_trans(const Transform &RA) {
 
-	EMData* ret = copy_head();
+//	EMData* ret = copy_head();
+
+	if (ret == NULL) EMData* ret = copy_head();
+	
 	float *in = this->get_data();
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
@@ -2909,21 +2978,21 @@ EMData::rot_scale_trans(const Transform &RA) {
 		set_array_offsets(saved_offsets);
 		return ret;
 	} else {
-//		 This begins the 3D version tri-linear interpolation.
+	//		 This begins the 3D version tri-linear interpolation.
 
-	float delx = translations.at(0);
-	float dely = translations.at(1);
-	float delz = translations.at(2);
-	delx = restrict2(delx, nx);
-	dely = restrict2(dely, ny);
-	delz = restrict2(delz, nz);
-	int xc = nx/2;
-	int yc = ny/2;
-	int zc = nz/2;
-//         shifted center for rotation
-	float shiftxc = xc + delx;
-	float shiftyc = yc + dely;
-	float shiftzc = zc + delz;
+		float delx = translations.at(0);
+		float dely = translations.at(1);
+		float delz = translations.at(2);
+		delx = restrict2(delx, nx);
+		dely = restrict2(dely, ny);
+		delz = restrict2(delz, nz);
+		int xc = nx/2;
+		int yc = ny/2;
+		int zc = nz/2;
+	//         shifted center for rotation
+		float shiftxc = xc + delx;
+		float shiftyc = yc + dely;
+		float shiftzc = zc + delz;
 
 		for (int iz = 0; iz < nz; iz++) {
 			float z = float(iz) - shiftzc;
@@ -2989,124 +3058,8 @@ EMData::rot_scale_trans(const Transform &RA) {
 
 		set_array_offsets(saved_offsets);
 		return ret;
-
-/*     This entire section has to go somewhere for quadratic 3D interpolation PAP 12/29/07
-//		 This begins the 3D version triquadratic interpolation.
-
-	float delx = translations.at(0);
-	float dely = translations.at(1);
-	float delz = translations.at(2);
-	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
-	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
-	if(dely >= 0.0f) { delz = fmod(delz, float(nz));} else {delz = -fmod(-delz, float(nz));}
-	int xc = nx/2;
-	int yc = ny/2;
-	int zc = nz/2;
-//         shifted center for rotation
-	float shiftxc = xc + delx;
-	float shiftyc = yc + dely;
-	float shiftzc = zc + delz;
-//                  set up array to use later
-//
-		int xArr[27];
-		int yArr[27];
-		int zArr[27];
-		float fdata[27];
-
-		for (int iL=0; iL<27 ; iL++){  // need this indexing array later
-			xArr[iL]  =  (int) (fmod((float)iL,3.0f) - 1.0f);
-			yArr[iL]  =  (int)( fmod( ((float) (iL/3) ),3.0f)- 1.0f);
-			zArr[iL]  = ((int) (iL/9)  ) -1;
-//			printf("iL=%d, \t xArr=%d, \t yArr=%d, \t zArr=%d \n",iL, xArr[iL],yArr[iL],zArr[iL]);
-		}
-
-//		for (int iz = 0; iz < nz; iz++) {for (int iy = 0; iy < ny; iy++) {for (int ix = 0; ix < nx; ix++) {
-//		      (*ret)(ix,iy,iz) = 0;}}}   // initialize returned data
-
-		for (int iz = 0; iz < nz; iz++) {
-			float z = float(iz) - shiftzc;
-			float xoldz = z*RAinv[0][2]+xc;
-			float yoldz = z*RAinv[1][2]+yc;
-			float zoldz = z*RAinv[2][2]+zc;
-			for (int iy = 0; iy < ny; iy++) {
-				float y = float(iy) - shiftyc;
-				float xoldzy = xoldz + y*RAinv[0][1] ;
-				float yoldzy = yoldz + y*RAinv[1][1] ;
-				float zoldzy = zoldz + y*RAinv[2][1] ;
-				for (int ix = 0; ix < nx; ix++) {
-					float x = float(ix) - shiftxc;
-					float xold = xoldzy + x*RAinv[0][0] ;
-					float yold = yoldzy + x*RAinv[1][0] ;
-					float zold = zoldzy + x*RAinv[2][0] ;
-
-
-				if (xold < 0.0f) xold = fmod((int(xold/float(nx))+1)*nx-xold, float(nx));
-				else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-				if (yold < 0.0f) yold =fmod((int(yold/float(ny))+1)*ny-yold, float(ny));
-				else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
-				if (zold < 0.0f) zold =fmod((int(zold/float(nz))+1)*nz-zold, float(nz));
-				else if (zold > (float) (nz-1) ) zold = fmod(zold, float(nz));
-
-				//  what follows does not accelerate the code; moreover, I doubt it is correct PAP 12/29/07
-				//while ( xold >= (float)(nx) )  xold -= nx;
-				//while ( xold < 0.0f )         xold += nx;
-				//while ( yold >= (float)(ny) )  yold -= ny;
-				//while ( yold < 0.0f )         yold += ny;
-				//while ( zold >= (float)(nz) )  zold -= nz;
-				//while ( zold < 0.0f )         zold += nz;
-
-//         This is currently coded the way  SPIDER coded it,
-//            changing floor to round  in the next 3 lines below may be better
-//					int IOX = (int) floor(xold); // This is the center of the array
-//					int IOY = (int) floor(yold ); // In the next loop we interpolate
-//					int IOZ = (int) floor(zold ); //  If floor is used dx is positive
-					int IOX = int(xold);
-					int IOY = int(yold);
-					int IOZ = int(zold);
-
-					float dx = xold-IOX; //remainder(xold,1);  //  now |dx| <= .5
-					float dy = yold-IOY; //remainder(yold,1);
-					float dz = zold-IOZ; //remainder(zold,1);
-
-//					printf(" IOX=%d \t IOY=%d \t IOZ=%d \n", IOX, IOY, IOZ);
-//					if (IOX>=0 && IOX<nx  && IOY>=0 && IOY < ny && IOZ >= 0 && IOZ < nz ) {
-//                                      	ROTATED POSITION IS INSIDE OF VOLUME
-//						FIND INTENSITIES ON 3x3x3 COORDINATE GRID;
-//                                     Solution is wrapped
-						for  (int iL=0; iL<27 ; iL++){
-							int xCoor = (int) fmod(IOX+xArr[iL] + nx + .0001f, (float) nx);
-							int yCoor = (int) fmod(IOY+yArr[iL] + ny + .0001f, (float) ny);
-							int zCoor = (int) fmod(IOZ+zArr[iL] + nz + .0001f, (float) nz);
-							fdata[iL] = (*this)( xCoor, yCoor ,zCoor );
-//							if (iy==iz && iz==0){printf(" fdata=%f \n", fdata[iL]);}
-//						}
-					}
-
-					(*ret)(ix,iy,iz) = Util::triquad(dx, dy, dz, fdata);
-//					(*ret)(ix,iy,iz) = Util:: trilinear_interpolate(fdata[13],fdata[14],fdata[16],
-//											fdata[17],fdata[22],fdata[23],
-//											fdata[25],fdata[26],dx, dy, dz);
-//	p1 iL=13,   xArr= 0,         yArr= 0,         zArr= 0
-//	p2 iL=14,   xArr= 1,         yArr= 0,         zArr= 0
-//	p3 iL=16,   xArr= 0,         yArr= 1,         zArr= 0
-//	p4 iL=17,   xArr= 1,         yArr= 1,         zArr= 0
-//	p5 iL=22,   xArr= 0,         yArr= 0,         zArr= 1
-//	p6 iL=23,   xArr= 1,         yArr= 0,         zArr= 1
-//	p7 iL=25,   xArr= 0,         yArr= 1,         zArr= 1
-//	p8 iL=26,   xArr= 1,         yArr= 1,         zArr= 1
-
-
-
-				} //ends x loop
-			} // ends y loop
-		} // ends z loop
-
-		set_array_offsets(saved_offsets);
-		return ret;
-*/
 	}
 }
-#undef  in
 
 // new function added for background option
 #define in(i,j,k)          in[i+(j+(k*ny))*(size_t)nx]
@@ -3586,6 +3539,212 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 	if (t) free(t);
 	set_array_offsets(saved_offsets);
 	return ret;
+}
+
+EMData*
+EMData::rot_fvol(const Transform &RA, EMData* ret) {
+//EMData::rot_fvol(const Transform &RA) {
+// Note data has to be shifted to corners by n/2
+//	EMData* ret = copy_head();
+
+    if (ret == NULL) {
+        ret = copy_head();
+	    ret->to_zero();
+	    ret->set_array_offsets(0,0,0);
+    }
+    
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	Transform RAinv = RA.inverse();
+
+	if (1 >= ny)  throw ImageDimensionException("Can't frotate 1D image");
+	if (nz < 2) {
+		throw ImageDimensionException("Can't frotate 2D image");
+	} else {
+//		 This begins the 3D version tri-linear interpolation.
+		if(is_complex())  {
+			bool iodd = get_attr("is_fftodd");
+			int xc = nx/2;
+			int yc = ny/2;
+			int zc = nz/2;
+			int bign = 2*nz;
+			float rm2 = (xc-1)*(xc-1);
+//cout<<"  "<<nx<<"  "<<ny<<"  "<<nz<<"  "<<xc<<"  "<<yc<<"  "<<zc<<"  "<<bign<<"  "<<rm2<<endl;
+			for (int iz = -zc + 1-nz%2; iz < zc; iz++) {
+				float xnewz = iz*RAinv[0][2];
+				float ynewz = iz*RAinv[1][2];
+				float znewz = iz*RAinv[2][2];
+				for (int iy = -yc + 1-ny%2; iy < yc; iy++) {
+					float xnewzy = xnewz + iy*RAinv[0][1];
+					float ynewzy = ynewz + iy*RAinv[1][1];
+					float znewzy = znewz + iy*RAinv[2][1];
+					for (int ix = 0; ix < xc; ix++) {
+						float xnew = xnewzy + ix*RAinv[0][0];
+						float ynew = ynewzy + ix*RAinv[1][0];
+						float znew = znewzy + ix*RAinv[2][0];
+//cout<<"   Before if "<<xnew*xnew + ynew+ynew + znew*znew<<"  "<<rm2<<"  "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<endl;
+						if(xnew*xnew + ynew+ynew + znew*znew <= rm2 ) {
+
+							int itz = iz;
+							if( itz < 0 ) itz += nz;
+							int ity = iy;
+							if( ity < 0 ) ity += ny;
+
+							bool flipin;
+							if (xnew < 0.) {
+								xnew = -xnew;
+								ynew = -ynew;
+								znew = -znew;
+								flipin = true;
+							} else  flipin = false;
+
+
+							int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+							int iyn = int(ynew + bign);
+							int izn = int(znew + bign);
+							float dx = xnew + bign - ixn;
+							float dy = ynew + bign - iyn;
+							float dz = znew + bign - izn;
+							float qdx = 1.0f - dx;
+							float qdy = 1.0f - dy;
+							float qdz = 1.0f - dz;
+
+							float qq000 = qdx * qdy * qdz;
+							float qq010 = qdx *  dy * qdz;
+							float qq100 =  dx * qdy * qdz;
+							float qq110 =  dx *  dy * qdz;
+							float qq001 = qdx * qdy *  dz;
+							float qq011 = qdx *  dy *  dz;
+							float qq101 =  dx * qdy *  dz;
+							float qq111 =  dx *  dy *  dz;
+
+							ixn -= bign;
+							iyn -= bign;
+							izn -= bign;
+
+							int iza = izn;
+							if (izn < 0)  iza += nz;
+
+							int iya = iyn;
+							if (iyn < 0)  iya += ny;
+
+
+							int ix1 = ixn + 1;
+							if( ix1 < xc) {
+								int iz1 = iza + 1;
+								if (iz1 >= nz) iz1 -= nz;
+
+								int iy1 = iya + 1;
+								if (iy1 >= ny) iy1 -= ny;
+	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
+	//if(ixn<0 or ixn >=xc)  cout<<"  error   ixn  "<<ixn<<endl;
+	//if(ix1<0 or ix1 >=xc){  cout<<"  error   ix1  "<<ix1<<endl;cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;}
+	//if(iya<0 or iya >=ny)  cout<<"  error   iya  "<<iya<<endl;
+	//if(iy1<0 or iy1 >=ny)  cout<<"  error   iy1  "<<iy1<<endl;
+	//if(iza<0 or iza >=nz)  cout<<"  error   iza  "<<iza<<endl;
+	//if(iz1<0 or iz1 >=nz)  cout<<"  error   iz1  "<<iz1<<endl;
+								std::complex<float> btq = qq000 * cmplx(ixn, iya, iza) + qq010 * cmplx(ixn, iy1, iza) + qq100 * cmplx(ix1, iya, iza)
+										+ qq110 * cmplx(ix1, iy1, iza) + qq001 * cmplx(ixn, iya, iz1) + qq011 * cmplx(ixn, iy1, iz1)
+										+ qq101 * cmplx(ix1, iya, iz1) + qq111 * cmplx(ix1, iy1, iz1);
+
+	//if(ix<0 or ix >=xc)  cout<<"  error   ix  "<<ix<<endl;
+	//if(ity<0 or ity >=ny)  cout<<"  error   ity  "<<ity<<endl;
+	//if(itz<0 or itz >=nz)  cout<<"  error   itz  "<<itz<<endl;
+								if( flipin )  ret->cmplx(ix,ity,itz) = conj(btq);
+								else  ret->cmplx(ix,ity,itz) = btq;
+							}
+
+						}
+					} //ends x loop
+				} // ends y loop
+			} // ends z loop
+		} else {
+			int xc = nx/2;
+			int yc = ny/2;
+			int zc = nz/2;
+			int bign = 2*zc;
+			float rm2 = (xc-1)*(xc-1);
+
+			for (int iz = -zc + 1-nz%2; iz < zc; iz++) {
+				float xnewz = iz*RAinv[0][2];
+				float ynewz = iz*RAinv[1][2];
+				float znewz = iz*RAinv[2][2];
+				for (int iy = -yc + 1-ny%2; iy < yc; iy++) {
+					float xnewzy = xnewz + iy*RAinv[0][1];
+					float ynewzy = ynewz + iy*RAinv[1][1];
+					float znewzy = znewz + iy*RAinv[2][1];
+					for (int ix = 0; ix < nx; ix++) {
+						float xnew = xnewzy + ix*RAinv[0][0];
+						float ynew = ynewzy + ix*RAinv[1][0];
+						float znew = znewzy + ix*RAinv[2][0];
+//cout<<"   Before if "<<xnew*xnew + ynew+ynew + znew*znew<<"  "<<rm2<<"  "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<endl;
+						if(xnew*xnew + ynew+ynew + znew*znew <= rm2 ) {
+
+							int itz = iz;
+							if( itz < 0 ) itz += nz;
+							int ity = iy;
+							if( ity < 0 ) ity += ny;
+
+							if (xnew < 0.) {
+								xnew = -xnew;
+								ynew = -ynew;
+								znew = -znew;
+							}
+
+
+							int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+							int iyn = int(ynew + bign);
+							int izn = int(znew + bign);
+							float dx = xnew + bign - ixn;
+							float dy = ynew + bign - iyn;
+							float dz = znew + bign - izn;
+							float qdx = 1.0f - dx;
+							float qdy = 1.0f - dy;
+							float qdz = 1.0f - dz;
+
+							float qq000 = qdx * qdy * qdz;
+							float qq010 = qdx *  dy * qdz;
+							float qq100 =  dx * qdy * qdz;
+							float qq110 =  dx *  dy * qdz;
+							float qq001 = qdx * qdy *  dz;
+							float qq011 = qdx *  dy *  dz;
+							float qq101 =  dx * qdy *  dz;
+							float qq111 =  dx *  dy *  dz;
+
+							ixn -= bign;
+							iyn -= bign;
+							izn -= bign;
+
+							int iza = izn;
+							if (izn < 0)  iza += nz;
+
+							int iya = iyn;
+							if (iyn < 0)  iya += ny;
+
+
+							int ix1 = ixn + 1;
+							if( ix1 < nx)  {
+								int iz1 = iza + 1;
+								if (iz1 >= nz) iz1 -= nz;
+
+								int iy1 = iya + 1;
+								if (iy1 >= ny) iy1 -= ny;
+	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
+	//btq = cmplx(ixn, iya, iza);
+
+								(*ret)(ix,ity,itz) = qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
+										+ qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
+										+ qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
+							}
+
+						}
+					} //ends x loop
+				} // ends y loop
+			} // ends z loop
+		}
+		set_array_offsets(saved_offsets);
+		return ret;
+	}
 }
 
 EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {

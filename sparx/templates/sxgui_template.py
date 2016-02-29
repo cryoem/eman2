@@ -31,15 +31,15 @@
 
 import sys
 import os
-from global_def import *
+from subprocess import *
+from functools import partial  # Use to connect event-source widget and event handler
 from PyQt4.Qt import *
 from PyQt4 import QtGui
 from PyQt4 import QtCore
-from subprocess import *
 from EMAN2 import *
-from sparx import *
 from EMAN2_cppwrap import *
-from functools import partial  # Use to connect event-source widget and event handler
+from global_def import *
+from sparx import *
 
 # ========================================================================================
 class SXcmd_token:
@@ -54,13 +54,15 @@ class SXcmd_token:
 		self.is_required = False    # Required argument or options. No default value are available 
 		self.default = ""           # Default value
 		self.type = ""              # Type of value
-		self.is_in_io = False       # <Used only here> To check consistency between "usage in command line" and list in "== Input ==" and "== Output ==" sections
+		self.restore = ""           # Restore value
+		self.is_in_io = False       # <Used only in wikiparser.py> To check consistency between "usage in command line" and list in "== Input ==" and "== Output ==" sections
+		self.restore_widget = None  # <Used only in sxgui.py> Restore widget instance associating with this command token
 		self.widget = None          # <Used only in sxgui.py> Widget instance associating with this command token
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
 class SXcmd:
-	def __init__(self):
+	def __init__(self, type = ""):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.name = ""               # Name of this command (i.e. name of sx*.py script but without .py extension)
@@ -68,12 +70,13 @@ class SXcmd:
 		self.short_info = ""         # Short description of this command
 		self.mpi_support = False     # Flag to indicate if this command suppors MPI version
 		self.mpi_add_flag = False    # DESIGN_NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts 
+		self.type = type             # Type of this command; pipe (pipeline), util (utility)
 		self.token_list = []         # list of command tokens. Need this to keep the order of command tokens
 		self.token_dict = {}         # dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
-		self.button = None           # <Used only in sxgui.py> QPushButton button instance associating with this command
+		self.btn = None              # <Used only in sxgui.py> QPushButton button instance associating with this command
 		self.widget = None           # <Used only in sxgui.py> SXCmdWidget instance associating with this command
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		
+
 # ========================================================================================
 def construct_sxcmd_list():
 	sxcmd_list = []
@@ -84,17 +87,18 @@ def construct_sxcmd_list():
 	
 	# Create command token dictionary for each SXcmd instance
 	for sxcmd in sxcmd_list:
-		for token in sxcmd.token_list:
+		for sxcmd_token in sxcmd.token_list:
 			# Handle very special cases
-			if token.type == "function":
+			if sxcmd_token.type == "function":
 				n_widgets = 2 # function type has two line edit boxes
-				token.label = [token.label, "enter name of external file with .py extension containing user function"]
-				token.help = [token.help, "(leave blank if file is not external to sphire)"]
-				token.default = [token.default, "None"]
+				sxcmd_token.label = [sxcmd_token.label, "enter name of external file with .py extension containing user function"]
+				sxcmd_token.help = [sxcmd_token.help, "(leave blank if file is not external to sphire)"]
+				sxcmd_token.default = [sxcmd_token.default, "None"]
+				sxcmd_token.restore = sxcmd_token.default
 			# else: Do nothing for the other types
 			
 			# Register this to command token dictionary
-			sxcmd.token_dict[token.key_base] = token
+			sxcmd.token_dict[sxcmd_token.key_base] = sxcmd_token
 		
 		# DESIGN_NOTE: 2016/02/05 Toshio Moriya
 		# Handle exceptional cases due to the limitation of software design 
@@ -103,7 +107,11 @@ def construct_sxcmd_list():
 			assert(sxcmd.token_dict["locresvolume"].key_base == "locresvolume")
 			assert(sxcmd.token_dict["locresvolume"].type == "output")
 			sxcmd.token_dict["locresvolume"].type = "image"
-			
+		elif sxcmd.name in ["sxlocres",  "sxsort3d", "sxrsort3d"]:
+			assert(sxcmd.token_dict["wn"].key_base == "wn")
+			assert(sxcmd.token_dict["wn"].type == "ctfwin")
+			sxcmd.token_dict["wn"].type = "int"
+	
 	return sxcmd_list
 
 # ========================================================================================
@@ -114,8 +122,9 @@ class SXconst:
 		self.key = ""               # <Used only in sxgui.py> key of constant parameter
 		self.label = ""             # <Used only in sxgui.py> User friendly name of constant parameter
 		self.help = ""              # <Used only in sxgui.py> Help info
-		self.default = ""           # <Used only in sxgui.py> Default value
+		self.register = ""           # <Used only in sxgui.py> Default value
 		self.type = ""              # <Used only in sxgui.py> Type of value
+		self.register_widget = None  # <Used only in sxgui.py> Restore widget instance associating with this command token
 		self.widget = None          # <Used only in sxgui.py> Widget instance associating with this constant parameter
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
@@ -129,82 +138,98 @@ class SXconst_set:
 		self.short_info = ""         # <Used only in sxgui.py> Short description of this set
 		self.list = []               # <Used only in sxgui.py> list of constant parameters. Need this to keep the order of constant parameters
 		self.dict = {}               # <Used only in sxgui.py> dictionary of constant parameters, organised by key of constant parameters. Easy to access a constant parameters but looses their order
-		self.button = None           # <Used only in sxgui.py> QPushButton button instance associating with this set
-		self.widget = None           # <Used only in sxgui.py> Widget instance associating with this set
+		self.btn = None              # <Used only in sxgui.py> QPushButton button instance associating with this set
+		self.window = None           # <Used only in sxgui.py> Widget instance associating with this set
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		
 
 # ========================================================================================
 def construct_sxconst_set():
 	
 	# Create project constant set 
-	sxconst_set = SXconst_set(); sxconst_set.name = "Project Constant Settings"; sxconst_set.label = "Project Constant Settings"; sxconst_set.short_info = "These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
-	sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.default = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "protein molecular mass"; sxconst.help = "in kDa"; sxconst.default = "0.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "protein particle radius"; sxconst.help = "in pixel"; sxconst.default = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "imaging configrations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configrations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.default = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "micrograph pixel size"; sxconst.help = "in angstrom/pixel"; sxconst.default = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "win"; sxconst.label = "CTF window size "; sxconst.help = "in pixel. it should be slightly larger than particle box size"; sxconst.default = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "box"; sxconst.label = "particle box size"; sxconst.help = " in pixel/voxel"; sxconst.default = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "point-group symmetry"; sxconst.help = ""; sxconst.default = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst_set = SXconst_set(); sxconst_set.name = "Project Constants"; sxconst_set.label = "Project Constants"; sxconst_set.short_info = "Set constant values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
+	sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "micrograph pixel size"; sxconst.help = "in angstrom/pixel"; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "ctfwin"; sxconst.label = "CTF window size "; sxconst.help = "in pixel. it should be slightly larger than particle box size"; sxconst.register = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "box"; sxconst.label = "particle box size"; sxconst.help = " in pixel/voxel"; sxconst.register = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "protein particle radius"; sxconst.help = "in pixel"; sxconst.register = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "protein molecular mass"; sxconst.help = "in kDa"; sxconst.register = "0.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "imaging configrations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configrations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	
 	return sxconst_set
 	
 # ========================================================================================
-class SXWidetConst:
+class SXLookFeelConst:
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# static class variables
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	default_bg_color = QColor(195, 195, 230) # Blueish Non-Transparent
+	sxcmd_widget_bg_color = QColor(195, 195, 230, 240) # sxcmd_widget_bg_color = QColor(195, 195, 230, 175) # Blueish Transparent
+	
 	grid_margin = 12 # grid_margin = 8
 	grid_spacing = 6
-	# main_bg_color = QColor(200, 200, 255) # Blueish 
-	sxconst_set_bg_color = QColor(195, 195, 230) # Blueish Non-Transparent
-	sxcmd_bg_color = QColor(195, 195, 230, 240) # sxcmd_bg_color = QColor(195, 195, 230, 175) # Blueish Transparent
 	
-	sxconst_set_min_width = 300 # Best for Linux
-	sxconst_set_min_height = 940
+	sxcmd_select_area_min_width = 240
+	# sxcmd_widget_area_min_width = 1080 # Best for MAC OSX
+	# sxcmd_widget_area_min_height = 1080 # Best for MAC OSX
+	sxcmd_widget_area_min_width = 1140 # Best for Linux
+	sxcmd_widget_area_min_height = 1080 # Best for Linux
 	
-	sxcmd_button_min_width = 240
-	# sxcmd_min_width = 900 # Best for MAC OSX
-	sxcmd_min_width = 940 # Best for Linux
-	sxcmd_min_height = 940
+	# sxconst_set_area_min_width = 440 # Best for Mac OSX
+	sxconst_set_area_min_width = 460 # Best for Linux
+	sxconst_set_area_min_height = sxcmd_widget_area_min_height
 	
+	# sxconst_set_window_width = sxconst_set_area_min_width + grid_margin * 5 # Best setting for MAC OSX
+	sxconst_set_window_width = sxconst_set_area_min_width + grid_margin * 5 # Best setting for Linux
+	sxconst_set_window_height = sxconst_set_area_min_height + grid_margin * 2
+	
+	# sxmain_window_width = sxcmd_widget_area_min_width + sxcmd_select_area_min_width + grid_margin * (7 + 1) # Best setting for MAC OSX
+	sxmain_window_width = sxcmd_widget_area_min_width + sxcmd_select_area_min_width + grid_margin * (7 + 7) # Best setting for Linux
+	sxmain_window_height = sxcmd_widget_area_min_height + grid_margin * 2
+	
+	sxutil_window_width = sxmain_window_width
+	sxutil_window_height = sxmain_window_height
+	
+	project_dir = "sxgui_settings"
+
 # ========================================================================================
 # Provides all necessary functionarity
-# tabs only contains gui and knows how to layout them
+# tabs only provides widgets and knows how to layout them
 class SXCmdWidget(QWidget):
-	def __init__(self, sxcmd, parent = None):
+	def __init__(self, sxconst_set, sxcmd, parent = None):
 		super(SXCmdWidget, self).__init__(parent)
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
+		self.sxconst_set = sxconst_set
 		self.sxcmd = sxcmd
+		self.sxcmd_tab_main = None
+		self.sxcmd_tab_advance = None
 		
-		self.projct_dir = "sxgui_settings"
-		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (self.projct_dir, self.sxcmd.name)
+		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (SXLookFeelConst.project_dir, self.sxcmd.name)
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 		# Set grid layout
 		grid_layout = QGridLayout(self)
-		# grid_layout.setMargin(SXWidetConst.grid_margin)
-		# grid_layout.setSpacing(SXWidetConst.grid_spacing)
-
+		# grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		# grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
+		
 		self.setAutoFillBackground(True)
 		palette = QPalette(self)
-		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxcmd_bg_color))
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxcmd_widget_bg_color))
 		self.setPalette(palette)
 		
 		# self.setWindowTitle(self.sxcmd.name)
-		self.sxtab_main = SXTab("Main", self)
-		self.sxtab_advance = SXTab("Advanced", self)
-#		self.sxtab_main.w1 = self.sxtab_advance
+		self.sxcmd_tab_main = SXCmdTab("Main", self)
+		self.sxcmd_tab_advance = SXCmdTab("Advanced", self)
+#		self.sxcmd_tab_main.w1 = self.sxcmd_tab_advance
 # 		self.tab_widget = QTabWidget(self)
 		self.tab_widget = QTabWidget()
-		self.tab_widget.insertTab(0, self.sxtab_main, self.sxtab_main.name)
-		self.tab_widget.insertTab(1, self.sxtab_advance, self.sxtab_advance.name)
+		self.tab_widget.insertTab(0, self.sxcmd_tab_main, self.sxcmd_tab_main.name)
+		self.tab_widget.insertTab(1, self.sxcmd_tab_advance, self.sxcmd_tab_advance.name)
 		# self.tab_widget.setAutoFillBackground(True)
 		# palette = self.tab_widget.palette()
-		# palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxcmd_bg_color))
+		# palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxcmd_widget_bg_color))
 		# self.tab_widget.setPalette(palette)
 #		self.tab_widget.resize(880,860) # self.tab_widget.resize(900,1080)
 #		self.tab_widget.show()
@@ -213,59 +238,59 @@ class SXCmdWidget(QWidget):
 		# Load the previously saved parameter setting of this sx command
 		if os.path.exists(self.gui_settings_file_path):
 			self.read_params(self.gui_settings_file_path)
-		
+	
 	def map_widgets_to_sxcmd_line(self):
 		# Add program name to command line
 		sxcmd_line = "%s.py" % self.sxcmd.name
 		
 		# Loop through all command tokens
-		for token in self.sxcmd.token_list:
+		for sxcmd_token in self.sxcmd.token_list:
 			# First, handle very special cases
-			if token.type == "function":
+			if sxcmd_token.type == "function":
 				user_func_name_index = 0
 				external_file_path_index = 1
-				user_func_name = str(token.widget[user_func_name_index].text())
-				external_file_path = str(token.widget[external_file_path_index].text())
+				user_func_name = str(sxcmd_token.widget[user_func_name_index].text())
+				external_file_path = str(sxcmd_token.widget[external_file_path_index].text())
 				
 				# This is not default value
-				if external_file_path not in ["", token.default[external_file_path_index]]:
+				if external_file_path not in ["", sxcmd_token.default[external_file_path_index]]:
 					# Case 1: User specified an exteranl function different from default or empty string
 					if os.path.splitext(external_file_path)[1] != ".py": 
 						QMessageBox.warning(self, "Invalid paramter value", "Exteranl File Path (%s) should include the python script extension (.py)." % (external_file_path))
 						return ""
 					dir_path, file_basename = os.path.split(external_file_path)
 					file_basename = file_basename.replace(".py", "")
-					sxcmd_line += " %s%s=[%s,%s,%s]" % (token.key_prefix, token.key_base, dir_path, file_basename, user_func_name)
-				elif user_func_name != token.default[user_func_name_index]:
+					sxcmd_line += " %s%s=[%s,%s,%s]" % (sxcmd_token.key_prefix, sxcmd_token.key_base, dir_path, file_basename, user_func_name)
+				elif user_func_name != sxcmd_token.default[user_func_name_index]:
 					# Case 2: User specified an internal function different from default
-					sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, user_func_name)
+					sxcmd_line += " %s%s=%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base, user_func_name)
 				# else: User left default value. Do nothing
-			# Then, handle the other cases
+			# Then, handle the other cases//
 			else:
-				if token.type == "bool":
-					if token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
-					if (token.widget.checkState() == Qt.Checked) != token.default:
-						sxcmd_line += " %s%s" % (token.key_prefix, token.key_base)
+				if sxcmd_token.type == "bool":
+					if sxcmd_token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+					if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default:
+						sxcmd_line += " %s%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base)
 				else:
-					if token.is_required == True and token.widget.text() == token.default:
-						QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this token." % (token.key_base, self.sxcmd.name))
+					if sxcmd_token.is_required == True and sxcmd_token.widget.text() == sxcmd_token.default:
+						QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.key_base, self.sxcmd.name))
 						return ""
 				
-					if token.widget.text() != token.default:
+					if sxcmd_token.widget.text() != sxcmd_token.default:
 						# For now, using line edit box for the other type
-						widget_text = str(token.widget.text())
-						if token.type not in ["int", "float"]:
+						widget_text = str(sxcmd_token.widget.text())
+						if sxcmd_token.type not in ["int", "float"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
 							widget_text = "\'%s\'" % (widget_text) # then, enclose the string value with single quotes (')
 						
-						if token.key_prefix == "":
+						if sxcmd_token.key_prefix == "":
 							sxcmd_line += " %s" % (widget_text)
-						elif token.key_prefix == "--":
-							sxcmd_line += " %s%s=%s" % (token.key_prefix, token.key_base, widget_text)
+						elif sxcmd_token.key_prefix == "--":
+							sxcmd_line += " %s%s=%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base, widget_text)
 						else:
-							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
+							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
 				
 		
 		return sxcmd_line
@@ -280,7 +305,7 @@ class SXCmdWidget(QWidget):
 			np = 1
 			if self.sxcmd.mpi_support:
 				# mpi is supported
-				np = int(str(self.sxtab_main.mpi_nproc_edit.text()))
+				np = int(str(self.sxcmd_tab_main.mpi_nproc_edit.text()))
 				# DESIGN_NOTE: 2015/10/27 Toshio Moriya
 				# Since we now assume sx*.py exists in only MPI version, always add --MPI flag if necessary
 				# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
@@ -319,14 +344,14 @@ class SXCmdWidget(QWidget):
 				
 			# Generate command line according to the case
 			cmd_line = ""
-			if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+			if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
-				if os.path.exists(self.sxtab_main.qsub_script_edit.text()) != True: 
-					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s)." % (self.sxtab_main.qsub_script_edit.text()))
+				if os.path.exists(self.sxcmd_tab_main.qsub_script_edit.text()) != True: 
+					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s)." % (self.sxcmd_tab_main.qsub_script_edit.text()))
 					return "" 
 					
-				file_template = open(self.sxtab_main.qsub_script_edit.text(),"r")
+				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
 				# Extract command line from qsub script template 
 				for line in file_template:
 					if line.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -334,13 +359,13 @@ class SXCmdWidget(QWidget):
 						if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 							cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
 						if cmd_line.find("XXX_SXMPI_JOB_NAME_XXX") != -1:
-							cmd_line = cmd_line.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.sxtab_main.qsub_job_name_edit.text()))
+							cmd_line = cmd_line.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.sxcmd_tab_main.qsub_job_name_edit.text()))
 				file_template.close()
 			elif self.sxcmd.mpi_support:
 				# Case 2: queue submission is disabled, but MPI is supported
-				if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxtab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Add MPI execution to command line
-				cmd_line = str(self.sxtab_main.mpi_cmd_line_edit.text())
+				cmd_line = str(self.sxcmd_tab_main.mpi_cmd_line_edit.text())
 				# If empty string is entered, use a default template
 				if cmd_line == "":
 					cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
@@ -350,7 +375,7 @@ class SXCmdWidget(QWidget):
 					cmd_line = cmd_line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
 			else: 
 				# Case 3: queue submission is disabled, and MPI is not supported
-				if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxtab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Use sx command as it is
 				cmd_line = sxcmd_line
 		else:
@@ -366,34 +391,34 @@ class SXCmdWidget(QWidget):
 		if cmd_line:
 			# Command line is not empty
 			# First, check existence of outputs
-			for token in self.sxcmd.token_list:
-				if token.type == "output":
-					if os.path.exists(token.widget.text()):
+			for sxcmd_token in self.sxcmd.token_list:
+				if sxcmd_token.type == "output":
+					if os.path.exists(sxcmd_token.widget.text()):
 						# DESIGN_NOTE: 2015/11/24 Toshio Moriya
 						# This special case needs to be handled with more general method...
 						if self.sxcmd.name in ["sxisac", "sxviper", "sxrviper", "sxmeridien", "sxsort3d"]:
-							reply = QMessageBox.question(self, "Output Directory/File", "Output Directory/File (%s) already exists. Do you really want to run the program with continue mode?" % (token.widget.text()), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+							reply = QMessageBox.question(self, "Output Directory/File", "Output Directory/File (%s) already exists. Do you really want to run the program with continue mode?" % (sxcmd_token.widget.text()), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 							if reply == QMessageBox.No:
 								return
 							# else: # Do nothing
 						else:
-							QMessageBox.warning(self, "Output Directory/File", "Output Directory/File (%s) already exists. Please change the name and try it again. Aborting execution ..." % (token.widget.text()))
+							QMessageBox.warning(self, "Output Directory/File", "Output Directory/File (%s) already exists. Please change the name and try it again. Aborting execution ..." % (sxcmd_token.widget.text()))
 							return
 			
 			# If mpi is not supported set number of MPI processer (np) to 1
 			np = 1
 			if self.sxcmd.mpi_support:
-				np = int(str(self.sxtab_main.mpi_nproc_edit.text()))
-		
-			if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+				np = int(str(self.sxcmd_tab_main.mpi_nproc_edit.text()))
+			
+			if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
-				template_file_path = self.sxtab_main.qsub_script_edit.text()
+				template_file_path = self.sxcmd_tab_main.qsub_script_edit.text()
 				if os.path.exists(template_file_path) == False: 
 					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
 					return
-				file_template = open(self.sxtab_main.qsub_script_edit.text(),"r")
-				file_name_qsub_script = "qsub_" + str(self.sxtab_main.qsub_job_name_edit.text()) + ".sh"
+				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
+				file_name_qsub_script = "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh"
 				file_qsub_script = open(file_name_qsub_script,"w")
 				for line_io in file_template:
 					if line_io.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -402,20 +427,20 @@ class SXCmdWidget(QWidget):
 						if line_io.find("XXX_SXMPI_NPROC_XXX") != -1:
 							line_io = line_io.replace("XXX_SXMPI_NPROC_XXX", str(np))
 						if line_io.find("XXX_SXMPI_JOB_NAME_XXX") != -1:
-							line_io = line_io.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.sxtab_main.qsub_job_name_edit.text()))
+							line_io = line_io.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.sxcmd_tab_main.qsub_job_name_edit.text()))
 					file_qsub_script.write(line_io)
 				file_template.close()
 				file_qsub_script.close()
 				# Generate command line for queue submission
 				cmd_line_in_script = cmd_line
-				cmd_line = str(self.sxtab_main.qsub_cmd_edit.text()) + " " + file_name_qsub_script
+				cmd_line = str(self.sxcmd_tab_main.qsub_cmd_edit.text()) + " " + file_name_qsub_script
 				print "Wrote the following command line in the queue submission script: "
 				print cmd_line_in_script
 				print "Submitted a job by the following command: "
 				print cmd_line
 			else:
 				# Case 2: queue submission is disabled (MPI can be supported or unsupported)
-				if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxtab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				print "Executed the following command: "
 				print cmd_line
 		
@@ -424,8 +449,8 @@ class SXCmdWidget(QWidget):
 			self.emit(SIGNAL("process_started"), process.pid)
 			
 			# Save the current state of GUI settings
-			if os.path.exists(self.projct_dir) == False:
-				os.mkdir(self.projct_dir)
+			if os.path.exists(SXLookFeelConst.project_dir) == False:
+				os.mkdir(SXLookFeelConst.project_dir)
 			self.write_params(self.gui_settings_file_path)
 		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
 	
@@ -433,22 +458,22 @@ class SXCmdWidget(QWidget):
 		# Generate command line 
 		cmd_line = self.generate_cmd_line()
 		if cmd_line:
-			file_name_out = QFileDialog.getSaveFileName(self, "Generate Command Line", options = QFileDialog.DontUseNativeDialog)
-			if file_name_out != "":
-				file_out = open(file_name_out,"w")
+			file_path_out = QFileDialog.getSaveFileName(self, "Generate Command Line", options = QFileDialog.DontUseNativeDialog)
+			if file_path_out != "":
+				file_out = open(file_path_out,"w")
 				file_out.write(cmd_line + "\n")
 				file_out.close()
-				print "Saved the following command to %s:" % file_name_out
+				print "Saved the following command to %s:" % file_path_out
 				print cmd_line
 				
 				# Save the current state of GUI settings
-				if os.path.exists(self.projct_dir) == False:
-					os.mkdir(self.projct_dir)
+				if os.path.exists(SXLookFeelConst.project_dir) == False:
+					os.mkdir(SXLookFeelConst.project_dir)
 				self.write_params(self.gui_settings_file_path)
 		# else: Do nothing
 	
-	def write_params(self, file_name_out):
-		file_out = open(file_name_out,"w")
+	def write_params(self, file_path_out):
+		file_out = open(file_path_out,"w")
 		
 		# Write script name for consistency check upon loading
 		file_out.write("@@@@@ %s gui setting - " % (self.sxcmd.name))
@@ -492,22 +517,22 @@ class SXCmdWidget(QWidget):
 			
 		# At the end of parameter file...
 		# Write MPI parameters 
-		file_out.write("%s == %s \n" % ("MPI processors", str(self.sxtab_main.mpi_nproc_edit.text())))
-		file_out.write("%s == %s \n" % ("MPI Command Line Template", str(self.sxtab_main.mpi_cmd_line_edit.text())))
+		file_out.write("%s == %s \n" % ("MPI processors", str(self.sxcmd_tab_main.mpi_nproc_edit.text())))
+		file_out.write("%s == %s \n" % ("MPI Command Line Template", str(self.sxcmd_tab_main.mpi_cmd_line_edit.text())))
 		# Write Qsub paramters 
-		if self.sxtab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
+		if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 			val_str = "YES"
 		else:
 			val_str = "NO"
 		file_out.write("%s == %s \n" % ("Submit Job to Queue", val_str))	
-		file_out.write("%s == %s \n" % ("Job Name", str(self.sxtab_main.qsub_job_name_edit.text())))
-		file_out.write("%s == %s \n" % ("Submission Command", str(self.sxtab_main.qsub_cmd_edit.text())))
-		file_out.write("%s == %s \n" % ("Submission Script Template", str(self.sxtab_main.qsub_script_edit.text())))
+		file_out.write("%s == %s \n" % ("Job Name", str(self.sxcmd_tab_main.qsub_job_name_edit.text())))
+		file_out.write("%s == %s \n" % ("Submission Command", str(self.sxcmd_tab_main.qsub_cmd_edit.text())))
+		file_out.write("%s == %s \n" % ("Submission Script Template", str(self.sxcmd_tab_main.qsub_script_edit.text())))
 		
 		file_out.close()
-			
-	def read_params(self, file_name_in):
-		file_in = open(file_name_in,"r")
+	
+	def read_params(self, file_path_in):
+		file_in = open(file_path_in,"r")
 	
 		# Check if this parameter file is for this sx script
 		line_in = file_in.readline()
@@ -522,21 +547,21 @@ class SXCmdWidget(QWidget):
 				val_str_in = line_in.split("==")[1].strip() 
 				
 				if label_in == "MPI processors":
-					self.sxtab_main.mpi_nproc_edit.setText(val_str_in)
+					self.sxcmd_tab_main.mpi_nproc_edit.setText(val_str_in)
 				elif label_in == "MPI Command Line Template":
-					self.sxtab_main.mpi_cmd_line_edit.setText(val_str_in)
+					self.sxcmd_tab_main.mpi_cmd_line_edit.setText(val_str_in)
 				elif label_in == "Submit Job to Queue":
 					if val_str_in == "YES":
-						self.sxtab_main.qsub_enable_checkbox.setChecked(True)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(True)
 					else:
 						assert val_str_in == "NO"
-						self.sxtab_main.qsub_enable_checkbox.setChecked(False)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(False)
 				elif label_in == "Job Name":
-					self.sxtab_main.qsub_job_name_edit.setText(val_str_in)
+					self.sxcmd_tab_main.qsub_job_name_edit.setText(val_str_in)
 				elif label_in == "Submission Command":
-					self.sxtab_main.qsub_cmd_edit.setText(val_str_in)
+					self.sxcmd_tab_main.qsub_cmd_edit.setText(val_str_in)
 				elif label_in == "Submission Script Template":
-					self.sxtab_main.qsub_script_edit.setText(val_str_in)
+					self.sxcmd_tab_main.qsub_script_edit.setText(val_str_in)
 				else:
 					# Extract key_base of this command token
 					target_operator = "<"
@@ -576,16 +601,16 @@ class SXCmdWidget(QWidget):
 		file_in.close()
 	
 	def save_params(self):
-		file_path = str(QFileDialog.getSaveFileName(self, "Save Parameters", options = QFileDialog.DontUseNativeDialog))
-		if file_path != "":
-			self.write_params(file_path)
+		file_path_out = str(QFileDialog.getSaveFileName(self, "Save Parameters", options = QFileDialog.DontUseNativeDialog))
+		if file_path_out != "":
+			self.write_params(file_path_out)
 	
 	def load_params(self):
-		file_path = str(QFileDialog.getOpenFileName(self, "Load parameters", options = QFileDialog.DontUseNativeDialog))
-		if file_path != "":
-			self.read_params(file_path)
+		file_path_in = str(QFileDialog.getOpenFileName(self, "Load parameters", options = QFileDialog.DontUseNativeDialog))
+		if file_path_in != "":
+			self.read_params(file_path_in)
 	
-	def select_file(self, target_edit_box, file_format = ""):
+	def select_file(self, target_widget, file_format = ""):
 		file_path = ""
 		if file_format == "bdb":
 			file_path = str(QFileDialog.getOpenFileName(self, "Select BDB File", "", "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog))
@@ -614,23 +639,23 @@ class SXCmdWidget(QWidget):
 				file_path = os.path.relpath(file_path)
 			
 		if file_path != "":
-			target_edit_box.setText(file_path)
-				
-	def select_dir(self, target_edit_box):
+			target_widget.setText(file_path)
+	
+	def select_dir(self, target_widget):
 		dir_path = str(QFileDialog.getExistingDirectory(self, "Select Directory", "", options = QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog))
 		if dir_path != "":
 			# Use relative path. 
-			target_edit_box.setText(os.path.relpath(dir_path))
-			
+			target_widget.setText(os.path.relpath(dir_path))
+	
 	"""
 #	def show_output_info(self):
 #		QMessageBox.information(self, "sx* output","outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program.")
 	"""
 
 # ========================================================================================
-class SXTab(QWidget):
+class SXCmdTab(QWidget):
 	def __init__(self, name, parent=None):
-		super(SXTab, self).__init__(parent)
+		super(SXCmdTab, self).__init__(parent)
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
@@ -647,6 +672,11 @@ class SXTab(QWidget):
 #		self.x4 = self.x3 + 100
 #		self.x5 = 230
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# local constants
+		required_cmd_token_restore_tooltip = "please enter the value manually"
+		const_cmd_token_restore_tooltip = "retrieve this registed constant value"
+		default_cmd_token_restore_tooltip = "retrieve this default value"
+		
 		# Set grid layout
 		grid_row_origin = 0; grid_col_origin = 0
 		title_row_span = 1; title_col_span = 2
@@ -661,17 +691,17 @@ class SXTab(QWidget):
 		short_info_min_width = 360
 		short_info_min_height = 80
 		func_btn_min_width = 150
-		# cmd_token_label_min_width = 460 # Best for MAC OSX
-		cmd_token_label_min_width = 560 # Best for Linux
-		cmd_token_widget_min_width = 120
-		cmd_token_button_min_width = 120
+		# token_label_min_width = 460 # Best for MAC OSX
+		token_label_min_width = 560 # Best for Linux
+		token_widget_min_width = 120
 		
 		grid_layout = QGridLayout(self)
-		grid_layout.setMargin(SXWidetConst.grid_margin)
-		grid_layout.setSpacing(SXWidetConst.grid_spacing)
-		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, cmd_token_widget_min_width)
-		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, cmd_token_button_min_width)
-		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, cmd_token_button_min_width)
+		grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
+		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
+		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
+		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
+		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		# # Give the columns of token label a higher priority to stretch relative to the others
 		# for col_span in xrange(token_label_col_span):
 		# 	grid_layout.setColumnStretch(grid_row_origin + col_span, grid_layout.columnStretch(grid_row_origin+col_span) + 1)
@@ -713,12 +743,12 @@ class SXTab(QWidget):
 			
 			grid_row += short_info_row_span
 			
-			# Add load paramater button 
+			# Add load paramaters button 
 #			self.load_params_btn = QPushButton("Load parameters", self)
 			self.load_params_btn = QPushButton("Load parameters")
 #			self.load_params_btn.move(self.x1 - 5, self.y1)
 			self.load_params_btn.setMinimumWidth(func_btn_min_width)
-			self.load_params_btn.setToolTip("Load gui parameter settings to retrieve a previously-saved one")
+			self.load_params_btn.setToolTip("load gui parameter settings to retrieve a previously-saved one")
 			self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.load_params)
 			grid_layout.addWidget(self.load_params_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 #			self.y1 += 25
@@ -755,22 +785,30 @@ class SXTab(QWidget):
 				if cmd_token.type == "function":
 					n_widgets = 2 # function type has two line edit boxes
 					cmd_token_widget = [None] * n_widgets
+					cmd_token_restore_widget = [None] * n_widgets
 					
 					# Create widgets for user function name
 					widget_index = 0
 #					temp_label = QLabel(cmd_token.label[widget_index], self)
 					temp_label = QLabel(cmd_token.label[widget_index])
 #					temp_label.move(self.x1, self.y1)
-					temp_label.setMinimumWidth(cmd_token_label_min_width)
+					temp_label.setMinimumWidth(token_label_min_width)
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+					
+					assert(cmd_token.is_required == False)
+					cmd_token_restore_widget[widget_index] = QPushButton("[%s]" % cmd_token.restore[widget_index])
+					cmd_token_restore_widget[widget_index].setToolTip(default_cmd_token_restore_tooltip)
+					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 					
 					# cmd_token_widget[widget_index] = QLineEdit(self)
 					cmd_token_widget[widget_index] = QLineEdit()
-					cmd_token_widget[widget_index].setText(cmd_token.default[widget_index])
+					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index])
 #					cmd_token_widget[widget_index].move(self.x2,self.y1 - 7)
-#					cmd_token_widget[widget_index].setMinimumWidth(cmd_token_widget_min_width)
+#					cmd_token_widget[widget_index].setMinimumWidth(token_widget_min_width)
 					cmd_token_widget[widget_index].setToolTip(cmd_token.help[widget_index])
-					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+					
+					self.connect(cmd_token_restore_widget[widget_index], SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token, widget_index))
 					
 #					self.y1 = self.y1 + 25
 					grid_row +=  1
@@ -780,26 +818,35 @@ class SXTab(QWidget):
 #					temp_label = QLabel(cmd_token.label[widget_index], self)
 					temp_label = QLabel(cmd_token.label[widget_index])
 #					temp_label.move(self.x1, self.y1)
-#					temp_label.setMinimumWidth(cmd_token_label_min_width)
+#					temp_label.setMinimumWidth(token_label_min_width)
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+					
+					assert(cmd_token.is_required == False)
+					cmd_token_restore_widget[widget_index] = QPushButton("[%s]" % cmd_token.restore[widget_index])
+					cmd_token_restore_widget[widget_index].setToolTip(default_cmd_token_restore_tooltip)
+					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 					
 #					cmd_token_widget[widget_index] = QLineEdit(self)
 					cmd_token_widget[widget_index] = QLineEdit()
-					cmd_token_widget[widget_index].setText(cmd_token.default[widget_index]) # Because default user functions is internal
+					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index]) # Because default user functions is internal
 #					cmd_token_widget[widget_index].move(self.x2,self.y1 - 7)
-#					cmd_token_widget[widget_index].setMinimumWidth(cmd_token_widget_min_width)
+#					cmd_token_widget[widget_index].setMinimumWidth(token_widget_min_width)
 					cmd_token_widget[widget_index].setToolTip(cmd_token.help[widget_index])
-					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+					
+					self.connect(cmd_token_restore_widget[widget_index], SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token, widget_index))
 					
 					file_format = "py"
 #					temp_btn = QPushButton("Select Script", self)
 					temp_btn = QPushButton("Select Script")
 #					temp_btn.move(self.x3, self.y1 - 10)
-#					temp_btn.setMinimumWidth(cmd_token_button_min_width)
-					grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+#					temp_btn.setMinimumWidth(token_widget_min_width)
+					temp_btn.setToolTip("display open file dailog to select .%s python script file" % file_format)
+					grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 					self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget[widget_index], file_format))
+					
 #					spacer_frame = QFrame()
-#					spacer_frame.setMinimumWidth(cmd_token_button_min_width)
+#					spacer_frame.setMinimumWidth(token_widget_min_width)
 #					grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 					
 					grid_row +=  1
@@ -807,7 +854,7 @@ class SXTab(QWidget):
 #					temp_label = QLabel(cmd_token.help[widget_index], self)
 					temp_label = QLabel(cmd_token.help[widget_index])
 #					temp_label.move(self.x1, self.y1 + 25)
-#					temp_label.setMinimumWidth(cmd_token_label_min_width)
+#					temp_label.setMinimumWidth(token_label_min_width)
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 					
 #					self.y1 = self.y1 + 25 * 2
@@ -819,139 +866,188 @@ class SXTab(QWidget):
 #					temp_label = QLabel(cmd_token.label, self)
 					temp_label = QLabel(cmd_token.label)
 #					temp_label.move(self.x1, self.y1)
-					temp_label.setMinimumWidth(cmd_token_label_min_width)
+					temp_label.setMinimumWidth(token_label_min_width)
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 					
 					# Create widget and associate it to this cmd_token
 					cmd_token_widget = None
+					cmd_token_restore_widget = None
+					cmd_token_restore_tooltip = default_cmd_token_restore_tooltip
 					if cmd_token.type == "bool":
+						btn_name = "NO"
+						is_btn_enable = True
+						custom_style = "QPushButton {color:gray; }"
+						if cmd_token.restore:
+							btn_name = "YES"
+						if cmd_token.type in parent.sxconst_set.dict.keys():
+							custom_style = "QPushButton {color:green; }"
+						elif cmd_token.is_required:
+							btn_name = "required"
+							custom_style = "QPushButton {color:red; }"
+							is_btn_enable = False
+							cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+						cmd_token_restore_widget = QPushButton("[%s]" % btn_name)
+						cmd_token_restore_widget.setStyleSheet(custom_style)
+						cmd_token_restore_widget.setEnabled(is_btn_enable)
+						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+						
 						# construct new widget(s) for this command token
 #						cmd_token_widget = QCheckBox("", self)
 						cmd_token_widget = QCheckBox("")
-						cmd_token_widget.setCheckState(cmd_token.default)
-						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+						cmd_token_widget.setCheckState(cmd_token.restore)
+						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+						
+						self.connect(cmd_token_restore_widget, SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token))
+						
 					else:
+						btn_name = "%s" % cmd_token.restore
+						custom_style = "QPushButton {color:gray; }"
+						is_btn_enable = True
+						if cmd_token.type in parent.sxconst_set.dict.keys():
+							custom_style = "QPushButton {color:green; }"
+						elif cmd_token.is_required:
+							btn_name = "required"
+							custom_style = "QPushButton {color:red; }"
+							is_btn_enable = False
+							cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+						cmd_token_restore_widget = QPushButton("[%s]" % btn_name)
+						cmd_token_restore_widget.setStyleSheet(custom_style)
+						cmd_token_restore_widget.setEnabled(is_btn_enable)
+						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+						
 #						cmd_token_widget = QLineEdit(self)
 						cmd_token_widget = QLineEdit()
-						cmd_token_widget.setText(cmd_token.default)
+						cmd_token_widget.setText(cmd_token.restore)
 #						cmd_token_widget.move(self.x2,self.y1 - 7)
-#						cmd_token_widget.setMinimumWidth(cmd_token_widget_min_width)
-						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+#						cmd_token_widget.setMinimumWidth(token_widget_min_width)
+						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+						
+						self.connect(cmd_token_restore_widget, SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token))
 						
 						if cmd_token.type == "image":
 							file_format = "hdf"
 #							temp_btn = QPushButton("Select .%s" % file_format, self)
 							temp_btn = QPushButton("Select .%s" % file_format)
 #							temp_btn.move(self.x3, self.y1 - 12)
-#							temp_btn.setMinimumWidth(cmd_token_button_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+#							temp_btn.setMinimumWidth(token_widget_min_width)
+							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "bdb"
 #							temp_btn = QPushButton("Select .%s" % file_format, self)
 							temp_btn = QPushButton("Select .%s" % file_format)
 #							temp_btn.move(self.x4, self.y1 - 12)
-#							temp_btn.setMinimumWidth(cmd_token_button_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+#							temp_btn.setMinimumWidth(token_widget_min_width)
+							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 						elif cmd_token.type == "any_image":
 #							temp_btn = QPushButton("Select Image", self)
 							temp_btn = QPushButton("Select Image")
 #							temp_btn.move(self.x3, self.y1 - 12)
-#							temp_btn.setMinimumWidth(cmd_token_button_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+#							temp_btn.setMinimumWidth(token_widget_min_width)
+							temp_btn.setToolTip("display open file dailog to select standard format image file (e.g. .hdf, .mrc)")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 							file_format = "bdb"
 #							temp_btn = QPushButton("Select .%s" % file_format, self)
 							temp_btn = QPushButton("Select .%s" % file_format)
 #							temp_btn.move(self.x4 + 40, self.y1 - 12)
-#							temp_btn.setMinimumWidth(cmd_token_button_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+#							temp_btn.setMinimumWidth(token_widget_min_width)
+							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 						elif cmd_token.type == "bdb":
 							file_format = "bdb"
 #							temp_btn = QPushButton("Select .%s" % file_format, self)
 							temp_btn = QPushButton("Select .%s" % file_format)
 #							temp_btn.move(self.x3 + 40, self.y1 - 12)
-#							temp_btn.setMinimumWidth(cmd_token_button_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+#							temp_btn.setMinimumWidth(token_widget_min_width)
+							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 #							spacer_frame = QFrame()
-#							spacer_frame.setMinimumWidth(cmd_token_button_min_width)
-#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+#							spacer_frame.setMinimumWidth(token_widget_min_width)
+#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "pdb":
 							file_format = "pdb"
 #							temp_btn = QPushButton("Select .%s" % file_format, self)
 							temp_btn = QPushButton("Select .%s" % file_format)
 #							temp_btn.move(self.x3, self.y1 - 12)
-#							temp_btn.setMinimumWidth(cmd_token_button_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+#							temp_btn.setMinimumWidth(token_widget_min_width)
+							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span* 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 #							spacer_frame = QFrame()
-#							spacer_frame.setMinimumWidth(cmd_token_button_min_width)
-#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+#							spacer_frame.setMinimumWidth(token_widget_min_width)
+#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "parameters":
 #							temp_btn = QPushButton("Select Paramter", self)
 							temp_btn = QPushButton("Select Paramter")
 #							temp_btn.move(self.x3, self.y1 - 12)
-#							temp_btn.setMinimumWidth(cmd_token_button_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+#							temp_btn.setMinimumWidth(token_widget_min_width)
+							temp_btn.setToolTip("display open file dailog to select paramter file (e.g. .txt)")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 #							spacer_frame = QFrame()
-#							spacer_frame.setMinimumWidth(cmd_token_button_min_width)
-#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+#							spacer_frame.setMinimumWidth(token_widget_min_width)
+#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "directory":
 #							temp_btn = QPushButton("Select directory", self)
 							temp_btn = QPushButton("Select directory")
 #							temp_btn.move(self.x3, self.y1 - 12)
-#							temp_btn.setMinimumWidth(cmd_token_button_min_width)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+#							temp_btn.setMinimumWidth(token_widget_min_width)
+							temp_btn.setToolTip("display select directory dailog")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_dir, cmd_token_widget))
 #							spacer_frame = QFrame()
-#							spacer_frame.setMinimumWidth(cmd_token_button_min_width)
-#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+#							spacer_frame.setMinimumWidth(token_widget_min_width)
+#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						# elif cmd_token.type == "output":
 #							spacer_frame = QFrame()
-#							spacer_frame.setMinimumWidth(cmd_token_button_min_width)
-#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
-#							spacer_frame = QFrame()
-#							spacer_frame.setMinimumWidth(cmd_token_button_min_width)
+#							spacer_frame.setMinimumWidth(token_widget_min_width)
 #							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+#							spacer_frame = QFrame()
+#							spacer_frame.setMinimumWidth(token_widget_min_width)
+#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						# else:
 						# 	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
 #							spacer_frame = QFrame()
-#							spacer_frame.setMinimumWidth(cmd_token_button_min_width)
-#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
-#							spacer_frame = QFrame()
-#							spacer_frame.setMinimumWidth(cmd_token_button_min_width)
+#							spacer_frame.setMinimumWidth(token_widget_min_width)
 #							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+#							spacer_frame = QFrame()
+#							spacer_frame.setMinimumWidth(token_widget_min_width)
+#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							
 					cmd_token_widget.setToolTip(cmd_token.help)
+					cmd_token_restore_widget.setToolTip(cmd_token_restore_tooltip)
 					
 #					self.y1 = self.y1 + 25
 					grid_row += 1
 				
 				# Register this widget
 				cmd_token.widget = cmd_token_widget
-				
+				cmd_token.restore_widget = cmd_token_restore_widget
+		
 		if tab_group == "main":
 			# Add space
 #			self.y1 = self.y1 + 25 * 1
 			grid_row += 1
-		
+			
 			# Add gui components for MPI related paramaters
 #			temp_label = QLabel("MPI processors", self)
 			temp_label = QLabel("MPI processors")
 #			temp_label.move(self.x1, self.y1)
-#			temp_label.setMinimumWidth(cmd_token_label_min_width)
+#			temp_label.setMinimumWidth(token_label_min_width)
 			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 			
 			# self.mpi_nproc_edit = QLineEdit(self)
 			self.mpi_nproc_edit = QLineEdit()
 			self.mpi_nproc_edit.setText("1")
 #			self.mpi_nproc_edit.move(self.x2, self.y1)
-#			self.mpi_nproc_edit.setMinimumWidth(cmd_token_widget_min_width)
-			self.mpi_nproc_edit.setToolTip("The number of processors to use. Default is single processor mode")
-			grid_layout.addWidget(self.mpi_nproc_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+#			self.mpi_nproc_edit.setMinimumWidth(token_widget_min_width)
+			self.mpi_nproc_edit.setToolTip("number of processors to use. default is single processor mode")
+			grid_layout.addWidget(self.mpi_nproc_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 			
 			# self.y1 = self.y1 + 25
 			grid_row += 1
@@ -959,30 +1055,30 @@ class SXTab(QWidget):
 #			temp_label = QLabel("MPI command line template", self)
 			temp_label = QLabel("MPI command line template")
 #			temp_label.move(self.x1, self.y1)
-#			temp_label.setMinimumWidth(cmd_token_label_min_width)
+#			temp_label.setMinimumWidth(token_label_min_width)
 			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 			
 #			self.mpi_cmd_line_edit = QLineEdit(self)
 			self.mpi_cmd_line_edit = QLineEdit()
 			self.mpi_cmd_line_edit.setText("")
 #			self.mpi_cmd_line_edit.move(self.x2, self.y1)
-#			self.mpi_cmd_line_edit.setMinimumWidth(cmd_token_widget_min_width)
-			self.mpi_cmd_line_edit.setToolTip("The template of MPI command line (e.g. \"mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX\"). If empty, use \"mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX\"")
-			grid_layout.addWidget(self.mpi_cmd_line_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+#			self.mpi_cmd_line_edit.setMinimumWidth(token_widget_min_width)
+			self.mpi_cmd_line_edit.setToolTip("template of MPI command line (e.g. \"mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX\"). if empty, use \"mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX\"")
+			grid_layout.addWidget(self.mpi_cmd_line_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 			
 #			self.y1 = self.y1 + 25
 			grid_row += 1
-		
+			
 			# If MPI is not supported, disable this widget
 			self.set_text_entry_widget_enable_state(self.mpi_nproc_edit, self.sxcmdwidget.sxcmd.mpi_support)
 			self.set_text_entry_widget_enable_state(self.mpi_cmd_line_edit, self.sxcmdwidget.sxcmd.mpi_support)
-
+			
 			# Add gui components for queue submission (qsub)
 			is_qsub_enabled = False
 #			temp_label = QLabel("submit job to queue", self)
 			temp_label = QLabel("submit job to queue")
 #			temp_label.move(self.x1, self.y1)
-#			temp_label.setMinimumWidth(cmd_token_label_min_width)
+#			temp_label.setMinimumWidth(token_label_min_width)
 			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 			
 #			self.qsub_enable_checkbox = QCheckBox("", self)
@@ -991,7 +1087,7 @@ class SXTab(QWidget):
 #			self.qsub_enable_checkbox.move(self.x2, self.y1)
 			self.qsub_enable_checkbox.setToolTip("submit job to queue")
 			self.qsub_enable_checkbox.stateChanged.connect(self.set_qsub_enable_state) # To control enable state of the following qsub related widgets
-			grid_layout.addWidget(self.qsub_enable_checkbox, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+			grid_layout.addWidget(self.qsub_enable_checkbox, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 			
 			# self.y1 = self.y1 + 25
 			grid_row += 1
@@ -999,16 +1095,16 @@ class SXTab(QWidget):
 #			temp_label = QLabel("job name", self)
 			temp_label = QLabel("job name")
 #			temp_label.move(self.x1, self.y1)
-#			temp_label.setMinimumWidth(cmd_token_label_min_width)
+#			temp_label.setMinimumWidth(token_label_min_width)
 			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 			
 #			self.qsub_job_name_edit = QLineEdit(self)
 			self.qsub_job_name_edit = QLineEdit()
 			self.qsub_job_name_edit.setText(self.sxcmdwidget.sxcmd.name)
 #			self.qsub_job_name_edit.move(self.x2, self.y1)
-#			self.qsub_job_name_edit.setMinimumWidth(cmd_token_widget_min_width)
+#			self.qsub_job_name_edit.setMinimumWidth(token_widget_min_width)
 			self.qsub_job_name_edit.setToolTip("name of this job")
-			grid_layout.addWidget(self.qsub_job_name_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+			grid_layout.addWidget(self.qsub_job_name_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 			
 #			self.y1 = self.y1 + 25
 			grid_row += 1
@@ -1016,16 +1112,16 @@ class SXTab(QWidget):
 #			temp_label = QLabel("submission command", self)
 			temp_label = QLabel("submission command")
 #			temp_label.move(self.x1, self.y1)
-#			temp_label.setMinimumWidth(cmd_token_label_min_width)
+#			temp_label.setMinimumWidth(token_label_min_width)
 			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 			
 #			self.qsub_cmd_edit = QLineEdit(self)
 			self.qsub_cmd_edit = QLineEdit()
 			self.qsub_cmd_edit.setText("qsub")
 #			self.qsub_cmd_edit.move(self.x2, self.y1)
-#			self.qsub_cmd_edit.setMinimumWidth(cmd_token_widget_min_width)
+#			self.qsub_cmd_edit.setMinimumWidth(token_widget_min_width)
 			self.qsub_cmd_edit.setToolTip("name of submission command to queue job")
-			grid_layout.addWidget(self.qsub_cmd_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+			grid_layout.addWidget(self.qsub_cmd_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 			
 #			self.y1 = self.y1 + 25
 			grid_row += 1
@@ -1033,27 +1129,28 @@ class SXTab(QWidget):
 #			temp_label = QLabel("submission script template", self)
 			temp_label = QLabel("submission script template")
 #			temp_label.move(self.x1, self.y1)
-#			temp_label.setMinimumWidth(cmd_token_label_min_width)
+#			temp_label.setMinimumWidth(token_label_min_width)
 			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 			
 #			self.qsub_script_edit = QLineEdit(self)
 			self.qsub_script_edit = QLineEdit()
 			self.qsub_script_edit.setText("msgui_qsub.sh")
 #			self.qsub_script_edit.move(self.x2, self.y1)
-#			self.qsub_script_edit.setMinimumWidth(cmd_token_widget_min_width)
+#			self.qsub_script_edit.setMinimumWidth(token_widget_min_width)
 			self.qsub_script_edit.setToolTip("file name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh)")
-			grid_layout.addWidget(self.qsub_script_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+			grid_layout.addWidget(self.qsub_script_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 			
 #			self.qsub_script_open_btn = QPushButton("Select Template", self)
 			self.qsub_script_open_btn = QPushButton("Select Template")
 #			self.qsub_script_open_btn.move(self.x3, self.y1 - 4)
-#			self.qsub_script_open_btn.setMinimumWidth(cmd_token_button_min_width)
+#			self.qsub_script_open_btn.setMinimumWidth(token_widget_min_width)
+			self.qsub_script_open_btn.setToolTip("display open file dailog to select job submission script template file")
 			self.connect(self.qsub_script_open_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, self.qsub_script_edit))
-			grid_layout.addWidget(self.qsub_script_open_btn, grid_row, grid_col_origin + token_label_col_span + 1, token_widget_row_span, token_widget_col_span)
+			grid_layout.addWidget(self.qsub_script_open_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 			
 #			self.y1 = self.y1 + 25
 			grid_row += 1
-		
+			
 			# Initialize enable state of qsub related widgets
 			self.set_qsub_enable_state()
 			
@@ -1061,12 +1158,12 @@ class SXTab(QWidget):
 #			self.y1 = self.y1 + 25 * 1
 			grid_row += 1
 			
-			# Add save paramater button 
+			# Add save paramaters button 
 #			self.save_params_btn = QPushButton("Save parameters", self)
 			self.save_params_btn = QPushButton("Save parameters")
 #			self.save_params_btn.move(self.x1-5, self.y1)
 			self.save_params_btn.setMinimumWidth(func_btn_min_width)
-			self.save_params_btn.setToolTip("Save gui parameter settings")
+			self.save_params_btn.setToolTip("save gui parameter settings")
 			self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_params)
 			grid_layout.addWidget(self.save_params_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 			
@@ -1077,7 +1174,7 @@ class SXTab(QWidget):
 			self.cmd_line_btn = QPushButton("Generate command line")
 #			self.cmd_line_btn.move(self.x1-5, self.y1)
 			self.cmd_line_btn.setMinimumWidth(func_btn_min_width)
-			self.cmd_line_btn.setToolTip("Generate command line from gui parameter settings")
+			self.cmd_line_btn.setToolTip("generate command line from gui parameter settings and automatically save settings")
 			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_cmd_line)
 			grid_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 			
@@ -1088,13 +1185,14 @@ class SXTab(QWidget):
 #			self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.name, self)
 			self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.name)
 			# make 3D textured push button look
-			custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+			custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px} QPushButton:focus {font: bold; color: #000;border: 2px solid #8D0;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px}"
 			self.execute_btn.setStyleSheet(custom_style)
 #			self.execute_btn.move(self.x5, self.y1)
 			self.execute_btn.setMinimumWidth(func_btn_min_width)
+			self.execute_btn.setToolTip("run %s and automatically save gui parameter settings" % self.sxcmdwidget.sxcmd.name)
 			self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxcmdwidget.execute_cmd_line)
 			grid_layout.addWidget(self.execute_btn, grid_row, grid_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
-
+	
 	def set_text_entry_widget_enable_state(self, widget, is_enabled):
 		# Set enable state and background color of text entry widget according to enable state
 		default_palette = QPalette()
@@ -1108,7 +1206,7 @@ class SXTab(QWidget):
 		palette = widget.palette()
 		palette.setColor(widget.backgroundRole(), bg_color)
 		widget.setPalette(palette)
-		
+	
 	def set_qsub_enable_state(self):
 		is_enabled = False
 		if self.qsub_enable_checkbox.checkState() == Qt.Checked:
@@ -1123,29 +1221,40 @@ class SXTab(QWidget):
 		self.set_text_entry_widget_enable_state(self.qsub_cmd_edit, is_enabled)
 		self.set_text_entry_widget_enable_state(self.qsub_script_edit, is_enabled)
 		self.qsub_script_open_btn.setEnabled(is_enabled)
+	
+	def handle_restore_widget_event(self, sxcmd_token, widget_index=0):
+		if sxcmd_token.type == "function":
+			assert(len(sxcmd_token.widget) == 2 and len(sxcmd_token.restore) == 2 and widget_index < 2)
+			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index])
+		else:
+			if sxcmd_token.type == "bool":
+				if sxcmd_token.restore == "YES":
+					sxcmd_token.widget.setChecked(True)
+				else: # sxcmd_token.restore == "NO"
+					sxcmd_token.widget.setChecked(False)
+			else:
+				sxcmd_token.widget.setText("%s" % sxcmd_token.restore)
 
 # ========================================================================================
-class SXConstSetWidget(QWidget):
-	def __init__(self, sxconst_set, parent=None):
-		super(SXConstSetWidget, self).__init__(parent)
+class SXConstSetWindow(QWidget):
+	def __init__(self, sxconst_set, sxcmd_list, parent=None):
+		super(SXConstSetWindow, self).__init__(parent)
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.sxconst_set = sxconst_set
+		self.sxcmd_list = sxcmd_list
 		
+		self.gui_settings_file_path = "%s/gui_settings_project_consts.txt" % (SXLookFeelConst.project_dir)
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		# Set the window title
+		# Set the window title and size
 		self.setWindowTitle(self.sxconst_set.name)
-		
-		# Best setting for MAC OSX
-		self.resize(SXWidetConst.sxconst_set_min_width + SXWidetConst.grid_margin * 5, SXWidetConst.sxconst_set_min_height + SXWidetConst.grid_margin * 2)
-		# Best setting for Linux
-		# self.resize(SXWidetConst.sxconst_set_min_width + SXWidetConst.grid_margin * 5, SXWidetConst.sxconst_set_min_height + SXWidetConst.grid_margin * 2)
+		self.resize(SXLookFeelConst.sxconst_set_window_width, SXLookFeelConst.sxconst_set_window_height)
 		
 #		# Set the background color of this widget
 #		self.setAutoFillBackground(True)
 #		palette = QPalette(self)
-#		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxconst_set_bg_color))
+#		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 #		self.setPalette(palette)
 		
 		global_row_origin = 0; global_col_origin = 0
@@ -1160,8 +1269,10 @@ class SXConstSetWidget(QWidget):
 		
 		const_set_row_origin = 0; const_set_col_origin = 0
 		const_label_row_span = 1; const_label_col_span = 1
+		const_register_widget_row_span = 1; const_register_widget_col_span = 1
 		const_widget_row_span = 1; const_widget_col_span = 1
 		const_label_min_width = 150
+		const_register_widget_min_width = const_label_min_width
 		const_widget_min_width = const_label_min_width
 		
 		btn_row_origin = 0; btn_col_origin = 0
@@ -1179,29 +1290,29 @@ class SXConstSetWidget(QWidget):
 		# Set the background color of scroll area
 		scroll_area_widgets.setAutoFillBackground(True)
 		palette = QPalette()
-		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxconst_set_bg_color))
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 		scroll_area_widgets.setPalette(palette)
 		
 		scroll_area.setWidget(scroll_area_widgets)
 		box_layout.addWidget(scroll_area)
 		
-		# global_layout = QGridLayout()
+#		global_layout = QGridLayout()
 		global_layout = QGridLayout(scroll_area_widgets)
-		global_layout.setMargin(SXWidetConst.grid_margin)
-		global_layout.setSpacing(SXWidetConst.grid_spacing)
+		global_layout.setMargin(SXLookFeelConst.grid_margin)
+		global_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		global_layout.setRowStretch(global_row_span - 1, global_layout.rowStretch(global_row_origin) + 1)
 		
 		header_layout = QGridLayout()
-		header_layout.setMargin(SXWidetConst.grid_margin)
-		header_layout.setSpacing(SXWidetConst.grid_spacing)
+		header_layout.setMargin(SXLookFeelConst.grid_margin)
+		header_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		
 		const_set_layout = QGridLayout()
-		const_set_layout.setMargin(SXWidetConst.grid_margin)
-		const_set_layout.setSpacing(SXWidetConst.grid_spacing)
+		const_set_layout.setMargin(SXLookFeelConst.grid_margin)
+		const_set_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		
 		btn_layout = QGridLayout()
-		btn_layout.setMargin(SXWidetConst.grid_margin)
-		btn_layout.setSpacing(SXWidetConst.grid_spacing * 2)
+		btn_layout.setMargin(SXLookFeelConst.grid_margin)
+		btn_layout.setSpacing(SXLookFeelConst.grid_spacing * 2)
 		
 		# # Define the frame within the widget layout
 		# widget_frame = QFrame()
@@ -1238,22 +1349,29 @@ class SXConstSetWidget(QWidget):
 		
 		# Add widget for editing command args and options
 		for sxconst in self.sxconst_set.list:
-			# Create label widget 
+			# Create widget associated to this project constant parameter
 			temp_label = QLabel(sxconst.label)
 			temp_label.setMinimumWidth(const_label_min_width)
 			const_set_layout.addWidget(temp_label, const_set_grid_row, const_set_col_origin, const_label_row_span, const_label_col_span)
 			
-			# Create widget and associate it to this cmd_token
+			sxconst_register_widget = QPushButton("[%s]" % sxconst.register)
+			sxconst_register_widget.setMinimumWidth(const_register_widget_min_width)
+			custom_style = "QPushButton {color:green; }"
+			sxconst_register_widget.setStyleSheet(custom_style)
+			const_set_layout.addWidget(sxconst_register_widget, const_set_grid_row, const_set_row_origin + const_label_col_span, const_register_widget_row_span, const_register_widget_col_span)
+			sxconst_register_widget.setToolTip("retrieve this registered value to edit box")
+			self.connect(sxconst_register_widget, SIGNAL("clicked()"), partial(self.handle_regster_widget_event, sxconst))
+			
 			sxconst_widget = QLineEdit()
 			sxconst_widget.setMinimumWidth(const_widget_min_width)
-			sxconst_widget.setText(sxconst.default)
-			const_set_layout.addWidget(sxconst_widget, const_set_grid_row, const_set_row_origin + const_label_col_span, const_widget_row_span, const_widget_col_span)
-			
+			sxconst_widget.setText(sxconst.register)
 			sxconst_widget.setToolTip(sxconst.help)
+			const_set_layout.addWidget(sxconst_widget, const_set_grid_row, const_set_row_origin + const_label_col_span + const_register_widget_col_span, const_widget_row_span, const_widget_col_span)
 			
 			const_set_grid_row += 1
 			
 			# Register this widget
+			sxconst.register_widget = sxconst_register_widget
 			sxconst.widget = sxconst_widget
 		
 		# Add const set grid layout to global layout
@@ -1269,42 +1387,135 @@ class SXConstSetWidget(QWidget):
 		custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 		self.execute_btn.setStyleSheet(custom_style)
 		self.execute_btn.setMinimumWidth(func_btn_min_width * register_btn_col_span)
-###		self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxcmdwidget.execute_cmd_line)
+		self.execute_btn.setToolTip("register constants to automatically set values to command arguments and options")
+		self.connect(self.execute_btn, SIGNAL("clicked()"), self.register_const_set)
 		btn_layout.addWidget(self.execute_btn, btn_grid_row, btn_col_origin, register_btn_row_span, register_btn_col_span)
 		
 		btn_grid_row += 1
 		
-		# Add save paramater button 
-		self.save_params_btn = QPushButton("Save parameters")
-		self.save_params_btn.setMinimumWidth(func_btn_min_width)
-		self.save_params_btn.setToolTip("Save gui parameter settings")
-###		self.connect(self.save_params_btn, SIGNAL("clicked()"), self.save_params)
-		btn_layout.addWidget(self.save_params_btn, btn_grid_row, btn_col_origin, func_btn_row_span, func_btn_col_span)
+		# Add save constants button 
+		self.save_consts_btn = QPushButton("Save constants")
+		self.save_consts_btn.setMinimumWidth(func_btn_min_width)
+		self.save_consts_btn.setToolTip("save project constant settings")
+		self.connect(self.save_consts_btn, SIGNAL("clicked()"), self.save_consts)
+		btn_layout.addWidget(self.save_consts_btn, btn_grid_row, btn_col_origin, func_btn_row_span, func_btn_col_span)
 		
-		# Add load paramater button 
-		self.load_params_btn = QPushButton("Load parameters")
-		self.load_params_btn.setMinimumWidth(func_btn_min_width)
-		self.load_params_btn.setToolTip("Load gui parameter settings to retrieve a previously-saved one")
-###		self.connect(self.load_params_btn, SIGNAL("clicked()"), self.load_params)
-		btn_layout.addWidget(self.load_params_btn, btn_grid_row, btn_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
+		# Add load constants button 
+		self.load_consts_btn = QPushButton("Load constants")
+		self.load_consts_btn.setMinimumWidth(func_btn_min_width)
+		self.load_consts_btn.setToolTip("load project constant setting to retrieve a previously-saved one")
+		self.connect(self.load_consts_btn, SIGNAL("clicked()"), self.load_consts)
+		btn_layout.addWidget(self.load_consts_btn, btn_grid_row, btn_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
 		
 		btn_grid_row += 1
 		
 		# Add a close button
 		self.close_btn = QPushButton("Close")
 		self.close_btn.setMinimumWidth(func_btn_min_width)
-		self.close_btn.setToolTip("Close this window")
+		self.close_btn.setToolTip("close this window")
 		self.connect(self.close_btn, SIGNAL("clicked()"), self.close)
 		btn_layout.addWidget(self.close_btn, btn_grid_row, btn_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
 		
 		# Add button grid layout to global layout
 		global_layout.addLayout(btn_layout, global_grid_row, global_col_origin)
 		
+		# Load the previously saved parameter setting of this sx command
+		if os.path.exists(self.gui_settings_file_path):
+			self.read_consts(self.gui_settings_file_path)
+	
+	def handle_regster_widget_event(self, sxconst):
+		sxconst.widget.setText(sxconst.register)
+		
+	def register_const_set(self):
+		# Loop through all project constant parameters
+		for sxconst in self.sxconst_set.list:
+			sxconst.register = sxconst.widget.text()
+			sxconst.register_widget.setText("[%s]" % sxconst.register)
+		
+		# Loop through all command tokens
+		for sxcmd in self.sxcmd_list:
+			for cmd_token in sxcmd.token_list:
+				if cmd_token.type in self.sxconst_set.dict.keys():
+					sxconst = self.sxconst_set.dict[cmd_token.type]
+					cmd_token.restore = sxconst.register
+					cmd_token.restore_widget.setText("[%s]" % cmd_token.restore)
+					cmd_token.widget.setText(cmd_token.restore)
+					# print "MRK_DEBUG: %s, %s, %s, %s, %s" % (sxcmd.name, cmd_token.key_base, cmd_token.type, cmd_token.default, cmd_token.restore)
+		
+		# Save the current state of GUI settings
+		if os.path.exists(SXLookFeelConst.project_dir) == False:
+			os.mkdir(SXLookFeelConst.project_dir)
+		self.write_consts(self.gui_settings_file_path)
+	
+	def write_consts(self, file_path_out):
+		file_out = open(file_path_out,"w")
+		
+		# Write script name for consistency check upon loading
+		file_out.write("@@@@@ project constants gui setting - ")
+		# file_out.write(EMANVERSION + " (CVS" + CVSDATESTAMP[6:-2] +")")
+		file_out.write(EMANVERSION + " (GITHUB: " + DATESTAMP +")" )
+		file_out.write(" @@@@@ \n")
+		
+		# Loop through all project constant parameters
+		for sxconst in self.sxconst_set.list:
+			# The other type has only one line edit box
+			val_str = str(sxconst.widget.text())
+			file_out.write("<%s> %s (registered %s) == %s \n" % (sxconst.key, sxconst.label, sxconst.register, val_str))
+			
+		file_out.close()
+	
+	def read_consts(self, file_path_in):
+		file_in = open(file_path_in,"r")
+		
+		# Check if this parameter file is for this sx script
+		line_in = file_in.readline()
+		if line_in.find("@@@@@ project constants gui setting") != -1:
+			n_function_type_lines = 2
+			function_type_line_counter = 0
+			# loop through the rest of lines
+			for line_in in file_in:
+				# Extract label (which should be left of "=="). Also strip the ending spaces
+				label_in = line_in.split("==")[0].strip()
+				# Extract value (which should be right of "=="). Also strip all spaces
+				val_str_in = line_in.split("==")[1].strip() 
+				
+				# Extract key_base of this command token
+				target_operator = "<"
+				item_tail = label_in.find(target_operator)
+				if item_tail != 0: 
+					QMessageBox.warning(self, "Invalid Project Constants File Format", "Project constant entry should start from \"%s\" for entry key in line (%s). The format of this file might be corrupted. Please save the project constants file again." % (target_operator, line_in))
+				label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
+				target_operator = ">"
+				item_tail = label_in.find(target_operator)
+				if item_tail == -1: 
+					QMessageBox.warning(self, "Invalid Project Constants File Format", "Project constant entry should have \"%s\" closing entry key in line (%s) The format of this file might be corrupted. Please save the project constants file again." % (target_operator, line_in))
+				key = label_in[0:item_tail]
+				# Get corresponding sxconst
+				if key not in self.sxconst_set.dict.keys(): 
+					QMessageBox.warning(self, "Invalid Project Constants File Format", "Invalid entry key for project constants \"%s\" is found in line (%s). This project constants file might be imcompatible with the current version. Please save the project constants file again." % (key, line_in))
+				sxconst = self.sxconst_set.dict[key]
+				sxconst.widget.setText(val_str_in)
+						
+		else:
+			QMessageBox.warning(self, "Fail to load project constants", "The specified file is not project constants file.")
+		
+		file_in.close()
+	
+	def save_consts(self):
+		file_path_out = str(QFileDialog.getSaveFileName(self, "Save constants", options = QFileDialog.DontUseNativeDialog))
+		if file_path_out != "":
+			self.write_consts(file_path_out)
+	
+	def load_consts(self):
+		file_path_in = str(QFileDialog.getOpenFileName(self, "Load constants", options = QFileDialog.DontUseNativeDialog))
+		if file_path_in != "":
+			self.read_consts(file_path_in)
+
 # ========================================================================================
-# Layout of the Pop Up window SXPopup_info; started by the function info of the main window
-class SXPopup_info(QWidget):
+# Layout of the Pop Up window SXInfoWindow; started by the function info of the main window
+class SXInfoWindow(QWidget):
 	def __init__(self, parent = None):
-		super(SXPopup_info, self).__init__(parent)
+		super(SXInfoWindow, self).__init__(parent)
 		
 		#Here we just set the window title and  3 different labels, with their positions in the window
 		self.setWindowTitle("SPHIRE GUI Info Page")
@@ -1312,7 +1523,7 @@ class SXPopup_info(QWidget):
 		# Set the background color of this widget
 		self.setAutoFillBackground(True)
 		palette = QPalette(self)
-		palette.setBrush(QPalette.Background, QBrush(SXWidetConst.sxconst_set_bg_color))
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 		self.setPalette(palette)
 		
 		label_row_span = 1; label_col_span = 3
@@ -1320,8 +1531,8 @@ class SXPopup_info(QWidget):
 		spacer_min_width = 12
 		
 		grid_layout = QGridLayout(self)
-		grid_layout.setMargin(SXWidetConst.grid_margin)
-		grid_layout.setSpacing(SXWidetConst.grid_spacing)
+		grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		
 		grid_col = 0
 		grid_row = 0; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
@@ -1343,42 +1554,158 @@ class SXPopup_info(QWidget):
 		grid_row += 1; close_btn = QPushButton("Close")
 		self.connect(close_btn, SIGNAL("clicked()"), self.close)
 		grid_layout.addWidget(close_btn, grid_row, grid_col + 1, close_row_span, close_col_span)
-		
 
 # ========================================================================================
-# Main Window (started by class App)
-# This class includes the layout of the main window
-class MainWindow(QWidget):
-	def __init__(self, parent = None):
-		super(MainWindow, self).__init__(parent)
+# Utility Window (opened by class SXMainWindow)
+# This class includes the layout of the utility window
+class SXUtilWindow(QWidget):
+	def __init__(self, sxconst_set, sxcmd_list, title= "Utility" , parent = None):
+		super(SXUtilWindow, self).__init__(parent)
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.sxconst_set = None
-		self.sxcmd_list = []
+		self.sxconst_set = sxconst_set
+		self.sxcmd_list = sxcmd_list
 		self.cur_sxcmd = None
-		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		
-		# Construct list of sxscript objects (extracted from associated wiki documents)
-		self.sxconst_set = construct_sxconst_set()
-		
-		# Construct list of sxscript objects (extracted from associated wiki documents)
-		self.sxcmd_list = construct_sxcmd_list()
-		
-		# self.setStyleSheet("background-image: url("1.png")")
-		# Set the title of the window
-		self.setWindowTitle("SPHIRE GUI (Alpha Version)")
-		
-		# Best setting for MAC OSX
-		# self.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_button_min_width + SXWidetConst.grid_margin * (7 + 1), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
-		# Best setting for Linux
-		self.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_button_min_width + SXWidetConst.grid_margin * (7 + 7), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
+		# Set the window title and size
+		self.setWindowTitle(title)
+		self.resize(SXLookFeelConst.sxutil_window_width, SXLookFeelConst.sxutil_window_height)
 		
 #		# Set the background color of main window
 #		self.setAutoFillBackground(True)
 #		palette = QPalette()
-#		# palette.setBrush(QPalette.Background, QBrush(SXWidetConst.main_bg_color))
+#		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
+#		self.setPalette(palette)
+		
+		# Set scroll area and grid layout
+		grid_row_origin = 0; grid_col_origin = 0
+		
+		close_row_span = 1; close_col_span = 1
+		title_row_span = 1; title_col_span = 1
+		cmd_btn_row_span = 1; cmd_btn_col_span = 1
+		cmd_settings_row_span = 32; cmd_settings_col_span = 1
+		
+		close_btn_min_width = SXLookFeelConst.sxcmd_select_area_min_width
+		
+		cmd_min_width = SXLookFeelConst.sxcmd_widget_area_min_width + SXLookFeelConst.grid_margin * 4
+		cmd_min_height = SXLookFeelConst.sxcmd_widget_area_min_height + SXLookFeelConst.grid_margin * 4
+		
+		box_layout = QVBoxLayout(self)
+		box_layout.setContentsMargins(0,0,0,0)
+		box_layout.setSpacing(0)
+		scroll_area = QScrollArea()
+		scroll_area.setWidgetResizable(True)
+		scroll_area_widgets = QWidget(scroll_area)
+		
+		# Set the background color of scroll area
+		scroll_area_widgets.setAutoFillBackground(True)
+		palette = QPalette()
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
+		scroll_area_widgets.setPalette(palette)
+		
+		scroll_area.setWidget(scroll_area_widgets)
+		box_layout.addWidget(scroll_area)
+		
+		grid_layout = QGridLayout(scroll_area_widgets)
+		grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
+		grid_layout.setColumnMinimumWidth(0, close_btn_min_width)
+		grid_layout.setColumnMinimumWidth(1, cmd_min_width)
+		# Give the command setting area a higher priority to stretch relative to the others
+		grid_layout.setColumnStretch(grid_col_origin + cmd_btn_col_span, grid_layout.columnStretch(grid_col_origin + cmd_btn_col_span) + 1)
+		
+		# Start add widgets to the grid layout
+		grid_row = grid_row_origin
+		
+		# --------------------------------------------------------------------------------
+		# General 
+		# --------------------------------------------------------------------------------
+		# Add Close button
+		close_btn = QPushButton("Close")
+		close_btn.setToolTip("close Utility Tool Window")
+		grid_layout.addWidget(close_btn, grid_row, grid_col_origin, close_row_span, close_col_span)
+		self.connect(close_btn, SIGNAL("clicked()"), self.close)
+		
+		grid_row += 1
+		
+		# --------------------------------------------------------------------------------
+		# Add SX Commands (sx*.py) associated widgets
+		# --------------------------------------------------------------------------------
+		# Add title label and set position and font style
+		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>Utilities </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>")
+		grid_layout.addWidget(title, grid_row, grid_col_origin, title_row_span, title_col_span)
+		
+		grid_row += 1
+		
+		self.cmd_btn_group = QButtonGroup()
+		
+		# Add SX Commands (sx*.py) associated widgets
+		for sxcmd in self.sxcmd_list:
+			if sxcmd.type == "util":
+				sxcmd.btn = QPushButton(sxcmd.label)
+				sxcmd.btn.setToolTip(sxcmd.short_info)
+			
+				self.cmd_btn_group.addButton(sxcmd.btn)
+				grid_layout.addWidget(sxcmd.btn, grid_row, grid_col_origin, cmd_btn_row_span, cmd_btn_col_span)
+			
+				# Create SXCmdWidget for this sx*.py processe
+				sxcmd.widget = SXCmdWidget(self.sxconst_set, sxcmd)
+				sxcmd.widget.hide()
+				grid_layout.addWidget(sxcmd.widget, grid_row_origin, grid_col_origin+cmd_btn_col_span, cmd_settings_row_span, cmd_settings_col_span)
+			
+				# connect widget signals
+				self.connect(sxcmd.btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
+			
+				grid_row += 1
+	
+	def handle_sxcmd_btn_event(self, sxcmd):
+		modifiers = QApplication.keyboardModifiers()
+		if modifiers == Qt.ShiftModifier:
+			os.system("python -m webbrowser %s%s" % (SPARX_DOCUMENTATION_WEBSITE, sxcmd.name))
+			return
+		
+		if self.cur_sxcmd == sxcmd: return
+		
+		if self.cur_sxcmd != None:
+			assert(self.cur_sxcmd.widget.isVisible() == True)
+			self.cur_sxcmd.widget.hide()
+			custom_style = "QPushButton {color:black; }"
+			self.cur_sxcmd.btn.setStyleSheet(custom_style)
+			
+		self.cur_sxcmd = sxcmd
+		
+		if self.cur_sxcmd != None:
+			assert(self.cur_sxcmd.widget.isVisible() == False)
+			self.cur_sxcmd.widget.show()
+			custom_style = "QPushButton {font: bold; color:blue; }"
+			self.cur_sxcmd.btn.setStyleSheet(custom_style)
+
+# ========================================================================================
+# Main Window (started by class SXApplication)
+class SXMainWindow(QWidget):
+	def __init__(self, sxconst_set, sxcmd_list, parent = None):
+		super(SXMainWindow, self).__init__(parent)
+		
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.sxconst_set = sxconst_set
+		self.sxcmd_list = sxcmd_list
+		self.cur_sxcmd = None
+		
+		self.sxinfo_window = None
+		self.sxutil_window = None
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# Set the window title and size
+		self.setWindowTitle("SPHIRE GUI (Alpha Version)")
+		self.resize(SXLookFeelConst.sxmain_window_width, SXLookFeelConst.sxmain_window_height)
+		
+		# self.setStyleSheet("background-image: url("1.png")")
+		
+#		# Set the background color of main window
+#		self.setAutoFillBackground(True)
+#		palette = QPalette()
+#		# palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 #		palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory() + "sxgui.py_main_window_background_image.png")))
 #		self.setPalette(palette)
 		
@@ -1398,18 +1725,18 @@ class MainWindow(QWidget):
 		# Set scroll area and grid layout
 		grid_row_origin = 0; grid_col_origin = 0
 		
-#		cmd_button_frame_row_span = 32; cmd_button_frame_col_span = 2
+#		cmd_btn_frame_row_span = 32; cmd_btn_frame_col_span = 2
 		
 		icon_row_span = 1; icon_col_span = 1; close_row_span = 1; close_col_span = 1
 		title_row_span = 1; title_col_span = 2
-		cmd_button_row_span = 1; cmd_button_col_span = 2
+		cmd_btn_row_span = 1; cmd_btn_col_span = 2
 		cmd_settings_row_span = 32; cmd_settings_col_span = 1
 		
-		icon_min_width = SXWidetConst.sxcmd_button_min_width // 2
-		close_min_width = SXWidetConst.sxcmd_button_min_width // 2
+		icon_min_width = SXLookFeelConst.sxcmd_select_area_min_width // 2
+		close_min_width = SXLookFeelConst.sxcmd_select_area_min_width // 2
 		
-		cmd_min_width = SXWidetConst.sxcmd_min_width + SXWidetConst.grid_margin * 4
-		cmd_min_height = SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 4
+		cmd_min_width = SXLookFeelConst.sxcmd_widget_area_min_width + SXLookFeelConst.grid_margin * 4
+		cmd_min_height = SXLookFeelConst.sxcmd_widget_area_min_height + SXLookFeelConst.grid_margin * 4
 		
 		box_layout = QVBoxLayout(self)
 		box_layout.setContentsMargins(0,0,0,0)
@@ -1419,11 +1746,11 @@ class MainWindow(QWidget):
 #		scroll_area.setStyleSheet("background-color:transparent;"); 
 		scroll_area_widgets = QWidget(scroll_area)
 #		scroll_area_widgets.setStyleSheet("background-color:transparent;"); 
-
+		
 		# Set the background color of scroll area
 		scroll_area_widgets.setAutoFillBackground(True)
 		palette = QPalette()
-		# palette.setBrush(QPalette.Background, QBrush(SXWidetConst.main_bg_color))
+		# palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 		palette.setBrush(QPalette.Background, QBrush(QPixmap(get_image_directory() + "sxgui.py_main_window_background_image.png")))
 		scroll_area_widgets.setPalette(palette)
 		
@@ -1432,26 +1759,26 @@ class MainWindow(QWidget):
 		
 #		grid_layout = QGridLayout(self)
 		grid_layout = QGridLayout(scroll_area_widgets)
-		grid_layout.setMargin(SXWidetConst.grid_margin)
-		grid_layout.setSpacing(SXWidetConst.grid_spacing)
+		grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		grid_layout.setColumnMinimumWidth(0, icon_min_width)
 		grid_layout.setColumnMinimumWidth(1, close_min_width)
 		grid_layout.setColumnMinimumWidth(2, cmd_min_width)
 		# Give the command setting area a higher priority to stretch relative to the others
-		grid_layout.setColumnStretch(grid_col_origin + cmd_button_col_span, grid_layout.columnStretch(grid_col_origin + cmd_button_col_span) + 1)
+		grid_layout.setColumnStretch(grid_col_origin + cmd_btn_col_span, grid_layout.columnStretch(grid_col_origin + cmd_btn_col_span) + 1)
 		
 		# # Define the command button frame within the global layout
-		# cmd_button_frame = QFrame()
-		# cmd_button_frame.resize(SXWidetConst.sxcmd_button_min_width, SXWidetConst.sxcmd_min_height)
-		# cmd_button_frame.setFrameStyle(QFrame.StyledPanel)
-		# grid_layout.addWidget(cmd_button_frame, grid_row_origin, grid_col_origin, cmd_settings_row_span, cmd_button_col_span)
+		# cmd_btn_frame = QFrame()
+		# cmd_btn_frame.resize(SXLookFeelConst.sxcmd_select_area_min_width, SXLookFeelConst.sxcmd_widget_area_min_height)
+		# cmd_btn_frame.setFrameStyle(QFrame.StyledPanel)
+		# grid_layout.addWidget(cmd_btn_frame, grid_row_origin, grid_col_origin, cmd_settings_row_span, cmd_btn_col_span)
 		
 		# # Define the command settings frame within the global layout
 		# cmd_settings_frame = QFrame()
-		# cmd_settings_frame.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.grid_margin * 11, SXWidetConst.sxcmd_min_height)
+		# cmd_settings_frame.resize(SXLookFeelConst.sxcmd_widget_area_min_width + SXLookFeelConst.grid_margin * 11, SXLookFeelConst.sxcmd_widget_area_min_height)
 #		# cmd_settings_frame.move(240, 0)
 		# cmd_settings_frame.setFrameStyle(QFrame.StyledPanel)
-		# grid_layout.addWidget(cmd_settings_frame, grid_row_origin, grid_col_origin + cmd_button_col_span, cmd_settings_row_span, cmd_settings_col_span)
+		# grid_layout.addWidget(cmd_settings_frame, grid_row_origin, grid_col_origin + cmd_btn_col_span, cmd_settings_row_span, cmd_settings_col_span)
 		
 		# Start add widgets to the grid layout
 		grid_row = grid_row_origin
@@ -1459,6 +1786,9 @@ class MainWindow(QWidget):
 		# --------------------------------------------------------------------------------
 		# General 
 		# --------------------------------------------------------------------------------
+		# Create SXInfoWindow
+		self.sxinfo_window = SXInfoWindow()
+		self.sxinfo_window.hide()
 		
 		# Add Push button to display popup window for info about the application
 #		self.btn_info = QPushButton(self)
@@ -1466,14 +1796,16 @@ class MainWindow(QWidget):
 		icon = QIcon(get_image_directory() + "sparxicon.png") # Decorates the button with the sphire image
 		self.btn_info.setIcon(icon)
 #		self.btn_info.move(5, 5)
-		self.btn_info.setToolTip("Info Page")
+		self.btn_info.setToolTip("open info page")
 		grid_layout.addWidget(self.btn_info, grid_row, grid_col_origin, icon_row_span, icon_col_span)
-		self.connect(self.btn_info, SIGNAL("clicked()"), self.info)
+		
+		# connect widget signals
+		self.connect(self.btn_info, SIGNAL("clicked()"), self.handle_info_btn_event)
 		
 		# Add Close button
-#		self.btn_quit = QPushButton("Close", self)
-		self.btn_quit = QPushButton("Close")
-		self.btn_quit.setToolTip("Close SPHIRE GUI ")
+#		self.btn_quit = QPushButton("Quit", self)
+		self.btn_quit = QPushButton("Quit")
+		self.btn_quit.setToolTip("quit SPHIRE GUI ")
 #		self.btn_quit.move(65, 5)
 		grid_layout.addWidget(self.btn_quit, grid_row, grid_col_origin + icon_col_span, close_row_span, close_col_span)
 		self.connect(self.btn_quit, SIGNAL("clicked()"),qApp, SLOT("quit()"))
@@ -1486,21 +1818,23 @@ class MainWindow(QWidget):
 		
 		grid_row += 1
 		
-		# Add project parameter constant set associated button
-		self.sxconst_set.button = QPushButton(self.sxconst_set.label)
-		self.sxconst_set.button.setToolTip(self.sxconst_set.short_info)
-		grid_layout.addWidget(self.sxconst_set.button, grid_row, grid_col_origin, cmd_button_row_span, cmd_button_col_span)
+		# Create SXConstSetWindow
+		self.sxconst_set.window = SXConstSetWindow(self.sxconst_set, self.sxcmd_list)
+		self.sxconst_set.window.hide()
 		
-		# Create SXConstSetWidget
-		self.sxconst_set.widget = SXConstSetWidget(self.sxconst_set)
-		self.sxconst_set.widget.hide()
-#		grid_layout.addWidget(self.sxconst_set.widget, grid_row_origin, grid_col_origin+cmd_button_col_span, cmd_settings_row_span, cmd_settings_col_span)
+		# Add project parameter constant set associated button
+		self.sxconst_set.btn = QPushButton("Open %s Window" % self.sxconst_set.label)
+		self.sxconst_set.btn.setToolTip(self.sxconst_set.short_info)
+		grid_layout.addWidget(self.sxconst_set.btn, grid_row, grid_col_origin, cmd_btn_row_span, cmd_btn_col_span)
 		
 		# connect widget signals
-		self.connect(self.sxconst_set.button, SIGNAL("clicked()"), self.handle_sxconst_set_btn_event)
+		self.connect(self.sxconst_set.btn, SIGNAL("clicked()"), self.handle_sxconst_set_btn_event)
 		
 		grid_row += 1
 		
+		# --------------------------------------------------------------------------------
+		# Add Pipeline SX Commands (sx*.py) associated widgets
+		# --------------------------------------------------------------------------------
 		# Add title label and set position and font style
 		# title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>", self)
 		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>PROGRAMS </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>")
@@ -1511,49 +1845,103 @@ class MainWindow(QWidget):
 		
 		grid_row += 1
 		
-		# --------------------------------------------------------------------------------
-		# Add SX Commands (sx*.py) associated widgets
-		# --------------------------------------------------------------------------------
 #		self.y1 = 95
 		
-#		self.cmd_button_group = QButtonGroup(self)
-		self.cmd_button_group = QButtonGroup()
-		# self.cmd_button_group.setExclusive(True) # NOTE: 2016/02/18 Toshio Moriya: Without QPushButton.setCheckable(True). This does not do anything. Let manually do this
+#		self.cmd_btn_group = QButtonGroup(self)
+		self.cmd_btn_group = QButtonGroup()
+		# self.cmd_btn_group.setExclusive(True) # NOTE: 2016/02/18 Toshio Moriya: Without QPushButton.setCheckable(True). This does not do anything. Let manually do this
 		
 		# Add SX Commands (sx*.py) associated widgets
 		for sxcmd in self.sxcmd_list:
-			# Add buttons for this sx*.py processe
-#			sxcmd.button = QPushButton(sxcmd.label, self)
-			sxcmd.button = QPushButton(sxcmd.label)
-			# sxcmd.button.setCheckable(True) # NOTE: 2016/02/18 Toshio Moriya: With this setting, we can not move the focus to the unchecked butttons... PyQt bug?
-#			sxcmd.button.move(10, self.y1)
-			sxcmd.button.setToolTip(sxcmd.short_info)
-#			sxcmd.button.setStyleSheet("QPushButton:!enabled{font: bold; color:green; border-color:red; border-width:2px;}") 
-#			sxcmd.button.setStyleSheet("QPushButton:!enabled {font: bold; color:red; }")
+			if sxcmd.type == "pipe":
+				# Add buttons for this sx*.py processe
+	#			sxcmd.btn = QPushButton(sxcmd.label, self)
+				sxcmd.btn = QPushButton(sxcmd.label)
+				# sxcmd.btn.setCheckable(True) # NOTE: 2016/02/18 Toshio Moriya: With this setting, we can not move the focus to the unchecked butttons... PyQt bug?
+	#			sxcmd.btn.move(10, self.y1)
+				sxcmd.btn.setToolTip(sxcmd.short_info)
+	#			sxcmd.btn.setStyleSheet("QPushButton:!enabled{font: bold; color:green; border-color:red; border-width:2px;}") 
+	#			sxcmd.btn.setStyleSheet("QPushButton:!enabled {font: bold; color:red; }")
+				
+				self.cmd_btn_group.addButton(sxcmd.btn)
+				grid_layout.addWidget(sxcmd.btn, grid_row, grid_col_origin, cmd_btn_row_span, cmd_btn_col_span)
+				
+				# Create SXCmdWidget for this sx*.py processe
+	#			sxcmd_widget = SXCmdWidget(sxcmd, self)
+				sxcmd.widget = SXCmdWidget(self.sxconst_set, sxcmd)
+	#			sxcmd.widget.move(300, 0)
+				sxcmd.widget.hide()
+				grid_layout.addWidget(sxcmd.widget, grid_row_origin, grid_col_origin+cmd_btn_col_span, cmd_settings_row_span, cmd_settings_col_span)
+				
+				# connect widget signals
+				self.connect(sxcmd.btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
+				
+				# self.y1 += 30
+				grid_row += 1
+			# else: assert(sxcmd.type == "util") # Skip all utility commands
+		
+		# --------------------------------------------------------------------------------
+		# Create Utility SX Commands (sx*.py) related widgets
+		# --------------------------------------------------------------------------------
+		# Add title label and set position and font style
+		title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>UTILITIES </b></span>")
+		grid_layout.addWidget(title, grid_row, grid_col_origin, title_row_span, title_col_span)
+		
+		grid_row += 1
+		
+		# Create Utility Window
+		self.sxutil_window = SXUtilWindow(self.sxconst_set, self.sxcmd_list)
+		self.sxutil_window.hide()
+		
+		# Add all utilities button
+		self.all_utils_btn = QPushButton("Open Utility Window")
+		self.all_utils_btn.setToolTip("open utility window")
+		grid_layout.addWidget(self.all_utils_btn, grid_row, grid_col_origin, cmd_btn_row_span, cmd_btn_col_span)
+		
+		# connect widget signals
+		self.connect(self.all_utils_btn, SIGNAL("clicked()"), self.handle_all_utils_btn_event)
+		
+		# --------------------------------------------------------------------------------
+		# Register constant parameter set upon initialization
+		# --------------------------------------------------------------------------------
+		self.sxconst_set.window.register_const_set()
+	
+	#This is the function info, which is being started when the Pushbutton btn_info of the main window is being clicked
+	def handle_info_btn_event(self):
+		if self.sxinfo_window.isVisible():
+			self.sxinfo_window.raise_()
+			self.sxinfo_window.activateWindow()
+			return
 			
-			self.cmd_button_group.addButton(sxcmd.button)
-			grid_layout.addWidget(sxcmd.button, grid_row, grid_col_origin, cmd_button_row_span, cmd_button_col_span)
-			
-			# Create SXCmdWidget for this sx*.py processe
-#			sxcmd_widget = SXCmdWidget(sxcmd, self)
-			sxcmd.widget = SXCmdWidget(sxcmd)
-#			sxcmd.widget.move(300, 0)
-			sxcmd.widget.hide()
-			grid_layout.addWidget(sxcmd.widget, grid_row_origin, grid_col_origin+cmd_button_col_span, cmd_settings_row_span, cmd_settings_col_span)
-			
-			# connect widget signals
-			self.connect(sxcmd.button, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
-			
-			# self.y1 += 30
-			grid_row += 1
-
-	# Click actions: The following functions are associated with the click event of push buttons (btn##) on the main window. 
+		# print "Opening a new popup window..."
+		# Opens the window SXInfoWindow, and defines its width and height
+		# The layout of the SXInfoWindow window is defined in class SXInfoWindow(QWidget Window)
+		# self.sxinfo_window = SXInfoWindow()
+		# self.sxinfo_window.resize(300,200) # sxinfo_window.resize(250,200)
+		self.sxinfo_window.move(self.pos())
+		self.sxinfo_window.show()
+		self.sxinfo_window.raise_()
+	
 	def handle_sxconst_set_btn_event(self):
-		self.sxconst_set.widget.move(self.pos())
-		self.sxconst_set.widget.show()
+		if self.sxconst_set.window.isVisible():
+			self.sxconst_set.window.raise_()
+			self.sxconst_set.window.activateWindow()
+			return
 		
+		self.sxconst_set.window.move(self.pos() - QPoint(SXLookFeelConst.sxconst_set_window_width, 0))
+		self.sxconst_set.window.show()
+		self.sxconst_set.window.raise_()
+	
+	def handle_all_utils_btn_event(self):
+		if self.sxutil_window.isVisible():
+			self.sxutil_window.raise_()
+			self.sxutil_window.activateWindow()
+			return
 		
-	# Click actions: The following functions are associated with the click event of push buttons (btn##) on the main window. 
+		self.sxutil_window.move(self.pos() + QPoint(SXLookFeelConst.sxcmd_select_area_min_width + SXLookFeelConst.grid_margin * 2, 0))
+		self.sxutil_window.show()
+		self.sxutil_window.raise_()
+	
 	def handle_sxcmd_btn_event(self, sxcmd):
 		modifiers = QApplication.keyboardModifiers()
 		if modifiers == Qt.ShiftModifier:
@@ -1565,39 +1953,34 @@ class MainWindow(QWidget):
 		if self.cur_sxcmd != None:
 			assert(self.cur_sxcmd.widget.isVisible() == True)
 			self.cur_sxcmd.widget.hide()
-#			assert(self.cur_sxcmd.button.isEnabled() == False)
-#			self.cur_sxcmd.button.setEnabled(True)
+#			assert(self.cur_sxcmd.btn.isEnabled() == False)
+#			self.cur_sxcmd.btn.setEnabled(True)
 			# custom_style = "QPushButton {color:#000; }"
 			custom_style = "QPushButton {color:black; }"
-			self.cur_sxcmd.button.setStyleSheet(custom_style)
+			self.cur_sxcmd.btn.setStyleSheet(custom_style)
 			
 		self.cur_sxcmd = sxcmd
 		
 		if self.cur_sxcmd != None:
 			assert(self.cur_sxcmd.widget.isVisible() == False)
 			self.cur_sxcmd.widget.show()
-#			assert(self.cur_sxcmd.button.isEnabled() == True)
-#			self.cur_sxcmd.button.setEnabled(False)
+#			assert(self.cur_sxcmd.btn.isEnabled() == True)
+#			self.cur_sxcmd.btn.setEnabled(False)
 #			custom_style = "QPushButton {font: bold; color:#8D0; }"
 			custom_style = "QPushButton {font: bold; color:blue; }"
-			self.cur_sxcmd.button.setStyleSheet(custom_style)
-			
-	#This is the function info, which is being started when the Pushbutton btn_info of the main window is being clicked
-	def info(self):
-		# print "Opening a new popup window..."
-		# Opens the window SXPopup_info, and defines its width and height
-		# The layout of the SXPopup_info window is defined in class SXPopup_info(QWidget Window)
-		self.sxpopup_info = SXPopup_info()
-		# self.sxpopup_info.resize(300,200) # sxpopup_info.resize(250,200)
-		self.sxpopup_info.move(self.pos())
-		self.sxpopup_info.show()
+			self.cur_sxcmd.btn.setStyleSheet(custom_style)
 
 # ========================================================================================
-#  This is the main class of the program
-class App(QApplication):
+class SXApplication(QApplication):
 	def __init__(self, *args):
-		QApplication.__init__(self, *args)
+#		QApplication.__init__(self, *args)
+		super(SXApplication, self).__init__(*args)
 		
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.sxmain_window = None
+		
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		"""
 		style=QtGui.QStyleFactory.create("Cleanlooks")
 		if style==None:
@@ -1611,24 +1994,30 @@ class App(QApplication):
 		if style!=None: self.setStyle(style)
 		"""
 		
-		# Define the main window (class MainWindow)
-		self.main = MainWindow()
-#		# Best setting for MAC OSX
-#		# self.main.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_button_min_width + SXWidetConst.grid_margin * (7 + 1), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
-#		# Best setting for Linux
-#		self.main.resize(SXWidetConst.sxcmd_min_width + SXWidetConst.sxcmd_button_min_width + SXWidetConst.grid_margin * (7 + 7), SXWidetConst.sxcmd_min_height + SXWidetConst.grid_margin * 2)
+		# Construct list of sxscript objects (extracted from associated wiki documents)
+		sxconst_set = construct_sxconst_set()
 		
-		# main_size = self.main.minimumSizeHint();
+		# Construct list of sxscript objects (extracted from associated wiki documents)
+		sxcmd_list = construct_sxcmd_list()
+		
+		# Define the main window (class SXMainWindow)
+		self.sxmain_window = SXMainWindow(sxconst_set, sxcmd_list)
+#		# Best setting for MAC OSX
+#		# self.sxmain_window.resize(SXLookFeelConst.sxcmd_widget_area_min_width + SXLookFeelConst.sxcmd_select_area_min_width + SXLookFeelConst.grid_margin * (7 + 1), SXLookFeelConst.sxcmd_widget_area_min_height + SXLookFeelConst.grid_margin * 2)
+#		# Best setting for Linux
+#		self.sxmain_window.resize(SXLookFeelConst.sxcmd_widget_area_min_width + SXLookFeelConst.sxcmd_select_area_min_width + SXLookFeelConst.grid_margin * (7 + 7), SXLookFeelConst.sxcmd_widget_area_min_height + SXLookFeelConst.grid_margin * 2)
+		
+		# main_size = self.sxmain_window.minimumSizeHint();
 		# desktop = self.desktop();
 		# screen_rect = desktop.screenGeometry();
-		# self.main.move((screen_rect.width()/2) - (main_size.width()/2), (screen_rect.height()/2) - (main_size.height()/2));
-		self.main.move(0, 0);
+		# self.sxmain_window.move((screen_rect.width()/2) - (main_size.width()/2), (screen_rect.height()/2) - (main_size.height()/2));
+		self.sxmain_window.move(QPoint(SXLookFeelConst.sxconst_set_window_width, 0));
 		
-		# Define that when all windows are closed, function byebye of class App will be started
+		# Define that when all windows are closed, function byebye of class SXApplication will be started
 		self.connect(self, SIGNAL("lastWindowClosed()"), self.byebye )
 		# Show main window
-		self.main.show()
-		self.main.raise_()
+		self.sxmain_window.show()
+		self.sxmain_window.raise_()
 		
 	#function byebye (just quit)  
 	def byebye( self ):
@@ -1636,30 +2025,29 @@ class App(QApplication):
 		self.exit(0)
 
 # ========================================================================================
-#  Necessary for execution of the program
 def main(args):
-	from optparse import OptionParser
-	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <image>
-		
-Automatic and manual particle selection. This version is specifically aimed at square boxes
-for single particle analysis."""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-
-	parser.add_option("--demo", type="string", default="",   help="Name of the demo whose input parameters should be used to initialize the GUI fields: --demo=mpibdb means the input parameters in demo/mpi_bdb will be used, --demo=mpibdbctf means the input parameters in demo/mpi_bdb_ctf will be used")
-	global options
-	(options, args) = parser.parse_args()
-	global DEMO_mpibdbctf
-	DEMO_mpibdbctf = "mpibdbctf"
-	global DEMO_mpibdb
-	DEMO_mpibdb = "mpibdb"
+#	from optparse import OptionParser
+#	progname = os.path.basename(sys.argv[0])
+#	usage = """%prog [options] <image>
+#	
+#Automatic and manual particle selection. This version is specifically aimed at square boxes
+#for single particle analysis."""
+#	parser = OptionParser(usage=usage,version=EMANVERSION)
+#	
+#	parser.add_option("--demo", type="string", default="",   help="Name of the demo whose input parameters should be used to initialize the GUI fields: --demo=mpibdb means the input parameters in demo/mpi_bdb will be used, --demo=mpibdbctf means the input parameters in demo/mpi_bdb_ctf will be used")
+#	global options
+#	(options, args) = parser.parse_args()
+#	global DEMO_mpibdbctf
+#	DEMO_mpibdbctf = "mpibdbctf"
+#	global DEMO_mpibdb
+#	DEMO_mpibdb = "mpibdb"
 	
-	global app
-	app = App(args)
-	app.setWindowIcon(QIcon(get_image_directory()+"sparxicon.png"))
+#	global sxapplication
+	sxapplication = SXApplication(args)
+	sxapplication.setWindowIcon(QIcon(get_image_directory()+"sparxicon.png"))
 	
-	app_font = app.font()
-	app_font_info = QFontInfo(app.font())
+	app_font = sxapplication.font()
+	app_font_info = QFontInfo(sxapplication.font())
 	new_point_size = app_font_info.pointSize() + 1
 	# # MRK_DEBUG: Check the default system font
 	# print "MRK_DEBUG: app_font_info.style()      = ", app_font_info.style()
@@ -1680,18 +2068,18 @@ for single particle analysis."""
 	# QPushButton, QLable, Window Title, and QToolTip
 	# 
 	app_font.setPointSize(new_point_size) # app_font.setPointSize(13) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
-	app.setFont(app_font)
+	sxapplication.setFont(app_font)
 	
-	# app.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
-	# app.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
-	# app.setStyleSheet("QToolTip {font-size:14pt; color:white; padding:2px; border-width:2px; border-style:solid; border-radius:20px; background-color: black; border: 1px solid white;}");
-	app.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
-#	app.setStyleSheet("QScrollArea {background-color: transparent;}");
-#	app.setStyleSheet("QScrollArea > QWidget > QWidget {background-color: transparent;}");
+	# sxapplication.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
+	# sxapplication.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
+	# sxapplication.setStyleSheet("QToolTip {font-size:14pt; color:white; padding:2px; border-width:2px; border-style:solid; border-radius:20px; background-color: black; border: 1px solid white;}");
+	sxapplication.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
+#	sxapplication.setStyleSheet("QScrollArea {background-color: transparent;}");
+#	sxapplication.setStyleSheet("QScrollArea > QWidget > QWidget {background-color: transparent;}");
 	
-	app.main.show()
-	app.main.raise_()
-	app.exec_()
+	sxapplication.sxmain_window.show()
+	sxapplication.sxmain_window.raise_()
+	sxapplication.exec_()
 
 # ========================================================================================
 if __name__ == "__main__":
