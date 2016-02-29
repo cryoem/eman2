@@ -3827,7 +3827,7 @@ EMData* nn4_ctfwReconstructor::finish(bool compensate)
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
-	//cout <<  "  will set refvol  "  <<endl;
+	cout <<  "  finish  "  <<endl;
 	m_refvol->set_array_offsets(0, 1, 1);
 	if(m_volume->is_fftodd())	m_volume->symplane0_odd(m_wptr);
 	else						m_volume->symplane0_ctf(m_wptr);

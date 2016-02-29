@@ -977,16 +977,16 @@ Output: 2D 3xk real image.
 
 	ii = -1;
 	for (int i = 0; i <= inc; i++) {
-		if(lr[i]>0) {
+		if(lr[i]>0 and n1[i]>0.0f and n2[i]>0.0f) {
 			ii++;
 			result[ii]        = float(i)/float(2*inc);
 			result[ii+linc]   = float(ret[i] / (std::sqrt(n1[i] * n2[i])));
 			result[ii+2*linc] = lr[i]  /*1.0f/sqrt(float(lr[i]))*/;
 		}
-		/*else {
+		else {
 			result[i]           = 0.0f;
 			result[i+inc+1]     = 0.0f;
-			result[i+2*(inc+1)] = 0.0f;}*/
+			result[i+2*(inc+1)] = 0.0f;}
 	}
 
 	if (needfree&1) {
@@ -2021,7 +2021,7 @@ void EMData::onelinenn_ctfw(int j, int n, int n2,
 //  Helper functions for method nn4_ctfw with tri-linear interpolation
 void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
 		          EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight) {
-//std::cout<<"   onelinetr_ctfw  "<<j<<"  "<<n<<"   "<<bign<<"  "<<n<<"  "<<n2<<std::endl;
+//std::cout<<"   onelinetr_ctfw  "<<j<<"  "<<n<<"   "<<bign<<"  "<<n<<"  "<<n2<<"  "<<npad<<std::endl;
 //for (int i = 0; i <= 12; i++)  cout <<"  "<<i<<"  "<<(*bckgnoise)(i)<<endl;
 	int nnd4 = n*n/4;
 	int jp = (j >= 0) ? j+1 : n+j+1;
@@ -2119,9 +2119,14 @@ void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
 			if (iz1 >= 0) iz1 = iz1 + 1;
 			else          iz1 = bign + iz1 + 1;
 */
-            //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
+            //cout <<" onetrl "<<jp<<"  "<<i<<"  "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<endl;
 			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
 			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
+	if(ixn<0 or ixn >=n2)  cout<<"  error   ixn  "<<ixn<<endl;
+	if(iya<1 or iya >bign)  cout<<"  error   iya  "<<iya<<endl;
+	if(iza<1 or iza >bign)  cout<<"  error   iza  "<<iza<<endl;
+	if(iy1<1 or iy1 >bign)  cout<<"  error   iy1  "<<iy1<<endl;
+	if(iz1<1 or iz1 >bign)  cout<<"  error   iz1  "<<iz1<<endl;
 
 			// numerator
 			cmplx(ixn, iya, iza) += qq000 * numerator;
@@ -2278,7 +2283,7 @@ void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, int npad, EMData*
 	int mynx = myfft->get_xsize();
 	mynx /= 2;
 	int myny = myfft->get_ysize();
-	//cout<<"  dimensions in nn_ctfw  "<<nxc<<"   "<<ny<<"   "<<mynx<<"   "<<myny<<endl;
+	//cout<<"  dimensions in nn_ctfw  "<<nx<<"   "<<ny<<"   "<<mynx<<"   "<<myny<<endl;
 	// loop over frequencies in y
 	for (int iy = -myny/2 + 1; iy <= myny/2; iy++) onelinetr_ctfw(iy, ny, myny, mynx, npad, w, myfft, ctf2d2, bckgnoise, tf, weight);
 	set_array_offsets(saved_offsets);

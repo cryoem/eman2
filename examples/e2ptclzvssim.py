@@ -77,8 +77,8 @@ as not all elements are computed.
 	parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
 	parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
-	parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
-	parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
+	parser.add_argument("--outimgs",type=str,help="Output image file. Appends if file exists.",default="imgs.hdf")
+	parser.add_argument("--filtimgs",type=str,help="A python expression using Zs[n], Qs[n], Ns[n], DTAs[n], DTRs[n], DAs[n], ALTs[Ns[n]], AZs[Ns[n]] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
@@ -106,6 +106,13 @@ as not all elements are computed.
 	ny=tmp["ny"]
 
 	logid=E2init(sys.argv,options.ppid)
+
+	if options.inimgs!=None and options.outimgs!=None and options.inimgs[-4:]==".lst" and options.outimgs[-4:]==".lst" :
+		inlst=LSXFile(options.inimgs)
+		outlst=LSXFile(options.outimgs)
+	else : inlst,outlst=None,None
+
+	nout=0
 
 # read in projection Euler angles
 	if options.refs:
@@ -264,11 +271,16 @@ as not all elements are computed.
 			e=eval(options.filtimgs)
 			#print y,e,DTRs[0]-DTRs[1],fabs(DAs[0]-DAs[1]),fabs(ALTs[0]-ALTs[1]),Qs[1]
 			if options.inimgs!=None and e:
-				EMData(options.inimgs,y).write_image(options.outimgs,-1)
+				nout+=1
+				if inlst!=None:
+					outlst[-1]=inlst[y]
+				else:
+					EMData(options.inimgs,y).write_image(options.outimgs,-1)
 
 	print " %d/%d\n"%(ny,ny),
 	print "Output in ",options.output
 	print "Key in ",options.output.rsplit(".",1)[0]+"_key.txt"
+	if nout!=0 : print "{} in filtered output: {}".format(nout,options.outimgs)
 	out.close()
 	
 	# we convert the output we just generated to an image file for other potential analysis techniques
