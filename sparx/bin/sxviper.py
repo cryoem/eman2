@@ -7,7 +7,7 @@ import global_def
 from global_def import *
 
 def main(args):
-	from utilities import if_error_all_processes_quit_program, write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
+	from utilities import if_error_then_all_processes_exit_program, write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
 	from logger import Logger, BaseLogger_Files
 	from mpi import mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
 	import user_functions

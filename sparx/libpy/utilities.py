@@ -5131,7 +5131,7 @@ def print_with_time_info(msg):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
 	print line
 
-def if_error_all_processes_quit_program(error_status):
+def if_error_then_all_processes_exit_program(error_status):
 	import sys, copy
 	from mpi import mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
 	
@@ -5534,7 +5534,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 
 	from traceback import extract_stack
 	from mpi import mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD, MPI_INT
-	from utilities import if_error_all_processes_quit_program
+	from utilities import if_error_then_all_processes_exit_program
 	import os
 
 	def get_current_stack_info():
@@ -5545,7 +5545,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	START_EXECUTING_ONLY_ONE_TIME_THEN_REVERT = 2
 	
 	# error_status = 1
-	# if_error_all_processes_quit_program(error_status)
+	# if_error_then_all_processes_exit_program(error_status)
 	
 	current_state = dict()
 	for var in program_state_stack.PROGRAM_STATE_VARIABLES & set(full_current_state) :
@@ -5646,7 +5646,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	else:
 		program_state_stack.start_executing = START_EXECUTING_FALSE
 		
-	if_error_all_processes_quit_program(error_status)	
+	if_error_then_all_processes_exit_program(error_status)	
 		
 	program_state_stack.start_executing = mpi_bcast(program_state_stack.start_executing, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	program_state_stack.start_executing = int(program_state_stack.start_executing[0])

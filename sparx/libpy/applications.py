@@ -5357,7 +5357,7 @@ def sali3d_base_horatio_01(stack, ref_vol = None, Tracker = None, rangle = 0.0, 
 					# generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
 				else:  list_of_reference_angles = [[1.0,1.0]]
 				error_status = 0
-				from utilities import if_error_all_processes_quit_program
+				from utilities import if_error_then_all_processes_exit_program
 
 				# for im in xrange(nima):
 				for im in image_indices:
@@ -5409,7 +5409,7 @@ def sali3d_base_horatio_01(stack, ref_vol = None, Tracker = None, rangle = 0.0, 
 				if len(image_indices)>0: del tempdata
 				if(an[N_step] > 0):  del list_of_reference_angles
 				#=========================================================================
-				# if_error_all_processes_quit_program(error_status)
+				# if_error_then_all_processes_exit_program(error_status)
 				# cannot have barriers in this loop because some cones might not have images assigned to them! In this case 'image_indices' is empty.
 				# mpi_barrier(mpi_comm)
 				if myid == main_node:
