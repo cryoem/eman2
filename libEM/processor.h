@@ -1716,7 +1716,8 @@ The basic design of EMAN Processors: <br>\
 				image->set_attr("apix_z", (float)params["apix"]);
 			}
 			float apix=(float)image->get_attr("apix_x");
-
+			params["bfactor"] = pow(apix/(float)params["cutoff_abs"],0.0f);
+			
 			const Dict dict = image->get_attr_dict();
 			if (params.has_key("cutoff_abs")) {
 				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0f);
