@@ -1146,9 +1146,7 @@ EMData* EMData::symvol(string symString) {
 	// actual work -- loop over symmetries and symmetrize
 	for (int isym = 0; isym < nsym; isym++) {
 		Transform rm = sym.get_sym(symString, isym);
-		EMData* symcopy = this -> rot_scale_trans(rm);
-		*svol += (*symcopy);
-		delete symcopy;
+		this -> rot_scale_trans(rm, svol);
 	}
 	*svol /=  ((float) nsym);
 	svol->update();
@@ -1174,7 +1172,6 @@ EMData* EMData::symfvol(string symString, int radius) {
 		Transform rm = sym.get_sym(symString, isym);
 		//cout<<"  wil rot fvol  "<<isym<<"  "<<svol->get_xsize()<<endl;
 		this -> rot_fvol(rm, svol, radius);
-		cout<<"  svol  "<<isym<<"   "<<nsym<<"   "<<(*this)(2,0,0)<<"   "<<(*svol)(2,0,0)<<endl;
 	}
 	*svol /=  ((float) nsym);
 	svol->update();
@@ -3558,9 +3555,7 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 // Note data has to be shifted to corners by n/2
 //	EMData* ret = copy_head();
 
-    int ret_is_initially_null = ret == NULL;
-
-    if (ret == NULL) {
+    if( ret == NULL ) {
         ret = copy_head();
 	    ret->to_zero();
     }
@@ -3613,38 +3608,37 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 							} else  flipin = false;
 
 
-							int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+							int ixn = int(xnew);
 							int iyn = int(ynew + bign);
 							int izn = int(znew + bign);
-							float dx = xnew + bign - ixn;
+							float dx = xnew - ixn;
 							float dy = ynew + bign - iyn;
 							float dz = znew + bign - izn;
 							float qdx = 1.0f - dx;
 							float qdy = 1.0f - dy;
 							float qdz = 1.0f - dz;
 
-							float qq000 = qdx * qdy * qdz;
-							float qq010 = qdx *  dy * qdz;
-							float qq100 =  dx * qdy * qdz;
-							float qq110 =  dx *  dy * qdz;
-							float qq001 = qdx * qdy *  dz;
-							float qq011 = qdx *  dy *  dz;
-							float qq101 =  dx * qdy *  dz;
-							float qq111 =  dx *  dy *  dz;
-
-							ixn -= bign;
 							iyn -= bign;
 							izn -= bign;
 
-							int iza = izn;
-							if (izn < 0)  iza += nz;
-
-							int iya = iyn;
-							if (iyn < 0)  iya += ny;
-
-
 							int ix1 = ixn + 1;
 							if( ix1 < xc) {
+
+								float qq000 = qdx * qdy * qdz;
+								float qq010 = qdx *  dy * qdz;
+								float qq100 =  dx * qdy * qdz;
+								float qq110 =  dx *  dy * qdz;
+								float qq001 = qdx * qdy *  dz;
+								float qq011 = qdx *  dy *  dz;
+								float qq101 =  dx * qdy *  dz;
+								float qq111 =  dx *  dy *  dz;
+
+								int iza = izn;
+								if (izn < 0)  iza += nz;
+
+								int iya = iyn;
+								if (iyn < 0)  iya += ny;
+
 								int iz1 = iza + 1;
 								if (iz1 >= nz) iz1 -= nz;
 
@@ -3665,16 +3659,9 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 	//if(ity<0 or ity >=ny)  cout<<"  error   ity  "<<ity<<endl;
 	//if(itz<0 or itz >=nz)  cout<<"  error   itz  "<<itz<<endl;
 	
-	                            if (ret_is_initially_null){
-                                    if( flipin )  ret->cmplx(ix,ity,itz) = conj(btq);
-                                    else  ret->cmplx(ix,ity,itz) = btq;
-	                            }
-	                            else{
-                                    if( flipin )  ret->cmplx(ix,ity,itz) += conj(btq);
-                                    else  ret->cmplx(ix,ity,itz) += btq;
-	                            }
+								if( flipin )  ret->cmplx(ix,ity,itz) += conj(btq);
+                                else  ret->cmplx(ix,ity,itz) += btq;
 							}
-
 						}
 					} //ends x loop
 				} // ends y loop
@@ -3711,39 +3698,37 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 								znew = -znew;
 							}
 
-
-							int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+							int ixn = int(xnew);
 							int iyn = int(ynew + bign);
 							int izn = int(znew + bign);
-							float dx = xnew + bign - ixn;
+							float dx = xnew - ixn;
 							float dy = ynew + bign - iyn;
 							float dz = znew + bign - izn;
 							float qdx = 1.0f - dx;
 							float qdy = 1.0f - dy;
 							float qdz = 1.0f - dz;
 
-							float qq000 = qdx * qdy * qdz;
-							float qq010 = qdx *  dy * qdz;
-							float qq100 =  dx * qdy * qdz;
-							float qq110 =  dx *  dy * qdz;
-							float qq001 = qdx * qdy *  dz;
-							float qq011 = qdx *  dy *  dz;
-							float qq101 =  dx * qdy *  dz;
-							float qq111 =  dx *  dy *  dz;
-
-							ixn -= bign;
 							iyn -= bign;
 							izn -= bign;
 
-							int iza = izn;
-							if (izn < 0)  iza += nz;
-
-							int iya = iyn;
-							if (iyn < 0)  iya += ny;
-
-
 							int ix1 = ixn + 1;
 							if( ix1 < nx)  {
+
+								float qq000 = qdx * qdy * qdz;
+								float qq010 = qdx *  dy * qdz;
+								float qq100 =  dx * qdy * qdz;
+								float qq110 =  dx *  dy * qdz;
+								float qq001 = qdx * qdy *  dz;
+								float qq011 = qdx *  dy *  dz;
+								float qq101 =  dx * qdy *  dz;
+								float qq111 =  dx *  dy *  dz;
+
+								int iza = izn;
+								if (izn < 0)  iza += nz;
+
+								int iya = iyn;
+								if (iyn < 0)  iya += ny;
+
 								int iz1 = iza + 1;
 								if (iz1 >= nz) iz1 -= nz;
 
@@ -3752,12 +3737,7 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
 	//btq = cmplx(ixn, iya, iza);
 
-                                if (ret_is_initially_null)
-                                    (*ret)(ix,ity,itz) = qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
-                                            + qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
-                                            + qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
-                                else
-                                    (*ret)(ix,ity,itz) += qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
+                                (*ret)(ix,ity,itz) += qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
                                             + qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
                                             + qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
                                 
