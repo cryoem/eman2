@@ -1146,9 +1146,7 @@ EMData* EMData::symvol(string symString) {
 	// actual work -- loop over symmetries and symmetrize
 	for (int isym = 0; isym < nsym; isym++) {
 		Transform rm = sym.get_sym(symString, isym);
-		EMData* symcopy = this -> rot_scale_trans(rm);
-		*svol += (*symcopy);
-		delete symcopy;
+		this -> rot_scale_trans(rm, svol);
 	}
 	*svol /=  ((float) nsym);
 	svol->update();
@@ -1167,14 +1165,12 @@ EMData* EMData::symfvol(string symString, int radius) {
 	svol->to_zero();
 	svol->set_array_offsets(0,0,0);
 	this->set_array_offsets(0,0,0);
-	if( radius < 1 )  radius = nx/2;
 	//cout<<" svol "<<svol->get_xsize()<<"  "<<svol->get_ysize()<<"  "<<svol->get_zsize()<<"  "<<svol->is_complex()<<endl;
 	// actual work -- loop over symmetries and symmetrize
 	for (int isym = 0; isym < nsym; isym++) {
 		Transform rm = sym.get_sym(symString, isym);
 		//cout<<"  wil rot fvol  "<<isym<<"  "<<svol->get_xsize()<<endl;
 		this -> rot_fvol(rm, svol, radius);
-		cout<<"  svol  "<<isym<<"   "<<nsym<<"   "<<(*this)(2,0,0)<<"   "<<(*svol)(2,0,0)<<endl;
 	}
 	*svol /=  ((float) nsym);
 	svol->update();
@@ -2054,7 +2050,7 @@ void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
 			float denominator = c2val * mult * weight;
 
 
-			int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+			int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters it is much larger than -xnew
 			int iyn = int(ynew + bign);
 			int izn = int(znew + bign);
 
@@ -2124,12 +2120,13 @@ void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
             //cout <<" onetrl "<<jp<<"  "<<i<<"  "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<endl;
 			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
 			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
-	if(ixn<0 or ixn >=n2)  cout<<"  error   ixn  "<<ixn<<endl;
+/*
+	if(ixn<0 or ixn >=n2*npad)  cout<<"  error   ixn  "<<ixn<<endl;
 	if(iya<1 or iya >bign)  cout<<"  error   iya  "<<iya<<endl;
 	if(iza<1 or iza >bign)  cout<<"  error   iza  "<<iza<<endl;
 	if(iy1<1 or iy1 >bign)  cout<<"  error   iy1  "<<iy1<<endl;
 	if(iz1<1 or iz1 >bign)  cout<<"  error   iz1  "<<iz1<<endl;
-
+*/
 			// numerator
 			cmplx(ixn, iya, iza) += qq000 * numerator;
 			cmplx(ixn, iy1, iza) += qq010 * numerator;
@@ -3558,9 +3555,7 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 // Note data has to be shifted to corners by n/2
 //	EMData* ret = copy_head();
 
-    int ret_is_initially_null = ret == NULL;
-
-    if (ret == NULL) {
+    if( ret == NULL ) {
         ret = copy_head();
 	    ret->to_zero();
     }
@@ -3574,10 +3569,10 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 	if (nz < 2) {
 		throw ImageDimensionException("Can't frotate 2D image");
 	} else {
-		if( radius < 1 ) radius = nx/2;
-		float rm2 = (radius-1)*(radius-1);
 //		 This begins the 3D version tri-linear interpolation.
 		if(is_complex())  {
+			if( radius < 1 or radius > nx/2-1) radius = nx/2-1;
+			float rm2 = (radius-1)*(radius-1);
 			bool iodd = get_attr("is_fftodd");
 			int xc = nx/2;
 			int yc = ny/2;
@@ -3597,7 +3592,7 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 						float ynew = ynewzy + ix*RAinv[1][0];
 						float znew = znewzy + ix*RAinv[2][0];
 //cout<<"   Before if "<<xnew*xnew + ynew+ynew + znew*znew<<"  "<<rm2<<"  "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<endl;
-						if(xnew*xnew + ynew+ynew + znew*znew <= rm2 ) {
+						if(xnew*xnew + ynew*ynew + znew*znew <= rm2 ) {
 
 							int itz = iz;
 							if( itz < 0 ) itz += nz;
@@ -3613,38 +3608,37 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 							} else  flipin = false;
 
 
-							int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+							int ixn = int(xnew);
 							int iyn = int(ynew + bign);
 							int izn = int(znew + bign);
-							float dx = xnew + bign - ixn;
+							float dx = xnew - ixn;
 							float dy = ynew + bign - iyn;
 							float dz = znew + bign - izn;
 							float qdx = 1.0f - dx;
 							float qdy = 1.0f - dy;
 							float qdz = 1.0f - dz;
 
-							float qq000 = qdx * qdy * qdz;
-							float qq010 = qdx *  dy * qdz;
-							float qq100 =  dx * qdy * qdz;
-							float qq110 =  dx *  dy * qdz;
-							float qq001 = qdx * qdy *  dz;
-							float qq011 = qdx *  dy *  dz;
-							float qq101 =  dx * qdy *  dz;
-							float qq111 =  dx *  dy *  dz;
-
-							ixn -= bign;
 							iyn -= bign;
 							izn -= bign;
 
-							int iza = izn;
-							if (izn < 0)  iza += nz;
-
-							int iya = iyn;
-							if (iyn < 0)  iya += ny;
-
-
 							int ix1 = ixn + 1;
 							if( ix1 < xc) {
+
+								float qq000 = qdx * qdy * qdz;
+								float qq010 = qdx *  dy * qdz;
+								float qq100 =  dx * qdy * qdz;
+								float qq110 =  dx *  dy * qdz;
+								float qq001 = qdx * qdy *  dz;
+								float qq011 = qdx *  dy *  dz;
+								float qq101 =  dx * qdy *  dz;
+								float qq111 =  dx *  dy *  dz;
+
+								int iza = izn;
+								if (izn < 0)  iza += nz;
+
+								int iya = iyn;
+								if (iyn < 0)  iya += ny;
+
 								int iz1 = iza + 1;
 								if (iz1 >= nz) iz1 -= nz;
 
@@ -3665,21 +3659,17 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 	//if(ity<0 or ity >=ny)  cout<<"  error   ity  "<<ity<<endl;
 	//if(itz<0 or itz >=nz)  cout<<"  error   itz  "<<itz<<endl;
 	
-	                            if (ret_is_initially_null){
-                                    if( flipin )  ret->cmplx(ix,ity,itz) = conj(btq);
-                                    else  ret->cmplx(ix,ity,itz) = btq;
-	                            }
-	                            else{
-                                    if( flipin )  ret->cmplx(ix,ity,itz) += conj(btq);
-                                    else  ret->cmplx(ix,ity,itz) += btq;
-	                            }
+								if( flipin )  ret->cmplx(ix,ity,itz) += conj(btq);
+                                else  ret->cmplx(ix,ity,itz) += btq;
 							}
-
 						}
 					} //ends x loop
 				} // ends y loop
 			} // ends z loop
 		} else {
+			if( radius < 1 or radius > nx-1) radius = nx-1;
+			float rm2 = (radius-1)*(radius-1);
+			//cout<< "  radius  "<<radius<<"   "<<rm2<<endl;
 			int xc = nx/2;
 			int yc = ny/2;
 			int zc = nz/2;
@@ -3697,8 +3687,8 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 						float xnew = xnewzy + ix*RAinv[0][0];
 						float ynew = ynewzy + ix*RAinv[1][0];
 						float znew = znewzy + ix*RAinv[2][0];
-//cout<<"   Before if "<<xnew*xnew + ynew+ynew + znew*znew<<"  "<<rm2<<"  "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<endl;
-						if(xnew*xnew + ynew+ynew + znew*znew <= rm2 ) {
+//cout<<"   Before if "<<xnew*xnew + ynew*ynew + znew*znew<<"  "<<rm2<<"  "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<endl;
+						if(xnew*xnew + ynew*ynew + znew*znew <= rm2 ) {
 
 							int itz = iz;
 							if( itz < 0 ) itz += nz;
@@ -3711,53 +3701,46 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 								znew = -znew;
 							}
 
-
-							int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+							int ixn = int(xnew);
 							int iyn = int(ynew + bign);
 							int izn = int(znew + bign);
-							float dx = xnew + bign - ixn;
+							float dx = xnew - ixn;
 							float dy = ynew + bign - iyn;
 							float dz = znew + bign - izn;
 							float qdx = 1.0f - dx;
 							float qdy = 1.0f - dy;
 							float qdz = 1.0f - dz;
 
-							float qq000 = qdx * qdy * qdz;
-							float qq010 = qdx *  dy * qdz;
-							float qq100 =  dx * qdy * qdz;
-							float qq110 =  dx *  dy * qdz;
-							float qq001 = qdx * qdy *  dz;
-							float qq011 = qdx *  dy *  dz;
-							float qq101 =  dx * qdy *  dz;
-							float qq111 =  dx *  dy *  dz;
-
-							ixn -= bign;
 							iyn -= bign;
 							izn -= bign;
 
-							int iza = izn;
-							if (izn < 0)  iza += nz;
-
-							int iya = iyn;
-							if (iyn < 0)  iya += ny;
-
-
 							int ix1 = ixn + 1;
 							if( ix1 < nx)  {
+
+								float qq000 = qdx * qdy * qdz;
+								float qq010 = qdx *  dy * qdz;
+								float qq100 =  dx * qdy * qdz;
+								float qq110 =  dx *  dy * qdz;
+								float qq001 = qdx * qdy *  dz;
+								float qq011 = qdx *  dy *  dz;
+								float qq101 =  dx * qdy *  dz;
+								float qq111 =  dx *  dy *  dz;
+
+								int iza = izn;
+								if (izn < 0)  iza += nz;
+
+								int iya = iyn;
+								if (iyn < 0)  iya += ny;
+
 								int iz1 = iza + 1;
 								if (iz1 >= nz) iz1 -= nz;
 
 								int iy1 = iya + 1;
 								if (iy1 >= ny) iy1 -= ny;
-	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
+	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<" new: "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
 	//btq = cmplx(ixn, iya, iza);
 
-                                if (ret_is_initially_null)
-                                    (*ret)(ix,ity,itz) = qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
-                                            + qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
-                                            + qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
-                                else
-                                    (*ret)(ix,ity,itz) += qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
+                                (*ret)(ix,ity,itz) += qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
                                             + qq110 * (*this)(ix1, iy1, iza) + qq001 * (*this)(ixn, iya, iz1) + qq011 * (*this)(ixn, iy1, iz1)
                                             + qq101 * (*this)(ix1, iya, iz1) + qq111 * (*this)(ix1, iy1, iz1);
                                 

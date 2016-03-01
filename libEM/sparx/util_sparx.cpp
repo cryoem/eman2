@@ -18241,7 +18241,7 @@ EMData* Util::shrinkfvol(EMData* img, int npad)
 				if( cmpx ) {
 					size_t imgp = 2*i+(jc+(kc*ny))*nx;
 					size_t outp = 2*ii+(jj+(kk*yn))*(xn+2-iodd);
-					cout<<" cmpx "<<  imgp<<"  "<<  outp<<endl;
+					//cout<<" cmpx "<<  imgp<<"  "<<  outp<<endl;
 					out_ptr[outp]   += img_ptr[imgp];
 					out_ptr[outp+1] += img_ptr[imgp+1];
 					w_ptr[ii+(jj+(kk*yn))*(xn+2-iodd)/2] += 1.0f;
@@ -22253,7 +22253,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  02/24/2016  2:53 PM "<<endl;}
+{ cout <<"  VERSION  03/01/2016  11:53 PM "<<endl;}
 
 void Util::version2()
 { cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;}
