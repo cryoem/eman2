@@ -1165,7 +1165,6 @@ EMData* EMData::symfvol(string symString, int radius) {
 	svol->to_zero();
 	svol->set_array_offsets(0,0,0);
 	this->set_array_offsets(0,0,0);
-	if( radius < 1 )  radius = nx/2;
 	//cout<<" svol "<<svol->get_xsize()<<"  "<<svol->get_ysize()<<"  "<<svol->get_zsize()<<"  "<<svol->is_complex()<<endl;
 	// actual work -- loop over symmetries and symmetrize
 	for (int isym = 0; isym < nsym; isym++) {
@@ -3569,10 +3568,10 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 	if (nz < 2) {
 		throw ImageDimensionException("Can't frotate 2D image");
 	} else {
-		if( radius < 1 ) radius = nx/2;
-		float rm2 = (radius-1)*(radius-1);
 //		 This begins the 3D version tri-linear interpolation.
 		if(is_complex())  {
+			if( radius < 1 or radius > nx/2-1) radius = nx/2-1;
+			float rm2 = (radius-1)*(radius-1);
 			bool iodd = get_attr("is_fftodd");
 			int xc = nx/2;
 			int yc = ny/2;
@@ -3592,7 +3591,7 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 						float ynew = ynewzy + ix*RAinv[1][0];
 						float znew = znewzy + ix*RAinv[2][0];
 //cout<<"   Before if "<<xnew*xnew + ynew+ynew + znew*znew<<"  "<<rm2<<"  "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<endl;
-						if(xnew*xnew + ynew+ynew + znew*znew <= rm2 ) {
+						if(xnew*xnew + ynew*ynew + znew*znew <= rm2 ) {
 
 							int itz = iz;
 							if( itz < 0 ) itz += nz;
@@ -3667,6 +3666,9 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 				} // ends y loop
 			} // ends z loop
 		} else {
+			if( radius < 1 or radius > nx-1) radius = nx-1;
+			float rm2 = (radius-1)*(radius-1);
+			//cout<< "  radius  "<<radius<<"   "<<rm2<<endl;
 			int xc = nx/2;
 			int yc = ny/2;
 			int zc = nz/2;
@@ -3684,8 +3686,8 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 						float xnew = xnewzy + ix*RAinv[0][0];
 						float ynew = ynewzy + ix*RAinv[1][0];
 						float znew = znewzy + ix*RAinv[2][0];
-//cout<<"   Before if "<<xnew*xnew + ynew+ynew + znew*znew<<"  "<<rm2<<"  "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<endl;
-						if(xnew*xnew + ynew+ynew + znew*znew <= rm2 ) {
+//cout<<"   Before if "<<xnew*xnew + ynew*ynew + znew*znew<<"  "<<rm2<<"  "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<endl;
+						if(xnew*xnew + ynew*ynew + znew*znew <= rm2 ) {
 
 							int itz = iz;
 							if( itz < 0 ) itz += nz;
@@ -3734,7 +3736,7 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 
 								int iy1 = iya + 1;
 								if (iy1 >= ny) iy1 -= ny;
-	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
+	//cout<<" XXX "<<ix<<"  "<<iy<<"  "<<iz<<" new: "<<xnew<<"  "<<ynew<<"  "<<znew<<"  "<<ix<<"  "<<ity<<"  "<<itz<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<endl;
 	//btq = cmplx(ixn, iya, iza);
 
                                 (*ret)(ix,ity,itz) += qq000 * (*this)(ixn, iya, iza) + qq010 * (*this)(ixn, iy1, iza) + qq100 * (*this)(ix1, iya, iza)
