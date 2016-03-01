@@ -118,7 +118,7 @@ def main(args):
 		if not options.__dict__[required_option]:
 			error_status = ("\n ==%s== mandatory option is missing.\n"%required_option + "Please run '" + progname + " -h' for detailed options", getframeinfo(currentframe()))
 
-	if_error_all_processes_quit_program(error_status)
+	if_error_then_all_processes_exit_program(error_status)
 	
 	radi  = options.radius
 	if(radi < 1):  ERROR("Particle radius geater than zero has to be provided!","sxisac",1,myid)
@@ -176,7 +176,7 @@ def main(args):
 	else:
 		shrink_ratio = 0
 
-	if_error_all_processes_quit_program(error_status)
+	if_error_then_all_processes_exit_program(error_status)
 	
 	shrink_ratio = float(mpi_bcast(shrink_ratio, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)[0])
 	

@@ -5285,9 +5285,9 @@ def calculate_number_of_cones(volft, kb, delta, sym, cnx, cny, numr, mode, wr_fo
 		error_status = [1]
 		
 	from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
-	from utilities import if_error_all_processes_quit_program
+	from utilities import if_error_then_all_processes_exit_program
 	error_status = mpi_reduce(error_status, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
-	if_error_all_processes_quit_program(error_status)	
+	if_error_then_all_processes_exit_program(error_status)	
 
 	number_of_concurrent_processes_per_node = determine_maximum_number_of_processes_per_node_from_all_nodes_that_belong_to_the_same_mpi_run()
 	number_of_references_that_fit_in_memory = (machine_memory_that_can_be_allocated/number_of_concurrent_processes_per_node)/memory_for_one_item
