@@ -51,7 +51,7 @@ a.write_image(dir + "/OutputMap_Normalized.mrc")
 for option1 in optionList:
 	if option1 == "icosahedral_symmetry":
 		s1 = "e2proc3d.py " + dir + "/OutputMap_Normalized.mrc " + dir + "/OutputMap_Normalized --icos2to5"
-		call(s,shell=True)
+		call(s1,shell=True)
 		
 
 OUT_META_FILE = "OutParam"
