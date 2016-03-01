@@ -2120,7 +2120,7 @@ void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
             //cout <<" onetrl "<<jp<<"  "<<i<<"  "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<endl;
 			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
 			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
-	if(ixn<0 or ixn >=n2)  cout<<"  error   ixn  "<<ixn<<endl;
+	if(ixn<0 or ixn >=n2*npad)  cout<<"  error   ixn  "<<ixn<<endl;
 	if(iya<1 or iya >bign)  cout<<"  error   iya  "<<iya<<endl;
 	if(iza<1 or iza >bign)  cout<<"  error   iza  "<<iza<<endl;
 	if(iy1<1 or iy1 >bign)  cout<<"  error   iy1  "<<iy1<<endl;
