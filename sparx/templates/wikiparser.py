@@ -14,11 +14,11 @@ from sxgui_template import SXcmd_token, SXcmd
 
 # ========================================================================================
 class SXcmd_config:
-	def __init__(self, wiki="", type=""):
+	def __init__(self, wiki = "", category = ""):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.wiki = wiki # Wiki document file path
-		self.type = type # Type of this command; pipe (pipeline), util (utility)
+		self.wiki = wiki         # Wiki document file path
+		self.category = category # Category of this command; pipe (pipeline), util (utility)
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
@@ -33,10 +33,10 @@ def construct_token_list_from_wiki(cmd_config):
 			self.token_type = token_type  # Token value type 
 			# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	
-	print "Start parsing Wiki document (%s as %s command) " % (cmd_config.wiki, cmd_config.type)
+	print "Start parsing Wiki document (%s as %s command) " % (cmd_config.wiki, cmd_config.category)
 	
 	# Allocate memory for new SXcmd instance
-	sxcmd = SXcmd(cmd_config.type)
+	sxcmd = SXcmd(cmd_config.category)
 	
 	# Define dictionary of keywords:
 	# The dictionary maps command token to special data types
@@ -307,7 +307,7 @@ def construct_token_list_from_wiki(cmd_config):
 			
 	file_wiki.close()
 	
-	print "Succeed to parse Wiki document (%s as %s command)" % (cmd_config.wiki, cmd_config.type)
+	print "Succeed to parse Wiki document (%s as %s command)" % (cmd_config.wiki, cmd_config.category)
 	
 	"""
 	# For DEBUG
@@ -344,7 +344,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	output_file.write("; %s.short_info = \"%s\"" % (sxcmd_variable_name, sxcmd.short_info.replace("\"", "'")))
 	output_file.write("; %s.mpi_support = %s" % (sxcmd_variable_name, sxcmd.mpi_support))
 	output_file.write("; %s.mpi_add_flag = %s" % (sxcmd_variable_name, sxcmd.mpi_add_flag))
-	output_file.write("; %s.type = \"%s\"" % (sxcmd_variable_name, sxcmd.type))
+	output_file.write("; %s.category = \"%s\"" % (sxcmd_variable_name, sxcmd.category))
 	output_file.write("\n")
 	
 	for token in sxcmd.token_list:
@@ -384,7 +384,7 @@ def main():
 	cmd_config_list.append(SXcmd_config("../doc/cter.txt", "pipe"))
 	cmd_config_list.append(SXcmd_config("../doc/window.txt", "pipe"))
 	# cmd_config_list.append(SXcmd_config("../doc/isac.txt", "pipe"))
-	cmd_config_list.append(SXcmd_config("../doc/isac_latest_release.txt", "pipe"))
+	cmd_config_list.append(SXcmd_config("../doc/isac_snr4.txt", "pipe"))
 	cmd_config_list.append(SXcmd_config("../doc/viper.txt", "pipe"))
 	cmd_config_list.append(SXcmd_config("../doc/rviper.txt", "pipe"))
 	cmd_config_list.append(SXcmd_config("../doc/meridien.txt", "pipe"))

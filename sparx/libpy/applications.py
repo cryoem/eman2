@@ -13809,7 +13809,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 
 def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
-	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file
+	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file, info
 	from string         import replace
 	from time           import time
 	from mpi            import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD
@@ -13899,6 +13899,7 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		set_params_proj(prjlist[i],[phi,theta,psi,sx/scale,sy/scale])
 	"""
 	nnnx = ((prjlist[0].get_ysize())*2+3)
+	#nnnx = 200#prjlist[0].get_ysize()
 	from fundamentals import fft,fshift
 	from utilities import get_params_proj,set_params_proj
 	for i in xrange(len(prjlist)):
@@ -13919,13 +13920,18 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		prjlist[i].set_attr("bckgnoise",m)
 	from reconstruction import recons3d_4nnfs_MPI
 	#if CTF: vol1, vol2, fff = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
-	vol,wei,reg = recons3d_4nnfs_MPI(myid, prjlist, cfsc = None, symmetry = sym, CTF = CTF, compensate = True, target_size = nnnx)
+	vol,wei,reg = recons3d_4nnfs_MPI(myid, prjlist, npad = npad, cfsc = None, symmetry = "c1", CTF = CTF, compensate = True, target_size = nnnx)
 	if myid == 0 :
+		if( sym != "c1" ):
+			vol = vol.symfvol(sym, -1)
+			wei = wei.symfvol(sym, -1)
+		#print  info(reg)
+		#for i in xrange(reg.get_xsize()):  print i,reg[i]
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
 		else:
 			drop_image(fft(vol), vol_stack)
-			wei.write_image("w"+vol_stack)
+			wei.write_image("w"+vol_stack)			
 			reg.write_image("r"+vol_stack)
 		#drop_image(vol1, "nvol0.hdf")
 		#drop_image(vol2, "nvol1.hdf")

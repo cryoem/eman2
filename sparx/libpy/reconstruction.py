@@ -1304,8 +1304,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 		else:  refvol[i] = cfsc[i]
 	else:
 		#  Set refvol to longer array so in finish it can be used to return regularization part
-		bnx    = imgsize*npad
-		refvol = model_blank(bnx)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
+		refvol = model_blank(target_size)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
 	refvol.set_attr("fudge", 1.0)
 
 
@@ -1325,6 +1324,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	elif(target_size >= imgsize):  jot = target_size
 	else:  ERROR("Target volume size too small",recons3d_4nnfs_MPI,1 ,myid)
 	"""
+	from utilities import info
 	params = {"size":target_size, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
@@ -1352,9 +1352,7 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 
 
 	if myid == 0:
-		#  
 		dummy = r.finish(compensate)
-
 	mpi_barrier(mpi_comm)
 
 	if True:
