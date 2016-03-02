@@ -2621,7 +2621,7 @@ def main():
 			PW_dict[Tracker["constants"]["nxinit"]] =Tracker["nxinit_PW"]
 			Tracker["PW_dict"] = PW_dict 
 		###----------------------------------------------------------------------------------
-		# Extract the previous results
+		# Extract the previous results#####################################################
 		from random import shuffle
 		if myid ==main_node:
 			log_main.add("Extact stable groups from previous runs")
@@ -2748,7 +2748,6 @@ def main():
 			vol2 = filt_tanl(vol2, Tracker["low_pass_filter"],.1)
 			vol2.write_image(volf2_file_name)
 		mpi_barrier(MPI_COMM_WORLD)
-		
 		from utilities import get_input_from_string
 		delta       = get_input_from_string(Tracker["constants"]["delta"])
 		delta       = delta[0]
@@ -2763,7 +2762,9 @@ def main():
 			log_main.add("total sampled direction %10d  at angle step %6.3f"%(len(n_angles), delta)) 
 			log_main.add("captured sampled directions %10d percentage covered by data  %6.3f"%(nc,float(nc)/len(n_angles)*100))
 		mpi_barrier(MPI_COMM_WORLD)
-		######### stop program when leftover is sufficient for a new run##########################
+		## ------------------------------------------------------------------------########
+		## stop program when leftover is sufficient for a new run    #######################
+		## ---------------------------------------------------  -------------------  ######
 		number_of_groups = get_number_of_groups(Tracker["total_stack"],Tracker["constants"]["number_of_images_per_group"])
 		if number_of_groups<=1:
 			if myid ==main_node:
@@ -2979,7 +2980,7 @@ def main():
 				Tracker["number_of_groups"]      = number_of_groups
 				mpi_barrier(MPI_COMM_WORLD)
 #############################################################################################################################
-			### this is only done once
+			### reconstruct the unaccounted is only done once
 			if Tracker["constants"]["unaccounted"] and len(Tracker["this_unaccounted_list"])!=0:
 				while not os.path.exists(Tracker["this_unaccounted_text"]):
 					#print  " my_id",myid
@@ -3061,7 +3062,8 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 		if myid ==main_node:log_main.add("P2 runs are done, now start two-way comparision to exclude those that are not reproduced ")
 		reproduced_groups = two_way_comparison_single(P2_partitions[0],P2_partitions[1],Tracker)# Here partition IDs are original indexes.
-		###### reconstruct reproduced groups
+		###### ----------------reconstruct reproduced groups------------------------#######
+		######
 		if myid ==main_node:
 			for index_of_reproduced_groups in xrange(len(reproduced_groups)):
 				name_of_class_file = os.path.join(masterdir, "P2_final_class%d.txt"%index_of_reproduced_groups)
