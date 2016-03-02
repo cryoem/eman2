@@ -2045,7 +2045,7 @@ def main():
 		mpi_comm = MPI_COMM_WORLD
 		main_node= 0
 		# import some utilities
-		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj
+		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
 		from applications import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
 		from statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum 
 		# Create the main log file
@@ -2273,17 +2273,11 @@ def main():
 	   		params= []
 	   		for i in xrange(total_stack):
 	   			e=get_im(orgstack,i)
-	   			p=get_params_proj(e)
+	   			phi,theta,psi,s2x,s2y = get_params_proj(e)
 	   			e.write_image(Tracker["constants"]["stack"],i)
-	   			params.append(p)
-	   		write_text_file(params,Tracker["constants"]["ali3d"]) 
+	   			params.append([phi,theta,psi,s2x,s2y])
+	   		write_text_row(params,Tracker["constants"]["ali3d"]) 
 	   	mpi_barrier(MPI_COMM_WORLD)
-	   	"""
-		if myid ==main_node:
-			cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
-			cmdexecute(cmd)
-		mpi_barrier(MPI_COMM_WORLD)
-		"""
 		########
 		Tracker["total_stack"]              = total_stack
 		Tracker["constants"]["total_stack"] = total_stack
