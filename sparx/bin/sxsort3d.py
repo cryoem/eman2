@@ -2293,23 +2293,21 @@ def main():
 		"""
 		mpi_barrier(MPI_COMM_WORLD)
 		#############
-		keepchecking =1
 	   	if myid == main_node:
-			if keepchecking:
-				if(os.path.exists(os.path.join(masterdir,"EMAN2DB/rdata.bdb"))):doit = False
-				else:  doit = True
-			else:  doit = True
-			if  doit:
-				if(orgstack[:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
-				else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
-				cmdexecute(cmd)
-				cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["constants"]["stack"])
-				cmdexecute(cmd)
-				cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
-				cmdexecute(cmd)
-				keepchecking = False
-			#total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
-			#total_stack = 0
+	   		for i in xrange(total_stak):
+	   			e=get_im(orgstack,i)
+	   			e.write_image(Tracker["constants"]["stack"],i)
+	   	mpi_barrier(MPI_COMM_WORLD)
+		"""
+		if(orgstack[:4] == "bdb:"):cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
+		else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
+		cmdexecute(cmd)
+		cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["constants"]["stack"])
+		cmdexecute(cmd)
+		"""
+		if myid ==main_node:
+			cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
+			cmdexecute(cmd)
 		mpi_barrier(MPI_COMM_WORLD)
 		#####
 		Tracker["total_stack"]              = total_stack
