@@ -2294,7 +2294,7 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		#############
 	   	if myid == main_node:
-	   		for i in xrange(total_stak):
+	   		for i in xrange(total_stack):
 	   			e=get_im(orgstack,i)
 	   			e.write_image(Tracker["constants"]["stack"],i)
 	   	mpi_barrier(MPI_COMM_WORLD)
