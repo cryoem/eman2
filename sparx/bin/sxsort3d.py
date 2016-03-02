@@ -2045,7 +2045,7 @@ def main():
 		mpi_comm = MPI_COMM_WORLD
 		main_node= 0
 		# import some utilities
-		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast
+		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj
 		from applications import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
 		from statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum 
 		# Create the main log file
