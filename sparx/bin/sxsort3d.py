@@ -2269,47 +2269,22 @@ def main():
 			chunk_two = wrap_mpi_bcast(chunk_two, main_node)
 		mpi_barrier(MPI_COMM_WORLD)
 		#################################################################
-		#--- Fill chunk ID into headers
-		"""
-		if myid ==main_node:
-			image=EMData()
-			image.read_image(Tracker["orgstack"],0)
-			chunk_id_filled = image.get_attr_default("chunk_id", None)
-			if chunk_id_filled is None:
-				log_main.add("chunk_id is not in header!")
-				for id_index in chunk_one:
-					image =EMData()
-					image.read_image(Tracker["orgstack"],id_index)
-					image.set_attr("chunk_id",0)
-					write_header(Tracker["orgstack"],image,id_index)
-				for id_index in chunk_two:
-					image =EMData()
-					image.read_image(Tracker["orgstack"],id_index)
-					image.set_attr("chunk_id",1)
-					write_header(Tracker["orgstack"],image,id_index)
-				log_main.add("chunk_ids have been filled in header!")
-			else:
-				log_main.add("chunk_id is already in header!")
-		"""
-		mpi_barrier(MPI_COMM_WORLD)
-		#############
 	   	if myid == main_node:
+	   		params= []
 	   		for i in xrange(total_stack):
 	   			e=get_im(orgstack,i)
+	   			p=get_params_proj(e)
 	   			e.write_image(Tracker["constants"]["stack"],i)
+	   			params.append(p)
+	   		write_text_file(params,Tracker["constants"]["ali3d"]) 
 	   	mpi_barrier(MPI_COMM_WORLD)
-		"""
-		if(orgstack[:4] == "bdb:"):cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
-		else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
-		cmdexecute(cmd)
-		cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["constants"]["stack"])
-		cmdexecute(cmd)
-		"""
+	   	"""
 		if myid ==main_node:
 			cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
 			cmdexecute(cmd)
 		mpi_barrier(MPI_COMM_WORLD)
-		#####
+		"""
+		########
 		Tracker["total_stack"]              = total_stack
 		Tracker["constants"]["total_stack"] = total_stack
 		Tracker["shrinkage"]  = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
