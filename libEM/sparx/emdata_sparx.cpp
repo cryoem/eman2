@@ -2050,7 +2050,7 @@ void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
 			float denominator = c2val * mult * weight;
 
 
-			int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters is is much larger than -xnew
+			int ixn = int(xnew + bign); // Here bign has no particular meaning, it only matters it is much larger than -xnew
 			int iyn = int(ynew + bign);
 			int izn = int(znew + bign);
 
@@ -2120,12 +2120,13 @@ void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
             //cout <<" onetrl "<<jp<<"  "<<i<<"  "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<endl;
 			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
 			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
-	if(ixn<0 or ixn >=n2)  cout<<"  error   ixn  "<<ixn<<endl;
+/*
+	if(ixn<0 or ixn >=n2*npad)  cout<<"  error   ixn  "<<ixn<<endl;
 	if(iya<1 or iya >bign)  cout<<"  error   iya  "<<iya<<endl;
 	if(iza<1 or iza >bign)  cout<<"  error   iza  "<<iza<<endl;
 	if(iy1<1 or iy1 >bign)  cout<<"  error   iy1  "<<iy1<<endl;
 	if(iz1<1 or iz1 >bign)  cout<<"  error   iz1  "<<iz1<<endl;
-
+*/
 			// numerator
 			cmplx(ixn, iya, iza) += qq000 * numerator;
 			cmplx(ixn, iy1, iza) += qq010 * numerator;
