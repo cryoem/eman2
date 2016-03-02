@@ -1234,7 +1234,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	else:
 		return None, None, None
 
-def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = None, finfo=None, npad=2, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = True, target_size=-1):
+def recons3d_4nnfs_MPI(myid, main_node, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = None, finfo=None, npad=2, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = True, target_size=-1):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -1254,7 +1254,6 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
-	main_node = 0
 	imgsize = prjlist[0].get_ysize()  # It can be Fourier, so take y-size
 	'''
 	if( smearstep > 0.0 ):
