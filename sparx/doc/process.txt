@@ -85,9 +85,13 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
 12. Generate 3D mask from a given 3D volume automatically or using threshold provided by user.
 
-''' sxprocess.py --adaptive_mask vol001.hdf '''
+''' sxprocess.py  --adaptive_mask vol001.hdf '''
 
-13.  Window stack file -reduce size of images without changing the pixel size. 
+13. Postprocess 3-D or 2-D images: For 3-D volumes, (1) calculate FSC with provided mask, (2) weight summed volume with FSC, (3) estimate B-factor from FSC weighted summed two volumes, then (4) apply negative B-factor to the weighted volume. For 2-D images, calculate B-factor and apply negative B-factor to 2-D images.
+
+''' sxprocess.py  --postprocess  run1_half1_class001_unfil.mrc  run1_half2_class001_unfil.mrc  --fsc_weighted  --pixel_size=1.12 '''
+
+14.  Window stack file -reduce size of images without changing the pixel size. 
 
 
 == Input ==
