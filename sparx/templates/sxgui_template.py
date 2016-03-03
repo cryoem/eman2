@@ -46,26 +46,37 @@ class SXcmd_token:
 	def __init__(self):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.key_base = ""          # key base name of command token (argument or option) in command line
-		self.key_prefix = ""        # key prefix of of command token. None for argument, "--" or "-" for option
-		self.label = ""             # User friendly name of argument or option
-		self.help = ""              # Help info
-		self.group = ""             # Tab group: main or advanced
-		self.is_required = False    # Required argument or options. No default value are available 
-		self.default = ""           # Default value
-		self.type = ""              # Type of value
-		self.restore = ""           # Restore value
-		self.is_in_io = False       # <Used only in wikiparser.py> To check consistency between "usage in command line" and list in "== Input ==" and "== Output ==" sections
-		self.restore_widget = None  # <Used only in sxgui.py> Restore widget instance associating with this command token
-		self.widget = None          # <Used only in sxgui.py> Widget instance associating with this command token
+		self.key_base = ""           # key base name of command token (argument or option) in command line
+		self.key_prefix = ""         # key prefix of of command token. None for argument, "--" or "-" for option
+		self.label = ""              # User friendly name of argument or option
+		self.help = ""               # Help info
+		self.group = ""              # Tab group: main or advanced
+		self.is_required = False     # Required argument or options. No default value are available 
+		self.default = ""            # Default value
+		self.type = ""               # Type of value
+		self.restore = ""            # Restore value
+		self.is_in_io = False        # <Used only in wikiparser.py> To check consistency between "usage in command line" and list in "== Input ==" and "== Output ==" sections
+		self.restore_widget = None   # <Used only in sxgui.py> Restore widget instance associating with this command token
+		self.widget = None           # <Used only in sxgui.py> Widget instance associating with this command token
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		
+	def initialize_edit(self, key_base):
+		self.key_base = key_base
+		self.key_prefix = None
+		self.label = None
+		self.help = None
+		self.group = None
+		self.is_required = None
+		self.default = None
+		self.type = None
 
 # ========================================================================================
 class SXcmd:
 	def __init__(self, category = ""):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.name = ""               # Name of this command (i.e. name of sx*.py script but without .py extension)
+		self.name = ""               # Name of this command (i.e. name of sx*.py script but without .py extension), used for generating command line
+		self.mode = ""               # key base name of a command token, defining mode/subset of this command. For fullset command, use empty string
 		self.label = ""              # User friendly name of this command
 		self.short_info = ""         # Short description of this command
 		self.mpi_support = False     # Flag to indicate if this command suppors MPI version
@@ -76,6 +87,16 @@ class SXcmd:
 		self.btn = None              # <Used only in sxgui.py> QPushButton button instance associating with this command
 		self.widget = None           # <Used only in sxgui.py> SXCmdWidget instance associating with this command
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		
+	def get_mode_name_for(self, target_name):
+		mode_name = self.name
+		if self.mode != "":
+			if target_name in ["file_path"]:
+				mode_name = "%s_%s" % (self.name, self.mode)
+			elif target_name in ["human"]:
+				mode_name = "%s %s%s" % (self.name, self.token_dict[self.mode].key_prefix, self.mode)
+				
+		return mode_name
 
 # ========================================================================================
 def construct_sxcmd_list():
@@ -100,18 +121,6 @@ def construct_sxcmd_list():
 			# Register this to command token dictionary
 			sxcmd.token_dict[sxcmd_token.key_base] = sxcmd_token
 		
-		# DESIGN_NOTE: 2016/02/05 Toshio Moriya
-		# Handle exceptional cases due to the limitation of software design 
-		# In future, we should remove these exception handling by reviewing software design
-		if sxcmd.name == "sxfilterlocal":
-			assert(sxcmd.token_dict["locresvolume"].key_base == "locresvolume")
-			assert(sxcmd.token_dict["locresvolume"].type == "output")
-			sxcmd.token_dict["locresvolume"].type = "image"
-		elif sxcmd.name in ["sxlocres",  "sxsort3d", "sxrsort3d"]:
-			assert(sxcmd.token_dict["wn"].key_base == "wn")
-			assert(sxcmd.token_dict["wn"].type == "ctfwin")
-			sxcmd.token_dict["wn"].type = "int"
-	
 	return sxcmd_list
 
 # ========================================================================================
@@ -119,13 +128,13 @@ class SXconst:
 	def __init__(self):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.key = ""               # <Used only in sxgui.py> key of constant parameter
-		self.label = ""             # <Used only in sxgui.py> User friendly name of constant parameter
-		self.help = ""              # <Used only in sxgui.py> Help info
+		self.key = ""                # <Used only in sxgui.py> key of constant parameter
+		self.label = ""              # <Used only in sxgui.py> User friendly name of constant parameter
+		self.help = ""               # <Used only in sxgui.py> Help info
 		self.register = ""           # <Used only in sxgui.py> Default value
-		self.type = ""              # <Used only in sxgui.py> Type of value
+		self.type = ""               # <Used only in sxgui.py> Type of value
 		self.register_widget = None  # <Used only in sxgui.py> Restore widget instance associating with this command token
-		self.widget = None          # <Used only in sxgui.py> Widget instance associating with this constant parameter
+		self.widget = None           # <Used only in sxgui.py> Widget instance associating with this constant parameter
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
@@ -211,7 +220,7 @@ class SXCmdWidget(QWidget):
 		self.sxcmd_tab_main = None
 		self.sxcmd_tab_advance = None
 		
-		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (SXLookFeelConst.project_dir, self.sxcmd.name)
+		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (SXLookFeelConst.project_dir, self.sxcmd.get_mode_name_for("file_path"))
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 		# Set grid layout
@@ -224,7 +233,6 @@ class SXCmdWidget(QWidget):
 		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.cmd_settings_bg_color))
 		self.setPalette(palette)
 		
-		# self.setWindowTitle(self.sxcmd.name)
 		self.sxcmd_tab_main = SXCmdTab("Main", self)
 		self.sxcmd_tab_advance = SXCmdTab("Advanced", self)
 #		self.sxcmd_tab_main.w1 = self.sxcmd_tab_advance
@@ -240,9 +248,9 @@ class SXCmdWidget(QWidget):
 #		self.tab_widget.show()
 		grid_layout.addWidget(self.tab_widget, 0, 0)
 		
-		# Load the previously saved parameter setting of this sx command
-		if os.path.exists(self.gui_settings_file_path):
-			self.read_params(self.gui_settings_file_path)
+#		# Load the previously saved parameter setting of this sx command
+#		if os.path.exists(self.gui_settings_file_path):
+#			self.read_params(self.gui_settings_file_path)
 	
 	def map_widgets_to_sxcmd_line(self):
 		# Add program name to command line
@@ -273,15 +281,25 @@ class SXCmdWidget(QWidget):
 			# Then, handle the other cases//
 			else:
 				if sxcmd_token.type == "bool":
-					if sxcmd_token.is_required == True and self.key_prefix == "--": ERROR("Logical Error: Encountered unexpected condition for bool type token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
-					if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default:
+					if not ((sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == False): 
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default and sxcmd_token.is_required == False: # Add this token to command line
 						sxcmd_line += " %s%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base)
+					#else: 
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == False: # Do not add this token to command line
 				else:
-					if sxcmd_token.is_required == True and sxcmd_token.widget.text() == sxcmd_token.default:
-						QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.key_base, self.sxcmd.name))
-						return ""
-				
-					if sxcmd_token.widget.text() != sxcmd_token.default:
+					if sxcmd_token.widget.text() == sxcmd_token.default:
+						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == True:  # Error case
+						if sxcmd_token.is_required == True: 
+							QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("message_output")))
+							return ""
+						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == False: # Do not add this token to command line
+						# else: # assert(sxcmd_token.is_required == False) # Do not add to this command line
+					else: # sxcmd_token.widget.text() != sxcmd_token.default
+						### if sxcmd_token.widget.text() != sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
+						### if sxcmd_token.widget.text() != sxcmd_token.default and sxcmd_token.is_required == False: # Add this token to command line
+						
 						# For now, using line edit box for the other type
 						widget_text = str(sxcmd_token.widget.text())
 						if sxcmd_token.type not in ["int", "float"]:
@@ -295,8 +313,8 @@ class SXCmdWidget(QWidget):
 						elif sxcmd_token.key_prefix == "--":
 							sxcmd_line += " %s%s=%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base, widget_text)
 						else:
-							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.name), "%s in %s" % (__name__, os.path.basename(__file__)))
-				
+							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.get_mode_name_for("human")), "%s in %s" % (__name__, os.path.basename(__file__)))
+						# else: # assert(sxcmd_token.widget.text() == sxcmd_token.default) # Do not add to this command line
 		
 		return sxcmd_line
 	
@@ -481,7 +499,7 @@ class SXCmdWidget(QWidget):
 		file_out = open(file_path_out,"w")
 		
 		# Write script name for consistency check upon loading
-		file_out.write("@@@@@ %s gui setting - " % (self.sxcmd.name))
+		file_out.write("@@@@@ %s gui setting - " % (self.sxcmd.get_mode_name_for("human")))
 		# file_out.write(EMANVERSION + " (CVS" + CVSDATESTAMP[6:-2] +")")
 		file_out.write(EMANVERSION + " (GITHUB: " + DATESTAMP +")" )
 		file_out.write(" @@@@@ \n")
@@ -541,7 +559,7 @@ class SXCmdWidget(QWidget):
 	
 		# Check if this parameter file is for this sx script
 		line_in = file_in.readline()
-		if line_in.find("@@@@@ %s gui setting" % (self.sxcmd.name)) != -1:
+		if line_in.find("@@@@@ %s gui setting" % (self.sxcmd.get_mode_name_for("human"))) != -1:
 			n_function_type_lines = 2
 			function_type_line_counter = 0
 			# loop through the rest of lines
@@ -593,15 +611,15 @@ class SXCmdWidget(QWidget):
 						if cmd_token.type == "bool":
 							# construct new widget(s) for this command token
 							if val_str_in == "YES":
-								cmd_token.widget.setChecked(True)
+								cmd_token.widget.setChecked(Qt.Checked)
 							else: # val_str_in == "NO"
-								cmd_token.widget.setChecked(False)
+								cmd_token.widget.setChecked(Qt.Unchecked)
 						else:
 							# For now, use line edit box for the other type
 							cmd_token.widget.setText(val_str_in)
 						
 		else:
-			QMessageBox.warning(self, "Fail to load paramters", "The specified file is not paramter file for %s." % self.sxcmd.name)
+			QMessageBox.warning(self, "Fail to load paramters", "The specified file is not paramter file for %s." % self.sxcmd.get_mode_name_for("human"))
 		
 		file_in.close()
 	
@@ -722,11 +740,9 @@ class SXCmdTab(QWidget):
 		
 		tab_group = self.name.lower()
 		if tab_group == "main":
-#			# Set the window title
-#			self.setWindowTitle(self.sxcmd.name)
 			# Set a label and its position in this tab
-#			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.name), self)
-			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.name))
+#			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")), self)
+			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 #			temp_label.move(self.x1, self.y1)
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
@@ -759,11 +775,9 @@ class SXCmdTab(QWidget):
 #			self.y1 += 25
 			
 		elif tab_group == "advanced":
-		# Set the window title
-#			self.setWindowTitle("%s advanced parameter selection" % self.sxcmd.name)
 			# Set a label and its position in this tab
-#			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.name), self)
-			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.name))
+#			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")), self)
+			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 #			temp_label.move(self.x1, self.y1)
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
@@ -899,7 +913,11 @@ class SXCmdTab(QWidget):
 						# construct new widget(s) for this command token
 #						cmd_token_widget = QCheckBox("", self)
 						cmd_token_widget = QCheckBox("")
-						cmd_token_widget.setCheckState(cmd_token.restore)
+						if cmd_token.restore == True:
+							cmd_token_widget.setCheckState(Qt.Checked)
+						else:
+							cmd_token_widget.setCheckState(Qt.Unchecked)
+						cmd_token_widget.setEnabled(is_btn_enable)
 						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 						
 						self.connect(cmd_token_restore_widget, SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token))
@@ -997,6 +1015,11 @@ class SXCmdTab(QWidget):
 #							spacer_frame = QFrame()
 #							spacer_frame.setMinimumWidth(token_widget_min_width)
 #							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "any_file":
+							temp_btn = QPushButton("Select File")
+							temp_btn.setToolTip("display open file dailog to select file (e.g. *.*)")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 						elif cmd_token.type == "directory":
 #							temp_btn = QPushButton("Select directory", self)
 							temp_btn = QPushButton("Select directory")
@@ -1088,7 +1111,10 @@ class SXCmdTab(QWidget):
 			
 #			self.qsub_enable_checkbox = QCheckBox("", self)
 			self.qsub_enable_checkbox = QCheckBox("")
-			self.qsub_enable_checkbox.setCheckState(is_qsub_enabled)
+			if is_qsub_enabled == True:
+				self.qsub_enable_checkbox.setCheckState(Qt.Checked)
+			else:
+				self.qsub_enable_checkbox.setCheckState(Qt.Unchecked)
 #			self.qsub_enable_checkbox.move(self.x2, self.y1)
 			self.qsub_enable_checkbox.setToolTip("submit job to queue")
 			self.qsub_enable_checkbox.stateChanged.connect(self.set_qsub_enable_state) # To control enable state of the following qsub related widgets
@@ -1105,7 +1131,7 @@ class SXCmdTab(QWidget):
 			
 #			self.qsub_job_name_edit = QLineEdit(self)
 			self.qsub_job_name_edit = QLineEdit()
-			self.qsub_job_name_edit.setText(self.sxcmdwidget.sxcmd.name)
+			self.qsub_job_name_edit.setText(self.sxcmdwidget.sxcmd.get_mode_name_for("file_path"))
 #			self.qsub_job_name_edit.move(self.x2, self.y1)
 #			self.qsub_job_name_edit.setMinimumWidth(token_widget_min_width)
 			self.qsub_job_name_edit.setToolTip("name of this job")
@@ -1187,14 +1213,14 @@ class SXCmdTab(QWidget):
 			grid_row += 1
 			
 			# Add a run button
-#			self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.name, self)
-			self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.name)
+#			self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.get_mode_name_for("human"), self)
+			self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.get_mode_name_for("human"))
 			# make 3D textured push button look
 			custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px} QPushButton:focus {font: bold; color: #000;border: 2px solid #8D0;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px}"
 			self.execute_btn.setStyleSheet(custom_style)
 #			self.execute_btn.move(self.x5, self.y1)
 			self.execute_btn.setMinimumWidth(func_btn_min_width)
-			self.execute_btn.setToolTip("run %s and automatically save gui parameter settings" % self.sxcmdwidget.sxcmd.name)
+			self.execute_btn.setToolTip("run %s and automatically save gui parameter settings" % self.sxcmdwidget.sxcmd.get_mode_name_for("human"))
 			self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxcmdwidget.execute_cmd_line)
 			grid_layout.addWidget(self.execute_btn, grid_row, grid_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
 	
@@ -1234,9 +1260,9 @@ class SXCmdTab(QWidget):
 		else:
 			if sxcmd_token.type == "bool":
 				if sxcmd_token.restore == "YES":
-					sxcmd_token.widget.setChecked(True)
+					sxcmd_token.widget.setChecked(Qt.Checked)
 				else: # sxcmd_token.restore == "NO"
-					sxcmd_token.widget.setChecked(False)
+					sxcmd_token.widget.setChecked(Qt.Unchecked)
 			else:
 				sxcmd_token.widget.setText("%s" % sxcmd_token.restore)
 
@@ -1745,6 +1771,14 @@ class SXUtilWindow(SXCmdWindowBase):
 		# Register constant parameter set upon initialization
 		# --------------------------------------------------------------------------------
 		self.sxconst_set.window.register_const_set()
+		
+		# --------------------------------------------------------------------------------
+		# Load the previously saved parameter setting of this sx command
+		# Override project constant registration with previous setting
+		# --------------------------------------------------------------------------------
+		for sxcmd in self.sxcmd_list:
+			if os.path.exists(sxcmd.widget.gui_settings_file_path):
+				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
 
 # ========================================================================================
 # Main Window (started by class SXApplication)
@@ -1849,7 +1883,15 @@ class SXMainWindow(SXCmdWindowBase):
 		# Register constant parameter set upon initialization
 		# --------------------------------------------------------------------------------
 		self.sxconst_set.window.register_const_set()
-	
+		
+		# --------------------------------------------------------------------------------
+		# Load the previously saved parameter setting of this sx command
+		# Override project constant registration with previous setting
+		# --------------------------------------------------------------------------------
+		for sxcmd in self.sxcmd_list:
+			if os.path.exists(sxcmd.widget.gui_settings_file_path):
+				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
+		
 	def closeEvent(self, event):
 		# close all child windows
 		if self.sxinfo_window:

@@ -18572,6 +18572,56 @@ void Util::div_cbyr(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
+#define img_ptr(ix,iy,iz) img_ptr[ix+(iy+(iz*ny))*nx]
+void Util::reg_weights(EMData* img, EMData* img1, EMData* cfsc)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img /= img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int nyh, nzh;
+	nyh = ny/2;
+	nzh = nz/2;
+
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float *cfsc_ptr = cfsc->get_data();
+	// get limit of resolution
+	int nr = cfsc->get_xsize();
+	int limitres = nr-1;
+	for( int i=0; i<nr-2; i++) { if( cfsc_ptr[nr-i] == 0.0f )  limitres = nr-i-1; }
+	float fudge = 1.0f;
+	for (int i = 0; i <= limitres; i++)  cfsc_ptr[i] = fudge * img1_ptr[i] * (1.0f - cfsc_ptr[i])/cfsc_ptr[i];
+
+	for (int iz = 0; iz < nz; iz++) {
+		int   izp = (iz<=nzh) ? iz : iz - nz;
+		float argz = float(izp*izp);
+		for (int iy = 0; iy < ny; iy++) {
+			int   iyp = (iy<=nyh) ? iy : iy - ny;
+			float argy = argz + float(iyp*iyp);
+			for (int ix = 0; ix < nx; ix++) {
+				float r = std::sqrt(argy + float(ix*ix));
+				int  ir = int(r);
+				if (ir < limitres) {
+					if ( img_ptr(ix,iy,iz) > 0.0f) {
+						float frac = r - float(ir);
+						img_ptr(ix,iy,iz) += (1.0f - frac)*cfsc_ptr[ir] + frac*cfsc_ptr[ir+1];
+					}
+				}
+			}
+		}
+	}
+
+	img->update();
+
+	EXITFUNC;
+}
+#undef  img_ptr
+
 void Util::mul_scalar(EMData* img, float scalar)
 {
 	ENTERFUNC;
@@ -18830,7 +18880,6 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 
 
 #define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*(size_t)nxo]
-
 EMData* Util::pack_complex_to_real(EMData* img)
 {
 	ENTERFUNC;
@@ -24911,7 +24960,6 @@ float Util::local_inner_product(EMData* image1, EMData* image2, int lx, int ly, 
 
 
 #define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
-
 EMData* Util::box_convolution(EMData* img, int w)
 {
 	ENTERFUNC;

@@ -3917,7 +3917,7 @@ EMData* nn4_ctfwReconstructor::finish(bool compensate)
 				int  ir = int(r);
 				if (ir <= limitres) {
 					if ( (*m_wptr)(ix,iy,iz) > 0.0f) {
-						if( refvol_present && ir > -1) {
+						if( refvol_present) {
 							float frac = r - float(ir);
 							float qres = 1.0f - frac;
 							osnr = qres*(*m_refvol)(ir) + frac*(*m_refvol)(ir+1);

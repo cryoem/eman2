@@ -3193,7 +3193,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	import types
 	from  utilities import  get_arb_params, set_arb_params
 	from  mpi 	import mpi_recv
-	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
+	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
 
 	#   hdf version!
 	# This is done on the main node, so for images from the main node, simply write headers
@@ -3219,8 +3219,8 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	headers = []
 	for n in xrange(number_of_proc):
 		if n != main_node:
-			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, comm)
-			value = mpi_recv(len_list*(dis[1]-dis[0]), MPI_FLOAT, n, MPI_TAG_UB, comm)
+			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
+			value = mpi_recv(len_list*(dis[1]-dis[0]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
 			ldis.append([dis[0], dis[1]])
 			headers.append(value)
 			del  dis
@@ -3290,7 +3290,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	import types
 	from  utilities import  get_arb_params, set_arb_params
 	from  mpi 	import mpi_recv
-	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
+	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
 	from EMAN2db import db_open_dict
 	#  bdb version!
 	# This is done on the main node, so for images from the main node, simply write headers
@@ -3319,10 +3319,10 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	headers = []
 	for n in xrange(number_of_proc):
 		if n != main_node:
-			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, comm)
+			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
 			img_begin = int(dis[0])
 			img_end = int(dis[1])
-			header = mpi_recv(len_list*(img_end-img_begin), MPI_FLOAT, n, MPI_TAG_UB, comm)
+			header = mpi_recv(len_list*(img_end-img_begin), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
 			for im in xrange(img_begin, img_end):
 				par_begin = (im-img_begin)*len_list
 				nvalue = []

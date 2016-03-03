@@ -340,8 +340,10 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 					#CHANGE_PRGS ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
-					ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
-					if CTF:  ref = filt_ctf( ref, ctf )
+					if CTF:
+						ref = fft(filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y],1,False), ctf ))
+					else:
+						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
@@ -875,8 +877,10 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 					#CHANGE_PRGS ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
-					ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
-					if CTF:  ref = filt_ctf( ref, ctf )
+					if CTF:
+						ref = fft(filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y],1,False), ctf ))
+					else:
+						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
 					#CHANGE_PRGS if(focus != None):  mask2D = binarize( prgs( focus, kb, [phi,tht,psi,-s2x,-s2y]) )  #  Should be precalculated!!
 					if(focus != None):  mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]),1)  #  Should be precalculated!!
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
@@ -1853,7 +1857,7 @@ def recons_mref(Tracker):
 		data, old_shifts =  get_shrink_data_huang(Tracker,nxinit,particle_list_file,partstack,myid,main_node,nproc,preshift=True)
 		#vol=reconstruct_3D(Tracker,data)
 		mpi_barrier(MPI_COMM_WORLD)
-		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],info=None)
+		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
 		if myid ==main_node:
 			print "reconstructed %3d"%igrp
 		ref_list.append(vol)
@@ -2041,7 +2045,7 @@ def main():
 		mpi_comm = MPI_COMM_WORLD
 		main_node= 0
 		# import some utilities
-		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast
+		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
 		from applications import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
 		from statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum 
 		# Create the main log file
@@ -2264,50 +2268,25 @@ def main():
 			chunk_one = wrap_mpi_bcast(chunk_one, main_node)
 			chunk_two = wrap_mpi_bcast(chunk_two, main_node)
 		mpi_barrier(MPI_COMM_WORLD)
-		#################################################################
-		#--- Fill chunk ID into headers
-		"""
-		if myid ==main_node:
-			image=EMData()
-			image.read_image(Tracker["orgstack"],0)
-			chunk_id_filled = image.get_attr_default("chunk_id", None)
-			if chunk_id_filled is None:
-				log_main.add("chunk_id is not in header!")
-				for id_index in chunk_one:
-					image =EMData()
-					image.read_image(Tracker["orgstack"],id_index)
-					image.set_attr("chunk_id",0)
-					write_header(Tracker["orgstack"],image,id_index)
-				for id_index in chunk_two:
-					image =EMData()
-					image.read_image(Tracker["orgstack"],id_index)
-					image.set_attr("chunk_id",1)
-					write_header(Tracker["orgstack"],image,id_index)
-				log_main.add("chunk_ids have been filled in header!")
-			else:
-				log_main.add("chunk_id is already in header!")
-		"""
-		mpi_barrier(MPI_COMM_WORLD)
-		#############
-		keepchecking =1
-	   	if myid == main_node:
-			if keepchecking:
-				if(os.path.exists(os.path.join(masterdir,"EMAN2DB/rdata.bdb"))):doit = False
-				else:  doit = True
-			else:  doit = True
-			if  doit:
-				if(orgstack[:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
-				else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
-				cmdexecute(cmd)
-				cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["constants"]["stack"])
-				cmdexecute(cmd)
-				cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
-				cmdexecute(cmd)
-				keepchecking = False
-			#total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
-			#total_stack = 0
-		mpi_barrier(MPI_COMM_WORLD)
-		#####
+		######################## Read/write bdb: data on main node ############################
+	   	if myid==main_node:
+	   		from EMAN2db import db_open_dict	
+	   		OB = db_open_dict(orgstack)
+	   		DB = db_open_dict(Tracker["constants"]["stack"]) 
+			for i in xrange(total_stack):
+				DB[i] = OB[i]
+			OB.close()
+			DB.close()
+	   	mpi_barrier(MPI_COMM_WORLD)
+	   	if myid==main_node:
+			params= []
+			for i in xrange(total_stack):
+				e=get_im(orgstack,i)
+				phi,theta,psi,s2x,s2y = get_params_proj(e)
+				params.append([phi,theta,psi,s2x,s2y])
+			write_text_row(params,Tracker["constants"]["ali3d"])
+		mpi_barrier(MPI_COMM_WORLD)	   		   	
+		########-----------------------------------------------------------------------------
 		Tracker["total_stack"]              = total_stack
 		Tracker["constants"]["total_stack"] = total_stack
 		Tracker["shrinkage"]  = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
@@ -2337,8 +2316,7 @@ def main():
 			PW_dict[Tracker["constants"]["nxinit"]] =Tracker["nxinit_PW"]
 			Tracker["PW_dict"] = PW_dict
 		mpi_barrier(MPI_COMM_WORLD)
-
-		#------------------------------------------------------------------------------
+		#-----------------------From two chunks to FSC, and low pass filter-----------------------------------------###
 		for element in chunk_one: chunk_dict[element] = 0
 		for element in chunk_two: chunk_dict[element] = 1
 		chunk_list =[chunk_one, chunk_two]
@@ -2353,9 +2331,9 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		vols = []
 		for index in xrange(2):
-			partids= os.path.join(masterdir,"chunk%d.txt"%index)
+			partids = os.path.join(masterdir,"chunk%d.txt"%index)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift=True)
-			vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],info=None)
+			vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
 			if myid ==main_node:
 				vol_file_name = os.path.join(masterdir, "vol%d.hdf"%index)
 				vol.write_image(vol_file_name)
@@ -2371,15 +2349,15 @@ def main():
 		bcast_number_to_all(currentres,source_node = main_node)
 		bcast_number_to_all(low_pass,source_node   = main_node)
 		bcast_number_to_all(falloff,source_node    = main_node)
-		Tracker["currentres"]         = currentres
-		Tracker["falloff"]            = falloff
+		Tracker["currentres"]                      = currentres
+		Tracker["falloff"]                         = falloff
 		if Tracker["constants"]["low_pass_filter"] ==-1.0:
-			Tracker["constants"]["low_pass_filter"]=low_pass/Tracker["shrinkage"]
+			Tracker["low_pass_filter"]=min(.45,low_pass/Tracker["shrinkage"]) # no better than .45
 		else:
-			Tracker["low_pass_filter"] =Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"]
-		Tracker["lowpass"]         =Tracker["low_pass_filter"]
-		Tracker["falloff"]         =.1
-		Tracker["global_fsc"]      = os.path.join(masterdir, "fsc.txt")
+			Tracker["low_pass_filter"] =min(.45,Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"])
+		Tracker["lowpass"]             =Tracker["low_pass_filter"]
+		Tracker["falloff"]             =.1
+		Tracker["global_fsc"]          = os.path.join(masterdir, "fsc.txt")
 		############################################################################################
 		if myid == main_node:
 			log_main.add("The command-line inputs are as following:")
@@ -2487,7 +2465,7 @@ def main():
 				sleep(2)
 			mpi_barrier(MPI_COMM_WORLD)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"],Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
-			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], info=None)
+			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 			ref_vol_list.append(volref)
 			number_of_ref_class.append(len(Tracker["this_data_list"]))
 			if myid ==main_node:
@@ -2529,7 +2507,7 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 			npergroup=read_text_file(class_file)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
+			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 			vol_list.append(volref)
 			number_of_ref_class.append(len(npergroup))
 		Tracker["number_of_ref_class"] = number_of_ref_class
@@ -2597,7 +2575,7 @@ def main():
 					write_text_file(Tracker["this_data_list"],Tracker["this_data_list_file"])
 				mpi_barrier(MPI_COMM_WORLD)
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
+				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 				#volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
 				if myid == main_node:volref.write_image(os.path.join(workdir,"vol_stable.hdf"),iref)
 				#volref = resample(volref,Tracker["shrinkage"])
@@ -2625,7 +2603,7 @@ def main():
 					sleep(2)
 				mpi_barrier(MPI_COMM_WORLD)
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
+				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 				vol_list.append(volref)
 			mpi_barrier(MPI_COMM_WORLD)
 			nx_of_image=ref_vol_list[0].get_xsize()
@@ -2657,7 +2635,7 @@ def main():
 				sleep(2)
 			mpi_barrier(MPI_COMM_WORLD)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],Tracker["this_unaccounted_text"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
+			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 			nx_of_image=volref.get_xsize()
 			if Tracker["constants"]["PWadjustment"]:
 				Tracker["PWadjustment"]=Tracker["PW_dict"][nx_of_image]
