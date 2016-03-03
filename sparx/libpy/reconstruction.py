@@ -1318,7 +1318,7 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 
 
 	from utilities import info
-	params = {"size":target_size, "npad":2, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
+	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	for image in prjlist:
