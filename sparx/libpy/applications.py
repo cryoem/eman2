@@ -9900,7 +9900,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 					ctf_params = dataim[imn].get_attr( "ctf" )
 					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
-						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params, dopad=False))
 
 				data[2] = dataim[imn]
 
@@ -10210,7 +10210,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
 					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
-						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params, dopad = False))
 
 				data[2] = dataim[imn-image_start]
 				if ts > 0.0:
@@ -10660,7 +10660,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 					ctf_params = dataim[imn].get_attr( "ctf" )
 					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
-						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params, dopad = False))
 
 				data[2] = dataim[imn]
 				if ts > 0.0:
