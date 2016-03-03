@@ -837,6 +837,8 @@ costlist, int* curbranch);
 	/* img /= img1 with zero check , img is complex, img1 real */
 	static void div_cbyr(EMData* img, EMData* img1);
 
+	static void reg_weights(EMData* img, EMData* img1, EMData* cfsc);
+
 	/* img += scalar * img1 */
 	static void mad_scalar(EMData* img, EMData* img1, float scalar);
 	/* img *= scalar  */
