@@ -59,6 +59,16 @@ class SXcmd_token:
 		self.restore_widget = None   # <Used only in sxgui.py> Restore widget instance associating with this command token
 		self.widget = None           # <Used only in sxgui.py> Widget instance associating with this command token
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		
+	def initialize_edit(self, key_base):
+		self.key_base = key_base
+		self.key_prefix = None
+		self.label = None
+		self.help = None
+		self.group = None
+		self.is_required = None
+		self.default = None
+		self.type = None
 
 # ========================================================================================
 class SXcmd:
@@ -271,33 +281,39 @@ class SXCmdWidget(QWidget):
 			# Then, handle the other cases//
 			else:
 				if sxcmd_token.type == "bool":
-					if sxcmd_token.is_required == True:
+					if not ((sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == False): 
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default and sxcmd_token.is_required == False: # Add this token to command line
 						sxcmd_line += " %s%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base)
-					else: # sxcmd_token.is_required == False: 
-						if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default:
-							sxcmd_line += " %s%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base)
-						# else: # assert((sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default) # Do not add to this command line
+					#else: 
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == False: # Do not add this token to command line
 				else:
-					if sxcmd_token.is_required == True:
-						if sxcmd_token.widget.text() == sxcmd_token.default:
+					if sxcmd_token.widget.text() == sxcmd_token.default:
+						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == True:  # Error case
+						if sxcmd_token.is_required == True: 
 							QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("message_output")))
 							return ""
-					else: # sxcmd_token.is_required == False:
-						if sxcmd_token.widget.text() != sxcmd_token.default:
-							# For now, using line edit box for the other type
-							widget_text = str(sxcmd_token.widget.text())
-							if sxcmd_token.type not in ["int", "float"]:
-								# Always enclose the string value with single quotes (')
-								widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
-								widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
-								widget_text = "\'%s\'" % (widget_text) # then, enclose the string value with single quotes (')
-							
-							if sxcmd_token.key_prefix == "":
-								sxcmd_line += " %s" % (widget_text)
-							elif sxcmd_token.key_prefix == "--":
-								sxcmd_line += " %s%s=%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base, widget_text)
-							else:
-								ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.get_mode_name_for("human")), "%s in %s" % (__name__, os.path.basename(__file__)))
+						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == False: # Do not add this token to command line
+						# else: # assert(sxcmd_token.is_required == False) # Do not add to this command line
+					else: # sxcmd_token.widget.text() != sxcmd_token.default
+						### if sxcmd_token.widget.text() != sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
+						### if sxcmd_token.widget.text() != sxcmd_token.default and sxcmd_token.is_required == False: # Add this token to command line
+						
+						# For now, using line edit box for the other type
+						widget_text = str(sxcmd_token.widget.text())
+						if sxcmd_token.type not in ["int", "float"]:
+							# Always enclose the string value with single quotes (')
+							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
+							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
+							widget_text = "\'%s\'" % (widget_text) # then, enclose the string value with single quotes (')
+						
+						if sxcmd_token.key_prefix == "":
+							sxcmd_line += " %s" % (widget_text)
+						elif sxcmd_token.key_prefix == "--":
+							sxcmd_line += " %s%s=%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base, widget_text)
+						else:
+							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.get_mode_name_for("human")), "%s in %s" % (__name__, os.path.basename(__file__)))
 						# else: # assert(sxcmd_token.widget.text() == sxcmd_token.default) # Do not add to this command line
 		
 		return sxcmd_line

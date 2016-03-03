@@ -59,6 +59,16 @@ class SXcmd_token:
 		self.restore_widget = None   # <Used only in sxgui.py> Restore widget instance associating with this command token
 		self.widget = None           # <Used only in sxgui.py> Widget instance associating with this command token
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		
+	def initialize_edit(self, key_base):
+		self.key_base = key_base
+		self.key_prefix = None
+		self.label = None
+		self.help = None
+		self.group = None
+		self.is_required = None
+		self.default = None
+		self.type = None
 
 # ========================================================================================
 class SXcmd:
@@ -251,15 +261,17 @@ def construct_sxcmd_list():
 
 	sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "postprocess"; sxcmd.label = "3D Refinement Postprocess"; sxcmd.short_info = "Adjust power spectrum of 3D or 2D images based on B-factor. B-factor is estimated from unfiltered odd-even 3D volumes or a 2D image. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "pipe"
 	token = SXcmd_token(); token.key_base = "postprocess"; token.key_prefix = "--"; token.label = "Adjust power spectrum of 3D or 2D images based on B-factor"; token.help = "B-factor is estimated from unfiltered odd-even 3D volumes or a 2D image. "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "fsc_weighted"; token.key_prefix = "--"; token.label = "apply FSC-based low-pass-filter"; token.help = "to merged 3D volume before B-factor estimation (not applicable to 2D image). "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "low_pass_filter"; token.key_prefix = "--"; token.label = "apply generic tangent low-pass-filter"; token.help = "to merged 3D volume after B-factor adjustment. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "ff"; token.key_prefix = "--"; token.label = "tangent low-pass-filter stop band frequency"; token.help = "in absolute frequency. "; token.group = "main"; token.is_required = False; token.default = "0.25"; token.restore = "0.25"; token.type = "float"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "tangent low-pass-filter falloff"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0.1"; token.restore = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = "--"; token.label = "input 3D or 2D mask file name"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "output"; token.key_prefix = "--"; token.label = "output file name"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "'postprocessed.hdf'"; token.restore = "'postprocessed.hdf'"; token.type = "output"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "pixel size of the input data"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "B_start"; token.key_prefix = "--"; token.label = "starting frequency in Angstrom for B-factor estimation"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "10.0"; token.restore = "10.0"; token.type = "float"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "FSC_cutoff"; token.key_prefix = "--"; token.label = "stop frequency in Angstrom for B-factor estimation"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0.143"; token.restore = "0.143"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "first unfiltered half-volume "; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "second unfiltered half-volume "; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "fsc_weighted"; token.key_prefix = "--"; token.label = "apply FSC-based low-pass-filter"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "low_pass_filter"; token.key_prefix = "--"; token.label = "apply generic tangent low-pass-filter"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ff"; token.key_prefix = "--"; token.label = "tangent low-pass-filter stop band frequency"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "0.25"; token.restore = "0.25"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "tangent low-pass-filter falloff"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "0.1"; token.restore = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = "--"; token.label = "input 3D or 2D mask file name"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "output"; token.key_prefix = "--"; token.label = "output file name"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "'postprocessed.hdf'"; token.restore = "'postprocessed.hdf'"; token.type = "output"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "pixel size of the input data"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "B_start"; token.key_prefix = "--"; token.label = "starting frequency in Angstrom for B-factor estimation"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "10.0"; token.restore = "10.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "FSC_cutoff"; token.key_prefix = "--"; token.label = "stop frequency in Angstrom for B-factor estimation"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "0.143"; token.restore = "0.143"; token.type = "float"; sxcmd.token_list.append(token)
 
 	sxcmd_list.append(sxcmd)
 
@@ -376,19 +388,21 @@ def construct_sxcmd_list():
 
 	sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "adaptive_mask"; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create adavptive 3D mask from a given 3D volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "util"
 	token = SXcmd_token(); token.key_base = "adaptive_mask"; token.key_prefix = "--"; token.label = "Create adavptive 3D mask from a given 3D volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "nsigma"; token.key_prefix = "--"; token.label = "factor of input volume sigma to obtain large density cluster"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "ndilation"; token.key_prefix = "--"; token.label = "number of dilations applied to the largest density cluster"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "3"; token.restore = "3"; token.type = "int"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "kernel_size"; token.key_prefix = "--"; token.label = "convolution kernel for mask edge smoothing"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "11"; token.restore = "11"; token.type = "int"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "gauss_standard_dev"; token.key_prefix = "--"; token.label = "standard deviation to generate Gaussian edge"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "9"; token.restore = "9"; token.type = "int"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "threshold"; token.key_prefix = "--"; token.label = "threshold to binarize input volume"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "9999.0"; token.restore = "9999.0"; token.type = "float"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "ne"; token.key_prefix = "--"; token.label = "number of erosions applied to the binarized input image"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "nd"; token.key_prefix = "--"; token.label = "number of dilations applied to the binarized input image"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "inputvolume"; token.key_prefix = ""; token.label = "input volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "nsigma"; token.key_prefix = "--"; token.label = "factor of input volume sigma to obtain large density cluster"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ndilation"; token.key_prefix = "--"; token.label = "number of dilations applied to the largest density cluster"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "3"; token.restore = "3"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "kernel_size"; token.key_prefix = "--"; token.label = "convolution kernel for mask edge smoothing"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "11"; token.restore = "11"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "gauss_standard_dev"; token.key_prefix = "--"; token.label = "standard deviation to generate Gaussian edge"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "9"; token.restore = "9"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "threshold"; token.key_prefix = "--"; token.label = "threshold to binarize input volume"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "9999.0"; token.restore = "9999.0"; token.type = "float"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "ne"; token.key_prefix = "--"; token.label = "number of erosions applied to the binarized input image"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "nd"; token.key_prefix = "--"; token.label = "number of dilations applied to the binarized input image"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
 
 	sxcmd_list.append(sxcmd)
 
 	sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.mode = "symmetrize"; sxcmd.label = "3D Variability Preprocess"; sxcmd.short_info = "Prepare input stack for handling symmetry. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "util"
 	token = SXcmd_token(); token.key_base = "symmetrize"; token.key_prefix = "--"; token.label = "Prepare input stack for handling symmetry"; token.help = ""; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "point-group symmetry of the structure"; token.help = "specified in case the input structure has symmetry higher than c1. It is specified together with option --sym in the first step for preparing data. Notice this step can be run with only one CPU and there is no MPI version for it. "; token.group = "main"; token.is_required = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "inputvolume"; token.key_prefix = ""; token.label = "input volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "point-group symmetry of the structure"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 
 	sxcmd_list.append(sxcmd)
 
@@ -589,33 +603,39 @@ class SXCmdWidget(QWidget):
 			# Then, handle the other cases//
 			else:
 				if sxcmd_token.type == "bool":
-					if sxcmd_token.is_required == True:
+					if not ((sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == False): 
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default and sxcmd_token.is_required == False: # Add this token to command line
 						sxcmd_line += " %s%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base)
-					else: # sxcmd_token.is_required == False: 
-						if (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default:
-							sxcmd_line += " %s%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base)
-						# else: # assert((sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default) # Do not add to this command line
+					#else: 
+						### if (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default and sxcmd_token.is_required == False: # Do not add this token to command line
 				else:
-					if sxcmd_token.is_required == True:
-						if sxcmd_token.widget.text() == sxcmd_token.default:
+					if sxcmd_token.widget.text() == sxcmd_token.default:
+						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == True:  # Error case
+						if sxcmd_token.is_required == True: 
 							QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("message_output")))
 							return ""
-					else: # sxcmd_token.is_required == False:
-						if sxcmd_token.widget.text() != sxcmd_token.default:
-							# For now, using line edit box for the other type
-							widget_text = str(sxcmd_token.widget.text())
-							if sxcmd_token.type not in ["int", "float"]:
-								# Always enclose the string value with single quotes (')
-								widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
-								widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
-								widget_text = "\'%s\'" % (widget_text) # then, enclose the string value with single quotes (')
-							
-							if sxcmd_token.key_prefix == "":
-								sxcmd_line += " %s" % (widget_text)
-							elif sxcmd_token.key_prefix == "--":
-								sxcmd_line += " %s%s=%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base, widget_text)
-							else:
-								ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.get_mode_name_for("human")), "%s in %s" % (__name__, os.path.basename(__file__)))
+						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == False: # Do not add this token to command line
+						# else: # assert(sxcmd_token.is_required == False) # Do not add to this command line
+					else: # sxcmd_token.widget.text() != sxcmd_token.default
+						### if sxcmd_token.widget.text() != sxcmd_token.default and sxcmd_token.is_required == True:  # Add this token to command line
+						### if sxcmd_token.widget.text() != sxcmd_token.default and sxcmd_token.is_required == False: # Add this token to command line
+						
+						# For now, using line edit box for the other type
+						widget_text = str(sxcmd_token.widget.text())
+						if sxcmd_token.type not in ["int", "float"]:
+							# Always enclose the string value with single quotes (')
+							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
+							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
+							widget_text = "\'%s\'" % (widget_text) # then, enclose the string value with single quotes (')
+						
+						if sxcmd_token.key_prefix == "":
+							sxcmd_line += " %s" % (widget_text)
+						elif sxcmd_token.key_prefix == "--":
+							sxcmd_line += " %s%s=%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base, widget_text)
+						else:
+							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.get_mode_name_for("human")), "%s in %s" % (__name__, os.path.basename(__file__)))
 						# else: # assert(sxcmd_token.widget.text() == sxcmd_token.default) # Do not add to this command line
 		
 		return sxcmd_line

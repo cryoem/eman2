@@ -15,12 +15,11 @@ from sxgui_template import SXcmd_token, SXcmd
 
 # ========================================================================================
 class SXsubcmd_config:
-	def __init__(self, label = "", token_key_base_list = [], mode_token_edit = None, mpi_support = None):
+	def __init__(self, label = "", token_edit_list = [], mpi_support = None):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.label = label                              # User friendly name of command subset
-		self.token_key_base_list = token_key_base_list  # token list of command subset
-		self.mode_token_edit = mode_token_edit          # To edit some attributes of mode token: is_required, default/restore
+		self.token_edit_list = token_edit_list          # To edit some attributes of tokens (label, help, group, is_required, default). If the original value should be kept, set to None. First entry should be mode token.
 		self.mpi_support = mpi_support                  # Flag to indicate if this command suppors MPI version
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
@@ -380,16 +379,16 @@ def apply_exclude_list(sxcmd_config_exclude_list, sxcmd):
 
 def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 	assert(sxsubcmd_config != None)
-	assert(len(sxsubcmd_config.token_key_base_list) > 0)
-	assert(sxsubcmd_config.mode_token_edit != None)
+	assert(len(sxsubcmd_config.token_edit_list) > 0)
 	
 	# Copy command token dictionary, then clear the command token list and dictionary
 	fullset_token_dict = copy.deepcopy(sxcmd.token_dict)
 	sxcmd.token_list = []
 	sxcmd.token_dict = {}
 	
-	# Get mode token from sxcmd having a fullset of tokens
-	mode_token_edit = sxsubcmd_config.mode_token_edit
+	# Using the first entry in token edit list as command mode token of this subset, 
+	# get mode token from sxcmd (having a fullset of tokens)
+	mode_token_edit = sxsubcmd_config.token_edit_list[0]
 	if mode_token_edit.key_base not in fullset_token_dict.keys(): ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
 	mode_token = fullset_token_dict[mode_token_edit.key_base]
 	
@@ -404,27 +403,43 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 	# Set command mpi support of this subset if necessary
 	if sxsubcmd_config.mpi_support != None:
 		sxcmd.mpi_support = sxsubcmd_config.mpi_support
+	# print "MRK_DEBUG: sxcmd.mpi_support = %s" % (sxcmd.mpi_support)
 	
 	# Use label of mode token as a short info of subset command
 	sxcmd.short_info = "%s. %s" % (mode_token.label, mode_token.help)
 	# print "MRK_DEBUG: sxcmd.short_info = %s" % (sxcmd.short_info)
 	
-	# Edit mode token
-	mode_token.is_required = mode_token_edit.is_required
-	mode_token.default = mode_token_edit.default
-	mode_token.restore = mode_token.default
-	
 	# Reconstruct token list
-	for token_key_base in sxsubcmd_config.token_key_base_list:
-		# print "MRK_DEBUG: token_key_base = %s" % (token_key_base)
-		if token_key_base not in fullset_token_dict.keys(): ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		token = fullset_token_dict[token_key_base]
-		token.group = "main" # NOTE: 2016/03/02
+	for token_edit in sxsubcmd_config.token_edit_list:
+		# print "MRK_DEBUG: token_edit.key_base = %s" % (token_edit.key_base)
+		token = None
+		if token_edit.key_base not in fullset_token_dict.keys():
+			# token key base is not found in fullset. This must be an argument to be added
+			if token_edit.key_prefix != "": ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			token = token_edit
+		else:
+			# token key base is found in fullset. This must be an option.
+			token = fullset_token_dict[token_edit.key_base]
+			assert(token_edit.key_prefix == None)
+			if token_edit.label != None:
+				token.label = token_edit.label
+			if token_edit.help != None:
+				token.help = token_edit.help
+			if token_edit.group != None:
+				token.group = token_edit.group
+			if token_edit.is_required != None:
+				token.is_required = token_edit.is_required
+			if token_edit.default != None:
+				token.default = token_edit.default
+			if token_edit.type != None:
+				token.type = token_edit.type
+		assert(token != None)
+		token.restore = token.default
 		sxcmd.token_list.append(token)
-		sxcmd.token_dict[token_key_base] = (token)
+		sxcmd.token_dict[token_edit.key_base] = (token)
 		
-	assert(len(sxcmd.token_list) == len(sxsubcmd_config.token_key_base_list))
-	assert(len(sxcmd.token_dict) == len(sxsubcmd_config.token_key_base_list))
+	assert(len(sxcmd.token_list) == len(sxsubcmd_config.token_edit_list))
+	assert(len(sxcmd.token_dict) == len(sxsubcmd_config.token_edit_list))
 
 def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	output_file.write("\t")
@@ -489,21 +504,22 @@ def main():
 	
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "pipe"))
 	
+	
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("postprocess"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "first unfiltered half-volume "; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
+	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "second unfiltered half-volume "; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fsc_weighted"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("low_pass_filter"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ff"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("FSC_cutoff"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
-	sxsubcmd_token_key_base_list = []
-	sxsubcmd_token_key_base_list.append("postprocess")
-	sxsubcmd_token_key_base_list.append("fsc_weighted")
-	sxsubcmd_token_key_base_list.append("low_pass_filter")
-	sxsubcmd_token_key_base_list.append("ff")
-	sxsubcmd_token_key_base_list.append("aa")
-	sxsubcmd_token_key_base_list.append("mask")
-	sxsubcmd_token_key_base_list.append("output")
-	sxsubcmd_token_key_base_list.append("pixel_size")
-	sxsubcmd_token_key_base_list.append("B_start")
-	sxsubcmd_token_key_base_list.append("FSC_cutoff")
-	sxsubcmd_mode_token_edit = SXcmd_token()
-	sxsubcmd_mode_token_edit.key_base = "postprocess"; sxsubcmd_mode_token_edit.is_required = True; sxsubcmd_mode_token_edit.default = True
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement Postprocess", sxsubcmd_token_key_base_list, sxsubcmd_mode_token_edit, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("3D Refinement Postprocess", token_edit_list, sxsubcmd_mpi_support)
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "pipe", subconfig = sxcmd_subconfig))
 
 	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", "pipe"))
@@ -519,28 +535,29 @@ def main():
 	# --------------------------------------------------------------------------------
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "util"))
 
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("adaptive_mask"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("inputvolume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ndilation"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("kernel_size"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("gauss_standard_dev"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("threshold"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ne"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nd"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
-	sxsubcmd_token_key_base_list = []
-	sxsubcmd_token_key_base_list.append("adaptive_mask")
-	sxsubcmd_token_key_base_list.append("nsigma")
-	sxsubcmd_token_key_base_list.append("ndilation")
-	sxsubcmd_token_key_base_list.append("kernel_size")
-	sxsubcmd_token_key_base_list.append("gauss_standard_dev")
-	sxsubcmd_token_key_base_list.append("threshold")
-	sxsubcmd_token_key_base_list.append("ne")
-	sxsubcmd_token_key_base_list.append("nd")
-	sxsubcmd_mode_token_edit = SXcmd_token()
-	sxsubcmd_mode_token_edit.key_base = "adaptive_mask"; sxsubcmd_mode_token_edit.is_required = True; sxsubcmd_mode_token_edit.default = True
-	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", sxsubcmd_token_key_base_list, sxsubcmd_mode_token_edit, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", token_edit_list, sxsubcmd_mpi_support)
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util", subconfig = sxcmd_subconfig))
+
+
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
 	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("inputvolume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
+	
+	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
-	sxsubcmd_token_key_base_list = [];
-	sxsubcmd_token_key_base_list.append("symmetrize");
-	sxsubcmd_token_key_base_list.append("sym")
-	sxsubcmd_mode_token_edit = SXcmd_token()
-	sxsubcmd_mode_token_edit.key_base = "symmetrize"; sxsubcmd_mode_token_edit.is_required = True; sxsubcmd_mode_token_edit.default = True
-	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", sxsubcmd_token_key_base_list, sxsubcmd_mode_token_edit, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util", subconfig = sxcmd_subconfig))
 
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util", exclude_list=["symmetrize"]))
