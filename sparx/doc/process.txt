@@ -1,93 +1,171 @@
 = Name =
-sxprocess - Carry out various SPARX commands on image series, and generate data and initialize database for demo script.
 
-
-    1.  Phase flip a stack of images and write output to new file:
-		sxprocess.py input_stack.hdf output_stack.hdf --phase_flip
-	
-    2.  Resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.
-	    The window size will change accordingly.
-		sxprocess input.hdf output.hdf  --changesize --ratio=0.5
-
-    3.  Compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
-		sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
-
-    4.  Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
-		sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64
-
-    5.  Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3):
-    	sxprocess.py  bdb:test3 class_averages_generation_3.hdf  list3_12.txt --isacgroup=12 --params=originalid
-
-    6.  Retrieve original image numbers of images listed in ISAC output stack of averages:
-    	sxprocess.py  select1.hdf  ohk.txt
-
-    7.  Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file.
-    	Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
-    	sxprocess.py  vol.hdf ref.hdf  avol.hdf < 0.25 0.2> --adjpw
-   	 	sxprocess.py  vol.hdf pw.txt   avol.hdf < 0.25 0.2> --adjpw
-
-    8.  Generate a 1D rotationally averaged power spectrum of an image.
-		sxprocess.py  vol.hdf --rotwp=rotpw.txt
-    	# Output will contain three columns:
-       (1) rotationally averaged power spectrum
-       (2) logarithm of the rotationally averaged power spectrum
-       (3) integer line number (from zero to approximately to half the image size)
-
-    9.  Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
-    	sxprocess.py  --transfromparams=phi,theta,psi,tx,ty,tz      input.txt  output.txt
-    	The output file is then imported and 3D transformed volume computed:
-    	sxheader.py  bdb:p  --params=xform.projection  --import=output.txt
-    	mpirun -np 2 sxrecons3d_n.py  bdb:p tvol.hdf --MPI
-    	The reconstructed volume is in the position of the volume computed using the input.txt parameters and then
-    	transformed with rot_shift3D(vol, phi,theta,psi,tx,ty,tz)
-
-    10.  Import ctf parameters from the output of sxcter into windowed particle headers.
-	    There are three possible input files formats:  (1) all particles are in one stack, (2 aor 3) particles are in stacks, each stack corresponds to a single micrograph.
-	    In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'.
-        Normally this is done by e2boxer.py during windowing.
-	    Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
-                sxprocess.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
-		#  Output will be a vritual stack bdb:Gdata
-		sxprocess.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
-		To concatenate output files:
-		cd directory
-		e2bdb.py . --makevstack=bdb:allparticles  --filt=G
-		IMPORTANT:  Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
-
-    11. Scale 3D shifts.  The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor
-		sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5
-
-    12. Generate a 3-D mask for an given input 3-D volume adaptively.
-         
-             sxprocess.py --adaptive_mask vol001.hdf  
-
+sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image series, and generate data and initialize database for demo script.
 
 
 = Usage =
-''Phase flip a stack of images and write output to new file: ''
 
-     sxprocess.py input_stack.hdf output_stack.hdf --phase_flip
 
-''Generate bdb:data, a stack of ctf applied projections in bdb format, and ctf applied micrographs prefixed by mic, e.g. mic0.hdf, mic1.hdf etc., from the structure model_structure.hdf:''
+''usage in command line''
 
-     sxprocess.py model_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --threshold=THRESHOLD  --ne=NE  --nd=ND  --postprocess  --fsc_weighted  --low_pass_filter  --ff=FF  --aa=AA  --mask=MASK  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --FSC_cutoff=FSC_CUTOFF  --2d  --window_stack  --box=BOX
 
-''Generate data.hdf, a stack of projections in hdf format, and micrographs prefixed by mic, e.g. mic0.hdf, mic1.hdf etc., from the structure model_structure.hdf:''
 
-     sxprocess.py model_structure.hdf data mic --generate_projections format="hdf":apix=5.2
+=== Typical usage ===
 
-''Create and initialize database with the appropriate input parameters for the demo in demo/mpi_bdb for running command-line mode autoboxing using the gauss mode of e2boxer:''
+sxprocess does not support MPI.
 
-     sxprocess.py demoparms --makedb=mpibdb
+ 1. Phase flip a stack of images and write output to new file:
 
-''Create and initialize database with the appropriate input parameters for the demo in demo/mpi_bdb_ctf for running command-line mode autoboxing using the gauss mode of e2boxer:''
+''' sxprocess.py  input_stack.hdf  output_stack.hdf  --phase_flip '''
 
-     sxprocess.py demoparms --makedb=mpibdbctf
+ 2. Resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size. The window size will change accordingly.
 
-== Options ==
-    --phase_flip:: phase flip an input stack of images and write output to new file. Required arguments for this option are the name of the input stack and desired name to which the output will be written.<<BR>><<BR>>
-    --makedb:: create and initialize database with the parameters needed to run e2boxer's autoboxer (in Gauss mode) from the command line. If --makedb=mpibdb, then the database will be initialized with parameters appropriate to the data set in the demo demo/mpi_bdb. Otherwise, if --makedb=mpibdbctf, then the database will be initialized with parameters appropriate to the data set in the demo demo/mpi_bdb_ctf. This option requires exactly one argument, the name of the key under which the parameters will be saved in the database. For the demo files, this key is demoparms.<<BR>><<BR>>
-    --generate_projections:: generate a stack of 1440 projections and five micrographs from an input structure. Three input arguments are required for this option: name of input structure from which projections are generated, desired name of projection stack to be generated (not including file extension), and prefix of micrographs to be generated. Optional arguments specifying format, apix and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=64, or format='hdf', etc., where format can be bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize is dimension of the box, which is assumed to be square . If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.<<BR>><<BR>>
+''' sxprocess  input.hdf  output.hdf  --changesize  --ratio=0.5 '''
+
+ 3. Compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
+
+''' sxprocess.py  input_stack.hdf  powerspectrum.hdf  --pw  [--wn=1024] '''
+
+ 4. Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs.
+
+''' sxprocess.py  input_structure.hdf  data mic  --generate_projections  format="bdb":apix=5.2:CTF=True:boxsize=64 '''
+
+ 5. Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3).
+
+''' sxprocess.py  bdb:test3  class_averages_generation_3.hdf  list3_12.txt  --isacgroup=12  --params=originalid '''
+
+ 6.  Retrieve original image numbers of images listed in ISAC output stack of averages/
+
+''' sxprocess.py  select1.hdf  ohk.txt '''
+
+ 7. Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file. Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
+
+''' sxprocess.py  vol.hdf ref.hdf  avol.hdf  < 0.25 0.2>  --adjpw '''
+''' sxprocess.py  vol.hdf pw.txt   avol.hdf  < 0.25 0.2>  --adjpw '''
+
+ 8. Generate a 1D rotationally averaged power spectrum of an image.
+
+''' sxprocess.py  vol.hdf  --rotwp=rotpw.txt '''
+
+# Output will contain three columns:
+(1) rotationally averaged power spectrum
+(2) logarithm of the rotationally averaged power spectrum
+(3) integer line number (from zero to approximately to half the image size)
+
+ 9. Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
+
+''' sxprocess.py  --transfromparams=phi,theta,psi,tx,ty,tz  input.txt  output.txt '''
+
+The output file is then imported and 3D transformed volume computed.
+
+''' sxheader.py  bdb:p  --params=xform.projection  --import=output.txt '''
+''' mpirun  -np  2  sxrecons3d_n.py  bdb:p tvol.hdf  --MPI '''
+
+The reconstructed volume is in the position of the volume computed using the input.txt parameters and then transformed with rot_shift3D(vol, phi,theta,psi,tx,ty,tz).
+
+10. Import ctf parameters from the output of sxcter into windowed particle headers. There are three possible input files formats:  (1) all particles are in one stack, (2 aor 3) particles are in stacks, each stack corresponds to a single micrograph. In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'. Normally this is done by e2boxer.py during windowing. Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
+
+''' sxprocess.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0 '''
+
+# Output will be a vritual stack bdb:Gdata.
+
+''' sxprocess.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0 '''
+
+To concatenate output files, 
+
+''' cd directory ''' 
+''' e2bdb.py  .  --makevstack=bdb:allparticles  --filt=G '''
+
+IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
+
+11. Scale 3D shifts. The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor.
+
+''' sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5 '''
+
+12. Generate 3D mask from a given 3D volume automatically or using threshold provided by user.
+
+''' sxprocess.py  --adaptive_mask vol001.hdf '''
+
+13. Postprocess 3-D or 2-D images: For 3-D volumes, (1) calculate FSC with provided mask, (2) weight summed volume with FSC, (3) estimate B-factor from FSC weighted summed two volumes, then (4) apply negative B-factor to the weighted volume. For 2-D images, calculate B-factor and apply negative B-factor to 2-D images.
+
+''' sxprocess.py  --postprocess  run1_half1_class001_unfil.mrc  run1_half2_class001_unfil.mrc  --fsc_weighted  --pixel_size=1.12 '''
+
+14.  Window stack file -reduce size of images without changing the pixel size. 
+
+
+== Input ==
+    inputfile:: input file: required for some options. (default none)
+
+    changesize:: Resample 2D or 3D images: resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size. (default False)
+    ratio:: ratio of new to old image size: if < 1, the pixel size will increase and image size decrease. if > 1, the other way round. (default 1.0)
+
+    pw:: Compute average power spectrum of a 2D image stack: with optional padding (option wn) with zeroes. (default False)
+    wn:: size of window to use: it should be larger/equal than particle box size, default padding to max(nx,ny). (default -1)
+
+    phase_flip:: Phase flip the input stack: (default False)
+
+    generate_projections:: Generate projections and simulated micrographs from 3D volume: three arguments are required. name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). if an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64. (default none)
+    
+    isacgroup:: Retrieve original image numbers in selected ISAC group: see ISAC documentation for details. (default -1)
+    
+    isacselect:: Retrieve original image numbers listed in ISAC output average stack: see ISAC documentation for details. (default False)
+    
+    params:: name of parameter in image file header: which one depends on specific option. (default none)
+    
+    adjpw:: Adjust rotationally averaged power spectrum of an image: (default False)
+    
+    rotpw:: Compute rotationally averaged power spectrum of the input image: store to output text file name specified by this option. (default none)
+    
+    importctf:: Import sxcter CTF parameters to stack file: specify file name containing CTF parameters produced by sxcter with this option. (default none)
+    input:: input particle image stack file: to which CTF parameters will be imported. (default none)
+    defocuserror:: defocus error threshold: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent. the error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)
+    astigmatismerror:: astigmatism error threshold: set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (default 360.0)
+    
+    scale:: Divide shifts in input 3D orientation parameters text file by this scale factor: (default -1.0)
+    
+    adaptive_mask:: Create adavptive 3D mask from a given 3D volume: (default False)
+    nsigma:: factor of input volume sigma to obtain large density cluster: (default 1.0)
+    ndilation:: number of dilations applied to the largest density cluster: (default 3)
+    kernel_size:: convolution kernel for mask edge smoothing: (default 11)
+    gauss_standard_dev:: standard deviation to generate Gaussian edge: (default 9)
+    threshold:: threshold to binarize input volume: (default 9999.0)
+    ne:: number of erosions applied to the binarized input image: (default 0)
+    nd:: number of dilations applied to the binarized input image: (default 0)
+    
+    postprocess:: Adjust power spectrum of 3D or 2D images based on B-factor: B-factor is estimated from unfiltered odd-even 3D volumes or a 2D image. (default False)
+    fsc_weighted:: apply FSC-based low-pass-filter: to merged 3D volume before B-factor estimation (not applicable to 2D image). (default False)
+    low_pass_filter:: apply generic tangent low-pass-filter: to merged 3D volume after B-factor adjustment. (default False)
+    ff:: tangent low-pass-filter stop band frequency: in absolute frequency. (default 0.25) 
+    aa:: tangent low-pass-filter falloff: (default 0.1)
+    mask:: input 3D or 2D mask file name: (default none)
+    output:: output file name: (default 'postprocessed.hdf')
+    pixel_size:: pixel size of the input data: (default 1.0)
+    B_start:: starting frequency in Angstrom for B-factor estimation: (default 10.0)
+    FSC_cutoff:: stop frequency in Angstrom for B-factor estimation: (default 0.143))
+
+    window_stack:: Window stack images using a smaller window size: (default False)
+    box:: new window size: (default 0)
+    
+    * The remaining parameters are optional.
+    order:: Order (unimplemented): two arguments are required, (1) name of input stack and (2) desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficient. (default False)
+    order_lookup:: order_lookup (unimplemented): test/debug. (default False)
+    order_metropolis:: order_metropolis (unimplemented): test/debug. (default False)
+    order_pca:: order_pca (unimplemented): test/debug. (default False)
+    initial:: initial (unimplemented): specifies which image will be used as an initial seed to form the chain. By default, use the first image (default 0)
+    circular:: circular (unimplemented): select circular ordering (first image has to be similar to the last) (default False)
+    radius:: radius (unimplemented): radius of a circular mask for similarity based ordering (default False)
+
+    makedb:: Generate a database file containing a set of parameters: one argument is required, name of key with which the database will be created. Fill in database with parameters specified as --makedb param1=value1:param2=value2 (e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0). (default none)
+
+    transformparams:: Transform 3D projection orientation parameters: using six 3D parameters (phi,theta,psi,sx,sy,sz). input is --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. output is file with modified orientation parameters. (default none)
+
+    2d:: postprocess isac 2D averaged images (unimplemented): (default False)
+
+
+== Output ==
+    outputfile::  output file: required for some options. (default none)
+    micrograph_prefix:: prefix for output micrographs: required for some options. (default none)
 
 = Author / Maintainer =
 Jia Fang
@@ -97,7 +175,7 @@ Jia Fang
  category 1:: APPLICATIONS
 
 = Files =
-sparx/bin/sxprocess.py
+sxprocess.py
 
 = Maturity =
-    beta::     works for author, often works for others.
+ beta:: works for author, often works for others.
