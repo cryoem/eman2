@@ -498,6 +498,8 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "pipe"))
 	# sxcmd_config_list.append(SXcmd_config("../doc/isac_snr4.txt", "pipe"))
 	
+	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "pipe"))
+	
 	sxcmd_config_list.append(SXcmd_config("../doc/viper.txt", "pipe"))
 	
 	sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", "pipe"))
@@ -548,18 +550,15 @@ def main():
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", token_edit_list, sxsubcmd_mpi_support)
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util", subconfig = sxcmd_subconfig))
-
-
+	
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("inputvolume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
-	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util", subconfig = sxcmd_subconfig))
-
+	
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util", exclude_list=["symmetrize"]))
 	
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util"))
