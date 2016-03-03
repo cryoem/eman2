@@ -2269,16 +2269,6 @@ def main():
 			chunk_two = wrap_mpi_bcast(chunk_two, main_node)
 		mpi_barrier(MPI_COMM_WORLD)
 		######################## Read/write bdb: data on main node ############################
-	   	"""
-	   	if myid == main_node:
-	   		params= []
-	   		for i in xrange(total_stack):
-	   			e=get_im(orgstack,i)
-	   			phi,theta,psi,s2x,s2y = get_params_proj(e)
-	   			e.write_image(Tracker["constants"]["stack"],i)
-	   			params.append([phi,theta,psi,s2x,s2y])
-	   		write_text_row(params,Tracker["constants"]["ali3d"])
-	   	"""
 	   	if myid==main_node:
 	   		from EMAN2db import db_open_dict	
 	   		OB = db_open_dict(orgstack)

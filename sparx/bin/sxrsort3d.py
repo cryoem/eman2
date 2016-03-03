@@ -1865,10 +1865,10 @@ def do_two_way_comparison(Tracker):
 	Tracker["two_way_stable_member"]      = two_ways_stable_member_list[(run1,run2)]
 	Tracker["pop_size_of_stable_members"] = 1
 	if myid == main_node:
-		log_main.add("Get outliers of the selected comparison")
+		log_main.add("extract outliers from the selected comparison")
 	####  Save both accounted ones and unaccounted ones
 	if myid == main_node:
-		log_main.add("Save outliers")
+		log_main.add("save the outliers")
 	stable_class_list = []
 	small_group_list  = []
 	if myid ==main_node:
@@ -2552,7 +2552,7 @@ def main():
 		elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
 			ERROR("Particle radius set too large!","sxsort3d.py",1,myid)
 ####-----------------------------------------------------------------------------------------
-		# Master directory
+		# create the master directory
 		if myid == main_node:
 			if masterdir =="":
 				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
@@ -2568,6 +2568,7 @@ def main():
 		if li>0:
 			masterdir = mpi_bcast(masterdir,li,MPI_CHAR,main_node,MPI_COMM_WORLD)
 			masterdir = string.join(masterdir,"")
+		####--- masterdir done!
 		if myid ==main_node:
 			print_dict(Tracker["constants"],"Permanent settings of 3-D sorting program")
 		from time import sleep
@@ -2580,6 +2581,8 @@ def main():
 		Tracker["constants"]["stack"]     = "bdb:"+masterdir+"/rdata"
 		Tracker["constants"]["ali3d"]     = os.path.join(masterdir, "ali3d_init.txt")
 		Tracker["constants"]["partstack"] = Tracker["constants"]["ali3d"]
+		######
+		"""
 	   	if myid == main_node:
 			if(orgstack[:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
@@ -2592,12 +2595,34 @@ def main():
 			total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
 		else:
 			total_stack =0
+		"""
+		########## ---------------new way of read data in --------------------##########
+		if myid==main_node:
+	   		from EMAN2db import db_open_dict	
+	   		OB = db_open_dict(orgstack)
+	   		DB = db_open_dict(Tracker["constants"]["stack"]) 
+			for i in xrange(total_stack):
+				DB[i] = OB[i]
+			OB.close()
+			DB.close()
+	   	mpi_barrier(MPI_COMM_WORLD)
+	   	if myid==main_node:
+	   		total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
+	   	else:
+	   		total_stack =0
+	   	total_stack = bcast_number_to_all(total_stack, source_node = main_node)
+	   	if myid==main_node:
+			params= []
+			for i in xrange(total_stack):
+				e=get_im(orgstack,i)
+				phi,theta,psi,s2x,s2y = get_params_proj(e)
+				params.append([phi,theta,psi,s2x,s2y])
+			write_text_row(params,Tracker["constants"]["ali3d"])
 		mpi_barrier(MPI_COMM_WORLD)
-		total_stack = bcast_number_to_all(total_stack, source_node = main_node)
-		#Tracker["total_stack"]= total_stack
+		#Tracker["total_stack"]             = total_stack
 		Tracker["constants"]["total_stack"] = total_stack
-		Tracker["shrinkage"] = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
-		#####
+		Tracker["shrinkage"]                = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
+		#####------------------------------------------------------------------------------
 		if Tracker["constants"]["mask3D"]:
 			Tracker["mask3D"]=os.path.join(masterdir,"smask.hdf")
 		else:Tracker["mask3D"] = None
@@ -2621,10 +2646,10 @@ def main():
 			PW_dict[Tracker["constants"]["nxinit"]] =Tracker["nxinit_PW"]
 			Tracker["PW_dict"] = PW_dict 
 		###----------------------------------------------------------------------------------
-		# Extract the previous results#####################################################
+		####---------------------------Extract the previous results#####################################################
 		from random import shuffle
 		if myid ==main_node:
-			log_main.add("Extact stable groups from previous runs")
+			log_main.add("Extract stable groups from previous runs")
 			stable_member_list           = get_stable_members_from_two_runs(Tracker["constants"]["previous_runs"],Tracker["constants"]["total_stack"],log_main)
 			leftover_list, new_stable_P1 = get_leftover_from_stable(stable_member_list,Tracker["constants"]["total_stack"] ,Tracker["constants"]["smallest_group"])
 			total_stack                  = len(leftover_list)
@@ -2639,7 +2664,7 @@ def main():
 		leftover_list                    = wrap_mpi_bcast(leftover_list, main_node)
 		Tracker["total_stack"]           = total_stack
 		Tracker["this_unaccounted_list"] = leftover_list
-		#################################### estimate resolution 
+		#################################### Estimate resolution----------------------############# 
 		#### make chunkdir dictionary for computing margin of error
 		chunk_dict = {}
 		chunk_list = []
@@ -2762,9 +2787,9 @@ def main():
 			log_main.add("total sampled direction %10d  at angle step %6.3f"%(len(n_angles), delta)) 
 			log_main.add("captured sampled directions %10d percentage covered by data  %6.3f"%(nc,float(nc)/len(n_angles)*100))
 		mpi_barrier(MPI_COMM_WORLD)
-		## ------------------------------------------------------------------------########
-		## stop program when leftover is sufficient for a new run    #######################
-		## ---------------------------------------------------  -------------------  ######
+		## ---------------------------------------------------------------------------------------------########
+		## Stop program and output results when the leftover is not sufficient for a new run    		########
+		## ---------------------------------------------------  ---------------------------------------  ######
 		number_of_groups = get_number_of_groups(Tracker["total_stack"],Tracker["constants"]["number_of_images_per_group"])
 		if number_of_groups<=1:
 			if myid ==main_node:
