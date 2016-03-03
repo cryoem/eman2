@@ -8,21 +8,35 @@
 # from sparx import *
 import os
 import sys
+import copy
 from global_def import ERROR
 
 from sxgui_template import SXcmd_token, SXcmd
 
 # ========================================================================================
-class SXcmd_config:
-	def __init__(self, wiki = "", category = ""):
+class SXsubcmd_config:
+	def __init__(self, label = "", token_key_base_list = [], mode_token_edit = None, mpi_support = None):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.wiki = wiki         # Wiki document file path
-		self.category = category # Category of this command; pipe (pipeline), util (utility)
+		self.label = label                              # User friendly name of command subset
+		self.token_key_base_list = token_key_base_list  # token list of command subset
+		self.mode_token_edit = mode_token_edit          # To edit some attributes of mode token: is_required, default/restore
+		self.mpi_support = mpi_support                  # Flag to indicate if this command suppors MPI version
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
-def construct_token_list_from_wiki(cmd_config):
+class SXcmd_config:
+	def __init__(self, wiki, category, exclude_list = [], subconfig = None):
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.wiki = wiki                  # Wiki document file path
+		self.category = category          # Category of this command: pipe (pipeline), util (utility)
+		self.exclude_list = exclude_list  # token key base list to be excluded
+		self.subconfig = subconfig        # Subset configuration of this command (e.g. sxprocess and sxlocres). None includes all command tokens, and do not make subcmd
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+
+# ========================================================================================
+def construct_token_list_from_wiki(sxcmd_config):
 	# Private helper class used only in this function
 	class SXkeyword_map:
 		def __init__(self, priority, token_type):
@@ -33,27 +47,28 @@ def construct_token_list_from_wiki(cmd_config):
 			self.token_type = token_type  # Token value type 
 			# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	
-	print "Start parsing Wiki document (%s as %s command) " % (cmd_config.wiki, cmd_config.category)
+	print "Start parsing Wiki document (%s as %s command) " % (sxcmd_config.wiki, sxcmd_config.category)
 	
 	# Allocate memory for new SXcmd instance
-	sxcmd = SXcmd(cmd_config.category)
+	sxcmd = SXcmd(sxcmd_config.category)
 	
 	# Define dictionary of keywords:
 	# The dictionary maps command token to special data types
 	# If a command token extracted from 'usage in command line' contains the keyword defined here
 	# the associated special data type will be assigned to this command token.
 	# 
-	# - bdb         : Line edit box and open file button for .bdb 
 	# - output      : Line edit box and output info button
 	#                 GUI also checks the existence of output directory/file before execution of the sx*.py
 	#                 GUI abort the execution if the directory/file exists already
-	# - directory   : Line edit box and open directory button
 	# - image       : Line edit box and open file buttons for .hdf and .bdb 
 	# - any_image   : Line edit box and open file buttons for all file types (also mrc, tiff, and etc) and .bdb 
 	# - parameters  : Line edit box and open file button for all file types 
+	# - any_file    : Line edit box and open file button for all file types 
+	# - bdb         : Line edit box and open file button for .bdb 
 	# - pdb         : Line edit box and open file button for .pdb 
 	# - function    : Two line edit boxes (function name & file path of the container script)
 	#                 and open file button for .py
+	# - directory   : Line edit box and open directory button (NOTE: Toshio Moriya 2016/03/03: Not used at this point)
 	# 
 	# - apix        : Project constant - float type
 	# - wn          : Project constant - int type
@@ -66,27 +81,34 @@ def construct_token_list_from_wiki(cmd_config):
 	
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
 	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
-	keyword_dict["stack_file"]                    = SXkeyword_map(2, "bdb")        # stack_file (contains keyworkd 'stack' but this should be bdb type)
+	keyword_dict["stack_file"]                    = SXkeyword_map(0, "bdb")        # stack_file (contains keyworkd 'stack' but this should be bdb type)
+	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")           # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")           # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	# Use priority 1 for output
-	keyword_dict["output"]                        = SXkeyword_map(1, "output")     # output_hdf, output_directory, outputfile
+	keyword_dict["output"]                        = SXkeyword_map(1, "output")     # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")     # outdir
 	keyword_dict["locresvolume"]                  = SXkeyword_map(1, "output")     # locresvolume (this contained keyword "volume" also... This is another reason why priority is introduced...)
 	keyword_dict["directory"]                     = SXkeyword_map(1, "output")     # directory
+	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")     # rotpw
 	# Use priority 2 for the others
 	keyword_dict["stack"]                         = SXkeyword_map(2, "image")      # stack, prj_stack
 	keyword_dict["volume"]                        = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, inputvolume
-	keyword_dict["mask"]                          = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask
+	keyword_dict["mask"]                          = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask, --mask=MASK
 	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
+	keyword_dict["--input"]                       = SXkeyword_map(2, "image")      # --input=INPUT
 	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")  # input_micrograph_pattern
 	keyword_dict["input_image"]                   = SXkeyword_map(2, "any_image")  # input_image
 	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters") # --tr0=matrix_file
 	keyword_dict["input_coordinates"]             = SXkeyword_map(2, "parameters") # input_coordinates_pattern
 	keyword_dict["--import_ctf"]                  = SXkeyword_map(2, "parameters") # --import_ctf=ctf_file
+	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters") # --importctf=IMPORTCTF
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters") # --pwreference=pwreference 
+	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")   # inputfile
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")        # input_pdb
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")   # --function=user_function
 	
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")       # --apix=pixel_size, --apix 
+	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")       # --pixel_size=PIXEL_SIZE
 	keyword_dict["--wn"]                          = SXkeyword_map(2, "ctfwin")     # --wn
 	keyword_dict["--box"]                         = SXkeyword_map(2, "box")        # --box=box_size, --box_size=box_size
 	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")     # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
@@ -124,9 +146,9 @@ def construct_token_list_from_wiki(cmd_config):
 	
 	# NOTE: 2015/11/11 Toshio Moriya
 	# This should be exception. Need to decide if this should be skipped or exit system.
-	if os.path.exists(cmd_config.wiki) == False: ERROR("Rutime Error: Wiki document is not found.", "%s in %s" % (__name__, os.path.basename(__file__)))
+	if os.path.exists(sxcmd_config.wiki) == False: ERROR("Rutime Error: Wiki document is not found.", "%s in %s" % (__name__, os.path.basename(__file__)))
 	
-	file_wiki = open(cmd_config.wiki,'r')
+	file_wiki = open(sxcmd_config.wiki,'r')
 	
 	# Loop through all lines in the wiki document file
 	for line_wiki in file_wiki:
@@ -215,7 +237,7 @@ def construct_token_list_from_wiki(cmd_config):
 					# else: Ignore this line (must be comments).
 				elif current_section == section_typical:
 					target_operator = "mpirun"
-					if sxcmd.mpi_support == False and line_wiki.find(target_operator) > 1:
+					if sxcmd.mpi_support == False and line_wiki.find(target_operator) > 1 and line_wiki.find(sxcmd.name + ".py") > 1:
 						sxcmd.mpi_support = True
 					# else: Ignore this line
 				elif current_section == section_input or current_section == section_output:
@@ -304,10 +326,22 @@ def construct_token_list_from_wiki(cmd_config):
 	# Make sure there are no extra arguments or options in 'usage in command line' of '= Usage ='
 	for token in sxcmd.token_list:
 		if token.is_in_io == False: ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '= Usage ='." % token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
-			
+	
 	file_wiki.close()
 	
-	print "Succeed to parse Wiki document (%s as %s command)" % (cmd_config.wiki, cmd_config.category)
+	# DESIGN_NOTE: 2016/02/05 Toshio Moriya
+	# Handle exceptional cases due to the limitation of software design 
+	# In future, we should remove these exception handling by reviewing the design
+	if sxcmd.name == "sxfilterlocal":
+		assert(sxcmd.token_dict["locresvolume"].key_base == "locresvolume")
+		assert(sxcmd.token_dict["locresvolume"].type == "output")
+		sxcmd.token_dict["locresvolume"].type = "image"
+	elif sxcmd.name in ["sxlocres",  "sxsort3d", "sxrsort3d"]:
+		assert(sxcmd.token_dict["wn"].key_base == "wn")
+		assert(sxcmd.token_dict["wn"].type == "ctfwin")
+		sxcmd.token_dict["wn"].type = "int"
+	
+	print "Succeed to parse Wiki document (%s as %s command)" % (sxcmd_config.wiki, sxcmd_config.category)
 	
 	"""
 	# For DEBUG
@@ -336,10 +370,67 @@ def construct_token_list_from_wiki(cmd_config):
 	
 	return sxcmd
 
+def apply_exclude_list(sxcmd_config_exclude_list, sxcmd):
+	assert(len(sxcmd_config_exclude_list) > 0)
+	assert(len(sxcmd.token_list) == len(sxcmd.token_dict))
+	
+	for token_key_base in sxcmd_config_exclude_list:
+		sxcmd.token_list.remove(sxcmd.token_dict[token_key_base])
+		del sxcmd.token_dict[token_key_base]
+
+def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
+	assert(sxsubcmd_config != None)
+	assert(len(sxsubcmd_config.token_key_base_list) > 0)
+	assert(sxsubcmd_config.mode_token_edit != None)
+	
+	# Copy command token dictionary, then clear the command token list and dictionary
+	fullset_token_dict = copy.deepcopy(sxcmd.token_dict)
+	sxcmd.token_list = []
+	sxcmd.token_dict = {}
+	
+	# Get mode token from sxcmd having a fullset of tokens
+	mode_token_edit = sxsubcmd_config.mode_token_edit
+	if mode_token_edit.key_base not in fullset_token_dict.keys(): ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
+	mode_token = fullset_token_dict[mode_token_edit.key_base]
+	
+	# Create mode name of this subset, append key base of mode token to mode_name of this command
+	sxcmd.mode = mode_token.key_base
+	# print "MRK_DEBUG: sxcmd.mode = %s" % (sxcmd.mode)
+	
+	# Set command label of this subset
+	sxcmd.label = sxsubcmd_config.label
+	# print "MRK_DEBUG: sxcmd.label = %s" % (sxcmd.label)
+	
+	# Set command mpi support of this subset if necessary
+	if sxsubcmd_config.mpi_support != None:
+		sxcmd.mpi_support = sxsubcmd_config.mpi_support
+	
+	# Use label of mode token as a short info of subset command
+	sxcmd.short_info = "%s. %s" % (mode_token.label, mode_token.help)
+	# print "MRK_DEBUG: sxcmd.short_info = %s" % (sxcmd.short_info)
+	
+	# Edit mode token
+	mode_token.is_required = mode_token_edit.is_required
+	mode_token.default = mode_token_edit.default
+	mode_token.restore = mode_token.default
+	
+	# Reconstruct token list
+	for token_key_base in sxsubcmd_config.token_key_base_list:
+		# print "MRK_DEBUG: token_key_base = %s" % (token_key_base)
+		if token_key_base not in fullset_token_dict.keys(): ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		token = fullset_token_dict[token_key_base]
+		token.group = "main" # NOTE: 2016/03/02
+		sxcmd.token_list.append(token)
+		sxcmd.token_dict[token_key_base] = (token)
+		
+	assert(len(sxcmd.token_list) == len(sxsubcmd_config.token_key_base_list))
+	assert(len(sxcmd.token_dict) == len(sxsubcmd_config.token_key_base_list))
+
 def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	output_file.write("\t")
 	output_file.write("%s = SXcmd()" % sxcmd_variable_name)
 	output_file.write("; %s.name = \"%s\"" % (sxcmd_variable_name, sxcmd.name)) 
+	output_file.write("; %s.mode = \"%s\"" % (sxcmd_variable_name, sxcmd.mode)) 
 	output_file.write("; %s.label = \"%s\"" % (sxcmd_variable_name, sxcmd.label)) 
 	output_file.write("; %s.short_info = \"%s\"" % (sxcmd_variable_name, sxcmd.short_info.replace("\"", "'")))
 	output_file.write("; %s.mpi_support = %s" % (sxcmd_variable_name, sxcmd.mpi_support))
@@ -356,15 +447,16 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		output_file.write("; token.help = \"%s\"" % token.help.replace("\"", "'")) 
 		output_file.write("; token.group = \"%s\"" % token.group)
 		output_file.write("; token.is_required = %s" % token.is_required)
-		if token.is_required:
-			output_file.write("; token.default = \"\"")
-			output_file.write("; token.restore = \"\"")
-		elif token.type == "bool":
+		if token.type == "bool":
 			output_file.write("; token.default = %s" % token.default)
 			output_file.write("; token.restore = %s" % token.restore)
 		else:
-			output_file.write("; token.default = \"%s\"" % token.default)
-			output_file.write("; token.restore = \"%s\"" % token.restore)
+			if token.is_required:
+				output_file.write("; token.default = \"\"")
+				output_file.write("; token.restore = \"\"")
+			else:
+				output_file.write("; token.default = \"%s\"" % token.default)
+				output_file.write("; token.restore = \"%s\"" % token.restore)
 		output_file.write("; token.type = \"%s\"" % token.type)
 		# output_file.write("; token.is_in_io = %s" % token.is_in_io)
 		
@@ -379,23 +471,85 @@ def main():
 	# Get all necessary informations from wiki documents of sx*.py scripts
 	# and create gui generation paramter
 	# --------------------------------------------------------------------------------
-	cmd_config_list = []
-	# Pipeline commands
-	cmd_config_list.append(SXcmd_config("../doc/cter.txt", "pipe"))
-	cmd_config_list.append(SXcmd_config("../doc/window.txt", "pipe"))
-	# cmd_config_list.append(SXcmd_config("../doc/isac.txt", "pipe"))
-	cmd_config_list.append(SXcmd_config("../doc/isac_snr4.txt", "pipe"))
-	cmd_config_list.append(SXcmd_config("../doc/viper.txt", "pipe"))
-	cmd_config_list.append(SXcmd_config("../doc/rviper.txt", "pipe"))
-	cmd_config_list.append(SXcmd_config("../doc/meridien.txt", "pipe"))
-	cmd_config_list.append(SXcmd_config("../doc/locres.txt", "pipe"))
-	cmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "pipe"))
-	cmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "pipe"))
-	cmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "pipe"))
-	# Utility commands
-	cmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "util"))
-	cmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util"))
+	sxcmd_config_list = []
 	
+	# --------------------------------------------------------------------------------
+	# Define pipeline command settings
+	# --------------------------------------------------------------------------------
+	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "pipe"))
+	
+	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", "pipe"))
+	
+	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "pipe"))
+	# sxcmd_config_list.append(SXcmd_config("../doc/isac_snr4.txt", "pipe"))
+	
+	sxcmd_config_list.append(SXcmd_config("../doc/viper.txt", "pipe"))
+	
+	sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", "pipe"))
+	
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "pipe"))
+	
+	sxsubcmd_mpi_support = False
+	sxsubcmd_token_key_base_list = []
+	sxsubcmd_token_key_base_list.append("postprocess")
+	sxsubcmd_token_key_base_list.append("fsc_weighted")
+	sxsubcmd_token_key_base_list.append("low_pass_filter")
+	sxsubcmd_token_key_base_list.append("ff")
+	sxsubcmd_token_key_base_list.append("aa")
+	sxsubcmd_token_key_base_list.append("mask")
+	sxsubcmd_token_key_base_list.append("output")
+	sxsubcmd_token_key_base_list.append("pixel_size")
+	sxsubcmd_token_key_base_list.append("B_start")
+	sxsubcmd_token_key_base_list.append("FSC_cutoff")
+	sxsubcmd_mode_token_edit = SXcmd_token()
+	sxsubcmd_mode_token_edit.key_base = "postprocess"; sxsubcmd_mode_token_edit.is_required = True; sxsubcmd_mode_token_edit.default = True
+	sxcmd_subconfig = SXsubcmd_config("3D Refinement Postprocess", sxsubcmd_token_key_base_list, sxsubcmd_mode_token_edit, sxsubcmd_mpi_support)
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "pipe", subconfig = sxcmd_subconfig))
+
+	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", "pipe"))
+
+	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "pipe"))
+
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "pipe"))
+
+	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "pipe"))
+
+	# --------------------------------------------------------------------------------
+	# Define utility command settings
+	# --------------------------------------------------------------------------------
+	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "util"))
+
+	sxsubcmd_mpi_support = False
+	sxsubcmd_token_key_base_list = []
+	sxsubcmd_token_key_base_list.append("adaptive_mask")
+	sxsubcmd_token_key_base_list.append("nsigma")
+	sxsubcmd_token_key_base_list.append("ndilation")
+	sxsubcmd_token_key_base_list.append("kernel_size")
+	sxsubcmd_token_key_base_list.append("gauss_standard_dev")
+	sxsubcmd_token_key_base_list.append("threshold")
+	sxsubcmd_token_key_base_list.append("ne")
+	sxsubcmd_token_key_base_list.append("nd")
+	sxsubcmd_mode_token_edit = SXcmd_token()
+	sxsubcmd_mode_token_edit.key_base = "adaptive_mask"; sxsubcmd_mode_token_edit.is_required = True; sxsubcmd_mode_token_edit.default = True
+	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", sxsubcmd_token_key_base_list, sxsubcmd_mode_token_edit, sxsubcmd_mpi_support)
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util", subconfig = sxcmd_subconfig))
+	
+	sxsubcmd_mpi_support = False
+	sxsubcmd_token_key_base_list = [];
+	sxsubcmd_token_key_base_list.append("symmetrize");
+	sxsubcmd_token_key_base_list.append("sym")
+	sxsubcmd_mode_token_edit = SXcmd_token()
+	sxsubcmd_mode_token_edit.key_base = "symmetrize"; sxsubcmd_mode_token_edit.is_required = True; sxsubcmd_mode_token_edit.default = True
+	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", sxsubcmd_token_key_base_list, sxsubcmd_mode_token_edit, sxsubcmd_mpi_support)
+	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util", subconfig = sxcmd_subconfig))
+
+	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util", exclude_list=["symmetrize"]))
+	
+	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util"))
+	
+	# --------------------------------------------------------------------------------
+	# Generate sxgui.py
+	# --------------------------------------------------------------------------------
 	sxgui_template_file_path = "sxgui_template.py"
 	
 	output_file_path = "../bin/sxgui.py" # output_file_path = "sxgui_trial.py"
@@ -417,9 +571,13 @@ def main():
 			if line.find("# @@@@@ START_INSERTION @@@@@") != -1:
 				current_state = state_insertion
 				sxcmd_variable_name = "sxcmd"
-				for cmd_config in cmd_config_list:
+				for sxcmd_config in sxcmd_config_list:
 					# Construct sxscript object associated with this wiki document
-					sxcmd = construct_token_list_from_wiki(cmd_config)
+					sxcmd = construct_token_list_from_wiki(sxcmd_config)
+					if sxcmd_config.subconfig != None:
+						apply_sxsubcmd_config(sxcmd_config.subconfig, sxcmd)
+					if len(sxcmd_config.exclude_list) > 0:
+						apply_exclude_list(sxcmd_config.exclude_list, sxcmd)
 					insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name)
 					output_file.write("\n")
 					output_file.write("\tsxcmd_list.append(%s)\n" % sxcmd_variable_name)
