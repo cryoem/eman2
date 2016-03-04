@@ -39,7 +39,6 @@ directory		output directory name: into which the results will be written (if it 
 	# 'radius' and 'ou' are the same as per Pawel's request; 'ou' is hidden from the user
 	# the 'ou' variable is not changed to 'radius' in the 'sparx' program. This change is at interface level only for sxviper.
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-	parser.add_option("--ou",       type= "int",   default= -1,                 help= SUPPRESS_HELP)
 	parser.add_option("--rs",                    type="int",           default=1,          help="step between rings in rotational search: >0 (default 1)")
 	parser.add_option("--ts",                    type="string",        default='1.0',      help="step size of the translation search in x-y directions: search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional (default '1.0')")
 	parser.add_option("--delta",                 type="string",        default='2.0',      help="angular step of reference projections: (default '2.0')")

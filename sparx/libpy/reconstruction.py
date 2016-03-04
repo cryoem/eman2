@@ -222,7 +222,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 		r = Reconstructors.get( "nn4_rect", params )
 	r.setup()
 
-	if not (info is None): nimg = 0
+	if not (finfo is None): nimg = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
 		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
@@ -239,12 +239,12 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 		if dopad:
 			prj = pad(prj, imgsize,imgsize, 1, "circumference")
 		insert_slices(r, prj)
-		if( not (info is None) ):
+		if( not (finfo is None) ):
 			nimg += 1
 			info.write("Image %4d inserted.\n" %(nimg) )
 			info.flush()
 
-	if not (info is None): 
+	if not (finfo is None): 
 		info.write( "Begin reducing ...\n" )
 		info.flush()
 
