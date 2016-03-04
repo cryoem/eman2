@@ -243,6 +243,12 @@ EMData *EMData_get_clip_2(EMData &ths, Region rgn, float fill) {
 	return ths.get_clip(rgn,fill);
 }
 
+EMData *EMData_do_fft_wrapper(EMData &ths) {
+	GILRelease rel;
+	
+	return ths.do_fft();
+}
+
 void EMData_add_wrapper(EMData &ths, EMData &to) {
 	GILRelease rel;
 	
@@ -596,7 +602,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::project, EMAN_EMData_project_overloads_1_2(args("projector_name", "params"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
 	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Transform&) )&EMAN::EMData::project, args("projector_name", "t3d"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nt3d - Transform object used to do projection.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.", return_value_policy< manage_new_object >() )
 	.def("backproject", &EMAN::EMData::backproject, EMAN_EMData_backproject_overloads_1_2(args("peojector_name", "params"), "Calculate the backprojection of this image (stack) and return the result.\n \nprojector_name - Projection algorithm name. Only \"pawel\" and \"chao\" have been implemented now.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
-	.def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >(), "return the fast fourier transform (FFT) image of the current\nimage. the current image is not changed. The result is in\nreal/imaginary format.\n \nreturn The FFT of the current image in real/imaginary format.")
+	.def("do_fft", &EMData_do_fft_wrapper, return_value_policy< manage_new_object >(), "return the fast fourier transform (FFT) image of the current\nimage. the current image is not changed. The result is in\nreal/imaginary format.\n \nreturn The FFT of the current image in real/imaginary format.")
 	.def("do_fft_inplace", &EMAN::EMData::do_fft_inplace, return_value_policy< reference_existing_object >(), "Do FFT inplace. And return the FFT image.\n \nreturn The FFT of the current image in real/imaginary format.")
 	.def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >(), "return the inverse fourier transform (IFT) image of the current\nimage. the current image may be changed if it is in amplitude/phase\nformat as opposed to real/imaginary format - if this change is\nperformed it is not undone.\n \nreturn The current image's inverse fourier transform image.\nexception - ImageFormatException If the image is not a complex image.")
 	.def("do_ift_inplace", &EMAN::EMData::do_ift_inplace, return_value_policy< reference_existing_object >(), "Do IFT inplace. And return the IFT image.\n \nreturn The IFT image.")

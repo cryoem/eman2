@@ -6819,13 +6819,14 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			TypeDict d;
 			d.put("filename", EMObject::STRING, "mask image file name");
-			d.put("ismaskset", EMObject::INT, "If set to 1, it will take a file containing a set of masks and apply the first mask to the image");
+			d.put("image", EMObject::EMDATA, "The actual mask image (instead of the filename).");
+			d.put("maskset", EMObject::INT, "One common way to store multiple masks in a single image is to assign a single integer value to each mask. For files of this type, will set values N-0.5<X<N+0.5 to 1, and other values to zero, before applying the mask.");
 			return d;
 		}
 
 		virtual string get_desc() const
 		{
-			return "Multiplies the image by the specified file using pixel indices. The images must be same size. If 'ismaskset=' is 1, it will take a file containing a set of masks and apply the first mask to the image.";
+			return "Multiplies the image by the specified filename or image object. Note that 'image' should be specified rather than filename for e2proc2d or e2proc3d, as these programs automatically read image filenames when specified as parameters. So-called multi-level masks are also supported via the 'maskset' option.";
 		}
 
 		static const string NAME;
@@ -6834,35 +6835,35 @@ correction is not possible, this will allow you to approximate the correction to
 	/**Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.
 	 *@param filename mask image file name
 	 */
-	class CoordinateMaskFileProcessor:public Processor
-	{
-	  public:
-		virtual void process_inplace(EMData * image);
-
-		virtual string get_name() const
-		{
-			return NAME;
-		}
-
-		static Processor *NEW()
-		{
-			return new CoordinateMaskFileProcessor();
-		}
-
-		virtual string get_desc() const
-		{
-			return "Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.";
-		}
-
-		virtual TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("filename", EMObject::STRING, "mask image file name");
-			return d;
-		}
-
-		static const string NAME;
-	};
+// 	class CoordinateMaskFileProcessor:public Processor
+// 	{
+// 	  public:
+// 		virtual void process_inplace(EMData * image);
+// 
+// 		virtual string get_name() const
+// 		{
+// 			return NAME;
+// 		}
+// 
+// 		static Processor *NEW()
+// 		{
+// 			return new CoordinateMaskFileProcessor();
+// 		}
+// 
+// 		virtual string get_desc() const
+// 		{
+// 			return "Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.";
+// 		}
+// 
+// 		virtual TypeDict get_param_types() const
+// 		{
+// 			TypeDict d;
+// 			d.put("filename", EMObject::STRING, "mask image file name");
+// 			return d;
+// 		}
+// 
+// 		static const string NAME;
+// 	};
 
 	/**'paints' a circle into the image at x,y,z with values inside r1 set to v1, values between r1 and r2 will be set to a
 	 * value between v1 and v2, and values outside r2 will be unchanged
