@@ -2190,7 +2190,7 @@ def main():
 				masterdir ="master_sort3d"+timestring
 			li =len(masterdir)
 			cmd="{} {}".format("mkdir", masterdir)
-			cmdexecute(cmd)
+			os.system(cmd)
 		else:
 			li=0
 		li = mpi_bcast(li,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
@@ -2420,7 +2420,7 @@ def main():
 			log_main.add("number of images per group is set as %d"%number_of_images_per_group)
 			log_main.add("the initial number of groups is  %10d "%number_of_groups)
 			cmd="{} {}".format("mkdir",workdir)
-			cmdexecute(cmd)
+			os.system(cmd)
 		mpi_barrier(MPI_COMM_WORLD)
 		Tracker["this_data_list"] = list_to_be_processed 
 		create_random_list(Tracker)
@@ -2545,7 +2545,7 @@ def main():
 				log_main.add("the number of groups is  %10d "%number_of_groups)
 				log_main.add(" number of particles for clustering is %10d"%Tracker["total_stack"])
 				cmd="{} {}".format("mkdir",workdir)
-				cmdexecute(cmd)
+				os.system(cmd)
 			mpi_barrier(MPI_COMM_WORLD)
 			create_random_list(Tracker)
 			for indep_run in xrange(Tracker["constants"]["indep_runs"]):
