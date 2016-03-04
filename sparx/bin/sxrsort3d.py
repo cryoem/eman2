@@ -3092,7 +3092,7 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 		if myid ==main_node:log_main.add("P2 runs are done, now start two-way comparision to exclude those that are not reproduced ")
 		reproduced_groups = two_way_comparison_single(P2_partitions[0],P2_partitions[1],Tracker)# Here partition IDs are original indexes.
-		###### ----------------reconstruct reproduced groups------------------------#######
+		###### ----------------Reconstruct reproduced groups------------------------#######
 		######
 		if myid ==main_node:
 			for index_of_reproduced_groups in xrange(len(reproduced_groups)):

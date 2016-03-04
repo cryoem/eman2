@@ -977,7 +977,7 @@ Output: 2D 3xk real image.
 
 	ii = -1;
 	for (int i = 0; i <= inc; i++) {
-		if(lr[i]>0 and n1[i]>0.0f and n2[i]>0.0f) {
+		if(lr[i]>0 && n1[i]>0.0f && n2[i]>0.0f) {
 			ii++;
 			result[ii]        = float(i)/float(2*inc);
 			result[ii+linc]   = float(ret[i] / (std::sqrt(n1[i] * n2[i])));
@@ -3570,8 +3570,8 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 		throw ImageDimensionException("Can't frotate 2D image");
 	} else {
 //		 This begins the 3D version tri-linear interpolation.
-		if(is_complex())  {
-			if( radius < 1 or radius > nx/2-1) radius = nx/2-1;
+		if (is_complex())  {
+			if (radius < 1 || radius > nx/2-1) radius = nx/2-1;
 			float rm2 = (radius-1)*(radius-1);
 			bool iodd = get_attr("is_fftodd");
 			int xc = nx/2;
@@ -3667,7 +3667,7 @@ EMData::rot_fvol(const Transform &RA, EMData* ret, int radius) {
 				} // ends y loop
 			} // ends z loop
 		} else {
-			if( radius < 1 or radius > nx-1) radius = nx-1;
+			if (radius < 1 || radius > nx-1) radius = nx-1;
 			float rm2 = (radius-1)*(radius-1);
 			//cout<< "  radius  "<<radius<<"   "<<rm2<<endl;
 			int xc = nx/2;

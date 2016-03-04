@@ -774,6 +774,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("bilinear")
 		.staticmethod("fftc_d")
 		.staticmethod("addn_img")
+		.staticmethod("muln_img")
 		.staticmethod("pw_extract")
 		.staticmethod("shrinkfvol")
 		.staticmethod("divn_img")
