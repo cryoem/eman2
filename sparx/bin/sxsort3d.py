@@ -2507,7 +2507,7 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 			npergroup=read_text_file(class_file)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
+			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
 			vol_list.append(volref)
 			number_of_ref_class.append(len(npergroup))
 		Tracker["number_of_ref_class"] = number_of_ref_class
