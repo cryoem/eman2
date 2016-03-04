@@ -241,12 +241,12 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 		insert_slices(r, prj)
 		if( not (finfo is None) ):
 			nimg += 1
-			info.write("Image %4d inserted.\n" %(nimg) )
-			info.flush()
+			finfo.write("Image %4d inserted.\n" %(nimg) )
+			finfo.flush()
 
 	if not (finfo is None): 
-		info.write( "Begin reducing ...\n" )
-		info.flush()
+		finfo.write( "Begin reducing ...\n" )
+		finfo.flush()
 
 	reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
 	reduce_EMData_to_root(weight, myid, comm=mpi_comm)
