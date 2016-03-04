@@ -292,6 +292,8 @@ def main():
 			print "Output file extension may not be .lst: " + outfile
 			continue
 
+		is_single_2d_image = False
+
 		if is_inp_bdb :
 #			if os.path.isdir("EMAN2DB") :
 #				if not os.path.isfile("EMAN2DB"+"/"+infile[4:]+".bdb") :
@@ -301,8 +303,8 @@ def main():
 #				print "BDB directory EMAN2DB does not exist."
 #				continue
 			num_inp_images = -1
-		elif infile[0]==":" :				# special flag to create a new image
-			num_inp_images=2
+		elif infile[0] == ":" : 	# special flag to create a new image
+			num_inp_images = 2
 		elif os.path.isfile(infile) :
 			try :
 				num_inp_images = EMUtil.get_image_count(infile)
@@ -313,6 +315,7 @@ def main():
 				[nxinp, nyinp, nzinp] = gimme_image_dimensions3D(infile)
 
 				if nzinp == 1 :
+					is_single_2d_image = True
 					num_inp_images = 2
 
 					if out_ext == ".mrc" :
@@ -330,7 +333,10 @@ def main():
 			num_out_images = num_inp_images
 		elif out_ext == ".mrc" :
 			if num_inp_images > 1 :
-				num_out_images = 2
+				if is_single_2d_image :
+					num_out_images = 2
+				else :
+					num_out_images = 1
 			else :
 				num_out_images = 1
 		else :
@@ -338,6 +344,9 @@ def main():
 
 		inp3d = (num_inp_images == 1)
 		out3d = (num_out_images == 1)
+
+		if options.verbose > 1 :
+			print "input 3d, output 3d =", inp3d, out3d
 
 		opt3to3 = options.threed2threed
 		opt3to2 = options.threed2twod
@@ -485,6 +494,9 @@ def main():
 
 		dummy = 0										#JESUS
 
+		if options.verbose > 1 :
+			print "input file, output file, is three-d =", infile, outfile, isthreed
+
 		for i in range(n0, n1+1, options.step[1]):
 			if options.verbose >= 1:
 				if time.time()-lasttime > 3 or options.verbose > 2 :
@@ -542,6 +554,8 @@ def main():
 
 					d = image_from_formula(n_x, n_y, n_z, func)
 				else:
+					if options.verbose > 1 :
+						print "Read image #", i, "from input file:"
 					d = EMData()
 					d.read_image(infile, i)
 			else:
@@ -569,7 +583,12 @@ def main():
 			for append_option in append_options:
 				index_d[append_option] = 0
 
+			if options.verbose > 1 :
+				print "option list =", optionlist
+
 			for option1 in optionlist:
+				if options.verbose > 1 :
+					print "option in option list =", option1
 				nx = d.get_xsize()
 				ny = d.get_ysize()
 
@@ -761,8 +780,7 @@ def main():
 					if xfmode == 1 : xform.invert()
 					
 					d.process_inplace("xform",{"transform":xform})
-					
-					
+
 				elif option1 == "selfcl":
 					scl = options.selfcl[0] / 2
 					sclmd = options.selfcl[1]
@@ -846,6 +864,9 @@ def main():
 				elif option1 == "outtype":
 					if not options.outtype:
 						options.outtype = "unknown"
+
+					if options.verbose > 1 :
+						print "output type =", options.outtype
 
 					if i == 0:
 						original_outfile = outfile
