@@ -8814,7 +8814,7 @@ correction is not possible, this will allow you to approximate the correction to
 		}
 		string get_desc() const
 		{
-			return "Calculate the z thickness of each pixel in a binarized 3d image.";
+			return "Calculate the z thickness of each pixel in a binarized 3d image. For each white voxel, use the number of continus white voxels above and below this voxel in z direction as the thickness.";
 		}
 		virtual TypeDict get_param_types() const
 		{
@@ -8844,7 +8844,6 @@ correction is not possible, this will allow you to approximate the correction to
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("num", EMObject::INT, "Length of the array.");
 			d.put("colorlst", EMObject::FLOATARRAY, "Array of values to replace.");
 			return d;
 		}
@@ -8853,8 +8852,8 @@ correction is not possible, this will allow you to approximate the correction to
 	  protected:
 		void process_pixel(float *x) const
 		{
-			int num=params["num"];
 			vector < float >lst =params["colorlst"];
+			int num=lst.size();
 			if (*x<num){
 				*x=lst[int(*x)];
 			}
