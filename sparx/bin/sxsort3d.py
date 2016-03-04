@@ -2190,7 +2190,7 @@ def main():
 				masterdir ="master_sort3d"+timestring
 			li =len(masterdir)
 			cmd="{} {}".format("mkdir", masterdir)
-			cmdexecute(cmd)
+			os.system(cmd)
 		else:
 			li=0
 		li = mpi_bcast(li,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
@@ -2269,16 +2269,6 @@ def main():
 			chunk_two = wrap_mpi_bcast(chunk_two, main_node)
 		mpi_barrier(MPI_COMM_WORLD)
 		######################## Read/write bdb: data on main node ############################
-	   	"""
-	   	if myid == main_node:
-	   		params= []
-	   		for i in xrange(total_stack):
-	   			e=get_im(orgstack,i)
-	   			phi,theta,psi,s2x,s2y = get_params_proj(e)
-	   			e.write_image(Tracker["constants"]["stack"],i)
-	   			params.append([phi,theta,psi,s2x,s2y])
-	   		write_text_row(params,Tracker["constants"]["ali3d"])
-	   	"""
 	   	if myid==main_node:
 	   		from EMAN2db import db_open_dict	
 	   		OB = db_open_dict(orgstack)
@@ -2430,7 +2420,7 @@ def main():
 			log_main.add("number of images per group is set as %d"%number_of_images_per_group)
 			log_main.add("the initial number of groups is  %10d "%number_of_groups)
 			cmd="{} {}".format("mkdir",workdir)
-			cmdexecute(cmd)
+			os.system(cmd)
 		mpi_barrier(MPI_COMM_WORLD)
 		Tracker["this_data_list"] = list_to_be_processed 
 		create_random_list(Tracker)
@@ -2555,7 +2545,7 @@ def main():
 				log_main.add("the number of groups is  %10d "%number_of_groups)
 				log_main.add(" number of particles for clustering is %10d"%Tracker["total_stack"])
 				cmd="{} {}".format("mkdir",workdir)
-				cmdexecute(cmd)
+				os.system(cmd)
 			mpi_barrier(MPI_COMM_WORLD)
 			create_random_list(Tracker)
 			for indep_run in xrange(Tracker["constants"]["indep_runs"]):
