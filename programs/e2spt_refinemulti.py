@@ -127,72 +127,68 @@ def main():
 		
 	parser.add_argument("--btref",type=int,default=0,help="""WARNING: MIGHT BE BUGGY OR NOT WORKING. Mulst supply references through --ref. Default=0 (internally turned on and set to 64). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_binarytree.py. By default, the largest power of two smaller than the number of particles in --input will be used. For example, if you supply a stack with 150 subtomograms, the program will automatically select 128 as the limit to use because it's the largest power of 2 that is smaller than 150. But if you provide, say --btref=100, then the number of particles used will be 64, because it's the largest power of 2 that is still smaller than 100.""")
 	
-	parser.add_argument("--radius", type=float, help="""Will make --align and --falign None. Hydrodynamic radius of the particle in Angstroms. This will be used to automatically calculate the angular steps to use in search of the best alignment. Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels. Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
+	parser.add_argument("--radius", type=float, default=0, help="""Default=0 (not used). Will make --align and --falign None. Hydrodynamic radius of the particle in Angstroms. This will be used to automatically calculate the angular steps to use in search of the best alignment. Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels. Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""")
 	
-	parser.add_argument("--iter", type=int, help="""The number of iterations to perform. Default is 1.""", default=1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
+	parser.add_argument("--iter", type=int, default=1,help="""The number of iterations to perform. Default is 1.""")
 	
-	parser.add_argument("--savesteps",action="store_true", help="""If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.""",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--savesteps",action="store_true", default=False, help="Default=False. If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.""")
 	
-	parser.add_argument("--saveali",action="store_true", help="""If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.""",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--saveali",action="store_true", default=False, help="Default=False. If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.""")
 	
-	parser.add_argument("--saveallalign",action="store_true", help="""If set, will save the alignment parameters after each iteration""",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--saveallalign",action="store_true", default=False, help="Default=False. If set, will save the alignment parameters after each iteration""")
 	
-	parser.add_argument("--sym", dest = "sym", default=None, help="""Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
+	parser.add_argument("--sym", dest = "sym", default=None, help="""Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""")
 	
-	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--mask",type=str,default='',help="""Mask processor applied to particles before alignment. Default=None.""")
 	
 	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
 	
-	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""", default="normalize")
+	parser.add_argument("--normproc",type=str,default='',help="""Default=None. Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 	
-	parser.add_argument("--threshold",type=str,help="""A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""")
 	
-	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--preprocess",type=str,default='',help="Default=''. Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
 
-	parser.add_argument("--preprocessfine",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
+	parser.add_argument("--preprocessfine",type=str, default='',help="Default=''. Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
 	
-	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--lowpass",type=str,default='',help="Default=None. A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
 
-	parser.add_argument("--lowpassfine",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
+	parser.add_argument("--lowpassfine",type=str,default='',help="Default=None.A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
 
-	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--highpass",type=str,default='',help="Default=None.A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
 
-	parser.add_argument("--highpassfine",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
+	parser.add_argument("--highpassfine",type=str,default='',help="Default=None.A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
 
-	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--postprocess",type=str,default='',help="Default=None.A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.")
 	
 	parser.add_argument("--procfinelikecoarse",type=bool,default=True,help="Turn on with --procfinelikecoarse=False, and supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.")
 	
-#	parser.add_argument("--ncoarse", type=int, help="Deprecated. Use --npeakstorefine instead.", default=None)
-
-	parser.add_argument("--npeakstorefine", type=int, default=1, help="Default=1. The number of best coarse alignments to refine in search of the best final alignment.",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
+	parser.add_argument("--npeakstorefine", type=int, default=1, help="Default=1. The number of best coarse alignments to refine in search of the best final alignment.")
 	
 	
 	
 	
-	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=12:dphi=12",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
+	parser.add_argument("--align",type=str,default="rotate_translate_3d_tree",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""")
 
-	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo.thresh", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+	parser.add_argument("--aligncmp",type=str,default="ccc.tomo.thresh",help="The comparator used for the --align aligner. Default is the internal tomographic ccc.tomo.thresh. Do not specify unless you need to use another specific aligner.")
 
-	parser.add_argument("--falign",type=str,default="refine_3d_grid:delta=3:range=15:search=2",help="""Default="refine_3d_grid:delta=3:range=15:search=2". This is the second stage aligner used to fine-tune the first alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+	parser.add_argument("--falign",type=str,default='',help="""Default=None (not used). This is the second stage aligner used to fine-tune the first alignment. Specify 'None' to disable.""")
 
-	parser.add_argument("--faligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo.thresh", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+	parser.add_argument("--faligncmp",type=str,default="ccc.tomo.thresh",help="The comparator used by the second stage aligner. Default is the internal tomographic ccc.tomo.thresh.")
 
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean.tomo")
 
-	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--keep",type=float,default=1.0,help="Default=1.0. The fraction of particles to keep in each class.")
 
-	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
+	parser.add_argument("--inixforms",type=str,default="",help="Default=None. .json file containing a dict of transform to apply before reference generation")
 
-	parser.add_argument("--breaksym",action="store_true", help="Break symmetry. Do not apply symmetrization after averaging", default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
+	parser.add_argument("--breaksym",action="store_true", default=False, help="Default=False. Breaks symmetry (skip symmetrization after averaging).")
 	
-#	parser.add_argument("--groups",type=int,help="WARNING: This parameter is EXPERIMENTAL, and will only work if --iter=1. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=0)
-
-	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False)
+	parser.add_argument("--randomizewedge",action="store_true", default=False,help="Default=False. This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned")
 	
-	parser.add_argument("--savepreproc",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False)
+	parser.add_argument("--savepreproc",action="store_true",default=False, help="Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).")
 	
-	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.")
 	
 	parser.add_argument("--autocenter",type=str, default='',help="""WARNING: Experimental. Default=None. Autocenters each averaged pair during initial average generation with --btref and --hacref. Will also autocenter the average of all particles after each iteration of iterative refinement. Options are --autocenter=xform.centerofmass (self descriptive), or --autocenter=xform.centeracf, which applies auto-convolution on the average.""")
 	
@@ -200,7 +196,6 @@ def main():
 	
 	parser.add_argument("--autocenterpreprocess",action='store_true', default=False,help="""WARNING: Experimental. Requires --autocenter. Default=False. This will apply a highpass filter at a frequency of half the box size times the apix, shrink by 2, and apply a low pass filter at half nyquist frequency to any computed average for autocentering purposes if --autocenter is provided. Default=False.""")
 	
-	#parser.add_argument('--reverse_contrast', action="store_true", default=False, help=""" This multiplies the input particles by -1. Remember that EMAN2 **MUST** work with 'white protein' """)
 	
 	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
 	
@@ -215,8 +210,7 @@ def main():
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	#parser.add_argument("--resample",action="store_true",help="If set, will perform bootstrap resampling on the particle data for use in making variance maps.",default=False)
-	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
-	#parser.add_argument("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
+
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")

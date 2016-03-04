@@ -219,6 +219,66 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_compute_missingwedge_overload
 
 using namespace EMAN;
 //// These give us threadsafety. Couldn't find a more elegant way to do it with overloading :^/
+
+// drawn from https://wiki.python.org/moin/boost.python/HowTo#Multithreading_Support_for_my_function
+// Instantiating this class in the function gives us GIL release
+class GILRelease
+{
+public:
+    inline GILRelease() { m_thread_state = PyEval_SaveThread(); }
+    inline ~GILRelease() { PyEval_RestoreThread(m_thread_state); m_thread_state = NULL; }
+private:
+    PyThreadState * m_thread_state;
+};
+
+EMData *EMData_get_clip_1(EMData &ths, Region rgn) {
+	GILRelease rel;
+	
+	return ths.get_clip(rgn);
+}
+
+EMData *EMData_get_clip_2(EMData &ths, Region rgn, float fill) {
+	GILRelease rel;
+	
+	return ths.get_clip(rgn,fill);
+}
+
+EMData *EMData_do_fft_wrapper(EMData &ths) {
+	GILRelease rel;
+	
+	return ths.do_fft();
+}
+
+void EMData_add_wrapper(EMData &ths, EMData &to) {
+	GILRelease rel;
+	
+	ths.add(to);
+}
+
+EMData *EMData_calc_ccf_wrapper3(EMData &ths, EMData *with, fp_flag fpflag, bool center) {
+	GILRelease rel;
+	
+	return ths.calc_ccf(with,fpflag,center);
+}
+
+EMData *EMData_calc_ccf_wrapper2(EMData &ths, EMData *with, fp_flag fpflag) {
+	GILRelease rel;
+	
+	return ths.calc_ccf(with,fpflag);
+}
+
+EMData *EMData_calc_ccf_wrapper1(EMData &ths, EMData *with) {
+	GILRelease rel;
+	
+	return ths.calc_ccf(with);
+}
+
+EMData *EMData_calc_ccf_wrapper0(EMData &ths) {
+	GILRelease rel;
+	
+	return ths.calc_ccf();
+}
+
 vector<Dict> EMData_align_nbest_wrapper6(EMData &ths, const string & aligner_name, EMData * to_img, const Dict & params, int nsoln, const string & cmp_name, const Dict& cmp_params) {
 	vector<Dict> ret;
 	PyThreadState *_save = PyEval_SaveThread();
@@ -542,7 +602,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::project, EMAN_EMData_project_overloads_1_2(args("projector_name", "params"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
 	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Transform&) )&EMAN::EMData::project, args("projector_name", "t3d"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nt3d - Transform object used to do projection.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.", return_value_policy< manage_new_object >() )
 	.def("backproject", &EMAN::EMData::backproject, EMAN_EMData_backproject_overloads_1_2(args("peojector_name", "params"), "Calculate the backprojection of this image (stack) and return the result.\n \nprojector_name - Projection algorithm name. Only \"pawel\" and \"chao\" have been implemented now.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
-	.def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >(), "return the fast fourier transform (FFT) image of the current\nimage. the current image is not changed. The result is in\nreal/imaginary format.\n \nreturn The FFT of the current image in real/imaginary format.")
+	.def("do_fft", &EMData_do_fft_wrapper, return_value_policy< manage_new_object >(), "return the fast fourier transform (FFT) image of the current\nimage. the current image is not changed. The result is in\nreal/imaginary format.\n \nreturn The FFT of the current image in real/imaginary format.")
 	.def("do_fft_inplace", &EMAN::EMData::do_fft_inplace, return_value_policy< reference_existing_object >(), "Do FFT inplace. And return the FFT image.\n \nreturn The FFT of the current image in real/imaginary format.")
 	.def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >(), "return the inverse fourier transform (IFT) image of the current\nimage. the current image may be changed if it is in amplitude/phase\nformat as opposed to real/imaginary format - if this change is\nperformed it is not undone.\n \nreturn The current image's inverse fourier transform image.\nexception - ImageFormatException If the image is not a complex image.")
 	.def("do_ift_inplace", &EMAN::EMData::do_ift_inplace, return_value_policy< reference_existing_object >(), "Do IFT inplace. And return the IFT image.\n \nreturn The IFT image.")
@@ -575,7 +635,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("copy", &EMAN::EMData::copy, return_value_policy< manage_new_object >(), "Make a copy of this image including both data and header.\n \nreturn A copy of this image including both data and header.")
 	.def("copy_head", &EMAN::EMData::copy_head, return_value_policy< manage_new_object >(), "Make an image with a copy of the current image's header.\n \nreturn An image with a copy of the current image's header.")
 	.def("add", (void (EMAN::EMData::*)(float, int) )&EMAN::EMData::add, EMAN_EMData_add_overloads_1_2(args("f", "keepzero"), "add a number to each pixel value of the image. Image may be real or complex.\n \nf - The number added to 'this' image.\nkeepzero - If set will not modify pixels that are exactly zero, default to 0."))
-	.def("add", (void (EMAN::EMData::*)(const EMAN::EMData&) )&EMAN::EMData::add, args("image"), "add a same-size image to this image pixel by pixel.\n \nimage - The image added to 'this' image.\n \nexception - ImageFormatException If the 2 images are not same size.")
+	.def("add", &EMData_add_wrapper, args("image"), "add a same-size image to this image pixel by pixel.\n \nimage - The image added to 'this' image.\n \nexception - ImageFormatException If the 2 images are not same size.")
 	.def("addsquare", (void (EMAN::EMData::*)(const EMAN::EMData&) )&EMAN::EMData::addsquare, args("image"), "add the squared value of each pixel from a same-size image to this image.\n \nimage - The image whose square is added to 'this' image.\n \nexception ImageFormatException If the 2 images are not same size.")
 	.def("sub", (void (EMAN::EMData::*)(float) )&EMAN::EMData::sub, args("f"), "subtract a float number to each pixel value of the image.\n \nf - The float number subtracted from 'this' image.")
 	.def("sub", (void (EMAN::EMData::*)(const EMAN::EMData&) )&EMAN::EMData::sub, args("image"), "subtract a same-size image from this image pixel by pixel.\n \nimage - The image subtracted  from 'this' image.\n \nexception - ImageFormatException If the 2 images are not same size.")
@@ -653,6 +713,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 //	.def("nn_ctf_applied", &EMAN::EMData::nn_ctf_applied)
 //	.def("symplane0_ctf", &EMAN::EMData::symplane0_ctf)
 	.def("symvol", &EMAN::EMData::symvol, return_value_policy< manage_new_object >(), args("symmetry"), "Symmetrize volume in real space.\n \nsymmetry - Point group of the target volume.\n \nreturn New symmetrized volume object.")
+	.def("symfvol", &EMAN::EMData::symfvol, return_value_policy< manage_new_object >(), args("symmetry"), "Symmetrize volume in Fourier space.\n \nsymmetry - Point group of the target volume.\n \nreturn New symmetrized volume object.")
+	.def("rot_fvol", &EMAN::EMData::rot_fvol, return_value_policy< manage_new_object >(), args("RA"), "Rotate Fourier volume.\n \nRA - Transform object\n \nreturn New rotated/ image\nexception - ImageDimensionException can not rotate 1 D image")
 	.def("rot_scale_trans2D", &EMAN::EMData::rot_scale_trans2D, EMAN_EMData_rot_scale_trans2D_overloads_1_4(args("ang", "delx", "dely", "scale"), "Rotate-Shift-Scale-Circulantly image.\nIf the image is a volume, then all slices are rotated/translated/scaled.\n \nang -Rotation angle in degrees.\ndelx - Amount to shift rotation origin along x\ndely - Amount to shift rotation origin along y\nscale - Scaling factor (default=1.0)\n \nreturn New rotated/shifted/scaled image\nexception ImageDimensionException can not rotate 1 D image\nexception ImageDimensionException can not rotate 3 D image")[ return_value_policy< manage_new_object >() ])
 	.def("rot_scale_trans2D_background", &EMAN::EMData::rot_scale_trans2D_background, EMAN_EMData_rot_scale_trans2D_background_overloads_1_4(args("ang", "delx", "dely", "scale"), "Rotate-Shift-Scale image\nIn contrast to rot_scale_trans2D, wrap aroud is not done circulantly so as to\nprevent artifacts from occurring.\nIf the image is a volume, then all slices are\nrotated/translated/scaled.\n \nang - Rotation angle in degrees.\ndelx - Amount to shift rotation origin along x(default=0.0)\ndely - Amount to shift rotation origin along y(default=0.0)\nscale - Scaling factor (default=1.0)\n \nreturn New rotated/shifted/scaled image\nexception - ImageDimensionException can not rotate 1 D image\nexception - ImageDimensionException can not rotate 3 D image")[ return_value_policy< manage_new_object >() ])
 	.def("rot_scale_trans", &EMAN::EMData::rot_scale_trans, return_value_policy< manage_new_object >(), args("RA"), "Rotate-Shift-Scale-Circulantly image\nIf the image is a volume, then all slices are\nrotated/translated/scaled.\n \nRA - Transform object\n \nreturn New rotated/shifted/scaled image\nexception - ImageDimensionException can not rotate 1 D image")
@@ -706,7 +768,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("filter_by_image", &EMAN::EMData::filter_by_image, EMAN_EMData_filter_by_image_overloads_1_2(args("image", "RetReal"), " ")[ return_value_policy< manage_new_object >() ])
 	.def("replace_amplitudes", &EMAN::EMData::replace_amplitudes, EMAN_EMData_replace_amplitudes_overloads_1_2(args("image", "RetReal"), " ")[ return_value_policy< manage_new_object >() ])
 	.def("norm_pad", &EMAN::EMData::norm_pad, EMAN_EMData_norm_pad_overloads_2_3(args("do_norm", "npad", "valtype"), "Normalize, pad, and Fourier extend convenience function.\nPurpose: Create a new [normalized] [zero-padded] Fourier image.\nMethod: Normalize (if requested), pad with zeros (if\nrequested), extend along x for fft, and return the new  image.\n \ndo_norm - If true then perform normalization.\nnpad - Amount of zero-padding to use (defaults to 2 if do_pad is true).(default=1)\nvaltype - (default=0)\n \nreturn [normalized,] [zero-padded,] [ft-extended] input image.") [ return_value_policy< manage_new_object >()])
-	.def("get_clip", &EMAN::EMData::get_clip, EMAN_EMData_get_clip_overloads_1_2(args("area", "fill"), "Get an inclusive clip. Pads to fill if larger than this image.\n \narea - The clip area, can be 2D/3D.\nfill - the value to assign new pixels outside the area of the original image.(default=0)\n \nreturn The clip image.\nexception ImageDimensionException if any of the dimensions of the argument region are negative") [ return_value_policy< manage_new_object >()])
+	.def("get_clip", &EMData_get_clip_1, args("area"), return_value_policy< manage_new_object >(),"Get an inclusive clip. Pads to fill if larger than this image.\n \narea - The clip area, can be 2D/3D.\nfill - the value to assign new pixels outside the area of the original image.(default=0)\n \nreturn The clip image.\nexception ImageDimensionException if any of the dimensions of the argument region are negative") 
+	.def("get_clip", &EMData_get_clip_2, args("area", "fill"), return_value_policy< manage_new_object >(),"Get an inclusive clip. Pads to fill if larger than this image.\n \narea - The clip area, can be 2D/3D.\nfill - the value to assign new pixels outside the area of the original image.(default=0)\n \nreturn The clip image.\nexception ImageDimensionException if any of the dimensions of the argument region are negative") 
 	.def("clip_inplace", &EMAN::EMData::clip_inplace, EMAN_EMData_clip_inplace_overloads_1_2(args("region", "fill_value"), "Clip the image inplace - clipping region must be smaller than the current region.\ninternally memory is reallocated.\n \nregion - The clip area, can be 2D/3D.\nfill_value - the value fill that new region. default to 0.")[return_value_policy< reference_existing_object >()])
 	.def("get_top_half", &EMAN::EMData::get_top_half, return_value_policy< manage_new_object >(), "Get the top half of this 3D image.\n \nreturn The top half of this image.\nexception - ImageDimensionException If this image is not 3D.")
 	.def("get_rotated_clip", &EMAN::EMData::get_rotated_clip, EMAN_EMData_get_rotated_clip_overloads_2_3(args("xform", "size", "scale"), "This will extract an arbitrarily oriented and sized region from the image.\n \nxform - The transformation of the region.\nsize - Size of the clip.\nscale - Scaling put on the returned image(default=1.0).\n \nreturn The clip image.")[ return_value_policy< manage_new_object >() ])
@@ -730,7 +793,10 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("dot_rotate_translate", &EMAN::EMData::dot_rotate_translate, EMAN_EMData_dot_rotate_translate_overloads_4_5(args("with", "dx", "dy", "da", "mirror"), "dot product of 2 images. Then 'this' image is rotated/translated.\nIt is much faster than Rotate/Translate then dot product.\n2D images only.\n \nwith - The image used to do the dot product.\ndx - Translation distance in x direction.\ndy - Translation distance in y direction.\nda - Rotation euler angle in degrees\nmirror - (default=False)\n \nexception - ImageFormatException If the 2 images are not the same size.\nexception - ImageDimensionException If the image is 3D."))
 	.def("little_big_dot", &EMAN::EMData::little_big_dot, EMAN_EMData_little_big_dot_overloads_1_2(args("little_img", "do_sigma"), "This does a normalized dot product of a little image with a big image\nusing real-space methods. The result is the same size as 'this',\nbut a border 1/2 the size of 'little_img' will be zero.\nThis routine is only efficient when 'little_img' is fairly small.\n \nlittle_img - A small image.\ndo_sigma - Calculate sigma or not(default=False).\n \nreturn normalized dot product image.\nexception - ImageDimensionException If the image is not 1D/2D.")[ return_value_policy< manage_new_object >() ])
 	.def("do_radon", &EMAN::EMData::do_radon, return_value_policy< manage_new_object >(), "Radon Transform: an algorithm that transforms an original\nimage into a series of equiangular projections. When\napplied to a 2D object, the output of the Radon transform is a\nseries of 1D lines.\nDo radon transformation on this image. This image must be 2D square.\n \nreturn Radon transform image in square.\nexception - ImageFormatException If the image is not square.\nexception - ImageDimensionException If the image is not 2D.")
-	.def("calc_ccf", &EMAN::EMData::calc_ccf, EMAN_EMData_calc_ccf_overloads_0_3(args("with", "fpflag", "center"), "Calculate Cross-Correlation Function (CCF).\nCalculate the correlation of two 1-, 2-, or 3-dimensional images.\nNote: this method internally just calls the correlation function from fundamentals.h.\n \nwith - The image used to calculate the CCF. If 'with' is NULL, the autocorrelation function is computed instead.\nfpflag - Specify how periodicity (or normalization) should be handled. See fundamentals.h for specific flags.(default = 'CIRCULANT').\ncenter - whether or not to center the image (bring bottom left corner to center)(default=False)\n \nreturn Real-space image.\nexception - ImageDimensionException if nx > 1 and nx < 2*radius + 1")[ return_value_policy< manage_new_object >() ])
+	.def("calc_ccf", &EMData_calc_ccf_wrapper0,return_value_policy< manage_new_object >(), "Calculate Cross-Correlation Function (CCF).\nCalculate the correlation of two 1-, 2-, or 3-dimensional images.\nNote: this method internally just calls the correlation function from fundamentals.h.\n \nwith - The image used to calculate the CCF. If 'with' is NULL, the autocorrelation function is computed instead.\nfpflag - Specify how periodicity (or normalization) should be handled. See fundamentals.h for specific flags.(default = fp_flag.CIRCULANT).\ncenter - whether or not to center the image (bring bottom left corner to center)(default=False)\n \nreturn Real-space image.\nexception - ImageDimensionException if nx > 1 and nx < 2*radius + 1")
+	.def("calc_ccf", &EMData_calc_ccf_wrapper1, args("with"), return_value_policy< manage_new_object >())
+	.def("calc_ccf", &EMData_calc_ccf_wrapper2, args("with", "fpflag"),return_value_policy< manage_new_object >())
+	.def("calc_ccf", &EMData_calc_ccf_wrapper3, args("with", "fpflag", "center"), return_value_policy< manage_new_object >())
 	.def("calc_ccfx", &EMAN::EMData::calc_ccfx, EMAN_EMData_calc_ccfx_overloads_1_4(args("with", "y0", "y1", "nosum"), "Calculate Cross-Correlation Function (CCF) in the x-direction and adds them up,\nresult in 1D.\nWARNING: this routine will modify the 'this' and 'with' to contain\n1D fft's without setting some flags. This is an optimization\nfor rotational alignment.\nsee calc_ccf()\n \nwith - The image used to calculate CCF.\ny0 - Starting position in x-direction(default=0).\ny1 - Ending position in x-direction. '-1' means the end of the row.(default=-1)\nnosum - If true, returns an image y1-y0+1 pixels high.(default=False)\n \nreturn The result image containing the CCF.\nexception - NullPointerException If input image 'with' is NULL.\nexception - ImageFormatException If 'with' and 'this' are not same size.\nexception - ImageDimensionException If 'this' image is 3D.")[ return_value_policy< manage_new_object >() ])
 	.def("calc_fast_sigma_image",&EMAN::EMData::calc_fast_sigma_image, return_value_policy< manage_new_object >(), args("mask"), "Calculates the local standard deviation (sigma) image using the given\nmask image. The mask image is typically much smaller than this image,\nand consists of ones, or is a small circle consisting of ones. The extent\nof the non zero neighborhood explicitly defines the range over which\nthe local standard deviation is determined.\nFourier convolution is used to do the math, ala Roseman (2003, Ultramicroscopy)\nHowever, Roseman was just working on methods Van Heel had presented earlier.\nThe normalize flag causes the mask image to be processed so that it has a unit sum.\nWorks in 1,2 and 3D\n \nmask - the image that will be used to define the neighborhood for determine the local standard deviation\n \nreturn the sigma image, the phase origin is at the corner (not the center)\nexception - ImageDimensionException if the dimensions of with do not match those of this\nexception - ImageDimensionException if any of the dimensions sizes of with exceed of this image's.")
 	.def("make_rotational_footprint", &EMAN::EMData::make_rotational_footprint, EMAN_EMData_make_rotational_footprint_overloads_0_1(args("unwrap"), "Makes a 'rotational footprint', which is an 'unwound'\nautocorrelation function. generally the image should be\nedge-normalized and masked before using this.\n \nunwrap - RFP undergoes polar->cartesian x-form,(default=True)\n \nreturn The rotaional footprint image.\nexception - ImageFormatException If image size is not even.")[ return_value_policy< manage_new_object >() ])

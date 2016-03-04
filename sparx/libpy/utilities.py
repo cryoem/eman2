@@ -2023,7 +2023,7 @@ def rotate_shift_params(paramsin, transf):
 
 
 #  01/06/2016 - This is my recoding of old FORTRAN code with the hope that python's double precission
-#                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeed psi
+#                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeeds psi
 #                 in this case as well.  So, the only choice is to use small theta instead of exact 0,0,0 direction
 def rotate_params(params, transf):
 	matinv = rotmatrix( -transf[2], -transf[1], -transf[0] )
@@ -3193,7 +3193,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	import types
 	from  utilities import  get_arb_params, set_arb_params
 	from  mpi 	import mpi_recv
-	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
+	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
 
 	#   hdf version!
 	# This is done on the main node, so for images from the main node, simply write headers
@@ -3219,8 +3219,8 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	headers = []
 	for n in xrange(number_of_proc):
 		if n != main_node:
-			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, comm)
-			value = mpi_recv(len_list*(dis[1]-dis[0]), MPI_FLOAT, n, MPI_TAG_UB, comm)
+			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
+			value = mpi_recv(len_list*(dis[1]-dis[0]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
 			ldis.append([dis[0], dis[1]])
 			headers.append(value)
 			del  dis
@@ -3290,7 +3290,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	import types
 	from  utilities import  get_arb_params, set_arb_params
 	from  mpi 	import mpi_recv
-	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
+	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
 	from EMAN2db import db_open_dict
 	#  bdb version!
 	# This is done on the main node, so for images from the main node, simply write headers
@@ -3319,10 +3319,10 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	headers = []
 	for n in xrange(number_of_proc):
 		if n != main_node:
-			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, comm)
+			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
 			img_begin = int(dis[0])
 			img_end = int(dis[1])
-			header = mpi_recv(len_list*(img_end-img_begin), MPI_FLOAT, n, MPI_TAG_UB, comm)
+			header = mpi_recv(len_list*(img_end-img_begin), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
 			for im in xrange(img_begin, img_end):
 				par_begin = (im-img_begin)*len_list
 				nvalue = []
@@ -5131,30 +5131,36 @@ def print_with_time_info(msg):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
 	print line
 
-def if_error_all_processes_quit_program(error_status):
-	from traceback import extract_stack
+def if_error_then_all_processes_exit_program(error_status):
 	import sys, copy
 	from mpi import mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+	
+	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	
+	if error_status != None and error_status != 0:
+		error_status_info = error_status
+		error_status = 1
+	else:
+		error_status = 0
 
-	# print "error_status1:", error_status
 	error_status = mpi_bcast(error_status, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	error_status = int(error_status[0])
 
 	if error_status > 0:
-		# if report_message:
-		# 	from utilities import program_state_stack
-		# 	from inspect import currentframe, getframeinfo
-		# 	program_state_stack(locals(), getframeinfo(currentframe()), last_call="___%s"%report_message)
-	
-		# if mpi_comm_rank(MPI_COMM_WORLD) == 0:
-		# 	print "Stack INFO -0-:", extract_stack()[-3:]
-		# if mpi_comm_rank(MPI_COMM_WORLD) == 1:
-		# 	print "Stack INFO -1-:", extract_stack()[-3:]
-		#
-		# print "qqqqqqq:", error_status
+		if myid == 0:
+			if type(error_status_info) == type((1,1)):
+				if len(error_status_info) == 2:
+					frameinfo = error_status_info[1] 
+					print "***********************************"
+					print "** Error:", error_status_info[0]
+					print "***********************************"
+					# print "** Location:", frameinfo.filename + "  --  " + str(frameinfo.lineno)
+					print "** Location:", frameinfo.filename + ":" + str(frameinfo.lineno)
+					print "***********************************"
 		mpi_finalize()
 		sys.stdout.flush()		
-		sys.exit()
+		sys.exit(1)
 
 def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
 	# The function will read from stack a subset of images specified in partids
@@ -5244,7 +5250,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 
 '''
 def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid = 0, main_node = 0, nproc = 1, \
-					original_data = None, return_real = False, preshift = False, apply_mask = True, compute_sigma2  False, large_memory = True):
+					original_data = None, return_real = False, preshift = False, apply_mask = True, large_memory = True):
 	"""
 	This function will read from stack a subset of images specified in partids
 	   and assign to them parameters from partstack with optional CTF application and shifting of the data.
@@ -5399,7 +5405,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 	assert( nxinit == data[0].get_ysize() )  #  Just to make sure.
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts, original_data
-
+'''
 def getindexdata(stack, partids, partstack, myid, nproc):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack
@@ -5428,7 +5434,7 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	for i in xrange(len(partstack)):
 		set_params_proj(data[i], partstack[i])
 	return data
-'''
+
 
 def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_of_vars = [], write_or_append = "w", 
 	vars_that_will_show_only_size = []):
@@ -5528,7 +5534,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 
 	from traceback import extract_stack
 	from mpi import mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD, MPI_INT
-	from utilities import if_error_all_processes_quit_program
+	from utilities import if_error_then_all_processes_exit_program
 	import os
 
 	def get_current_stack_info():
@@ -5539,7 +5545,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	START_EXECUTING_ONLY_ONE_TIME_THEN_REVERT = 2
 	
 	# error_status = 1
-	# if_error_all_processes_quit_program(error_status)
+	# if_error_then_all_processes_exit_program(error_status)
 	
 	current_state = dict()
 	for var in program_state_stack.PROGRAM_STATE_VARIABLES & set(full_current_state) :
@@ -5640,7 +5646,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	else:
 		program_state_stack.start_executing = START_EXECUTING_FALSE
 		
-	if_error_all_processes_quit_program(error_status)	
+	if_error_then_all_processes_exit_program(error_status)	
 		
 	program_state_stack.start_executing = mpi_bcast(program_state_stack.start_executing, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	program_state_stack.start_executing = int(program_state_stack.start_executing[0])

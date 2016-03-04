@@ -43,6 +43,7 @@
 using namespace EMAN;
 
 const string ImageAverager::NAME = "mean";
+const string VarianceAverager::NAME = "variance";
 const string TomoAverager::NAME = "mean.tomo";
 const string MinMaxAverager::NAME = "minmax";
 const string AbsMaxMinAverager::NAME = "absmaxmin";
@@ -55,6 +56,7 @@ const string FourierWeightAverager::NAME = "weightedfourier";
 template <> Factory < Averager >::Factory()
 {
 	force_add<ImageAverager>();
+	force_add<VarianceAverager>();
 	force_add<MinMaxAverager>();
 	force_add<AbsMaxMinAverager>();
 	force_add<IterationAverager>();
@@ -309,6 +311,74 @@ EMData * ImageAverager::finish()
 
 	return result;
 }
+
+VarianceAverager::VarianceAverager()
+	: mean(0), nimg(0)
+{
+
+}
+
+void VarianceAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+
+	if (nimg >= 1 && !EMUtil::is_same_size(image, result)) {
+		LOGERR("%sAverager can only process same-size Image", get_name().c_str());
+		return;
+	}
+
+	nimg++;
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	size_t image_size = (size_t)nx * ny * nz;
+
+	if (nimg == 1) {
+		result = image->copy_head();
+		result->set_size(nx, ny, nz);
+	}
+
+	float *result_data = result->get_data();
+	float *image_data = image->get_data();
+	float *mean_data = mean->get_data();
+
+	for (size_t j = 0; j < image_size; ++j) {
+		float f = image_data[j];
+		if (f) {
+			float delta = f - mean_data[j];
+			mean_data[j] += delta / ((float) nimg);
+			result_data[j] += delta * (f - mean_data[j]);
+		}
+	}
+}
+
+EMData * VarianceAverager::finish()
+{
+	if (nimg < 2) {
+		LOGERR("Variance calculation requires two or more images");
+		return NULL;
+	}
+
+	if (result) {
+		size_t image_size = (size_t)result->get_xsize() * result->get_ysize() * result->get_zsize();
+		float *result_data = result->get_data();
+		float tmp = (float)(nimg - 1);
+		for (size_t j = 0; j < image_size; ++j) {
+			float f = result_data[j];
+			if (f) {
+				result_data[j] /= tmp;
+			}
+		}
+		result->update();
+	}	
+	result->set_attr("ptcl_repr",nimg);
+
+	return result;
+}
+
 
 FourierWeightAverager::FourierWeightAverager()
 	: normimage(0), freenorm(0), nimg(0)

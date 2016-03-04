@@ -214,6 +214,19 @@ void symplane1(EMData* norm, EMData* norm2);
  */
 void symplane2(EMData* norm, EMData* norm2, EMData* norm3);
 
+
+/** Symmetrize plane 0
+ *  Modifies the current object.
+ *
+ * @param w Normalization data.
+ */
+void symplane0_ctf(EMData* w);
+void symplane0_odd(EMData* w);
+void symplane0_rect(EMData* w);
+
+
+
+
 /** Helper function for method nn4_ctf.
  *
  * @param j y fourier index (frequency)
@@ -249,8 +262,7 @@ void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, EMD
  * @param tf Transform reference
  * @param mult
  */
-// void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* bckgnoise, const Transform& tf, float weight);
-void onelinetr_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight);
+void onelinetr_ctfw(int j, int bign, int n, int n2, int npad, EMData* w, EMData* bi, EMData* c2, EMData* bckgnoise, const Transform& tf, float weight);
 
 
 /** Nearest Neighbor interpolation.
@@ -296,16 +308,6 @@ void nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float mult );
 
 void nn_ctf_exists(EMData* w, EMData* myfft, EMData* ctf2d2, const Transform& tf, float weight);
 
-/** Symmetrize plane 0
- *  Modifies the current object.
- *
- * @param w Normalization data.
- */
-void symplane0_ctf(EMData* w);
-void symplane0_rect(EMData* w);
-
-
-
 /** Helper functions for method nn4_ctf.
  *
  * @param j y fourier index (frequency)
@@ -317,7 +319,7 @@ void symplane0_rect(EMData* w);
  * @param mult
  */
 //void nn_ctfw(EMData* w, EMData* myfft, EMData* bckgnoise, const Transform& tf, float weight);
-void nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* bckgnoise, const Transform& tf, float weight);
+void nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, int npad, EMData* bckgnoise, const Transform& tf, float weight);
 
 
 /** Symmetrize volume in real space.
@@ -327,6 +329,14 @@ void nn_ctfw(EMData* w, EMData* myfft, EMData* ctf2d2, EMData* bckgnoise, const 
  *  @return New symmetrized volume object.
  */
 EMData* symvol(string symmetry);
+
+/** Symmetrize volume in Fourier space.
+ *
+ *  @param[in] symmetry Point group of the target volume.
+ *
+ *  @return New symmetrized volume object.
+ */
+EMData* symfvol(string symmetry, int radius = -1);
 
 
 /** Rotate-Shift-Scale-Circulantly image
@@ -371,7 +381,8 @@ EMData* rot_scale_trans2D_background(float ang, float delx = 0.0f, float dely = 
  *  @exception ImageDimensionException can not rotate 1 D image
  *  @return New rotated/shifted/scaled image
 	 */
-EMData* rot_scale_trans(const Transform &RA);
+//EMData* rot_scale_trans(const Transform &RA);
+EMData* rot_scale_trans(const Transform &RA, EMData* ret = NULL);
 
 /** Rotate-Shift-Scale image
  *
@@ -405,7 +416,7 @@ static inline float restrict2(float x, int nx) {
 	return x;
 }
 
-
+EMData* rot_fvol(const Transform &RA, EMData* ret = NULL, int radius = -1);
 
 /** euclidean distance between two line
  * @param sinoj

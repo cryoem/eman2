@@ -161,6 +161,9 @@ def prgl(volft, params, interpolation_method = 0, return_real = True):
 		Input
 			vol: input volume, the volume has to be cubic
 			params: input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by sx,sy
+			interpolation_method = 0  NN
+			interpolation_method = 1  trilinear
+			return_real:  True - return real; False - return FT of a projection.
 		Output
 			proj: generated 2-D projection
 	"""
@@ -319,7 +322,10 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 		Name
 			prep_vol - prepare the volume for calculation of gridding projections and generate the interpolants.
 		Input
-			vol: input volume for which projections will be calculated using prgs
+			vol: input volume for which projections will be calculated using prgs (interpolation_method=-1) or prgl (interpolation_method>0)
+			interpolation_method = -1  gridding
+			interpolation_method =  0  NN
+			interpolation_method =  1  trilinear
 		Output
 			volft: volume prepared for gridding projections using prgs
 			kb: interpolants (tabulated Kaiser-Bessel function) when the volume is cubic.

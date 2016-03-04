@@ -1,0 +1,49 @@
+= Name =
+sxisac_post_processing - 2D Clustering Postprocess: Postprocess 2D clustering result produced by ISAC.
+
+= Usage =
+
+
+''Usage in command lines'':
+
+sxisac_post_processing.py  stack_file  isac_directory  --radius=particle_radius  --CTF 
+
+=== Typical usage ===
+
+sxisac_post_processing.py exists only in MPI version
+
+''' mpirun  -np  32  sxisac_post_processing.py  bdb:data  fisac1  locres.hdf  --radius=28 '''
+
+
+== Input ==
+    stack_file:: 2-D images in a stack file (format must be bdb): images have to be square (''nx''=''ny'') (default required string)
+    isac_directory:: isac output directory name: (default required string)
+
+    radius:: particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)
+    CTF:: apply phase-flip for CTF correction: if set, the data will be phase-flipped using CTF information included in image headers (default False)
+
+    * The remaining parameters are optional.
+
+
+== Output ==
+
+
+= Description =
+
+
+= Method =
+
+= Reference =
+
+= Author / Maintainer =
+Horatiu Voicu and Pawel A. Penczek
+
+= Keywords =
+
+= Files =
+sxisac_post_processing.py
+
+= See also =
+
+= Maturity =
+ alpha:: in development

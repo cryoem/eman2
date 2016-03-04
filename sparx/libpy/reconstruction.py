@@ -1096,8 +1096,8 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
-	main_node = 0
-	imgsize = list_of_prjlist[0][0].get_xsize()
+
+	imgsize = list_of_prjlist[0].get_xsize()
 	
 	if( smearstep > 0.0 ):
 		#if myid == 0:  print "  Setting smear in prepare_recons_ctf"
@@ -1234,19 +1234,16 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 	else:
 		return None, None, None
 
-def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = None, finfo=None, npad=2, mpi_comm=None, smearstep = 0.0, CTF = True):
+def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = False, target_size=-1):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
 			list_of_prjlist: list of lists of projections to be included in the reconstruction
-			bckgdata = [get_im("tsd.hdf"),read_text_file("data_stamp.txt")]
-			snr: Signal-to-Noise Ratio of the data 
-			sign: sign of the CTF
-			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
 	"""
 	from utilities  import reduce_EMData_to_root, random_string, get_im
 	from EMAN2      import Reconstructors
 	from utilities  import model_blank
+	from filter		import filt_table
 	from mpi        import MPI_COMM_WORLD, mpi_barrier
 	import types
 	from statistics import fsc
@@ -1254,7 +1251,6 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
-	main_node = 0
 	imgsize = prjlist[0].get_ysize()  # It can be Fourier, so take y-size
 	'''
 	if( smearstep > 0.0 ):
@@ -1291,10 +1287,10 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 		bckgnoise.append(prj)
 	'''
 	#datastamp = bckgdata[1]
-
+	"""
 	#  Do the FSC shtick.
 	if cfsc:
-		bnx     = len(cfsc)*npad
+		bnx     = len(cfsc)*npad*2
 		refvol  = model_blank(bnx)
 		if(npad > 1):
 			from utilities import reshape_1d
@@ -1303,8 +1299,11 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 			del bfsc
 		else:  refvol[i] = cfsc[i]
 	else:
-		bnx    = imgsize*npad//2+1
-		refvol = model_blank(bnx)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
+		#  Set refvol to longer array so in finish it can be used to return regularization part
+		refvol = model_blank(target_size)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
+	"""
+
+	refvol = model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 
 
@@ -1315,23 +1314,19 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 
 	fftvol = EMData()
 	weight = EMData()
-	if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
-	#  We have to trick the setup so for Fourier padded input data creates volumes of correct size
-	if( prjlist[0].get_attr("is_complex") and prjlist[0].get_attr("npad") >1 ):  i=npad
-	else: i = 1
-	params = {"size":imgsize/i, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
+	#if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
+
+
+	from utilities import info
+	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	for image in prjlist:
-		if( npad > 1 ):
-			b = image.get_attr("bckgnoise")
-			ln = b.get_xsize()
-			tb = model_blank(2*ln)
-			for i in xrange(ln):
-				tb[2*i] = b[i]
-				tb[2*i+1] = (b[i]+b[i+1])*0.5
-			image.set_attr("bckgnoise",tb)
-		insert_slices(r, image)
+		if not upweighted:
+			tmp = image.get_attr("bckgnoise")
+			ttt = [ tmp[i] for i in xrange(tmp.get_xsize()) ]
+			insert_slices(r, filt_table(image, ttt) )
+		else:				insert_slices(r, image)
 
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )
@@ -1339,19 +1334,18 @@ def recons3d_4nnfs_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", cfsc = N
 
 	reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
 	reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
-	
+
 	if not (finfo is None): 
 		finfo.write( "after reduce\n" )
 		finfo.flush()
 
-	if myid == 0:
-		dummy = r.finish(True)
 
+	if myid == main_node:
+		dummy = r.finish(compensate)
 	mpi_barrier(mpi_comm)
-	if myid == 0:
-		return fftvol
-	else:
-		return None
+
+	if myid == main_node: return fftvol, weight, refvol
+	else: return None, None, None
 
 
 def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize = -1, zsize = -1 ):
@@ -2714,8 +2708,8 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 		ERROR("Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume", "rec3D", 0)
 		return model_blank( 2, 2, 2 ), None
 
-	fftvol_odd_file,weight_odd_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_odd, odd_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
-	fftvol_eve_file,weight_eve_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_eve, eve_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
+	fftvol_odd_file, weight_odd_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_odd, odd_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
+	fftvol_eve_file, weight_eve_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_eve, eve_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
 	del imgdata
 
 	if nproc == 1:

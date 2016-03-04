@@ -18175,6 +18175,117 @@ L12:
 ################################################################################################*/
 
 
+#define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*nx]
+#define out_ptr(i,j,k)  out_ptr[i+(j+(k*yn))*xn]
+#define w_ptr(i,j,k)    w_ptr[i+(j+(k*yn))*xn]
+
+EMData* Util::shrinkfvol(EMData* img, int npad)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ==============   Shrink Fourier volume, either real or complex   ================ */
+
+	int nx=img->get_xsize(),  ny=img->get_ysize(),  nz=img->get_zsize();
+	int	yn = 2*(((ny-3)/2)/npad)+ 3;
+	int zn = 2*(((nz-3)/2)/npad)+ 3;
+	int xn, xx, xt, kk, kc, jj, jc, ii;
+	bool iodd = false;
+	float *img_ptr  = img->get_data();
+	EMData *out   = new EMData();
+	EMData *w   = new EMData();
+	int cmpx = img->is_complex();
+	if(cmpx) {
+		iodd = img->get_attr("is_fftodd");
+		img->set_attr("is_complex", 0);
+		xn = 2*((((nx-2+iodd)-3)/2)/npad) + 3;
+		xx = nx/2;
+		xt = xn/2;
+		out->set_size(xn+2-iodd, yn, zn);
+		w->set_size((xn+2-iodd)/2, yn, zn);
+
+	} else {
+		xn = 2*(((nx-3)/2)/npad)+ 3;
+		xx = nx;
+		xt = xn;
+		out->set_size(xn, yn, zn);	
+		w->set_size(xn, yn, zn);
+	}
+	out->to_zero();
+	float *out_ptr = out->get_data();
+
+	w->to_zero();
+	float *w_ptr = w->get_data();
+	int zh = nz/2;
+	int yh = ny/2;
+	for(int k=-zh; k<=zh; k++) {
+		if( k < 0 )  kc = k+nz;
+		else         kc = k;
+		kk = int(round(float(k)/npad));
+		if( kk < 0 )  kk += zn;
+		//cout<<" k "<<  k<<"  "<<  kc<<"  "<<  kk<<endl;
+		for(int j=-yh; j<=yh; j++) {
+			if( j < 0 )  jc = j+ny;
+			else         jc = j;
+			jj = int(round(float(j)/npad));
+			if( jj < 0 )  jj += yn;
+			//cout<<" j "<<  j<<"  "<<  jc<<"  "<<  jj<<endl;
+			for(int i=0; i<xx; i++) {
+				ii = int(round(float(i)/npad));
+				//cout<<" all "<<  i<<"  "<<  jc<<"  "<<  kc<<"  "<<  ii<<"  "<<  jj<<"  "<<  kk<<"  "<<nx<<"  "<<xn+2-iodd<<endl;
+				/*cout<<"  "<<  img_ptr(i,jc,kc)<<endl;
+				cout<<"  "<<  out_ptr(ii,jj,kk)<<endl;
+				cout<<"  "<<  w_ptr(ii,jj,kk)<<endl;*/
+				if( cmpx ) {
+					size_t imgp = 2*i+(jc+(kc*ny))*nx;
+					size_t outp = 2*ii+(jj+(kk*yn))*(xn+2-iodd);
+					//cout<<" cmpx "<<  imgp<<"  "<<  outp<<endl;
+					out_ptr[outp]   += img_ptr[imgp];
+					out_ptr[outp+1] += img_ptr[imgp+1];
+					w_ptr[ii+(jj+(kk*yn))*(xn+2-iodd)/2] += 1.0f;
+				}  else  {
+					out_ptr(ii,jj,kk) += img_ptr(i,jc,kc);
+					w_ptr(ii,jj,kk) += 1.0f;
+				}
+			}
+		}
+	}
+
+	if( cmpx ) {
+		for(size_t i=0; i<(xn+2-iodd)/2*yn*zn; i++) {
+			if( w_ptr[i] > 0.0 ) {
+				out_ptr[2*i]   /= w_ptr[i];
+				out_ptr[2*i+1] /= w_ptr[i];
+			} else {
+				out_ptr[2*i]=0.0;
+				out_ptr[2*i+1]=0.0;
+			}
+		}
+	} else {
+		for(size_t i=0; i<xt*yn*zn; i++) {
+			if( w_ptr[i] > 0.0 )  out_ptr[i] /= w_ptr[i];
+			else                  out_ptr[i]=0.0;
+		}
+	}
+	delete w; w = 0;
+	if( cmpx ) {
+		out->set_complex(true);
+		out->set_fftodd(iodd);
+		out->set_ri(true);
+		img->set_attr("is_complex", 1);
+	}
+	out->update();
+	EXITFUNC;
+	return out;
+}
+
+#undef img_ptr
+#undef out_ptr
+#undef w_ptr
+
+
 EMData* Util::mult_scalar(EMData* img, float scalar)
 {
 	ENTERFUNC;
@@ -18401,6 +18512,115 @@ EMData* Util::divn_filter(EMData* img, EMData* img1)
 	EXITFUNC;
 	return img2;
 }
+
+EMData* Util::divn_cbyr(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img /= img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float *img2_ptr = img2->get_data();
+	if(img->is_complex()) {
+		for (size_t i=0; i<size; i+=2) {
+			int k = i/2;
+			if(img1_ptr[k] > 1.e-6f) {
+				img2_ptr[i]   = img_ptr[i]  /img1_ptr[k];
+				img2_ptr[i+1] = img_ptr[i+1]/img1_ptr[k];
+			} else img2_ptr[i] = img2_ptr[i+1] = 0.0f;
+		}
+	} else  throw ImageFormatException("Only Fourier image allowed");
+
+	img2->update();
+
+	EXITFUNC;
+	return img2;
+}
+
+void Util::div_cbyr(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img /= img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	if(img->is_complex()) {
+		for (size_t i=0; i<size; i+=2) {
+			int k = i/2;
+			if(img1_ptr[k] > 1.e-6f) {
+				img_ptr[i]   /= img1_ptr[k];
+				img_ptr[i+1] /= img1_ptr[k];
+			} else img_ptr[i] = img_ptr[i+1] = 0.0f;
+		}
+	} else  throw ImageFormatException("Only Fourier image allowed");
+
+	img->update();
+
+	EXITFUNC;
+}
+
+#define img_ptr(ix,iy,iz) img_ptr[ix+(iy+(iz*ny))*nx]
+void Util::reg_weights(EMData* img, EMData* img1, EMData* cfsc)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img /= img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int nyh, nzh;
+	nyh = ny/2;
+	nzh = nz/2;
+
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float *cfsc_ptr = cfsc->get_data();
+	// get limit of resolution
+	int nr = cfsc->get_xsize();
+	int limitres = nr-1;
+	for( int i=0; i<nr-2; i++) { if( cfsc_ptr[nr-i] == 0.0f )  limitres = nr-i-1; }
+	float fudge = 1.0f;
+	for (int i = 0; i <= limitres; i++)  cfsc_ptr[i] = fudge * img1_ptr[i] * (1.0f - cfsc_ptr[i])/cfsc_ptr[i];
+
+	for (int iz = 0; iz < nz; iz++) {
+		int   izp = (iz<=nzh) ? iz : iz - nz;
+		float argz = float(izp*izp);
+		for (int iy = 0; iy < ny; iy++) {
+			int   iyp = (iy<=nyh) ? iy : iy - ny;
+			float argy = argz + float(iyp*iyp);
+			for (int ix = 0; ix < nx; ix++) {
+				float r = std::sqrt(argy + float(ix*ix));
+				int  ir = int(r);
+				if (ir < limitres) {
+					if ( img_ptr(ix,iy,iz) > 0.0f) {
+						float frac = r - float(ir);
+						img_ptr(ix,iy,iz) += (1.0f - frac)*cfsc_ptr[ir] + frac*cfsc_ptr[ir+1];
+					}
+				}
+			}
+		}
+	}
+
+	img->update();
+
+	EXITFUNC;
+}
+#undef  img_ptr
 
 void Util::mul_scalar(EMData* img, float scalar)
 {
@@ -18660,7 +18880,6 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 
 
 #define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*(size_t)nxo]
-
 EMData* Util::pack_complex_to_real(EMData* img)
 {
 	ENTERFUNC;
@@ -19793,7 +20012,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	{
 		if (crefim_len_original_only_from_asymmetric_unit != list_of_reference_angles_length/nsym/2)
 		{
-			printf("\n\ncrefim_len_original_only_from_asymmetric_unit(%d) == list_of_reference_angles_length(%d)/nsym(%d)/2\n\n",
+			printf("\n\ncrefim_len_original_only_from_asymmetric_unit(%lu) == list_of_reference_angles_length(%lu)/nsym(%d)/2\n\n",
 			crefim_len_original_only_from_asymmetric_unit, list_of_reference_angles_length, nsym);
 			fflush(stdout);
 		}	
@@ -22083,8 +22302,10 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  02/17/2016  11:53 AM "<<endl;}
+{ cout <<"  VERSION  03/01/2016  11:53 PM "<<endl;}
 
+void Util::version2()
+{ cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;}
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
@@ -24739,7 +24960,6 @@ float Util::local_inner_product(EMData* image1, EMData* image2, int lx, int ly, 
 
 
 #define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
-
 EMData* Util::box_convolution(EMData* img, int w)
 {
 	ENTERFUNC;

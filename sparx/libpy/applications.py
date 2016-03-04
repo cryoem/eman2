@@ -5357,7 +5357,7 @@ def sali3d_base_horatio_01(stack, ref_vol = None, Tracker = None, rangle = 0.0, 
 					# generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
 				else:  list_of_reference_angles = [[1.0,1.0]]
 				error_status = 0
-				from utilities import if_error_all_processes_quit_program
+				from utilities import if_error_then_all_processes_exit_program
 
 				# for im in xrange(nima):
 				for im in image_indices:
@@ -5409,7 +5409,7 @@ def sali3d_base_horatio_01(stack, ref_vol = None, Tracker = None, rangle = 0.0, 
 				if len(image_indices)>0: del tempdata
 				if(an[N_step] > 0):  del list_of_reference_angles
 				#=========================================================================
-				# if_error_all_processes_quit_program(error_status)
+				# if_error_then_all_processes_exit_program(error_status)
 				# cannot have barriers in this loop because some cones might not have images assigned to them! In this case 'image_indices' is empty.
 				# mpi_barrier(mpi_comm)
 				if myid == main_node:
@@ -9900,7 +9900,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 					ctf_params = dataim[imn].get_attr( "ctf" )
 					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
-						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params, dopad=False))
 
 				data[2] = dataim[imn]
 
@@ -10210,7 +10210,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
 					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
-						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params, dopad = False))
 
 				data[2] = dataim[imn-image_start]
 				if ts > 0.0:
@@ -10660,7 +10660,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 					ctf_params = dataim[imn].get_attr( "ctf" )
 					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
-						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params, dopad = False))
 
 				data[2] = dataim[imn]
 				if ts > 0.0:
@@ -13720,9 +13720,9 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 
 def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1, smearstep = 0.0):
 	if MPI:
-		###recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
+		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
 		##newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
-		newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
+		###$newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -13807,9 +13807,9 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 
 
 
-def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose,xysize, zsize):
+def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
-	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file
+	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file, info
 	from string         import replace
 	from time           import time
 	from mpi            import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD
@@ -13818,6 +13818,7 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 	time_start = time()
 	if(myid == 0):
+		print "  news "
 		if(listfile):
 			from utilities import read_text_file
 			pid_list = read_text_file(listfile, 0)
@@ -13897,18 +13898,38 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		phi,theta,psi,sx,sy = get_params_proj(prjlist[i])
 		set_params_proj(prjlist[i],[phi,theta,psi,sx/scale,sy/scale])
 	"""
+	nnnx = ((prjlist[0].get_ysize())*2+3)
+	#nnnx = 200#prjlist[0].get_ysize()
+	from fundamentals import fft,fshift
+	from utilities import get_params_proj,set_params_proj
+	for i in xrange(len(prjlist)):
+		#phi,theta,psi,sxs,sys = get_params_proj(prjlist[i])
+
+		prjlist[i] = fft(prjlist[i])
+		#prjlist[i] = fshift(prjlist[i],sxs,sys)
+		prjlist[i].set_attr("padffted",1)
+		prjlist[i].set_attr("npad",1)
+		#set_params_proj(prjlist[i] ,[phi,theta,psi,0.0,0.0])
+
+
+
+
 	from utilities import model_blank
 	m = model_blank(600,1,1,1.0)
 	for i in xrange(len(prjlist)):
 		prjlist[i].set_attr("bckgnoise",m)
 	from reconstruction import recons3d_4nnfs_MPI
 	#if CTF: vol1, vol2, fff = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, info = finfo, npad = npad,\
-	vol = recons3d_4nnfs_MPI(myid, prjlist, None, symmetry = sym, npad = npad, smearstep = 0.0, CTF = CTF)
+	vol,wei,reg = recons3d_4nnfs_MPI(myid, prjlist, npad = npad, cfsc = None, symmetry = "c1", CTF = CTF, compensate = True, target_size = nnnx)
 	if myid == 0 :
+		#print  info(reg)
+		#for i in xrange(reg.get_xsize()):  print i,reg[i]
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")
 		else:
-			drop_image(vol, vol_stack)
+			drop_image(fft(vol), vol_stack)
+			wei.write_image("w"+vol_stack)			
+			reg.write_image("r"+vol_stack)
 		#drop_image(vol1, "nvol0.hdf")
 		#drop_image(vol2, "nvol1.hdf")
 		#write_text_file(fff,"nfsc.txt")
