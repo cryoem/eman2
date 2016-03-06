@@ -18592,10 +18592,17 @@ void Util::reg_weights(EMData* img, EMData* img1, EMData* cfsc)
 	float *cfsc_ptr = cfsc->get_data();
 	// get limit of resolution
 	int nr = cfsc->get_xsize();
-	int limitres = nr-1;
-	for( int i=0; i<nr-2; i++) { if( cfsc_ptr[nr-i] == 0.0f )  limitres = nr-i-1; }
+	int limitres = 0;
+	for (int i = 0; i < nr; i++)  {
+		cfsc_ptr[i] = max(cfsc_ptr[i],0.0f);
+		cfsc_ptr[i] = min(cfsc_ptr[i],0.999f);
+		if(cfsc_ptr[i] == 0.0f and limitres == 0)  limitres = i-1;
+	}
+	if( limitres == 0 ) limitres = nr-2;
+	
+	for( int i=limitres+1; i<nr; i++) cfsc_ptr[nr-i] = 0.0f;
 	float fudge = 1.0f;
-	for (int i = 0; i <= limitres; i++)  cfsc_ptr[i] = fudge * img1_ptr[i] * (1.0f - cfsc_ptr[i])/cfsc_ptr[i];
+	for (int i = 0; i <= limitres; i++) cfsc_ptr[i] = fudge * img1_ptr[i] * (1.0f - cfsc_ptr[i])/cfsc_ptr[i];
 
 	for (int iz = 0; iz < nz; iz++) {
 		int   izp = (iz<=nzh) ? iz : iz - nz;
@@ -18611,7 +18618,7 @@ void Util::reg_weights(EMData* img, EMData* img1, EMData* cfsc)
 						float frac = r - float(ir);
 						img_ptr(ix,iy,iz) += (1.0f - frac)*cfsc_ptr[ir] + frac*cfsc_ptr[ir+1];
 					}
-				}
+				} else  img_ptr(ix,iy,iz) = 0.0f;
 			}
 		}
 	}
