@@ -18596,7 +18596,7 @@ void Util::reg_weights(EMData* img, EMData* img1, EMData* cfsc)
 	for (int i = 0; i < nr; i++)  {
 		cfsc_ptr[i] = max(cfsc_ptr[i],0.0f);
 		cfsc_ptr[i] = min(cfsc_ptr[i],0.999f);
-		if(cfsc_ptr[i] == 0.0f and limitres == 0)  limitres = i-1;
+		if(cfsc_ptr[i] == 0.0f && limitres == 0)  limitres = i-1;
 	}
 	if( limitres == 0 ) limitres = nr-2;
 	
