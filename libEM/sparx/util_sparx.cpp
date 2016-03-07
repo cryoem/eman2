@@ -18594,13 +18594,10 @@ void Util::reg_weights(EMData* img, EMData* img1, EMData* cfsc)
 	int nr = cfsc->get_xsize();
 	int limitres = 0;
 	for (int i = 0; i < nr; i++)  {
-		cfsc_ptr[i] = max(cfsc_ptr[i],0.0f);
-		cfsc_ptr[i] = min(cfsc_ptr[i],0.999f);
 		if(cfsc_ptr[i] == 0.0f && limitres == 0)  limitres = i-1;
 	}
 	if( limitres == 0 ) limitres = nr-2;
 	
-	for( int i=limitres+1; i<nr; i++) cfsc_ptr[nr-i] = 0.0f;
 	float fudge = 1.0f;
 	for (int i = 0; i <= limitres; i++) cfsc_ptr[i] = fudge * img1_ptr[i] * (1.0f - cfsc_ptr[i])/cfsc_ptr[i];
 
@@ -18622,7 +18619,6 @@ void Util::reg_weights(EMData* img, EMData* img1, EMData* cfsc)
 			}
 		}
 	}
-
 	img->update();
 
 	EXITFUNC;
@@ -22309,7 +22305,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  03/07/2016  9:32 AM "<<endl;}
+{ cout <<"  VERSION  03/07/2016  11:51 AM "<<endl;}
 
 void Util::version2()
 { cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;}
