@@ -18611,7 +18611,7 @@ void Util::reg_weights(EMData* img, EMData* img1, EMData* cfsc)
 						float frac = r - float(ir);
 						img_ptr(ix,iy,iz) += (1.0f - frac)*cfsc_ptr[ir] + frac*cfsc_ptr[ir+1];
 					}
-				}
+				} else img_ptr(ix,iy,iz) = 0.0f;
 			}
 		}
 	}
