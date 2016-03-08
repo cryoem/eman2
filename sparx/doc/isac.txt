@@ -44,14 +44,14 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
 
 
 == Input ==
-    stack_file:: 2-D images in a stack file (format must be bdb): images have to be square (''nx''=''ny'') (default required string)
+    stack_file:: 2-D images in a stack file (bdb or hdf): images have to be square (''nx''=''ny'') (default required string)
     
     radius:: particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)
     img_per_grp:: number of images per class: in the ideal case (essentially maximum size of class) (default 100)
     CTF:: apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)
     restart_section:: restart section: each generation (iteration) contains three sections: 'restart', 'candidate_class_averages', and 'reproducible_class_averages'. To restart from a particular step, for example, generation 4 and section 'candidate_class_averages' the following option is needed: '--restart_section=candidate_class_averages,4'. The option requires no white space before or after the comma. The default behavior is to restart execution from where it stopped intentionally or unintentionally. For default restart, it is assumed that the name of the directory is provided as argument. Alternatively, the '--use_latest_master_directory' option can be used. (default ' ')
     target_radius:: target particle radius: actual particle radius on which isac will process data. Images will be shrinked/enlarged to achieve this radius (default 29)
-    target_nx:: target particle image size: actual image size on which isac will process data. Images will be shrinked/enlarged according to target particle radius and then cut/padded to achieve target_nx size. When xr > 0, the final image size for isac processing is 'target_nx + xr'  (default 76)
+    target_nx:: target particle image size: actual image size on which isac will process data. Images will be shrinked/enlarged according to target particle radius and then cut/padded to achieve target_nx size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  (default 76)
     xr:: x range: of translational search. By default, set by the program. (default -1)
 
     * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
@@ -81,7 +81,7 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
     debug:: debug info printout: (default False)
     use_latest_master_directory:: use latest master directory: when active, the program looks for the latest directory that starts with the word 'master', so the user does not need to provide a directory name. (default False)
     stop_after_candidates:: stop after candidates: stops after the 'candidate_class_averages' section. (default False)
-    skip_alignment:: skip alignment step: to be used if images are already aligned. (default False)
+    skip_alignment:: skip alignment step: to be used if images are already aligned. 2dalignment directory will still be generated but the parameters will be zero. (default False)
 
 
 == Output ==
@@ -139,23 +139,46 @@ Let us assume we would want to generate a RCT reconstruction using as a basis gr
 
 = Description =
 
-The program will perform the following steps:
+The program will perform the following steps (to save computation time, in case of inadvertent termination, i.e. power failure or other causes, the program can be restarted from any saved step location, see options)  :
 
  1. The images in the input stacked will be phase-flipped.
 
  2. The data stack will be pre-aligned (output is in subdirectory 2dalignment, in particular it contains the overall 2D average aqfinal.hdf, it is advisable to confirm it is correctly centered).
+ 
+   * In case 2dalignment directory exists steps 1 and 2 are skipped. 
 
  3. The alignment shift parameters will be applied to the input data.
 
- 4. '''IMPORTANT''': Input aligned images will be resized such that the original user-provided radius will be now 29 and the box size 76.  The data should fit into box size 64, though, so the final outcome can be windowed to this size.  The pixel size of the modified data is thus (original pixel size)*(original radius size)/29.
+ 4. '''IMPORTANT''': Input aligned images will be resized such that the original user-provided radius will be now target_radius and the box size target_nx + xr - 1.  The pixel size of the modified data is thus original_pixel_size * original_radius_size / target_radius.
+ 
+   * The pseudo-code for adjusting the size of the radius and the size of the images is as follows:
+   
+   * shrink_ratio = target_radius / original_radius_size
+   
+   * new_pixel_size = original_pixel_size * shrink_ratio
+   
+   * if shrink_ratio is different than 1: resample images using shrink_ratio
+   
+   * if new_pixel_size > target_nx : cut image to be target_nx in size
+    
+   * if new_pixel_size < target_nx : pad image to be target_nx in size
 
- 5. The program will iterate through generations of ISAC by alternating:
+   * The newly added options target_radius and target_nx allow the user to finely adjust the image so that it contains enough background information.
+    
 
- 5a. Calculation of candidate class averages.
+ 5. The program will iterate through generations of ISAC by alternating two steps. The outcome of these two steps is in subdirectory generation_*** (stars replaced by the current generation number).
 
- 5b. Calculation of validated class averages.  The outcome of these two step is in subdirectory generation_*** (stars replaced by the current generation number).
+   1. Calculation of candidate class averages.
+   
+     * saved checkpoint: restart from just before this step with --restart_section=candidate_class_averages,4 for the fourth isac generation.
+
+   1. Calculation of validated class averages. 
+   
+     * saved checkpoint: restart from just before this step with --restart_section=reproducible_class_averages,4 for the fourth isac generation.
 
  6. The program will terminate when it cannot find any more reproducible class averages.
+ 
+ 7. If no restart option is given the program will pick-up from the last saved point.
 
 = Method =
 See the reference below.
