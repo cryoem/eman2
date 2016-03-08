@@ -18290,29 +18290,46 @@ EMData* Util::mulreal(EMData* img1, EMData* img2)
 {
 	ENTERFUNC;
 	int nx=img1->get_xsize(),ny=img1->get_ysize(),nz=img1->get_zsize();
-	int    lsm = nx + 2 - nx%2;
 	EMData* cvv = new EMData();
-	cvv->set_size(lsm, ny, nz);
+	cvv->set_size(2*nx, ny, nz);
 	cvv->to_zero();
 	float *img1_ptr  = img1->get_data();
 	float *img2_ptr  = img2->get_data();
 	float *cvv_ptr  = cvv->get_data();
 
-	for( size_t i = 0; i<(lsm*ny*nz)/2; i++) cvv_ptr[2*i] = img1_ptr[i]*img2_ptr[i];
+	for( size_t i = 0; i<(nx*ny*nz); i++) cvv_ptr[2*i] = img1_ptr[i]*img2_ptr[i];
 
 	cvv->set_complex(true);
 	cvv->set_ri(true);
-	if(nx%2==0) cvv->set_fftodd(false); else cvv->set_fftodd(true);
+	if(ny%2==0) cvv->set_fftodd(false); else cvv->set_fftodd(true);
 	cvv->update();
 	return cvv;
+}
+
+
+void Util::mulclreal(EMData* img1, EMData* img2)
+{
+	ENTERFUNC;
+	size_t nx=img2->get_xsize(),ny=img2->get_ysize(),nz=img2->get_zsize();
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+
+	for( size_t i = 0; i<(nx*ny*nz); i++) {
+		img1_ptr[2*i]   *= img2_ptr[i];
+		img1_ptr[2*i+1] *= img2_ptr[i];
+	}
+
+	img1->update();
+	EXITFUNC;
 }
 
 
 void Util::divabs(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
-	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	size_t size = (size_t)nx*ny*nz/2;
+	// img is real, img1 is complex
+	size_t nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	for (size_t i=0; i<size; ++i) img_ptr[i] /= fmax(1.0e-5f, sqrt(img1_ptr[2*i]*img1_ptr[2*i]+img1_ptr[2*i+1]*img1_ptr[2*i+1]));

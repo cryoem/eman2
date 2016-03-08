@@ -815,6 +815,7 @@ costlist, int* curbranch);
 
 	static EMData* shrinkfvol(EMData* img, int npad);
 	static EMData* mulreal(EMData* img1, EMData* img2);
+	static void mulclreal(EMData* img1, EMData* img2);
 	static void divabs(EMData* img, EMData* img1);
     /*  Various operation on images */
 	/* out = img + scalar * img1  */

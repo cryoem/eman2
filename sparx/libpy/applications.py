@@ -16530,26 +16530,28 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 # Plot angles distribution on a hemisphere from a list of given projection
 def plot_projs_distrib(stack, outplot, wnx = 256):
 	from projection import plot_angles
-	from utilities  import get_params_proj, file_type
+	from utilities  import get_params_proj, file_type, read_text_row
 	import sys
 
 	N    = EMUtil.get_image_count(stack)
 	ext  = file_type(stack)
-	if ext == 'bdb':
+	if ext == 'txt' :
+		agls = read_text_row(stack)
+	elif ext == 'bdb' :
 		from EMAN2db import db_open_dict
 		DB = db_open_dict(stack)
-	agls = []
-	for n in xrange(N):
-		im = EMData()
-		im.read_image(stack, n, True)
-		try:
-			p0, p1, p2, p3, p4 = get_params_proj(im)
-		except RuntimeError:
-			print 'Projection #%d from %s has no angles set!' % (n, stack)
-			sys.exit()
-		agls.append([p0, p1])
+		agls = []
+		for n in xrange(N):
+			im = EMData()
+			im.read_image(stack, n, True)
+			try:
+				p0, p1, p2, p3, p4 = get_params_proj(im)
+			except RuntimeError:
+				print 'Projection #%d from %s has no angles set!' % (n, stack)
+				sys.exit()
+			agls.append([p0, p1])
 
-	if ext == 'bdb': DB.close()
+		if ext == 'bdb': DB.close()
 
 	plot_angles(agls, wnx).write_image(outplot, 0)
 
