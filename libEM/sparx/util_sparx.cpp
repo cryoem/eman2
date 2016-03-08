@@ -22311,8 +22311,10 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 { cout <<"  VERSION  03/07/2016  9:32 AM "<<endl;}
 
-void Util::version2()
-{ cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;}
+void Util::version2(){ 
+    cout <<"  Compile time of util_sparx.cpp                  --  "<< __DATE__ << "  --  " << __TIME__ <<endl;
+    cout <<"  Date and time of last edit of util_sparx.cpp    --  "<<  __TIMESTAMP__  <<endl;
+}
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
