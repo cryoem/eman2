@@ -5675,7 +5675,7 @@ void EMData::div_sinc(int interpolate_method) {
 	int nz = this->get_zsize();
 	if (nx != ny || ny != nz)
 		throw ImageDimensionException("div_sinc requires ny == nx == nz");
-	float cdf = M_PI/nx;
+	float cdf = M_PI/nx/2;
 /*
 	int IP = nx/2+1;
 
