@@ -3759,6 +3759,7 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 				return 0;
 			}
 		*/
+
 		EMData* padfft = padfft_slice( slice, t, m_npad );
 
 		EMData* ctf2d = NULL;
@@ -3788,7 +3789,7 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 			for (int i = 0; i < size; ++i) ctf2d_ptr[i] = 1.0;
 		}
 
-		EMData* bckgnoise;
+		vector<float> bckgnoise;
 		bckgnoise = slice->get_attr("bckgnoise");
 
 		insert_padfft_slice_weighted(padfft, ctf2d, bckgnoise, t, weight);
@@ -3800,7 +3801,7 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 	return 0;
 }
 
-int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData* ctf2d2, EMData* bckgnoise, const Transform& t, float weight )
+int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData* ctf2d2, vector<float> bckgnoise, const Transform& t, float weight )
 {
 	Assert( padfft != NULL );
 
