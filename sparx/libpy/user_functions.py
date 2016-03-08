@@ -819,7 +819,7 @@ def constant( ref_data ):
 	cs = [0.0]*2
 	return  tavg, cs
 
-
+'''
 def temp_dovolume( ref_data ):
 	from utilities      import print_msg, read_text_row
 	from filter         import fit_tanh, filt_tanl
@@ -885,7 +885,7 @@ def temp_dovolume( ref_data ):
 	else:  	cs = [0.0]*3
 
 	return  vol, cs
-
+'''
 
 def dovolume( ref_data ):
 	from utilities      import print_msg, read_text_row
@@ -1448,7 +1448,7 @@ class factory_class:
 		self.contents["ref_7grp"]           = ref_7grp
 		self.contents["steady"]             = steady
 		self.contents["dovolume"]           = dovolume	 
-		self.contents["temp_dovolume"]      = temp_dovolume	 
+		#self.contents["temp_dovolume"]      = temp_dovolume	 
 		self.contents["do_volume_mrk02"]    = do_volume_mrk02	 
 		self.contents["do_volume_mrk03"]    = do_volume_mrk03
 		self.contents["do_volume_mrk04"]    = do_volume_mrk04

@@ -18286,6 +18286,42 @@ EMData* Util::shrinkfvol(EMData* img, int npad)
 #undef w_ptr
 
 
+EMData* Util::mulreal(EMData* img1, EMData* img2)
+{
+	ENTERFUNC;
+	int nx=img1->get_xsize(),ny=img1->get_ysize(),nz=img1->get_zsize();
+	int    lsm = nx + 2 - nx%2;
+	EMData* cvv = new EMData();
+	cvv->set_size(lsm, ny, nz);
+	cvv->to_zero();
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+	float *cvv_ptr  = cvv->get_data();
+
+	for( size_t i = 0; i<(lsm*ny*nz)/2; i++) cvv_ptr[2*i] = img1_ptr[i]*img2_ptr[i];
+
+	cvv->set_complex(true);
+	cvv->set_ri(true);
+	if(nx%2==0) cvv->set_fftodd(false); else cvv->set_fftodd(true);
+	cvv->update();
+	return cvv;
+}
+
+
+void Util::divabs(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz/2;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	for (size_t i=0; i<size; ++i) img_ptr[i] /= fmax(1.0e-5f, sqrt(img1_ptr[2*i]*img1_ptr[2*i]+img1_ptr[2*i+1]*img1_ptr[2*i+1]));
+	img->update();
+	EXITFUNC;
+}
+
+
+
 EMData* Util::mult_scalar(EMData* img, float scalar)
 {
 	ENTERFUNC;
@@ -18300,7 +18336,7 @@ EMData* Util::mult_scalar(EMData* img, float scalar)
 	EMData * img2   = img->copy_head();
 	float *img_ptr  = img->get_data();
 	float *img2_ptr = img2->get_data();
-	for (size_t i=0;i<size;++i)img2_ptr[i] = img_ptr[i]*scalar;
+	for (size_t i=0;i<size;++i)  img2_ptr[i] = img_ptr[i]*scalar;
 	img2->update();
 
 	if(img->is_complex()) {
@@ -18594,13 +18630,10 @@ void Util::reg_weights(EMData* img, EMData* img1, EMData* cfsc)
 	int nr = cfsc->get_xsize();
 	int limitres = 0;
 	for (int i = 0; i < nr; i++)  {
-		cfsc_ptr[i] = max(cfsc_ptr[i],0.0f);
-		cfsc_ptr[i] = min(cfsc_ptr[i],0.999f);
 		if(cfsc_ptr[i] == 0.0f && limitres == 0)  limitres = i-1;
 	}
 	if( limitres == 0 ) limitres = nr-2;
 	
-	for( int i=limitres+1; i<nr; i++) cfsc_ptr[nr-i] = 0.0f;
 	float fudge = 1.0f;
 	for (int i = 0; i <= limitres; i++) cfsc_ptr[i] = fudge * img1_ptr[i] * (1.0f - cfsc_ptr[i])/cfsc_ptr[i];
 
@@ -18622,7 +18655,6 @@ void Util::reg_weights(EMData* img, EMData* img1, EMData* cfsc)
 			}
 		}
 	}
-
 	img->update();
 
 	EXITFUNC;
@@ -22309,7 +22341,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  03/07/2016  9:32 AM "<<endl;}
+{ cout <<"  VERSION  03/07/2016  07:14 PM "<<endl;}
 
 void Util::version2(){ 
     cout <<"  Compile time of util_sparx.cpp                  --  "<< __DATE__ << "  --  " << __TIME__ <<endl;
@@ -22677,8 +22709,6 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	ctf_img1->update();
 	ctf_img1->set_complex(true);
 	ctf_img1->set_ri(true);
-	//ctf_img1->attr_dict["is_complex"] = 1;
-	//ctf_img1->attr_dict["is_ri"] = 1;
 	if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);
 	return ctf_img1;
 }
@@ -22797,10 +22827,8 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	int cy = ny/2;
 	int cx = nx/2;
 	int img_dim = img->get_ndim();
-	if (radius<0 )
-	{
-		switch (img_dim)
-		{
+	if (radius<0 ) {
+		switch (img_dim) {
 			case(1):
 	    		radius = nx/2 - cosine_width;
 			break;
@@ -22813,82 +22841,61 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 		}
 	}
 	int radius_p = radius + cosine_width;
-	if (bckg != NULL )
-	{
-	  	for (int iz=0; iz<nz; iz++)
-	  		{
-	  			int tz =(iz-cz)*(iz-cz);
-	  			for (int iy=0; iy<ny; iy++)
-	  				{
-	  					int ty=tz+(iy-cy)*(iy-cy);
-	  					
-	  					for (int ix =0; ix<nx; ix++)
-	  					 {
-	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
-	  						if (r>=radius_p)
-	  					  		(*cmasked)(ix,iy,iz) = (*bckg)(ix,iy,iz);
-							if (r>=radius && r<radius_p)
-							{
-								float temp = (0.5+0.5*cos(pi*(radius_p-r)/cosine_width));
-								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*((*bckg)(ix,iy,iz)-(*img)(ix,iy,iz));
-							}
-							if (r<radius)
-								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
-							}
-						}
+	if (bckg != NULL )  {
+	  	for (int iz=0; iz<nz; iz++) {
+			int tz =(iz-cz)*(iz-cz);
+			for (int iy=0; iy<ny; iy++) {
+				int ty=tz+(iy-cy)*(iy-cy);				
+				for (int ix =0; ix<nx; ix++) {
+					float r = sqrt(ty +(ix-cx)*(ix-cx));
+					if (r>=radius_p)
+						(*cmasked)(ix,iy,iz) = (*bckg)(ix,iy,iz);
+					if (r>=radius && r<radius_p) {
+						float temp = (0.5+0.5*cos(pi*(radius_p-r)/cosine_width));
+						(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*((*bckg)(ix,iy,iz)-(*img)(ix,iy,iz));
 					}
-		}
-	else
-	{
-		float u =0.0;
-		float s =0.0;
-	  	for (int iz=0; iz<nz; iz++)
-	  		{
-	  			int tz =(iz-cz)*(iz-cz);
-	  			for (int iy=0; iy<ny; iy++)
-	  				{
-	  					int ty=tz+(iy-cy)*(iy-cy);
-	  					for (int ix=0; ix<nx; ix++)
-	  					{
-	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
-	  						if (r>=radius_p)
-	  							{	
-	  								u +=1.0f;
-	  								s +=(*img)(ix,iy,iz);
-	  							}
-							if ( r>=radius && r<radius_p)
-								{
-									float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
-									u += temp;
-									s += (*img)(ix,iy,iz)*temp;
-								}
-							if (r<radius)
-								(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
-							}
-						}
-				}
-		s /= u;
-		for (int iz=0; iz<nz; iz++)
-			{
-	  		    int tz =(iz-cz)*(iz-cz);
-	  			for (int iy=0; iy<ny; iy++)
-	  			  {
-	  				    int ty=tz+(iy-cy)*(iy-cy);
-	  				    for (int ix=0; ix<nx; ix++)
-	  				    {
-	  						float r = sqrt(ty +(ix-cx)*(ix-cx));
-	  							if (r>=radius_p)
-									(*cmasked) (ix,iy,iz)=s;
-								if (r>=radius && r<radius_p)
-									{
-								  		float temp = (.5+.5*cos(quadpi*(radius_p-r)/cosine_width));
-								  		(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s-(*img)(ix,iy,iz));
-									}
-									if (r<radius)
-								    (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
-						}
+					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 				}
 			}
+		}
+	} else {
+		float u =0.0f;
+		float s =0.0f;
+	  	for (int iz=0; iz<nz; iz++) {
+			int tz =(iz-cz)*(iz-cz);
+			for (int iy=0; iy<ny; iy++) {
+				int ty=tz+(iy-cy)*(iy-cy);
+				for (int ix=0; ix<nx; ix++) {
+					float r = sqrt(ty +(ix-cx)*(ix-cx));
+					if (r>=radius_p) {	
+						u +=1.0f;
+						s +=(*img)(ix,iy,iz);
+					}
+					if ( r>=radius && r<radius_p) {
+						float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
+						u += temp;
+						s += (*img)(ix,iy,iz)*temp;
+					}
+					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
+				}
+			}
+		}
+		s /= u;
+		for (int iz=0; iz<nz; iz++) {
+			int tz =(iz-cz)*(iz-cz);
+			for (int iy=0; iy<ny; iy++) {
+				int ty=tz+(iy-cy)*(iy-cy);
+				for (int ix=0; ix<nx; ix++) {
+					float r = sqrt(ty +(ix-cx)*(ix-cx));
+					if (r>=radius_p)  (*cmasked) (ix,iy,iz) = s;
+					if (r>=radius && r<radius_p) {
+						float temp = (0.5 + 0.5*cos(quadpi*(radius_p-r)/cosine_width));
+						(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s-(*img)(ix,iy,iz));
+					}
+					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
+				}
+			}
+		}
 	}
 	cmasked->update();
 	return cmasked;

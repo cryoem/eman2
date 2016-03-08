@@ -814,7 +814,8 @@ costlist, int* curbranch);
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
 
 	static EMData* shrinkfvol(EMData* img, int npad);
-
+	static EMData* mulreal(EMData* img1, EMData* img2);
+	static void divabs(EMData* img, EMData* img1);
     /*  Various operation on images */
 	/* out = img + scalar * img1  */
 	static EMData* madn_scalar(EMData* img, EMData* img1, float scalar);
