@@ -116,11 +116,11 @@ def main():
 	#parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version")
 	#parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
 	#parser.add_option("--iter", 		type="int"         ,	default=40   ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
-	#parser.add_option("--abs", 			type="float"       ,	default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
-	#parser.add_option("--squ", 			type="float"       ,	default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
+	#parser.add_option("--abs", 		type="float"   ,        default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
+	#parser.add_option("--squ", 		type="float"   ,	    default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances (Default False)")
-	parser.add_option("--decimate",     type="float",           default=1.0,                 help="image decimate rate, a number large than 1. default is 1")
-	parser.add_option("--window",       type="int",             default=0,                   help="reduce images to a small image size without changing pixel_size. Default value is zero.")
+	parser.add_option("--decimate",     type="float",           default=1.0,                help="image decimate rate, a number large than 1. default is 1")
+	parser.add_option("--window",       type="int",             default=0,                  help="reduce images to a small image size without changing pixel_size. Default value is zero.")
 	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
 	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
 	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
@@ -280,8 +280,6 @@ def main():
 		nx   = bcast_number_to_all(nx)
 		ny   = bcast_number_to_all(ny)
 		Tracker ={}
-		Tracker["nx"]  =nx
-		Tracker["ny"]  =ny
 		Tracker["total_stack"]=nima
 		if options.decimate==1.:
 			if options.window !=0:
@@ -294,6 +292,9 @@ def main():
 			else:
 				nx = int(options.window/options.decimate)
 				ny = nx
+		Tracker["nx"]  =nx
+		Tracker["ny"]  =ny
+		Tracker["nz"]  =nx
 		symbaselen = bcast_number_to_all(symbaselen)
 		if radiuspca == -1: radiuspca = nx/2-2
 
@@ -423,9 +424,9 @@ def main():
 			if options.VERBOSE: 	print "Begin to read images on processor %d"%(myid)
 			ttt = time()
 			#imgdata = EMData.read_images(stack, all_proj)
-			img     = EMData()
 			imgdata = []
 			for index_of_proj in xrange(len(all_proj)):
+				img     = EMData()
 				img.read_image(stack, all_proj[index_of_proj])
 				dmg = image_decimate_window_xform_ctf(img,options.decimate,options.window,options.CTF)
 				#print dmg.get_xsize(), "init"
