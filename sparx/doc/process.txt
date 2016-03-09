@@ -139,7 +139,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     ff:: tangent low-pass-filter stop band frequency: in absolute frequency. (default 0.25) 
     aa:: tangent low-pass-filter falloff: (default 0.1)
     mask:: input 3D or 2D mask file name: (default none)
-    output:: output file name: (default 'postprocessed.hdf')
+    output:: output file name: (default postprocessed.hdf)
     pixel_size:: pixel size of the input data: (default 1.0)
     B_start:: starting frequency in Angstrom for B-factor estimation: (default 10.0)
     FSC_cutoff:: stop frequency in Angstrom for B-factor estimation: (default 0.143))
