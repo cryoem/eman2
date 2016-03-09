@@ -70,46 +70,56 @@ def main():
 	app=EMApp()
 	
 	cter_ctf_file = None
-	if len(args) == 1:
+	if len(args) == 1 and args[0] != "":
 		cter_ctf_file = args[0]
 	# else: # Do nothig
 	
-	gui=SXGuiCter(cter_ctf_file)
+	# Make sure main window is shown, raised, and activated upon startup.
+	# gui=SXGuiCter(cter_ctf_file)
+	gui=SXGuiCter()
 	gui.show()
+	gui.raise_()
+	gui.activateWindow()
 	
-	try:
-		# gui.wimage.raise_()
-#		gui.wfft.raise_()
-		gui.wplotparam.raise_()
-		gui.whistparam.raise_()
-		gui.wplotrotavgcoarse.raise_()
-		gui.wplotrotavgfine.raise_()
-		gui.raise_()
-	except: 
-		print "Recieved unexpected exception in main(): ", sys.exc_info()[0]
-		exc_type, exc_value, exc_traceback = sys.exc_info()
-		traceback.print_exception(exc_type, exc_value, exc_traceback)
-		# MRK_NOTE: 2015/12/17 Toshio Moriya
-		# Another way to print out exception info...
-		# lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-		# print ''.join('!! ' + line for line in lines)
-		pass
+	# read CTER CTF file if necessary
+	if cter_ctf_file != None:
+		gui.readCterCtfFile(os.path.relpath(cter_ctf_file))
 	
+#	try:
+#		# gui.wimage.qt_parent.raise_() # wimage should not be visible upon start-up
+#		# gui.wfft.qt_parent.raise_()
+#		gui.wplotrotavgcoarse.qt_parent.raise_()
+#		gui.wplotrotavgfine.qt_parent.raise_()
+#		gui.whistparam.qt_parent.raise_()
+#		gui.wplotparam.qt_parent.raise_()
+#		gui.raise_()
+#		gui.activateWindow()
+#	except: 
+#		print "Recieved unexpected exception in main(): ", sys.exc_info()[0]
+#		exc_type, exc_value, exc_traceback = sys.exc_info()
+#		traceback.print_exception(exc_type, exc_value, exc_traceback)
+#		# MRK_NOTE: 2015/12/17 Toshio Moriya
+#		# Another way to print out exception info...
+#		# lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+#		# print ''.join('!! ' + line for line in lines)
+#		pass
+	
+	# NOTE: 2016/03/08 Toshio Moriya
+	# Unfortunately, EMApp.execute() will print logid (e.g. "None") upon the exit...
 	app.execute()
 
 class SXListWidget(QtGui.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
 
 	def keyPressEvent(self,event):
-
 		if event.key() in (Qt.Key_Up,Qt.Key_Down) :
 			QtGui.QListWidget.keyPressEvent(self,event)
 			return
-
+		
 		self.emit(QtCore.SIGNAL("keypress"),event)
 
 class SXPlot2DWidget(EMPlot2DWidget):
-
+	
 	def full_refresh(self):
 		'''
 		This function is called from resizeGL and from the inspector when somebody toggles the display of a line
@@ -121,14 +131,15 @@ class SXPlot2DWidget(EMPlot2DWidget):
 		# self.del_shapes(("hist_param_shape_value","hist_param_shape_unapply_threshold_lower","hist_param_shape_apply_threshold_lower","hist_param_shape_unapply_threshold_upper", "hist_param_shape_apply_threshold_upper", "hist_param_shape_label")) # for SXGuiCter.whistparam
 		# self.del_shapes(("hist_param_shape_label")) # for SXGuiCter.whistparam
 		# self.del_shapes(("plot_param_shape_label")) # for SXGuiCter.wplotparam
-
+	
 	def mouseReleaseEvent(self, event):
 		EMPlot2DWidget.mouseReleaseEvent(self,event)
 		if event.button()==Qt.LeftButton:
 			self.emit(QtCore.SIGNAL("mouseup"),event)
 
 class SXGuiCter(QtGui.QWidget):
-	def __init__(self, cter_ctf_file = None):
+# 	def __init__(self, cter_ctf_file = None):
+	def __init__(self):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,quality)
 		'parms' is [box size,ctf,box coord,set of excluded boxnums,quality,oversampling]
@@ -139,8 +150,55 @@ class SXGuiCter(QtGui.QWidget):
 			print "Cannot import EMAN image GUI objects (EMImage2DWidget)"
 			sys.exit(1)
 		
-		QtGui.QWidget.__init__(self,None)
-		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
+# 		QtGui.QWidget.__init__(self,None)
+		super(SXGuiCter, self).__init__(None)
+#		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
+		self.setWindowIcon(QtGui.QIcon(get_image_directory()+"sparxicon.png"))
+
+#		# NOTE: 2016/03/08 Toshio Moriya
+#		# Checked the following window flags and found out ...
+#		# (1) I could not find a way to disabled a close button at all.
+#		# (2) Qt.CustomizeWindowHint is best to disabled a minimize AND maximize button.
+#		# (3) With Qt.WindowTitleHint and Qt.WindowSystemMenuHint, I could not find a way to disable maximize button.
+#		# (4) It seems to be impossible to turn off Qt.Window flag here...
+#		print "MRK_DEBUG: Qt.Widget Window Flags: 0x%08x " % (Qt.Widget)
+#		print "MRK_DEBUG: Qt.Window Window Flags: 0x%08x " % (Qt.Window)
+#		print "MRK_DEBUG: Qt.Dialog Window Flags: 0x%08x " % (Qt.Dialog)
+#		print "MRK_DEBUG: Qt.Popup Window Flags: 0x%08x " % (Qt.Popup)
+#		print "MRK_DEBUG: Qt.Tool Window Flags: 0x%08x " % (Qt.Tool)
+#		print "MRK_DEBUG: Qt.SubWindow Window Flags: 0x%08x " % (Qt.SubWindow)
+#		
+#		print "MRK_DEBUG: Original Window Flags: 0x%08x " % (self.windowFlags())
+#		
+#		self.setWindowFlags((self.windowFlags()| Qt.CustomizeWindowHint)) # Turns off the default window title hints.
+#		self.setWindowFlags((self.windowFlags()| Qt.WindowTitleHint)) # Gives the window a title bar.
+#		self.setWindowFlags((self.windowFlags()| Qt.WindowSystemMenuHint)) # Disabled minimize icon button in window title bar
+		# self.setWindowFlags((self.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # OK
+		# self.setWindowFlags((self.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMaximizeButtonHint) # OK
+#		self.setWindowFlags((self.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowCloseButtonHint) # NG
+#		self.setWindowFlags((self.windowFlags()| Qt.WindowTitleHint) & ~Qt.WindowMinimizeButtonHint) # OK
+#		self.setWindowFlags((self.windowFlags()| Qt.WindowTitleHint) & ~Qt.WindowMaximizeButtonHint) # NG
+#		self.setWindowFlags((self.windowFlags()| Qt.WindowTitleHint) & ~Qt.WindowCloseButtonHint) # NG
+#		self.setWindowFlags((self.windowFlags()| Qt.WindowSystemMenuHint) & ~Qt.WindowMinimizeButtonHint) # OK
+#		self.setWindowFlags((self.windowFlags()| Qt.WindowSystemMenuHint) & ~Qt.WindowMaximizeButtonHint) # NG
+#		self.setWindowFlags((self.windowFlags()| Qt.WindowSystemMenuHint) & ~Qt.WindowCloseButtonHint) # NG
+#		self.setWindowFlags(Qt.Widget| Qt.CustomizeWindowHint) # It looks like, we always need Qt.CustomizeWindowHint to override window flags
+#		self.setWindowFlags(Qt.Widget| Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowSystemMenuHint) # OK, but it is still Qt.Window ...
+#		self.setWindowFlags(Qt.Dialog| Qt.CustomizeWindowHint) # It looks like, we always need Qt.CustomizeWindowHint to override window flags
+#		self.setWindowFlags(Qt.Dialog| Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowSystemMenuHint) # OK, but it is still Qt.Window ...
+#		self.setWindowFlags(Qt.SubWindow| Qt.CustomizeWindowHint) # It looks like, we always need Qt.CustomizeWindowHint to override window flags
+#		self.setWindowFlags(Qt.SubWindow| Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowSystemMenuHint) # OK, but it is still Qt.Window ...
+#		self.setWindowFlags(Qt.Widget & ~Qt.WindowSystemMenuHint) # 
+#		
+#		print "MRK_DEBUG: Edited Window Flags: 0x%08x " % (self.windowFlags())
+#		
+#		window_flags = self.windowFlags()
+#		if Qt.WindowCloseButtonHint == (window_flags & Qt.WindowCloseButtonHint):
+#			print "MRK_DEBUG: Window Close Button 0x%08x should be ON: 0x%08x" % (Qt.WindowCloseButtonHint, window_flags & Qt.WindowCloseButtonHint)
+#		else:
+#			print "MRK_DEBUG: Window Close Button 0x%08x should be OFF: 0x%08x" % (Qt.WindowCloseButtonHint, window_flags & Qt.WindowCloseButtonHint)
+#			
+		self.installEventFilter(self) # Necessary for self.eventFilter()
 		
 		i_enum = -1
 		i_enum += 1; self.idx_cter_id           = i_enum # <extra> entry id
@@ -350,37 +408,56 @@ class SXGuiCter(QtGui.QWidget):
 		self.cursyncsort = False
 		self.curthresholdset=0
 		
-		self.wimage=EMImage2DWidget()
-		self.wimage.setWindowTitle("sxgui_cter - Micrograph")
+		self.child_status_list = [] 
 		
+		#
+		# NOTE: 2016/03/09 Toshio Moriya
+		# To set window flags of EMGLWidget (SXPlot2DWidget and EMImage2DWidget) window,
+		# we have to go through its qt_parent attribute to call setWindowTitle()...
+		# 
 #		self.wfft=EMImage2DWidget()
 #		self.wfft.setWindowTitle("sxgui_cter - 2D FFT")
+#		self.wfft.mmode="app"
+#		self.wfft.qt_parent.setWindowFlags((self.qt_parent.wfft.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+#		self.is_wfft_minimized = False
 		
-		self.wplotparam=SXPlot2DWidget()
-		self.wplotparam.setWindowTitle("sxgui_cter - Sort Plot")
-		
-		self.whistparam=SXPlot2DWidget()
-		self.whistparam.setWindowTitle("sxgui_cter - Histogram")
+		self.wimage=EMImage2DWidget()
+		self.wimage.setWindowTitle("sxgui_cter - Micrograph")
+		self.wimage.mmode="app"
+		self.wimage.qt_parent.setWindowFlags((self.wimage.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		self.is_wimage_minimized = False
 		
 		self.wplotrotavgcoarse=SXPlot2DWidget()
 		self.wplotrotavgcoarse.setWindowTitle("sxgui_cter - Plot")
+		self.wplotrotavgcoarse.qt_parent.setWindowFlags((self.wplotrotavgcoarse.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		self.is_wplotrotavgcoarse_minimized = False
 		
 		self.wplotrotavgfine=SXPlot2DWidget()
 		self.wplotrotavgfine.setWindowTitle("sxgui_cter - Plot Zoom")
+		self.wplotrotavgfine.qt_parent.setWindowFlags((self.wplotrotavgfine.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		self.is_wplotrotavgfine_minimized = False
 		
-		self.wplotparam.connect(self.wplotparam,QtCore.SIGNAL("mouseup"),self.plotparammouseup)
-		self.whistparam.connect(self.whistparam,QtCore.SIGNAL("mouseup"),self.histparammouseup)
+		self.whistparam=SXPlot2DWidget()
+		self.whistparam.setWindowTitle("sxgui_cter - Histogram")
+		self.whistparam.qt_parent.setWindowFlags((self.whistparam.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		self.is_whistparam_minimized = False
 		
-#		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
-#		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
-#		self.wimage.connect(self.wimage,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
+		self.wplotparam=SXPlot2DWidget()
+		self.wplotparam.setWindowTitle("sxgui_cter - Sort Plot")
+		self.wplotparam.qt_parent.setWindowFlags((self.wplotparam.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		self.is_wplotparam_minimized = False
+		
 #		self.wfft.connect(self.wfft,QtCore.SIGNAL("mousedown"),self.fftmousedown)
 #		self.wfft.connect(self.wfft,QtCore.SIGNAL("mousedrag"),self.fftmousedrag)
 #		self.wfft.connect(self.wfft,QtCore.SIGNAL("mouseup")  ,self.fftmouseup)
+#		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
+#		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
+#		self.wimage.connect(self.wimage,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
 #		self.wplotrotavgcoarse.connect(self.wplotrotavgcoarse,QtCore.SIGNAL("mousedown"),self.plotmousedown)
+#		self.wplotrotavgfine.connect(self.wplotrotavgfine,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 		
-		self.wimage.mmode="app"
-#		self.wfft.mmode="app"
+		self.whistparam.connect(self.whistparam,QtCore.SIGNAL("mouseup"),self.histparammouseup)
+		self.wplotparam.connect(self.wplotparam,QtCore.SIGNAL("mouseup"),self.plotparammouseup)
 		
 		# This object is itself a widget we need to set up
 		self.gbl = QtGui.QGridLayout(self)
@@ -704,12 +781,12 @@ class SXGuiCter(QtGui.QWidget):
 		
 		# Try to recover sizes & positions of windows of the previous GUI session
 		E2loadappwin("sxgui_cter","main",self)
-		E2loadappwin("sxgui_cter","plotparam",self.wplotparam.qt_parent)
-		E2loadappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
+#		E2loadappwin("sxgui_cter","fft",self.wfft.qt_parent)
+		E2loadappwin("sxgui_cter","image",self.wimage.qt_parent)
 		E2loadappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
 		E2loadappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
-		E2loadappwin("sxgui_cter","image",self.wimage.qt_parent)
-#		E2loadappwin("sxgui_cter","fft",self.wfft.qt_parent)
+		E2loadappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
+		E2loadappwin("sxgui_cter","plotparam",self.wplotparam.qt_parent)
 		
 #		if self.cter_entry_list:
 # #			self.wfft.show()
@@ -727,9 +804,9 @@ class SXGuiCter(QtGui.QWidget):
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
 		self.timer.start(100)
 		
-		# Finally, read CTER CTF file if necessary
-		if cter_ctf_file != None:
-			self.readCterCtfFile(os.path.relpath(cter_ctf_file))
+#		# Finally, read CTER CTF file if necessary
+#		if cter_ctf_file != None:
+#			self.readCterCtfFile(os.path.relpath(cter_ctf_file))
 		
 	def add_value_widget(self, idx_cter, val_min, val_max, grid_row, grid_col, intonly = False, label_width = 90):
 		param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
@@ -739,7 +816,7 @@ class SXGuiCter(QtGui.QWidget):
 		val_widget.intonly=intonly
 		self.gbl.addWidget(val_widget,grid_row,grid_col)
 		self.value_map_list[idx_cter][self.idx_cter_item_widget] = val_widget
-
+	
 	def add_value_widget_with_threshold(self, idx_hist, grid_row, grid_col, grid_col_2nd, grid_col_3rd, intonly = False, label_width = 90):
 		val_min = self.hist_map_list[idx_hist][self.idx_hist_item_val_min]
 		val_max = self.hist_map_list[idx_hist][self.idx_hist_item_val_max]
@@ -763,7 +840,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].text.setStyleSheet("color: rgb(255,0,0);")
 		self.gbl.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper],grid_row,grid_col_3rd+1)
-
+	
 	def readCterCtfFile(self, file_path):
 		"""Read all entries from a CTER CTF file into the list box"""
 		
@@ -787,7 +864,7 @@ class SXGuiCter(QtGui.QWidget):
 		if len(new_entry_list) == 0:
 			QtGui.QMessageBox.warning(self, "Warning", "The specified CTER CTF file (%S) does not contain any entry. Please try it again." % new_cter_entry_list)
 			return
-			
+		
 		# print "MRK_DEBUG: Detected %s entries in %s" % (len(new_entry_list), file_path)
 		# print "MRK_DEBUG: Num. of Columns is %d in %s" % (len(new_entry_list[0]), file_path)
 		if len(new_entry_list[0]) == self.n_idx_cter - self.n_idx_cter_extra:
@@ -809,17 +886,17 @@ class SXGuiCter(QtGui.QWidget):
 				# Limiting_absolute_frequency [cycle/pixel] int(xr/fwpix+0.5) = <Unit:[(cycle/A)/(pixel/A)] = [(cycle/A)*(A/pixel)] = [cycle/pixel]>
 				# return  Limiting_abs_frequency [cycle/pixel]Limiting_frequency[cycle/A] <= int(xr/fwpix+0.5),xr
 				new_entry_list[cter_id][self.idx_cter_error_ctf] = cter_limit_freq
-			
+				
 				# Set associated pwrot file path 
 				assert os.path.dirname(file_path).find("partres") != -1
 				cter_pwrot_dir = os.path.dirname(file_path).replace("partres", "pwrot")
 				new_cter_pwrot_file_path = os.path.join(cter_pwrot_dir, "rotinf%04d.txt" % new_entry_list[cter_id][self.idx_cter_id])
 				new_entry_list[cter_id][self.idx_cter_pwrot_name] = new_cter_pwrot_file_path
-			
+				
 				# Set max value of pwrot related to this micrograph
 				new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1)
 				new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig])
-			
+				
 				# Always set selection state to 1 (selected)
 				new_entry_list[cter_id][self.idx_cter_select] = 1
 		else: 
@@ -850,6 +927,12 @@ class SXGuiCter(QtGui.QWidget):
 			# self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setRange(val_min, val_max)
 			self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setValue(val_max)
 		
+		# Always disable micrograph display upon loading new dataset
+		if self.wimage.isVisible():
+			self.wimage.hide()
+		self.cbmicdisplay.setValue(False)
+		self.curmicdisplay = False
+		
 		# Set disable status of histogram
 		if self.hist_map_list[self.curhist][self.idx_hist_item_val_min] == self.hist_map_list[self.curhist][self.idx_hist_item_val_max]:
 			idx_cter = self.hist_map_list[self.curhist][self.idx_hist_item_idx_cter]
@@ -860,12 +943,6 @@ class SXGuiCter(QtGui.QWidget):
 			if self.wplotparam.isVisible():
 				self.wplotparam.hide()
 			QtGui.QMessageBox.information(self, "Information","All entries have the same selected paramter values (%s). Parameter Histogram & Plot will not be shown" % (param_label))
-		
-		# Always disable micrograph display upon loading new dataset
-		if self.wimage.isVisible():
-			self.wimage.hide()
-		self.cbmicdisplay.setValue(False)
-		self.curmicdisplay = False
 		
 		self.updateEntryList()
 		
@@ -887,7 +964,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.pbsaveselection.setEnabled(True)
 		
 		# NOTE: 2016/01/03 Toshio Moriya
-		# Force update related plots for scaling delay...
+		# Force update related plots to hide too much scaling delay...
 		self.updateHist()
 		self.updatePlotParam()
 		
@@ -895,10 +972,14 @@ class SXGuiCter(QtGui.QWidget):
 		
 		mic_dir = os.path.dirname(self.cter_entry_list[0][self.idx_cter_mic_name])
 		if os.path.exists(mic_dir):
-		 	self.cbmicdisplay.setEnabled(True)
+			self.cbmicdisplay.setEnabled(True)
 		else:
-		 	QtGui.QMessageBox.warning(None,"Warning","Can not find the micrograph directory (%s). Please check your project directory. \n\nMicrograph display option is disabled for this session." % (mic_dir))
-		
+			QtGui.QMessageBox.warning(None,"Warning","Can not find the micrograph directory (%s). Please check your project directory. \n\nMicrograph display option is disabled for this session." % (mic_dir))
+			
+#		assert(self.isVisible()) 
+#		self.raise_()
+#		self.activateWindow()
+	
 	def openCter(self,val=None):
 		"""Open CTER CTF file"""
 		
@@ -906,7 +987,7 @@ class SXGuiCter(QtGui.QWidget):
 		if file_path == "": return
 		
 		self.readCterCtfFile(os.path.relpath(file_path))
-
+	
 	def updateHist(self):
 		if self.whistparam == None: return # it's closed/not visible
 		if self.cter_partres_file_path == None: return # no cter ctf file is selected
@@ -914,7 +995,7 @@ class SXGuiCter(QtGui.QWidget):
 		if self.curhistdisable == True: return # do nothing while it is hidden
 		
 		val_list = []
-
+		
 		# Create Histogram for selected paramter
 		idx_cter = self.hist_map_list[self.curhist][self.idx_hist_item_idx_cter]
 		for cter_entry in self.cter_entry_list:
@@ -949,7 +1030,7 @@ class SXGuiCter(QtGui.QWidget):
 		# shape_name = "hist_param_shape_value"
 		# scr_x, scr_y = self.whistparam.plot2scr(param_val, 0.0)
 		# self.whistparam.add_shape(shape_name,EMShape(("scrline",0,1,0,scr_x,self.whistparam.scrlim[1],scr_x,self.whistparam.scrlim[1]+self.whistparam.scrlim[3],3)))
-
+		
 		val_min = min(hist_y_list)
 		val_max = max(hist_y_list)
 		# threshold_lower_label = "Lower(Blue)"
@@ -958,25 +1039,25 @@ class SXGuiCter(QtGui.QWidget):
 		# threshold_upper_label = "Upper(Red)"
 		unapply_threshold_upper_val = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_upper]
 		apply_threshold_upper_val = self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_upper]
-
+		
 		self.whistparam.set_data(([param_val, param_val], [val_min, val_max]),"selected_val",quiet=False,color=3)
 		self.whistparam.set_data(([unapply_threshold_lower_val, unapply_threshold_lower_val], [val_min, val_max]),"unapply_threshold_lower_val",quiet=False,color=1,linetype=1)
 		self.whistparam.set_data(([apply_threshold_lower_val, apply_threshold_lower_val], [val_min, val_max]),"apply_threshold_lower_val",quiet=False,color=1)
 		self.whistparam.set_data(([unapply_threshold_upper_val, unapply_threshold_upper_val], [val_min, val_max]),"unapply_threshold_upper_val",quiet=False,color=2,linetype=1)
 		self.whistparam.set_data(([apply_threshold_upper_val, apply_threshold_upper_val], [val_min, val_max]),"apply_threshold_upper_val",quiet=False,color=2)
-
+		
 		# shape_name = "hist_param_shape_unapply_threshold_lower"
 		# scr_x, scr_y = self.whistparam.plot2scr(unapply_threshold_lower_val, 0.0)
 		#self.whistparam.add_shape(shape_name,EMShape(("scrline",0,0,0.5,scr_x,self.whistparam.scrlim[1],scr_x,self.whistparam.scrlim[1]+self.whistparam.scrlim[3],1)))
-
+		
 		# shape_name = "hist_param_shape_apply_threshold_lower"
 		# scr_x, scr_y = self.whistparam.plot2scr(apply_threshold_lower_val, 0.0)
 		# self.whistparam.add_shape(shape_name,EMShape(("scrline",0,0,1,scr_x,self.whistparam.scrlim[1],scr_x,self.whistparam.scrlim[1]+self.whistparam.scrlim[3],1)))
-
+		
 		# shape_name = "hist_param_shape_unapply_threshold_upper"
 		# scr_x, scr_y = self.whistparam.plot2scr(unapply_threshold_upper_val, 0.0)
 		# self.whistparam.add_shape(shape_name,EMShape(("scrline",0.5,0,0,scr_x,self.whistparam.scrlim[1],scr_x,self.whistparam.scrlim[1]+self.whistparam.scrlim[3],1)))
-
+		
 		# shape_name = "hist_param_shape_apply_threshold_upper"
 		# scr_x, scr_y = self.whistparam.plot2scr(apply_threshold_upper_val, 0.0)
 		# self.whistparam.add_shape(shape_name,EMShape(("scrline",1,0,0,scr_x,self.whistparam.scrlim[1],scr_x,self.whistparam.scrlim[1]+self.whistparam.scrlim[3],1)))
@@ -988,14 +1069,14 @@ class SXGuiCter(QtGui.QWidget):
 		# else:
 		# 	self.whistparam.add_shape(shape_name,EMShape(("scrlabel",0,0,0,self.whistparam.scrlim[0]+30,self.whistparam.scrlim[1]+self.whistparam.scrlim[3]-18,"%s(Green) %1.3g, %s %1.3g, %s %1.3g"%(param_label,param_val,threshold_lower_label,apply_threshold_lower_val,threshold_upper_label,apply_threshold_upper_val),120.0,-1)))
 		# 	# self.whistparam.add_shape(shape_name,EMShape(("scrlabel",0,0,0,self.whistparam.scrlim[0]+30,self.whistparam.scrlim[1]+self.whistparam.scrlim[3]-18,"%s %1.5g"%(param_label,param_val),120.0,-1)))
-
+		
 		self.whistparam.setAxisParms(param_label,"Image Counts")
 		# x_margin = (hist_x_list[-1] - hist_x_list[0]) * 0.05
 		# NOTE: 2016/01/02 Toshio Moriya
 		# Disable manual rescale for now and use autoscale
 		# self.whistparam.rescale(min(val_list),max(val_list),0,max(hist_y_list) * 1.05)
 		self.whistparam.autoscale(True)
-
+	
 	def updatePlotParam(self):
 		if self.wplotparam == None: return # it's closed/not visible
 		if self.cter_partres_file_path == None: return # no cter ctf file is selected
@@ -1050,7 +1131,7 @@ class SXGuiCter(QtGui.QWidget):
 		# NOTE: 2016/01/02 Toshio Moriya
 		# Use autoscale for now
 		self.wplotparam.autoscale(True)
-
+	
 	def updatePlot(self):
 		if self.wplotrotavgcoarse == None: return # it's closed/not visible
 		if self.wplotrotavgfine == None: return # it's closed/not visible
@@ -1139,7 +1220,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.wplotrotavgfine.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
 		
 		self.updatePlotVisibility()
-
+	
 	def updateEntryList(self):
 		"""Updated entry list box after sorting of CTER entries based on current setting."""
 		
@@ -1256,7 +1337,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.updateMicImg()
 		
 		self.needredisp = True
-
+	
 	def updateEntrySelect(self, entry):
 		"""called when check status of an cter entry in list box is changed."""
 		assert(self.cter_partres_file_path != None)
@@ -1272,7 +1353,7 @@ class SXGuiCter(QtGui.QWidget):
 			self.value_map_list[self.idx_cter_select][self.idx_cter_item_widget].setValue(self.cter_entry_list[self.curentry][self.idx_cter_select],True)
 			
 		self.updateUncheckCounts()
-
+	
 	def updateUncheckCounts(self):
 		"""called whenever checked status of cter entries change."""
 		assert(self.cter_partres_file_path != None)
@@ -1287,14 +1368,14 @@ class SXGuiCter(QtGui.QWidget):
 		
 		self.vbuncheckcounts.setValue(uncheck_counts,True)
 		self.vbuncheckratio.setValue(float(uncheck_counts)/n_entry,True)
-
+	
 	def reapplySort(self,item = None):
 		"""Called when reapply button is clicked."""
 		if self.cter_partres_file_path == None: return # no cter ctf file is selected
 		if self.cter_entry_list == None: return # no cter ctf file is selected
 		
 		self.updateEntryList()
-
+	
 	def newSort(self,cursort):
 		"""Sort CTER entries by selected parameter values."""
 		if self.cursort == cursort: return
@@ -1306,11 +1387,11 @@ class SXGuiCter(QtGui.QWidget):
 		if self.cter_entry_list == None: return # no cter ctf file is selected
 		
 		self.updateEntryList()
-
+	
 	def newSortOrder(self, sortoder):
 		"""Change sorting order of CTER entries."""
 		if self.cursortoder == sortoder: return
-
+		
 		# now set the new status
 		self.cursortoder = sortoder
 		
@@ -1318,7 +1399,7 @@ class SXGuiCter(QtGui.QWidget):
 		if self.cter_entry_list == None: return # no cter ctf file is selected
 		
 		self.updateEntryList()
-
+	
 	def newSortSelect(self, sortselect):
 		"""Change sort select status of CTER entries."""
 		if self.cursortselect == sortselect: return
@@ -1330,7 +1411,7 @@ class SXGuiCter(QtGui.QWidget):
 		if self.cter_entry_list == None: return # no cter ctf file is selected
 		
 		self.updateEntryList()
-
+	
 	def newThresholdLower(self):
 		threshold_lower = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].getValue()
 		if threshold_lower < self.hist_map_list[self.curhist][self.idx_hist_item_val_min]:
@@ -1345,7 +1426,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_lower] = threshold_lower
 		
 		self.needredisp=True
-
+	
 	def newThresholdUpper(self):
 		threshold_upper = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].getValue()
 		if threshold_upper < self.hist_map_list[self.curhist][self.idx_hist_item_val_min]:
@@ -1360,7 +1441,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_upper] = threshold_upper
 		
 		self.needredisp=True
-
+	
 	def newHist(self,currow):
 		"called when a new row is selected from the Histogram list box"
 		
@@ -1399,12 +1480,12 @@ class SXGuiCter(QtGui.QWidget):
 				assert(self.curthresholdcontrol == self.idx_threshold_control_edit_only)
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setEnabled(True)
-		
+			
 			idx_cter = self.hist_map_list[self.curhist][self.idx_hist_item_idx_cter]
 			param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
 			self.whistparam.setWindowTitle("sxgui_cter - %s Histogram" % (param_label))
 			self.wplotparam.setWindowTitle("sxgui_cter - %s Sort Plot" % (param_label))
-		
+			
 			if self.cursyncsort == True:
 				idx_sort = self.hist_map_list[self.curhist][self.idx_hist_item_idx_sort]
 				if (idx_sort != self.cursort):
@@ -1412,10 +1493,10 @@ class SXGuiCter(QtGui.QWidget):
 					self.ssort.setCurrentIndex(idx_sort)
 				# else: assert(idx_sort == self.cursort) # Do nothing
 			# else: assert(self.cursyncsort == False) # Do nothing
-
+			
 			if self.cter_partres_file_path == None: return # no cter ctf file is selected
 			if self.cter_entry_list == None: return # no cter ctf file is selected
-		
+			
 			self.curhistdisable=False
 			if not self.whistparam.isVisible():
 				self.whistparam.show()
@@ -1428,9 +1509,9 @@ class SXGuiCter(QtGui.QWidget):
 			self.updatePlotParam()
 			if self.cursyncsort == True:
 				self.updateEntryList()
-		
+			
 			self.needredisp = True
-
+	
 	def newThresholdControl(self, currow):
 		"called when a new row is selected from the Threshold Control list box"
 		
@@ -1458,11 +1539,11 @@ class SXGuiCter(QtGui.QWidget):
 			assert(self.curthresholdcontrol == self.idx_threshold_control_edit_only)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setEnabled(True)
-
+	
 	def newSyncSort(self, syncsort):
 		"""Change scyn sort enable state."""
 		if self.cursyncsort == syncsort: return
-
+		
 		# now set the new status
 		self.cursyncsort = syncsort
 		
@@ -1475,7 +1556,7 @@ class SXGuiCter(QtGui.QWidget):
 				self.ssort.setCurrentIndex(idx_sort)
 			# else: assert(idx_sort == self.cursort) # Do nothing
 		# else: assert(self.cursyncsort == False) # Do nothing
-
+	
 	def newEntryPerBin(self,curentryperbin):
 		if self.curentryperbin == curentryperbin: return
 		
@@ -1491,7 +1572,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.updatePlotParam()
 		
 		self.needredisp = True
-
+	
 	def applyAllThresholds(self,item = None):
 		if self.cter_partres_file_path == None: return # no cter ctf file is selected
 		if self.cter_entry_list == None: return # no cter ctf file is selected
@@ -1519,14 +1600,14 @@ class SXGuiCter(QtGui.QWidget):
 			
 		self.updateEntryList()
 		self.updateUncheckCounts()
-
+	
 	def newThresholdSet(self, currow):
 		"called when a new row is selected from the Threshold Set list box"
 		
 		if self.curthresholdset == currow: return
 		# now set the new item and enalble it
 		self.curthresholdset=currow
-
+	
 	def writeThresholdSet(self, file_path_out, idx_thresholdset):
 		assert(self.cter_partres_file_path != None)
 		assert(self.cter_entry_list != None)
@@ -1596,7 +1677,7 @@ class SXGuiCter(QtGui.QWidget):
 			QtGui.QMessageBox.warning(self, "Warning", "The specified file is not threshold file.")
 		
 		file_in.close()
-
+	
 	def saveThresholdSet(self,item = None):
 		if self.cter_partres_file_path == None: return # no cter ctf file is selected
 		if self.cter_entry_list == None: return # no cter ctf file is selected
@@ -1606,7 +1687,7 @@ class SXGuiCter(QtGui.QWidget):
 		if file_path_out == "": return
 		
 		self.writeThresholdSet(os.path.relpath(file_path_out), self.curthresholdset)
-
+	
 	def loadThresholdSet(self,item = None):
 		if self.cter_partres_file_path == None: return # no cter ctf file is selected
 		if self.cter_entry_list == None: return # no cter ctf file is selected
@@ -1620,7 +1701,7 @@ class SXGuiCter(QtGui.QWidget):
 		if file_path_in == "": return
 		
 		self.readThresholdSet(os.path.relpath(file_path_in), self.curthresholdset)
-
+	
 	def saveSelection(self,item = None):
 		if self.cter_partres_file_path == None: return # no cter ctf file is selected
 		if self.cter_entry_list == None: return # no cter ctf file is selected
@@ -1653,7 +1734,7 @@ class SXGuiCter(QtGui.QWidget):
 			reply = QtGui.QMessageBox.question(self, "Warning", "The file (%s) already exists. Do you want to overwrite the file?" % (existing_file_path), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No)
 			if reply == QtGui.QMessageBox.No:
 				return
-			
+		
 		# Save selection in CTER Format
 		file_out_select = open(file_path_out_select,"w")
 		file_out_discard = open(file_path_out_discard,"w")
@@ -1683,7 +1764,7 @@ class SXGuiCter(QtGui.QWidget):
 				else:
 					file_out.write("  %12.5g" % cter_entry[idx_cter])
 			file_out.write("\n")
-			
+		
 		file_out_select.close()
 		file_out_discard.close()
 		
@@ -1705,7 +1786,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.writeThresholdSet(file_path_out_thresholds, self.idx_thresholdset_applied) 
 		
 		QtGui.QMessageBox.information(self, "Information","The following files are saved in %s:\n\nCTER CTF List - Selected: %s\n\nCTER CTF List - Discarded: %s\n\nMicrograph - Selected: %s\n\nMicrograph - Discarded: %s\n\nApplied Threshold Set: %s" % (os.path.dirname(self.cter_partres_file_path), file_path_out_select, file_path_out_discard, file_path_out_mic_select, file_path_out_mic_discard, file_path_out_thresholds))
-
+	
 	def timeOut(self):
 		if self.busy: return
 		
@@ -1722,31 +1803,35 @@ class SXGuiCter(QtGui.QWidget):
 				# lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
 				# print ''.join('!! ' + line for line in lines)
 				pass
-
+	
 	def redisplay(self):
 		self.needredisp=False
 		self.busy=True
 		
 		if self.cter_entry_list != None:
-#			if not self.wfft.isVisible():
+			is_child_shown = False
+#			if not self.wfft.isVisible() and self.is_wfft_minimized:
 #				self.wfft.show()
-			if not self.whistparam.isVisible() and not self.curhistdisable:
-				self.whistparam.show()
-			if not self.wplotparam.isVisible() and not self.curhistdisable:
-				self.wplotparam.show()
-			if not self.wplotrotavgcoarse.isVisible():
-				self.wplotrotavgcoarse.show()
-			if not self.wplotrotavgfine.isVisible():
-				self.wplotrotavgfine.show()
-			if not self.wimage.isVisible() and self.curmicdisplay:
+#				is_child_shown = True
+			if not self.wimage.isVisible() and self.curmicdisplay and not self.is_wimage_minimized:
 				self.wimage.show()
-			
-#		if self.cter_entry_list != None:
-#			self.wimage.raise_()
-#			self.wfft.raise_()
-#			self.wplotrotavgcoarse.raise_()
-#			self.whistparam.raise_()
-		
+				is_child_shown = True
+			if not self.wplotrotavgcoarse.isVisible() and not self.is_wplotrotavgcoarse_minimized:
+				self.wplotrotavgcoarse.show()
+				is_child_shown = True
+			if not self.wplotrotavgfine.isVisible() and not self.is_wplotrotavgfine_minimized:
+				self.wplotrotavgfine.show()
+				is_child_shown = True
+			if not self.whistparam.isVisible() and not self.curhistdisable and not self.is_whistparam_minimized:
+				self.whistparam.show()
+				is_child_shown = True
+			if not self.wplotparam.isVisible() and not self.curhistdisable and not self.is_wplotparam_minimized:
+				self.wplotparam.show()
+				is_child_shown = True
+			if is_child_shown == True:
+				self.raise_()
+				self.activateWindow()
+				
 		self.updateHist()
 		self.updatePlotParam()
 		self.updatePlot()
@@ -1770,20 +1855,128 @@ class SXGuiCter(QtGui.QWidget):
 #		elif event.key()==Qt.Key_F :
 #			print "MRK_DEBUG: Not used now"
 #			self.doRefit()
-
+	
+	def eventFilter(self, source, event):
+		if event.type() == QtCore.QEvent.WindowStateChange:
+			# print "MRK_DEBUG: Hello QtCore.QEvent.WindowStateChange"
+			if self.windowState() & QtCore.Qt.WindowMinimized:
+				# print "MRK_DEBUG: sxgui main window has minimized"
+				assert(self.isMinimized() == True)
+				#
+				# NOTE: 2016/03/09 Toshio Moriya
+				# Minimize icon button of child window should be disabled
+				#
+				if self.cter_entry_list != None:
+					# if self.wfft.isVisible() and not self.is_wfft_minimized:
+					# 	self.wfft.hide()
+					# 	self.is_wfft_minimized = True
+					if self.wimage.isVisible() == True and self.is_wimage_minimized == False:
+						assert(self.curmicdisplay == True)
+						self.wimage.hide()
+						self.is_wimage_minimized = True
+					if self.wplotrotavgcoarse.isVisible() == True and self.is_wplotrotavgcoarse_minimized == False:
+						self.wplotrotavgcoarse.hide()
+						self.is_wplotrotavgcoarse_minimized = True
+					if self.wplotrotavgfine.isVisible() == True and self.is_wplotrotavgfine_minimized == False:
+						self.wplotrotavgfine.hide()
+						self.is_wplotrotavgfine_minimized = True
+					if self.whistparam.isVisible() == True and self.is_whistparam_minimized == False:
+						assert(self.curhistdisable == False)
+						self.whistparam.hide()
+						self.is_whistparam_minimized = True
+					if self.wplotparam.isVisible() == True and self.is_wplotparam_minimized == False:
+						assert(self.curhistdisable == False )
+						self.wplotparam.hide()
+						self.is_wplotparam_minimized = True
+			else:
+				# print "MRK_DEBUG: sxgui main window has not minimized"
+				assert(self.isMinimized() == False)
+				#
+				# NOTE: 2016/03/09 Toshio Moriya
+				# Minimize icon button of child window should be disabled
+				#
+				if self.cter_entry_list != None:
+					# if self.is_wfft_minimized == True:
+					# 	assert(self.wfft.isVisible() == False and self.curmicdisplay == True)
+					# 	self.wfft.show()
+					# 	self.is_wfft_minimized = False
+					if self.is_wimage_minimized == True:
+						assert(self.wimage.isVisible() == False and self.curmicdisplay == True)
+						self.wimage.show()
+						self.is_wimage_minimized = False
+					if self.is_wplotrotavgcoarse_minimized == True:
+						assert(self.wplotrotavgcoarse.isVisible() == False)
+						self.wplotrotavgcoarse.show()
+						self.is_wplotrotavgcoarse_minimized = False
+					if self.is_wplotrotavgfine_minimized == True:
+						assert(self.wplotrotavgfine.isVisible() == False)
+						self.wplotrotavgfine.show()
+						self.is_wplotrotavgfine_minimized = False
+					if self.is_whistparam_minimized == True:
+						assert(self.whistparam.isVisible() == False and self.curhistdisable == False)
+						self.whistparam.show()
+						self.is_whistparam_minimized = False
+					if self.is_wplotparam_minimized == True:
+						assert(self.wplotparam.isVisible() == False and self.curhistdisable == False )
+						self.wplotparam.show()
+						self.is_wplotparam_minimized = False
+				assert(self.isVisible()) 
+				self.raise_()
+				self.activateWindow()
+		elif event.type() == QtCore.QEvent.WindowActivate:
+			# print "MRK_DEBUG: sxgui main window has gained focus (beome active)"
+			# 
+			# NOTE: 2016/03/08 Toshio Moriya
+			# To raise EMGLWidget (SXPlot2DWidget and EMImage2DWidget) window,
+			# we have to go through its qt_parent attribute to call raise_()...
+			# 
+			if self.cter_entry_list != None:
+				# if self.wfft.isVisible() == True:
+				#	self.wfft.qt_parent.raise_()
+				if self.wimage.isVisible() == True:
+					self.wimage.qt_parent.raise_()
+				if self.wplotrotavgcoarse.isVisible() == True:
+					self.wplotrotavgcoarse.qt_parent.raise_()
+				if self.wplotrotavgfine.isVisible() == True:
+					self.wplotrotavgfine.qt_parent.raise_()
+				if self.whistparam.isVisible() == True:
+					self.whistparam.qt_parent.raise_()
+				if self.wplotparam.isVisible() == True:
+					self.wplotparam.qt_parent.raise_()
+				assert(self.isVisible()) 
+				self.raise_()
+		# elif event.type()== QtCore.QEvent.WindowDeactivate:
+		# 	print "MRK_DEBUG: sxgui main window has lost focus (beome deactive)"
+		# elif event.type()== QtCore.QEvent.FocusIn:
+		# 	print "MRK_DEBUG: sxgui main has gained keyboard focus"
+		# elif event.type()== QtCore.QEvent.FocusOut:
+		# 	print "MRK_DEBUG: sxgui main has lost keyboard focus"
+		
+		return super(SXGuiCter, self).eventFilter(source, event)
+	
 	def closeEvent(self,event):
+		# Save current window layout
 		E2saveappwin("sxgui_cter","main",self)
 		if self.cter_entry_list != None:
-			E2saveappwin("sxgui_cter","plotparam",self.wplotparam.qt_parent)
-			E2saveappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
+#			E2saveappwin("sxgui_cter","fft",self.wfft.qt_parent)
+			E2saveappwin("sxgui_cter","image",self.wimage.qt_parent)
 			E2saveappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
 			E2saveappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
-			E2saveappwin("sxgui_cter","image",self.wimage.qt_parent)
-#			E2saveappwin("sxgui_cter","fft",self.wfft.qt_parent)
+			E2saveappwin("sxgui_cter","plotparam",self.wplotparam.qt_parent)
+			E2saveappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
+		
+		# close all child windows
+		# if self.wfft:
+		# 	self.wfft.close()
+		if self.wimage: self.wimage.close()
+		if self.wplotrotavgcoarse: self.wplotrotavgcoarse.close()
+		if self.wplotrotavgfine: self.wplotrotavgfine.close()
+		if self.whistparam: self.whistparam.close()
+		if self.wplotparam: self.wplotparam.close()
 		
 		event.accept()
 		QtGui.qApp.exit(0)
-
+		
 	def updatePlotVisibility(self,val=None):
 		if self.wplotrotavgcoarse == None: return # it's closed/not visible
 		if self.wplotrotavgfine == None: return # it's closed/not visible
@@ -1796,7 +1989,7 @@ class SXGuiCter(QtGui.QWidget):
 				self.wplotrotavgcoarse.visibility[name] = item_widget.getValue()
 				self.wplotrotavgcoarse.full_refresh()
 				self.wplotrotavgcoarse.updateGL()
-
+		
 		for idx_graph in xrange(self.n_idx_graph):
 			item_widget = self.graph_map_list[idx_graph][self.idx_graph_item_widget]
 			name = self.graph_map_list[idx_graph][self.idx_graph_item_name]
@@ -1804,7 +1997,7 @@ class SXGuiCter(QtGui.QWidget):
 				self.wplotrotavgfine.visibility[name] = item_widget.getValue()
 				self.wplotrotavgfine.full_refresh()
 				self.wplotrotavgfine.updateGL()
-
+	
 	def newPlotFixScale(self,curplotfixscale):
 		if self.curplotfixscale == curplotfixscale: return
 		
@@ -1819,10 +2012,10 @@ class SXGuiCter(QtGui.QWidget):
 		# self.updatePlotParam()
 		
 		self.needredisp = True
-
+	
 	def refreshGraphs(self,item):
 		self.needredisp = True
-
+	
 	def plotparammouseup(self,event):
 		if self.curthresholdcontrol == self.idx_threshold_control_edit_only:
 			return
@@ -1849,7 +2042,7 @@ class SXGuiCter(QtGui.QWidget):
 			else:
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setValue(plot_y)
 				self.newThresholdLower()
-
+	
 	def histparammouseup(self,event):
 		if self.curthresholdcontrol == self.idx_threshold_control_edit_only:
 			return
