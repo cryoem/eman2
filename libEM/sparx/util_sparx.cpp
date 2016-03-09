@@ -18332,7 +18332,7 @@ void Util::divabs(EMData* img, EMData* img1)
 	size_t size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
-	for (size_t i=0; i<size; ++i) img_ptr[i] /= fmax(1.0e-5f, sqrt(img1_ptr[2*i]*img1_ptr[2*i]+img1_ptr[2*i+1]*img1_ptr[2*i+1]));
+	for (size_t i=0; i<size; ++i) img_ptr[i] /= Util::get_max(1.0e-5f, sqrt(img1_ptr[2*i]*img1_ptr[2*i]+img1_ptr[2*i+1]*img1_ptr[2*i+1]));
 	img->update();
 	EXITFUNC;
 }
@@ -22848,10 +22848,10 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	    		radius = nx/2 - cosine_width;
 			break;
 			case(2):
-				radius = int(std::min(nx,ny)/2.)-cosine_width;
+				radius = int(Util::get_min(nx,ny)/2.)-cosine_width;
 			break;
 			case(3):
-				radius = int(std::min(std::min(nx,ny),nz)/2.) - cosine_width;
+				radius = int(Util::get_min(Util::get_min(nx,ny),nz)/2.) - cosine_width;
 			break;
 		}
 	}
@@ -22862,7 +22862,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 			for (int iy=0; iy<ny; iy++) {
 				int ty=tz+(iy-cy)*(iy-cy);				
 				for (int ix =0; ix<nx; ix++) {
-					float r = sqrt(ty +(ix-cx)*(ix-cx));
+					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
 					if (r>=radius_p)
 						(*cmasked)(ix,iy,iz) = (*bckg)(ix,iy,iz);
 					if (r>=radius && r<radius_p) {
@@ -22881,7 +22881,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 			for (int iy=0; iy<ny; iy++) {
 				int ty=tz+(iy-cy)*(iy-cy);
 				for (int ix=0; ix<nx; ix++) {
-					float r = sqrt(ty +(ix-cx)*(ix-cx));
+					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
 					if (r>=radius_p) {	
 						u +=1.0f;
 						s +=(*img)(ix,iy,iz);
@@ -22901,7 +22901,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 			for (int iy=0; iy<ny; iy++) {
 				int ty=tz+(iy-cy)*(iy-cy);
 				for (int ix=0; ix<nx; ix++) {
-					float r = sqrt(ty +(ix-cx)*(ix-cx));
+					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
 					if (r>=radius_p)  (*cmasked) (ix,iy,iz) = s;
 					if (r>=radius && r<radius_p) {
 						float temp = (0.5 + 0.5*cos(quadpi*(radius_p-r)/cosine_width));

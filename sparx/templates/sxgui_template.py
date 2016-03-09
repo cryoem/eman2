@@ -72,20 +72,21 @@ class SXcmd_token:
 
 # ========================================================================================
 class SXcmd:
-	def __init__(self, category = ""):
+	def __init__(self, category = "", is_submittable = True):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.name = ""               # Name of this command (i.e. name of sx*.py script but without .py extension), used for generating command line
-		self.mode = ""               # key base name of a command token, defining mode/subset of this command. For fullset command, use empty string
-		self.label = ""              # User friendly name of this command
-		self.short_info = ""         # Short description of this command
-		self.mpi_support = False     # Flag to indicate if this command suppors MPI version
-		self.mpi_add_flag = False    # DESIGN_NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts 
-		self.category = category     # Category of this command; pipe (pipeline), util (utility)
-		self.token_list = []         # list of command tokens. Need this to keep the order of command tokens
-		self.token_dict = {}         # dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
-		self.btn = None              # <Used only in sxgui.py> QPushButton button instance associating with this command
-		self.widget = None           # <Used only in sxgui.py> SXCmdWidget instance associating with this command
+		self.name = ""                        # Name of this command (i.e. name of sx*.py script but without .py extension), used for generating command line
+		self.mode = ""                        # key base name of a command token, defining mode/subset of this command. For fullset command, use empty string
+		self.label = ""                       # User friendly name of this command
+		self.short_info = ""                  # Short description of this command
+		self.mpi_support = False              # Flag to indicate if this command suppors MPI version
+		self.mpi_add_flag = False             # DESIGN_NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts 
+		self.category = category              # Category of this command; pipe (pipeline), util (utility)
+		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue
+		self.token_list = []                  # list of command tokens. Need this to keep the order of command tokens
+		self.token_dict = {}                  # dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
+		self.btn = None                       # <Used only in sxgui.py> QPushButton button instance associating with this command
+		self.widget = None                    # <Used only in sxgui.py> SXCmdWidget instance associating with this command
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 	def get_mode_name_for(self, target_name):
@@ -219,6 +220,7 @@ class SXCmdWidget(QWidget):
 		self.sxcmd = sxcmd
 		self.sxcmd_tab_main = None
 		self.sxcmd_tab_advance = None
+		self.child_application_list = []
 		
 		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (SXLookFeelConst.project_dir, self.sxcmd.get_mode_name_for("file_path"))
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -302,7 +304,7 @@ class SXCmdWidget(QWidget):
 						
 						# For now, using line edit box for the other type
 						widget_text = str(sxcmd_token.widget.text())
-						if sxcmd_token.type not in ["int", "float"]:
+						if sxcmd_token.type not in ["int", "float", "apix", "wn", "box", "radius"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
@@ -468,8 +470,12 @@ class SXCmdWidget(QWidget):
 				print cmd_line
 		
 			# Execute the generated command line
-			process = subprocess.Popen(cmd_line, shell=True)
+ 			process = subprocess.Popen(cmd_line, shell=True)
 			self.emit(SIGNAL("process_started"), process.pid)
+			if self.sxcmd.is_submittable == False:
+				assert(self.sxcmd.mpi_support == False)
+				# Register to This is a GUI application
+				self.child_application_list.append(process)
 			
 			# Save the current state of GUI settings
 			if os.path.exists(SXLookFeelConst.project_dir) == False:
@@ -576,8 +582,7 @@ class SXCmdWidget(QWidget):
 				elif label_in == "Submit Job to Queue":
 					if val_str_in == "YES":
 						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(True)
-					else:
-						assert val_str_in == "NO"
+					else: # assert(val_str_in == "NO")
 						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(False)
 				elif label_in == "Job Name":
 					self.sxcmd_tab_main.qsub_job_name_edit.setText(val_str_in)
@@ -669,6 +674,12 @@ class SXCmdWidget(QWidget):
 		if dir_path != "":
 			# Use relative path. 
 			target_widget.setText(os.path.relpath(dir_path))
+	
+	def quit_all_child_applications(self):
+		# Quit all child applications
+		for child_application in self.child_application_list:
+			child_application.kill()
+			# child_application.terminate() # This call ends up outputing "Program interrupted" Message and it is not pretty...
 	
 	"""
 #	def show_output_info(self):
@@ -1039,7 +1050,7 @@ class SXCmdTab(QWidget):
 #							spacer_frame.setMinimumWidth(token_widget_min_width)
 #							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						# else:
-						# 	if cmd_token.type not in ["int", "float", "string"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
+						# 	if cmd_token.type not in ["int", "float", "string", "apix", "wn", "box", "radius", "sym"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
 #							spacer_frame = QFrame()
 #							spacer_frame.setMinimumWidth(token_widget_min_width)
 #							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
@@ -1113,11 +1124,12 @@ class SXCmdTab(QWidget):
 			self.qsub_enable_checkbox = QCheckBox("")
 			if is_qsub_enabled == True:
 				self.qsub_enable_checkbox.setCheckState(Qt.Checked)
-			else:
+			else: # assert(is_qsub_enabled == False)
 				self.qsub_enable_checkbox.setCheckState(Qt.Unchecked)
 #			self.qsub_enable_checkbox.move(self.x2, self.y1)
 			self.qsub_enable_checkbox.setToolTip("submit job to queue")
 			self.qsub_enable_checkbox.stateChanged.connect(self.set_qsub_enable_state) # To control enable state of the following qsub related widgets
+			self.qsub_enable_checkbox.setEnabled(self.sxcmdwidget.sxcmd.is_submittable)
 			grid_layout.addWidget(self.qsub_enable_checkbox, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 			
 			# self.y1 = self.y1 + 25
@@ -1131,7 +1143,11 @@ class SXCmdTab(QWidget):
 			
 #			self.qsub_job_name_edit = QLineEdit(self)
 			self.qsub_job_name_edit = QLineEdit()
-			self.qsub_job_name_edit.setText(self.sxcmdwidget.sxcmd.get_mode_name_for("file_path"))
+			if self.sxcmdwidget.sxcmd.is_submittable == True:
+				self.qsub_job_name_edit.setText(self.sxcmdwidget.sxcmd.get_mode_name_for("file_path"))
+			else: # assert(self.sxcmdwidget.sxcmd.is_submittable == False)
+				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
+				self.qsub_job_name_edit.setText("N/A")
 #			self.qsub_job_name_edit.move(self.x2, self.y1)
 #			self.qsub_job_name_edit.setMinimumWidth(token_widget_min_width)
 			self.qsub_job_name_edit.setToolTip("name of this job")
@@ -1148,7 +1164,11 @@ class SXCmdTab(QWidget):
 			
 #			self.qsub_cmd_edit = QLineEdit(self)
 			self.qsub_cmd_edit = QLineEdit()
-			self.qsub_cmd_edit.setText("qsub")
+			if self.sxcmdwidget.sxcmd.is_submittable == True:
+				self.qsub_cmd_edit.setText("qsub")
+			else: # assert(self.sxcmdwidget.sxcmd.is_submittable == False)
+				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
+				self.qsub_cmd_edit.setText("N/A")
 #			self.qsub_cmd_edit.move(self.x2, self.y1)
 #			self.qsub_cmd_edit.setMinimumWidth(token_widget_min_width)
 			self.qsub_cmd_edit.setToolTip("name of submission command to queue job")
@@ -1165,7 +1185,11 @@ class SXCmdTab(QWidget):
 			
 #			self.qsub_script_edit = QLineEdit(self)
 			self.qsub_script_edit = QLineEdit()
-			self.qsub_script_edit.setText("msgui_qsub.sh")
+			if self.sxcmdwidget.sxcmd.is_submittable == True:
+				self.qsub_script_edit.setText("msgui_qsub.sh")
+			else: # assert(self.sxcmdwidget.sxcmd.is_submittable == False)
+				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
+				self.qsub_script_edit.setText("N/A")
 #			self.qsub_script_edit.move(self.x2, self.y1)
 #			self.qsub_script_edit.setMinimumWidth(token_widget_min_width)
 			self.qsub_script_edit.setToolTip("file name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh)")
@@ -1690,7 +1714,7 @@ class SXCmdWindowBase(QWidget):
 				self.connect(sxcmd.btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
 				
 				self.grid_row += 1
-				
+	
 	def handle_sxcmd_btn_event(self, sxcmd):
 		modifiers = QApplication.keyboardModifiers()
 		if modifiers == Qt.ShiftModifier:
@@ -1722,7 +1746,7 @@ class SXCmdWindowBase(QWidget):
 		window.move(self.pos() + position_shift)
 		window.show()
 		window.raise_()
-
+		
 # ========================================================================================
 # Utility Window (opened by class SXMainWindow)
 # This class includes the layout of the utility window
@@ -1779,18 +1803,34 @@ class SXUtilWindow(SXCmdWindowBase):
 		for sxcmd in self.sxcmd_list:
 			if os.path.exists(sxcmd.widget.gui_settings_file_path):
 				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
+	
+#	def closeEvent(self, event):
+#		# Quit child applications of all sxcmd widgets
+#		for sxcmd in self.sxcmd_list:
+#			sxcmd.widget.quit_all_child_applications()
+#		
+#		event.accept()
 
+# ========================================================================================
+# Child Window status, used by only main window
+class SXChildStatus:
+	def __init__(self, window = None):
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		self.window = window       # Child window widget
+		self.is_minimized = False  # Is this window currently minimized?
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+	
 # ========================================================================================
 # Main Window (started by class SXApplication)
 class SXMainWindow(SXCmdWindowBase):
+	
 	def __init__(self, sxconst_set, sxcmd_list, parent = None):
 		super(SXMainWindow, self).__init__("pipe", sxconst_set, sxcmd_list, parent)
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.sxinfo_window = None
-		self.sxutil_window = None
-		
+		self.child_status_list = [] 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 		# --------------------------------------------------------------------------------
@@ -1798,6 +1838,8 @@ class SXMainWindow(SXCmdWindowBase):
 		# --------------------------------------------------------------------------------
 		self.setWindowTitle("SPHIRE-GUI Main (Alpha Version)")
 		self.resize(SXLookFeelConst.sxmain_window_width, SXLookFeelConst.sxmain_window_height)
+		self.installEventFilter(self) # Necessary for self.eventFilter()
+		print "MRK_DEBUG: SXMainWindow Window Flags: 0x%08x " % (self.windowFlags())
 		
 		# --------------------------------------------------------------------------------
 		# Setup Window Layout
@@ -1808,8 +1850,11 @@ class SXMainWindow(SXCmdWindowBase):
 		# General 
 		# --------------------------------------------------------------------------------
 		# Create SXInfoWindow
-		self.sxinfo_window = SXInfoWindow()
-		self.sxinfo_window.hide()
+		sxinfo_window = SXInfoWindow()
+		sxinfo_window.setWindowFlags((sxinfo_window.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		sxinfo_window.setWindowFlags((sxinfo_window.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMaximizeButtonHint) # Disabled maximize icon button in window title bar
+		sxinfo_window.hide()
+		self.child_status_list.append(SXChildStatus(sxinfo_window))
 		
 		# Add Push button to display popup window for info about the application
 		info_btn = QPushButton()
@@ -1818,7 +1863,7 @@ class SXMainWindow(SXCmdWindowBase):
 		info_btn.setToolTip("open info page")
 		self.grid_layout.addWidget(info_btn, self.grid_row, self.grid_col_origin, self.menu_widget_row_span, self.menu_widget_col_span // 2)
 		position_shift = QPoint(0, 0)
-		self.connect(info_btn, SIGNAL("clicked()"), partial(self.handle_open_window_btn_event, self.sxinfo_window, position_shift))
+		self.connect(info_btn, SIGNAL("clicked()"), partial(self.handle_open_window_btn_event, sxinfo_window, position_shift))
 		
 		# Add Close button
 		quit_btn = QPushButton("Quit")
@@ -1836,8 +1881,10 @@ class SXMainWindow(SXCmdWindowBase):
 		self.grid_row += 1
 		
 		# Create SXConstSetWindow
-		self.sxconst_set.window = SXConstSetWindow(self.sxconst_set, self.sxcmd_list)
-		self.sxconst_set.window.hide()
+		sxconst_set.window = SXConstSetWindow(self.sxconst_set, self.sxcmd_list)
+		sxconst_set.window.setWindowFlags((sxconst_set.window.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		sxconst_set.window.hide()
+		self.child_status_list.append(SXChildStatus(sxconst_set.window))
 		
 		# Add project parameter constant set associated button
 		self.sxconst_set.btn = QPushButton("Open %s Window" % self.sxconst_set.label)
@@ -1867,14 +1914,16 @@ class SXMainWindow(SXCmdWindowBase):
 		self.grid_row += 1
 		
 		# Create Utility Window
-		self.sxutil_window = SXUtilWindow(self.sxconst_set, self.sxcmd_list)
-		self.sxutil_window.hide()
+		sxutil_window = SXUtilWindow(self.sxconst_set, self.sxcmd_list)
+		sxutil_window.setWindowFlags((sxutil_window.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		sxutil_window.hide()
+		self.child_status_list.append(SXChildStatus(sxutil_window))
 		
 		# Add all utilities button
 		open_util_window_btn = QPushButton("Open Utilities Window")
 		open_util_window_btn.setToolTip("open utilities window")
 		position_shift = QPoint(SXLookFeelConst.menu_area_min_width + SXLookFeelConst.grid_margin * 2, 0)
-		self.connect(open_util_window_btn, SIGNAL("clicked()"), partial(self.handle_open_window_btn_event, self.sxutil_window, position_shift))
+		self.connect(open_util_window_btn, SIGNAL("clicked()"), partial(self.handle_open_window_btn_event, sxutil_window, position_shift))
 		
 		self.grid_layout.addWidget(open_util_window_btn, self.grid_row, self.grid_col_origin, self.menu_widget_row_span, self.menu_widget_col_span)
 		self.grid_row += 1
@@ -1891,75 +1940,124 @@ class SXMainWindow(SXCmdWindowBase):
 		for sxcmd in self.sxcmd_list:
 			if os.path.exists(sxcmd.widget.gui_settings_file_path):
 				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
+	
+	def eventFilter(self, source, event):
+		if event.type() == QEvent.WindowStateChange:
+			# print "MRK_DEBUG: Hello QEvent.WindowStateChange"
+			if self.windowState() & Qt.WindowMinimized:
+				# print "MRK_DEBUG: sxgui main window has minimized"
+				assert(self.isMinimized() == True)
+				#
+				# NOTE: 2016/03/07 Toshio Moriya
+				# Minimize icon button of child window should be disabled
+				#
+				for child_status in self.child_status_list:
+					if child_status.window.isVisible(): 
+						# assert(not child_status.window.isMinimized())
+						child_status.window.hide()
+						child_status.is_minimized = True
+						# child_status.window.setWindowState(child_status.window.windowState() | Qt.WindowMinimized)
+#				
+#				if self.sxinfo_window.isVisible(): 
+#					# assert(not self.sxinfo_window.isMinimized())
+#					self.sxinfo_window.hide()
+#					self.sxinfo_window_minimized = True
+#					# self.sxinfo_window.setWindowState(self.sxinfo_window.windowState() | Qt.WindowMinimized)
+#				if  self.sxconst_set.window.isVisible(): 
+#					# assert(not self.sxconst_set.window.isMinimized())
+#					self.sxconst_set.window.hide()
+#					self.sxconst_set_window_minimized = True
+#					# self.sxconst_set.window.setWindowState(self.sxconst_set.window.windowState() | Qt.WindowMinimized)
+#				if self.sxutil_window.isVisible(): 
+#					# assert(not self.sxutil_window.isMinimized())
+#					self.sxutil_window.hide()
+#					self.sxutil_window_minimized = True
+#					# self.sxutil_window.setWindowState(self.sxutil_window.windowState() | Qt.WindowMinimized)
+#				
+			else:
+				# print "MRK_DEBUG: sxgui main window has not minimized"
+				assert(self.isMinimized() == False)
+				#
+				# NOTE: 2016/03/07 Toshio Moriya
+				# Minimize icon button of child window should be disabled
+				#
+				for child_status in self.child_status_list:
+					# if self.sxinfo_window.isMinimized():
+					if child_status.is_minimized == True:
+						assert(not child_status.window.isVisible()) 
+						# self.child_status.window.setWindowState(child_status.window.windowState() & ~Qt.WindowMinimized)
+						child_status.window.show()
+						child_status.window.raise_()
+						child_status.is_minimized = False
+				assert(self.isVisible()) 
+				self.raise_()
+#				
+#				# if self.sxinfo_window.isMinimized():
+#				if self.sxinfo_window_minimized == True:
+#					assert(not self.sxinfo_window.isVisible()) 
+#					# self.sxinfo_window.setWindowState(self.sxinfo_window.windowState() & ~Qt.WindowMinimized)
+#					self.sxinfo_window.show()
+#					self.sxinfo_window.raise_()
+#					self.sxinfo_window_minimized = False
+#				# if self.sxconst_set.window.isMinimized(): 
+#				if self.sxconst_set_window_minimized == True: 
+#					assert(not self.sxconst_set.window.isVisible()) 
+#					# self.sxconst_set.window.setWindowState(self.sxconst_set.window.windowState() & ~Qt.WindowMinimized)
+#					self.sxconst_set.window.show()
+#					self.sxconst_set.window.raise_()
+#					self.sxconst_set_window_minimized = False
+#				# if self.sxutil_window.isMinimized(): 
+#				if self.sxutil_window_minimized == True: 
+#					assert(not self.sxutil_window.isVisible()) 
+#					# self.sxutil_window.setWindowState(self.sxutil_window.windowState() & ~Qt.WindowMinimized)
+#					self.sxutil_window.show()
+#					self.sxutil_window.raise_()
+#					self.sxutil_window_minimized = False
+#				assert(self.isVisible()) 
+#				self.raise_()
+#				
+		elif event.type() == QEvent.WindowActivate:
+			# print "MRK_DEBUG: sxgui main window has gained focus (beome active)"
+			for child_status in self.child_status_list:
+				if child_status.window.isVisible(): 
+					child_status.window.raise_()
+			assert(self.isVisible()) 
+			self.raise_()
+			
+#			if self.sxinfo_window.isVisible(): 
+#				self.sxinfo_window.raise_()
+#			if self.sxconst_set.window.isVisible(): 
+#				self.sxconst_set.window.raise_()
+#			if self.sxutil_window.isVisible(): 
+#				self.sxutil_window.raise_()
+#			self.raise_()
+		# elif event.type()== QEvent.WindowDeactivate:
+		# 	print "MRK_DEBUG: sxgui main window has lost focus (beome deactive)"
+		# elif event.type()== QEvent.FocusIn:
+		# 	print "MRK_DEBUG: sxgui main has gained keyboard focus"
+		# elif event.type()== QEvent.FocusOut:
+		# 	print "MRK_DEBUG: sxgui main has lost keyboard focus"
 		
+		return super(SXMainWindow, self).eventFilter(source, event)
+	
 	def closeEvent(self, event):
+		# Quit child applications of all sxcmd widgets
+		for sxcmd in self.sxcmd_list:
+			sxcmd.widget.quit_all_child_applications()
+		
 		# close all child windows
-		if self.sxinfo_window:
-			self.sxinfo_window.close()
-		if self.sxutil_window:
-			self.sxutil_window.close()
-		if self.sxconst_set.window:
-			self.sxconst_set.window.close()
+		for child_status in self.child_status_list:
+			if child_status.window:
+				child_status.window.close()
+		
+#		if self.sxinfo_window:
+#			self.sxinfo_window.close()
+#		if self.sxutil_window:
+#			self.sxutil_window.close()
+#		if self.sxconst_set.window:
+#			self.sxconst_set.window.close()
 		
 		event.accept()
-	
-#	#This is the function info, which is being started when the Pushbutton btn_info of the main window is being clicked
-#	def handle_info_btn_event(self):
-#		if self.sxinfo_window.isVisible():
-#			self.sxinfo_window.raise_()
-#			self.sxinfo_window.activateWindow()
-#			return
-#			
-#		# print "Opening a new popup window..."
-#		# Opens the window SXInfoWindow, and defines its width and height
-#		# The layout of the SXInfoWindow window is defined in class SXInfoWindow(QWidget Window)
-#		# self.sxinfo_window = SXInfoWindow()
-#		# self.sxinfo_window.resize(300,200) # sxinfo_window.resize(250,200)
-#		self.sxinfo_window.move(self.pos())
-#		self.sxinfo_window.show()
-#		self.sxinfo_window.raise_()
-	
-#	def handle_sxconst_set_btn_event(self):
-#		if self.sxconst_set.window.isVisible():
-#			self.sxconst_set.window.raise_()
-#			self.sxconst_set.window.activateWindow()
-#			return
-#		
-#		self.sxconst_set.window.move(self.pos() - QPoint(SXLookFeelConst.sxconst_set_window_width, 0))
-#		self.sxconst_set.window.show()
-#		self.sxconst_set.window.raise_()
-	
-#	def handle_all_utils_btn_event(self):
-#		if self.sxutil_window.isVisible():
-#			self.sxutil_window.raise_()
-#			self.sxutil_window.activateWindow()
-#			return
-#		
-#		self.sxutil_window.move(self.pos() + QPoint(SXLookFeelConst.menu_area_min_width + SXLookFeelConst.grid_margin * 2, 0))
-#		self.sxutil_window.show()
-#		self.sxutil_window.raise_()
-	
-#	def handle_sxcmd_btn_event(self, sxcmd):
-#		modifiers = QApplication.keyboardModifiers()
-#		if modifiers == Qt.ShiftModifier:
-#			os.system("python -m webbrowser %s%s" % (SPARX_DOCUMENTATION_WEBSITE, sxcmd.name))
-#			return
-#		
-#		if self.cur_sxcmd == sxcmd: return
-#		
-#		if self.cur_sxcmd != None:
-#			assert(self.cur_sxcmd.widget.isVisible() == True)
-#			self.cur_sxcmd.widget.hide()
-#			custom_style = "QPushButton {color:black; }"
-#			self.cur_sxcmd.btn.setStyleSheet(custom_style)
-#			
-#		self.cur_sxcmd = sxcmd
-#		
-#		if self.cur_sxcmd != None:
-#			assert(self.cur_sxcmd.widget.isVisible() == False)
-#			self.cur_sxcmd.widget.show()
-#			custom_style = "QPushButton {font: bold; color:blue; }"
-#			self.cur_sxcmd.btn.setStyleSheet(custom_style)
 
 # ========================================================================================
 class SXApplication(QApplication):

@@ -1322,11 +1322,8 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	for image in prjlist:
-		if not upweighted:
-			tmp = image.get_attr("bckgnoise")
-			ttt = [ tmp[i] for i in xrange(tmp.get_xsize()) ]
-			insert_slices(r, filt_table(image, ttt) )
-		else:				insert_slices(r, image)
+		if not upweighted: insert_slices(r, filt_table(image, image.get_attr("bckgnoise")) )
+		else:              insert_slices(r, image)
 
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )
