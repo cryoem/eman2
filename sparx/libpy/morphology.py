@@ -203,7 +203,7 @@ def threshold_to_zero(img, minval = 0.0):
 		Output
 			thresholded image.
 	"""
-	return img.process( "threshold.belowtozero_cut", {"minval": minval } )	
+	return img.process( "threshold.belowtozero_cut", {"minval": minval } )
 
 def threshold_to_minval(img, minval = 0.0):
 	"""
@@ -215,7 +215,7 @@ def threshold_to_minval(img, minval = 0.0):
 		Output
 			thresholded image.
 	"""
-	return img.process( "threshold.belowtominval", {"minval": minval } )	
+	return img.process( "threshold.belowtominval", {"minval": minval } )
 
 def threshold_outside(img, minval, maxval):
 	"""
@@ -226,7 +226,7 @@ def threshold_outside(img, minval, maxval):
 			minval: value below which image pixels will be set to this value.
 			maxval: value above which image pixels will be set to this value.
 	"""
-	return img.process( "threshold.clampminmax", {"minval": minval, "maxval": maxval } )	
+	return img.process( "threshold.clampminmax", {"minval": minval, "maxval": maxval } )
 
 def threshold_maxval(img, maxval = 0.0):
 	"""
@@ -238,8 +238,19 @@ def threshold_maxval(img, maxval = 0.0):
 		Output
 			thresholded image.
 	"""
-	st = Util.infomask(img, None, True)	
-	return img.process( "threshold.clampminmax", {"minval": st[2], "maxval": maxval } )	
+	st = Util.infomask(img, None, True)
+	return img.process( "threshold.clampminmax", {"minval": st[2], "maxval": maxval } )
+
+def notzero(img):
+	"""
+		Name
+			notzero - replace values that are not zero by 1.0
+		Input
+			img: input image
+		Output
+			binary image.
+	"""
+	return img.process( "threshold.notzero" )
 
 def linchange(a, fct):
 	"""

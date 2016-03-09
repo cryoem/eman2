@@ -2000,12 +2000,12 @@ void EMData::onelinenn_ctfw(int j, int n, int n2,
 			if (iyn >= 0) iya = iyn + 1;
 			else          iya = n + iyn + 1;
 
-            // linear interpolation of 1D bckgnoise
-            float rr = std::sqrt(float(r2));
-            int   ir = int(rr);
-            float df = rr - float(ir);
-            float mult = (1.0f - df)*bckgnoise[ir] + df*bckgnoise[ir+1];
-            //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
+			// linear interpolation of 1D bckgnoise
+			float rr = std::sqrt(float(r2));
+			int   ir = int(rr);
+			float df = rr - float(ir);
+			float mult = (1.0f - df)*bckgnoise[ir] + df*bckgnoise[ir+1];
+			//cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
 			// cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
 			// (*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
 			cmplx(ixn, iya, iza) +=  btq * mult * weight;
