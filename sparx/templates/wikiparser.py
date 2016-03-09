@@ -25,13 +25,14 @@ class SXsubcmd_config:
 
 # ========================================================================================
 class SXcmd_config:
-	def __init__(self, wiki, category, exclude_list = [], subconfig = None):
+	def __init__(self, wiki, category, is_submittable = True, exclude_list = [], subconfig = None):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		self.wiki = wiki                  # Wiki document file path
-		self.category = category          # Category of this command: pipe (pipeline), util (utility)
-		self.exclude_list = exclude_list  # token key base list to be excluded
-		self.subconfig = subconfig        # Subset configuration of this command (e.g. sxprocess and sxlocres). None includes all command tokens, and do not make subcmd
+		self.wiki = wiki                      # Wiki document file path
+		self.category = category              # Category of this command: pipe (pipeline), util (utility)
+		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue
+		self.exclude_list = exclude_list      # token key base list to be excluded
+		self.subconfig = subconfig            # Subset configuration of this command (e.g. sxprocess and sxlocres). None includes all command tokens, and do not make subcmd
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
@@ -49,7 +50,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	print "Start parsing Wiki document (%s as %s command) " % (sxcmd_config.wiki, sxcmd_config.category)
 	
 	# Allocate memory for new SXcmd instance
-	sxcmd = SXcmd(sxcmd_config.category)
+	sxcmd = SXcmd(sxcmd_config.category, sxcmd_config.is_submittable)
 	
 	# Define dictionary of keywords:
 	# The dictionary maps command token to special data types
@@ -101,6 +102,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	keyword_dict["input_coordinates"]             = SXkeyword_map(2, "parameters") # input_coordinates_pattern
 	keyword_dict["--import_ctf"]                  = SXkeyword_map(2, "parameters") # --import_ctf=ctf_file
 	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters") # --importctf=IMPORTCTF
+	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "parameters") # cter_ctf_file 
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters") # --pwreference=pwreference 
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")   # inputfile
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")        # input_pdb
@@ -451,6 +453,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	output_file.write("; %s.mpi_support = %s" % (sxcmd_variable_name, sxcmd.mpi_support))
 	output_file.write("; %s.mpi_add_flag = %s" % (sxcmd_variable_name, sxcmd.mpi_add_flag))
 	output_file.write("; %s.category = \"%s\"" % (sxcmd_variable_name, sxcmd.category))
+	output_file.write("; %s.is_submittable = %s" % (sxcmd_variable_name, sxcmd.is_submittable))
 	output_file.write("\n")
 	
 	for token in sxcmd.token_list:
@@ -492,6 +495,8 @@ def main():
 	# Define pipeline command settings
 	# --------------------------------------------------------------------------------
 	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "pipe"))
+	
+	sxcmd_config_list.append(SXcmd_config("../doc/gui_cter.txt", "pipe", is_submittable = False))
 	
 	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", "pipe"))
 	
