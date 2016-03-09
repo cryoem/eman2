@@ -57,18 +57,18 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# If a command token extracted from 'usage in command line' contains the keyword defined here
 	# the associated special data type will be assigned to this command token.
 	# 
-	# - output      : Line edit box and output info button
+	# - output      : Line edit box for formatted string type, and output info button. 
 	#                 GUI also checks the existence of output directory/file before execution of the sx*.py
 	#                 GUI abort the execution if the directory/file exists already
-	# - image       : Line edit box and open file buttons for .hdf and .bdb 
-	# - any_image   : Line edit box and open file buttons for all file types (also mrc, tiff, and etc) and .bdb 
-	# - parameters  : Line edit box and open file button for all file types 
-	# - any_file    : Line edit box and open file button for all file types 
-	# - bdb         : Line edit box and open file button for .bdb 
-	# - pdb         : Line edit box and open file button for .pdb 
-	# - function    : Two line edit boxes (function name & file path of the container script)
+	# - image       : Line edit box for formatted string type, and open file buttons for .hdf and .bdb 
+	# - any_image   : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .bdb 
+	# - parameters  : Line edit box for formatted string type, and open file button for all file types 
+	# - any_file    : Line edit box for formatted string type, and open file button for all file types 
+	# - bdb         : Line edit box for formatted string type, and open file button for .bdb 
+	# - pdb         : Line edit box for formatted string type, and open file button for .pdb 
+	# - function    : Two line edit boxes for formatted string type (function name & file path of the container script), 
 	#                 and open file button for .py
-	# - directory   : Line edit box and open directory button (NOTE: Toshio Moriya 2016/03/03: Not used at this point)
+	# - directory   : Line edit box for formatted string type, and open directory button (NOTE: Toshio Moriya 2016/03/03: Not used at this point)
 	# 
 	# - apix        : Project constant - float type
 	# - wn          : Project constant - int type
