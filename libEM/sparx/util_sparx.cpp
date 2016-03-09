@@ -22372,6 +22372,8 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
+	qprob = 0.0f;
+	/*
 	cout <<"  VERSION  12/19/2015  5:40 PM"<<endl;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	EMData * img2 = new EMData();
@@ -22391,7 +22393,6 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 
 	EXITFUNC;
 	return img2;
-	/*
 	exit(0);
 
 	float dummy;
@@ -22516,11 +22517,11 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 		}
 	}
 	//for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] + Util::get_irand(1,7);
-	img2->update();
+	*/
+	img->update();
 
 	EXITFUNC;
-	return img2;
-	*/
+	return img;
 }
 #undef img_ptr
 #undef img2_ptr
