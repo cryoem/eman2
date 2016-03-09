@@ -339,7 +339,7 @@ def main():
 			this_image = EMData()
 			for index_of_particle in xrange(img_begin,img_end):
 				this_image.read_image(stack,index_of_particle)
-				varList.append(image_decimate_window_xform_ctf(img,options.decimate,options.window,options.CTF))
+				varList.append(image_decimate_window_xform_ctf(this_image,options.decimate,options.window,options.CTF))
 		else:
 			from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
 			from utilities		import set_params_proj, get_params_proj, params_3D_2D, get_params2D, set_params2D, compose_transform2
