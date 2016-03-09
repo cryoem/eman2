@@ -125,21 +125,29 @@ ${COMMDNA_TOKEN_HELP}
 
 ${COMMDNA_TOKEN_DEFAULT}
 	Default value of a command token.
-	
+
 	Used as the default value of this command token in GUI.
-	
+
 	GUI also uses default value to find its data type (either int, float, string, bool), 
 	please make sure to use appropriate expression for the value.
 	For example, use "1.0" instead of "1" for float type.
 
+	In case of using string type to express a list of int or float type, 
+	please use the following formula for wikiparser.py to deduce the type from the default value:
+	
+	1     ==>  int
+	1.0   ==>  float
+	‘1.0' ==>  string. please use single quotations (') instead of double (")
+	Aaa   ==>  string
+
 	In case of string type, it can be multiple words.
 	e.g. "current directory"
-	
+
 	Please do not use "required" for the 1st word, since it is a part of syntax.
 
 	If the value in GUI is not changed from the default value, GUI excludes 
 	this command token from the command line upon its generation.
-	
+
 ${COMMDNA_TOKEN_TYPE}
 	Data type of a command token. Valid types are int, float, string, and bool.
 	
