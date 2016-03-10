@@ -13722,7 +13722,7 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 	if MPI:
 		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
 		##newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
-		###$newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose)
+		###  newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -13877,15 +13877,11 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	image_start, image_end = MPI_start_end(nima, nproc, myid)
 	prjlist = EMData.read_images(prj_stack, pid_list[image_start:image_end])
 
-	"""
-	if myid == 0 :  print "  NEW  "
+	#if myid == 0 :  print "  NEW  "
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
 	from utilities import model_blank, get_im
-	from reconstruction import recons3d_4nnw_MPI
-	from utilities import read_text_file, read_text_row, write_text_file
-	bckgnoise = [get_im("bckgnoise.hdf"), read_text_file("defgroup_stamp.txt")]#model_blank(1000,1,1,1.0)
-	if myid == 0 :  print  sym,finfo,npad
-	"""
+	#from reconstruction import recons3d_4nnw_MPI
+	#if myid == 0 :  print  sym,finfo,npad
 	"""
 	from fundamentals import fdecimate
 	from utilities import get_params_proj,set_params_proj
@@ -13899,29 +13895,48 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		set_params_proj(prjlist[i],[phi,theta,psi,sx/scale,sy/scale])
 	"""
 	nnnx = ((prjlist[0].get_ysize())*2+3)
+	from utilities import read_text_file, read_text_row, write_text_file
+	bckgnoise = get_im("bckgnoise.hdf")
+	nlx = bckgnoise.get_xsize()
+	datastamp = read_text_file("defgroup_stamp.txt")
 	#nnnx = 200#prjlist[0].get_ysize()
 	from fundamentals import fft,fshift
 	from utilities import get_params_proj,set_params_proj
 	for i in xrange(len(prjlist)):
 		#phi,theta,psi,sxs,sys = get_params_proj(prjlist[i])
+		try:
+			stmp = prjlist[i].get_attr("ptcl_source_image")
+		except:
+			try:
+				stmp = prjlist[i].get_attr("ctf")
+				stmp = round(stmp.defocus,4)
+			except:
+				ERROR("Either ptcl_source_image or ctf has to be present in the header.","get_shrink_data",1, myid)
+		try:
+			indx = datastamp.index(stmp)
+		except:
+			ERROR("Problem with indexing ptcl_source_image.","get_shrink_data",1, myid)
+
 
 		prjlist[i] = fft(prjlist[i])
 		#prjlist[i] = fshift(prjlist[i],sxs,sys)
 		prjlist[i].set_attr("padffted",1)
 		prjlist[i].set_attr("npad",1)
 		#set_params_proj(prjlist[i] ,[phi,theta,psi,0.0,0.0])
+		prjlist[i].set_attr("bckgnoise", [bckgnoise[k,indx] for k in xrange(nlx)]) #  This is index on bckgnoise table
 
 
 
-
+	"""
 	from utilities import model_blank
 	m = model_blank(600,1,1,1.0)
 	for i in xrange(len(prjlist)):
 		prjlist[i].set_attr("bckgnoise",m)
+	"""
 	from reconstruction import recons3d_4nnfs_MPI
 
 
-	vol,wei,reg = recons3d_4nnfs_MPI(myid, 0, prjlist,  upweighted = True, CTF = CTF, compensate = False, target_size = nnnx)
+	vol,wei,reg = recons3d_4nnfs_MPI(myid, 0, prjlist,  upweighted = False, CTF = CTF, compensate = False, target_size = nnnx)
 
 	if myid == 0 :
 		#print  info(reg)

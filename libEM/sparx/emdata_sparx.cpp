@@ -2044,7 +2044,8 @@ void EMData::onelinetr_ctfw(int j, int bign, int n, int n2, int npad,
 			float mult = (1.0f - df)*bckgnoise[ir] + df*bckgnoise[ir+1];
 
 			float c2val = (*c2)(i,jp);
-			std::complex<float> numerator = btq * mult * weight;
+			//std::complex<float> numerator = btq * mult * weight;
+			std::complex<float> numerator = btq * weight;//  Data is always premultiplied
 			float denominator = c2val * mult * weight;
 
 
