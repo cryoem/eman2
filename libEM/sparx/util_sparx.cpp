@@ -22358,10 +22358,10 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ 
-    cout <<"  VERSION  03/10/2016  05:14 PM double upweighting removed"<<endl;
-    cout <<"  Compilation time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
-}
+{ cout <<"  VERSION  03/10/2016  05:14 PM double upweighting removed"<<endl;}
+
+void Util::version2()
+{ cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;}
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
