@@ -18207,7 +18207,7 @@ EMData* Util::shrinkfvol(EMData* img, int npad)
 		w->set_size((xn+2-iodd)/2, yn, zn);
 
 	} else {
-		xn = 2*(((nx-3)/2)/npad)+ 3;
+		xn = (yn+2-yn%2)/2;
 		xx = nx;
 		xt = xn;
 		out->set_size(xn, yn, zn);	
