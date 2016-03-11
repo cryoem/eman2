@@ -231,7 +231,7 @@ class SXCmdWidget(QWidget):
 		# grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		
 		self.setAutoFillBackground(True)
-		palette = QPalette(self)
+		palette = QPalette()
 		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.cmd_settings_bg_color))
 		self.setPalette(palette)
 		
@@ -1308,7 +1308,7 @@ class SXConstSetWindow(QWidget):
 		
 #		# Set the background color of this widget
 #		self.setAutoFillBackground(True)
-#		palette = QPalette(self)
+#		palette = QPalette()
 #		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 #		self.setPalette(palette)
 		
@@ -1577,7 +1577,7 @@ class SXInfoWindow(QWidget):
 		
 		# Set the background color of this widget
 		self.setAutoFillBackground(True)
-		palette = QPalette(self)
+		palette = QPalette()
 		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 		self.setPalette(palette)
 		
@@ -1839,7 +1839,7 @@ class SXMainWindow(SXCmdWindowBase):
 		self.setWindowTitle("SPHIRE-GUI Main (Alpha Version)")
 		self.resize(SXLookFeelConst.sxmain_window_width, SXLookFeelConst.sxmain_window_height)
 		self.installEventFilter(self) # Necessary for self.eventFilter()
-		print "MRK_DEBUG: SXMainWindow Window Flags: 0x%08x " % (self.windowFlags())
+		# print "MRK_DEBUG: SXMainWindow Window Flags: 0x%08x " % (self.windowFlags())
 		
 		# --------------------------------------------------------------------------------
 		# Setup Window Layout
