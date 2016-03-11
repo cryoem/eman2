@@ -1857,7 +1857,7 @@ def recons_mref(Tracker):
 		data, old_shifts =  get_shrink_data_huang(Tracker,nxinit,particle_list_file,partstack,myid,main_node,nproc,preshift=True)
 		#vol=reconstruct_3D(Tracker,data)
 		mpi_barrier(MPI_COMM_WORLD)
-		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],info=None)
+		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
 		if myid ==main_node:
 			print "reconstructed %3d"%igrp
 		ref_list.append(vol)
@@ -2333,7 +2333,7 @@ def main():
 		for index in xrange(2):
 			partids = os.path.join(masterdir,"chunk%d.txt"%index)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift=True)
-			vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],info=None)
+			vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
 			if myid ==main_node:
 				vol_file_name = os.path.join(masterdir, "vol%d.hdf"%index)
 				vol.write_image(vol_file_name)
@@ -2465,7 +2465,7 @@ def main():
 				sleep(2)
 			mpi_barrier(MPI_COMM_WORLD)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"],Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
-			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], info=None)
+			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 			ref_vol_list.append(volref)
 			number_of_ref_class.append(len(Tracker["this_data_list"]))
 			if myid ==main_node:
@@ -2575,7 +2575,7 @@ def main():
 					write_text_file(Tracker["this_data_list"],Tracker["this_data_list_file"])
 				mpi_barrier(MPI_COMM_WORLD)
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
+				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 				#volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
 				if myid == main_node:volref.write_image(os.path.join(workdir,"vol_stable.hdf"),iref)
 				#volref = resample(volref,Tracker["shrinkage"])
@@ -2603,7 +2603,7 @@ def main():
 					sleep(2)
 				mpi_barrier(MPI_COMM_WORLD)
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
+				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 				vol_list.append(volref)
 			mpi_barrier(MPI_COMM_WORLD)
 			nx_of_image=ref_vol_list[0].get_xsize()
@@ -2635,7 +2635,7 @@ def main():
 				sleep(2)
 			mpi_barrier(MPI_COMM_WORLD)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],Tracker["this_unaccounted_text"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],info=None)
+			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 			nx_of_image=volref.get_xsize()
 			if Tracker["constants"]["PWadjustment"]:
 				Tracker["PWadjustment"]=Tracker["PW_dict"][nx_of_image]
