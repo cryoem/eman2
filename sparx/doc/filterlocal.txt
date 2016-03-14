@@ -6,7 +6,7 @@ sxfilterlocal - 3D Local Filter: Locally filter input volume based on values wit
 
 ''Usage in command lines'':
 
-sxfilterlocal.py  inputvolume  locresvolume  maskfile  outputfile  --radius=radius  --falloff=falloff  --MPI
+sxfilterlocal.py  input_volume  locres_volume  maskfile  outputfile  --radius=radius  --falloff=falloff  --MPI
 
 
 === Typical usage ===
@@ -17,8 +17,8 @@ sxlocres exists in for both MPI and non-MPI versions.
 
 
 == Input ==
-    inputvolume:: input volume: (default required string)
-    locresvolume:: local resolution volume: as produced by [[sxlocres.py]]. (default required string)
+    input_volume:: input volume: (default required string)
+    locres_volume:: local resolution volume: as produced by [[sxlocres.py]]. (default required string)
     maskfile:: mask volume: outlining the region within which local filtration will be applied (optional). (default none)
      
     radius:: radius for the mask in pixels: (default -1)
