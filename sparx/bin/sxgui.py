@@ -449,7 +449,7 @@ class SXconst_set:
 		self.label = ""              # <Used only in sxgui.py> User friendly name of this set
 		self.short_info = ""         # <Used only in sxgui.py> Short description of this set
 		self.list = []               # <Used only in sxgui.py> list of constant parameters. Need this to keep the order of constant parameters
-		self.dict = {}               # <Used only in sxgui.py> dictionary of constant parameters, organised by key of constant parameters. Easy to access a constant parameters but looses their order
+		self.dict = {}               # <Used only in sxgui.py> dictionary of constant parameters, organised by keys of constant parameters. Easy to access each constant parameter but looses their order
 		self.btn = None              # <Used only in sxgui.py> QPushButton button instance associating with this set
 		self.window = None           # <Used only in sxgui.py> Widget instance associating with this set
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -457,8 +457,8 @@ class SXconst_set:
 # ========================================================================================
 def construct_sxconst_set():
 	
-	# Create project constant set 
-	sxconst_set = SXconst_set(); sxconst_set.name = "Project Constants"; sxconst_set.label = "Project Constants"; sxconst_set.short_info = "Set constant values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
+	# Create the project constant parameter set for project settings
+	sxconst_set = SXconst_set(); sxconst_set.name = "Project Settings"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
 	sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "micrograph pixel size"; sxconst.help = "in angstrom/pixel"; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "ctfwin"; sxconst.label = "CTF window size "; sxconst.help = "in pixel. it should be slightly larger than particle box size"; sxconst.register = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
@@ -807,7 +807,7 @@ class SXCmdWidget(QWidget):
 		file_out = open(file_path_out,"w")
 		
 		# Write script name for consistency check upon loading
-		file_out.write("@@@@@ %s gui setting - " % (self.sxcmd.get_mode_name_for("human")))
+		file_out.write("@@@@@ %s gui settings - " % (self.sxcmd.get_mode_name_for("human")))
 		# file_out.write(EMANVERSION + " (CVS" + CVSDATESTAMP[6:-2] +")")
 		file_out.write(EMANVERSION + " (GITHUB: " + DATESTAMP +")" )
 		file_out.write(" @@@@@ \n")
@@ -867,7 +867,7 @@ class SXCmdWidget(QWidget):
 	
 		# Check if this parameter file is for this sx script
 		line_in = file_in.readline()
-		if line_in.find("@@@@@ %s gui setting" % (self.sxcmd.get_mode_name_for("human"))) != -1:
+		if line_in.find("@@@@@ %s gui settings" % (self.sxcmd.get_mode_name_for("human"))) != -1:
 			n_function_type_lines = 2
 			function_type_line_counter = 0
 			# loop through the rest of lines
@@ -1010,7 +1010,7 @@ class SXCmdTab(QWidget):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# local constants
 		required_cmd_token_restore_tooltip = "please enter the value manually"
-		const_cmd_token_restore_tooltip = "retrieve this registed constant value"
+		const_cmd_token_restore_tooltip = "retrieve the registed constant value for this parameter"
 		default_cmd_token_restore_tooltip = "retrieve this default value"
 		
 		# Set grid layout
@@ -1213,6 +1213,7 @@ class SXCmdTab(QWidget):
 							btn_name = "YES"
 						if cmd_token.type in parent.sxconst_set.dict.keys():
 							custom_style = "QPushButton {color:green; }"
+							cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
 						elif cmd_token.is_required:
 							btn_name = "required"
 							custom_style = "QPushButton {color:red; }"
@@ -1241,6 +1242,7 @@ class SXCmdTab(QWidget):
 						is_btn_enable = True
 						if cmd_token.type in parent.sxconst_set.dict.keys():
 							custom_style = "QPushButton {color:green; }"
+							cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
 						elif cmd_token.is_required:
 							btn_name = "required"
 							custom_style = "QPushButton {color:red; }"
@@ -1602,7 +1604,7 @@ class SXConstSetWindow(QWidget):
 		self.sxconst_set = sxconst_set
 		self.sxcmd_list = sxcmd_list
 		
-		self.gui_settings_file_path = "%s/gui_settings_project_consts.txt" % (SXLookFeelConst.project_dir)
+		self.gui_settings_file_path = "%s/gui_settings_project_settings.txt" % (SXLookFeelConst.project_dir)
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# Set the window title and size
 		self.setWindowTitle(self.sxconst_set.name)
@@ -1739,28 +1741,28 @@ class SXConstSetWindow(QWidget):
 		btn_grid_row = btn_row_origin
 		
 		# Add a register button
-		self.execute_btn = QPushButton("Register constants")
+		self.execute_btn = QPushButton("Register settings")
 		# make 3D textured push button look
 		custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 		self.execute_btn.setStyleSheet(custom_style)
 		self.execute_btn.setMinimumWidth(func_btn_min_width * register_btn_col_span)
-		self.execute_btn.setToolTip("register constants to automatically set values to command arguments and options")
+		self.execute_btn.setToolTip("register project constant parameter settings to automatically set values to command arguments and options")
 		self.connect(self.execute_btn, SIGNAL("clicked()"), self.register_const_set)
 		btn_layout.addWidget(self.execute_btn, btn_grid_row, btn_col_origin, register_btn_row_span, register_btn_col_span)
 		
 		btn_grid_row += 1
 		
-		# Add save constants button 
-		self.save_consts_btn = QPushButton("Save constants")
+		# Add save project constant parameter settings button 
+		self.save_consts_btn = QPushButton("Save settings")
 		self.save_consts_btn.setMinimumWidth(func_btn_min_width)
-		self.save_consts_btn.setToolTip("save project constant settings")
+		self.save_consts_btn.setToolTip("save project constant parameter settings")
 		self.connect(self.save_consts_btn, SIGNAL("clicked()"), self.save_consts)
 		btn_layout.addWidget(self.save_consts_btn, btn_grid_row, btn_col_origin, func_btn_row_span, func_btn_col_span)
 		
-		# Add load constants button 
-		self.load_consts_btn = QPushButton("Load constants")
+		# Add load project constant parameter settings button 
+		self.load_consts_btn = QPushButton("Load settings")
 		self.load_consts_btn.setMinimumWidth(func_btn_min_width)
-		self.load_consts_btn.setToolTip("load project constant setting to retrieve a previously-saved one")
+		self.load_consts_btn.setToolTip("load project constant parameter settings to retrieve the previously-saved one")
 		self.connect(self.load_consts_btn, SIGNAL("clicked()"), self.load_consts)
 		btn_layout.addWidget(self.load_consts_btn, btn_grid_row, btn_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
 		
@@ -1808,7 +1810,7 @@ class SXConstSetWindow(QWidget):
 		file_out = open(file_path_out,"w")
 		
 		# Write script name for consistency check upon loading
-		file_out.write("@@@@@ project constants gui setting - ")
+		file_out.write("@@@@@ project settings gui settings - ")
 		# file_out.write(EMANVERSION + " (CVS" + CVSDATESTAMP[6:-2] +")")
 		file_out.write(EMANVERSION + " (GITHUB: " + DATESTAMP +")" )
 		file_out.write(" @@@@@ \n")
@@ -1826,7 +1828,7 @@ class SXConstSetWindow(QWidget):
 		
 		# Check if this parameter file is for this sx script
 		line_in = file_in.readline()
-		if line_in.find("@@@@@ project constants gui setting") != -1:
+		if line_in.find("@@@@@ project settings gui settings") != -1:
 			n_function_type_lines = 2
 			function_type_line_counter = 0
 			# loop through the rest of lines
@@ -1840,31 +1842,31 @@ class SXConstSetWindow(QWidget):
 				target_operator = "<"
 				item_tail = label_in.find(target_operator)
 				if item_tail != 0: 
-					QMessageBox.warning(self, "Invalid Project Constants File Format", "Project constant entry should start from \"%s\" for entry key in line (%s). The format of this file might be corrupted. Please save the project constants file again." % (target_operator, line_in))
+					QMessageBox.warning(self, "Invalid Project Settings File Format", "Project settings entry should start from \"%s\" for entry key in line (%s). The format of this file might be corrupted. Please save the project settings file again." % (target_operator, line_in))
 				label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
 				target_operator = ">"
 				item_tail = label_in.find(target_operator)
 				if item_tail == -1: 
-					QMessageBox.warning(self, "Invalid Project Constants File Format", "Project constant entry should have \"%s\" closing entry key in line (%s) The format of this file might be corrupted. Please save the project constants file again." % (target_operator, line_in))
+					QMessageBox.warning(self, "Invalid Project Settings File Format", "Project settings entry should have \"%s\" closing entry key in line (%s) The format of this file might be corrupted. Please save the project settings file again." % (target_operator, line_in))
 				key = label_in[0:item_tail]
 				# Get corresponding sxconst
 				if key not in self.sxconst_set.dict.keys(): 
-					QMessageBox.warning(self, "Invalid Project Constants File Format", "Invalid entry key for project constants \"%s\" is found in line (%s). This project constants file might be imcompatible with the current version. Please save the project constants file again." % (key, line_in))
+					QMessageBox.warning(self, "Invalid Project Settings File Format", "Invalid entry key for project settings \"%s\" is found in line (%s). This project settings file might be imcompatible with the current version. Please save the project settings file again." % (key, line_in))
 				sxconst = self.sxconst_set.dict[key]
 				sxconst.widget.setText(val_str_in)
 						
 		else:
-			QMessageBox.warning(self, "Fail to load project constants", "The specified file is not project constants file.")
+			QMessageBox.warning(self, "Fail to load project settings", "The specified file is not project settings file.")
 		
 		file_in.close()
 	
 	def save_consts(self):
-		file_path_out = str(QFileDialog.getSaveFileName(self, "Save constants", options = QFileDialog.DontUseNativeDialog))
+		file_path_out = str(QFileDialog.getSaveFileName(self, "Save settings", options = QFileDialog.DontUseNativeDialog))
 		if file_path_out != "":
 			self.write_consts(file_path_out)
 	
 	def load_consts(self):
-		file_path_in = str(QFileDialog.getOpenFileName(self, "Load constants", options = QFileDialog.DontUseNativeDialog))
+		file_path_in = str(QFileDialog.getOpenFileName(self, "Load settings", options = QFileDialog.DontUseNativeDialog))
 		if file_path_in != "":
 			self.read_consts(file_path_in)
 
@@ -2094,13 +2096,13 @@ class SXUtilWindow(SXCmdWindowBase):
 		self.add_sxcmd_widgets()
 		
 		# --------------------------------------------------------------------------------
-		# Register constant parameter set upon initialization
+		# Register project constant parameter settings upon initialization
 		# --------------------------------------------------------------------------------
 		self.sxconst_set.window.register_const_set()
 		
 		# --------------------------------------------------------------------------------
 		# Load the previously saved parameter setting of this sx command
-		# Override project constant registration with previous setting
+		# Override the registration of project constant parameter settings with the previously-saved one
 		# --------------------------------------------------------------------------------
 		for sxcmd in self.sxcmd_list:
 			if os.path.exists(sxcmd.widget.gui_settings_file_path):
@@ -2188,7 +2190,7 @@ class SXMainWindow(SXCmdWindowBase):
 		sxconst_set.window.hide()
 		self.child_status_list.append(SXChildStatus(sxconst_set.window))
 		
-		# Add project parameter constant set associated button
+		# Add project constant parameter set associated button
 		self.sxconst_set.btn = QPushButton("Open %s Window" % self.sxconst_set.label)
 		self.sxconst_set.btn.setToolTip(self.sxconst_set.short_info)
 		self.grid_layout.addWidget(self.sxconst_set.btn, self.grid_row, self.grid_col_origin, self.menu_widget_row_span, self.menu_widget_col_span)
@@ -2231,13 +2233,13 @@ class SXMainWindow(SXCmdWindowBase):
 		self.grid_row += 1
 		
 		# --------------------------------------------------------------------------------
-		# Register constant parameter set upon initialization
+		# Register project constant parameter settings upon initialization
 		# --------------------------------------------------------------------------------
 		self.sxconst_set.window.register_const_set()
 		
 		# --------------------------------------------------------------------------------
 		# Load the previously saved parameter setting of this sx command
-		# Override project constant registration with previous setting
+		# Override the registration of project constant parameter settings with the previously-saved one
 		# --------------------------------------------------------------------------------
 		for sxcmd in self.sxcmd_list:
 			if os.path.exists(sxcmd.widget.gui_settings_file_path):
