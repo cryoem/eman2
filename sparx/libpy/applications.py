@@ -22224,11 +22224,11 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
 					if(focus == None):
-						temp = fsc(ref, data[im])[0]
+						tempx = fsc(ref, data[im])[0]
 					else:
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						temp = fsc(ref, fft(data[im]*mask2d))[0]
-					peak = sum(temp[1:highres[iref]])/highres[iref]
+						tempx = fsc(ref, fft(data[im]*mask2d))[0]
+					peak = sum(tempx[1:highres[iref]])/highres[iref]
 
 
 					if not(finfo is None):
@@ -22813,11 +22813,11 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
 					if(focus == None):
-						temp = fsc(ref, data[im])[0]
+						tempx = fsc(ref, data[im])[0]
 					else:
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						temp = fsc(ref, fft(data[im]*mask2d))[0]
-					peak = sum(temp[1:highres[iref]])/highres[iref]
+						tempx = fsc(ref, fft(data[im]*mask2d))[0]
+					peak = sum(tempx[1:highres[iref]])/highres[iref]
 						
 					if not(finfo is None):
 						finfo.write( "ID, iref, peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
