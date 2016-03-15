@@ -22381,10 +22381,6 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 				volref     = user_func(refdata)
 				volref.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 				del volref
-				else:
-					Tracker["lowpass"]  =0.45
-					Tracker["falloff"] = 0.1
-					res   = 0.5
 
 		if runtype=="REFINEMENT":
 			if fourvar:
