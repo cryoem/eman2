@@ -22365,7 +22365,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			## res
 			res = 0.5
         	for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
-            	if fscc[iref][1][ifreq] > 0.5:
+				if fscc[iref][1][ifreq] > 0.5:
 					res=fscc[iref][0][ifreq]
 					break
             Tracker["lowpass"] = min( 0.45, res)
