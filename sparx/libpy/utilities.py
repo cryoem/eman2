@@ -6334,6 +6334,8 @@ def recons_mref(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	import os
 	from time import sleep
+	from reconstruction import recons3d_4nn_ctf_MPI
+	from utilities import get_shrink_data_huang
 	myid             = Tracker["constants"]["myid"]
 	main_node        = Tracker["constants"]["main_node"]
 	nproc            = Tracker["constants"]["nproc"]
@@ -6345,11 +6347,11 @@ def recons_mref(Tracker):
 	ref_list = []
 	number_of_ref_class = []
 	for igrp in xrange(number_of_groups):
-		a_group_list=particle_list[(total_data*igrp)//number_of_groups:(total_data*(igrp+1))//number_of_groups]
+		a_group_list = particle_list[(total_data*igrp)//number_of_groups:(total_data*(igrp+1))//number_of_groups]
 		a_group_list.sort()
 		Tracker["this_data_list"] = a_group_list
 		from utilities import write_text_file
-		particle_list_file = os.path.join(Tracker["this_dir"],"iclass%d.txt"%igrp)
+		particle_list_file = os.path.join(Tracker["this_dir"], "iclass%d.txt"%igrp)
 		if myid ==main_node:
 			write_text_file(Tracker["this_data_list"],particle_list_file)
 		mpi_barrier(MPI_COMM_WORLD)
@@ -6361,7 +6363,7 @@ def recons_mref(Tracker):
 			print "reconstructed %3d"%igrp
 		ref_list.append(vol)
 		number_of_ref_class.append(len(Tracker["this_data_list"]))
-	Tracker["number_of_ref_class"]=number_of_ref_class
+	Tracker["number_of_ref_class"] = number_of_ref_class
 	return ref_list
 
 def apply_low_pass_filter(refvol,Tracker):
