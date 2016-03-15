@@ -21889,7 +21889,7 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 
 	return  params
 
-### from sort3d
+### from sxsort3d
 
 def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker): 
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
@@ -22003,6 +22003,13 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	numref      = len(ref_list)
 	nx          = ref_list[0].get_xsize()
 	if last_ring < 0:       last_ring = nx//2 - 2
+
+	if Tracker["constants"]["focus3Dmask"]:
+		focus               = Tracker["focus3D"]
+	else:
+		focus =      None
+
+
 	fscmask     = model_circle(last_ring, nx, nx, nx)
 	stack       = Tracker["constants"]["stack"]
 	import user_functions
@@ -22016,6 +22023,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		log.add("Output directory            : %s"%(outdir))
 		log.add("User function               : %s"%(user_func_name))
 		log.add("Maskfile                    : %s"%(maskfile))
+		if(focus != None):  \
+		log.add("Maskfile 3D for focused clustering        : %s"%(focus))
 		log.add("Inner radius                : %i"%(first_ring))
 		log.add("Outer radius                : %i"%(last_ring))
 		log.add("Ring step                   : %i"%(rstep))
@@ -22044,7 +22053,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	mask2D     = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
 	total_nima = len(Tracker["this_data_list"])
 	nima       = len(data)
-	list_of_particles  =Tracker["this_data_list"]
+	list_of_particles  = Tracker["this_data_list"]
 	Tracker["total_stack"]  = total_nima
     #####
 	if debug:
@@ -22057,6 +22066,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	assignment = [-1]*len(data)
  	for im in xrange(len(data)):
 		data[im].set_attr_dict({'ID':list_of_particles[im], 'group':-1})
+	'''
 	if fourvar:
 		from reconstruction import rec3D_MPI
 		from statistics     import varf3d_MPI
@@ -22068,7 +22078,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			varf.write_image( os.path.join(outdir,"varf0000.hdf") )
 	else:
 		varf = None
-		
+	'''
 	highres = []
 	for  iref in xrange(numref):
 		set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
@@ -22106,6 +22116,19 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		recvcount.append( ie - ib )
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
+
+
+	if(focus != None):
+		if(myid == main_node):
+			vol = get_shrink_3dmask(Tracker["nxinit"],focus)
+		else:
+			vol =  model_blank(nx, nx, nx)
+		bcast_EMData_to_all(vol, myid, main_node)
+		st = Util.infomask(focus, None, True)
+		if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
+		focus = prep_vol(vol, 1, 1)
+
+
 	Niter = int(lstp*maxit*(nassign + nrefine) )
 	for Iter in xrange(Niter):
 		N_step = (Iter%(lstp*(nassign+nrefine)))/(nassign+nrefine)
@@ -22134,14 +22157,13 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			else:  list_of_reference_angles = [[1.0,1.0]]
 		cs = [0.0]*3
 		from fundamentals import fft
-		for im in xrange(nima):  data[im] = fft(data[im])
+		if( not focus ):
+			for im in xrange(nima):  data[im] = fft(data[im])
+
 		for iref in xrange(numref):
-			if myid==main_node:
-				volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
-			else:
-				volft=model_blank(nx,nx,nx)
+			if myid==main_node: volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
+			else:				volft=model_blank(nx,nx,nx)
 			bcast_EMData_to_all(volft, myid, main_node)
-			#CHANGE_PRGS volft, kb = prep_vol(volft)
 			volft= prep_vol(volft,1,1)
 			if CTF:
 				previous_defocus = -1.0
@@ -22170,9 +22192,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 							refrings = gen_rings_ctf( prjref, nx, ctf, numr)
 							if myid == main_node:log.add( "Repeated time to prepare rings: %d" % (time()-rstart_time) );rstart_time = time()
 				if runtype=="ASSIGNMENT":
-					'''
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-					#CHANGE_PRGS ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
+					'''
 					if CTF:
 						ref = fft(filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y],1,False), ctf ))
 					else:
@@ -22180,12 +22201,16 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					'''
 
+					#  Ref is in reciprocal space
 					if CTF:
 						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
-					from statistics import fsc
-					temp = fsc(ref, data[im])[0]
+					if(focus == None):
+						temp = fsc(ref, data[im])[0]
+					else:
+						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
+						temp = fsc(ref, fft(data[im]*mask2d))[0]
 					peak = sum(temp[1:highres[iref]])/highres[iref]
 
 
@@ -22300,13 +22325,14 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			sumvol = model_blank(nx, nx, nx)
 		sart_time = time()
 	
-		lowpass=.5
+		lowpass = 0.5
 		for  iref in xrange(numref):
 			set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
 		lowpass=min(lowpass, Tracker["lowpass"])
 		Tracker["lowpass"]=lowpass
 
-		for im in xrange(nima):  data[im] = fft(data[im])
+		if( not focus ):
+			for im in xrange(nima):  data[im] = fft(data[im])
 
 		
 		for iref in xrange(numref):
@@ -22319,7 +22345,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 
 			if myid == main_node:
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
-				if fourvar and runtype=="REFINEMENT":sumvol += volref
+				if fourvar and runtype=="REFINEMENT": sumvol += volref
 			#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],ngroup[iref],Tracker)
 			if myid==main_node:
 				log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],ngroup[iref]))
@@ -22429,6 +22455,8 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	from utilities      import print_begin_msg, print_end_msg, print_msg, read_text_file
 	from projection     import prep_vol, prgs, prgl, project, prgq, gen_rings_ctf
 	from morphology     import binarize
+	from statistics		import fsc
+
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -22464,9 +22492,9 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	center         = Tracker["constants"]["center"]
 	nassign        = Tracker["constants"]["nassign"]
 	nrefine        = Tracker["constants"]["nrefine"]
-	CTF                 = Tracker["constants"]["CTF"]
-	sym                 = Tracker["constants"]["sym"]
-	termprec            = Tracker["constants"]["stoprnct"]
+	CTF            = Tracker["constants"]["CTF"]
+	sym            = Tracker["constants"]["sym"]
+	termprec       = Tracker["constants"]["stoprnct"]
 	if Tracker["constants"]["mask3D"]:
 		maskfile            = Tracker["mask3D"]
 	else:
@@ -22659,12 +22687,13 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 
 	if(focus != None):
 		if(myid == main_node):
-			vol = get_shrink_3dmask(Tracker["nxinit"],focus)
+			focus = get_shrink_3dmask(Tracker["nxinit"], focus)
 		else:
-			vol =  model_blank(nx, nx, nx)
-		bcast_EMData_to_all(vol, myid, main_node)
-		#CHANGE_PRGS focus, kb = prep_vol(vol)
-		focus = prep_vol(vol, 1, 1)
+			focus =  model_blank(nx, nx, nx)
+		bcast_EMData_to_all(focus, myid, main_node)
+		st = Util.infomask(focus, None, True)
+		if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
+		focus = prep_vol(focus, 1, 1)
 
 	Niter = int(lstp*maxit*(nassign + nrefine) )
 	for Iter in xrange(Niter):
@@ -22694,13 +22723,13 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 			else:  list_of_reference_angles = [[1.0,1.0]]
 		cs = [0.0]*3
 		from fundamentals import fft
-		for im in xrange(nima):  data[im] = fft(data[im])
+		if( not focus ):
+			for im in xrange(nima):  data[im] = fft(data[im])
 
 		for iref in xrange(numref):
-			if(myid == main_node): volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
-			else: volft =  model_blank(nx, nx, nx)
+			if(myid == main_node):	volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
+			else: 					volft =  model_blank(nx, nx, nx)
 			bcast_EMData_to_all(volft, myid, main_node)
-			#CHANGE_PRGS volft, kb = prep_vol(volft)
 			volft = prep_vol(volft, 1, 1)
 			if CTF:
 				previous_defocus=-1.0
@@ -22728,7 +22757,6 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-					#CHANGE_PRGS ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
 					'''
 					if CTF:
 						ref = fft(filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y],1,False), ctf ))
@@ -22737,16 +22765,17 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 					if(focus != None):  mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]),1)  #  Should be precalculated!!
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					'''
-					if(focus == None):
-						if CTF:
-							ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
-						else:
-							ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
-						from statistics import fsc
-						temp = fsc(ref, data[im])[0]
-						peak = sum(temp[1:highres[iref]])/highres[iref]
+					#  Ref is in reciprocal space
+					if CTF:
+						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
 					else:
-						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]),1)  #  Should be precalculated!!
+						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
+					if(focus == None):
+						temp = fsc(ref, data[im])[0]
+					else:
+						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
+						temp = fsc(ref, fft(data[im]*mask2d))[0]
+					peak = sum(temp[1:highres[iref]])/highres[iref]
 						
 					if not(finfo is None):
 						finfo.write( "ID, iref, peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
@@ -23072,7 +23101,8 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 			sumvol = model_blank(nx, nx, nx)
 		start_time = time()
 
-		for im in xrange(nima):  data[im] = fft(data[im])
+		if( not focus ):
+			for im in xrange(nima):  data[im] = fft(data[im])
 
 		for iref in xrange(numref):
 			#  3D stuff
@@ -23085,7 +23115,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
 			if(myid == main_node):
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)			
-				if fourvar and runtype=="REFINEMENT":sumvol += volref
+				if fourvar and runtype=="REFINEMENT": sumvol += volref
 			set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],ngroup[iref],Tracker)
 			if myid ==main_node:
 				log.add(" low pass filter is %f    %f   %d"%(Tracker["lowpass"],Tracker["falloff"],ngroup[iref]))
@@ -23146,7 +23176,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 			mpi_barrier(MPI_COMM_WORLD)
 			Tracker["this_partition"]=group_list
 			break
-	if terminate !=1:
+	if terminate != 1:
 		final_list = get_sorting_params_refine(Tracker,data)
 		group_list, ali3d_params_list = parsing_sorting_params(final_list)  
 		if myid ==main_node:

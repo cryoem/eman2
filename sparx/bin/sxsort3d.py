@@ -37,19 +37,6 @@ def get_initial_ID(part_list, full_ID_dict):
 		new_dict[iptl] = id
 	return part_initial_id_list, new_dict
 
-def get_shrink_3dmask(nxinit,mask_file_name):
-	from utilities import get_im
-	from fundamentals import resample
-	mask3d = get_im(mask_file_name)
-	nx2 = nxinit
-	nx1 = mask3d.get_xsize()
-	if nx1 == nx2:
-		return mask3d
-	else:
-		shrinkage = float(nx2)/nx1
-		mask3d    =resample(mask3d,shrinkage)
-		return mask3d
-
 def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
 	new_class  = []
 	final_list = []
@@ -1070,16 +1057,19 @@ def main():
 		else:
 			Tracker["mask3D"] = None
 		if Tracker["constants"]["focus3Dmask"]:
-			Tracker["focus3D"]=os.path.join(masterdir,"sfocus.hdf")
+			Tracker["focus3D"] = os.path.join(masterdir,"sfocus.hdf")
 		else:
 			Tracker["focus3D"] = None
 		if myid ==main_node:
 			if Tracker["constants"]["mask3D"]:
-				mask_3D=get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
+				mask_3D = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
 				mask_3D.write_image(Tracker["mask3D"])
 			if Tracker["constants"]["focus3Dmask"]:
-				mask_3D=get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
+				mask_3D = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
+				st = Util.infomask(mask_3D, None, True)
+				if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1)
 				mask_3D.write_image(Tracker["focus3D"])
+				del mask_3D
 		if Tracker["constants"]["PWadjustment"]:
 			PW_dict={}
 			nxinit_pwsp=sample_down_1D_curve(Tracker["constants"]["nxinit"],Tracker["constants"]["nnxo"],Tracker["constants"]["PWadjustment"])

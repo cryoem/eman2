@@ -12,6 +12,9 @@ import sys
 from   numpy     import array
 import types
 from   logger    import Logger, BaseLogger_Files
+from morphology import 	get_shrink_3dmask
+
+
 
 def sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file):
 	shrinkage=float(nnxo)/float(nxinit)
@@ -244,23 +247,6 @@ def get_initial_ID(part_list, full_ID_dict):
 		part_initial_id_list.append(id)
 		new_dict[iptl] = id
 	return part_initial_id_list, new_dict
-
-def get_shrink_3dmask(nxinit,mask_file_name):
-	from utilities import get_im,pad
-	from fundamentals import resample
-	mask3d = get_im(mask_file_name)
-	nx2 = nxinit
-	nx1 = mask3d.get_xsize()
-	if nx1 == nx2:
-		return mask3d
-	else:
-		shrinkage = float(nx2)/nx1
-		#new_size  = nx1+5*2
-        #pmask     =pad(mask3d,new_size, new_size, new_size,0.0)
-		mask3d    =resample(mask3d,shrinkage)
-        #cnt       = int((rpmask.get_xsize()-nx2)/2.)
-        #mask3d    =Util.window(rpmask,nx2,nx2,nx2,cnt,cnt,cnt)
-		return mask3d
 		
 def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	from applications import ali3d_mref_Kmeans_MPI
@@ -318,7 +304,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 			number_of_ref_class = wrap_mpi_bcast(number_of_ref_class,main_node)
 			mpi_barrier(MPI_COMM_WORLD)
 			ref_vol_list = []
-			if  Tracker["constants"]["mask3D"]: mask3D=get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
+			if  Tracker["constants"]["mask3D"]: mask3D = get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
 			else: mask3D =None
 			Tracker["number_of_ref_class"] = number_of_ref_class
 			for igrp in xrange(len(new_class)):
@@ -1375,14 +1361,17 @@ def main():
 		else:Tracker["mask3D"] = None
 		if Tracker["constants"]["focus3Dmask"]:
 			Tracker["focus3D"]=os.path.join(masterdir,"sfocus.hdf")
-		else:Tracker["focus3D"] = None
+		else: Tracker["focus3D"] = None
 		if myid ==main_node:
 			if Tracker["constants"]["mask3D"]:
-				mask_3D=get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
+				mask_3D = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
 				mask_3D.write_image(Tracker["mask3D"])
 			if Tracker["constants"]["focus3Dmask"]:
-				mask_3D=get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
+				mask_3D = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
+				st = Util.infomask(mask_3D, None, True)
+				if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1)
 				mask_3D.write_image(Tracker["focus3D"])
+				del mask_3D
 		if Tracker["constants"]["PWadjustment"]:
 			PW_dict={}
 			nxinit_pwsp=sample_down_1D_curve(Tracker["constants"]["nxinit"],Tracker["constants"]["nnxo"],Tracker["constants"]["PWadjustment"])
@@ -1488,11 +1477,11 @@ def main():
 		else:
 			Tracker["low_pass_filter"] = Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"]
 		Tracker["lowpass"]             = Tracker["low_pass_filter"]
-		Tracker["falloff"]             = .1
+		Tracker["falloff"]             = 0.1
 		Tracker["global_fsc"]          = os.path.join(masterdir,"fsc.txt")
 		##################################################################
 		if myid ==main_node:
-			log_main.add("The command-line inputs are as following:")
+			log_main.add("The command-line inputs are\:")
 			log_main.add("**********************************************************")
 		for a in sys.argv:
 			if myid ==main_node:
@@ -1510,14 +1499,14 @@ def main():
 			#log_main.add("the user provided enforced low_pass_filter is %f"%Tracker["constants"]["low_pass_filter"])
 			#log_main.add("equivalent to %f Angstrom resolution"%(Tracker["constants"]["pixel_size"]/Tracker["constants"]["low_pass_filter"]))
 			vol1_file_name =os.path.join(masterdir, "vol0.hdf")
-			vol1 =get_im(vol1_file_name)
-			vol1 = filt_tanl(vol1, Tracker["low_pass_filter"],.1)
+			vol1 = get_im(vol1_file_name)
+			vol1 = filt_tanl(vol1, Tracker["low_pass_filter"], 0.1)
 			volf1_file_name = os.path.join(masterdir, "volf0.hdf")
 			vol1.write_image(volf1_file_name)
 			vol2_file_name = os.path.join(masterdir, "vol1.hdf")
-			vol2 =get_im(vol2_file_name)
+			vol2 = get_im(vol2_file_name)
 			volf2_file_name = os.path.join(masterdir, "volf1.hdf")
-			vol2 = filt_tanl(vol2, Tracker["low_pass_filter"],.1)
+			vol2 = filt_tanl(vol2, Tracker["low_pass_filter"], 0.1)
 			vol2.write_image(volf2_file_name)
 		mpi_barrier(MPI_COMM_WORLD)
 		from utilities import get_input_from_string
@@ -1572,10 +1561,10 @@ def main():
 				if myid ==main_node:
 					log_main.add(" lowpass and falloff from fsc are %f %f"%(lowpass,falloff))
 				lowpass=round(lowpass,4)
-				falloff=round(min(.1,falloff),4)
-				Tracker["lowpass"]=lowpass
-				Tracker["falloff"]=falloff
-				refdata           =[None]*4
+				falloff=round(min(0.1,falloff),4)
+				Tracker["lowpass"]= lowpass
+				Tracker["falloff"]= falloff
+				refdata           = [None]*4
 				refdata[0]        = volref
 				refdata[1]        = Tracker
 				refdata[2]        = Tracker["constants"]["myid"]
@@ -1595,15 +1584,15 @@ def main():
 		#	number_of_images_per_group = int(Tracker["constants"]["scale_of_number"]*len(n_angles))
 		#
 		#########################################################################################################################P2
-		P2_partitions        =[]
-		number_of_P2_runs    =2  # Notice P2 start from two P1 runs
+		P2_partitions        = []
+		number_of_P2_runs    = 2  # Notice P2 start from two P1 runs
 		### input list_to_be_processed
 		import copy
 		mpi_barrier(MPI_COMM_WORLD)
 		for iter_P2_run in xrange(number_of_P2_runs):
 			list_to_be_processed = copy.deepcopy(leftover_list)
 			if myid == main_node :    new_stable1 =  copy.deepcopy(new_stable_P1)
-			total_stack                = len(list_to_be_processed) # This is the input from two P1 runs
+			total_stack   = len(list_to_be_processed) # This is the input from two P1 runs
 			number_of_images_per_group = Tracker["constants"]["number_of_images_per_group"]
 			P2_run_dir = os.path.join(masterdir, "P2_run%d"%iter_P2_run)
 			if myid == main_node:
@@ -1643,7 +1632,7 @@ def main():
 				##### ----------------independent runs for EQ-Kmeans  ------------------------------------
 				for indep_run in xrange(Tracker["constants"]["indep_runs"]):
 					Tracker["this_particle_list"] = Tracker["this_indep_list"][indep_run]
-					ref_vol= recons_mref(Tracker)
+					ref_vol = recons_mref(Tracker)
 					if myid ==main_node:
 						log_main.add("independent run  %10d"%indep_run)
 					mpi_barrier(MPI_COMM_WORLD)
@@ -1657,8 +1646,8 @@ def main():
 					mpi_barrier(MPI_COMM_WORLD)
 					outdir = os.path.join(workdir, "EQ_Kmeans%03d"%indep_run)
 					#ref_vol= apply_low_pass_filter(ref_vol,Tracker)
-					mref_ali3d_EQ_Kmeans(ref_vol,outdir,this_particle_text_file,Tracker)
-					partition_dict[indep_run]=Tracker["this_partition"]
+					mref_ali3d_EQ_Kmeans(ref_vol, outdir, this_particle_text_file, Tracker)
+					partition_dict[indep_run] = Tracker["this_partition"]
 					del ref_vol
 					Tracker["partition_dict"]    = partition_dict
 					Tracker["this_total_stack"]  = Tracker["total_stack"]
@@ -1847,7 +1836,7 @@ def main():
 				write_text_file(reproduced_groups[index_of_reproduced_groups],name_of_class_file)
 			log_main.add("-------start to reconstruct reproduced volumes individully to orignal size-----------")
 		mpi_barrier(MPI_COMM_WORLD)
-		if Tracker["constants"]["mask3D"]: mask_3d=get_shrink_3dmask(Tracker["constants"]["nnxo"],Tracker["constants"]["mask3D"])
+		if Tracker["constants"]["mask3D"]: mask_3d = get_shrink_3dmask(Tracker["constants"]["nnxo"],Tracker["constants"]["mask3D"])
 		else: mask_3d = None
 		for igrp in xrange(len(reproduced_groups)):
 			name_of_class_file = os.path.join(masterdir, "P2_final_class%d.txt"%igrp)
