@@ -1042,7 +1042,7 @@ def adjust_fsc_down(fsc,n1,n2):
 	
 def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 	## use the smallest group 
-	fsc_cutoff   = 0.333333333333333333333333
+	fsc_cutoff   = 1.0/3.0
 	adjusted_fsc = adjust_fsc_down(Tracker["global_fsc"],n1,n2)
 	currentres   = -1.0
 	ns           = len(adjusted_fsc)
