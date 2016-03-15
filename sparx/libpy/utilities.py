@@ -5709,19 +5709,6 @@ def mpi_exit():
 	
 ### from sort3d
 
-def get_shrink_3dmask(nxinit,mask_file_name):
-        from utilities import get_im
-        from fundamentals import resample
-        mask3d = get_im(mask_file_name)
-        nx2 = nxinit
-        nx1 = mask3d.get_xsize()
-        if nx1 == nx2:
-                return mask3d
-        else:
-                shrinkage = float(nx2)/nx1
-                mask3d    =resample(mask3d,shrinkage)
-                return mask3d
-
 def get_attr_stack(data_stack,attr_string):
 	attr_value_list = []
 	for idat in xrange(len(data_stack)):
@@ -5931,13 +5918,14 @@ def checkstep(item, keepchecking, myid, main_node):
         return doit, keepchecking
 """
 
-def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir,mask_option):
+def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
         # this function is single processor
         #  Get updated FSC curves, user can also provide a mask using radi variable
 	import types
 	from statistics import fsc
 	from utilities import model_circle, get_im
 	from filter import fit_tanh1
+	import os
 	if(type(radi) == int):
 		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 		else:                     mask = get_im(mask_option)
@@ -6331,7 +6319,10 @@ def get_number_of_groups(total_particles,number_of_images_per_group, round_off=.
 
 def recons_mref(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
+	import os
 	from time import sleep
+	from reconstruction import recons3d_4nn_ctf_MPI
+	from utilities import get_shrink_data_huang
 	myid             = Tracker["constants"]["myid"]
 	main_node        = Tracker["constants"]["main_node"]
 	nproc            = Tracker["constants"]["nproc"]
@@ -6343,11 +6334,11 @@ def recons_mref(Tracker):
 	ref_list = []
 	number_of_ref_class = []
 	for igrp in xrange(number_of_groups):
-		a_group_list=particle_list[(total_data*igrp)//number_of_groups:(total_data*(igrp+1))//number_of_groups]
+		a_group_list = particle_list[(total_data*igrp)//number_of_groups:(total_data*(igrp+1))//number_of_groups]
 		a_group_list.sort()
 		Tracker["this_data_list"] = a_group_list
 		from utilities import write_text_file
-		particle_list_file = os.path.join(Tracker["this_dir"],"iclass%d.txt"%igrp)
+		particle_list_file = os.path.join(Tracker["this_dir"], "iclass%d.txt"%igrp)
 		if myid ==main_node:
 			write_text_file(Tracker["this_data_list"],particle_list_file)
 		mpi_barrier(MPI_COMM_WORLD)
@@ -6359,7 +6350,7 @@ def recons_mref(Tracker):
 			print "reconstructed %3d"%igrp
 		ref_list.append(vol)
 		number_of_ref_class.append(len(Tracker["this_data_list"]))
-	Tracker["number_of_ref_class"]=number_of_ref_class
+	Tracker["number_of_ref_class"] = number_of_ref_class
 	return ref_list
 
 def apply_low_pass_filter(refvol,Tracker):

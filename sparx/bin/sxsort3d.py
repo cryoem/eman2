@@ -48,7 +48,7 @@ def main():
 	parser.add_option("--CTF",                           action="store_true", default=False,       help="Consider CTF correction during the alignment ")
 	parser.add_option("--stoprnct",                      type="float",        default=3.0,         help="Minimum percentage of assignment change to stop the program")
 	parser.add_option("--sym",                           type="string",       default='c1',        help="symmetry of the structure ")
-	parser.add_option("--function",                      type="string",       default='do_volume_mrk02',     help="name of the reference preparation function")
+	parser.add_option("--function",                      type="string",       default='do_volume_mrk05',     help="name of the reference preparation function")
 	parser.add_option("--independent",                   type="int",          default= 3,           help="number of independent run")
 	parser.add_option("--number_of_images_per_group",    type="int",          default=1000,         help="number of groups")
 	parser.add_option("--low_pass_filter",               type="float",        default=-1.0,         help="absolute frequency of low-pass filter for 3d sorting on the original image size" )

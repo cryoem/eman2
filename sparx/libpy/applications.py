@@ -21910,6 +21910,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	from projection     import prep_vol, prgs, prgl, project, prgq, gen_rings_ctf
 	from applications   import MPI_start_end
 	from reconstruction import rec3D_MPI_noCTF,rec3D_two_chunks_MPI
+	from morphology     import binarize, get_shrink_3dmask
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -22470,7 +22471,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank, wrap_mpi_bcast, write_text_file
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
-	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
+	from utilities      import rotate_3D_shift,estimate_3D_center_MPI, get_shrink_data_huang
 	####-------
 	from utilities      import get_attr_stack, get_sorting_attr_stack, get_sorting_params, get_sorting_params_refine
 	from utilities      import parsing_sorting_params, fill_in_mpi_list, wrap_mpi_bcast, get_groups_from_partition
@@ -22481,7 +22482,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	from filter         import filt_ctf
 	from utilities      import print_begin_msg, print_end_msg, print_msg, read_text_file
 	from projection     import prep_vol, prgs, prgl, project, prgq, gen_rings_ctf
-	from morphology     import binarize
+	from morphology     import binarize, get_shrink_3dmask
 	from statistics		import fsc
 
 	import os

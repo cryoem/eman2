@@ -12,7 +12,7 @@ import sys
 from   numpy     import array
 import types
 from   logger    import Logger, BaseLogger_Files
-from morphology import 	get_shrink_3dmask
+from    morphology import 	get_shrink_3dmask
 
 
 
