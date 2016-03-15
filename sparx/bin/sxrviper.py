@@ -668,12 +668,12 @@ output_directory: directory name into which the output files will be written.  I
 	# else:
 	ref_vol = None
 	
-	error_status = None
-	if myid == 0:
-		number_of_images = EMUtil.get_image_count(args[0])
-		if mpi_size > number_of_images:
-			error_status = ('Number of processes supplied by --np in mpirun needs to be less than or equal to %d (total number of images) ' % number_of_images, getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
+	# error_status = None
+	# if myid == 0:
+	# 	number_of_images = EMUtil.get_image_count(args[0])
+	# 	if mpi_size > number_of_images:
+	# 		error_status = ('Number of processes supplied by --np in mpirun needs to be less than or equal to %d (total number of images) ' % number_of_images, getframeinfo(currentframe()))
+	# if_error_then_all_processes_exit_program(error_status)
 	
 	bdb_stack_location = ""
 
