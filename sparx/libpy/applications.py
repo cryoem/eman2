@@ -21898,6 +21898,11 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	from utilities      import get_params_proj, set_params_proj, model_blank, write_text_file
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
 	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
+	###-------
+	from utilities      import get_attr_stack, get_sorting_attr_stack, get_sorting_params, get_sorting_params_refine
+	from utilities      import parsing_sorting_params, fill_in_mpi_list, wrap_mpi_bcast, get_groups_from_partition
+	from utilities      import remove_small_groups, set_filter_parameters_from_adjusted_fsc
+	###------- 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore
 	from random         import randint
 	from filter         import filt_ctf
@@ -22449,6 +22454,11 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	from utilities      import get_params_proj, set_params_proj, model_blank, wrap_mpi_bcast, write_text_file
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
 	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
+	####-------
+	from utilities      import get_attr_stack, get_sorting_attr_stack, get_sorting_params, get_sorting_params_refine
+	from utilities      import parsing_sorting_params, fill_in_mpi_list, wrap_mpi_bcast, get_groups_from_partition
+	from utilities      import remove_small_groups, set_filter_parameters_from_adjusted_fsc
+	###-----------
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore
 	from random         import randint, random
 	from filter         import filt_ctf
