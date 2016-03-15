@@ -153,13 +153,12 @@ class SXGuiCter(QtGui.QWidget):
 # 		QtGui.QWidget.__init__(self,None)
 		super(SXGuiCter, self).__init__(None)
 		
-		# MRK_TEST: Flag to test experimental functions
+		# MRK_TEST: Flags to test experimental functions
 		self.is_enable_max_power = False # MRK_TEST: Can this be an option in future?
 		
 		# NOTE: 2016/03/15 Toshio Moriya
-		# About decimal module:
 		# Due to the representation error of float number, 
-		# default threshold using max/min value of a parameter can be different after
+		# default thresholds using max/min value of each parameter can be different after
 		# saving/loading the threshold values from the file.
 		# This problem is solved by round() function for thresholding parameter values
 		# 
@@ -236,12 +235,11 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism (1/A)
 		i_enum += 1; self.idx_cter_mic_name     = i_enum # Micrograph name
 		i_enum += 1; self.idx_cter_pwrot_name   = i_enum # <extra> CTER power spectrum rotational average file name
-		i_enum += 1; self.idx_cter_box_size     = i_enum # <extra> window size used in cter estimation
 		i_enum += 1; self.idx_cter_error_ctf    = i_enum # <extra> limit frequency by CTF error 
 		if self.is_enable_max_power == True: i_enum += 1; self.idx_cter_max_power = i_enum # MRK_TEST: <extra> maximum power in experimental rotational average (with astigmatism)
 		i_enum += 1; self.idx_cter_select       = i_enum # <extra> selected state
 		i_enum += 1; self.n_idx_cter            = i_enum
-		self.n_idx_cter_extra = 5
+		self.n_idx_cter_extra = 4
 		if self.is_enable_max_power == True: self.n_idx_cter_extra += 1 # MRK_TEST:
 		
 		i_enum = -1
@@ -267,7 +265,6 @@ class SXGuiCter(QtGui.QWidget):
 		self.value_map_list[self.idx_cter_error_astig]  = ["Astig. Error", None]
 		self.value_map_list[self.idx_cter_mic_name]     = ["Micrograph", None]
 		self.value_map_list[self.idx_cter_pwrot_name]   = ["PW. Rot. File", None]
-		self.value_map_list[self.idx_cter_box_size]     = ["CTF Box Size", None]
 		self.value_map_list[self.idx_cter_error_ctf]    = ["CTF Error", None]
 		if self.is_enable_max_power == True: self.value_map_list[self.idx_cter_max_power] = ["Max Power", None] # MRK_TEST:
 		self.value_map_list[self.idx_cter_select]       = ["Select", None]
@@ -408,8 +405,6 @@ class SXGuiCter(QtGui.QWidget):
 		self.thresholdset_map_list[self.idx_thresholdset_unapplied] = ["Unapplied"]
 		self.thresholdset_map_list[self.idx_thresholdset_applied]   = ["Applied"]
 		
-		self.cter_box_size = 512  # Currently, this information was not available (2016/01/29 Toshio Moriya)
-		
 		self.cter_partres_file_path = None
 		self.cter_entry_list        = None
 		self.cter_mic_file_path     = None
@@ -531,9 +526,6 @@ class SXGuiCter(QtGui.QWidget):
 		grid_row+=1
 		
 		self.add_value_widget(self.idx_cter_apix, 0, 500, grid_row, grid_col)
-		grid_row+=1
-		
-		self.add_value_widget(self.idx_cter_box_size, 0, 4096, grid_row, grid_col, intonly=True)
 		grid_row+=1
 		
 		# Make space
@@ -891,16 +883,14 @@ class SXGuiCter(QtGui.QWidget):
 			# This CTEF file format is original one (before around 2016/01/29)
 			for cter_id in xrange(len(new_entry_list)):
 				# Add extra items first to make sure indices match
-#				new_entry_list[cter_id] = [cter_id] +  new_entry_list[cter_id] + ["", self.cter_box_size, 0.5, 0.0, 1]
 				new_entry_list[cter_id] = [cter_id] +  new_entry_list[cter_id]           # self.idx_cter_id , <extra> entry id
 				new_entry_list[cter_id] = new_entry_list[cter_id] + [""]                 # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
-				new_entry_list[cter_id] = new_entry_list[cter_id] + [self.cter_box_size] # self.idx_cter_box_size, <extra> window size used in cter estimation
 				new_entry_list[cter_id] = new_entry_list[cter_id] + [0.5]                # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
 				if self.is_enable_max_power == True: new_entry_list[cter_id] = new_entry_list[cter_id] + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
 				new_entry_list[cter_id] = new_entry_list[cter_id] + [1]                  # self.idx_cter_select  <extra> selected state
 				
 				# Cut off frequency components higher than CTF limit 
-				cter_box_size = new_entry_list[cter_id][self.idx_cter_box_size]
+				cter_box_size = 512 # NOTE: Toshio Moriya 2016/03/15: This is temporary. Remove this after adding CTF limit to cter output file
 				cter_def = new_entry_list[cter_id][self.idx_cter_def]
 				cter_cs = new_entry_list[cter_id][self.idx_cter_cs]
 				cter_vol = new_entry_list[cter_id][self.idx_cter_vol]
@@ -1778,7 +1768,7 @@ class SXGuiCter(QtGui.QWidget):
 			
 			# # Save with the original format (before around 2016/01/29)
 			# for idx_cter in xrange(self.n_idx_cter):
-			# 	if idx_cter in [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_box_size, self.idx_cter_error_ctf, self.idx_cter_max_power, self.idx_cter_select]:
+			# 	if idx_cter in [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_error_ctf, self.idx_cter_max_power, self.idx_cter_select]:
 			# 		# Do nothing
 			# 		continue
 			# 	elif idx_cter in [self.idx_cter_mic_name]:
@@ -1787,7 +1777,7 @@ class SXGuiCter(QtGui.QWidget):
 			# 		file_out.write("  %12.5g" % cter_entry[idx_cter])
 			# file_out.write("\n")
 			
-			# Save with the original format (before around 2016/01/29)
+			# Save with the new format (after around 2016/01/29)
 			for idx_cter in xrange(self.n_idx_cter):
 				if idx_cter in [self.idx_cter_mic_name, self.idx_cter_pwrot_name]:
 					file_out.write("  %s" % cter_entry[idx_cter])
