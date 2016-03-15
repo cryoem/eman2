@@ -22099,7 +22099,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 					break
 	Tracker["lowpass"]=min(.45,res)
 	Tracker["falloff"]= .1
-		
+	highres = []
+	for  iref in xrange(numref): highres.append(int(res*Tracker["nxinit"]+.5))	
 	for  iref in xrange(numref):
 		#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
 		refdata= [None]*4
@@ -22350,7 +22351,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		if( not focus ):
 			for im in xrange(nima):  data[im] = fft(data[im])
 
-		
+		highres= []
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
@@ -22368,6 +22369,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 				if fscc[iref][1][ifreq] > 0.5:
 					res=fscc[iref][0][ifreq]
 					break
+			highres.append(int(res*Tracker["nxinit"]+.5))
 			Tracker["lowpass"] = min( 0.45, res)
 			Tracker["falloff"] = 0.1
 			if myid==main_node:
@@ -22685,12 +22687,13 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	refdata        =[None]*4
 	
 	
-	
 	res = 0.5
 	for i in xrange(len(Tracker["global_fsc"][0])-1,0,-1):
 		if Tracker["global_fsc"][1][i]>.5:
 				res=fsc_in[0][i]
 				break
+	highres = []
+	for  iref in xrange(numref): highres.append(int(res*Tracker["nxinit"]+.5))
 	Tracker["lowpass"]=min(.45,res)
 	Tracker["falloff"]= .1
 	for iref in xrange(numref):
@@ -23142,7 +23145,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 
 		if( not focus ):
 			for im in xrange(nima):  data[im] = fft(data[im])
-
+		highres = []
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
@@ -23161,6 +23164,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 				if fscc[iref][1][ifreq] > 0.5: # always use .5 as cutoff
 					res=fscc[iref][0][ifreq]
 					break
+			highres.append(int(res*Tracker["nxinit"]+ 0.5))
 			Tracker["lowpass"]=min(.45,res)
 			Tracker["falloff"]= .1
 			if myid ==main_node:
