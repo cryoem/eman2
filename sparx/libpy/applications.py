@@ -22686,7 +22686,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	
 	
 	
-	res=.5
+	res = 0.5
 	for i in xrange(len(Tracker["global_fsc"][0])-1,0,-1):
 		if Tracker["global_fsc"][1][i]>.5:
 				res=fsc_in[0][i]
