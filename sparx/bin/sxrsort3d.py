@@ -263,6 +263,7 @@ def get_shrink_3dmask(nxinit,mask_file_name):
 		return mask3d
 		
 def Kmeans_exhaustive_run(ref_vol_list,Tracker):
+	from applications import ali3d_mref_Kmeans_MPI
 	import os
 	from mpi import MPI_COMM_WORLD, mpi_barrier
 	# npad is 2

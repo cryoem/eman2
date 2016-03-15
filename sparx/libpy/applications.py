@@ -22069,23 +22069,23 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	else:
 		varf = None
 		
-	lowpass=.5
+	highres = []
 	for  iref in xrange(numref):
 		set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
 		lowpass=min(lowpass, Tracker["lowpass"])
 	Tracker["lowpass"]=lowpass	
 	for  iref in xrange(numref):
 		#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
-		refdata= [None]*4
-		refdata[0] = ref_list[iref]
-		refdata[1] = Tracker
-		refdata[2] = Tracker["constants"]["myid"]
-		refdata[3] = Tracker["constants"]["nproc"]
-		volref = user_func(refdata)
+		#refdata= [None]*4
+		#refdata[0] = ref_list[iref]
+		#refdata[1] = Tracker
+		#refdata[2] = Tracker["constants"]["myid"]
+		#refdata[3] = Tracker["constants"]["nproc"]
+		#volref = user_func(refdata)
 		if myid ==main_node:
-			log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
-			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
-			ref_list[iref].write_image(os.path.join(outdir, "vol0000.hdf"), iref)
+			#log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
+			#volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
+			ref_list[iref].write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 	mpi_barrier(MPI_COMM_WORLD)
 	if CTF:
 		#if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
