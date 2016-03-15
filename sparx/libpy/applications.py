@@ -22367,7 +22367,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			res = 0.5
 			for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
 				if fscc[iref][1][ifreq] > 0.5:
-					res=fscc[iref][0][ifreq]
+					res = fscc[iref][0][ifreq]
 					break
 			highres.append(int(res*Tracker["nxinit"]+.5))
 			Tracker["lowpass"] = min( 0.45, res)
@@ -23162,7 +23162,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 			res = 0.5
 			for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
 				if fscc[iref][1][ifreq] > 0.5: # always use .5 as cutoff
-					res=fscc[iref][0][ifreq]
+					res = fscc[iref][0][ifreq]
 					break
 			highres.append(int(res*Tracker["nxinit"]+ 0.5))
 			Tracker["lowpass"]=min(.45,res)
