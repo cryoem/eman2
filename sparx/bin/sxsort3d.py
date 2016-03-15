@@ -5,6 +5,7 @@
 #  New version.
 #  
 from sparx import *
+from EMAN2 import *
 import os
 import global_def
 from   global_def import *
@@ -96,7 +97,7 @@ def main():
 		from logger import Logger,BaseLogger_Files
 		if myid ==main_node:
 			log_main=Logger(BaseLogger_Files())
-			log_main.prefix=masterdir+"/"
+			log_main.prefix = masterdir+"/"
 		else:
 			log_main =None
 		#--- fill input parameters into dictionary named after Constants
@@ -324,6 +325,12 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		######################## Read/write bdb: data on main node ############################
 	   	if myid==main_node:
+			if(orgstack[:4] == "bdb:"):	cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
+			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
+	   		cmdexecute(cmd)
+			cmd = "{} {} {}".format("sxheader.py  --params=xform.projection", "--export="+Tracker["constants"]["ali3d"],orgstack)
+			cmdexecute(cmd)
+	   		"""
 	   		from EMAN2db import db_open_dict	
 	   		OB = db_open_dict(orgstack)
 	   		DB = db_open_dict(Tracker["constants"]["stack"]) 
@@ -331,14 +338,13 @@ def main():
 				DB[i] = OB[i]
 			OB.close()
 			DB.close()
-	   	mpi_barrier(MPI_COMM_WORLD)
-	   	if myid==main_node:
 			params= []
 			for i in xrange(total_stack):
 				e=get_im(orgstack,i)
 				phi,theta,psi,s2x,s2y = get_params_proj(e)
 				params.append([phi,theta,psi,s2x,s2y])
 			write_text_row(params,Tracker["constants"]["ali3d"])
+			"""
 		mpi_barrier(MPI_COMM_WORLD)	   		   	
 		########-----------------------------------------------------------------------------
 		Tracker["total_stack"]              = total_stack
@@ -346,7 +352,7 @@ def main():
 		Tracker["shrinkage"]  = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
 		Tracker["radius"]     = Tracker["constants"]["radius"]*Tracker["shrinkage"]
 		if Tracker["constants"]["mask3D"]:
-			Tracker["mask3D"]=os.path.join(masterdir,"smask.hdf")
+			Tracker["mask3D"] = os.path.join(masterdir,"smask.hdf")
 		else:
 			Tracker["mask3D"] = None
 		if Tracker["constants"]["focus3Dmask"]:
