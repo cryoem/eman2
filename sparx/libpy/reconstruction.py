@@ -75,6 +75,18 @@ def insert_slices(reconstructor, proj):
 	for i in xrange(len(xforms)):
 		reconstructor.insert_slice( proj, xforms[i], weights[i] )
 
+def insert_slices_pdf(reconstructor, proj):
+	xforms =   proj.get_attr("xform.projection") 
+	weights =  proj.get_attr_default("weight", 1.0) 
+	reconstructor.insert_slice( proj, xforms, weights )
+	ixform = 0
+	while True:
+		ixform += 1
+		xform_proj = proj.get_attr_default("xform.projection" + str(ixform), None)
+		if xform_proj == None:
+			return 
+		weights = proj.get_attr_default("weight" + str(ixform), 1.0)
+		reconstructor.insert_slice( proj, xforms, weights)
 
 def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=True, xysize=-1, zsize = -1):
 	"""
@@ -1248,6 +1260,7 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 	import types
 	from statistics import fsc
 	import datetime
+	import insert_slice_pdf
 	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
@@ -1322,8 +1335,8 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	for image in prjlist:
-		if not upweighted: insert_slices(r, filt_table(image, image.get_attr("bckgnoise")) )
-		else:              insert_slices(r, image)
+		if not upweighted: insert_slices_pdf(r, filt_table(image, image.get_attr("bckgnoise")) )
+		else:              insert_slices_pdf(r, image)
 
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )

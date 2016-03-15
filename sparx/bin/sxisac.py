@@ -539,7 +539,7 @@ def main(args):
 			fp = open(os.path.join(init2dir, "Finished_initial_2d_alignment.txt"), "w"); fp.flush() ;fp.close()
 	else:
 		if( myid == main_node ):
-			print "Skipping 2d alignment since it was alredy done!"
+			print "Skipping 2d alignment since it was already done!"
 
 	mpi_barrier(MPI_COMM_WORLD)
 	
