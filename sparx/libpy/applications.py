@@ -21910,6 +21910,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	from projection     import prep_vol, prgs, prgl, project, prgq, gen_rings_ctf
 	from applications   import MPI_start_end
 	from reconstruction import rec3D_MPI_noCTF,rec3D_two_chunks_MPI
+	from morphology     import binarize, get_shrink_3dmask
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -22465,7 +22466,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 	from filter         import filt_ctf
 	from utilities      import print_begin_msg, print_end_msg, print_msg, read_text_file
 	from projection     import prep_vol, prgs, prgl, project, prgq, gen_rings_ctf
-	from morphology     import binarize
+	from morphology     import binarize, get_shrink_3dmask
 	from statistics		import fsc
 
 	import os
