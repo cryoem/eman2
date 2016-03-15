@@ -5871,15 +5871,17 @@ def print_a_line_with_timestamp(string_to_be_printed ):
 	return string_to_be_printed
 
 def convertasi(asig,K):
-	p=[]
+	from numpy import array
+	p = []
 	for k in xrange(K):
 		l = []
 		for i in xrange(len(asig)):
-			if asig[i]==k: l.append(i)
-		l=array(l,"int32")
+			if( asig[i ]== k ): l.append(i)
+		l = array(l,"int32")
 		l.sort()
 		p.append(l)
 	return p
+
 def prepare_ptp(data_list,K):
 	num_of_pt=len(data_list)
 	ptp=[]
@@ -6033,8 +6035,8 @@ def do_two_way_comparison(Tracker):
 		partition_list=Tracker["partition_dict"][iter_indep]
 		total_partition.append(partition_list)
     ### Two-way comparision is carried out on all nodes 
-	ptp=prepare_ptp(total_partition,number_of_groups)
-	indep_runs_to_groups =partition_independent_runs(total_partition,number_of_groups)
+	ptp = prepare_ptp(total_partition, number_of_groups)
+	indep_runs_to_groups = partition_independent_runs(total_partition, number_of_groups)
 	###### Check margin of error
 	if myid ==main_node:
 		log_main.add("--------------------------margin of error--------------------------------------------")
