@@ -16,30 +16,6 @@ from morphology import 	get_shrink_3dmask
 
 
 
-def sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file):
-	shrinkage=float(nnxo)/float(nxinit)
-	curv_orgn = read_text_file(pspcurv_nnxo_file)
-	new_curv=int(1.5*len(curv_orgn))*[0.0]
-	for index in xrange(len(curv_orgn)):
-		new_index = int(index/shrinkage)
-		fraction  =  index/shrinkage-new_index
-		if fraction <=0:
-			new_curv[new_index] +=curv_orgn[index]
-		else:
-			new_curv[new_index]  +=(1.-fraction)*curv_orgn[index]
-			new_curv[new_index+1] += fraction*curv_orgn[index]
-	return new_curv
-	
-def margin_of_error(P,size_of_this_sampling):
-	# margin of an error, or radius of an error for a percentage
-	from math import sqrt
-	return sqrt(P*(1.-P)/size_of_this_sampling)
-	
-def get_margin_of_error(this_group_of_data,Tracker):
-	ratio = margin_of_error(Tracker["P_chunk0"],len(this_group_of_data))
-	rate1, rate2, size_of_this_sampling = count_chunk_members(Tracker["chunk_dict"],this_group_of_data)
-	return abs(rate1-Tracker["P_chunk0"]),ratio,abs(rate2-Tracker["P_chunk1"]),ratio
-
 def get_class_members(sort3d_dir):
 	import os
 	from utilities import read_text_file
@@ -329,165 +305,13 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 		log_main.add(" %d groups are selected out"%len(new_class))
 	return new_class 
 	
-def print_upper_triangular_matrix(data_table_dict,N_indep,log_main):
-		msg =""
-		for i in xrange(N_indep):
-			msg +="%7d"%i
-		log_main.add(msg)
-		for i in xrange(N_indep):
-			msg ="%5d "%i
-			for j in xrange(N_indep):
-				if i<j:
-					msg +="%5.2f "%data_table_dict[(i,j)]
-				else:
-					msg +="      "
-			log_main.add(msg)
 			
 def print_a_line_with_timestamp(string_to_be_printed ):                 
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
  	print(line,string_to_be_printed)
 	return string_to_be_printed
 
-def convertasi(asig,K):
-	p=[]
-	for k in xrange(K):
-		l = []
-		for i in xrange(len(asig)):
-			if asig[i]==k: l.append(i)
-		l=array(l,"int32")
-		l.sort()
-		p.append(l)
-	return p
-	
-def prepare_ptp(data_list,K):
-	num_of_pt=len(data_list)
-	ptp=[]
-	for ipt in xrange(num_of_pt):
-		ptp.append([])
-	for ipt in xrange(num_of_pt):
-		nc =len(data_list[ipt])
-		asig=[-1]*nc
-		for i in xrange(nc):
-			asig[i]=data_list[ipt][i]
-		ptp[ipt] = convertasi(asig,K)
-	return ptp
-
-def print_dict(dict,theme):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line+theme)
-		spaces = "                           "
-		for key, value in sorted( dict.items() ):
-			if(key != "constants"):  
-				print("                    => "+key+spaces[len(key):]+":  "+str(value))
-
-def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
-        # this function is single processor
-        #  Get updated FSC curves, user can also provide a mask using radi variable
-	import types
-	from statistics import fsc
-	from utilities import model_circle, get_im
-	from filter import fit_tanh1
-	if(type(radi) == int):
-		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
-		else:                           mask = get_im(mask_option)
-	else:  mask = radi
-	nfsc = fsc(vol[0]*mask,vol[1]*mask,1.0,os.path.join(fscoutputdir,"fsc.txt") )
-	currentres = -1.0
-	ns = len(nfsc[1])
-	#  This is actual resolution, as computed by 2*f/(1+f)
-	for i in xrange(1,ns-1):
-		if ( nfsc[1][i] < 0.333333333333333333333333):
-			currentres = nfsc[0][i-1]
-			break
-		#if(currentres < 0.0):
-			#print("  Something wrong with the resolution, cannot continue")
-		currentres = nfsc[0][i-1]
-        
-        """ this commented previously
-		lowpass = 0.5
-		ns = len(nfsc[1])
-        #  This is resolution used to filter half-volumes
-        for i in xrange(1,ns-1):
-                if ( nfsc[1][i] < 0.5 ):
-                        lowpass = nfsc[0][i-1]
-                        break
-        """  
-	lowpass, falloff = fit_tanh1(nfsc, 0.01)
-	return  round(lowpass,4), round(falloff,4), round(currentres,2)
-        
-def partition_to_groups(partition_list,K):
-	res =[]
-	for igroup in xrange(K):
-		this_group =[]
-		for imeb in xrange(len(partition_list)):
-			if partition_list[imeb] ==igroup:
-				this_group.append(imeb)
-		this_group.sort()
-		res.append(this_group)
-	return res
-
-def partition_independent_runs(run_list,K):
-	indep_runs_groups={}
-	for indep in xrange(len(run_list)):
-		this_run = run_list[indep]
-		groups = partition_to_groups(this_run,K)
-		indep_runs_groups[indep]=groups 
-	return indep_runs_groups
-
-def get_outliers(total_number,plist):
-	tlist={}
-	for i in xrange(total_number):
-		tlist[i]=i
-	for a in plist:
-		del tlist[a]
-	out =[]
-	for a in tlist:
-		out.append(a)
-	return out
-
-def merge_groups(stable_members_list,smallest_group):
-	alist=[]
-	for i in xrange(len(stable_members_list)):
-		if len(stable_members_list[i])>=smallest_group:
-			for j in xrange(len(stable_members_list[i])):
-				alist.append(stable_members_list[i][j])
-	return alist
-
-def save_alist(Tracker,name_of_the_text_file,alist):
-	from utilities import write_text_file
-	import os
-	log       =Tracker["constants"]["log_main"]
-	myid      =Tracker["constants"]["myid"]
-	main_node =Tracker["constants"]["main_node"]
-	dir_to_save_list =Tracker["this_dir"]
-	if myid==main_node:
-		file_name=os.path.join(dir_to_save_list,name_of_the_text_file)
-		write_text_file(alist, file_name)
-
-def select_two_runs(summed_scores,two_way_dict):
-	summed_scores.sort()
-	rate1 = summed_scores[-1]
-	rate2 = None
-	for index in xrange(2,len(summed_scores)+1):
-		rate2 =summed_scores[-index]
-		if rate2 !=rate1:
-			break
-	if rate2 != None:
-		if rate1 != rate2:
-			tmp_run1= two_way_dict[rate1]
-			tmp_run2= two_way_dict[rate2]
-			run1 = min(tmp_run1,tmp_run2)
-			run2 = max(tmp_run1,tmp_run2)
-		else:
-			run1 = 0
-			run2 = 1
-			rate2=rate1
-	else:
-		run1 =0
-		run2 =1
-		rate2 = rate1
-	return run1, run2, rate1, rate2
-	
+"""
 def do_two_way_comparison(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	from utilities import read_text_file,write_text_file
@@ -658,240 +482,10 @@ def do_two_way_comparison(Tracker):
 	del two_ways_stable_member_list
 	Tracker["score_of_this_comparison"]=(avg_two_ways,two_ways_std,net_rate)
 	mpi_barrier(MPI_COMM_WORLD)
-
+"""
 	
-def get_ali3d_params(ali3d_old_text_file,shuffled_list):
-	from utilities import read_text_row
-	ali3d_old = read_text_row(ali3d_old_text_file)
-	ali3d_new = []
-	for iptl in xrange(len(shuffled_list)):
-		ali3d_new.append(ali3d_old[shuffled_list[iptl]])
-	return ali3d_new
 
-def counting_projections(delta,ali3d_params,image_start):
-	from utilities import even_angles,angle_between_projections_directions
-	sampled_directions = {}
-	angles=even_angles(delta,0,180)
-	for a in angles:
-		[phi0, theta0, psi0]=a
-		sampled_directions[(phi0,theta0)]=[]
-	from math import sqrt
-	for i in xrange(len(ali3d_params)):
-		[phi, theta, psi, s2x, s2y] = ali3d_params[i]
-		dis_min    = 9999.
-		this_phi   = 9999.
-		this_theta = 9999.
-		this_psi   = 9999.
-		prj1       =[phi,theta]
-		for j in xrange(len(angles)):
-			[phi0, theta0, psi0] = angles[j]
-			prj2 =[phi0,theta0]
-			dis=angle_between_projections_directions(prj1, prj2)
-			if dis<dis_min:
-				dis_min    =dis
-				this_phi   =phi0
-				this_theta =theta0
-				this_psi   =psi0
-		alist= sampled_directions[(this_phi,this_theta)]
-		alist.append(i+image_start)
-		sampled_directions[(this_phi,this_theta)]=alist
-	return sampled_directions
 
-def unload_dict(dict_angles):
-	dlist =[]
-	for a in dict_angles:
-		tmp=[a[0],a[1]]
-		tmp_list=dict_angles[a]
-		for b in tmp_list:
-			tmp.append(b)
-		dlist.append(tmp)
-	return dlist
-
-def load_dict(dict_angle_main_node, unloaded_dict_angles):
-	for ang_proj in unloaded_dict_angles:
-		if len(ang_proj)>2:
-			for item in xrange(2,len(ang_proj)):
-				dict_angle_main_node[(ang_proj[0],ang_proj[1])].append(item)
-	return dict_angle_main_node
-
-def get_stat_proj(Tracker,delta,this_ali3d):
-	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_row,wrap_mpi_bcast,even_angles
-	from applications import MPI_start_end
-	myid      = Tracker["constants"]["myid"]
-	main_node = Tracker["constants"]["main_node"]
-	nproc     = Tracker["constants"]["nproc"]
-	mpi_comm  = MPI_COMM_WORLD
-	if myid ==main_node:
-		ali3d_params=read_text_row(this_ali3d)
-		lpartids    = range(len(ali3d_params))
-	else:
-		lpartids      = 0
-		ali3d_params  = 0
-	lpartids = wrap_mpi_bcast(lpartids, main_node)
-	ali3d_params = wrap_mpi_bcast(ali3d_params, main_node)
-	ndata=len(ali3d_params)
-	image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	ali3d_params=ali3d_params[image_start:image_end]
-	sampled=counting_projections(delta,ali3d_params,image_start)
-	for inode in xrange(nproc):
-		if myid ==inode:
-			dlist=unload_dict(sampled)
-		else:
-			dlist =0
-		dlist=wrap_mpi_bcast(dlist,inode)
-		if myid ==main_node and inode != main_node:
-			sampled=load_dict(sampled,dlist)
-		mpi_barrier(MPI_COMM_WORLD)
-	return sampled
-
-def get_attr_stack(data_stack,attr_string):
-	attr_value_list = []
-	for idat in xrange(len(data_stack)):
-		attr_value = data_stack[idat].get_attr(attr_string)
-		attr_value_list.append(attr_value)
-	return attr_value_list
-
-def fill_in_mpi_list(mpi_list,data_list,index_start,index_end):
-	for index in xrange(index_start, index_end):
-		mpi_list[index] = data_list[index-index_start]
-	return mpi_list
-	
-def get_sorting_params(Tracker,data):
-	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_row,wrap_mpi_bcast,even_angles
-	from applications import MPI_start_end
-	myid      = Tracker["constants"]["myid"]
-	main_node = Tracker["constants"]["main_node"]
-	nproc     = Tracker["constants"]["nproc"]
-	ndata     = Tracker["total_stack"]
-	mpi_comm  = MPI_COMM_WORLD
-	if myid == main_node:
-		total_attr_value_list = []
-		for n in xrange(ndata):
-			total_attr_value_list.append([])
-	else:
-		total_attr_value_list = 0
-	for inode in xrange(nproc):
-		attr_value_list =get_attr_stack(data,"group")
-		attr_value_list =wrap_mpi_bcast(attr_value_list,inode)
-		if myid ==main_node:
-			image_start,image_end=MPI_start_end(ndata,nproc,inode)
-			total_attr_value_list=fill_in_mpi_list(total_attr_value_list,attr_value_list,image_start,image_end)		
-		mpi_barrier(MPI_COMM_WORLD)
-	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list,main_node)
-	return total_attr_value_list
-
-def get_ID_of_full_list(data_list, data_dict):
-	data_in_full_list =[]
-	for index in xrange(len(data_list)):
-		data_dict[data_list[index]]=old_ID
-		data_in_full_list.append(old_ID)
-	return data_in_full_list
-	
-def create_random_list(Tracker):
-	import random
-	myid        = Tracker["constants"]["myid"]
-	main_node   = Tracker["constants"]["main_node"]
-	total_stack = Tracker["total_stack"]
-	from utilities import wrap_mpi_bcast
-	indep_list  =[]
-	import copy
-	SEED= Tracker["constants"]["seed"]
-	if SEED ==-1:random.seed()
-	else:random.seed(SEED)
-	for irandom in xrange(Tracker["constants"]["indep_runs"]):
-		ll=copy.copy(Tracker["this_data_list"])
-		random.shuffle(ll)
-		ll = wrap_mpi_bcast(ll, main_node)
-		indep_list.append(ll)
-	Tracker["this_indep_list"]=indep_list
-
-def recons_mref(Tracker):
-	from mpi import mpi_barrier, MPI_COMM_WORLD
-	myid             = Tracker["constants"]["myid"]
-	main_node        = Tracker["constants"]["main_node"]
-	nproc            = Tracker["constants"]["nproc"]
-	number_of_groups = Tracker["number_of_groups"]
-	log_main         = Tracker["constants"]["log_main"]
-	particle_list    = Tracker["this_particle_list"]
-	nxinit           = Tracker["nxinit"]
-	partstack        = Tracker["constants"]["partstack"]
-	workdir          = Tracker["this_dir"]
-	total_data       = len(particle_list)
-	ref_list         = []
-	number_of_ref_class = []
-	for igrp in xrange(number_of_groups):
-		a_group_list=particle_list[(total_data*igrp)//number_of_groups:(total_data*(igrp+1))//number_of_groups]
-		a_group_list.sort()
-		#Tracker["this_data_list"] = a_group_list
-		from utilities import write_text_file
-		particle_list_file = os.path.join(workdir,"iclass%d.txt"%igrp)
-		if myid ==main_node:
-			write_text_file(a_group_list,particle_list_file)
-		mpi_barrier(MPI_COMM_WORLD)
-		while not os.path.exists(particle_list_file):
-			#print  " my_id",myid
-			sleep(2)
-			mpi_barrier(MPI_COMM_WORLD)
-		data, old_shifts =  get_shrink_data_huang(Tracker,nxinit,particle_list_file,partstack,myid,main_node,nproc,preshift=True)
-		#vol=reconstruct_3D(Tracker,data)
-		mpi_barrier(MPI_COMM_WORLD)
-		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
-		if myid ==main_node:log_main.add("reconstructed %3d"%igrp)
-		ref_list.append(vol)
-		number_of_ref_class.append(len(a_group_list))
-	Tracker["number_of_ref_class"] =  number_of_ref_class
-	return ref_list
-
-def apply_low_pass_filter(refvol,Tracker):
-	from filter import filt_tanl
-	for iref in xrange(len(refvol)):
-		refvol[iref]=filt_tanl(refvol[iref],Tracker["low_pass_filter"],.1)
-	return refvol
-	
-def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
-	# sort out Kmref results to individual groups that has initial IDs
-	# make a dictionary
-	dict = {}
-	for iptl in xrange(len(initial_ID_list)):
-		dict[iptl] = initial_ID_list[iptl]
-	res = []
-	for igrp in xrange(number_of_groups):
-		class_one = []
-		for ipt in xrange(len(partition)):
-			if partition[ipt] == igrp:
-				orginal_id = dict[ipt]
-				class_one.append(orginal_id)
-		if len(class_one)>=1:
-			res.append(class_one)
-	return res
-
-def get_complementary_elements(total_list,sub_data_list):
-	if len(total_list)<len(sub_data_list):
-		print "Wrong input list!"
-		return []
-	else:
-		sub_data_dict     = {}
-		complementary     = []
-		for index in xrange(len(sub_data_list)):sub_data_dict[sub_data_list[index]]=index
-		for any in total_list:
-			if sub_data_dict.has_key(any) is False:complementary.append(any)
-		return complementary
-
-def get_complementary_elements_total(total_stack, data_list):
-	data_dict    ={}
-	complementary     = []
-	for index in xrange(len(data_list)):data_dict[data_list[index]]=index
-	for index in xrange(total_stack):
-		if data_dict.has_key(index) is False:complementary.append(index)
-	return complementary
-
-def update_full_dict(leftover_list,Tracker):
-	full_dict ={}
-	for iptl in xrange(len(leftover_list)):
-		full_dict[iptl]     = leftover_list[iptl]
-	Tracker["full_ID_dict"] = full_dict
 	
 def split_a_group(workdir,list_of_a_group,Tracker):
 	### Using EQ-Kmeans and Kmeans to split a group
@@ -969,95 +563,6 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 		ref_list.append(vol)
 	mpi_barrier(MPI_COMM_WORLD)
 	#### Kmeans
-	
-def count_chunk_members(chunk_dict,one_class):
-	if len(one_class)==0:
-		return 0,0,0
-	else:
-		N_chunk0 = 0.0
-		N_chunk1 = 0.0
-		for a in one_class:
-			if chunk_dict[a]==0:
-				N_chunk0 +=1.
-			else:
-				N_chunk1 +=1
-		rate0 = N_chunk0/len(one_class)
-		rate1 = N_chunk1/len(one_class) 
-		return rate0,rate1,len(one_class)
-
-def get_sorting_params_refine(Tracker,data):
-	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_row,wrap_mpi_bcast,even_angles
-	from applications import MPI_start_end
-	myid      = Tracker["constants"]["myid"]
-	main_node = Tracker["constants"]["main_node"]
-	nproc     = Tracker["constants"]["nproc"]
-	ndata     = Tracker["total_stack"]
-	mpi_comm  = MPI_COMM_WORLD
-	if myid == main_node:
-		total_attr_value_list = []
-		for n in xrange(ndata):
-			total_attr_value_list.append([])
-	else:
-		total_attr_value_list = 0
-	for inode in xrange(nproc):
-		attr_value_list =get_sorting_attr_stack(data)
-		attr_value_list =wrap_mpi_bcast(attr_value_list,inode)
-		if myid ==main_node:
-			image_start,image_end=MPI_start_end(ndata,nproc,inode)
-			total_attr_value_list=fill_in_mpi_list(total_attr_value_list,attr_value_list,image_start,image_end)		
-		mpi_barrier(MPI_COMM_WORLD)
-	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list,main_node)
-	return total_attr_value_list
-	
-def get_sorting_attr_stack(data_stack):
-	from utilities import get_params_proj
-	attr_value_list = []
-	for idat in xrange(len(data_stack)):
-		group = data_stack[idat].get_attr("group")
-		phi,theta,psi,s2x,s2y=get_params_proj(data_stack[idat],xform = "xform.projection")
-		attr_value_list.append([group, phi, theta, psi, s2x, s2y])
-	return attr_value_list
-	
-def parsing_sorting_params(sorting_params_list):
-	group_list        = []
-	ali3d_params_list = []
-	for element in sorting_params_list:
-		group_list.append(element[0]) 
-		ali3d_params_list.append(element[1:])
-	return group_list, ali3d_params_list
-	
-def adjust_fsc_down(fsc,n1,n2):
-	# fsc curve:  frequencies   cc values  number of the sampling points
-	# n1 total data n2 subset
-	from utilities import read_text_file
-	import types
-	if type(fsc) == types.StringType:fsc=read_text_file(fsc,-1)
-	N_bins =  len(fsc[0])
-	adjusted_fsc = N_bins*[None]
-	for index_of_cc in xrange(N_bins):
-		adjusted_fsc[index_of_cc] = (float(n2)/float(n1))*fsc[1][index_of_cc]/(1.-(1.-float(n2)/float(n1))*fsc[1][index_of_cc])
-	calibrated_fsc=[fsc[0], adjusted_fsc, fsc[2]]
-	return calibrated_fsc
-	
-def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
-	## use the smallest group 
-	fsc_cutoff   = 1.0/3.0
-	adjusted_fsc = adjust_fsc_down(Tracker["global_fsc"],n1,n2)
-	currentres   = -1.0
-	ns           = len(adjusted_fsc)
-	for i in xrange(1,ns-1):
-		if adjusted_fsc[1][i] < fsc_cutoff:
-			currentres = adjusted_fsc[0][i-1]
-			break
-	lowpass, falloff    = fit_tanh1(adjusted_fsc, 0.01)
-	lowpass             = round(lowpass,4)
-	if Tracker["constants"]["myid"] ==Tracker["constants"]["main_node"]:
-		Tracker["constants"]["log_main"].add("the determined low pass filter is %5.3f"%lowpass) 	
-	falloff             = round(falloff,4)
-	currentres          = round(currentres,2)
-	Tracker["lowpass"] = lowpass
-	Tracker["falloff"]  =min(Tracker["falloff"],falloff)
 	
 def search_lowpass(fsc):
 	fcutoff =.5
@@ -1238,6 +743,16 @@ def main():
 		#Tracker["global_resolution"]   = 0.0
 		Tracker["orgstack"]             = orgstack
 		#--------------------------------------------------------------------
+		
+		# import from utilities
+		from utilities import sample_down_1D_curve,get_initial_ID,remove_small_groups,print_upper_triangular_matrix,print_a_line_with_timestamp
+		from utilities import convertasi,prepare_ptp,print_dict,get_resolution_mrk01,partition_to_groups,partition_independent_runs,get_outliers
+		from utilities import merge_groups, save_alist, margin_of_error, get_margin_of_error, do_two_way_comparison, select_two_runs, get_ali3d_params
+		from utilities import counting_projections, unload_dict, load_dict, get_stat_proj, create_random_list, get_number_of_groups, recons_mref
+		from utilities import apply_low_pass_filter, get_groups_from_partition, get_number_of_groups, get_complementary_elements_total, update_full_dict
+		from utilities import count_chunk_members, set_filter_parameters_from_adjusted_fsc, adjust_fsc_down, get_two_chunks_from_stack
+		####------------------------------------------------------------------	
+		
 		#
 		# Get the pixel size; if none, set to 1.0, and the original image size
 		from utilities import get_shrink_data_huang
