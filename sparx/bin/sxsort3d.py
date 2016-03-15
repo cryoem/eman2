@@ -60,7 +60,7 @@ def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
 				final_list.append(element)
 	final_list.sort()
 	return final_list, new_class
-	
+
 def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker): 
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
 	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im
@@ -303,6 +303,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 				del ref_angles
 			else:  list_of_reference_angles = [[1.0,1.0]]
 		cs = [0.0]*3
+		from fundamentals import fft
+		for im in xrange(nima):  data[im] = fft(data[im])
 		for iref in xrange(numref):
 			if myid==main_node:
 				volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
@@ -338,6 +340,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 							refrings = gen_rings_ctf( prjref, nx, ctf, numr)
 							if myid == main_node:log.add( "Repeated time to prepare rings: %d" % (time()-rstart_time) );rstart_time = time()
 				if runtype=="ASSIGNMENT":
+					'''
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 					#CHANGE_PRGS ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
 					if CTF:
@@ -345,6 +348,17 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
+					'''
+
+					if CTF:
+						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
+					else:
+						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
+					from statistics import fsc
+					temp = fsc(ref, data[im])[0]
+					peak = sum(temp[1:highres[iref]])/highres[iref]
+
+
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
@@ -461,6 +475,9 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
 		lowpass=min(lowpass, Tracker["lowpass"])
 		Tracker["lowpass"]=lowpass
+
+		for im in xrange(nima):  data[im] = fft(data[im])
+
 		
 		for iref in xrange(numref):
 			#  3D stuff
@@ -844,6 +861,9 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 				del ref_angles
 			else:  list_of_reference_angles = [[1.0,1.0]]
 		cs = [0.0]*3
+		from fundamentals import fft
+		for im in xrange(nima):  data[im] = fft(data[im])
+
 		for iref in xrange(numref):
 			if(myid == main_node): volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			else: volft =  model_blank(nx, nx, nx)
@@ -877,13 +897,25 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 					#CHANGE_PRGS ref = prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
+					'''
 					if CTF:
 						ref = fft(filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y],1,False), ctf ))
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
-					#CHANGE_PRGS if(focus != None):  mask2D = binarize( prgs( focus, kb, [phi,tht,psi,-s2x,-s2y]) )  #  Should be precalculated!!
 					if(focus != None):  mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]),1)  #  Should be precalculated!!
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
+					'''
+					if(focus == None):
+						if CTF:
+							ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
+						else:
+							ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
+						from statistics import fsc
+						temp = fsc(ref, data[im])[0]
+						peak = sum(temp[1:highres[iref]])/highres[iref]
+					else:
+						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]),1)  #  Should be precalculated!!
+						
 					if not(finfo is None):
 						finfo.write( "ID, iref, peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
@@ -1207,6 +1239,9 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 		if fourvar and runtype=="REFINEMENT":
 			sumvol = model_blank(nx, nx, nx)
 		start_time = time()
+
+		for im in xrange(nima):  data[im] = fft(data[im])
+
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
