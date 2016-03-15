@@ -22080,10 +22080,11 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		varf = None
 	'''
 	highres = []
+	lowpass = 0.5
 	for  iref in xrange(numref):
 		set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
-		lowpass=min(lowpass, Tracker["lowpass"])
-	Tracker["lowpass"]=lowpass	
+		lowpass = min(lowpass, Tracker["lowpass"])
+	Tracker["lowpass"] = lowpass	
 	for  iref in xrange(numref):
 		#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
 		#refdata= [None]*4
@@ -22190,7 +22191,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 							previous_defocus = ctf.defocus
 							rstart_time = time()
 							refrings = gen_rings_ctf( prjref, nx, ctf, numr)
-							if myid == main_node:log.add( "Repeated time to prepare rings: %d" % (time()-rstart_time) );rstart_time = time()
+							if myid == main_node: log.add( "Repeated time to prepare rings: %d" % (time()-rstart_time) );rstart_time = time()
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 					'''
@@ -22328,8 +22329,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		lowpass = 0.5
 		for  iref in xrange(numref):
 			set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
-		lowpass=min(lowpass, Tracker["lowpass"])
-		Tracker["lowpass"]=lowpass
+		lowpass = min(lowpass, Tracker["lowpass"])
+		Tracker["lowpass"] = lowpass
 
 		if( not focus ):
 			for im in xrange(nima):  data[im] = fft(data[im])
