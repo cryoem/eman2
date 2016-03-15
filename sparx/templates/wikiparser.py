@@ -532,9 +532,17 @@ def main():
 	sxcmd_subconfig = SXsubcmd_config("3D Refinement Postprocess", token_edit_list, sxsubcmd_mpi_support)
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "pipe", subconfig = sxcmd_subconfig))
 
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
+	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "pipe", subconfig = sxcmd_subconfig))
+	
+	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "pipe", exclude_list=["symmetrize"]))
+	
 	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", "pipe"))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "pipe"))
 
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "pipe"))
 
@@ -560,16 +568,8 @@ def main():
 	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", token_edit_list, sxsubcmd_mpi_support)
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util", subconfig = sxcmd_subconfig))
 	
-	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
-	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
-	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util", subconfig = sxcmd_subconfig))
-	
-	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util", exclude_list=["symmetrize"]))
-	
+	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "util"))
+
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util"))
 	
 	# --------------------------------------------------------------------------------
