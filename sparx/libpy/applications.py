@@ -21895,7 +21895,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
 	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
-	from utilities      import get_params_proj, set_params_proj, model_blank, write_text_file
+	from utilities      import get_params_proj, set_params_proj, model_blank, write_text_file, get_shrink_data_huang
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
 	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
 	###-------
@@ -22223,11 +22223,12 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
+					from statistics import fsc
 					if(focus == None):
-						tempx = fsc(ref, data[im])[0]
+						tempx = fsc(ref, data[im])[1]
 					else:
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						tempx = fsc(ref, fft(data[im]*mask2d))[0]
+						tempx = fsc(ref, fft(data[im]*mask2d))[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
 
 
@@ -22351,7 +22352,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		if( not focus ):
 			for im in xrange(nima):  data[im] = fft(data[im])
 
-		highres= []
+		highres = []
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
@@ -22812,10 +22813,10 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
 					if(focus == None):
-						tempx = fsc(ref, data[im])[0]
+						tempx = fsc(ref, data[im])[1]
 					else:
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						tempx = fsc(ref, fft(data[im]*mask2d))[0]
+						tempx = fsc(ref, fft(data[im]*mask2d))[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
 						
 					if not(finfo is None):
