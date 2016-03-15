@@ -5709,19 +5709,6 @@ def mpi_exit():
 	
 ### from sort3d
 
-def get_shrink_3dmask(nxinit,mask_file_name):
-        from utilities import get_im
-        from fundamentals import resample
-        mask3d = get_im(mask_file_name)
-        nx2 = nxinit
-        nx1 = mask3d.get_xsize()
-        if nx1 == nx2:
-                return mask3d
-        else:
-                shrinkage = float(nx2)/nx1
-                mask3d    =resample(mask3d,shrinkage)
-                return mask3d
-
 def get_attr_stack(data_stack,attr_string):
 	attr_value_list = []
 	for idat in xrange(len(data_stack)):
