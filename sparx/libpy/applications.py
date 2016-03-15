@@ -22362,14 +22362,14 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			if myid == main_node:
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 				if fourvar and runtype=="REFINEMENT": sumvol += volref
-		    ## res
-		    res=.5
+			## res
+			res = 0.5
         	for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
-            	if fscc[iref][1][ifreq]>.5:
-                        res=fscc[iref][0][ifreq]
-                        break
-            Tracker["lowpass"]=min(.45,res)
-            Tracker["falloff"]= .1
+            	if fscc[iref][1][ifreq] > 0.5:
+					res=fscc[iref][0][ifreq]
+					break
+            Tracker["lowpass"] = min( 0.45, res)
+            Tracker["falloff"] = 0.1
 			if myid==main_node:
 				log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],ngroup[iref]))
 			refdata    = [None]*4
