@@ -2489,17 +2489,11 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 		em_dict = reference_em_object.get_attr_dict()
 		dict_to_send = {"size_of_one_refring_assumed_common_to_all":size_of_one_refring_assumed_common_to_all, \
 						"em_dict":em_dict, "nx":nx, "ny":ny, "nz":nz}
-		
-		try:
-			str_to_send = str(dict_to_send)
-		except:
-			raise ValueError("Could not convert em attribute dictionary to string s that bcast_compacted_EMData_all_to_all can be used.")
-		
-	else: str_to_send = ""
+	else: 
+		dict_to_send = None
 
-	str_to_send = send_string_to_all(str_to_send, first_myid_process_that_has_em_elements)
+	dict_received = wrap_mpi_bcast(dict_to_send, first_myid_process_that_has_em_elements, comm)
 	
-	dict_received = eval(str_to_send)
 	em_dict = dict_received["em_dict"]
 	nx = dict_received["nx"]
 	ny = dict_received["ny"]
@@ -5665,26 +5659,32 @@ def qw(s):
 def debug_mpi_barrier(comm):
 	from mpi import mpi_barrier, mpi_comm_rank, mpi_bcast
 	from traceback import extract_stack
+	import sys
 
-	if mpi_comm_rank(comm) == 0:
-		print "Stack info::0::", extract_stack()[-3:]
-	if mpi_comm_rank(comm) == 1:
-		print "Stack info::1::", extract_stack()[-3:]
+
+	# if mpi_comm_rank(comm) in range(4):
+	print "Stack info::0::", extract_stack()[-3:]
+	
+	sys.stdout.flush()
+	sys.stderr.flush()
 	return mpi_barrier(comm)
-
-
 
 
 def debug_mpi_bcast(newv, s, t, m, comm):
 	from mpi import mpi_comm_rank, mpi_bcast
 	from traceback import extract_stack	
-	
+	import sys
 
-	if mpi_comm_rank(comm) == 0:
-		print "Stack info::0::", extract_stack()[-3:]
-	if mpi_comm_rank(comm) == 1:
-		print "Stack info::1::", extract_stack()[-3:]
-	return mpi_bcast(newv, s, t, m, comm)
+	
+	rrr = mpi_bcast(newv, s, t, m, comm)
+	# if mpi_comm_rank(comm) in range(4):
+	print "Stack info::0::", extract_stack()[-3:], "****************", newv, "####", rrr 
+
+	sys.stdout.flush()
+	sys.stderr.flush()
+
+	# return mpi_bcast(newv, s, t, m, comm)
+	return rrr
 
 def print_from_process(process_rank, message):
 	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier

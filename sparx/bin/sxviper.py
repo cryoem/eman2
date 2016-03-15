@@ -109,17 +109,17 @@ directory		output directory name: into which the results will be written (if it 
 	mpi_rank = mpi_comm_rank(MPI_COMM_WORLD)
 	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
 	
-	error_status = None
-	if mpi_rank == 0:
-		all_projs = EMData.read_images(args[0])
-		subset = range(len(all_projs))
-		if mpi_size > len(all_projs):
-			error_status = ('Number of processes supplied by --np in mpirun needs to be less than or equal to %d (total number of images) ' % len(all_projs), getframeinfo(currentframe()))
-	else:
-		all_projs = None
-		subset = None
-		
-	if_error_then_all_processes_exit_program(error_status)
+	# error_status = None
+	# if mpi_rank == 0:
+	# 	all_projs = EMData.read_images(args[0])
+	# 	subset = range(len(all_projs))
+	# 	if mpi_size > len(all_projs):
+	# 		error_status = ('Number of processes supplied by --np in mpirun needs to be less than or equal to %d (total number of images) ' % len(all_projs), getframeinfo(currentframe()))
+	# else:
+	# 	all_projs = None
+	# 	subset = None
+	# 	
+	# if_error_then_all_processes_exit_program(error_status)
 
 	outdir = args[1]
 	if mpi_rank == 0:

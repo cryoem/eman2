@@ -22364,6 +22364,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 				if fourvar and runtype=="REFINEMENT": sumvol += volref
 			## res
+<<<<<<< HEAD
 			res = 0.5
 			for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
 				if fscc[iref][1][ifreq] > 0.5:
@@ -22374,6 +22375,25 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			Tracker["falloff"] = 0.1
 			if myid==main_node:
 				log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],ngroup[iref]))
+=======
+			if myid ==main_node:
+				res = 0.5
+				for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
+					if fscc[iref][1][ifreq] > 0.5: # always use .5 as cutoff
+						res=fscc[iref][0][ifreq]
+						break
+				Tracker["lowpass"] = min( 0.45, res)
+				Tracker["falloff"] = 0.1
+				if myid==main_node:
+					log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],ngroup[iref]))
+			else:
+				Tracker["lowpass"]  =0.0
+				Tracker["falloff"] = 0.1
+				res   = 0.5
+			Tracker["lowpass"] = wrap_mpi_bcast(Tracker["lowpass"], main_node, mpi_comm)
+			Tracker["falloff"] = wrap_mpi_bcast(Tracker["falloff"], main_node, mpi_comm)
+			res = wrap_mpi_bcast(res, main_node, mpi_comm)
+>>>>>>> c09aeedcc9db36a0b364108f4157c8f62e32954e
 			refdata    = [None]*4
 			refdata[0] = volref
 			refdata[1] = Tracker
@@ -22382,6 +22402,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			volref     = user_func(refdata)
 			if myid == main_node:volref.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 			del volref
+		highres.append(int(res*Tracker["nxinit"]+ 0.5))
 		if runtype=="REFINEMENT":
 			if fourvar:
 				varf = varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%total_iter), None,sumvol,last_ring, 1.0, 1, CTF, 1, sym, myid)
@@ -23159,24 +23180,33 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)			
 				if fourvar and runtype=="REFINEMENT": sumvol += volref
 			#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],ngroup[iref],Tracker)
-			res = 0.5
-			for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
-				if fscc[iref][1][ifreq] > 0.5: # always use .5 as cutoff
-					res = fscc[iref][0][ifreq]
-					break
-			highres.append(int(res*Tracker["nxinit"]+ 0.5))
-			Tracker["lowpass"]=min(.45,res)
-			Tracker["falloff"]= .1
 			if myid ==main_node:
-				log.add(" low pass filter is %f    %f   %d"%(Tracker["lowpass"],Tracker["falloff"],ngroup[iref]))
+				res = 0.5
+				for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
+					if fscc[iref][1][ifreq] > 0.5 : # always use .5 as cutoff
+						res = fscc[iref][0][ifreq]
+						break
+				
+				Tracker["lowpass"] = min(0.45, res)
+				Tracker["falloff"] = 0.1
+				if myid ==main_node:
+					log.add(" low pass filter is %f    %f   %d"%(Tracker["lowpass"],Tracker["falloff"],ngroup[iref]))
+			else:
+				res = 0.5
+				Tracker["lowpass"] = 0.45
+				Tracker["lowpass"] = 0.1
+			res = bcast_number_to_all(res, main_node)
+			Tracker["lowpass"] = bcast_number_to_all(Tracker["lowpass"], main_node)
+			Tracker["falloff"] = bcast_number_to_all(Tracker["falloff"], main_node)
 			refdata    =[None]*4
 			refdata[0] = volref
 			refdata[1] = Tracker
 			refdata[2] = Tracker["constants"]["myid"]
 			refdata[3] = Tracker["constants"]["nproc"] 
 			volref = user_func(refdata)
-			if myid ==main_node:volref.write_image(os.path.join(outdir,"volf%04d.hdf"%(total_iter)),iref)
+			if myid ==main_node:  volref.write_image( os.path.join(outdir,"volf%04d.hdf"%(total_iter)), iref)
 			del volref
+			highres.append(int(res*Tracker["nxinit"]+ 0.5))
 		"""
 		if runtype=="REFINEMENT":
 			if fourvar:
