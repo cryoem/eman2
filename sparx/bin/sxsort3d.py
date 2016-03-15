@@ -283,45 +283,14 @@ def main():
 		user_func = user_functions.factory[Tracker["constants"]["user_func"]]
 		chunk_dict = {}
 		chunk_list = []
-		if Tracker["constants"]["chunkdir"]=="":
-			chunk_id_exist = 0
-			if myid ==main_node:
-				image=get_im(Tracker["orgstack"],0)
-				chunk_id_in_header = image.get_attr_default("chunk_id", None) # in case text files are lost, chunk_id could be recorded in image header
-				if chunk_id_in_header == None:
-					chunk_id_exist = 0
-				else:
-					chunk_id_exist = 1
-			chunk_id_exist =bcast_number_to_all(chunk_id_exist, source_node=main_node)
-			if chunk_id_exist:
-				if myid ==main_node:
-					chunk_one, chunk_two=get_two_chunks_from_stack(Tracker)
-				else:
-					chunk_one = 0
-					chunk_two = 0
-			else:
-				if myid ==main_node:
-					ll=range(total_stack)
-					shuffle(ll)
-					chunk_one =ll[0:total_stack//2]
-					chunk_two =ll[total_stack//2:]
-					del ll
-					chunk_one.sort()
-					chunk_two.sort()
-				else:
-					chunk_one = 0
-					chunk_two = 0
-			chunk_one = wrap_mpi_bcast(chunk_one, main_node)
-			chunk_two = wrap_mpi_bcast(chunk_two, main_node)
-		else: 
-			if myid == main_node:
-				chunk_one = read_text_file(os.path.join(Tracker["constants"]["chunkdir"],"chunk0.txt"))
-				chunk_two = read_text_file(os.path.join(Tracker["constants"]["chunkdir"],"chunk1.txt"))
-			else:
-				chunk_one = 0
-				chunk_two = 0
-			chunk_one = wrap_mpi_bcast(chunk_one, main_node)
-			chunk_two = wrap_mpi_bcast(chunk_two, main_node)
+		if myid == main_node:
+			chunk_one = read_text_file(os.path.join(Tracker["constants"]["chunkdir"],"chunk0.txt"))
+			chunk_two = read_text_file(os.path.join(Tracker["constants"]["chunkdir"],"chunk1.txt"))
+		else:
+			chunk_one = 0
+			chunk_two = 0
+		chunk_one = wrap_mpi_bcast(chunk_one, main_node)
+		chunk_two = wrap_mpi_bcast(chunk_two, main_node)
 		mpi_barrier(MPI_COMM_WORLD)
 		######################## Read/write bdb: data on main node ############################
 	   	if myid==main_node:
@@ -383,27 +352,27 @@ def main():
 		for element in chunk_one: chunk_dict[element] = 0
 		for element in chunk_two: chunk_dict[element] = 1
 		chunk_list =[chunk_one, chunk_two]
-		Tracker["chunk_dict"] =chunk_dict
-		Tracker["P_chunk0"]   =len(chunk_one)/float(total_stack)
-		Tracker["P_chunk1"]   =len(chunk_two)/float(total_stack)
+		Tracker["chunk_dict"] = chunk_dict
+		Tracker["P_chunk0"]   = len(chunk_one)/float(total_stack)
+		Tracker["P_chunk1"]   = len(chunk_two)/float(total_stack)
 		### create two volumes to estimate resolution
 		if myid == main_node:
 			for index in xrange(2):
-				partids = os.path.join(masterdir,"chunk%d.txt"%index)
+				partids = os.path.join(masterdir,"chunk%01d.txt"%index)
 				write_text_file(chunk_list[index],partids)
 		mpi_barrier(MPI_COMM_WORLD)
 		vols = []
 		for index in xrange(2):
-			partids = os.path.join(masterdir,"chunk%d.txt"%index)
+			partids = os.path.join(masterdir,"chunk%01d.txt"%index)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift=True)
-			vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
+			vol = recons3d_4nn_ctf_MPI(myid=myid, prjlist=data,symmetry=Tracker["constants"]["sym"], finfo=None)
 			if myid ==main_node:
 				vol_file_name = os.path.join(masterdir, "vol%d.hdf"%index)
 				vol.write_image(vol_file_name)
 			vols.append(vol)
 			mpi_barrier(MPI_COMM_WORLD)
 		if myid ==main_node:
-			low_pass, falloff,currentres =get_resolution_mrk01(vols,Tracker["constants"]["radius"],Tracker["constants"]["nxinit"],masterdir,Tracker["mask3D"])
+			low_pass, falloff,currentres = get_resolution_mrk01(vols,Tracker["constants"]["radius"],Tracker["constants"]["nxinit"],masterdir,Tracker["mask3D"])
 			if low_pass >Tracker["constants"]["low_pass_filter"]: low_pass= Tracker["constants"]["low_pass_filter"]
 		else:
 			low_pass    =0.0
@@ -613,7 +582,7 @@ def main():
 			create_random_list(Tracker)
 			for indep_run in xrange(Tracker["constants"]["indep_runs"]):
 				Tracker["this_particle_list"] = Tracker["this_indep_list"][indep_run]
-				ref_vol= recons_mref(Tracker)
+				ref_vol = recons_mref(Tracker)
 				if myid ==main_node:
 					log_main.add("independent run  %10d"%indep_run)
 					outdir = os.path.join(workdir, "EQ_Kmeans%03d"%indep_run)

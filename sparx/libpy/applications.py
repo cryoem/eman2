@@ -23149,10 +23149,10 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
-			if(CTF): volref, fscc[iref] = rec3D_two_chunks_MPI(data,snr,sym,mask3D,\
-			 os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)),myid,main_node,index=iref,npad=npad,finfo=frec)
-			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data,sym,mask3D,\
-			 os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)),myid,main_node,index=iref,npad=npad,finfo=frec)
+			if(CTF): volref, fscc[iref] = rec3D_two_chunks_MPI(data, snr, sym, mask3D,\
+			 	os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
+			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym,mask3D,\
+			 	os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
 			if(myid == 0):
 				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
 			if(myid == main_node):
