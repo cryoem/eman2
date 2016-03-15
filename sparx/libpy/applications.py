@@ -23156,13 +23156,13 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)			
 				if fourvar and runtype=="REFINEMENT": sumvol += volref
 			#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],ngroup[iref],Tracker)
-		    res=.5
-        	for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
-            	if fscc[iref][1][ifreq]>.5: # always use .5 as cutoff
-                        res=fscc[iref][0][ifreq]
-                        break
-            Tracker["lowpass"]=min(.45,res)
-            Tracker["falloff"]= .1
+			res = 0.5
+			for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
+				if fscc[iref][1][ifreq] > 0.5: # always use .5 as cutoff
+					res=fscc[iref][0][ifreq]
+					break
+			Tracker["lowpass"]=min(.45,res)
+			Tracker["falloff"]= .1
 			if myid ==main_node:
 				log.add(" low pass filter is %f    %f   %d"%(Tracker["lowpass"],Tracker["falloff"],ngroup[iref]))
 			refdata    =[None]*4
