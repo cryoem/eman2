@@ -1067,13 +1067,13 @@ def main():
 				falloff=round(min(0.1,falloff),4)
 				Tracker["lowpass"]= lowpass
 				Tracker["falloff"]= falloff
-				refdata           = [None]*4
-				refdata[0]        = volref
-				refdata[1]        = Tracker
-				refdata[2]        = Tracker["constants"]["myid"]
-				refdata[3]        = Tracker["constants"]["nproc"]
-				volref            = user_func(refdata)
 				if myid == main_node:
+					refdata           = [None]*4
+					refdata[0]        = volref
+					refdata[1]        = Tracker
+					refdata[2]        = Tracker["constants"]["myid"]
+					refdata[3]        = Tracker["constants"]["nproc"]
+					volref            = user_func(refdata)
 					cutoff=Tracker["constants"]["pixel_size"]/lowpass
 					log_main.add("%d vol low pass filer %f   %f  cut to  %f Angstrom"%(igrp,Tracker["lowpass"],Tracker["falloff"],cutoff))
 					volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))
@@ -1372,13 +1372,13 @@ def main():
 			falloff=round(min(.1,falloff),4)
 			Tracker["lowpass"]=lowpass
 			Tracker["falloff"]=falloff
-			refdata    =[None]*4
-			refdata[0] = volref
-			refdata[1] = Tracker
-			refdata[2] = Tracker["constants"]["myid"]
-			refdata[3] = Tracker["constants"]["nproc"]
-			volref = user_func(refdata)
 			if myid == main_node:
+				refdata    =[None]*4
+				refdata[0] = volref
+				refdata[1] = Tracker
+				refdata[2] = Tracker["constants"]["myid"]
+				refdata[3] = Tracker["constants"]["nproc"]
+				volref = user_func(refdata)
 				cutoff=Tracker["constants"]["pixel_size"]/lowpass
 				log_main.add("%d vol low pass filer %f   %f  cut to  %f Angstrom"%(igrp,Tracker["lowpass"],Tracker["falloff"],cutoff))
 				volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))

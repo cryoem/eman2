@@ -6013,6 +6013,7 @@ def do_two_way_comparison(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	from utilities import read_text_file,write_text_file
 	from statistics import k_means_match_clusters_asg_new
+	import os
 	######
 	myid              =Tracker["constants"]["myid"]
 	main_node         =Tracker["constants"]["main_node"]
@@ -6156,10 +6157,10 @@ def do_two_way_comparison(Tracker):
 	update_full_dict(accounted_list,Tracker)# Update full_ID_dict for Kmeans
 	mpi_barrier(MPI_COMM_WORLD)
 	Tracker["this_unaccounted_dir"]     = workdir
-	Tracker["this_unaccounted_text"]    =os.path.join(workdir,"Unaccounted.txt")
-	Tracker["this_accounted_text"]      =os.path.join(workdir,"Accounted.txt")
-	Tracker["ali3d_of_outliers"]        =os.path.join(workdir,"ali3d_params_of_outliers.txt")
-	Tracker["ali3d_of_accounted"]       =os.path.join(workdir,"ali3d_params_of_accounted.txt")
+	Tracker["this_unaccounted_text"]    = os.path.join(workdir,"Unaccounted.txt")
+	Tracker["this_accounted_text"]      = os.path.join(workdir,"Accounted.txt")
+	Tracker["ali3d_of_outliers"]        = os.path.join(workdir,"ali3d_params_of_outliers.txt")
+	Tracker["ali3d_of_accounted"]       = os.path.join(workdir,"ali3d_params_of_accounted.txt")
 	if myid==main_node:
 		log_main.add(" Selected indepedent runs      %5d and  %5d"%(run1,run2))
 		log_main.add(" Their pair-wise averaged rates are %5.2f  and %5.2f "%(rate1,rate2))		

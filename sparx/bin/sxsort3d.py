@@ -508,14 +508,14 @@ def main():
 			Tracker["PWadjustment"]=Tracker["PW_dict"][nx_of_image]
 		else:
 			Tracker["PWadjustment"]=Tracker["constants"]["PWadjustment"]	
-		for iref in xrange(len(ref_vol_list)):
-			refdata    = [None]*4
-			refdata[0] = ref_vol_list[iref]
-			refdata[1] = Tracker
-			refdata[2] = Tracker["constants"]["myid"]
-			refdata[3] = Tracker["constants"]["nproc"]
-			volref = user_func(refdata)
-			if myid ==main_node:
+		if myid ==main_node:
+			for iref in xrange(len(ref_vol_list)):
+				refdata    = [None]*4
+				refdata[0] = ref_vol_list[iref]
+				refdata[1] = Tracker
+				refdata[2] = Tracker["constants"]["myid"]
+				refdata[3] = Tracker["constants"]["nproc"]
+				volref = user_func(refdata)
 				volref.write_image(os.path.join(workdir,"volf_stable.hdf"),iref)
 		mpi_barrier(MPI_COMM_WORLD)
 		Tracker["this_data_list"] =Tracker["this_accounted_list"]
@@ -549,14 +549,14 @@ def main():
 			Tracker["PWadjustment"]=Tracker["PW_dict"][nx_of_image]
 		else:
 			Tracker["PWadjustment"]=Tracker["constants"]["PWadjustment"]	
-		for ivol in xrange(len(vol_list)):
-			refdata =[None]*4
-			refdata[0] = vol_list[ivol]
-			refdata[1] = Tracker
-			refdata[2] = Tracker["constants"]["myid"]
-			refdata[3] = Tracker["constants"]["nproc"] 
-			volref = user_func(refdata)
-			if myid ==main_node:
+		if myid ==main_node:
+			for ivol in xrange(len(vol_list)):
+				refdata =[None]*4
+				refdata[0] = vol_list[ivol]
+				refdata[1] = Tracker
+				refdata[2] = Tracker["constants"]["myid"]
+				refdata[3] = Tracker["constants"]["nproc"] 
+				volref = user_func(refdata)
 				volref.write_image(os.path.join(workdir,"volf_of_Classes.hdf"),ivol)
 				log_main.add("number of unaccounted particles  %10d"%len(Tracker["this_unaccounted_list"]))
 				log_main.add("number of accounted particles  %10d"%len(Tracker["this_accounted_list"]))
@@ -643,14 +643,14 @@ def main():
 				Tracker["PWadjustment"]=Tracker["PW_dict"][nx_of_image]
 			else:
 				Tracker["PWadjustment"]=Tracker["constants"]["PWadjustment"]	
-			for ivol in xrange(len(vol_list)):
-				refdata =[None]*4
-				refdata[0] = vol_list[ivol]
-				refdata[1] = Tracker
-				refdata[2] = Tracker["constants"]["myid"]
-				refdata[3] = Tracker["constants"]["nproc"] 
-				volref = user_func(refdata)
-				if myid ==main_node:
+			if myid ==main_node:
+				for ivol in xrange(len(vol_list)):
+					refdata =[None]*4
+					refdata[0] = vol_list[ivol]
+					refdata[1] = Tracker
+					refdata[2] = Tracker["constants"]["myid"]
+					refdata[3] = Tracker["constants"]["nproc"] 
+					volref = user_func(refdata)
 					volref.write_image(os.path.join(workdir, "volf_of_Classes.hdf"),ivol)
 			if myid == main_node:
 				log_main.add("number of unaccounted particles  %10d"%len(Tracker["this_unaccounted_list"]))
@@ -673,14 +673,14 @@ def main():
 				Tracker["PWadjustment"]=Tracker["PW_dict"][nx_of_image]
 			else:
 				Tracker["PWadjustment"]=Tracker["constants"]["PWadjustment"]	
-			refdata =[None]*4
-			refdata[0] = volref
-			refdata[1] = Tracker
-			refdata[2] = Tracker["constants"]["myid"]
-			refdata[3] =  Tracker["constants"]["nproc"]
-			volref = user_func(refdata)
-			#volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
-			if myid ==main_node:
+			if( myid == main_node ):
+				refdata =[None]*4
+				refdata[0] = volref
+				refdata[1] = Tracker
+				refdata[2] = Tracker["constants"]["myid"]
+				refdata[3] =  Tracker["constants"]["nproc"]
+				volref = user_func(refdata)
+				#volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
 				volref.write_image(os.path.join(workdir,"volf_unaccounted.hdf"))
 		# Finish program
 		if myid ==main_node:
