@@ -857,7 +857,9 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				out2["apix_z"] = ctf.apix
 				out2.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 				out2.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.06})
-				out2.process_inplace("math.meanshrink",{"n":2})
+#				out2.process_inplace("math.meanshrink",{"n":2})
+				dsfac=5.0/ctf.apix
+				out2.process_inplace("math.fft.resample",{"n":dsfac})	# Pawel's method much more flexible and better
 #				out2.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 
 #				print fft2.get_ysize(),len(hpfilt)
