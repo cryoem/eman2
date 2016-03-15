@@ -5938,7 +5938,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	from statistics import fsc
 	from utilities import model_circle, get_im
 	from filter import fit_tanh1
-	ipmort os
+	import os
 	if(type(radi) == int):
 		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 		else:                     mask = get_im(mask_option)
