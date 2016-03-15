@@ -460,12 +460,12 @@ def construct_sxconst_set():
 	# Create the project constant parameter set for project settings
 	sxconst_set = SXconst_set(); sxconst_set.name = "Project Settings"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
 	sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "micrograph pixel size"; sxconst.help = "in angstrom/pixel"; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "ctfwin"; sxconst.label = "CTF window size "; sxconst.help = "in pixel. it should be slightly larger than particle box size"; sxconst.register = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "box"; sxconst.label = "particle box size"; sxconst.help = " in pixel/voxel"; sxconst.register = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "protein particle radius"; sxconst.help = "in pixel"; sxconst.register = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "micrograph pixel size [A/pixel]"; sxconst.help = "in Angstrom/pixel"; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "ctfwin"; sxconst.label = "CTF window size [pixel]"; sxconst.help = "in pixel. it should be slightly larger than particle box size"; sxconst.register = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "box"; sxconst.label = "particle box size [pixel]" ; sxconst.help = " in pixel/voxel"; sxconst.register = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "protein particle radius [pixel]"; sxconst.help = "in pixel"; sxconst.register = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "protein molecular mass"; sxconst.help = "in kDa"; sxconst.register = "0.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "protein molecular mass [kDa]"; sxconst.help = "in kDa"; sxconst.register = "0.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "imaging configrations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configrations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	
 	return sxconst_set
@@ -486,14 +486,13 @@ class SXLookFeelConst:
 	sxcmd_area_min_width = 1140 # Best for Linux
 	sxcmd_area_min_height = 1080 # Best for Linux
 	
-	
 	# menu_area_min_width = 240 # Best for Mac OSX
 	menu_area_min_half_width = 120 # Best for Linux
 	menu_area_min_width = menu_area_min_half_width * 2 + grid_spacing * 1 # Best for Linux
 	menu_area_min_height = sxcmd_area_min_height
 	
 	# sxconst_set_area_min_width = 440 # Best for Mac OSX
-	sxconst_set_area_min_width = 460 # Best for Linux
+	sxconst_set_area_min_width = 480 # Best for Linux
 	sxconst_set_area_min_height = sxcmd_area_min_height
 	
 	# sxconst_set_window_width = sxconst_set_area_min_width + grid_margin * 5 # Best setting for MAC OSX
