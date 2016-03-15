@@ -5931,13 +5931,14 @@ def checkstep(item, keepchecking, myid, main_node):
         return doit, keepchecking
 """
 
-def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir,mask_option):
+def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
         # this function is single processor
         #  Get updated FSC curves, user can also provide a mask using radi variable
 	import types
 	from statistics import fsc
 	from utilities import model_circle, get_im
 	from filter import fit_tanh1
+	ipmort os
 	if(type(radi) == int):
 		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 		else:                     mask = get_im(mask_option)
@@ -6331,6 +6332,7 @@ def get_number_of_groups(total_particles,number_of_images_per_group, round_off=.
 
 def recons_mref(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
+	import os
 	from time import sleep
 	myid             = Tracker["constants"]["myid"]
 	main_node        = Tracker["constants"]["main_node"]
