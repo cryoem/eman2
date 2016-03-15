@@ -1127,7 +1127,7 @@ class SXCmdTab(QWidget):
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 					
 					assert(cmd_token.is_required == False)
-					cmd_token_restore_widget[widget_index] = QPushButton("[%s]" % cmd_token.restore[widget_index])
+					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index])
 					cmd_token_restore_widget[widget_index].setToolTip(default_cmd_token_restore_tooltip)
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 					
@@ -1153,7 +1153,7 @@ class SXCmdTab(QWidget):
 					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 					
 					assert(cmd_token.is_required == False)
-					cmd_token_restore_widget[widget_index] = QPushButton("[%s]" % cmd_token.restore[widget_index])
+					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index])
 					cmd_token_restore_widget[widget_index].setToolTip(default_cmd_token_restore_tooltip)
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 					
@@ -1218,7 +1218,7 @@ class SXCmdTab(QWidget):
 							custom_style = "QPushButton {color:red; }"
 							is_btn_enable = False
 							cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
-						cmd_token_restore_widget = QPushButton("[%s]" % btn_name)
+						cmd_token_restore_widget = QPushButton("%s" % btn_name)
 						cmd_token_restore_widget.setStyleSheet(custom_style)
 						cmd_token_restore_widget.setEnabled(is_btn_enable)
 						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
@@ -1247,7 +1247,7 @@ class SXCmdTab(QWidget):
 							custom_style = "QPushButton {color:red; }"
 							is_btn_enable = False
 							cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
-						cmd_token_restore_widget = QPushButton("[%s]" % btn_name)
+						cmd_token_restore_widget = QPushButton("%s" % btn_name)
 						cmd_token_restore_widget.setStyleSheet(custom_style)
 						cmd_token_restore_widget.setEnabled(is_btn_enable)
 						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
@@ -1712,7 +1712,7 @@ class SXConstSetWindow(QWidget):
 			temp_label.setMinimumWidth(const_label_min_width)
 			const_set_layout.addWidget(temp_label, const_set_grid_row, const_set_col_origin, const_label_row_span, const_label_col_span)
 			
-			sxconst_register_widget = QPushButton("[%s]" % sxconst.register)
+			sxconst_register_widget = QPushButton("%s" % sxconst.register)
 			sxconst_register_widget.setMinimumWidth(const_register_widget_min_width)
 			custom_style = "QPushButton {color:green; }"
 			sxconst_register_widget.setStyleSheet(custom_style)
@@ -1788,7 +1788,7 @@ class SXConstSetWindow(QWidget):
 		# Loop through all project constant parameters
 		for sxconst in self.sxconst_set.list:
 			sxconst.register = sxconst.widget.text()
-			sxconst.register_widget.setText("[%s]" % sxconst.register)
+			sxconst.register_widget.setText("%s" % sxconst.register)
 		
 		# Loop through all command tokens
 		for sxcmd in self.sxcmd_list:
@@ -1796,7 +1796,7 @@ class SXConstSetWindow(QWidget):
 				if cmd_token.type in self.sxconst_set.dict.keys():
 					sxconst = self.sxconst_set.dict[cmd_token.type]
 					cmd_token.restore = sxconst.register
-					cmd_token.restore_widget.setText("[%s]" % cmd_token.restore)
+					cmd_token.restore_widget.setText("%s" % cmd_token.restore)
 					cmd_token.widget.setText(cmd_token.restore)
 					# print "MRK_DEBUG: %s, %s, %s, %s, %s" % (sxcmd.name, cmd_token.key_base, cmd_token.type, cmd_token.default, cmd_token.restore)
 		
