@@ -87,12 +87,13 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")     # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")     # outdir
-	keyword_dict["locresvolume"]                  = SXkeyword_map(1, "output")     # locresvolume (this contained keyword "volume" also... This is another reason why priority is introduced...)
+	keyword_dict["locres_volume"]                 = SXkeyword_map(1, "output")     # locres_volume (this contained keyword "volume" also... This is another reason why priority is introduced...)
 	keyword_dict["directory"]                     = SXkeyword_map(1, "output")     # directory
 	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")     # rotpw
+	keyword_dict["output_mask3D"]                 = SXkeyword_map(1, "output")     # output_mask3D
 	# Use priority 2 for the others
 	keyword_dict["stack"]                         = SXkeyword_map(2, "image")      # stack, prj_stack
-	keyword_dict["volume"]                        = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, inputvolume
+	keyword_dict["volume"]                        = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, input_volume
 	keyword_dict["mask"]                          = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask, --mask=MASK
 	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
 	keyword_dict["--input"]                       = SXkeyword_map(2, "image")      # --input=INPUT
@@ -334,9 +335,9 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# Handle exceptional cases due to the limitation of software design 
 	# In future, we should remove these exception handling by reviewing the design
 	if sxcmd.name == "sxfilterlocal":
-		assert(sxcmd.token_dict["locresvolume"].key_base == "locresvolume")
-		assert(sxcmd.token_dict["locresvolume"].type == "output")
-		sxcmd.token_dict["locresvolume"].type = "image"
+		assert(sxcmd.token_dict["locres_volume"].key_base == "locres_volume")
+		assert(sxcmd.token_dict["locres_volume"].type == "output")
+		sxcmd.token_dict["locres_volume"].type = "image"
 	elif sxcmd.name in ["sxlocres",  "sxsort3d", "sxrsort3d"]:
 		assert(sxcmd.token_dict["wn"].key_base == "wn")
 		assert(sxcmd.token_dict["wn"].type == "ctfwin")
@@ -506,8 +507,10 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "pipe"))
 	
 	sxcmd_config_list.append(SXcmd_config("../doc/viper.txt", "pipe"))
-	
-	sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", "pipe"))
+
+	# NOTE: Toshio Moriya 2016/03/11
+	# Temporarily disabled sxrviper for the 03/07/2016 release
+	# sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", "pipe"))
 	
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "pipe"))
 	
@@ -529,9 +532,17 @@ def main():
 	sxcmd_subconfig = SXsubcmd_config("3D Refinement Postprocess", token_edit_list, sxsubcmd_mpi_support)
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "pipe", subconfig = sxcmd_subconfig))
 
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
+	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "pipe", subconfig = sxcmd_subconfig))
+	
+	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "pipe", exclude_list=["symmetrize"]))
+	
 	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", "pipe"))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "pipe"))
 
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "pipe"))
 
@@ -544,7 +555,8 @@ def main():
 
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("adaptive_mask"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("inputvolume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "output 3D mask"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit) 
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ndilation"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("kernel_size"); token_edit.help = "main"; token_edit_list.append(token_edit)
@@ -556,16 +568,8 @@ def main():
 	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", token_edit_list, sxsubcmd_mpi_support)
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util", subconfig = sxcmd_subconfig))
 	
-	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("inputvolume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
-	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
-	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util", subconfig = sxcmd_subconfig))
-	
-	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "util", exclude_list=["symmetrize"]))
-	
+	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "util"))
+
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util"))
 	
 	# --------------------------------------------------------------------------------

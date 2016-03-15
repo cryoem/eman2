@@ -18207,7 +18207,7 @@ EMData* Util::shrinkfvol(EMData* img, int npad)
 		w->set_size((xn+2-iodd)/2, yn, zn);
 
 	} else {
-		xn = 2*(((nx-3)/2)/npad)+ 3;
+		xn = (yn+2-yn%2)/2;
 		xx = nx;
 		xt = xn;
 		out->set_size(xn, yn, zn);	
@@ -22358,12 +22358,11 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 
 void Util::version()
-{ cout <<"  VERSION  03/07/2016  07:14 PM "<<endl;}
-
-void Util::version2(){ 
-    cout <<"  Compile time of util_sparx.cpp                  --  "<< __DATE__ << "  --  " << __TIME__ <<endl;
-    cout <<"  Date and time of last edit of util_sparx.cpp    --  "<<  __TIMESTAMP__  <<endl;
+{
+ cout <<"  VERSION  03/10/2016  05:14 PM double upweighting removed"<<endl;
+ cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
+
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
@@ -22374,6 +22373,8 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
+	qprob = 0.0f;
+	/*
 	cout <<"  VERSION  12/19/2015  5:40 PM"<<endl;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	EMData * img2 = new EMData();
@@ -22393,7 +22394,6 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 
 	EXITFUNC;
 	return img2;
-	/*
 	exit(0);
 
 	float dummy;
@@ -22518,11 +22518,11 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 		}
 	}
 	//for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] + Util::get_irand(1,7);
-	img2->update();
+	*/
+	img->update();
 
 	EXITFUNC;
-	return img2;
-	*/
+	return img;
 }
 #undef img_ptr
 #undef img2_ptr

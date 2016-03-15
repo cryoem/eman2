@@ -109,7 +109,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="autofit[0.6]")
 	parser.add_argument("--defocusmax",type=float,help="Maximum autofit defocus",default=4, guitype='floatbox', row=6, col=1, rowspan=1, colspan=1, mode='autofit[4.0]')
-	parser.add_argument("--constbfactor",type=float,help="Set B-factor to fixed specified value, negative value autofits",default=-1.0, guitype='floatbox', row=14, col=0, rowspan=1, colspan=1, mode='autofit[-1.0],tuning[-1.0],genoutp[-1.0]')
+	parser.add_argument("--constbfactor",type=float,help="Set B-factor to fixed specified value, negative value autofits",default=-1.0, guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode='autofit[-1.0],tuning[-1.0],genoutp[-1.0]')
 	parser.add_argument("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
@@ -124,6 +124,8 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--phaseflipproc2",help="If specified _proc particles will be generated. Typical = filter.highpass.gauss:cutoff_freq=.005",default=None, guitype='strbox', row=10, col=0, rowspan=1, colspan=3, mode='genoutp["filter.highpass.gauss:cutoff_freq=.005"]')
 	parser.add_argument("--phaseflipproc3",help="If specified _proc particles will be generated. Typical = math.meanshrink:n=2",default=None, guitype='strbox', row=11, col=0, rowspan=1, colspan=3, mode='genoutp["math.meanshrink:n=2"]')
 	parser.add_argument("--phaseflipproc4",help="If specified _proc particles will be generated.",default=None, guitype='strbox', row=12, col=0, rowspan=1, colspan=3, mode='genoutp')
+	parser.add_argument("--phaseflipproc5",help="If specified _proc particles will be generated.",default=None, guitype='strbox', row=14, col=0, rowspan=1, colspan=3, mode='genoutp')
+
 #	parser.add_argument("--virtualout",type=str,help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
 	parser.add_argument("--storeparm",action="store_true",help="Output files will include CTF info. CTF parameters are used from the database, rather than values that may be present in the input image header. Critical to use this when generating output !",default=False,guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--oversamp",type=int,help="Oversampling factor",default=1, guitype='intbox', row=3, col=0, rowspan=1, colspan=2, mode='autofit[2]')
@@ -392,6 +394,10 @@ def write_e2ctf_output(options):
 
 				if options.phaseflipproc4!=None:
 					phaseprocout.append(parsemodopt(options.phaseflipproc4))
+
+				if options.phaseflipproc5!=None:
+					phaseprocout.append(parsemodopt(options.phaseflipproc5))
+
 			try:
 				js=js_open_dict(info_name(filename))
 				ctf=js["ctf"][0]		# EMAN2CTF object from disk
@@ -536,7 +542,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		except:
 			print "Error fitting CTF (ds) on ",filename
 			continue
-		
+
 		for j,p in enumerate(ps):
 			try: im_1d,bg_1d,im_2d,bg_2d,bg_1d_low,micro_1d=p
 			except:
@@ -814,8 +820,16 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert: out.mult(-1.0)
 			if edgenorm: out.process("normalize.edgemean")
-			if phaseflip: out.write_image(phaseflip,i)
+			if phaseflip:
 
+
+				try:
+					out.write_image(phaseflip,i)
+				except:
+					print(phaseflip,i)
+					x = EMData(phaseflip,i,False)
+					print(x.get_attr_dict())
+					display(x)
 			if phaseproc!=None:
 				out2=out.copy()				# processor may or may not be in Fourier space
 				out2["ctf"]=ctf

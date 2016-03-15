@@ -1,5 +1,5 @@
 = Name =
-sxmeridien - Automatic 3D Refinement: Performs 3D structure refinement.
+sxmeridien - 3D Refinement: Performs 3D structure refinement.
 
 = Usage =
 
