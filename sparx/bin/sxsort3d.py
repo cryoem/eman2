@@ -405,11 +405,7 @@ def main():
 			log_main.add("the user provided enforced low_pass_filter is %f"%Tracker["constants"]["low_pass_filter"])
 			#log_main.add("equivalent to %f Angstrom resolution"%(Tracker["constants"]["pixel_size"]/Tracker["constants"]["low_pass_filter"]))
 			for index in xrange(2):
-				vol_file = os.path.join(masterdir,"vol%d.txt"%index)
-				vol = get_im(vol_file_name)
-				vol = filt_tanl(vol, Tracker["low_pass_filter"],Tracker["falloff"])
-				volf_file_name = os.path.join(masterdir, "volf%d.hdf"%index)
-				vol.write_image(volf_file_name)
+				filt_tanl(get_im(os.path.join(masterdir,"vol%d.txt"%index)), Tracker["low_pass_filter"],Tracker["falloff"]).write_image(os.path.join(masterdir, "volf%d.hdf"%index))
 		mpi_barrier(MPI_COMM_WORLD)
 		from utilities import get_input_from_string
 		delta       = get_input_from_string(Tracker["constants"]["delta"])
@@ -422,7 +418,7 @@ def main():
 			nc = 0
 			for a in sampled:
 				if len(sampled[a])>0:
-					nc +=1
+					nc += 1
 			log_main.add("total sampled direction %10d  at angle step %6.3f"%(len(n_angles), delta)) 
 			log_main.add("captured sampled directions %10d percentage covered by data  %6.3f"%(nc,float(nc)/len(n_angles)*100))
 		mpi_barrier(MPI_COMM_WORLD)
@@ -442,7 +438,6 @@ def main():
 		partition_dict ={}
 		full_dict      ={}
 		workdir =os.path.join(masterdir,"generation%03d"%generation)
-		list_to_be_processed = range(Tracker["constants"]["total_stack"])
 		Tracker["this_dir"] = workdir
 		if myid ==main_node:
 			log_main.add("---- generation         %5d"%generation)
@@ -451,29 +446,28 @@ def main():
 			cmd="{} {}".format("mkdir",workdir)
 			os.system(cmd)
 		mpi_barrier(MPI_COMM_WORLD)
-		Tracker["this_data_list"] = list_to_be_processed 
+		list_to_be_processed = range(Tracker["constants"]["total_stack"])
+		Tracker["this_data_list"] = list_to_be_processed
 		create_random_list(Tracker)
 		#################################
 		full_dict ={}
 		for iptl in xrange(Tracker["constants"]["total_stack"]):
-			 full_dict[iptl]=iptl
+			 full_dict[iptl] = iptl
 		Tracker["full_ID_dict"] = full_dict
 		################################# 	
 		for indep_run in xrange(Tracker["constants"]["indep_runs"]):
 			Tracker["this_particle_list"] = Tracker["this_indep_list"][indep_run]
-			ref_vol= recons_mref(Tracker)
+			ref_vol = recons_mref(Tracker)
 			if myid ==main_node:
 				log_main.add("independent run  %10d"%indep_run)
 			mpi_barrier(MPI_COMM_WORLD)
-			Tracker["this_data_list"]=list_to_be_processed
-			Tracker["total_stack"]   =len(Tracker["this_data_list"])
+			Tracker["this_data_list"] = list_to_be_processed
+			Tracker["total_stack"]   = len(Tracker["this_data_list"])
 			Tracker["this_particle_text_file"] = os.path.join(workdir,"independent_list_%03d.txt"%indep_run) # for get_shrink_data
-			if myid ==main_node:
-				write_text_file(Tracker["this_data_list"],Tracker["this_particle_text_file"])
 			mpi_barrier(MPI_COMM_WORLD)
 			outdir = os.path.join(workdir, "EQ_Kmeans%03d"%indep_run)
-			ref_vol=apply_low_pass_filter(ref_vol,Tracker)
-			mref_ali3d_EQ_Kmeans(ref_vol,outdir,Tracker["this_particle_text_file"],Tracker)
+			ref_vol = apply_low_pass_filter(ref_vol,Tracker)
+			mref_ali3d_EQ_Kmeans(ref_vol, outdir, Tracker["this_particle_text_file"], Tracker)
 			partition_dict[indep_run]=Tracker["this_partition"]
 		Tracker["partition_dict"]    = partition_dict
 		Tracker["total_stack"]       = len(Tracker["this_data_list"])
