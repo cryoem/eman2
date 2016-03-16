@@ -794,7 +794,7 @@ def main():
 				if myid == main_node:
 					number_of_ref_class=[]
 					log_main.add(" Compute volumes of original size")
-					for igrp in xrange(number_of_groups):
+					for igrp in xrange(Tracker["number_of_groups"]):
 						if os.path.exists( os.path.join( outdir,"Class%d.txt"%igrp ) ):
 							new_stable1.append( read_text_file( os.path.join( outdir, "Class%d.txt"%igrp ) ) )
 							log_main.add(" read Class file %d"%igrp)
