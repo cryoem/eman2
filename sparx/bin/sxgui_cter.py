@@ -1051,14 +1051,14 @@ class SXGuiCter(QtGui.QWidget):
 		# scr_x, scr_y = self.whistparam.plot2scr(param_val, 0.0)
 		# self.whistparam.add_shape(shape_name,EMShape(("scrline",0,1,0,scr_x,self.whistparam.scrlim[1],scr_x,self.whistparam.scrlim[1]+self.whistparam.scrlim[3],3)))
 		
-		val_min = min(hist_y_list)
-		val_max = max(hist_y_list)
+		val_min = round(min(hist_y_list), self.round_ndigits)
+		val_max = round(max(hist_y_list), self.round_ndigits)
 		# threshold_lower_label = "Lower(Blue)"
-		unapply_threshold_lower_val = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_lower]
-		apply_threshold_lower_val = self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_lower]
+		unapply_threshold_lower_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_lower], self.round_ndigits)
+		apply_threshold_lower_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_lower], self.round_ndigits)
 		# threshold_upper_label = "Upper(Red)"
-		unapply_threshold_upper_val = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_upper]
-		apply_threshold_upper_val = self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_upper]
+		unapply_threshold_upper_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_upper], self.round_ndigits)
+		apply_threshold_upper_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_upper], self.round_ndigits)
 		
 		self.whistparam.set_data(([param_val, param_val], [val_min, val_max]),"selected_val",quiet=False,color=3)
 		self.whistparam.set_data(([unapply_threshold_lower_val, unapply_threshold_lower_val], [val_min, val_max]),"unapply_threshold_lower_val",quiet=False,color=1,linetype=1)
@@ -1119,14 +1119,14 @@ class SXGuiCter(QtGui.QWidget):
 		# This may NOT be good place to update the following information...
 		idx_cter = self.hist_map_list[self.curhist][self.idx_hist_item_idx_cter]
 		param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
-		param_val = self.cter_entry_list[self.curentry][idx_cter]
+		param_val = round(self.cter_entry_list[self.curentry][idx_cter], self.round_ndigits)
 		
 		# threshold_lower_label = "Lower(Blue)"
-		unapply_threshold_lower_val = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_lower]
-		apply_threshold_lower_val = self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_lower]
+		unapply_threshold_lower_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_lower], self.round_ndigits)
+		apply_threshold_lower_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_lower], self.round_ndigits)
 		# threshold_upper_label = "Upper(Red)"
-		unapply_threshold_upper_val = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_upper]
-		apply_threshold_upper_val = self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_upper]
+		unapply_threshold_upper_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_upper], self.round_ndigits)
+		apply_threshold_upper_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_upper], self.round_ndigits)
 		
 		y_list = [param_val]*len(x_list)
 		self.wplotparam.set_data((x_list,y_list),"selected_val",quiet=False,color=3)
@@ -1433,12 +1433,12 @@ class SXGuiCter(QtGui.QWidget):
 		self.updateEntryList()
 	
 	def newThresholdLower(self):
-		threshold_lower = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].getValue()
-		if threshold_lower < self.hist_map_list[self.curhist][self.idx_hist_item_val_min]:
-			threshold_lower = self.hist_map_list[self.curhist][self.idx_hist_item_val_min]
+		threshold_lower = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].getValue(), self.round_ndigits)
+		if threshold_lower < round(self.hist_map_list[self.curhist][self.idx_hist_item_val_min], self.round_ndigits):
+			threshold_lower = round(self.hist_map_list[self.curhist][self.idx_hist_item_val_min], self.round_ndigits)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setValue(threshold_lower)
-		elif threshold_lower > self.hist_map_list[self.curhist][self.idx_hist_item_val_max]:
-			threshold_lower = self.hist_map_list[self.curhist][self.idx_hist_item_val_max]
+		elif threshold_lower > round(self.hist_map_list[self.curhist][self.idx_hist_item_val_max], self.round_ndigits):
+			threshold_lower = round(self.hist_map_list[self.curhist][self.idx_hist_item_val_max], self.round_ndigits)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setValue(threshold_lower)
 		# else: # Do nothing
 		
@@ -1448,12 +1448,12 @@ class SXGuiCter(QtGui.QWidget):
 		self.needredisp=True
 	
 	def newThresholdUpper(self):
-		threshold_upper = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].getValue()
-		if threshold_upper < self.hist_map_list[self.curhist][self.idx_hist_item_val_min]:
-			threshold_upper = self.hist_map_list[self.curhist][self.idx_hist_item_val_min]
+		threshold_upper = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].getValue(), self.round_ndigits)
+		if threshold_upper < round(self.hist_map_list[self.curhist][self.idx_hist_item_val_min], self.round_ndigits):
+			threshold_upper = round(self.hist_map_list[self.curhist][self.idx_hist_item_val_min], self.round_ndigits)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setValue(threshold_upper)
-		elif threshold_upper > self.hist_map_list[self.curhist][self.idx_hist_item_val_max]:
-			threshold_upper = self.hist_map_list[self.curhist][self.idx_hist_item_val_max]
+		elif threshold_upper > round(self.hist_map_list[self.curhist][self.idx_hist_item_val_max], self.round_ndigits):
+			threshold_upper = round(self.hist_map_list[self.curhist][self.idx_hist_item_val_max], self.round_ndigits)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setValue(threshold_upper)
 		# else: # Do nothing
 		
@@ -1612,8 +1612,9 @@ class SXGuiCter(QtGui.QWidget):
 				self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].setValue(threshold_lower)
 				self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setValue(threshold_upper)
 				idx_cter = self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter]
-				param_val = cter_entry[idx_cter]
+				param_val = round(cter_entry[idx_cter], self.round_ndigits)
 				if param_val < threshold_lower or threshold_upper < param_val:
+					print "MRK_DEBUG: Param #%d diselected entry #%04d with (param_val, threshold_lower, threshold_upper) = (%1.15g, %1.15g, %1.15g)" % (idx_hist, idx_cter, param_val, threshold_lower, threshold_upper)
 					new_select_state = 0
 				# else: # Do nothing
 			cter_entry[self.idx_cter_select] = new_select_state
@@ -1682,8 +1683,8 @@ class SXGuiCter(QtGui.QWidget):
 				map_entry = self.hist_map_list[idx_hist]
 				tokens_val = tokens_in[1].split()
 				assert(len(tokens_val) == 2)
-				threshold_lower = float(tokens_val[0])
-				threshold_upper = float(tokens_val[1])
+				threshold_lower = round(float(tokens_val[0]), self.round_ndigits)
+				threshold_upper = round(float(tokens_val[1]), self.round_ndigits)
 				map_entry[self.idx_hist_item_unapply_threshold_lower] = threshold_lower
 				map_entry[self.idx_hist_item_unapply_threshold_upper] = threshold_upper
 				map_entry[self.idx_hist_item_unapply_widget_lower].setValue(threshold_lower)
@@ -1760,26 +1761,19 @@ class SXGuiCter(QtGui.QWidget):
 		file_out_discard = open(file_path_out_discard,"w")
 		
 		save_cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[self.idx_cter_id])
+		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_error_ctf, self.idx_cter_select]
+		if self.is_enable_max_power == True: idx_cter_ignore_list.append(self.idx_cter_max_power)
 		for cter_entry in save_cter_entry_list:
 			file_out = file_out_select
 			if cter_entry[self.idx_cter_select] == 0:
 				file_out = file_out_discard
 			# else: assert(cter_entry[self.idx_cter_select] == 1) # do nothing
 			
-			# # Save with the original format (before around 2016/01/29)
-			# for idx_cter in xrange(self.n_idx_cter):
-			# 	if idx_cter in [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_error_ctf, self.idx_cter_max_power, self.idx_cter_select]:
-			# 		# Do nothing
-			# 		continue
-			# 	elif idx_cter in [self.idx_cter_mic_name]:
-			# 		file_out.write("  %s" % cter_entry[idx_cter])
-			# 	else:
-			# 		file_out.write("  %12.5g" % cter_entry[idx_cter])
-			# file_out.write("\n")
-			
-			# Save with the new format (after around 2016/01/29)
 			for idx_cter in xrange(self.n_idx_cter):
-				if idx_cter in [self.idx_cter_mic_name, self.idx_cter_pwrot_name]:
+				if idx_cter in idx_cter_ignore_list:
+					# Do nothing
+					continue
+				elif idx_cter in [self.idx_cter_mic_name]:
 					file_out.write("  %s" % cter_entry[idx_cter])
 				else:
 					file_out.write("  %12.5g" % cter_entry[idx_cter])
