@@ -22455,12 +22455,10 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	final_group_list, res_groups = remove_small_groups(res_groups, Tracker["constants"]["smallest_group"])
 	if myid ==main_node:
 		nc = 0
-		group_list_saved_file =os.path.join(outdir,"list2.txt")
-		write_text_file(group_list,group_list_saved_file)
+		write_text_file(group_list, os.path.join(outdir,"list2.txt"))
 		for igrp in xrange(len(res_groups)):
 			if len(res_groups[igrp])>0:
-				saved_file = os.path.join(outdir,"Class%d.txt"%nc)
-				write_text_file(res_groups[igrp],saved_file)
+				write_text_file(res_groups[igrp], os.path.join(outdir,"Class%d.txt"%nc))
 				nc +=1
 	mpi_barrier(MPI_COMM_WORLD)
 	Tracker["this_partition"]=final_list
