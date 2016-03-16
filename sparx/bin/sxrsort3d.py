@@ -284,16 +284,11 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 			else: mask3D =None
 			Tracker["number_of_ref_class"] = number_of_ref_class
 			for igrp in xrange(len(new_class)):
-				class_file = os.path.join(workdir,"final_class%d.txt"%igrp)
-				while not os.path.exists(class_file):
-					#print  " my_id",myid
-					sleep(2)
-				mpi_barrier(MPI_COMM_WORLD)
-				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],os.path.join(workdir,"final_class%d.txt"%igrp),Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
 				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
-			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)),myid,main_node,index=-1,npad=npad,finfo=None)
+			 								os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)),myid,main_node,index=-1,npad=npad,finfo=None)
 				ref_vol_list.append(volref)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
@@ -527,12 +522,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	################ create references for EQ-Kmeans
 	ref_list = []
 	for index in xrange(2):
-		partids = os.path.join(workdir,"Class_%d.txt"%index)
-		while not os.path.exists(partids):
-			#print  " my_id",myid
-			sleep(2)
-		mpi_barrier(MPI_COMM_WORLD)
-		data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+		data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],os.path.join(workdir,"Class_%d.txt"%index),Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist = data,symmetry=Tracker["constants"]["sym"],finfo=None)
 		vol = filt_tanl(vol,Tracker["constants"]["low_pass_filter"],.1)
 		ref_list.append(vol)
@@ -552,12 +542,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	############# create references for Kmeans
 	ref_list = []
 	for index in xrange(2):
-		partids = os.path.join(workdir,"new_class%d.txt"%index)
-		while not os.path.exists(partids):
-			#print  " my_id",myid
-			sleep(2)
-		mpi_barrier(MPI_COMM_WORLD)
-		data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+		data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],os.path.join(workdir,"new_class%d.txt"%index),Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist = data,symmetry=Tracker["constants"]["sym"],finfo=None)
 		vol = filt_tanl(vol,Tracker["constants"]["low_pass_filter"],.1)
 		ref_list.append(vol)
@@ -948,12 +933,10 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		vols = []
 		for index in xrange(2):
-			partids= os.path.join(masterdir,"chunk%d.txt"%index)
-			while not os.path.exists(partids):
-				#print  " my_id",myid
-				sleep(3)
-			mpi_barrier(MPI_COMM_WORLD)
-			data1,old_shifts1 = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
+			if( myid == main_node ):  partids = read_text_file(os.path.join(masterdir,"chunk%d.txt"%index))
+			else:  partids = []
+			partids = bcast_list_to_all(partids, myid, main_node )
+			data1,old_shifts1 = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"], partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 			vol1 = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data1,symmetry=Tracker["constants"]["sym"],finfo=None)
 			if myid ==main_node:
 				vol1_file_name = os.path.join(masterdir, "vol%d.hdf"%index)
@@ -1139,17 +1122,12 @@ def main():
 					if myid ==main_node:
 						log_main.add("independent run  %10d"%indep_run)
 					mpi_barrier(MPI_COMM_WORLD)
-					this_particle_text_file = os.path.join(workdir,"independent_list_%03d.txt"%indep_run) # for get_shrink_data
+					this_particle_text_file = os.path.join(workdir, "independent_list_%03d.txt"%indep_run) # for get_shrink_data
 					if myid ==main_node:
-						write_text_file(list_to_be_processed,this_particle_text_file)
+						write_text_file(list_to_be_processed, this_particle_text_file)
 					from time import sleep
-					while not os.path.exists(this_particle_text_file):
-						print  "Node ",myid,"  waiting..."
-						sleep(5)
-					mpi_barrier(MPI_COMM_WORLD)
-					outdir = os.path.join(workdir, "EQ_Kmeans%03d"%indep_run)
 					#ref_vol= apply_low_pass_filter(ref_vol,Tracker)
-					mref_ali3d_EQ_Kmeans(ref_vol, outdir, this_particle_text_file, Tracker)
+					mref_ali3d_EQ_Kmeans(ref_vol, os.path.join(workdir, "EQ_Kmeans%03d"%indep_run), this_particle_text_file, Tracker)
 					partition_dict[indep_run] = Tracker["this_partition"]
 					del ref_vol
 					Tracker["partition_dict"]    = partition_dict
@@ -1168,18 +1146,13 @@ def main():
 				for igrp in xrange(len(Tracker["two_way_stable_member"])):
 					Tracker["this_data_list_file"] = os.path.join(workdir,"stable_class%d.txt"%igrp)
 					Tracker["this_data_list"]      = Tracker["two_way_stable_member"][igrp]
-					while not os.path.exists(Tracker["this_data_list_file"]):
-						#print  " my_id",myid
-						sleep(2)
-					mpi_barrier(MPI_COMM_WORLD)
-					data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+					data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"], Tracker["constants"]["partstack"], myid, main_node,nproc,preshift = True)
 					volref = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
 					ref_vol_list.append(volref)
 					number_of_ref_class.append(len(Tracker["this_data_list"]))
 				if myid ==main_node:
 					log_main.add("group  %d  members %d "%(igrp,len(Tracker["this_data_list"])))	
-				#ref_vol_list=apply_low_pass_filter(ref_vol_list,Tracker)
-				if myid ==main_node:
+					#ref_vol_list=apply_low_pass_filter(ref_vol_list,Tracker)
 					for iref in xrange(len(ref_vol_list)):
 						ref_vol_list[iref].write_image(os.path.join(workdir,"vol_stable.hdf"),iref)
 				mpi_barrier(MPI_COMM_WORLD)
@@ -1215,19 +1188,13 @@ def main():
 				if myid ==main_node:
 					vol_list = []
 				for igrp in xrange(number_of_groups):
-					class_file = os.path.join(outdir,"Class%d.txt"%igrp)
-					if os.path.exists(class_file):
-						if myid ==main_node:log_main.add("start vol   %d"%igrp)
-					while not os.path.exists(class_file):
-						#print  " my_id",myid
-						sleep(2)
-					mpi_barrier(MPI_COMM_WORLD)
-					data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+					if myid ==main_node: log_main.add("start vol   %d"%igrp)
+					data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 					volref          = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 					if myid ==main_node: 
 						vol_list.append(volref)
 						log_main.add(" vol   %d is done"%igrp)
-				Tracker["number_of_ref_class"]=number_of_ref_class
+				Tracker["number_of_ref_class"] = number_of_ref_class
 				mpi_barrier(MPI_COMM_WORLD)
 				generation +=1
 				#################################
@@ -1250,11 +1217,7 @@ def main():
 				mpi_barrier(MPI_COMM_WORLD)
 #############################################################################################################################
 			### reconstruct the unaccounted is only done once
-			if Tracker["constants"]["unaccounted"] and len(Tracker["this_unaccounted_list"])!=0:
-				while not os.path.exists(Tracker["this_unaccounted_text"]):
-					#print  " my_id",myid
-					sleep(2)
-				mpi_barrier(MPI_COMM_WORLD)
+			if Tracker["constants"]["unaccounted"] and (len(Tracker["this_unaccounted_list"]) != 0):
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],Tracker["this_unaccounted_text"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 				volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
@@ -1268,7 +1231,7 @@ def main():
 				number_of_groups = len(new_stable1)
 				log_main.add("----------------Exhaustive Kmeans------------------")
 				log_main.add("number_of_groups is %d"%number_of_groups)
-			else:number_of_groups=0
+			else:    number_of_groups=0
 			if myid == main_node:
 				final_list =[]
 				for alist in new_stable1:
@@ -1304,12 +1267,8 @@ def main():
 			number_of_ref_class = wrap_mpi_bcast(number_of_ref_class,main_node)
 			mpi_barrier(MPI_COMM_WORLD)
 			for igrp in xrange(number_of_groups):
-				while not os.path.exists(Tracker["this_unaccounted_text"]):
-					#print  " my_id",myid
-					sleep(2)
-				mpi_barrier(MPI_COMM_WORLD)
 				Tracker["this_data_list_file"] = os.path.join(workdir,"final_class%d.txt"%igrp)
-				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+				data,old_shifts = get_shrink_data_huang(Tracker, Tracker["nxinit"], Tracker["this_data_list_file"], Tracker["constants"]["partstack"], myid,main_node,nproc,preshift = True)
 				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
 				#if myid == main_node:
@@ -1342,32 +1301,27 @@ def main():
 		if Tracker["constants"]["mask3D"]: mask_3d = get_shrink_3dmask(Tracker["constants"]["nnxo"],Tracker["constants"]["mask3D"])
 		else: mask_3d = None
 		for igrp in xrange(len(reproduced_groups)):
-			name_of_class_file = os.path.join(masterdir, "P2_final_class%d.txt"%igrp)
-			#while not os.path.exists(name_of_class_file):
-			#	#print  " my_id",myid
-			#	sleep(2)
-			#mpi_barrier(MPI_COMM_WORLD)
-			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],name_of_class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],os.path.join(masterdir, "P2_final_class%d.txt"%igrp),Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 			#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 			if Tracker["constants"]["CTF"]: 
-				volref, fscc = rec3D_two_chunks_MPI(data,1.0,Tracker["constants"]["sym"],mask_3d,
-			 os.path.join(masterdir,"resolution_%02d.txt"%igrp),myid,main_node,index =-1,npad =2,finfo=None)
+				volref, fscc = rec3D_two_chunks_MPI(data,1.0,Tracker["constants"]["sym"],mask_3d, \
+									os.path.join(masterdir,"resolution_%02d.txt"%igrp),myid,main_node,index =-1,npad =2,finfo=None)
 			else: 
 				print "Missing CTF flag!"
 				from mpi import mpi_finalize
 				mpi_finalize()
 				exit()
 			mpi_barrier(MPI_COMM_WORLD)
-			fscc=read_text_file(os.path.join(masterdir,"resolution_%02d.txt"%igrp),-1)
-			nx_of_image=volref.get_xsize()
-			if Tracker["constants"]["PWadjustment"]:Tracker["PWadjustment"]=Tracker["PW_dict"][nx_of_image]
-			else:Tracker["PWadjustment"]=Tracker["constants"]["PWadjustment"]	
+			fscc = read_text_file(os.path.join(masterdir, "resolution_%02d.txt"%igrp),-1)
+			nx_of_image = volref.get_xsize()
+			if Tracker["constants"]["PWadjustment"]:	Tracker["PWadjustment"] = Tracker["PW_dict"][nx_of_image]
+			else:										Tracker["PWadjustment"] = Tracker["constants"]["PWadjustment"]	
 			try:
 				lowpass = search_lowpass(fscc)
-				falloff =.1
+				falloff = 0.1
 			except:
-				lowpass=.4
-				falloff=.1
+				lowpass= 0.4
+				falloff= 0.1
 			lowpass=round(lowpass,4)
 			falloff=round(min(.1,falloff),4)
 			Tracker["lowpass"]=lowpass
