@@ -405,7 +405,7 @@ def main():
 			log_main.add("the user provided enforced low_pass_filter is %f"%Tracker["constants"]["low_pass_filter"])
 			#log_main.add("equivalent to %f Angstrom resolution"%(Tracker["constants"]["pixel_size"]/Tracker["constants"]["low_pass_filter"]))
 			for index in xrange(2):
-				filt_tanl(get_im(os.path.join(masterdir,"vol%d.txt"%index)), Tracker["low_pass_filter"],Tracker["falloff"]).write_image(os.path.join(masterdir, "volf%d.hdf"%index))
+				filt_tanl(get_im(os.path.join(masterdir,"vol%01d.hdf"%index)), Tracker["low_pass_filter"],Tracker["falloff"]).write_image(os.path.join(masterdir, "volf%01d.hdf"%index))
 		mpi_barrier(MPI_COMM_WORLD)
 		from utilities import get_input_from_string
 		delta       = get_input_from_string(Tracker["constants"]["delta"])
