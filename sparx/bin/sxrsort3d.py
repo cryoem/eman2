@@ -708,13 +708,13 @@ def main():
 			list_to_be_processed = copy.deepcopy(leftover_list)
 			if myid == main_node :    new_stable1 =  copy.deepcopy(new_stable_P1)
 			total_stack   = len(list_to_be_processed) # This is the input from two P1 runs
-			#number_of_images_per_group = Tracker["constants"]["number_of_images_per_group"]
+			number_of_images_per_group = Tracker["constants"]["number_of_images_per_group"]
 			P2_run_dir = os.path.join(masterdir, "P2_run%d"%iter_P2_run)
 			if myid == main_node:
 				cmd="{} {}".format("mkdir",P2_run_dir)
 				os.system(cmd)
 				log_main.add("----------------P2 independent run %d--------------"%iter_P2_run)
-				log_main.add("user provided number_of_images_per_group %d"%Tracker["constants"]["number_of_images_per_group"])
+				log_main.add("user provided number_of_images_per_group %d"%number_of_images_per_group)
 			mpi_barrier(MPI_COMM_WORLD)
 			Tracker["number_of_groups"]                      = get_number_of_groups(total_stack,Tracker["constants"]["number_of_images_per_group"])
 			generation                                       = 0
