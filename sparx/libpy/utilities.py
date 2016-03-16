@@ -5752,14 +5752,14 @@ def get_sorting_params(Tracker,data):
 	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list,main_node)
 	return total_attr_value_list
 	
-def get_sorting_params_refine(Tracker,data):
+def get_sorting_params_refine(Tracker,data,ndata):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	from utilities import read_text_row,wrap_mpi_bcast,even_angles
 	from applications import MPI_start_end
 	myid      = Tracker["constants"]["myid"]
 	main_node = Tracker["constants"]["main_node"]
 	nproc     = Tracker["constants"]["nproc"]
-	ndata     = Tracker["total_stack"]
+	#ndata     = Tracker["total_stack"]
 	mpi_comm  = MPI_COMM_WORLD
 	if myid == main_node:
 		total_attr_value_list = []
@@ -5768,13 +5768,13 @@ def get_sorting_params_refine(Tracker,data):
 	else:
 		total_attr_value_list = 0
 	for inode in xrange(nproc):
-		attr_value_list =get_sorting_attr_stack(data)
-		attr_value_list =wrap_mpi_bcast(attr_value_list,inode)
-		if myid ==main_node:
-			image_start,image_end=MPI_start_end(ndata,nproc,inode)
-			total_attr_value_list=fill_in_mpi_list(total_attr_value_list,attr_value_list,image_start,image_end)		
+		attr_value_list = get_sorting_attr_stack(data)
+		attr_value_list = wrap_mpi_bcast(attr_value_list,inode)
+		if myid == main_node:
+			image_start,image_end = MPI_start_end(ndata,nproc,inode)
+			total_attr_value_list = fill_in_mpi_list(total_attr_value_list, attr_value_list, image_start,image_end)		
 		mpi_barrier(MPI_COMM_WORLD)
-	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list,main_node)
+	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list, main_node)
 	return total_attr_value_list
 	
 def parsing_sorting_params(sorting_params_list):
@@ -6589,6 +6589,7 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs,ad_hoc_number,log_main):
 def two_way_comparison_single(partition_A, partition_B,Tracker):
 	###############
 	from statistics import k_means_match_clusters_asg_new
+	two_way_comparison_single
 	total_stack = Tracker["constants"]["total_stack"]
 	log_main    = Tracker["constants"]["log_main"]
 	myid        = Tracker["constants"]["myid"]

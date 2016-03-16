@@ -21976,6 +21976,13 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		sleep(2)
 	mpi_barrier(MPI_COMM_WORLD)	
 	data, old_shifts    = get_shrink_data_huang(Tracker,Tracker["nxinit"],this_data_list_file,Tracker["constants"]["partstack"],myid, main_node, number_of_proc, preshift = True)
+	if myid ==main_node:
+		list_of_particles     = read_text_file(particle_list_file)
+		total_nima            =len(list_of_particles)
+	else:   total_nima        = 0
+	total_nima = bcast_number_to_all(total_nima,main_node)
+	
+	
 	from time import time	
 
 	if debug:
@@ -22059,8 +22066,6 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	mask2D     = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
 	total_nima = len(Tracker["this_data_list"])
 	nima       = len(data)
-	list_of_particles  = Tracker["this_data_list"]
-	Tracker["total_stack"]  = total_nima
     #####
 	if debug:
 		finfo.write( "Image_start, image_end: %d %d\n" %(image_start, image_end) )
@@ -22135,7 +22140,6 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		recvcount.append( ie - ib )
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
-	print(" place 1")
 
 	if(focus != None):
 		if(myid == main_node):
@@ -22304,16 +22308,15 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			if empty_group ==1:
 				terminate = 1
 		else:
-			ngroup = 0
-		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
-		terminate = int(terminate[0])
-		ngroup = wrap_mpi_bcast(ngroup,main_node)
+			ngroup  = 0
+		terminate   = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
+		terminate   = int(terminate[0])
+		ngroup      = wrap_mpi_bcast(ngroup,main_node)
 		empty_group = mpi_bcast(empty_group, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		empty_group = int(empty_group[0])
 		if empty_group ==1: break # program stops whenever empty_group appears!
 		if runtype=="REFINEMENT":
-			for im in xrange(nima):
-				data[im].set_attr('xform.projection', trans[im])
+			for im in xrange(nima):  data[im].set_attr('xform.projection', trans[im])
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
@@ -22458,7 +22461,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
 	"""
 	if myid == main_node:log.add("Kmref_ali3d_MPI is done!")
-	final_list = get_sorting_params_refine(Tracker,data)
+	final_list = get_sorting_params_refine(Tracker,data, total_nima)
 	group_list, ali3d_params_list = parsing_sorting_params(final_list)
 	res_groups = get_groups_from_partition(group_list, Tracker["this_data_list"], numref)
 	final_group_list, res_groups = remove_small_groups(res_groups, Tracker["constants"]["smallest_group"])
@@ -22551,11 +22554,19 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	from time import sleep
 	#Tracker["applyctf"] = True # 
 	data, old_shifts = get_shrink_data_huang(Tracker, Tracker["nxinit"], particle_list_file, partstack, myid,main_node,number_of_proc,preshift=True)
+	if myid ==main_node:
+		list_of_particles = read_text_file(particle_list_file)
+		total_nima        =len(list_of_particles)
+	else:
+		total_nima = 0
+	total_nima = bcast_number_to_all(total_nima,main_node)
+	
 	if myid == main_node:
 		if os.path.exists(outdir):  nx = 1
 		else:  nx = 0
 	else:  nx = 0
 	ny = bcast_number_to_all(nx, source_node = main_node)
+	#image_start, image_end = MPI_start_end(total_data,number_of_proc, myid)
 	
 	if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_iter", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -22593,7 +22604,6 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	rstep       = int(rs)
 	last_ring   = int(int(ou)*shrinkage+.5)
 	center      = int(center)
-	image_start, image_end = MPI_start_end(len(Tracker["this_data_list"]),number_of_proc, myid)
 	numref  = len(ref_list)
 	nx      = ref_list[0].get_xsize()
 	if last_ring < 0:last_ring = nx//2 - 2
@@ -22637,9 +22647,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	numr     = Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D   = model_circle(last_ring, nx, nx)
 	if(first_ring > 1):  mask2D -= model_circle(first_ring,nx,nx)
-	total_nima = len(Tracker["this_data_list"])
-	nima       = len(data)
-	list_of_particles  =Tracker["this_data_list"]
+	nima       = len(data) # local number of particles
+	
 	'''
 	if(myid == main_node):	
 		total_nima = EMUtil.get_image_count(stack)
@@ -22667,7 +22676,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	#  Here the assumption is that input are always volumes.  It should be most likely be changed so optionally these are group assignments.
 	#  Initialize Particle ID and set group number to non-existant -1
 	for im in xrange(nima):
-		data[im].set_attr_dict({'ID':list_of_particles[im], 'group':-1})
+		data[im].set_attr_dict({'group':-1})
 	if(myid == 0):
 		log.add( "Time to read data: %d" % (time()-start_time) );start_time = time()
 
@@ -23227,7 +23236,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			"""
 			if(myid == 0):log.add( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 		else:
-			final_list = get_sorting_params_refine(Tracker,data)
+			final_list = get_sorting_params_refine(Tracker,data, total_nima)
 			group_list, ali3d_params_list = parsing_sorting_params(final_list)
 			if myid ==main_node:
 				group_list_saved_file =os.path.join(outdir, "list2.txt")
