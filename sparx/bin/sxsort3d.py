@@ -528,7 +528,11 @@ def main():
 		vol_list = []
 		number_of_ref_class= []
 		for igrp in xrange(number_of_groups):
-			data,old_shifts = get_shrink_data_huang(Tracker, Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+			if( myid == main_node ):  npergroup = read_text_file()
+			else:  npergroup = []
+			npergroup = bcast_list_to_all(npergroup, myid, main_node )
+			
+			data,old_shifts = get_shrink_data_huang(Tracker, Tracker["constants"]["nnxo"], npergroup, Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 			vol_list.append(volref)
 
