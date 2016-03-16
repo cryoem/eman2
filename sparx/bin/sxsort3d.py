@@ -464,6 +464,8 @@ def main():
 			Tracker["this_data_list"] = list_to_be_processed
 			Tracker["total_stack"]   = len(Tracker["this_data_list"])
 			Tracker["this_particle_text_file"] = os.path.join(workdir,"independent_list_%03d.txt"%indep_run) # for get_shrink_data
+			if myid ==main_node:
+				write_text_file(Tracker["this_data_list"], Tracker["this_particle_text_file"])
 			mpi_barrier(MPI_COMM_WORLD)
 			outdir = os.path.join(workdir, "EQ_Kmeans%03d"%indep_run)
 			ref_vol = apply_low_pass_filter(ref_vol,Tracker)
