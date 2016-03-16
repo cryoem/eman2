@@ -358,17 +358,14 @@ def main():
 		### create two volumes to estimate resolution
 		if myid == main_node:
 			for index in xrange(2):
-				partids = os.path.join(masterdir,"chunk%01d.txt"%index)
-				write_text_file(chunk_list[index],partids)
+				write_text_file(chunk_list[index],os.path.join(masterdir,"chunk%01d.txt"%index))
 		mpi_barrier(MPI_COMM_WORLD)
 		vols = []
 		for index in xrange(2):
-			partids = os.path.join(masterdir,"chunk%01d.txt"%index)
-			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift=True)
+			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"], os.path.join(masterdir,"chunk%01d.txt"%index), Tracker["constants"]["partstack"],myid,main_node,nproc,preshift=True)
 			vol = recons3d_4nn_ctf_MPI(myid=myid, prjlist=data,symmetry=Tracker["constants"]["sym"], finfo=None)
 			if myid ==main_node:
-				vol_file_name = os.path.join(masterdir, "vol%d.hdf"%index)
-				vol.write_image(vol_file_name)
+				vol.write_image(os.path.join(masterdir, "vol%d.hdf"%index))
 			vols.append(vol)
 			mpi_barrier(MPI_COMM_WORLD)
 		if myid ==main_node:
@@ -491,7 +488,7 @@ def main():
 			Tracker["this_data_list"]      = Tracker["two_way_stable_member"][igrp]
 			Tracker["this_data_list_file"] = os.path.join(workdir,"stable_class%d.txt"%igrp)
 			if myid ==main_node:
-				write_text_file(Tracker["this_data_list"],Tracker["this_data_list_file"])
+				write_text_file(Tracker["this_data_list"], Tracker["this_data_list_file"])
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"], Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 			ref_vol_list.append(volref)
@@ -528,15 +525,14 @@ def main():
 		vol_list = []
 		number_of_ref_class= []
 		for igrp in xrange(number_of_groups):
-			if( myid == main_node ):  npergroup = read_text_file(os.path.join(outdir,"Class%d.txt"%igrp))
-			else:  npergroup = []
-			npergroup = bcast_list_to_all(npergroup, myid, main_node )
-			
-			data,old_shifts = get_shrink_data_huang(Tracker, Tracker["constants"]["nnxo"], npergroup, Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
+			data,old_shifts = get_shrink_data_huang(Tracker, Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 			vol_list.append(volref)
 
-			number_of_ref_class.append(len(npergroup))
+			if( myid == main_node ):  npergroup = len(read_text_file(os.path.join(outdir,"Class%d.txt"%igrp)))
+			else:  npergroup = 0
+			npergroup = bcast_number_to_all(npergroup, main_node )
+			number_of_ref_class.append(npergroup)
 
 		Tracker["number_of_ref_class"] = number_of_ref_class
 		mpi_barrier(MPI_COMM_WORLD)
@@ -596,12 +592,12 @@ def main():
 			do_two_way_comparison(Tracker)
 			###############################
 			ref_vol_list = []
-			number_of_ref_class=[]
+			number_of_ref_class = []
 			for igrp in xrange(len(Tracker["two_way_stable_member"])):
 				Tracker["this_data_list"]      = Tracker["two_way_stable_member"][igrp]
 				Tracker["this_data_list_file"] = os.path.join(workdir,"stable_class%d.txt"%igrp)
 				if myid ==main_node:
-					write_text_file(Tracker["this_data_list"],Tracker["this_data_list_file"])
+					write_text_file(Tracker["this_data_list"], Tracker["this_data_list_file"])
 				mpi_barrier(MPI_COMM_WORLD)
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
