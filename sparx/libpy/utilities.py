@@ -6462,5 +6462,398 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 	currentres          = round(currentres,2)	
 	Tracker["lowpass"]  = lowpass
 	Tracker["falloff"]  = falloff
+##### from RSORT
 
+def get_class_members(sort3d_dir):
+	import os
+	from utilities import read_text_file
+	maximum_generations = 100
+	maximum_groups      = 100
+	class_list = []
+	for igen in xrange(maximum_generations):
+		gendir =os.path.join(sort3d_dir,"generation%03d"%igen)
+		if os.path.exists(gendir):
+			for igrp in xrange(maximum_groups):
+				Class_file=os.path.join(gendir,"Kmref/Class%d.txt"%igrp)
+				if os.path.exists(Class_file):
+					class_one=read_text_file(Class_file)
+					class_list.append(class_one)
+				else:
+					break
+		else:
+			break
+	return class_list
+
+def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
+	new_class  = []
+	final_list = []
+	for one_class in class_list:
+		if len(one_class)>=minimum_number_of_objects_in_a_group:
+			new_class.append(one_class)  
+			for element in one_class:
+				final_list.append(element)
+	final_list.sort()
+	return final_list, new_class
 	
+def get_number_of_groups(total_particles,number_of_images_per_group):
+	#minimum_number_of_members = 1000
+	number_of_groups=float(total_particles)/number_of_images_per_group
+	if number_of_groups - int(number_of_groups)<.4:number_of_groups = int(number_of_groups)
+	else:number_of_groups = int(number_of_groups)+1
+	return number_of_groups
+	
+def get_stable_members_from_two_runs(SORT3D_rootdirs,ad_hoc_number,log_main):
+	#SORT3D_rootdirs                       =sys.argv[1]
+	########
+	from string import split
+	from statistics import k_means_match_clusters_asg_new
+	sort3d_rootdir_list=split(SORT3D_rootdirs)
+	dict1              =[]
+	maximum_elements   = 0
+	for index_sort3d in xrange(len(sort3d_rootdir_list)):
+		sort3d_dir       = sort3d_rootdir_list[index_sort3d]
+		all_groups       = get_class_members(sort3d_dir)
+		dict1.append(all_groups)
+		if maximum_elements <len(all_groups):
+			maximum_elements = len(all_groups)
+	TC =ad_hoc_number+1
+	for indep in xrange(len(dict1)):
+		alist=dict1[indep] 
+		while len(alist)<maximum_elements:
+			alist.append([TC])
+			TC +=1
+		dict1[indep]=alist
+		TC +=1
+	for a in dict1:log_main.add(len(a))
+	dict = {}
+	for index_sort3d in xrange(len(sort3d_rootdir_list)):
+		sort3d_dir       = sort3d_rootdir_list[index_sort3d]
+		dict[sort3d_dir] = dict1[index_sort3d]
+	###### Conduct two-way comparison
+	from numpy import array
+	from statistics import k_means_match_clusters_asg_new
+	for isort3d in xrange(0,1): #len(sort3d_rootdir_list)):
+		li = dict[sort3d_rootdir_list[isort3d]]
+		new_li = []
+		for ili in xrange(len(li)):
+			li[ili].sort()
+			t= array(li[ili],'int32')
+			new_li.append(t)
+		avg_list = {}
+		total    = {}
+		for ii in xrange(len(li)):
+			avg_list[ii]=0.0
+			total[ii]=0.0
+		for jsort3d in xrange(len(sort3d_rootdir_list)):
+			if isort3d !=jsort3d:
+				new_lj = []
+				lj = dict[sort3d_rootdir_list[jsort3d]]
+				for a in lj:
+					log_main.add("the size is  %d"%len(a))
+				for jlj in xrange(len(lj)):
+					lj[jlj].sort()
+					t= array(lj[jlj],'int32')
+					new_lj.append(t)
+				ptp=[new_li,new_lj]
+				newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[0],ptp[1])
+				log_main.add("*************************************************************")
+				log_main.add("the results of two P1 runs are: ")
+				for index in xrange(len(newindeces)):
+					log_main.add("  %d of %s matches  %d of %s"%(newindeces[index][0],sort3d_rootdir_list[isort3d],newindeces[index][1],sort3d_rootdir_list[jsort3d]))
+				for index in xrange(len(list_stable)):
+					log_main.add("%d   stable memebers"%len(list_stable[index]))
+				#print newindeces, sort3d_rootdir_list[isort3d],sort3d_rootdir_list[jsort3d]
+				#print "nb_tot_objs", nb_tot_objs/10001.*100.
+				#print len(list_stable), len(newindeces)
+				new_stable = []
+				for ilist in xrange(len(list_stable)):
+					if len(list_stable[ilist])!=0:
+						new_stable.append(list_stable[ilist])
+				for istable in xrange(len(new_stable)):
+					stable = new_stable[istable]
+					if len(stable)>0: 
+						group_A =  li[newindeces[istable][0]]
+						group_B =  lj[newindeces[istable][1]]
+						#write_text_file(stable,"stable_%d_members%d.txt"%(jsort3d,istable))
+						log_main.add(" %d %d %d   "%(len(group_A),len(group_B),len(stable)))
+						#write_text_file(group_A,"stable_%d_members%d_group%d.txt"%(jsort3d,istable,newindeces[istable][0]))
+						#write_text_file(group_B,"stable_%d_members%d_group%d.txt"%(jsort3d,istable,newindeces[istable][1]))
+				#for index_of_matching in xrange(len(newindeces)):
+				#	avg_list[newindeces[index_of_matching][0]] +=len(list_stable[newindeces[index_of_matching][0]])
+				#	total[newindeces[index_of_matching][0]] += len(li[newindeces[index_of_matching][0]])#+len(lj[newindeces[index_of_matching][1]])
+		return new_stable
+		
+def two_way_comparison_single(partition_A, partition_B,Tracker):
+	###############
+	from statistics import k_means_match_clusters_asg_new
+	total_stack = Tracker["constants"]["total_stack"]
+	log_main    = Tracker["constants"]["log_main"]
+	myid        = Tracker["constants"]["myid"]
+	main_node   = Tracker["constants"]["main_node"]
+	numpy32_A = []
+	numpy32_B = []
+	total_A = 0
+	total_B = 0
+	if myid==main_node:
+		log_main.add(" the first run has number of particles %d"%len(partition_A))
+		log_main.add(" the second run has number of particles %d"%len(partition_B))
+	for A in partition_A:
+		total_A +=len(A)
+	for B in partition_B:
+		total_B +=len(B)
+	nc_zero = 1
+	if len(partition_A) < len(partition_B):
+		while len(partition_A) <len(partition_B):
+			partition_A.append([nc_zero+total_stack])
+			nc_zero +=1
+	elif len(partition_A) > len(partition_B):
+		while len(partition_B) <len(partition_A):
+			partition_B.append([nc_zero+total_stack])
+			nc_zero +=1
+	number_of_class=len(partition_A)
+	for index_of_class in xrange(number_of_class):
+		A = partition_A[index_of_class]
+		A.sort()
+		A= array(A,'int32')
+		numpy32_A.append(A)
+		B= partition_B[index_of_class]
+		B.sort()
+		B = array(B,'int32')
+		numpy32_B.append(B)
+		if myid ==main_node:
+			log_main.add("group %d  %d   %d"%(index_of_class,len(A), len(B))) 
+	ptp=[[],[]]
+	ptp[0]=numpy32_A
+	ptp[1]=numpy32_B
+	newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[0],ptp[1])
+	if myid == main_node:
+		log_main.add(" reproducible percentage of the first partition %f"%(nb_tot_objs/float(total_A)*100.))
+		log_main.add(" reproducible percentage of the second partition %f"%(nb_tot_objs/float(total_B)*100.))
+		for index in xrange(len(newindexes)):
+			log_main.add("%d of A match %d of B "%(newindexes[index][0],newindexes[index][1]))
+		for index in xrange(len(list_stable)):
+			log_main.add("%d number of reproduced objects are found in group %d"%(len(list_stable[index]),index))
+		log_main.add(" %d number of objects are reproduced "%nb_tot_objs)
+		log_main.add(" margin of error")
+	large_stable = []
+	for index_of_stable in xrange(len(list_stable)):
+		rate1,rate2,size_of_this_group = count_chunk_members(Tracker["chunk_dict"],list_stable[index_of_stable])
+		if size_of_this_group>=Tracker["constants"]["smallest_group"]:
+			error                          = margin_of_error(Tracker["P_chunk0"],size_of_this_group)
+			if myid ==main_node:
+				log_main.add(" chunk0  lower bound %f  upper bound  %f  for sample size  %d"%((Tracker["P_chunk0"]-error),(Tracker["P_chunk0"]+error),size_of_this_group))
+				log_main.add(" actual percentage is %f"%rate1)
+			large_stable.append(list_stable[index_of_stable])
+		else:
+			if myid==main_node:
+				log_main.add("%d  group is too small"%index_of_stable)
+	return large_stable
+	
+def get_leftover_from_stable(stable_list, N_total,smallest_group):
+	tmp_dict={}
+	for i in xrange(N_total):
+		tmp_dict[i]=i
+	new_stable =[]
+	for alist in stable_list:
+		if len(alist)>smallest_group:
+			for index_of_list in xrange(len(alist)):
+				del tmp_dict[alist[index_of_list]]
+			new_stable.append(alist)
+	leftover_list = []
+	for one_element in tmp_dict:
+		leftover_list.append(one_element)
+	return leftover_list, new_stable
+
+def get_initial_ID(part_list, full_ID_dict):
+	part_initial_id_list = []
+	new_dict = {}
+	for iptl in xrange(len(part_list)):
+		id = full_ID_dict[part_list[iptl]]
+		part_initial_id_list.append(id)
+		new_dict[iptl] = id
+	return part_initial_id_list, new_dict
+		
+def Kmeans_exhaustive_run(ref_vol_list,Tracker):
+	from applications import ali3d_mref_Kmeans_MPI
+	from utilities import write_text_file
+	from reconstruction import rec3D_two_chunks_MPI
+	from morphology import get_shrink_3dmask
+	from utilities import wrap_mpi_bcast
+	import os
+	from mpi import MPI_COMM_WORLD, mpi_barrier
+	# npad is 2
+	npad                  = 2
+	myid                  = Tracker["constants"]["myid"]
+	main_node             = Tracker["constants"]["main_node"]
+	log_main              = Tracker["constants"]["log_main"]
+	nproc                 = Tracker["constants"]["nproc"]
+	final_list_text_file  = Tracker["this_data_list_file"]
+	snr  =1.
+	Tracker["total_stack"]= len(Tracker["this_data_list"])
+	if myid ==main_node:
+		log_main.add("start exhaustive Kmeans")
+		log_main.add("total data is %d"%len(Tracker["this_data_list"]))
+		log_main.add("final list file is "+final_list_text_file)
+	workdir = Tracker["this_dir"]
+	empty_group = 1
+	kmref =0
+	while empty_group ==1 and kmref<=5:
+		if myid ==main_node:
+			log_main.add(" %d     Kmref run"%kmref) 
+		outdir =os.path.join(workdir, "Kmref%d"%kmref)
+		empty_group, res_classes, data_list = ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,final_list_text_file,Tracker)
+		kmref +=1
+		if empty_group ==1:
+			if myid ==main_node:
+				log_main.add("empty gorup appears, next round of Kmeans requires rebuilding reference volumes!")
+				log_main.add(" the number of classes for next round before cleaning is %d"%len(res_classes))
+			final_list   = []
+			new_class    = []
+			for a in res_classes:
+				if len(a)>=Tracker["constants"]["smallest_group"]:
+					for b in a:
+						final_list.append(b)
+					new_class.append(a)
+			final_list.sort()
+			Tracker["total_stack"]    = len(final_list)
+			Tracker["this_data_list"] = final_list
+			final_list_text_file = os.path.join(workdir, "final_list%d.txt"%kmref)
+			if myid == main_node:
+				log_main.add("number of classes for next round is %d"%len(new_class))
+				write_text_file(final_list, final_list_text_file)
+			mpi_barrier(MPI_COMM_WORLD)
+			if myid == main_node:
+				number_of_ref_class = []
+				for igrp in xrange(len(new_class)):
+					class_file =os.path.join(workdir,"final_class%d.txt"%igrp)
+					write_text_file(new_class[igrp],class_file)
+					number_of_ref_class.append(len(new_class[igrp]))
+			else:
+				number_of_ref_class = 0
+			number_of_ref_class = wrap_mpi_bcast(number_of_ref_class,main_node)
+			mpi_barrier(MPI_COMM_WORLD)
+			ref_vol_list = []
+			if  Tracker["constants"]["mask3D"]: mask3D = get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
+			else: mask3D =None
+			Tracker["number_of_ref_class"] = number_of_ref_class
+			for igrp in xrange(len(new_class)):
+				class_file = os.path.join(workdir,"final_class%d.txt"%igrp)
+				while not os.path.exists(class_file):
+					#print  " my_id",myid
+					sleep(2)
+				mpi_barrier(MPI_COMM_WORLD)
+				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+				#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
+				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
+				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
+			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)),myid,main_node,index=-1,npad=npad,finfo=None)
+				ref_vol_list.append(volref)
+				mpi_barrier(MPI_COMM_WORLD)
+		else:
+			new_class    = []
+			for a in res_classes:
+				if len(a)>=Tracker["constants"]["smallest_group"]:new_class.append(a)
+	if myid==main_node:
+		log_main.add("Exhaustive Kmeans ends")
+		log_main.add(" %d groups are selected out"%len(new_class))
+	return new_class 
+	
+			
+def print_a_line_with_timestamp(string_to_be_printed ):                 
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+ 	print(line,string_to_be_printed)
+	return string_to_be_printed
+		
+def split_a_group(workdir,list_of_a_group,Tracker):
+	### Using EQ-Kmeans and Kmeans to split a group
+	from utilities import wrap_mpi_bcast
+	from random import shuffle
+	from mpi import MPI_COMM_WORLD, mpi_barrier
+	from utilities import get_shrink_data_huang 
+	from reconstructions import recons3d_4nn_ctf_MPI
+	from filter import filt_tanl
+	from applications import mref_ali3d_EQ_Kmeans
+	################
+	myid        = Tracker["constants"]["myid"]
+	main_node   = Tracker["constants"]["main_node"]
+	nproc       = Tracker["constants"]["nproc"]
+	total_stack = len(list_of_a_group)
+	################
+	import copy
+	data_list = copy.deepcopy(list_of_a_group)
+	update_full_dict(data_list,Tracker)
+	this_particle_text_file = os.path.join(workdir,"full_class.txt")
+	if myid ==main_node:
+		write_text_file(data_list,"full_class.txt")
+	# Compute the resolution of leftover 
+	if myid ==main_node:
+		shuffle(data_list)
+		l1=data_list[0:total_stack//2]
+		l2=data_list[total_stack//2:]
+		l1.sort()
+		l2.sort()
+	else:
+		l1 = 0
+		l2 = 0
+	l1 = wrap_mpi_bcast(l1, main_node)
+	l2 = wrap_mpi_bcast(l2, main_node)
+	llist = []
+	llist.append(l1)
+	llist.append(l2)
+	if myid ==main_node:
+		for index in xrange(2): 
+			partids = os.path.join(workdir,"Class_%d.txt"%index)
+			write_text_file(llist[index],partids)
+	mpi_barrier(MPI_COMM_WORLD)
+	################ create references for EQ-Kmeans
+	ref_list = []
+	for index in xrange(2):
+		partids = os.path.join(workdir,"Class_%d.txt"%index)
+		while not os.path.exists(partids):
+			#print  " my_id",myid
+			sleep(2)
+		mpi_barrier(MPI_COMM_WORLD)
+		data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist = data,symmetry=Tracker["constants"]["sym"],finfo=None)
+		vol = filt_tanl(vol,Tracker["constants"]["low_pass_filter"],.1)
+		ref_list.append(vol)
+	mpi_barrier(MPI_COMM_WORLD)
+	### EQ-Kmeans
+	outdir = os.path.join(workdir,"EQ-Kmeans")
+	mref_ali3d_EQ_Kmeans(ref_list,outdir,this_particle_text_file,Tracker)
+	res_EQ = partition_to_groups(Tracker["this_partition"],K=2)
+	new_class = []
+	for index in xrange(len(res_EQ)):
+		new_ID, new_dict = get_initial_ID(res_EQ(index),Tracker["full_ID_dict"])
+		new_class.append(new_ID)
+		if myid ==main_node:
+			new_class_file = os.path.join(workdir,"new_class%d.txt"%index)
+			write_text_file(new_ID,new_class_file)
+	mpi_barrier(MPI_COMM_WORLD)
+	############# create references for Kmeans
+	ref_list = []
+	for index in xrange(2):
+		partids = os.path.join(workdir,"new_class%d.txt"%index)
+		while not os.path.exists(partids):
+			#print  " my_id",myid
+			sleep(2)
+		mpi_barrier(MPI_COMM_WORLD)
+		data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist = data,symmetry=Tracker["constants"]["sym"],finfo=None)
+		vol = filt_tanl(vol,Tracker["constants"]["low_pass_filter"],.1)
+		ref_list.append(vol)
+	mpi_barrier(MPI_COMM_WORLD)
+	#### Kmeans
+	
+def search_lowpass(fsc):
+	fcutoff =.5
+	for i in xrange(len(fsc[1])):
+		if fsc[0][i]<.5:
+			break
+	if i<len(fsc[1])-1:
+		fcutoff=fsc[0][i-1]
+	else:
+		fcutoff=.5
+	fcutoff=min(.45,fcutoff)
+	return fcutoff
+#####---------------------------------------------------
