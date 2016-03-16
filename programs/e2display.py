@@ -250,7 +250,7 @@ def plot(files,app):
 	from emplot2d import EMPlot2DWidget
 	plotw=EMPlot2DWidget(application=app)
 	for f in files:
-		plotw.set_data_from_file(f)
+		plotw.set_data_from_file(f,quiet=True)
 	plotw.setWindowTitle("2D Plot")
 	app.show_specific(plotw)
 	return plotw

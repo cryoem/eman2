@@ -260,7 +260,7 @@ class EMPlot2DWidget(EMGLWidget):
 			self.inspector.datachange()
 		return self.inspector
 
-	def set_data_from_file(self,filename,replace=False):
+	def set_data_from_file(self,filename,replace=False,quiet=False):
 		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
 		self.del_shapes()
 
@@ -280,7 +280,7 @@ class EMPlot2DWidget(EMGLWidget):
 				l = [i for i in range(im.get_size())]
 				k = im.get_data_as_vector()
 				if self.data.has_key(filename) : filename="{}.{}".format(filename,len(self.data))
-				self.set_data([l,k],filename)
+				self.set_data([l,k],filename,quiet=quiet)
 			elif im[0].get_attr_default("isvector",0):
 #				all=[i.get_data_as_vector() for i in im]
 
@@ -290,12 +290,12 @@ class EMPlot2DWidget(EMGLWidget):
 					for i in range(len(im)):
 						r.append(im[i][j,0])
 					all.append(r)
-				self.set_data(all,vecset)
+				self.set_data(all,vecset,quiet=quiet)
 			else:
 				for idx,image in enumerate(im):
 					l = [i for i in range(image.get_size())]
 					k = image.get_data_as_vector()
-					self.set_data([l,k],filename+":"+str(idx))
+					self.set_data([l,k],filename+":"+str(idx),quiet=quiet)
 
 		elif file_type == 'fp':
 			fin=file(filename)
@@ -306,7 +306,7 @@ class EMPlot2DWidget(EMGLWidget):
 			for i in range(nx):
 				data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
 
-			self.set_data(data,filename)
+			self.set_data(data,filename,quiet=quiet)
 		else:
 			try:
 				fin=file(filename)
@@ -319,7 +319,7 @@ class EMPlot2DWidget(EMGLWidget):
 				ny=len(rdata)
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
 
-				self.set_data(data,remove_directories_from_name(filename,1))
+				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet)
 			except:
 				traceback.print_exc()
 				print "couldn't read",filename
@@ -612,18 +612,25 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		self.updateGL()
 
-	def setAxes(self,key,xa,ya=-1,za=-2,sa=-2):
+	def setAxes(self,key,xa,ya=-1,za=-2,sa=-2,quiet=False):
 		if self.axes[key]==(xa,ya,za,sa) : return
 		self.axes[key]=(xa,ya,za,sa)
 		self.autoscale(True)
 		self.needupd=1
-		self.updateGL()
+		if not quiet : self.updateGL()
 
-	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize):
+	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False):
+		if color==None : color=self.pparm[key][0]
+		if line==None : line=self.pparm[key][1]
+		if linetype==None : linetype=self.pparm[key][2]
+		if linewidth==None : linewidth=self.pparm[key][3]
+		if sym==None : sym=self.pparm[key][4]
+		if symtype==None : symtype=self.pparm[key][5]
+		if symsize==None : symsize=self.pparm[key][6]
 		if self.pparm[key]==(color,line,linetype,linewidth,sym,symtype,symsize) : return
 		self.pparm[key]=(color,line,linetype,linewidth,sym,symtype,symsize)
 		self.needupd=1
-		self.updateGL()
+		if not quiet: self.updateGL()
 
 	def add_shape(self,k,s):
 		"""Add a 'shape' object to be overlaid on the image. Each shape is
@@ -1580,6 +1587,12 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl.setMargin(2)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
+		
+		vbl3 = QtGui.QVBoxLayout()
+		vbl3.setMargin(0)
+		vbl3.setSpacing(6)
+		vbl3.setObjectName("vbl3")
+		hbl.addLayout(vbl3)
 
 		# plot list
 		self.setlist=DragListWidget(self)
@@ -1588,8 +1601,37 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
-		hbl.addWidget(self.setlist)
+		vbl3.addWidget(self.setlist)
 
+		# none and all buttons for turning plot display on and off
+		hbl6 = QtGui.QHBoxLayout()
+		hbl.setObjectName("hbl6")
+		vbl3.addLayout(hbl6)
+		
+		self.nonebut=QtGui.QPushButton(self)
+		self.nonebut.setText("None")
+		hbl6.addWidget(self.nonebut)
+		
+		self.allbut=QtGui.QPushButton(self)
+		self.allbut.setText("All")
+		hbl6.addWidget(self.allbut)
+
+		# Slider for moving within the range
+		self.showslide=ValSlider(self,(0,5),"Sel1:",0,30)
+		self.showslide.setIntonly(1)
+		vbl3.addWidget(self.showslide)
+
+		# number and step for the slider
+		hbl7 = QtGui.QHBoxLayout()
+		hbl.setObjectName("hbl7")
+		vbl3.addLayout(hbl7)
+		
+		self.nbox=ValBox(label="ns:",value=1)
+		hbl7.addWidget(self.nbox)
+		
+		self.stepbox=ValBox(label="stp:",value=1)
+		hbl7.addWidget(self.stepbox)
+		
 		vbl = QtGui.QVBoxLayout()
 		vbl.setMargin(0)
 		vbl.setSpacing(6)
@@ -1814,22 +1856,26 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.busy=0
 		self.classwin=None
 
+		QtCore.QObject.connect(self.showslide, QtCore.SIGNAL("valueChanged"), self.selSlide)
+		QtCore.QObject.connect(self.allbut, QtCore.SIGNAL("clicked()"), self.selAll)
+		QtCore.QObject.connect(self.nonebut, QtCore.SIGNAL("clicked()"), self.selNone)
+		
 		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slides, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
-		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlotColor)
 		QtCore.QObject.connect(self.classb,QtCore.SIGNAL("clicked()"),self.openClassWin)
 		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
-		QtCore.QObject.connect(self.symsize,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
+		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlotSymsel)
+		QtCore.QObject.connect(self.symsize,QtCore.SIGNAL("valueChanged(int)"),self.updPlotSymsize)
 		QtCore.QObject.connect(self.xlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.ylogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.lintog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.linsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
-		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
+		QtCore.QObject.connect(self.linsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlotLinsel)
+		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlotLinwid)
 		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.saveb,QtCore.SIGNAL("clicked()"),self.savePlot)
@@ -1848,6 +1894,30 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.newSet(0)
 		self.datachange()
 		self.resize(500,540)
+
+	def selSlide(self,val):
+		rngn0=int(val)
+		rngn1=int(self.nbox.getValue())
+		rngstp=int(self.stepbox.getValue())
+		rng=range(rngn0,rngn0+rngstp*rngn1,rngstp)
+		for i,k in enumerate(sorted(self.target().visibility.keys())) :
+			self.target().visibility[k]=i in rng
+		self.target().full_refresh()
+		self.target().updateGL()
+		self.datachange()
+		
+	def selAll(self):
+		for k in self.target().visibility.keys() : self.target().visibility[k]=True
+		self.target().full_refresh()
+		self.target().updateGL()
+		self.datachange()
+		
+	def selNone(self):
+		for k in self.target().visibility.keys() : self.target().visibility[k]=False
+		self.target().full_refresh()
+		self.target().updateGL()
+		self.datachange()
+		
 
 	def openClassWin(self):
 		"""This launches a separate window for classifying points in a 2-D plot"""
@@ -1985,10 +2055,71 @@ class EMPlot2DInspector(QtGui.QWidget):
 		else : xl="linear"
 		if self.ylogtog.isChecked() : yl="log"
 		else : yl="linear"
+		names = [str(item.text()) for item in self.setlist.selectedItems()]
 		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl)
 		self.target().autoscale(True)
-		self.target().setPlotParms(str(self.setlist.currentItem().text()),self.color.currentIndex(),self.lintog.isChecked(),
+		if len(names)==1:
+			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
 				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+		else:
+			for name in names:
+				self.target().setPlotParms(name,None,self.lintog.isChecked(),None,None,self.symtog.isChecked(),None,None,True)
+			self.target().updateGL()
+
+	def updPlotColor(self,s=None):
+		if self.quiet : return
+		names = [str(item.text()) for item in self.setlist.selectedItems()]
+		if len(names)==1:
+			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+		else:
+			for name in names:
+				self.target().setPlotParms(name,self.color.currentIndex(),None,None,None,None,None,None,True)
+			self.target().updateGL()
+
+	def updPlotSymsel(self,s=None):
+		if self.quiet : return
+		names = [str(item.text()) for item in self.setlist.selectedItems()]
+		if len(names)==1:
+			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+		else:
+			for name in names:
+				self.target().setPlotParms(name,None,None,None,None,None,self.symsel.currentIndex(),None,True)
+			self.target().updateGL()
+
+	def updPlotSymsize(self,s=None):
+		if self.quiet : return
+		names = [str(item.text()) for item in self.setlist.selectedItems()]
+		if len(names)==1:
+			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+		else:
+			for name in names:
+				self.target().setPlotParms(name,None,None,None,None,None,None,self.symsize.value(),True)
+			self.target().updateGL()
+
+	def updPlotLinsel(self,s=None):
+		if self.quiet : return
+		names = [str(item.text()) for item in self.setlist.selectedItems()]
+		if len(names)==1:
+			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+		else:
+			for name in names:
+				self.target().setPlotParms(name,None,None,self.linsel.currentIndex(),None,None,None,None,True)
+			self.target().updateGL()
+
+	def updPlotLinwid(self,s=None):
+		if self.quiet : return
+		names = [str(item.text()) for item in self.setlist.selectedItems()]
+		if len(names)==1:
+			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+		else:
+			for name in names:
+				self.target().setPlotParms(name,None,None,None,self.linwid.value(),None,None,None,True)
+			self.target().updateGL()
 
 	def newSet(self,row):
 		self.quiet=1
@@ -2023,7 +2154,12 @@ class EMPlot2DInspector(QtGui.QWidget):
 	def newCols(self,val):
 		if self.target and not self.quiet:
 #			print "newcols",self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value()
-			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value())
+			names = [str(item.text()) for item in self.setlist.selectedItems()]
+			for name in names:
+				self.target().setAxes(name,self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value(),True)
+			self.target().updateGL()
+				
+#			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value())
 
 	def newLimits(self,val=None):
 		if self.busy: return
@@ -2114,6 +2250,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 			self.setlist.addItem(a)
 
 		if len(keys) > 0 : self.setlist.setCurrentRow(0)
+		self.showslide.setRange(0,len(keys))
 
 	def list_item_changed(self,item):
 		checked = False
