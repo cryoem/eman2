@@ -22542,7 +22542,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	####################################################
 	from time import sleep
 	#Tracker["applyctf"] = True # 
-	data, old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], particle_list_file, partstack, myid,main_node,number_of_proc,preshift=True)
+	data, old_shifts = get_shrink_data_huang(Tracker, Tracker["nxinit"], particle_list_file, partstack, myid,main_node,number_of_proc,preshift=True)
 	if myid == main_node:
 		if os.path.exists(outdir):  nx = 1
 		else:  nx = 0

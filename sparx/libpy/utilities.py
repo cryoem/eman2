@@ -6293,24 +6293,24 @@ def get_stat_proj(Tracker,delta,this_ali3d):
 	return sampled
 	
 def create_random_list(Tracker):
+	import copy
 	import random
+	from utilities import wrap_mpi_bcast
+
 	myid        = Tracker["constants"]["myid"]
 	main_node   = Tracker["constants"]["main_node"]
 	total_stack = Tracker["total_stack"]
-	from utilities import wrap_mpi_bcast
-	indep_list  =[]
-	import copy
-	SEED= Tracker["constants"]["seed"]
-	if SEED ==-1:
-		random.seed()
-	else:
-		random.seed(SEED)
+
+	if Tracker["constants"]["seed"] ==- 1: random.seed()
+	else:                                  random.seed(Tracker["constants"]["seed"])
+
+	indep_list  = []
 	for irandom in xrange(Tracker["constants"]["indep_runs"]):
-		ll=copy.copy(Tracker["this_data_list"])
+		ll = copy.copy(Tracker["this_data_list"])
 		random.shuffle(ll)
 		ll = wrap_mpi_bcast(ll, main_node)
 		indep_list.append(ll)
-	Tracker["this_indep_list"]=indep_list
+	Tracker["this_indep_list"] = indep_list
 	
 def get_number_of_groups(total_particles,number_of_images_per_group, round_off=.2):
 	number_of_groups=float(total_particles)/number_of_images_per_group
