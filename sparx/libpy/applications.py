@@ -22542,9 +22542,9 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	Tracker["lowpass"]  = Tracker["low_pass_filter"]
 	Tracker["falloff"]  = .1
 	if Tracker["constants"]["PWadjustment"]:
-		Tracker["PWadjustment"]=Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
+		Tracker["PWadjustment"] = Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
 	else:
-		Tracker["PWadjustment"]=None	
+		Tracker["PWadjustment"] = None	
 	####################################################
 	from time import sleep
 	#Tracker["applyctf"] = True # 
@@ -22730,7 +22730,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		if(myid == main_node):
 			focus = get_shrink_3dmask(Tracker["nxinit"], focus)
 		else:
-			focus =  model_blank(nx, nx, nx)
+			focus =  model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 		bcast_EMData_to_all(focus, myid, main_node)
 		st = Util.infomask(focus, None, True)
 		if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
@@ -23241,6 +23241,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			write_text_file(group_list,group_list_saved_file)
 		mpi_barrier(MPI_COMM_WORLD)
 		Tracker["this_partition"]=group_list
+	### program finishes
+	if myid ==main_node:  log.add(" mref_ali3d_EQ_Kmeans finishes !")
 		
 ######
  
