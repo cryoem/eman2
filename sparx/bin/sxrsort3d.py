@@ -460,8 +460,6 @@ def main():
 			if(orgstack[:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
 			cmdexecute(cmd)
-			cmd = "{} {}".format("sxheader.py   --params=originalid", Tracker["constants"]["stack"])
-			cmdexecute(cmd)
 			cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
 			cmdexecute(cmd)
 			#keepchecking = False
@@ -754,17 +752,18 @@ def main():
 				###--------------------------------------------
 				##### ----------------independent runs for EQ-Kmeans  ------------------------------------
 				for indep_run in xrange(Tracker["constants"]["indep_runs"]):
+					print "!!!!!!!!!!!!!!!!!!!! come into EQ!"
 					Tracker["this_particle_list"] = Tracker["this_indep_list"][indep_run]
 					ref_vol = recons_mref(Tracker)
 					if myid ==main_node:
 						log_main.add("independent run  %10d"%indep_run)
 					mpi_barrier(MPI_COMM_WORLD)
-					this_particle_text_file = os.path.join(workdir, "independent_list_%03d.txt"%indep_run) # for get_shrink_data
+					#this_particle_text_file =  # for get_shrink_data
 					if myid ==main_node:
-						write_text_file(list_to_be_processed, this_particle_text_file)
+						write_text_file(list_to_be_processed, os.path.join(workdir, "independent_list_%03d.txt"%indep_run))
 					from time import sleep
-					#ref_vol= apply_low_pass_filter(ref_vol,Tracker)
-					mref_ali3d_EQ_Kmeans(ref_vol, os.path.join(workdir, "EQ_Kmeans%03d"%indep_run), this_particle_text_file, Tracker)
+				
+					mref_ali3d_EQ_Kmeans(ref_vol, os.path.join(workdir, "EQ_Kmeans%03d"%indep_run), os.path.join(workdir, "independent_list_%03d.txt"%indep_run), Tracker)
 					partition_dict[indep_run] = Tracker["this_partition"]
 					del ref_vol
 					Tracker["partition_dict"]    = partition_dict
