@@ -22360,8 +22360,6 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			else:   volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			if myid == main_node:
 				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
-
-			if myid == main_node:
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 				if fourvar and runtype=="REFINEMENT": sumvol += volref
 			else:
@@ -22374,6 +22372,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			highres.append(int(res*Tracker["nxinit"]+ 0.5))
 
 			if myid == main_node:
+				log.add("%d  low pass filter   %f %f  %d"%(iref,Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
 				refdata    = [None]*4
 				refdata[0] = volref
 				refdata[1] = Tracker
@@ -22455,12 +22454,10 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	final_group_list, res_groups = remove_small_groups(res_groups, Tracker["constants"]["smallest_group"])
 	if myid ==main_node:
 		nc = 0
-		group_list_saved_file =os.path.join(outdir,"list2.txt")
-		write_text_file(group_list,group_list_saved_file)
+		write_text_file(group_list, os.path.join(outdir,"list2.txt"))
 		for igrp in xrange(len(res_groups)):
 			if len(res_groups[igrp])>0:
-				saved_file = os.path.join(outdir,"Class%d.txt"%nc)
-				write_text_file(res_groups[igrp],saved_file)
+				write_text_file(res_groups[igrp], os.path.join(outdir,"Class%d.txt"%nc))
 				nc +=1
 	mpi_barrier(MPI_COMM_WORLD)
 	Tracker["this_partition"]=final_list
@@ -22468,7 +22465,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 ##########################
 
 
-def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
+def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
 	from utilities      import  bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
@@ -22544,12 +22541,8 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 		Tracker["PWadjustment"]=None	
 	####################################################
 	from time import sleep
-	while not os.path.exists(particle_list_file):
-		#print  " my_id",myid
-		sleep(2)
-	mpi_barrier(MPI_COMM_WORLD)	
 	#Tracker["applyctf"] = True # 
-	data, old_shifts =  get_shrink_data_huang(Tracker,Tracker["nxinit"],particle_list_file,partstack,myid,main_node,number_of_proc,preshift=True)
+	data, old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], particle_list_file, partstack, myid,main_node,number_of_proc,preshift=True)
 	if myid == main_node:
 		if os.path.exists(outdir):  nx = 1
 		else:  nx = 0
@@ -23155,7 +23148,6 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 			 	os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
 			if(myid == 0):
 				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
-			if(myid == main_node):
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)			
 				if fourvar and runtype=="REFINEMENT": sumvol += volref
 			#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],ngroup[iref],Tracker)
@@ -23165,11 +23157,10 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 					if fscc[iref][1][ifreq] > 0.5 : # always use .5 as cutoff
 						res = fscc[iref][0][ifreq]
 						break
-				
+
 				Tracker["lowpass"] = min(0.45, res)
 				Tracker["falloff"] = 0.1
-				if myid ==main_node:
-					log.add(" low pass filter is %f    %f   %d"%(Tracker["lowpass"],Tracker["falloff"],ngroup[iref]))
+				log.add(" low pass filter is %f    %f   %d"%(Tracker["lowpass"], Tracker["falloff"], ngroup[iref]))
 			else:
 				res = 0.5
 				Tracker["lowpass"] = 0.45
@@ -23211,7 +23202,7 @@ def mref_ali3d_EQ_Kmeans(ref_list,outdir,particle_list_file,Tracker):
 			refdata[6] = Tracker["low_pass_filter"]#(runtype=="REFINEMENT") # whether to align on 50S, this only happens at refinement step
 		"""
 		mpi_barrier(MPI_COMM_WORLD)
-		if terminate ==0: # headers are only updated when the program is going to terminate
+		if terminate == 0: # headers are only updated when the program is going to terminate
 			start_time = time()
 			if nrefine!=0: par_str = ['xform.projection', 'ID', 'group']
 			else: par_str = ['group', 'ID' ]

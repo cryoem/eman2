@@ -492,11 +492,7 @@ def main():
 			Tracker["this_data_list_file"] = os.path.join(workdir,"stable_class%d.txt"%igrp)
 			if myid ==main_node:
 				write_text_file(Tracker["this_data_list"],Tracker["this_data_list_file"])
-			while not os.path.exists(Tracker["this_data_list_file"]):
-				#print  " my_id",myid
-				sleep(2)
-			mpi_barrier(MPI_COMM_WORLD)
-			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"],Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
+			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"], Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 			ref_vol_list.append(volref)
 			number_of_ref_class.append(len(Tracker["this_data_list"]))
@@ -532,23 +528,24 @@ def main():
 		vol_list = []
 		number_of_ref_class= []
 		for igrp in xrange(number_of_groups):
-			class_file = os.path.join(outdir,"Class%d.txt"%igrp)
-			while not os.path.exists(class_file):
-				print  " my_id",myid
-				sleep(2)
-			mpi_barrier(MPI_COMM_WORLD)
-			npergroup=read_text_file(class_file)
+			if( myid == main_node ):  npergroup = read_text_file(os.path.join(outdir,"Class%d.txt"%igrp))
+			else:  npergroup = []
+			npergroup = bcast_list_to_all(npergroup, myid, main_node )
+			
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 			vol_list.append(volref)
+
 			number_of_ref_class.append(len(npergroup))
+
 		Tracker["number_of_ref_class"] = number_of_ref_class
 		mpi_barrier(MPI_COMM_WORLD)
-		nx_of_image=vol_list[0].get_xsize()
+		nx_of_image = vol_list[0].get_xsize()
 		if Tracker["constants"]["PWadjustment"]:
 			Tracker["PWadjustment"]=Tracker["PW_dict"][nx_of_image]
 		else:
 			Tracker["PWadjustment"]=Tracker["constants"]["PWadjustment"]	
+
 		if myid ==main_node:
 			for ivol in xrange(len(vol_list)):
 				refdata =[None]*4
@@ -560,12 +557,12 @@ def main():
 				volref.write_image(os.path.join(workdir,"volf_of_Classes.hdf"),ivol)
 				log_main.add("number of unaccounted particles  %10d"%len(Tracker["this_unaccounted_list"]))
 				log_main.add("number of accounted particles  %10d"%len(Tracker["this_accounted_list"]))
-		Tracker["this_data_list"]    =Tracker["this_unaccounted_list"]
-		Tracker["total_stack"]       =len(Tracker["this_unaccounted_list"])
+		Tracker["this_data_list"]    = Tracker["this_unaccounted_list"]
+		Tracker["total_stack"]       = len(Tracker["this_unaccounted_list"])
 		Tracker["this_total_stack"]  = Tracker["total_stack"]
 		number_of_groups = get_number_of_groups(len(Tracker["this_unaccounted_list"]),number_of_images_per_group)
 		Tracker["number_of_groups"] =  number_of_groups
-		while number_of_groups >=2:
+		while number_of_groups >= 2 :
 			generation    +=1
 			partition_dict ={}
 			workdir =os.path.join(masterdir,"generation%03d"%generation)
@@ -629,21 +626,22 @@ def main():
 			update_full_dict(complementary,Tracker)
 			vol_list = []
 			for igrp in xrange(number_of_groups):
-				class_file = os.path.join(outdir,"Class%d.txt"%igrp)
-				while not os.path.exists(class_file):
-					#print  " my_id",myid
-					sleep(2)
-				mpi_barrier(MPI_COMM_WORLD)
-				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+				if( myid == main_node ):  class_file = read_text_file(os.path.join(outdir,"Class%d.txt"%igrp))
+				else:  class_file = []
+				class_file = bcast_list_to_all(class_file, myid, main_node )
+
+				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], class_file, Tracker["constants"]["partstack"], myid, main_node, nproc,preshift = True)
 				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 				vol_list.append(volref)
+
 			mpi_barrier(MPI_COMM_WORLD)
 			nx_of_image=ref_vol_list[0].get_xsize()
 			if Tracker["constants"]["PWadjustment"]:
-				Tracker["PWadjustment"]=Tracker["PW_dict"][nx_of_image]
+				Tracker["PWadjustment"] = Tracker["PW_dict"][nx_of_image]
 			else:
-				Tracker["PWadjustment"]=Tracker["constants"]["PWadjustment"]	
-			if myid ==main_node:
+				Tracker["PWadjustment"] = Tracker["constants"]["PWadjustment"]	
+
+			if myid == main_node:
 				for ivol in xrange(len(vol_list)):
 					refdata =[None]*4
 					refdata[0] = vol_list[ivol]
@@ -652,9 +650,10 @@ def main():
 					refdata[3] = Tracker["constants"]["nproc"] 
 					volref = user_func(refdata)
 					volref.write_image(os.path.join(workdir, "volf_of_Classes.hdf"),ivol)
-			if myid == main_node:
+
 				log_main.add("number of unaccounted particles  %10d"%len(Tracker["this_unaccounted_list"]))
 				log_main.add("number of accounted particles  %10d"%len(Tracker["this_accounted_list"]))
+
 			del vol_list
 			mpi_barrier(MPI_COMM_WORLD)
 			number_of_groups = get_number_of_groups(len(Tracker["this_unaccounted_list"]),number_of_images_per_group)
@@ -662,10 +661,6 @@ def main():
 			Tracker["this_data_list"]   = Tracker["this_unaccounted_list"]
 			Tracker["total_stack"]      = len(Tracker["this_unaccounted_list"])
 		if Tracker["constants"]["unaccounted"]:
-			while not os.path.exists(Tracker["this_unaccounted_text"]):
-				#print  " my_id",myid
-				sleep(2)
-			mpi_barrier(MPI_COMM_WORLD)
 			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],Tracker["this_unaccounted_text"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 			nx_of_image=volref.get_xsize()
