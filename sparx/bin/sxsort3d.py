@@ -528,11 +528,7 @@ def main():
 		vol_list = []
 		number_of_ref_class= []
 		for igrp in xrange(number_of_groups):
-			if( myid == main_node ):  npergroup = read_text_file(os.path.join(outdir,"Class%d.txt"%igrp))
-			else:  npergroup = []
-			npergroup = bcast_list_to_all(npergroup, myid, main_node )
-			
-			data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+			data,old_shifts = get_shrink_data_huang(Tracker, Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 			vol_list.append(volref)
 
@@ -626,11 +622,7 @@ def main():
 			update_full_dict(complementary,Tracker)
 			vol_list = []
 			for igrp in xrange(number_of_groups):
-				if( myid == main_node ):  class_file = read_text_file(os.path.join(outdir,"Class%d.txt"%igrp))
-				else:  class_file = []
-				class_file = bcast_list_to_all(class_file, myid, main_node )
-
-				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], class_file, Tracker["constants"]["partstack"], myid, main_node, nproc,preshift = True)
+				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"], myid, main_node, nproc,preshift = True)
 				volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 				vol_list.append(volref)
 
