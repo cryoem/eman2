@@ -22137,13 +22137,13 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 
 	if(focus != None):
 		if(myid == main_node):
-			vol = get_shrink_3dmask(Tracker["nxinit"],focus)
+			focus = get_shrink_3dmask(Tracker["nxinit"],focus)
 		else:
-			vol =  model_blank(nx, nx, nx)
-		bcast_EMData_to_all(vol, myid, main_node)
-		st = Util.infomask(vol, None, True)
+			focus =  model_blank(nx, nx, nx)
+		bcast_EMData_to_all(focus, myid, main_node)
+		st = Util.infomask(focus, None, True)
 		if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
-		focus = prep_vol(vol, 1, 1)
+		focus = prep_vol(focus, 1, 1)
 
 
 	Niter = int(lstp*maxit*(nassign + nrefine) )
