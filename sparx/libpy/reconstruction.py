@@ -3309,7 +3309,7 @@ def prepare_recons_ctf_two_chunks(nx,data,snr,symmetry,myid,main_node_half,chunk
 	return None,None
 	
 def rec3D_two_chunks_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, \
-		myid = 0, main_node = 0, rstep = 1.0,finfo=None, \
+		myid = 0, main_node = 0, rstep = 1.0, finfo=None, \
 		index=-1, npad = 2, mpi_comm=None, smearstep = 0.0):
 	'''
 	  This function is to be called within an MPI program to do a reconstruction on a dataset kept 

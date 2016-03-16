@@ -152,6 +152,24 @@ class SXGuiCter(QtGui.QWidget):
 		
 # 		QtGui.QWidget.__init__(self,None)
 		super(SXGuiCter, self).__init__(None)
+		
+		# MRK_TEST: Flags to test experimental functions
+		self.is_enable_max_power = False # MRK_TEST: Can this be an option in future?
+		
+		# NOTE: 2016/03/15 Toshio Moriya
+		# Due to the representation error of float number, 
+		# default thresholds using max/min value of each parameter can be different after
+		# saving/loading the threshold values from the file.
+		# This problem is solved by round() function for thresholding parameter values
+		# 
+		# About Precision: 
+		# Double precision numbers have 53 bits (16 digits ~~ 15.95 digits = 53*log10(2)) of precision and 
+		# regular floats have 24 bits (8 digits ~~ 7.22 digits = 24*log10(2)) of precision. 
+		# The floating point in python uses double precision to store the values, and 
+		# usually taken to be 15 for practical purposes
+		# 
+		self.round_ndigits = 15
+		
 #		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 		self.setWindowIcon(QtGui.QIcon(get_image_directory()+"sparxicon.png"))
 
@@ -217,12 +235,12 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism (1/A)
 		i_enum += 1; self.idx_cter_mic_name     = i_enum # Micrograph name
 		i_enum += 1; self.idx_cter_pwrot_name   = i_enum # <extra> CTER power spectrum rotational average file name
-		i_enum += 1; self.idx_cter_box_size     = i_enum # <extra> window size used in cter estimation
 		i_enum += 1; self.idx_cter_error_ctf    = i_enum # <extra> limit frequency by CTF error 
-		i_enum += 1; self.idx_cter_max_power    = i_enum # <extra> maximum power in experimental rotational average (with astigmatism)
+		if self.is_enable_max_power == True: i_enum += 1; self.idx_cter_max_power = i_enum # MRK_TEST: <extra> maximum power in experimental rotational average (with astigmatism)
 		i_enum += 1; self.idx_cter_select       = i_enum # <extra> selected state
 		i_enum += 1; self.n_idx_cter            = i_enum
-		self.n_idx_cter_extra = 6
+		self.n_idx_cter_extra = 4
+		if self.is_enable_max_power == True: self.n_idx_cter_extra += 1 # MRK_TEST:
 		
 		i_enum = -1
 		i_enum += 1; self.idx_cter_item_label   =  i_enum
@@ -247,9 +265,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.value_map_list[self.idx_cter_error_astig]  = ["Astig. Error", None]
 		self.value_map_list[self.idx_cter_mic_name]     = ["Micrograph", None]
 		self.value_map_list[self.idx_cter_pwrot_name]   = ["PW. Rot. File", None]
-		self.value_map_list[self.idx_cter_box_size]     = ["CTF Box Size", None]
 		self.value_map_list[self.idx_cter_error_ctf]    = ["CTF Error", None]
-		self.value_map_list[self.idx_cter_max_power]    = ["Max Power", None]
+		if self.is_enable_max_power == True: self.value_map_list[self.idx_cter_max_power] = ["Max Power", None] # MRK_TEST:
 		self.value_map_list[self.idx_cter_select]       = ["Select", None]
 		
 		i_enum = -1
@@ -272,7 +289,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_sort_error_def    = i_enum
 		i_enum += 1; self.idx_sort_error_astig  = i_enum
 		i_enum += 1; self.idx_sort_error_ctf    = i_enum
-		i_enum += 1; self.idx_sort_max_power    = i_enum
+		if self.is_enable_max_power == True: i_enum += 1; self.idx_sort_max_power = i_enum # MRK_TEST:
 		i_enum += 1; self.n_idx_sort            = i_enum
 		
 		i_enum = -1
@@ -292,7 +309,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.sort_map_list[self.idx_sort_error_def]    = [self.idx_cter_error_def]
 		self.sort_map_list[self.idx_sort_error_astig]  = [self.idx_cter_error_astig]
 		self.sort_map_list[self.idx_sort_error_ctf]    = [self.idx_cter_error_ctf]
-		self.sort_map_list[self.idx_sort_max_power]    = [self.idx_cter_max_power]
+		if self.is_enable_max_power == True: self.sort_map_list[self.idx_sort_max_power] = [self.idx_cter_max_power] # MRK_TEST:
 		
 		i_enum = -1
 		i_enum += 1; self.idx_hist_def          = i_enum
@@ -304,7 +321,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_hist_error_def    = i_enum
 		i_enum += 1; self.idx_hist_error_astig  = i_enum
 		i_enum += 1; self.idx_hist_error_ctf    = i_enum
-		i_enum += 1; self.idx_hist_max_power    = i_enum
+		if self.is_enable_max_power == True: i_enum += 1; self.idx_hist_max_power = i_enum  # MRK_TEST:
 		i_enum += 1; self.n_idx_hist            = i_enum
 		
 		i_enum = -1
@@ -334,7 +351,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.hist_map_list[self.idx_hist_error_def]    = [self.idx_cter_error_def, self.idx_sort_error_def, 0, 10, 0, 10, None, None, 0, 10, None, None]
 		self.hist_map_list[self.idx_hist_error_astig]  = [self.idx_cter_error_astig, self.idx_sort_error_astig, 0, 10, 0, 10, None, None, 0, 10, None, None]
 		self.hist_map_list[self.idx_hist_error_ctf]    = [self.idx_cter_error_ctf, self.idx_sort_error_ctf, 0, 10, 0, 10, None, None, 0, 10, None, None]
-		self.hist_map_list[self.idx_hist_max_power]    = [self.idx_cter_max_power, self.idx_sort_max_power, 0, 99999, 0, 99999, None, None, 0, 99999, None, None]
+		if self.is_enable_max_power == True: self.hist_map_list[self.idx_hist_max_power] = [self.idx_cter_max_power, self.idx_sort_max_power, 0, 99999, 0, 99999, None, None, 0, 99999, None, None] # MRK_TEST:
 		
 		i_enum = -1
 		i_enum += 1; self.idx_threshold_control_lower     = i_enum
@@ -387,8 +404,6 @@ class SXGuiCter(QtGui.QWidget):
 		self.thresholdset_map_list = [None] * self.n_idx_thresholdset
 		self.thresholdset_map_list[self.idx_thresholdset_unapplied] = ["Unapplied"]
 		self.thresholdset_map_list[self.idx_thresholdset_applied]   = ["Applied"]
-		
-		self.cter_box_size = 512  # Currently, this information was not available (2016/01/29 Toshio Moriya)
 		
 		self.cter_partres_file_path = None
 		self.cter_entry_list        = None
@@ -455,7 +470,6 @@ class SXGuiCter(QtGui.QWidget):
 #		self.wimage.connect(self.wimage,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
 #		self.wplotrotavgcoarse.connect(self.wplotrotavgcoarse,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 #		self.wplotrotavgfine.connect(self.wplotrotavgfine,QtCore.SIGNAL("mousedown"),self.plotmousedown)
-		
 		self.whistparam.connect(self.whistparam,QtCore.SIGNAL("mouseup"),self.histparammouseup)
 		self.wplotparam.connect(self.wplotparam,QtCore.SIGNAL("mouseup"),self.plotparammouseup)
 		
@@ -464,6 +478,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.gbl.setMargin(8)
 		self.gbl.setSpacing(6)
 		
+
 		# --------------------------------------------------------------------------------
 		# Columns 1-2
 		# --------------------------------------------------------------------------------
@@ -511,9 +526,6 @@ class SXGuiCter(QtGui.QWidget):
 		grid_row+=1
 		
 		self.add_value_widget(self.idx_cter_apix, 0, 500, grid_row, grid_col)
-		grid_row+=1
-		
-		self.add_value_widget(self.idx_cter_box_size, 0, 4096, grid_row, grid_col, intonly=True)
 		grid_row+=1
 		
 		# Make space
@@ -871,9 +883,14 @@ class SXGuiCter(QtGui.QWidget):
 			# This CTEF file format is original one (before around 2016/01/29)
 			for cter_id in xrange(len(new_entry_list)):
 				# Add extra items first to make sure indices match
-				new_entry_list[cter_id] = [cter_id] +  new_entry_list[cter_id] + ["", self.cter_box_size, 0.5, 0.0, 1]
+				new_entry_list[cter_id] = [cter_id] +  new_entry_list[cter_id]           # self.idx_cter_id , <extra> entry id
+				new_entry_list[cter_id] = new_entry_list[cter_id] + [""]                 # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
+				new_entry_list[cter_id] = new_entry_list[cter_id] + [0.5]                # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
+				if self.is_enable_max_power == True: new_entry_list[cter_id] = new_entry_list[cter_id] + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
+				new_entry_list[cter_id] = new_entry_list[cter_id] + [1]                  # self.idx_cter_select  <extra> selected state
+				
 				# Cut off frequency components higher than CTF limit 
-				cter_box_size = new_entry_list[cter_id][self.idx_cter_box_size]
+				cter_box_size = 512 # NOTE: Toshio Moriya 2016/03/15: This is temporary. Remove this after adding CTF limit to cter output file
 				cter_def = new_entry_list[cter_id][self.idx_cter_def]
 				cter_cs = new_entry_list[cter_id][self.idx_cter_cs]
 				cter_vol = new_entry_list[cter_id][self.idx_cter_vol]
@@ -893,9 +910,10 @@ class SXGuiCter(QtGui.QWidget):
 				new_cter_pwrot_file_path = os.path.join(cter_pwrot_dir, "rotinf%04d.txt" % new_entry_list[cter_id][self.idx_cter_id])
 				new_entry_list[cter_id][self.idx_cter_pwrot_name] = new_cter_pwrot_file_path
 				
-				# Set max value of pwrot related to this micrograph
-				new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1)
-				new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig])
+				# MRK_TEST: Set max value of pwrot related to this micrograph
+				if self.is_enable_max_power == True: # MRK_TEST: 
+					new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1) # MRK_TEST: 
+					new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig]) # MRK_TEST: 
 				
 				# Always set selection state to 1 (selected)
 				new_entry_list[cter_id][self.idx_cter_select] = 1
@@ -911,7 +929,9 @@ class SXGuiCter(QtGui.QWidget):
 		for idx_hist in xrange(self.n_idx_hist):
 			idx_cter = self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter]
 			val_min = min(self.cter_entry_list, key=lambda x:x[idx_cter])[idx_cter]
+			val_min = round(val_min, self.round_ndigits)
 			val_max = max(self.cter_entry_list, key=lambda x:x[idx_cter])[idx_cter]
+			val_max = round(val_max, self.round_ndigits)
 			self.hist_map_list[idx_hist][self.idx_hist_item_val_min] = val_min
 			self.hist_map_list[idx_hist][self.idx_hist_item_val_max] = val_max
 			self.hist_map_list[idx_hist][self.idx_hist_item_unapply_threshold_lower] = val_min
@@ -1031,14 +1051,14 @@ class SXGuiCter(QtGui.QWidget):
 		# scr_x, scr_y = self.whistparam.plot2scr(param_val, 0.0)
 		# self.whistparam.add_shape(shape_name,EMShape(("scrline",0,1,0,scr_x,self.whistparam.scrlim[1],scr_x,self.whistparam.scrlim[1]+self.whistparam.scrlim[3],3)))
 		
-		val_min = min(hist_y_list)
-		val_max = max(hist_y_list)
+		val_min = round(min(hist_y_list), self.round_ndigits)
+		val_max = round(max(hist_y_list), self.round_ndigits)
 		# threshold_lower_label = "Lower(Blue)"
-		unapply_threshold_lower_val = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_lower]
-		apply_threshold_lower_val = self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_lower]
+		unapply_threshold_lower_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_lower], self.round_ndigits)
+		apply_threshold_lower_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_lower], self.round_ndigits)
 		# threshold_upper_label = "Upper(Red)"
-		unapply_threshold_upper_val = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_upper]
-		apply_threshold_upper_val = self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_upper]
+		unapply_threshold_upper_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_upper], self.round_ndigits)
+		apply_threshold_upper_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_upper], self.round_ndigits)
 		
 		self.whistparam.set_data(([param_val, param_val], [val_min, val_max]),"selected_val",quiet=False,color=3)
 		self.whistparam.set_data(([unapply_threshold_lower_val, unapply_threshold_lower_val], [val_min, val_max]),"unapply_threshold_lower_val",quiet=False,color=1,linetype=1)
@@ -1099,14 +1119,14 @@ class SXGuiCter(QtGui.QWidget):
 		# This may NOT be good place to update the following information...
 		idx_cter = self.hist_map_list[self.curhist][self.idx_hist_item_idx_cter]
 		param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
-		param_val = self.cter_entry_list[self.curentry][idx_cter]
+		param_val = round(self.cter_entry_list[self.curentry][idx_cter], self.round_ndigits)
 		
 		# threshold_lower_label = "Lower(Blue)"
-		unapply_threshold_lower_val = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_lower]
-		apply_threshold_lower_val = self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_lower]
+		unapply_threshold_lower_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_lower], self.round_ndigits)
+		apply_threshold_lower_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_lower], self.round_ndigits)
 		# threshold_upper_label = "Upper(Red)"
-		unapply_threshold_upper_val = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_upper]
-		apply_threshold_upper_val = self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_upper]
+		unapply_threshold_upper_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_threshold_upper], self.round_ndigits)
+		apply_threshold_upper_val = round(self.hist_map_list[self.curhist][self.idx_hist_item_apply_threshold_upper], self.round_ndigits)
 		
 		y_list = [param_val]*len(x_list)
 		self.wplotparam.set_data((x_list,y_list),"selected_val",quiet=False,color=3)
@@ -1315,10 +1335,10 @@ class SXGuiCter(QtGui.QWidget):
 		
 		# Use red font to indicate the value is not between applied threshold ranage
 		for idx_hist in xrange(self.n_idx_hist):
-			lower_threshold = self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_lower]
-			upper_threshold = self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_upper]
+			lower_threshold = round(self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_lower], self.round_ndigits)
+			upper_threshold = round(self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_upper], self.round_ndigits)
 			idx_cter = self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter]
-			param_val = self.cter_entry_list[self.curentry][idx_cter]
+			param_val = round(self.cter_entry_list[self.curentry][idx_cter], self.round_ndigits)
 			if lower_threshold <= param_val and param_val <= upper_threshold:
 				self.value_map_list[idx_cter][self.idx_cter_item_widget].text.setStyleSheet("color: rgb(0,0,0);")
 			elif param_val < lower_threshold:
@@ -1413,12 +1433,12 @@ class SXGuiCter(QtGui.QWidget):
 		self.updateEntryList()
 	
 	def newThresholdLower(self):
-		threshold_lower = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].getValue()
-		if threshold_lower < self.hist_map_list[self.curhist][self.idx_hist_item_val_min]:
-			threshold_lower = self.hist_map_list[self.curhist][self.idx_hist_item_val_min]
+		threshold_lower = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].getValue(), self.round_ndigits)
+		if threshold_lower < round(self.hist_map_list[self.curhist][self.idx_hist_item_val_min], self.round_ndigits):
+			threshold_lower = round(self.hist_map_list[self.curhist][self.idx_hist_item_val_min], self.round_ndigits)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setValue(threshold_lower)
-		elif threshold_lower > self.hist_map_list[self.curhist][self.idx_hist_item_val_max]:
-			threshold_lower = self.hist_map_list[self.curhist][self.idx_hist_item_val_max]
+		elif threshold_lower > round(self.hist_map_list[self.curhist][self.idx_hist_item_val_max], self.round_ndigits):
+			threshold_lower = round(self.hist_map_list[self.curhist][self.idx_hist_item_val_max], self.round_ndigits)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setValue(threshold_lower)
 		# else: # Do nothing
 		
@@ -1428,12 +1448,12 @@ class SXGuiCter(QtGui.QWidget):
 		self.needredisp=True
 	
 	def newThresholdUpper(self):
-		threshold_upper = self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].getValue()
-		if threshold_upper < self.hist_map_list[self.curhist][self.idx_hist_item_val_min]:
-			threshold_upper = self.hist_map_list[self.curhist][self.idx_hist_item_val_min]
+		threshold_upper = round(self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].getValue(), self.round_ndigits)
+		if threshold_upper < round(self.hist_map_list[self.curhist][self.idx_hist_item_val_min], self.round_ndigits):
+			threshold_upper = round(self.hist_map_list[self.curhist][self.idx_hist_item_val_min], self.round_ndigits)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setValue(threshold_upper)
-		elif threshold_upper > self.hist_map_list[self.curhist][self.idx_hist_item_val_max]:
-			threshold_upper = self.hist_map_list[self.curhist][self.idx_hist_item_val_max]
+		elif threshold_upper > round(self.hist_map_list[self.curhist][self.idx_hist_item_val_max], self.round_ndigits):
+			threshold_upper = round(self.hist_map_list[self.curhist][self.idx_hist_item_val_max], self.round_ndigits)
 			self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_upper].setValue(threshold_upper)
 		# else: # Do nothing
 		
@@ -1585,15 +1605,16 @@ class SXGuiCter(QtGui.QWidget):
 		for cter_entry in self.cter_entry_list:
 			new_select_state = 1
 			for idx_hist in xrange(self.n_idx_hist):
-				threshold_lower = self.hist_map_list[idx_hist][self.idx_hist_item_unapply_threshold_lower]
-				threshold_upper = self.hist_map_list[idx_hist][self.idx_hist_item_unapply_threshold_upper]
+				threshold_lower = round(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_threshold_lower], self.round_ndigits)
+				threshold_upper = round(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_threshold_upper], self.round_ndigits)
 				self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_lower] = threshold_lower
 				self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_upper] = threshold_upper
 				self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].setValue(threshold_lower)
 				self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setValue(threshold_upper)
 				idx_cter = self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter]
-				param_val = cter_entry[idx_cter]
+				param_val = round(cter_entry[idx_cter], self.round_ndigits)
 				if param_val < threshold_lower or threshold_upper < param_val:
+					print "MRK_DEBUG: Param #%d diselected entry #%04d with (param_val, threshold_lower, threshold_upper) = (%1.15g, %1.15g, %1.15g)" % (idx_hist, idx_cter, param_val, threshold_lower, threshold_upper)
 					new_select_state = 0
 				# else: # Do nothing
 			cter_entry[self.idx_cter_select] = new_select_state
@@ -1636,7 +1657,7 @@ class SXGuiCter(QtGui.QWidget):
 			param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
 			# NOTE: 2016/01/26 Toshio Moriya
 			# Use the precision for double to minimise precision loss by save & load operations 
-			file_out.write("%2d %s == %1.15g %1.15g \n" % (idx_hist, param_label, map_entry[idx_threshold_lower], map_entry[idx_threshold_upper]))
+			file_out.write("%2d %s == %1.15g %1.15g \n" % (idx_hist, param_label, round(map_entry[idx_threshold_lower], self.round_ndigits), round(map_entry[idx_threshold_upper], self.round_ndigits)))
 		
 		file_out.close()
 	
@@ -1662,8 +1683,8 @@ class SXGuiCter(QtGui.QWidget):
 				map_entry = self.hist_map_list[idx_hist]
 				tokens_val = tokens_in[1].split()
 				assert(len(tokens_val) == 2)
-				threshold_lower = float(tokens_val[0])
-				threshold_upper = float(tokens_val[1])
+				threshold_lower = round(float(tokens_val[0]), self.round_ndigits)
+				threshold_upper = round(float(tokens_val[1]), self.round_ndigits)
 				map_entry[self.idx_hist_item_unapply_threshold_lower] = threshold_lower
 				map_entry[self.idx_hist_item_unapply_threshold_upper] = threshold_upper
 				map_entry[self.idx_hist_item_unapply_widget_lower].setValue(threshold_lower)
@@ -1740,26 +1761,19 @@ class SXGuiCter(QtGui.QWidget):
 		file_out_discard = open(file_path_out_discard,"w")
 		
 		save_cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[self.idx_cter_id])
+		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_error_ctf, self.idx_cter_select]
+		if self.is_enable_max_power == True: idx_cter_ignore_list.append(self.idx_cter_max_power)
 		for cter_entry in save_cter_entry_list:
 			file_out = file_out_select
 			if cter_entry[self.idx_cter_select] == 0:
 				file_out = file_out_discard
 			# else: assert(cter_entry[self.idx_cter_select] == 1) # do nothing
 			
-			# # Save with the original format (before around 2016/01/29)
-			# for idx_cter in xrange(self.n_idx_cter):
-			# 	if idx_cter in [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_box_size, self.idx_cter_error_ctf, self.idx_cter_max_power, self.idx_cter_select]:
-			# 		# Do nothing
-			# 		continue
-			# 	elif idx_cter in [self.idx_cter_mic_name]:
-			# 		file_out.write("  %s" % cter_entry[idx_cter])
-			# 	else:
-			# 		file_out.write("  %12.5g" % cter_entry[idx_cter])
-			# file_out.write("\n")
-			
-			# Save with the original format (before around 2016/01/29)
 			for idx_cter in xrange(self.n_idx_cter):
-				if idx_cter in [self.idx_cter_mic_name, self.idx_cter_pwrot_name]:
+				if idx_cter in idx_cter_ignore_list:
+					# Do nothing
+					continue
+				elif idx_cter in [self.idx_cter_mic_name]:
 					file_out.write("  %s" % cter_entry[idx_cter])
 				else:
 					file_out.write("  %12.5g" % cter_entry[idx_cter])

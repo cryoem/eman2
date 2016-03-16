@@ -1412,7 +1412,7 @@ def do_volume_mrk05(ref_data):
 	Util.mul_scalar(vol, 1.0/stat[1])
 	
 	#=========================================================================
-	return Util.muln_img(vol, mask3D), vol
+	return Util.muln_img(vol, mask3D)#, vol
 
 
 
