@@ -456,26 +456,25 @@ def main():
 		Tracker["constants"]["ali3d"]     = os.path.join(masterdir, "ali3d_init.txt")
 		Tracker["constants"]["partstack"] = Tracker["constants"]["ali3d"]
 		######
-		"""
 	   	if myid == main_node:
 			if(orgstack[:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
 			cmdexecute(cmd)
-			cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["constants"]["stack"])
+			cmd = "{} {}".format("sxheader.py   --params=originalid", Tracker["constants"]["stack"])
 			cmdexecute(cmd)
 			cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
 			cmdexecute(cmd)
-			keepchecking = False
+			#keepchecking = False
 			total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
 		else:
 			total_stack =0
-		"""
 		########## ---------------new way of read data in --------------------##########
 		if myid==main_node:
 	   		total_stack = EMUtil.get_image_count(orgstack)
 	   	else:
 	   		total_stack =0
 	   	total_stack = bcast_number_to_all(total_stack, source_node = main_node)
+	   	"""
 		if myid==main_node:
 	   		from EMAN2db import db_open_dict	
 	   		OB = db_open_dict(orgstack)
@@ -493,6 +492,7 @@ def main():
 				params.append([phi,theta,psi,s2x,s2y])
 			write_text_row(params,Tracker["constants"]["ali3d"])
 		mpi_barrier(MPI_COMM_WORLD)
+		"""
 		#Tracker["total_stack"]             = total_stack
 		Tracker["constants"]["total_stack"] = total_stack
 		Tracker["shrinkage"]                = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
@@ -500,9 +500,8 @@ def main():
 		if Tracker["constants"]["mask3D"]:
 			Tracker["mask3D"]=os.path.join(masterdir,"smask.hdf")
 		else:Tracker["mask3D"] = None
-		if Tracker["constants"]["focus3Dmask"]:
-			Tracker["focus3D"]=os.path.join(masterdir,"sfocus.hdf")
-		else: Tracker["focus3D"] = None
+		if Tracker["constants"]["focus3Dmask"]:  Tracker["focus3D"]=os.path.join(masterdir,"sfocus.hdf")
+		else:                                    Tracker["focus3D"] = None
 		if myid ==main_node:
 			if Tracker["constants"]["mask3D"]:
 				mask_3D = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
@@ -523,7 +522,7 @@ def main():
 			PW_dict[Tracker["constants"]["nxinit"]] =Tracker["nxinit_PW"]
 			Tracker["PW_dict"] = PW_dict 
 		###----------------------------------------------------------------------------------		
-		####---------------------------Extract the previous results#####################################################
+		####---------------------------  Extract the previous results   #####################################################
 		from random import shuffle
 		if myid ==main_node:
 			log_main.add("Extract stable groups from previous runs")

@@ -22097,6 +22097,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		if Tracker["global_fsc"][1][i]>0.5:
 			res = fsc_in[0][i]
 			break
+	print(" place 0")
 	Tracker["lowpass"] = min(0.45, res)
 	Tracker["falloff"] = 0.1
 	highres = []
@@ -22114,6 +22115,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 			ref_list[iref].write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 	mpi_barrier(MPI_COMM_WORLD)
+	print(" place 0")
 	if CTF:
 		#if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
 		from reconstruction import rec3D_MPI
@@ -22133,7 +22135,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		recvcount.append( ie - ib )
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
-
+	print(" place 1")
 
 	if(focus != None):
 		if(myid == main_node):
@@ -22176,7 +22178,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		from fundamentals import fft
 		if( not focus ):
 			for im in xrange(nima):  data[im] = fft(data[im])
-
+		print(" place 2")
 		for iref in xrange(numref):
 			if myid==main_node: volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			else:				volft=model_blank(nx,nx,nx)
@@ -22302,7 +22304,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			if empty_group ==1:
 				terminate = 1
 		else:
-			ngroup =0
+			ngroup =[]
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
 		ngroup = wrap_mpi_bcast(ngroup,main_node)
@@ -22535,18 +22537,16 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		maskfile            = Tracker["mask3D"]
 	else:
 		maskfile            = None
-	if Tracker["constants"]["focus3Dmask"]:
-		focus               = Tracker["focus3D"]
-	else:
-		focus =      None
+	if Tracker["constants"]["focus3Dmask"]: focus = Tracker["constants"]["focus3Dmask"]
+	else:                                   focus = None
 	partstack           = Tracker["constants"]["partstack"]
 	user_func_name      = Tracker["constants"]["user_func"]
 	Tracker["lowpass"]  = Tracker["low_pass_filter"]
 	Tracker["falloff"]  = .1
 	if Tracker["constants"]["PWadjustment"]:
-		Tracker["PWadjustment"]=Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
+		Tracker["PWadjustment"] = Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
 	else:
-		Tracker["PWadjustment"]=None	
+		Tracker["PWadjustment"] = None	
 	####################################################
 	from time import sleep
 	#Tracker["applyctf"] = True # 
@@ -22732,7 +22732,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		if(myid == main_node):
 			focus = get_shrink_3dmask(Tracker["nxinit"], focus)
 		else:
-			focus =  model_blank(nx, nx, nx)
+			focus =  model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 		bcast_EMData_to_all(focus, myid, main_node)
 		st = Util.infomask(focus, None, True)
 		if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
@@ -23105,7 +23105,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				ngroup.append(int(npergroup[iref]))
 			if(precn <= termprec):  terminate = 1
 		else:
-			ngroup =0
+			ngroup =[]
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
 		ngroup = wrap_mpi_bcast(ngroup,main_node)
@@ -23243,6 +23243,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			write_text_file(group_list,group_list_saved_file)
 		mpi_barrier(MPI_COMM_WORLD)
 		Tracker["this_partition"]=group_list
+	### program finishes
+	if myid ==main_node:  log.add(" mref_ali3d_EQ_Kmeans finishes !")
 		
 ######
  
