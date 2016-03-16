@@ -22362,17 +22362,25 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 				if fourvar and runtype=="REFINEMENT": sumvol += volref
-			else:
-				Tracker["lowpass"]  =0.0
+				res = 0.5
+				for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
+					if fscc[iref][1][ifreq] > 0.5 : # always use .5 as cutoff
+						res = fscc[iref][0][ifreq]
+						break
+
+				Tracker["lowpass"] = min(0.45, res)
 				Tracker["falloff"] = 0.1
-				res   = 0.5
+				log.add(" low pass filter is %f    %f   %d"%(Tracker["lowpass"], Tracker["falloff"], ngroup[iref]))
+			else:
+				Tracker["lowpass"] = 0.0
+				Tracker["falloff"] = 0.0
+				res   = 0.0
 			Tracker["lowpass"] = wrap_mpi_bcast(Tracker["lowpass"], main_node, mpi_comm)
 			Tracker["falloff"] = wrap_mpi_bcast(Tracker["falloff"], main_node, mpi_comm)
 			res = wrap_mpi_bcast(res, main_node, mpi_comm)
 			highres.append(int(res*Tracker["nxinit"]+ 0.5))
 
 			if myid == main_node:
-				log.add("%d  low pass filter   %f %f  %d"%(iref,Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
 				refdata    = [None]*4
 				refdata[0] = volref
 				refdata[1] = Tracker
@@ -23162,9 +23170,9 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				Tracker["falloff"] = 0.1
 				log.add(" low pass filter is %f    %f   %d"%(Tracker["lowpass"], Tracker["falloff"], ngroup[iref]))
 			else:
-				res = 0.5
-				Tracker["lowpass"] = 0.45
-				Tracker["lowpass"] = 0.1
+				Tracker["lowpass"] = 0.0
+				Tracker["lowpass"] = 0.0
+				res = 0.0
 			res = bcast_number_to_all(res, main_node)
 			highres.append(int(res*Tracker["nxinit"]+ 0.5))
 			Tracker["lowpass"] = bcast_number_to_all(Tracker["lowpass"], main_node)
