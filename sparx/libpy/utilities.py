@@ -5162,6 +5162,8 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	# So, the lengths of partids and partstack are the same.
 	#  The read data is properly distributed among MPI threads.
 	# 10142015 --- preshift is set to True when doing 3-D sorting. 
+	# chunk_id are set when data is read in	
+
 	from fundamentals import resample, fshift
 	from filter import filt_ctf
 	from applications import MPI_start_end
@@ -6507,6 +6509,7 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs,ad_hoc_number,log_main):
 	########
 	from string import split
 	from statistics import k_means_match_clusters_asg_new
+	
 	sort3d_rootdir_list=split(SORT3D_rootdirs)
 	dict1              =[]
 	maximum_elements   = 0
@@ -6737,12 +6740,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 			else: mask3D =None
 			Tracker["number_of_ref_class"] = number_of_ref_class
 			for igrp in xrange(len(new_class)):
-				class_file = os.path.join(workdir,"final_class%d.txt"%igrp)
-				while not os.path.exists(class_file):
-					#print  " my_id",myid
-					sleep(2)
-				mpi_barrier(MPI_COMM_WORLD)
-				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],class_file,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],os.path.join(workdir,"final_class%d.txt"%igrp),Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
 				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\

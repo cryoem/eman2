@@ -500,9 +500,8 @@ def main():
 		if Tracker["constants"]["mask3D"]:
 			Tracker["mask3D"]=os.path.join(masterdir,"smask.hdf")
 		else:Tracker["mask3D"] = None
-		if Tracker["constants"]["focus3Dmask"]:
-			Tracker["focus3D"]=os.path.join(masterdir,"sfocus.hdf")
-		else: Tracker["focus3D"] = None
+		if Tracker["constants"]["focus3Dmask"]:  Tracker["focus3D"]=os.path.join(masterdir,"sfocus.hdf")
+		else:                                    Tracker["focus3D"] = None
 		if myid ==main_node:
 			if Tracker["constants"]["mask3D"]:
 				mask_3D = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
@@ -523,7 +522,7 @@ def main():
 			PW_dict[Tracker["constants"]["nxinit"]] =Tracker["nxinit_PW"]
 			Tracker["PW_dict"] = PW_dict 
 		###----------------------------------------------------------------------------------		
-		####---------------------------Extract the previous results#####################################################
+		####---------------------------  Extract the previous results   #####################################################
 		from random import shuffle
 		if myid ==main_node:
 			log_main.add("Extract stable groups from previous runs")
