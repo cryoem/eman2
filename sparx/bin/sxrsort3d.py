@@ -388,7 +388,7 @@ def main():
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(line+"Initialization of 3-D sorting")
-			a = get_im(orgstack)
+			a = get_im(Tracker["orgstack"])
 			nnxo = a.get_xsize()
 			if( Tracker["nxinit"] > nnxo ):
 				ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxsort3d.py",1)
@@ -457,22 +457,15 @@ def main():
 		Tracker["constants"]["partstack"] = Tracker["constants"]["ali3d"]
 		######
 	   	if myid == main_node:
-			if(orgstack[:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
+			if(Tracker["orgstack"][:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", Tracker["orgstack"],"--makevstack="+Tracker["constants"]["stack"])
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
-			cmdexecute(cmd)
-			cmd = "{} {}".format("sxheader.py   --params=originalid", Tracker["constants"]["stack"])
 			cmdexecute(cmd)
 			cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
 			cmdexecute(cmd)
 			#keepchecking = False
-			total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
+			total_stack = EMUtil.get_image_count(Tracker["orgstack"])
 		else:
 			total_stack =0
-		########## ---------------new way of read data in --------------------##########
-		if myid==main_node:
-	   		total_stack = EMUtil.get_image_count(orgstack)
-	   	else:
-	   		total_stack =0
 	   	total_stack = bcast_number_to_all(total_stack, source_node = main_node)
 	   	"""
 		if myid==main_node:
@@ -504,8 +497,7 @@ def main():
 		else:                                    Tracker["focus3D"] = None
 		if myid ==main_node:
 			if Tracker["constants"]["mask3D"]:
-				mask_3D = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
-				mask_3D.write_image(Tracker["mask3D"])
+				get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"]).write_image(Tracker["mask3D"])
 			if Tracker["constants"]["focus3Dmask"]:
 				mask_3D = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
 				st = Util.infomask(mask_3D, None, True)
