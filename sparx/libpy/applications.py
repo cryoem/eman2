@@ -22535,10 +22535,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		maskfile            = Tracker["mask3D"]
 	else:
 		maskfile            = None
-	if Tracker["constants"]["focus3Dmask"]:
-		focus               = Tracker["focus3D"]
-	else:
-		focus =      None
+	if Tracker["constants"]["focus3Dmask"]: focus = Tracker["constants"]["focus3Dmask"]
+	else:                                   focus = None
 	partstack           = Tracker["constants"]["partstack"]
 	user_func_name      = Tracker["constants"]["user_func"]
 	Tracker["lowpass"]  = Tracker["low_pass_filter"]
