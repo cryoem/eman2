@@ -528,7 +528,7 @@ def main():
 		vol_list = []
 		number_of_ref_class= []
 		for igrp in xrange(number_of_groups):
-			if( myid == main_node ):  npergroup = read_text_file()
+			if( myid == main_node ):  npergroup = read_text_file(os.path.join(outdir,"Class%d.txt"%igrp))
 			else:  npergroup = []
 			npergroup = bcast_list_to_all(npergroup, myid, main_node )
 			
