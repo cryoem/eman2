@@ -22097,7 +22097,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		if Tracker["global_fsc"][1][i]>0.5:
 			res = fsc_in[0][i]
 			break
-	print(" place 0")
+
 	Tracker["lowpass"] = min(0.45, res)
 	Tracker["falloff"] = 0.1
 	highres = []
@@ -22113,9 +22113,9 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			volref = user_func(refdata)
 			log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
 			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
-			ref_list[iref].write_image(os.path.join(outdir, "volf0000.hdf"), iref)
+			ref_list[iref].write_image(os.path.join(outdir, "vol0000.hdf"), iref)
 	mpi_barrier(MPI_COMM_WORLD)
-	print(" place 0")
+
 	if CTF:
 		#if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
 		from reconstruction import rec3D_MPI
@@ -22178,7 +22178,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		from fundamentals import fft
 		if( not focus ):
 			for im in xrange(nima):  data[im] = fft(data[im])
-		print(" place 2")
+
 		for iref in xrange(numref):
 			if myid==main_node: volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			else:				volft=model_blank(nx,nx,nx)
@@ -22299,12 +22299,12 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 					empty_group =1
 					empty_group_list.append(iref)
 				ngroup.append(int(npergroup[iref]))
-			if precn <= termprec:  
+			if precn <= termprec:
 				terminate = 1
 			if empty_group ==1:
 				terminate = 1
 		else:
-			ngroup =[]
+			ngroup = 0
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
 		ngroup = wrap_mpi_bcast(ngroup,main_node)
@@ -23105,7 +23105,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				ngroup.append(int(npergroup[iref]))
 			if(precn <= termprec):  terminate = 1
 		else:
-			ngroup =[]
+			ngroup = 0
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
 		ngroup = wrap_mpi_bcast(ngroup,main_node)
