@@ -736,7 +736,7 @@ def main():
 					#core=read_text_row(Tracker["constants"]["ali3d"],-1)
 					#write_text_row(core, os.path.join(workdir,"node%d.txt"%myid))
 				mpi_barrier(MPI_COMM_WORLD)
-				       = number_of_groups
+				#       = number_of_groups
 				Tracker["this_data_list"]         = list_to_be_processed # leftover of P1 runs
 				Tracker["total_stack"]            = len(list_to_be_processed)
 				create_random_list(Tracker)
