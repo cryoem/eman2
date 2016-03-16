@@ -22141,7 +22141,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		else:
 			vol =  model_blank(nx, nx, nx)
 		bcast_EMData_to_all(vol, myid, main_node)
-		st = Util.infomask(focus, None, True)
+		st = Util.infomask(vol, None, True)
 		if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
 		focus = prep_vol(vol, 1, 1)
 
@@ -22228,7 +22228,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 						tempx = fsc(ref, data[im])[1]
 					else:
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						tempx = fsc(ref, fft(data[im]*mask2d))[1]
+						tempx = fsc(ref, fft(data[im]*mask2D))[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
 
 
@@ -22817,7 +22817,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 						tempx = fsc(ref, data[im])[1]
 					else:
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						tempx = fsc(ref, fft(data[im]*mask2d))[1]
+						tempx = fsc(ref, fft(data[im]*mask2D))[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
 						
 					if not(finfo is None):
