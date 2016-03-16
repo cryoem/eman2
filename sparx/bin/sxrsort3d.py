@@ -574,10 +574,7 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		vols = []
 		for index in xrange(2):
-			if( myid == main_node ):  partids = read_text_file(os.path.join(masterdir,"chunk%d.txt"%index))
-			else:  partids = []
-			partids = bcast_list_to_all(partids, myid, main_node )
-			data1,old_shifts1 = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"], partids, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
+			data1,old_shifts1 = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"], os.path.join(masterdir,"chunk%d.txt"%index, Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 			vol1 = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data1,symmetry=Tracker["constants"]["sym"],finfo=None)
 			if myid ==main_node:
 				vol1_file_name = os.path.join(masterdir, "vol%d.hdf"%index)
