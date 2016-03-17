@@ -21891,9 +21891,9 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 
 ### from sxsort3d
 
-def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker): 
+def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker): 
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
-	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im
+	from utilities      import bcast_list_to_all, get_image, get_input_from_string, get_im, read_text_file
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank, write_text_file, get_shrink_data_huang
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
@@ -21976,6 +21976,13 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		sleep(2)
 	mpi_barrier(MPI_COMM_WORLD)	
 	data, old_shifts    = get_shrink_data_huang(Tracker,Tracker["nxinit"],this_data_list_file,Tracker["constants"]["partstack"],myid, main_node, number_of_proc, preshift = True)
+	if myid ==main_node:
+		list_of_particles     = read_text_file(this_data_list_file)
+		total_nima            = len(list_of_particles)
+	else:   total_nima        = 0
+	total_nima = bcast_number_to_all(total_nima,main_node)
+	
+	
 	from time import time	
 
 	if debug:
@@ -22059,8 +22066,6 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	mask2D     = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
 	total_nima = len(Tracker["this_data_list"])
 	nima       = len(data)
-	list_of_particles  = Tracker["this_data_list"]
-	Tracker["total_stack"]  = total_nima
     #####
 	if debug:
 		finfo.write( "Image_start, image_end: %d %d\n" %(image_start, image_end) )
@@ -22071,7 +22076,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	#  Initialize Particle ID and set group number to non-existant -1
 	assignment = [-1]*len(data)
  	for im in xrange(len(data)):
-		data[im].set_attr_dict({'ID':list_of_particles[im], 'group':-1})
+		data[im].set_attr_dict({'group':-1})
 	'''
 	if fourvar:
 		from reconstruction import rec3D_MPI
@@ -22097,6 +22102,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 		if Tracker["global_fsc"][1][i]>0.5:
 			res = fsc_in[0][i]
 			break
+
 	Tracker["lowpass"] = min(0.45, res)
 	Tracker["falloff"] = 0.1
 	highres = []
@@ -22112,8 +22118,9 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 			volref = user_func(refdata)
 			log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
 			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
-			ref_list[iref].write_image(os.path.join(outdir, "volf0000.hdf"), iref)
+			ref_list[iref].write_image(os.path.join(outdir, "vol0000.hdf"), iref)
 	mpi_barrier(MPI_COMM_WORLD)
+
 	if CTF:
 		#if(data[0].get_attr("ctf_applied") > 0.0):  ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
 		from reconstruction import rec3D_MPI
@@ -22134,16 +22141,15 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	total_iter = 0
 	tr_dummy = Transform({"type":"spider"})
 
-
 	if(focus != None):
 		if(myid == main_node):
-			vol = get_shrink_3dmask(Tracker["nxinit"],focus)
+			focus = get_shrink_3dmask(Tracker["nxinit"],focus)
 		else:
-			vol =  model_blank(nx, nx, nx)
-		bcast_EMData_to_all(vol, myid, main_node)
+			focus =  model_blank(nx, nx, nx)
+		bcast_EMData_to_all(focus, myid, main_node)
 		st = Util.infomask(focus, None, True)
 		if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
-		focus = prep_vol(vol, 1, 1)
+		focus = prep_vol(focus, 1, 1)
 
 
 	Niter = int(lstp*maxit*(nassign + nrefine) )
@@ -22228,7 +22234,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 						tempx = fsc(ref, data[im])[1]
 					else:
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						tempx = fsc(ref, fft(data[im]*mask2d))[1]
+						tempx = fsc(ref, fft(data[im]*mask2D))[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
 
 
@@ -22297,21 +22303,20 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 					empty_group =1
 					empty_group_list.append(iref)
 				ngroup.append(int(npergroup[iref]))
-			if precn <= termprec:  
+			if precn <= termprec:
 				terminate = 1
 			if empty_group ==1:
 				terminate = 1
 		else:
-			ngroup =0
-		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
-		terminate = int(terminate[0])
-		ngroup = wrap_mpi_bcast(ngroup,main_node)
+			ngroup  = 0
+		terminate   = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
+		terminate   = int(terminate[0])
+		ngroup      = wrap_mpi_bcast(ngroup,main_node)
 		empty_group = mpi_bcast(empty_group, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		empty_group = int(empty_group[0])
 		if empty_group ==1: break # program stops whenever empty_group appears!
 		if runtype=="REFINEMENT":
-			for im in xrange(nima):
-				data[im].set_attr('xform.projection', trans[im])
+			for im in xrange(nima):  data[im].set_attr('xform.projection', trans[im])
 			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
@@ -22456,7 +22461,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
 	"""
 	if myid == main_node:log.add("Kmref_ali3d_MPI is done!")
-	final_list = get_sorting_params_refine(Tracker,data)
+	final_list = get_sorting_params_refine(Tracker,data, total_nima)
 	group_list, ali3d_params_list = parsing_sorting_params(final_list)
 	res_groups = get_groups_from_partition(group_list, Tracker["this_data_list"], numref)
 	final_group_list, res_groups = remove_small_groups(res_groups, Tracker["constants"]["smallest_group"])
@@ -22535,27 +22540,33 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		maskfile            = Tracker["mask3D"]
 	else:
 		maskfile            = None
-	if Tracker["constants"]["focus3Dmask"]:
-		focus               = Tracker["focus3D"]
-	else:
-		focus =      None
+	if Tracker["constants"]["focus3Dmask"]: focus = Tracker["constants"]["focus3Dmask"]
+	else:                                   focus = None
 	partstack           = Tracker["constants"]["partstack"]
 	user_func_name      = Tracker["constants"]["user_func"]
 	Tracker["lowpass"]  = Tracker["low_pass_filter"]
 	Tracker["falloff"]  = .1
 	if Tracker["constants"]["PWadjustment"]:
-		Tracker["PWadjustment"]=Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
+		Tracker["PWadjustment"] = Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
 	else:
-		Tracker["PWadjustment"]=None	
+		Tracker["PWadjustment"] = None	
 	####################################################
 	from time import sleep
 	#Tracker["applyctf"] = True # 
 	data, old_shifts = get_shrink_data_huang(Tracker, Tracker["nxinit"], particle_list_file, partstack, myid,main_node,number_of_proc,preshift=True)
+	if myid ==main_node:
+		list_of_particles = read_text_file(particle_list_file)
+		total_nima        =len(list_of_particles)
+	else:
+		total_nima = 0
+	total_nima = bcast_number_to_all(total_nima,main_node)
+	
 	if myid == main_node:
 		if os.path.exists(outdir):  nx = 1
 		else:  nx = 0
 	else:  nx = 0
 	ny = bcast_number_to_all(nx, source_node = main_node)
+	#image_start, image_end = MPI_start_end(total_data,number_of_proc, myid)
 	
 	if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_iter", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -22593,7 +22604,6 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	rstep       = int(rs)
 	last_ring   = int(int(ou)*shrinkage+.5)
 	center      = int(center)
-	image_start, image_end = MPI_start_end(len(Tracker["this_data_list"]),number_of_proc, myid)
 	numref  = len(ref_list)
 	nx      = ref_list[0].get_xsize()
 	if last_ring < 0:last_ring = nx//2 - 2
@@ -22637,9 +22647,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	numr     = Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D   = model_circle(last_ring, nx, nx)
 	if(first_ring > 1):  mask2D -= model_circle(first_ring,nx,nx)
-	total_nima = len(Tracker["this_data_list"])
-	nima       = len(data)
-	list_of_particles  =Tracker["this_data_list"]
+	nima       = len(data) # local number of particles
+	
 	'''
 	if(myid == main_node):	
 		total_nima = EMUtil.get_image_count(stack)
@@ -22667,7 +22676,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	#  Here the assumption is that input are always volumes.  It should be most likely be changed so optionally these are group assignments.
 	#  Initialize Particle ID and set group number to non-existant -1
 	for im in xrange(nima):
-		data[im].set_attr_dict({'ID':list_of_particles[im], 'group':-1})
+		data[im].set_attr_dict({'group':-1})
 	if(myid == 0):
 		log.add( "Time to read data: %d" % (time()-start_time) );start_time = time()
 
@@ -22732,7 +22741,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		if(myid == main_node):
 			focus = get_shrink_3dmask(Tracker["nxinit"], focus)
 		else:
-			focus =  model_blank(nx, nx, nx)
+			focus =  model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 		bcast_EMData_to_all(focus, myid, main_node)
 		st = Util.infomask(focus, None, True)
 		if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
@@ -22817,7 +22826,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 						tempx = fsc(ref, data[im])[1]
 					else:
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						tempx = fsc(ref, fft(data[im]*mask2d))[1]
+						tempx = fsc(ref, fft(data[im]*mask2D))[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
 						
 					if not(finfo is None):
@@ -23105,7 +23114,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				ngroup.append(int(npergroup[iref]))
 			if(precn <= termprec):  terminate = 1
 		else:
-			ngroup =0
+			ngroup = 0
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
 		ngroup = wrap_mpi_bcast(ngroup,main_node)
@@ -23227,7 +23236,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			"""
 			if(myid == 0):log.add( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 		else:
-			final_list = get_sorting_params_refine(Tracker,data)
+			final_list = get_sorting_params_refine(Tracker,data, total_nima)
 			group_list, ali3d_params_list = parsing_sorting_params(final_list)
 			if myid ==main_node:
 				group_list_saved_file =os.path.join(outdir, "list2.txt")
@@ -23243,6 +23252,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			write_text_file(group_list,group_list_saved_file)
 		mpi_barrier(MPI_COMM_WORLD)
 		Tracker["this_partition"]=group_list
+	### program finishes
+	if myid ==main_node:  log.add(" mref_ali3d_EQ_Kmeans finishes !")
 		
 ######
  
