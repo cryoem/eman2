@@ -6151,11 +6151,11 @@ def do_two_way_comparison(Tracker):
 	accounted_list = merge_groups(stable_class_list)
 	Tracker["this_accounted_list"]   =  accounted_list
 	Tracker["two_way_stable_member"] =  stable_class_list
-	outliers     = get_complementary_elements(Tracker["this_accounted_list"],accounted_list) 
-	save_alist(Tracker,"Unaccounted.txt",outliers)
+	#outliers     = get_complementary_elements(Tracker["this_accounted_list"],accounted_list) 
+	#save_alist(Tracker,"Unaccounted.txt",outliers)
 	Tracker["this_unaccounted_list"] =  outliers
 	mpi_barrier(MPI_COMM_WORLD)
-	#save_alist(Tracker,"Accounted.txt",accounted_list)
+	save_alist(Tracker,"Accounted.txt",accounted_list)
 	update_full_dict(accounted_list,Tracker)# Update full_ID_dict for Kmeans
 	mpi_barrier(MPI_COMM_WORLD)
 	Tracker["this_unaccounted_dir"]     = workdir
