@@ -6046,6 +6046,9 @@ def do_two_way_comparison(Tracker):
 	for indep in xrange(len(indep_runs_to_groups)):
 		for index_of_class in xrange(len(indep_runs_to_groups[indep])):
 			one_group_in_old_ID = get_initial_ID(indep_runs_to_groups[indep][index_of_class], Tracker["full_ID_dict"])
+			if myid ==main_node:
+				print  " chunk_dict ",Tracker["chunk_dict"]
+				print "one_group_in_old_ID",one_group_in_old_ID
 			rate1, rate2, size_of_this_group = count_chunk_members(Tracker["chunk_dict"], one_group_in_old_ID)
 			error = margin_of_error(Tracker["P_chunk0"], size_of_this_group)
 			if myid ==main_node:
@@ -6406,17 +6409,17 @@ def get_complementary_elements_total(total_stack, data_list):
 		if data_dict.has_key(index) is False:complementary.append(index)
 	return complementary
 
-def update_full_dict(leftover_list,Tracker):
-	full_dict ={}
+def update_full_dict(leftover_list, Tracker):
+	full_dict = {}
 	for iptl in xrange(len(leftover_list)):
 		full_dict[iptl]     = leftover_list[iptl]
 	Tracker["full_ID_dict"] = full_dict
 	
-def count_chunk_members(chunk_dict,one_class):
+def count_chunk_members(chunk_dict, one_class):
 	N_chunk0 = 0
 	N_chunk1 = 0
 	for a in one_class:
-		if chunk_dict[a] == 0: N_chunk0 += 1 
+		if chunk_dict[a] == 0: N_chunk0 += 1
 		else:                  N_chunk1 += 1
 	n = len(one_class)
 	return  float(N_chunk0)/n, float(N_chunk1)/n, n
@@ -6625,8 +6628,8 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 		if myid ==main_node:
 			log_main.add("group %d  %d   %d"%(index_of_class,len(A), len(B))) 
 	ptp=[[],[]]
-	ptp[0]=numpy32_A
-	ptp[1]=numpy32_B
+	ptp[0] = numpy32_A
+	ptp[1] = numpy32_B
 	newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[0],ptp[1])
 	if myid == main_node:
 		log_main.add(" reproducible percentage of the first partition %f"%(nb_tot_objs/float(total_A)*100.))
@@ -6639,7 +6642,7 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 		log_main.add(" margin of error")
 	large_stable = []
 	for index_of_stable in xrange(len(list_stable)):
-		rate1,rate2,size_of_this_group = count_chunk_members(Tracker["chunk_dict"],list_stable[index_of_stable])
+		rate1,rate2,size_of_this_group = count_chunk_members(Tracker["chunk_dict"], list_stable[index_of_stable])
 		if size_of_this_group>=Tracker["constants"]["smallest_group"]:
 			error                          = margin_of_error(Tracker["P_chunk0"],size_of_this_group)
 			if myid ==main_node:
@@ -6665,15 +6668,6 @@ def get_leftover_from_stable(stable_list, N_total,smallest_group):
 	for one_element in tmp_dict:
 		leftover_list.append(one_element)
 	return leftover_list, new_stable
-
-def get_initial_ID(part_list, full_ID_dict):
-	part_initial_id_list = []
-	new_dict = {}
-	for iptl in xrange(len(part_list)):
-		id = full_ID_dict[part_list[iptl]]
-		part_initial_id_list.append(id)
-		new_dict[iptl] = id
-	return part_initial_id_list, new_dict
 		
 def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	from applications import ali3d_mref_Kmeans_MPI
