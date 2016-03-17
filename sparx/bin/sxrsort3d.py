@@ -782,8 +782,8 @@ def main():
 				################################
 				Tracker["number_of_ref_class"]       = number_of_ref_class
 				#Tracker["this_data_list"]           = Tracker["this_accounted_list"]
-				
-				empty_groups,res_classes,final_list  = ali3d_mref_Kmeans_MPI(ref_vol_list, os.path.join(workdir,"Kmref"),os.path.join(workdir,"Accounted.txt"), Tracker)
+				outdir = os.path.join(workdir,"Kmref")
+				empty_groups,res_classes,final_list  = ali3d_mref_Kmeans_MPI(ref_vol_list, outdir,os.path.join(workdir,"Accounted.txt"), Tracker)
 				Tracker["this_unaccounted_list"]     = get_complementary_elements(list_to_be_processed,final_list)
 				if myid ==main_node:  log_main.add("the number of particles not processed is %d"%len(Tracker["this_unaccounted_list"]))
 				update_full_dict(Tracker["this_unaccounted_list"],Tracker)
