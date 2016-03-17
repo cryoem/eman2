@@ -634,7 +634,7 @@ def main():
 		if Tracker["number_of_groups"] <=1 :
 			if myid == main_node:
 				log_main.add("the unaccounted ones are no sufficient for a simple two-group run, output results!")
-				log_main.add("the final reproducibility is  %f"%((Tracker["constants"]["total_stack"]-len(leftover_list))/float(Tracker["constants"]["total_stack"])))
+				log_main.add("the final reproducibility is  %f"%((Tracker["constants"]["total_stack"]-len(Tracker["this_unaccounted_list"]))/float(Tracker["constants"]["total_stack"])))
 				for i in xrange(len(stable_member_list)):
 					write_text_file(stable_member_list[i], os.path.join(masterdir,"P2_final_class%d.txt"%i))
 				mask3d = get_im(Tracker["constants"]["mask3D"])
@@ -694,7 +694,7 @@ def main():
 		import copy
 		mpi_barrier(MPI_COMM_WORLD)
 		for iter_P2_run in xrange(number_of_P2_runs):
-			list_to_be_processed = leftover_list[:]
+			list_to_be_processed = Tracker["this_unaccounted_list"][:]
 			if myid == main_node :    new_stable1 =  new_stable_P1[:]
 			total_stack   = len(list_to_be_processed) # This is the input from two P1 runs
 			#number_of_images_per_group = Tracker["constants"]["number_of_images_per_group"]
