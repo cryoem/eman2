@@ -829,7 +829,7 @@ def main():
 				#number_of_groups = int(float(len(Tracker["this_unaccounted_list"]))/number_of_images_per_group)
 				del list_to_be_processed
 				list_to_be_processed             = copy.deepcopy(Tracker["this_unaccounted_list"]) 
-				Tracker["number_of_groups"]      = get_number_of_groups(len(list_to_be_processed),number_of_images_per_group)
+				Tracker["number_of_groups"]      = get_number_of_groups(len(list_to_be_processed),Tracker["constants"]["number_of_images_per_group"])
 				mpi_barrier(MPI_COMM_WORLD)
 #############################################################################################################################
 			### reconstruct the unaccounted is only done once
