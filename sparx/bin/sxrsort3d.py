@@ -674,7 +674,7 @@ def main():
 					refdata[2]        = Tracker["constants"]["myid"]
 					refdata[3]        = Tracker["constants"]["nproc"]
 					volref            = user_func(refdata)
-					cutoff =T racker["constants"]["pixel_size"]/lowpass
+					cutoff = Tracker["constants"]["pixel_size"]/lowpass
 					log_main.add("%d vol low pass filer %f   %f  cut to  %f Angstrom"%(igrp,Tracker["lowpass"],Tracker["falloff"],cutoff))
 					volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))
 			mpi_barrier(MPI_COMM_WORLD)			
