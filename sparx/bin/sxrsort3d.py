@@ -518,10 +518,10 @@ def main():
 		from random import shuffle
 		if myid ==main_node:
 			log_main.add("Extract stable groups from previous runs")
-			stable_member_list           = get_stable_members_from_two_runs(Tracker["constants"]["previous_runs"], Tracker["constants"]["total_stack"], log_main)
+			stable_member_list = get_stable_members_from_two_runs(Tracker["constants"]["previous_runs"], Tracker["constants"]["total_stack"], log_main)
 			Tracker["this_unaccounted_list"], new_stable_P1 = get_leftover_from_stable(stable_member_list, Tracker["constants"]["total_stack"], Tracker["constants"]["smallest_group"])
-			Tracker["total_stack"]                  = len(leftover_list)
-			leftover_list.sort()
+			Tracker["this_unaccounted_list"].sort()
+			Tracker["total_stack"] = len(Tracker["this_unaccounted_list"])
 			log_main.add("new stable is %d"%len(new_stable_P1))
 		else:
 			Tracker["total_stack"]   = 0
@@ -531,6 +531,7 @@ def main():
 		Tracker["total_stack"]           = bcast_number_to_all(Tracker["total_stack"], source_node = main_node)
 		Tracker["this_unaccounted_list"] = wrap_mpi_bcast(Tracker["this_unaccounted_list"], main_node)
 		#################################### Estimate resolution----------------------############# 
+
 		#### make chunkdir dictionary for computing margin of error
 		chunk_list = []
 		if Tracker["constants"]["chunkdir"] !="":
@@ -704,6 +705,7 @@ def main():
 				log_main.add("----------------P2 independent run %d--------------"%iter_P2_run)
 				log_main.add("user provided number_of_images_per_group %d"%Tracker["constants"]["number_of_images_per_group"])
 			mpi_barrier(MPI_COMM_WORLD)
+
 			Tracker["number_of_groups"] = get_number_of_groups(total_stack,Tracker["constants"]["number_of_images_per_group"])
 			generation                  = 0
 			if myid == main_node:
@@ -715,7 +717,7 @@ def main():
 				workdir             = os.path.join(P2_run_dir,"generation%03d"%generation)
 				Tracker["this_dir"] = workdir
 				if myid ==main_node:
-					cmd="{} {}".format("mkdir",workdir)
+					cmd="{} {}".format("mkdir", workdir)
 					os.system(cmd)
 					log_main.add("---- generation         %5d"%generation)
 					log_main.add("number of images per group is set as %d"%Tracker["constants"]["number_of_images_per_group"])
@@ -844,14 +846,14 @@ def main():
 					Tracker["number_of_groups"] = len(new_stable1)
 					for any in unaccounted:final_list.append(any)
 				log_main.add("total number %d"%len(final_list))
-			else:final_list = 0
+			else:  final_list = 0
 			Tracker["number_of_groups"] = bcast_number_to_all(Tracker["number_of_groups"],source_node = main_node)
 			mpi_barrier(MPI_COMM_WORLD)
 			final_list = wrap_mpi_bcast(final_list,main_node)
 			workdir = os.path.join(P2_run_dir,"Exhaustive_Kmeans")
 			if myid==main_node:
 				os.mkdir(workdir)
-				write_text_file(final_list,os.path.join(workdir,"final_list.txt"))
+				write_text_file(final_list, os.path.join(workdir,"final_list.txt"))
 			else: new_stable1 = 0
 			mpi_barrier(MPI_COMM_WORLD)
 			## Create reference volumes
