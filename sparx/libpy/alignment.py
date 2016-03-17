@@ -2111,7 +2111,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar
 
-def ali3D_direct_local(data, volprep, refang, delta_psi, oldangs, shifts, myid, main_node, lentop = 1000, kb3D = None):
+def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, myid, main_node, lentop = 1000, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
 	from utilities import wrap_mpi_gatherv
@@ -2135,6 +2135,12 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, oldangs, shifts, myid, 
 	#  To sort:
 	from operator import itemgetter#, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
+	from math import acos, cos
+	ac = cos(an)
+	dvec = [None]*len(data)
+	for i in xrange(len(data)):
+		dvec[i] = getfvec(oldangs[i][0], oldangs[i][1])
+	
 
 	at = time()
 	npsi = int(360./delta_psi)
@@ -2144,6 +2150,7 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, oldangs, shifts, myid, 
 	for i in xrange(nang):
 		#if myid == main_node:  print "  Angle :",i,time()-at
 		iang = i*100000000
+		rdir = getfvec(refang[i][0],refang[i][1])
 		for j in xrange(npsi):
 			iangpsi = j*1000 + iang
 			psi = j*delta_psi
@@ -2152,24 +2159,25 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, oldangs, shifts, myid, 
 			temp.set_attr("is_complex",0)
 			nrmref = sqrt(Util.innerproduct(temp, temp))
 			for kl,emimage in enumerate(data):
-				for im in xrange(len(shifts)):
-					peak = Util.innerproduct(temp, emimage[im])
-					peak /= nrmref
-					#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
-					newpar[kl][-1].append([im + iangpsi, peak])
-					#newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
-					#del newpar[kl][-1][-1]
-					'''
-					toto = -1
-					for k in xrange(lentop):
-						if(peak > newpar[kl][-1][k][1]):
-							toto = k
-							break
-					if( toto == 0 ):  newpar[kl][-1] = [[im + iangpsi, peak]] + newpar[kl][-1][:lentop-1]
-					elif(toto > 0 ):  newpar[kl][-1] = newpar[kl][-1][:toto-1] + [[im + iangpsi, peak]] + newpar[kl][-1][toto:lentop-1]
-					'''
-					#  Store the worst one
-					if( peak < newpar[kl][1]):  newpar[kl][1] = peak
+				if( (dvec[kl][0]*rdir[0] + dvec[kl][1]*rdir[1] + dvec[kl][2]*rdir[2]) >= ac ):
+					for im in xrange(len(shifts)):
+						peak = Util.innerproduct(temp, emimage[im])
+						peak /= nrmref
+						#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
+						newpar[kl][-1].append([im + iangpsi, peak])
+						#newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
+						#del newpar[kl][-1][-1]
+						'''
+						toto = -1
+						for k in xrange(lentop):
+							if(peak > newpar[kl][-1][k][1]):
+								toto = k
+								break
+						if( toto == 0 ):  newpar[kl][-1] = [[im + iangpsi, peak]] + newpar[kl][-1][:lentop-1]
+						elif(toto > 0 ):  newpar[kl][-1] = newpar[kl][-1][:toto-1] + [[im + iangpsi, peak]] + newpar[kl][-1][toto:lentop-1]
+						'''
+						#  Store the worst one
+						if( peak < newpar[kl][1]):  newpar[kl][1] = peak
 		for kl in xrange(len(data)):
 			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]

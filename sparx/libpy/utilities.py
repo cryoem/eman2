@@ -3680,9 +3680,10 @@ def getvec( phi, tht ):
 
 	qt = radians(tht)
 	qp = radians(phi)
+	qs = sin(qt)
 
-	x = sin(qt)*cos(qp) 
-	y = sin(qt)*sin(qp)
+	x = qs*cos(qp) 
+	y = qs*sin(qp)
 	z = cos(qt)
 
 	return (x,y,z)
@@ -3691,8 +3692,9 @@ def getfvec( phi, tht ):
 	from math import radians,cos,sin
 	qt = radians(tht)
 	qp = radians(phi)
-	x = sin(qt)*cos(qp) 
-	y = sin(qt)*sin(qp)
+	qs = sin(qt)
+	x = qs*cos(qp) 
+	y = qs*sin(qp)
 	z = cos(qt)
 
 	return (x,y,z)
