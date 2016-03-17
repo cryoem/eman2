@@ -6480,7 +6480,7 @@ def get_class_members(sort3d_dir):
 					igrp += 1
 				else:
 					igrp = maximum_groups
-		igen += 1
+			igen += 1
 		else:
 			igen = maximum_generations
 	return class_list
