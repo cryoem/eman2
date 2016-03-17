@@ -1260,7 +1260,7 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 	import types
 	from statistics import fsc
 	import datetime
-	import insert_slice_pdf
+	from reconstruction import insert_slices_pdf
 	
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
