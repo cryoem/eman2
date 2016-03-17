@@ -330,10 +330,15 @@ class SXCmdWidget(QWidget):
 			if self.sxcmd.mpi_support:
 				# mpi is supported
 				np = int(str(self.sxcmd_tab_main.mpi_nproc_edit.text()))
+				# DESIGN_NOTE: 2016/03/17 Toshio Moriya
+				# The MPI police below has changed!!! An example of this exception is sxcter.py.
+				# Don't add --MPI flag if np == 1
+				# 
 				# DESIGN_NOTE: 2015/10/27 Toshio Moriya
 				# Since we now assume sx*.py exists in only MPI version, always add --MPI flag if necessary
 				# This is not elegant but can be removed when --MPI flag is removed from all sx*.py scripts 
-				if self.sxcmd.mpi_add_flag:
+				# 
+				if self.sxcmd.mpi_add_flag and np > 1:
 					sxcmd_line += " --MPI"
 					
 				# DESIGN_NOTE: 2016/02/11 Toshio Moriya
