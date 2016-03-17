@@ -7,7 +7,7 @@ sxcter - CTF Estimation: Automated estimation of CTF parameters with error asses
 
 ''usage in command line''
 
-sxcter.py  input_image  output_directory  --wn  --apix  --Cs  --voltage  --ac  --kboot  --overlap_x  --overlap_y  --edge_x  --edge_y  --f_start  --f_stop  --MPI  --debug  
+sxcter.py  input_image  output_directory  --wn  --apix  --Cs  --voltage  --ac  --f_start  --f_stop  --kboot  --overlap_x  --overlap_y  --edge_x  --edge_y  --MPI  --debug  
 
 
 === Typical usage ===
@@ -39,6 +39,8 @@ Specify name of stack (without wild card "*") and output directory as arguments.
     Cs:: microscope Cs (spherical aberration): (default 2.0)
     voltage:: microscope voltage in KV: (default 300.0)
     ac:: amplitude contrast in percentage: (default 10.0)
+    f_start:: starting frequency in 1/A: by default determined automatically (default -1.0)
+    f_stop:: stop frequency in 1/A: by default determined automatically (default -1.0)
 
     * The remaining parameters are optional.
     kboot:: number of defocus estimates for micrograph: used for error assessment (default 16)
@@ -46,8 +48,6 @@ Specify name of stack (without wild card "*") and output directory as arguments.
     overlap_y:: overlap y in percentage: (default 50)
     edge_x:: edge x in pixels: (default 0)
     edge_y:: edge y in pixels: (default 0)
-    f_start:: starting frequency in 1/A: by default determined automatically (default -1.0)
-    f_stop:: stop frequency in 1/A: by default determined automatically (default -1.0)
     MPI:: use MPI version: (default False)
     debug:: debug info printout: (default False)
 
