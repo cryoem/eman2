@@ -883,7 +883,7 @@ def main():
 			Tracker["total_stack"]         = len(final_list)
 			Tracker["this_dir"]            = workdir
 			Tracker["this_data_list_file"] = final_list_text_file
-			KE_group  = Kmeans_exhaustive_run(ref_vol_list,Tracker) # 
+			KE_group  = Kmeans_exhaustive_run(ref_vol_list,Tracker)
 			P2_partitions.append(KE_group)
 			if myid ==main_node:
 				log_main.add(" the number of groups after exhaustive Kmeans is %d"%len(KE_group))
