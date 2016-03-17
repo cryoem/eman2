@@ -21977,7 +21977,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	mpi_barrier(MPI_COMM_WORLD)	
 	data, old_shifts    = get_shrink_data_huang(Tracker,Tracker["nxinit"],this_data_list_file,Tracker["constants"]["partstack"],myid, main_node, number_of_proc, preshift = True)
 	if myid ==main_node:
-		list_of_particles     = read_text_file(particle_list_file)
+		list_of_particles     = read_text_file(this_data_list_file)
 		total_nima            = len(list_of_particles)
 	else:   total_nima        = 0
 	total_nima = bcast_number_to_all(total_nima,main_node)
@@ -22076,7 +22076,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir,this_data_list_file,Tracker):
 	#  Initialize Particle ID and set group number to non-existant -1
 	assignment = [-1]*len(data)
  	for im in xrange(len(data)):
-		data[im].set_attr_dict({'ID':list_of_particles[im], 'group':-1})
+		data[im].set_attr_dict({'group':-1})
 	'''
 	if fourvar:
 		from reconstruction import rec3D_MPI
