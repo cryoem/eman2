@@ -21979,8 +21979,11 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 	if myid ==main_node:
 		list_of_particles     = read_text_file(this_data_list_file)
 		total_nima            = len(list_of_particles)
-	else:   total_nima        = 0
+	else:   
+		total_nima            = 0
+		list_of_particles     = 0
 	total_nima = bcast_number_to_all(total_nima,main_node)
+	list_of_particles     = wrap_mpi_bcast(list_of_particles, main_node)
 	
 	
 	from time import time	
@@ -22463,7 +22466,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 	if myid == main_node:log.add("Kmref_ali3d_MPI is done!")
 	final_list = get_sorting_params_refine(Tracker,data, total_nima)
 	group_list, ali3d_params_list = parsing_sorting_params(final_list)
-	res_groups = get_groups_from_partition(group_list, Tracker["this_data_list"], numref)
+	res_groups = get_groups_from_partition(group_list, list_of_particles, numref)
 	final_group_list, res_groups = remove_small_groups(res_groups, Tracker["constants"]["smallest_group"])
 	if myid ==main_node:
 		nc = 0
@@ -22559,7 +22562,9 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		total_nima        =len(list_of_particles)
 	else:
 		total_nima = 0
-	total_nima = bcast_number_to_all(total_nima,main_node)
+		list_of_particles = 0
+	total_nima            = bcast_number_to_all(total_nima,main_node)
+	list_of_particles     = wrap_mpi_bcast(list_of_particles, main_node)
 	
 	if myid == main_node:
 		if os.path.exists(outdir):  nx = 1
