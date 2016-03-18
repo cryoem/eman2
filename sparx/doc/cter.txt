@@ -7,7 +7,7 @@ sxcter - CTF Estimation: Automated estimation of CTF parameters with error asses
 
 ''usage in command line''
 
-sxcter.py  input_image  output_directory  --wn  --apix  --Cs  --voltage  --ac  --f_start  --f_stop  --kboot  --overlap_x  --overlap_y  --edge_x  --edge_y  --MPI  --debug  
+sxcter.py  input_image  output_directory  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLATEGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --MPI  --stack_mode  --debug  
 
 
 === Typical usage ===
@@ -15,64 +15,65 @@ sxcter.py  input_image  output_directory  --wn  --apix  --Cs  --voltage  --ac  -
 sxcter exists in for both MPI and non-MPI versions.
 
 
-''Micrograph Mode - Process a set of micrographs'':
+    Milti-Micrograph Mode - Process a set of micrographs:: Specify micrograph name pattern with wild card [*] enclosed by single quotes ['] or double quotes ["] (Note: sxgui.py automatically adds single quotes [']) and output directory as arguments. 
 
-Specify micrograph name with wild card (*) enclosed by single quotes (') or double quotes (") (Note: sxgui.py automatically adds single quotes (')). The wild card (*) must be in front of the extension. The extension has to be 3 letter long excluding dot (.).
+    ''' mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI ''' <<BR>><<BR>>
 
-Specify output directory as an argument.
+    Single-Micrograph Mode - Process a single micrograph:: Specify micrograph name (without wild card "*") and output directory as arguments. Use single processor for this mode. 
 
-''' mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI ''' 
+    ''' sxcter.py Micrographs/mic0.mrc outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 ''' <<BR>><<BR>>
 
+    Stack Mode - Process a stack (Advanced Option):: Use option --stack_mode, then specify name of stack (without wild card "*") and output directory as arguments. --wn will be not used with this mode. Use single processor for this mode. 
 
-''Stack Mode - Process a stack'':
-
-Specify name of stack (without wild card "*") and output directory as arguments. Use single processor for stack mode. 
-
-''' sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 ''' 
+    ''' sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode ''' <<BR>><<BR>>
 
 
 == Input ==
-    input_image:: a set of micrographs (name with wild card *) or 2D images in a stack file: (default required string)
+    input_image:: a set of micrographs: name with wild card * to process multiple micrographs (milti-micrograph mode). it can be 2D images in a stack file with --stack_mode. (default required string)
     
-    wn:: size of window to use: should be slightly larger than particle box size (default 512)
-    apix:: pixel size in angstroms: (default 1.0)
-    Cs:: microscope Cs (spherical aberration): (default 2.0)
-    voltage:: microscope voltage in KV: (default 300.0)
-    ac:: amplitude contrast in percentage: (default 10.0)
-    f_start:: starting frequency in 1/A: by default determined automatically (default -1.0)
-    f_stop:: stop frequency in 1/A: by default determined automatically (default -1.0)
+    wn:: CTF window size [pixels]: should be slightly larger than particle box size. used only in micrograph modes. (default 512)
+    apix:: pixel size [A]: (default -1.0)
+    Cs:: microscope spherical aberration (Cs) [mm]: (default 2.0)
+    voltage:: microscope voltage [kV]: (default 300.0)
+    ac:: amplitude contrast [%]: (default 10.0)
+    f_start:: starting frequency [1/A]: by default determined automatically (default -1.0)
+    f_stop:: stop frequency [1/A]: by default determined automatically (default -1.0)
 
     * The remaining parameters are optional.
     kboot:: number of defocus estimates for micrograph: used for error assessment (default 16)
-    overlap_x:: overlap x in percentage: (default 50)
-    overlap_y:: overlap y in percentage: (default 50)
-    edge_x:: edge x in pixels: (default 0)
-    edge_y:: edge y in pixels: (default 0)
+    overlap_x:: overlap x [%]: (default 50)
+    overlap_y:: overlap y [%]: (default 50)
+    edge_x:: edge x [pixels]: (default 0)
+    edge_y:: edge y [pixels]: (default 0)
+    set_ctf_header:: set estimated CTF parameters to stack header: used only in micrograph modes. (default False)
     MPI:: use MPI version: (default False)
-    debug:: debug info printout: (default False)
+    stack_mode:: use stack mode: also set a stack name to input image. this is advanced option. (default False)
+    debug:: print out debug info: (default False)
+
 
 == Output ==
     output_directory:: output directory name: into which the partres file and rotinf**** files will be written. The program creates the directory automatically. The directory should not exists upon the execution. (default required string)
 
 Under the directory specified by argument output_directory, 
-(1) CTF parameters are written to ''partres/partres.txt''<<BR>><<BR>>
-(2) Rotational averages are written to ''pwrot/rotinf****.txt''.<<BR>><<BR>>
+
+ 1. CTF parameters are written to ''partres.txt''<<BR>><<BR>>
+ 2. Rotational averages are written to ''pwrot/rotinf****.txt''.<<BR>><<BR>>
 
 File ''partres.txt'' contains 14 columns with the following information:<<BR>><<BR>>
 
 
 || Column || Parameter ||
-|| 1 || defocus (ym) ||
-|| 2 || Cs (mm) ||
-|| 3 || voltage(kV) ||
-|| 4 || pixel size (A) ||
-|| 5 || B-factor (A^2) ||
-|| 6 || amp contrast (%) ||
-|| 7 || astigmatism amplitude (um) ||
-|| 8 || astigmatism angle ||
-|| 9 || std dev of defocus (um) ||
-|| 10 || std dev of ast amp (A) ||
-|| 11 || std dev of ast angle ||
+|| 1 || defocus [um] ||
+|| 2 || Cs [mm] ||
+|| 3 || voltage [kV] ||
+|| 4 || pixel size [A] ||
+|| 5 || B-factor [A^2] ||
+|| 6 || amp contrast [%] ||
+|| 7 || astigmatism amplitude [um] ||
+|| 8 || astigmatism angle [degrees] ||
+|| 9 || std dev of defocus [um] ||
+|| 10 || std dev of ast amp [A] ||
+|| 11 || std dev of ast angle [degrees] ||
 || 12 || frequency at which signal drops by 50% due to estimated error of defocus alone (1/A) ||
 || 13 || frequency at which signal drops by 50% due to estimated error of defocus and astigmatism (1/A) ||
 || 14 || Micrograph name ||
@@ -83,7 +84,7 @@ Files ''rotinf****.txt'' contain 6 columns with the following information:<<BR>>
 
 || Column || Parameter ||
 || 1 || line number ||
-|| 2 || spatial frequency (1/A) ||
+|| 2 || spatial frequency [1/A] ||
 || 3 || experimental rotational average (no astigmatism) ||
 || 4 || fitted rotational average (no astigmatism) ||
 || 5 || experimental rotational average (with astigmatism) ||
@@ -92,11 +93,17 @@ Files ''rotinf****.txt'' contain 6 columns with the following information:<<BR>>
 
 == Description ==
 
-''''This is work in progress  11/30/2013''''
+''''This is work in progress since 11/30/2013''''
+
+''NOTE: 2016/03/17 Toshio Moriya'':
+IMPORTANT - Started another major modification of I/O related arguments and options as well as formats of output files. This work is currently in progress.
+
+''NOTE: 2015/12/27 Toshio Moriya'':
+IMPORTANT - Major modification of I/O related arguments and options to simplified the interface. 
 
 
 == Author / Maintainer ==
-Pawel A. Penczek
+Pawel A. Penczek and Toshio Moriya
 
 
 === Attachments ===
@@ -108,12 +115,10 @@ Pawel A. Penczek
 
 
 == Files ==
-sxcter.py
-
+sparx/bin/sxcter.py
 
 === See also ===
-References to relevant other routines.
-
+[[http://sparx-em.org/sparxwiki/sxgui_cter|sxgui_cter]], [[http://sparx-em.org/sparxwiki/window|window]]
 
 === Maturity ===
     beta::     works for author, often works for others.
