@@ -4276,13 +4276,12 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
-		from math import acos, pi
+		from math import acos, pi, degrees
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		if v > 1: v = 1
-		if v < -1: v = -1
-		if v >= 0: return acos(v)*180/pi, 0
-		else:  return acos(-v)*180/pi, 1
+		v = max(min(v,1.0),-1.0)
+		if v >= 0: return degrees(acos(v)), 0
+		else:      return degrees(acos(-v)), 1
 
 	t0 = time()
 	proj_list = []   
