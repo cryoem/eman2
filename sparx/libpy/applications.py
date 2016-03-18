@@ -22226,6 +22226,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					'''
+					'''
 					#  Standard distance
 					#  Ref is in reciprocal space
 					if CTF:
@@ -22256,13 +22257,12 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
 					from statistics import fsc
-					if(focus == None):
-						tempx = fsc(ref, data[im])[1]
-					else:
+					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fsc(ref, fft(data[im]*mask2D))[1]
+					else:
+						tempx = fsc(ref, data[im])[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
-					'''
 
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
@@ -22845,6 +22845,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 					if(focus != None):  mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]),1)  #  Should be precalculated!!
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					'''
+					'''
 					#  Standard distance
 					#  Ref is in reciprocal space
 					if CTF:
@@ -22873,13 +22874,15 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
-					if(focus == None):
-						tempx = fsc(ref, data[im])[1]
-					else:
+					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fsc(ref, fft(data[im]*mask2D))[1]
+					else:
+						tempx = fsc(ref, data[im])[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
-					'''
+
+
+
 					if not(finfo is None):
 						finfo.write( "ID, iref, peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
