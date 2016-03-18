@@ -2160,7 +2160,7 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 			nrmref = sqrt(Util.innerproduct(temp, temp))
 			for kl,emimage in enumerate(data):
 				#  Check psi first which is faster
-				qt = (oldangs[kl][1]-psi)%360.0
+				qt = (oldangs[kl][2]-psi)%360.0
 				if( qt > 180.0 ): qt = 360. - qt
 				if(qt < an):
 					if( (dvec[kl][0]*rdir[0] + dvec[kl][1]*rdir[1] + dvec[kl][2]*rdir[2]) >= ac ):
