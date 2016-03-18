@@ -22238,7 +22238,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 					nrmref = sqrt(Util.innerproduct(ref, ref))
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						tempx = fft(data[im]*mask2D))
+						tempx = fft(data[im]*mask2D)
 						tempx.set_attr("is_complex",0)
 						peak = Util.innerproduct(ref, tempx)
 					else:
@@ -22856,7 +22856,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 					nrmref = sqrt(Util.innerproduct(ref, ref))
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						tempx = fft(data[im]*mask2D))
+						tempx = fft(data[im]*mask2D)
 						tempx.set_attr("is_complex",0)
 						peak = Util.innerproduct(ref, tempx)
 					else:
