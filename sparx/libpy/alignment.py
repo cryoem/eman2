@@ -2114,7 +2114,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, myid, main_node, lentop = 1000, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
-	from utilities import wrap_mpi_gatherv
+	from utilities import wrap_mpi_gatherv, getfvec
 	from math import sqrt
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	from time import time
@@ -2135,7 +2135,7 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 	#  To sort:
 	from operator import itemgetter#, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
-	from math import acos, cos
+	from math import cos
 	ac = cos(an)
 	dvec = [None]*len(data)
 	for i in xrange(len(data)):
