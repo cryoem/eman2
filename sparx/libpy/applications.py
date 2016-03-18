@@ -22226,7 +22226,29 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					'''
+					#  Standard distance
+					#  Ref is in reciprocal space
+					if CTF:
+						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
+					else:
+						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
+					from filter import filt_tophatl
+					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize))
+					ref.set_attr("is_complex",0)
+					nrmref = sqrt(Util.innerproduct(ref, ref))
+					if(focus):
+						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
+						tempx = fft(data[im]*mask2D))
+						tempx.set_attr("is_complex",0)
+						peak = Util.innerproduct(ref, tempx)
+					else:
+						data[im].set_attr("is_complex",0)
+						peak = Util.innerproduct(ref, data[im])
+						data[im].set_attr("is_complex",1)
+					peak /= nrmref
 
+
+					'''  FSC distance
 					#  Ref is in reciprocal space
 					if CTF:
 						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
@@ -22239,7 +22261,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fsc(ref, fft(data[im]*mask2D))[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
-
+					'''
 
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
@@ -22822,6 +22844,28 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 					if(focus != None):  mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]),1)  #  Should be precalculated!!
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					'''
+					#  Standard distance
+					#  Ref is in reciprocal space
+					if CTF:
+						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
+					else:
+						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
+					from filter import filt_tophatl
+					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize))
+					ref.set_attr("is_complex",0)
+					nrmref = sqrt(Util.innerproduct(ref, ref))
+					if(focus):
+						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
+						tempx = fft(data[im]*mask2D))
+						tempx.set_attr("is_complex",0)
+						peak = Util.innerproduct(ref, tempx)
+					else:
+						data[im].set_attr("is_complex",0)
+						peak = Util.innerproduct(ref, data[im])
+						data[im].set_attr("is_complex",1)
+					peak /= nrmref
+
+					'''  FSC distance
 					#  Ref is in reciprocal space
 					if CTF:
 						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
@@ -22833,7 +22877,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fsc(ref, fft(data[im]*mask2D))[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
-						
+					'''
 					if not(finfo is None):
 						finfo.write( "ID, iref, peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
