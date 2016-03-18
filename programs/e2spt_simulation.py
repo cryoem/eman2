@@ -365,9 +365,10 @@ def main():
 					
 					
 					#options = ret[0]
-					if options.clip:
+					#if options.clip:
 						
-						model = clip3D( model, options.clip )
+					#	model = clip3D( model, options.clip )
+					if options.verbose:
 						print "\n\n\n\n\n\nBox of model AFTER preprocessing is", model['nx']
 				
 				if options.savepreprocessed:
