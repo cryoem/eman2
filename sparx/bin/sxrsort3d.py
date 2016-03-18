@@ -347,9 +347,9 @@ def main():
 			stable_member_list =0
 		stable_member_list               = wrap_mpi_bcast(stable_member_list, main_node)
 		Tracker["total_stack"]           = bcast_number_to_all(Tracker["total_stack"], source_node = main_node)
-		Tracker["this_unaccounted_list"] = wrap_mpi_bcast(Tracker["this_unaccounted_list"], main_node)
+		left_one_from_old_two_runs = wrap_mpi_bcast(Tracker["this_unaccounted_list"], main_node)
 		if myid ==main_node:  
-			write_text_file(Tracker["this_unaccounted_list"], os.path.join(masterdir,"unaccounted_from_two_previous_runs.txt"))
+			write_text_file(left_one_from_old_two_runs, os.path.join(masterdir,"unaccounted_from_two_previous_runs.txt"))
 			print " Extracting results of two previous runs is done!"
 		#################################### Estimate resolution----------------------############# 
 
@@ -458,7 +458,7 @@ def main():
 		## ---------------------------------------------------------------------------------------------########
 		## Stop program and output results when the leftover from two sort3d runs is not sufficient for a new run    		########
 		## ---------------------------------------------------  ---------------------------------------  ######
-		Tracker["number_of_groups"] = get_number_of_groups(Tracker["total_stack"], Tracker["constants"]["number_of_images_per_group"])
+		Tracker["number_of_groups"] = get_number_of_groups(len(left_one_from_old_two_runs), Tracker["constants"]["number_of_images_per_group"])
 		if Tracker["number_of_groups"] <=1 : # programs finishes 
 			if myid == main_node:
 				log_main.add("the unaccounted ones are no sufficient for a simple two-group run, output results!")
@@ -527,11 +527,13 @@ def main():
 			import copy
 			mpi_barrier(MPI_COMM_WORLD)
 			for iter_P2_run in xrange(number_of_P2_runs): # two runs such that one can obtain reproducibility
-				list_to_be_processed = Tracker["this_unaccounted_list"][:]
+				list_to_be_processed = left_one_from_old_two_runs[:]#Tracker["this_unaccounted_list"][:]
+				Tracker["this_unaccounted_list"] = left_one_from_old_two_runs[:]
 				if myid == main_node :    new_stable1 =  new_stable_P1[:]
 				total_stack   = len(list_to_be_processed) # This is the input from two P1 runs
 				#number_of_images_per_group = Tracker["constants"]["number_of_images_per_group"]
 				P2_run_dir = os.path.join(masterdir, "P2_run%d"%iter_P2_run)
+				Tracker["number_of_groups"] = get_number_of_groups(total_stack, Tracker["constants"]["number_of_images_per_group"])
 				if myid == main_node:
 					cmd="{} {}".format("mkdir", P2_run_dir)
 					os.system(cmd)
@@ -540,7 +542,7 @@ def main():
 					print "----------------P2 independent run %d--------------"%iter_P2_run
 				mpi_barrier(MPI_COMM_WORLD)
 				#
-				Tracker["number_of_groups"] = get_number_of_groups(total_stack,Tracker["constants"]["number_of_images_per_group"])
+				#Tracker["number_of_groups"] = get_number_of_groups(total_stack,Tracker["constants"]["number_of_images_per_group"])
 				generation                  = 0
 				
 				if myid == main_node:
@@ -673,7 +675,7 @@ def main():
 					volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo=None)
 					volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
 					if myid ==main_node: volref.write_image(os.path.join(workdir, "volf_unaccounted.hdf"))
-					
+				
 					######## Exhaustive Kmeans #############################################
 				if myid ==main_node:
 					if len(Tracker["this_unaccounted_list"])>=Tracker["constants"]["smallest_group"]:
@@ -705,7 +707,7 @@ def main():
 				else: new_stable1 = 0
 				mpi_barrier(MPI_COMM_WORLD)
 				## Create reference volumes
-			
+		
 				if myid == main_node:
 					number_of_ref_class = []
 					for igrp in xrange(Tracker["number_of_groups"]):
@@ -715,7 +717,7 @@ def main():
 						number_of_ref_class.append(len(new_stable1[igrp]))
 				else:  number_of_ref_class= 0
 				number_of_ref_class = wrap_mpi_bcast(number_of_ref_class,main_node)
-			
+		
 				mpi_barrier(MPI_COMM_WORLD)
 				ref_vol_list = []
 				for igrp in xrange(Tracker["number_of_groups"]):
@@ -737,7 +739,7 @@ def main():
 				Tracker["this_dir"]            = workdir
 				Tracker["this_data_list_file"] = os.path.join(workdir,"final_list.txt")
 				KE_group                       = Kmeans_exhaustive_run(ref_vol_list,Tracker) # 
-				P2_partitions.append(KE_group)
+				P2_partitions.append(KE_group[:][:])
 				if myid ==main_node:
 					log_main.add(" the number of groups after exhaustive Kmeans is %d"%len(KE_group))
 					for ike in xrange(len(KE_group)):log_main.add(" group   %d   number of objects %d"%(ike,len(KE_group[ike])))
@@ -793,11 +795,11 @@ def main():
 					cutoff     = Tracker["constants"]["pixel_size"]/lowpass
 					log_main.add("%d vol low pass filer %f   %f  cut to  %f Angstrom"%(igrp,Tracker["lowpass"],Tracker["falloff"],cutoff))
 					volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))
-			if myid==main_node:   log_main.add(" sxsort3d_P2 finishes. ")
-			# Finish program
-			mpi_barrier(MPI_COMM_WORLD)
-			from mpi import mpi_finalize
-			mpi_finalize()
-			exit()
+		if myid==main_node:   log_main.add(" sxsort3d_P2 finishes. ")
+		# Finish program
+		mpi_barrier(MPI_COMM_WORLD)
+		from mpi import mpi_finalize
+		mpi_finalize()
+		exit()
 if __name__ == "__main__":
 		main()
