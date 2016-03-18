@@ -2135,8 +2135,8 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 	#  To sort:
 	from operator import itemgetter#, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
-	from math import cos
-	ac = cos(an)
+	from math import cos, radians
+	ac = cos(radians(an))
 	dvec = [None]*len(data)
 	for kl in xrange(len(data)):
 		dvec[kl] = getfvec(oldangs[kl][0], oldangs[kl][1])
@@ -2159,25 +2159,29 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 			temp.set_attr("is_complex",0)
 			nrmref = sqrt(Util.innerproduct(temp, temp))
 			for kl,emimage in enumerate(data):
-				if( (dvec[kl][0]*rdir[0] + dvec[kl][1]*rdir[1] + dvec[kl][2]*rdir[2]) >= ac ):
-					for im in xrange(len(shifts)):
-						peak = Util.innerproduct(temp, emimage[im])
-						peak /= nrmref
-						#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
-						newpar[kl][-1].append([im + iangpsi, peak])
-						#newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
-						#del newpar[kl][-1][-1]
-						'''
-						toto = -1
-						for k in xrange(lentop):
-							if(peak > newpar[kl][-1][k][1]):
-								toto = k
-								break
-						if( toto == 0 ):  newpar[kl][-1] = [[im + iangpsi, peak]] + newpar[kl][-1][:lentop-1]
-						elif(toto > 0 ):  newpar[kl][-1] = newpar[kl][-1][:toto-1] + [[im + iangpsi, peak]] + newpar[kl][-1][toto:lentop-1]
-						'''
-						#  Store the worst one
-						if( peak < newpar[kl][1]):  newpar[kl][1] = peak
+				#  Check psi first which is faster
+				qt = (oldangs[kl][1]-psi)%360.0
+				if( qt > 180.0 ): qt = 360. - qt
+				if(qt < an):
+					if( (dvec[kl][0]*rdir[0] + dvec[kl][1]*rdir[1] + dvec[kl][2]*rdir[2]) >= ac ):
+						for im in xrange(len(shifts)):
+							peak = Util.innerproduct(temp, emimage[im])
+							peak /= nrmref
+							#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
+							newpar[kl][-1].append([im + iangpsi, peak])
+							#newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
+							#del newpar[kl][-1][-1]
+							'''
+							toto = -1
+							for k in xrange(lentop):
+								if(peak > newpar[kl][-1][k][1]):
+									toto = k
+									break
+							if( toto == 0 ):  newpar[kl][-1] = [[im + iangpsi, peak]] + newpar[kl][-1][:lentop-1]
+							elif(toto > 0 ):  newpar[kl][-1] = newpar[kl][-1][:toto-1] + [[im + iangpsi, peak]] + newpar[kl][-1][toto:lentop-1]
+							'''
+							#  Store the worst one
+							if( peak < newpar[kl][1]):  newpar[kl][1] = peak
 		for kl in xrange(len(data)):
 			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]

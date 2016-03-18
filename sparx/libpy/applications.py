@@ -22226,7 +22226,6 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					'''
-					'''
 					#  Standard distance
 					#  Ref is in reciprocal space
 					if CTF:
@@ -22237,6 +22236,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 					from math import sqrt
 					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
+					ref.set_value_at(0,0,0.0)
 					nrmref = sqrt(Util.innerproduct(ref, ref))
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
@@ -22277,6 +22277,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f\n"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
 						finfo.flush()
+					'''
 
 				if peak > peaks[im]:
 					peaks[im] = peak
@@ -22846,7 +22847,6 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 					if(focus != None):  mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]),1)  #  Should be precalculated!!
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					'''
-					'''
 					#  Standard distance
 					#  Ref is in reciprocal space
 					if CTF:
@@ -22857,6 +22857,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 					from math import sqrt
 					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
+					ref.set_value_at(0,0,0.0)
 					nrmref = sqrt(Util.innerproduct(ref, ref))
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
@@ -22882,6 +22883,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 					else:
 						tempx = fsc(ref, data[im])[1]
 					peak = sum(tempx[1:highres[iref]])/highres[iref]
+					'''
 
 
 
