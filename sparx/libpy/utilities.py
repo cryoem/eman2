@@ -6193,7 +6193,7 @@ def get_ali3d_params(ali3d_old_text_file,shuffled_list):
 		ali3d_new.append(ali3d_old[shuffled_list[iptl]])
 	return ali3d_new
 
-def counting_projections(delta,ali3d_params,image_start):
+def counting_projections(delta, ali3d_params, image_start):
 	from utilities import even_angles,angle_between_projections_directions
 	sampled_directions = {}
 	angles=even_angles(delta,0,180)
@@ -6211,13 +6211,13 @@ def counting_projections(delta,ali3d_params,image_start):
 		for j in xrange(len(angles)):
 			[phi0, theta0, psi0] = angles[j]
 			prj2 =[phi0,theta0]
-			dis=angle_between_projections_directions(prj1, prj2)
+			dis = angle_between_projections_directions(prj1, prj2)
 			if dis<dis_min:
 				dis_min    =dis
 				this_phi   =phi0
 				this_theta =theta0
 				this_psi   =psi0
-		alist= sampled_directions[(this_phi,this_theta)]
+		alist = sampled_directions[(this_phi,this_theta)]
 		alist.append(i+image_start)
 		sampled_directions[(this_phi,this_theta)]=alist
 	return sampled_directions
