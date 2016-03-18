@@ -22233,6 +22233,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
 					from filter import filt_tophatl
+					from math import sqrt
 					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
 					nrmref = sqrt(Util.innerproduct(ref, ref))
@@ -22851,6 +22852,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 					else:
 						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
 					from filter import filt_tophatl
+					from math import sqrt
 					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
 					nrmref = sqrt(Util.innerproduct(ref, ref))
