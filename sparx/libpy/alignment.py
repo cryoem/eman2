@@ -2161,7 +2161,7 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 			for kl,emimage in enumerate(data):
 				if( (dvec[kl][0]*rdir[0] + dvec[kl][1]*rdir[1] + dvec[kl][2]*rdir[2]) >= ac ):
 					for im in xrange(len(shifts)):
-						peak = Util.innerproduct(temp, emimage[im])
+						peak = Util.innerproduct(temp, emimage)
 						peak /= nrmref
 						#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
 						newpar[kl][-1].append([im + iangpsi, peak])
