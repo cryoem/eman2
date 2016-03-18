@@ -6397,7 +6397,8 @@ def count_chunk_members(chunk_dict, one_class):
 		if chunk_dict[a] == 0: N_chunk0 += 1
 		else:                  N_chunk1 += 1
 	n = len(one_class)
-	return  float(N_chunk0)/n, float(N_chunk1)/n, n
+	if n <=1:  return 0.0, 0.0, n
+	else: return  float(N_chunk0)/n, float(N_chunk1)/n, n
 	
 def get_two_chunks_from_stack(Tracker):
 	total_chunk = EMUtil.get_all_attributes(Tracker["orgstack"],"chunk_id")
