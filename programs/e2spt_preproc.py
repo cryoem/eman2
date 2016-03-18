@@ -428,7 +428,11 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 		except:
 			if options.verbose > 9:	
 				print "\n(e2spt_preproc)(preprocfunc) parameter --output probably doesn't exist in program calling this function. default outname %s and i=%d " %( outname , i) 
-			simage.write_image( outname, i )
+			
+			if outname:
+				simage.write_image( outname, i )
+			else:
+				print "no output name"
 			
 			
 		#del simage		
