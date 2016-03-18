@@ -22250,7 +22250,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 					peak /= nrmref
 
 
-					'''  FSC distance
+					'''  
+					#  FSC distance
 					#  Ref is in reciprocal space
 					if CTF:
 						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
@@ -22868,7 +22869,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 						data[im].set_attr("is_complex",1)
 					peak /= nrmref
 
-					'''  FSC distance
+					'''
+					#  FSC distance
 					#  Ref is in reciprocal space
 					if CTF:
 						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
