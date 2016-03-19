@@ -22132,6 +22132,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 				rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
 				ro = rops_table(volref)
 				for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
+				volref =filt_table(volref,ro)
 				
 			if Tracker["mask3D"]: Util.mul_img(volref, mask3D)
 			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
@@ -22437,11 +22438,11 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 				if (Tracker["constants"]["low_pass_filter"]==-1.):  volref = filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
 				else:                                               volref = filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter			
 	
-				volref= filt_tanl(volref, Tracker["lowpass"], Tracker["falloff"])
 				if(Tracker["constants"]["PWadjustment"]):
 					rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
 					ro = rops_table(volref)
 					for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
+					volref =filt_table(volref,ro)
 					
 				if Tracker["mask3D"]: Util.mul_img(volref, mask3D)
 				volref.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
@@ -23291,13 +23292,11 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				if (Tracker["constants"]["low_pass_filter"]==-1.):  volref = filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
 				else:                                               volref = filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
 			
-				
-				
-				volref= filt_tanl(volref, Tracker["lowpass"], Tracker["falloff"])
 				if(Tracker["constants"]["PWadjustment"]):
 					rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
 					ro = rops_table(volref)
 					for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
+					volref =filt_table(volref,ro)
 				if Tracker["mask3D"]: Util.mul_img(volref, mask3D)
 				volref.write_image( os.path.join(outdir,"volf%04d.hdf"%(total_iter)), iref)
 				del volref
