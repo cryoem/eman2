@@ -494,7 +494,9 @@ void FourierReconstructor::setup()
 	nz2=nz/2;
 
 #ifdef RECONDEBUG
-	for (int i=0; i<125; i++) ddata[i]=dnorm[i]=0.0;
+	ddata=(double *)malloc(sizeof(double)*250);
+	dnorm=(double *)malloc(sizeof(double)*250);
+	for (int i=0; i<250; i++) ddata[i]=dnorm[i]=0.0;
 #endif
 
 	// Adjust nx if for Fourier transform even odd issues
@@ -552,6 +554,12 @@ void FourierReconstructor::setup()
 
 	load_inserter();
 
+#ifdef RECONDEBUG
+	printf("copied\n");
+	inserter->ddata=ddata;
+	inserter->dnorm=dnorm;
+#endif
+	
 	if ( (bool) params["verbose"] )
 	{
 		cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
@@ -1041,9 +1049,10 @@ EMData *FourierReconstructor::finish(bool doift)
 		for (int j=0; j<5; j++) {
 			for (int i=0; i<5; i++) {
 				int idx=i*2+j*10+k*50;
-				ddata[idx]/=dnorm[idx];
-				ddata[idx+1]/=dnorm[idx+1];
-				printf("%d %d %d   %1.4lg\t%1.4g     %1.4lg\t%1.4g\n",i,j,k,ddata[idx],image->get_value_at(i*2,j,k),ddata[idx+1],image->get_value_at(i*2+1,j,k));
+				std::complex <double> a(ddata[idx],ddata[idx+1]);
+				double b=dnorm[idx];
+				a/=b;
+				printf("%d %d %d   %1.4lg\t%1.4g     %1.4lg\t%1.4g\n",i,j,k,a.real(),image->get_value_at(i*2,j,k),a.imag(),image->get_value_at(i*2+1,j,k));
 			}
 		}
 	}
