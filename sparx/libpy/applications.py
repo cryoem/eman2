@@ -21897,11 +21897,12 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank, write_text_file, get_shrink_data_huang
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
-	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
+	from utilities      import rotate_3D_shift,estimate_3D_center_MPI,get_im
 	###-------
 	from utilities      import get_attr_stack, get_sorting_attr_stack, get_sorting_params, get_sorting_params_refine
 	from utilities      import parsing_sorting_params, fill_in_mpi_list, wrap_mpi_bcast, get_groups_from_partition
 	from utilities      import remove_small_groups, set_filter_parameters_from_adjusted_fsc
+
 	###------- 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore
 	from random         import randint
@@ -21911,6 +21912,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 	from applications   import MPI_start_end
 	from reconstruction import rec3D_MPI_noCTF,rec3D_two_chunks_MPI
 	from morphology     import binarize, get_shrink_3dmask
+	from fundamentals   import fftip, rops_table, fft
 	import os
 	import types
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -22111,15 +22113,27 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 	highres = []
 	for  iref in xrange(numref): highres.append(int(res*Tracker["nxinit"]+.5))	
 	if myid ==main_node:
+	
 		for  iref in xrange(numref):
 			#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
-			refdata= [None]*4
-			refdata[0] = ref_list[iref]
-			refdata[1] = Tracker
-			refdata[2] = Tracker["constants"]["myid"]
-			refdata[3] = Tracker["constants"]["nproc"]
-			volref = user_func(refdata)
 			log.add("%d reference low pass filter is %f  %f  %d"%(iref, Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
+			log.add("%d highres                   %f"%(iref, highres[iref]))
+			
+			if Tracker["mask3D"]:
+				mask3D          = get_im(Tracker["mask3D"])
+				stat            = Util.infomask(ref_list[iref], mask3D, False)
+				ref_list[iref] -= stat[0]
+				Util.mul_scalar(ref_list[iref], 1.0/stat[1])
+				
+			if (Tracker["constants"]["low_pass_filter"]==-1.):  volref = filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+			else:                                               volref = filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
+			
+			if(Tracker["constants"]["PWadjustment"]):
+				rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
+				ro = rops_table(volref)
+				for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
+				
+			if Tracker["mask3D"]: Util.mul_img(volref, mask3D)
 			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 			ref_list[iref].write_image(os.path.join(outdir, "vol0000.hdf"), iref)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -22412,14 +22426,24 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 			Tracker["falloff"] = wrap_mpi_bcast(Tracker["falloff"], main_node, mpi_comm)
 			res = wrap_mpi_bcast(res, main_node, mpi_comm)
 			highres.append(int(res*Tracker["nxinit"]+ 0.5))
-
 			if myid == main_node:
-				refdata    = [None]*4
-				refdata[0] = volref
-				refdata[1] = Tracker
-				refdata[2] = Tracker["constants"]["myid"]
-				refdata[3] = Tracker["constants"]["nproc"]
-				volref     = user_func(refdata)
+				log.add("%d highres                   %f"%(iref, highres[iref]))
+				if Tracker["mask3D"]:
+					mask3D = get_im(Tracker["mask3D"])
+					stat = Util.infomask(volref, mask3D, False)
+					volref -= stat[0]
+					Util.mul_scalar(volref, 1.0/stat[1])
+
+				if (Tracker["constants"]["low_pass_filter"]==-1.):  volref = filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+				else:                                               volref = filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter			
+	
+				volref= filt_tanl(volref, Tracker["lowpass"], Tracker["falloff"])
+				if(Tracker["constants"]["PWadjustment"]):
+					rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
+					ro = rops_table(volref)
+					for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
+					
+				if Tracker["mask3D"]: Util.mul_img(volref, mask3D)
 				volref.write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 				del volref
 
@@ -22512,7 +22536,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, model_blank, wrap_mpi_bcast, write_text_file
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
-	from utilities      import rotate_3D_shift,estimate_3D_center_MPI, get_shrink_data_huang
+	from utilities      import rotate_3D_shift,estimate_3D_center_MPI, get_shrink_data_huang, get_im
 	####-------
 	from utilities      import get_attr_stack, get_sorting_attr_stack, get_sorting_params, get_sorting_params_refine
 	from utilities      import parsing_sorting_params, fill_in_mpi_list, wrap_mpi_bcast, get_groups_from_partition
@@ -22532,6 +22556,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	from mpi            import mpi_reduce, mpi_gatherv, mpi_scatterv, MPI_INT, MPI_SUM
 	from applications   import MPI_start_end
 	from reconstruction import rec3D_two_chunks_MPI, rec3D_MPI_noCTF
+	from fundamentals   import fftip, rops_table, fft
 	mpi_comm = MPI_COMM_WORLD
 	#####  reconstruction parameters, no need to change.
 	fourvar   = False
@@ -22714,20 +22739,9 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		refdata = [None]*7
 		for  iref in xrange(numref):
 			ref_list[iref].write_image(os.path.join(outdir, "vol0000.hdf"), iref)
-		"""
-		refdata[0] = numref
-		refdata[1] = outdir
-		refdata[2] = None   #Tracker["frequency_low_pass"]
-		refdata[3] = 0
-		refdata[4] = ref_list
-		refdata[5] = mask3D
-		refdata[6] = Tracker["low_pass_filter"] # whether to align on 50S, this only happens at refinement step
-		"""
 		#refdata[0] = 
 		#user_func(refdata)
 	refdata        =[None]*4
-	
-	
 	res = 0.5
 	for i in xrange(len(Tracker["global_fsc"][0])-1,0,-1):
 		if Tracker["global_fsc"][1][i] > 0.5:
@@ -22737,15 +22751,29 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	for  iref in xrange(numref): highres.append(int(res*Tracker["nxinit"] + 0.5))
 	Tracker["lowpass"] = min(0.45, res)
 	Tracker["falloff"] = 0.1
-	if myid == main_node:
+	##-----------------------------------------------
+	if myid == main_node:  ### 3-D mask, low pass filter, and power spectrum adjustment
 		for iref in xrange(numref):
 			#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
-			refdata[0] = ref_list[iref]
-			refdata[1] = Tracker
-			refdata[2] = Tracker["constants"]["myid"]
-			refdata[3] = Tracker["constants"]["nproc"]
-			volref = user_func(refdata)
 			log.add("%d  low pass filter   %f %f  %d"%(iref,Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
+			log.add("%d highres                   %f"%(iref, highres[iref]))
+			
+			if Tracker["mask3D"]:
+				mask3D = get_im(Tracker["mask3D"])
+				stat = Util.infomask(ref_list[iref], mask3D, False)
+				ref_list[iref] -= stat[0]
+				#ref_list[iref].write_image(os.path.join(outdir,"volf0003.hdf"),iref)
+				Util.mul_scalar(ref_list[iref], 1.0/stat[1])
+				
+			if (Tracker["constants"]["low_pass_filter"]==-1.):  volref = filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+			else:                                               volref = filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
+							
+			if(Tracker["constants"]["PWadjustment"] !=""):
+				rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
+				ro = rops_table(volref)
+				for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
+				volref =filt_table(volref,ro)
+			if Tracker["mask3D"]: Util.mul_img(volref, mask3D)
 			volref.write_image(os.path.join(outdir,"volf0000.hdf"),iref)
 	mpi_barrier( MPI_COMM_WORLD )
 	if CTF:
@@ -23242,15 +23270,35 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				res = 0.0
 			res = bcast_number_to_all(res, main_node)
 			highres.append(int(res*Tracker["nxinit"]+ 0.5))
+			if myid ==main_node:
+				log.add("%d highres                   %f"%(iref, highres[iref]))
 			Tracker["lowpass"] = bcast_number_to_all(Tracker["lowpass"], main_node)
 			Tracker["falloff"] = bcast_number_to_all(Tracker["falloff"], main_node)
 			if myid ==main_node:
 				refdata    =[None]*4
-				refdata[0] = volref
-				refdata[1] = Tracker
-				refdata[2] = Tracker["constants"]["myid"]
-				refdata[3] = Tracker["constants"]["nproc"] 
-				volref = user_func(refdata)
+				#refdata[0] = volref
+				#refdata[1] = Tracker
+				#refdata[2] = Tracker["constants"]["myid"]
+				#refdata[3] = Tracker["constants"]["nproc"]
+				#volref = user_func(refdata)
+				if Tracker["mask3D"]: 
+				
+					mask3D = get_im(Tracker["mask3D"])
+					stat = Util.infomask(volref, mask3D, False)
+					volref -= stat[0]
+					Util.mul_scalar(volref, 1.0/stat[1])
+							
+				if (Tracker["constants"]["low_pass_filter"]==-1.):  volref = filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+				else:                                               volref = filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
+			
+				
+				
+				volref= filt_tanl(volref, Tracker["lowpass"], Tracker["falloff"])
+				if(Tracker["constants"]["PWadjustment"]):
+					rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
+					ro = rops_table(volref)
+					for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
+				if Tracker["mask3D"]: Util.mul_img(volref, mask3D)
 				volref.write_image( os.path.join(outdir,"volf%04d.hdf"%(total_iter)), iref)
 				del volref
 		"""
@@ -23294,7 +23342,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			"""
 			if(myid == 0):log.add( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 		else:
-			final_list = get_sorting_params_refine(Tracker,data, total_nima)
+			final_list = get_sorting_params_refine(Tracker, data, total_nima)
 			group_list, ali3d_params_list = parsing_sorting_params(final_list)
 			if myid ==main_node:
 				group_list_saved_file =os.path.join(outdir, "list2.txt")
@@ -23303,7 +23351,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			Tracker["this_partition"]=group_list
 			break
 	if terminate != 1:
-		final_list = get_sorting_params_refine(Tracker,data)
+		final_list = get_sorting_params_refine(Tracker,data, total_nima)
 		group_list, ali3d_params_list = parsing_sorting_params(final_list)  
 		if myid ==main_node:
 			group_list_saved_file =os.path.join(outdir, "list2.txt")
