@@ -23296,8 +23296,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 					for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
 					volref =filt_table(volref,ro)
 							
-				if (Tracker["constants"]["low_pass_filter"]==-1.):  volref = filt_tanl(volfref, Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
-				else:                                               volref = filt_tanl(volfref, min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
+				if (Tracker["constants"]["low_pass_filter"]==-1.):  volref = filt_tanl(volref, Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+				else:                                               volref = filt_tanl(volref, min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
 			
 	
 				if Tracker["mask3D"]: Util.mul_img(volref, mask3D)
