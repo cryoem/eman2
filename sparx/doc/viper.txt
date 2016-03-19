@@ -1,5 +1,5 @@
 = Name =
-sxviper - Initial 3D Modeling Old: Validated ''ab initio'' 3D structure determination, aka Validation of Individual Parameter Reproducibility. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]. 
+sxviper - Initial 3D Model with VIPER: Validated ''ab initio'' 3D structure determination, aka Validation of Individual Parameter Reproducibility. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]. 
 
 = Usage =
 
@@ -30,6 +30,7 @@ Since VIPER makes use of group of processors working together, it is important f
     stack:: 2D images in a stack file: (default required string)
 
     radius:: radius of the particle: has to be less than < int(nx/2)-1 (default required int)
+    sym:: point-group symmetry of the structure: (default c1)
 
     * The remaining parameters are optional.
     xr:: range for translation search in x direction: search is +/xr in pixels (default '0')
@@ -46,7 +47,6 @@ Since VIPER makes use of group of processors working together, it is important f
     maxit2:: maximum number of iterations performed for the finishing up part: (default 50)
     L2threshold:: stopping criterion of GA: given as a maximum relative dispersion of volumes' L2 norms: (default 0.03)
     ref_a:: method for generating the quasi-uniformly distributed projection directions: (default S)
-    sym:: point-group symmetry of the structure: (default c1)
     nruns:: GA population: aka number of quasi-independent volumes (default 6)
     doga:: do GA when fraction of orientation changes less than 1.0 degrees is at least doga: (default 0.1)
     fl:: cut-off frequency applied to the template volume: using a hyperbolic tangent low-pass filter (default 0.25)

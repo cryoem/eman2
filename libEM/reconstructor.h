@@ -1341,7 +1341,7 @@ namespace EMAN
 		*/
 		virtual int insert_slice(const EMData* const slice, const Transform & euler, const float weight);
 
-		virtual EMData *finish(bool doift=true);
+		virtual EMData *finish(bool compensate=true);
 
 		virtual string get_name() const
 		{
@@ -1378,7 +1378,7 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad, float snr, int sign, int do_ctf );
 
-		int insert_padfft_slice_weighted( EMData* padfft, EMData* ctf2d2, EMData* sigmasq2, const Transform& trans, const float weight);
+		int insert_padfft_slice_weighted( EMData* padfft, EMData* ctf2d2, vector<float> bckgnoise, const Transform& trans, const float weight);
 
 		//  It appears here one could add extra functions  int insert_buffed_slice( const EMData* buffer, float mult );
 		//int insert_buffed_slice( const EMData* buffer, float mult );

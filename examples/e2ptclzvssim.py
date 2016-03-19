@@ -48,6 +48,10 @@ def main():
 Reads a full similarity matrix. Computes a Z score for each particle and plots vs actual
 similarity score.
 
+Note that this will work much better with complete similarity matrices. The partially sampled matrices
+produced in a normal run of e2refine_easy may not produce optimal results, though the stage 1
+matrices may be better.
+
 If there are N particles and M input files, the output file is:
 an M*4 or M*6 column text file with N rows (lines). M*6 columns are present only if --refs is specified.
 The columns are:
@@ -73,27 +77,27 @@ as not all elements are computed.
 	parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
 	parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
-	parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
-	parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
+	parser.add_argument("--outimgs",type=str,help="Output image file. Appends if file exists.",default="imgs.hdf")
+	parser.add_argument("--filtimgs",type=str,help="A python expression using Zs[n], Qs[n], Ns[n], DTAs[n], DTRs[n], DAs[n], ALTs[Ns[n]], AZs[Ns[n]] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 
 		
 	if options.refine!=None:
+		com=js_open_dict("{}/0_refine_parms.json".format(options.refine))
 		if len(args)<1 :
-			args.extend(sorted([ "bdb:%s#"%options.refine+i for i in db_list_dicts("bdb:"+options.refine) if "simmx" in i and len(i)==8]))
+			args.append(com["last_even"].replace("threed","simmx"))
 			print ", ".join(args)
-		options.refs="bdb:%s#projections_%s"%(options.refine,args[-1][-2:])
+		options.refs=com["last_even"].replace("threed","projections")
 		print "refs: ",options.refs
 
-		db=db_open_dict("bdb:%s#register"%options.refine,True)
-		options.inimgs=db["cmd_dict"]["input"]
+		options.inimgs=com["input"][0]
 		print "inimgs: ",options.inimgs
 
 		
 	if len(args)<1 : 
-		print "Please specify input files"
+		print "Please specify input simmx files"
 		sys.exit(1)
 
 
@@ -102,6 +106,13 @@ as not all elements are computed.
 	ny=tmp["ny"]
 
 	logid=E2init(sys.argv,options.ppid)
+
+	if options.inimgs!=None and options.outimgs!=None and options.inimgs[-4:]==".lst" and options.outimgs[-4:]==".lst" :
+		inlst=LSXFile(options.inimgs)
+		outlst=LSXFile(options.outimgs)
+	else : inlst,outlst=None,None
+
+	nout=0
 
 # read in projection Euler angles
 	if options.refs:
@@ -260,11 +271,16 @@ as not all elements are computed.
 			e=eval(options.filtimgs)
 			#print y,e,DTRs[0]-DTRs[1],fabs(DAs[0]-DAs[1]),fabs(ALTs[0]-ALTs[1]),Qs[1]
 			if options.inimgs!=None and e:
-				EMData(options.inimgs,y).write_image(options.outimgs,-1)
+				nout+=1
+				if inlst!=None:
+					outlst[-1]=inlst[y]
+				else:
+					EMData(options.inimgs,y).write_image(options.outimgs,-1)
 
 	print " %d/%d\n"%(ny,ny),
 	print "Output in ",options.output
 	print "Key in ",options.output.rsplit(".",1)[0]+"_key.txt"
+	if nout!=0 : print "{} in filtered output: {}".format(nout,options.outimgs)
 	out.close()
 	
 	# we convert the output we just generated to an image file for other potential analysis techniques

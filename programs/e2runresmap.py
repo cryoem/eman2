@@ -40,6 +40,7 @@ parser.add_argument("--res_min", help="Minimum resolution (in Angstroms)", defau
 parser.add_argument("--res_max", help="Maximum resolution (in Angstroms)", default=0.0,  guitype='floatbox', row=2, col=2, rowspan=1, colspan=1)
 parser.add_argument("--p_value", help="Confidence level (Usually between .01 and .05) ", default=0.05,  guitype='floatbox', row=3, col=0, rowspan=1, colspan=1)
 #parser.add_argument("--optional_mask",type=str, help="Location of the optional mask to be used", guitype='filebox',default="", browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False,row=15, col=0, rowspan=2, colspan=2)
+parser.add_argument("--resmapexe", default=None,help = "Full path to the ResMap executable", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=True, row=4, col=0, rowspan=1, colspan=3)
 parser.add_argument("--verbose", type=int, help="Set the level of verbosity for the code", default=1, guitype='combobox', choicelist='0,1,2,3,4,5,6,7,8,9', row=26, col=1, rowspan=1, colspan=1, expert=True)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
@@ -79,13 +80,20 @@ if "use_mask" in optionList:
 		mask = True
 
 #Can we find the Resmap Executable?
-for path in os.environ["PATH"].split(os.pathsep):
-	if os.path.isfile(str(path)+"/ResMap-1.1.4-linux64"):
-		resmap=str(path)+"/ResMap-1.1.4-linux64"
-		exe = True
-if not exe:
-	print "Could not find the ResMap executable. Make sure it is in the $PATH environment variable."
-	exit(-1)
+if options.resmapexe==None:
+	for path in os.environ["PATH"].split(os.pathsep):
+		dl=[i for i in os.listdir(path) if "ResMap" in i]
+		if len(dl)>1 :
+			print "Ambiguous ResMap executables, please use --resmapexe"
+			sys.exit(1)
+		if len(dl)==1 :
+			resmap=os.path.join(path,dl[0])
+			if options.verbose: print "Found: ",resmap
+			break
+	else:
+		print "Unable to find ResMap executable in your path. Please use --resmapexe"
+		sys.exit(1)
+else: resmap=options.resmapexe
 	
 s = resmap+ " --noguiSplit " + E2RES + "/" + EMAN_ODD.replace("hdf","mrc") + " " + E2RES + "/" + EMAN_EVEN.replace("hdf","mrc") + " --vxSize=" + str(apix) + " --pVal=" + str(options.p_value)+ " --stepRes=" + str(options.res_step)
 

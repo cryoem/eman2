@@ -1,6 +1,6 @@
 = Name =
 
-sxrviper - Initial 3D Modeling New: Reproducible ''ab initio'' 3D structure determination, aka Reproducible VIPER.  The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]. 
+sxrviper - Initial 3D Model with RVIPER: Reproducible ''ab initio'' 3D structure determination, aka Reproducible VIPER.  The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]. 
 
 = Usage =
 
@@ -27,7 +27,9 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
 
 == Input ==
     stack:: set of 2-D images in a stack file (format hdf): images have to be squares (''nx''=''ny'', nx, ny denotes the image size) (default required string)
+
     radius:: radius of the particle: has to be less than < int(nx/2)-1 (default required int)
+    sym:: point-group symmetry of the structure: (default c1)
 
     * The remaining parameters are optional.  
     Note '''ir, ou, rs, xr, yr, ts''' are in pixels while '''delta, an''' are in degrees.
@@ -49,14 +51,13 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
     outlier_percentile:: percentile above which outliers are removed every rviper iteration: (default 95.0)
     iteration_start:: starting iteration for rviper: 0 means go to the most recent one (default 0)
     ref_a:: method for generating the quasi-uniformly distributed projection directions: (default S)
-    sym:: point-group symmetry of the structure: (default c1)
     npad:: padding size for 3D reconstruction: (default 2)
     fl:: cut-off frequency applied to the template volume: using a hyperbolic tangent low-pass filter (default 0.25)
     aa:: fall-off of hyperbolic tangent low-pass filter: (default 0.1)    
     pwreference:: text file with a reference power spectrum: (default none)
     mask3D:: 3D mask file: (default sphere)
     moon_elimination:: elimination of disconnected pieces: two arguments: mass in KDa and pixel size in px/A separated by comma, no space (default none)
-    criterion_name:: criterion deciding if volumes have a core set of stable projections: '80th percentile', other options:'fastest increase in the last quartile' (default '80th percentile')
+    criterion_name:: criterion deciding if volumes have a core set of stable projections: '80th percentile', other options:'fastest increase in the last quartile' (default 80th percentile)
     outlier_index_threshold_method:: method that decides which images to keep: discontinuity_in_derivative, other options:percentile, angle_measure (default discontinuity_in_derivative)
     angle_threshold:: angle threshold for projection removal if using 'angle_measure': (default 30)
 

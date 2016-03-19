@@ -1716,7 +1716,8 @@ The basic design of EMAN Processors: <br>\
 				image->set_attr("apix_z", (float)params["apix"]);
 			}
 			float apix=(float)image->get_attr("apix_x");
-
+			params["bfactor"] = pow(apix/(float)params["cutoff_abs"],0.0f);
+			
 			const Dict dict = image->get_attr_dict();
 			if (params.has_key("cutoff_abs")) {
 				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0f);
@@ -4196,6 +4197,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		{
 			TypeDict d;
 			d.put("npeaks", EMObject::INT, "The number of pixels adjacent to the pixel under consideration which may be higher and still be a valid peak. If 0, finds pure peaks");
+			d.put("usemean", EMObject::BOOL, "Count all pixels with value higher than the mean of adjacent pixels as peaks. Overwrite npeaks.");
 			return d;
 		}
 
@@ -4209,18 +4211,32 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 	  protected:
 		void process_pixel(float *pixel, const float *data, int n) const
 		{
-			int r = 0;
+			if (params["usemean"]){
+				float mean=0;
+				for (int i = 0; i < n; i++)
+				{
+					mean+=data[i];
+				}
 
-			for (int i = 0; i < n; i++)
-			{
-				if (data[i] >= *pixel) {
-					r++;
+				if (*pixel < mean/float(n))
+				{
+					*pixel = 0;
 				}
 			}
+			else{
+				int r = 0;
 
-			if (r > npeaks)
-			{
-				*pixel = 0;
+				for (int i = 0; i < n; i++)
+				{
+					if (data[i] >= *pixel) {
+						r++;
+					}
+				}
+
+				if (r > npeaks)
+				{
+					*pixel = 0;
+				}
 			}
 		}
 	  private:
@@ -6803,13 +6819,14 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			TypeDict d;
 			d.put("filename", EMObject::STRING, "mask image file name");
-			d.put("ismaskset", EMObject::INT, "If set to 1, it will take a file containing a set of masks and apply the first mask to the image");
+			d.put("image", EMObject::EMDATA, "The actual mask image (instead of the filename).");
+			d.put("maskset", EMObject::INT, "One common way to store multiple masks in a single image is to assign a single integer value to each mask. For files of this type, will set values N-0.5<X<N+0.5 to 1, and other values to zero, before applying the mask.");
 			return d;
 		}
 
 		virtual string get_desc() const
 		{
-			return "Multiplies the image by the specified file using pixel indices. The images must be same size. If 'ismaskset=' is 1, it will take a file containing a set of masks and apply the first mask to the image.";
+			return "Multiplies the image by the specified filename or image object. Note that 'image' should be specified rather than filename for e2proc2d or e2proc3d, as these programs automatically read image filenames when specified as parameters. So-called multi-level masks are also supported via the 'maskset' option.";
 		}
 
 		static const string NAME;
@@ -6818,35 +6835,35 @@ correction is not possible, this will allow you to approximate the correction to
 	/**Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.
 	 *@param filename mask image file name
 	 */
-	class CoordinateMaskFileProcessor:public Processor
-	{
-	  public:
-		virtual void process_inplace(EMData * image);
-
-		virtual string get_name() const
-		{
-			return NAME;
-		}
-
-		static Processor *NEW()
-		{
-			return new CoordinateMaskFileProcessor();
-		}
-
-		virtual string get_desc() const
-		{
-			return "Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.";
-		}
-
-		virtual TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("filename", EMObject::STRING, "mask image file name");
-			return d;
-		}
-
-		static const string NAME;
-	};
+// 	class CoordinateMaskFileProcessor:public Processor
+// 	{
+// 	  public:
+// 		virtual void process_inplace(EMData * image);
+// 
+// 		virtual string get_name() const
+// 		{
+// 			return NAME;
+// 		}
+// 
+// 		static Processor *NEW()
+// 		{
+// 			return new CoordinateMaskFileProcessor();
+// 		}
+// 
+// 		virtual string get_desc() const
+// 		{
+// 			return "Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.";
+// 		}
+// 
+// 		virtual TypeDict get_param_types() const
+// 		{
+// 			TypeDict d;
+// 			d.put("filename", EMObject::STRING, "mask image file name");
+// 			return d;
+// 		}
+// 
+// 		static const string NAME;
+// 	};
 
 	/**'paints' a circle into the image at x,y,z with values inside r1 set to v1, values between r1 and r2 will be set to a
 	 * value between v1 and v2, and values outside r2 will be unchanged
@@ -8779,6 +8796,79 @@ correction is not possible, this will allow you to approximate the correction to
 		static const string NAME;
 	};
 	
+	/**  Calculate the z thickness of each pixel in a binarized 3d image
+	 *   @author: Muyuan Chen
+	 *   @date: 02/2016
+	 */	
+	class ZThicknessProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new ZThicknessProcessor();
+		}
+		string get_desc() const
+		{
+			return "Calculate the z thickness of each pixel in a binarized 3d image. For each white voxel, use the number of continus white voxels above and below this voxel in z direction as the thickness.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh", EMObject::FLOAT, "Threshold for binarization");
+			return d;
+		}
+		static const string NAME;
+	};
+	
+	/** Replace the value of each pixel with a value in a given array.
+	 * i.e. given an array of [3,7,9], pixels with value of 0 will become 3, 1 becomes 7, 2 becomes 9.
+	 *   @author: Muyuan Chen
+	 *   @date: 02/2016
+	 */
+	class ReplaceValuefromListProcessor:public RealPixelProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new ReplaceValuefromListProcessor();
+		}
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("colorlst", EMObject::FLOATARRAY, "Array of values to replace.");
+			return d;
+		}
+		static const string NAME;
+
+	  protected:
+		void process_pixel(float *x) const
+		{
+			vector < float >lst =params["colorlst"];
+			int num=lst.size();
+			if (*x<num){
+				*x=lst[int(*x)];
+			}
+			else{
+				*x=0;
+			}
+		}
+
+		string get_desc() const
+		{
+			return "Replace the value of each pixel with a value in a given array, i.e. given an array of [3,7,9], pixels with value of 0 will become 3, 1 becomes 7, 2 becomes 9. The input image has to be int, or it will be round down. Values exceed the length of array are set to zero. Designed for labeled image coloring.";
+		}
+	};
 	
 #ifdef SPARX_USING_CUDA
 	/* class MPI CUDA kmeans processor

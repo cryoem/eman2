@@ -813,6 +813,10 @@ costlist, int* curbranch);
 	/**********************************************************/
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
 
+	static EMData* shrinkfvol(EMData* img, int npad);
+	static EMData* mulreal(EMData* img1, EMData* img2);
+	static void mulclreal(EMData* img1, EMData* img2);
+	static void divabs(EMData* img, EMData* img1);
     /*  Various operation on images */
 	/* out = img + scalar * img1  */
 	static EMData* madn_scalar(EMData* img, EMData* img1, float scalar);
@@ -830,6 +834,12 @@ costlist, int* curbranch);
 	static EMData* squaren_img(EMData* img);
 	/* img /= Re(img1) with zero check  */
 	static EMData* divn_filter(EMData* img, EMData* img1);
+	/* out = img /= img1 with zero check , img is complex, img1 real */
+	static EMData* divn_cbyr(EMData* img, EMData* img1);
+	/* img /= img1 with zero check , img is complex, img1 real */
+	static void div_cbyr(EMData* img, EMData* img1);
+
+	static void reg_weights(EMData* img, EMData* img1, EMData* cfsc);
 
 	/* img += scalar * img1 */
 	static void mad_scalar(EMData* img, EMData* img1, float scalar);
@@ -1084,6 +1094,8 @@ public:
 
 	static float ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sx, float sy);
 
+	static float innerproduct(EMData* image1, EMData* image2);
+
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
 	
 	static void version();
@@ -1178,5 +1190,5 @@ public:
 
 static float bessel0(float r, float a, float alpha);
 static inline double bessi0(double x);
-
+static void euler_direction2angles(vector<float>v, float &alpha, float &beta);
 #endif	//util__sparx_h__

@@ -63,7 +63,7 @@ BATCH = False
 CACHE_DISABLE = False
 
 
-global LOGFILE 
+global LOGFILE
 LOGFILE = "logfile"
 from time import localtime, strftime
 # timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
@@ -101,3 +101,9 @@ def ERROR(message, where, action = 1, myid = 0):
 	if action and BATCH:
 		from sys import exit
 		exit()
+
+
+
+from inspect import currentframe, getframeinfo
+# frameinfo = getframeinfo(currentframe())
+# print frameinfo.filename, frameinfo.lineno

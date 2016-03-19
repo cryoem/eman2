@@ -6,7 +6,7 @@ from mpi import MPI_SUM, mpi_reduce, mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi
 	mpi_comm_split, mpi_bcast, MPI_INT, MPI_CHAR, MPI_FLOAT
 
 from utilities import get_im, string_found_in_file, get_latest_directory_increment_value, store_value_of_simple_vars_in_json_file
-from utilities import cmdexecute, if_error_all_processes_quit_program
+from utilities import cmdexecute, if_error_then_all_processes_exit_program
 from utilities import read_text_row, read_text_file, write_text_file, write_text_row, getindexdata, print_program_start_information
 from multi_shc import find_common_subset, do_volume, multi_shc
 
@@ -138,7 +138,7 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 				found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination[1:], outlier_percentile, 
 					rviper_iter, masterdir, bdb_stack_location, outlier_index_threshold_method)
 
-	if_error_all_processes_quit_program(error_status)
+	if_error_then_all_processes_exit_program(error_status)
 
 	no_of_viper_runs_analyzed_together_must_be_incremented = mpi_bcast(no_of_viper_runs_analyzed_together_must_be_incremented, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
 
@@ -667,8 +667,14 @@ output_directory: directory name into which the output files will be written.  I
 	# 	ref_vol = get_im(args[2])
 	# else:
 	ref_vol = None
-
-
+	
+	# error_status = None
+	# if myid == 0:
+	# 	number_of_images = EMUtil.get_image_count(args[0])
+	# 	if mpi_size > number_of_images:
+	# 		error_status = ('Number of processes supplied by --np in mpirun needs to be less than or equal to %d (total number of images) ' % number_of_images, getframeinfo(currentframe()))
+	# if_error_then_all_processes_exit_program(error_status)
+	
 	bdb_stack_location = ""
 
 	masterdir = ""
@@ -696,7 +702,7 @@ output_directory: directory name into which the output files will be written.  I
 		'the number of processes divided by the number of quasi-independent runs is a power '
 		'of 2 (e.g. 2, 4, 8 or 16 depending on how many physical cores each node has).', 'sxviper', 1)
 		error_status = 1
-	if_error_all_processes_quit_program(error_status)
+	if_error_then_all_processes_exit_program(error_status)
 
 	#Create folder for all results or check if there is one created already
 	if(myid == main_node):
@@ -782,7 +788,7 @@ output_directory: directory name into which the output files will be written.  I
 			ERROR('Please provide number of rviper runs (--n_rv_runs) greater than number of iterations already performed.', 'sxviper', 1)
 			error_status = 1
 
-	if_error_all_processes_quit_program(error_status)
+	if_error_then_all_processes_exit_program(error_status)
 
 	for rviper_iter in range(iteration_start, number_of_rrr_viper_runs + 1):
 		if(myid == main_node):

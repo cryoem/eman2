@@ -80,28 +80,36 @@ def main():
 		output = os.path.join(os.path.join(".","micrographs"),base+".hdf")
 		cmd = "e2proc2d.py %s %s --inplace"%(arg,output)
 
-		if options.invert: cmd += " --mult=-1"
-		if options.edgenorm: cmd += " --process=normalize.edgemean"
-		if options.xraypixel: cmd += " --process=threshold.clampminmax.nsigma:nsigma=4"
-		
-		launch_childprocess(cmd)
+		cmdext=[]
+		if options.invert: cmdext.append(" --mult=-1")
+		if options.edgenorm: cmdext.append(" --process=normalize.edgemean")
+		if options.xraypixel: cmdext.append(" --process=threshold.clampminmax.nsigma:nsigma=4")
+		if len(cmdext)>0 or arg!=output:
+			cmd+="".join(cmdext)
+			launch_childprocess(cmd)
+
 		if options.moverawdata:
 			os.rename(arg,os.path.join(originalsdir,os.path.basename(arg)))
 			
 		# We estimate the defocus and B-factor (no astigmatism) from the micrograph and store it in info and the header
 		if options.ctfest :
 			d=EMData(output,0)
-			if d["nx"]<1200 or d["ny"]<1200 : 
-				print "CTF estimation will only work with images at least 1200x1200 in size"
+			if d["nx"]<1000 or d["ny"]<1000 : 
+				print "CTF estimation will only work with images at least 1000x1000 in size"
 				sys.exit(1)
+			if d["nx"]<2000 : box=256
+			elif d["nx"]<4000 : box=512
+			elif d["nx"]<6000 : box=768
+			else : box=1024
+
 			import e2ctf
 			
-			ds=1.0/(options.apix*512)
+			ds=1.0/(options.apix*box)
 			ffta=None
 			nbx=0
-			for x in range(100,d["nx"]-512,512):
-				for y in range(100,d["ny"]-512,512):
-					clip=d.get_clip(Region(x,y,512,512))
+			for x in range(100,d["nx"]-box,box):
+				for y in range(100,d["ny"]-box,box):
+					clip=d.get_clip(Region(x,y,box,box))
 					clip.process_inplace("normalize.edgemean")
 					fft=clip.do_fft()
 					fft.ri2inten()
@@ -109,7 +117,7 @@ def main():
 					else: ffta+=fft
 					nbx+=1
 
-			ffta.mult(1.0/(nbx*512**2))
+			ffta.mult(1.0/(nbx*box**2))
 			ffta.process_inplace("math.sqrt")
 			ffta["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 
@@ -130,7 +138,7 @@ def main():
 			#ctf.background=bg_1d
 			#ctf.dsbg=ds
 			db=js_open_dict(info_name(arg,nodir=not options.usefoldername))
-			db["ctf_frame"]=[512,ctf,(256,256),set(),5,1]
+			db["ctf_frame"]=[box,ctf,(box/2,box/2),set(),5,1]
 			print info_name(arg,nodir=not options.usefoldername),ctf
 
 		E2progress(logid,(float(i)/float(len(args))))

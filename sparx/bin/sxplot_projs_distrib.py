@@ -42,7 +42,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ 2Dprojections plot_output
 
-Read projection angles from 2Dprojections file and write a 2D image file
+Read projection angles from 2Dprojections file or from a text file and write a 2D image file
 containing their distribution on a hemisphere."""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--wnx",       type="int",  default=256,             help="plot image size (default = 256)")

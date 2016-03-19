@@ -208,7 +208,7 @@ const string LocalNormProcessor::NAME = "normalize.local";
 const string StripeXYProcessor::NAME = "math.xystripefix";
 const string BadLineXYProcessor::NAME = "math.xybadline";
 const string IndexMaskFileProcessor::NAME = "mask.fromfile";
-const string CoordinateMaskFileProcessor::NAME = "mask.fromfile.sizediff";
+// const string CoordinateMaskFileProcessor::NAME = "mask.fromfile.sizediff";
 const string PaintProcessor::NAME = "mask.paint";
 const string DirectionalSumProcessor::NAME = "misc.directional_sum";
 template<> const string BinaryOperateProcessor<MaxPixelOperator>::NAME = "math.max";		// These 2 should not really be processors
@@ -293,6 +293,8 @@ const string BinaryTopHatProcessor::NAME = "morph.tophat.binary";
 const string BinaryBlackHatProcessor::NAME = "morph.blackhat.binary";
 const string GrowSkeletonProcessor::NAME = "morph.grow";
 const string FixSignProcessor::NAME = "math.fixmode";
+const string ZThicknessProcessor::NAME = "misc.zthick";
+const string ReplaceValuefromListProcessor::NAME = "misc.colorlabel";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -483,7 +485,7 @@ template <> Factory < Processor >::Factory()
 	force_add<LocalNormProcessor>();
 
 	force_add<IndexMaskFileProcessor>();
-	force_add<CoordinateMaskFileProcessor>();
+// 	force_add<CoordinateMaskFileProcessor>();
 	force_add<SetSFProcessor>();
 	force_add<MatchSFProcessor>();
 
@@ -567,6 +569,8 @@ template <> Factory < Processor >::Factory()
 	force_add<BinaryInternalGradientProcessor>();
 	force_add<BinaryTopHatProcessor>();
 	force_add<BinaryBlackHatProcessor>();
+	force_add<ZThicknessProcessor>();
+	force_add<ReplaceValuefromListProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -7114,106 +7118,107 @@ void IndexMaskFileProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-
-	const char *filename = params["filename"];
-	EMData *msk = new EMData();
-	msk->read_image(filename);
-	if (!EMUtil::is_same_size(image, msk)) {
-		LOGERR("IndexMaskFileProcessor: Mask size different than image");
-		return;
+	EMData* mask = params.set_default("image",(EMData*)0);
+	
+	if (mask==0) {
+		const char *filename = params["filename"];
+		mask=new EMData(filename,0);
+		if (!EMUtil::is_same_size(image, mask)) {
+			delete mask;
+			LOGERR("IndexMaskFileProcessor: Mask size different than image");
+			return;
+		}
+	}
+	else mask=mask->copy();
+	
+	int maskset=params.set_default("maskset",-1);
+	if (maskset>=0) {
+		mask->process_inplace("threshold.binaryrange", Dict("low", (float)(maskset-0.5), "high", (float)(maskset+0.5)));
 	}
 
-	if ((int) params["ismaskset"] != 0) {
-		msk->process_inplace("threshold.binaryrange", Dict("low", 0.5f, "high", 1.5f));
-	}
-
-	image->mult(*msk);
-	if( msk )
-	{
-		delete msk;
-		msk = 0;
-	}
+	image->mult(*mask);
+	delete mask;
 }
 
 
-void CoordinateMaskFileProcessor::process_inplace(EMData * image)
-{
-	if (!image) {
-		LOGWARN("NULL Image");
-		return;
-	}
-
-	const char *filename = params["filename"];
-	EMData *msk = new EMData();
-	msk->read_image(filename);
-
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-
-	int xm = msk->get_xsize();
-	int ym = msk->get_ysize();
-	int zm = msk->get_zsize();
-
-	float apix = image->get_attr("apix_x");
-	float apixm = msk->get_attr("apix_x");
-
-	float xo = image->get_attr_default("origin_x",0.0);
-	float yo = image->get_attr_default("origin_y",0.0);
-	float zo = image->get_attr_default("origin_z",0.0);
-
-	float xom = msk->get_attr_default("origin_x",0.0);
-	float yom = msk->get_attr_default("origin_y",0.0);
-	float zom = msk->get_attr_default("origin_z",0.0);
-
-	float *dp = image->get_data();
-	float *dpm = msk->get_data();
-	int nxy = nx * ny;
-
-	for (int k = 0; k < nz; k++) {
-		float zc = zo + k * apix;
-		if (zc <= zom || zc >= zom + zm * apixm) {
-			memset(&(dp[k * nxy]), 0, sizeof(float) * nxy);
-		}
-		else {
-			int km = (int) ((zc - zom) / apixm);
-
-			for (int j = 0; j < ny; j++) {
-				float yc = yo + j * apix;
-				if (yc <= yom || yc >= yom + ym * apixm) {
-					memset(&(dp[k * nxy + j * nx]), 0, sizeof(float) * nx);
-				}
-				else {
-					int jm = (int) ((yc - yom) / apixm);
-					size_t idx = 0;
-					float xc;
-					int im;
-					for (int i = 0; i < nx; i++) {
-						xc = xo + i * apix;
-						idx = (size_t)k * nxy + j * nx + i;
-						if (xc <= xom || xc >= xom + xm * apixm) {
-							dp[idx] = 0;
-						}
-						else {
-							im = (int) ((xc - xom) / apixm);
-							if (dpm[km * xm * ym + jm * xm + im] <= 0) {
-								dp[idx] = 0;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	image->update();
-	msk->update();
-	if( msk )
-	{
-		delete msk;
-		msk = 0;
-	}
-}
+// void CoordinateMaskFileProcessor::process_inplace(EMData * image)
+// {
+// 	if (!image) {
+// 		LOGWARN("NULL Image");
+// 		return;
+// 	}
+// 
+// 	const char *filename = params["filename"];
+// 	EMData *msk = new EMData();
+// 	msk->read_image(filename);
+// 
+// 	int nx = image->get_xsize();
+// 	int ny = image->get_ysize();
+// 	int nz = image->get_zsize();
+// 
+// 	int xm = msk->get_xsize();
+// 	int ym = msk->get_ysize();
+// 	int zm = msk->get_zsize();
+// 
+// 	float apix = image->get_attr("apix_x");
+// 	float apixm = msk->get_attr("apix_x");
+// 
+// 	float xo = image->get_attr_default("origin_x",0.0);
+// 	float yo = image->get_attr_default("origin_y",0.0);
+// 	float zo = image->get_attr_default("origin_z",0.0);
+// 
+// 	float xom = msk->get_attr_default("origin_x",0.0);
+// 	float yom = msk->get_attr_default("origin_y",0.0);
+// 	float zom = msk->get_attr_default("origin_z",0.0);
+// 
+// 	float *dp = image->get_data();
+// 	float *dpm = msk->get_data();
+// 	int nxy = nx * ny;
+// 
+// 	for (int k = 0; k < nz; k++) {
+// 		float zc = zo + k * apix;
+// 		if (zc <= zom || zc >= zom + zm * apixm) {
+// 			memset(&(dp[k * nxy]), 0, sizeof(float) * nxy);
+// 		}
+// 		else {
+// 			int km = (int) ((zc - zom) / apixm);
+// 
+// 			for (int j = 0; j < ny; j++) {
+// 				float yc = yo + j * apix;
+// 				if (yc <= yom || yc >= yom + ym * apixm) {
+// 					memset(&(dp[k * nxy + j * nx]), 0, sizeof(float) * nx);
+// 				}
+// 				else {
+// 					int jm = (int) ((yc - yom) / apixm);
+// 					size_t idx = 0;
+// 					float xc;
+// 					int im;
+// 					for (int i = 0; i < nx; i++) {
+// 						xc = xo + i * apix;
+// 						idx = (size_t)k * nxy + j * nx + i;
+// 						if (xc <= xom || xc >= xom + xm * apixm) {
+// 							dp[idx] = 0;
+// 						}
+// 						else {
+// 							im = (int) ((xc - xom) / apixm);
+// 							if (dpm[km * xm * ym + jm * xm + im] <= 0) {
+// 								dp[idx] = 0;
+// 							}
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 
+// 	image->update();
+// 	msk->update();
+// 	if( msk )
+// 	{
+// 		delete msk;
+// 		msk = 0;
+// 	}
+// }
 
 void MatchSFProcessor::create_radial_func(vector < float >&rad,EMData *image) const {
 	// The radial mask comes in with the existing radial image profile
@@ -12469,8 +12474,7 @@ EMData* CircularAverageBinarizeProcessor::process(const EMData* const image)  //
 			}
 		}
 	}
-	delete
-	dx;
+	delete dx;
 	delete dy;
 	return bwmap;
 
@@ -13284,6 +13288,52 @@ void BinaryBlackHatProcessor::process_inplace(EMData *image)
 	delete close;
 }
 
+EMData* ZThicknessProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("misc.zthick",params);
+	return proc;
+}
+
+void ZThicknessProcessor::process_inplace(EMData *image)
+{
+	float thresh=params.set_default("thresh",0);
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	for (int i=0; i<nx; i++) {
+		for (int j=0; j<ny; j++) {
+			// depth
+			int dep=0, starti=0;
+			bool counting=false;
+			for (int k=0; k<nz; k++) {
+				if (image->get_value_at(i,j,k)>thresh){
+					if (!counting){
+						// start counting
+						starti=k;
+						dep=0;
+						counting=true;
+					}
+					dep++;
+				}
+				else{
+					if (counting){
+						counting=false;
+						// go back and set the voxels to the depth value
+						for (int u=starti; u<k; u++){
+							image->set_value_at_fast(i,j,u,dep);
+// 							printf("%d,%d,%d,%d\n", i,j,u,dep);
+
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	
+}
 
 #ifdef SPARX_USING_CUDA
 

@@ -367,7 +367,7 @@ def write_output(args,options,logid, database="e2boxercache"):
 			input = args[i]
 			box_list = EMBoxList()
 			box_list.load_boxes_from_database(input)
-			box_list.write_coordinates(input,output,options.boxsize) # input is redundant but it makes output interfaces generic
+			box_list.write_coordinates(input,output,options.boxsize,options.exclude_edges) # input is redundant but it makes output interfaces generic
 
 			progress += 1.0
 			E2progress(logid,progress/total_progress)

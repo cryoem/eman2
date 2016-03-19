@@ -819,7 +819,7 @@ def constant( ref_data ):
 	cs = [0.0]*2
 	return  tavg, cs
 
-
+'''
 def temp_dovolume( ref_data ):
 	from utilities      import print_msg, read_text_row
 	from filter         import fit_tanh, filt_tanl
@@ -885,7 +885,7 @@ def temp_dovolume( ref_data ):
 	else:  	cs = [0.0]*3
 
 	return  vol, cs
-
+'''
 
 def dovolume( ref_data ):
 	from utilities      import print_msg, read_text_row
@@ -1370,6 +1370,50 @@ def do_volume_mrk04(ref_data):
 	#=========================================================================
 	return vol
 
+def do_volume_mrk05(ref_data):
+	"""
+		vol - volume
+		return - volume the same for all cpus
+	"""
+	from EMAN2          import Util
+	from mpi            import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+	from filter         import filt_table
+	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
+	from utilities      import bcast_EMData_to_all, bcast_number_to_all, model_blank
+	from fundamentals   import rops_table, fftip, fft
+	import types
+
+	# Retrieve the function specific input arguments from ref_data
+	vol     = ref_data[0]
+	Tracker = ref_data[1]
+	
+	from morphology import threshold
+	from filter     import filt_tanl, filt_btwl
+	from utilities  import model_circle, get_im
+	import types
+	nx = vol.get_xsize()
+	if(Tracker["constants"]["mask3D"] == None):
+		mask3D = model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
+	elif(Tracker["constants"]["mask3D"] == "auto"):
+		from utilities import adaptive_mask
+		mask3D = adaptive_mask(vol)
+	else:
+		if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+		else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
+		nxm = mask3D.get_xsize()
+		if( nx != nxm):
+			from fundamentals import rot_shift3D
+			mask3D = Util.window(rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
+			nxm = mask3D.get_xsize()
+			assert(nx == nxm)
+
+	stat = Util.infomask(vol, mask3D, False)
+	vol -= stat[0]
+	Util.mul_scalar(vol, 1.0/stat[1])
+	
+	#=========================================================================
+	return Util.muln_img(vol, mask3D)#, vol
+
 
 
 # rewrote factory dict to provide a flexible interface for providing user functions dynamically.
@@ -1404,10 +1448,11 @@ class factory_class:
 		self.contents["ref_7grp"]           = ref_7grp
 		self.contents["steady"]             = steady
 		self.contents["dovolume"]           = dovolume	 
-		self.contents["temp_dovolume"]      = temp_dovolume	 
+		#self.contents["temp_dovolume"]      = temp_dovolume	 
 		self.contents["do_volume_mrk02"]    = do_volume_mrk02	 
 		self.contents["do_volume_mrk03"]    = do_volume_mrk03
 		self.contents["do_volume_mrk04"]    = do_volume_mrk04
+		self.contents["do_volume_mrk05"]    = do_volume_mrk05
 		self.contents["constant"]           = constant	 
 
 	def __getitem__(self,index):
