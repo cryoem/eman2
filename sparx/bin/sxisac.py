@@ -81,7 +81,7 @@ def main(args):
 	parser.add_option("--ts",                    type="float",         default=1.0,        help="search step: of translational search: units - pixels (default 1.0)")
 	parser.add_option("--maxit",                 type="int",           default=30,         help="number of iterations for reference-free alignment: (default 30)")
 	#parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)")
-	parser.add_option("--center_method",         type="int",           default=7,          help="method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default 7)")
+	parser.add_option("--center_method",         type="int",           default=-1,          help="method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default -1)")
 	parser.add_option("--dst",                   type="float",         default=90.0,       help="discrete angle used in within group alignment: (default 90.0)")
 	parser.add_option("--FL",                    type="float",         default=0.2,        help="lowest stopband: frequency used in the tangent filter (default 0.2)")
 	parser.add_option("--FH",                    type="float",         default=0.3,        help="highest stopband: frequency used in the tangent filter (default 0.3)")
@@ -109,8 +109,8 @@ def main(args):
 	parser.add_option("--stop_after_candidates", action="store_true",  default=False,      help="stop after candidates: stops after the 'candidate_class_averages' section. (default False)")
 
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-	parser.add_option("--return_options", action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)
-	parser.add_option("--skip_alignment",        action="store_true",  default=False,      help="skip alignment step: to be used if images are already aligned. (default False)")
+	parser.add_option("--return_options",        action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)
+	parser.add_option("--skip_prealignment",     action="store_true",  default=False,      help="skip pre-alignment step: to be used if images are already aligned. (default False)")
 
 	required_option_list = ['radius']
 	(options, args) = parser.parse_args(args)
@@ -295,7 +295,7 @@ def main(args):
 
 		image_start, image_end = MPI_start_end(number_of_images_in_stack, nproc, myid)
 
-		if options.skip_alignment:
+		if options.skip_prealignment:
 			params2d = [[0.0,0.0,0.0,0] for i in xrange(image_start, image_end)]
 		else:
 
@@ -358,7 +358,7 @@ def main(args):
 		tmp = params2d[:]
 		tmp = wrap_mpi_gatherv(tmp, main_node, MPI_COMM_WORLD)
 		if( myid == main_node ):		
-			if options.skip_alignment:
+			if options.skip_prealignment:
 				print "========================================="
 				print "Even though there is no alignment step, '%s' params are set to zero for later use."%os.path.join(init2dir, "initial2Dparams.txt")
 				print "========================================="
