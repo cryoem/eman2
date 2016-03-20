@@ -38,7 +38,7 @@ from math import *
 import os
 import sys
 import time
-
+import numpy as np
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -57,6 +57,7 @@ def main():
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, auto or none). default=none",default="none")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
+	parser.add_argument("--ampcorrect",choices=['strucfac', 'flatten','without'],default="strucfac",help="Will perform amplitude correction via the specified method. The default choice is strucfac.")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--automaskexpand", default=-1, type=int,help="Default=boxsize/20. Specify number of voxels to expand mask before soft edge. Only used if automask3d not specified." )
@@ -125,7 +126,8 @@ def main():
 		os.unlink("{path}tmp0.hdf".format(path=path))
 
 	### Unmasked FSC
-	cmd="e2proc3d.py {evenfile} {path}fsc_unmasked_{itr:02d}.txt --calcfsc={oddfile}".format(path=path,itr=options.iter,evenfile=evenfile,oddfile=oddfile)
+	unmaskedfsc = "{path}fsc_unmasked_{itr:02d}.txt".format(path=path,itr=options.iter)
+	cmd="e2proc3d.py {evenfile} {unmaskedfsc} --calcfsc={oddfile}".format(unmaskedfsc=unmaskedfsc,evenfile=evenfile,oddfile=oddfile)
 	run(cmd)
 
 	### Filtration & Normalize
@@ -136,19 +138,38 @@ def main():
 	except: pass
 	combined.write_image(combfile,0)
 
-	if options.setsf and options.setsf!="none" : 
+	apix=combined["apix_x"]
+
+	if options.setsf and options.setsf!="none" :
 		setsf="--setsf "+options.setsf
-	else: 
+	else:
 		setsf=""
 
+	maxfreq=1.0/options.restarget
+
 	nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
-	run("e2proc3d.py {combfile} {combfile} {setsf} --process=filter.wiener.byfsc:fscfile={path}fsc_unmasked_{itr:02d}.txt:snrmult=2:maxfreq={maxfreq} --process=normalize.bymass:thr=1:mass={mass}".format(
-		path=path,itr=options.iter,mass=options.mass,setsf=setsf,combfile=combfile,maxfreq=1.0/options.restarget))
+
+	if options.ampcorrect == "flatten": # use something akin to Henderson's 2013 method
+		print("Performing amplitude correction via 'flattening'")
+		try: noisecutoff=calc_noise_cutoff(unmaskedfsc)
+		except: noisecutoff= 1/(2*(apix+0.1))
+		bfactor=0.0
+		ampcorrect="--process=filter.lowpass.autob:cutoff_freq={}:noisecutoff={}:interpolate=1:bfactor={}".format(maxfreq,noisecutoff,bfactor)
+	elif options.ampcorrect == "strucfac": # use old eman2 structure factor method
+		print("Performing structure factor amplitude correction")
+		ampcorrect=setsf
+	elif options.ampcorrect == "without":
+		print("NOT performing amplitude correction")
+		ampcorrect = ""
+
+	wiener = "--process=filter.wiener.byfsc:fscfile={path}fsc_unmasked_{itr:02d}.txt:snrmult=2:maxfreq={maxfreq}".format(path=path, itr=options.iter, maxfreq=maxfreq)
+	massnorm = "--process=normalize.bymass:thr=1:mass={mass}".format(mass=options.mass)
+
+	run("e2proc3d.py {combfile} {combfile} {ampcorrect} {wiener} {massnorm}".format(ampcorrect=ampcorrect, combfile=combfile,wiener=wiener,massnorm=massnorm))
 
 	# combined2 is the merged file after setsf & initial filtration
 	combined2=EMData(combfile,0)
 	sigmanz=combined2["sigma_nonzero"]
-	apix=combined["apix_x"]
 
 	### Masking
 	if options.automask3d==None or len(options.automask3d.strip())==0 :
@@ -171,7 +192,7 @@ def main():
 				sigmanz=combined2["sigma_nonzero"]*1.1
 				seeds=0
 				break
-		
+
 		if options.automaskexpand<0 : options.automaskexpand=int(nx*0.05+0.5)
 		# Final automasking parameters
 		amask3d="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
@@ -189,10 +210,10 @@ def main():
 	# this is a terrible hack. mask.auto3d needs the actual data to generate a mask, but the other mask. processors don't in general, and don't have the return_mask option
 	if amask3d.split(":")[0]=="--process mask.auto3d" : maskopt=":return_mask=1"
 	else: maskopt=" --inputto1"
-	
+
 	run("e2proc3d.py {cfile} {path}mask.hdf {mask}{maskopt} {amask3d2}".format(path=path,cfile=combfile,mask=amask3d,amask3d2=amask3d2,maskopt=maskopt))
 	run("e2proc3d.py {cfile} {path}mask_tight.hdf {mask}{maskopt} {amask3d2}".format(path=path,cfile=combfile,mask=amask3dtight,amask3d2=amask3d2,maskopt=maskopt))
-	
+
 	### Masked tight FSC
 	run("e2proc3d.py {evenfile} {path}tmp_even.hdf --multfile {path}mask_tight.hdf".format(evenfile=evenfile,path=path))
 	run("e2proc3d.py {oddfile} {path}tmp_odd.hdf --multfile {path}mask_tight.hdf".format(oddfile=oddfile,path=path))
@@ -227,11 +248,11 @@ def main():
 
 	# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
 	nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
-	
+
 	# we impose the symmetry in real-space, since this is what people expect
 	if options.sym=="c1" : symopt=""
 	else: symopt="--sym {}".format(options.sym)
-	
+
 	run("e2proc3d.py {combfile} {combfile} {setsf} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {symopt} {postproc}".format(
 		combfile=combfile,path=path,itr=options.iter,mass=options.mass,setsf=setsf,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=1.0/options.restarget))
 
@@ -244,6 +265,13 @@ def main():
 		pass
 
 	E2end(logid)
+
+def calc_noise_cutoff(fsc_file):
+	#noisecutoff= 1/(2*(apix+0.1))
+	fsc_data = np.loadtxt(fsc_file)
+	freqs,fscs = np.array_split(fsc_data,2,axis=1)
+	atfreq=freqs[fscs<=0.143][0] # first spatial frequency at which FSC touches (or falls below) 0.143.
+	return atfreq/2
 
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
