@@ -13,7 +13,7 @@ sxwindow.py  input_micrograph_pattern  input_coordinates_pattern  output_directo
 
 sxwindow does not support MPI.
 
-Specify name pattern of input micrographs and coordinates files with wild card (*) enclosed by single quotes (') or double quotes (") (Note: sxgui.py automatically adds single quotes (')). Use the wild card (*) to specify the place of micrograph ID (e.g. serial number, time stamp, and etc). 
+Specify name pattern of input micrographs and coordinates files with wild card (*) enclosed by single quotes (') or double quotes (") (Note: sxgui.py automatically adds single quotes (')). Use the wild card (*) to specify the place of micrograph ID (e.g. serial number, time stamp, and etc). BDB files can not be selected as input micrographs.
 
 ''' sxwindow.py  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt '''
 
@@ -23,7 +23,7 @@ Specify name pattern of input micrographs and coordinates files with wild card (
 
 
 == Input ==
-    input_micrograph_pattern:: name pattern of input micrographs: use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, or etc). (default required string)
+    input_micrograph_pattern:: name pattern of input micrographs (exclude bdb): use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, or etc). (default required string)
     input_coordinates_pattern:: name pattern of input coordinates files: use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, and etc). (default required string)
     
     coordinates_format:: format of input coordinates files: 'sparx', 'eman1', 'eman2', or 'spider'. the coordinates of sparx, eman2, and spider format is particle center. the coordinates of eman1 format is particle box conner associated with the original box size. (default eman1)

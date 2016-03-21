@@ -82,6 +82,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
 	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
 	keyword_dict["stack_file"]                    = SXkeyword_map(0, "bdb")        # stack_file (contains keyworkd 'stack' but this should be bdb type)
+	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "")           # stack_mode (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")           # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")           # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	# Use priority 1 for output
@@ -406,6 +407,8 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 	# Set command mpi support of this subset if necessary
 	if sxsubcmd_config.mpi_support != None:
 		sxcmd.mpi_support = sxsubcmd_config.mpi_support
+		if sxcmd.mpi_support == False:
+			sxcmd.mpi_add_flag = False
 	# print "MRK_DEBUG: sxcmd.mpi_support = %s" % (sxcmd.mpi_support)
 	
 	# Use label of mode token as a short info of subset command
@@ -495,7 +498,7 @@ def main():
 	# --------------------------------------------------------------------------------
 	# Define pipeline command settings
 	# --------------------------------------------------------------------------------
-	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "pipe"))
+	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "pipe", exclude_list=["stack_mode"]))
 	
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_cter.txt", "pipe", is_submittable = False))
 	
@@ -572,6 +575,26 @@ def main():
 
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util"))
 	
+#	token_edit_list = []
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("stack_mode"); token_edit.group = "main"; token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.key_prefix = ""; token_edit.label = "2D images in a stack file (bdb or hdf)"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit) 
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit) 
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("apix"); token_edit_list.append(token_edit)
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("Cs"); token_edit_list.append(token_edit)
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("voltage"); token_edit_list.append(token_edit)
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("ac"); token_edit_list.append(token_edit)
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("f_start"); token_edit_list.append(token_edit)
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("f_stop"); token_edit_list.append(token_edit)
+#	# token_edit = SXcmd_token(); token_edit.initialize_edit("kboot"); token_edit_list.append(token_edit)
+#	# token_edit = SXcmd_token(); token_edit.initialize_edit("overlap_x"); token_edit_list.append(token_edit)
+#	# token_edit = SXcmd_token(); token_edit.initialize_edit("overlap_y"); token_edit_list.append(token_edit)
+#	# token_edit = SXcmd_token(); token_edit.initialize_edit("edge_x"); token_edit_list.append(token_edit)
+#	# token_edit = SXcmd_token(); token_edit.initialize_edit("edge_y"); token_edit_list.append(token_edit)
+#	token_edit = SXcmd_token(); token_edit.initialize_edit("debug"); token_edit_list.append(token_edit)
+#	sxsubcmd_mpi_support = False
+#	sxcmd_subconfig = SXsubcmd_config("CTF Estimation (Stack Mode)", token_edit_list, sxsubcmd_mpi_support)
+#	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "util", subconfig = sxcmd_subconfig))
+
 	# --------------------------------------------------------------------------------
 	# Generate sxgui.py
 	# --------------------------------------------------------------------------------

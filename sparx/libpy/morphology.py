@@ -2049,45 +2049,29 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 
 ################
 #
-#  Helper Functions for cter_mrk (new version since 2016/03/16)
+#  Helper functions for cter_mrk() (new since 2016/03/16)
 #
 ################
-def validate_arguments_mrk(input_image, output_directory, pixel_size, MPI, guimic):
-	import os
-	from EMAN2db import db_check_dict
+# For cter_mrk(), we want to have softer exit than ERROR in global_def
+# This way program have a chance to call mpi_finalize and avoid mpirun error...
+def ERROR_MRK(message, where, action = 1, myid = 0):
+	import global_def
 	
-	error_message_list = [] # List of error messages. If no error is found, the length should be zero
+	"""
+		General error function for sparx system
+		where:   function name
+		message: error message
+		action: 2 - fatal error, but make caller call exit(); 1 - fatal error, exit; 0 - non-fatal, print a warning
+	"""
 	
-	# Input related errors
-	if guimic != None:
-		# This is a single micrograph file name from a GUI application => single-micrograph mode
-		if os.path.exists(guimic) == False and db_check_dict(guimic) == False:
-			error_message_list.append("Micrograph file specified by guimic (%s) could not be found. Please check the file name, and restart the program." % guimic)
-	if input_image.find("*") == -1:  
-		# This is a stack file name because the string does NOT contain wild card "*"  => particle stack mode
-		if os.path.exists(input_image) == False and db_check_dict(input_image) == False:
-			error_message_list.append("Stack file specified by input_image (%s) could not be found. Please check the file name, and restart the program." % input_image)
-	# else: # assert input_image.find("*") != -1:
-		# This is a micrograph file name pattern because the string contains wild card "*" => multiple-micrograph mode
-		# The error condition of this should be checked after this function call
-	
-	# Output related errors
-	if os.path.exists(output_directory):
-		error_message_list.append("Output directory (%s) exists. Please change the name and restart the program." % output_directory)
-		
-	# Option related errors
-	if pixel_size < 0:
-		error_message_list.append("Pixel size has to be specified. Please set it and restart the program.")
-	
-	# MPI related errors
-	if MPI:
-		if input_image.find("*") == -1:
-			error_message_list.append("Please use single processor version for stack mode, and restart the program.")
-		
-		if guimic != None:
-			error_message_list.append("Please use single processor version for single micrograph mode, and restart the program.")
-			
-	return error_message_list
+	if myid == 0:
+		if action: print  "\n  *****  ERROR in: %s"%(where)
+		else:      print  "\n  *****  WARNING in: %s"%(where)
+		print "  *****  %s"%message
+		print ""
+	if action == 1 and global_def.BATCH:
+		from sys import exit
+		exit()
 
 ################
 #
@@ -2104,15 +2088,14 @@ def validate_arguments_mrk(input_image, output_directory, pixel_size, MPI, guimi
 # To get a single micrograph file name from a GUI application, 
 # there must be a better way than using guimic...
 # 
-def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50 , edge_x = 0, edge_y = 0, MPI = False, debug_mode = False, guimic = None, set_ctf_header = False):
+def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50 , edge_x = 0, edge_y = 0, set_ctf_header = False, MPI = False, stack_mode = False, debug_mode = False):
 	"""
 	Arguments
-		input_image       : Micrograph file name pattern ('Micrographs/mic*.mrc') or particle stack file name ('bdb:stack'). This will be ignored if "guimic" is used (see below)
-		output_directory  : Output directory
-		
-		guimic            : A single micrograph file name from a GUI application (e.g. e2boxer.py and sxhelixboxer.py). This overrides input_image.
+		input_image       : micrograph file name pattern ('Micrographs/mic*.mrc'), single micrograph file name ('Micrographs/mic0.mrc'), or particle stack file name ('bdb:stack'; must be stack_mode = True).
+		output_directory  : output directory
 	"""
 	from   EMAN2 import periodogram
+	from   EMAN2db import db_check_dict, db_parse_path
 	from   applications import MPI_start_end
 	from   utilities import read_text_file, write_text_file, get_im, model_blank, model_circle, amoeba, generate_ctf
 	from   sys import exit
@@ -2125,6 +2108,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	from   morphology   import defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett
 	from   morphology   import defocus_guessn, defocusgett_, defocusget_from_crf, make_real
 	from   morphology   import fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
+	from   morphology   import ERROR_MRK
 	from   alignment    import Numrinit, ringwe
 	from   statistics   import table_stat
 	from   pixel_error  import angle_ave
@@ -2132,7 +2116,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	import global_def
 	
 	# Local Constants
-	myname = "cter"
+	myname = "cter_mrk"
 	
 	# Set up MPI related variables
 	if MPI:
@@ -2142,52 +2126,113 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	else: 
 		myid = 0
 		ncpu = 1
+		main_node = 0
 	
-	# Check error conditions
-	error_message_list = validate_arguments_mrk(input_image, output_directory, pixel_size, MPI, guimic)
+	# Find the cter mode from arguments
+	i_enum = -1; the_cter_mode_invalid    = i_enum; 
+	i_enum += 1; the_cter_mode_multi_mic  = i_enum # Multi-Micrograph Mode
+	i_enum += 1; the_cter_mode_single_mic = i_enum # Single-Micrograph Mode
+	i_enum += 1; the_cter_mode_stack      = i_enum # (Particle) Stack Mode
+	i_enum += 1; the_n_cter_mode          = i_enum
+	
+	cter_mode = the_cter_mode_invalid
+	cter_mode_name = ""
+	if stack_mode == False:
+		# One of two Micrograph Modes
+		if input_image.find("*") != -1:
+			# multi-micrograph mode because input image file name contains wild card "*"
+			cter_mode = the_cter_mode_multi_mic
+			cter_mode_name = "multi-micrograph"
+		else: # assert input_image.find("*") == -1:
+			# single-micrograph mode because input image file name does not contain wild card "*"
+			cter_mode = the_cter_mode_single_mic
+			cter_mode_name = "single-micrograph"
+	else: # assert(stack_mode == True)
+		# (particle) stack Mode
+		cter_mode = the_cter_mode_stack
+		cter_mode_name = "stack"
+	assert(cter_mode != the_cter_mode_invalid)
+	
+	# Check error conditions. All nodes should check error to see if abort is necessary
+	error_message_list = [] # List of error messages. If no error is found, the length should be zero
+	
+	# input-related errors (mode-dependent) and also create the input file name list
+	input_file_path_list = []
+	if cter_mode == the_cter_mode_multi_mic:
+		# assert(input_image.find("*") != -1)
+		# Get the list of micrograph file names
+		input_file_path_list = glob.glob(input_image)
+		if input_image[:len("bdb:")].lower() == "bdb:":
+			error_message_list.append("BDB file can not be selected as input_image (%s) for %s mode. Please convert the format, and restart the program." % (input_image, cter_mode_name))
+		elif len(input_file_path_list) == 0:
+			# The result shouldn't be empty if the specified micrograph file name pattern is invalid
+			error_message_list.append("There are no files whose names match with the provided file name pattern (%s) for %s mode. Please correct the pattern, and restart the program." % (input_image, cter_mode_name))
+	elif cter_mode == the_cter_mode_single_mic:
+		# assert(input_image.find("*") == -1)
+		if input_image[:len("bdb:")].lower() == "bdb:":
+			error_message_list.append("BDB file can not be selected as input_image (%s) for %s mode. Please convert the format, and restart the program." % (input_image, cter_mode_name))
+		elif os.path.exists(input_image) == False:
+			error_message_list.append("Micrograph file specified by input_image (%s) for %s mode could not be found. Please correct the file name, and restart the program." % (input_image, cter_mode_name))
+		if MPI:
+			error_message_list.append("Please use single processor version for %s mode, and restart the program." % (cter_mode_name))
+		input_file_path_list = [input_image]
+	elif cter_mode == the_cter_mode_stack:
+		if input_image.find("*") != -1:
+			error_message_list.append("Stack file name specified by input_image (%s) for %s mode should not contain wild card \"*\". Please correct the file name, and restart the program." % (input_image, cter_mode_name))
+		elif os.path.exists(input_image) == False and db_check_dict(input_image) == False:
+			error_message_list.append("Stack file specified by input_image (%s) for %s mode could not be found. Please correct the file name, and restart the program." % (input_image, cter_mode_name))
+		if MPI:
+			error_message_list.append("Please use single processor version for %s mode, and restart the program." % (cter_mode_name))
+		input_file_path_list = [input_image]
+	# else:
+		# assert(False) # This is unreachable code
+	
+	# output-related errors
+	if os.path.exists(output_directory):
+		error_message_list.append("Output directory (%s) exists. Please change the name and restart the program." % output_directory)
+	
+	# option-related errors
+	if pixel_size <= 0.0:
+		error_message_list.append("Pixel size has to be specified. Please set it and restart the program.")
+	
 	if len(error_message_list) > 0:
 		# Detected error! output error message
 		if MPI == False:
-			for erro_message in error_message_list:  ERROR(erro_message, myname, 1)
+			for erro_message in error_message_list:  ERROR_MRK(erro_message, myname, 2)
 		elif myid == main_node: # assert(MPI == True)
-			for erro_message in error_message_list:  ERROR(erro_message, myname, 1, myid)
+			for erro_message in error_message_list:  ERROR_MRK(erro_message, myname, 2, myid)
 		# Abort process
-		if guimic != None:  return 0, 0, 0, 0, 0, 0
+		if cter_mode == the_cter_mode_single_mic:  return 0, 0, 0, 0, 0, 0
 		else:  return
 	
-	# Prepare input file path(s) and check error conditions
-	# depending on the command mode: particle stack mode, multiple-micrograph mode, or single-micrograph mode
-	stack = None # Particle stack file name: if it is not None, cter runs with Stack Mode. Otherwise, runs with Micrograph Mode
-	namics = []  # Micrograph file name list
-	if guimic != None:
-		# This is a single micrograph file name from a GUI application => single micrograph mode
+	# Prepare input file path(s)
+	# 
+	# NOTE: 2016/03/17 Toshio Moriya
+	# From here on, stack (and namics) will be used to distinguish stack mode and micrograph mode.
+	# However, a single input_file_path_list should be sufficient since we already know the mode.
+	# Let's consider this refactoring in the future.
+	# 
+	stack = None # (particle) stack file name: if it is not None, cter runs with stack mode. Otherwise, runs with micrograph mode
+	namics = []  # micrograph file name list
+	if cter_mode == the_cter_mode_multi_mic:
+		namics = input_file_path_list
+		namics.sort(key=str.lower) # Sort list of micrographs using case insensitive string comparison
 		# asssert(stack == None)
-		namics = [guimic]
+		# asssert(len(namics) > 0)
+	elif cter_mode == the_cter_mode_single_mic:
+		namics = input_file_path_list
+		# asssert(stack == None)
+		# assert(len(namics) == 1)
+	elif cter_mode == the_cter_mode_stack:
+		stack = input_file_path_list[0]
+		# asssert(stack == None)
 		# assert(len(namics) > 0) # it can't be empty, right?
-		if MPI == False or myid == main_node: print "  Running with Single Micrograph Mode"
-	else: # assert(guimic == None)
-		if input_image.find("*") == -1:  
-			# This is a stack file name because the string does NOT contain wild card "*"  => particle stack mode
-			stack = input_image
-			# assert(len(namics) == 0)
-			if MPI == False or myid == main_node: print "  Running with Particle Stack Mode"
-		else:  # ssert(input_image.find("*") != -1)
-			# This is a micrograph file name pattern because the string contains wild card "*" => multiple micrograph mode
-			# asssert(stack == None)
-			# Get the list of micrograph file names
-			namics = glob.glob(input_image)
-			if len(namics) == 0:
-				# The result shouldn't be empty if the specified micrograph file name pattern is invalid
-				erro_message = "There are no files whose names match with input image file pattern provided for micrograph mode (%s). Please check the pattern, and restart the program." % input_image
-				# Output error message
-				if MPI == False:
-					ERROR(erro_message, myname, 1)
-				elif myid == main_node: # assert(MPI == True)
-					ERROR(erro_message, myname, 1, myid)
-				# Abort process
-				if guimic != None:  return 0, 0, 0, 0, 0, 0
-				else:  return
-			if MPI == False or myid == main_node: print "  Running with Multiple Micrograph Mode"
+	# else: 
+		# assert(False)  # This is unreachable code
+	
+	if MPI == False or myid == main_node: print "  Running with %s mode." % (cter_mode_name)
+#	if MPI == False or myid == main_node: print "MRK_DEBUG: namics", namics
+#	if MPI == False or myid == main_node: print "MRK_DEBUG: stack", stack
 	
 	# Make output directory
 	outpwrot = "%s/pwrot" % (output_directory)
@@ -2202,18 +2247,16 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 		os.mkdir(output_directory)
 		os.mkdir(outpwrot)
 	
-	# Set up loop variables
-	if stack == None: # Micrograph Mode
+	# Set up loop variables depending on the cter mode
+	if stack == None:
 		# assert(len(namics) > 0)
-		# Sort list of micrographs using case insensitive string comparison
-		namics.sort(key=str.lower)
 #		if MPI == False or myid == main_node: print "MRK_DEBUG: len(namics) == %d" % (len(namics))
 		if MPI:
 			set_start, set_end = MPI_start_end(len(namics), ncpu, myid)
 		else:
 			set_start = 0
 			set_end = len(namics)
-	else: # assert(stack =! None) # Stack Mode 
+	else: # assert(stack =! None)
 		# assert(len(namics) == 0)
 		# assert(MPI == False)
 		pw2 = []
@@ -2228,21 +2271,40 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	
 	totresi = []
 	for ifi in xrange(set_start,set_end):
+		# set pw2 (image used for CTF estimation) and basename root of image file depending on the cter mode
 		pw2 = []
+		img_basename_root = ""
 		if stack == None:
 			numFM = EMUtil.get_image_count(namics[ifi])
 			print  "  Process ID = %04d, Micrograph Name = %s, Frame Counts = %03d" % (ifi, namics[ifi], numFM)
+			#
+			# NOTE: 2016/03/21 Toshio Moriya
+			# For now, dbd file is a invalid input_image for micrograph modes
+			# 
+			# assert(db_check_dict(namics[ifi]) == False)
+			img_basename_root = os.path.splitext(os.path.basename(namics[ifi]))[0]
 			# 
 			# NOTE: 2016/03/17 Toshio Moriya
 			# The following loop does not make sense because nf is not used in the loop body
-			# If get_im(namics[ifi], nf) instead of get_im(namics[ifi]), it make sense.
+			# If get_im(namics[ifi], nf) instead of get_im(namics[ifi]), it might make sense.
+			# 
 			for nf in xrange(numFM):
 				pw2 += tilemic(get_im(namics[ifi]), win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
 		else:
+			assert (ifi == 0) # MRK_DEBUG
 			numFM = EMUtil.get_image_count(stack)
 			print  "  Process ID = %04d, Stack Name = %s, Frame Counts = %03d" % (ifi, stack, numFM)
+			if db_check_dict(stack) == False:
+				img_basename_root = os.path.splitext(os.path.basename(stack))[0]
+			else: # assert(db_check_dict(namics[ifi]) == True)
+				path, dictname, keys = db_parse_path(stack)
+				img_basename_root = dictname
+			
 			for i in xrange(numFM):
 				pw2.append(periodogram(get_im(stack,i)))
+		# assert(len(pw2) != [])
+		# assert(img_basename_root != "")
+		
 		
 		nimi = len(pw2)
 		adefocus = [0.0] * kboot
@@ -2564,7 +2626,8 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				if stack == None:
 					totresi.append( [ namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
 				else:
-					totresi.append( [ 0, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
+					# totresi.append( [ 0, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
+					totresi.append( [ stack, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
 				#if ifi == 4 : break
 				"""
 				for i in xrange(len(ssubroo)):
@@ -2583,13 +2646,13 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				except:		pwrot1 = [0.0] * lnsb
 				freq = range(lnsb)
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
-				fou = os.path.join(outpwrot, "rotinf%04d.txt" % ifi)
+				fou = os.path.join(outpwrot, "%s_rotinf.txt" % (img_basename_root))
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
 				write_text_file([range(len(crot1)), freq, pwrot1, crot1, pwrot2, crot2], fou)
 				
-				if stack == None:     cmd = "echo " + "    " + namics[ifi] + "  >>  " + fou
-				else:                 cmd = "echo " + "    " + "  >>  " + fou
-				os.system(cmd)
+#				if stack == None:     cmd = "echo " + "    " + namics[ifi] + "  >>  " + fou
+#				else:                 cmd = "echo " + "    " + "  >>  " + fou
+#				os.system(cmd)
 		
 		if stack == None and set_ctf_header:
 			img = get_im(namics[ifi])
@@ -2610,7 +2673,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			outf.write("  %s\n" % totresi[i][0])
 		outf.close()
 	
-	if guimic != None:
+	if cter_mode == the_cter_mode_single_mic:
 		return totresi[0][1], totresi[0][7], totresi[0][8], totresi[0][9], totresi[0][10], totresi[0][11]
 	
 ########################################
@@ -3332,6 +3395,10 @@ def fufu(args,data):
 	from morphology import fastigmatism2
 	return -fastigmatism2(args[1],[data[0], data[1], data[2], args[0], data[4], data[5], data[6], data[7], data[8]])
 
+#  
+# NOTE: 2016/03/21 Toshio Moriya
+# getastcrfNOE() function does not work with the new output format of cter_mrk()
+# 
 def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.0, wgh = 7.0, kboot=16, DEBug = False):
 	"""
 

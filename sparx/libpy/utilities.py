@@ -4276,13 +4276,12 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
-		from math import acos, pi
+		from math import acos, pi, degrees
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		if v > 1: v = 1
-		if v < -1: v = -1
-		if v >= 0: return acos(v)*180/pi, 0
-		else:  return acos(-v)*180/pi, 1
+		v = max(min(v,1.0),-1.0)
+		if v >= 0: return degrees(acos(v)), 0
+		else:      return degrees(acos(-v)), 1
 
 	t0 = time()
 	proj_list = []   
@@ -5128,12 +5127,18 @@ def print_with_time_info(msg):
 	print line
 
 def if_error_then_all_processes_exit_program(error_status):
-	import sys, copy
-	from mpi import mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+	import sys, os
+	from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+	from utilities import print_msg
 	
-	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
+	if "OMPI_COMM_WORLD_SIZE" not in os.environ:
+		def mpi_comm_rank(n): return 0
+		def mpi_bcast(*largs):
+			return [largs[0]]
+		def mpi_finalize():
+			return None
+	
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	
 	if error_status != None and error_status != 0:
 		error_status_info = error_status
 		error_status = 1
@@ -5148,14 +5153,13 @@ def if_error_then_all_processes_exit_program(error_status):
 			if type(error_status_info) == type((1,1)):
 				if len(error_status_info) == 2:
 					frameinfo = error_status_info[1] 
-					print "***********************************"
-					print "** Error:", error_status_info[0]
-					print "***********************************"
-					# print "** Location:", frameinfo.filename + "  --  " + str(frameinfo.lineno)
-					print "** Location:", frameinfo.filename + ":" + str(frameinfo.lineno)
-					print "***********************************"
-		mpi_finalize()
+					print_msg("***********************************\n")
+					print_msg("** Error: %s\n"%error_status_info[0])
+					print_msg("***********************************\n")
+					print_msg("** Location: %s\n"%(frameinfo.filename + ":" + str(frameinfo.lineno)))
+					print_msg("***********************************\n")
 		sys.stdout.flush()		
+		mpi_finalize()
 		sys.exit(1)
 
 def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
@@ -6193,7 +6197,7 @@ def get_ali3d_params(ali3d_old_text_file,shuffled_list):
 		ali3d_new.append(ali3d_old[shuffled_list[iptl]])
 	return ali3d_new
 
-def counting_projections(delta,ali3d_params,image_start):
+def counting_projections(delta, ali3d_params, image_start):
 	from utilities import even_angles,angle_between_projections_directions
 	sampled_directions = {}
 	angles=even_angles(delta,0,180)
@@ -6211,13 +6215,13 @@ def counting_projections(delta,ali3d_params,image_start):
 		for j in xrange(len(angles)):
 			[phi0, theta0, psi0] = angles[j]
 			prj2 =[phi0,theta0]
-			dis=angle_between_projections_directions(prj1, prj2)
+			dis = angle_between_projections_directions(prj1, prj2)
 			if dis<dis_min:
 				dis_min    =dis
 				this_phi   =phi0
 				this_theta =theta0
 				this_psi   =psi0
-		alist= sampled_directions[(this_phi,this_theta)]
+		alist = sampled_directions[(this_phi,this_theta)]
 		alist.append(i+image_start)
 		sampled_directions[(this_phi,this_theta)]=alist
 	return sampled_directions

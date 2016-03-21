@@ -365,9 +365,10 @@ def main():
 					
 					
 					#options = ret[0]
-					if options.clip:
+					#if options.clip:
 						
-						model = clip3D( model, options.clip )
+					#	model = clip3D( model, options.clip )
+					if options.verbose:
 						print "\n\n\n\n\n\nBox of model AFTER preprocessing is", model['nx']
 				
 				if options.savepreprocessed:
@@ -702,15 +703,15 @@ def randomizer(options, model, tag):
 		if options.verbose:
 			print "The random transform applied to it was", random_transform
 			
-		if options.clip:
-			if int(b['nx']) != int(options.clip) or int(b['ny']) != int(options.clip) or int(b['nz']) != int(options.clip):
+		#if options.clip:
+		#	if int(b['nx']) != int(options.clip) or int(b['ny']) != int(options.clip) or int(b['nz']) != int(options.clip):
 				
 				
-				clipcmdf = 'e2proc3d.py ' + randstackname + ' ' + randstackname + ' --clip=' + str(options.clip)
-		
-				p=subprocess.Popen( clipcmdf, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				text=p.communicate()	
-				p.stdout.close()
+		#		clipcmdf = 'e2proc3d.py ' + randstackname + ' ' + randstackname + ' --clip=' + str(options.clip)
+		#
+		#		p=subprocess.Popen( clipcmdf, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		#		text=p.communicate()	
+		#		p.stdout.close()
 	
 
 	return(randptcls,randstackname)
@@ -832,17 +833,17 @@ def subtomosim(options,ptcls,outname,dimension):
 		#pn+=1
 		ii+=1
 	
-	if options.clip and dimension == 3:
-		box = int(options.clip)
-		print "\nActually, because of clip$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n options.clip is", options.clip
-		print "Therefore, box of final simulated stack is", box
+	#if options.clip and dimension == 3:
+	#	box = int(options.clip)
+	#	print "\nActually, because of clip$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n options.clip is", options.clip
+	#	print "Therefore, box of final simulated stack is", box
 		
-		clipcmdf = 'e2proc3d.py ' + finaloutname + ' ' + finaloutname + ' --clip=' + str(options.clip)
-		print "with cmmand", clipcmdf
-		
-		p=subprocess.Popen( clipcmdf, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
+	#	clipcmdf = 'e2proc3d.py ' + finaloutname + ' ' + finaloutname + ' --clip=' + str(options.clip)
+	#	print "with cmmand", clipcmdf
+	#	
+	#	p=subprocess.Popen( clipcmdf, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	#	text=p.communicate()	
+	#	p.stdout.close()
 	
 	
 	if options.simref and not options.saveorthostack:
@@ -1268,38 +1269,38 @@ class SubtomoSimTask(JSTask):
 		#	
 		#else:
 		
-		if options.clip:
-			box = int(options.clip)
-			print "\nActually, because of clip$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n options.clip is", options.clip
-			print "Therefore, box is", box
+		#if options.clip:
+		#	box = int(options.clip)
+		#	print "\nActually, because of clip$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n options.clip is", options.clip
+		#	print "Therefore, box is", box
 			
 		#print "The boxsize to use is", options.clip
 			
-		if finalprjsRAW and options.clip and int(options.clip) > int(box):
-			print "\n\n\n\n\n\n\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@prjs raw need to be clipped! to a size of", options.clip
+		#if finalprjsRAW and options.clip and int(options.clip) > int(box):
+		#	print "\n\n\n\n\n\n\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@prjs raw need to be clipped! to a size of", options.clip
 			
-			finalprjsRAWclipped = finalprjsRAW.replace('.hdf','_clipped.hdf')  
-			clipcmd1 = 'e2proc2d.py ' + finalprjsRAW + ' ' + finalprjsRAWclipped + ' --clip=' + str(options.clip) + ',' + str(options.clip) + ' && mv ' + finalprjsRAWclipped + ' ' + finalprjsRAW
-			print "with cmmand", clipcmd1
+		#	finalprjsRAWclipped = finalprjsRAW.replace('.hdf','_clipped.hdf')  
+		#	clipcmd1 = 'e2proc2d.py ' + finalprjsRAW + ' ' + finalprjsRAWclipped + ' --clip=' + str(options.clip) + ',' + str(options.clip) + ' && mv ' + finalprjsRAWclipped + ' ' + finalprjsRAW
+		#	print "with cmmand", clipcmd1
+			
+		#	
+		#	p=subprocess.Popen( clipcmd1, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		#	text=p.communicate()	
+		#	p.stdout.close()
+			
+		#if finalprjsED and options.clip and int(options.clip) > int(box):
+		#	print "\n\n\n\n\n\n\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@prjs ED need to be clipped! to a size of", options.clip
+			
+		#	#finalprjsEDclipped = finalprjsED.replace('.hdf','_clipped.hdf')  
+			
+		#	clipcmd2 = 'e2proc2d.py ' + finalprjsED + ' ' + finalprjsEDclipped + ' --clip=' + str(options.clip) + ',' + str(options.clip) + ' && mv ' + finalprjsEDclipped + ' ' + finalprjsED 
+		#	print "with cmmand", clipcmd2
 			
 			
-			p=subprocess.Popen( clipcmd1, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
 			
-		if finalprjsED and options.clip and int(options.clip) > int(box):
-			print "\n\n\n\n\n\n\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@prjs ED need to be clipped! to a size of", options.clip
-			
-			finalprjsEDclipped = finalprjsED.replace('.hdf','_clipped.hdf')  
-			
-			clipcmd2 = 'e2proc2d.py ' + finalprjsED + ' ' + finalprjsEDclipped + ' --clip=' + str(options.clip) + ',' + str(options.clip) + ' && mv ' + finalprjsEDclipped + ' ' + finalprjsED 
-			print "with cmmand", clipcmd2
-			
-			
-			
-			p=subprocess.Popen( clipcmd2, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
+		#	p=subprocess.Popen( clipcmd2, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		#	text=p.communicate()	
+		#	p.stdout.close()
 		
 		#box = image.get_xsize()
 		

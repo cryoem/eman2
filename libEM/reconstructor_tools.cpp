@@ -33,6 +33,7 @@
  *
  * */
 
+
 #include <cstring>
 #include "reconstructor_tools.h"
 
@@ -279,8 +280,8 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 #ifdef RECONDEBUG
 					std::complex<double> v1=dt*gg*w,v2=gg*w;
 					
-					if (k<5 && j<5&& i<5) {
-						int idx=i*2+j*10+k*10*5;
+					if (k<5 && j<5&& i<5&& k>=0 && j>=0 && i>=0) {
+						int idx=i*2+j*10+k*50;
 						ddata[idx]+=v1.real();
 						ddata[idx+1]+=v1.imag();
 						dnorm[idx]+=v2.real();

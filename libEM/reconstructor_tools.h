@@ -32,6 +32,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  * 
  * */
+//#define RECONDEBUG		// This is used to add some data objects for debugging reconstructors, it should normally be commented out!
 
 #ifndef eman_reconstructor_toosl_h__
 #define eman_reconstructor_tools_h__ 1
@@ -130,6 +131,10 @@ namespace EMAN
 
 		virtual void init();
 		
+#ifdef RECONDEBUG
+		double *ddata;
+		double *dnorm;
+#endif
 		
 		protected:
 			/// A pointer to the constructor argument normalize_values

@@ -31,7 +31,7 @@
 #
 #
 import global_def
-from   global_def import *
+from global_def import *
 
 def main():
 	import os
@@ -42,36 +42,49 @@ def main():
 		arglist.append( arg )
 	
 	progname = os.path.basename(arglist[0])
-	usage = progname + """  input_image  output_directory  --wn  --apix  --Cs  --voltage  --ac  --f_start  --f_stop  --kboot  --overlap_x  --overlap_y  --edge_x  --edge_y  --MPI  --debug
+	usage = progname + """  input_image  output_directory  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLATEGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --MPI  --stack_mode  --debug  
+sxcter exists in for both MPI and non-MPI versions.
+
+Milti-Micrograph Mode - Process a set of micrographs:
+
+	Specify micrograph name pattern with wild card [*] enclosed by single quotes ['] or double quotes ["] 
+	(Note: sxgui.py automatically adds single quotes [']) and output directory as arguments. 
+	BDB files can not be selected as input micrographs.
 	
-	Micrograph Mode - Process a set of micrographs:
-	
-		Specify micrograph name with wild card (*) enclosed by single quotes (') or double quotes (") (Note: sxgui.py automatically adds single quotes (')). 
-		Specify output directory as an argument.
+	mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
 		
-			mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
-			
-	Stack Mode - Process a stack:
+Single-Micrograph Mode - Process a single micrograph:
+
+	Specify micrograph name (without wild card "*") and output directory as arguments.
+	BDB file can not be selected as input micrograph. Use single processor for this mode.
 	
-		Specify name of stack (without wild card "*") and output directory as arguments. 
-			sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
+	sxcter.py Micrographs/mic0.mrc outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
+		
+Stack Mode - Process a stack (Advanced Option):
+
+	Use option --stack_mode, then specify name of stack (without wild card "*") and output directory as arguments. 
+	--wn will be not used with this mode. Use single processor for this mode. 
 	
-	"""
+	sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode
+
+"""
 	parser = OptionParser(usage, version=SPARXVERSION)
-	parser.add_option("--wn",         type="int",           default=512,    help="size of window to use: should be slightly larger than particle box size (default 512)")
-	parser.add_option("--apix",       type="float",         default= -1,    help="pixel size in angstroms: (default 1.0)")
-	parser.add_option("--Cs",         type="float",         default= 2.0,   help="microscope Cs (spherical aberration): (default 2.0)")
-	parser.add_option("--voltage",    type="float",         default=300.0,  help="microscope voltage in KV: (default 300.0)")
-	parser.add_option("--ac",         type="float",         default=10.0,   help="amplitude contrast in percentage: (default 10.0)")
-	parser.add_option("--f_start",    type="float",         default=-1.0,   help="starting frequency in 1/A: by default determined automatically (default -1.0)")
-	parser.add_option("--f_stop",     type="float",         default=-1.0,   help="stop frequency in 1/A: by default determined automatically (default -1.0)")
-	parser.add_option("--kboot",      type="int",           default=16,     help="number of defocus estimates for micrograph: used for error assessment (default 16)")
-	parser.add_option("--overlap_x",  type="int",           default=50,     help="overlap x in percentage: (default 50)")
-	parser.add_option("--overlap_y",  type="int",           default=50,     help="overlap y in percentage: (default 50)")
-	parser.add_option("--edge_x",     type="int",           default=0,      help="edge x in pixels: (default 0)")
-	parser.add_option("--edge_y",     type="int",           default=0,      help="edge y in pixels: (default 0)")
-	parser.add_option("--MPI",        action="store_true",  default=False,  help="use MPI version (default False)")
-	parser.add_option("--debug",      action="store_true",  default=False,  help="debug info printout: (default False)")
+	parser.add_option("--wn",              type="int",           default=512,    help="CTF window size [pixels]: should be slightly larger than particle box size. used only in micrograph modes. (default 512)")
+	parser.add_option("--apix",            type="float",         default=-1.0,   help="pixel size [A]: (default -1.0)")
+	parser.add_option("--Cs",              type="float",         default=2.0,    help="microscope spherical aberration (Cs) [mm]: (default 2.0)")
+	parser.add_option("--voltage",         type="float",         default=300.0,  help="microscope voltage [kV]: (default 300.0)")
+	parser.add_option("--ac",              type="float",         default=10.0,   help="amplitude contrast [%]: (default 10.0)")
+	parser.add_option("--f_start",         type="float",         default=-1.0,   help="starting frequency [1/A]: by default determined automatically (default -1.0)")
+	parser.add_option("--f_stop",          type="float",         default=-1.0,   help="stop frequency [1/A]: by default determined automatically (default -1.0)")
+	parser.add_option("--kboot",           type="int",           default=16,     help="number of defocus estimates for micrograph: used for error assessment (default 16)")
+	parser.add_option("--overlap_x",       type="int",           default=50,     help="overlap x [%]: (default 50)")
+	parser.add_option("--overlap_y",       type="int",           default=50,     help="overlap y [%]: (default 50)")
+	parser.add_option("--edge_x",          type="int",           default=0,      help="edge x [pixels]: (default 0)")
+	parser.add_option("--edge_y",          type="int",           default=0,      help="edge y [pixels]: (default 0)")
+	parser.add_option("--set_ctf_header",  action="store_true",  default=False,  help="set estimated CTF parameters to image header: used only in micrograph modes. (default False)")
+	parser.add_option("--MPI",             action="store_true",  default=False,  help="use MPI version: (default False)")
+	parser.add_option("--stack_mode",      action="store_true",  default=False,  help="use stack mode: also set a stack name to input image. this is advanced option. (default False)")
+	parser.add_option("--debug",           action="store_true",  default=False,  help="print out debug info: (default False)")
 
 	(options, args) = parser.parse_args(arglist[1:])
 	
@@ -98,23 +111,28 @@ def main():
 		disable_bdb_cache()
 	
 	from morphology import cter_mrk
-	# global_def.BATCH = True
+	global_def.BATCH = True
 	
-	cter_mrk(input_image, output_directory, options.wn, pixel_size=options.apix, \
-			Cs = options.Cs, voltage=options.voltage, wgh=options.ac, \
-			f_start=options.f_start, f_stop=options.f_stop, kboot=options.kboot, \
-			overlap_x = options.overlap_x, overlap_y = options.overlap_y, \
-			edge_x = options.edge_x, edge_y = options.edge_y, \
-			MPI=options.MPI, debug_mode = options.debug)
+	result = cter_mrk(input_image, output_directory, options.wn, pixel_size=options.apix, \
+					Cs = options.Cs, voltage=options.voltage, wgh=options.ac, \
+					f_start=options.f_start, f_stop=options.f_stop, kboot=options.kboot, \
+					overlap_x = options.overlap_x, overlap_y = options.overlap_y, \
+					edge_x = options.edge_x, edge_y = options.edge_y, \
+					set_ctf_header = options.set_ctf_header, MPI=options.MPI, \
+					stack_mode = options.stack_mode, debug_mode = options.debug)
 	
-	# global_def.BATCH = False
+	global_def.BATCH = False
 	
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD, mpi_finalize
 		if mpi_comm_rank(MPI_COMM_WORLD) == 0:
+			if options.debug:
+				print "returned value from cter_mrk() := ", result
 			print "DONE!!!"
 		mpi_finalize()
 	else:
+		if options.debug:
+			print "returned value from cter_mrk() := ", result
 		print "DONE!!!"
 	
 if __name__ == "__main__":
