@@ -220,6 +220,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		i_enum = -1
 		i_enum += 1; self.idx_cter_id           = i_enum # <extra> entry id
+		i_enum += 1; self.idx_cter_select       = i_enum # <extra> selected state
 		i_enum += 1; self.idx_cter_def          = i_enum # defocus (ym)
 		i_enum += 1; self.idx_cter_cs           = i_enum # Cs (mm)
 		i_enum += 1; self.idx_cter_vol          = i_enum # voltage(kV)
@@ -234,12 +235,11 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone (1/A)
 		i_enum += 1; self.idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism (1/A)
 		i_enum += 1; self.idx_cter_mic_name     = i_enum # Micrograph name
-		i_enum += 1; self.idx_cter_pwrot_name   = i_enum # <extra> CTER power spectrum rotational average file name
+#		i_enum += 1; self.idx_cter_pwrot_name   = i_enum # <extra> CTER power spectrum rotational average file name
 		i_enum += 1; self.idx_cter_error_ctf    = i_enum # <extra> limit frequency by CTF error 
 		if self.is_enable_max_power == True: i_enum += 1; self.idx_cter_max_power = i_enum # MRK_TEST: <extra> maximum power in experimental rotational average (with astigmatism)
-		i_enum += 1; self.idx_cter_select       = i_enum # <extra> selected state
 		i_enum += 1; self.n_idx_cter            = i_enum
-		self.n_idx_cter_extra = 4
+		self.n_idx_cter_extra = 3
 		if self.is_enable_max_power == True: self.n_idx_cter_extra += 1 # MRK_TEST:
 		
 		i_enum = -1
@@ -250,6 +250,7 @@ class SXGuiCter(QtGui.QWidget):
 		# Mapping for parameter value items (line edit widgets)
 		self.value_map_list = [None] * self.n_idx_cter
 		self.value_map_list[self.idx_cter_id]           = ["CTER ID", None]
+		self.value_map_list[self.idx_cter_select]       = ["Select", None]
 		self.value_map_list[self.idx_cter_def]          = ["Defocus", None]
 		self.value_map_list[self.idx_cter_cs]           = ["Cs (mm)", None]
 		self.value_map_list[self.idx_cter_vol]          = ["Voltage (kV)", None]
@@ -264,10 +265,9 @@ class SXGuiCter(QtGui.QWidget):
 		self.value_map_list[self.idx_cter_error_def]    = ["Defocus Error", None]
 		self.value_map_list[self.idx_cter_error_astig]  = ["Astig. Error", None]
 		self.value_map_list[self.idx_cter_mic_name]     = ["Micrograph", None]
-		self.value_map_list[self.idx_cter_pwrot_name]   = ["PW. Rot. File", None]
+#		self.value_map_list[self.idx_cter_pwrot_name]   = ["PW. Rot. File", None]
 		self.value_map_list[self.idx_cter_error_ctf]    = ["CTF Error", None]
 		if self.is_enable_max_power == True: self.value_map_list[self.idx_cter_max_power] = ["Max Power", None] # MRK_TEST:
-		self.value_map_list[self.idx_cter_select]       = ["Select", None]
 		
 		i_enum = -1
 		i_enum += 1; self.idx_rotinf_cter_id        = i_enum # line number == cter id
@@ -884,10 +884,10 @@ class SXGuiCter(QtGui.QWidget):
 			for cter_id in xrange(len(new_entry_list)):
 				# Add extra items first to make sure indices match
 				new_entry_list[cter_id] = [cter_id] +  new_entry_list[cter_id]           # self.idx_cter_id , <extra> entry id
-				new_entry_list[cter_id] = new_entry_list[cter_id] + [""]                 # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
+				new_entry_list[cter_id] = [1] + new_entry_list[cter_id]                  # self.idx_cter_select  <extra> selected state
+#				new_entry_list[cter_id] = new_entry_list[cter_id] + [""]                 # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
 				new_entry_list[cter_id] = new_entry_list[cter_id] + [0.5]                # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
 				if self.is_enable_max_power == True: new_entry_list[cter_id] = new_entry_list[cter_id] + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
-				new_entry_list[cter_id] = new_entry_list[cter_id] + [1]                  # self.idx_cter_select  <extra> selected state
 				
 				# Cut off frequency components higher than CTF limit 
 				cter_box_size = 512 # NOTE: Toshio Moriya 2016/03/15: This is temporary. Remove this after adding CTF limit to cter output file
@@ -905,14 +905,20 @@ class SXGuiCter(QtGui.QWidget):
 				new_entry_list[cter_id][self.idx_cter_error_ctf] = cter_limit_freq
 				
 				# Set associated pwrot file path 
-#				assert os.path.dirname(file_path).find("partres") != -1
+#				assert os.path.dirname(file_path).find("partres") != -1 # MRK_DEBUG
 #				cter_pwrot_dir = os.path.dirname(file_path).replace("partres", "pwrot")
-				cter_pwrot_dir = os.path.join(os.path.dirname(file_path), "pwrot")
-				new_cter_pwrot_file_path = os.path.join(cter_pwrot_dir, "rotinf%04d.txt" % new_entry_list[cter_id][self.idx_cter_id])
-				new_entry_list[cter_id][self.idx_cter_pwrot_name] = new_cter_pwrot_file_path
+#				cter_pwrot_dir = os.path.join(os.path.dirname(file_path), "pwrot")
+#				new_cter_pwrot_file_path = os.path.join(cter_pwrot_dir, "rotinf%04d.txt" % new_entry_list[cter_id][self.idx_cter_id])
+#				new_entry_list[cter_id][self.idx_cter_pwrot_name] = new_cter_pwrot_file_path
 				
 				# MRK_TEST: Set max value of pwrot related to this micrograph
 				if self.is_enable_max_power == True: # MRK_TEST: 
+					new_cter_mic_file_path = new_entry_list[cter_id][self.idx_cter_mic_name]
+#					print "MRK_DEBUG: new_cter_mic_file_path := ", new_cter_mic_file_path
+					mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))[0]
+#					print "MRK_DEBUG: mic_basename_root := ", mic_basename_root
+					new_cter_pwrot_file_path = os.path.join(os.path.dirname(file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
+#					print "MRK_DEBUG: new_cter_pwrot_file_path := ", new_cter_pwrot_file_path
 					new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1) # MRK_TEST: 
 					new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig]) # MRK_TEST: 
 				
@@ -1169,12 +1175,12 @@ class SXGuiCter(QtGui.QWidget):
 		
 		# print "MRK_DEBUG: Last entry of the 1st colum should be a micrograph name %s which is same as " % os.path.basename(self.rotinf_table[0][-1])
 		
-		mic_basename_rotinf = os.path.basename(self.rotinf_table[0][-1]) # last entry of 1st colum should be associated micrograph
-		mic_basename_partres = os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name])
-		
-		if mic_basename_rotinf != mic_basename_partres:
-			QtGui.QMessageBox.warning(None,"Warning","Micrograph name (%s) in %s is not same as name (%s) in %s " % (mic_basename_rotinf, os.path.basename(self.cter_pwrot_file_path), mic_basename_partres, os.path.basename(self.cter_partres_file_path)))
-			return
+#		mic_basename_rotinf = os.path.basename(self.rotinf_table[0][-1]) # last entry of 1st colum should be associated micrograph
+#		mic_basename_partres = os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name])
+#		
+#		if mic_basename_rotinf != mic_basename_partres:
+#			QtGui.QMessageBox.warning(None,"Warning","Micrograph name (%s) in %s is not same as name (%s) in %s " % (mic_basename_rotinf, os.path.basename(self.cter_pwrot_file_path), mic_basename_partres, os.path.basename(self.cter_partres_file_path)))
+#			return
 		
 		# global_min = float("inf")
 		# global_max = float("-inf")
@@ -1312,10 +1318,14 @@ class SXGuiCter(QtGui.QWidget):
 		self.curentry = currow # row can be the same even after resorting of the cter entry list
 		
 		# Get associated pwrot file path of current entry
-		new_cter_pwrot_file_path = self.cter_entry_list[self.curentry][self.idx_cter_pwrot_name]
+#		new_cter_pwrot_file_path = self.cter_entry_list[self.curentry][self.idx_cter_pwrot_name]
 		
 		# Get associated micrograph path of current entry
 		new_cter_mic_file_path = self.cter_entry_list[self.curentry][self.idx_cter_mic_name]
+		
+		# Generate associated pwrot file path of current entry
+		mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))[0]
+		new_cter_pwrot_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
 		
 		# Changing row does not always change the pwrot file path after resorting of the cter entry list
 		# If same, skip the following processes
@@ -1334,7 +1344,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.ssortedid.setValue(self.curentry,True)
 		
 		for idx_cter in xrange(self.n_idx_cter):
-			if idx_cter not in [self.idx_cter_mic_name, self.idx_cter_pwrot_name]:
+#			if idx_cter not in [self.idx_cter_mic_name, self.idx_cter_pwrot_name]:
+			if idx_cter not in [self.idx_cter_mic_name]:
 				self.value_map_list[idx_cter][self.idx_cter_item_widget].setValue(self.cter_entry_list[self.curentry][idx_cter],True)
 		
 		# Use red font to indicate the value is not between applied threshold ranage
@@ -1765,7 +1776,8 @@ class SXGuiCter(QtGui.QWidget):
 		file_out_discard = open(file_path_out_discard,"w")
 		
 		save_cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[self.idx_cter_id])
-		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_error_ctf, self.idx_cter_select]
+# 		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_error_ctf, self.idx_cter_select]
+		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_select, self.idx_cter_error_ctf]
 		if self.is_enable_max_power == True: idx_cter_ignore_list.append(self.idx_cter_max_power)
 		for cter_entry in save_cter_entry_list:
 			file_out = file_out_select
@@ -1938,9 +1950,9 @@ class SXGuiCter(QtGui.QWidget):
 						assert(self.wplotparam.isVisible() == False and self.curhistdisable == False )
 						self.wplotparam.show()
 						self.is_wplotparam_minimized = False
-				assert(self.isVisible()) 
-				self.raise_()
-				self.activateWindow()
+				if self.isVisible() == True: # Depends on timing at startup, this can happen?!!
+					self.raise_()
+					self.activateWindow()
 		elif event.type() == QtCore.QEvent.WindowActivate:
 			# print "MRK_DEBUG: sxgui main window has gained focus (beome active)"
 			# 
