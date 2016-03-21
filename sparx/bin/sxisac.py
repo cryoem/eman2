@@ -194,7 +194,7 @@ def main(args):
 		if(args[0][:4] == "bdb:"): filename = args[0][4:]
 		else:                      filename = args[0][:-4]
 		filename = os.path.basename(filename)
-		stack_processed_by_ali2d_base__filename  = "bdb:" + os.path.join(masterdir, filename )
+		stack_processed_by_ali2d_base__filename = "bdb:" + os.path.join(masterdir, filename )
 		stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + filename
 	if_error_then_all_processes_exit_program(error_status)
 
@@ -337,10 +337,6 @@ def main(args):
 			params2d = ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
 				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
 				"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
-			
-			
-			
-			
 			
 			del original_images
 			

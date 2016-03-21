@@ -223,7 +223,7 @@ def main(args):
 
 	make_a_list_to_send_to_master__original_images_id_list_associated_with_this_class = []
 	for class_avg_img_iter in xrange(class_averages_nima):
-		this_class_average_params = align2d_direct3(original_images_grouped_by_class_averages[class_avg_img_iter], class_average_images[class_avg_img_iter], xrng=range_lim, yrng=range_lim, psimax=180, psistep=1, ou = radi, CTF = CTF)
+		this_class_average_params = align2d_direct3(original_images_grouped_by_class_averages[class_avg_img_iter], class_average_images[class_avg_img_iter], xrng=range_lim, yrng=range_lim, psimax=180, psistep=180/(pi*radi), ou = radi, CTF = CTF)
 		original_images_id_list_associated_with_this_class = class_average_images[class_avg_img_iter].get_attr("members")
 		make_a_list_to_send_to_master__original_images_id_list_associated_with_this_class.append(original_images_id_list_associated_with_this_class)
 		for img_iter in xrange(len(original_images_grouped_by_class_averages[class_avg_img_iter])):
