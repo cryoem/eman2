@@ -137,7 +137,7 @@ def main():
 	
 			if options.apix:
 				if options.apix != img2matchapix:
-					cmd = 'e2fixheaderparam.py --input=' + options.img2match + ' --stem=apix --stemval=' + str( options.apix ) + ' --valtype=float'
+					cmd = 'e2fixheader.py --input=' + options.img2match + ' --stem=apix --stemval=' + str( options.apix ) + ' --valtype=float'
 					runcmd( options, cmd )
 				else:
 					print "\nWARNING: the apix of --img2match is already equal to --apix."
@@ -145,7 +145,7 @@ def main():
 			'''
 			fix the origin values for --img2match
 			'''		
-			cmd = 'e2fixheaderparam.py --input=' + options.img2match + ' --stem=origin --stemval=0 && e2fixheaderparam.py --input=' + options.img2match + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0"
+			cmd = 'e2fixheader.py --input=' + options.img2match + ' --stem=origin --stemval=0 && e2fixheader.py --input=' + options.img2match + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0"
 			
 				
 	'''
@@ -203,6 +203,8 @@ def main():
 			runcmd( options, cmd )
 			img2p = img2processED
 			
+			img2processApix = img2p['apix_x']
+			
 			nStack2process = EMUtil.get_image_count( img2p )
 	
 			if options.verbose:
@@ -211,7 +213,7 @@ def main():
 			'''
 			fix origin on header of --img2process current file img2p
 			'''	
-			cmd = ' e2fixheaderparam.py --input=' + img2p+ ' --stem=origin --stemval=0 && e2fixheaderparam.py --input=' + img2p + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0" 
+			cmd = ' e2fixheader.py --input=' + img2p+ ' --stem=origin --stemval=0 && e2fixheader.py --input=' + img2p + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0" 
 			runcmd( options, cmd )
 		
 			img2phdr = EMData( img2p, 0, True )
@@ -256,15 +258,32 @@ def main():
 			print "\n\ncalling preciseshrink function"
 			print "before, size is", img2phdr['nx']		
 						
-			preciseshrink( options, img2p, targetApix, targetBox)
+			#preciseshrink( options, img2p, targetApix, targetBox)
+			
 			
 			img2processhdr = EMData( img2p, 0, True )
 			print "after preciseshrink, size is", img2processhdr['nx']
 			
+			
+			
+			scaleup = 0
+			scaledown = 0
+	
+			scalefactor = float( targetApix )/float(img2processApix)
+	
+			
+			if float(scalefactor) < 1.0:
+				scaleup =1
+			elif float(scalefactor) > 1.0:
+				scaledown = 1
+				
+			cmdshrink = 'e2proc3d.py ' + img2p + ' ' + img2p + ' --process math.fft.resample:n='+ str( scalefactor ) + ' --clip ' + str(targetBox)
+			runcmd( options, cmdshrink )
+			
 			if options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or options.threshold or options.mirror or options.sym:			
 				refpostprocessing( options, img2p )		
 				
-			cmd = 'e2fixheaderparam.py --input=' + img2p + ' --stem=origin --stemval=0 && e2fixheaderparam.py --input=' + img2p + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0"
+			cmd = 'e2fixheader.py --input=' + img2p + ' --stem=origin --stemval=0 && e2fixheader.py --input=' + img2p + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0"
 			if options.verbose:
 				print "The first command to fix the header is", cmd
 		
@@ -273,7 +292,7 @@ def main():
 			ny = hdr['ny']
 			nz = hdr['nz']
 		
-			cmd2 = ' && e2fixheaderparam.py --input=' + img2p + ' --params=MRC.mx:' + str(targetBox) + ',MRC.my:' + str(targetBox) + ',MRC.mz:' + str(targetBox) + ',MRC.nx:' + str(targetBox) + ',MRC.ny:' + str(targetBox) + ',MRC.nz:' + str(targetBox)
+			cmd2 = ' && e2fixheader.py --input=' + img2p + ' --params=MRC.mx:' + str(targetBox) + ',MRC.my:' + str(targetBox) + ',MRC.mz:' + str(targetBox) + ',MRC.nx:' + str(targetBox) + ',MRC.ny:' + str(targetBox) + ',MRC.nz:' + str(targetBox)
 			cmd2 += ',MRC.xlen:' + str(targetBox) + ',MRC.ylen:' + str(targetBox) + ',MRC.zlen:' + str(targetBox) + ',MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0'	
 			if options.verbose:
 				print "The second command to fix the header is", cmd2
@@ -299,6 +318,9 @@ def runcmd(options,cmd):
 	return
 	
 
+'''
+DEPRECATED
+'''
 def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	'''
 	Calculate the scale between the reference model and the data, round to the nearest 
@@ -380,7 +402,7 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	if scaledown:
 		print "scaling down"
 		cmd += ':clip=' + str(targetBox) + ' --apix=' + str(targetApix)
-		cmd += ' && e2fixheaderparam.py --input=' + img2processEd + ' --stem apix --valtype float --stemval ' + str(targetApix)
+		cmd += ' && e2fixheader.py --input=' + img2processEd + ' --stem apix --valtype float --stemval ' + str(targetApix)
 		print "meanshrinkfactor_int > 1.0, it is", meanshrinkfactor_int
 		print "target apix is", targetApix
 		
@@ -388,13 +410,13 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	elif scaleup:
 		print "scaling up"
 		cmd += ' && e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --clip=' + str(targetBox)
-		cmd += ' && e2fixheaderparam.py --input=' + str(img2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
+		cmd += ' && e2fixheader.py --input=' + str(img2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
 		print "meanshrinkfactor_int < 1, it is", meanshrinkfactor_int
 		print "target apix is", targetApix
 		
 	else:
 		cmd += ':clip=' + str(targetBox) + ' --apix=' + str(targetApix)
-		cmd += ' && e2fixheaderparam.py --input=' + img2processEd + ' --stem apix --valtype float --stemval ' + str(targetApix)
+		cmd += ' && e2fixheader.py --input=' + img2processEd + ' --stem apix --valtype float --stemval ' + str(targetApix)
 
 	print "cmd is", cmd
 	runcmd( options, cmd )
