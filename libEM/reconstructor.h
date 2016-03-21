@@ -245,7 +245,7 @@ namespace EMAN
 			int subz0;
 			
 #ifdef RECONDEBUG
-			double ddata[250],dnorm[250];
+			double *ddata,*dnorm;
 #endif
 
 		protected:

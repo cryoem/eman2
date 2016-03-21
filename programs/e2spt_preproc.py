@@ -396,13 +396,14 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 			
 			clipf = options.clip
 			
-			if not simulation:
-				if options.shrink > 1:
-					clipf /= options.shrink
+			#if not simulation:
+			#	if options.shrink > 1:
+			#		clipf /= options.shrink
 			
-				simage = clip3D( simage, clipf)
-			else:
-				simage = clip3D( simage, clipf)
+			#	simage = clip3D( simage, clipf)
+			#else:
+			
+			simage = clip3D( simage, clipf)
 				
 			simage.process_inplace('mask.soft',{'outer_radius':-4})
 		
@@ -427,7 +428,11 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 		except:
 			if options.verbose > 9:	
 				print "\n(e2spt_preproc)(preprocfunc) parameter --output probably doesn't exist in program calling this function. default outname %s and i=%d " %( outname , i) 
-			simage.write_image( outname, i )
+			
+			if outname:
+				simage.write_image( outname, i )
+			else:
+				print "no output name"
 			
 			
 		#del simage		
@@ -446,6 +451,8 @@ def clip3D( vol, sizex, sizey=0, sizez=0 ):
 	volxc = vol['nx']/2
 	volyc = vol['ny']/2
 	volzc = vol['nz']/2
+	
+	print "clipping volume to size", sizex, sizey, sizez
 	
 	Rvol =  Region( (2*volxc - sizex)/2, (2*volyc - sizey)/2, (2*volzc - sizez)/2, sizex , sizey , sizez)
 	vol.clip_inplace( Rvol )

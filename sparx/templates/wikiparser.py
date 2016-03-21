@@ -82,6 +82,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
 	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
 	keyword_dict["stack_file"]                    = SXkeyword_map(0, "bdb")        # stack_file (contains keyworkd 'stack' but this should be bdb type)
+	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "")           # stack_mode (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")           # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")           # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	# Use priority 1 for output

@@ -868,9 +868,9 @@ class SXGuiCter(QtGui.QWidget):
 			QtGui.QMessageBox.warning(None,"Warning","Invalid file extension for CTER CTF File (%s). The file extension must be \".txt\"." % (file_path))
 			return
 		
-		if os.path.dirname(file_path)[-1*len("partres"):] != "partres":
-			QtGui.QMessageBox.warning(None,"Warning","Invalid file path for CTER CTF File (%s). The file must be in \"partres\" directory." % (file_path))
-			return
+#		if os.path.dirname(file_path)[-1*len("partres"):] != "partres":
+#			QtGui.QMessageBox.warning(None,"Warning","Invalid file path for CTER CTF File (%s). The file must be in \"partres\" directory." % (file_path))
+#			return
 		
 		new_entry_list = read_text_row(file_path)
 		if len(new_entry_list) == 0:
@@ -905,8 +905,9 @@ class SXGuiCter(QtGui.QWidget):
 				new_entry_list[cter_id][self.idx_cter_error_ctf] = cter_limit_freq
 				
 				# Set associated pwrot file path 
-				assert os.path.dirname(file_path).find("partres") != -1
-				cter_pwrot_dir = os.path.dirname(file_path).replace("partres", "pwrot")
+#				assert os.path.dirname(file_path).find("partres") != -1
+#				cter_pwrot_dir = os.path.dirname(file_path).replace("partres", "pwrot")
+				cter_pwrot_dir = os.path.join(os.path.dirname(file_path), "pwrot")
 				new_cter_pwrot_file_path = os.path.join(cter_pwrot_dir, "rotinf%04d.txt" % new_entry_list[cter_id][self.idx_cter_id])
 				new_entry_list[cter_id][self.idx_cter_pwrot_name] = new_cter_pwrot_file_path
 				
@@ -990,8 +991,10 @@ class SXGuiCter(QtGui.QWidget):
 		
 		self.needredisp = True
 		
+		# current directory is empty string
 		mic_dir = os.path.dirname(self.cter_entry_list[0][self.idx_cter_mic_name])
-		if os.path.exists(mic_dir):
+		# print "MRK_DEBUG: mic_dir = \"%s\" in readCterCtfFile() "% (mic_dir)
+		if len(mic_dir) == 0 or os.path.exists(mic_dir):
 			self.cbmicdisplay.setEnabled(True)
 		else:
 			QtGui.QMessageBox.warning(None,"Warning","Can not find the micrograph directory (%s). Please check your project directory. \n\nMicrograph display option is disabled for this session." % (mic_dir))
@@ -1273,6 +1276,7 @@ class SXGuiCter(QtGui.QWidget):
 	def updateMicImg(self):
 		if not self.curmicdisplay: return # Micrograph display is disabled
 		
+		# print "MRK_DEBUG: self.cter_mic_file_path =\"%s\" in updateMicImg() "% (self.cter_mic_file_path)
 		if not os.path.exists(self.cter_mic_file_path):
 			QtGui.QMessageBox.warning(None,"Warning","Can not find micrograph (%s). Please check your micrograph directory. \n\nA blank image is shown." % (self.cter_mic_file_path))
 			mic_img = EMData() # Set empty image...
@@ -1729,7 +1733,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		assert(os.path.basename(self.cter_partres_file_path).find("partres") != -1)
 		assert(self.cter_partres_file_path[-1*len(".txt"):] == ".txt")
-		assert(os.path.dirname(self.cter_partres_file_path)[-1*len("partres"):] == "partres")
+#		assert(os.path.dirname(self.cter_partres_file_path)[-1*len("partres"):] == "partres")
 		
 		file_suffix = self.vfilesuffix.getValue()
 		file_path_out_select = os.path.join(os.path.dirname(self.cter_partres_file_path), "%s_partres_select.txt" % (file_suffix))

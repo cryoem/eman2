@@ -63,7 +63,7 @@ BATCH = False
 CACHE_DISABLE = False
 
 
-global LOGFILE 
+global LOGFILE
 LOGFILE = "logfile"
 from time import localtime, strftime
 # timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())

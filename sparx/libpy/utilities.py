@@ -3680,9 +3680,10 @@ def getvec( phi, tht ):
 
 	qt = radians(tht)
 	qp = radians(phi)
+	qs = sin(qt)
 
-	x = sin(qt)*cos(qp) 
-	y = sin(qt)*sin(qp)
+	x = qs*cos(qp) 
+	y = qs*sin(qp)
 	z = cos(qt)
 
 	return (x,y,z)
@@ -3691,8 +3692,9 @@ def getfvec( phi, tht ):
 	from math import radians,cos,sin
 	qt = radians(tht)
 	qp = radians(phi)
-	x = sin(qt)*cos(qp) 
-	y = sin(qt)*sin(qp)
+	qs = sin(qt)
+	x = qs*cos(qp) 
+	y = qs*sin(qp)
 	z = cos(qt)
 
 	return (x,y,z)
@@ -4274,13 +4276,12 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
-		from math import acos, pi
+		from math import acos, pi, degrees
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		if v > 1: v = 1
-		if v < -1: v = -1
-		if v >= 0: return acos(v)*180/pi, 0
-		else:  return acos(-v)*180/pi, 1
+		v = max(min(v,1.0),-1.0)
+		if v >= 0: return degrees(acos(v)), 0
+		else:      return degrees(acos(-v)), 1
 
 	t0 = time()
 	proj_list = []   
@@ -5168,11 +5169,13 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	from filter import filt_ctf
 	from applications import MPI_start_end
 
+	'''
 	if( myid == main_node ):
 		print "  "
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], Tracker["applyctf"], preshift)
 		print  "                       stack:      %s\n                       partids:     %s\n                       partstack: %s\n"%(Tracker["constants"]["stack"], partids, partstack)
+	'''
 	if( myid == main_node ): lpartids = read_text_file(partids)
 	else:  lpartids = 0
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
@@ -5835,12 +5838,11 @@ def sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file):
 	
 def get_initial_ID(part_list, full_ID_dict):
 	part_initial_id_list = []
-	new_dict = {}
+	#new_dict = {}
 	for iptl in xrange(len(part_list)):
-		id = full_ID_dict[part_list[iptl]]
-		part_initial_id_list.append(id)
-		new_dict[iptl] = id
-	return part_initial_id_list, new_dict
+		part_initial_id_list.append(full_ID_dict[part_list[iptl]])
+		#new_dict[iptl] = id
+	return part_initial_id_list#, new_dict
 
 def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
 	new_class  = []
@@ -5884,17 +5886,17 @@ def convertasi(asig,K):
 		p.append(l)
 	return p
 
-def prepare_ptp(data_list,K):
-	num_of_pt=len(data_list)
+def prepare_ptp(data_list, K):
+	num_of_pt = len(data_list)
 	ptp=[]
 	for ipt in xrange(num_of_pt):
 		ptp.append([])
 	for ipt in xrange(num_of_pt):
-		nc =len(data_list[ipt])
-		asig=[-1]*nc
+		nc = len(data_list[ipt])
+		asig  =[-1]*nc
 		for i in xrange(nc):
-			asig[i]=data_list[ipt][i]
-		ptp[ipt] = convertasi(asig,K)
+			asig[i] = data_list[ipt][i]
+		ptp[ipt] = convertasi(asig, K)
 	return ptp
 
 def print_dict(dict,theme):
@@ -5958,30 +5960,28 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	lowpass, falloff = fit_tanh1(nfsc, 0.01)
 	return  round(lowpass,4), round(falloff,4), round(currentres,2)
         
-def partition_to_groups(alist,K):
+def partition_to_groups(alist, K):
 	res =[]
 	for igroup in xrange(K):
 		this_group =[]
 		for imeb in xrange(len(alist)):
-			if alist[imeb] ==igroup:this_group.append(imeb)
+			if( alist[imeb] == igroup ):   this_group.append(imeb)
 		this_group.sort()
 		res.append(this_group)
 	return res
 
-def partition_independent_runs(run_list,K):
-	indep_runs_groups={}
+def partition_independent_runs(run_list, K):
+	indep_runs_groups = {}
 	for indep in xrange(len(run_list)):
-		this_run = run_list[indep]
-		groups = partition_to_groups(this_run,K)
-		indep_runs_groups[indep]=groups 
+		indep_runs_groups[indep] = partition_to_groups(run_list[indep], K)
 	return indep_runs_groups
 
 def get_outliers(total_number,plist):
 	tlist={}
 	for i in xrange(total_number):tlist[i]=i
-	for a in plist:del tlist[a]
+	for a in plist:   del tlist[a]
 	out =[]
-	for a in tlist:out.append(a)
+	for a in tlist:   out.append(a)
 	return out
 
 def merge_groups(stable_members_list):
@@ -6001,7 +6001,7 @@ def save_alist(Tracker,name_of_the_text_file,alist):
 		file_name=os.path.join(dir_to_save_list,name_of_the_text_file)
 		write_text_file(alist, file_name)
 
-def margin_of_error(P,size_of_this_sampling):
+def margin_of_error(P, size_of_this_sampling):
 	# margin of an error, or radius of an error for a percentage
 	from math import sqrt
 	return sqrt(P*(1.-P)/size_of_this_sampling)
@@ -6017,173 +6017,148 @@ def do_two_way_comparison(Tracker):
 	from statistics import k_means_match_clusters_asg_new
 	import os
 	######
-	myid              =Tracker["constants"]["myid"]
-	main_node         =Tracker["constants"]["main_node"]
-	log_main          =Tracker["constants"]["log_main"]
-	total_stack       =Tracker["this_total_stack"]
-	workdir          =Tracker["this_dir"]
-	number_of_groups  =Tracker["number_of_groups"]
+	myid              = Tracker["constants"]["myid"]
+	main_node         = Tracker["constants"]["main_node"]
+	log_main          = Tracker["constants"]["log_main"]
+	total_stack       = Tracker["this_total_stack"]
+	workdir           = Tracker["this_dir"]
+	number_of_groups  = Tracker["number_of_groups"]
 	######
 	if myid ==main_node:
 		msg="-------Two_way comparisons analysis of %3d independent runs of equal Kmeans-------"%Tracker["constants"]["indep_runs"]
 		log_main.add(msg)
-	total_partition=[]
-	if Tracker["constants"]["indep_runs"]<2:
+	total_partition = []
+	if( Tracker["constants"]["indep_runs"]<2 ):
 		if myid ==main_node:
 			log_main.add(" Error! One single run cannot make two-way comparison")
-		from mip import mpi_finalize
+		from mpi import mpi_finalize
+		from sys import exit
 		mpi_finalize()
 		exit()
-	for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
-		partition_list=Tracker["partition_dict"][iter_indep]
-		total_partition.append(partition_list)
-    ### Two-way comparision is carried out on all nodes 
-	ptp = prepare_ptp(total_partition, number_of_groups)
-	indep_runs_to_groups = partition_independent_runs(total_partition, number_of_groups)
-	###### Check margin of error
-	if myid ==main_node:
-		log_main.add("--------------------------margin of error--------------------------------------------")
-	for indep in xrange(len(indep_runs_to_groups)):
-		for index_of_class in xrange(len(indep_runs_to_groups[indep])):
-			one_group_in_old_ID,tmp_dict = get_initial_ID(indep_runs_to_groups[indep][index_of_class],Tracker["full_ID_dict"])
-			rate1,rate2,size_of_this_group = count_chunk_members(Tracker["chunk_dict"],one_group_in_old_ID)
+	else:
+		for iter_indep in xrange(Tracker["constants"]["indep_runs"]):  total_partition.append(Tracker["partition_dict"][iter_indep])
+		### Two-way comparision is carried out on all nodes 
+		ptp = prepare_ptp(total_partition, number_of_groups)
+		indep_runs_to_groups = partition_independent_runs(total_partition, number_of_groups)
+		###### Check margin of error
+		if myid ==main_node:
+			log_main.add("--------------------------margin of error--------------------------------------------")
+		for indep in xrange(len(indep_runs_to_groups)):
+			for index_of_class in xrange(len(indep_runs_to_groups[indep])):
+				one_group_in_old_ID = get_initial_ID(indep_runs_to_groups[indep][index_of_class], Tracker["full_ID_dict"])
+				#if myid ==main_node:
+				#	print  " chunk_dict ",Tracker["chunk_dict"]
+				#	print "one_group_in_old_ID",one_group_in_old_ID
+				rate1, rate2, size_of_this_group = count_chunk_members(Tracker["chunk_dict"], one_group_in_old_ID)
+				error = margin_of_error(Tracker["P_chunk0"], size_of_this_group)
+				if myid ==main_node:
+					#log_main.add("    %f     %f     %d"%(rate1,rate2,size_of_this_group))
+					log_main.add(" margin of error for chunk0 is %f   %f    %d"%((Tracker["P_chunk0"]-error),(Tracker["P_chunk0"]+error),size_of_this_group))
+					log_main.add(" actual percentage is %f"%rate1)
+					#log_main.add(" margin of error for chunk1 is %f"%margin_of_error(Tracker["P_chunk1"],size_of_this_group))
+					#log_main.add(" actual error is %f"%abs(rate2-Tracker["P_chunk1"]))
+		if myid ==main_node:
+			log_main.add("------------------------------------------------------------------------------")
+		total_pop=0
+		two_ways_stable_member_list = {}
+		avg_two_ways                = 0.0
+		avg_two_ways_square         = 0.0
+		scores                      = {}
+		for iptp in xrange(len(ptp)):
+			for jptp in xrange(len(ptp)):
+				newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[iptp], ptp[jptp])
+				tt = 0.0
+				if myid ==main_node and iptp<jptp:
+					aline="Two-way comparison between independent run %3d and %3d"%(iptp,jptp)
+					log_main.add(aline)
+				for m in xrange(len(list_stable)):
+					tt +=len(list_stable[m])
+				if( (myid == main_node) and (iptp<jptp) ):
+					unaccounted = total_stack-tt
+					ratio_unaccounted  = 100.-tt/total_stack*100.
+					ratio_accounted    = tt/total_stack*100
+				rate = tt/total_stack*100.0
+				scores[(iptp,jptp)]    = rate
+				if iptp<jptp :
+					avg_two_ways 	    += rate
+					avg_two_ways_square += rate**2
+					total_pop += 1
+					new_list=[]
+					for any in list_stable:
+						any.tolist()
+						new_list.append(any)
+					two_ways_stable_member_list[(iptp,jptp)] = new_list[:]
+					del new_list
+		if myid ==main_node:
+			log_main.add("two_way comparison is done!")
+		#### Score each independent run by pairwise summation
+		summed_scores = []
+		two_way_dict  = {}
+		for ipp in xrange(len(ptp)):
+			avg_scores =0.0
+			for jpp in xrange(len(ptp)):
+				if ipp!=jpp:
+					avg_scores += scores[(ipp,jpp)]
+			avg_rate =avg_scores/(len(ptp)-1)
+			summed_scores.append(avg_rate)
+			two_way_dict[avg_rate] =ipp
+		#### Select two independent runs that have the first two highest scores
+		run1, run2,rate1,rate2 = select_two_runs(summed_scores,two_way_dict)
+		Tracker["two_way_stable_member"]      = two_ways_stable_member_list[(run1,run2)]
+		Tracker["pop_size_of_stable_members"] = 1
+		if myid == main_node:
+			log_main.add("Get outliers of the selected comparison")
+		####  Save both accounted ones and unaccounted ones
+		if myid == main_node:
+			log_main.add("Save outliers")
+		stable_class_list = []
+		small_group_list  = []
+		if myid ==main_node:
+			log_main.add("------------------margin of error--------------------------------------------")
+		for istable in xrange(len(Tracker["two_way_stable_member"])):
+			new_one_class                    = get_initial_ID(Tracker["two_way_stable_member"][istable], Tracker["full_ID_dict"]) 
+			rate1, rate2, size_of_this_group = count_chunk_members(Tracker["chunk_dict"], new_one_class)
 			error=margin_of_error(Tracker["P_chunk0"],size_of_this_group)
 			if myid ==main_node:
-				#log_main.add("    %f     %f     %d"%(rate1,rate2,size_of_this_group))
-				log_main.add(" margin of error for chunk0 is %f   %f    %d"%((Tracker["P_chunk0"]-error),(Tracker["P_chunk0"]+error),size_of_this_group))
+				log_main.add(" margin of error for chunk0 is %f    %f    %d"%((Tracker["P_chunk0"]-error),(Tracker["P_chunk0"]+error),size_of_this_group))
 				log_main.add(" actual percentage is %f"%rate1)
-				#log_main.add(" margin of error for chunk1 is %f"%margin_of_error(Tracker["P_chunk1"],size_of_this_group))
-				#log_main.add(" actual error is %f"%abs(rate2-Tracker["P_chunk1"]))
-	if myid ==main_node:
-		log_main.add("------------------------------------------------------------------------------")
-	total_pop=0
-	two_ways_stable_member_list={}
-	avg_two_ways               =0.0
-	avg_two_ways_square        =0.
-	scores                     ={}
-	for iptp in xrange(len(ptp)):
-		for jptp in xrange(len(ptp)):
-			newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[iptp],ptp[jptp])
-			tt =0.
-			if myid ==main_node and iptp<jptp:
-				aline="Two-way comparison between independent run %3d and %3d"%(iptp,jptp)
-				log_main.add(aline)
-			for m in xrange(len(list_stable)):
-				a=list_stable[m]
-				tt +=len(a)
-				#if myid==main_node and iptp<jptp:
-					#aline=print_a_line_with_timestamp("Group %d  number of stable members %10d  "%(m,len(a)))
-					#log_main.add(aline)
-					#aline=print_a_line_with_timestamp("The comparison is between %3d th group of %3d th run and %3d th group of %3d th run" \
-					# 									%(newindeces[m][0],iptp,newindeces[m][1],jptp))
-					#log_main.add(aline)
-					#aline=print_a_line_with_timestamp("The  %3d th group of %3d th run contains %6d members" \
-					#	        %(iptp,newindeces[m][0],len(indep_runs_to_groups[iptp][newindeces[m][0]])))
-					#log_main.add(aline)
-					#aline=print_a_line_with_timestamp("The  %3d th group of %3d th run contains %6d members"%(jptp,newindeces[m][1],\
-					#			len(indep_runs_to_groups[jptp][newindeces[m][1]]))) 
-			if myid==main_node and iptp<jptp:
-				unaccounted=total_stack-tt
-				ratio_unaccounted  = 100.-tt/total_stack*100.
-				ratio_accounted    = tt/total_stack*100
-				#aline             = print_a_line_with_timestamp("Accounted data is %6d, %5.2f "%(int(tt),ratio_accounted))
-				#log_main.add(aline)
-				#aline=print_a_line_with_timestamp("Unaccounted data is %6d, %5.2f"%(int(unaccounted),ratio_unaccounted))
-				#log_main.add(aline)
-			rate=tt/total_stack*100.0
-			scores[(iptp,jptp)] =rate
-			if iptp<jptp:
-				avg_two_ways 	    +=rate
-				avg_two_ways_square +=rate**2
-				total_pop +=1
-				#if myid ==main_node and iptp<jptp:
-				#aline=print_a_line_with_timestamp("The two-way comparison stable member total ratio %3d %3d %5.3f  "%(iptp,jptp,rate))
-				#log_main.add(aline)
-				new_list=[]
-				for any in list_stable:
-					any.tolist()
-					new_list.append(any)
-				two_ways_stable_member_list[(iptp,jptp)]=new_list
-	if myid ==main_node:
-		log_main.add("two_way comparison is done!")
-	#### Score each independent run by pairwise summation
-	summed_scores =[]
-	two_way_dict  ={}
-	for ipp in xrange(len(ptp)):
-		avg_scores =0.0
-		for jpp in xrange(len(ptp)):
-			if ipp!=jpp:
-				avg_scores +=scores[(ipp,jpp)]
-		avg_rate =avg_scores/(len(ptp)-1)
-		summed_scores.append(avg_rate)
-		two_way_dict[avg_rate] =ipp
-	#### Select two independent runs that have the first two highest scores
-	run1, run2,rate1,rate2 = select_two_runs(summed_scores,two_way_dict)
-	Tracker["two_way_stable_member"]      = two_ways_stable_member_list[(run1,run2)]
-	Tracker["pop_size_of_stable_members"] = 1
-	if myid == main_node:
-		log_main.add("Get outliers of the selected comparison")
-	####  Save both accounted ones and unaccounted ones
-	if myid == main_node:
-		log_main.add("Save outliers")
-	stable_class_list = []
-	small_group_list  = []
-	if myid ==main_node:
-		log_main.add("------------------margin of error--------------------------------------------")
-	for istable in xrange(len(Tracker["two_way_stable_member"])):
-		one_class = Tracker["two_way_stable_member"][istable]
-		#write_text_file(one_class, "class%d.txt"%istable)
-		new_one_class, new_tmp_dict = get_initial_ID(one_class, Tracker["full_ID_dict"])
-		#write_text_file(new_one_class, "new_class%d.txt"%istable)
-		rate1, rate2, size_of_this_group = count_chunk_members(Tracker["chunk_dict"],new_one_class)
-		error=margin_of_error(Tracker["P_chunk0"],size_of_this_group)
+			if( len(new_one_class)>= Tracker["constants"]["smallest_group"] ):  stable_class_list.append(new_one_class) 
+			else:                                                               small_group_list.append(new_one_class)
 		if myid ==main_node:
-			log_main.add(" margin of error for chunk0 is %f    %f    %d"%((Tracker["P_chunk0"]-error),(Tracker["P_chunk0"]+error),size_of_this_group))
-			log_main.add(" actual percentage is %f"%rate1)
-			#log_main.add(" margin of error for chunk1 is %f"%margin_of_error(Tracker["P_chunk1"],size_of_this_group))
-			#log_main.add(" actual error is %f"%abs(rate2-Tracker["P_chunk1"]))
-		if len(new_one_class)>=Tracker["constants"]["smallest_group"]:
-			stable_class_list.append(new_one_class) 
-		else:
-			small_group_list.append(new_one_class)
-	if myid ==main_node:
-		log_main.add("----------------------------------------------------------------------------")
-	accounted_list = merge_groups(stable_class_list)
-	Tracker["this_accounted_list"]   =  accounted_list
-	Tracker["two_way_stable_member"] =  stable_class_list
-	outliers     = get_complementary_elements(Tracker["this_accounted_list"],accounted_list) 
-	save_alist(Tracker,"Unaccounted.txt",outliers)
-	Tracker["this_unaccounted_list"] =  outliers
-	mpi_barrier(MPI_COMM_WORLD)
-	save_alist(Tracker,"Accounted.txt",accounted_list)
-	update_full_dict(accounted_list,Tracker)# Update full_ID_dict for Kmeans
-	mpi_barrier(MPI_COMM_WORLD)
-	Tracker["this_unaccounted_dir"]     = workdir
-	Tracker["this_unaccounted_text"]    = os.path.join(workdir,"Unaccounted.txt")
-	Tracker["this_accounted_text"]      = os.path.join(workdir,"Accounted.txt")
-	Tracker["ali3d_of_outliers"]        = os.path.join(workdir,"ali3d_params_of_outliers.txt")
-	Tracker["ali3d_of_accounted"]       = os.path.join(workdir,"ali3d_params_of_accounted.txt")
-	if myid==main_node:
-		log_main.add(" Selected indepedent runs      %5d and  %5d"%(run1,run2))
-		log_main.add(" Their pair-wise averaged rates are %5.2f  and %5.2f "%(rate1,rate2))		
-	from math import sqrt
-	avg_two_ways        = avg_two_ways/total_pop
-	two_ways_std        = sqrt(avg_two_ways_square/total_pop-avg_two_ways**2)
-	net_rate            = avg_two_ways-1./number_of_groups*100.
-	Tracker["net_rate"] = net_rate
-	if myid == main_node: 
-		msg="average of two-way comparison  %5.3f"%avg_two_ways
-		log_main.add(msg)
-		msg="net rate of two-way comparison  %5.3f"%net_rate
-		log_main.add(msg)
-		msg="std of two-way comparison %5.3f"%two_ways_std
-		log_main.add(msg)
-		msg ="Score table of two_way comparison when Kgroup =  %5d"%number_of_groups
-		log_main.add(msg)
-		print_upper_triangular_matrix(scores,Tracker["constants"]["indep_runs"],log_main)
-	del two_ways_stable_member_list
-	Tracker["score_of_this_comparison"]=(avg_two_ways,two_ways_std,net_rate)
-	mpi_barrier(MPI_COMM_WORLD)
+			log_main.add("----------------------------------------------------------------------------")
+		accounted_list = merge_groups(stable_class_list)
+		Tracker["this_accounted_list"]   =  accounted_list
+		Tracker["two_way_stable_member"] =  stable_class_list
+		mpi_barrier(MPI_COMM_WORLD)
+		save_alist(Tracker,"Accounted.txt", accounted_list)
+		update_full_dict(accounted_list,Tracker)# Update full_ID_dict for Kmeans
+		mpi_barrier(MPI_COMM_WORLD)
+		Tracker["this_unaccounted_dir"]     = workdir
+		Tracker["this_unaccounted_text"]    = os.path.join(workdir,"Unaccounted.txt")
+		Tracker["this_accounted_text"]      = os.path.join(workdir,"Accounted.txt")
+		Tracker["ali3d_of_outliers"]        = os.path.join(workdir,"ali3d_params_of_outliers.txt")
+		Tracker["ali3d_of_accounted"]       = os.path.join(workdir,"ali3d_params_of_accounted.txt")
+		if myid==main_node:
+			log_main.add(" Selected indepedent runs      %5d and  %5d"%(run1,run2))
+			log_main.add(" Their pair-wise averaged rates are %5.2f  and %5.2f "%(rate1,rate2))		
+		from math import sqrt
+		avg_two_ways        = avg_two_ways/total_pop
+		two_ways_std        = sqrt(avg_two_ways_square/total_pop-avg_two_ways**2)
+		net_rate            = avg_two_ways-1./number_of_groups*100.
+		Tracker["net_rate"] = net_rate
+		if myid == main_node: 
+			msg="average of two-way comparison  %5.3f"%avg_two_ways
+			log_main.add(msg)
+			msg="net rate of two-way comparison  %5.3f"%net_rate
+			log_main.add(msg)
+			msg="std of two-way comparison %5.3f"%two_ways_std
+			log_main.add(msg)
+			msg ="Score table of two_way comparison when Kgroup =  %5d"%number_of_groups
+			log_main.add(msg)
+			print_upper_triangular_matrix(scores,Tracker["constants"]["indep_runs"],log_main)
+		del two_ways_stable_member_list
+		Tracker["score_of_this_comparison"]=(avg_two_ways,two_ways_std,net_rate)
+		mpi_barrier(MPI_COMM_WORLD)
 
 def select_two_runs(summed_scores,two_way_dict):
 	summed_scores.sort()
@@ -6217,7 +6192,7 @@ def get_ali3d_params(ali3d_old_text_file,shuffled_list):
 		ali3d_new.append(ali3d_old[shuffled_list[iptl]])
 	return ali3d_new
 
-def counting_projections(delta,ali3d_params,image_start):
+def counting_projections(delta, ali3d_params, image_start):
 	from utilities import even_angles,angle_between_projections_directions
 	sampled_directions = {}
 	angles=even_angles(delta,0,180)
@@ -6235,13 +6210,13 @@ def counting_projections(delta,ali3d_params,image_start):
 		for j in xrange(len(angles)):
 			[phi0, theta0, psi0] = angles[j]
 			prj2 =[phi0,theta0]
-			dis=angle_between_projections_directions(prj1, prj2)
+			dis = angle_between_projections_directions(prj1, prj2)
 			if dis<dis_min:
 				dis_min    =dis
 				this_phi   =phi0
 				this_theta =theta0
 				this_psi   =psi0
-		alist= sampled_directions[(this_phi,this_theta)]
+		alist = sampled_directions[(this_phi,this_theta)]
 		alist.append(i+image_start)
 		sampled_directions[(this_phi,this_theta)]=alist
 	return sampled_directions
@@ -6408,23 +6383,21 @@ def get_complementary_elements_total(total_stack, data_list):
 		if data_dict.has_key(index) is False:complementary.append(index)
 	return complementary
 
-def update_full_dict(leftover_list,Tracker):
-	full_dict ={}
+def update_full_dict(leftover_list, Tracker):
+	full_dict = {}
 	for iptl in xrange(len(leftover_list)):
 		full_dict[iptl]     = leftover_list[iptl]
 	Tracker["full_ID_dict"] = full_dict
 	
-def count_chunk_members(chunk_dict,one_class):
-	N_chunk0 = 0.0
-	N_chunk1 = 0.0
+def count_chunk_members(chunk_dict, one_class):
+	N_chunk0 = 0
+	N_chunk1 = 0
 	for a in one_class:
-		if chunk_dict[a]==0:
-			N_chunk0 +=1.
-		else:
-			N_chunk1 +=1
-	rate0 = N_chunk0/len(one_class)
-	rate1 = N_chunk1/len(one_class) 
-	return rate0,rate1,len(one_class)
+		if chunk_dict[a] == 0: N_chunk0 += 1
+		else:                  N_chunk1 += 1
+	n = len(one_class)
+	if n <=1:  return 0.0, 0.0, n
+	else: return  float(N_chunk0)/n, float(N_chunk1)/n, n
 	
 def get_two_chunks_from_stack(Tracker):
 	total_chunk = EMUtil.get_all_attributes(Tracker["orgstack"],"chunk_id")
@@ -6472,18 +6445,22 @@ def get_class_members(sort3d_dir):
 	maximum_generations = 100
 	maximum_groups      = 100
 	class_list = []
-	for igen in xrange(maximum_generations):
-		gendir =os.path.join(sort3d_dir,"generation%03d"%igen)
+	igen = 0
+	while( igen < maximum_generations ):
+		gendir = os.path.join(sort3d_dir, "generation%03d"%igen)
 		if os.path.exists(gendir):
-			for igrp in xrange(maximum_groups):
-				Class_file=os.path.join(gendir,"Kmref/Class%d.txt"%igrp)
+			igrp = 0
+			while( igrp < maximum_groups):
+				Class_file = os.path.join(gendir, "Kmref/Class%d.txt"%igrp)
 				if os.path.exists(Class_file):
-					class_one=read_text_file(Class_file)
+					class_one = read_text_file(Class_file)
 					class_list.append(class_one)
+					igrp += 1
 				else:
-					break
+					igrp = maximum_groups
+			igen += 1
 		else:
-			break
+			igen = maximum_generations
 	return class_list
 
 def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
@@ -6504,14 +6481,16 @@ def get_number_of_groups(total_particles,number_of_images_per_group):
 	else:number_of_groups = int(number_of_groups)+1
 	return number_of_groups
 	
-def get_stable_members_from_two_runs(SORT3D_rootdirs,ad_hoc_number,log_main):
+def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 	#SORT3D_rootdirs                       =sys.argv[1]
+	# ad_hoc_number would be a number larger than the id simply for handling two_way comparison of non-equal number of groups from two partitions.
 	########
 	from string import split
 	from statistics import k_means_match_clusters_asg_new
+	from numpy import array
 	
-	sort3d_rootdir_list=split(SORT3D_rootdirs)
-	dict1              =[]
+	sort3d_rootdir_list = split(SORT3D_rootdirs)
+	dict1              = []
 	maximum_elements   = 0
 	for index_sort3d in xrange(len(sort3d_rootdir_list)):
 		sort3d_dir       = sort3d_rootdir_list[index_sort3d]
@@ -6519,22 +6498,20 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs,ad_hoc_number,log_main):
 		dict1.append(all_groups)
 		if maximum_elements <len(all_groups):
 			maximum_elements = len(all_groups)
-	TC =ad_hoc_number+1
+	TC = ad_hoc_number + 1
 	for indep in xrange(len(dict1)):
-		alist=dict1[indep] 
+		alist = dict1[indep] 
 		while len(alist)<maximum_elements:
 			alist.append([TC])
-			TC +=1
-		dict1[indep]=alist
-		TC +=1
-	for a in dict1:log_main.add(len(a))
+			TC += 1
+		dict1[indep] = alist
+		TC += 1
+	for a in dict1:   log_main.add(len(a))
 	dict = {}
 	for index_sort3d in xrange(len(sort3d_rootdir_list)):
 		sort3d_dir       = sort3d_rootdir_list[index_sort3d]
 		dict[sort3d_dir] = dict1[index_sort3d]
 	###### Conduct two-way comparison
-	from numpy import array
-	from statistics import k_means_match_clusters_asg_new
 	for isort3d in xrange(0,1): #len(sort3d_rootdir_list)):
 		li = dict[sort3d_rootdir_list[isort3d]]
 		new_li = []
@@ -6548,7 +6525,7 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs,ad_hoc_number,log_main):
 			avg_list[ii]=0.0
 			total[ii]=0.0
 		for jsort3d in xrange(len(sort3d_rootdir_list)):
-			if isort3d !=jsort3d:
+			if isort3d != jsort3d:
 				new_lj = []
 				lj = dict[sort3d_rootdir_list[jsort3d]]
 				for a in lj:
@@ -6565,40 +6542,35 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs,ad_hoc_number,log_main):
 					log_main.add("  %d of %s matches  %d of %s"%(newindeces[index][0],sort3d_rootdir_list[isort3d],newindeces[index][1],sort3d_rootdir_list[jsort3d]))
 				for index in xrange(len(list_stable)):
 					log_main.add("%d   stable memebers"%len(list_stable[index]))
-				#print newindeces, sort3d_rootdir_list[isort3d],sort3d_rootdir_list[jsort3d]
-				#print "nb_tot_objs", nb_tot_objs/10001.*100.
-				#print len(list_stable), len(newindeces)
 				new_stable = []
 				for ilist in xrange(len(list_stable)):
-					if len(list_stable[ilist])!=0:
+					if len(list_stable[ilist])!= 0:
 						new_stable.append(list_stable[ilist])
 				for istable in xrange(len(new_stable)):
 					stable = new_stable[istable]
 					if len(stable)>0: 
 						group_A =  li[newindeces[istable][0]]
 						group_B =  lj[newindeces[istable][1]]
-						#write_text_file(stable,"stable_%d_members%d.txt"%(jsort3d,istable))
 						log_main.add(" %d %d %d   "%(len(group_A),len(group_B),len(stable)))
-						#write_text_file(group_A,"stable_%d_members%d_group%d.txt"%(jsort3d,istable,newindeces[istable][0]))
-						#write_text_file(group_B,"stable_%d_members%d_group%d.txt"%(jsort3d,istable,newindeces[istable][1]))
-				#for index_of_matching in xrange(len(newindeces)):
-				#	avg_list[newindeces[index_of_matching][0]] +=len(list_stable[newindeces[index_of_matching][0]])
-				#	total[newindeces[index_of_matching][0]] += len(li[newindeces[index_of_matching][0]])#+len(lj[newindeces[index_of_matching][1]])
 		return new_stable
 		
 def two_way_comparison_single(partition_A, partition_B,Tracker):
 	###############
 	from statistics import k_means_match_clusters_asg_new
-	two_way_comparison_single
+	from utilities import count_chunk_members, margin_of_error
+	from numpy import array
+	#two_way_comparison_single
 	total_stack = Tracker["constants"]["total_stack"]
 	log_main    = Tracker["constants"]["log_main"]
 	myid        = Tracker["constants"]["myid"]
 	main_node   = Tracker["constants"]["main_node"]
-	numpy32_A = []
-	numpy32_B = []
-	total_A = 0
-	total_B = 0
-	if myid==main_node:
+	numpy32_A   = []
+	numpy32_B   = []
+	total_A     = 0
+	total_B     = 0
+	###--------------------------------------
+	
+	if myid == main_node:
 		log_main.add(" the first run has number of particles %d"%len(partition_A))
 		log_main.add(" the second run has number of particles %d"%len(partition_B))
 	for A in partition_A:
@@ -6614,7 +6586,7 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 		while len(partition_B) <len(partition_A):
 			partition_B.append([nc_zero+total_stack])
 			nc_zero +=1
-	number_of_class=len(partition_A)
+	number_of_class = len(partition_A)
 	for index_of_class in xrange(number_of_class):
 		A = partition_A[index_of_class]
 		A.sort()
@@ -6626,9 +6598,9 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 		numpy32_B.append(B)
 		if myid ==main_node:
 			log_main.add("group %d  %d   %d"%(index_of_class,len(A), len(B))) 
-	ptp=[[],[]]
-	ptp[0]=numpy32_A
-	ptp[1]=numpy32_B
+	ptp    = [[],[]]
+	ptp[0] = numpy32_A
+	ptp[1] = numpy32_B
 	newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[0],ptp[1])
 	if myid == main_node:
 		log_main.add(" reproducible percentage of the first partition %f"%(nb_tot_objs/float(total_A)*100.))
@@ -6641,11 +6613,11 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 		log_main.add(" margin of error")
 	large_stable = []
 	for index_of_stable in xrange(len(list_stable)):
-		rate1,rate2,size_of_this_group = count_chunk_members(Tracker["chunk_dict"],list_stable[index_of_stable])
+		rate1,rate2,size_of_this_group = count_chunk_members(Tracker["chunk_dict"], list_stable[index_of_stable])
 		if size_of_this_group>=Tracker["constants"]["smallest_group"]:
 			error                          = margin_of_error(Tracker["P_chunk0"],size_of_this_group)
-			if myid ==main_node:
-				log_main.add(" chunk0  lower bound %f  upper bound  %f  for sample size  %d"%((Tracker["P_chunk0"]-error),(Tracker["P_chunk0"]+error),size_of_this_group))
+			if myid == main_node:
+				log_main.add(" chunk0  lower bound %f  upper bound  %f  for sample size  %d"%((Tracker["P_chunk0"]- error),(Tracker["P_chunk0"]+error),size_of_this_group))
 				log_main.add(" actual percentage is %f"%rate1)
 			large_stable.append(list_stable[index_of_stable])
 		else:
@@ -6659,7 +6631,7 @@ def get_leftover_from_stable(stable_list, N_total,smallest_group):
 		tmp_dict[i]=i
 	new_stable =[]
 	for alist in stable_list:
-		if len(alist)>smallest_group:
+		if len(alist) > smallest_group:
 			for index_of_list in xrange(len(alist)):
 				del tmp_dict[alist[index_of_list]]
 			new_stable.append(alist)
@@ -6667,15 +6639,6 @@ def get_leftover_from_stable(stable_list, N_total,smallest_group):
 	for one_element in tmp_dict:
 		leftover_list.append(one_element)
 	return leftover_list, new_stable
-
-def get_initial_ID(part_list, full_ID_dict):
-	part_initial_id_list = []
-	new_dict = {}
-	for iptl in xrange(len(part_list)):
-		id = full_ID_dict[part_list[iptl]]
-		part_initial_id_list.append(id)
-		new_dict[iptl] = id
-	return part_initial_id_list, new_dict
 		
 def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	from applications import ali3d_mref_Kmeans_MPI
@@ -6685,13 +6648,13 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	from utilities import wrap_mpi_bcast
 	import os
 	from mpi import MPI_COMM_WORLD, mpi_barrier
-	# npad is 2
+	# npad 2 ---------------------------------------
 	npad                  = 2
 	myid                  = Tracker["constants"]["myid"]
 	main_node             = Tracker["constants"]["main_node"]
 	log_main              = Tracker["constants"]["log_main"]
 	nproc                 = Tracker["constants"]["nproc"]
-	final_list_text_file  = Tracker["this_data_list_file"]
+	final_list_text_file  = Tracker["this_data_list_file"] ## id text file for get_shrink_data_huang
 	snr  =1.
 	Tracker["total_stack"]= len(Tracker["this_data_list"])
 	if myid ==main_node:
@@ -6699,13 +6662,14 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 		log_main.add("total data is %d"%len(Tracker["this_data_list"]))
 		log_main.add("final list file is "+final_list_text_file)
 	workdir = Tracker["this_dir"]
+	####----------------------------------------------
 	empty_group = 1
 	kmref =0
-	while empty_group ==1 and kmref<=5:
+	while empty_group ==1 and kmref<=5:## In case pctn of Kmeans jumps between 100% to 0%, stop the program
 		if myid ==main_node:
 			log_main.add(" %d     Kmref run"%kmref) 
 		outdir =os.path.join(workdir, "Kmref%d"%kmref)
-		empty_group, res_classes, data_list = ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,final_list_text_file,Tracker)
+		empty_group, res_classes, data_list = ali3d_mref_Kmeans_MPI(ref_vol_list, outdir, final_list_text_file, Tracker)
 		kmref +=1
 		if empty_group ==1:
 			if myid ==main_node:
@@ -6719,33 +6683,34 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 						final_list.append(b)
 					new_class.append(a)
 			final_list.sort()
+			### reset variables of Kmeans run 
 			Tracker["total_stack"]    = len(final_list)
 			Tracker["this_data_list"] = final_list
-			final_list_text_file = os.path.join(workdir, "final_list%d.txt"%kmref)
+			final_list_text_file      = os.path.join(workdir, "final_list%d.txt"%kmref)
 			if myid == main_node:
 				log_main.add("number of classes for next round is %d"%len(new_class))
 				write_text_file(final_list, final_list_text_file)
 			mpi_barrier(MPI_COMM_WORLD)
+			
 			if myid == main_node:
 				number_of_ref_class = []
 				for igrp in xrange(len(new_class)):
-					class_file =os.path.join(workdir,"final_class%d.txt"%igrp)
-					write_text_file(new_class[igrp],class_file)
+					write_text_file(new_class[igrp],os.path.join(workdir,"final_class%d.txt"%igrp))
 					number_of_ref_class.append(len(new_class[igrp]))
-			else:
-				number_of_ref_class = 0
+			else:   number_of_ref_class = 0
 			number_of_ref_class = wrap_mpi_bcast(number_of_ref_class,main_node)
 			mpi_barrier(MPI_COMM_WORLD)
+			
 			ref_vol_list = []
 			if  Tracker["constants"]["mask3D"]: mask3D = get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
-			else: mask3D =None
+			else: mask3D = None
 			Tracker["number_of_ref_class"] = number_of_ref_class
 			for igrp in xrange(len(new_class)):
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],os.path.join(workdir,"final_class%d.txt"%igrp),Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
 				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
-			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)),myid,main_node,index=-1,npad=npad,finfo=None)
+			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)), myid, main_node, index=-1, npad=npad, finfo=None)
 				ref_vol_list.append(volref)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
@@ -6757,7 +6722,6 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 		log_main.add(" %d groups are selected out"%len(new_class))
 	return new_class 
 	
-			
 def print_a_line_with_timestamp(string_to_be_printed ):                 
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
  	print(line,string_to_be_printed)
@@ -6823,7 +6787,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	res_EQ = partition_to_groups(Tracker["this_partition"],K=2)
 	new_class = []
 	for index in xrange(len(res_EQ)):
-		new_ID, new_dict = get_initial_ID(res_EQ(index),Tracker["full_ID_dict"])
+		new_ID = get_initial_ID(res_EQ(index), Tracker["full_ID_dict"])
 		new_class.append(new_ID)
 		if myid ==main_node:
 			new_class_file = os.path.join(workdir,"new_class%d.txt"%index)

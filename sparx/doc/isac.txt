@@ -6,7 +6,7 @@ sxisac - 2D Clustering with ISAC: Iterative Stable Alignment and Clustering (ISA
 
 ''usage in command line''
 
-sxisac.py stack_file  output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --restart_section --target_radius=target_radius --target_nx=target_nx --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_iter=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --n_generations=n_generations --rand_seed=rand_seed --new --debug --use_latest_master_directory --stop_after_candidates --skip_alignment
+sxisac.py stack_file  output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --restart_section --target_radius=target_radius --target_nx=target_nx --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_iter=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --n_generations=n_generations --rand_seed=rand_seed --new --debug --use_latest_master_directory --stop_after_candidates --skip_prealignment
 
 
 === Typical usage ===
@@ -60,7 +60,7 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
     yr:: y range: of translational search. By default, same as xr. (default -1)
     ts:: search step: of translational search: units - pixels (default 1.0)
     maxit:: number of iterations for reference-free alignment: (default 30)
-    center_method:: method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default 7)
+    center_method:: method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default -1)
     dst:: discrete angle used in within group alignment: (default 90.0)
     FL:: lowest stopband: frequency used in the tangent filter (default 0.2)
     FH:: highest stopband: frequency used in the tangent filter (default 0.3)
@@ -81,7 +81,7 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
     debug:: debug info printout: (default False)
     use_latest_master_directory:: use latest master directory: when active, the program looks for the latest directory that starts with the word 'master', so the user does not need to provide a directory name. (default False)
     stop_after_candidates:: stop after candidates: stops after the 'candidate_class_averages' section. (default False)
-    skip_alignment:: skip alignment step: to be used if images are already aligned. 2dalignment directory will still be generated but the parameters will be zero. (default False)
+    skip_prealignment:: skip pre-alignment step: to be used if images are already centered. 2dalignment directory will still be generated but the parameters will be zero. (default False)
 
 
 == Output ==

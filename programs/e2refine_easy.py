@@ -166,9 +166,9 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.",guitype='boolbox', row=20, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--prethreshold",default=False, action="store_true", help="Applies a threshold to the volume just before generating projections. A sort of aggressive solvent flattening for the reference.",guitype='boolbox', row=20, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dkeep", type=float, help="The fraction of slices to keep in e2make3d.py. Default=0.8 -> 80%%", default=0.8, guitype='floatbox', row=18, col=1, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter should not normally be used here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),"filter.lowpass|filter.highpass|mask")', row=22, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=24, col=0, rowspan=1, colspan=2, mode="refinement[thread:4]")
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement[4]")
+	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter should not normally be used here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),"filter.lowpass|filter.highpass|mask")', row=26, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=30, col=0, rowspan=1, colspan=2, mode="refinement[thread:4]")
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new refine_xx")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
@@ -210,7 +210,6 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Default=auto. Normalization applied during class averaging")
 	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging. This matches the filtration of the class-averages to the projections for easier comparison. May also improve convergence.",guitype='boolbox', row=20, col=0, rowspan=1, colspan=1, mode="refinement[True]")
 
-
 	#options associated with e2make3d.py
 #	parser.add_header(name="make3dheader", help='Options below this label are specific to e2make3d', title="### e2make3d options ###", row=32, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--pad", type=int, dest="pad", default=0, help="Default=auto. To reduce Fourier artifacts, the model is typically padded by ~25 percent - only applies to Fourier reconstruction")
@@ -218,6 +217,11 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="Default=auto. The standard deviation alternative to the --m3dkeep argument")
 #	parser.add_argument("--m3dsetsf", type=str,dest="m3dsetsf", default=None, help="Default=auto. Name of a file containing a structure factor to apply after refinement")
 	parser.add_argument("--m3dpreprocess", type=str, default=None, help="Default=auto. Normalization processor applied before 3D reconstruction")
+
+	parser.add_argument("--ampcorrect",choices=['strucfac','flatten','without'],default='strucfac',help="Will perform amplitude correction via the specified method. The default choice is 'strucfac'. 'flatten' requires a target resolution better than 8 angstroms (experimental). 'without' will forego amplitude correction (experimental).", guitype='combobox', row=28, col=0, rowspan=1, colspan=2, mode="refinement['strucfac']", choicelist="('strucfac','flatten','without')")
+
+	#parser.add_argument("--classweight",choices=['sqrt','count','no_wt'],default='count',help="Alter the weight of each class in the reconstruction (experimental).", guitype='combobox', row=24, col=0, rowspan=1, colspan=2, mode="refinement['count']", choicelist="('sqrt','count','no_wt')")
+	#parser.add_argument("--sqrtnorm",action="store_true",default=False, dest="sqrtnorm", help="If set, the sqrt of the number of particles in each class will be used to weight the direct fourier inversion.",guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, mode="refinement")
 
 	#lowmem!
 	parser.add_argument("--lowmem", default=True, action="store_true",help="Default=auto. Make limited use of memory when possible - useful on lower end machines")
@@ -262,12 +266,12 @@ not need to specify any of the following other than the ones already listed abov
 		img1 = EMData(options.input,0,True)
 		img3 = EMData(options.model,0,True)
 		apix1=1.0
-		try: 
+		try:
 			apix1=img1["apix_x"]
 			apix3=img3["apix_x"]
 		except:
 			apix3=apix1
-		
+
 		if ( xsize3d != xsize or apix1!=apix3 ) :
 			print "WARNING: the dimensions of the particles (%d @ %1.4f A/pix) do not match the dimensions of the starting model (%d @ %1.4 A/pix). I will attempt to adjust the model appropriately."%(xsize,apix1,xsize3d,apix3)
 			try:
@@ -292,7 +296,7 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	if options.automask3d: automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
 	if options.apix>0 : apix=options.apix
 	else:
-		if options.startfrom!=None : 
+		if options.startfrom!=None :
 			olddb = js_open_dict(options.startfrom+"/0_refine_parms.json")
 			apix=options.apix=olddb["apix"]
 			if apix<=0 :
@@ -524,7 +528,7 @@ important to use an angular step which is 90/integer.</p>")
 
 	if options.pad<nx :
 		options.pad=good_size(nx*1.7)
-		if options.pad>1024 : 
+		if options.pad>1024 :
 			print "Warning: padding for Fourier reconstruction is now {}, meaning quite a lot of memory will \
 be required for reconstructions, and they may be very slow. Padding in Fourier space is largely performed to avoid high-radius \
 Fourier artifacts, and a gradual radial density falloff. If you feel this value is too large, you can manually specify a value \
@@ -553,7 +557,7 @@ are memory concerns, using a smaller pad option may be the only reasonable alter
 
 	if options.prefilt : prefilt="--prefilt"
 	else: prefilt=""
-	
+
 	if options.cmpdiff : cmpdiff="--cmpdiff"
 	else: cmpdiff=""
 
@@ -574,8 +578,8 @@ are memory concerns, using a smaller pad option may be the only reasonable alter
 
 	if options.classrefsf : classrefsf="--setsfref"
 	else: classrefsf=""
-	
-	if options.inputavg!=None: 
+
+	if options.inputavg!=None:
 		cainput=["--input {} --usefilt {}".format(options.inputavg[ii],options.input[ii]) for ii in (0,1)]
 	else:
 		cainput=["--input {}".format(options.input[ii]) for ii in (0,1)]
@@ -646,10 +650,10 @@ compares these three FSC curves for the last completed iteration. The relevant m
 mask.hdf and mask_tight.hdf. Note: if visualizing 3-D masks, it is generally a good idea to display as 2-D slices (single image view in
 browser) rather than using isosurfaces, so any internal features of the mask can be readily observed.</p>
 <p>If you see an 'unheathly' looking unmasked curve (rising at high resolution, etc.), particularly if the masked curves look healthy, this can
-indicate that your box-size is too small, and you are getting Fourier artifacts at the edge. It could also indicate some other problem, so if 
+indicate that your box-size is too small, and you are getting Fourier artifacts at the edge. It could also indicate some other problem, so if
 re-extracting your boxed particles with a somewhat larger box doesn't fix the problem, please contact us, and we will help you to debug the problem.</p>
 <p>If your goal is to compare EMAN2.1 results to Relion, the only way to reliably accomplish this is to extract the unmasked even and odd
-gold-standard maps from both EMAN and RELION, mask them with exactly the same mask, then compute the FSC. For visual comparison of the final 
+gold-standard maps from both EMAN and RELION, mask them with exactly the same mask, then compute the FSC. For visual comparison of the final
 gold-standard maps from both packages, you must insure that they are both identically filtered. This can be done easily by matching the 1-D
 power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_eman.hdf map_eman_cmp.hdf --process filter.matchto:to=map_relion.mrc</i></p>
 
@@ -702,20 +706,20 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 #			msk.process_inplace("threshold.binary",{"value":msk["sigma"]/50.0})
 			msk.process_inplace("threshold.notzero")
 			msk.write_image("{path}/simmask.hdf".format(path=options.path),0)
-		
+
 		if options.treeclassify:
 			### Classify using a binary tree
 			append_html("<p>* Classify each particle using a binary tree generated from the projections</p>",True)
 			cmd = "e2classifytree.py {path}/projections_{itr:02d}_even.hdf {inputfile} --output={path}/classmx_{itr:02d}_even.hdf  --nodes {path}/nodes_{itr:02d}_even.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} {cmpdiff} --incomplete {incomplete} {parallel}".format(path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,cmpdiff=cmpdiff,incomplete=options.treeincomplete, parallel=parallel)
 			run(cmd)
 			progress += 1.0
-			
+
 			cmd = "e2classifytree.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --output={path}/classmx_{itr:02d}_odd.hdf  --nodes {path}/nodes_{itr:02d}_odd.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} {cmpdiff} --incomplete {incomplete} {parallel}".format(path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,cmpdiff=cmpdiff,incomplete=options.treeincomplete,parallel=parallel)
 			run(cmd)
 			progress += 1.0
 			E2progress(logid,progress/total_procs)
 		else:
-		
+
 			### Simmx
 			#FIXME - Need to combine simmx with classification !!!
 
@@ -768,6 +772,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		if options.breaksym : m3dsym="c1"
 		else : m3dsym=options.sym
 		append_html("<p>* Using the known orientations, reconstruct the even/odd 3-D maps from the even/odd 2-D class-averages.</p>",True)
+
 		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_even.hdf --sym {sym} --output {path}/threed_{itr:02d}_even.hdf {preprocess} \
  --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_5 --threads {threads} {verbose}".format(
@@ -778,6 +783,14 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, verbose=verbose)
+
+		#if options.classweight == "count":
+		#	pass # this is the default.
+		#elif options.classweight == "sqrt":
+		#	cmd += " --sqrtnorm"
+		#elif options.classwright == "no_wt":
+		#	cmd += " --no_wt"
+
 		run(cmd)
 
 		if not options.m3dold :
@@ -790,6 +803,14 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, verbose=verbose)
+
+		#if options.classweight == "count":
+		#	pass # this is the default.
+		#elif options.classweight == "sqrt":
+		#	cmd += " --sqrtnorm"
+		#elif options.classwright == "no_wt":
+		#	cmd += " --no_wt"
+
 		run(cmd)
 		progress += 1.0
 
@@ -799,8 +820,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
  		evenfile="{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it)
  		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
  		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
-		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --automaskexpand {amaskxp} --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(
-			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=m3dsym,amask3d2=amask3d2,m3dpostproc=m3dpostproc,setsf=m3dsetsf,restarget=options.targetres,amaskxp=options.automaskexpand))
+		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --automaskexpand {amaskxp} --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter --ampcorrect={ampcorrect}".format(path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3d2=amask3d2, m3dpostproc=m3dpostproc, setsf=m3dsetsf, restarget=options.targetres, amaskxp=options.automaskexpand, ampcorrect=options.ampcorrect))
 
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
