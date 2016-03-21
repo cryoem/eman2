@@ -106,7 +106,7 @@ def construct_sxcmd_list():
 	# Actual sx commands are inserted into the following section by wikiparser.py.
 	# @@@@@ START_INSERTION @@@@@
 	sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.mode = ""; sxcmd.label = "CTF Estimation"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "pipe"; sxcmd.is_submittable = True
-	token = SXcmd_token(); token.key_base = "input_image"; token.key_prefix = ""; token.label = "a set of micrographs"; token.help = "name with wild card * to process multiple micrographs (milti-micrograph mode). it can be 2D images in a stack file with --stack_mode. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "input_image"; token.key_prefix = ""; token.label = "a set of micrographs (exclude bdb)"; token.help = "name with wild card * to process multiple micrographs (milti-micrograph mode). it can be 2D images in a stack file with --stack_mode. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the partres file and rotinf**** files will be written. The program creates the directory automatically. The directory should not exists upon the execution. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "CTF window size [pixels]"; token.help = "should be slightly larger than particle box size. used only in micrograph modes. "; token.group = "main"; token.is_required = False; token.default = "512"; token.restore = "512"; token.type = "ctfwin"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "pixel size [A]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "apix"; sxcmd.token_list.append(token)
@@ -120,8 +120,7 @@ def construct_sxcmd_list():
 	token = SXcmd_token(); token.key_base = "overlap_y"; token.key_prefix = "--"; token.label = "overlap y [%]"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "50"; token.restore = "50"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "edge_x"; token.key_prefix = "--"; token.label = "edge x [pixels]"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "edge_y"; token.key_prefix = "--"; token.label = "edge y [pixels]"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "set_ctf_header"; token.key_prefix = "--"; token.label = "set estimated CTF parameters to stack header"; token.help = "used only in micrograph modes. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-	token = SXcmd_token(); token.key_base = "stack_mode"; token.key_prefix = "--"; token.label = "use stack mode"; token.help = "also set a stack name to input image. this is advanced option. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "set_ctf_header"; token.key_prefix = "--"; token.label = "set estimated CTF parameters to image header"; token.help = "used only in micrograph modes. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "debug"; token.key_prefix = "--"; token.label = "print out debug info"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 	sxcmd_list.append(sxcmd)
@@ -132,7 +131,7 @@ def construct_sxcmd_list():
 	sxcmd_list.append(sxcmd)
 
 	sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.mode = ""; sxcmd.label = "Particle Windowing"; sxcmd.short_info = "Window out particles with known coordinates from a micrograph."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "pipe"; sxcmd.is_submittable = True
-	token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "name pattern of input micrographs"; token.help = "use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, or etc). "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
+	token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "name pattern of input micrographs (exclude bdb)"; token.help = "use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, or etc). "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "input_coordinates_pattern"; token.key_prefix = ""; token.label = "name pattern of input coordinates files"; token.help = "use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, and etc). "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output directory name"; token.help = "into which the results will be written. the directory should not exists upon the execution. the program creates it automatically. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 	token = SXcmd_token(); token.key_base = "coordinates_format"; token.key_prefix = "--"; token.label = "format of input coordinates files"; token.help = "'sparx', 'eman1', 'eman2', or 'spider'. the coordinates of sparx, eman2, and spider format is particle center. the coordinates of eman1 format is particle box conner associated with the original box size. "; token.group = "main"; token.is_required = False; token.default = "eman1"; token.restore = "eman1"; token.type = "string"; sxcmd.token_list.append(token)
@@ -1293,14 +1292,14 @@ class SXCmdTab(QWidget):
 							temp_btn.setToolTip("display open file dailog to select standard format image file (e.g. .hdf, .mrc)")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
-							file_format = "bdb"
-#							temp_btn = QPushButton("Select .%s" % file_format, self)
-							temp_btn = QPushButton("Select .%s" % file_format)
-#							temp_btn.move(self.x4 + 40, self.y1 - 12)
-#							temp_btn.setMinimumWidth(token_widget_min_width)
-							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
-							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+# 							file_format = "bdb"
+# #							temp_btn = QPushButton("Select .%s" % file_format, self)
+# 							temp_btn = QPushButton("Select .%s" % file_format)
+# #							temp_btn.move(self.x4 + 40, self.y1 - 12)
+# #							temp_btn.setMinimumWidth(token_widget_min_width)
+# 							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
+# 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+# 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 						elif cmd_token.type == "bdb":
 							file_format = "bdb"
 #							temp_btn = QPushButton("Select .%s" % file_format, self)
