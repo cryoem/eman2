@@ -71,7 +71,7 @@ def main(args):
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--radius",                type="int",           help="particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)")
 	parser.add_option("--target_radius",         type="int",           default=29,         help="target particle radius: actual particle radius on which isac will process data. Images will be shrinked/enlarged to achieve this radius (default 29)")
-	parser.add_option("--target_nx",             type="int",           default=76,         help="target particle image size: actual image size on which isac will process data. Images will be shrinked/enlarged according to target particle radius and then cut/padded to achieve target_nx size. When xr > 0, the final image size for isac processing is 'target_nx + xr'  (default 76)")
+	parser.add_option("--target_nx",             type="int",           default=76,         help="target particle image size: actual image size on which isac will process data. Images will be shrinked/enlarged according to target particle radius and then cut/padded to achieve target_nx size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  (default 76)")
 	parser.add_option("--img_per_grp",           type="int",           default=100,        help="number of images per class: in the ideal case (essentially maximum size of class) (default 100)")
 	parser.add_option("--CTF",                   action="store_true",  default=False,      help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)")
 	parser.add_option("--ir",                    type="int",           default=1,          help="inner ring: of the resampling to polar coordinates. units - pixels (default 1)")
@@ -81,7 +81,7 @@ def main(args):
 	parser.add_option("--ts",                    type="float",         default=1.0,        help="search step: of translational search: units - pixels (default 1.0)")
 	parser.add_option("--maxit",                 type="int",           default=30,         help="number of iterations for reference-free alignment: (default 30)")
 	#parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)")
-	parser.add_option("--center_method",         type="int",           default=-1,          help="method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default -1)")
+	parser.add_option("--center_method",         type="int",           default=-1,         help="method for centering: of global 2D average during initial prealignment of data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7) (default -1)")
 	parser.add_option("--dst",                   type="float",         default=90.0,       help="discrete angle used in within group alignment: (default 90.0)")
 	parser.add_option("--FL",                    type="float",         default=0.2,        help="lowest stopband: frequency used in the tangent filter (default 0.2)")
 	parser.add_option("--FH",                    type="float",         default=0.3,        help="highest stopband: frequency used in the tangent filter (default 0.3)")
@@ -95,10 +95,10 @@ def main(args):
 	parser.add_option("--stab_ali",              type="int",           default=5,          help="number of alignments when checking stability: (default 5)")
 	parser.add_option("--thld_err",              type="float",         default=0.7,        help="threshold of pixel error when checking stability: equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou). units - pixels. (default 0.7)")
 	parser.add_option("--indep_run",             type="int",           default=4,          help="level of m-way matching for reproducibility tests: By default, perform full ISAC to 4-way matching. Value indep_run=2 will restrict ISAC to 2-way matching and 3 to 3-way matching.  Note the number of used MPI processes requested in mpirun must be a multiplicity of indep_run. (default 4)")
-	parser.add_option("--thld_grp",              type="int",           default=10,         help="threshold of the size of reproducible class: essentially minimum size of class (default 10)")
+	parser.add_option("--thld_grp",              type="int",           default=10,         help="minimum size of reproducible class (default 10)")
 	parser.add_option("--n_generations",         type="int",           default=100,        help="maximum number of generations: program stops when reaching this total number of generations: (default 100)")
 	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
-	parser.add_option("--rand_seed",             type="int",           help="random seed set before calculations: useful for testing purposes (default total randomness - type int)")
+	parser.add_option("--rand_seed",             type="int",           help="random seed set before calculations: useful for testing purposes. By default, total randomness (type int)")
 	parser.add_option("--new",                   action="store_true",  default=False,      help="use new code: (default False)")
 	parser.add_option("--debug",                 action="store_true",  default=False,      help="debug info printout: (default False)")
 
@@ -110,7 +110,7 @@ def main(args):
 
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--return_options",        action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)
-	parser.add_option("--skip_prealignment",     action="store_true",  default=False,      help="skip pre-alignment step: to be used if images are already aligned. (default False)")
+	parser.add_option("--skip_prealignment",     action="store_true",  default=False,      help="skip pre-alignment step: to be used if images are already centered. 2dalignment directory will still be generated but the parameters will be zero. (default False)")
 
 	required_option_list = ['radius']
 	(options, args) = parser.parse_args(args)

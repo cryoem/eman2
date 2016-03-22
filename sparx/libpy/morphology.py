@@ -2049,32 +2049,6 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 
 ################
 #
-#  Helper functions for cter_mrk() (new since 2016/03/16)
-#
-################
-# For cter_mrk(), we want to have softer exit than ERROR in global_def
-# This way program have a chance to call mpi_finalize and avoid mpirun error...
-def ERROR_MRK(message, where, action = 1, myid = 0):
-	import global_def
-	
-	"""
-		General error function for sparx system
-		where:   function name
-		message: error message
-		action: 2 - fatal error, but make caller call exit(); 1 - fatal error, exit; 0 - non-fatal, print a warning
-	"""
-	
-	if myid == 0:
-		if action: print  "\n  *****  ERROR in: %s"%(where)
-		else:      print  "\n  *****  WARNING in: %s"%(where)
-		print "  *****  %s"%message
-		print ""
-	if action == 1 and global_def.BATCH:
-		from sys import exit
-		exit()
-
-################
-#
 #  CTER code (new version since 2016/03/16)
 #
 ################
@@ -2103,12 +2077,11 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	import os
 	import glob
 	from   mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
-	from   fundamentals import tilemic, rot_avg_table
+	from   fundamentals import tilemic, rot_avg_table, resample
 	from   morphology   import threshold, bracket_def, bracket, goldsearch_astigmatism
 	from   morphology   import defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett
 	from   morphology   import defocus_guessn, defocusgett_, defocusget_from_crf, make_real
 	from   morphology   import fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
-	from   morphology   import ERROR_MRK
 	from   alignment    import Numrinit, ringwe
 	from   statistics   import table_stat
 	from   pixel_error  import angle_ave
@@ -2198,9 +2171,9 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	if len(error_message_list) > 0:
 		# Detected error! output error message
 		if MPI == False:
-			for erro_message in error_message_list:  ERROR_MRK(erro_message, myname, 2)
+			for erro_message in error_message_list:  ERROR(erro_message, myname, 2)
 		elif myid == main_node: # assert(MPI == True)
-			for erro_message in error_message_list:  ERROR_MRK(erro_message, myname, 2, myid)
+			for erro_message in error_message_list:  ERROR(erro_message, myname, 2, myid)
 		# Abort process
 		if cter_mode == the_cter_mode_single_mic:  return 0, 0, 0, 0, 0, 0
 		else:  return
@@ -2236,16 +2209,22 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	
 	# Make output directory
 	outpwrot = "%s/pwrot" % (output_directory)
+	outmicthumb = "%s/micthumb" % (output_directory)
+	if debug_mode:  outravg = "%s/ravg" % (output_directory)
 	if MPI:
 		if myid == main_node:
 			# Make output directory
 			os.mkdir(output_directory)
 			os.mkdir(outpwrot)
+			os.mkdir(outmicthumb)
+			if debug_mode:  os.mkdir(outravg)
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
 		# Make output directory
 		os.mkdir(output_directory)
 		os.mkdir(outpwrot)
+		os.mkdir(outmicthumb)
+		if debug_mode:  os.mkdir(outravg)
 	
 	# Set up loop variables depending on the cter mode
 	if stack == None:
@@ -2274,6 +2253,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 		# set pw2 (image used for CTF estimation) and basename root of image file depending on the cter mode
 		pw2 = []
 		img_basename_root = ""
+		img_extension = ""
 		if stack == None:
 			numFM = EMUtil.get_image_count(namics[ifi])
 			print  "  Process ID = %04d, Micrograph Name = %s, Frame Counts = %03d" % (ifi, namics[ifi], numFM)
@@ -2282,7 +2262,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			# For now, dbd file is a invalid input_image for micrograph modes
 			# 
 			# assert(db_check_dict(namics[ifi]) == False)
-			img_basename_root = os.path.splitext(os.path.basename(namics[ifi]))[0]
+			img_basename_root, img_extension = os.path.splitext(os.path.basename(namics[ifi]))
 			# 
 			# NOTE: 2016/03/17 Toshio Moriya
 			# The following loop does not make sense because nf is not used in the loop body
@@ -2295,7 +2275,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			numFM = EMUtil.get_image_count(stack)
 			print  "  Process ID = %04d, Stack Name = %s, Frame Counts = %03d" % (ifi, stack, numFM)
 			if db_check_dict(stack) == False:
-				img_basename_root = os.path.splitext(os.path.basename(stack))[0]
+				img_basename_root, img_extension = os.path.splitext(os.path.basename(stack))
 			else: # assert(db_check_dict(namics[ifi]) == True)
 				path, dictname, keys = db_parse_path(stack)
 				img_basename_root = dictname
@@ -2382,7 +2362,9 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
-				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], "%s/ravg%05d.txt" % (output_directory, ifi))
+#				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], "%s/ravg%05d.txt" % (output_directory, ifi))
+				fou = os.path.join(outravg, "%s_ravg_%02d.txt" % (img_basename_root, nboot))
+				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], fou)
 			#mpi_barrier(MPI_COMM_WORLD)
 			
 			#exit()
@@ -2654,12 +2636,21 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 #				else:                 cmd = "echo " + "    " + "  >>  " + fou
 #				os.system(cmd)
 		
-		if stack == None and set_ctf_header:
+#		if stack == None and set_ctf_header:
+		if stack == None:
 			img = get_im(namics[ifi])
-			from utilities import set_ctf
-			set_ctf(img, [totresi[-1][1], Cs, voltage, pixel_size, 0, wgh, totresi[-1][7], totresi[-1][8]])
-			# and rewrite image 
-			img.write_image(namics[ifi])
+			# create micrograph thumbnail
+			nx_target = 512
+			nx = img.get_xsize()
+			if nx > nx_target:
+				img_thumb = resample(img, float(nx_target)/nx)
+				fou = os.path.join(outmicthumb, "%s_thumb%s" % (img_basename_root, img_extension))
+				img_thumb.write_image(fou)
+			if set_ctf_header:
+				from utilities import set_ctf
+				set_ctf(img, [totresi[-1][1], Cs, voltage, pixel_size, 0, wgh, totresi[-1][7], totresi[-1][8]])
+				# and rewrite image 
+				img.write_image(namics[ifi])
 		#except:
 			#print  namics[ifi],"     FAILED"
 	#from utilities import write_text_row
