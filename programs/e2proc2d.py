@@ -631,11 +631,11 @@ def main():
 
 				elif option1 == "addfile":
 					af=EMData(options.addfile[index_d[option1]],0)
-					data.add(af)
+					d.add(af)
 					af=None
 					index_d[option1] += 1
 				elif option1 == "add":
-					data.add(options.add[index_d[option1]])
+					d.add(options.add[index_d[option1]])
 					af=None
 					index_d[option1] += 1
 				elif option1 == "mult" :
