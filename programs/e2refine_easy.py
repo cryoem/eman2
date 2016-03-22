@@ -272,8 +272,8 @@ not need to specify any of the following other than the ones already listed abov
 		except:
 			apix3=apix1
 
-		if ( xsize3d != xsize or apix1!=apix3 ) :
-			print "WARNING: the dimensions of the particles (%d @ %1.4f A/pix) do not match the dimensions of the starting model (%d @ %1.4 A/pix). I will attempt to adjust the model appropriately."%(xsize,apix1,xsize3d,apix3)
+		if ( xsize3d != xsize or apix3==0 or fabs(fabs(apix1/apix3)-1.0)>.001 ) :
+			print "WARNING: the dimensions of the particles (%d @ %1.4f A/pix) do not match the dimensions of the starting model (%d @ %1.4f A/pix). I will attempt to adjust the model appropriately."%(xsize,apix1,xsize3d,apix3)
 			try:
 				scale=img3["apix_x"]/img1["apix_x"]
 				print "Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale)

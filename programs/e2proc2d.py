@@ -180,6 +180,8 @@ def main():
 	parser.add_argument("--fftavg", metavar="filename", type=str, help="Incoherent Fourier average of all images and write a single power spectrum image")
 	parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str, action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 	parser.add_argument("--mult", metavar="k", type=float, help="Multiply image by a constant. mult=-1 to invert contrast.")
+	parser.add_argument("--add", metavar="f", type=float,action="append",help="Adds a constant 'f' to the densities")
+	parser.add_argument("--addfile", type=str, action="append",help="Adds the volume to another volume of identical size")
 	parser.add_argument("--first", metavar="n", type=int, default=0, help="the first image in the input to process [0 - n-1])")
 	parser.add_argument("--last", metavar="n", type=int, default=-1, help="the last image in the input to process")
 	parser.add_argument("--list", metavar="listfile", type=str, help="Works only on the image numbers in LIST file")
@@ -226,7 +228,7 @@ def main():
 
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 
-	append_options = ["clip", "process", "meanshrink", "medianshrink", "fouriershrink", "scale", "randomize", "rotate", "translate", "multfile", "headertransform"]
+	append_options = ["clip", "process", "meanshrink", "medianshrink", "fouriershrink", "scale", "randomize", "rotate", "translate", "multfile","addfile","add", "headertransform"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 
@@ -627,9 +629,17 @@ def main():
 					d.process_inplace(processorname, param_dict)
 					index_d[option1] += 1
 
+				elif option1 == "addfile":
+					af=EMData(options.addfile[index_d[option1]],0)
+					data.add(af)
+					af=None
+					index_d[option1] += 1
+				elif option1 == "add":
+					data.add(options.add[index_d[option1]])
+					af=None
+					index_d[option1] += 1
 				elif option1 == "mult" :
 					d.mult(options.mult)
-
 				elif option1 == "multfile":
 					mf = EMData(options.multfile[index_d[option1]],0)
 					d.mult(mf)
