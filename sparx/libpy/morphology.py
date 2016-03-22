@@ -2049,32 +2049,6 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 
 ################
 #
-#  Helper functions for cter_mrk() (new since 2016/03/16)
-#
-################
-# For cter_mrk(), we want to have softer exit than ERROR in global_def
-# This way program have a chance to call mpi_finalize and avoid mpirun error...
-def ERROR_MRK(message, where, action = 1, myid = 0):
-	import global_def
-	
-	"""
-		General error function for sparx system
-		where:   function name
-		message: error message
-		action: 2 - fatal error, but make caller call exit(); 1 - fatal error, exit; 0 - non-fatal, print a warning
-	"""
-	
-	if myid == 0:
-		if action: print  "\n  *****  ERROR in: %s"%(where)
-		else:      print  "\n  *****  WARNING in: %s"%(where)
-		print "  *****  %s"%message
-		print ""
-	if action == 1 and global_def.BATCH:
-		from sys import exit
-		exit()
-
-################
-#
 #  CTER code (new version since 2016/03/16)
 #
 ################
@@ -2108,7 +2082,6 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	from   morphology   import defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett
 	from   morphology   import defocus_guessn, defocusgett_, defocusget_from_crf, make_real
 	from   morphology   import fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
-	from   morphology   import ERROR_MRK
 	from   alignment    import Numrinit, ringwe
 	from   statistics   import table_stat
 	from   pixel_error  import angle_ave
@@ -2198,9 +2171,9 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	if len(error_message_list) > 0:
 		# Detected error! output error message
 		if MPI == False:
-			for erro_message in error_message_list:  ERROR_MRK(erro_message, myname, 2)
+			for erro_message in error_message_list:  ERROR(erro_message, myname, 2)
 		elif myid == main_node: # assert(MPI == True)
-			for erro_message in error_message_list:  ERROR_MRK(erro_message, myname, 2, myid)
+			for erro_message in error_message_list:  ERROR(erro_message, myname, 2, myid)
 		# Abort process
 		if cter_mode == the_cter_mode_single_mic:  return 0, 0, 0, 0, 0, 0
 		else:  return
