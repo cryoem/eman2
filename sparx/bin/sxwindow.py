@@ -66,6 +66,7 @@ def main():
 Window particles from a micrograph. The coordinates of the particles should be given as input.
 Specify name pattern of input micrographs and coordinates files with wild card (*) enclosed by single quotes (') or double quotes (") 
 (Note: sxgui.py automatically adds single quotes (')). Use the wild card (*) to specify the place of micrograph ID (e.g. serial number, time stamp, and etc). 
+BDB files can not be selected as input micrographs.
 	
 	sxwindow.py  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt
 	
@@ -90,6 +91,10 @@ Specify name pattern of input micrographs and coordinates files with wild card (
 	# assert (len(args) == 3)
 	
 	mic_pattern = args[0]
+	if mic_pattern[:len("bdb:")].lower() == "bdb":
+		ERROR("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (progname), "sxwindow", 1)
+		exit()
+	
 	if mic_pattern.find("*") == -1:
 		ERROR("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (progname), "sxwindow", 1)
 		exit()

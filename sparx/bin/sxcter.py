@@ -48,14 +48,15 @@ sxcter exists in for both MPI and non-MPI versions.
 Milti-Micrograph Mode - Process a set of micrographs:
 
 	Specify micrograph name pattern with wild card [*] enclosed by single quotes ['] or double quotes ["] 
-	(Note: sxgui.py automatically adds single quotes [']) and output directory as arguments.
+	(Note: sxgui.py automatically adds single quotes [']) and output directory as arguments. 
+	BDB files can not be selected as input micrographs.
 	
 	mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
 		
 Single-Micrograph Mode - Process a single micrograph:
 
 	Specify micrograph name (without wild card "*") and output directory as arguments.
-	Use single processor for this mode.
+	BDB file can not be selected as input micrograph. Use single processor for this mode.
 	
 	sxcter.py Micrographs/mic0.mrc outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
 		
@@ -80,7 +81,7 @@ Stack Mode - Process a stack (Advanced Option):
 	parser.add_option("--overlap_y",       type="int",           default=50,     help="overlap y [%]: (default 50)")
 	parser.add_option("--edge_x",          type="int",           default=0,      help="edge x [pixels]: (default 0)")
 	parser.add_option("--edge_y",          type="int",           default=0,      help="edge y [pixels]: (default 0)")
-	parser.add_option("--set_ctf_header",  action="store_true",  default=False,  help="set estimated CTF parameters to stack header: used only in micrograph modes. (default False)")
+	parser.add_option("--set_ctf_header",  action="store_true",  default=False,  help="set estimated CTF parameters to image header: used only in micrograph modes. (default False)")
 	parser.add_option("--MPI",             action="store_true",  default=False,  help="use MPI version: (default False)")
 	parser.add_option("--stack_mode",      action="store_true",  default=False,  help="use stack mode: also set a stack name to input image. this is advanced option. (default False)")
 	parser.add_option("--debug",           action="store_true",  default=False,  help="print out debug info: (default False)")

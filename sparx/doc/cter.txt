@@ -15,21 +15,21 @@ sxcter.py  input_image  output_directory  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE
 sxcter exists in for both MPI and non-MPI versions.
 
 
-    Milti-Micrograph Mode - Process a set of micrographs:: Specify micrograph name pattern with wild card [*] enclosed by single quotes ['] or double quotes ["] (Note: sxgui.py automatically adds single quotes [']) and output directory as arguments. 
+    Milti-Micrograph Mode - Process a set of micrographs:: Specify micrograph name pattern with wild card [*] enclosed by single quotes ['] or double quotes ["] (Note: sxgui.py automatically adds single quotes [']) and output directory as arguments. BDB files can not be selected as input micrographs.
 
     ''' mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI ''' <<BR>><<BR>>
 
-    Single-Micrograph Mode - Process a single micrograph:: Specify micrograph name (without wild card "*") and output directory as arguments. Use single processor for this mode. 
+    Single-Micrograph Mode - Process a single micrograph:: Specify micrograph name (without wild card "*") and output directory as arguments. BDB files can not be selected as input micrograph. Use single processor for this mode. 
 
     ''' sxcter.py Micrographs/mic0.mrc outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 ''' <<BR>><<BR>>
 
-    Stack Mode - Process a stack (Advanced Option):: Use option --stack_mode, then specify name of stack (without wild card "*") and output directory as arguments. --wn will be not used with this mode. Use single processor for this mode. 
+    Stack Mode - Process a stack (Advanced Option):: Use option --stack_mode, then specify name of stack (without wild card "*") and output directory as arguments. --wn will be not used with this mode. Use single processor for this mode. sxgui.py does not support this mode. 
 
     ''' sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode ''' <<BR>><<BR>>
 
 
 == Input ==
-    input_image:: a set of micrographs: name with wild card * to process multiple micrographs (milti-micrograph mode). it can be 2D images in a stack file with --stack_mode. (default required string)
+    input_image:: a set of micrographs (exclude bdb): name with wild card * to process multiple micrographs (milti-micrograph mode). it can be 2D images in a stack file with --stack_mode. (default required string)
     
     wn:: CTF window size [pixels]: should be slightly larger than particle box size. used only in micrograph modes. (default 512)
     apix:: pixel size [A]: (default -1.0)
@@ -45,7 +45,7 @@ sxcter exists in for both MPI and non-MPI versions.
     overlap_y:: overlap y [%]: (default 50)
     edge_x:: edge x [pixels]: (default 0)
     edge_y:: edge y [pixels]: (default 0)
-    set_ctf_header:: set estimated CTF parameters to stack header: used only in micrograph modes. (default False)
+    set_ctf_header:: set estimated CTF parameters to image header: used only in micrograph modes. (default False)
     MPI:: use MPI version: (default False)
     stack_mode:: use stack mode: also set a stack name to input image. this is advanced option. (default False)
     debug:: print out debug info: (default False)

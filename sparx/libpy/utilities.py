@@ -5127,12 +5127,18 @@ def print_with_time_info(msg):
 	print line
 
 def if_error_then_all_processes_exit_program(error_status):
-	import sys, copy
-	from mpi import mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+	import sys, os
+	from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+	from utilities import print_msg
 	
-	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
+	if "OMPI_COMM_WORLD_SIZE" not in os.environ:
+		def mpi_comm_rank(n): return 0
+		def mpi_bcast(*largs):
+			return [largs[0]]
+		def mpi_finalize():
+			return None
+	
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	
 	if error_status != None and error_status != 0:
 		error_status_info = error_status
 		error_status = 1
@@ -5147,14 +5153,13 @@ def if_error_then_all_processes_exit_program(error_status):
 			if type(error_status_info) == type((1,1)):
 				if len(error_status_info) == 2:
 					frameinfo = error_status_info[1] 
-					print "***********************************"
-					print "** Error:", error_status_info[0]
-					print "***********************************"
-					# print "** Location:", frameinfo.filename + "  --  " + str(frameinfo.lineno)
-					print "** Location:", frameinfo.filename + ":" + str(frameinfo.lineno)
-					print "***********************************"
-		mpi_finalize()
+					print_msg("***********************************\n")
+					print_msg("** Error: %s\n"%error_status_info[0])
+					print_msg("***********************************\n")
+					print_msg("** Location: %s\n"%(frameinfo.filename + ":" + str(frameinfo.lineno)))
+					print_msg("***********************************\n")
 		sys.stdout.flush()		
+		mpi_finalize()
 		sys.exit(1)
 
 def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
