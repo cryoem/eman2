@@ -2552,13 +2552,29 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			stdavad1 = np.sqrt(kboot * max(0.0, ad2))
 			stdavbd1 = np.sqrt(kboot * max(0.0, bd2))
 			cd2 *= np.sqrt(kboot)
+			
+			# Adjust value ranges of astig. amp. and angle.
+			if bd1 < 0.0:
+				bd1 = -1 * bd1
+				cd1 = 90.0 + cd1
+			cd1 = cd1 % 180
+			
+			if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (ad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+			if cd1 < 0.0 or cd1 >= 180: ERROR("Logical Error: Encountered unexpected astig. angle value (%f). Consult with the developer." % (cd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+			
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
+			willdo = True
 			try:
 				pwrot2 = rotavg_ctf( model_blank(wn, wn), ad1, Cs, voltage, pixel_size, 0.0, wgh, bd1, cd1)
-				willdo = True
 			except:
-				print "  Astigmatism amplitude larger than defocus or defocus is negative :",namics[ifi],ad1, Cs, voltage, pixel_size, wgh, bd1, cd1
+				print "  Astigmatism amplitude is larger than defocus or defocus is negative :", namics[ifi], ad1, Cs, voltage, pixel_size, wgh, bd1, cd1
 				willdo = False
+			
+			valid_min_defocus = 0.3
+			if ad1 < valid_min_defocus:
+				print "  Defocus is smaller than valid minimum value (%f) :" % (valid_min_defocus), namics[ifi], ad1, Cs, voltage, pixel_size, wgh, bd1, cd1
+				willdo = False
+				
 			
 			if(willdo):
 				#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
@@ -2601,16 +2617,18 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				#from utilities import write_text_file
 				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 				
-				if stack == None:
-					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
-				else:
-					print               ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
-				if stack == None:
-					totresi.append( [ namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
-				else:
-					# totresi.append( [ 0, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
-					totresi.append( [ stack, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
-				#if ifi == 4 : break
+				# Compute defocus CV and astig. amp. CV (CV: coefficient of variation; ratio of error (SD) relative to average (mean))
+				if ad1 < max(0.0, valid_min_defocus): ERROR("Logical Error: Encountered unexpected defocus value (%f). Consult with the developer." % (ad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				if stdavad1 < 0.0: ERROR("Logical Error: Encountered unexpected defocus SD value (%f). Consult with the developer." % (stdavad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				cvavad1 = stdavad1 / ad1 * 100 # use percentage
+				
+				if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				if stdavbd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. SD value (%f). Consult with the developer." % (stdavbd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				bd1_precision = 1.0e-15  # use double precision
+				if bd1 < bd1_precision:
+					bd1 = bd1_precision
+				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
+				
 				"""
 				for i in xrange(len(ssubroo)):
 					asubroo[i] /= kboot
@@ -2635,7 +2653,21 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 #				if stack == None:     cmd = "echo " + "    " + namics[ifi] + "  >>  " + fou
 #				else:                 cmd = "echo " + "    " + "  >>  " + fou
 #				os.system(cmd)
-		
+				
+				if stack == None:
+#					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
+					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec
+				else:
+#					print               ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
+					print               ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec
+				if stack == None:
+#					totresi.append( [ namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
+					totresi.append( [ namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec])
+				else:
+#					totresi.append( [ 0, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
+					totresi.append( [ stack,       ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec])
+				#if ifi == 4 : break
+				
 #		if stack == None and set_ctf_header:
 		if stack == None:
 			img = get_im(namics[ifi])

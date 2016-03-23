@@ -232,6 +232,8 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_cter_sd_def       = i_enum # std dev of defocus (um)
 		i_enum += 1; self.idx_cter_sd_astig_amp = i_enum # std dev of ast amp (A)
 		i_enum += 1; self.idx_cter_sd_astig_ang = i_enum # std dev of ast angle
+		i_enum += 1; self.idx_cter_cv_def       = i_enum # coefficient of variation of defocus (%)
+		i_enum += 1; self.idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp (%)
 		i_enum += 1; self.idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone (1/A)
 		i_enum += 1; self.idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism (1/A)
 		i_enum += 1; self.idx_cter_mic_name     = i_enum # Micrograph name
@@ -262,6 +264,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.value_map_list[self.idx_cter_sd_def]       = ["Defocus SD", None]
 		self.value_map_list[self.idx_cter_sd_astig_amp] = ["Astig. Amp. SD", None]
 		self.value_map_list[self.idx_cter_sd_astig_ang] = ["Astig. Ang. SD", None]
+		self.value_map_list[self.idx_cter_cv_def]       = ["Defocus CV", None]
+		self.value_map_list[self.idx_cter_cv_astig_amp] = ["Astig. Amp. CV", None]
 		self.value_map_list[self.idx_cter_error_def]    = ["Defocus Error", None]
 		self.value_map_list[self.idx_cter_error_astig]  = ["Astig. Error", None]
 		self.value_map_list[self.idx_cter_mic_name]     = ["Micrograph", None]
@@ -286,6 +290,8 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_sort_sd_def       = i_enum
 		i_enum += 1; self.idx_sort_sd_astig_amp = i_enum
 		i_enum += 1; self.idx_sort_sd_astig_ang = i_enum
+		i_enum += 1; self.idx_sort_cv_def       = i_enum
+		i_enum += 1; self.idx_sort_cv_astig_amp = i_enum
 		i_enum += 1; self.idx_sort_error_def    = i_enum
 		i_enum += 1; self.idx_sort_error_astig  = i_enum
 		i_enum += 1; self.idx_sort_error_ctf    = i_enum
@@ -306,6 +312,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.sort_map_list[self.idx_sort_sd_def]       = [self.idx_cter_sd_def]
 		self.sort_map_list[self.idx_sort_sd_astig_amp] = [self.idx_cter_sd_astig_amp]
 		self.sort_map_list[self.idx_sort_sd_astig_ang] = [self.idx_cter_sd_astig_ang]
+		self.sort_map_list[self.idx_sort_cv_def]       = [self.idx_cter_cv_def]
+		self.sort_map_list[self.idx_sort_cv_astig_amp] = [self.idx_cter_cv_astig_amp]
 		self.sort_map_list[self.idx_sort_error_def]    = [self.idx_cter_error_def]
 		self.sort_map_list[self.idx_sort_error_astig]  = [self.idx_cter_error_astig]
 		self.sort_map_list[self.idx_sort_error_ctf]    = [self.idx_cter_error_ctf]
@@ -318,6 +326,8 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_hist_sd_def       = i_enum
 		i_enum += 1; self.idx_hist_sd_astig_amp = i_enum
 		i_enum += 1; self.idx_hist_sd_astig_ang = i_enum
+		i_enum += 1; self.idx_hist_cv_def       = i_enum
+		i_enum += 1; self.idx_hist_cv_astig_amp = i_enum
 		i_enum += 1; self.idx_hist_error_def    = i_enum
 		i_enum += 1; self.idx_hist_error_astig  = i_enum
 		i_enum += 1; self.idx_hist_error_ctf    = i_enum
@@ -348,6 +358,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.hist_map_list[self.idx_hist_sd_def]       = [self.idx_cter_sd_def, self.idx_sort_sd_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
 		self.hist_map_list[self.idx_hist_sd_astig_amp] = [self.idx_cter_sd_astig_amp, self.idx_sort_sd_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
 		self.hist_map_list[self.idx_hist_sd_astig_ang] = [self.idx_cter_sd_astig_ang, self.idx_sort_sd_astig_ang, 0, 180, 0, 180, None, None, 0, 180, None, None]
+		self.hist_map_list[self.idx_hist_cv_def]       = [self.idx_cter_cv_def, self.idx_sort_cv_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
+		self.hist_map_list[self.idx_hist_cv_astig_amp] = [self.idx_cter_cv_astig_amp, self.idx_sort_cv_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
 		self.hist_map_list[self.idx_hist_error_def]    = [self.idx_cter_error_def, self.idx_sort_error_def, 0, 10, 0, 10, None, None, 0, 10, None, None]
 		self.hist_map_list[self.idx_hist_error_astig]  = [self.idx_cter_error_astig, self.idx_sort_error_astig, 0, 10, 0, 10, None, None, 0, 10, None, None]
 		self.hist_map_list[self.idx_hist_error_ctf]    = [self.idx_cter_error_ctf, self.idx_sort_error_ctf, 0, 10, 0, 10, None, None, 0, 10, None, None]
