@@ -86,7 +86,7 @@ def main():
 		gui.readCterCtfFile(os.path.relpath(cter_ctf_file))
 	
 #	try:
-#		# gui.wimage.qt_parent.raise_() # wimage should not be visible upon start-up
+#		# gui.wimgmicthumb.qt_parent.raise_() # wimgmicthumb should not be visible upon start-up
 #		# gui.wfft.qt_parent.raise_()
 #		gui.wplotrotavgcoarse.qt_parent.raise_()
 #		gui.wplotrotavgfine.qt_parent.raise_()
@@ -220,6 +220,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		i_enum = -1
 		i_enum += 1; self.idx_cter_id           = i_enum # <extra> entry id
+		i_enum += 1; self.idx_cter_select       = i_enum # <extra> selected state
 		i_enum += 1; self.idx_cter_def          = i_enum # defocus (ym)
 		i_enum += 1; self.idx_cter_cs           = i_enum # Cs (mm)
 		i_enum += 1; self.idx_cter_vol          = i_enum # voltage(kV)
@@ -231,15 +232,16 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_cter_sd_def       = i_enum # std dev of defocus (um)
 		i_enum += 1; self.idx_cter_sd_astig_amp = i_enum # std dev of ast amp (A)
 		i_enum += 1; self.idx_cter_sd_astig_ang = i_enum # std dev of ast angle
+		i_enum += 1; self.idx_cter_cv_def       = i_enum # coefficient of variation of defocus (%)
+		i_enum += 1; self.idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp (%)
 		i_enum += 1; self.idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone (1/A)
 		i_enum += 1; self.idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism (1/A)
+		i_enum += 1; self.idx_cter_error_ctf    = i_enum # limit frequency by CTF error 
 		i_enum += 1; self.idx_cter_mic_name     = i_enum # Micrograph name
-		i_enum += 1; self.idx_cter_pwrot_name   = i_enum # <extra> CTER power spectrum rotational average file name
-		i_enum += 1; self.idx_cter_error_ctf    = i_enum # <extra> limit frequency by CTF error 
+#		i_enum += 1; self.idx_cter_pwrot_name   = i_enum # <extra> CTER power spectrum rotational average file name
 		if self.is_enable_max_power == True: i_enum += 1; self.idx_cter_max_power = i_enum # MRK_TEST: <extra> maximum power in experimental rotational average (with astigmatism)
-		i_enum += 1; self.idx_cter_select       = i_enum # <extra> selected state
 		i_enum += 1; self.n_idx_cter            = i_enum
-		self.n_idx_cter_extra = 4
+		self.n_idx_cter_extra = 2
 		if self.is_enable_max_power == True: self.n_idx_cter_extra += 1 # MRK_TEST:
 		
 		i_enum = -1
@@ -250,24 +252,26 @@ class SXGuiCter(QtGui.QWidget):
 		# Mapping for parameter value items (line edit widgets)
 		self.value_map_list = [None] * self.n_idx_cter
 		self.value_map_list[self.idx_cter_id]           = ["CTER ID", None]
-		self.value_map_list[self.idx_cter_def]          = ["Defocus", None]
-		self.value_map_list[self.idx_cter_cs]           = ["Cs (mm)", None]
-		self.value_map_list[self.idx_cter_vol]          = ["Voltage (kV)", None]
-		self.value_map_list[self.idx_cter_apix]         = ["A/pix", None]
-		self.value_map_list[self.idx_cter_bfactor]      = ["B factor", None]
-		self.value_map_list[self.idx_cter_ac]           = ["Amp. Contrast", None]
-		self.value_map_list[self.idx_cter_astig_amp]    = ["Astig. Amp.", None]
-		self.value_map_list[self.idx_cter_astig_ang]    = ["Astig. Ang.", None]
-		self.value_map_list[self.idx_cter_sd_def]       = ["Defocus SD", None]
-		self.value_map_list[self.idx_cter_sd_astig_amp] = ["Astig. Amp. SD", None]
-		self.value_map_list[self.idx_cter_sd_astig_ang] = ["Astig. Ang. SD", None]
-		self.value_map_list[self.idx_cter_error_def]    = ["Defocus Error", None]
-		self.value_map_list[self.idx_cter_error_astig]  = ["Astig. Error", None]
-		self.value_map_list[self.idx_cter_mic_name]     = ["Micrograph", None]
-		self.value_map_list[self.idx_cter_pwrot_name]   = ["PW. Rot. File", None]
-		self.value_map_list[self.idx_cter_error_ctf]    = ["CTF Error", None]
-		if self.is_enable_max_power == True: self.value_map_list[self.idx_cter_max_power] = ["Max Power", None] # MRK_TEST:
 		self.value_map_list[self.idx_cter_select]       = ["Select", None]
+		self.value_map_list[self.idx_cter_def]          = ["Defocus [um]", None]
+		self.value_map_list[self.idx_cter_cs]           = ["Cs [mm]", None]
+		self.value_map_list[self.idx_cter_vol]          = ["Voltage [kV]", None]
+		self.value_map_list[self.idx_cter_apix]         = ["Pixel Size [A]", None]
+		self.value_map_list[self.idx_cter_bfactor]      = ["B-factor [A^2]", None]
+		self.value_map_list[self.idx_cter_ac]           = ["Amp. Contrast [%]", None]
+		self.value_map_list[self.idx_cter_astig_amp]    = ["Astig. Amp.[um]", None]
+		self.value_map_list[self.idx_cter_astig_ang]    = ["Astig. Ang.[deg]", None]
+		self.value_map_list[self.idx_cter_sd_def]       = ["Defocus SD [um]", None]
+		self.value_map_list[self.idx_cter_sd_astig_amp] = ["Astig. Amp. SD [um]", None]
+		self.value_map_list[self.idx_cter_sd_astig_ang] = ["Astig. Ang. SD [deg]", None]
+		self.value_map_list[self.idx_cter_cv_def]       = ["Defocus CV [%]", None]
+		self.value_map_list[self.idx_cter_cv_astig_amp] = ["Astig. Amp. CV [%]", None]
+		self.value_map_list[self.idx_cter_error_def]    = ["Defocus Freq. Limit [1/A]", None]
+		self.value_map_list[self.idx_cter_error_astig]  = ["Astig. Freq. Limit [1/A]", None]
+		self.value_map_list[self.idx_cter_error_ctf]    = ["CTF Freq. Limit [1/A]", None]
+		self.value_map_list[self.idx_cter_mic_name]     = ["Micrograph", None]
+#		self.value_map_list[self.idx_cter_pwrot_name]   = ["PW. Rot. File", None]
+		if self.is_enable_max_power == True: self.value_map_list[self.idx_cter_max_power] = ["Max Power", None] # MRK_TEST:
 		
 		i_enum = -1
 		i_enum += 1; self.idx_rotinf_cter_id        = i_enum # line number == cter id
@@ -286,6 +290,8 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_sort_sd_def       = i_enum
 		i_enum += 1; self.idx_sort_sd_astig_amp = i_enum
 		i_enum += 1; self.idx_sort_sd_astig_ang = i_enum
+		i_enum += 1; self.idx_sort_cv_def       = i_enum
+		i_enum += 1; self.idx_sort_cv_astig_amp = i_enum
 		i_enum += 1; self.idx_sort_error_def    = i_enum
 		i_enum += 1; self.idx_sort_error_astig  = i_enum
 		i_enum += 1; self.idx_sort_error_ctf    = i_enum
@@ -306,6 +312,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.sort_map_list[self.idx_sort_sd_def]       = [self.idx_cter_sd_def]
 		self.sort_map_list[self.idx_sort_sd_astig_amp] = [self.idx_cter_sd_astig_amp]
 		self.sort_map_list[self.idx_sort_sd_astig_ang] = [self.idx_cter_sd_astig_ang]
+		self.sort_map_list[self.idx_sort_cv_def]       = [self.idx_cter_cv_def]
+		self.sort_map_list[self.idx_sort_cv_astig_amp] = [self.idx_cter_cv_astig_amp]
 		self.sort_map_list[self.idx_sort_error_def]    = [self.idx_cter_error_def]
 		self.sort_map_list[self.idx_sort_error_astig]  = [self.idx_cter_error_astig]
 		self.sort_map_list[self.idx_sort_error_ctf]    = [self.idx_cter_error_ctf]
@@ -318,6 +326,8 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_hist_sd_def       = i_enum
 		i_enum += 1; self.idx_hist_sd_astig_amp = i_enum
 		i_enum += 1; self.idx_hist_sd_astig_ang = i_enum
+		i_enum += 1; self.idx_hist_cv_def       = i_enum
+		i_enum += 1; self.idx_hist_cv_astig_amp = i_enum
 		i_enum += 1; self.idx_hist_error_def    = i_enum
 		i_enum += 1; self.idx_hist_error_astig  = i_enum
 		i_enum += 1; self.idx_hist_error_ctf    = i_enum
@@ -348,6 +358,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.hist_map_list[self.idx_hist_sd_def]       = [self.idx_cter_sd_def, self.idx_sort_sd_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
 		self.hist_map_list[self.idx_hist_sd_astig_amp] = [self.idx_cter_sd_astig_amp, self.idx_sort_sd_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
 		self.hist_map_list[self.idx_hist_sd_astig_ang] = [self.idx_cter_sd_astig_ang, self.idx_sort_sd_astig_ang, 0, 180, 0, 180, None, None, 0, 180, None, None]
+		self.hist_map_list[self.idx_hist_cv_def]       = [self.idx_cter_cv_def, self.idx_sort_cv_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
+		self.hist_map_list[self.idx_hist_cv_astig_amp] = [self.idx_cter_cv_astig_amp, self.idx_sort_cv_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
 		self.hist_map_list[self.idx_hist_error_def]    = [self.idx_cter_error_def, self.idx_sort_error_def, 0, 10, 0, 10, None, None, 0, 10, None, None]
 		self.hist_map_list[self.idx_hist_error_astig]  = [self.idx_cter_error_astig, self.idx_sort_error_astig, 0, 10, 0, 10, None, None, 0, 10, None, None]
 		self.hist_map_list[self.idx_hist_error_ctf]    = [self.idx_cter_error_ctf, self.idx_sort_error_ctf, 0, 10, 0, 10, None, None, 0, 10, None, None]
@@ -405,12 +417,13 @@ class SXGuiCter(QtGui.QWidget):
 		self.thresholdset_map_list[self.idx_thresholdset_unapplied] = ["Unapplied"]
 		self.thresholdset_map_list[self.idx_thresholdset_applied]   = ["Applied"]
 		
-		self.cter_partres_file_path = None
-		self.cter_entry_list        = None
-		self.cter_mic_file_path     = None
-		self.cter_pwrot_file_path   = None
+		self.cter_partres_file_path  = None
+		self.cter_entry_list         = None
+		self.cter_mic_file_path      = None
+		self.cter_micthumb_file_path = None
+		self.cter_pwrot_file_path    = None
 		
-		self.curmicdisplay=False
+		self.curimgmicthumbdisplay=True
 		self.curplotfixscale=5
 		self.curentry=None
 		self.cursort=0
@@ -436,11 +449,11 @@ class SXGuiCter(QtGui.QWidget):
 #		self.wfft.qt_parent.setWindowFlags((self.qt_parent.wfft.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 #		self.is_wfft_minimized = False
 		
-		self.wimage=EMImage2DWidget()
-		self.wimage.setWindowTitle("sxgui_cter - Micrograph")
-		self.wimage.mmode="app"
-		self.wimage.qt_parent.setWindowFlags((self.wimage.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
-		self.is_wimage_minimized = False
+		self.wimgmicthumb=EMImage2DWidget()
+		self.wimgmicthumb.setWindowTitle("sxgui_cter - Micrograph Thumbnail")
+		self.wimgmicthumb.mmode="app"
+		self.wimgmicthumb.qt_parent.setWindowFlags((self.wimgmicthumb.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		self.is_wimgmicthumb_minimized = False
 		
 		self.wplotrotavgcoarse=SXPlot2DWidget()
 		self.wplotrotavgcoarse.setWindowTitle("sxgui_cter - Plot")
@@ -465,9 +478,9 @@ class SXGuiCter(QtGui.QWidget):
 #		self.wfft.connect(self.wfft,QtCore.SIGNAL("mousedown"),self.fftmousedown)
 #		self.wfft.connect(self.wfft,QtCore.SIGNAL("mousedrag"),self.fftmousedrag)
 #		self.wfft.connect(self.wfft,QtCore.SIGNAL("mouseup")  ,self.fftmouseup)
-#		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
-#		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
-#		self.wimage.connect(self.wimage,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
+#		self.wimgmicthumb.connect(self.wimgmicthumb,QtCore.SIGNAL("mousedown"),self.imgmicthumbmousedown)
+#		self.wimgmicthumb.connect(self.wimgmicthumb,QtCore.SIGNAL("mousedrag"),self.imgmicthumbmousedrag)
+#		self.wimgmicthumb.connect(self.wimgmicthumb,QtCore.SIGNAL("mouseup")  ,self.imgmicthumbmouseup)
 #		self.wplotrotavgcoarse.connect(self.wplotrotavgcoarse,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 #		self.wplotrotavgfine.connect(self.wplotrotavgfine,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 		self.whistparam.connect(self.whistparam,QtCore.SIGNAL("mouseup"),self.histparammouseup)
@@ -478,151 +491,227 @@ class SXGuiCter(QtGui.QWidget):
 		self.gbl.setMargin(8)
 		self.gbl.setSpacing(6)
 		
-
 		# --------------------------------------------------------------------------------
-		# Columns 1-2
+		# Columns 1-3
 		# --------------------------------------------------------------------------------
-		grid_col = 0; col_span = 2
+		grid_col = 0;
+		col_span_label = 1
+		col_span_edit = 2
+		col_span_sublabel = 2
+		col_span_subedit = 1
+		assert(col_span_label + col_span_edit == col_span_sublabel + col_span_subedit) # MRK_DEBUG
+		col_span = col_span_label + col_span_edit
 		grid_row = 0
 		
-		checkbox_label_width=160
+		labelwidth=70
+		sublabelwidth=140
 		
 		self.pbopencter=QtGui.QPushButton("Open CTER CTF file")
-		self.gbl.addWidget(self.pbopencter,grid_row,grid_col)
+		self.gbl.addWidget(self.pbopencter,grid_row,grid_col,1,col_span)
 		grid_row += 1
 		
-		# temp_label=QtGui.QLabel("Selection Status:",self)
-		# self.gbl.addWidget(temp_label,grid_row,grid_col,1,2)
+		# Make space
+		grid_row+=1
+		
+		temp_label=QtGui.QLabel("<b>Selection Summary:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
 		grid_row += 1
 		
-		self.vbnentry=ValBox(self,(0,10000),"Num. of entries",0,90)
+		temp_label=QtGui.QLabel("Num. of entries",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
+		self.vbnentry=ValBox(self,(0,10000),None,0)
 		self.vbnentry.setEnabled(False)
 		self.vbnentry.intonly=True
-		self.gbl.addWidget(self.vbnentry,grid_row,grid_col)
+		self.gbl.addWidget(self.vbnentry,grid_row,grid_col+col_span_label,1,col_span_edit)
 		grid_row+=1
 		
-		self.vbuncheckcounts=ValBox(self,(0,1000000),"Unchecked",0,90)
+		temp_label=QtGui.QLabel("Unchecked",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
+		self.vbuncheckcounts=ValBox(self,(0,1000000),None,0)
 		self.vbuncheckcounts.setEnabled(False)
 		self.vbuncheckcounts.intonly=True
-		self.gbl.addWidget(self.vbuncheckcounts,grid_row,grid_col)
+		self.gbl.addWidget(self.vbuncheckcounts,grid_row,grid_col+col_span_label,1,col_span_edit)
 		grid_row+=1
 		
-		self.vbuncheckratio=ValBox(self,(0,1.0),"Ratio",0,90)
+		temp_label=QtGui.QLabel("Ratio",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
+		self.vbuncheckratio=ValBox(self,(0,1.0),None,0)
 		self.vbuncheckratio.setEnabled(False)
-		self.gbl.addWidget(self.vbuncheckratio,grid_row,grid_col)
-		grid_row+=1
-		
-		# temp_label=QtGui.QLabel("Electron Microscopy:",self)
-		# self.gbl.addWidget(temp_label,grid_row,grid_col,1,2)
-		grid_row+=1
-		
-		self.add_value_widget(self.idx_cter_vol, 0, 500, grid_row, grid_col)
-		grid_row+=1
-		
-		self.add_value_widget(self.idx_cter_cs, 0, 5, grid_row, grid_col)
-		grid_row+=1
-		
-		self.add_value_widget(self.idx_cter_ac, 0, 100, grid_row, grid_col)
-		grid_row+=1
-		
-		self.add_value_widget(self.idx_cter_apix, 0, 500, grid_row, grid_col)
+		self.gbl.addWidget(self.vbuncheckratio,grid_row,grid_col+col_span_label,1,col_span_edit)
 		grid_row+=1
 		
 		# Make space
 		grid_row+=1
 		
-		self.cbmicdisplay=CheckBox(None,"Display Micrograph",self.curmicdisplay)
-		self.cbmicdisplay.setEnabled(False)
-		self.gbl.addWidget(self.cbmicdisplay,grid_row,grid_col)
+		temp_label=QtGui.QLabel("<b>Electron Microscopy:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
+		grid_row += 1
+		
+		self.add_value_widget(self.idx_cter_vol,0,500,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
+		grid_row+=1
+		
+		self.add_value_widget(self.idx_cter_cs,0,5,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
+		grid_row+=1
+		
+		self.add_value_widget(self.idx_cter_ac,0,100,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
+		grid_row+=1
+		
+		self.add_value_widget(self.idx_cter_apix,0,500,grid_row,grid_col,col_span_label,col_span_edit,labelwidth=labelwidth)
 		grid_row+=1
 		
 		# Make space
 		grid_row+=1
 		
-		temp_label=QtGui.QLabel("Display Curves:",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col)
+		temp_label=QtGui.QLabel("<b>Display Micrograph:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
+		grid_row += 1
+		
+		temp_label=QtGui.QLabel("Open Window",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
+		self.cbmicthumbdisplay=CheckBox(None,None,self.curimgmicthumbdisplay)
+#		self.cbmicthumbdisplay.setEnabled(False)
+		self.gbl.addWidget(self.cbmicthumbdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
+		grid_row+=1
+		
+		# Make space
+		grid_row+=1
+		
+		temp_label=QtGui.QLabel("<b>Display Curves:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
 		grid_row += 1
 		
 		for idx_graph in xrange(self.n_idx_graph):
-			self.graph_map_list[idx_graph][self.idx_graph_item_widget]=CheckBox(None,self.graph_map_list[idx_graph][self.idx_graph_item_label],True,checkbox_label_width)
-			self.gbl.addWidget(self.graph_map_list[idx_graph][self.idx_graph_item_widget],grid_row,grid_col)
+			temp_label=QtGui.QLabel(self.graph_map_list[idx_graph][self.idx_graph_item_label],self)
+			temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+			temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
+			self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_sublabel)
+			self.graph_map_list[idx_graph][self.idx_graph_item_widget]=CheckBox(None,None,True)
+			self.gbl.addWidget(self.graph_map_list[idx_graph][self.idx_graph_item_widget],grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
 			grid_row += 1
 		
-		self.vbplotfixscale=ValBox(self,(0,99999),"Plot Fix Scale",self.curplotfixscale,90)
-		self.gbl.addWidget(self.vbplotfixscale,grid_row,grid_col)
+		temp_label=QtGui.QLabel("Plot Fix Scale",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
+		self.vbplotfixscale=ValBox(self,(0,99999),None,self.curplotfixscale)
+		self.gbl.addWidget(self.vbplotfixscale,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
 		grid_row+=1
-		
-		# # Make space
-		# grid_row+=1
 		
 		self.pbrefreshgraphs=QtGui.QPushButton("Refresh Graphs")
 		self.pbrefreshgraphs.setEnabled(False)
-		self.gbl.addWidget(self.pbrefreshgraphs,grid_row,grid_col)
+		self.gbl.addWidget(self.pbrefreshgraphs,grid_row,grid_col,1,col_span)
 		grid_row += 1
 		
 		# --------------------------------------------------------------------------------
-		# Columns 3-4
+		# Columns 4
 		# --------------------------------------------------------------------------------
-		grid_col += col_span; col_span = 2
+		grid_col += col_span
+		col_span = 1
 		grid_row = 0
 		
 		# plot list and plot mode combobox
-		row_span_entry_list = 21
+		row_span_entry_list = 24
 		self.lbentry=SXListWidget(self) # self.lbentry=e2ctf.MyListWidget(self)
 		self.lbentry.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		self.lbentry.setMinimumWidth(220)
 		self.gbl.addWidget(self.lbentry,grid_row,grid_col,row_span_entry_list,col_span)
 		grid_row += row_span_entry_list
 		
+		grid_row_entry_list = grid_row - 1
+		grid_col_entry_list = grid_col
+		
 		# --------------------------------------------------------------------------------
-		# Columns 5-6 (for Micrograph/CTER Entry) and 7-8 (for Histogram)
+		# Columns 5-7 (for Micrograph/CTER Entry), 7-8 (for Unapplied Threshold), 9-10 (for Applied Threshold)
 		# --------------------------------------------------------------------------------
-		grid_col += col_span; col_span = 2
+		grid_col += col_span
+		col_span_1st_label = 2
+		col_span_1st_edit = 1
+		col_span_1st_subspace = 1
+		col_span_1st_sublabel = 1
+		col_span_1st_subedit = 1
+		col_span_2nd_sublabel = col_span_1st_sublabel
+		col_span_2nd_subedit = col_span_1st_subedit
+		col_span_3rd_sublabel = col_span_1st_sublabel
+		col_span_3rd_subedit = col_span_1st_subedit
+		assert(col_span_1st_label + col_span_1st_edit == col_span_1st_subspace + col_span_1st_sublabel + col_span_1st_subedit)
+		col_span_1st = col_span_1st_label + col_span_1st_edit
+		col_span_1st_sub = col_span_1st_sublabel + col_span_1st_subedit
+		col_span_2nd = 2
+		col_span_3rd = 2
+		col_span = col_span_1st + col_span_2nd + col_span_3rd
 		grid_row = 0
 		
-		grid_col_2nd = grid_col + col_span
-		grid_col_3rd = grid_col_2nd + col_span
+		grid_col_1st = grid_col
+		grid_col_1st_sub = grid_col + col_span_1st_subspace
+		grid_col_2nd = grid_col_1st + col_span_1st
+		grid_col_3rd = grid_col_2nd + col_span_2nd
 		
-		temp_label=QtGui.QLabel("Current Entry Info:",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col,1,2)
-		temp_label=QtGui.QLabel("Unapplied Thresholds:",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,2)
-		temp_label=QtGui.QLabel("Applied Thresholds:",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,2)
+		labelwidth=160
+		editwidth=100
+		sublabelwidth=editwidth
+		
+		temp_label=QtGui.QLabel("<b>Current Entry Info:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sub)
+		temp_label=QtGui.QLabel("<b>Unapplied Thresholds:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,col_span_2nd)
+		temp_label=QtGui.QLabel("<b>Applied Thresholds:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,col_span_3rd)
 		grid_row += 1
 		
-		self.ssortedid=ValBox(self,(0,10000),"Sorted ID",0,90)
+		temp_label=QtGui.QLabel("Sorted ID",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col_1st,1,col_span_1st_label)
+		self.ssortedid=ValBox(self,(0,10000),None,0)
 		self.ssortedid.setEnabled(False)
 		self.ssortedid.intonly=True
-		self.gbl.addWidget(self.ssortedid,grid_row,grid_col)
+		self.gbl.addWidget(self.ssortedid,grid_row,grid_col_1st+col_span_1st_label,1,col_span_1st_edit)
 		grid_row+=1
 		
-		self.add_value_widget(self.idx_cter_id, 0, 10000, grid_row, grid_col, intonly=True)
+		self.add_value_widget(self.idx_cter_id,0,10000,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit,intonly=True,labelwidth=labelwidth,editwidth=editwidth)
 		grid_row+=1
 		
-		self.add_value_widget(self.idx_cter_select, 0, 1, grid_row, grid_col, intonly=True)
+		self.add_value_widget(self.idx_cter_select,0,1,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit,intonly=True,labelwidth=labelwidth,editwidth=editwidth)
 		grid_row+=1
 		
 		for idx_hist in xrange(self.n_idx_hist):
-			self.add_value_widget_with_threshold(idx_hist, grid_row, grid_col, grid_col_2nd, grid_col_3rd)
+			self.add_value_widget_with_threshold(idx_hist,grid_row,grid_col_1st,grid_col_2nd,grid_col_3rd,col_span_1st_label,col_span_1st_edit,labelwidth=labelwidth,editwidth=editwidth)
 			grid_row+=1
 		self.hist_map_list[0][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
 		# self.hist_map_list[0][self.idx_hist_item_unapply_widget_upper].setEnabled(True)
 		
-		self.add_value_widget(self.idx_cter_bfactor, 0, 1600, grid_row, grid_col)
+		self.add_value_widget(self.idx_cter_bfactor,0,1600,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit,labelwidth=labelwidth,editwidth=editwidth)
 		grid_row+=1
 		
 		# make space
-		# grid_row += 1
+		grid_row += 1
 		
-		temp_label=QtGui.QLabel("Sort CTER Entries:",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col,1,2)
+		temp_label=QtGui.QLabel("<b>Sort CTER Entries:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sub)
 		
-		temp_label=QtGui.QLabel("Parameter for Histogram & Plot:",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,2)
+		temp_label=QtGui.QLabel("<b>Histogram & Plot Settings:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,col_span_2nd)
 		
-		temp_label=QtGui.QLabel("Save/Load Thresholds:",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,2)
+		temp_label=QtGui.QLabel("<b>Save/Load Thresholds:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,col_span_3rd)
 		grid_row += 1
 		
 		self.ssort=QtGui.QComboBox(self)
@@ -630,28 +719,33 @@ class SXGuiCter(QtGui.QWidget):
 			idx_cter = map_entry[self.idx_sort_item_idx_cter]
 			self.ssort.addItem(self.value_map_list[idx_cter][self.idx_cter_item_label])
 		self.ssort.setCurrentIndex(self.cursort)
-		self.gbl.addWidget(self.ssort,grid_row,grid_col)
+		self.gbl.addWidget(self.ssort,grid_row,grid_col_1st_sub,1,col_span_1st_sub)
 		
 		self.shist=QtGui.QComboBox(self)
 		for map_entry in self.hist_map_list:
 			idx_cter = map_entry[self.idx_hist_item_idx_cter]
 			self.shist.addItem(self.value_map_list[idx_cter][self.idx_cter_item_label])
 		self.shist.setCurrentIndex(self.curhist)
-		self.gbl.addWidget(self.shist,grid_row,grid_col_2nd,1,2)
+		self.gbl.addWidget(self.shist,grid_row,grid_col_2nd,1,col_span_2nd)
 		
 		self.sthresholdset=QtGui.QComboBox(self)
 		for map_entry in self.thresholdset_map_list:
 			self.sthresholdset.addItem(map_entry[self.idx_thresholdset_item_label])
 		self.sthresholdset.setCurrentIndex(self.curthresholdset)
-		self.gbl.addWidget(self.sthresholdset,grid_row,grid_col_3rd,1,2)
+		self.gbl.addWidget(self.sthresholdset,grid_row,grid_col_3rd,1,col_span_3rd)
 		grid_row += 1
 		
-		self.cbsortoder=CheckBox(None,"Decending",self.cursortoder)
-		self.gbl.addWidget(self.cbsortoder,grid_row,grid_col)
+		temp_label=QtGui.QLabel("Decending",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sublabel)
+		self.cbsortoder=CheckBox(None,None,self.cursortoder)
+		self.gbl.addWidget(self.cbsortoder,grid_row,grid_col_1st_sub+col_span_1st_sublabel,1,col_span_1st_subedit)
 		
 		temp_label=QtGui.QLabel("Move Threshold",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd)
-		
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,col_span_2nd_sublabel)
 		self.sthresholdcontrol=QtGui.QComboBox(self)
 		# self.sthresholdcontrol.setStyleSheet("color: rgb(255,0,0);") # NOTE: Toshio Moriya 2016/01/22 Unfortunately, this will over write the individual item color...
 		for idx_threshold_control in xrange(self.n_idx_threshold_control):
@@ -659,61 +753,76 @@ class SXGuiCter(QtGui.QWidget):
 			self.sthresholdcontrol.addItem(map_entry[self.idx_threshold_control_item_label])
 			self.sthresholdcontrol.setItemData(idx_threshold_control, QtGui.QColor(map_entry[self.idx_threshold_control_item_color]), Qt.TextColorRole);
 		self.sthresholdcontrol.setCurrentIndex(self.curthresholdcontrol)
-		self.gbl.addWidget(self.sthresholdcontrol,grid_row,grid_col_2nd+1)
+		self.gbl.addWidget(self.sthresholdcontrol,grid_row,grid_col_2nd+col_span_2nd_sublabel,1,col_span_2nd_subedit)
 		
 		self.pbsavethresholdset=QtGui.QPushButton("Save")
 		self.pbsavethresholdset.setEnabled(False)
-		self.gbl.addWidget(self.pbsavethresholdset,grid_row,grid_col_3rd)
+		self.gbl.addWidget(self.pbsavethresholdset,grid_row,grid_col_3rd,1,col_span_3rd_sublabel)
 		self.pbloadthresholdset=QtGui.QPushButton("Load")
 		self.pbloadthresholdset.setEnabled(False)
-		self.gbl.addWidget(self.pbloadthresholdset,grid_row,grid_col_3rd+1)
+		self.gbl.addWidget(self.pbloadthresholdset,grid_row,grid_col_3rd+col_span_3rd_sublabel,1,col_span_3rd_subedit)
 		grid_row += 1
 		
-		self.cbsortselect=CheckBox(None,"Sort Select",self.cursortselect)
-		self.gbl.addWidget(self.cbsortselect,grid_row,grid_col)
+		temp_label=QtGui.QLabel("Sort Select",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sublabel)
+		self.cbsortselect=CheckBox(None,None,self.cursortselect)
+		self.gbl.addWidget(self.cbsortselect,grid_row,grid_col_1st_sub+col_span_1st_sublabel,1,col_span_1st_subedit)
 		
-		self.cbsyncsort=CheckBox(None,"Sync Sort",self.cursyncsort)
-		self.gbl.addWidget(self.cbsyncsort,grid_row,grid_col_2nd)
+		temp_label=QtGui.QLabel("Sync. Sort",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,col_span_2nd_sublabel)
+		self.cbsyncsort=CheckBox(None,None,self.cursyncsort)
+		self.gbl.addWidget(self.cbsyncsort,grid_row,grid_col_2nd+col_span_2nd_sublabel,1,col_span_2nd_subedit)
 		
-		temp_label=QtGui.QLabel("Save Selection:",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,2)
+		temp_label=QtGui.QLabel("<b>Save Selection:</b>",self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,col_span_3rd)
 		grid_row += 1
 		
-		temp_label=QtGui.QLabel("Avg. counts per bin",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd)
-		self.vsentryperbin=ValBox(self,(0,10000),None,self.curentryperbin,90)
+		temp_label=QtGui.QLabel("counts/bin",self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd, 1, col_span_2nd_sublabel)
+		self.vsentryperbin=ValBox(self,(0,10000),None,self.curentryperbin)
 		self.vsentryperbin.setIntonly(True)
-		self.gbl.addWidget(self.vsentryperbin,grid_row,grid_col_2nd+1)
+		self.gbl.addWidget(self.vsentryperbin,grid_row,grid_col_2nd+col_span_2nd_sublabel,1,col_span_2nd_subedit)
 		
 		temp_label=QtGui.QLabel("File Suffix",self)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd)
-		self.vfilesuffix=StringBox(self,None,"Trial00",90)
-		self.gbl.addWidget(self.vfilesuffix,grid_row,grid_col_3rd+1)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,col_span_3rd_sublabel)
+		self.vfilesuffix=StringBox(self,None,"Trial00")
+		self.gbl.addWidget(self.vfilesuffix,grid_row,grid_col_3rd+col_span_3rd_sublabel,1,col_span_3rd_subedit)
 		grid_row += 1
 		
 		self.pbreaplysort=QtGui.QPushButton("Reapply Sort")
 		self.pbreaplysort.setEnabled(False)
-		self.gbl.addWidget(self.pbreaplysort,grid_row,grid_col)
+		self.gbl.addWidget(self.pbreaplysort,grid_row,grid_col_1st_sub,1,col_span_1st_sub)
 		
 		self.pbapplyallthreshold=QtGui.QPushButton("Apply All Thresholds")
 		self.pbapplyallthreshold.setEnabled(False)
-		self.gbl.addWidget(self.pbapplyallthreshold,grid_row,grid_col_2nd,1,2)
+		self.gbl.addWidget(self.pbapplyallthreshold,grid_row,grid_col_2nd,1,col_span_2nd)
 		
 		self.pbsaveselection=QtGui.QPushButton("Save Selection")
 		self.pbsaveselection.setEnabled(False)
-		self.gbl.addWidget(self.pbsaveselection,grid_row,grid_col_3rd,1,2)
+		self.gbl.addWidget(self.pbsaveselection,grid_row,grid_col_3rd,1,col_span_3rd)
 		grid_row += 1
 		
-		# this is just a spacer
-		self.gbl.setRowStretch(grid_row,2)
-		self.gbl.setColumnStretch(3,2)
+		# --------------------------------------------------------------------------------
+		# Set spacer for global grid layout
+		# --------------------------------------------------------------------------------
+		self.gbl.setRowStretch(grid_row_entry_list, self.gbl.rowStretch(grid_row_entry_list) + 1) # Give a priority to the last empty row of the entry box list for stretching
+		self.gbl.setColumnStretch(grid_col_entry_list, self.gbl.columnStretch(grid_col_entry_list) + 1) # Give a priority to the entry list box column for stretching
 		
 		# --------------------------------------------------------------------------------
 		# Set signal handler
 		# --------------------------------------------------------------------------------
 		QtCore.QObject.connect(self.pbopencter, QtCore.SIGNAL("clicked(bool)"),self.openCter)
 		
-		QtCore.QObject.connect(self.cbmicdisplay, QtCore.SIGNAL("valueChanged"),self.newMicDisplay)
+		QtCore.QObject.connect(self.cbmicthumbdisplay, QtCore.SIGNAL("valueChanged"),self.newMicThumbDisplay)
 		
 		for idx_graph in xrange(self.n_idx_graph):
 			QtCore.QObject.connect(self.graph_map_list[idx_graph][self.idx_graph_item_widget], QtCore.SIGNAL("valueChanged"),self.updatePlotVisibility)
@@ -783,18 +892,18 @@ class SXGuiCter(QtGui.QWidget):
 		# Set the image window
 		win_left = graph_win_width
 		win_width = img_win_width
-		img_size = 4096
-		scale_factor = float(win_width)/img_size
-		self.wimage.set_data(model_blank(img_size,img_size, bckg=1.0)) # resize does not work if no image is set
-		self.wimage.qt_parent.resize(win_width,win_height)
-		self.wimage.qt_parent.move(win_left,win_top)
-		self.wimage.scroll_to(-1 * img_size,-1 * img_size)
-		self.wimage.set_scale(scale_factor)
+		img_size = 512
+		# scale_factor = float(win_width)/img_size
+		self.wimgmicthumb.set_data(model_blank(img_size,img_size, bckg=1.0)) # resize does not work if no image is set
+		self.wimgmicthumb.qt_parent.resize(win_width,win_height)
+		self.wimgmicthumb.qt_parent.move(win_left,win_top)
+		self.wimgmicthumb.scroll_to(-1 * img_size,-1 * img_size)
+		# self.wimgmicthumb.set_scale(scale_factor)
 		
 		# Try to recover sizes & positions of windows of the previous GUI session
 		E2loadappwin("sxgui_cter","main",self)
 #		E2loadappwin("sxgui_cter","fft",self.wfft.qt_parent)
-		E2loadappwin("sxgui_cter","image",self.wimage.qt_parent)
+		E2loadappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
 		E2loadappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
 		E2loadappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
 		E2loadappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
@@ -820,44 +929,53 @@ class SXGuiCter(QtGui.QWidget):
 #		if cter_ctf_file != None:
 #			self.readCterCtfFile(os.path.relpath(cter_ctf_file))
 		
-	def add_value_widget(self, idx_cter, val_min, val_max, grid_row, grid_col, intonly = False, label_width = 90):
+	def add_value_widget(self, idx_cter, val_min, val_max, grid_row, grid_col, col_span_label, col_span_edit, intonly = False, labelwidth = 80, editwidth = 80):
 		param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
+		temp_label=QtGui.QLabel(param_label,self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
+		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
 		val_default = val_min
-		val_widget = ValBox(self,(val_min,val_max),param_label,val_default,label_width)
+		val_widget = ValBox(self,(val_min,val_max),None,val_default)
 		val_widget.setEnabled(False)
 		val_widget.intonly=intonly
-		self.gbl.addWidget(val_widget,grid_row,grid_col)
+		val_widget.text.setMinimumSize(QtCore.QSize(editwidth,0))
+		self.gbl.addWidget(val_widget,grid_row,grid_col+col_span_label,1,col_span_edit)
 		self.value_map_list[idx_cter][self.idx_cter_item_widget] = val_widget
 	
-	def add_value_widget_with_threshold(self, idx_hist, grid_row, grid_col, grid_col_2nd, grid_col_3rd, intonly = False, label_width = 90):
+	def add_value_widget_with_threshold(self, idx_hist, grid_row, grid_col_1st, grid_col_2nd, grid_col_3rd, col_span_1st_label, col_span_1st_edit, intonly = False, labelwidth = 80, editwidth = 80):
 		val_min = self.hist_map_list[idx_hist][self.idx_hist_item_val_min]
 		val_max = self.hist_map_list[idx_hist][self.idx_hist_item_val_max]
 		# Add widget for parameter value
-		self.add_value_widget(self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter], val_min, val_max, grid_row, grid_col, intonly, label_width)
+		self.add_value_widget(self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter],val_min,val_max,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit,intonly=intonly,labelwidth=labelwidth)
 		# Add widget for unapplied thresholds
-		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower]=ValBox(self,(val_min,val_max),None,val_min,label_width)
+		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower]=ValBox(self,(val_min,val_max),None,val_min,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].text.setStyleSheet("color: rgb(0,0,255);")
+		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].text.setMinimumSize(QtCore.QSize(editwidth,0))
 		self.gbl.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],grid_row,grid_col_2nd)
-		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper]=ValBox(self,(val_min,val_max),None,val_max,label_width)
+		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper]=ValBox(self,(val_min,val_max),None,val_max,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].text.setStyleSheet("color: rgb(255,0,0);")
+		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].text.setMinimumSize(QtCore.QSize(editwidth,0))
 		self.gbl.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper],grid_row,grid_col_2nd+1)
 		# Add widget for applied thresholds
-		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower]=ValBox(self,(val_min,val_max),None,val_min,label_width)
+		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower]=ValBox(self,(val_min,val_max),None,val_min,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].text.setStyleSheet("color: rgb(0,0,255);")
+		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].text.setMinimumSize(QtCore.QSize(editwidth,0))
 		self.gbl.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower],grid_row,grid_col_3rd)
-		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper]=ValBox(self,(val_min,val_max),None,val_max,label_width)
+		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper]=ValBox(self,(val_min,val_max),None,val_max,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].text.setStyleSheet("color: rgb(255,0,0);")
+		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].text.setMinimumSize(QtCore.QSize(editwidth,0))
 		self.gbl.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper],grid_row,grid_col_3rd+1)
 	
 	def readCterCtfFile(self, file_path):
 		"""Read all entries from a CTER CTF file into the list box"""
 		
 		if not os.path.exists(file_path):
-			QtGui.QMessageBox.warning(None,"Warning","Can not fild CTER CTF File (%s). Please check the file path." % (file_path))
+			QtGui.QMessageBox.warning(None,"Warning","Can not find CTER CTF File (%s). Please check the file path." % (file_path))
 			return
 		
 		if os.path.basename(file_path).find("partres") == -1:
@@ -874,7 +992,12 @@ class SXGuiCter(QtGui.QWidget):
 		
 		new_entry_list = read_text_row(file_path)
 		if len(new_entry_list) == 0:
-			QtGui.QMessageBox.warning(self, "Warning", "The specified CTER CTF file (%S) does not contain any entry. Please try it again." % new_cter_entry_list)
+			QtGui.QMessageBox.warning(self, "Warning", "Specified CTER CTF file (%s) does not contain any entry. Please check the file." % (file_path))
+			return
+		
+		cter_pwrot_dir = os.path.join(os.path.dirname(file_path), "pwrot")
+		if not os.path.exists(cter_pwrot_dir):
+			QtGui.QMessageBox.warning(self, "Warning", "Can not find \"%s\" sub-directory associated with specified CTER CTF file (%s). Please check your project directory." % (cter_pwrot_dir, file_path))
 			return
 		
 		# print "MRK_DEBUG: Detected %s entries in %s" % (len(new_entry_list), file_path)
@@ -884,35 +1007,41 @@ class SXGuiCter(QtGui.QWidget):
 			for cter_id in xrange(len(new_entry_list)):
 				# Add extra items first to make sure indices match
 				new_entry_list[cter_id] = [cter_id] +  new_entry_list[cter_id]           # self.idx_cter_id , <extra> entry id
-				new_entry_list[cter_id] = new_entry_list[cter_id] + [""]                 # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
-				new_entry_list[cter_id] = new_entry_list[cter_id] + [0.5]                # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
+				new_entry_list[cter_id] = [1] + new_entry_list[cter_id]                  # self.idx_cter_select  <extra> selected state
+#				new_entry_list[cter_id] = new_entry_list[cter_id] + [""]                 # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
+#				new_entry_list[cter_id] = new_entry_list[cter_id] + [0.5]                # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
 				if self.is_enable_max_power == True: new_entry_list[cter_id] = new_entry_list[cter_id] + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
-				new_entry_list[cter_id] = new_entry_list[cter_id] + [1]                  # self.idx_cter_select  <extra> selected state
 				
-				# Cut off frequency components higher than CTF limit 
-				cter_box_size = 512 # NOTE: Toshio Moriya 2016/03/15: This is temporary. Remove this after adding CTF limit to cter output file
-				cter_def = new_entry_list[cter_id][self.idx_cter_def]
-				cter_cs = new_entry_list[cter_id][self.idx_cter_cs]
-				cter_vol = new_entry_list[cter_id][self.idx_cter_vol]
-				cter_apix = new_entry_list[cter_id][self.idx_cter_apix]
-				cter_limit_ab_freq, cter_limit_freq = ctflimit(cter_box_size, cter_def, cter_cs, cter_vol, cter_apix)
-				# NOTE: 2015/12/16 Toshio Moriya
-				# Limiting_frequency[cycle/A]: xr[cycle/A]. Max is Nyquist frequency = 1.0[cycle]/(2*apix[A/pixel]). <UNIT: [cycle/(A/pixel)/[pixel])] => [(cycle*pixel)/(A*pixel] => [cycle/A]>
-				# limiting_period(Angstrom resolution)[A/cycle]: 1.0/xr[cycle/A]. Min is Nyquist period = (2*apix[A/pixel]). <UNIT: [1/(cycle/A)] = [A/cycle]>
-				# Width of Fourier pixel [pixel/A]: fwpix = 1.0[pixel]/(2*apix[A/pixel])/box_half[pixel] = 1[pixel]/fullsize[A]) <UNIT: [pixel/(A/pixel)/(pixel)] = [pixel*(pixel/A)*(1/pixel) = [pixel/A]>
-				# Limiting_absolute_frequency [cycle/pixel] int(xr/fwpix+0.5) = <Unit:[(cycle/A)/(pixel/A)] = [(cycle/A)*(A/pixel)] = [cycle/pixel]>
-				# return  Limiting_abs_frequency [cycle/pixel]Limiting_frequency[cycle/A] <= int(xr/fwpix+0.5),xr
-				new_entry_list[cter_id][self.idx_cter_error_ctf] = cter_limit_freq
+#				# Cut off frequency components higher than CTF limit 
+#				cter_box_size = 512 # NOTE: Toshio Moriya 2016/03/15: This is temporary. Remove this after adding CTF limit to cter output file
+#				cter_def = new_entry_list[cter_id][self.idx_cter_def]
+#				cter_cs = new_entry_list[cter_id][self.idx_cter_cs]
+#				cter_vol = new_entry_list[cter_id][self.idx_cter_vol]
+#				cter_apix = new_entry_list[cter_id][self.idx_cter_apix]
+#				cter_limit_ab_freq, cter_limit_freq = ctflimit(cter_box_size, cter_def, cter_cs, cter_vol, cter_apix)
+#				# NOTE: 2015/12/16 Toshio Moriya
+#				# Limiting_frequency[cycle/A]: xr[cycle/A]. Max is Nyquist frequency = 1.0[cycle]/(2*apix[A/pixel]). <UNIT: [cycle/(A/pixel)/[pixel])] => [(cycle*pixel)/(A*pixel] => [cycle/A]>
+#				# limiting_period(Angstrom resolution)[A/cycle]: 1.0/xr[cycle/A]. Min is Nyquist period = (2*apix[A/pixel]). <UNIT: [1/(cycle/A)] = [A/cycle]>
+#				# Width of Fourier pixel [pixel/A]: fwpix = 1.0[pixel]/(2*apix[A/pixel])/box_half[pixel] = 1[pixel]/fullsize[A]) <UNIT: [pixel/(A/pixel)/(pixel)] = [pixel*(pixel/A)*(1/pixel) = [pixel/A]>
+#				# Limiting_absolute_frequency [cycle/pixel] int(xr/fwpix+0.5) = <Unit:[(cycle/A)/(pixel/A)] = [(cycle/A)*(A/pixel)] = [cycle/pixel]>
+#				# return  Limiting_abs_frequency [cycle/pixel]Limiting_frequency[cycle/A] <= int(xr/fwpix+0.5),xr
+#				new_entry_list[cter_id][self.idx_cter_error_ctf] = cter_limit_freq
 				
 				# Set associated pwrot file path 
-#				assert os.path.dirname(file_path).find("partres") != -1
+#				assert os.path.dirname(file_path).find("partres") != -1 # MRK_DEBUG
 #				cter_pwrot_dir = os.path.dirname(file_path).replace("partres", "pwrot")
-				cter_pwrot_dir = os.path.join(os.path.dirname(file_path), "pwrot")
-				new_cter_pwrot_file_path = os.path.join(cter_pwrot_dir, "rotinf%04d.txt" % new_entry_list[cter_id][self.idx_cter_id])
-				new_entry_list[cter_id][self.idx_cter_pwrot_name] = new_cter_pwrot_file_path
+#				cter_pwrot_dir = os.path.join(os.path.dirname(file_path), "pwrot")
+#				new_cter_pwrot_file_path = os.path.join(cter_pwrot_dir, "rotinf%04d.txt" % new_entry_list[cter_id][self.idx_cter_id])
+#				new_entry_list[cter_id][self.idx_cter_pwrot_name] = new_cter_pwrot_file_path
 				
 				# MRK_TEST: Set max value of pwrot related to this micrograph
 				if self.is_enable_max_power == True: # MRK_TEST: 
+					new_cter_mic_file_path = new_entry_list[cter_id][self.idx_cter_mic_name]
+#					print "MRK_DEBUG: new_cter_mic_file_path := ", new_cter_mic_file_path
+					mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))
+#					print "MRK_DEBUG: mic_basename_root := ", mic_basename_root
+					new_cter_pwrot_file_path = os.path.join(os.path.dirname(file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
+#					print "MRK_DEBUG: new_cter_pwrot_file_path := ", new_cter_pwrot_file_path
 					new_rotinf_table = read_text_file(new_cter_pwrot_file_path, ncol=-1) # MRK_TEST: 
 					new_entry_list[cter_id][self.idx_cter_max_power] = max(new_rotinf_table[self.idx_rotinf_exp_with_astig]) # MRK_TEST: 
 				
@@ -948,22 +1077,15 @@ class SXGuiCter(QtGui.QWidget):
 			# self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setRange(val_min, val_max)
 			self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setValue(val_max)
 		
-		# Always disable micrograph display upon loading new dataset
-		if self.wimage.isVisible():
-			self.wimage.hide()
-		self.cbmicdisplay.setValue(False)
-		self.curmicdisplay = False
-		
 		# Set disable status of histogram
 		if self.hist_map_list[self.curhist][self.idx_hist_item_val_min] == self.hist_map_list[self.curhist][self.idx_hist_item_val_max]:
 			idx_cter = self.hist_map_list[self.curhist][self.idx_hist_item_idx_cter]
-			param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
 			self.curhistdisable=True
 			if self.whistparam.isVisible():
 				self.whistparam.hide()
 			if self.wplotparam.isVisible():
 				self.wplotparam.hide()
-			QtGui.QMessageBox.information(self, "Information","All entries have the same selected paramter values (%s). Parameter Histogram & Plot will not be shown" % (param_label))
+			# Error message of this condition should be displayed at the end of this function for smooth visual presentation
 		
 		self.updateEntryList()
 		
@@ -984,21 +1106,42 @@ class SXGuiCter(QtGui.QWidget):
 		self.pbloadthresholdset.setEnabled(True)
 		self.pbsaveselection.setEnabled(True)
 		
+#		# Always disable micrograph display at the beginning of loading new dataset
+#		if self.wimgmicthumb.isVisible() == True:
+#			self.wimgmicthumb.hide()
+#		self.cbmicthumbdisplay.setValue(False)
+#		self.curimgmicthumbdisplay = False
+		
+		cter_micthumb_dir = os.path.join(os.path.dirname(self.cter_partres_file_path), "micthumb")
+		# print "MRK_DEBUG: cter_micthumb_dir = \"%s\" in readCterCtfFile() "% (cter_micthumb_dir)
+		if os.path.exists(cter_micthumb_dir):
+			# if self.cbmicthumbdisplay.getEnabled() == False: # MRK_NOTE: 2016/03/22 Toshio Moriya: This method does not work as I expected
+			self.cbmicthumbdisplay.setEnabled(True)
+		else:
+			# if self.cbmicthumbdisplay.getEnabled() == True: # MRK_NOTE: 2016/03/22 Toshio Moriya: This method does not work as I expected
+			self.cbmicthumbdisplay.setEnabled(False)
+			if self.curimgmicthumbdisplay == True:
+				self.curimgmicthumbdisplay = False
+				self.cbmicthumbdisplay.setValue(self.curimgmicthumbdisplay)
+			if self.wimgmicthumb.isVisible():
+				self.wimgmicthumb.hide()
+			# Error message of this condition should be displayed at the end of this function for smooth visual presentation
+			
 		# NOTE: 2016/01/03 Toshio Moriya
 		# Force update related plots to hide too much scaling delay...
+		self.updateImgMicThumb(False)
 		self.updateHist()
 		self.updatePlotParam()
 		
 		self.needredisp = True
 		
-		# current directory is empty string
-		mic_dir = os.path.dirname(self.cter_entry_list[0][self.idx_cter_mic_name])
-		# print "MRK_DEBUG: mic_dir = \"%s\" in readCterCtfFile() "% (mic_dir)
-		if len(mic_dir) == 0 or os.path.exists(mic_dir):
-			self.cbmicdisplay.setEnabled(True)
-		else:
-			QtGui.QMessageBox.warning(None,"Warning","Can not find the micrograph directory (%s). Please check your project directory. \n\nMicrograph display option is disabled for this session." % (mic_dir))
-			
+		if self.hist_map_list[self.curhist][self.idx_hist_item_val_min] == self.hist_map_list[self.curhist][self.idx_hist_item_val_max]:
+			param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
+			QtGui.QMessageBox.information(self, "Information","All entries have the same selected paramter values (%s). \n\nParameter Histogram & Plot will not be shown" % (param_label))
+		
+		if not os.path.exists(cter_micthumb_dir):
+			QtGui.QMessageBox.warning(None,"Warning","Can not find \"%s\" sub-directory associated with specified CTER CTF file (%s). Please check your project directory. \n\nMicrograph thumbnail display option is disabled for this session." % (cter_micthumb_dir, self.cter_partres_file_path))
+		
 #		assert(self.isVisible()) 
 #		self.raise_()
 #		self.activateWindow()
@@ -1011,7 +1154,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		self.readCterCtfFile(os.path.relpath(file_path))
 	
-	def updateHist(self):
+	def updateHist(self, error_display = True):
 		if self.whistparam == None: return # it's closed/not visible
 		if self.cter_partres_file_path == None: return # no cter ctf file is selected
 		if self.cter_entry_list == None: return # no cter ctf file is selected
@@ -1100,7 +1243,7 @@ class SXGuiCter(QtGui.QWidget):
 		# self.whistparam.rescale(min(val_list),max(val_list),0,max(hist_y_list) * 1.05)
 		self.whistparam.autoscale(True)
 	
-	def updatePlotParam(self):
+	def updatePlotParam(self, error_display = True):
 		if self.wplotparam == None: return # it's closed/not visible
 		if self.cter_partres_file_path == None: return # no cter ctf file is selected
 		if self.cter_entry_list == None: return # no cter ctf file is selected
@@ -1155,26 +1298,31 @@ class SXGuiCter(QtGui.QWidget):
 		# Use autoscale for now
 		self.wplotparam.autoscale(True)
 	
-	def updatePlot(self):
+	def updatePlot(self, error_display = True):
 		if self.wplotrotavgcoarse == None: return # it's closed/not visible
 		if self.wplotrotavgfine == None: return # it's closed/not visible
 		if self.cter_pwrot_file_path == None: return # no cter entry is selected
 		
 		# Now update the plots
 		if not os.path.exists(self.cter_pwrot_file_path):
-			QtGui.QMessageBox.warning(None,"Warning","Can not find file cter_pwrot_file_path (%s). Please check the contents of pwrot directory" % (self.cter_pwrot_file_path))
+			if self.wplotrotavgcoarse.isVisible():
+				self.wplotrotavgcoarse.hide()
+			if self.wplotrotavgfine.isVisible():
+				self.wplotrotavgfine.hide()
+			if error_display:
+				QtGui.QMessageBox.warning(None,"Warning","Can not find file cter_pwrot_file_path (%s). Please check the contents of pwrot directory. \n\nPlots will not be shown." % (self.cter_pwrot_file_path))
 			return
 			
 		self.rotinf_table = read_text_file(self.cter_pwrot_file_path, ncol=-1)
 		
 		# print "MRK_DEBUG: Last entry of the 1st colum should be a micrograph name %s which is same as " % os.path.basename(self.rotinf_table[0][-1])
 		
-		mic_basename_rotinf = os.path.basename(self.rotinf_table[0][-1]) # last entry of 1st colum should be associated micrograph
-		mic_basename_partres = os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name])
-		
-		if mic_basename_rotinf != mic_basename_partres:
-			QtGui.QMessageBox.warning(None,"Warning","Micrograph name (%s) in %s is not same as name (%s) in %s " % (mic_basename_rotinf, os.path.basename(self.cter_pwrot_file_path), mic_basename_partres, os.path.basename(self.cter_partres_file_path)))
-			return
+#		mic_basename_rotinf = os.path.basename(self.rotinf_table[0][-1]) # last entry of 1st colum should be associated micrograph
+#		mic_basename_partres = os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name])
+#		
+#		if mic_basename_rotinf != mic_basename_partres:
+#			QtGui.QMessageBox.warning(None,"Warning","Micrograph name (%s) in %s is not same as name (%s) in %s " % (mic_basename_rotinf, os.path.basename(self.cter_pwrot_file_path), mic_basename_partres, os.path.basename(self.cter_partres_file_path)))
+#			return
 		
 		# global_min = float("inf")
 		# global_max = float("-inf")
@@ -1273,34 +1421,49 @@ class SXGuiCter(QtGui.QWidget):
 		self.newEntry(0)
 		self.lbentry.setCurrentRow(0)
 
-	def updateMicImg(self):
-		if not self.curmicdisplay: return # Micrograph display is disabled
+	def updateImgMicThumb(self, error_display = True):
+		if not self.curimgmicthumbdisplay: return # Micrograph thumbnail display is disabled
+		if self.wimgmicthumb == None: return # it's closed/not visible
+		if self.cter_micthumb_file_path == None: return # no cter entry is selected
 		
-		# print "MRK_DEBUG: self.cter_mic_file_path =\"%s\" in updateMicImg() "% (self.cter_mic_file_path)
-		if not os.path.exists(self.cter_mic_file_path):
-			QtGui.QMessageBox.warning(None,"Warning","Can not find micrograph (%s). Please check your micrograph directory. \n\nA blank image is shown." % (self.cter_mic_file_path))
-			mic_img = EMData() # Set empty image...
-			img_size = 4096 # Use the most typical image size?!!!
-			mic_img = model_blank(img_size,img_size, bckg=1.0)
-		else:
-			mic_img = EMData(self.cter_mic_file_path) # read the image from disk
-		self.wimage.set_data(mic_img)
-		self.wimage.setWindowTitle("sxgui_cter - Micrograph - %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), os.path.basename(self.cter_pwrot_file_path)))
+		# print "MRK_DEBUG: self.cter_micthumb_file_path =\"%s\" in updateImgMicThumb() "% (self.cter_micthumb_file_path)
+		if not os.path.exists(self.cter_micthumb_file_path):
+			# QtGui.QMessageBox.warning(None,"Warning","Can not find micrograph thumbnail (%s). Please check your micrograph thumbnail directory. \n\nA blank image is shown." % (self.cter_micthumb_file_path))
+			if self.wimgmicthumb.isVisible():
+				self.wimgmicthumb.hide()
+			if error_display:
+				QtGui.QMessageBox.warning(None,"Warning","Can not find micrograph thumbnail (%s). Please check your micrograph thumbnail directory. \n\nMicrograph thumbnail will not be shown." % (self.cter_micthumb_file_path))
+			return
 		
-	def newMicDisplay(self,val=None):
-		"""Change micrograph display status."""
-		assert(self.cbmicdisplay.getEnabled() == True)
+		micthumb_img = EMData(self.cter_micthumb_file_path) # read the image from disk
+		self.wimgmicthumb.set_data(micthumb_img)
+		self.wimgmicthumb.setWindowTitle("sxgui_cter - Micrograph Thumbnail- %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), os.path.basename(self.cter_pwrot_file_path)))
 		
-		if self.curmicdisplay == val: return
+#		# print "MRK_DEBUG: self.cter_mic_file_path =\"%s\" in updateImgMicThumb() "% (self.cter_mic_file_path)
+#		if not os.path.exists(self.cter_mic_file_path):
+#			QtGui.QMessageBox.warning(None,"Warning","Can not find micrograph (%s). Please check your micrograph directory. \n\nA blank image is shown." % (self.cter_mic_file_path))
+#			mic_img = EMData() # Set empty image...
+#			img_size = 4096 # Use the most typical image size?!!!
+#			mic_img = model_blank(img_size,img_size, bckg=1.0)
+#		else:
+#			mic_img = EMData(self.cter_mic_file_path) # read the image from disk
+#		self.wimage.set_data(mic_img)
+#		self.wimage.setWindowTitle("sxgui_cter - Micrograph - %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), os.path.basename(self.cter_pwrot_file_path)))
+		
+	def newMicThumbDisplay(self,val=None):
+		"""Change micrograph thumbnail display status."""
+		# assert(self.cbmicthumbdisplay.getEnabled() == True)  # MRK_NOTE: 2016/03/22 Toshio Moriya: This method does not work as I expected
+		
+		if self.curimgmicthumbdisplay == val: return
 		
 		# now set the new status
-		self.curmicdisplay = val
+		self.curimgmicthumbdisplay = val
 		
-		if self.curmicdisplay and not self.wimage.isVisible():
-			self.wimage.show()
-			self.updateMicImg()
-		elif not self.curmicdisplay and self.wimage.isVisible():
-			self.wimage.hide()
+		if self.curimgmicthumbdisplay and not self.wimgmicthumb.isVisible():
+			self.wimgmicthumb.show()
+			self.needredisp = True
+		elif not self.curimgmicthumbdisplay and self.wimgmicthumb.isVisible():
+			self.wimgmicthumb.hide()
 		
 	def newEntry(self,currow):
 		"""called when a new data set is selected from the CTER Entry list box."""
@@ -1312,29 +1475,41 @@ class SXGuiCter(QtGui.QWidget):
 		self.curentry = currow # row can be the same even after resorting of the cter entry list
 		
 		# Get associated pwrot file path of current entry
-		new_cter_pwrot_file_path = self.cter_entry_list[self.curentry][self.idx_cter_pwrot_name]
+#		new_cter_pwrot_file_path = self.cter_entry_list[self.curentry][self.idx_cter_pwrot_name]
 		
 		# Get associated micrograph path of current entry
 		new_cter_mic_file_path = self.cter_entry_list[self.curentry][self.idx_cter_mic_name]
 		
+		# Generate associated micthumb & pwrot file path of current entry
+		mic_basename_root, mic_extension = os.path.splitext(os.path.basename(new_cter_mic_file_path))
+		new_cter_micthumb_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "micthumb", "%s_thumb%s" % (mic_basename_root, mic_extension))
+		new_cter_pwrot_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
+		
 		# Changing row does not always change the pwrot file path after resorting of the cter entry list
 		# If same, skip the following processes
 		if self.cter_pwrot_file_path == new_cter_pwrot_file_path: 
+			assert(self.cter_micthumb_file_path == new_cter_micthumb_file_path)
 			assert(self.cter_mic_file_path == new_cter_mic_file_path)
 			return
 		
 		# now set the new item
 		assert(self.cter_pwrot_file_path != new_cter_pwrot_file_path)
 		self.cter_pwrot_file_path = new_cter_pwrot_file_path
+		assert(self.cter_micthumb_file_path != new_cter_micthumb_file_path)
+		self.cter_micthumb_file_path = new_cter_micthumb_file_path
 		assert(self.cter_mic_file_path != new_cter_mic_file_path)
 		self.cter_mic_file_path = new_cter_mic_file_path
+		
+#		# Now update the image
+#		self.updateImgMicThumb()
 		
 		# print "MRK_DEBUG: Row No. %d (CTER Entry No. %d) is selected from cter entry list box" % (self.curentry, self.cter_entry_list[self.curentry][self.idx_cter_id])
 		
 		self.ssortedid.setValue(self.curentry,True)
 		
 		for idx_cter in xrange(self.n_idx_cter):
-			if idx_cter not in [self.idx_cter_mic_name, self.idx_cter_pwrot_name]:
+#			if idx_cter not in [self.idx_cter_mic_name, self.idx_cter_pwrot_name]:
+			if idx_cter not in [self.idx_cter_mic_name]:
 				self.value_map_list[idx_cter][self.idx_cter_item_widget].setValue(self.cter_entry_list[self.curentry][idx_cter],True)
 		
 		# Use red font to indicate the value is not between applied threshold ranage
@@ -1355,11 +1530,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.wplotrotavgcoarse.setWindowTitle("sxgui_cter - Plot - %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), os.path.basename(self.cter_pwrot_file_path)))
 		self.wplotrotavgfine.setWindowTitle("sxgui_cter - Plot Zoom- %s, %s" % (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), os.path.basename(self.cter_pwrot_file_path)))
 		
-		self.cter_mic_file_path = new_cter_mic_file_path
+#		self.cter_mic_file_path = new_cter_mic_file_path
 	
-		# Now update the image
-		self.updateMicImg()
-		
 		self.needredisp = True
 	
 	def updateEntrySelect(self, entry):
@@ -1494,7 +1666,7 @@ class SXGuiCter(QtGui.QWidget):
 				self.whistparam.hide()
 			if self.wplotparam.isVisible():
 				self.wplotparam.hide()
-			QtGui.QMessageBox.information(self, "Information","All entries have the same selected paramter values (%s). Parameter Histogram & Plot will not be shown" % (param_label))
+			QtGui.QMessageBox.information(self, "Information","All entries have the same selected paramter values (%s). \n\nParameter Histogram & Plot will not be shown" % (param_label))
 		else:
 			if self.curthresholdcontrol == self.idx_threshold_control_lower:
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
@@ -1765,7 +1937,8 @@ class SXGuiCter(QtGui.QWidget):
 		file_out_discard = open(file_path_out_discard,"w")
 		
 		save_cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[self.idx_cter_id])
-		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_error_ctf, self.idx_cter_select]
+# 		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_error_ctf, self.idx_cter_select]
+		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_select, self.idx_cter_error_ctf]
 		if self.is_enable_max_power == True: idx_cter_ignore_list.append(self.idx_cter_max_power)
 		for cter_entry in save_cter_entry_list:
 			file_out = file_out_select
@@ -1831,8 +2004,8 @@ class SXGuiCter(QtGui.QWidget):
 #			if not self.wfft.isVisible() and self.is_wfft_minimized:
 #				self.wfft.show()
 #				is_child_shown = True
-			if not self.wimage.isVisible() and self.curmicdisplay and not self.is_wimage_minimized:
-				self.wimage.show()
+			if not self.wimgmicthumb.isVisible() and self.curimgmicthumbdisplay and not self.is_wimgmicthumb_minimized:
+				self.wimgmicthumb.show()
 				is_child_shown = True
 			if not self.wplotrotavgcoarse.isVisible() and not self.is_wplotrotavgcoarse_minimized:
 				self.wplotrotavgcoarse.show()
@@ -1850,6 +2023,7 @@ class SXGuiCter(QtGui.QWidget):
 				self.raise_()
 				self.activateWindow()
 				
+		self.updateImgMicThumb()
 		self.updateHist()
 		self.updatePlotParam()
 		self.updatePlot()
@@ -1888,10 +2062,10 @@ class SXGuiCter(QtGui.QWidget):
 					# if self.wfft.isVisible() and not self.is_wfft_minimized:
 					# 	self.wfft.hide()
 					# 	self.is_wfft_minimized = True
-					if self.wimage.isVisible() == True and self.is_wimage_minimized == False:
-						assert(self.curmicdisplay == True)
-						self.wimage.hide()
-						self.is_wimage_minimized = True
+					if self.wimgmicthumb.isVisible() == True and self.is_wimgmicthumb_minimized == False:
+						assert(self.curimgmicthumbdisplay == True)
+						self.wimgmicthumb.hide()
+						self.is_wimgmicthumb_minimized = True
 					if self.wplotrotavgcoarse.isVisible() == True and self.is_wplotrotavgcoarse_minimized == False:
 						self.wplotrotavgcoarse.hide()
 						self.is_wplotrotavgcoarse_minimized = True
@@ -1915,13 +2089,13 @@ class SXGuiCter(QtGui.QWidget):
 				#
 				if self.cter_entry_list != None:
 					# if self.is_wfft_minimized == True:
-					# 	assert(self.wfft.isVisible() == False and self.curmicdisplay == True)
+					# 	assert(self.wfft.isVisible() == False and self.curfftdisplay == True)
 					# 	self.wfft.show()
 					# 	self.is_wfft_minimized = False
-					if self.is_wimage_minimized == True:
-						assert(self.wimage.isVisible() == False and self.curmicdisplay == True)
-						self.wimage.show()
-						self.is_wimage_minimized = False
+					if self.is_wimgmicthumb_minimized == True:
+						assert(self.wimgmicthumb.isVisible() == False and self.curimgmicthumbdisplay == True)
+						self.wimgmicthumb.show()
+						self.is_wimgmicthumb_minimized = False
 					if self.is_wplotrotavgcoarse_minimized == True:
 						assert(self.wplotrotavgcoarse.isVisible() == False)
 						self.wplotrotavgcoarse.show()
@@ -1938,9 +2112,9 @@ class SXGuiCter(QtGui.QWidget):
 						assert(self.wplotparam.isVisible() == False and self.curhistdisable == False )
 						self.wplotparam.show()
 						self.is_wplotparam_minimized = False
-				assert(self.isVisible()) 
-				self.raise_()
-				self.activateWindow()
+				if self.isVisible() == True: # Depends on timing at startup, this can happen?!!
+					self.raise_()
+					self.activateWindow()
 		elif event.type() == QtCore.QEvent.WindowActivate:
 			# print "MRK_DEBUG: sxgui main window has gained focus (beome active)"
 			# 
@@ -1951,8 +2125,8 @@ class SXGuiCter(QtGui.QWidget):
 			if self.cter_entry_list != None:
 				# if self.wfft.isVisible() == True:
 				#	self.wfft.qt_parent.raise_()
-				if self.wimage.isVisible() == True:
-					self.wimage.qt_parent.raise_()
+				if self.wimgmicthumb.isVisible() == True:
+					self.wimgmicthumb.qt_parent.raise_()
 				if self.wplotrotavgcoarse.isVisible() == True:
 					self.wplotrotavgcoarse.qt_parent.raise_()
 				if self.wplotrotavgfine.isVisible() == True:
@@ -1977,7 +2151,7 @@ class SXGuiCter(QtGui.QWidget):
 		E2saveappwin("sxgui_cter","main",self)
 		if self.cter_entry_list != None:
 #			E2saveappwin("sxgui_cter","fft",self.wfft.qt_parent)
-			E2saveappwin("sxgui_cter","image",self.wimage.qt_parent)
+			E2saveappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
 			E2saveappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
 			E2saveappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
 			E2saveappwin("sxgui_cter","plotparam",self.wplotparam.qt_parent)
@@ -1986,7 +2160,7 @@ class SXGuiCter(QtGui.QWidget):
 		# close all child windows
 		# if self.wfft:
 		# 	self.wfft.close()
-		if self.wimage: self.wimage.close()
+		if self.wimgmicthumb: self.wimgmicthumb.close()
 		if self.wplotrotavgcoarse: self.wplotrotavgcoarse.close()
 		if self.wplotrotavgfine: self.wplotrotavgfine.close()
 		if self.whistparam: self.whistparam.close()

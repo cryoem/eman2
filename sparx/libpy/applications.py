@@ -22833,7 +22833,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			start_ime = time()
 		peaks =  [ [ -1.0e23 for im in xrange(nima) ] for iref in xrange(numref) ]
 		if runtype=="REFINEMENT":
- 			trans = [ [ tr_dummy for im in xrange(nima) ] for iref in xrange(numref) ]
+			trans = [ [ tr_dummy for im in xrange(nima) ] for iref in xrange(numref) ]
 			pixer = [ [  0.0     for im in xrange(nima) ] for iref in xrange(numref) ]
 			if(an[N_step] > 0):
 				from utilities    import even_angles

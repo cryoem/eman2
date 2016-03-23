@@ -264,17 +264,20 @@ def getfscs(options,apix):
 	options.input
 	print "\n inside getfscs options.input is", options.input
 	print 'and the current directory is', os.getcwd()
-	fyle = 'alignment/' + options.input.split('/')[-1]
+	
+	fyle = options.input.split('/')[-1]
+	if not options.fsconly:
+		fyle = 'alignment/' + options.input.split('/')[-1]
 	
 	
-	if options.path not in fyle:
-		fyle = options.path + '/' + fyle
+		if options.path not in fyle:
+			fyle = options.path + '/' + fyle
 	
 	
-	current = os.getcwd()
+			current = os.getcwd()
 	
-	if current not in fyle:
-		fyle = current + '/' + fyle
+			if current not in fyle:
+				fyle = current + '/' + fyle
 	
 	
 	print "\n\n\n\n\nThe fyle to get image count from is", fyle
@@ -285,6 +288,10 @@ def getfscs(options,apix):
 	path = options.path
 	fscs = []
 	fscsm = []
+	
+	if not options.output:
+		options.output = fyle.split('.')[0] + '_FSC.txt'
+	
 	for i in range(n):
 		ptcl = EMData( fyle ,i)
 		ref = EMData(options.ref,0)
