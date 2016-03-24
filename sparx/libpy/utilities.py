@@ -2124,7 +2124,7 @@ def recmat(mat):
 	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
 	#return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
 
-def reduce2asymmetric_D(angles_list,symmetry="d2"):
+def reduce2asymmetric_D(angles_list, symmetry="d2"):
 	sym_number =int(symmetry[1:])
 	sym_angle  =360./sym_number
 	badb      = 360.0/int(symmetry[1:])/4
@@ -2165,27 +2165,22 @@ def reduce2asymmetric_D(angles_list,symmetry="d2"):
 	return alist
 
 def reduce2asymmetric_C(angles_list,symmetry="c1"):
-	sym_number =int(symmetry[1:])
-	sym_angle  =360./sym_number
-	alist      =[]
+	sym_angle  = 360.0/int(symmetry[1:])
+	alist      = []
 	for index in xrange(len(angles_list)):
 		if len(angles_list[index]) == 3:
 			[phi,theta,psi] = angles_list[index]
 		else:
 			[phi,theta,psi,sx,sy] = angles_list[index]
-		if theta > 90.: # mirror back lower hemisphere to upper one
-			phi   = (phi+540.0)%360.0
-			theta = 180.0-theta
-			psi   = (540.0-psi)%360.0
-		phi=phi%sym_angle
+		phi = phi%sym_angle
 		alist.append([phi,theta,psi])			
 	return alist
 
 def reduce_to_asymmetric_unit(angles_list,symmetry):
 	from string import atoi
-	sym_type   =symmetry[0:1].lower()
+	sym_type   = symmetry[0:1].lower()
 	if sym_type=="c":
-		flist = reduce2asymmetric_C(angles_list,symmetry=symmetry)
+		flist = reduce2asymmetric_C(angles_list, symmetry=symmetry)
 		return flist
 	elif sym_type=="d":
 		new_angleslist1 = reduce2asymmetric_D(angles_list, symmetry=symmetry)

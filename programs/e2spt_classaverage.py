@@ -440,6 +440,20 @@ def main():
 	preprocdone = 0
 	
 	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
+		
+		print "\noptions.mask", options.mask
+		print "\noptions.maskfile", options.mamaskfilesk
+		print "\noptions.normproc", options.normproc
+		print "\noptions.threshold", options.threshold
+		print "\noptions.clip", options.clip
+		print "\noptions.shrink", options.shrink
+		print "\noptions.shrinkfine", options.shrinkfine
+		print "\noptions.lowpass", options.lowpass
+		print "\noptions.highpass", options.highpass
+		print "\noptions.preprocess", options.preprocess
+		
+		print "\ntruth statement", options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess
+		
 		ret = cmdpreproc( options.input, options, False )
 		if ret: 
 			preprocdone += 1
@@ -2367,7 +2381,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 
 				hacelements = []
 				for ele in elements:
-					if 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
+					if 'saveallpeaks' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
 						hacelements.append(ele)
 			
 				cmdhac = ' '.join(hacelements)
@@ -2415,9 +2429,19 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					os.rename( hacrefsubdir, options.path + '/' + hacrefsubdir )
 				except:
 					print "tried moving hacrefsubdir into path but failed", hacrefsubdir, options.path
-					newdirectorycount = '_'.join( hacrefsubdir.split('_')[:-1]) + '_' + str( int(hacrefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					newdirectorycount = '_'.join( hacrefsubdir.split('_')[:-1]) 
+					
+					try:
+						newdirectorycount += '_' + str( int(hacrefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					except:
+						#newdirectorycount += '_0'
+						pass
+					
+					
 					print "newdirectorycount is", newdirectorycount
 					os.rename( hacrefsubdir, options.path + '/' + newdirectorycount )
+				
+				
 				
 				try:
 					os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef )
@@ -2497,7 +2521,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				ssaelements = []
 				print "\nelements are", elements
 				for ele in elements:
-					if 'fine' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
+					if 'saveallpeaks' not in ele and 'fine' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
 					#	print "Appended element", ele
 						ssaelements.append(ele)
 						print "appending element",ele
@@ -2550,7 +2574,14 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					os.rename( ssarefsubdir, options.path + '/' + ssarefsubdir )
 				except:
 					print "tried moving ssarefsubdir into path but failed", ssarefsubdir, options.path
-					newdirectorycount = '_'.join( ssarefsubdir.split('_')[:-1]) + '_' + str( int(ssarefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					newdirectorycount = '_'.join( ssarefsubdir.split('_')[:-1]) 
+					
+					try:
+						newdirectorycount += '_' + str( int(ssarefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					except:
+						#newdirectorycount += '_0'
+						pass
+					
 					print "newdirectorycount is", newdirectorycount
 					os.rename( ssarefsubdir, options.path + '/' + newdirectorycount )			
 				
@@ -2644,7 +2675,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				btelements = []
 				#print "elements are", elements
 				for ele in elements:
-					if 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
+					if 'saveallpeaks' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele:
 						#print "added ele", ele
 						btelements.append(ele)
 					else:
@@ -2697,7 +2728,13 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					os.rename( btrefsubdir, options.path + '/' + btrefsubdir )
 				except:
 					print "tried moving btrefsubdir into path but failed", btrefsubdir, options.path
-					newdirectorycount = '_'.join( btrefsubdir.split('_')[:-1]) + '_' + str( int(btrefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					newdirectorycount = '_'.join( btrefsubdir.split('_')[:-1])  
+					try: 
+						newdirectorycount += '_' + str( int(btrefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					except:
+						#newdirectorycount += '_0'
+						pass
+						
 					os.rename( btrefsubdir, options.path + '/' + newdirectorycount )
 								
 				

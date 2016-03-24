@@ -114,7 +114,7 @@ def main():
 	PRE-FFT processing parameters
 	'''
 	
-	#parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clipali, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
+	#parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clip, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
 
 	parser.add_argument("--shrink", type=int,default=1,help="""Default=1 (no shrinking). Optionally shrink the input volumes by an integer amount for coarse alignment.""", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
@@ -122,13 +122,13 @@ def main():
 	
 	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
-	parser.add_argument("--mask",type=str,default='', help="""Default=None. Masking processor applied to particles before alignment. IF using --clipali, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--mask",type=str,default='', help="""Default=None. Masking processor applied to particles before alignment. IF using --clip, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
 	
 	parser.add_argument("--normproc",type=str, default='',help="""Default=None (see 'e2help.py processors -v 10' at the command line). Normalization processor applied to particles before alignment. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 	
-	parser.add_argument("--clipali",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
+	parser.add_argument("--clip",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clip=75""")
 
 	
 	'''
@@ -185,7 +185,7 @@ def main():
 	parser.add_argument("--faligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
 		
 	
-	#parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clipali, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
+	#parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clip, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
 	
 	#parser.add_argument("--keep",type=float,default=1.0,help="""Default=1.0 (all particles kept). The fraction of particles to keep in each class.""", guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
@@ -339,7 +339,7 @@ def main():
 
 	else:
 		from e2spt_classaverage import cmdpreproc
-		cmpreproc( options.input, options, False )
+		cmdpreproc( options.input, options, False )
 	"""
 	
 	nptcl=EMUtil.get_image_count(options.input)
@@ -433,7 +433,27 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 	
 	
 	from e2spt_classaverage import cmdpreproc
-	cmpreproc( seedfile, options, False )
+	
+	
+	preproc = 0
+	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
+		
+		print "\noptions.mask", options.mask
+		print "\noptions.maskfile", options.mamaskfilesk
+		print "\noptions.normproc", options.normproc
+		print "\noptions.threshold", options.threshold
+		print "\noptions.clip", options.clip
+		print "\noptions.shrink", options.shrink
+		print "\noptions.shrinkfine", options.shrinkfine
+		print "\noptions.lowpass", options.lowpass
+		print "\noptions.highpass", options.highpass
+		print "\noptions.preprocess", options.preprocess
+		
+		print "\ntruth statement", options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess
+		
+		cmdpreproc( seedfile, options, False )
+		
+		preproc = 1
 
 	'''
 	#Outer loop covering levels in the converging binary tree
@@ -445,10 +465,12 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 		#if ic < 0:
 		
 		rawinfile = "%s/seedtree_%d.hdf"%(options.path,i)
+		infile = rawinfile
 		
-		infile="%s/seedtree_%d.hdf"%(options.path,i).replace('.hdf','_preproc.hdf')
-			
-		print "\n(e2spt_binarytree)(binaryTreeRef) Infile will be", infile
+		if preproc:
+			infile="%s/seedtree_%d.hdf"%(options.path,i).replace('.hdf','_preproc.hdf')
+				
+		print "\n(e2spt_binarytree)(binaryTreeRef) infile will be", infile
 		
 		#outfile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i+1,ic)
 		#if ic < 0:
@@ -457,7 +479,7 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 		if i == nseediter-1:
 			outfile = options.path + '/final_avg.hdf'
 		
-		print "\n(e2spt_binarytree)(binaryTreeRef) Outfile will be", outfile
+		print "\n(e2spt_binarytree)(binaryTreeRef) outfile will be", outfile
 	
 		tasks=[]
 		results=[]
@@ -511,8 +533,8 @@ def binaryTreeRef(options,nptclForRef,nseed,etc):
 			ret = makeAveragePairs(options,infile,outfile,results)
 			
 			if ret:
-				from e2spt_classaverage import cmdpreproc
-				cmpreproc( outfile, options, False )
+				if preproc:
+					cmdpreproc( outfile, options, False )
 		
 		else:
 			print "\nalgorithm converged since infile %s has only one particle, nimgs=%d" %(infile,nptclsinInfile)

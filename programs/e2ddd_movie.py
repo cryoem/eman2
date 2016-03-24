@@ -265,7 +265,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			print ""
 
 			av=avgr.finish()
-			if first!=1 or last!=-1 : av.write_image(outname[:-4]+"_{}-{}_mean.hdf".format(first,flast),0)
+			if first!=1 or flast!=-1 : av.write_image(outname[:-4]+"_{}-{}_mean.hdf".format(first,flast),0)
 			else: av.write_image(outname[:-4]+"_mean.hdf",0)
 
 		# Generates different possibilites for resolution-weighted, but unaligned, averages
