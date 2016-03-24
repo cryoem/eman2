@@ -16556,12 +16556,12 @@ def plot_projs_distrib(stack, outplot, wnx = 256):
 	from utilities  import get_params_proj, file_type, read_text_row
 	import sys
 
-	N    = EMUtil.get_image_count(stack)
 	ext  = file_type(stack)
 	if ext == 'txt' :
 		agls = read_text_row(stack)
 	elif ext == 'bdb' :
 		from EMAN2db import db_open_dict
+		N  = EMUtil.get_image_count(stack)
 		DB = db_open_dict(stack)
 		agls = []
 		for n in xrange(N):
