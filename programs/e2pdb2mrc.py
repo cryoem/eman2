@@ -72,6 +72,7 @@ def main():
 	parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'")
 	parser.add_argument("--quiet",action="store_true",default=False,help="Verbose is the default")
+	parser.add_argument("--model", type=int,default=None, help="Extract only a single numbered model from a multi-model PDB")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -118,7 +119,14 @@ def main():
 		mass=0
 
 	# parse the pdb file and pull out relevant atoms
+		stm=False
 		for line in infile:
+			if options.model!=None:
+				if line[:5]=="MODEL":
+					if int(line.split()[1])==options.model: stm=True
+				if stm and line[:6]=="ENDMDL" : break
+				if not stm: continue
+
 			if (line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het)) :
 				if chains and not (line[21] in chains) : continue
 			
@@ -186,13 +194,13 @@ def main():
 		print '\r   %d\nConversion complete'%len(atoms)
 
 	else:
-		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.quiet)
+		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.model,options.quiet)
 		outmap.write_image(args[1])
 
 	E2end(logger)
 						
 # this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)
-def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=False):
+def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=None,quiet=False):
 	'''
 	file_name is the name of a pdb file
 	apix is the angstrom per pixel
@@ -218,7 +226,14 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 	mass=0
 
 	# parse the pdb file and pull out relevant atoms
+	stm=False
 	for line in infile:
+		if model!=None:
+			if line[:5]=="MODEL":
+				if int(line.split()[1])==model: stm=True
+			if stm and line[:6]=="ENDMDL" : break
+			if not stm: continue
+
 		if (line[:4]=='ATOM' or (line[:6]=='HETATM' and het)) :
 			if chains and not (line[21] in chains) : continue
 			

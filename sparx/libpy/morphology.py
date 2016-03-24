@@ -2049,29 +2049,6 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 
 ################
 #
-#  Helper functions for cter_mrk() (new since 2016/03/16)
-#
-################
-# For cter_mrk(), we want to have softer exit than ERROR in global_def
-# This way program have a chance to call mpi_finalize and avoid mpirun error...
-def ERROR_MRK(message, where, action = 1, myid = 0):
-	"""
-		General error function for sparx system
-		where:   function name
-		message: error message
-		action: 2 - fatal error, but allow caller to exit; 1 - fatal error, exit; 0 - non-fatal, print a warning
-	"""
-	if myid == 0:
-		if action: print  "\n  *****  ERROR in: %s"%(where)
-		else:      print  "\n  *****  WARNING in: %s"%(where)
-		print "  *****  %s"%message
-		print ""
-	if action == 1 and BATCH:
-		from sys import exit
-		exit()
-
-################
-#
 #  CTER code (new version since 2016/03/16)
 #
 ################
@@ -2092,7 +2069,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 		output_directory  : output directory
 	"""
 	from   EMAN2 import periodogram
-	from   EMAN2db import db_check_dict
+	from   EMAN2db import db_check_dict, db_parse_path
 	from   applications import MPI_start_end
 	from   utilities import read_text_file, write_text_file, get_im, model_blank, model_circle, amoeba, generate_ctf
 	from   sys import exit
@@ -2100,7 +2077,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	import os
 	import glob
 	from   mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
-	from   fundamentals import tilemic, rot_avg_table
+	from   fundamentals import tilemic, rot_avg_table, resample
 	from   morphology   import threshold, bracket_def, bracket, goldsearch_astigmatism
 	from   morphology   import defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett
 	from   morphology   import defocus_guessn, defocusgett_, defocusget_from_crf, make_real
@@ -2158,12 +2135,16 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 		# assert(input_image.find("*") != -1)
 		# Get the list of micrograph file names
 		input_file_path_list = glob.glob(input_image)
-		if len(input_file_path_list) == 0:
+		if input_image[:len("bdb:")].lower() == "bdb:":
+			error_message_list.append("BDB file can not be selected as input_image (%s) for %s mode. Please convert the format, and restart the program." % (input_image, cter_mode_name))
+		elif len(input_file_path_list) == 0:
 			# The result shouldn't be empty if the specified micrograph file name pattern is invalid
 			error_message_list.append("There are no files whose names match with the provided file name pattern (%s) for %s mode. Please correct the pattern, and restart the program." % (input_image, cter_mode_name))
 	elif cter_mode == the_cter_mode_single_mic:
 		# assert(input_image.find("*") == -1)
-		if os.path.exists(input_image) == False and db_check_dict(input_image) == False:
+		if input_image[:len("bdb:")].lower() == "bdb:":
+			error_message_list.append("BDB file can not be selected as input_image (%s) for %s mode. Please convert the format, and restart the program." % (input_image, cter_mode_name))
+		elif os.path.exists(input_image) == False:
 			error_message_list.append("Micrograph file specified by input_image (%s) for %s mode could not be found. Please correct the file name, and restart the program." % (input_image, cter_mode_name))
 		if MPI:
 			error_message_list.append("Please use single processor version for %s mode, and restart the program." % (cter_mode_name))
@@ -2190,9 +2171,9 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	if len(error_message_list) > 0:
 		# Detected error! output error message
 		if MPI == False:
-			for erro_message in error_message_list:  ERROR_MRK(erro_message, myname, 1)
+			for erro_message in error_message_list:  ERROR(erro_message, myname, 2)
 		elif myid == main_node: # assert(MPI == True)
-			for erro_message in error_message_list:  ERROR_MRK(erro_message, myname, 1, myid)
+			for erro_message in error_message_list:  ERROR(erro_message, myname, 2, myid)
 		# Abort process
 		if cter_mode == the_cter_mode_single_mic:  return 0, 0, 0, 0, 0, 0
 		else:  return
@@ -2228,16 +2209,22 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	
 	# Make output directory
 	outpwrot = "%s/pwrot" % (output_directory)
+	outmicthumb = "%s/micthumb" % (output_directory)
+	if debug_mode:  outravg = "%s/ravg" % (output_directory)
 	if MPI:
 		if myid == main_node:
 			# Make output directory
 			os.mkdir(output_directory)
 			os.mkdir(outpwrot)
+			os.mkdir(outmicthumb)
+			if debug_mode:  os.mkdir(outravg)
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
 		# Make output directory
 		os.mkdir(output_directory)
 		os.mkdir(outpwrot)
+		os.mkdir(outmicthumb)
+		if debug_mode:  os.mkdir(outravg)
 	
 	# Set up loop variables depending on the cter mode
 	if stack == None:
@@ -2263,22 +2250,41 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	
 	totresi = []
 	for ifi in xrange(set_start,set_end):
-		# set pw2 (image used for CTF estimation) depending on the cter mode
+		# set pw2 (image used for CTF estimation) and basename root of image file depending on the cter mode
 		pw2 = []
+		img_basename_root = ""
+		img_extension = ""
 		if stack == None:
 			numFM = EMUtil.get_image_count(namics[ifi])
 			print  "  Process ID = %04d, Micrograph Name = %s, Frame Counts = %03d" % (ifi, namics[ifi], numFM)
+			#
+			# NOTE: 2016/03/21 Toshio Moriya
+			# For now, dbd file is a invalid input_image for micrograph modes
+			# 
+			# assert(db_check_dict(namics[ifi]) == False)
+			img_basename_root, img_extension = os.path.splitext(os.path.basename(namics[ifi]))
 			# 
 			# NOTE: 2016/03/17 Toshio Moriya
 			# The following loop does not make sense because nf is not used in the loop body
 			# If get_im(namics[ifi], nf) instead of get_im(namics[ifi]), it might make sense.
+			# 
 			for nf in xrange(numFM):
 				pw2 += tilemic(get_im(namics[ifi]), win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
 		else:
+			assert (ifi == 0) # MRK_DEBUG
 			numFM = EMUtil.get_image_count(stack)
 			print  "  Process ID = %04d, Stack Name = %s, Frame Counts = %03d" % (ifi, stack, numFM)
+			if db_check_dict(stack) == False:
+				img_basename_root, img_extension = os.path.splitext(os.path.basename(stack))
+			else: # assert(db_check_dict(namics[ifi]) == True)
+				path, dictname, keys = db_parse_path(stack)
+				img_basename_root = dictname
+			
 			for i in xrange(numFM):
 				pw2.append(periodogram(get_im(stack,i)))
+		# assert(len(pw2) != [])
+		# assert(img_basename_root != "")
+		
 		
 		nimi = len(pw2)
 		adefocus = [0.0] * kboot
@@ -2356,7 +2362,9 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
-				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], "%s/ravg%05d.txt" % (output_directory, ifi))
+#				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], "%s/ravg%05d.txt" % (output_directory, ifi))
+				fou = os.path.join(outravg, "%s_ravg_%02d.txt" % (img_basename_root, nboot))
+				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], fou)
 			#mpi_barrier(MPI_COMM_WORLD)
 			
 			#exit()
@@ -2544,13 +2552,29 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			stdavad1 = np.sqrt(kboot * max(0.0, ad2))
 			stdavbd1 = np.sqrt(kboot * max(0.0, bd2))
 			cd2 *= np.sqrt(kboot)
+			
+			# Adjust value ranges of astig. amp. and angle.
+			if bd1 < 0.0:
+				bd1 = -1 * bd1
+				cd1 = 90.0 + cd1
+			cd1 = cd1 % 180
+			
+			if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (ad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+			if cd1 < 0.0 or cd1 >= 180: ERROR("Logical Error: Encountered unexpected astig. angle value (%f). Consult with the developer." % (cd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+			
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
+			willdo = True
 			try:
 				pwrot2 = rotavg_ctf( model_blank(wn, wn), ad1, Cs, voltage, pixel_size, 0.0, wgh, bd1, cd1)
-				willdo = True
 			except:
-				print "  Astigmatism amplitude larger than defocus or defocus is negative :",namics[ifi],ad1, Cs, voltage, pixel_size, wgh, bd1, cd1
+				print "  Astigmatism amplitude is larger than defocus or defocus is negative :", namics[ifi], ad1, Cs, voltage, pixel_size, wgh, bd1, cd1
 				willdo = False
+			
+			valid_min_defocus = 0.3
+			if ad1 < valid_min_defocus:
+				print "  Defocus is smaller than valid minimum value (%f) :" % (valid_min_defocus), namics[ifi], ad1, Cs, voltage, pixel_size, wgh, bd1, cd1
+				willdo = False
+				
 			
 			if(willdo):
 				#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
@@ -2593,15 +2617,30 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				#from utilities import write_text_file
 				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 				
-				if stack == None:
-					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
-				else:
-					print               ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
-				if stack == None:
-					totresi.append( [ namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
-				else:
-					totresi.append( [ 0, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
-				#if ifi == 4 : break
+				# Compute defocus CV and astig. amp. CV (CV: coefficient of variation; ratio of error (SD) relative to average (mean))
+				if ad1 < max(0.0, valid_min_defocus): ERROR("Logical Error: Encountered unexpected defocus value (%f). Consult with the developer." % (ad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				if stdavad1 < 0.0: ERROR("Logical Error: Encountered unexpected defocus SD value (%f). Consult with the developer." % (stdavad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				cvavad1 = stdavad1 / ad1 * 100 # use percentage
+				
+				if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				if stdavbd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. SD value (%f). Consult with the developer." % (stdavbd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				bd1_precision = 1.0e-15  # use double precision
+				if bd1 < bd1_precision:
+					bd1 = bd1_precision
+				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
+				
+				# Compute CTF limit (theoretical resolution limit based on the oscillations of CTF) 
+				# For output, use ctflim (relative frequency limit [1/A]), not ctflim_abs (absolute frequency limit)
+				# 
+				# NOTE: 2016/03/23 Toshio Moriya
+				# xr is limiting frequency [1/A]. Max is Nyquist frequency = 1.0/(2*apix[A/pixel]). <UNIT: [1/(A/pixel)/[pixel])] => [(pixel)/(A*pixel] => [1/A]>
+				# 1.0/xr is limiting period (Angstrom resolution) [A]. Min is Nyquist period = (2*apix[A/pixel]). <UNIT: [1/(1/A)] = [A]>
+				# fwpix is width of Fourier pixel [pixel/A] := 1.0[pixel]/(2*apix[A/pixel])/box_half[pixel] = 1[pixel]/fullsize[A]). <UNIT: [pixel/(A/pixel)/(pixel)] = [pixel*(pixel/A)*(1/pixel) = [pixel/A]>
+				# int(xr/fwpix+0.5) is limiting_absolute_frequency [1/pixel]. <Unit:[(1/A)/(pixel/A)] = [(1/A)*(A/pixel)] = [1/pixel]>
+				# return  int(xr/fwpix+0.5),xr, which is limiting_abs_frequency [1/pixel], and Limiting_frequency[1/A]
+				#
+				ctflim_abs, ctflim = ctflimit(wn, ad1, Cs, voltage, pixel_size)
+				
 				"""
 				for i in xrange(len(ssubroo)):
 					asubroo[i] /= kboot
@@ -2619,20 +2658,43 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				except:		pwrot1 = [0.0] * lnsb
 				freq = range(lnsb)
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
-				fou = os.path.join(outpwrot, "rotinf%04d.txt" % ifi)
+				fou = os.path.join(outpwrot, "%s_rotinf.txt" % (img_basename_root))
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
 				write_text_file([range(len(crot1)), freq, pwrot1, crot1, pwrot2, crot2], fou)
 				
-				if stack == None:     cmd = "echo " + "    " + namics[ifi] + "  >>  " + fou
-				else:                 cmd = "echo " + "    " + "  >>  " + fou
-				os.system(cmd)
-		
-		if stack == None and set_ctf_header:
+#				if stack == None:     cmd = "echo " + "    " + namics[ifi] + "  >>  " + fou
+#				else:                 cmd = "echo " + "    " + "  >>  " + fou
+#				os.system(cmd)
+				
+				if stack == None:
+#					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
+					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim
+				else:
+#					print               ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
+					print               ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim
+				if stack == None:
+#					totresi.append( [ namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
+					totresi.append( [ namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim])
+				else:
+#					totresi.append( [ 0, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
+					totresi.append( [ stack,       ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim])
+				#if ifi == 4 : break
+				
+#		if stack == None and set_ctf_header:
+		if stack == None:
 			img = get_im(namics[ifi])
-			from utilities import set_ctf
-			set_ctf(img, [totresi[-1][1], Cs, voltage, pixel_size, 0, wgh, totresi[-1][7], totresi[-1][8]])
-			# and rewrite image 
-			img.write_image(namics[ifi])
+			# create micrograph thumbnail
+			nx_target = 512
+			nx = img.get_xsize()
+			if nx > nx_target:
+				img_thumb = resample(img, float(nx_target)/nx)
+				fou = os.path.join(outmicthumb, "%s_thumb%s" % (img_basename_root, img_extension))
+				img_thumb.write_image(fou)
+			if set_ctf_header:
+				from utilities import set_ctf
+				set_ctf(img, [totresi[-1][1], Cs, voltage, pixel_size, 0, wgh, totresi[-1][7], totresi[-1][8]])
+				# and rewrite image 
+				img.write_image(namics[ifi])
 		#except:
 			#print  namics[ifi],"     FAILED"
 	#from utilities import write_text_row
@@ -3368,6 +3430,10 @@ def fufu(args,data):
 	from morphology import fastigmatism2
 	return -fastigmatism2(args[1],[data[0], data[1], data[2], args[0], data[4], data[5], data[6], data[7], data[8]])
 
+#  
+# NOTE: 2016/03/21 Toshio Moriya
+# getastcrfNOE() function does not work with the new output format of cter_mrk()
+# 
 def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.0, wgh = 7.0, kboot=16, DEBug = False):
 	"""
 

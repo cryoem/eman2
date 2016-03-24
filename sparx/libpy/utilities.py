@@ -2124,7 +2124,7 @@ def recmat(mat):
 	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
 	#return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
 
-def reduce2asymmetric_D(angles_list,symmetry="d2"):
+def reduce2asymmetric_D(angles_list, symmetry="d2"):
 	sym_number =int(symmetry[1:])
 	sym_angle  =360./sym_number
 	badb      = 360.0/int(symmetry[1:])/4
@@ -2165,27 +2165,22 @@ def reduce2asymmetric_D(angles_list,symmetry="d2"):
 	return alist
 
 def reduce2asymmetric_C(angles_list,symmetry="c1"):
-	sym_number =int(symmetry[1:])
-	sym_angle  =360./sym_number
-	alist      =[]
+	sym_angle  = 360.0/int(symmetry[1:])
+	alist      = []
 	for index in xrange(len(angles_list)):
 		if len(angles_list[index]) == 3:
 			[phi,theta,psi] = angles_list[index]
 		else:
 			[phi,theta,psi,sx,sy] = angles_list[index]
-		if theta > 90.: # mirror back lower hemisphere to upper one
-			phi   = (phi+540.0)%360.0
-			theta = 180.0-theta
-			psi   = (540.0-psi)%360.0
-		phi=phi%sym_angle
+		phi = phi%sym_angle
 		alist.append([phi,theta,psi])			
 	return alist
 
 def reduce_to_asymmetric_unit(angles_list,symmetry):
 	from string import atoi
-	sym_type   =symmetry[0:1].lower()
+	sym_type   = symmetry[0:1].lower()
 	if sym_type=="c":
-		flist = reduce2asymmetric_C(angles_list,symmetry=symmetry)
+		flist = reduce2asymmetric_C(angles_list, symmetry=symmetry)
 		return flist
 	elif sym_type=="d":
 		new_angleslist1 = reduce2asymmetric_D(angles_list, symmetry=symmetry)
@@ -5127,12 +5122,18 @@ def print_with_time_info(msg):
 	print line
 
 def if_error_then_all_processes_exit_program(error_status):
-	import sys, copy
-	from mpi import mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+	import sys, os
+	from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+	from utilities import print_msg
 	
-	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
+	if "OMPI_COMM_WORLD_SIZE" not in os.environ:
+		def mpi_comm_rank(n): return 0
+		def mpi_bcast(*largs):
+			return [largs[0]]
+		def mpi_finalize():
+			return None
+	
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	
 	if error_status != None and error_status != 0:
 		error_status_info = error_status
 		error_status = 1
@@ -5147,14 +5148,13 @@ def if_error_then_all_processes_exit_program(error_status):
 			if type(error_status_info) == type((1,1)):
 				if len(error_status_info) == 2:
 					frameinfo = error_status_info[1] 
-					print "***********************************"
-					print "** Error:", error_status_info[0]
-					print "***********************************"
-					# print "** Location:", frameinfo.filename + "  --  " + str(frameinfo.lineno)
-					print "** Location:", frameinfo.filename + ":" + str(frameinfo.lineno)
-					print "***********************************"
-		mpi_finalize()
+					print_msg("***********************************\n")
+					print_msg("** Error: %s\n"%error_status_info[0])
+					print_msg("***********************************\n")
+					print_msg("** Location: %s\n"%(frameinfo.filename + ":" + str(frameinfo.lineno)))
+					print_msg("***********************************\n")
 		sys.stdout.flush()		
+		mpi_finalize()
 		sys.exit(1)
 
 def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
@@ -6617,7 +6617,7 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 		if size_of_this_group>=Tracker["constants"]["smallest_group"]:
 			error                          = margin_of_error(Tracker["P_chunk0"],size_of_this_group)
 			if myid == main_node:
-				log_main.add(" chunk0  lower bound %f  upper bound  %f  for sample size  %d"%((Tracker["P_chunk0"]- error),(Tracker["P_chunk0"]+error),size_of_this_group))
+				log_main.add(" chunk0  lower bound %f  upper bound  %f  for sample size  %d     group id %d"%((Tracker["P_chunk0"]- error),(Tracker["P_chunk0"]+error),size_of_this_group, index_of_stable))
 				log_main.add(" actual percentage is %f"%rate1)
 			large_stable.append(list_stable[index_of_stable])
 		else:
@@ -6710,7 +6710,10 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 				#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
 				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
-			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)), myid, main_node, index=-1, npad=npad, finfo=None)
+			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)), myid, main_node, index=-1, npad=npad, finfo = None)
+			 	if myid !=main_node:
+			 		volref = model_blank(Tracker["nxinit"], ,Tracker["nxinit"], ,Tracker["nxinit"])
+			 	bcast_EMData_to_all(volref, myid, main_node, MPI_COMM_WORLD)
 				ref_vol_list.append(volref)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
@@ -6720,7 +6723,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	if myid==main_node:
 		log_main.add("Exhaustive Kmeans ends")
 		log_main.add(" %d groups are selected out"%len(new_class))
-	return new_class 
+	return new_class
 	
 def print_a_line_with_timestamp(string_to_be_printed ):                 
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"

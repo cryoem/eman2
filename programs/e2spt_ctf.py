@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 
 #
-# Author: Jesus Galaz, 11/01/2012; last update 31/oct/2015
+# Author: Jesus Galaz, 11/01/2012; last update 17/mar/2016
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -86,7 +86,7 @@ def main():
 	
 	parser.add_argument("--mintiles", type=int, default=0, help="""Minimum number of 'good tiles' in strip to consider it.""")
 		
-	parser.add_argument("--defocusvariationlimit",type=float,default=0.1,help="""default=0.1. total variation in defocus (in micrometers) tolerated within a strip and still consider it a region of 'constant defocus'.""")
+	parser.add_argument("--defocusvariationlimit",type=float,default=0.0,help="""default=0.0. Automatically calculated based on --apix and --voltage, but can be overwritten by the user. Total variation in defocus ('depth of focus' in micrometers) tolerated within a strip to still consider it a region of 'constant defocus'.""")
 	
 	parser.add_argument("--infodir",type=str,default='',help="""Folder typically produced by e2evalimage.py or previous runs of this program containing info.json files, one per tilt image in a tilt series. Each .json file should contain the fitted ctf and all associated parameters for each tilt image.""")
 	
@@ -1827,6 +1827,29 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 	
 	
 	anglestoexclude=[]
+
+	'''
+	calculate the maximum allowable depth of focus or variation in defocus across particles to achieve 2/3 Nyquist resolution
+	'''
+	nyquist = apix*2.0
+	twothirdsnyquist = nyquist*3.0/2.0
+
+	#set the wavelength lambd of the electrons depending on acceleration voltage
+	lambd = 0.0197
+	if int(options.voltage) == 200:
+		lambd = 0.0251
+	elif int(options.voltage) == 100:
+		lambd = 0.037
+
+	allowabledz = twothirdsnyquist*twothirdsnyquist/(2.0*lambd)
+
+	print "\n\n\n\n\n\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\nthe theoretical allowable depth of focus or defocus variation limit in angstroms is %.2f to reach 2/3 nyquist resolution %.2f" %( twothirdsnyquist, allowabledz )
+
+	if options.defocusvariationlimit:
+		allowabledz = options.defocusvariationlimit
+		print "however, the allowable depth of focus in micrometers has been set via --defocusvariationlimit and is", allowabledz
+		print "which in angstroms is", allowabledz*10000
+
 	for label in imagefilenames:
 		angle = imagefilenames[label][1]
 		imgindx = angles.index( angle )
@@ -1858,8 +1881,8 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			
 			
 			
-			#get central region of 3 tile width
-			r = Region( img['nx']/2 - options.tilesize - int(ceil(options.tilesize/2.0)), 0, 3*options.tilesize, img['ny'])
+			#get central region of 2 tile width
+			#r = Region( img['nx']/2 - options.tilesize - int(ceil(options.tilesize/2.0)), 0, 3*options.tilesize, img['ny'])
 			
 			r = Region( img['nx']/2 - options.tilesize, 0, 2*options.tilesize, img['ny'])
 
@@ -1940,25 +1963,41 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			#'''
 		
 			#deltata = pxta
-			dx100dz = nx/2.0						#at zero degrees dzx100 is half the micrograph size, since there should be no defocus variation due to tilt
+			
+			#dx100dz = nx/2.0						#at zero degrees dzx100 is half the micrograph size, since there should be no defocus variation due to tilt
+			
+			stripwidth = nx 						#at zero degrees dzx100 is the micrograph size, since there should be no defocus variation due to tilt
+
+
 			if math.fabs( angle ) > 0.5:
 		
 				#defocusvariationlimit is in micrometers. it is the variation in defocus to tolerate across a strip due to tilt and still consider the defocus "constant"
 			
-				dx100dz = math.fabs( options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix )	#calculate strip half-width in pixels
-			
+				#dx100dz = math.fabs( options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix )	#calculate strip half-width in pixels
+				
+				stripwidthold = math.fabs( 0.1 / numpy.sin( math.radians( angle ) ) * 10000/apix )
+
 				if icethickness:
 					depthdefocus = math.fabs( icethickness / numpy.cos( math.radians( angle ) ) )	#icethickness, in pixels, will contribute to defocus variation with tilt, in addition to the tilting itself
 				
-					dx100dz += depthdefocus				
-						
-				if dx100dz > nx/2.0:
-					dx100dz = nx/2.0
+					stripwidthold += depthdefocus				
+				
+				stripwidthold*=2 #this factor of two accounts for the fact that the old method only calculated things for half of the micrograph (from the tilt axis)
+
+				print "old strip width in pixels was", stripwidthold
+
+				#cos/sin is cot, but the function does not exist in numpy
+				stripwidth = int( math.fabs( allowabledz * (numpy.cos( math.radians (angle) ) / numpy.sin( math.radians (angle) ) ) / apix - icethickness / numpy.sin( math.radians( angle )) ) )#this is in pixels
+
+				print "however, new strip width is", stripwidth
+
+				if stripwidth > nx:
+					stripwidth = nx
 		
 			'''#
-			#submicrograph width (the region at "equal/constant defocus" to tile) will be twice dx100dz  
+			#submicrograph width (the region at "equal/constant defocus" to tile) will be twice dx100dz (stripwidthold) or just stripwidth 
 			#'''
-			micrographwidth = int( dx100dz * 2 )
+			micrographwidth = int( stripwidth )
 		
 			#micrographwidth = 3*options.tilesize
 		

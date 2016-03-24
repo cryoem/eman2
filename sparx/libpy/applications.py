@@ -13720,9 +13720,9 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 
 def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1, smearstep = 0.0):
 	if MPI:
-		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
+		####recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
 		##newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
-		###  newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose)
+		newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -13895,12 +13895,17 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		set_params_proj(prjlist[i],[phi,theta,psi,sx/scale,sy/scale])
 	"""
 	nnnx = ((prjlist[0].get_ysize())*2+3)
+
 	from utilities import read_text_file, read_text_row, write_text_file
+	from fundamentals import fft,fshift
+
+	"""
+
+
 	bckgnoise = get_im("bckgnoise.hdf")
 	nlx = bckgnoise.get_xsize()
 	datastamp = read_text_file("defgroup_stamp.txt")
 	#nnnx = 200#prjlist[0].get_ysize()
-	from fundamentals import fft,fshift
 	from utilities import get_params_proj,set_params_proj
 	for i in xrange(len(prjlist)):
 		#phi,theta,psi,sxs,sys = get_params_proj(prjlist[i])
@@ -13928,11 +13933,14 @@ def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 
 
 	"""
-	from utilities import model_blank
-	m = model_blank(600,1,1,1.0)
+	m = [1.0]*600
 	for i in xrange(len(prjlist)):
+		prjlist[i] = fft(prjlist[i])
+		#prjlist[i] = fshift(prjlist[i],sxs,sys)
+		prjlist[i].set_attr("padffted",1)
+		prjlist[i].set_attr("npad",1)
+		#set_params_proj(prjlist[i] ,[phi,theta,psi,0.0,0.0])
 		prjlist[i].set_attr("bckgnoise",m)
-	"""
 	from reconstruction import recons3d_4nnfs_MPI
 
 
@@ -16548,12 +16556,12 @@ def plot_projs_distrib(stack, outplot, wnx = 256):
 	from utilities  import get_params_proj, file_type, read_text_row
 	import sys
 
-	N    = EMUtil.get_image_count(stack)
 	ext  = file_type(stack)
 	if ext == 'txt' :
 		agls = read_text_row(stack)
 	elif ext == 'bdb' :
 		from EMAN2db import db_open_dict
+		N  = EMUtil.get_image_count(stack)
 		DB = db_open_dict(stack)
 		agls = []
 		for n in xrange(N):
@@ -22825,7 +22833,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			start_ime = time()
 		peaks =  [ [ -1.0e23 for im in xrange(nima) ] for iref in xrange(numref) ]
 		if runtype=="REFINEMENT":
- 			trans = [ [ tr_dummy for im in xrange(nima) ] for iref in xrange(numref) ]
+			trans = [ [ tr_dummy for im in xrange(nima) ] for iref in xrange(numref) ]
 			pixer = [ [  0.0     for im in xrange(nima) ] for iref in xrange(numref) ]
 			if(an[N_step] > 0):
 				from utilities    import even_angles

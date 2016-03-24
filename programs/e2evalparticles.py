@@ -237,7 +237,8 @@ class EMClassPtclTool(QtGui.QWidget):
 				newbad+=len(newset)-len(badset)
 			except:
 				print "Error setting bad particles in ",origfile
-				
+			
+			js_close_dict(info_name(origfile))
 		print newbad, " new particles marked as bad. Total of ",totbad," in affected micrographs"
 
 	def markGoodPtcl(self,x):
