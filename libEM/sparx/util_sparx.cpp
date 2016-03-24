@@ -19435,6 +19435,8 @@ int Util::nearest_ang(const vector<float>& vecref, float x, float y, float z) {
 
 int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z) {
 
+	throw InvalidParameterException("Should be called only when cones code is integrated!");
+	
 	float best_v = abs(vecref[0][0]*x+vecref[0][1]*y+vecref[0][2]*z);
 	int best_i = 0;
 
