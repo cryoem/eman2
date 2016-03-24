@@ -6617,7 +6617,7 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 		if size_of_this_group>=Tracker["constants"]["smallest_group"]:
 			error                          = margin_of_error(Tracker["P_chunk0"],size_of_this_group)
 			if myid == main_node:
-				log_main.add(" chunk0  lower bound %f  upper bound  %f  for sample size  %d"%((Tracker["P_chunk0"]- error),(Tracker["P_chunk0"]+error),size_of_this_group))
+				log_main.add(" chunk0  lower bound %f  upper bound  %f  for sample size  %d     group id %d"%((Tracker["P_chunk0"]- error),(Tracker["P_chunk0"]+error),size_of_this_group, index_of_stable))
 				log_main.add(" actual percentage is %f"%rate1)
 			large_stable.append(list_stable[index_of_stable])
 		else:
@@ -6710,7 +6710,10 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 				#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
 				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
-			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)), myid, main_node, index=-1, npad=npad, finfo=None)
+			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)), myid, main_node, index=-1, npad=npad, finfo = None)
+			 	if myid !=main_node:
+			 		volref = model_blank(Tracker["nxinit"], ,Tracker["nxinit"], ,Tracker["nxinit"])
+			 	bcast_EMData_to_all(volref, myid, main_node, MPI_COMM_WORLD)
 				ref_vol_list.append(volref)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
@@ -6720,7 +6723,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	if myid==main_node:
 		log_main.add("Exhaustive Kmeans ends")
 		log_main.add(" %d groups are selected out"%len(new_class))
-	return new_class 
+	return new_class
 	
 def print_a_line_with_timestamp(string_to_be_printed ):                 
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
