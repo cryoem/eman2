@@ -92,6 +92,8 @@ def main():
 		specifying an alternate format when supported: float, int8, int16, int32, uint8, 
 		uint16, uint32. Values are rescaled to fill MIN-MAX range.""")
 	
+	parser.add_argument("--normalizeimod",action='store_true',default=False,help="""Default=False. This will apply 'newstack -float 2' to the input stack. Requires IMOD. Does not apply to --unstack or --restack.""")
+
 	parser.add_argument("--bidirectional",action='store_true',default=False,help="""This will
 		assume the first image is at 0 degrees and will stack images from --lowerend through 0, 
 		and then will stack the rest from 0+tiltstep throgh --upperend. 
@@ -342,11 +344,25 @@ def main():
 			stcmd += ' --apix=' + str(options.apix)
 			stcmd += ' && e2fixheaderparam.py --input=' + outstackst + ' --stem=apix --valtype=float --stemval=' + str( options.apix ) + ' --output=' + outstackst.replace('.st','.mrc') + " && mv " +  outstackst.replace('.st','.mrc') + ' ' + outstackst
 			
+		stcmd += ' && rm ' + outstackhdf
 		
 		print "\n(e2spt_tiltstacker.py)(main) stcmd is", stcmd	
 		p = subprocess.Popen( stcmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text = p.communicate()	
 		p.stdout.close()
+
+		if options.normalizeimod:
+			try:
+				cmd = 'newstack ' + outstackst + ' ' + outstackst + ' --float 2'
+				print "normalizeimod cmd is", cmd
+				p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				text = p.communicate()	
+				p.wait()
+			except:
+				print "\nERROR: --normalizeimod skipped. Doesn't seem like IMOD is installed on this machine"	
+
+
+		
 		
 		if options.verbose > 9:
 			print "\nFeedback from stcmd:"
@@ -378,6 +394,8 @@ def main():
 				print text
 				p.stdout.close()
 	
+
+
 	E2end( logger )
 	return
 
@@ -488,29 +506,36 @@ def writetlt( angles, options, raworder=False ):
 
 def organizetilts( intilts, options ):
 	
+	intilts.sort()
+
 	intiltsdict = {}
 	angles = []
 	if options.anglesindxinfilename:
 		collectionindex=0
 		anglesdict = {}
 		for intilt in intilts:
+
 			parsedname = intilt.replace(',',' ').replace('-',' ').replace('_',' ').split()
 			#dividerstoadd = options.anglesindxinfilename - 1
+			print 'parsedname is',parsedname
 			charsum = 0
 			for i in range(options.anglesindxinfilename):
 				charsum += len(parsedname[i])
 			charsum += i
 
-			sign = intilt[charsum]
+			sign = intilt[charsum+1]
 			print "by position, sign is",sign
 			angle = float(parsedname[options.anglesindxinfilename])
-			sign2 = intilt.split(str(angle))[0][-1]
-			print "by other means, sign2 is",sign2
-			if sign2 == '-':
+			if sign == '-':
 				angle *= -1
+			
+			#sign2 = intilt.split(str(angle))[0][-1]
+			#print "by other means, sign2 is",sign2
+			
 			angles.append( angle )
 			anglesdict.update({angle:[intilt,collectionindex]})
-		
+			
+			collectionindex+=1
 		
 		if options.negativetiltseries:
 			angles.sort()
