@@ -19451,7 +19451,7 @@ vector<int> Util::nearest_fang(const vector<float>& vecref, float x, float y, fl
 }
 
 int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z) {
-
+	throw NullPointerException("nearest_ang_f");
 	float best_v = vecref[0][0]*x+vecref[0][1]*y+vecref[0][2]*z;
 	int best_i = 0;
 
