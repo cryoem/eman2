@@ -19433,13 +19433,30 @@ int Util::nearest_ang(const vector<float>& vecref, float x, float y, float z) {
 	return best_i;
 }
 
-int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z) {
+vector<int> Util::nearest_fang(const vector<float>& vecref, float x, float y, float z) {
+	float best_v = -1.0f;
+	int   best_i = -1;
 
-	float best_v = abs(vecref[0][0]*x+vecref[0][1]*y+vecref[0][2]*z);
+	for (unsigned int i=0; i<vecref.size()/3; i++) {
+		float v = vecref[i*3]*x+vecref[i*3+1]*y+vecref[i*3+2]*z;
+		if (v > best_v) {
+			best_v = v;
+			best_i = i;
+		}
+	}
+	std::vector<int> bout(2);
+	bout[0] = best_i;
+	bout[1] = int(best_v*1000000);
+	return bout;
+}
+
+int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z) {
+	throw NullPointerException("nearest_ang_f");
+	float best_v = vecref[0][0]*x+vecref[0][1]*y+vecref[0][2]*z;
 	int best_i = 0;
 
 	for (unsigned int i=1; i<vecref.size(); i++) {
-		float v = abs(vecref[i][0]*x+vecref[i][1]*y+vecref[i][2]*z);
+		float v = vecref[i][0]*x+vecref[i][1]*y+vecref[i][2]*z;
 		if (v > best_v) {
 			best_v = v;
 			best_i = i;

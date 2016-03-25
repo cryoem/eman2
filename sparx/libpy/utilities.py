@@ -3802,9 +3802,6 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 		from EMAN2 import Vec2f, Transform
 		t = get_symt(sym)
 		phir = 360.0/int(sym[1:])
-		for i in xrange(len(t)):  t[i] = t[i].inverse()
-		refvec = getfvec(projangles[whichone][0], projangles[whichone][1])
-		#print  "refvec   ",q["phi"], q["theta"]
 
 		tempan =  [None]*len(projangles)
 		for i in xrange(len(projangles)): tempan[i] = projangles[i]
@@ -3837,6 +3834,108 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 
 
 	return assignments
+
+
+def nearest_full_k_projangles(anormals, refang, howmany = 1, sym="c1"):
+	# We assume refang can be on the list of normals
+	from utilities import getfvec
+	refnormal = []
+	for i,q in enumerate(anormals):
+		refnormal += getfvec(q[0],q[1])
+	lookup = range(len(refnormal)/3)
+	#refnormal = normals[:]
+	assignments = [-1]*howmany
+
+	if( sym == "c1"):
+		ref = getfvec(refang[0],refang[1])
+		for i in xrange(howmany):
+			tmp = Util.nearest_fang(refnormal, ref[0],ref[1],ref[2])
+			print tmp
+			k = tmp[0]
+			assignments[i] = lookup[k]
+			for l in xrange(3): del refnormal[3*k+2-l]
+			del lookup[k]
+
+	elif( sym[:1] == "d" ):
+		from utilities import get_symt, getfvec
+		from EMAN2 import Vec2f, Transform
+		t = get_symt(sym)
+		phir = 360.0/int(sym[1:])
+		for i in xrange(len(t)):  t[i] = t[i].inverse()
+		a = Transform({"type":"spider","phi":projangles[whichone][0], "theta":projangles[whichone][1]})
+		for l in xrange(len(t)):
+			q = a*t[l]
+			q = q.get_params("spider")
+			if(q["phi"]<phir and q["theta"] <= 90.0): break
+		refvec = getfvec(q["phi"], q["theta"])
+		#print  "refvec   ",q["phi"], q["theta"]
+
+		tempan =  [None]*len(projangles)
+		for i in xrange(len(projangles)): tempan[i] = projangles[i]
+		del tempan[whichone], lookup[whichone]
+		assignments = [-1]*howmany
+
+		for i in xrange(howmany):
+			best = -1
+			for j in xrange(len(tempan)):
+				nearest = -1.
+				a = Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
+				for l in xrange(len(t)):
+					q = a*t[l]
+					q = q.get_params("spider")
+					vecs = getfvec(q["phi"], q["theta"])
+					s = vecs[0]*refvec[0] + vecs[1]*refvec[1] + vecs[2]*refvec[2]
+					if( s > nearest ):
+						nearest = s
+						#ttt = (q["phi"], q["theta"])
+				if( nearest > best ):
+					best = nearest
+					best_j = j
+					#print  j,tempan[j][0], tempan[j][1],best,lookup[j],ttt
+			assignments[i] = lookup[best_j]
+			del tempan[best_j], lookup[best_j]
+
+	elif( sym[:1] == "c" ):
+		from utilities import get_symt, getfvec
+		from EMAN2 import Vec2f, Transform
+		phir = 360.0/int(sym[1:])
+
+		for i in xrange(howmany):
+			best = -1
+			for j in xrange(len(tempan)):
+
+				tmp = Util.nearest_fang(refnormal, ref[0],ref[1],ref[2])
+				print tmp
+				k = tmp[0]
+				assignments[i] = lookup[k]
+				for l in xrange(3): del refnormal[3*k+2-l]
+				del lookup[k]
+
+
+				nearest = -1.
+				a = Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
+				for l in xrange(len(t)):
+					q = a*t[l]
+					q = q.get_params("spider")
+					vecs = getfvec(q["phi"], q["theta"])
+					s = vecs[0]*refvec[0] + vecs[1]*refvec[1] + vecs[2]*refvec[2]
+					if( s > nearest ):
+						nearest = s
+						#ttt = (q["phi"], q["theta"])
+				if( nearest > best ):
+					best = nearest
+					best_j = j
+					#print  j,tempan[j][0], tempan[j][1],best,lookup[j],ttt
+			assignments[i] = lookup[best_j]
+			del tempan[best_j], lookup[best_j]
+
+	else:
+		print  "  ERROR:  symmetry not supported  ",sym
+		assignments = []
+
+
+	return assignments
+
 
 def nearestk_to_refdir(refnormal, refdir, howmany = 1):
 	lookup = range(len(refnormal))
@@ -6712,7 +6811,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
 			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)), myid, main_node, index=-1, npad=npad, finfo = None)
 			 	if myid !=main_node:
-			 		volref = model_blank(Tracker["nxinit"], ,Tracker["nxinit"], ,Tracker["nxinit"])
+			 		volref = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 			 	bcast_EMData_to_all(volref, myid, main_node, MPI_COMM_WORLD)
 				ref_vol_list.append(volref)
 				mpi_barrier(MPI_COMM_WORLD)
