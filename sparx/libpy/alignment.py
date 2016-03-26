@@ -2048,9 +2048,9 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	from time import time
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	#    newpar = [[i, [1.0e23,1.e23]], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
 	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, worstsimilarity,[imageallparams]]]
+	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
 	#  Coding of orientations:
 	#    hash = ang*100000000 + lpsi*1000 + ishift
@@ -2067,8 +2067,8 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	at = time()
 	npsi = int(360./delta_psi)
 	nang = len(refang)
-	#newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
-	newpar = [[i, 1.0e23, []] for i in xrange(len(data))]
+	newpar = [[i, [1.0e23,0.0], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	#newpar = [[i, [1.0e23,1.0e23], []] for i in xrange(len(data))]
 	for i in xrange(nang):
 		#if myid == main_node:  print "  Angle :",i,time()-at
 		iang = i*100000000
@@ -2096,8 +2096,9 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 					if( toto == 0 ):  newpar[kl][-1] = [[im + iangpsi, peak]] + newpar[kl][-1][:lentop-1]
 					elif(toto > 0 ):  newpar[kl][-1] = newpar[kl][-1][:toto-1] + [[im + iangpsi, peak]] + newpar[kl][-1][toto:lentop-1]
 					'''
+					newpar[kl][1][1] += peak
 					#  Store the worst one
-					if( peak < newpar[kl][1]):  newpar[kl][1] = peak
+					if( peak < newpar[kl][1][0]):  newpar[kl][1][0] = peak
 		for kl in xrange(len(data)):
 			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]
@@ -2217,9 +2218,9 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 	from time import time
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	#    newpar = [[i, [1.0e23,1.e23]], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
 	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, worstsimilarity,[imageallparams]]]
+	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
 	#  Coding of orientations:
 	#    hash = ang*100000000 + lpsi*1000 + ishift
@@ -2232,6 +2233,7 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 	#  To sort:
 	from operator import itemgetter#, attrgetter, methodcaller
 	#   params.sort(key=itemgetter(2))
+
 	from math import cos, radians
 	ac = cos(radians(an))
 	dvec = [None]*len(data)
@@ -2242,8 +2244,8 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 	at = time()
 	npsi = int(360./delta_psi)
 	nang = len(refang)
-	#newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
-	newpar = [[i, 1.0e23, []] for i in xrange(len(data))]
+	newpar = [[i, [1.0e23,0.0], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	#newpar = [[i, 1.0e23, []] for i in xrange(len(data))]
 	for i in xrange(nang):
 		#if myid == main_node:  print "  Angle :",i,time()-at
 		iang = i*100000000
@@ -2278,7 +2280,8 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 							elif(toto > 0 ):  newpar[kl][-1] = newpar[kl][-1][:toto-1] + [[im + iangpsi, peak]] + newpar[kl][-1][toto:lentop-1]
 							'''
 							#  Store the worst one
-							if( peak < newpar[kl][1]):  newpar[kl][1] = peak
+							newpar[kl][1][1] += peak
+							if( peak < newpar[kl][1][0]):  newpar[kl][1][0] = peak
 		for kl in xrange(len(data)):
 			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]
