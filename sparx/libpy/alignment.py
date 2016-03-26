@@ -2048,7 +2048,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	from time import time
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [1.0e23,1.e23]], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities]], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -2218,7 +2218,7 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 	from time import time
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [1.0e23,1.e23]], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities]], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
