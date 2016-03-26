@@ -2111,6 +2111,103 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar
 
+
+def ali3D_direct_preselect(data, volprep, oldcodedparams, refang, delta_psi, shifts, myid, main_node, lentop = 1000, kb3D = None):
+	from projection import prgs,prgl
+	from fundamentals import fft
+	from utilities import wrap_mpi_gatherv
+	from math import sqrt
+	from mpi import mpi_barrier, MPI_COMM_WORLD
+	from time import time
+	#  Input data has to be CTF-multiplied, preshifted
+	#  Output - newpar, see structure, shifts are sublist of angles
+	#    newpar = [[i, 1.0e23, [[j, -1.0e11,[[q,-1.0e22] for q in xrange(lshift)]] for j in xrange(lentop)]] for i in xrange(ldat)]
+	#    ??? newpar = [[params],[],... len(data)]
+	#    params = [particleID, worstsimilarity,[imageallparams]]]
+	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+	#  Coding of orientations:
+	#    hash = ang*100000 + lpsi
+	#    ipsi = hash%100000
+	#    iang  = hash/100000
+	#  To get best matching for particle #kl:
+	#     hash_best = newpar[kl][-1][0][0]
+	#     best_sim  = newpar[kl][-1][0][1]
+	#  To delete  shifts:
+	#for i in xrange(ldat):
+    #for j in xrange(lentop):
+    #    del newpar[i][2][j][-1]
+
+	#  To extract list of valid angles:
+	#	for i in xrange(ldat):
+    # 		newpar[i][2] = [newpar[i][2][j][0] for j in xrange(len(newpar[i][2])) ]
+    #  as a result, oldcodedparams[im][2] will contain a list of valid angles for image im
+
+
+	#  To sort:
+	from operator import itemgetter#, attrgetter, methodcaller
+	#   params.sort(key=itemgetter(2))
+
+	at = time()
+	npsi = int(360./delta_psi)
+	nang = len(refang)
+	lshift = len(shifts)
+	#newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	newpar = [[i, 1.0e23, []] for i in xrange(len(data))]
+	#newpar = [[i, 1.0e23, [ [j, -1.0e11, [[q,-1.0e22] for q in xrange(lshift)]] for j in xrange(lentop)] ] for i in xrange(ldat)]
+	for i in xrange(nang):
+		#if myid == main_node:  print "  Angle :",i,time()-at
+		iang = i*100000
+		for j in xrange(npsi):
+			iangpsi = j + iang
+			psi = j*delta_psi
+			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
+			else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
+			temp.set_attr("is_complex",0)
+			nrmref = sqrt(Util.innerproduct(temp, temp))
+			for kl,emimage in enumerate(data):
+				try:
+					junk = oldcodedparams[kl][2].index(iangpsi)
+					newpar[kl][2].append([iangpsi, -1.0, []])
+					for im in xrange(lshift):
+						peak = Util.innerproduct(temp, emimage[im])
+						peak /= nrmref
+						#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
+						newpar[kl][-1][2].append([im, peak])
+						#newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
+						#del newpar[kl][-1][-1]
+						'''
+						toto = -1
+						for k in xrange(lentop):
+							if(peak > newpar[kl][-1][k][1]):
+								toto = k
+								break
+						if( toto == 0 ):  newpar[kl][-1] = [[im + iangpsi, peak]] + newpar[kl][-1][:lentop-1]
+						elif(toto > 0 ):  newpar[kl][-1] = newpar[kl][-1][:toto-1] + [[im + iangpsi, peak]] + newpar[kl][-1][toto:lentop-1]
+						'''
+						#  Store the worst one
+						if( peak < newpar[kl][1]):  newpar[kl][1] = peak
+
+					#  Store sum of shift scores
+					newpar[kl][2][-1][1] = sum([newpar[kl][2][-1][2][im][1] for im in xrange(lshift)])
+				except:
+					#  No valid angles
+					pass
+					
+		for kl in xrange(len(data)):
+			newpar[kl][2].sort(key=itemgetter(1),reverse=True)
+			newpar[kl][2] = newpar[kl][2][:min(lentop, len(newpar[kl][2]))]
+
+		
+	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
+	###if myid == main_node:  print "  Finished :",time()-at
+	#mpi_barrier(MPI_COMM_WORLD)
+	#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
+	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
+	mpi_barrier(MPI_COMM_WORLD)
+	return newpar
+
+
+
 def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, myid, main_node, lentop = 1000, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
