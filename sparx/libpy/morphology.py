@@ -2174,9 +2174,20 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			for erro_message in error_message_list:  ERROR(erro_message, myname, 2)
 		elif myid == main_node: # assert(MPI == True)
 			for erro_message in error_message_list:  ERROR(erro_message, myname, 2, myid)
+#		print "MRK_DEBUG: Process %03d returning from cter_mrk()" % (myid)
+#		for erro_message in error_message_list:  print "MRK_DEBUG: %s" % (erro_message)
 		# Abort process
 		if cter_mode == the_cter_mode_single_mic:  return 0, 0, 0, 0, 0, 0
 		else:  return
+	
+	# Wait for all nodes to check error condition, especially existence of output directory
+	# Without this barrier, main node can create output directory before some child nodes check this error.
+	if MPI == True:
+		mpi_barrier(MPI_COMM_WORLD)
+	
+	if MPI == False or myid == main_node: print "  Running with %s mode." % (cter_mode_name)
+#	if MPI == False or myid == main_node: print "MRK_DEBUG: namics", namics
+#	if MPI == False or myid == main_node: print "MRK_DEBUG: stack", stack
 	
 	# Prepare input file path(s)
 	# 
@@ -2203,10 +2214,6 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	# else: 
 		# assert(False)  # This is unreachable code
 	
-	if MPI == False or myid == main_node: print "  Running with %s mode." % (cter_mode_name)
-#	if MPI == False or myid == main_node: print "MRK_DEBUG: namics", namics
-#	if MPI == False or myid == main_node: print "MRK_DEBUG: stack", stack
-	
 	# Make output directory
 	outpwrot = "%s/pwrot" % (output_directory)
 	outmicthumb = "%s/micthumb" % (output_directory)
@@ -2218,7 +2225,10 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			os.mkdir(outpwrot)
 			os.mkdir(outmicthumb)
 			if debug_mode:  os.mkdir(outravg)
+#			print "MRK_DEBUG: Main node created directories. Waiting for the other to reach the next line"
+		# Make all nodes wait for main node to create output directory
 		mpi_barrier(MPI_COMM_WORLD)
+#		if myid == main_node: print "MRK_DEBUG: OK. Every one reached mpi_barrier above"
 	else:
 		# Make output directory
 		os.mkdir(output_directory)
@@ -2249,42 +2259,49 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 		set_end = 1
 	
 	totresi = []
+	rejected_img_names = []
 	for ifi in xrange(set_start,set_end):
 		# set pw2 (image used for CTF estimation) and basename root of image file depending on the cter mode
 		pw2 = []
+		img_type = ""
+		img_name = ""
 		img_basename_root = ""
 		img_extension = ""
+		img_name_for_print = ""
 		if stack == None:
-			numFM = EMUtil.get_image_count(namics[ifi])
-			print  "  Process ID = %04d, Micrograph Name = %s, Frame Counts = %03d" % (ifi, namics[ifi], numFM)
+			img_type = "Micrograph"; img_name = namics[ifi]; img_name_for_print = " " + img_name
+			numFM = EMUtil.get_image_count(img_name)
 			#
 			# NOTE: 2016/03/21 Toshio Moriya
 			# For now, dbd file is a invalid input_image for micrograph modes
 			# 
-			# assert(db_check_dict(namics[ifi]) == False)
-			img_basename_root, img_extension = os.path.splitext(os.path.basename(namics[ifi]))
+			# assert(db_check_dict(img_name) == False)
+			img_basename_root, img_extension = os.path.splitext(os.path.basename(img_name))
 			# 
 			# NOTE: 2016/03/17 Toshio Moriya
 			# The following loop does not make sense because nf is not used in the loop body
-			# If get_im(namics[ifi], nf) instead of get_im(namics[ifi]), it might make sense.
+			# If get_im(img_name, nf) instead of get_im(img_name), it might make sense.
 			# 
 			for nf in xrange(numFM):
-				pw2 += tilemic(get_im(namics[ifi]), win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+				pw2 += tilemic(get_im(img_name), win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
 		else:
 			assert (ifi == 0) # MRK_DEBUG
-			numFM = EMUtil.get_image_count(stack)
-			print  "  Process ID = %04d, Stack Name = %s, Frame Counts = %03d" % (ifi, stack, numFM)
-			if db_check_dict(stack) == False:
-				img_basename_root, img_extension = os.path.splitext(os.path.basename(stack))
-			else: # assert(db_check_dict(namics[ifi]) == True)
-				path, dictname, keys = db_parse_path(stack)
+			img_type = "Stack"; img_name = stack; print_img_name = ""
+			numFM = EMUtil.get_image_count(img_name)
+			if db_check_dict(img_name) == False:
+				img_basename_root, img_extension = os.path.splitext(os.path.basename(img_name))
+			else: # assert(db_check_dict(img_name) == True)
+				path, dictname, keys = db_parse_path(img_name)
 				img_basename_root = dictname
 			
 			for i in xrange(numFM):
-				pw2.append(periodogram(get_im(stack,i)))
+				pw2.append(periodogram(get_im(img_name,i)))
 		# assert(len(pw2) != [])
+		# assert(img_type != "")
+		# assert(img_name != "")
 		# assert(img_basename_root != "")
-		
+		# assert(img_extension != "")
+		print  "  Process ID = %04d, %s Name = %s, Frame Counts = %03d" % (ifi, img_type, img_name, numFM)
 		
 		nimi = len(pw2)
 		adefocus = [0.0] * kboot
@@ -2355,10 +2372,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			
 			defc, subpw, ctf2, baseline, envelope, istart, istop = defocusgett(rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, ampcont = wgh, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			if debug_mode:
-				if stack == None:  
-					print "  RESULT ", namics[ifi], defc, istart, istop
-				else:
-					print "  RESULT ", defc, istart, istop
+				print "  RESULT%s" % (img_name_for_print), defc, istart, istop
 				
 				freq = range(len(subpw))
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
@@ -2528,19 +2542,14 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				print adefocus[i], ad1, thr
 				reject.append(i)
 		if(len(reject) > 0):
-			if stack == None:
-				print "  Number of rejects  ", namics[ifi], len(reject)
-			else:
-				print "  Number of rejects  ", len(reject)
+			print "  Number of rejects%s" % img_name_for_print, len(reject)
 			for i in xrange(len(reject) - 1, -1, -1):
 				del adefocus[i]
 				del aamplitu[i]
 				del aangle[i]
 		if(len(adefocus) < 2):
-			if stack == None:
-				print "  After rejection of outliers too few estimated defocus values for :", namics[ifi]
-			else:
-				print "  After rejection of outliers too few estimated defocus values"
+			print "  After rejection of outliers too few estimated defocus values for%s" % img_name_for_print
+			
 		else:
 			#print "adefocus",adefocus
 			#print  "aamplitu",aamplitu
@@ -2563,20 +2572,25 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			if cd1 < 0.0 or cd1 >= 180: ERROR("Logical Error: Encountered unexpected astig. angle value (%f). Consult with the developer." % (cd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 			
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
-			willdo = True
+			reject_img_messages = []
 			try:
 				pwrot2 = rotavg_ctf( model_blank(wn, wn), ad1, Cs, voltage, pixel_size, 0.0, wgh, bd1, cd1)
 			except:
-				print "  Astigmatism amplitude is larger than defocus or defocus is negative :", namics[ifi], ad1, Cs, voltage, pixel_size, wgh, bd1, cd1
-				willdo = False
+				reject_img_messages.append("  - Astigmatism amplitude (%f) is larger than defocus (%f) or defocus (%f) is negative." % (bd1, ad1, ad1))
 			
 			valid_min_defocus = 0.3
 			if ad1 < valid_min_defocus:
-				print "  Defocus is smaller than valid minimum value (%f) :" % (valid_min_defocus), namics[ifi], ad1, Cs, voltage, pixel_size, wgh, bd1, cd1
-				willdo = False
-				
+				reject_img_messages.append("  - Defocus (%f) is smaller than valid minimum value (%f)." % (ad1, valid_min_defocus))
 			
-			if(willdo):
+			if len(reject_img_messages) > 0:
+				rejected_img_names.append(img_name)
+				print "  Rejected%s" % (img_name_for_print), ad1, Cs, voltage, pixel_size, wgh, bd1, cd1, "(def, Cs, vol, apix, amp_contrast, astig_amp, astig_angle)"
+				print "  because ... "
+				assert(len(reject_img_messages) > 0)
+				for reject_img_message in reject_img_messages:
+					print reject_img_message
+				print "  Skipping the output..."
+			else: # assert(len(img_reject_messages) == 0)
 				#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
 				import random as rqt
 				
@@ -2662,23 +2676,58 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
 				write_text_file([range(len(crot1)), freq, pwrot1, crot1, pwrot2, crot2], fou)
 				
+				#
+				# NOTE: 2016/03/23 Toshio Moriya
+				# Compute mean of extrema differences (differences at peak & trough) between 
+				# (1) experimental rotational average with astigmatism (pwrot2)
+				# (2) experimental rotational average without astigmatism (pwrot1), and
+				# as a indication of goodness of astigmatism estimation by cter.
+				# The peak & trough detection uses fitted rotational average with astigmatism (crot2) 
+				# Start from 1st trough while ignoring 1st peak.
+				# End at astigmatism frequency limit.
+				# 
+				is_peak_target = True
+				pre_crot2_val = crot2[0]
+				extremum_counts = 0
+				extremum_diff_sum = 0
+				for i in xrange(1, len(crot2)):
+					cur_crot2_val = crot2[i]
+					if is_peak_target == True and pre_crot2_val > cur_crot2_val:
+						# peak search state
+						extremum_i = i - 1
+						extremum_counts += 1
+						extremum_diff_sum += pwrot2[extremum_i] - pwrot1[extremum_i] # This should be positive if astigmatism estimation is good
+						# print "MRK_DEBUG: Peak Search  : extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot2[extremum_i] - pwrot1[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot2[extremum_i] - pwrot1[extremum_i]), extremum_diff_sum)
+						is_peak_target = False
+					elif is_peak_target == False and pre_crot2_val < cur_crot2_val:
+						# trough search state
+						extremum_i = i - 1
+						extremum_counts += 1
+						extremum_diff_sum += pwrot1[extremum_i] - pwrot2[extremum_i] # This should be positive if astigmatism estimation is good
+						# print "MRK_DEBUG: Trough Search: extremum_i = %03d, freq[extremum_i] = %12.5g, extremum_counts = %03d, (pwrot1[extremum_i] - pwrot2[extremum_i]) = %12.5g, extremum_diff_sum = %12.5g " % (extremum_i, freq[extremum_i] , extremum_counts, (pwrot1[extremum_i] - pwrot2[extremum_i]), extremum_diff_sum)
+						is_peak_target = True
+					pre_crot2_val = cur_crot2_val
+				if extremum_counts == 0: ERROR("Logical Error: Encountered unexpected zero extremum counts. Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				extremum_diff_avg = extremum_diff_sum / extremum_counts
+				
+				# print "MRK_DEBUG: extremum_avg = %12.5g, extremum_diff_sum = %12.5g, extremum_counts = %03d," % (extremum_avg, extremum_diff_sum, extremum_counts)
+				
 #				if stack == None:     cmd = "echo " + "    " + namics[ifi] + "  >>  " + fou
 #				else:                 cmd = "echo " + "    " + "  >>  " + fou
 #				os.system(cmd)
 				
-				if stack == None:
+				print  "  Stored Parmaters:%s" % (img_name_for_print), ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim
+				totresi.append( [ img_name, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, extremum_diff_avg, ib1, ibec, ctflim])
+				
+#				if stack == None:
 #					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
-					print  namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim
-				else:
+#				else:
 #					print               ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
-					print               ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim
-				if stack == None:
+#				if stack == None:
 #					totresi.append( [ namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
-					totresi.append( [ namics[ifi], ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim])
-				else:
+#				else:
 #					totresi.append( [ 0, ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec])
-					totresi.append( [ stack,       ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, cvavad1, cvavbd1, ib1, ibec, ctflim])
-				#if ifi == 4 : break
+#				#if ifi == 4 : break
 				
 #		if stack == None and set_ctf_header:
 		if stack == None:
@@ -2701,12 +2750,23 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	if MPI:
 		from utilities import wrap_mpi_gatherv
 		totresi = wrap_mpi_gatherv(totresi, 0, MPI_COMM_WORLD)
+		rejected_img_names = wrap_mpi_gatherv(rejected_img_names, 0, MPI_COMM_WORLD)
 	if myid == 0:
 		outf = open(os.path.join(output_directory, "partres.txt"), "w")
 		for i in xrange(len(totresi)):
 			for k in xrange(1, len(totresi[i])):  outf.write("  %12.5g" % totresi[i][k])
 			outf.write("  %s\n" % totresi[i][0])
 		outf.close()
+		
+		rejected_counts = len(rejected_img_names)
+		print "  Num. of rejected %s(s): %d." % (img_type.lower(), rejected_counts)
+		if rejected_counts > 0:
+			outfile_path = os.path.join(output_directory, "rejected_%s_list.txt" % (img_type.lower()))
+			print "  Saving list of rejected %s(s) in %s..." % (img_type.lower(), outfile_path)
+			outf = open(outfile_path, "w")
+			for rejected_img_name in rejected_img_names:
+				outf.write("%s\n" % rejected_img_name)
+			outf.close()
 	
 	if cter_mode == the_cter_mode_single_mic:
 		return totresi[0][1], totresi[0][7], totresi[0][8], totresi[0][9], totresi[0][10], totresi[0][11]
