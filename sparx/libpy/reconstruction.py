@@ -1357,7 +1357,7 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 	if myid == main_node: return fftvol, weight, refvol
 	else: return None, None, None
 
-def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, upweighted = True, finfo=None, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = False, target_size=-1):
+def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, delta, upweighted = True, finfo=None, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = False, target_size=-1):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -1447,32 +1447,34 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, upw
 	r.setup()
 
 	for im in xrange(len(prjlist)):
-		#  parse projection structure
-		#  [ipsi+iang, ishift, probability]
+		#  parse projection structure, generate three lists:
+		#  [ipsi+iang], [ishift], [probability]
+		#  Number of orientations for a given image
 		numbor = len(paramstructure[im][2])
 		ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in xrange(numbor) ]
 		allshifts   = [ paramstructure[im][2][i][0]%1000  for i in xrange(numbor) ]
 		probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
 		#  Find unique projection directions
-		tdir = set(ipsiandiang)
-		tdir = [q for q in tdir]
+		tdir = list(set(ipsiandiang))
+		#  For each unique projection direction:
 		for ii in xrange(len(tdir)):
-			ipsi = ipsiandiang%100000
-			iang  = ipsiandiang/100000			
+			#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
 			lshifts = findall(tdir[ii], ipsiandiang)
-			recdata = EMData(ny,ny,False)
+			recdata = EMData(imgsize,imgsize,1,False)
 			recdata.set_attr_dict({"padffted":1, "is_complex":0})
 			toprab  = 0.0
-			for ki in xrange(len(lshfits)):
-				#  
-				ishift = allshifts[lshifts[ki]]
-				Util.img_add(recdata, prjlist[im][ishift])
+			for ki in xrange(len(lshifts)):
+				Util.add_img(recdata, prjlist[im][allshifts[lshifts[ki]]])
 				toprab += probs[lshifts[ki]]
 			recdata.set_attr_dict({"padffted":1, "is_complex":1})
-			if not upweighted:  recdata = filt_table(recdata, data[im][ishift].get_attr("bckgnoise") )
-			recdata.set_attr("bckgnoise",  data[im][ishift].get_attr("bckgnoise") )
-			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":ipsi*Tracker["delta"]}), toprab)
-
+			bckgn = prjlist[im][allshifts[lshifts[0]]].get_attr("bckgnoise")
+			if not upweighted:  recdata = filt_table(recdata, bckgn )
+			recdata.set_attr("bckgnoise", bckgn )
+			ipsi = tdir[ii]%100000
+			iang = tdir[ii]/100000
+			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":ipsi*delta}), toprab)
+	#  clean stuff
+	del bckgn, rdata, tdir, ipsiandiang, allshifts, probs
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )
 		finfo.flush()
