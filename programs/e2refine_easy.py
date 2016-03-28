@@ -306,7 +306,7 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	if options.targetres<apix*2:
 		print "ERROR: Target resolution is smaller than 2*A/pix value. This is impossible."
 		sys.exit(1)
-
+	db["apix"]=apix
 	logid=E2init(sys.argv,options.ppid)
 
 	###################################
