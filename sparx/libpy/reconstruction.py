@@ -1462,14 +1462,13 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 			#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
 			lshifts = findall(tdir[ii], ipsiandiang)
 			ki = 0
-			recdata = prjlist[im][allshifts[lshifts[ki]]]
+			recdata = prjlist[im][allshifts[lshifts[ki]]].copy()
 			recdata.set_attr_dict({"padffted":1, "is_complex":0})
 			toprab  = probs[lshifts[ki]]
 			for ki in xrange(1,len(lshifts)):
 				Util.add_img(recdata, prjlist[im][allshifts[lshifts[ki]]])
 				toprab += probs[lshifts[ki]]
 			recdata.set_attr_dict({"padffted":1, "is_complex":1})
-			
 			if not upweighted:  recdata = filt_table(recdata, bckgn )
 			recdata.set_attr("bckgnoise", bckgn )
 			ipsi = tdir[ii]%100000
