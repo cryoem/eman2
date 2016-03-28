@@ -7,11 +7,11 @@ from sys import argv
 
 im=EMData(argv[1]+"/threed_even_unmasked.hdf",0)
 
-for f in xrange(15):
+for f in xrange(6):
 	aa=im.process("filter.lowpass.gauss",{"cutoff_freq":.08})
 	if f : aa=aa.process("math.gausskernelfix",{"gauss_width":float(f)})
-	md=aa.calc_radial_dist(aa["nx"]/2,0,1,3)
-	out=open("cor{:02d}.txt".format(f),"w")
+	md=aa.calc_radial_dist(aa["nx"]/2,0,1,1)
+	out=open("corm{:02d}.txt".format(f),"w")
 	for x,y in enumerate(md):
 		out.write("{}\t{}\n".format(x,y))
 
