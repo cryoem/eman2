@@ -130,6 +130,7 @@ def main():
 								help="Calculate a FSC curve between two models. Output is a txt file. This option is the name of the second volume.")
 	parser.add_option("--calcsf", type="string", metavar="outputfile",
 								help="Calculate a radial structure factor. Must specify apix.")
+	parser.add_option("--calcradial", type="int",default=-1,help="Calculate the radial density by shell. Output file becomes a text file. 0 - mean amp, 2 - min, 3 - max, 4 - sigma")
 	parser.add_option("--setsf", type="string", metavar="inputfile",
 								help="Set the radial structure factor. Must specify apix.")
 	parser.add_option("--tophalf", action="store_true",
@@ -300,6 +301,22 @@ def main():
 	if options.alignref : alignref=EMData(options.alignref,0)
 	else : alignref=None
 
+	if options.calcradial>=0 :
+		print "Computing radial real-space distribution. All other options ignored!"
+		curves=[]
+		for i in range(n0,n1+1,n2):
+			img=EMData(infile,i) 
+			c=img.calc_radial_dist(img["nx"]/2,0,1,options.calcradial)
+			curves.append(c)
+		
+		out=file(outfile,"w")
+		out.write("# {} mode {}".format(infile,options.calcradial))
+		for l in xrange(len(curves[0])):
+			out.write("\n{}".format(l))
+			for c in curves:
+				out.write("\t{}".format(c[l]))
+		
+		sys.exit(0)
 
 	if options.average:
 		print "Averaging particles from %d to %d stepping by %d. All other options ignored !"%(n0,n1,n2)

@@ -155,6 +155,7 @@ def main():
 		except: noisecutoff= 1/(2*(apix+0.1))
 		bfactor=0.0
 		ampcorrect="--process=filter.lowpass.autob:cutoff_freq={}:noisecutoff={}:interpolate=1:bfactor={}".format(maxfreq,noisecutoff,bfactor)
+		print "noise cutoff: {:1.2f}".format(1.0/noisecutoff)
 	elif options.ampcorrect == "strucfac": # use old eman2 structure factor method
 		print("Performing structure factor amplitude correction")
 		ampcorrect=setsf
@@ -165,60 +166,127 @@ def main():
 	wiener = "--process=filter.wiener.byfsc:fscfile={path}fsc_unmasked_{itr:02d}.txt:snrmult=2:maxfreq={maxfreq}".format(path=path, itr=options.iter, maxfreq=maxfreq)
 	massnorm = "--process=normalize.bymass:thr=1:mass={mass}".format(mass=options.mass)
 
-	run("e2proc3d.py {combfile} {combfile} {ampcorrect} {wiener} {massnorm}".format(ampcorrect=ampcorrect, combfile=combfile,wiener=wiener,massnorm=massnorm))
+	run("e2proc3d.py {combfile} {path}tmp.hdf {ampcorrect} {wiener} {massnorm}".format(ampcorrect=ampcorrect, path=path,combfile=combfile,wiener=wiener,massnorm=massnorm))
 
 	# combined2 is the merged file after setsf & initial filtration
-	combined2=EMData(combfile,0)
-	sigmanz=combined2["sigma_nonzero"]
+	#combined2=EMData(combfile,0)
+	#sigmanz=combined2["sigma_nonzero"]
 
 	### Masking
-	if options.automask3d==None or len(options.automask3d.strip())==0 :
-		# This loop runs automatic masking with real parameters to test if the mask is extending to the edge of the box
-		# if it is, it adjusts the threshold and seed parameters to make the mask smaller
-		# This is a bit of a hack, and unfortunately a slow way of handling the problem
-		radav=1.0
-		seeds=24
-		itr=0
-		while radav>0.001:
-			sigmanz*=1.1
-			seeds=max(0,seeds-8)
-			vol=EMData(combfile,0)
-			vol.process_inplace("mask.auto3d",{"threshold":sigmanz*.85,"radius":nx/10,"nshells":int(nx*0.05+.5),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":seeds,"return_mask":1})
-			dis=vol.calc_radial_dist(vol["nx"]/2,0,1,0)
-			radav=sum(dis[-4:])
-			itr+=1
-			if itr>5 :
-				print "WARNING: failed to achieve a properly isolated volume, FSC artifacts may occur. Often this is caused by an incorrect A/pix value or specifying too large a mask. It could also indicate that the box size is too small."
-				sigmanz=combined2["sigma_nonzero"]*1.1
-				seeds=0
-				break
+	if options.automask3d2==None: automask3d2=None
+	else: automask3d2=parsemodopt(options.automask3d)
 
-		if options.automaskexpand<0 : options.automaskexpand=int(nx*0.05+0.5)
-		# Final automasking parameters
-		amask3d="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
-			thresh=sigmanz*.75,radius=nx/10,shells=options.automaskexpand,gshells=int(options.restarget*1.5/apix),seed=seeds)
-		amask3dtight="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
-			thresh=sigmanz*.9,radius=nx/10,shells=int(options.restarget*1.2/apix),gshells=int(options.restarget*1.2/apix),seed=seeds)
+	if options.automask3d==None or options.automask3d.lower()=="auto" or len(options.automask3d.strip())==0 :
+		## This loop runs automatic masking with real parameters to test if the mask is extending to the edge of the box
+		## if it is, it adjusts the threshold and seed parameters to make the mask smaller
+		## This is a bit of a hack, and unfortunately a slow way of handling the problem
+		#radav=1.0
+		#seeds=24
+		#itr=0
+		#while radav>0.001:
+			#sigmanz*=1.1
+			#seeds=max(0,seeds-8)
+			#vol=EMData(combfile,0)
+			#vol.process_inplace("mask.auto3d",{"threshold":sigmanz*.85,"radius":nx/10,"nshells":int(nx*0.05+.5),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":seeds,"return_mask":1})
+			#dis=vol.calc_radial_dist(vol["nx"]/2,0,1,0)
+			#radav=sum(dis[-4:])
+			#itr+=1
+			#if itr>5 :
+				#print "WARNING: failed to achieve a properly isolated volume, FSC artifacts may occur. Often this is caused by an incorrect A/pix value or specifying too large a mask. It could also indicate that the box size is too small."
+				#sigmanz=combined2["sigma_nonzero"]*1.1
+				#seeds=0
+				#break
+
+		#if options.automaskexpand<0 : options.automaskexpand=int(nx*0.05+0.5)
+		## Final automasking parameters
+		#amask3d="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
+			#thresh=sigmanz*.75,radius=nx/10,shells=options.automaskexpand,gshells=int(options.restarget*1.5/apix),seed=seeds)
+		#amask3dtight="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
+			#thresh=sigmanz*.9,radius=nx/10,shells=int(options.restarget*1.2/apix),gshells=int(options.restarget*1.2/apix),seed=seeds)
+		
+		# New version of automasking based on a more intelligent interrogation of the volume
+		vol=EMData("{path}tmp.hdf".format(path=path),0)
+		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.1,1.0/options.restarget)})		# Mask at no higher than 10 A resolution
+		md=vol.calc_radial_dist(nx/2,0,1,3)	# radial max value per shell in real space
+		
+		rmax=int(nx/2.2)		# we demand at least 10% padding
+		vmax=max(md[:rmax])			# max value within permitted radius
+		
+		# this finds the first radius where the max value @ r falls below overall max/4
+		# this becomes the new maximum mask radius
+		act=0
+		for i in xrange(rmax):
+			if md[i]==vmax : rmaxval=i
+			if not act and md[i]<0.9*vmax : continue
+			act=True
+			if md[i]<0.25*vmax :
+				rmax=i
+				break
+		
+		# excludes any spurious high values at large radius
+		vol.process_inplace("mask.sharp",{"outer_radius":rmax})
+		
+		# automask 
+		mask=vol.process("mask.auto3d",{"threshold":vmax*.3,"radius":0,"nshells":int(nx*0.05+.5+options.automaskexpand),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
+		
+		# Soften mask this way instead of with nshellsgauss
+#		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*1.5)})
+		
+		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
+		
+		mask.write_image("{path}mask.hdf".format(path=path),0)
+
+		# automask (tight)
+		th=min(md[rmaxval-nx//8:rmaxval+nx//8])
+		mask=vol.process("mask.auto3d",{"threshold":th*.6,"radius":0,"nshells":int(options.restarget*1.2/apix),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
+		
+		## Soften mask this way instead of with nshellsgauss
+		#mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*1.5)})
+		
+		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
+		
+		mask.write_image("{path}mask_tight.hdf".format(path=path),0)
+
 	else:
-		amask3d="--process "+options.automask3d
-		amask3dtight=amask3d
+		amask3d=parsemodopt(automask3d)
+		if amask3d[0]=="mask.auto3d" :
+			vol=EMData("{path}tmp.hdf".format(path=path),0)
+			amask3d[1]["return_mask"]=1
+			mask=vol.process(amask3d[0],amask3d[1])
+			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
+			mask.write_image("{path}mask.hdf".format(path=path),0)
+
+			vol=EMData("{path}tmp.hdf".format(path=path),0)
+			amask3d[1]["nshells"]=int(amask3d[1]["nshells"]*.5)
+			mask=vol.process(amask3d[0],amask3d[1])
+			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
+			mask.write_image("{path}mask_tight.hdf".format(path=path),0)
+		else:
+			mask=EMData(nx,ny,nz)
+			mask.to_one()
+			mask.process(amask3d[0],amask3d[1])
+			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
+			mask.write_image("{path}mask.hdf".format(path=path),0)
+
+			mask.process_inplace("morph.erode.binary",{"k":2})
+			mask.write_image("{path}mask_tight.hdf".format(path=path),0)
 
 	combined2=0
-	if options.automask3d2==None or len(options.automask3d2.strip())==0 : amask3d2=""
-	else : amask3d2="--process "+options.automask3d2
+	#if options.automask3d2==None or len(options.automask3d2.strip())==0 : amask3d2=""
+	#else : amask3d2="--process "+options.automask3d2
 
-	# this is a terrible hack. mask.auto3d needs the actual data to generate a mask, but the other mask. processors don't in general, and don't have the return_mask option
-	if amask3d.split(":")[0]=="--process mask.auto3d" : maskopt=":return_mask=1"
-	else: maskopt=" --inputto1"
+	## this is a terrible hack. mask.auto3d needs the actual data to generate a mask, but the other mask. processors don't in general, and don't have the return_mask option
+	#if amask3d.split(":")[0]=="--process mask.auto3d" : maskopt=":return_mask=1"
+	#else: maskopt=" --inputto1"
 
-	run("e2proc3d.py {cfile} {path}mask.hdf {mask}{maskopt} {amask3d2}".format(path=path,cfile=combfile,mask=amask3d,amask3d2=amask3d2,maskopt=maskopt))
-	run("e2proc3d.py {cfile} {path}mask_tight.hdf {mask}{maskopt} {amask3d2}".format(path=path,cfile=combfile,mask=amask3dtight,amask3d2=amask3d2,maskopt=maskopt))
+	#run("e2proc3d.py {cfile} {path}mask.hdf {mask}{maskopt} {amask3d2}".format(path=path,cfile=combfile,mask=amask3d,amask3d2=amask3d2,maskopt=maskopt))
+	#run("e2proc3d.py {cfile} {path}mask_tight.hdf {mask}{maskopt} {amask3d2}".format(path=path,cfile=combfile,mask=amask3dtight,amask3d2=amask3d2,maskopt=maskopt))
 
 	### Masked tight FSC
 	run("e2proc3d.py {evenfile} {path}tmp_even.hdf --multfile {path}mask_tight.hdf".format(evenfile=evenfile,path=path))
 	run("e2proc3d.py {oddfile} {path}tmp_odd.hdf --multfile {path}mask_tight.hdf".format(oddfile=oddfile,path=path))
 
-	# New FSC between the two masked volumes, which we will use for the final filter
+	# New FSC between the two masked volumes
 	cmd="e2proc3d.py {path}tmp_even.hdf {path}fsc_maskedtight_{itr:02d}.txt --calcfsc {path}tmp_odd.hdf".format(path=path,itr=options.iter)
 	run(cmd)
 
@@ -230,17 +298,27 @@ def main():
 	cmd="e2proc3d.py {path}tmp_even.hdf {path}fsc_masked_{itr:02d}.txt --calcfsc {path}tmp_odd.hdf".format(path=path,itr=options.iter)
 	run(cmd)
 
+
+	# readjust 'flatten' for new fsc
+	if options.ampcorrect == "flatten": # use something akin to Henderson's 2013 method
+		try: 
+			noisecutoff=calc_noise_cutoff("{path}fsc_masked_{itr:02d}.txt".format(path=path,itr=options.iter))
+			bfactor=0.0
+			ampcorrect="--process=filter.lowpass.autob:cutoff_freq={}:noisecutoff={}:interpolate=1:bfactor={}".format(maxfreq,noisecutoff,bfactor)
+			print "new noise cutoff: {:1.2f}".format(1.0/noisecutoff)
+		except: pass
+
 	# _unmasked volumes are filtered
-	run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {setsf} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq}".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,setsf=setsf,underfilter=underfilter,maxfreq=1.0/options.restarget))
-	run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {setsf} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq}".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,setsf=setsf,underfilter=underfilter,maxfreq=1.0/options.restarget))
+	run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq}".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget))
+	run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq}".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget))
 
 	# Technically snrmult should be 1 here, but we use 2 to help speed convergence
-	cmd="e2proc3d.py {path}tmp_even.hdf {evenfile} {setsf} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
-	evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,setsf=setsf,underfilter=underfilter,maxfreq=1.0/options.restarget,postproc=m3dpostproc)
+	cmd="e2proc3d.py {path}tmp_even.hdf {evenfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
+	evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,postproc=m3dpostproc)
 	run(cmd)
 
-	cmd="e2proc3d.py {path}tmp_odd.hdf {oddfile} {setsf} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
-	oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,setsf=setsf,underfilter=underfilter,maxfreq=1.0/options.restarget,postproc=m3dpostproc)
+	cmd="e2proc3d.py {path}tmp_odd.hdf {oddfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
+	oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,postproc=m3dpostproc)
 	run(cmd)
 
 	### Refilter/mask
@@ -253,12 +331,13 @@ def main():
 	if options.sym=="c1" : symopt=""
 	else: symopt="--sym {}".format(options.sym)
 
-	run("e2proc3d.py {combfile} {combfile} {setsf} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {symopt} {postproc}".format(
-		combfile=combfile,path=path,itr=options.iter,mass=options.mass,setsf=setsf,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=1.0/options.restarget))
+	run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {symopt} {postproc}".format(
+		combfile=combfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=1.0/options.restarget))
 
 	try:
 		os.unlink("{path}tmp_even.hdf".format(path=path))
 		os.unlink("{path}tmp_odd.hdf".format(path=path))
+		os.unlink("{path}tmp.hdf".format(path=path))
 		#os.system("gzip {path}mask.hdf".format(path=path)
 		#os.system("gzip {path}mask_tight.hdf".format(path=path)
 	except:
@@ -271,7 +350,7 @@ def calc_noise_cutoff(fsc_file):
 	fsc_data = np.loadtxt(fsc_file)
 	freqs,fscs = np.array_split(fsc_data,2,axis=1)
 	atfreq=freqs[fscs<=0.143][0] # first spatial frequency at which FSC touches (or falls below) 0.143.
-	return atfreq/2
+	return atfreq
 
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"

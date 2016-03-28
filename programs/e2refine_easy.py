@@ -218,7 +218,7 @@ not need to specify any of the following other than the ones already listed abov
 #	parser.add_argument("--m3dsetsf", type=str,dest="m3dsetsf", default=None, help="Default=auto. Name of a file containing a structure factor to apply after refinement")
 	parser.add_argument("--m3dpreprocess", type=str, default=None, help="Default=auto. Normalization processor applied before 3D reconstruction")
 
-	parser.add_argument("--ampcorrect",choices=['strucfac','flatten','none'],default='strucfac',help="Will perform amplitude correction via the specified method. The default choice is 'strucfac'. 'flatten' requires a target resolution better than 8 angstroms (experimental). 'none' will forego amplitude correction (experimental).", guitype='combobox', row=28, col=0, rowspan=1, colspan=2, mode="refinement['strucfac']", choicelist="('strucfac','flatten','none')")
+	parser.add_argument("--ampcorrect",choices=['strucfac','flatten','none'],default='auto',help="Will perform amplitude correction via the specified method.  'flatten' requires a target resolution better than 8 angstroms (experimental). 'none' will disable amplitude correction (experimental).", guitype='combobox', row=28, col=0, rowspan=1, colspan=2, mode="refinement['strucfac']", choicelist="('strucfac','flatten','none')")
 
 	#parser.add_argument("--classweight",choices=['sqrt','count','no_wt'],default='count',help="Alter the weight of each class in the reconstruction (experimental).", guitype='combobox', row=24, col=0, rowspan=1, colspan=2, mode="refinement['count']", choicelist="('sqrt','count','no_wt')")
 	#parser.add_argument("--sqrtnorm",action="store_true",default=False, dest="sqrtnorm", help="If set, the sqrt of the number of particles in each class will be used to weight the direct fourier inversion.",guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, mode="refinement")
@@ -293,7 +293,7 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	progress = 0.0
 	total_procs = 5*options.iter
 
-	if options.automask3d: automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
+#	if options.automask3d: automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
 	if options.apix>0 : apix=options.apix
 	else:
 		if options.startfrom!=None :
@@ -820,7 +820,15 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
  		evenfile="{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it)
  		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
  		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
-		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --automaskexpand {amaskxp} --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter --ampcorrect={ampcorrect}".format(path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3d2=amask3d2, m3dpostproc=m3dpostproc, setsf=m3dsetsf, restarget=options.targetres, amaskxp=options.automaskexpand, ampcorrect=options.ampcorrect))
+ 		if options.ampcorrect=="auto":
+			try:
+				if options.targetres<=8 and lastres!=0 and lastres[1]<9.0 : ampcorrect="flatten"
+				else: ampcorrect="strucfac"
+			except:
+				ampcorrect="strucfac"		# first iteration
+			append_html("""<p>Auto amplitude correction using mode:{} in this iteration</p>""".format(ampcorrect))
+		else: ampcorrect=options.ampcorrect
+		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --automaskexpand {amaskxp} --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter --ampcorrect={ampcorrect}".format(path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3d2=amask3d2, m3dpostproc=m3dpostproc, setsf=m3dsetsf, restarget=options.targetres, amaskxp=options.automaskexpand, ampcorrect=ampcorrect))
 
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})

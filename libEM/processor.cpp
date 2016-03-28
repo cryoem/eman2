@@ -7802,7 +7802,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	if (verbose) printf("expanding mask\n");
 	amask->process_inplace("mask.addshells.gauss", Dict("val1", (int)(nshells+nshellsgauss/2),"val2",0));
 	if (verbose) printf("filtering mask\n");
-	amask->process_inplace("filter.lowpass.gauss", Dict("cutoff_abs", (float)(1.0f/(float)nshellsgauss)));
+	if (nshellsgauss>0) amask->process_inplace("filter.lowpass.gauss", Dict("cutoff_abs", (float)(1.0f/(float)nshellsgauss)));
 	amask->process_inplace("threshold.belowtozero", Dict("minval",(float)0.002));	// this makes the value exactly 0 beyond ~2.5 sigma
 
 	bool return_mask = params.set_default("return_mask",false);
