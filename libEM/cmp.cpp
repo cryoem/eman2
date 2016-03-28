@@ -57,6 +57,7 @@ const string OptVarianceCmp::NAME = "optvariance";
 const string OptSubCmp::NAME = "optsub";
 const string PhaseCmp::NAME = "phase";
 const string FRCCmp::NAME = "frc";
+const string VerticalCmp::NAME = "vertical";
 
 template <> Factory < Cmp >::Factory()
 {
@@ -73,6 +74,7 @@ template <> Factory < Cmp >::Factory()
 	force_add<OptSubCmp>();
 	force_add<PhaseCmp>();
 	force_add<FRCCmp>();
+	force_add<VerticalCmp>();
 //	force_add<XYZCmp>();
 }
 
@@ -1605,7 +1607,27 @@ float OptSubCmp::cmp(EMData * image, EMData * with) const
 // 	delete diff;
 // 	return sum;
 }
-
+float VerticalCmp::cmp(EMData * image, EMData * with) const
+{
+	ENTERFUNC;
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+// 	vector<float> proj(nx,0);
+	float max=0;
+	for (int x=0; x<nx; x++){
+		float s=0;
+		for (int y=0; y<ny; y++){
+			s+=image->get_value_at(x,y);			
+		}
+// 		proj[x]=s;
+		if (s>max)
+			max=s;
+	}
+	
+// 	Dict params=Util::get_stats(proj);
+// 	float ret=params["std_dev"];
+	return -max;
+}
 
 void EMAN::dump_cmps()
 {

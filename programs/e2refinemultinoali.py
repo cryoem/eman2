@@ -87,19 +87,24 @@ def main():
 		options.mask="--multfile {}".format(options.mask)
 	else:
 		options.mask=""
-		
+	
+	db_apix=db["apix"]
+	if db_apix==0:
+		e=EMData(inputmodel[0],0,True)
+		db_apix=e["apix_x"]
+	
 	if multimodel:
 		models=range(len(inputmodel))
 		for m in models:
 			outfile="{path}/model_input_{k}.hdf".format(path=options.newpath, k=m)
-			run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db["apix"],mask=options.mask))
+			run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask))
 			inputmodel[m]=outfile
 		
 	
 	else:
 		models=[0,1]
 		outfile="{path}/model_input.hdf".format(path=options.newpath)
-		run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[0],out=outfile,freq=1.0/(db["targetres"]*2),apix=db["apix"],mask=options.mask))
+		run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[0],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask))
 		inputmodel[m]=outfile
 		
 		
@@ -231,7 +236,7 @@ def main():
 			### make 3d
 			run("e2make3dpar.py --input {clsout} --sym {sym} --output {threed} {preprocess} --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_5 --threads {threads} ".format(
 			clsout=classout[s],threed=threedout[s], sym=db["sym"], recon=db["recon"], preprocess=db["m3dpreprocess"],  m3dkeep=db["m3dkeep"], keepsig=db["m3dkeepsig"],
-			m3dpad=db["pad"],fillangle=db["astep"] ,threads=options.threads, apix=db["apix"]))
+			m3dpad=db["pad"],fillangle=db["astep"] ,threads=options.threads, apix=db_apix))
  
 	### post process
 	print "Post processing..."
