@@ -208,7 +208,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--classaverager",type=str,help="Default=auto. The averager used to generate the class averages. Default is auto.",default=None)
 	parser.add_argument("--classcmp",type=str,help="Default=auto. The name and parameters of the comparitor used to generate similarity scores, when class averaging.", default=None)
 	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Default=auto. Normalization applied during class averaging")
-	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging. This matches the filtration of the class-averages to the projections for easier comparison. May also improve convergence.",guitype='boolbox', row=20, col=0, rowspan=1, colspan=1, mode="refinement[True]")
+	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging. This matches the filtration of the class-averages to the projections for easier comparison. Disabled when ampcorrect=flatten is used.",guitype='boolbox', row=20, col=0, rowspan=1, colspan=1, mode="refinement[False]")
 
 	#options associated with e2make3d.py
 #	parser.add_header(name="make3dheader", help='Options below this label are specific to e2make3d', title="### e2make3d options ###", row=32, col=0, rowspan=1, colspan=3)
@@ -749,6 +749,22 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			E2progress(logid,progress/total_procs)
 
 		### Class-averaging
+		
+		# we need to decide on a postprocessing amplitude correction scheme here, because it may impact class-averaging
+		if options.ampcorrect=="auto":
+			try:
+				if options.targetres<=8 and lastres!=0 and lastres[1]<9.0 : ampcorrect="flatten"
+				else: ampcorrect="strucfac"
+			except:
+				ampcorrect="strucfac"		# first iteration
+			append_html("""<p>Auto amplitude correction using mode:{} in this iteration</p>""".format(ampcorrect))
+		else: ampcorrect=options.ampcorrect
+		
+		if ampcorrect!="strucfac" and classrefsf!="" :
+			classrefsf=""
+			print "Warning: Not using structure factor amplitude correction, so disabling classrefsf option"
+			append_html("<p>Warning: classrefsf option requires 'strucfac' amplitude correction. Since this is not being used either by intent or due to the high resolution of the map, 'classrefsf' has been disabled.</p>")
+
 		append_html("<p>* Iteratively align and average all of the particles within each class, discarding the worst fraction</p>",True)
 		cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
@@ -817,19 +833,12 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		### postprocessing
 		append_html("""<p>* Finally, determine the resolution, filter and mask the even/odd maps, and then produce the final 3-D map for this iteration.
 Note that the next iteration is seeded with the individual even/odd maps, not the final average.</p>""",True)
- 		evenfile="{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it)
- 		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
- 		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
- 		if options.ampcorrect=="auto":
-			try:
-				if options.targetres<=8 and lastres!=0 and lastres[1]<9.0 : ampcorrect="flatten"
-				else: ampcorrect="strucfac"
-			except:
-				ampcorrect="strucfac"		# first iteration
-			append_html("""<p>Auto amplitude correction using mode:{} in this iteration</p>""".format(ampcorrect))
-		else: ampcorrect=options.ampcorrect
-		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --automaskexpand {amaskxp} --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter --ampcorrect={ampcorrect}".format(path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3d2=amask3d2, m3dpostproc=m3dpostproc, setsf=m3dsetsf, restarget=options.targetres, amaskxp=options.automaskexpand, ampcorrect=ampcorrect))
-
+		evenfile="{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it)
+		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
+		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
+		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --automaskexpand {amaskxp} \
+--align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter --ampcorrect={ampcorrect}".format(\
+path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3d2=amask3d2, m3dpostproc=m3dpostproc, setsf=m3dsetsf, restarget=options.targetres, amaskxp=options.automaskexpand, ampcorrect=ampcorrect))
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
 
