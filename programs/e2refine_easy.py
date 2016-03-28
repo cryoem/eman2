@@ -306,7 +306,7 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	if options.targetres<apix*2:
 		print "ERROR: Target resolution is smaller than 2*A/pix value. This is impossible."
 		sys.exit(1)
-
+	
 	logid=E2init(sys.argv,options.ppid)
 
 	###################################
@@ -616,6 +616,7 @@ are memory concerns, using a smaller pad option may be the only reasonable alter
 	db["commandline"]=" ".join(sys.argv)
 	db["timestamp"]=str(time.ctime())
 	db["astep"]=astep
+	db["apix"]=apix
 
 	print "NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path))
 
