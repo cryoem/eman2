@@ -1456,18 +1456,20 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 		probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
 		#  Find unique projection directions
 		tdir = list(set(ipsiandiang))
+		bckgn = prjlist[im][allshifts[lshifts[0]]].get_attr("bckgnoise")
 		#  For each unique projection direction:
 		for ii in xrange(len(tdir)):
 			#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
 			lshifts = findall(tdir[ii], ipsiandiang)
-			recdata = EMData(imgsize,imgsize,1,False)
+			ki = 0
+			recdata = prjlist[im][allshifts[lshifts[ki]]]
 			recdata.set_attr_dict({"padffted":1, "is_complex":0})
-			toprab  = 0.0
-			for ki in xrange(len(lshifts)):
+			toprab  = probs[lshifts[ki]]
+			for ki in xrange(1,len(lshifts)):
 				Util.add_img(recdata, prjlist[im][allshifts[lshifts[ki]]])
 				toprab += probs[lshifts[ki]]
 			recdata.set_attr_dict({"padffted":1, "is_complex":1})
-			bckgn = prjlist[im][allshifts[lshifts[0]]].get_attr("bckgnoise")
+			
 			if not upweighted:  recdata = filt_table(recdata, bckgn )
 			recdata.set_attr("bckgnoise", bckgn )
 			ipsi = tdir[ii]%100000
