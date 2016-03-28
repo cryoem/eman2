@@ -216,10 +216,10 @@ def main():
 		# this becomes the new maximum mask radius
 		act=0
 		for i in xrange(rmax):
-			if md[i]==vmax : rmaxval=i
+			if md[i]==vmax : rmaxval=i		# find the radius of the actual max val
 			if not act and md[i]<0.9*vmax : continue
 			act=True
-			if md[i]<0.25*vmax :
+			if md[i]<0.2*vmax :
 				rmax=i
 				break
 		
@@ -227,7 +227,14 @@ def main():
 		vol.process_inplace("mask.sharp",{"outer_radius":rmax})
 		
 		# automask 
-		mask=vol.process("mask.auto3d",{"threshold":vmax*.3,"radius":0,"nshells":int(nx*0.05+.5+options.automaskexpand),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
+		mask=vol.process("mask.auto3d",{"threshold":vmax*.25,"radius":0,"nshells":int(nx*0.05+.5+options.automaskexpand),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
+		
+		## check the largest extent of the mask
+		#maskrd=mask.calc_radial_dist(nx/2,0,1,3)
+		## if the mask doesn't extend 
+		#if maskrd[rmax-3]<.9 :
+			#mask=vol.process("mask.auto3d",{"threshold":vmax*.15,"radius":0,"nshells":int(nx*0.05+.5+options.automaskexpand),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
+		
 		
 		# Soften mask this way instead of with nshellsgauss
 #		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*1.5)})
@@ -238,7 +245,7 @@ def main():
 
 		# automask (tight)
 		th=min(md[rmaxval-nx//8:rmaxval+nx//8])
-		mask=vol.process("mask.auto3d",{"threshold":th*.6,"radius":0,"nshells":int(options.restarget*1.2/apix),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
+		mask=vol.process("mask.auto3d",{"threshold":th*.4,"radius":0,"nshells":int(options.restarget*1.2/apix),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
 		
 		## Soften mask this way instead of with nshellsgauss
 		#mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*1.5)})
