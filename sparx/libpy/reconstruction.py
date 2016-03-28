@@ -1465,7 +1465,7 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, upw
 			toprab  = 0.0
 			for ki in xrange(len(lshifts)):
 				ishift = allshifts[lshifts[ki]]
-				Util.img_add(recdata, prjlist[im][ishift])
+				Util.add_img(recdata, prjlist[im][ishift])
 				toprab += probs[lshifts[ki]]
 			recdata.set_attr_dict({"padffted":1, "is_complex":1})
 			if not upweighted:  recdata = filt_table(recdata, data[im][ishift].get_attr("bckgnoise") )
