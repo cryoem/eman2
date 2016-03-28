@@ -215,13 +215,17 @@ def main():
 		# this finds the first radius where the max value @ r falls below overall max/4
 		# this becomes the new maximum mask radius
 		act=0
+		mv=0,0
 		for i in xrange(rmax):
-			if md[i]==vmax : rmaxval=i		# find the radius of the actual max val
+			if md[i]>mv[0] : mv=md[i],i		# find the radius of the  max val in range
 			if not act and md[i]<0.9*vmax : continue
 			act=True
 			if md[i]<0.2*vmax :
 				rmax=i
 				break
+			
+		rmaxval=mv[1]
+		vmax=mv[0]
 		
 		# excludes any spurious high values at large radius
 		vol.process_inplace("mask.sharp",{"outer_radius":rmax})
@@ -244,8 +248,8 @@ def main():
 		mask.write_image("{path}mask.hdf".format(path=path),0)
 
 		# automask (tight)
-		th=min(md[rmaxval-nx//8:rmaxval+nx//8])
-		mask=vol.process("mask.auto3d",{"threshold":th*.4,"radius":0,"nshells":int(options.restarget*1.2/apix),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
+#		th=min(md[rmaxval-nx//8:rmaxval+nx//8])
+		mask=vol.process("mask.auto3d",{"threshold":vmax*.25,"radius":0,"nshells":int(options.restarget*1.2/apix),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
 		
 		## Soften mask this way instead of with nshellsgauss
 		#mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*1.5)})
