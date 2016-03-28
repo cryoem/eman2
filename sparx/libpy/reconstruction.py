@@ -1463,7 +1463,7 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, upw
 			recdata = EMData(imgsize,imgsize,1,False)
 			recdata.set_attr_dict({"padffted":1, "is_complex":0})
 			toprab  = 0.0
-			for ki in xrange(len(lshfits)):
+			for ki in xrange(len(lshifts)):
 				ishift = allshifts[lshifts[ki]]
 				Util.img_add(recdata, prjlist[im][ishift])
 				toprab += probs[lshifts[ki]]
