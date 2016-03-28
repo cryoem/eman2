@@ -1467,12 +1467,14 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, upw
 				Util.add_img(recdata, prjlist[im][allshifts[lshifts[ki]]])
 				toprab += probs[lshifts[ki]]
 			recdata.set_attr_dict({"padffted":1, "is_complex":1})
-			if not upweighted:  recdata = filt_table(recdata, prjlist[im][allshifts[lshifts[0]]].get_attr("bckgnoise") )
-			recdata.set_attr("bckgnoise", data[im][ishift].get_attr("bckgnoise") )
+			bckgn = prjlist[im][allshifts[lshifts[0]]].get_attr("bckgnoise")
+			if not upweighted:  recdata = filt_table(recdata, bckgn )
+			recdata.set_attr("bckgnoise", bckgn )
 			ipsi = tdir[ii]%100000
 			iang = tdir[ii]/100000
 			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":ipsi*Tracker["delta"]}), toprab)
-
+	#  clean stuff
+	del bckgn, rdata, tdir, ipsiandiang, allshifts, probs
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )
 		finfo.flush()
