@@ -1456,7 +1456,7 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 		probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
 		#  Find unique projection directions
 		tdir = list(set(ipsiandiang))
-		bckgn = prjlist[im][allshifts[lshifts[0]]].get_attr("bckgnoise")
+		bckgn = prjlist[im][0].get_attr("bckgnoise")
 		#  For each unique projection direction:
 		for ii in xrange(len(tdir)):
 			#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
@@ -1475,8 +1475,8 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 			iang = tdir[ii]/100000
 			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":ipsi*delta}), toprab)
 	#  clean stuff
-	del bckgn, rdata, tdir, ipsiandiang, allshifts, probs
-	if not (finfo is None): 
+	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
+	if not (finfo is None):
 		finfo.write( "begin reduce\n" )
 		finfo.flush()
 
