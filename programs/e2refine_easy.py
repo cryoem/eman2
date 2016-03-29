@@ -218,7 +218,7 @@ not need to specify any of the following other than the ones already listed abov
 #	parser.add_argument("--m3dsetsf", type=str,dest="m3dsetsf", default=None, help="Default=auto. Name of a file containing a structure factor to apply after refinement")
 	parser.add_argument("--m3dpreprocess", type=str, default=None, help="Default=auto. Normalization processor applied before 3D reconstruction")
 
-	parser.add_argument("--ampcorrect",choices=['strucfac','flatten','none'],default='auto',help="Will perform amplitude correction via the specified method.  'flatten' requires a target resolution better than 8 angstroms (experimental). 'none' will disable amplitude correction (experimental).", guitype='combobox', row=28, col=0, rowspan=1, colspan=2, mode="refinement['strucfac']", choicelist="('strucfac','flatten','none')")
+	parser.add_argument("--ampcorrect",choices=['auto','strucfac','flatten','none'],default='auto',help="Will perform amplitude correction via the specified method.  'flatten' requires a target resolution better than 8 angstroms (experimental). 'none' will disable amplitude correction (experimental).", guitype='combobox', row=28, col=0, rowspan=1, colspan=2, mode="refinement['strucfac']", choicelist="('strucfac','flatten','none','auto')")
 
 	#parser.add_argument("--classweight",choices=['sqrt','count','no_wt'],default='count',help="Alter the weight of each class in the reconstruction (experimental).", guitype='combobox', row=24, col=0, rowspan=1, colspan=2, mode="refinement['count']", choicelist="('sqrt','count','no_wt')")
 	#parser.add_argument("--sqrtnorm",action="store_true",default=False, dest="sqrtnorm", help="If set, the sqrt of the number of particles in each class will be used to weight the direct fourier inversion.",guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, mode="refinement")
@@ -306,7 +306,7 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	if options.targetres<apix*2:
 		print "ERROR: Target resolution is smaller than 2*A/pix value. This is impossible."
 		sys.exit(1)
-	
+
 	logid=E2init(sys.argv,options.ppid)
 
 	###################################
@@ -750,7 +750,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			E2progress(logid,progress/total_procs)
 
 		### Class-averaging
-		
+
 		# we need to decide on a postprocessing amplitude correction scheme here, because it may impact class-averaging
 		if options.ampcorrect=="auto":
 			try:
@@ -760,7 +760,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 				ampcorrect="strucfac"		# first iteration
 			append_html("""<p>Auto amplitude correction using mode:{} in this iteration</p>""".format(ampcorrect))
 		else: ampcorrect=options.ampcorrect
-		
+
 		if ampcorrect!="strucfac" and classrefsf!="" :
 			classrefsf=""
 			print "Warning: Not using structure factor amplitude correction, so disabling classrefsf option"
