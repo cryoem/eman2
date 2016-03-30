@@ -2048,7 +2048,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	from time import time
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities]], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -2109,6 +2109,9 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	#mpi_barrier(MPI_COMM_WORLD)
 	#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
 	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
+	for kl in xrange(len(data)):
+		newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
+		newpar[kl][-1] = newpar[kl][-1][:1]
 	mpi_barrier(MPI_COMM_WORLD)
 	return newpar
 
