@@ -300,9 +300,11 @@ def main():
 	ys = []
 	zs = []
 	ptclnx = 0
-	
+	subtilts=[]
 	if options.subtiltsdir:
-		procsubtiltsdir( options )
+		ret = procsubtiltsdir( options )
+		nimgs=ret[0]
+		subtilts=ret[1]
 				
 	elif options.imagestem:
 		#if not options.icethickness:
@@ -401,7 +403,7 @@ def main():
 					
 		elif not options.subtiltsdir and not options.coords:
 			print "\nWARNING: --icethicknessauto requires --subtiltsdir or --coords"
-			
+		print "done with ice"	
 	elif not options.icethicknessauto:
 		print "WARNING: No icethickness provided, and --icethicknessauto is also turned off."
 			
@@ -415,12 +417,14 @@ def main():
 
 	#if nangles != nimgs-len(indxstoexclude):
 	if nangles != nimgs:
-		print "\nERROR: The number of angles %d does not coincide with number of images %d" % ( nangles, nimgs)
-		sys.exit(1)
+		if not options.subtiltsdir:
+			print "\nERROR: The number of angles %d does not coincide with number of images %d" % ( nangles, nimgs)
+			sys.exit(1)
 	else:
 		pass
 		#print "\nnumber of images to exclude",len( indxstoexclude )
 	
+	print "nangles",nangles
 	imagefilenames = {}
 	
 		
@@ -515,20 +519,30 @@ def main():
 				
 				
 				kk=0
+				imagesordered=[]
 				for f in findir:
-					imagestem = ''
-					if '.mrc' in f:
-						imagestem = f.replace('.mrc','')
-					if '.st' in f:
-						imagestem = f.replace('.st','')
-					if '.ali' in f:
-						imagestem = f.replace('.ali','')
-					if '.hdf' in f:
-						imagestem = f.replace('.hdf','')
-				
-					if imagestem:
-						imagefilenames.update({imagestem:[ options.path + '/' + f,angles[kk]]})
-						kk+=1
+					#imagestem = ''
+					#if '.mrc' in f:
+					#	imagestem = f.replace('.mrc','')
+					#if '.st' in f:
+					#	imagestem = f.replace('.st','')
+					#if '.ali' in f:
+					#	imagestem = f.replace('.ali','')
+					if 'UNSTACKED' in f and '.hdf' in f:
+						#imagestem = f.replace('.hdf','')
+					
+						imagesordered.append( f )
+
+				imagesordered.sort()
+				#print "\n\n\nOOOOOOOOOOOOOooooooooooo\nordered images",imagesordered
+				#print "len", len(imagesordered)
+				kk=0
+				for img in imagesordered:
+					imagestem = img.replace('.hdf','')
+					#if imagestem:
+					#print "adding imagestem",imagestem
+					imagefilenames.update({imagestem:[ options.path + '/' + img,angles[kk]]})
+					kk+=1
 	
 				nfiles = len(imagefilenames)
 				if nimgs != nfiles:
@@ -560,6 +574,7 @@ def main():
 	Read or generate the CTF parameters to use
 	'''
 	
+	print "\nwill generate ctfs"
 	ctfs = genctfparamlines( options, apix, nimgs, angles, imagefilenames, icethickness )
 	
 	if not options.defocilist:
@@ -703,6 +718,7 @@ def main():
 	If input consists of subtiltseries, adjust the defocus value in 'ctfs' based on the particle's
 	X and Z coordinates in the tomogram
 	'''
+	print "\nchecking for subtiltsdir"
 	if options.subtiltsdir:
 		if not options.save3d:
 			if not options.save2d:
@@ -723,7 +739,7 @@ def main():
 		
 		maxz = max( zs ) 
 		minz =  min( zs ) 
-		
+		print "\n\nshould correct subtiltseries"
 		correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, framexsize, icethickness, maxz, minz )
 	
 	'''
@@ -862,7 +878,7 @@ def errordetector( options ):
 
 
 
-def procsubtiltsdir():
+def procsubtiltsdir( options ):
 	
 	if not options.framexsize:
 		print "ERROR: provide a value for options.framexsize if processing --subtiltsdir"
@@ -876,6 +892,10 @@ def procsubtiltsdir():
 	linesyz = []
 	maxfiles = options.subset
 	fn = 0
+	subtilts=[]
+	xs=[]
+	ys=[]
+	zs=[]
 	for f in findir:
 		
 		if options.subset:
@@ -943,10 +963,17 @@ def procsubtiltsdir():
 		print "\nERROR: cannot plot y vs z values because arrays are empty", ys, zs
 	
 	
+	ns = []
+	
 	nimgs = EMUtil.get_image_count( subtilts[0] )
+	kn=0
+	for sub in subtilts:
+		ns.append(EMUtil.get_image_count( subtilts[kn] ))
+		kn+=1
+	nimgs = max(ns)
 	apix = EMData( subtilts[0], 0, True)['apix_x']
 		
-	return
+	return nimgs,subtilts
 
 
 
@@ -967,16 +994,17 @@ def runcmd( options, cmd ):
 
 
 def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, framexsize, icethickness, maxz, minz ):
-	
+	print "inside correctsubtilt"
 	ii = 0
 	globalAvgDefErrors=[]
 	
 	zfillfactor = len( str( len(subtilts) ) )
 	
 	#indxstoexclude=[int(i) for i in options.exclude.split(',')]
-	
+	print "subtilts are", subtilts
 	#ss=0
 	for sts in subtilts:
+		print "processing subtilt",sts
 		imghdr = EMData( sts, 0, True )
 		
 		#print " icethickness is", icethickness
@@ -1361,19 +1389,19 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames, icethickness
 		g.close()
 		#if kk not in indxstoexclude: 
 		if len( defoci ) != nimgs:
-			print """ERROR: The number lines in the file provided
+			print """WARNING: The number lines in the file provided
 				through --defocilist should match the number of images in the tiltseries
 				or in each subtiltseries provided.
 				To use the same parameters for all images provide them
 				explicitly through --cs, --bfactor,--voltage, --defocus, --ampcont and, optionally --apix
 				(this apix will be read from the header if not provided, so make sure it's correct). 
 				"""
-			sys.exit(1)
+			#sys.exit(1)
 		else:
 			print "same number of defoci %d as imgs %d" %(len(defoci),nimgs)
-			if len(defoci) != len(angles):
-				print "ERROR: number of defoci %d not the same as number of angles %d" %(len(defoci),len(angles))
-				sys.exit()
+		if len(defoci) != len(angles):
+			print "ERROR: number of defoci %d not the same as number of angles %d" %(len(defoci),len(angles))
+			sys.exit()
 		
 		if options.voltage and options.cs and apix and options.bfactor and options.ampcont:
 			print """\nExplicit parameters --cs,--apix,--bfactor,--voltage and --ampcont 
