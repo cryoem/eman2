@@ -2160,9 +2160,17 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	# else:
 		# assert(False) # This is unreachable code
 	
-	# output-related errors
-	if os.path.exists(output_directory):
-		error_message_list.append("Output directory (%s) exists. Please change the name and restart the program." % output_directory)
+	# # output-related errors
+	# if os.path.exists(output_directory):
+	# 	error_message_list.append("Output directory (%s) exists. Please change the name and restart the program." % output_directory)
+	
+	error_status = None
+	if myid == 0:
+		if os.path.exists(output_directory):
+			error_status = ("Output directory (%s) exists. Please change the name and restart the program." % output_directory, getframeinfo(currentframe()))
+	from utilities import if_error_then_all_processes_exit_program
+	if_error_then_all_processes_exit_program(error_status)
+	
 	
 	# option-related errors
 	if pixel_size <= 0.0:
