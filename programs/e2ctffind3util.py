@@ -31,9 +31,11 @@
 #
 # e2ctffind3.py  11/5/2014 Stephen Murray
 # This is a program for interacting with ctffind3 and ctffind3 results from within EMAN2
+# ... which Stephen apparently never finished
+# 3/28/16 - completing it ... steve
 
 from EMAN2 import *
-from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
+from EMAN2star import StarFile
 from optparse import OptionParser
 from math import *
 import os
@@ -54,6 +56,7 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 	parser.add_argument("--voltage", default=0.0, type=float,help="The voltage (in kV) of the microscope", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--ac", default=0.0, type=float,help="The amplitude contrast of the micrographs", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="import,run")
+	parser.add_argument("--importrelionstar", default=False, action="store_true",help="Import CTFFIND3 data in Relion STAR format. Put STAR files in 'ctffind3' folder", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
 	parser.add_argument("--importctffind3", default=False, action="store_true",help="Import ctffind3 data?", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
 	parser.add_argument("--importctffind4", default=False, action="store_true",help="Import ctffind4 data?", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='import[False]')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -71,6 +74,38 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv,options.ppid)
+
+	if options.importrelionstar :
+		fls=[i for i in os.listdir("ctffind3") if i[-5:]==".star"]
+		if len(fls)==0:
+			print "please create a folder called 'ctffind3' and put .star files in it before running this option"
+			sys.exit(1)
+		
+		for f in fls:
+			star=StarFile("ctffind3/"+f)
+			if not star.has_key("rlnMicrographName") :
+				print "No rlnMicrographName in ",f
+				continue
+			
+			print f
+			for i,imfsp in enumerate(star["rlnMicrographName"]):
+				im=info_name(imfsp)		# should work regardless of extension
+				jdb=js_open_dict(im)
+				
+				dfu=star["rlnDefocusU"][i]
+				dfv=star["rlnDefocusV"][i]
+				dfang=star["rlnDefocusAngle"][i]
+				ctf=EMAN2Ctf()
+				ctf.from_dict({"defocus":(dfu+dfv)/20000.0,"dfang":dfang,"dfdiff":(dfu-dfv)/10000.0,"voltage":star["rlnVoltage"][i],"cs":star["rlnSphericalAberration"][i],"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
+				jdb["ctf_frame"]=[512,ctf,(256,256),tuple(),5,1]
+				js_close_dict(im)
+
+		launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit --curdefocusfix --astigmatism".format(ctf.voltage,ctf.cs,ctf.ampcont,ctf.apix))
+		
+		print "All done"
+		sys.exit(0)
+
+
 	if options.apix<= 0 :
 		print "Angstrom per pixel (apix) must be specified!"
 		exit(-1)
@@ -92,6 +127,8 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 					args.append("micrographs/" + item)
 			except:
 				pass
+	
+		
 	
 	if options.runctffind4:
 		version = "ctffind4"
@@ -125,7 +162,7 @@ def import_ctf(voltage, cs, ac, apix, verbose, version):
 							defocusv = float(line.split()[1])
 							dfang =  float(line.split()[2])
 							cc = float(line.split()[3])
-							e2defocus = (defocusu + defocusv) / 20000.0
+							e2defocus =  (defocusu + defocusv) / 20000.0
 							e2dfdiff = abs(defocusu - defocusv) / 10000.0
 							e2dfang = dfang
 							if not os.path.exists(os.getcwd() + "/info"):
