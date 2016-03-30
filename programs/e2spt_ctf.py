@@ -72,6 +72,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	
+
 	parser.add_argument("--tiltseries", type=str, default='', help="""Aligned tilt series. File format must be MRC and must have .mrc or .st or .ali extension.""")
 	
 	parser.add_argument("--exclude",type=str,default='',help="""Comma-separated list of image indexes in the --tiltseries to exclude from CTF fitting. For example, --exclude 0,3,4,6,7.""")
@@ -101,6 +102,8 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	
+	parser.add_argument("--maxangerror", type=float,default=180.0,help="""Default=180.0. If the calculated angle exceeds this value, the global defocus will be used.""")
 	
 	parser.add_argument("--pad2d", type=float,default=0.0,help="""Padding factor to zero-pad
 		the 2d images in the tilt series prior to reconstruction.
@@ -146,6 +149,8 @@ def main():
 		
 	parser.add_argument("--defocusmin",type=float,default=0.0,help=""" If --autofit, minimum autofit defocus. Default=0.0, not used. A value will be estimated based on tilt angle and distance from the tilt axis.""")
 	
+	parser.add_argument("--targetdefocus",type=float,default=0.0,help=""" Default=0.0, not used. Target defocus value at the tilt axis in micrometers for the images in the tiltseries.""")
+
 	parser.add_argument("--defocusmax",type=float,default=0.0,help="""Default=0.0, not used. If --autofit, maximum autofit defocus. A value will be estimated based on tilt angle and distance from the tilt axis.""")
 		
 	parser.add_argument("--stripstep",type=int,default=0,help="""This will determine the
@@ -543,7 +548,8 @@ def main():
 				
 				if imagestem:
 					imagefilenames.update({imagestem:[f,angles[0]]})
-			
+
+			print "\n\n\nThese are the imagefilenames to process",imagefilenames,len(imagefilenames)
 		else:
 			print "\nTilt series has to be in .st or .mrc or .ali extension"
 			sys.exit()	
@@ -1280,8 +1286,8 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames, icethickness
 	
 	#indxstoexclude = [int(i) for i in options.exclude.split(',')]
 	
-	print "e2spt_ctf (genctfparamlines)"
-	print "received imagefilenames", imagefilenames
+	print "\n\n\n\n\n\ne2spt_ctf (genctfparamlines)"
+	print "received imagefilenames", imagefilenames, len(imagefilenames)
 	
 	ctfs={}
 	
@@ -1389,7 +1395,7 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames, icethickness
 			sys.exit(1)
 		
 	elif options.autofit:
-		print "autofitting using voltage=%.2f, cs=%.2f, apix=%.2f, ampcont=%.2f" %( float(options.voltage), float( options.cs), float( apix), float( options.ampcont))
+		print "\n\n\nautofitting using voltage=%.2f, cs=%.2f, apix=%.2f, ampcont=%.2f" %( float(options.voltage), float( options.cs), float( apix), float( options.ampcont))
 		print "imagefilenames", imagefilenames
 		if options.voltage and options.cs and apix and options.ampcont:
 			ctfs = sptctffit( options, apix, imagefilenames, angles, icethickness )
@@ -1539,7 +1545,7 @@ def phaseflipper(options,img,ctf):
 	prj_flipped=prj_fft.do_ift()
 	
 	
-	print "prj_flipped to return, min, max, sigma, mean", prj_flipped['minimum'],prj_flipped['maximum'],prj_flipped['sigma'],prj_flipped['mean']
+	#print "prj_flipped to return, min, max, sigma, mean", prj_flipped['minimum'],prj_flipped['maximum'],prj_flipped['sigma'],prj_flipped['mean']
 
 	return prj_flipped, intermediate
 	
@@ -1577,9 +1583,9 @@ def tilerfft(options, angle, imgt, currentstrip, nstrips, start, end, step, save
 	
 	#for x in range( micrographstarts[m], micrographstarts[m] + micrographwidth - options.tilesize + 1, options.stripstep ):
 	for x in range( start, end, step ): 
-		print "\nsumming over tiles along y"
+		#print "\nsumming over tiles along y"
 		for y in range(0, ny - options.tilesize+1, options.tilesize):
-			print "tile at y", y
+			#print "tile at y", y
 			clipr = imgt.get_clip(Region(x,y, options.tilesize, options.tilesize))
 			
 			if clipr['sigma']:
@@ -1756,7 +1762,7 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 		ctf1d = ctf.compute_1d
 		#ctfbs = ctf1d - bg_1d
 		
-		print '\n\nctf1d is', ctf1d
+		#print '\n\nctf1d is', ctf1d
 		#print '\n\nctfbs is', ctfbs
 		
 		#c = open( options.path + '/ctf.txt', 'w' )
@@ -1810,7 +1816,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 	defocuswiggle = None	
 	
 	ctfs={}
-	print "imagefilenames", imagefilenames
+	print "\n\nimagefilenames", imagefilenames, len(imagefilenames)
 	
 	#angles.sort()	#use to get image index
 	
@@ -1843,20 +1849,23 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 
 	allowabledz = twothirdsnyquist*twothirdsnyquist/(2.0*lambd)
 
-	print "\n\n\n\n\n\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\nthe theoretical allowable depth of focus or defocus variation limit in angstroms is %.2f to reach 2/3 nyquist resolution %.2f" %( twothirdsnyquist, allowabledz )
+	print "\n\n\n\n\n\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\nthe theoretical allowable depth of focus or defocus variation limit in angstroms is %.2f to reach 2/3 nyquist resolution %.2f" %( allowabledz, twothirdsnyquist )
 
 	if options.defocusvariationlimit:
 		allowabledz = options.defocusvariationlimit
 		print "however, the allowable depth of focus in micrometers has been set via --defocusvariationlimit and is", allowabledz
 		print "which in angstroms is", allowabledz*10000
 
+	
+	progresscount=1
 	for label in imagefilenames:
 		angle = imagefilenames[label][1]
 		imgindx = angles.index( angle )
 		
-		print "\n\nautofitting ctf for stem %s, image %s, angle %f, apix %f, progress = %d/%d" %( label, imagefilenames[label][0],angle,apix,imgindx,len(angles))
+		print "\n\n\n\n\n\n\nautofitting ctf for stem %s, image %s, imgindx %d, angle %f, apix %f, progress = %d/%d" %( label, imagefilenames[label][0],imgindx,angle,apix,progresscount,len(angles))
 		img = EMData( imagefilenames[label][0], 0 )
-		
+		progresscount+=1
+
 		nx = int( img['nx'] )
 		ny = int( img['ny'] )
 		
@@ -1872,10 +1881,22 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			'''
 			#options, angle, imgt, currentstrip, nstrips, start, end, step, savestriptiles, saveffts
 			fftg = tilerfft( options, angle, img, 0, 1, 0, nx - options.tilesize + 1, options.tilesize, 0, 0 )
-		
+			
+			defocusmin = 0.5
+			defocusmax = 15.0
+
+			if options.targetdefocus:
+				defocusmin = options.targetdefocus -1.5
+				defocusmax = options.targetdefocus + 1.5
+
 			#ffta, angle, apix, options, nsubmicros, currentsubmicro, defocusmin, defocusmax, defocusstep, x=0 ):
 			globaldefocus = fitdefocus( fftg, angle, apix, options, 1, 0, defocusmin, defocusmax, defocusstep, 0)
-		
+			
+			if globaldefocus:
+				defocusmin = globaldefocus -1.5
+				defocusmax = globaldefocus + 1.5
+
+
 			globalmiddle = ( nx/2.0 ) * apix / 10000	#convert to micrometers, so x and y axis are in the same units
 			
 			
@@ -1887,7 +1908,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			r = Region( img['nx']/2 - options.tilesize, 0, 2*options.tilesize, img['ny'])
 
 			
-			fixcenter = 0
+			fixcenter = 1
 			
 			if fixcenter:
 				imgcenterstrips = img.get_clip( r )
@@ -1939,6 +1960,8 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				print "\nWARNING! global defocus fitting failed! for image", label
 		
 		
+		print "\n\nfound this globaldefocus %.2f for label %s" %(globaldefocus,label)
+
 		xs = []
 		imgdefocuses = []
 		micrographmiddle = img['nx']/2
@@ -2111,11 +2134,11 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 
 			
 				'''#
-				#The defocus is fitted per submicrograph (regions of pseudo-constant defocus); therefore, things are rest here
+				#The defocus is fitted per submicrograph (regions of pseudo-constant defocus); therefore, things are reset here
 				#'''
 			
-				print "m and type", m, type(m)
-				print "submicrographwidth, corresponding to a region of pseudo constant defocus is", micrographwidth
+				#print "m and type", m, type(m)
+				#print "submicrographwidth, corresponding to a region of pseudo constant defocus is", micrographwidth
 				print "options.tilesize and type", options.tilesize, type( options.tilesize )
 			
 			
@@ -2163,7 +2186,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			
 			
 				#print "micrographmiddlein micrometers is", micrographmiddle
-			
+				print "stripdefocus", stripdefocus
 				if stripdefocus:
 					#imgdefocuses.append( stripdefocus*10000/apix )		#defocus in pixels
 					imgdefocuses.append( stripdefocus )					#defocus in micrometers
@@ -2177,21 +2200,21 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			
 			#xs = numpy.array( [i*options.stripstep + options.tilesize/2.0 for i in range(len(imgdefocuses))] )
 		
-			print "micromids are", micromids
+			#print "micromids are", micromids
 			xs =numpy.array( micromids )
 		
 			imgdefocuses = numpy.array( imgdefocuses )
 		
-			print 'xs are', xs, type(xs)
-		
-			print "\bPLOTTING\n\n"
+			#print 'xs are', xs, type(xs)
+			print "\n\n\n\nimgdefocuses", imgdefocuses
+			#print "\bPLOTTING\n\n"
 		
 			m=0
 			b=0
 			defocuscalc = 0	
 			nxMicrometers = nx*apix/10000.00
 		else:
-			print "img being skipped for strip-based fitting"
+			print "\n\n\n\n\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!img being skipped for strip-based fitting"
 			xs.append(micrographmiddle)
 			imgdefocuses.append(globaldefocus)
 			anglestoexclude.append(angle)
@@ -2199,15 +2222,17 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 		xs = numpy.array( xs )
 		imgdefocuses = numpy.array( imgdefocuses )
 		
+		print "\nfor label",label
+		print "imgdefocuses are",imgdefocuses
+		print "xs are",xs
 		
 		if xs.any() and imgdefocuses.any():
 		
-			for y in range( len(imgdefocuses)):
-				imgdefocuses[y] = imgdefocuses[y] *-1
+			#for y in range( len(imgdefocuses)):
+			#	imgdefocuses[y] = imgdefocuses[y] *-1
 			
 
-			m, b = numpy.polyfit(xs, imgdefocuses, 1)
-			defocuscalc = m * nxMicrometers/2.0 + b
+
 			
 			#if m < 0:
 			#	if angle > 0:
@@ -2217,14 +2242,27 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			#		m *= -1
 			
 			
-			anglecalc = math.degrees(numpy.arctan( m ))
+			
 			
 			if len(xs) < 2 and len (imgdefocuses) < 2:
 				anglecalc = angle
 				print "defocus calc is derived from middle strip only! it would have been", defocuscalc
 				defocuscalc = imgdefocuses[0]
 				print "but is", defocuscalc
+				if defocuscalc < 0.0:
+					defocuscalc*=-1.0
+			else:
+				m, b = numpy.polyfit(xs, imgdefocuses, 1)
 				
+				defocuscalc = m * nxMicrometers/2.0 + b
+				print "\n\n\n\nSSSSSSSS\nbased on angle, m, b, xs, imgdefocuses",angle,m,b,xs,imgdefocuses
+				print "defocuscalc is",defocuscalc
+				print "the mirrored defocus is", (-1*m) * (-1*nxMicrometers)/2.0 + b
+				print "while globaldefocus is",globaldefocus
+
+
+				#becuause defocus is defined as positive (when really it should be negative; more defocus is a more negative value; less defocus is a smaller negative value), the actual slope will be inverted, so lets reinvert it
+				anglecalc = math.degrees(numpy.arctan( -1*m ))
 				
 			if angle not in anglestoexclude:
 				angerror = math.fabs( angle - anglecalc )
@@ -2232,9 +2270,13 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				print "angle, anglecalc, and angerror are", angle, anglecalc, angerror
 				angerrors.update( { angle:angerror } )
 				
-				if angerror > 15.0:
+				if math.fabs(angerror) > math.fabs(options.maxangerror):
+					print "\nusing globaldefocus for label %s due to large angular error" %(label)
 					defocuscalc = globaldefocus
 					middef = imgdefocuses[0]
+					if defocuscalc < 0.0:
+						defocuscalc*=-1.0
+					
 					if len(imgdefocuses) > 2:
 						middef = imgdefocuses[len(imgdefocuses)/2]
 						defocuscalc = (globaldefocus+middef)/2.0
@@ -2242,15 +2284,22 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					
 										
 			
+			
+
 			sptctfplotter( options, nxMicrometers, xs, imgdefocuses, maxangle, angle, angles.index( angle ), len(angles), imgindx, m, b, globaldefocus, globalmiddle, faileddefs, failedmids )		
 
 			
 		else:
 			print "\nWarning: All defocuses failed for this submicrograph. Nothing to plot."
+			defocuscalc = globaldefocus
+			if defocuscalc < 0.0:
+					defocuscalc*=-1
 		
 		#if xs.any() and imgdefocuses.any():
 			#pass nx in micrometers
 		
+		print "\n\n\n\n\n\n\n\n@@@@@@@@@@@@@@@@@@@@@\nbefore setting params, defocuscalc %f and globaldefocus %f" %(defocuscalc,globaldefocus)
+
 		params = {'ampcont':options.ampcont,'apix':apix,'bfactor':options.bfactor,'cs':options.cs,'defocus':math.fabs(defocuscalc),'voltage':options.voltage}
 	
 		ctf = EMAN2Ctf()
@@ -2503,6 +2552,8 @@ def sptctfplotter( options, nx, xdata, ydata, maxangle, angle, angleindx, nangle
 	#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 
 	plt.clf()
+	plt.close(fig)
+	plt.close("all")
 
 	return
 
@@ -2584,7 +2635,7 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 			extray = extrax = int(ptclnx/2)
 		
 			
-	print "\nmax y is", maxy
+	#print "\nmax y is", maxy
 	ylim1 = miny - extray
 	ylim2 = maxy + extray
 	
@@ -2600,13 +2651,13 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 
 	pylab.ylim([ylim1, ylim2])
 	
-	print 'yrange', ylim1,ylim2
+	#print 'yrange', ylim1,ylim2
 	
 	print "\nmax x is", max(xaxis)
 	
 	pylab.xlim([xlim1, xlim2])
 	
-	print 'xrange', xlim1,xlim2
+	#print 'xrange', xlim1,xlim2
 	
 	
 	
@@ -2642,6 +2693,9 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 	#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	
 	plt.clf()
+	plt.close(fig)
+	plt.close("all")
+
 	
 	return	
 
