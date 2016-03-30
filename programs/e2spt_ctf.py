@@ -153,13 +153,14 @@ def main():
 
 	parser.add_argument("--defocusmax",type=float,default=0.0,help="""Default=0.0, not used. If --autofit, maximum autofit defocus. A value will be estimated based on tilt angle and distance from the tilt axis.""")
 		
-	parser.add_argument("--stripstep",type=int,default=0,help="""This will determine the
-		amount of strips and the overlap between them for defocus estimation. The default 
-		is half the tilesize. For example, for a 4000x4000 pixels image, a tile size of
+	parser.add_argument("--stripstep",type=int,default=0,help="""Default=0 (not used; no overlap). This will determine the
+		amount of strips and the overlap between them for defocus estimation. For example, for a 4000x4000 pixels image, a tile size of
 		400 would yield 20, not 10 strips, by default. If --stripstep=1 were provided, the
 		image would be devided into 4000-400=3600 strips. The first strip would go from pixel
 		0 to pixel 400, the second strip from pixel 1 to pixel 401, the third from pixel 2
-		to 402, etc... up to the las strip going from pixel 3600 to 4000.""")
+		to 402, etc... up to the last strip going from pixel 3600 to 4000.""")
+	
+	parser.add_argument("--tileoverlap",action='store_true',default=False,help="""If provided, it will cause tiles to overlap by 50 percent in x and y for power spectrum computation (periodogram averaging).""")
 	
 	parser.add_argument('--subset', type=int, default=0, help='''Requires --subtiltsdir. Specify how many subtiltseries (or particles) to ctf correct. If you specify 10, the first 10 subtiltseires in --subtiltsdir will be corrected. 0 means "process all" because it makes no sense to process none''')
 
@@ -370,7 +371,7 @@ def main():
 		if options.coords:
 			f=open(options.coords,'r')
 			lines=f.readlines()
-			zs = [ int( line.replace('\t',' ').split(' ')[-1].replace('\n','') ) for line in lines ]
+			zs = [ int(float( line.replace('\t',' ').split(' ')[-1].replace('\n','') )) for line in lines ]
 			f.close()
 		
 		if options.subtiltsdir or options.coords:
@@ -1580,11 +1581,15 @@ def tilerfft(options, angle, imgt, currentstrip, nstrips, start, end, step, save
 	signtag = 'p'
 	if angle < 0.0:
 		signtag ='m'
-	
+	step = int(step)
+	if options.tileoverlap:
+		step = int(options.tilesize/2)
+		print "tiles are overlapping, therefore step is", step
 	#for x in range( micrographstarts[m], micrographstarts[m] + micrographwidth - options.tilesize + 1, options.stripstep ):
 	for x in range( start, end, step ): 
 		#print "\nsumming over tiles along y"
-		for y in range(0, ny - options.tilesize+1, options.tilesize):
+		#for y in range(0, ny - options.tilesize+1, options.tilesize):
+		for y in range(0, ny - options.tilesize+1, step):
 			#print "tile at y", y
 			clipr = imgt.get_clip(Region(x,y, options.tilesize, options.tilesize))
 			
@@ -1908,7 +1913,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			r = Region( img['nx']/2 - options.tilesize, 0, 2*options.tilesize, img['ny'])
 
 			
-			fixcenter = 1
+			fixcenter = 0
 			
 			if fixcenter:
 				imgcenterstrips = img.get_clip( r )
@@ -2228,8 +2233,9 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 		
 		if xs.any() and imgdefocuses.any():
 		
-			#for y in range( len(imgdefocuses)):
-			#	imgdefocuses[y] = imgdefocuses[y] *-1
+			for y in range( len(imgdefocuses)):
+				#if math.fabs(imgdefocuses[y]-globaldefocus)
+				imgdefocuses[y] = imgdefocuses[y] *-1
 			
 
 
@@ -2257,12 +2263,12 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				defocuscalc = m * nxMicrometers/2.0 + b
 				print "\n\n\n\nSSSSSSSS\nbased on angle, m, b, xs, imgdefocuses",angle,m,b,xs,imgdefocuses
 				print "defocuscalc is",defocuscalc
-				print "the mirrored defocus is", (-1*m) * (-1*nxMicrometers)/2.0 + b
+				#print "the mirrored defocus is", (-1*m) * (-1*nxMicrometers)/2.0 + b
 				print "while globaldefocus is",globaldefocus
 
 
-				#becuause defocus is defined as positive (when really it should be negative; more defocus is a more negative value; less defocus is a smaller negative value), the actual slope will be inverted, so lets reinvert it
-				anglecalc = math.degrees(numpy.arctan( -1*m ))
+				#positive angle --> positive slope --> more defocused left side, less defocused right side
+				anglecalc = math.degrees(numpy.arctan( m ))
 				
 			if angle not in anglestoexclude:
 				angerror = math.fabs( angle - anglecalc )
