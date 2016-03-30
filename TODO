@@ -66,6 +66,9 @@ Low priority
 9/23/15		Show stack/ Filter tool only work on the first image in 3D stacks
 
 Complete
+3/26/16		Made "flatten" amplitude correction option added by M to be used in "auto" mode for high resolution.
+3/26/16		Mode 5 make3d radial real space correction enabled. Improved masking based on radial max profile.
+3/16		New movie alignment code in examples working very well!
 10/12/15	usefilt like option (inputavg) added to e2refine_easy
 9/23/15		10/10/15 Add highsym and other new programs to gui workflow
 7/17/15		added 'single' orientation generator

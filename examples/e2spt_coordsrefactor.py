@@ -32,17 +32,19 @@ import os
 import sys 
 import commands
 from EMAN2 import *
+from sys import argv
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	
-	usage = """Aligns a 3d volume to another by executing e2classaverage3d.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
-	criterion(on the screen) and a plot as an image in .png format."""
+	usage = """Processes coordinate files (a text file with x y z coordinates) in various ways. May supply first argument instead. e2spt_coordsrefactor.py coords.txt. Otherwise, e2spt_coordsrefactor.py --input=coords.txt"""
 		
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--coords", type=str, help="""Text file containing the coordinates for SPT subvolumes of a tomogram, in a sane format X, Y, Z or X, Z, Y, 
+	parser.add_argument("--input", type=str, help="""Text file containing the coordinates for SPT subvolumes of a tomogram, in a sane format X, Y, Z or X, Z, Y, 
 													with ONE set of coordinates per line, and NO EXTRA CHARACTERS, except blank spaces (a tab is fine too) in between coordinates.""", default='')
+	
+
 	parser.add_argument("--output", type=str, help="Output name for the refactored coordinates file.", default='')
 	parser.add_argument("--swapyz", action="store_true", help="This will swap the Y and Z coordinates.", default=False)
 	parser.add_argument("--rotx", action="store_true", help="""Will produce the effects of rotating the coordinates about the x axis. 
@@ -69,14 +71,28 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 
-	cfile = options.coords
+	cfile=''
+	try:
+		if len(argv) > 0:
+			if '.txt' in argv[1]:
+				cfile = argv[1]
+			else:
+				print "ERROR: coordinates file must be in .txt format"
+				sys.exit(1)
+	except:
+		pass
+
+	if options.input:
+		cfile = options.input
 	
+
 	if options.rotx and not options.tomothickness:
 		print "ERROR: You must supply --tomothickness if you intend to use --rotx"
 		sys.exit()
 		
 	if not cfile:
-		print "ERROR: Must profile a coordinates file"
+		print "ERROR: Must provide a coordinates file"
+		sys.exit(1)
 	
 	if options.randomize and options.sort:
 		print "ERROR: Cannot randomize and sort at the same time; the functions are contradictory. Chooe one, please."
@@ -130,20 +146,23 @@ def main():
 			z = float( options.tomothickness ) - float(z)
 		
 		if options.mult:
-			x = str(round( float(x) * options.mult ))
-			y = str(round( float(y) * options.mult ))
-			z = str(round( float(z) * options.mult ))
+			x = str( int(round( float(x) * options.mult )))
+			y = str( int(round( float(y) * options.mult )))
+			z = str( int(round( float(z) * options.mult )))
 
-		newline = x + ' ' + y + ' ' + z + '\n'
+		newline = x + '\t' + y + '\t' + z + '\n'
 		newlines.append(newline)
 	
+	output = cfile.replace('.txt','_refactored.txt')
 	if options.output:
-		f=open(options.output,'w')
-		f.writelines(newlines)
-		f.close()
-	else:
-		print "ERROR: Terminating. You must specify the output file in .txt format"
-		sys.exit()
+		output=options.output
+
+	f=open(output,'w')
+	f.writelines(newlines)
+	f.close()
+	#else:
+	#	print "ERROR: Terminating. You must specify the output file in .txt format"
+	#	sys.exit()
 	
 	if options.randomize and not options.sort:
 		pass

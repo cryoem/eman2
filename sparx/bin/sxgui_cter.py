@@ -234,6 +234,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_cter_sd_astig_ang = i_enum # std dev of ast angle
 		i_enum += 1; self.idx_cter_cv_def       = i_enum # coefficient of variation of defocus (%)
 		i_enum += 1; self.idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp (%)
+		i_enum += 1; self.idx_cter_spectra_diff = i_enum # Average of differences between with- and without-astig. experimental 1D spectra at extrema
 		i_enum += 1; self.idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone (1/A)
 		i_enum += 1; self.idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism (1/A)
 		i_enum += 1; self.idx_cter_error_ctf    = i_enum # limit frequency by CTF error 
@@ -266,6 +267,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.value_map_list[self.idx_cter_sd_astig_ang] = ["Astig. Ang. SD [deg]", None]
 		self.value_map_list[self.idx_cter_cv_def]       = ["Defocus CV [%]", None]
 		self.value_map_list[self.idx_cter_cv_astig_amp] = ["Astig. Amp. CV [%]", None]
+		self.value_map_list[self.idx_cter_spectra_diff] = ["Spectrum Diff", None]
 		self.value_map_list[self.idx_cter_error_def]    = ["Defocus Freq. Limit [1/A]", None]
 		self.value_map_list[self.idx_cter_error_astig]  = ["Astig. Freq. Limit [1/A]", None]
 		self.value_map_list[self.idx_cter_error_ctf]    = ["CTF Freq. Limit [1/A]", None]
@@ -292,6 +294,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_sort_sd_astig_ang = i_enum
 		i_enum += 1; self.idx_sort_cv_def       = i_enum
 		i_enum += 1; self.idx_sort_cv_astig_amp = i_enum
+		i_enum += 1; self.idx_sort_spectra_diff = i_enum
 		i_enum += 1; self.idx_sort_error_def    = i_enum
 		i_enum += 1; self.idx_sort_error_astig  = i_enum
 		i_enum += 1; self.idx_sort_error_ctf    = i_enum
@@ -314,6 +317,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.sort_map_list[self.idx_sort_sd_astig_ang] = [self.idx_cter_sd_astig_ang]
 		self.sort_map_list[self.idx_sort_cv_def]       = [self.idx_cter_cv_def]
 		self.sort_map_list[self.idx_sort_cv_astig_amp] = [self.idx_cter_cv_astig_amp]
+		self.sort_map_list[self.idx_sort_spectra_diff] = [self.idx_cter_spectra_diff]
 		self.sort_map_list[self.idx_sort_error_def]    = [self.idx_cter_error_def]
 		self.sort_map_list[self.idx_sort_error_astig]  = [self.idx_cter_error_astig]
 		self.sort_map_list[self.idx_sort_error_ctf]    = [self.idx_cter_error_ctf]
@@ -328,6 +332,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_hist_sd_astig_ang = i_enum
 		i_enum += 1; self.idx_hist_cv_def       = i_enum
 		i_enum += 1; self.idx_hist_cv_astig_amp = i_enum
+		i_enum += 1; self.idx_hist_spectra_diff = i_enum
 		i_enum += 1; self.idx_hist_error_def    = i_enum
 		i_enum += 1; self.idx_hist_error_astig  = i_enum
 		i_enum += 1; self.idx_hist_error_ctf    = i_enum
@@ -360,6 +365,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.hist_map_list[self.idx_hist_sd_astig_ang] = [self.idx_cter_sd_astig_ang, self.idx_sort_sd_astig_ang, 0, 180, 0, 180, None, None, 0, 180, None, None]
 		self.hist_map_list[self.idx_hist_cv_def]       = [self.idx_cter_cv_def, self.idx_sort_cv_def, 0, 5, 0, 5, None, None, 0, 5, None, None]
 		self.hist_map_list[self.idx_hist_cv_astig_amp] = [self.idx_cter_cv_astig_amp, self.idx_sort_cv_astig_amp, 0, 1, 0, 1, None, None, 0, 1, None, None]
+		self.hist_map_list[self.idx_hist_spectra_diff] = [self.idx_cter_spectra_diff, self.idx_sort_spectra_diff, -99999, 99999, -99999, 99999, None, None, -99999, 99999, None, None]
 		self.hist_map_list[self.idx_hist_error_def]    = [self.idx_cter_error_def, self.idx_sort_error_def, 0, 10, 0, 10, None, None, 0, 10, None, None]
 		self.hist_map_list[self.idx_hist_error_astig]  = [self.idx_cter_error_astig, self.idx_sort_error_astig, 0, 10, 0, 10, None, None, 0, 10, None, None]
 		self.hist_map_list[self.idx_hist_error_ctf]    = [self.idx_cter_error_ctf, self.idx_sort_error_ctf, 0, 10, 0, 10, None, None, 0, 10, None, None]
@@ -1006,11 +1012,16 @@ class SXGuiCter(QtGui.QWidget):
 			# This CTEF file format is original one (before around 2016/01/29)
 			for cter_id in xrange(len(new_entry_list)):
 				# Add extra items first to make sure indices match
-				new_entry_list[cter_id] = [cter_id] +  new_entry_list[cter_id]           # self.idx_cter_id , <extra> entry id
-				new_entry_list[cter_id] = [1] + new_entry_list[cter_id]                  # self.idx_cter_select  <extra> selected state
-#				new_entry_list[cter_id] = new_entry_list[cter_id] + [""]                 # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
-#				new_entry_list[cter_id] = new_entry_list[cter_id] + [0.5]                # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
-				if self.is_enable_max_power == True: new_entry_list[cter_id] = new_entry_list[cter_id] + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
+				extended_entry = []
+				extended_entry = extended_entry + [cter_id]                              # self.idx_cter_id , <extra> entry id
+				extended_entry = extended_entry + [1]                                    # self.idx_cter_select  <extra> selected state
+				extended_entry = extended_entry + new_entry_list[cter_id]                # original entry
+#				extended_entry = extended_entry + [""]                                   # self.idx_cter_pwrot_name, <extra> CTER power spectrum rotational average file name
+#				extended_entry = extended_entry + [0.5]                                  # self.idx_cter_error_ctf, <extra> limit frequency by CTF error 
+				if self.is_enable_max_power == True: extended_entry = extended_entry + [0.0] # MRK_TEST: self.idx_cter_max_power, <extra> maximum power in experimental rotational average (with astigmatism)
+				
+				# Store the extended entry to entry list
+				new_entry_list[cter_id] = extended_entry
 				
 #				# Cut off frequency components higher than CTF limit 
 #				cter_box_size = 512 # NOTE: Toshio Moriya 2016/03/15: This is temporary. Remove this after adding CTF limit to cter output file
@@ -1049,7 +1060,7 @@ class SXGuiCter(QtGui.QWidget):
 				new_entry_list[cter_id][self.idx_cter_select] = 1
 		else: 
 			# This CTEF file format must be current (after around 2016/01/29) or output of this script
-			assert len(new_entry_list[0]) == self.n_idx_cter, "MRK_DEBUG: The number of columns (%d) have to be %d or %d in %s" % (len(new_entry_list[0]), self.n_idx_cter - self.n_idx_cter_extra, self.n_idx_cter, file_path)
+			assert len(new_entry_list[0]) == self.n_idx_cter, "MRK_DEBUG: The number of columns (%d) have to be %d in %s" % (len(new_entry_list[0]), self.n_idx_cter, file_path)
 		
 		# now set the new status
 		self.cter_partres_file_path = file_path
@@ -1790,7 +1801,7 @@ class SXGuiCter(QtGui.QWidget):
 				idx_cter = self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter]
 				param_val = round(cter_entry[idx_cter], self.round_ndigits)
 				if param_val < threshold_lower or threshold_upper < param_val:
-					print "MRK_DEBUG: Param #%d diselected entry #%04d with (param_val, threshold_lower, threshold_upper) = (%1.15g, %1.15g, %1.15g)" % (idx_hist, idx_cter, param_val, threshold_lower, threshold_upper)
+					# print "MRK_DEBUG: Param #%d diselected entry #%04d with (param_val, threshold_lower, threshold_upper) = (%1.15g, %1.15g, %1.15g)" % (idx_hist, idx_cter, param_val, threshold_lower, threshold_upper)
 					new_select_state = 0
 				# else: # Do nothing
 			cter_entry[self.idx_cter_select] = new_select_state
@@ -1938,7 +1949,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		save_cter_entry_list = sorted(self.cter_entry_list, key=lambda x: x[self.idx_cter_id])
 # 		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_pwrot_name, self.idx_cter_error_ctf, self.idx_cter_select]
-		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_select, self.idx_cter_error_ctf]
+		idx_cter_ignore_list = [self.idx_cter_id, self.idx_cter_select]
 		if self.is_enable_max_power == True: idx_cter_ignore_list.append(self.idx_cter_max_power)
 		for cter_entry in save_cter_entry_list:
 			file_out = file_out_select

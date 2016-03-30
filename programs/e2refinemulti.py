@@ -317,7 +317,7 @@ in the refinement directory. You can use Info with the browser or just read the 
 	# make sure the box sizes match
 	hdr=EMData(options.input,0,True)
 	xsize=hdr["nx"]
-	apix=hdr["apix_x"]
+	#apix=hdr["apix_x"]
 	for i in range(options.nmodels):
 		xsize3d=EMData("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0,True)["nx"]
 		if ( xsize3d != xsize ) :
@@ -539,7 +539,6 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 	print "NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path))
 	
-	
 	### Actual refinement loop ###
 	for it in range(1,options.iter+1) :
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
@@ -756,10 +755,10 @@ def get_apix_used(options):
 	except: pass
 
 
-	else:
-		img=EMData(options.input,0,True)
-		try: apix=img["ctf"].apix
-		except: apix=img["apix_x"]
+	#else:
+		#img=EMData(options.input,0,True)
+		#try: apix=img["ctf"].apix
+		#except: apix=img["apix_x"]
 
 	print "ERROR: Could not find a valid A/pix value anywhere. Please specify."
 

@@ -320,7 +320,7 @@ template <> Factory < Processor >::Factory()
 	force_add<Wiener2DFourierProcessor>();
 	force_add<LowpassAutoBProcessor>();
 	force_add<CtfSimProcessor>();
-	
+
 	force_add<LinearPyramidProcessor>();
 	force_add<LinearRampProcessor>();
 	force_add<AbsoluateValueProcessor>();
@@ -372,7 +372,7 @@ template <> Factory < Processor >::Factory()
 	force_add<MaskGaussNonuniformProcessor>();
 	force_add<MaskGaussInvProcessor>();
 	force_add<MaskAzProcessor>();
-	
+
 	force_add<MaxShrinkProcessor>();
 	force_add<MinShrinkProcessor>();
 	force_add<MeanShrinkProcessor>();
@@ -469,7 +469,7 @@ template <> Factory < Processor >::Factory()
 	force_add<XGradientProcessor>();
 	force_add<YGradientProcessor>();
 	force_add<ZGradientProcessor>();
-	
+
 	force_add<ImageDivergenceProcessor>();
 	force_add<GradientMagnitudeProcessor>();
 	force_add<GradientDirectionProcessor>();
@@ -558,7 +558,7 @@ template <> Factory < Processor >::Factory()
 	force_add<BwMajorityProcessor>();
 	force_add<PruneSkeletonProcessor>();
 	force_add<GrowSkeletonProcessor>();
-	
+
 	force_add<ManhattanDistanceProcessor>();
 	force_add<BinaryDilationProcessor>();
 	force_add<BinaryErosionProcessor>();
@@ -783,8 +783,8 @@ void WedgeFillProcessor::process_inplace(EMData * image)
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
-	
-	vector<float> sigmaimg; 
+
+	vector<float> sigmaimg;
 	sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
 	for (int i=0; i<nx/2; i++) sigmaimg[i]*=.1;			// anything less than 1/10 sigma is considered to be missing
 
@@ -794,18 +794,18 @@ void WedgeFillProcessor::process_inplace(EMData * image)
 				float r2=Util::hypot3sq(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
 				int r=int(sqrtf(r2));
 				if (r<3) continue;		// too few points at r<3 to consider any "missing"
-				
+
 				float v1r=image->get_value_at(x,y,z);
 				float v1i=image->get_value_at(x+1,y,z);
 				float v1=Util::square_sum(v1r,v1i);
 				if (v1<sigmaimg[r]) continue;
-				
+
 				image->set_value_at_fast(x,y,z,source->get_value_at(x,y,z));
 				image->set_value_at_fast(x+1,y,z,source->get_value_at(x+1,y,z));
 			}
 		}
 	}
-	
+
 	image->update();
 }
 
@@ -920,7 +920,7 @@ void Axis0FourierProcessor::process_inplace(EMData * image)
 
 	int neighbor=params.set_default("neighbor",0);
 	float neighbornorm=params.set_default("neighbornorm",sqrt(2.0f));
-	
+
 	int nx=fft->get_xsize()/2;
 	int ny=fft->get_ysize();
 	if (params.set_default("x",1)) {
@@ -962,7 +962,7 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 
 	const Dict dict = image->get_attr_dict();
 	if( params.has_key("cutoff_freq") ) {
-		float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"]; 
+		float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"];
 		params["cutoff_abs"] = val;
 	}
 	else if( params.has_key("cutoff_pixels") ) {
@@ -972,7 +972,7 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 
 	float omega = params["cutoff_abs"];
 	omega = (omega<0?-1.0:1.0)*0.5f/omega/omega;
-	
+
 	EMData *fft;
 	int f=0;
 
@@ -993,7 +993,7 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	int ny=fft->get_ysize();
 	int nz=fft->get_ysize();
 	omega /=(nz*nz)/4;
-	
+
 	for (int z=-nz/2; z<nz/2; z++) {
 		for (int y=-ny/2; y<ny/2; y++) {
 			for (int x=0; x<nx/2; x++) {
@@ -6786,7 +6786,7 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	float ac = params.set_default("ac",10.0);
 	float voltage = params.set_default("voltage",300.0);
 	float apix = params.set_default("apix",image->get_attr("apix_x"));
-	
+
 	EMAN2Ctf ctf;
 
 	int ny = image->get_ysize();
@@ -6798,10 +6798,10 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	ctf.dfdiff=0;
 	ctf.bfactor=200.0;
 	ctf.dsbg=1.0/(ctf.apix*ny);
-	
+
 	int np=(int)ceil(ny*1.73)+1;
 	vector <float> filter = ctf.compute_1d(np,ctf.dsbg,Ctf::CTF_AMP);
-	
+
 	// reciprocal until the first CTF maximum, then no filter after that
 	int i;
 	for (i=0; i<np/2-1; i++) {
@@ -6819,7 +6819,7 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 
 //	for (i=0; i<np/2; i++) printf("%d\t%1.3g\n",i,filter[i]);
 	image->process_inplace("filter.radialtable",Dict("table",filter));
-	
+
 }
 
 void FileFourierProcessor::process_inplace(EMData * image)
@@ -7119,7 +7119,7 @@ void IndexMaskFileProcessor::process_inplace(EMData * image)
 		return;
 	}
 	EMData* mask = params.set_default("image",(EMData*)0);
-	
+
 	if (mask==0) {
 		const char *filename = params["filename"];
 		mask=new EMData(filename,0);
@@ -7130,7 +7130,7 @@ void IndexMaskFileProcessor::process_inplace(EMData * image)
 		}
 	}
 	else mask=mask->copy();
-	
+
 	int maskset=params.set_default("maskset",-1);
 	if (maskset>=0) {
 		mask->process_inplace("threshold.binaryrange", Dict("low", (float)(maskset-0.5), "high", (float)(maskset+0.5)));
@@ -7147,34 +7147,34 @@ void IndexMaskFileProcessor::process_inplace(EMData * image)
 // 		LOGWARN("NULL Image");
 // 		return;
 // 	}
-// 
+//
 // 	const char *filename = params["filename"];
 // 	EMData *msk = new EMData();
 // 	msk->read_image(filename);
-// 
+//
 // 	int nx = image->get_xsize();
 // 	int ny = image->get_ysize();
 // 	int nz = image->get_zsize();
-// 
+//
 // 	int xm = msk->get_xsize();
 // 	int ym = msk->get_ysize();
 // 	int zm = msk->get_zsize();
-// 
+//
 // 	float apix = image->get_attr("apix_x");
 // 	float apixm = msk->get_attr("apix_x");
-// 
+//
 // 	float xo = image->get_attr_default("origin_x",0.0);
 // 	float yo = image->get_attr_default("origin_y",0.0);
 // 	float zo = image->get_attr_default("origin_z",0.0);
-// 
+//
 // 	float xom = msk->get_attr_default("origin_x",0.0);
 // 	float yom = msk->get_attr_default("origin_y",0.0);
 // 	float zom = msk->get_attr_default("origin_z",0.0);
-// 
+//
 // 	float *dp = image->get_data();
 // 	float *dpm = msk->get_data();
 // 	int nxy = nx * ny;
-// 
+//
 // 	for (int k = 0; k < nz; k++) {
 // 		float zc = zo + k * apix;
 // 		if (zc <= zom || zc >= zom + zm * apixm) {
@@ -7182,7 +7182,7 @@ void IndexMaskFileProcessor::process_inplace(EMData * image)
 // 		}
 // 		else {
 // 			int km = (int) ((zc - zom) / apixm);
-// 
+//
 // 			for (int j = 0; j < ny; j++) {
 // 				float yc = yo + j * apix;
 // 				if (yc <= yom || yc >= yom + ym * apixm) {
@@ -7210,7 +7210,7 @@ void IndexMaskFileProcessor::process_inplace(EMData * image)
 // 			}
 // 		}
 // 	}
-// 
+//
 // 	image->update();
 // 	msk->update();
 // 	if( msk )
@@ -7802,7 +7802,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	if (verbose) printf("expanding mask\n");
 	amask->process_inplace("mask.addshells.gauss", Dict("val1", (int)(nshells+nshellsgauss/2),"val2",0));
 	if (verbose) printf("filtering mask\n");
-	amask->process_inplace("filter.lowpass.gauss", Dict("cutoff_abs", (float)(1.0f/(float)nshellsgauss)));
+	if (nshellsgauss>0) amask->process_inplace("filter.lowpass.gauss", Dict("cutoff_abs", (float)(1.0f/(float)nshellsgauss)));
 	amask->process_inplace("threshold.belowtozero", Dict("minval",(float)0.002));	// this makes the value exactly 0 beyond ~2.5 sigma
 
 	bool return_mask = params.set_default("return_mask",false);
@@ -9475,26 +9475,28 @@ void MirrorProcessor::process_inplace(EMData *image)
 	int nz = image->get_zsize();
 	size_t nxy = nx*ny;
 
-	int x_start = 1-nx%2;
-	int y_start = 1-ny%2;
-	int z_start = 1-nz%2;
+	int x_start = 0; //1-nx%2; // if this is buggy, start here
+	int y_start = 0; //1-ny%2;
+	int z_start = 0; //1-nz%2;
 
 	if (axis == "x" || axis == "X") {
-			for (int iz = 0; iz < nz; iz++)
+		int offset = 0;
+		for (int iz = 0; iz < nz; iz++){
 			for (int iy = 0; iy < ny; iy++) {
-				int offset = nx*iy + nxy*iz;
-				reverse(&data[offset+x_start],&data[offset+nx]);
+				offset = nx*iy + nxy*iz;
+				reverse(&data[x_start+offset],&data[offset+nx]);
 			}
+		}
 	} else if (axis == "y" || axis == "Y") {
 		float *tmp = new float[nx];
-		int nhalf	= ny/2;
-		size_t beg	   = 0;
+		int nhalf = ny/2;
+		size_t beg = 0;
 		for (int iz = 0; iz < nz; iz++) {
 			beg = iz*nxy;
 			for (int iy = y_start; iy < nhalf; iy++) {
 				memcpy(tmp, &data[beg+iy*nx], nx*sizeof(float));
-				memcpy(&data[beg+iy*nx], &data[beg+(ny-iy-1+y_start)*nx], nx*sizeof(float));
-				memcpy(&data[beg+(ny-iy-1+y_start)*nx], tmp, nx*sizeof(float));
+				memcpy(&data[beg+iy*nx], &data[beg+(y_start+ny-iy-1)*nx], nx*sizeof(float));
+				memcpy(&data[beg+(y_start+ny-iy-1)*nx], tmp, nx*sizeof(float));
 			}
 		}
 		delete[] tmp;
@@ -11864,20 +11866,20 @@ void SDGDProcessor::process_inplace( EMData* image )
 	dxdx = dx->process("math.edge.xgradient");
 	dxdy = dx->process("math.edge.ygradient");
 	dydy = dy->process("math.edge.ygradient");
-	
+
 	dxdx->mult(*dx);
 	dxdx->mult(*dx);
-	
+
 	dxdy->mult(2);
 	dxdy->mult(*dx);
 	dxdy->mult(*dy);
-	
+
 	dydy->mult(*dx);
 	dydy->mult(*dy);
-	
+
 	dx->mult(*dx);
 	dx->addsquare(*dy);
-	
+
 	image->to_zero();
 	image->add(*dxdx);
 	image->add(*dxdy);
@@ -12132,7 +12134,7 @@ EMData* ConvolutionKernelProcessor::process(const EMData* const image)
 	int ny = image->get_ysize();
 
 	EMData* conv = new EMData(image->get_xsize(),image->get_ysize(),1);
-	
+
 	int ks;
 	vector<float> kernel;
 	if (params.has_key("selem")) {
@@ -12624,7 +12626,7 @@ void ObjLabelProcessor::process_inplace(EMData * image)
 							nowstop=1;
 					}
 				}
-				
+
 
 			}
 		}
@@ -13005,11 +13007,11 @@ void GrowSkeletonProcessor::process_inplace(EMData * image){
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	int verbose=params.set_default("verbose",0);
 	int rad=params.set_default("radius",3);
 
-	
+
 	float *data = image->get_data();
 	// the index of the boundary points of the box
 	int *xlist=new int[2*rad*4];
@@ -13023,7 +13025,7 @@ void GrowSkeletonProcessor::process_inplace(EMData * image){
 	for (int k=0; k<nz; k++){
 		if (verbose>0)
 			printf("Processing layer %d \n",k);
-		
+
 		size_t knxy = (size_t)k * nxy;
 		// only grow on the endpoints
 		for (int j=rad; j < ny-rad; j++) {
@@ -13051,7 +13053,7 @@ void GrowSkeletonProcessor::process_inplace(EMData * image){
 					if (nv != 1)
 						// more than one possible directions
 						continue;
-					
+
 					// grow towards the oppisite direction
 					for (int ig=1; ig<=rad; ig++){
 						int ix=i-(float)xlist[cp]/rad*ig;
@@ -13061,7 +13063,7 @@ void GrowSkeletonProcessor::process_inplace(EMData * image){
 				}
 			}
 		}
-		
+
 		for (int j=rad; j < ny-rad; j++) {
 			int jnx=j*nx;
 			for (int i=rad; i<nx-rad; i++) {
@@ -13071,9 +13073,9 @@ void GrowSkeletonProcessor::process_inplace(EMData * image){
 		}
 	}
 	image->update();
-	
+
 	delete xlist,ylist;
-	
+
 }
 
 EMData* ManhattanDistanceProcessor::process(const EMData* const image)
@@ -13162,7 +13164,7 @@ void BinaryErosionProcessor::process_inplace(EMData *image)
 {
 	int k=params.set_default("k",1);
 	if (image->get_zsize() != 1) throw ImageDimensionException("Only 2-D images supported");
-	
+
 	image->mult(-1);
 	image->add(1);
 	image->process_inplace("math.distance.manhattan");
@@ -13331,8 +13333,8 @@ void ZThicknessProcessor::process_inplace(EMData *image)
 			}
 		}
 	}
-	
-	
+
+
 }
 
 #ifdef SPARX_USING_CUDA

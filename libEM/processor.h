@@ -8854,7 +8854,7 @@ correction is not possible, this will allow you to approximate the correction to
 	  protected:
 		void process_pixel(float *x) const
 		{
-			vector < float >lst =params["colorlst"];
+			vector<float> lst =params["colorlst"];
 			int num=lst.size();
 			if (*x<num){
 				*x=lst[int(*x)];

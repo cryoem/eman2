@@ -711,6 +711,42 @@ to be missing values. If not provided, these values will be computed automatical
 		
 		static const string NAME;
 	};
+	
+	
+	
+	/** 
+    */
+	class VerticalCmp:public Cmp
+	{
+	  public:
+		float cmp(EMData * image, EMData * with) const;
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Align the 2d image vertically. Reference image is ignored";
+		}
+
+		static Cmp *NEW()
+		{
+			return new VerticalCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+		
+		static const string NAME;
+	};
+	
+		
+	
 
 	template <> Factory < Cmp >::Factory();
 

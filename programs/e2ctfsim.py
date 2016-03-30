@@ -353,7 +353,7 @@ class GUIctfsim(QtGui.QWidget):
 			self.img=EMData(self.data[val][1].samples+2,self.data[val][1].samples)
 			self.img.to_zero()
 			self.img.set_complex(1)
-			self.guiim.set_data(self.img)
+		self.guiim.set_data(self.img)
 #		self.imginfo.setText("%s particles     SNR = %s"%(ptcl,ssnr))
 
 		#if self.guiim != None:
