@@ -1832,6 +1832,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 		if action:
 			self.box_list.remove_boxes(rm_idxs)
+			self.box_list.save_boxes_to_database(self.current_file())
 			self.signal_slot_handlers["2d_window"].boxes_erased(rm_boxes)
 			self.full_box_update()
 
