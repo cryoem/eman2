@@ -226,8 +226,8 @@ def main():
 	    The window size will change accordingly.
 		sxprocess input.hdf output.hdf  --changesize --ratio=0.5
 
-	3.  Compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes or a 3-D volume.
-		sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
+	3.  Compute average power spectrum of a stack of 2D images with optional mask and/or padding (option wn) with zeroes or a 3-D volume.
+		sxprocess.py input_stack.hdf powerspectrum.hdf  <mask.hdf> --pw [--wn=1024]
 
 	4.  Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
 		sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64

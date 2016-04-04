@@ -80,7 +80,7 @@ def main():
 		if options.oneDx:
 			helicalshiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar, options.search_rng)		
 		else:
-			shiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx,options.search_rng_y)
+			shiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar, options.search_rng, options.oneDx, options.search_rng_y)
 		global_def.BATCH = False
 		
 		from mpi import mpi_finalize
@@ -276,7 +276,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 				ishift_x[im] = p1_x
 				sx_sum += p1_x
 			else:
-				p1 = peak_search(Util.window(ccf(data[im],tavg), nwx,nwy))
+				p1 = peak_search(Util.window(ccf(data[im],tavg), nwx, nwy))
 				p1_x = -int(p1[0][4])
 				p1_y = -int(p1[0][5])
 				ishift_x[im] = p1_x
