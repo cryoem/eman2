@@ -1,5 +1,5 @@
 High priority
-2.1
+2/29/16		jenni@harvard noticed no automasking in e2refinemulti! option ignored. no other masking done
 2/2/16		Make sure split particles in e2refinesplit are being split correctly (matching maps)
 2/2/16		slice view in 3d contrast doesn't adjust well for maps with strange density ranges (Pawel)
 2/1/16		e2spt_average uses unmasked FSC for filter

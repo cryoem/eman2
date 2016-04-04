@@ -52,13 +52,15 @@ except:
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] 
+	usage = """prog [options] [refine_xx]
 	This program is still in its early stages. Eventually will provide a variety of tools for 
 	evaluating a single particle reconstruction refinement run."""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
+	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement the refine_xx folder name. This may be used to identify bad particles.")
+	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
 	parser.add_argument("--timing", default=False, action="store_true", help="report on how long each step of the refinement process took during the first iteration of each run")
-	parser.add_argument("--resolution", type=str, default=None, help="generates a resolution and convergence plot for a single refinement run. Provide the refine_xx folder name.")
+	parser.add_argument("--resolution", default=False, action="store_true", help="generates a resolution and convergence plot for a single refinement run.")
 	parser.add_argument("--resolution_all", default=False, action="store_true", help="generates resolution plot with the last iteration of all refine_xx directories")
 	#parser.add_argument("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
 	#parser.add_argument("--parmpair",default=None,type=str,help="Specify iter,iter to compare the parameters used between 2 itertions.")
@@ -66,7 +68,7 @@ def main():
 	#options associated with e2refine.py
 	#parser.add_argument("--iter", dest = "iter", type = int, default=0, help = "The total number of refinement iterations to perform")
 	#parser.add_argument("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
-	#parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	#parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data")
 
 	(options, args) = parser.parse_args()
@@ -78,9 +80,112 @@ def main():
 	yticlocs2=(0.0,.125,.25,.375,.5,.625,.75,.875,1.0)
 	yticlbl2=("0"," ","0.25"," ","0.5"," ","0.75"," ","1.0")
 
-	if options.resolution!=None:
+	if args[0][:7]=="refine_":
+		jsparm=js_open_dict(args[0]+"/0_refine_parms.json")
+		
+		if options.iter==None: 
+			try: options.iter=int(jsparm["last_map"].split("_")[-1][:2])
+			except:
+				print "Could not find a completed iteration in ",args[0]
+				sys.exit(1)
 
-		if not os.path.isdir(options.resolution):
+	if options.evalptclqual!=None:
+		
+		try:
+			pathmx="{}/classmx_{:02d}_even.hdf".format(args[0],options.iter)
+			classmx=[EMData(pathmx,0)]
+			nptcl=[classmx[0]["ny"]]
+			cmxtx=[EMData(pathmx,2)]
+			cmxty=[EMData(pathmx,3)]
+			cmxalpha=[EMData(pathmx,4)]
+			cmxmirror=[EMData(pathmx,5)]
+
+			pathmx="{}/classmx_{:02d}_odd.hdf".format(args[0],options.iter)
+			classmx.append(EMData(pathmx,0))
+			nptcl.append(classmx[1]["ny"])
+			cmxtx.append(EMData(pathmx,2))
+			cmxty.append(EMData(pathmx,3))
+			cmxalpha.append(EMData(pathmx,4))
+			cmxmirror.append(EMData(pathmx,5))
+		except:
+			traceback.print_exc()
+			print "====\nError reading classification matrix. Must be full classification matrix with alignments"
+			sys.exit(1)
+
+		if options.verbose: print "{} even and {} odd particles in classmx".format(nptcl[0],nptcl[1])
+
+		# path to the even/odd particles used for the refinement
+		cptcl=js_open_dict("{}/0_refine_parms.json".format(args[0]))["input"]
+		cptcl=[str(i) for i in cptcl]
+
+		# this reads all of the EMData headers from the projections, should be same for even and odd
+		pathprj="{}/projections_{:02d}_even.hdf".format(args[0],options.iter)
+		nref=EMUtil.get_image_count(pathprj)
+		eulers=[EMData(pathprj,i,1)["xform.projection"] for i in range(nref)]
+
+		# The 3D reference volume we are using for subtraction
+		threed=EMData("{}/threed_{:02d}.hdf".format(args[0],options.iter),0)
+
+		# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching
+		ptclmask=EMData(args[0]+"/mask.hdf",0)
+		nx=ptclmask["nx"]
+		
+		# We expand the mask a bit, since we want to consider problems with "touching" particles
+		ptclmask.process_inplace("threshold.binary",{"value":0.2})
+		ptclmask.process_inplace("mask.addshells",{"nshells":nx//15})
+		ptclmask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
+
+		try: os.mkdir("ptclfsc")
+		except: pass
+
+		# generate a projection for each particle so we can compare
+		for i in xrange(nref):
+			if options.verbose>1 : print "--- Class %d"%i
+
+			# The first projection is unmasked, used for scaling
+			proj=threed.project("standard",{"transform":eulers[i]})
+
+			projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
+
+			fout=open("ptclfsc/f{:04d}.txt".format(i),"w")
+			for eo in range(2):
+				for j in xrange(nptcl[eo]):
+					if classmx[eo][0,j]!=i : 
+#						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
+						continue		# only proceed if the particle is in this class
+					if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
+
+					# the particle itself
+					ptcl=EMData(cptcl[eo],j)
+
+					# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
+					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
+					projc=proj.process("xform",{"transform":ptclxf})	# we transform the projection, not the particle (as in the original classification)
+
+					projmaskc=projmask.process("xform",{"transform":ptclxf})
+					ptcl.mult(projmaskc)
+
+					#ptcl.write_image("tst.hdf",0)
+					#projc[0].write_image("tst.hdf",1)
+
+					# Particle vs projection FSC
+					fsc = ptcl.calc_fourier_shell_correlation(projc)
+					third = len(fsc)/3
+					rng=third/5
+					sums=[sum(fsc[third+k*rng:third+k*rng+rng]) for k in xrange(5)]		# sum the fsc into 5 range values
+					fout.write("{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],sums[4],j,cptcl[eo]))
+					#xaxis = fsc[0:third]
+					#fsc = fsc[third:2*third]
+##					saxis = [x/apix for x in xaxis]
+##					Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:-1],args[1])
+					#Util.save_data(xaxis[1],xaxis[1]-xaxis[0],fsc[1:-1],"ptclfsc/f{:04d}_{:1d}_{:06d}.txt".format(i,eo,j))
+
+	
+		sys.exit(0)
+
+	if options.resolution:
+
+		if not os.path.isdir(args[0]):
 			print "You must provide the name of the refine_XX folder"
 			sys.exit(1)
 		
@@ -89,13 +194,13 @@ def main():
 		plt.title("Convergence plot (not resolution)")
 		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
 		plt.ylabel("FSC")
-		cnvrg=[i for i in os.listdir(options.resolution) if "converge_" in i and i[-4:]==".txt"]
+		cnvrg=[i for i in os.listdir(args[0]) if "converge_" in i and i[-4:]==".txt"]
 		cnvrg.sort(reverse=True)
 		nummx=int(cnvrg[0].split("_")[2][:2])
 		maxx=0.01
 		for c in cnvrg:
 			num=int(c.split("_")[2][:2])
-			d=np.loadtxt("{}/{}".format(options.resolution,c)).transpose()
+			d=np.loadtxt("{}/{}".format(args[0],c)).transpose()
 			if c[9:13]=="even" : plt.plot(d[0],d[1],label=c[14:-4],color=pltcolors[(nummx-num)%12])
 			else : plt.plot(d[0],d[1],color=pltcolors[(nummx-num)%12])
 			maxx=max(maxx,max(d[0]))
@@ -109,8 +214,8 @@ def main():
 		#plt.minorticks_on()
 		plt.xticks(xticlocs,xticlbl)
 		plt.yticks(yticlocs2,yticlbl2)
-		plt.savefig("converge_{}.pdf".format(options.resolution[-2:]))
-		print "Generated : converge_{}.pdf".format(options.resolution[-2:])
+		plt.savefig("converge_{}.pdf".format(args[0][-2:]))
+		print "Generated : converge_{}.pdf".format(args[0][-2:])
 		plt.clf()
 		
 		######################
@@ -120,7 +225,7 @@ def main():
 		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
 		plt.ylabel("FSC")
 		
-		fscs=[i for i in os.listdir(options.resolution) if "fsc_masked" in i and i[-4:]==".txt"]
+		fscs=[i for i in os.listdir(args[0]) if "fsc_masked" in i and i[-4:]==".txt"]
 		fscs.sort(reverse=True)
 		nummx=int(fscs[0].split("_")[2][:2])
 		maxx=0.01
@@ -130,7 +235,7 @@ def main():
 			num=int(f.split("_")[2][:2])
 			
 			# read the fsc curve
-			d=np.loadtxt("{}/{}".format(options.resolution,f)).transpose()
+			d=np.loadtxt("{}/{}".format(args[0],f)).transpose()
 			
 			# plot the curve
 			try: plt.plot(d[0],d[1],label=f[4:],color=pltcolors[(nummx-num)%12])
@@ -157,8 +262,8 @@ def main():
 		plt.legend(loc="upper right",fontsize="x-small")
 		plt.xticks(xticlocs,xticlbl)
 		plt.yticks(yticlocs,yticlbl)
-		plt.savefig("goldstandard_{}.pdf".format(options.resolution[-2:]))
-		print "Generated: goldstandard_{}.pdf".format(options.resolution[-2:])
+		plt.savefig("goldstandard_{}.pdf".format(args[0][-2:]))
+		print "Generated: goldstandard_{}.pdf".format(args[0][-2:])
 		plt.clf()
 
 	if options.resolution_all:

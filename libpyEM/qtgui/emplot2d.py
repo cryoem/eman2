@@ -116,6 +116,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.rmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
 		self.selected=[]
+		self.comments={}			# IF reading from a file which contains per-point comments, this dictionary contains a list of comments for each point 
 
 		self.data={}				# List of Lists to plot
 		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
@@ -184,7 +185,7 @@ class EMPlot2DWidget(EMGLWidget):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10,comments=None):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -231,11 +232,15 @@ class EMPlot2DWidget(EMGLWidget):
 		try:
 			if len(data)>1 :
 				if len(data)>2:
-					if data[0][2]-data[0][1]==1 : self.axes[key]=(1,2,-2,-2)	# if it looks like the first axis is a boring count
-					else : self.axes[key]=(0,1,-2,-2)
+					try:
+						if data[0][2]-data[0][1]==1 : self.axes[key]=(1,2,-2,-2)	# if it looks like the first axis is a boring count
+						else : self.axes[key]=(0,1,-2,-2)
+					except: self.axes[key]=(0,1,-2,-2)
 				else : self.axes[key]=(0,1,-2,-2)
 			else : self.axes[key]=(-1,0,-2,-2)
-		except: return
+		except: 
+			print "Data error:", data
+			return
 
 		if symtype==-2 and linetype==-2:
 			if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
@@ -247,6 +252,9 @@ class EMPlot2DWidget(EMGLWidget):
 		if symtype>=0 : dosym=1
 		else : dosym,symtype=0,0
 		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize)
+
+		if comments!=None:
+			self.comments[key]=comments
 
 		self.autoscale()
 
@@ -312,6 +320,9 @@ class EMPlot2DWidget(EMGLWidget):
 				fin=file(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
+				if '#' in rdata[0]:
+					try: comments=[i.split("#",1)[1].strip() for i in rdata if i[0]!="#"]
+					except: comments=None
 				rdata=[i.split("#")[0] for i in rdata if i[0]!='#']
 				if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
 				else : rdata=[[float(j) for j in i.split()] for i in rdata]
@@ -319,7 +330,7 @@ class EMPlot2DWidget(EMGLWidget):
 				ny=len(rdata)
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
 
-				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet)
+				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet,comments=comments)
 			except:
 				traceback.print_exc()
 				print "couldn't read",filename
@@ -688,6 +699,9 @@ lc is the cursor selection point in plot coords"""
 		if j[1]==-1 : y=arange(len(self.data[ak][0]))
 		else : y=self.data[ak][self.axes[ak][1]]
 
+		try: comments=self.comments[ak]
+		except: comments=None
+
 		x2,y2=self.plot2scr(x,y)
 
 		r=hypot(x2-evc[0],y2-evc[1])		# distance from cursor
@@ -695,7 +709,7 @@ lc is the cursor selection point in plot coords"""
 		# if the closest point is more than 5 pixels away, nothing is selected
 		if min(r)>5 :
 			self.selected=[]
-			self.del_shapes(("selp0","selp1","selp2","selp3","selp4"))
+			self.del_shapes(("selp0","selp1","selp2","selp3","selp4","selpc"))
 			return
 
 		srt=argsort(r)					# indices which would produce sorted array
@@ -704,9 +718,17 @@ lc is the cursor selection point in plot coords"""
 		self.selected=[srt[0]]
 		for i in xrange(1,5) :
 			if r[srt[i]]<3 : self.selected.append(srt[i])
+		
+		y0=35
+		if comments!=None:
+			p=self.selected[0]
+			self.add_shape("selpc",EMShape(("scrlabel",0,0,0,80,self.scrlim[3]-(35),comments[p],120.0,-1)))
+			y0+=18
 
 		for i,p in enumerate(self.selected):
-			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+35),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
+			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+y0),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
+
+			
 
 		self.emit(QtCore.SIGNAL("selected"),self.selected)
 
@@ -2241,6 +2263,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 			except:
 				print "Color error"
+				print list(sorted(parms.keys()))
 				print parms[j][0]
 				print colortypes[parms[j][0]]
 				print qt_color_map[colortypes[parms[j][0]]]
