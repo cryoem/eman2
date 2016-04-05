@@ -67,6 +67,7 @@ from numpy import *
 from valslider import *
 from cStringIO import StringIO
 import re
+import emimage2d
 
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -154,6 +155,8 @@ class EMPlot2DWidget(EMGLWidget):
 		self.resize_event(width,height)
 
 	def closeEvent(self,event):
+		if self.particle_viewer!=None :
+			self.particle_viewer.close()
 		self.clear_gl_memory()
 		EMGLWidget.closeEvent(self, event)
 
@@ -208,8 +211,17 @@ class EMPlot2DWidget(EMGLWidget):
 			self.visibility = {}
 
 		if input_data==None :
+			self.data.pop(key)
+			self.visibility.pop(key)
+			self.axes.pop(key)
+			try: self.comments.pop(key)
+			except: pass
+			if self.inspector: self.inspector.datachange()
 			if not quiet: self.updateGL()
 			return
+
+		if self.data.has_key(key) : oldkey=True
+		else: oldkey=False
 
 		if isinstance(input_data,EMData):
 			data = input_data.get_data_as_vector()
@@ -221,13 +233,8 @@ class EMPlot2DWidget(EMGLWidget):
 			self.data[key]= data
 			self.visibility.setdefault(key,True)
 		else:
-			if data!=None :
-				self.data[key]=[array(i) for i in data]
-				self.visibility.setdefault(key,True)
-			else :
-				#del self.data[key] why del?
-				self.data.pop(key)
-				self.visibility.pop(key)
+			self.data[key]=[array(i) for i in data]
+			self.visibility.setdefault(key,True)
 
 		try:
 			if len(data)>1 :
@@ -242,15 +249,28 @@ class EMPlot2DWidget(EMGLWidget):
 			print "Data error:", data
 			return
 
-		if symtype==-2 and linetype==-2:
-			if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
-			else : dosym,symtype=1,0
-		if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
-		if color >len(colortypes): color = 0 # there are only a certain number of colors
-		if linetype>=0 : doline=1
-		else : doline,linetype=0,0
-		if symtype>=0 : dosym=1
-		else : dosym,symtype=0,0
+		if oldkey:
+			pp=self.pparm[key]
+			if color<0 : color=pp[0]
+			if linetype==-2: doline=pp[1]
+			elif linetype==-1: doline=0
+			else: doline=1
+			if symtype==-2: dosym=pp[4]
+			elif symtype==-1: dosym=0
+			else: dosym=1
+			if symtype<0: symtype=pp[5]
+			if linewidth<0: linewidth=pp[3]
+			if symsize<0 : symsize=pp[6]
+		else:
+			if symtype==-2 and linetype==-2:
+				if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
+				else : dosym,symtype=1,0
+			if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
+			if color >len(colortypes): color = 0 # there are only a certain number of colors
+			if linetype>=0 : doline=1
+			else : doline,linetype=0,0
+			if symtype>=0 : dosym=1
+			else : dosym,symtype=0,0
 		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize)
 
 		if comments!=None:
@@ -721,9 +741,22 @@ lc is the cursor selection point in plot coords"""
 		
 		y0=35
 		if comments!=None:
+			# If the comment is "#;file", we display the image, otherwise show the comment on the plot
 			p=self.selected[0]
-			self.add_shape("selpc",EMShape(("scrlabel",0,0,0,80,self.scrlim[3]-(35),comments[p],120.0,-1)))
-			y0+=18
+			try:
+				imn,imf=comments[p].split(";")
+				imn=int(imn)
+				ptclim=EMData(imf,imn)
+
+				if self.particle_viewer==None : 
+					self.particle_viewer=emimage2d.EMImage2DWidget(ptclim)
+					self.particle_viewer.show()
+				else:
+					self.particle_viewer.set_data(ptclim)
+					self.particle_viewer.show()
+			except:
+				self.add_shape("selpc",EMShape(("scrlabel",0,0,0,80,self.scrlim[3]-(35),comments[p],120.0,-1)))
+				y0+=18
 
 		for i,p in enumerate(self.selected):
 			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+y0),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
@@ -951,6 +984,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	def closeEvent(self,event):
 		self.clear_gl_memory()
 		EMGLWidget.closeEvent(self, event)
+			
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_C:
@@ -1440,12 +1474,12 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.target=weakref.ref(target)
 		gbl0=QtGui.QGridLayout(self)
 
-		self.wimgfile=StringBox(label="Images:")
-		gbl0.addWidget(self.wimgfile,0,0)
+		#self.wimgfile=StringBox(label="Images:")
+		#gbl0.addWidget(self.wimgfile,0,0)
 
-		self.wimgfilebut=QtGui.QPushButton(self)
-		self.wimgfilebut.setText("Browse")
-		gbl0.addWidget(self.wimgfilebut,0,1)
+		#self.wimgfilebut=QtGui.QPushButton(self)
+		#self.wimgfilebut.setText("Browse")
+		#gbl0.addWidget(self.wimgfilebut,0,1)
 
 		self.kmeansb=QtGui.QPushButton(self)
 		self.kmeansb.setText("K-means")
@@ -1453,12 +1487,118 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 
 		self.wnseg=ValBox(rng=(2,32),label="Nseg",value=3)
 		self.wnseg.intonly=1
-		gbl0.addWidget(self.wnseg,3,0,1,2)
+		gbl0.addWidget(self.wnseg,3,0)
+		
+		self.wnax=StringBox(label="axes:",value="all")
+		gbl0.addWidget(self.wnax,3,1)
 
-		QtCore.QObject.connect(self.wimgfilebut,QtCore.SIGNAL("clicked()"),self.selectImgFile)
-		QtCore.QObject.connect(self.target(),QtCore.SIGNAL("selected"),self.imgSelect)
+		self.wcbaxnorm=CheckBox(label="Eq Wt Axes:",value=0)
+		gbl0.addWidget(self.wcbaxnorm,4,0)
+
+		self.wspfix=StringBox(label="Prefix:",value="split")
+		gbl0.addWidget(self.wspfix,12,0)
+		
+		self.wbmakeset=QtGui.QPushButton()
+		self.wbmakeset.setText("New Sets")
+		gbl0.addWidget(self.wbmakeset,12,1)
+
+		QtCore.QObject.connect(self.kmeansb,QtCore.SIGNAL("clicked()"),self.doKMeans)
+		QtCore.QObject.connect(self.wbmakeset,QtCore.SIGNAL("clicked()"),self.doMakeSet)
+		#QtCore.QObject.connect(self.wimgfilebut,QtCore.SIGNAL("clicked()"),self.selectImgFile)
+		#QtCore.QObject.connect(self.target(),QtCore.SIGNAL("selected"),self.imgSelect)
 
 		self.imgwin=None
+
+	def doMakeSet(self):
+		"""Saves selected plots as new .lst files in sets/ if 'comment' field contains image specifiers"""
+		insp=self.target().get_inspector()				# inspector
+		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently hilighted items
+		lsx={}
+		
+		nums=set()
+		for name in names:
+			try: num=int(name.rsplit("_",1)[1])
+			except:
+				QtGui.QMessageBox.error(self, "Selected data sets must be subsets ending in _# !")
+				return
+			if num in nums:
+				QtGui.QMessageBox.error(self, "Please select only one group of sets at a time !")
+				return
+			nums.add(num)
+			
+			out=LSXFile("sets/{}_{}.lst".format(self.wspfix.getValue(),num))
+
+			try: comments=self.target().comments[name]
+			except:
+				QtGui.QMessageBox.error(self, "No filenames stored in {}".format(name))
+				return
+			
+			for r in xrange(len(comments)):
+				try: imn,imf=comments[r].split(";")
+				except:
+					QtGui.QMessageBox.error(self, "Invalid filename {} in {}".format(comments[r],name))
+					return
+				
+				imn=int(imn)
+				if not lsx.has_key(imf) : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading 
+				val=lsx[imf][imn]
+				out[r]=val
+
+	def doKMeans(self):
+		"""Performs K-means classification, and produces nseg new data sets"""
+		nseg=self.wnseg.getValue()		# number of segments
+		axes=self.wnax.getValue()		# selected axes
+		axnorm=self.wcbaxnorm.getValue()
+		insp=self.target().get_inspector()				# inspector
+		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+		data=self.target().data[name]					# data set we will operate on
+		try: comments=self.target().comments[name]		# comments for copying to results
+		except: comments=None
+		ncol=len(data)
+		nrow=len(data[0])
+
+		if axes=="all":
+			axes=range(ncol)
+		else:
+			try:
+				axes=[int(i) for i in axes.split(",")]
+				if max(axes)>=ncol : raise Exception
+			except:
+				QtGui.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
+				return
+		
+		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
+		if axnorm:
+			print "Normalize Axes"
+			datafix=[i.copy()/std(i) for i in data]
+		else: datafix=data
+		
+		# build our array data into images for analysis ... this may not be the most efficient approach
+		imdata=[]
+		for r in range(nrow):
+			imdata.append(EMData(len(axes),1,1))
+			for c,ax in enumerate(axes):
+				imdata[r][c]=datafix[ax][r]
+
+		an=Analyzers.get("kmeans")
+		an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":1,"slowseed":0,"mininclass":5})
+		an.insert_images_list(imdata)
+		centers=an.analyze()
+		
+		#print "centers ",centers
+
+		# extract classified results as new sets
+		results=[[[] for i in range(ncol)] for j in range(nseg)]	# nseg lists of data sets. Each data set is a list of ncol lists
+		resultc=[[] for j in range(nseg)]							# nseg lists of comments
+		for r in range(nrow):
+			s=imdata[r]["class_id"]
+			for c in xrange(ncol): 
+				results[s][c].append(data[c][r])
+			if comments!=None: resultc[s].append(comments[r])
+				
+		for s in range(nseg) :
+			if comments!=None: self.target().set_data(results[s],key="{}_{}".format(name,s),comments=resultc[s])
+			else: self.target().set_data(results[s],key="{}_{}".format(name,s))
 
 	def imgSelect(self,sel=None):
 		if self.imgwin==None :
@@ -1509,6 +1649,12 @@ class DragListWidget(QtGui.QListWidget):
 	def setDataSource(self,trg):
 		"""We keep a weak reference to our data source so we can pull the data only when dragging actually starts"""
 		self.datasource=weakref.ref(trg)
+
+	def keyPressEvent(self,event):
+		if event.key() == Qt.Key_Backspace:
+			name=str(self.currentItem().text())		# currently hilighted item
+			self.datasource().target().set_data(None,key=name)
+		else: QtGui.QListWidget.keyPressEvent(self,event)
 
 	def dragEnterEvent(self,e):
 		if e.mimeData().hasText() : e.acceptProposedAction()
@@ -1610,11 +1756,14 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 		
+		gbx = QtGui.QGroupBox("Data sets")
+		
 		vbl3 = QtGui.QVBoxLayout()
-		vbl3.setMargin(0)
+		vbl3.setMargin(4)
 		vbl3.setSpacing(6)
 		vbl3.setObjectName("vbl3")
-		hbl.addLayout(vbl3)
+		gbx.setLayout(vbl3)
+		hbl.addWidget(gbx)
 
 		# plot list
 		self.setlist=DragListWidget(self)

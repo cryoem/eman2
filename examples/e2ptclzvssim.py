@@ -87,19 +87,18 @@ as not all elements are computed.
 	if options.refine!=None:
 		com=js_open_dict("{}/0_refine_parms.json".format(options.refine))
 		if len(args)<1 :
-			args.append(com["last_even"].replace("threed","simmx"))
+			args.append(com["last_even"].replace("threed","simmx").encode("ascii"))
 			print ", ".join(args)
-		options.refs=com["last_even"].replace("threed","projections")
+		options.refs=com["last_even"].replace("threed","projections").encode("ascii")
 		print "refs: ",options.refs
 
-		options.inimgs=com["input"][0]
+		options.inimgs=com["input"][0].encode("ascii")
 		print "inimgs: ",options.inimgs
 
 		
 	if len(args)<1 : 
 		print "Please specify input simmx files"
 		sys.exit(1)
-
 
 	tmp=EMData(args[0],0,True)		# header info from first input, assume others are same
 	nx=tmp["nx"]
@@ -238,6 +237,7 @@ as not all elements are computed.
 					colh+=1
 
 		# if input values were provided, we write per-particle info
+		# THIS MUST BE LAST because we save a comment
 		if options.inimgs:
 			ptcl=EMData(options.inimgs,y,True)		# read image header
 			try :
@@ -248,7 +248,7 @@ as not all elements are computed.
 				nsnr=len(snr)
 				# This gives integrated radial weighted SSNR over 3 resolution ranges
 #				out.write("%1.3g\t%1.3g\t%1.3g\t"%(sum(snrw[1:nsnr/8])/(nsnr/8),sum(snrw[nsnr/16:nsnr/3])/(nsnr/3-nsnr/16),sum(snrw[nsnr/3:nsnr*2/3])/(nsnr*2/3-nsnr/3)));
-				out.write("%1.3g\t%1.3g\t%1.3g\t"%(sum(snr[3:nsnr/6])/(nsnr/6-3),sum(snr[nsnr/8:nsnr/3])/(nsnr/3-nsnr/8),sum(snr[nsnr/3:nsnr*2/3])/(nsnr*2/3-nsnr/3)));
+				out.write("%1.3g\t%1.3g\t%1.3g # %d;%s"%(sum(snr[3:nsnr/6])/(nsnr/6-3),sum(snr[nsnr/8:nsnr/3])/(nsnr/3-nsnr/8),sum(snr[nsnr/3:nsnr*2/3])/(nsnr*2/3-nsnr/3),y,options.inimgs));
 				if y==0:
 					outkey.write( "%d - defocus\n"%(colh))
 					colh+=1

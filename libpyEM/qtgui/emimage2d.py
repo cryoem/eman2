@@ -36,7 +36,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
-from valslider import ValSlider,ValBox
+from valslider import ValSlider,ValBox,StringBox
 from math import *
 import EMAN2db
 from EMAN2 import *
@@ -113,6 +113,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.fmaxden=1.0
 		self.fcurmin=0.0
 		self.fcurmax=0.0
+		self.disp_proc=[]			# a list/set of Processor objects to apply before rendering
 		self.display_fft = None		# a cached version of the FFT
 		self.fft=None				# The FFT of the current target if currently displayed
 		self.rmousedrag=None		# coordinates during a right-drag operation
@@ -249,6 +250,10 @@ class EMImage2DWidget(EMGLWidget):
 		if self.data==None : return QtCore.QSize(512,512)
 		return QtCore.QSize(*self.get_parent_suggested_size())
 
+	def set_disp_proc(self,procs):
+		self.disp_proc=procs
+		self.force_display_update()
+		self.updateGL()
 
 	def set_enable_clip(self,val=True):
 		self.enable_clip = val
@@ -878,6 +883,11 @@ class EMImage2DWidget(EMGLWidget):
 			min_val = self.curmin
 			max_val = self.curmax
 			gam_val = self.gamma
+
+		if len(self.disp_proc)>0 :
+			tmp=values.copy()
+			for p in self.disp_proc: p.process_inplace(tmp)
+			values=tmp
 
 		wid = (self.width() * value_size - 1) / 4 * 4 + 4
 		wdt =  self.width()
@@ -1916,6 +1926,31 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.stmoviebut,QtCore.SIGNAL("clicked(bool)"),self.do_makemovie)
 		QtCore.QObject.connect(self.stanimgif,QtCore.SIGNAL("clicked(bool)"),self.do_makegifanim)
 
+		# Filter tab
+		self.filttab = QtGui.QWidget()
+		self.ftlay=QtGui.QGridLayout(self.filttab)
+
+		self.procbox1=StringBox(label="Process1:",value="filter.lowpass.gauss:cutoff_abs=0.125",showenable=0)
+		self.ftlay.addWidget(self.procbox1,2,0)
+
+		self.procbox2=StringBox(label="Process2:",value="filter.highpass.gauss:cutoff_pixels=3",showenable=0)
+		self.ftlay.addWidget(self.procbox2,6,0)
+
+		self.procbox3=StringBox(label="Process3:",value="math.linear:scale=5:shift=0",showenable=0)
+		self.ftlay.addWidget(self.procbox3,10,0)
+
+		self.proclbl1=QtGui.QLabel("Image unchanged, display only!")
+		self.ftlay.addWidget(self.proclbl1,12,0)
+		
+		self.mmtab.addTab(self.filttab,"Filt")
+		
+		self.procbox1.connect(self.procbox1,QtCore.SIGNAL("enableChanged"),self.do_filters)
+		self.procbox1.connect(self.procbox1,QtCore.SIGNAL("textChanged"),self.do_filters)
+		self.procbox2.connect(self.procbox2,QtCore.SIGNAL("enableChanged"),self.do_filters)
+		self.procbox2.connect(self.procbox2,QtCore.SIGNAL("textChanged"),self.do_filters)
+		self.procbox3.connect(self.procbox3,QtCore.SIGNAL("enableChanged"),self.do_filters)
+		self.procbox3.connect(self.procbox3,QtCore.SIGNAL("textChanged"),self.do_filters)
+
 		# Probe tab
 		self.probetab = QtGui.QWidget()
 		self.ptlay=QtGui.QGridLayout(self.probetab)
@@ -2221,6 +2256,31 @@ class EMImageInspector2D(QtGui.QWidget):
 		dfp=EMDataFnPlotter(data=(s,pspec))
 		dfp.show()
 		self.pspecwins.append(dfp)
+
+	def do_filters(self,val=None):
+		ret=[]
+		if self.procbox1.getEnabled():
+			try:
+				nm,op=parsemodopt(self.procbox1.getValue())
+				ret.append(Processors.get(nm,op))
+			except:
+				print "Error with processor: ",self.procbox1.getValue()
+		
+		if self.procbox2.getEnabled():
+			try:
+				nm,op=parsemodopt(self.procbox2.getValue())
+				ret.append(Processors.get(nm,op))
+			except:
+				print "Error with processor2: ",self.procbox2.getValue()
+		
+		if self.procbox3.getEnabled():
+			try:
+				nm,op=parsemodopt(self.procbox3.getValue())
+				ret.append(Processors.get(nm,op))
+			except:
+				print "Error with processor: ",self.procbox3.getValue()
+		
+		self.target().set_disp_proc(ret)
 
 	def do_snapshot(self,du) :
 		if self.target().data==None or self.target() == None: return
