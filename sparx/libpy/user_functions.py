@@ -59,7 +59,8 @@ def ref_ali2d( ref_data ):
 	fl = max(min(0.4,fl),0.12)
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
-	tavg = filt_tanl(ref_data[2], fl, aa)
+	st = Util.infomask(ref_data[2], ref_data[0], True)
+	tavg = filt_tanl((ref_data[2]-st[0])*ref_data[0], fl, aa)
 	cs = [0.0]*2
 	if(ref_data[1] > 0):
 		tavg, cs[0], cs[1] = center_2D(tavg, ref_data[1], self_defined_reference = ref_data[0])
