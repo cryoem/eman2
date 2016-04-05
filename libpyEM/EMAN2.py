@@ -1966,7 +1966,7 @@ comment : optional comment string"""
 	def read(self,n):
 		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
 performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,comment)"""
-		if n>=self.n : raise Exception,"Attempt to read record {} from #LSX with {} records".format(n,self.n)
+		if n>=self.n : raise Exception,"Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n)
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
 		if len(ln)==2 : ln.append(None)
