@@ -1210,7 +1210,6 @@ EMData* EMData::average_circ_sub() const
 
 
 	if( m > 0 ) qs /= m;
-
 	for (int iz = 1; iz <= nz; iz++)
 		for (int iy = 1; iy <= ny; iy++)
 			for (int ix = 1; ix <= nx; ix++)
