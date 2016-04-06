@@ -343,6 +343,7 @@ class EMPlot2DWidget(EMGLWidget):
 				if '#' in rdata[0]:
 					try: comments=[i.split("#",1)[1].strip() for i in rdata if i[0]!="#"]
 					except: comments=None
+				else: comments=None
 				rdata=[i.split("#")[0] for i in rdata if i[0]!='#']
 				if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
 				else : rdata=[[float(j) for j in i.split()] for i in rdata]
