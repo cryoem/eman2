@@ -2254,9 +2254,8 @@ void circumfnn( EMData* win , int npad)
 		for (int j = 1; j <= iy; ++j) {
 			for (int i = 1; i <= ix; ++i) {
 				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=(size_t)L2) tw(i,j,k) = (tw(i,j,k) - TNR)*npad;
-				else                tw(i,j,k) = 0.0f;
-
+				if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
+				else                tw(i,j,k)  = 0.0f;
 			}
 		}
 	}
@@ -2331,9 +2330,8 @@ void circumftrl( EMData* win , int npad)
 		for (int j = 1; j <= iy; ++j) {
 			for (int i = 1; i <= ix; ++i) {
 				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=(size_t)L2) tw(i,j,k) = (tw(i,j,k) - TNR)*npad;
-				else                tw(i,j,k) = 0.0f;
-
+				if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
+				else                tw(i,j,k)  = 0.0f;
 			}
 		}
 	}
