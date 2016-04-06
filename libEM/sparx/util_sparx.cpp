@@ -18307,6 +18307,27 @@ EMData* Util::mulreal(EMData* img1, EMData* img2)
 }
 
 
+void Util::mulreal_2D_in_place(EMData* img0, EMData* img1, EMData* img2, int slice_index)
+{
+	ENTERFUNC;
+	int nx=img1->get_xsize(),ny=img1->get_ysize(),nz=img1->get_zsize();
+
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+	float *img0_ptr  = img0->get_data();
+
+	for( size_t i = 0; i<(nx*ny); i++)
+	{
+		img0_ptr[2*i + 2*nx*ny*slice_index] = img1_ptr[i  + nx*ny*slice_index]*img2_ptr[i];
+	}
+
+	img0->set_complex(true);
+	img0->set_ri(true);
+	if(ny%2==0) img0->set_fftodd(false); else img0->set_fftodd(true);
+	img0->update();
+}
+
+
 void Util::mulclreal(EMData* img1, EMData* img2)
 {
 	ENTERFUNC;
@@ -18818,6 +18839,40 @@ void Util::mul_img(EMData* img, EMData* img1)
 	} else {
 		for (size_t i=0;i<size;++i) img_ptr[i] *= img1_ptr[i];
 	}
+	img->update();
+
+	EXITFUNC;
+}
+
+void Util::mul_img_tabularized(EMData* img, int ncx, vector<float> tabular_vals, float granularity, float max_rr)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+
+	float kaiser;
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+
+	float *img_ptr  = img->get_data();
+
+	for (size_t k=0;k<nz;++k)
+		for (size_t j=0;j<ny;++j)
+			for (size_t i=0;i<nx;++i)
+			{
+				float rr = sqrt(float((i-ncx)*(i-ncx)+(j-ncx)*(j-ncx)+(k-ncx)*(k-ncx)))/(384.*2);
+				int return_index = (int)(granularity*(rr/max_rr));
+				if (return_index>=granularity)
+				{
+					kaiser = tabular_vals[(int)(granularity - 1)];
+				}
+				else
+				{
+					kaiser = tabular_vals[return_index];
+				}
+				img_ptr[i + j*nx + k*nx*ny] *= kaiser;
+			}
 	img->update();
 
 	EXITFUNC;
