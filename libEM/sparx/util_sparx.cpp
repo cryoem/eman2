@@ -18844,35 +18844,33 @@ void Util::mul_img(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
-void Util::mul_img_tabularized(EMData* img, int ncx, vector<float> tabular_vals, float granularity, float max_rr)
+void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab)
 {
 	ENTERFUNC;
 	/* Exception Handle */
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
+	int nbel = beltab.size();
+	cout<<"  XXX nbel  "<<nbel<<endl;
 
-	float kaiser;
-	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-
+	int nx=img->get_xsize();  // NOTE:  here is extended!!
+	int ny=img->get_ysize();
+	int ncx = ny/2;
+	cout<<"  mul_img_tabularized  "<<nx<<"   "<<ny<<endl;
 	float *img_ptr  = img->get_data();
 
-	for (size_t k=0;k<nz;++k)
-		for (size_t j=0;j<ny;++j)
-			for (size_t i=0;i<nx;++i)
-			{
-				float rr = sqrt(float((i-ncx)*(i-ncx)+(j-ncx)*(j-ncx)+(k-ncx)*(k-ncx)))/(384.*2);
-				int return_index = (int)(granularity*(rr/max_rr));
-				if (return_index>=granularity)
-				{
-					kaiser = tabular_vals[(int)(granularity - 1)];
-				}
-				else
-				{
-					kaiser = tabular_vals[return_index];
-				}
-				img_ptr[i + j*nx + k*nx*ny] *= kaiser;
+	for (size_t k=0;k<ny;++k)  {
+		float argz = (k-ncx)*(k-ncx);
+		for (size_t j=0;j<ny;++j)  {
+			float argy = argz +(j-ncx)*(j-ncx);
+			for (size_t i=0;i<ny;++i) {
+				float rr = sqrt(float((i-ncx)*(i-ncx)+ argy))/(nnxo*2.0f);
+				int iab = std::min((int)((nbel-1)*rr*2.0 + 0.5), nbel -1 );
+				img_ptr[i + nx*(j + k*ny)] *= beltab[iab];
 			}
+		}
+	}
 	img->update();
 
 	EXITFUNC;
