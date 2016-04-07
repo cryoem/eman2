@@ -144,7 +144,7 @@ def main():
 #		except: pass
 
 #		fout=open("ptclsnr.txt".format(i),"w")
-		fout=open("ptclfsc_{}.txt".format(args[0][-2:),"w")
+		fout=open("ptclfsc_{}.txt".format(args[0][-2:]),"w")
 		# generate a projection for each particle so we can compare
 		for i in xrange(nref):
 			if options.verbose>1 : print "--- Class %d"%i

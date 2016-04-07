@@ -15,11 +15,17 @@ NTHREADS=28
 VERBOSE=1
 DOFSC=0
 
+if len(argv)>2 :
+	normimg=EMData(argv[2])
+	print "Normalizing with ",argv[2]
+
 data=EMData.read_images(argv[1])
+for i in data: i.mult(normimg)
 n=len(data)
 nx=data[0]["nx"]
 ny=data[0]["ny"]
 print "{} frames read {} x {}".format(n,nx,ny)
+
 
 ccfs=Queue.Queue(0)
 
