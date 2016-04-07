@@ -389,6 +389,32 @@ def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 	if(ny < 1):  ny = nx
 	return  Util.ctf_img(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
 
+def ctf_img_real(nx, ctf, sign = 1, ny = 0, nz = 1):
+	"""
+		Generate a 1-2-3-D real image containing the CTF.
+	 	Default is 2D output.
+	  	Input
+			nx: x image size.
+			ctf: ctf object, see CTF_info for description.
+			sign: sign of the CTF.
+			ny: y image size
+			nz: z image size 
+		Output
+			ctfimg: real image containing CTF, x-size half of the complex
+	"""
+	dict = ctf.to_dict()
+	dz = dict["defocus"]
+	cs = dict["cs"]
+	voltage = dict["voltage"]
+	pixel_size = dict["apix"]
+	b_factor = dict["bfactor"]
+	ampcont = dict["ampcont"]
+	dza = dict["dfdiff"]
+	azz = dict["dfang"]
+
+	if(ny < 1):  ny = nx
+	return  Util.ctf_img_real(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
+
 
 def ctf_rimg(nx, ctf, sign = 1, ny = 0, nz = 1):
 	"""

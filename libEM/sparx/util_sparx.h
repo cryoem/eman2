@@ -862,6 +862,8 @@ costlist, int* curbranch);
 	/* img /= Re(img1) with zero check  */
 	static void div_filter(EMData* img, EMData* img1);
 
+	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, const vector<float>& bckgnoise);
+
 	//utility for sxlocres
 	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);
 

@@ -1309,7 +1309,7 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
-
+	print "do_ctf  ",do_ctf
 	if not (finfo is None): nimg = 0
 
 	fftvol = EMData()
