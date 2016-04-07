@@ -2342,35 +2342,35 @@ float Util::triquad(float R, float S, float T, float* fdata)
     float  TP1  = (1+T);
 
     float triquad =
-    (-C8) * RST * RM1  * SM1  * TM1 * fdata[0] +
-	( C4) * ST  * RSQ  * SM1  * TM1 * fdata[1] +
-	( C8) * RST * RP1  * SM1  * TM1 * fdata[2] +
-	( C4) * RT  * RM1  * SSQ  * TM1 * fdata[3] +
-	(-C2) * T   * RSQ  * SSQ  * TM1 * fdata[4] +
-	(-C4) * RT  * RP1  * SSQ  * TM1 * fdata[5] +
-	( C8) * RST * RM1  * SP1  * TM1 * fdata[6] +
-	(-C4) * ST  * RSQ  * SP1  * TM1 * fdata[7] +
-	(-C8) * RST * RP1  * SP1  * TM1 * fdata[8] +
-//
-	( C4) * RS  * RM1  * SM1  * TSQ * fdata[9]  +
-	(-C2) * S   * RSQ  * SM1  * TSQ * fdata[10] +
-	(-C4) * RS  * RP1  * SM1  * TSQ * fdata[11] +
-	(-C2) * R   * RM1  * SSQ  * TSQ * fdata[12] +
-	              RSQ  * SSQ  * TSQ * fdata[13] +
-	( C2) * R   * RP1  * SSQ  * TSQ * fdata[14] +
-	(-C4) * RS  * RM1  * SP1  * TSQ * fdata[15] +
-	( C2) * S   * RSQ  * SP1  * TSQ * fdata[16] +
-	( C4) * RS  * RP1  * SP1  * TSQ * fdata[17] +
- //
-	( C8) * RST * RM1  * SM1  * TP1 * fdata[18] +
-	(-C4) * ST  * RSQ  * SM1  * TP1 * fdata[19] +
-	(-C8) * RST * RP1  * SM1  * TP1 * fdata[20] +
-	(-C4) * RT  * RM1  * SSQ  * TP1 * fdata[21] +
-	( C2) * T   * RSQ  * SSQ  * TP1 * fdata[22] +
-	( C4) * RT  * RP1  * SSQ  * TP1 * fdata[23] +
-	(-C8) * RST * RM1  * SP1  * TP1 * fdata[24] +
-	( C4) * ST  * RSQ  * SP1  * TP1 * fdata[25] +
-	( C8) * RST * RP1  * SP1  * TP1 * fdata[26]   ;
+					(-C8) * RST * RM1  * SM1  * TM1 * fdata[0] +
+					( C4) * ST  * RSQ  * SM1  * TM1 * fdata[1] +
+					( C8) * RST * RP1  * SM1  * TM1 * fdata[2] +
+					( C4) * RT  * RM1  * SSQ  * TM1 * fdata[3] +
+					(-C2) * T   * RSQ  * SSQ  * TM1 * fdata[4] +
+					(-C4) * RT  * RP1  * SSQ  * TM1 * fdata[5] +
+					( C8) * RST * RM1  * SP1  * TM1 * fdata[6] +
+					(-C4) * ST  * RSQ  * SP1  * TM1 * fdata[7] +
+					(-C8) * RST * RP1  * SP1  * TM1 * fdata[8] +
+				//
+					( C4) * RS  * RM1  * SM1  * TSQ * fdata[9]  +
+					(-C2) * S   * RSQ  * SM1  * TSQ * fdata[10] +
+					(-C4) * RS  * RP1  * SM1  * TSQ * fdata[11] +
+					(-C2) * R   * RM1  * SSQ  * TSQ * fdata[12] +
+								  RSQ  * SSQ  * TSQ * fdata[13] +
+					( C2) * R   * RP1  * SSQ  * TSQ * fdata[14] +
+					(-C4) * RS  * RM1  * SP1  * TSQ * fdata[15] +
+					( C2) * S   * RSQ  * SP1  * TSQ * fdata[16] +
+					( C4) * RS  * RP1  * SP1  * TSQ * fdata[17] +
+				 //
+					( C8) * RST * RM1  * SM1  * TP1 * fdata[18] +
+					(-C4) * ST  * RSQ  * SM1  * TP1 * fdata[19] +
+					(-C8) * RST * RP1  * SM1  * TP1 * fdata[20] +
+					(-C4) * RT  * RM1  * SSQ  * TP1 * fdata[21] +
+					( C2) * T   * RSQ  * SSQ  * TP1 * fdata[22] +
+					( C4) * RT  * RP1  * SSQ  * TP1 * fdata[23] +
+					(-C8) * RST * RM1  * SP1  * TP1 * fdata[24] +
+					( C4) * ST  * RSQ  * SP1  * TP1 * fdata[25] +
+					( C8) * RST * RP1  * SP1  * TP1 * fdata[26]   ;
      return triquad;
 }
 
