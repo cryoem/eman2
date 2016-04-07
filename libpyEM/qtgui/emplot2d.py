@@ -1520,10 +1520,10 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		for name in names:
 			try: num=int(name.rsplit("_",1)[1])
 			except:
-				QtGui.QMessageBox.error(self, "Selected data sets must be subsets ending in _# !")
+				QtGui.QMessageBox.warning(self, "Selected data sets must be subsets ending in _# !")
 				return
 			if num in nums:
-				QtGui.QMessageBox.error(self, "Please select only one group of sets at a time !")
+				QtGui.QMessageBox.warning(self, "Please select only one group of sets at a time !")
 				return
 			nums.add(num)
 			
@@ -1531,13 +1531,13 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 
 			try: comments=self.target().comments[name]
 			except:
-				QtGui.QMessageBox.error(self, "No filenames stored in {}".format(name))
+				QtGui.QMessageBox.warning(self, "No filenames stored in {}".format(name))
 				return
 			
 			for r in xrange(len(comments)):
 				try: imn,imf=comments[r].split(";")
 				except:
-					QtGui.QMessageBox.error(self, "Invalid filename {} in {}".format(comments[r],name))
+					QtGui.QMessageBox.warning(self, "Invalid filename {} in {}, line {}".format(comments[r],name,r))
 					return
 				
 				imn=int(imn)
