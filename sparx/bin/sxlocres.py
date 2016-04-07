@@ -85,7 +85,7 @@ def main():
 			#print sys.argv
 			vi = get_im(sys.argv[1])
 			ui = get_im(sys.argv[2])
-
+			
 			nx = vi.get_xsize()
 			ny = vi.get_ysize()
 			nz = vi.get_zsize()
@@ -118,11 +118,21 @@ def main():
 		bcast_EMData_to_all(m, myid, main_node)
 
 		from statistics import locres
-		freqvol, resolut = locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
+		res_overall = 0.5
+		if myid ==main_node:
+			if options.fsc != None:
+				fsc_curve = read_text_file(options.fsc, -1)
+			else:
+				fsc_curve = fsc(vi, ui)
+			for ifreq in xrange(len(fsc_curve[0])-1, -1, -1):
+				if fsc_curve[1][ifreq] > options.cutoff:
+					res_overall = fsc_curve[0][ifreq]
+					break
+		res_overall = bcast_number_to_all(res_overall, main_node)
+		freqvol, resolut = locres(vi, ui, m, nk, cutoff, options.step, res_overall, myid, main_node, number_of_proc)
 		if(myid == 0):
 			freqvol.write_image(outvol)
 			if(options.fsc != None): write_text_row(resolut, options.fsc)
-
 		from mpi import mpi_finalize
 		mpi_finalize()
 
@@ -146,7 +156,17 @@ def main():
 
 		vf = fft(vi)
 		uf = fft(ui)
-
+		
+		res_overall = 0.5
+		if options.fsc != None:
+			fsc_curve = read_text_file(options.fsc, -1)
+		else:
+			fsc_curve = fsc(vi, ui)
+		for ifreq in xrange(len(fsc_curve[0])-1, -1, -1):
+			if fsc_curve[1][ifreq] > options.cutoff:
+				res_overall = fsc_curve[0][ifreq]
+				break
+				
 		lp = int(nn/2/options.step+0.5)
 		step = 0.5/lp
 
@@ -193,7 +213,7 @@ def main():
 						if(m.get_value_at(x,y,z) > 0.5):
 							if(freqvol.get_value_at(x,y,z) == 0.0):
 								if(tmp3.get_value_at(x,y,z) < cutoff):
-									freqvol.set_value_at(x,y,z,freq)
+									freqvol.set_value_at(x,y,z, min(freq + res_overall, 0.5))
 									bailout = False
 								else:
 									bailout = False
