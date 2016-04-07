@@ -815,6 +815,7 @@ costlist, int* curbranch);
 
 	static EMData* shrinkfvol(EMData* img, int npad);
 	static EMData* mulreal(EMData* img1, EMData* img2);
+	static void mulreal_2D_in_place(EMData* img0, EMData* img1, EMData* img2, int slice_index);
 	static void mulclreal(EMData* img1, EMData* img2);
 	static void divabs(EMData* img, EMData* img1);
     /*  Various operation on images */
@@ -855,6 +856,8 @@ costlist, int* curbranch);
 	static void sub_img(EMData* img, EMData* img1);
 	/* img *= img1  */
 	static void mul_img(EMData* img, EMData* img1);
+	/* img *= img1  but tabularized */
+	static void mul_img_tabularized(EMData* img, int ncx, vector<float> tabular_vals, float granularity, float max_rr);
 	/* img /= img1  */
 	static void div_img(EMData* img, EMData* img1);
 	/* img = |img|^2  */
