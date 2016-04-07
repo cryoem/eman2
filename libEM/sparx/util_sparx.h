@@ -857,7 +857,7 @@ costlist, int* curbranch);
 	/* img *= img1  */
 	static void mul_img(EMData* img, EMData* img1);
 	/* img *= img1  but tabularized */
-	static void mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab);
+	static void mul_img_tabularized(EMData* img, int nnxo, vector<float>& beltab);
 	/* img /= img1  */
 	static void div_img(EMData* img, EMData* img1);
 	/* img = |img|^2  */
