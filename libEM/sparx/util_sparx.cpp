@@ -18844,7 +18844,7 @@ void Util::mul_img(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
-void Util::mul_img_tabularized(EMData* img, int ncx, vector<float> tabular_vals, float granularity, float max_rr)
+void Util::mul_img_tabularized(EMData* img, int ncx, const vector<float>& tabular_vals, float granularity, float max_rr)
 {
 	ENTERFUNC;
 	/* Exception Handle */

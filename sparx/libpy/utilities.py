@@ -5195,7 +5195,6 @@ def print_with_time_info(msg):
 
 def if_error_then_all_processes_exit_program(error_status):
 	import sys, os
-	from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
 	from utilities import print_msg
 	
 	if "OMPI_COMM_WORLD_SIZE" not in os.environ:
@@ -5204,6 +5203,9 @@ def if_error_then_all_processes_exit_program(error_status):
 			return [largs[0]]
 		def mpi_finalize():
 			return None
+		MPI_INT, MPI_COMM_WORLD = 0, 0
+	else:
+		from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
 	
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	if error_status != None and error_status != 0:
