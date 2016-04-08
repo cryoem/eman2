@@ -2059,7 +2059,7 @@ def locres(vi, ui, m, nk, cutoff, step, res_overall, myid, main_node, number_of_
 										if(k == number_of_proc-1):
 											bailout = 0
 				"""
-				freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
+			freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
 
 		else:
 			tag_node = myid+1001
