@@ -18867,7 +18867,7 @@ void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab)
 			float argy = argz +(j-ncx)*(j-ncx);
 			for (size_t i=0;i<ny;++i) {
 				float rr = sqrt(float((i-ncx)*(i-ncx)+ argy))/(nnxo*2.0f);
-				int iab = std::min((int)((nbel-1)*rr*2.0 + 0.5), nbel -1 );
+				int iab = Util::get_min((int)((nbel-1)*rr*2.0 + 0.5), nbel -1 );
 				img_ptr[i + nx*(j + k*ny)] *= beltab[iab];
 			}
 		}
