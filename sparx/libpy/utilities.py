@@ -6766,7 +6766,8 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
 			new_class    = []
-			for a in res_classes: if len(a)>=Tracker["constants"]["smallest_group"]:new_class.append(a)
+			for a in res_classes: 
+				if len(a)>=Tracker["constants"]["smallest_group"]:new_class.append(a)
 	if myid == main_node:
 		log_main.add("Exhaustive Kmeans finishes")
 		log_main.add(" %d groups are selected out"%len(new_class))
