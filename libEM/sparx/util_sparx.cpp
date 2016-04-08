@@ -18853,12 +18853,12 @@ void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float>& beltab)
 		throw NullPointerException("NULL input image");
 	}
 	int nbel = beltab.size();
-	cout<<"  XXX nbel  "<<nbel<<endl;
+	//cout<<"  XXX nbel  "<<nbel<<endl;
 
 	int nx=img->get_xsize();  // NOTE:  here is extended!!
 	int ny=img->get_ysize();
 	int ncx = ny/2;
-	cout<<"  mul_img_tabularized  "<<nx<<"   "<<ny<<endl;
+	//cout<<"  mul_img_tabularized  "<<nx<<"   "<<ny<<endl;
 	float *img_ptr  = img->get_data();
 
 	for (size_t k=0;k<ny;++k)  {
