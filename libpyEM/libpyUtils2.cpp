@@ -518,7 +518,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("add_img2", &EMAN::Util::add_img2, args("img", "img1"), "img += img1**2")
 		.def("sub_img", &EMAN::Util::sub_img, args("img", "img1"), "img -= img1")
 		.def("mul_img", &EMAN::Util::mul_img, args("img", "img1"), "img *= img1")
-		.def("mul_img_tabularized", &EMAN::Util::mul_img_tabularized, args("img", "nnxo", "beltab"), "img *= img1")
+		.def("mul_img_tabularized", &EMAN::Util::mul_img_tabularized, args("img", "nnxo", "beltab"), "img *= beltab")
 		.def("div_img", &EMAN::Util::div_img, args("img", "img1"), "img /= img1")
 		.def("square_img", &EMAN::Util::square_img, args("img"), "img = |img|^2")
 		.def("div_filter", &EMAN::Util::div_filter, args("img", "img1"), "img /= Re(img1) with zero check")

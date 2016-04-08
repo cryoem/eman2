@@ -18845,7 +18845,7 @@ void Util::mul_img(EMData* img, EMData* img1)
 }
 
 
-void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float>& beltab)
+void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab)
 {
 	ENTERFUNC;
 	/* Exception Handle */
