@@ -213,12 +213,12 @@ def main():
 						if(m.get_value_at(x,y,z) > 0.5):
 							if(freqvol.get_value_at(x,y,z) == 0.0):
 								if(tmp3.get_value_at(x,y,z) < cutoff):
-									freqvol.set_value_at(x,y,z, min(freq + res_overall, 0.5))
+									freqvol.set_value_at(x,y,z, freq)
 									bailout = False
 								else:
 									bailout = False
 			if(bailout):  break
-
+		freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
 		freqvol.write_image(outvol)
 		if(options.fsc != None): write_text_row(resolut, options.fsc)
 
