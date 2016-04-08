@@ -18967,7 +18967,7 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, const vector<float>& 
 {
 	ENTERFUNC;
 	int nb = bckgnoise.size();
-	for(int i=0; i<nb; i++) cout<<i<<"    "<<bckgnoise[i]<<endl;
+	//for(int i=0; i<nb; i++) cout<<i<<"    "<<bckgnoise[i]<<endl;
 	int nx=img->get_xsize(), ny=img->get_ysize();
 	nx /= 2;
 	if (nx != ctfs->get_xsize()) {
