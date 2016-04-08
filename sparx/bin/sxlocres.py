@@ -213,7 +213,7 @@ def main():
 						if(m.get_value_at(x,y,z) > 0.5):
 							if(freqvol.get_value_at(x,y,z) == 0.0):
 								if(tmp3.get_value_at(x,y,z) < cutoff):
-									freqvol.set_value_at(x,y,z, freq))
+									freqvol.set_value_at(x,y,z, freq)
 									bailout = False
 								else:
 									bailout = False
