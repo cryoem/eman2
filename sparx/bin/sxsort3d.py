@@ -486,19 +486,18 @@ def main():
 		Tracker["this_data_list"]           = Tracker["this_accounted_list"]
 		outdir                              = os.path.join(workdir,"Kmref")  
 		empty_group, res_groups, final_list = ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,Tracker["this_accounted_text"],Tracker)
-		complementary                       = get_complementary_elements(list_to_be_processed,final_list)
-		Tracker["this_unaccounted_list"]    = complementary
+		Tracker["this_unaccounted_list"]    = get_complementary_elements(list_to_be_processed,final_list)
 		if myid == main_node:
-			log_main.add("the number of particles not processed is %d"%len(complementary))
+			log_main.add("the number of particles not processed is %d"%len(Tracker["this_unaccounted_list"]))
 			write_text_file(Tracker["this_unaccounted_list"],Tracker["this_unaccounted_text"])
-		update_full_dict(complementary,Tracker)
+		update_full_dict(Tracker["this_unaccounted_list"], Tracker)
 		#######################################
-		number_of_groups =  len(res_groups)
-		vol_list = []
-		number_of_ref_class= []
+		number_of_groups    = len(res_groups)
+		vol_list            = []
+		number_of_ref_class = []
 		for igrp in xrange(number_of_groups):
 			data,old_shifts = get_shrink_data_huang(Tracker, Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-			volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
+			volref          = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 			vol_list.append(volref)
 
 			if( myid == main_node ):  npergroup = len(read_text_file(os.path.join(outdir,"Class%d.txt"%igrp)))
