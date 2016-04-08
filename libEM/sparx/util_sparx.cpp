@@ -18986,7 +18986,7 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, const vector<float>& 
 			float rf = sqrt( argx );
 			int  ir = int(rf);
 			float df = rf - float(ir);
-			float f = bckgnoise[ir] + df * (bckgnoise[ir+1] - bckgnoise[ir]);
+			float f = (bckgnoise[ir] + df * (bckgnoise[ir+1] - bckgnoise[ir]))/2.0;  // 2 on account of x^2/(2*s^2)
 			int jx2 = 2*jx;
 			edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*f;
 			edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*f;

@@ -144,7 +144,7 @@ def main():
 #		except: pass
 
 #		fout=open("ptclsnr.txt".format(i),"w")
-		fout=open("ptclfsc_{}.txt".format(args[0][-2:),"w")
+		fout=open("ptclfsc_{}.txt".format(args[0][-2:]),"w")
 		# generate a projection for each particle so we can compare
 		for i in xrange(nref):
 			if options.verbose>1 : print "--- Class %d"%i
@@ -166,6 +166,8 @@ def main():
 
 					# the particle itself
 					ptcl=EMData(cptcl[eo],j)
+					try: defocus=ptcl["ctf"].defocus
+					except: defocus=-1.0
 
 					# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
@@ -184,7 +186,7 @@ def main():
 #					snr=fsc/(1.0-fsc)
 					sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 #					sums=[sum(snr[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
-					fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,j,cptcl[eo]))
+					fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,defocus,j,cptcl[eo]))
 					#xaxis = fsc[0:third]
 					#fsc = fsc[third:2*third]
 ##					saxis = [x/apix for x in xaxis]
