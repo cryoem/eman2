@@ -5799,8 +5799,8 @@ def get_sorting_attr_stack(data_stack):
 	from utilities import get_params_proj
 	attr_value_list = []
 	for idat in xrange(len(data_stack)):
-		group = data_stack[idat].get_attr("group")
-		phi,theta,psi,s2x,s2y=get_params_proj(data_stack[idat],xform = "xform.projection")
+		group                 = data_stack[idat].get_attr("group")
+		phi,theta,psi,s2x,s2y = get_params_proj(data_stack[idat],xform = "xform.projection")
 		attr_value_list.append([group, phi, theta, psi, s2x, s2y])
 	return attr_value_list
 	
@@ -5820,11 +5820,11 @@ def get_sorting_params(Tracker,data):
 	else:
 		total_attr_value_list = 0
 	for inode in xrange(nproc):
-		attr_value_list =get_attr_stack(data,"group")
-		attr_value_list =wrap_mpi_bcast(attr_value_list,inode)
-		if myid ==main_node:
-			image_start,image_end=MPI_start_end(ndata,nproc,inode)
-			total_attr_value_list=fill_in_mpi_list(total_attr_value_list,attr_value_list,image_start,image_end)		
+		attr_value_list = get_attr_stack(data,"group")
+		attr_value_list = wrap_mpi_bcast(attr_value_list,inode)
+		if myid == main_node:
+			image_start,image_end = MPI_start_end(ndata,nproc,inode)
+			total_attr_value_list = fill_in_mpi_list(total_attr_value_list,attr_value_list,image_start,image_end)		
 		mpi_barrier(MPI_COMM_WORLD)
 	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list,main_node)
 	return total_attr_value_list
@@ -5833,11 +5833,11 @@ def get_sorting_params_refine(Tracker,data,ndata):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	from utilities import read_text_row,wrap_mpi_bcast,even_angles
 	from applications import MPI_start_end
-	myid      = Tracker["constants"]["myid"]
-	main_node = Tracker["constants"]["main_node"]
-	nproc     = Tracker["constants"]["nproc"]
+	myid       = Tracker["constants"]["myid"]
+	main_node  = Tracker["constants"]["main_node"]
+	nproc      = Tracker["constants"]["nproc"]
 	#ndata     = Tracker["total_stack"]
-	mpi_comm  = MPI_COMM_WORLD
+	mpi_comm   = MPI_COMM_WORLD
 	if myid == main_node:
 		total_attr_value_list = []
 		for n in xrange(ndata):
@@ -5980,23 +5980,6 @@ def print_dict(dict,theme):
 		for key, value in sorted( dict.items() ):
 			if(key != "constants"):  
 				print("                    => "+key+spaces[len(key):]+":  "+str(value))
-"""
-def checkstep(item, keepchecking, myid, main_node):
-	from utilities import bcast_number_to_all
-        if(myid == main_node):
-                if keepchecking:
-                        if(os.path.exists(item)):
-                                doit = 0
-                        else:
-                                doit = 1
-                                keepchecking = False
-                else:
-                        doit = 1
-        else:
-                doit = 1
-        doit = bcast_number_to_all(doit, source_node = main_node)
-        return doit, keepchecking
-"""
 
 def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
         # this function is single processor
@@ -6120,17 +6103,11 @@ def do_two_way_comparison(Tracker):
 		for indep in xrange(len(indep_runs_to_groups)):
 			for index_of_class in xrange(len(indep_runs_to_groups[indep])):
 				one_group_in_old_ID = get_initial_ID(indep_runs_to_groups[indep][index_of_class], Tracker["full_ID_dict"])
-				#if myid ==main_node:
-				#	print  " chunk_dict ",Tracker["chunk_dict"]
-				#	print "one_group_in_old_ID",one_group_in_old_ID
 				rate1, rate2, size_of_this_group = count_chunk_members(Tracker["chunk_dict"], one_group_in_old_ID)
 				error = margin_of_error(Tracker["P_chunk0"], size_of_this_group)
 				if myid ==main_node:
-					#log_main.add("    %f     %f     %d"%(rate1,rate2,size_of_this_group))
 					log_main.add(" margin of error for chunk0 is %f   %f    %d"%((Tracker["P_chunk0"]-error),(Tracker["P_chunk0"]+error),size_of_this_group))
 					log_main.add(" actual percentage is %f"%rate1)
-					#log_main.add(" margin of error for chunk1 is %f"%margin_of_error(Tracker["P_chunk1"],size_of_this_group))
-					#log_main.add(" actual error is %f"%abs(rate2-Tracker["P_chunk1"]))
 		if myid ==main_node:
 			log_main.add("------------------------------------------------------------------------------")
 		total_pop=0
@@ -6430,6 +6407,7 @@ def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 	return res
 
 def get_number_of_groups(total_particles,number_of_images_per_group):
+	# soft partition groups
 	number_of_groups=float(total_particles)/number_of_images_per_group
 	if number_of_groups - int(number_of_groups)<.4:
 		number_of_groups = int(number_of_groups)
@@ -6506,7 +6484,7 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 			break
 	lowpass, falloff    = fit_tanh1(adjusted_fsc, 0.01)
 	lowpass             = round(lowpass,4)
-	falloff    =min(.1,falloff)
+	falloff             = min(.1,falloff)
 	falloff             = round(falloff,4)
 	currentres          = round(currentres,2)	
 	Tracker["lowpass"]  = lowpass
@@ -6550,7 +6528,7 @@ def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
 	
 def get_number_of_groups(total_particles,number_of_images_per_group):
 	#minimum_number_of_members = 1000
-	number_of_groups=float(total_particles)/number_of_images_per_group
+	number_of_groups   =  float(total_particles)/number_of_images_per_group
 	if number_of_groups - int(number_of_groups)<.4:number_of_groups = int(number_of_groups)
 	else:number_of_groups = int(number_of_groups)+1
 	return number_of_groups
@@ -6699,11 +6677,11 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 				log_main.add("%d  group is too small"%index_of_stable)
 	return large_stable
 	
-def get_leftover_from_stable(stable_list, N_total,smallest_group):
-	tmp_dict={}
+def get_leftover_from_stable(stable_list, N_total, smallest_group):
+	tmp_dict = {}
 	for i in xrange(N_total):
-		tmp_dict[i]=i
-	new_stable =[]
+		tmp_dict[i] = i
+	new_stable      =[]
 	for alist in stable_list:
 		if len(alist) > smallest_group:
 			for index_of_list in xrange(len(alist)):
@@ -6729,19 +6707,18 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	log_main              = Tracker["constants"]["log_main"]
 	nproc                 = Tracker["constants"]["nproc"]
 	final_list_text_file  = Tracker["this_data_list_file"] ## id text file for get_shrink_data_huang
-	snr  =1.
+	snr                   = 1.
 	Tracker["total_stack"]= len(Tracker["this_data_list"])
-	if myid ==main_node:
+	if myid == main_node:
 		log_main.add("start exhaustive Kmeans")
 		log_main.add("total data is %d"%len(Tracker["this_data_list"]))
 		log_main.add("final list file is "+final_list_text_file)
 	workdir = Tracker["this_dir"]
 	####----------------------------------------------
 	empty_group = 1
-	kmref =0
+	kmref       = 0
 	while empty_group ==1 and kmref<=5:## In case pctn of Kmeans jumps between 100% to 0%, stop the program
-		if myid ==main_node:
-			log_main.add(" %d     Kmref run"%kmref) 
+		if myid ==main_node: log_main.add(" %d     Kmref run"%kmref) 
 		outdir =os.path.join(workdir, "Kmref%d"%kmref)
 		empty_group, res_classes, data_list = ali3d_mref_Kmeans_MPI(ref_vol_list, outdir, final_list_text_file, Tracker)
 		kmref +=1
@@ -6764,17 +6741,14 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 			if myid == main_node:
 				log_main.add("number of classes for next round is %d"%len(new_class))
 				write_text_file(final_list, final_list_text_file)
-			mpi_barrier(MPI_COMM_WORLD)
-			
-			if myid == main_node:
 				number_of_ref_class = []
 				for igrp in xrange(len(new_class)):
 					write_text_file(new_class[igrp],os.path.join(workdir,"final_class%d.txt"%igrp))
 					number_of_ref_class.append(len(new_class[igrp]))
-			else:   number_of_ref_class = 0
+			else:   
+				number_of_ref_class = 0
 			number_of_ref_class = wrap_mpi_bcast(number_of_ref_class,main_node)
 			mpi_barrier(MPI_COMM_WORLD)
-			
 			ref_vol_list = []
 			if  Tracker["constants"]["mask3D"]: mask3D = get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
 			else: mask3D = None
@@ -6792,10 +6766,10 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
 			new_class    = []
-			for a in res_classes:
+			for a in res_classes: 
 				if len(a)>=Tracker["constants"]["smallest_group"]:new_class.append(a)
-	if myid==main_node:
-		log_main.add("Exhaustive Kmeans ends")
+	if myid == main_node:
+		log_main.add("Exhaustive Kmeans finishes")
 		log_main.add(" %d groups are selected out"%len(new_class))
 	return new_class
 	
@@ -6820,13 +6794,12 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	total_stack = len(list_of_a_group)
 	################
 	import copy
-	data_list = copy.deepcopy(list_of_a_group)
+	data_list [:] = list_of_a_group[:]
 	update_full_dict(data_list,Tracker)
 	this_particle_text_file = os.path.join(workdir,"full_class.txt")
-	if myid ==main_node:
-		write_text_file(data_list,"full_class.txt")
+	if myid ==main_node: write_text_file(data_list,"full_class.txt")
 	# Compute the resolution of leftover 
-	if myid ==main_node:
+	if myid == main_node:
 		shuffle(data_list)
 		l1=data_list[0:total_stack//2]
 		l2=data_list[total_stack//2:]
@@ -6837,9 +6810,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 		l2 = 0
 	l1 = wrap_mpi_bcast(l1, main_node)
 	l2 = wrap_mpi_bcast(l2, main_node)
-	llist = []
-	llist.append(l1)
-	llist.append(l2)
+	llist =[l1,l2]
 	if myid ==main_node:
 		for index in xrange(2): 
 			partids = os.path.join(workdir,"Class_%d.txt"%index)

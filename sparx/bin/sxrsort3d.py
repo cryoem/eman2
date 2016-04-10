@@ -270,15 +270,18 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		######### create a vstack from input stack to the local stack in masterdir
 		# stack name set to default
-		Tracker["constants"]["stack"]     = "bdb:"+masterdir+"/rdata"
-		Tracker["constants"]["ali3d"]     = os.path.join(masterdir, "ali3d_init.txt")
-		Tracker["constants"]["partstack"] = Tracker["constants"]["ali3d"]
+		Tracker["constants"]["stack"]          = "bdb:"+masterdir+"/rdata"
+		Tracker["constants"]["ali3d"]          = os.path.join(masterdir, "ali3d_init.txt")
+		Tracker["constants"]["partstack"]      = Tracker["constants"]["ali3d"]
+		Tracker["constants"]["ctf_params"]     = os.path.join(masterdir, "ctf_params.txt")
 		######
 	   	if myid == main_node:
 			if(Tracker["orgstack"][:4] == "bdb:"):     cmd = "{} {} {}".format("e2bdb.py", Tracker["orgstack"],"--makevstack="+Tracker["constants"]["stack"])
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
 			cmdexecute(cmd)
 			cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=xform.projection","--export="+Tracker["constants"]["ali3d"])
+			cmdexecute(cmd)
+			cmd = "{} {} {} {} ".format("sxheader.py", Tracker["constants"]["stack"],"--params=ctf","--export="+Tracker["constants"]["ctf_params"])
 			cmdexecute(cmd)
 			#keepchecking = False
 			total_stack = EMUtil.get_image_count(Tracker["orgstack"])
@@ -342,12 +345,12 @@ def main():
 			Tracker["total_stack"] = len(Tracker["this_unaccounted_list"])
 			log_main.add("new stable is %d"%len(new_stable_P1))
 		else:
-			Tracker["total_stack"]   = 0
+			Tracker["total_stack"]           = 0
 			Tracker["this_unaccounted_list"] = 0
 			stable_member_list =0
 		stable_member_list               = wrap_mpi_bcast(stable_member_list, main_node)
 		Tracker["total_stack"]           = bcast_number_to_all(Tracker["total_stack"], source_node = main_node)
-		left_one_from_old_two_runs = wrap_mpi_bcast(Tracker["this_unaccounted_list"], main_node)
+		left_one_from_old_two_runs       = wrap_mpi_bcast(Tracker["this_unaccounted_list"], main_node)
 		if myid ==main_node:  
 			write_text_file(left_one_from_old_two_runs, os.path.join(masterdir,"unaccounted_from_two_previous_runs.txt"))
 			print " Extracting results of two previous runs is done!"
@@ -383,7 +386,6 @@ def main():
 		Tracker["P_chunk0"]   = len(chunk_one)/float(Tracker["constants"]["total_stack"])
 		Tracker["P_chunk1"]   = len(chunk_two)/float(Tracker["constants"]["total_stack"])
 		### create two volumes to estimate resolution
-		#Tracker["this_data_list"] = chunk_one
 		if myid == main_node:
 			write_text_file(chunk_one, os.path.join(masterdir,"chunk0.txt"))
 			write_text_file(chunk_two, os.path.join(masterdir,"chunk1.txt"))
@@ -433,28 +435,10 @@ def main():
 			log_main.add("----------3-D sorting  program------- ")
 			log_main.add("current resolution %6.3f for images of original size in terms of absolute frequency"%Tracker["currentres"])
 			log_main.add("equivalent to %f Angstrom resolution"%(round((Tracker["constants"]["pixel_size"]/Tracker["currentres"]/Tracker["shrinkage"]),4)))
-	
-			filt_tanl(get_im(os.path.join(masterdir, "vol0.hdf")), Tracker["low_pass_filter"], 0.1).write_image(os.path.join(masterdir, "volf0.hdf"))
-			
+			filt_tanl(get_im(os.path.join(masterdir, "vol0.hdf")), Tracker["low_pass_filter"], 0.1).write_image(os.path.join(masterdir, "volf0.hdf"))			
 			filt_tanl(get_im(os.path.join(masterdir, "vol1.hdf")), Tracker["low_pass_filter"], 0.1).write_image(os.path.join(masterdir, "volf1.hdf"))
 			print " random odd and even assignment done  !"
 		mpi_barrier(MPI_COMM_WORLD)
-		"""
-		from utilities import get_input_from_string
-		delta       = get_input_from_string(Tracker["constants"]["delta"])
-		delta       = delta[0]
-		from utilities import even_angles
-		n_angles    = even_angles(delta, 0, 180)
-		this_ali3d  = Tracker["constants"]["ali3d"]
-		sampled     = get_stat_proj(Tracker, delta, this_ali3d)
-		if myid == main_node:
-			nc = 0
-			for a in sampled:
-				if len(sampled[a])>0 :  nc +=1
-			log_main.add("total sampled direction %10d  at angle step %6.3f"%(len(n_angles), delta)) 
-			log_main.add("captured sampled directions %10d percentage covered by data  %6.3f"%(nc,float(nc)/len(n_angles)*100))		
-		mpi_barrier(MPI_COMM_WORLD)
-		"""
 		## ---------------------------------------------------------------------------------------------########
 		## Stop program and output results when the leftover from two sort3d runs is not sufficient for a new run    		########
 		## ---------------------------------------------------  ---------------------------------------  ######
@@ -465,13 +449,11 @@ def main():
 				log_main.add("this implies your two sort3d runs already achieved high reproducibale ratio. ")
 				log_main.add("Or your number_of_images_per_group is too large ")
 				log_main.add("the final reproducibility is  %f"%((Tracker["constants"]["total_stack"]-len(Tracker["this_unaccounted_list"]))/float(Tracker["constants"]["total_stack"])))
-				for i in xrange(len(stable_member_list)):
-					write_text_file(stable_member_list[i], os.path.join(masterdir,"P2_final_class%d.txt"%i))
+				for i in xrange(len(stable_member_list)): write_text_file(stable_member_list[i], os.path.join(masterdir,"P2_final_class%d.txt"%i))
 				mask3d = get_im(Tracker["constants"]["mask3D"])
 			else:
 				mask3d = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 			bcast_EMData_to_all(mask3d, myid, main_node)
-
 			for igrp in xrange(len(stable_member_list)):
 				#name_of_class_file = os.path.join(masterdir, "P2_final_class%d.txt"%igrp)
 				data, old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], os.path.join(masterdir, "P2_final_class%d.txt"%igrp), Tracker["constants"]["partstack"], myid, main_node, nproc,preshift = True)
