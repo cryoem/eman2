@@ -78,7 +78,7 @@ def main():
 	if options.m3dpostprocess==None or len(options.m3dpostprocess.strip())==0 : m3dpostproc=""
 	else : m3dpostproc="--process "+options.m3dpostprocess
 
-	lpfilt=1.15/max(15.0,options.restarget)	# low-pass for alignment
+	lpfilt=1.15/max(10.0,options.restarget)	# low-pass for alignment
 
 	### Post-processing ###
 	### Even/Odd Alignment
@@ -231,7 +231,7 @@ def main():
 		vol.process_inplace("mask.sharp",{"outer_radius":rmax})
 		
 		# automask 
-		mask=vol.process("mask.auto3d",{"threshold":vmax*.25,"radius":0,"nshells":int(nx*0.05+.5+options.automaskexpand),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
+		mask=vol.process("mask.auto3d",{"threshold":vmax*.2,"radius":0,"nshells":int(nx*0.05+.5+options.automaskexpand),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
 		
 		## check the largest extent of the mask
 		#maskrd=mask.calc_radial_dist(nx/2,0,1,3)
