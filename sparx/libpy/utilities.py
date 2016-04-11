@@ -1822,10 +1822,9 @@ def write_text_row(data, file_name):
 		# Single list
 		for j in xrange(len(data)):
 			qtp = type(data[j])
-			if qtp == type(0):      outf.write("  %12d"%data[j])
+			if qtp == type(0):      outf.write("  %12d\n"%data[j])
 			elif qtp == type(0.0):  outf.write("  %12.5g\n"%data[j])
-			else:                   outf.write("  %s"%data[j])
-		outf.write("  \n")
+			else:                   outf.write("  %s\n"%data[j])
 	outf.flush()
 	outf.close()
 
@@ -1895,7 +1894,7 @@ def write_text_file(data, file_name):
 		for j in xrange(len(data)):
 			qtp = type(data[j])
 			if qtp == type(0):          outf.write("  %12d\n"%data[j])
-			elif qtp == type(0.0):      outf.write("  %12.5g"%data[j])
+			elif qtp == type(0.0):      outf.write("  %12.5g\"%data[j])
 			else:                       outf.write("  %s\n"%data[j])
 	outf.close()
 
