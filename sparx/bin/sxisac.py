@@ -666,7 +666,7 @@ def main(args):
 
 		exit_program = 0
 		if(myid == main_node):
-			if not os.path.exists("class_averages_candidate_generation_%d.hdf"%isac_generation):
+			if not os.path.exists("class_averages_generation_%d.hdf"%isac_generation):
 				print "This generation (%d) no class averages were generated!"%isac_generation
 				exit_program = 1
 		exit_program = int(mpi_bcast(exit_program, 1, MPI_INT, 0, MPI_COMM_WORLD)[0])
