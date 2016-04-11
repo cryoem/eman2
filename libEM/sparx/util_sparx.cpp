@@ -18845,7 +18845,7 @@ void Util::mul_img(EMData* img, EMData* img1)
 }
 
 
-void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float>& beltab)
+void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab)
 {
 	ENTERFUNC;
 	/* Exception Handle */
@@ -18853,12 +18853,12 @@ void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float>& beltab)
 		throw NullPointerException("NULL input image");
 	}
 	int nbel = beltab.size();
-	cout<<"  XXX nbel  "<<nbel<<endl;
+	//cout<<"  XXX nbel  "<<nbel<<endl;
 
 	int nx=img->get_xsize();  // NOTE:  here is extended!!
 	int ny=img->get_ysize();
 	int ncx = ny/2;
-	cout<<"  mul_img_tabularized  "<<nx<<"   "<<ny<<endl;
+	//cout<<"  mul_img_tabularized  "<<nx<<"   "<<ny<<endl;
 	float *img_ptr  = img->get_data();
 
 	for (size_t k=0;k<ny;++k)  {
@@ -18867,7 +18867,7 @@ void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float>& beltab)
 			float argy = argz +(j-ncx)*(j-ncx);
 			for (size_t i=0;i<ny;++i) {
 				float rr = sqrt(float((i-ncx)*(i-ncx)+ argy))/(nnxo*2.0f);
-				int iab = std::min((int)((nbel-1)*rr*2.0 + 0.5), nbel -1 );
+				int iab = Util::get_min((int)((nbel-1)*rr*2.0 + 0.5), nbel -1 );
 				img_ptr[i + nx*(j + k*ny)] *= beltab[iab];
 			}
 		}
@@ -18967,7 +18967,7 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, const vector<float>& 
 {
 	ENTERFUNC;
 	int nb = bckgnoise.size();
-	for(int i=0; i<nb; i++) cout<<i<<"    "<<bckgnoise[i]<<endl;
+	//for(int i=0; i<nb; i++) cout<<i<<"    "<<bckgnoise[i]<<endl;
 	int nx=img->get_xsize(), ny=img->get_ysize();
 	nx /= 2;
 	if (nx != ctfs->get_xsize()) {
@@ -22470,7 +22470,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  04/07/2016  13:55 PM locres is updated"<<endl;
+ cout <<"  VERSION  04/08/2016  10:00 AM locres is updated"<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
 
