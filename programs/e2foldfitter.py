@@ -348,24 +348,38 @@ both box sizes should be multiples of 8."""
 		print (pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2
 		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
 		pc.transform(s)
-		if target["MRC.nxstart"]==0 and target["MRC.nystart"]==0:
-			shx=target['origin_x']
-			shy=target['origin_y']
-			shz=target['origin_z']
-		else:
-			shx=target["MRC.nxstart"]*target["apix_x"]
-			shy=target["MRC.nystart"]*target["apix_x"]
-			shz=target["MRC.nzstart"]*target["apix_x"]
-		b[3]=b[3]*apix-pc['origin_x']+shx
-		b[4]=b[4]*apix-pc['origin_y']+shy
-		b[5]=b[5]*apix-pc["origin_z"]+shz
+		shx=shy=shz=0
+		try:
+			if target["MRC.nxstart"]==0 and target["MRC.nystart"]==0:
+				shx=target['origin_x']
+				shy=target['origin_y']
+				shz=target['origin_z']
+			else:
+				shx=target["MRC.nxstart"]*target["apix_x"]
+				shy=target["MRC.nystart"]*target["apix_x"]
+				shz=target["MRC.nzstart"]*target["apix_x"]
+		except:
+			pass
+		
+		ox=oy=oz=0
+		try:
+			ox=pc['origin_x']
+			oy=pc['origin_y']
+			oz=pc['origin_z']
+		except:
+			pass
+		
+		b[3]=b[3]*apix-ox+shx
+		b[4]=b[4]*apix-oy+shy
+		b[5]=b[5]*apix-oz+shz
 		#pc['origin_x']=target["MRC.nxstart"]*target["apix_x"]
 		#pc['origin_y']=target["MRC.nystart"]*target["apix_x"]
 		#pc["origin_z"]=target["MRC.nzstart"]*target["apix_x"]
 		#pc.write_image("tst.mrc")
 		t.set_rotation({'type':'eman', 'az':b[0], 'alt':b[1], 'phi':b[2]})
 		t.set_trans((b[3],b[4],b[5]))
-		pdb_transform(args[1],'final.%02d.pdb'%i,t,cent)
+		if args[1].endswith(".pdb"):
+			pdb_transform(args[1],'final.%02d.pdb'%i,t,cent)
 
 
 	print ncmp," total comparisons"
