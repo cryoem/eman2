@@ -1,0 +1,49 @@
+/* JSON file to configure the project manager SPR mode */
+/* The ICON string needs to correspond to a dict key listed in the PM */
+/* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */ 
+[
+
+  {
+    "ICON": "single_image_3d",
+    "PROGRAM": "e2import.py", 
+    "MODE": "tomos", 
+    "NAME": "Import Tomogram Files",
+    "CHILDREN": [] 
+  },
+  
+  {
+    "ICON": "single_image_3d",
+    "PROGRAM": "e2tomoseg_buildtrainset.py", 
+    "MODE": "box", 
+    "NAME": "Box training references",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "single_image_3d",
+    "PROGRAM": "e2tomoseg_buildtrainset.py", 
+    "MODE": "seg", 
+    "NAME": "Segment training references",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "single_image_3d",
+    "PROGRAM": "e2tomoseg_buildtrainset.py", 
+    "MODE": "set", 
+    "NAME": "Build training set",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "single_image_3d",
+    "PROGRAM": "e2tomoseg_convnet.py", 
+    "MODE": "train", 
+    "NAME": "Train the neural network",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "single_image_3d",
+    "PROGRAM": "e2tomoseg_convnet.py", 
+    "MODE": "test", 
+    "NAME": "Apply the neural network",
+    "CHILDREN": [] 
+  }
+]
