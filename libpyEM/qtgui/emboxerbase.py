@@ -278,9 +278,10 @@ class EMBox:
 	Also has convenient functions for moving, getting the associated box image, etc
 	'''
 	BOX_COLORS = {}
-	def __init__(self,x,y,type,score=0.0):
+	def __init__(self,x,y,type,score=0.0,z_idx=0):
 		self.x = x # central x coordinate
 		self.y = y # central y coordinate
+		self.z_idx=z_idx # z coordinate
 		self.type = type # type can be customized
 		self.score = score # can be some kind of score, such as correlation
 		self.image = None # an image
@@ -297,6 +298,7 @@ class EMBox:
 		if idx == 0: return self.x
 		elif idx == 1: return self.y
 		elif idx == 2: return self.type
+		elif idx == 3: return self.z_idx
 		else: raise RuntimeError("Out of bounds request in EMBox")
 
 	def to_list(self):
@@ -329,11 +331,14 @@ class EMBox:
 		self.image = None
 
 	def get_image(self,image_name,box_size,norm=None):
-
 		if self.image == None or self.image.get_xsize() != box_size or self.image.get_ysize() != box_size:
 			global BigImageCache
 			data=BigImageCache.get_object(image_name).get_image(use_alternate=True,norm=norm) # use alternate is a red herring
-			r = Region(self.x-box_size/2,self.y-box_size/2,box_size,box_size)
+			nz=data.get_attr("nz")
+			if nz>1:
+				r = Region(self.x-box_size/2,self.y-box_size/2,self.z_idx,box_size,box_size,1)
+			else:
+				r = Region(self.x-box_size/2,self.y-box_size/2,box_size,box_size)
 			self.image = data.get_clip(r)
 			if norm != None and str(norm) != "None":
 				self.image.process_inplace(norm)
@@ -351,12 +356,12 @@ class EMBox:
 		else:
 			r,g,b = 1.0,0.42,0.71 # hot pint, apparently ;)
 		from emshape import EMShape
-		shape = EMShape([shape_string,r,g,b,self.x-box_size/2,self.y-box_size/2,self.x+box_size/2,self.y+box_size/2,2.0])
+		shape = EMShape([shape_string,r,g,b,self.x-box_size/2,self.y-box_size/2,self.x+box_size/2,self.y+box_size/2,2.0,self.z_idx])
 		return shape
 
-	def collision(self,x,y,box_size):
+	def collision(self,x,y,box_size,z_idx=0):
 
-		if x-box_size/2 < self.x and x+box_size/2 > self.x and y-box_size/2 < self.y and y+box_size/2 > self.y: return True
+		if z_idx==self.z_idx and x-box_size/2 < self.x and x+box_size/2 > self.x and y-box_size/2 < self.y and y+box_size/2 > self.y: return True
 		else: return False
 
 
@@ -768,7 +773,11 @@ class ManualBoxingTool:
 		from PyQt4.QtCore import Qt
 		if box_num == -1:
 			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
-			box_num = self.target().add_box(m[0],m[1],ManualBoxingTool.BOX_TYPE)
+			if self.get_2d_window().list_data!=None:
+				#print m[0], m[1], len(self.get_2d_window().list_data),self.get_2d_window().list_idx
+				box_num = self.target().add_box(m[0],m[1],ManualBoxingTool.BOX_TYPE,z_idx=self.get_2d_window().list_idx)
+			else:
+				box_num = self.target().add_box(m[0],m[1],ManualBoxingTool.BOX_TYPE)
 			if self.panel_object.auto_center_checkbox.isChecked():
 				self.try_to_center_ref(box_num)
 
@@ -1264,12 +1273,12 @@ class EMBoxList(object):
 		if cache:
 			self.save_boxes_to_database(self.target().current_file())
 
-	def add_box(self,x,y,type=ManualBoxingTool.BOX_TYPE,score=0.0):
+	def add_box(self,x,y,type=ManualBoxingTool.BOX_TYPE,score=0.0,z_idx=0):
 		'''
 		Appends a box to the end of the list of the boxes
 		@return the index of the box that was just added
 		'''
-		self.boxes.append(EMBox(x,y,type,score))
+		self.boxes.append(EMBox(x,y,type,score,z_idx))
 		self.shapes.append(None)
 		return len(self.boxes)-1
 
@@ -1318,9 +1327,9 @@ class EMBoxList(object):
 		self.boxes[box_number] = box
 		self.shapes[box_number] = None
 
-	def detect_collision(self,x,y,box_size):
+	def detect_collision(self,x,y,box_size,z_idx=0):
 		for i,box in enumerate(self.boxes):
-			if box.collision(x,y,box_size):
+			if box.collision(x,y,box_size,z_idx):
 				return i
 
 		return -1
@@ -1388,7 +1397,7 @@ class EMBoxList(object):
 
 
 	def get_boxes_for_database(self):
-		return [[box.x,box.y,box.type] for box in self.boxes]
+		return [[box.x,box.y,box.type,box.z_idx] for box in self.boxes]
 
 	def save_boxes_to_database(self,image_name):
 
@@ -1402,8 +1411,13 @@ class EMBoxList(object):
 
 		data = get_database_entry(image_name,"boxes")
 		if data != None:
-			for x,y,type in data:
-				self.add_box(x,y,type)
+			for entry in data:
+				if len(entry)==3:
+					self.add_box(entry[0],entry[1],entry[2])
+				elif len(entry)>3:
+					self.add_box(entry[0],entry[1],entry[2],z_idx=entry[3])
+			#for x,y,type in data:
+				#self.add_box(x,y,type)
 
 	def exclude_from_scaled_image(self,exclusion_image,subsample_rate):
 		action = False
@@ -1553,7 +1567,8 @@ class EMBoxerModuleVitals(object):
 			self.full_box_update()
 
 	def detect_box_collision(self, data):
-		return self.box_list.detect_collision(data[0], data[1], self.box_size)
+		z_idx=self.get_2d_window().list_idx
+		return self.box_list.detect_collision(data[0], data[1], self.box_size, z_idx)
 
 
 	def particle_selected(self, box_number):
@@ -1573,9 +1588,9 @@ class EMBoxerModuleVitals(object):
 		self.box_list.add_boxes(boxes)
 		self.box_list.save_boxes_to_database(self.current_file())
 
-	def add_box(self, x, y, type=ManualBoxingTool.BOX_TYPE):
+	def add_box(self, x, y, type=ManualBoxingTool.BOX_TYPE,z_idx=0):
 		self.box_placement_update_exclusion_image(x,y)
-		box_num = self.box_list.add_box(x,y,type=type)
+		box_num = self.box_list.add_box(x,y,type=type,z_idx=z_idx)
 		self.box_list.save_boxes_to_database(self.current_file())
 		return box_num
 
@@ -1779,11 +1794,11 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 			if update_gl: self.main_2d_window.updateGL()
 		self.load_default_status_msg()
 
-	def add_box(self,x,y,type=ManualBoxingTool.BOX_TYPE):
+	def add_box(self,x,y,type=ManualBoxingTool.BOX_TYPE,z_idx=0):
 		if self.particles_window == None:
 			self.__init_particles_window()
 			get_application().show_specific(self.particles_window)
-		box_num = EMBoxerModuleVitals.add_box(self, x, y,type=type)
+		box_num = EMBoxerModuleVitals.add_box(self, x, y,type=type,z_idx=z_idx)
 		if self.particles_window:
 			self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
 			self.particles_window.updateGL()
@@ -1806,7 +1821,8 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 	def particle_selected(self,box_number):
 		box = EMBoxerModuleVitals.particle_selected(self,box_number)
-		if self.main_2d_window: self.main_2d_window.register_scroll_motion(box.x,box.y)
+		if self.main_2d_window:
+			self.main_2d_window.register_scroll_motion(box.x,box.y,box.z_idx)
 
 	# subclass methods
 	def has_thumbs(self):
@@ -1849,7 +1865,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 	def scroll_2d_window_to_box(self,box_number):
 		if self.main_2d_window:
 			box = self.box_list.get_box(box_number)
-			self.main_2d_window.register_scroll_motion(box.x,box.y)
+			self.main_2d_window.register_scroll_motion(box.x,box.y,box.z_idx)
 
 	def set_main_2d_mouse_mode(self,mode):
 		self.current_tool = mode

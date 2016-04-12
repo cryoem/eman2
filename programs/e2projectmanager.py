@@ -200,6 +200,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		# To add a new mode add an item to the list, and then add the json file in fuction: makeStackedWidget
 		self.modeCB.addItem("SPR")
 		self.modeCB.addItem("SPT")
+		self.modeCB.addItem("TomoSeg")
 
 		box.addWidget(workflowcontrollabel)
 		box.addWidget(self.modeCB)
@@ -276,6 +277,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		#self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/spt.json', 'SPT'))
 
 		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography'))
+		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomosegpanel.json', 'TomogramSegmentation'))
 		#Jesus
 
 		return self.tree_stacked_widget

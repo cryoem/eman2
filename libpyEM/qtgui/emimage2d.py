@@ -655,7 +655,10 @@ class EMImage2DWidget(EMGLWidget):
 		self.shapes.update(shapes)
 		self.shapechange=1
 
-	def register_scroll_motion(self,x,y):
+	def register_scroll_motion(self,x,y,z=0):
+		if self.list_data!=None:
+			self.image_range_changed(z+1)
+			#self.setup_shapes()
 		animation = LineAnimation(self,self.origin,(x*self.scale-self.width()/2,y*self.scale-self.height()/2))
 		self.qt_parent.register_animatable(animation)
 		return True
@@ -1276,6 +1279,12 @@ class EMImage2DWidget(EMGLWidget):
 
 		glPointSize(2)
 		for k,s in self.shapes.items():
+			### handle boxes for 3D images
+			if self.list_data!=None and len(s.shape)==10:
+				z_idx=s[9]
+				if z_idx!=self.list_idx:
+					continue
+			
 			if k == self.active[0]:
 				if not isinstance(s,EMShape) : 
 					print "Invalid shape in EMImage : ",s
@@ -1798,13 +1807,17 @@ class EMImage2DWidget(EMGLWidget):
 					self.list_idx += 1
 					self.get_inspector().set_image_idx(self.list_idx+1)
 					self.__set_display_image(self.curfft)
+					self.setup_shapes()
 					self.force_display_update()
+					
 			elif delta < 0:
 				if (self.list_idx > 0):
 					self.list_idx -= 1
 					self.get_inspector().set_image_idx(self.list_idx+1)
 					self.__set_display_image(self.curfft)
+					self.setup_shapes()
 					self.force_display_update()
+					
 
 	def image_range_changed(self,val):
 		l_val = val-1
@@ -1815,6 +1828,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.__set_display_image(self.curfft)
 			self.force_display_update()
 			self.updateGL()
+			self.setup_shapes()
 
 	def leaveEvent(self,event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
