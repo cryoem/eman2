@@ -1814,38 +1814,17 @@ def write_text_row(data, file_name):
 		for i in xrange(len(data)):
 			for j in xrange(len(data[i])):
 				qtp = type(data[i][j])
-				if qtp == type(0):
-					outf.write("  %12d"%data[i][j])
-				elif qtp == type(0.0):
-					# NOTE: 2015/05/27 Toshio Moriya
-					# Since %12.5g does not work as the Python spec,
-					# we manually mimic the spec.  
-					# %12.5g results in int when a float value has only one non-zero digit after decimal point 
-					a = data[i][j]
-					z = (a>0.00001 and a<1.e6) or (a<-0.00001 and a>-1.e4)
-					if z: outf.write("  %12.5f"%a)
-					else: outf.write("  %12.5e"%a)
-				else:
-					outf.write("  %s"%data[i][j])
+				if qtp == type(0):      outf.write("  %12d"%data[i][j])
+				elif qtp == type(0.0):  outf.write("  %12.5g"%data[i][j])
+				else:                   outf.write("  %s"%data[i][j])
 			outf.write("\n")
 	else:
 		# Single list
 		for j in xrange(len(data)):
 			qtp = type(data[j])
-			if qtp == type(0):
-				outf.write("  %12d"%data[j])
-			elif qtp == type(0.0):
-				# NOTE: 2015/05/27 Toshio Moriya
-				# Since %12.5g does not work as the Python spec,
-				# we manually mimic the spec.  
-				# %12.5g results in int when a float value has only one non-zero digit after decimal point 
-				a = data[j]
-				z = (a>0.00001 and a<1.e6) or (a<-0.00001 and a>-1.e4)
-				if z: outf.write("  %12.5f\n"%a)
-				else: outf.write("  %12.5e\n"%a)
-			else:
-				outf.write("  %s"%data[j])
-		outf.write("  \n")
+			if qtp == type(0):      outf.write("  %12d\n"%data[j])
+			elif qtp == type(0.0):  outf.write("  %12.5g\n"%data[j])
+			else:                   outf.write("  %s\n"%data[j])
 	outf.flush()
 	outf.close()
 
@@ -1906,37 +1885,17 @@ def write_text_file(data, file_name):
 		for i in xrange(len(data[0])):
 			for j in xrange(len(data)):
 				qtp = type(data[j][i])
-				if qtp == type(0):
-					outf.write("  %12d"%data[j][i])
-				elif qtp == type(0.0):
-					# NOTE: 2015/05/27 Toshio Moriya
-					# Since %12.5g does not work as the Python spec,
-					# we manually mimic the spec.  
-					# %12.5g results in int when a float value has only one non-zero digit after decimal point 
-					a = data[j][i]
-					z = (a>0.00001 and a<1.e6) or (a<-0.00001 and a>-1.e4)
-					if z: outf.write("  %12.5f"%a)
-					else: outf.write("  %12.5e"%a)
-				else:
-					outf.write("  %s"%data[j][i])
+				if qtp == type(0):      outf.write("  %12d"%data[j][i])
+				elif qtp == type(0.0):  outf.write("  %12.5g"%data[j][i])
+				else:                   outf.write("  %s"%data[j][i])
 			outf.write("\n")
 	else:
 		# Single list 
 		for j in xrange(len(data)):
 			qtp = type(data[j])
-			if qtp == type(0):
-				outf.write("  %12d\n"%data[j])
-			elif qtp == type(0.0):
-				# NOTE: 2015/05/27 Toshio Moriya
-				# Since %12.5g does not work as the Python spec,
-				# we manually mimic the spec.  
-				# %12.5g results in int when a float value has only one non-zero digit after decimal point 
-				a = data[j]
-				z = (a>0.00001 and a<1.e6) or (a<-0.00001 and a>-1.e4)
-				if z: outf.write("  %12.5f\n"%a)
-				else: outf.write("  %12.5e\n"%a)
-			else:
-				outf.write("  %s\n"%data[j])
+			if qtp == type(0):          outf.write("  %12d\n"%data[j])
+			elif qtp == type(0.0):      outf.write("  %12.5g\n"%data[j])
+			else:                       outf.write("  %s\n"%data[j])
 	outf.close()
 
 def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk = True, saved_file_name = "image_in_reconstituted_mask.hdf"):
