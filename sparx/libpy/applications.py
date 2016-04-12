@@ -23393,6 +23393,874 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		
 ######
  
+ def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker):
+	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
+	from utilities      import  bcast_list_to_all, get_image, get_input_from_string, get_im
+	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
+	from utilities      import get_params_proj, set_params_proj, model_blank, wrap_mpi_bcast, write_text_file
+	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
+	from utilities      import rotate_3D_shift,estimate_3D_center_MPI, get_shrink_data_huang, get_im
+	####-------
+	from utilities      import get_attr_stack, get_sorting_attr_stack, get_sorting_params, get_sorting_params_refine
+	from utilities      import parsing_sorting_params, fill_in_mpi_list, wrap_mpi_bcast, get_groups_from_partition
+	from utilities      import remove_small_groups, set_filter_parameters_from_adjusted_fsc
+	###-----------
+	from alignment      import Numrinit, prepare_refrings, proj_ali_incore
+	from random         import randint, random
+	from filter         import filt_ctf
+	from utilities      import print_begin_msg, print_end_msg, print_msg, read_text_file
+	from projection     import prep_vol, prgs, prgl, project, prgq, gen_rings_ctf
+	from morphology     import binarize, get_shrink_3dmask
+	from statistics		import fsc
+
+	import os
+	import types
+	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi            import mpi_reduce, mpi_gatherv, mpi_scatterv, MPI_INT, MPI_SUM
+	from applications   import MPI_start_end
+	from reconstruction import rec3D_two_chunks_MPI, rec3D_MPI_noCTF
+	from fundamentals   import fftip, rops_table, fft
+	mpi_comm = MPI_COMM_WORLD
+	#####  reconstruction parameters, no need to change.
+	fourvar   = False
+	snr       = 1.0
+	debug     = False
+	ref_a     = "S"
+	npad      = 2
+	#####################################################
+	from logger import Logger,BaseLogger_Files
+	log       = Logger()
+	log   =Logger(BaseLogger_Files())
+	log.prefix=outdir+"/"
+	myid           = Tracker["constants"]["myid"]
+	main_node      = Tracker["constants"]["main_node"]
+	number_of_proc = Tracker["constants"]["nproc"]
+	shrinkage      = Tracker["shrinkage"]
+	### input parameters
+	maxit          = Tracker["constants"]["maxit"]
+	ou             = Tracker["constants"]["radius"]
+	ir             = Tracker["constants"]["ir"]
+	rs             = Tracker["constants"]["rs"]
+	xr             = Tracker["constants"]["xr"]
+	yr             = Tracker["constants"]["yr"]
+	ts             = Tracker["constants"]["ts"]
+	delta          = Tracker["constants"]["delta"]
+	an             = Tracker["constants"]["an"]
+	center         = Tracker["constants"]["center"]
+	nassign        = Tracker["constants"]["nassign"]
+	nrefine        = Tracker["constants"]["nrefine"]
+	CTF            = Tracker["constants"]["CTF"]
+	sym            = Tracker["constants"]["sym"]
+	termprec       = Tracker["constants"]["stoprnct"]
+	if myid == main_node:
+		weight         = Tracker["constants"]["weight"]
+		m = len(weight)-1
+		#s= sum(weight)
+	else:
+		weight         = 0.0
+		m              = 0
+	weight = wrap_mpi_bcast(weight, main_node, mpi_comm)
+	if myid ==main_node:
+		print weight
+	m = bcast_number_to_all(m, main_node)
+	if Tracker["constants"]["mask3D"]:
+		maskfile            = Tracker["mask3D"]
+	else:
+		maskfile            = None
+	if Tracker["constants"]["focus3Dmask"]: focus = Tracker["constants"]["focus3Dmask"]
+	else:                                   focus = None
+	partstack           = Tracker["constants"]["partstack"]
+	user_func_name      = Tracker["constants"]["user_func"]
+	Tracker["lowpass"]  = Tracker["low_pass_filter"]
+	Tracker["falloff"]  = .1
+	if Tracker["constants"]["PWadjustment"]:
+		Tracker["PWadjustment"] = Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
+	else:
+		Tracker["PWadjustment"] = None	
+	####################################################
+	from time import sleep
+	#Tracker["applyctf"] = True # 
+	data, old_shifts = get_shrink_data_huang(Tracker, Tracker["nxinit"], particle_list_file, partstack, myid,main_node,number_of_proc,preshift=True)
+	if myid ==main_node:
+		list_of_particles = read_text_file(particle_list_file)
+		total_nima        =len(list_of_particles)
+	else:
+		total_nima = 0
+		list_of_particles = 0
+	total_nima            = bcast_number_to_all(total_nima,main_node)
+	list_of_particles     = wrap_mpi_bcast(list_of_particles, main_node)
+	
+	if myid == main_node:
+		if os.path.exists(outdir):  nx = 1
+		else:  nx = 0
+	else:  nx = 0
+	ny = bcast_number_to_all(nx, source_node = main_node)
+	#image_start, image_end = MPI_start_end(total_data,number_of_proc, myid)
+	
+	if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_iter", 1,myid)
+	mpi_barrier(MPI_COMM_WORLD)
+	if myid == main_node:	
+		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		log.add("Equal K-means  ")
+	mpi_barrier(MPI_COMM_WORLD)
+	from time import time	
+	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+		finfo = open(os.path.join(outdir, "progress%04d"%myid), 'w')
+		frec  = open( os.path.join(outdir, "recons%04d"%myid), "w" )
+	else:
+		finfo = None
+		frec  = None
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+	delta       = get_input_from_string(delta)
+	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
+	if (an == "-1"):
+		an = []
+		for i in xrange(len(xrng)):   an.append(-1)
+	else:
+		from  alignment	    import proj_ali_incore_local
+		an      = get_input_from_string(an)
+
+	first_ring  = int(ir)
+	rstep       = int(rs)
+	last_ring   = int(int(ou)*shrinkage+.5)
+	center      = int(center)
+	numref  = len(ref_list)
+	nx      = ref_list[0].get_xsize()
+	if last_ring < 0:last_ring = nx//2 - 2
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+	if (myid == main_node):
+		#import user_functions
+		#user_func = user_functions.factory[user_func_name]
+		log.add("mref_ali3d_MPI")
+		log.add("Input stack                               : %s"%(Tracker["constants"]["stack"]))
+		#log.add("Reference volumes                         : %s"%(ref_vol))	
+		log.add("Number of reference volumes               : %i"%(numref))
+		log.add("Output directory                          : %s"%(outdir))
+		log.add("User function                             : %s"%(user_func_name))
+		if(focus != None):  \
+		log.add("Maskfile 3D for focused clustering        : %s"%(focus))
+		log.add("Overall 3D mask applied in user function  : %s"%(maskfile))
+		log.add("Inner radius                              : %i"%(first_ring))
+		log.add("Outer radius                              : %i"%(last_ring))
+		log.add("Ring step                                 : %i"%(rstep))
+		log.add("X search range                            : %s"%(xrng))
+		log.add("Y search range                            : %s"%(yrng))
+		log.add("Translational step                        : %s"%(step))
+		log.add("Angular step                              : %s"%(delta))
+		log.add("Angular search range                      : %s"%(an))
+		log.add("Number of assignments in each iteration   : %i"%(nassign))
+		log.add("Number of alignments in each iteration    : %i"%(nrefine))
+		log.add("Number of iterations                      : %i"%(lstp*maxit) )
+		log.add("Center type                               : %i"%(center))
+		log.add("CTF correction                            : %s"%(CTF))
+		log.add("Symmetry group                            : %s"%(sym))
+		log.add("Percentage of change for termination      : %f"%(termprec))
+		log.add("User function                             : %s"%(user_func_name))
+		log.add("total number of particles                 : %d"%len(Tracker["this_data_list"]))
+		log.add("shrinkage is                              : %f"%shrinkage)
+		log.add("the particle id files for get_shrink_dat is %s"%particle_list_file) 
+	if(maskfile):
+		if(type(maskfile) is types.StringType): mask3D = get_shrink_3dmask(Tracker["nxinit"],maskfile) 
+		else: 	                                mask3D = maskfile
+	else        :  mask3D = model_circle(last_ring, nx, nx, nx)
+	numr     = Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D   = model_circle(last_ring, nx, nx)
+	if(first_ring > 1):  mask2D -= model_circle(first_ring,nx,nx)
+	nima       = len(data) # local number of particles
+	
+	'''
+	if(myid == main_node):	
+		total_nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(total_nima)
+	
+	else:
+		total_nima =0
+
+	total_nima = bcast_number_to_all(total_nima, source_node = main_node)
+
+	if(myid != main_node):
+		list_of_particles = [-1]*total_nima
+
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
+
+	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
+	# create a list of images for each node
+	list_of_particles = list_of_particles[image_start: image_end]
+	nima = len(list_of_particles)
+	'''
+	if debug:
+		finfo.write( "Image_start, image_end: %d %d\n" %(image_start,image_end))
+		finfo.flush()
+	start_time = time()
+	#  Here the assumption is that input are always volumes.  It should be most likely be changed so optionally these are group assignments.
+	#  Initialize Particle ID and set group number to non-existant -1
+	for im in xrange(nima):
+		data[im].set_attr_dict({'group':-1})
+	if(myid == 0):
+		log.add( "Time to read data: %d" % (time()-start_time) );start_time = time()
+
+	if myid == main_node:
+		refdata = [None]*7
+		for  iref in xrange(numref):
+			ref_list[iref].write_image(os.path.join(outdir, "vol0000.hdf"), iref)
+		#refdata[0] = 
+		#user_func(refdata)
+	refdata        =[None]*4
+	res = 0.5
+	for i in xrange(len(Tracker["global_fsc"][0])-1,0,-1):
+		if Tracker["global_fsc"][1][i] > 0.5:
+				res=fsc_in[0][i]
+				break
+	highres = []
+	for  iref in xrange(numref): highres.append(int(res*Tracker["nxinit"] + 0.5))
+	Tracker["lowpass"] = min(0.45, res-0.05)
+	Tracker["lowpass"] = max(0.11, res)
+	Tracker["falloff"] = 0.1
+	##-----------------------------------------------
+	if myid == main_node:  ### 3-D mask, low pass filter, and power spectrum adjustment
+		for iref in xrange(numref):
+		
+			#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],Tracker["number_of_ref_class"][iref],Tracker)
+			log.add("%d  low pass filter   %f %f  %d"%(iref,Tracker["lowpass"],Tracker["falloff"],Tracker["number_of_ref_class"][iref]))
+			log.add("%d highres                   %f"%(iref, highres[iref]))
+			
+			if Tracker["mask3D"]:
+				mask3D = get_im(Tracker["mask3D"])
+				stat = Util.infomask(ref_list[iref], mask3D, False)
+				ref_list[iref] -= stat[0]
+				Util.mul_scalar(ref_list[iref], 1.0/stat[1])
+				
+			if(Tracker["constants"]["PWadjustment"] !=""):
+				rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
+				ro = rops_table(ref_list[iref])
+				for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
+				ref_list[iref] =filt_table(ref_list[iref],ro)
+				
+			if (Tracker["constants"]["low_pass_filter"]==-1.):  ref_list[iref] = filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+			else:                                               ref_list[iref] = filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
+							
+
+			if Tracker["mask3D"]: Util.mul_img(ref_list[iref], mask3D)
+			ref_list[iref].write_image(os.path.join(outdir,"volf0000.hdf"),iref)
+			
+	mpi_barrier( MPI_COMM_WORLD )
+	if CTF:
+		#if(data[0].get_attr_default("ctf_applied",0) > 0):  ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
+		from reconstruction import rec3D_MPI
+	else:
+		from reconstruction import rec3D_MPI_noCTF
+	if debug:
+		finfo.write( '%d loaded  \n' % len(data) )
+		finfo.flush()
+	#  this is needed for gathering of pixel errors
+	disps = []
+	recvcount = []
+	for im in xrange(number_of_proc):
+		if( im == main_node ):  disps.append(0)
+		else:                   disps.append(disps[im-1] + recvcount[im-1])
+		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
+		recvcount.append( ie - ib )
+	total_iter = 0
+	tr_dummy = Transform({"type":"spider"})
+
+	if(focus != None):
+		if(myid == main_node):
+			focus = get_shrink_3dmask(Tracker["nxinit"], focus)
+		else:
+			focus =  model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
+		bcast_EMData_to_all(focus, myid, main_node)
+		st = Util.infomask(focus, None, True)
+		if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
+		focus = prep_vol(focus, 1, 1)
+
+	Niter = int(lstp*maxit*(nassign + nrefine) )
+	for Iter in xrange(Niter):
+		N_step = (Iter%(lstp*(nassign+nrefine)))/(nassign+nrefine)
+		if Iter%(nassign+nrefine) < nassign:
+			runtype = "ASSIGNMENT"
+		else:
+			runtype = "REFINEMENT"
+
+		total_iter += 1
+		if(myid == main_node):
+			log.add("\n%s ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f  \
+			"%(runtype, total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+			start_ime = time()
+		peaks =  [ [ -1.0e23 for im in xrange(nima) ] for iref in xrange(numref) ]
+		if runtype=="REFINEMENT":
+ 			trans = [ [ tr_dummy for im in xrange(nima) ] for iref in xrange(numref) ]
+			pixer = [ [  0.0     for im in xrange(nima) ] for iref in xrange(numref) ]
+			if(an[N_step] > 0):
+				from utilities    import even_angles
+				ref_angles = even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+				# generate list of angles
+				from alignment import generate_list_of_reference_angles_for_search
+				list_of_reference_angles = \
+				generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
+				del ref_angles
+			else:  list_of_reference_angles = [[1.0,1.0]]
+		cs = [0.0]*3
+		from fundamentals import fft
+		if( not focus ):
+			for im in xrange(nima):  data[im] = fft(data[im])
+
+		for iref in xrange(numref):
+			if(myid == main_node):	volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
+			else: 					volft =  model_blank(nx, nx, nx)
+			bcast_EMData_to_all(volft, myid, main_node)
+			volft = prep_vol(volft, 1, 1)
+			if CTF:
+				previous_defocus=-1.0
+				if runtype=="REFINEMENT":
+					start_time = time()
+					prjref = prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
+					if(myid == 0): log.add( "Calculation of projections: %d" % (time()-start_time) );start_time = time()
+					del volft, kb
+			else:
+				if runtype=="REFINEMENT":
+					start_time = time()
+					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
+					if(myid == 0): log.add( "Initial time to prepare rings: %d" % (time()-start_time) );start_time = time()
+					del volft, kb
+			start_time = time()
+			for im in xrange(nima):
+				if(CTF):
+					ctf = data[im].get_attr("ctf")
+					if runtype=="REFINEMENT":
+						if(ctf.defocus != previous_defocus):
+							previous_defocus = ctf.defocus
+							rstart_time = time()
+							refrings = gen_rings_ctf( prjref, nx, ctf, numr)
+							if(myid == 0): log.add( "Repeated time to prepare rings: %d" % (time()-rstart_time) );rstart_time = time()
+
+				if runtype=="ASSIGNMENT":
+					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
+					'''
+					if CTF:
+						ref = fft(filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y],1,False), ctf ))
+					else:
+						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y],1)
+					if(focus != None):  mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]),1)  #  Should be precalculated!!
+					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
+					'''
+					#  Standard distance
+					#  Ref is in reciprocal space
+					if CTF:
+						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
+					else:
+						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
+					from filter import filt_tophatl
+					from math import sqrt
+					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
+					ref.set_attr("is_complex",0)
+					ref.set_value_at(0,0,0.0)
+					nrmref = sqrt(Util.innerproduct(ref, ref))
+					if(focus):
+						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
+						tempx = fft(data[im]*mask2D)
+						tempx.set_attr("is_complex",0)
+						peak = Util.innerproduct(ref, tempx)
+					else:
+						data[im].set_attr("is_complex",0)
+						peak = Util.innerproduct(ref, data[im])
+						data[im].set_attr("is_complex",1)
+					peak /= nrmref
+
+					'''
+					#  FSC distance
+					#  Ref is in reciprocal space
+					if CTF:
+						ref = filt_ctf( prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
+					else:
+						ref = prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
+					if(focus):
+						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
+						tempx = fsc(ref, fft(data[im]*mask2D))[1]
+					else:
+						tempx = fsc(ref, data[im])[1]
+					peak = sum(tempx[1:highres[iref]])/highres[iref]
+					'''
+
+
+
+					if not(finfo is None):
+						finfo.write( "ID, iref, peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
+				else:
+					if(an[N_step] == -1):
+						peak, pixel_error = proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
+					else:
+						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
+																	xrng[N_step], yrng[N_step], step[N_step], an[N_step],sym=sym)
+					if not(finfo is None):
+						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
+						finfo.write( "ID, iref, peak,t rans: %6d %d %f %f %f %f %f %f\n"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
+						finfo.flush()
+
+				peaks[iref][im] = peak
+				if runtype=="REFINEMENT":
+					pixer[iref][im] = pixel_error
+					trans[iref][im] = data[im].get_attr( "xform.projection" )
+			if(myid == 0):log.add( "Time to process particles for reference %3d: %d" % (iref, time()-start_time) );start_time = time()
+		#newpeaks = [nima*[0.0]]*numref
+		### add circular conditions
+		# m = len(weight)//2
+		#for im in xrange(nima):
+		#	for iref in xrange(numref):
+		#		for j in xrange(-m, m):
+		#			newpeaks[iref][im] += peaks[(iref+j)%numref][im]*weight[j+m]
+		#peaks = newpeaks	
+		if runtype=="ASSIGNMENT":  del volft, ref #kb, ref
+		else:
+			if CTF: del prjref
+			del refrings
+			if(an[N_step] > 0): del list_of_reference_angles
+		#  send peak values to the main node, do the assignments, and bring them back
+		from numpy import float32, empty, inner, abs
+		if( myid == 0 ):
+			dtot = empty( (numref, total_nima), dtype = float32)
+		for  iref in xrange(numref):
+			recvbuf = mpi_gatherv(peaks[iref], nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			if( myid == 0 ): dtot[iref] = recvbuf
+		del recvbuf
+		#  The while loop over even angles delta should start here.
+		#  prepare reference directions
+		from utilities import even_angles, getvec
+		refa = even_angles(60.0)
+		numrefang = len(refa)
+		refanorm = empty( (numrefang, 3), dtype = float32)
+		for i in xrange(numrefang):
+			tmp = getvec(refa[i][0], refa[i][1])
+			for j in xrange(3):
+				refanorm[i][j] = tmp[j]
+		del  refa, tmp
+		transv = empty( (nima, 3), dtype = float32)
+		if runtype=="ASSIGNMENT":
+			for im in xrange(nima):
+				trns = data[im].get_attr("xform.projection")
+				for j in xrange(3):
+					transv[im][j] = trns.at(2,j)
+		else:
+			# For REFINEMENT we have a problem, as the exact angle is known only after the next step of assigning projections.
+			# So, we will assume it is the one with max peak
+			for im in xrange(nima):
+				qt = -1.0e23
+				it = -1
+				for iref in xrange(numref):
+					pt = peaks[iref][im]
+					if(pt > qt):
+						qt = pt
+						it = iref
+				for j in xrange(3):
+					transv[im][j] = trans[it][im].at(2,j)
+		#  We have all vectors, now create a list of assignments of images to references
+		refassign = [-1]*nima
+		for im in xrange(nima):
+			refassign[im] = abs(inner(refanorm,transv[im])).argmax()
+		assigntorefa = mpi_gatherv(refassign, nima, MPI_INT, recvcount, disps, MPI_INT, main_node, MPI_COMM_WORLD)
+		assigntorefa = map(int, assigntorefa)
+		del refassign, refanorm, transv
+		"""
+		#  Trying to use ISAC code for EQ-Kmeans  PAP 03/21/2015
+		if myid == main_node:
+
+			for imrefa in xrange(numrefang):
+				from utilities import findall
+				N = findall(imrefa, assigntorefa)
+				current_nima = len(N)
+				if( current_nima >= numref and report_error == 0):
+					tasi = [[] for iref in xrange(numref)]
+					maxasi = current_nima//numref
+					nt = current_nima
+					kt = numref
+					K = range(numref)
+
+					d = empty( (numref, current_nima), dtype = float32)
+					for ima in xrange(current_nima):
+						for iref in xrange(numref):  d[iref][ima] = dtot[iref][N[ima]]
+
+			e b = empty( (numref, total_nima), dtype = float32)
+			for ima in xrange(total_nima):
+				for iref in xrange(numref):  d[iref][ima] = dtot[iref][N[ima]]
+			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
+			del d
+			id_list = [[] for i in xrange(numref)]
+			maxasi = total_nima/numref
+			for i in xrange(maxasi*numref):
+				id_list[i/maxasi].append(id_list_long[i])
+			for i in xrange(total_nima%maxasi):
+				id_list[id_list_long[-1]].append(id_list_long[maxasi*numref+i])
+			for iref in xrange(numref):
+				id_list[iref].sort()
+
+			assignment = [0]*total_nima
+			for iref in xrange(numref):
+				for im in id_list[iref]: assignment[im] = iref
+		else:
+			assignment = [0]*total_nima
+		mpi_barrier(MPI_COMM_WORLD)
+		#belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, MPI_COMM_WORLD)
+		#belongsto = map(int, belongsto)
+		"""
+		if myid == main_node:
+			SA = False
+			asi = [[] for iref in xrange(numref)]
+			report_error = 0
+			for imrefa in xrange(numrefang):
+				from utilities import findall
+				N = findall(imrefa, assigntorefa)
+				current_nima = len(N)
+				if( current_nima >= numref and report_error == 0):
+					tasi = [[] for iref in xrange(numref)]
+					maxasi = current_nima//numref
+					nt = current_nima
+					kt = numref
+					K = range(numref)
+
+					d = empty( (numref, current_nima), dtype = float32)
+					for ima in xrange(current_nima):
+						for iref in xrange(numref):  d[iref][ima] = dtot[iref][N[ima]]
+
+					while nt > 0 and kt > 0:
+						l = d.argmax()
+						group = l//current_nima
+						ima   = l-current_nima*group
+						if SA:
+							J = [0.0]*numref
+							sJ = 0
+							Jc = [0.0]*numref
+							for iref in xrange(numref):
+								J[iref] = exp(d[iref][ima]/T)
+								sJ += J[iref]
+							for iref in xrange(numref):
+								J[iref] /= sJ
+							Jc[0] = J[0]
+							for iref in xrange(1, numref):
+								Jc[iref] = Jc[iref-1]+J[iref]
+							sss = random()
+							for group in xrange(numref):
+								if( sss <= Jc[group]): break
+						tasi[group].append(N[ima])
+						N[ima] = -1
+						for iref in xrange(numref):  d[iref][ima] = -1.e10
+						nt -= 1
+						masi = len(tasi[group])
+						if masi == maxasi:
+							for im in xrange(current_nima):  d[group][im] = -1.e10
+							kt -= 1
+					else:
+						for ima in xrange(current_nima):
+							if N[ima] > -1:
+								qm = -1.e10
+								for iref in xrange(numref):
+									qt = dtot[iref][N[ima]]
+									if( qt > qm ):
+										qm = qt
+										group = iref
+								tasi[group].append(N[ima])
+					del d, N, K
+					if  SA:  del J, Jc
+					for iref in xrange(numref):
+						asi[iref] += tasi[iref]
+					del tasi
+				else:
+					report_error = 1
+			#  This should be deleted only once we know that the number of images is sufficiently large, see below.
+			del dtot
+		else:
+			assignment = []
+			report_error = 0
+		report_error = bcast_number_to_all(report_error, source_node = main_node)
+		if report_error == 1:  ERROR('Number of images within a group too small', "mref_ali3d_MPI", 1, myid)
+		if myid == main_node:
+			assignment = [0]*total_nima
+			for iref in xrange(numref):
+				for im in xrange(len(asi[iref])):
+					assignment[asi[iref][im]] = iref
+			del asi
+		
+		"""
+		if myid == main_node:
+			assignment = [0]*total_nima
+			for iref in xrange(numref):
+				for im in xrange(len(asi[iref])):
+					assignment[asi[iref][im]] = iref
+			del asi
+		"""
+
+		'''
+		if myid == main_node:
+			SA = False
+			maxasi = total_nima//numref
+			asi = [[] for iref in xrange(numref)]
+			nt = total_nima
+			kt = numref
+			K = range(numref)
+			N = range(total_nima)
+
+			while nt > 0 and kt > 1:
+				l = d.argmax()
+				group = l//total_nima
+				ima   = l-total_nima*group
+				if SA:
+					J = [0.0]*numref
+					sJ = 0
+					Jc = [0.0]*numref
+					for iref in xrange(numref):
+						J[iref] = exp(d[iref][ima]/T)
+						sJ += J[iref]
+					for iref in xrange(numref):
+						J[iref] /= sJ
+					Jc[0] = J[0]
+					for iref in xrange(1, numref):
+						Jc[iref] = Jc[iref-1]+J[iref]
+					sss = random()
+					for group in xrange(numref):
+						if( sss <= Jc[group]): break
+				asi[group].append(N[ima])
+				for iref in xrange(numref):  d[iref][ima] = -1.e10
+				nt -= 1
+				masi = len(asi[group])
+				if masi == maxasi:
+					for im in xrange(total_nima):  d[group][im] = -1.e10
+					kt -= 1
+			else:
+				mas = [len(asi[iref]) for iref in xrange(numref)]
+				group = mas.index(min(mas))
+				del mas
+				for im in xrange(total_nima):
+					kt = 0
+					go = True
+					while(go and kt < numref):
+						if d[kt][im] > -1.e10:
+							asi[group].append(im)
+							go = False
+						kt += 1
+
+			assignment = [0]*total_nima
+			for iref in xrange(numref):
+				for im in xrange(len(asi[iref])):
+					assignment[asi[iref][im]] = iref
+
+			del asi, d, N, K
+			if  SA:  del J, Jc
+
+
+		else:
+			assignment = []
+		'''
+		assignment = mpi_scatterv(assignment, recvcount, disps, MPI_INT, recvcount[myid], MPI_INT, main_node, MPI_COMM_WORLD)
+		assignment = map(int, assignment)
+		#  compute number of particles that changed assignment and how many are in which group
+		nchng = 0
+		npergroup = [0]*numref
+		for im in xrange(nima):
+			iref = data[im].get_attr('group')
+			npergroup[assignment[im]] += 1
+			if( iref != assignment[im]): nchng += 1
+			data[im].set_attr('group', assignment[im])
+		nchng = mpi_reduce(nchng, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+		npergroup = mpi_reduce(npergroup, numref, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+		npergroup = map(int, npergroup)
+		terminate = 0
+		if( myid == 0 ):
+			ngroup=[]
+			nchng = int(nchng[0])
+			precn = 100*float(nchng)/float(total_nima)
+			msg = " Number of particles that changed assignments %7d, percentage of total: %5.1f"%(nchng, precn)
+			log.add(msg)
+			msg = " Group       number of particles"
+			log.add(msg)
+			for iref in xrange(numref):
+				msg = " %5d       %7d"%(iref+1, npergroup[iref])
+				log.add(msg)
+				ngroup.append(int(npergroup[iref]))
+			if(precn <= termprec):  terminate = 1
+		else:
+			ngroup = 0
+		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
+		terminate = int(terminate[0])
+		ngroup = wrap_mpi_bcast(ngroup,main_node)
+
+		if runtype=="REFINEMENT":
+			for im in xrange(nima):
+				data[im].set_attr('xform.projection', trans[assignment[im]][im])
+				pixer[0][im] = pixer[assignment[im]][im]
+			pixer = pixer[0]
+			if(center == -1):
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
+				if myid == main_node:
+					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f"%(cs[0], cs[1], cs[2])
+					log.add(msg)
+				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
+				rotate_3D_shift(data, cs)
+			#output pixel errors
+			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
+			if(myid == main_node):
+				recvbuf = map(float, recvbuf)
+				from statistics import hist_list
+				lhist = 20
+				region, histo = hist_list(recvbuf, lhist)
+				if(region[0] < 0.0):  region[0] = 0.0
+				msg = "      Histogram of pixel errors\n      ERROR       number of particles"
+				log.add(msg)
+				for lhx in xrange(lhist):
+					msg = " %10.3f      %7d"%(region[lhx], histo[lhx])
+					log.add(msg)
+				del region, histo
+			del recvbuf
+		fscc = [None]*numref
+		if fourvar and runtype=="REFINEMENT":
+			sumvol = model_blank(nx, nx, nx)
+		start_time = time()
+
+		if( not focus ):
+			for im in xrange(nima):  data[im] = fft(data[im])
+		highres     = []
+		lowpass_tmp = []
+		tmpref      = []
+		for iref in xrange(numref):
+			#  3D stuff
+			from time import localtime, strftime
+			if(CTF): volref, fscc[iref] = rec3D_two_chunks_MPI(data, snr, sym, mask3D,\
+			 	os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
+			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym,mask3D,\
+			 	os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
+			if(myid == 0):
+				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
+				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
+				tmpref.append(volref)			
+				if fourvar and runtype=="REFINEMENT": sumvol += volref
+			#set_filter_parameters_from_adjusted_fsc(Tracker["constants"]["total_stack"],ngroup[iref],Tracker)
+			if myid ==main_node:
+				res = 0.5
+				for ifreq in xrange(len(fscc[iref][0])-1,0,-1):
+					if fscc[iref][1][ifreq] > 0.5 : # always use .5 as cutoff
+						res = fscc[iref][0][ifreq]
+						break
+
+				Tracker["lowpass"] = min(0.45, res)
+				#Tracker["lowpass"] = max(0.11, res)
+				Tracker["falloff"] = 0.1
+				log.add(" low pass filter is %f    %f   %d"%(Tracker["lowpass"], Tracker["falloff"], ngroup[iref]))
+			else:
+				Tracker["lowpass"] = 0.0
+				Tracker["lowpass"] = 0.0
+				res = 0.0
+			res = bcast_number_to_all(res, main_node)
+			highres.append(int(res*Tracker["nxinit"]+ 0.5))
+			if myid ==main_node:
+				log.add("%d highres                   %f"%(iref, highres[iref]))
+			Tracker["lowpass"] = bcast_number_to_all(Tracker["lowpass"], main_node)
+			Tracker["falloff"] = bcast_number_to_all(Tracker["falloff"], main_node)
+			lowpass_tmp.append(Tracker["lowpass"])
+		Tracker["lowpass"] = min(lowpass_tmp)
+		if myid ==main_node:
+			log.add(" the adopted  low pass filter is %f    %f   "%(Tracker["lowpass"], Tracker["falloff"]))
+		for iref in xrange(numref):
+			if myid ==main_node:
+				volref = model_blank(nx,nx,nx)
+				for j in xrange(-m, m+1):
+					#if iref +j <0: k = numref+iref+j
+					#else: k = (iref+j)%numref
+					
+					volref += tmpref[(j+iref)%numref]*weight[abs(j)] # weight the reference volumes 
+			
+				#volref = tmpref[iref]
+				if Tracker["mask3D"]: 
+					mask3D = get_im(Tracker["mask3D"])
+					stat = Util.infomask(volref, mask3D, False)
+					volref -= stat[0]
+					Util.mul_scalar(volref, 1.0/stat[1])
+					
+				if(Tracker["constants"]["PWadjustment"]):
+				
+					rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
+					ro = rops_table(volref)
+					for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
+					volref =filt_table(volref,ro)
+							
+				if (Tracker["constants"]["low_pass_filter"]== -1.):  volref = filt_tanl(volref, Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+				else:                                                volref = filt_tanl(volref, min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
+				if Tracker["mask3D"]: Util.mul_img(volref, mask3D)
+				volref.write_image( os.path.join(outdir,"volf%04d.hdf"%(total_iter)), iref)
+				del volref
+				
+		"""
+		if runtype=="REFINEMENT":
+			if fourvar:
+				varf = varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%total_iter), None,sumvol,last_ring, 1.0, 1, CTF, 1, sym, myid)
+				if myid == main_node:   
+					varf = 1.0/varf
+					varf.write_image( os.path.join(outdir,"varf%04d.hdf"%total_iter) )
+		"""
+		#if(myid == main_node):
+		"""
+			frcs={}
+			for iref in xrange(numref):
+				frc=read_text_file(os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)),-1)
+				frcs[iref]=frc
+			refdata = [None]*7
+			refdata[0] = numref
+			refdata[1] = outdir
+			refdata[2] = None #frequency_low_pass
+			refdata[3] = total_iter
+			refdata[4] = None
+			refdata[5] = mask3D
+			refdata[6] = Tracker["low_pass_filter"]#(runtype=="REFINEMENT") # whether to align on 50S, this only happens at refinement step
+		"""
+		mpi_barrier(MPI_COMM_WORLD)
+		if terminate == 0: # headers are only updated when the program is going to terminate
+			start_time = time()
+			if nrefine!=0: par_str = ['xform.projection', 'ID', 'group']
+			else: par_str = ['group', 'ID' ]
+			"""
+	        	if myid == main_node:
+				from utilities import file_type
+	        		if(file_type(stack) == "bdb"):
+	        			from utilities import recv_attr_dict_bdb
+	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        		else:
+	        			from utilities import recv_attr_dict
+	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        	else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
+			"""
+			if(myid == 0):log.add( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
+		else:
+			final_list = get_sorting_params_refine(Tracker, data, total_nima)
+			group_list, ali3d_params_list = parsing_sorting_params(final_list)
+			if myid ==main_node:
+				group_list_saved_file =os.path.join(outdir, "list2.txt")
+				write_text_file(group_list,group_list_saved_file)
+			mpi_barrier(MPI_COMM_WORLD)
+			Tracker["this_partition"]=group_list
+			break
+	if terminate != 1:
+		final_list = get_sorting_params_refine(Tracker,data, total_nima)
+		group_list, ali3d_params_list = parsing_sorting_params(final_list)  
+		if myid ==main_node:
+			group_list_saved_file =os.path.join(outdir, "list2.txt")
+			write_text_file(group_list,group_list_saved_file)
+		mpi_barrier(MPI_COMM_WORLD)
+		Tracker["this_partition"] = group_list
+	### program finishes
+	if myid ==main_node:  log.add(" mref_ali3d_EQ_Kmeans finishes !")
+		
+######
+ 
+ 
+
 			
 			
 			
