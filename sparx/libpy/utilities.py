@@ -5693,6 +5693,17 @@ def qw(s):
 	return tuple(s.split())
 
 
+def convert_json_fromunicode(data):
+	import  collections
+	if isinstance(data, basestring):
+		return str(data)
+	elif isinstance(data, collections.Mapping):
+		return dict(map(convert_json_fromunicode, data.iteritems()))
+	elif isinstance(data, collections.Iterable):
+		return type(data)(map(convert_json_fromunicode, data))
+	else:
+		return data
+
 
 def debug_mpi_barrier(comm):
 	from mpi import mpi_barrier, mpi_comm_rank, mpi_bcast

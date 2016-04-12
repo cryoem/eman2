@@ -18992,7 +18992,7 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, const vector<float>& 
 			edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*f;
 		}
 	}
-	
+
     return edis;
 	EXITFUNC;
 }
