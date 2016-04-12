@@ -9475,28 +9475,26 @@ void MirrorProcessor::process_inplace(EMData *image)
 	int nz = image->get_zsize();
 	size_t nxy = nx*ny;
 
-	int x_start = 0; //1-nx%2; // if this is buggy, start here
-	int y_start = 0; //1-ny%2;
-	int z_start = 0; //1-nz%2;
+	int x_start = 1-nx%2;
+	int y_start = 1-ny%2;
+	int z_start = 1-nz%2;
 
 	if (axis == "x" || axis == "X") {
-		int offset = 0;
-		for (int iz = 0; iz < nz; iz++){
+			for (int iz = 0; iz < nz; iz++)
 			for (int iy = 0; iy < ny; iy++) {
-				offset = nx*iy + nxy*iz;
-				reverse(&data[x_start+offset],&data[offset+nx]);
+				int offset = nx*iy + nxy*iz;
+				reverse(&data[offset+x_start],&data[offset+nx]);
 			}
-		}
 	} else if (axis == "y" || axis == "Y") {
 		float *tmp = new float[nx];
-		int nhalf = ny/2;
-		size_t beg = 0;
+		int nhalf	= ny/2;
+		size_t beg	   = 0;
 		for (int iz = 0; iz < nz; iz++) {
 			beg = iz*nxy;
 			for (int iy = y_start; iy < nhalf; iy++) {
 				memcpy(tmp, &data[beg+iy*nx], nx*sizeof(float));
-				memcpy(&data[beg+iy*nx], &data[beg+(y_start+ny-iy-1)*nx], nx*sizeof(float));
-				memcpy(&data[beg+(y_start+ny-iy-1)*nx], tmp, nx*sizeof(float));
+				memcpy(&data[beg+iy*nx], &data[beg+(ny-iy-1+y_start)*nx], nx*sizeof(float));
+				memcpy(&data[beg+(ny-iy-1+y_start)*nx], tmp, nx*sizeof(float));
 			}
 		}
 		delete[] tmp;
