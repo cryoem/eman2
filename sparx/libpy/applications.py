@@ -23393,7 +23393,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		
 ######
  
- def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker):
+def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
 	from utilities      import  bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
