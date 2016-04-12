@@ -1813,18 +1813,25 @@ def write_text_row(data, file_name):
 		# It is a list of lists
 		for i in xrange(len(data)):
 			for j in xrange(len(data[i])):
-				qtp = type(data[i][j])
-				if qtp == type(0):      outf.write("  %12d"%data[i][j])
-				elif qtp == type(0.0):  outf.write("  %12.5g"%data[i][j])
-				else:                   outf.write("  %s"%data[i][j])
+				tpt = data[i][j]
+				qtp = type(tpt)
+				if qtp == types.IntType:			outf.write("  %12d"%tpt)
+				elif qtp == types.FloatType:
+					if( float(int(tpt)) == tpt ):	outf.write("  %12.5e"%tpt)
+					else:							outf.write("  %12.5g"%tpt)
+				else:                   			outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
 		for j in xrange(len(data)):
-			qtp = type(data[j])
-			if qtp == type(0):      outf.write("  %12d\n"%data[j])
-			elif qtp == type(0.0):  outf.write("  %12.5g\n"%data[j])
-			else:                   outf.write("  %s\n"%data[j])
+			tpt = data[j]
+			qtp = type(tpt)
+			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
+			elif qtp == types.FloatType:
+				if( float(int(tpt)) == tpt ):	outf.write("  %12.5e\n"%tpt)
+				else:							outf.write("  %12.5g\n"%tpt)
+			elif qtp == types.IntType :  		outf.write("  %12.5g\n"%tpt)
+			else:								outf.write("  %s\n"%tpt)
 	outf.flush()
 	outf.close()
 
@@ -1884,18 +1891,25 @@ def write_text_file(data, file_name):
 		# It is a list of lists
 		for i in xrange(len(data[0])):
 			for j in xrange(len(data)):
-				qtp = type(data[j][i])
-				if qtp == type(0):      outf.write("  %12d"%data[j][i])
-				elif qtp == type(0.0):  outf.write("  %12.5g"%data[j][i])
-				else:                   outf.write("  %s"%data[j][i])
+				tpt = data[j][i]
+				qtp = type(tpt)
+				if qtp == types.IntType:		outf.write("  %12d"%tpt)
+				elif qtp == types.FloatType:
+					if( float(int(tpt)) == tpt ):	outf.write("  %12.5e"%tpt)
+					else:							outf.write("  %12.5g"%tpt)
+				else:                   		outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list 
 		for j in xrange(len(data)):
-			qtp = type(data[j])
-			if qtp == type(0):          outf.write("  %12d\n"%data[j])
-			elif qtp == type(0.0):      outf.write("  %12.5g\n"%data[j])
-			else:                       outf.write("  %s\n"%data[j])
+			tpt = data[j]
+			qtp = type(tpt)
+			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
+			elif qtp == types.FloatType:
+				if( float(int(tpt)) == tpt ):	outf.write("  %12.5e\n"%tpt)
+				else:							outf.write("  %12.5g\n"%tpt)
+			elif qtp == types.IntType :			outf.write("  %12.5g\n"%tpt)
+			else:                   			outf.write("  %s\n"%tpt)
 	outf.close()
 
 def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk = True, saved_file_name = "image_in_reconstituted_mask.hdf"):
