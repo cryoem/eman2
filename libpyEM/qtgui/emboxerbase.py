@@ -622,7 +622,7 @@ class ManualBoxingPanel:
 			self.clearfrom = QtGui.QLineEdit(str(-1))
 			vbl.addWidget(self.auto_center_checkbox,1,0)
 			vbl.addWidget(self.clear,2,0)
-			vbl.addWidget(QtGui.QLabel("Clear from #:"),3,0)
+			vbl.addWidget(QtGui.QLabel("Keep range #:"),3,0)
 			vbl.addWidget(self.clearfrom,3,1)
 			
 
