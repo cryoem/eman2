@@ -630,8 +630,16 @@ class ManualBoxingPanel:
 		return self.widget
 
 	def clear_clicked(self,val):
-		self.target().clear_all(int(self.clearfrom.text()))
-
+		clr= str(self.clearfrom.text()).split(',')
+		if len(clr[0])==0: ## clear "" -> clear all
+			self.target().clear_all(-1)
+		elif int(clr[0])<0: ## clear "-1" -> clear all
+			self.target().clear_all(-1)
+		elif len(clr)==1: ## clear "5" -> clear all after No 5
+			self.target().clear_all(0,int(clr[0]))
+		else:	## clear "3,5" -> clear all before 3 or after 5
+			self.target().clear_all(int(clr[0]),int(clr[1]))
+		
 class EraseTool(EMBoxingTool):
 	'''
 	A class that knows how to handle mouse erase events for a GUIBox
@@ -819,8 +827,8 @@ class ManualBoxingTool:
 
 	def mouse_move(self,event): pass
 
-	def clear_all(self,start=-1):
-		self.target().clear_boxes([ManualBoxingTool.BOX_TYPE], cache=True, startfrom=start)
+	def clear_all(self,start=-1, end=-1):
+		self.target().clear_boxes([ManualBoxingTool.BOX_TYPE], cache=True, start=start,end=end)
 
 	def moving_ptcl_established(self,box_num,x,y):
 		box = self.target().get_box(box_num)
@@ -1264,11 +1272,26 @@ class EMBoxList(object):
 
 		return ret
 
-	def clear_boxes(self,types,cache=False, startform=-1):
-		for i in xrange(len(self.boxes)-1,startform,-1):
-			if self.boxes[i].type in types:
-				self.boxes.pop(i)
-				self.shapes.pop(i)
+	def clear_boxes(self,types,cache=False, start=-1, end=-1):
+		#print start, end
+		#if start<0: start=len(self.boxes)-1
+		#if end<0: end=len(self.boxes)
+		#print start, end
+		if start<0 and end<0:
+			start=len(self.boxes)
+		if end>=0:
+			for i in xrange(len(self.boxes)-1,end,-1):
+				#print i
+				if self.boxes[i].type in types:
+					self.boxes.pop(i)
+					self.shapes.pop(i)
+		#print 
+		if start>=0:
+			for i in xrange(start-1,-1,-1):
+				#print i
+				if self.boxes[i].type in types:
+					self.boxes.pop(i)
+					self.shapes.pop(i)
 
 		if cache:
 			self.save_boxes_to_database(self.target().current_file())
@@ -1518,8 +1541,8 @@ class EMBoxerModuleVitals(object):
 		pass
 
 
-	def clear_boxes(self, type, cache=False, startfrom = -1):
-		self.box_list.clear_boxes(type,cache,startfrom)
+	def clear_boxes(self, type, cache=False, start= -1, end=-1):
+		self.box_list.clear_boxes(type,cache,start, end)
 
 
 	def get_subsample_rate(self):
@@ -1808,8 +1831,8 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		self.load_default_status_msg()
 		return box_num
 
-	def clear_boxes(self, type, cache=False, startfrom=-1):
-		EMBoxerModuleVitals.clear_boxes(self, type, cache, startfrom)
+	def clear_boxes(self, type, cache=False, start=-1, end=-1):
+		EMBoxerModuleVitals.clear_boxes(self, type, cache, start, end)
 
 		if self.particles_window:
 			self.particles_window.set_data(self.box_list.get_particle_images(self.current_file(), self.box_size))
