@@ -41,6 +41,7 @@ import pyemtbx.options
 import os
 import datetime
 import time
+import traceback
 
 # constants
 
@@ -208,6 +209,7 @@ def main():
 	parser.add_argument("--rfp",  action="store_true", help="this is an experimental option")
 	parser.add_argument("--fp",  type=int, help="This generates rotational/translational 'footprints' for each input particle, the number indicates which algorithm to use (0-6)")
 	parser.add_argument("--scale", metavar="f", type=float, action="append", help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
+	parser.add_argument("--anisotropic", type=str,action="append", help="Anisotropic scaling, stretches on one axis and compresses the orthogonal axis. Specify amount,angle. See e2evalrefine")
 	parser.add_argument("--selfcl", metavar="steps mode", type=int, nargs=2, help="Output file will be a 180x180 self-common lines map for each image.")
 	parser.add_argument("--setsfpairs",  action="store_true", help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc")
 	parser.add_argument("--split", metavar="n", type=int, help="Splits the input file into a set of n output files")
@@ -228,7 +230,7 @@ def main():
 
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 
-	append_options = ["clip", "process", "meanshrink", "medianshrink", "fouriershrink", "scale", "randomize", "rotate", "translate", "multfile","addfile","add", "headertransform"]
+	append_options = ["anisotropic","clip", "process", "meanshrink", "medianshrink", "fouriershrink", "scale", "randomize", "rotate", "translate", "multfile","addfile","add", "headertransform"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 
@@ -696,6 +698,24 @@ def main():
 
 				elif option1 == "fp":
 					d = d.make_footprint(options.fp)
+
+				elif option1 == "anisotropic":
+					try: 
+						amount,angle = (options.anisotropic[index_d[option1]]).split(",")
+						amount=float(amount)
+						angle=float(angle)
+					except:
+						traceback.print_exc()
+						print options.anisotropic[index_d[option1]]
+						print "Error: --anisotropic specify amount,angle"
+						sys.exit(1)
+						
+					rt=Transform({"type":"2d","alpha":angle})
+					xf=rt*Transform([amount,0,0,0,0,1/amount,0,0,0,0,1,0])*rt.inverse()
+					d.transform(xf)
+
+					index_d[option1] += 1
+
 
 				elif option1 == "scale":
 					scale_f = options.scale[index_d[option1]]
