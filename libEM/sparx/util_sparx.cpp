@@ -2342,35 +2342,35 @@ float Util::triquad(float R, float S, float T, float* fdata)
     float  TP1  = (1+T);
 
     float triquad =
-    (-C8) * RST * RM1  * SM1  * TM1 * fdata[0] +
-	( C4) * ST  * RSQ  * SM1  * TM1 * fdata[1] +
-	( C8) * RST * RP1  * SM1  * TM1 * fdata[2] +
-	( C4) * RT  * RM1  * SSQ  * TM1 * fdata[3] +
-	(-C2) * T   * RSQ  * SSQ  * TM1 * fdata[4] +
-	(-C4) * RT  * RP1  * SSQ  * TM1 * fdata[5] +
-	( C8) * RST * RM1  * SP1  * TM1 * fdata[6] +
-	(-C4) * ST  * RSQ  * SP1  * TM1 * fdata[7] +
-	(-C8) * RST * RP1  * SP1  * TM1 * fdata[8] +
-//
-	( C4) * RS  * RM1  * SM1  * TSQ * fdata[9]  +
-	(-C2) * S   * RSQ  * SM1  * TSQ * fdata[10] +
-	(-C4) * RS  * RP1  * SM1  * TSQ * fdata[11] +
-	(-C2) * R   * RM1  * SSQ  * TSQ * fdata[12] +
-	              RSQ  * SSQ  * TSQ * fdata[13] +
-	( C2) * R   * RP1  * SSQ  * TSQ * fdata[14] +
-	(-C4) * RS  * RM1  * SP1  * TSQ * fdata[15] +
-	( C2) * S   * RSQ  * SP1  * TSQ * fdata[16] +
-	( C4) * RS  * RP1  * SP1  * TSQ * fdata[17] +
- //
-	( C8) * RST * RM1  * SM1  * TP1 * fdata[18] +
-	(-C4) * ST  * RSQ  * SM1  * TP1 * fdata[19] +
-	(-C8) * RST * RP1  * SM1  * TP1 * fdata[20] +
-	(-C4) * RT  * RM1  * SSQ  * TP1 * fdata[21] +
-	( C2) * T   * RSQ  * SSQ  * TP1 * fdata[22] +
-	( C4) * RT  * RP1  * SSQ  * TP1 * fdata[23] +
-	(-C8) * RST * RM1  * SP1  * TP1 * fdata[24] +
-	( C4) * ST  * RSQ  * SP1  * TP1 * fdata[25] +
-	( C8) * RST * RP1  * SP1  * TP1 * fdata[26]   ;
+					(-C8) * RST * RM1  * SM1  * TM1 * fdata[0] +
+					( C4) * ST  * RSQ  * SM1  * TM1 * fdata[1] +
+					( C8) * RST * RP1  * SM1  * TM1 * fdata[2] +
+					( C4) * RT  * RM1  * SSQ  * TM1 * fdata[3] +
+					(-C2) * T   * RSQ  * SSQ  * TM1 * fdata[4] +
+					(-C4) * RT  * RP1  * SSQ  * TM1 * fdata[5] +
+					( C8) * RST * RM1  * SP1  * TM1 * fdata[6] +
+					(-C4) * ST  * RSQ  * SP1  * TM1 * fdata[7] +
+					(-C8) * RST * RP1  * SP1  * TM1 * fdata[8] +
+				//
+					( C4) * RS  * RM1  * SM1  * TSQ * fdata[9]  +
+					(-C2) * S   * RSQ  * SM1  * TSQ * fdata[10] +
+					(-C4) * RS  * RP1  * SM1  * TSQ * fdata[11] +
+					(-C2) * R   * RM1  * SSQ  * TSQ * fdata[12] +
+								  RSQ  * SSQ  * TSQ * fdata[13] +
+					( C2) * R   * RP1  * SSQ  * TSQ * fdata[14] +
+					(-C4) * RS  * RM1  * SP1  * TSQ * fdata[15] +
+					( C2) * S   * RSQ  * SP1  * TSQ * fdata[16] +
+					( C4) * RS  * RP1  * SP1  * TSQ * fdata[17] +
+				 //
+					( C8) * RST * RM1  * SM1  * TP1 * fdata[18] +
+					(-C4) * ST  * RSQ  * SM1  * TP1 * fdata[19] +
+					(-C8) * RST * RP1  * SM1  * TP1 * fdata[20] +
+					(-C4) * RT  * RM1  * SSQ  * TP1 * fdata[21] +
+					( C2) * T   * RSQ  * SSQ  * TP1 * fdata[22] +
+					( C4) * RT  * RP1  * SSQ  * TP1 * fdata[23] +
+					(-C8) * RST * RM1  * SP1  * TP1 * fdata[24] +
+					( C4) * ST  * RSQ  * SP1  * TP1 * fdata[25] +
+					( C8) * RST * RP1  * SP1  * TP1 * fdata[26]   ;
      return triquad;
 }
 
@@ -18307,6 +18307,27 @@ EMData* Util::mulreal(EMData* img1, EMData* img2)
 }
 
 
+void Util::mulreal_2D_in_place(EMData* img0, EMData* img1, EMData* img2, int slice_index)
+{
+	ENTERFUNC;
+	int nx=img1->get_xsize(),ny=img1->get_ysize(),nz=img1->get_zsize();
+
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+	float *img0_ptr  = img0->get_data();
+
+	for( size_t i = 0; i<(nx*ny); i++)
+	{
+		img0_ptr[2*i + 2*nx*ny*slice_index] = img1_ptr[i  + nx*ny*slice_index]*img2_ptr[i];
+	}
+
+	img0->set_complex(true);
+	img0->set_ri(true);
+	if(ny%2==0) img0->set_fftodd(false); else img0->set_fftodd(true);
+	img0->update();
+}
+
+
 void Util::mulclreal(EMData* img1, EMData* img2)
 {
 	ENTERFUNC;
@@ -18823,6 +18844,39 @@ void Util::mul_img(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
+
+void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	int nbel = beltab.size();
+	//cout<<"  XXX nbel  "<<nbel<<endl;
+
+	int nx=img->get_xsize();  // NOTE:  here is extended!!
+	int ny=img->get_ysize();
+	int ncx = ny/2;
+	//cout<<"  mul_img_tabularized  "<<nx<<"   "<<ny<<endl;
+	float *img_ptr  = img->get_data();
+
+	for (size_t k=0;k<ny;++k)  {
+		float argz = (k-ncx)*(k-ncx);
+		for (size_t j=0;j<ny;++j)  {
+			float argy = argz +(j-ncx)*(j-ncx);
+			for (size_t i=0;i<ny;++i) {
+				float rr = sqrt(float((i-ncx)*(i-ncx)+ argy))/(nnxo*2.0f);
+				int iab = Util::get_min((int)((nbel-1)*rr*2.0 + 0.5), nbel -1 );
+				img_ptr[i + nx*(j + k*ny)] *= beltab[iab];
+			}
+		}
+	}
+	img->update();
+
+	EXITFUNC;
+}
+
 void Util::div_img(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
@@ -18906,6 +18960,46 @@ void Util::div_filter(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
+#define data(ix,iy)          data[jx2 + (iy-1)*2*nx]
+#define dproj(ix,iy)         dproj[jx2 + (iy-1)*2*nx]
+#define dctfs(jx,iy)         dctfs[jx+(iy-1)*nx]
+float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, const vector<float>& bckgnoise )
+{
+	ENTERFUNC;
+	int nb = bckgnoise.size();
+	//for(int i=0; i<nb; i++) cout<<i<<"    "<<bckgnoise[i]<<endl;
+	int nx=img->get_xsize(), ny=img->get_ysize();
+	nx /= 2;
+	if (nx != ctfs->get_xsize()) {
+		throw NullPointerException("incorrect image size");
+	}
+    float* data = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfs = ctfs->get_data();
+    int nyp2 = ny/2;
+    float argy, argx;
+    float edis = 0.0;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		for ( int ix = 1; ix <= nx; ix++) {
+			int jx=ix-1; argx = argy + float(jx*jx);
+			float rf = sqrt( argx );
+			int  ir = int(rf);
+			float df = rf - float(ir);
+			float f = (bckgnoise[ir] + df * (bckgnoise[ir+1] - bckgnoise[ir]))/2.0;  // 2 on account of x^2/(2*s^2)
+			int jx2 = 2*jx;
+			edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*f;
+			edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*f;
+		}
+	}
+
+    return edis;
+	EXITFUNC;
+}
+#undef data
+#undef dproj
+#undef dctfs
+
 
 void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq)
 {
@@ -18921,7 +19015,7 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 	float *temp_ptr = temp->get_data();
 	float *mask_ptr = mask->get_data();
 
-	for (size_t i=0;i<size;++i) {
+	for (size_t i=0; i<size; ++i) {
 		if(mask_ptr[i] >0.5f) {
 			if(freqvol_ptr[i]  == 0.0f) {
 				if(temp_ptr[i] < cutoff) freqvol_ptr[i] = freq;
@@ -22376,7 +22470,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  03/10/2016  05:14 PM double upweighting removed"<<endl;
+ cout <<"  VERSION  04/08/2016  10:00 AM locres is updated"<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
 

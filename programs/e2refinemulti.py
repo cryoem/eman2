@@ -148,7 +148,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=str,help="The ~mass of the particles in kilodaltons. May specify one number or one number for each map. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getAPIX()']")
+#	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getAPIX()']")
 	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=-1)
 	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score. (default=0.9 -> 90%%)", default=0.9, guitype='floatbox', row=16, col=2, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
@@ -293,7 +293,8 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 	total_procs = 5*options.iter
 
 	if options.automask3d: automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
-	apix = get_apix_used(options)
+#	apix = get_apix_used(options)
+	apix = EMData(options.input,0)["apix_x"]
 
 	if options.targetres<apix*2:
 		print "ERROR: Target resolution is smaller than 2*A/pix value. This is impossible."

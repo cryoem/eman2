@@ -815,6 +815,7 @@ costlist, int* curbranch);
 
 	static EMData* shrinkfvol(EMData* img, int npad);
 	static EMData* mulreal(EMData* img1, EMData* img2);
+	static void mulreal_2D_in_place(EMData* img0, EMData* img1, EMData* img2, int slice_index);
 	static void mulclreal(EMData* img1, EMData* img2);
 	static void divabs(EMData* img, EMData* img1);
     /*  Various operation on images */
@@ -855,12 +856,16 @@ costlist, int* curbranch);
 	static void sub_img(EMData* img, EMData* img1);
 	/* img *= img1  */
 	static void mul_img(EMData* img, EMData* img1);
+	/* img *= img1  but tabularized */
+	static void mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab);
 	/* img /= img1  */
 	static void div_img(EMData* img, EMData* img1);
 	/* img = |img|^2  */
 	static void square_img(EMData* img);
 	/* img /= Re(img1) with zero check  */
 	static void div_filter(EMData* img, EMData* img1);
+
+	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, const vector<float>& bckgnoise);
 
 	//utility for sxlocres
 	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);

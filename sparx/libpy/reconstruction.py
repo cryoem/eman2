@@ -88,7 +88,7 @@ def insert_slices_pdf(reconstructor, proj):
 		weights = proj.get_attr_default("weight" + str(ixform), 1.0)
 		reconstructor.insert_slice( proj, xforms, weights)
 
-def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=True, xysize=-1, zsize = -1):
+def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=False, xysize=-1, zsize = -1):
 	"""
 	Perform a 3-D reconstruction using Pawel's FFT Back Projection algorithm.
 
@@ -131,12 +131,10 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	weight = EMData()
 	params = {"npad":npad, "symmetry":symmetry, "weighting":weighting, "fftvol":fftvol, "weight":weight}
 	if ( xysize == -1 and zsize == -1 ):
-		if snr is None:
-			params["size"] = size
-		else:
-			params["size"] = size
+		params["size"] = size
+		if snr != None:
 			params["snr"] = snr
-			params["varsnr"] = int(varsnr)
+			#params["varsnr"] = int(varsnr)
 		r = Reconstructors.get("nn4", params)
 	else:
 		if ( xysize != -1 and zsize != -1):
@@ -237,17 +235,6 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 	if not (finfo is None): nimg = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
-		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# active = prj.get_attr_default('active', 1)
-		# if(active == 1):
-		# 	if dopad:
-		# 		prj = pad(prj, imgsize,imgsize, 1, "circumference")
-		# 	insert_slices(r, prj)
-		# 	if( not (info is None) ):
-		# 		nimg += 1
-		# 		info.write("Image %4d inserted.\n" %(nimg) )
-		# 		info.flush()
-
 		if dopad:
 			prj = pad(prj, imgsize,imgsize, 1, "circumference")
 		insert_slices(r, prj)
@@ -1322,7 +1309,6 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
-
 	if not (finfo is None): nimg = 0
 
 	fftvol = EMData()

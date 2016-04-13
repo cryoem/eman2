@@ -634,6 +634,9 @@ def main():
 				index_d[option1] += 1
 
 			elif option1 == "clip":
+				x=data["nx"]
+				y=data["ny"]
+				z=data["nz"]
 				if(len(options.clip) == 6):
 					(nx, ny, nz, xc, yc, zc) = options.clip
 				elif(len(options.clip) == 3):

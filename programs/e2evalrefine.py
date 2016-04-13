@@ -38,6 +38,7 @@ from math import *
 import os
 import sys
 import datetime
+from numpy import array
 
 try:
 	import numpy as np
@@ -115,9 +116,9 @@ def main():
 		if options.verbose: print "{} even and {} odd particles in classmx".format(nptcl[0],nptcl[1])
 
 		# path to the even/odd particles used for the refinement
-		cptcl=js_open_dict("{}/0_refine_parms.json".format(args[0]))["input"]
+		cptcl=jsparm["input"]
 		cptcl=[str(i) for i in cptcl]
-
+		
 		# this reads all of the EMData headers from the projections, should be same for even and odd
 		pathprj="{}/projections_{:02d}_even.hdf".format(args[0],options.iter)
 		nref=EMUtil.get_image_count(pathprj)
@@ -129,25 +130,33 @@ def main():
 		# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching
 		ptclmask=EMData(args[0]+"/mask.hdf",0)
 		nx=ptclmask["nx"]
-		
+		apix=threed["apix_x"]
+
+		rings=[int(2*nx*apix/res) for res in (100,30,15,8,4)]
+		print rings
+
 		# We expand the mask a bit, since we want to consider problems with "touching" particles
 		ptclmask.process_inplace("threshold.binary",{"value":0.2})
 		ptclmask.process_inplace("mask.addshells",{"nshells":nx//15})
 		ptclmask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 
-		try: os.mkdir("ptclfsc")
-		except: pass
+#		try: os.mkdir("ptclfsc")
+#		except: pass
 
+#		fout=open("ptclsnr.txt".format(i),"w")
+		fout=open("ptclfsc_{}.txt".format(args[0][-2:]),"w")
 		# generate a projection for each particle so we can compare
 		for i in xrange(nref):
 			if options.verbose>1 : print "--- Class %d"%i
 
 			# The first projection is unmasked, used for scaling
 			proj=threed.project("standard",{"transform":eulers[i]})
-
 			projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
 
-			fout=open("ptclfsc/f{:04d}.txt".format(i),"w")
+			alt=eulers[i].get_rotation("eman")["alt"]
+			az=eulers[i].get_rotation("eman")["az"]
+
+#			fout=open("ptclfsc/f{:04d}.txt".format(i),"w")
 			for eo in range(2):
 				for j in xrange(nptcl[eo]):
 					if classmx[eo][0,j]!=i : 
@@ -157,6 +166,8 @@ def main():
 
 					# the particle itself
 					ptcl=EMData(cptcl[eo],j)
+					try: defocus=ptcl["ctf"].defocus
+					except: defocus=-1.0
 
 					# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
@@ -171,9 +182,11 @@ def main():
 					# Particle vs projection FSC
 					fsc = ptcl.calc_fourier_shell_correlation(projc)
 					third = len(fsc)/3
-					rng=third/5
-					sums=[sum(fsc[third+k*rng:third+k*rng+rng]) for k in xrange(5)]		# sum the fsc into 5 range values
-					fout.write("{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],sums[4],j,cptcl[eo]))
+					fsc=array(fsc[third:third*2])
+#					snr=fsc/(1.0-fsc)
+					sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
+#					sums=[sum(snr[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
+					fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,defocus,j,cptcl[eo]))
 					#xaxis = fsc[0:third]
 					#fsc = fsc[third:2*third]
 ##					saxis = [x/apix for x in xaxis]
