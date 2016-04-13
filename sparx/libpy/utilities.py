@@ -5060,7 +5060,7 @@ def wrap_mpi_bcast(data, root, communicator = None):
 
 
 # data must be a python list (numpy array also should be implemented)
-def wrap_mpi_gatherv(data, root, communicator = None):
+def wrap_mpi_gatherv(data, root, communidef cator = None):
 	from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 
 	if communicator == None:
