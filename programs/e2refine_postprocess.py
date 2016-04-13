@@ -72,7 +72,7 @@ def main():
 
 	if options.setsf.lower()=="none" : options.setsf=None
 
-	if options.underfilter: underfilter=":sscale=1.1"
+	if options.underfilter: underfilter=":sscale=1.15"
 	else: underfilter=""
 
 	if options.m3dpostprocess==None or len(options.m3dpostprocess.strip())==0 : m3dpostproc=""
