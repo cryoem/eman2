@@ -25090,6 +25090,27 @@ float Util::innerproduct(EMData* img, EMData* img1)
 }
 
 
+
+float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img || !img1) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img += img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float *img2_ptr = img2->get_data();
+	float ip = 0.0f;
+	for (size_t i=0;i<size/2;++i) ip += img_ptr[2*i]*img1_ptr[2*i]*img2_ptr[i]+img_ptr[2*i+1]*img1_ptr[2*i+1]*img2_ptr[i];
+	return ip;
+}
+
+
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
 float Util::local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w) {
