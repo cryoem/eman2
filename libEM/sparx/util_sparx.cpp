@@ -18348,7 +18348,7 @@ void Util::mulclreal(EMData* img1, EMData* img2)
 EMData* Util::mulnclreal(EMData* img1, EMData* img2)
 {
 	ENTERFUNC;
-	size_t nx=img2->get_xsize(),ny=img2->get_ysize(),nz=img2->get_zsize();
+	size_t nx=img2->get_xsize() ,ny=img2->get_ysize(), nz=img2->get_zsize();
 	EMData * img3   = img1->copy_head();
 	float *img1_ptr  = img1->get_data();
 	float *img2_ptr  = img2->get_data();
@@ -18359,7 +18359,7 @@ EMData* Util::mulnclreal(EMData* img1, EMData* img2)
 		img3_ptr[2*i+1] = img1_ptr[2*i+1] * img2_ptr[i];
 	}
 
-	img1->update();
+	img3->update();
 	EXITFUNC;
 	return img3;
 }
@@ -18369,7 +18369,7 @@ void Util::divabs(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
 	// img is real, img1 is complex
-	size_t nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t nx=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
 	size_t size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
