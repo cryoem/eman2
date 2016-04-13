@@ -817,6 +817,7 @@ costlist, int* curbranch);
 	static EMData* mulreal(EMData* img1, EMData* img2);
 	static void mulreal_2D_in_place(EMData* img0, EMData* img1, EMData* img2, int slice_index);
 	static void mulclreal(EMData* img1, EMData* img2);
+	static EMData* mulnclreal(EMData* img1, EMData* img2);
 	static void divabs(EMData* img, EMData* img1);
     /*  Various operation on images */
 	/* out = img + scalar * img1  */

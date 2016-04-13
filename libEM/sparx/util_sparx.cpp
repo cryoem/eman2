@@ -18345,6 +18345,26 @@ void Util::mulclreal(EMData* img1, EMData* img2)
 }
 
 
+EMData* Util::mulnclreal(EMData* img1, EMData* img2)
+{
+	ENTERFUNC;
+	size_t nx=img2->get_xsize(),ny=img2->get_ysize(),nz=img2->get_zsize();
+	EMData * img3   = img1->copy_head();
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+	float *img3_ptr  = img3->get_data();
+
+	for( size_t i = 0; i<(nx*ny*nz); i++) {
+		img3_ptr[2*i]   = img1_ptr[2*i]   * img2_ptr[i];
+		img3_ptr[2*i+1] = img1_ptr[2*i+1] * img2_ptr[i];
+	}
+
+	img1->update();
+	EXITFUNC;
+	return img3;
+}
+
+
 void Util::divabs(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
