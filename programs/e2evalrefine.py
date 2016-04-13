@@ -354,7 +354,7 @@ def main():
 ##					Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:-1],args[1])
 					#Util.save_data(xaxis[1],xaxis[1]-xaxis[0],fsc[1:-1],"ptclfsc/f{:04d}_{:1d}_{:06d}.txt".format(i,eo,j))
 
-		print "Results in ptclfsc_{:02d}.txt".format(args[0][-2:])
+		print "Results in ptclfsc_{}.txt".format(args[0][-2:])
 		sys.exit(0)
 
 	if options.resolution:
