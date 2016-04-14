@@ -22261,15 +22261,15 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
 					ref.set_value_at(0,0,0.0)
-					nrmref = sqrt(Util.innerproduct(ref, ref))
+					nrmref = sqrt(Util.innerproduct(ref, ref, None))
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fft(data[im]*mask2D)
 						tempx.set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, tempx)
+						peak = Util.innerproduct(ref, tempx, None)
 					else:
 						data[im].set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, data[im])
+						peak = Util.innerproduct(ref, data[im], None)
 						data[im].set_attr("is_complex",1)
 					peak /= nrmref
 
@@ -22909,15 +22909,15 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
 					ref.set_value_at(0,0,0.0)
-					nrmref = sqrt(Util.innerproduct(ref, ref))
+					nrmref = sqrt(Util.innerproduct(ref, ref, None))
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fft(data[im]*mask2D)
 						tempx.set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, tempx)
+						peak = Util.innerproduct(ref, tempx, None)
 					else:
 						data[im].set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, data[im])
+						peak = Util.innerproduct(ref, data[im], None)
 						data[im].set_attr("is_complex",1)
 					peak /= nrmref
 
@@ -23764,15 +23764,15 @@ def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker)
 					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
 					ref.set_value_at(0,0,0.0)
-					nrmref = sqrt(Util.innerproduct(ref, ref))
+					nrmref = sqrt(Util.innerproduct(ref, ref, None))
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fft(data[im]*mask2D)
 						tempx.set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, tempx)
+						peak = Util.innerproduct(ref, tempx, None)
 					else:
 						data[im].set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, data[im])
+						peak = Util.innerproduct(ref, data[im], None)
 						data[im].set_attr("is_complex",1)
 					peak /= nrmref
 
