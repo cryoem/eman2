@@ -108,8 +108,8 @@ for option1 in optionList:
 			print "-----Writing Particle Information-----"
 			for ptcl_by_micrograph in os.listdir(cwd + "/particles"):
 				if ptcl_by_micrograph.find("__") == -1 and ptcl_by_micrograph.find(".") != 0:
-					if os.path.exists(cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf"):
-						particle_stack = EMData().read_images(cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf")
+					if os.path.exists(cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf","") + "__ctf_flip.hdf"):
+						particle_stack = EMData().read_images("{}/particles/{}__ctf_flip.hdf".format(cwd,ptcl_by_micrograph.replace(".hdf","")))
 						if options.writeimages:
 							s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf emx/" + ptcl_by_micrograph.replace(".hdf.",".mrcs")
 							call(s1,shell=True)
