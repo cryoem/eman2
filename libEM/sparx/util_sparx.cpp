@@ -18980,6 +18980,82 @@ void Util::div_filter(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
+
+#define data(jx,iy)         data[jx+(iy-1)*nx]
+EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
+{
+	ENTERFUNC;
+
+    int nyp2 = ny/2;
+	int nx = nyp2+1;
+
+	int nb = bckgnoise.size();
+	EMData* power = new EMData();
+	power->set_size(nx,ny);
+	power->to_zero();
+
+    float* data = power->get_data();
+
+    float argy, argx;
+	float rmax = nyp2 + 0.5;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		for ( int ix = 1; ix <= nx; ix++) {
+			int jx=ix-1; argx = argy + float(jx*jx);
+			float rf = sqrt( argx );
+			if( rf <= rmax )  {
+				int  ir = int(rf);
+				float df = rf - float(ir);
+				data(jx,iy) = (bckgnoise[ir] + df * (bckgnoise[ir+1] - bckgnoise[ir]));///2.0;  // 2 on account of x^2/(2*s^2)
+			}
+		}
+	}
+	data[0] = 0.0f;
+	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+
+	power->update();
+	EXITFUNC;
+    return power;
+}
+
+EMData*  Util::unrollmask( int ny )
+{
+	ENTERFUNC;
+
+    int nyp2 = ny/2;
+	int nx = nyp2+1;
+
+	EMData* power = new EMData();
+	power->set_size(nx,ny);
+	power->to_one();
+
+    float* data = power->get_data();
+
+    float argy, argx;
+	float rmax = nyp2 + 0.5;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		for ( int ix = 1; ix <= nx; ix++) {
+			int jx=ix-1; argx = argy + float(jx*jx);
+			float rf = sqrt( argx );
+			if( rf > rmax )  {
+				int  ir = int(rf);
+				float df = rf - float(ir);
+				data(jx,iy) = 0.0f;
+			}
+		}
+	}
+	data[0] = 0.0f;
+	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+
+	power->update();
+	EXITFUNC;
+    return power;
+}
+#undef data
+
+
+
 #define data(ix,iy)          data[jx2 + (iy-1)*2*nx]
 #define dproj(ix,iy)         dproj[jx2 + (iy-1)*2*nx]
 #define dctfs(jx,iy)         dctfs[jx+(iy-1)*nx]
@@ -25072,7 +25148,7 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 }
 
 
-float Util::innerproduct(EMData* img, EMData* img1)
+float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 {
 	ENTERFUNC;
 	/* Exception Handle */
@@ -25086,13 +25162,20 @@ float Util::innerproduct(EMData* img, EMData* img1)
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	float ip = 0.0f;
-	for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+	if (mask == NULL) {
+		for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+	} else {
+		float *pmask = mask->get_data();
+		for (size_t i=0;i<size;++i) {
+			if( pmask[i] > 0.5f)  ip += img_ptr[i]*img1_ptr[i];
+		}
+	}
 	return ip;
 }
 
 
 
-float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2)
+float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2, EMData* mask)
 {
 	ENTERFUNC;
 	/* Exception Handle */
@@ -25107,7 +25190,14 @@ float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2)
 	float *img1_ptr = img1->get_data();
 	float *img2_ptr = img2->get_data();
 	float ip = 0.0f;
-	for (size_t i=0;i<size/2;++i) ip += (img_ptr[2*i]*img1_ptr[2*i]+img_ptr[2*i+1]*img1_ptr[2*i+1])*img2_ptr[i];
+	if (mask == NULL) {
+		for (size_t i=0;i<size/2;++i) ip += (img_ptr[2*i]*img1_ptr[2*i]+img_ptr[2*i+1]*img1_ptr[2*i+1])*img2_ptr[i];
+	} else {
+		float *pmask = mask->get_data();
+		for (size_t i=0;i<size/2;++i) {
+			if( pmask[i] > 0.5f)  ip += (img_ptr[2*i]*img1_ptr[2*i]+img_ptr[2*i+1]*img1_ptr[2*i+1])*img2_ptr[i];
+		}
+	}
 	return ip;
 }
 
