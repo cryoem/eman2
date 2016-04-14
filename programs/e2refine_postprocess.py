@@ -145,17 +145,18 @@ def main():
 	else:
 		setsf=""
 
-	maxfreq=1.0/options.restarget
-
 	nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 
-	if options.ampcorrect == "flatten": # use something akin to Henderson's 2013 method
-		print("Performing amplitude correction via 'flattening'")
-		try: noisecutoff=calc_noise_cutoff(unmaskedfsc)
-		except: noisecutoff= 1/(2*(apix+0.1))
-		bfactor=0.0
-		ampcorrect="--process=filter.lowpass.autob:cutoff_freq={}:noisecutoff={}:interpolate=1:bfactor={}".format(maxfreq,noisecutoff,bfactor)
-		print "noise cutoff: {:1.2f}".format(1.0/noisecutoff)
+	if options.ampcorrect == "flatten":
+		try:
+			noisecutoff=calc_noise_cutoff(unmaskedfsc)
+			print("Performing amplitude correction via 'flattening'")
+			print "noise cutoff: {:1.2f}".format(1.0/noisecutoff)
+			ampcorrect="--process=filter.lowpass.autob:cutoff_abs=1.0:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
+		except:
+			print("Could not compute noise cutoff from the unmasked FSC.")
+			print("Defaulting to structure factor-based amplitude correction.")
+			ampcorrect=setsf
 	elif options.ampcorrect == "strucfac": # use old eman2 structure factor method
 		print("Performing structure factor amplitude correction")
 		ampcorrect=setsf
@@ -163,6 +164,7 @@ def main():
 		print("NOT performing amplitude correction")
 		ampcorrect = ""
 
+	maxfreq=1.0/options.restarget
 	wiener = "--process=filter.wiener.byfsc:fscfile={path}fsc_unmasked_{itr:02d}.txt:snrmult=2:maxfreq={maxfreq}".format(path=path, itr=options.iter, maxfreq=maxfreq)
 	massnorm = "--process=normalize.bymass:thr=1:mass={mass}".format(mass=options.mass)
 
@@ -203,15 +205,15 @@ def main():
 			#thresh=sigmanz*.75,radius=nx/10,shells=options.automaskexpand,gshells=int(options.restarget*1.5/apix),seed=seeds)
 		#amask3dtight="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
 			#thresh=sigmanz*.9,radius=nx/10,shells=int(options.restarget*1.2/apix),gshells=int(options.restarget*1.2/apix),seed=seeds)
-		
+
 		# New version of automasking based on a more intelligent interrogation of the volume
 		vol=EMData("{path}tmp.hdf".format(path=path),0)
 		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.1,1.0/options.restarget)})		# Mask at no higher than 10 A resolution
 		md=vol.calc_radial_dist(nx/2,0,1,3)	# radial max value per shell in real space
-		
+
 		rmax=int(nx/2.2)		# we demand at least 10% padding
 		vmax=max(md[:rmax])			# max value within permitted radius
-		
+
 		# this finds the first radius where the max value @ r falls below overall max/4
 		# this becomes the new maximum mask radius
 		act=0
@@ -223,39 +225,39 @@ def main():
 			if md[i]<0.2*vmax :
 				rmax=i
 				break
-			
+
 		rmaxval=mv[1]
 		vmax=mv[0]
-		
+
 		# excludes any spurious high values at large radius
 		vol.process_inplace("mask.sharp",{"outer_radius":rmax})
-		
-		# automask 
+
+		# automask
 		mask=vol.process("mask.auto3d",{"threshold":vmax*.2,"radius":0,"nshells":int(nx*0.05+.5+options.automaskexpand),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
-		
+
 		## check the largest extent of the mask
 		#maskrd=mask.calc_radial_dist(nx/2,0,1,3)
-		## if the mask doesn't extend 
+		## if the mask doesn't extend
 		#if maskrd[rmax-3]<.9 :
 			#mask=vol.process("mask.auto3d",{"threshold":vmax*.15,"radius":0,"nshells":int(nx*0.05+.5+options.automaskexpand),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
-		
-		
+
+
 		# Soften mask this way instead of with nshellsgauss
 #		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*1.5)})
-		
+
 		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
-		
+
 		mask.write_image("{path}mask.hdf".format(path=path),0)
 
 		# automask (tight)
 #		th=min(md[rmaxval-nx//8:rmaxval+nx//8])
 		mask=vol.process("mask.auto3d",{"threshold":vmax*.25,"radius":0,"nshells":int(options.restarget*1.2/apix),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
-		
+
 		## Soften mask this way instead of with nshellsgauss
 		#mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*1.5)})
-		
+
 		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
-		
+
 		mask.write_image("{path}mask_tight.hdf".format(path=path),0)
 
 	else:
@@ -309,13 +311,11 @@ def main():
 	cmd="e2proc3d.py {path}tmp_even.hdf {path}fsc_masked_{itr:02d}.txt --calcfsc {path}tmp_odd.hdf".format(path=path,itr=options.iter)
 	run(cmd)
 
-
 	# readjust 'flatten' for new fsc
-	if options.ampcorrect == "flatten": # use something akin to Henderson's 2013 method
-		try: 
+	if options.ampcorrect == "flatten":
+		try:
 			noisecutoff=calc_noise_cutoff("{path}fsc_masked_{itr:02d}.txt".format(path=path,itr=options.iter))
-			bfactor=0.0
-			ampcorrect="--process=filter.lowpass.autob:cutoff_freq={}:noisecutoff={}:interpolate=1:bfactor={}".format(maxfreq,noisecutoff,bfactor)
+			ampcorrect="--process=filter.lowpass.autob:cutoff_abs=0.5:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
 			print "new noise cutoff: {:1.2f}".format(1.0/noisecutoff)
 		except: pass
 
@@ -357,11 +357,10 @@ def main():
 	E2end(logid)
 
 def calc_noise_cutoff(fsc_file):
-	#noisecutoff= 1/(2*(apix+0.1))
 	fsc_data = np.loadtxt(fsc_file)
 	freqs,fscs = np.array_split(fsc_data,2,axis=1)
 	atfreq=freqs[fscs<=0.143][0] # first spatial frequency at which FSC touches (or falls below) 0.143.
-	return atfreq
+	return atfreq * 1.05 # just past where we can distinguish signal from noise
 
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
