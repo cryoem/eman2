@@ -6843,7 +6843,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 def search_lowpass(fsc):
 	fcutoff =.5
 	for i in xrange(len(fsc[1])):
-		if fsc[0][i]<.5:
+		if fsc[1][i]<.5:
 			break
 	if i<len(fsc[1])-1:
 		fcutoff=fsc[0][i-1]
