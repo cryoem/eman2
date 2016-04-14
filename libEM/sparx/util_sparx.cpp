@@ -18345,11 +18345,31 @@ void Util::mulclreal(EMData* img1, EMData* img2)
 }
 
 
+EMData* Util::mulnclreal(EMData* img1, EMData* img2)
+{
+	ENTERFUNC;
+	size_t nx=img2->get_xsize() ,ny=img2->get_ysize(), nz=img2->get_zsize();
+	EMData * img3   = img1->copy_head();
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+	float *img3_ptr  = img3->get_data();
+
+	for( size_t i = 0; i<(nx*ny*nz); i++) {
+		img3_ptr[2*i]   = img1_ptr[2*i]   * img2_ptr[i];
+		img3_ptr[2*i+1] = img1_ptr[2*i+1] * img2_ptr[i];
+	}
+
+	img3->update();
+	EXITFUNC;
+	return img3;
+}
+
+
 void Util::divabs(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
 	// img is real, img1 is complex
-	size_t nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t nx=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
 	size_t size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
@@ -18988,8 +19008,9 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, const vector<float>& 
 			float df = rf - float(ir);
 			float f = (bckgnoise[ir] + df * (bckgnoise[ir+1] - bckgnoise[ir]))/2.0;  // 2 on account of x^2/(2*s^2)
 			int jx2 = 2*jx;
-			edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*f;
-			edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*f;
+			edis += (data(jx2,iy)*dproj(jx2,iy) + data(jx2+1,iy)*dproj(jx2+1,iy))*dctfs(jx,iy)*f;
+			//edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*f;
+			//edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*f;
 		}
 	}
 
@@ -25066,6 +25087,27 @@ float Util::innerproduct(EMData* img, EMData* img1)
 	float *img1_ptr = img1->get_data();
 	float ip = 0.0f;
 	for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+	return ip;
+}
+
+
+
+float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img || !img1) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img += img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float *img2_ptr = img2->get_data();
+	float ip = 0.0f;
+	for (size_t i=0;i<size/2;++i) ip += (img_ptr[2*i]*img1_ptr[2*i]+img_ptr[2*i+1]*img1_ptr[2*i+1])*img2_ptr[i];
 	return ip;
 }
 

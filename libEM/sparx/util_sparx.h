@@ -817,6 +817,7 @@ costlist, int* curbranch);
 	static EMData* mulreal(EMData* img1, EMData* img2);
 	static void mulreal_2D_in_place(EMData* img0, EMData* img1, EMData* img2, int slice_index);
 	static void mulclreal(EMData* img1, EMData* img2);
+	static EMData* mulnclreal(EMData* img1, EMData* img2);
 	static void divabs(EMData* img, EMData* img1);
     /*  Various operation on images */
 	/* out = img + scalar * img1  */
@@ -1101,6 +1102,7 @@ public:
 	static float ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sx, float sy);
 
 	static float innerproduct(EMData* image1, EMData* image2);
+	static float innerproductwithctf(EMData* img, EMData* img1, EMData* img2);
 
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
 	
