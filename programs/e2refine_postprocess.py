@@ -58,6 +58,7 @@ def main():
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
 	parser.add_argument("--ampcorrect",choices=['strucfac', 'flatten','none'],default="strucfac",help="Will perform amplitude correction via the specified method. The default choice is strucfac.")
+	parser.add_argument("--ncmult",type=float,default=1.1,help="Specify how much to multiply noise cutoff during flattening amplitude correction. Default is 1.1.")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--automaskexpand", default=-1, type=int,help="Default=boxsize/20. Specify number of voxels to expand mask before soft edge. Only used if automask3d not specified." )
@@ -149,7 +150,7 @@ def main():
 
 	if options.ampcorrect == "flatten":
 		try:
-			noisecutoff=calc_noise_cutoff(unmaskedfsc)
+			noisecutoff=calc_noise_cutoff(unmaskedfsc, options.ncmult)
 			print("Performing amplitude correction via 'flattening'")
 			print "noise cutoff: {:1.2f}".format(1.0/noisecutoff)
 			ampcorrect="--process=filter.lowpass.autob:cutoff_abs=1.0:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
@@ -314,7 +315,7 @@ def main():
 	# readjust 'flatten' for new fsc
 	if options.ampcorrect == "flatten":
 		try:
-			noisecutoff=calc_noise_cutoff("{path}fsc_masked_{itr:02d}.txt".format(path=path,itr=options.iter))
+			noisecutoff=calc_noise_cutoff("{path}fsc_masked_{itr:02d}.txt".format(path=path,itr=options.iter),options.ncmult)
 			ampcorrect="--process=filter.lowpass.autob:cutoff_abs=0.5:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
 			print "new noise cutoff: {:1.2f}".format(1.0/noisecutoff)
 		except: pass
@@ -356,11 +357,11 @@ def main():
 
 	E2end(logid)
 
-def calc_noise_cutoff(fsc_file):
+def calc_noise_cutoff(fsc_file,mult=1.1):
 	fsc_data = np.loadtxt(fsc_file)
 	freqs,fscs = np.array_split(fsc_data,2,axis=1)
 	atfreq=freqs[fscs<=0.143][0] # first spatial frequency at which FSC touches (or falls below) 0.143.
-	return atfreq * 1.05 # just past where we can distinguish signal from noise
+	return atfreq * mult # just past where we can distinguish signal from noise
 
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
