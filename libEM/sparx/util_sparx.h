@@ -866,6 +866,11 @@ costlist, int* curbranch);
 	/* img /= Re(img1) with zero check  */
 	static void div_filter(EMData* img, EMData* img1);
 
+	static EMData*  unroll1dpw( int ny, const vector<float>& bckgnoise );
+
+	static EMData*  unrollmask( int ny );
+
+
 	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, const vector<float>& bckgnoise);
 
 	//utility for sxlocres
@@ -1101,8 +1106,8 @@ public:
 
 	static float ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sx, float sy);
 
-	static float innerproduct(EMData* image1, EMData* image2);
-	static float innerproductwithctf(EMData* img, EMData* img1, EMData* img2);
+	static float innerproduct(EMData* image1, EMData* image2, EMData* mask);
+	static float innerproductwithctf(EMData* img, EMData* img1, EMData* img2, EMData* mask);
 
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
 	
