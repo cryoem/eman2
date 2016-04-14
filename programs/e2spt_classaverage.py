@@ -245,7 +245,7 @@ def main():
 	
 	parser.add_argument("--falign",type=str,default='',help="""Default=None. This is the second stage aligner when the default aligner (rotate_translate_3d_tree) is NOT used. The fine alignment aligner is used to fine-tune the first alignment.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
 			
-	parser.add_argument("--faligncmp",type=str,default="ccc.tomo.thresh",help="""Default=ccc.tomo.thresh. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
+	parser.add_argument("--faligncmp",type=str,default='',help="""Default=None. The default will depend on the aligner used (ccc.tomo or ccc.tomo.thresh). The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
 
 	parser.add_argument("--translateonly",action='store_true',default=False,help="""Default=False. This will force the aligner to not do any rotations and thus serves for translational centering. Specify search values through --search, otherwise its default value will be used.""")	
 		
@@ -442,7 +442,7 @@ def main():
 	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
 		
 		print "\noptions.mask", options.mask
-		print "\noptions.maskfile", options.mamaskfilesk
+		print "\noptions.maskfile", options.maskfile
 		print "\noptions.normproc", options.normproc
 		print "\noptions.threshold", options.threshold
 		print "\noptions.clip", options.clip
@@ -515,89 +515,7 @@ def main():
 			"""
 			
 	else:
-		preprocdone += 1		
-	
-	
-	
-	
-	#if preprocdone > 1:
-	
-		"""		
-			
-			preprocstackfine = os.path.basename(options.input).replace('.hdf','_preprocfine.hdf')
-			cmdpreprocfine = 'e2spt_preproc.py --input ' + options.raw + ' --output ' + preprocstackfine
-			
-			cmdpreprocreffine = ''
-			preprocreffine = ''
-		
-			if options.ref and options.refpreprocess:
-				
-				preprocreffine = os.path.basename(options.ref).replace('.hdf','_preprocfine.hdf')
-				cmdpreprocreffine = 'e2spt_preproc.py --input ' + options.ref + ' --output ' + preprocreffine
-
-			if options.mask:
-				cmdpreprocfine += ' --mask ' + options.mask 
-				if options.ref and options.refpreprocess:
-					cmdpreprocreffine += ' --mask ' + options.mask
-				
-			if options.maskfile:
-				cmdpreprocfine += ' --maskfile ' + options.maskfile
-				if options.ref and options.refpreprocess:
-					cmdpreprocreffine += ' --maskfile ' + options.maskfile
-		
-			if options.normproc:
-				cmdpreprocfine += ' --normproc ' + options.normproc
-				if options.ref and options.refpreprocess:
-					cmdpreprocreffine += ' --normproc ' + options.normproc
-
-			if options.threshold:
-				cmdpreprocfine += ' --threshold ' + options.threshold
-				if options.ref and options.refpreprocess:
-					cmdpreprocreffine += ' --threshold ' + options.threshold
-	
-			if options.clip:
-				cmdpreprocfine += ' --clip ' + str(options.clip)
-				if options.ref and options.refpreprocess:
-					cmdpreprocreffine += ' --clip ' + str(options.clip)
-	
-			if options.shrinkfine > 1:
-				cmdpreprocfine += ' --shrinkfine ' + str(options.shrinkfine)
-				if options.ref and options.refpreprocess:
-					cmdpreprocreffine += ' --shrinkfine ' + str(options.shrinkfine)
-	
-			if options.lowpassfine:
-				cmdpreprocfine += ' --lowpassfine ' + options.lowpassfine
-				if options.ref and options.refpreprocess:
-					cmdpreprocreffine += ' --lowpassfine ' + options.lowpassfine
-		
-			if options.highpassfine:
-				cmdpreprocfine += ' --highpassfine ' + options.highpassfine
-				if options.ref and options.refpreprocess:
-					cmdpreprocreffine += ' --highpassfine ' + options.highpassfine
-
-			if options.preprocessfine:
-				cmdpreprocfine += ' --preprocessfine ' + options.preprocessfine
-				if options.ref and options.refpreprocess:
-					cmdpreprocreffine += ' --preprocessfine ' + options.preprocessfine
-			
-		
-			retfine = runcmd( options, cmdpreprocfine )
-	
-			if retfine:
-				input_preprocfine = options.path + '/' + preprocstackfine
-				os.rename( preprocstackfine, input_preprocfine )
-			else:
-				print "\n(e2spt_classaverage)(main) preprocessing particles for fine alignment crashed"
-		
-			if options.ref and options.refpreprocess:	
-				retreffine = runcmd( options, cmdpreprocreffine )	
-				if retreffine:	
-					ref_preprocfine = options.path + '/' + preprocreffine
-					os.rename( preprocreffine, ref_preprocfine )
-					#options.input = input_preproc
-				else:
-					print "\n(e2spt_classaverage)(main) preprocessing reference for fine alignment crashed"
-	"""
+		preprocdone += 1
 	
 
 	print "\n(e2spt_classaverage)(main) preprocessing completed"
@@ -2161,43 +2079,55 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 	nyquist = 2.0 * apix			#this is nyquist 'resolution', not frequency; it's the inverse of nyquist frequency
 	halfnyquist = 2.0 * nyquist
 	twothirdsnyquist = 3.0 * nyquist / 2.0
+	boxsize = finalA['nx']
+	halfbox = boxsize/2
+	halfnshells = halfbox - int(halfbox/2.0)
+	twothirdshells = halfbox - int((2.0/3.0)*halfbox)
+	fourfithsshells = halfbox - int((4.0/5.0)*halfbox)
+	
+	
 	
 	eventhresh = avgeven['sigma']
 	#eventhresh = 0
-	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':1,'nshellsgauss':5,'radius':1,'nmaxseed':1,'threshold': eventhresh })
+	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':1,'nshellsgauss':4,'radius':1,'nmaxseed':1,'threshold': eventhresh })
 	
 	oddthresh = avgodd['sigma']
 	#oddthresh = 0
-	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':1,'nshellsgauss':5,'radius':1,'nmaxseed':1,'threshold': oddthresh })
+	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':1,'nshellsgauss':4,'radius':1,'nmaxseed':1,'threshold': oddthresh })
 	
 	fscfilemasked = fscfile.replace('.txt','_mask_supertight.txt')
 	
 	calcFsc( options, avgevenmasked, avgoddmasked, fscfilemasked )
 	
-	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':1,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': eventhresh })
-	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':1,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': oddthresh })
 	
-	fscfilemasked2 = fscfile.replace('.txt','_mask_lesstight.txt')
+	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':1,'nshellsgauss':fourfithsshells,'radius':1,'nmaxseed':1,'threshold': eventhresh })
+	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':1,'nshellsgauss':fourfithsshells,'radius':1,'nmaxseed':1,'threshold': oddthresh })
+	
+	fscfilemasked2 = fscfile.replace('.txt','_mask_lesstight_nshg' + str(fourfithsshells)+ '.txt')
 	calcFsc( options, avgevenmasked, avgoddmasked, fscfilemasked2 )
 	
-	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':3,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': eventhresh })
-	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':3,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': oddthresh })
 	
-	fscfilemasked3 = fscfile.replace('.txt','_mask_itermediate.txt')
+	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':1,'nshellsgauss':twothirdshells,'radius':1,'nmaxseed':1,'threshold': eventhresh })
+	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':1,'nshellsgauss':twothirdshells,'radius':1,'nmaxseed':1,'threshold': oddthresh })
+	
+	fscfilemasked3 = fscfile.replace('.txt','_mask_itermediate_nshg' + str(twothirdshells)+ '.txt')
 	calcFsc( options, avgevenmasked, avgoddmasked, fscfilemasked3 )
 	
-	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':4,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': eventhresh })
-	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':4,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': oddthresh })
 	
-	fscfilemasked4 = fscfile.replace('.txt','_mask_loose.txt')
+	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':1,'nshellsgauss':halfnshells,'radius':1,'nmaxseed':1 })
+	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':1,'nshellsgauss':halfnshells,'radius':1,'nmaxseed':1 })
+	
+	fscfilemasked4 = fscfile.replace('.txt','_mask_loose_nshg' + str(halfnshells)+ '.txt')
 	calcFsc( options, avgevenmasked, avgoddmasked, fscfilemasked4 )
 	
 	finalthresh = finalA['sigma']
 	
 	finalAfilt = finalA.copy()
-	finalAmasked = finalAfilt.process('mask.auto3d',{'nshells':1,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': finalthresh })
+	finalAfiltLp = finalAfilt.process('filter.lowpass.tanh',{'cutoff_freq':twothirdsnyquist})
+	finalAfiltLpNormlocal = finalAfiltLp.process('normalize.local',{'radius':2})
+	finalAfiltLpNormlocalMasked = finalAfiltLpNormlocal.process('mask.auto3d',{'nshells':1,'nshellsgauss':twothirdshells,'radius':1,'nmaxseed':1,'threshold': finalthresh })
 	
-	finalAmasked.write_image( options.path + '/recomputed_final_avg_masked.hdf', 0 )
+	finalAfiltLpNormlocalMasked.write_image( options.path + '/final_avg_postproc.hdf', 0 )
 	
 	return finalA
 
