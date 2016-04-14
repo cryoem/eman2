@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from EMAN2 import *
 import os, sys
 from sys import argv
