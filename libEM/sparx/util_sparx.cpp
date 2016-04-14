@@ -25166,8 +25166,13 @@ float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 		for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
 	} else {
 		float *pmask = mask->get_data();
-		for (size_t i=0;i<size;++i) {
-			if( pmask[i] > 0.5f)  ip += img_ptr[i]*img1_ptr[i];
+		for (size_t i=0;i<size/2;++i) {
+
+			//if( pmask[i] > 0.5f)  {
+				int lol = i*2;
+			//	ip += img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1];
+			ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*pmask[i];
+			//}
 		}
 	}
 	return ip;
@@ -25195,7 +25200,11 @@ float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2, EMData*
 	} else {
 		float *pmask = mask->get_data();
 		for (size_t i=0;i<size/2;++i) {
-			if( pmask[i] > 0.5f)  ip += (img_ptr[2*i]*img1_ptr[2*i]+img_ptr[2*i+1]*img1_ptr[2*i+1])*img2_ptr[i];
+			//if( pmask[i] > 0.5f)  {
+				int lol = i*2;
+				//ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*img2_ptr[i];
+			ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*img2_ptr[i]*pmask[i];
+			//}
 		}
 	}
 	return ip;
