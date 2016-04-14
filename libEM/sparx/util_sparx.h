@@ -871,7 +871,7 @@ costlist, int* curbranch);
 	static EMData*  unrollmask( int ny );
 
 
-	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, const vector<float>& bckgnoise);
+	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, EMData* bckgnoise);
 
 	//utility for sxlocres
 	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);
