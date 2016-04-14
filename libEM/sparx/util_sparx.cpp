@@ -19008,8 +19008,9 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, const vector<float>& 
 			float df = rf - float(ir);
 			float f = (bckgnoise[ir] + df * (bckgnoise[ir+1] - bckgnoise[ir]))/2.0;  // 2 on account of x^2/(2*s^2)
 			int jx2 = 2*jx;
-			edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*f;
-			edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*f;
+			edis += (data(jx2,iy)*dproj(jx2,iy) + data(jx2+1,iy)*dproj(jx2+1,iy))*dctfs(jx,iy)*f;
+			//edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*f;
+			//edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*f;
 		}
 	}
 
@@ -25106,7 +25107,7 @@ float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2)
 	float *img1_ptr = img1->get_data();
 	float *img2_ptr = img2->get_data();
 	float ip = 0.0f;
-	for (size_t i=0;i<size/2;++i) ip += img_ptr[2*i]*img1_ptr[2*i]*img2_ptr[i]+img_ptr[2*i+1]*img1_ptr[2*i+1]*img2_ptr[i];
+	for (size_t i=0;i<size/2;++i) ip += (img_ptr[2*i]*img1_ptr[2*i]+img_ptr[2*i+1]*img1_ptr[2*i+1])*img2_ptr[i];
 	return ip;
 }
 
