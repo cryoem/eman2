@@ -763,6 +763,7 @@ def main():
 				except:
 					lowpass= 0.4
 					falloff= 0.1
+				print lowpass
 				lowpass=round(lowpass,4)
 				falloff=round(min(.1,falloff),4)
 				Tracker["lowpass"]= lowpass

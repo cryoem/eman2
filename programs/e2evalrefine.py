@@ -39,6 +39,7 @@ import os
 import sys
 import datetime
 from numpy import array
+import traceback
 
 try:
 	import numpy as np
@@ -59,6 +60,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement the refine_xx folder name. This may be used to identify bad particles.")
+	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
 	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
 	parser.add_argument("--timing", default=False, action="store_true", help="report on how long each step of the refinement process took during the first iteration of each run")
 	parser.add_argument("--resolution", default=False, action="store_true", help="generates a resolution and convergence plot for a single refinement run.")
@@ -90,7 +92,163 @@ def main():
 				print "Could not find a completed iteration in ",args[0]
 				sys.exit(1)
 
+	if options.anisotropy>=0 :
+		print "Anisotropy evaluation mode"
+
+		try:
+			pathmx="{}/classmx_{:02d}_even.hdf".format(args[0],options.iter)
+			classmx=[EMData(pathmx,0)]
+			nptcl=[classmx[0]["ny"]]
+			cmxtx=[EMData(pathmx,2)]
+			cmxty=[EMData(pathmx,3)]
+			cmxalpha=[EMData(pathmx,4)]
+			cmxmirror=[EMData(pathmx,5)]
+
+			pathmx="{}/classmx_{:02d}_odd.hdf".format(args[0],options.iter)
+			classmx.append(EMData(pathmx,0))
+			nptcl.append(classmx[1]["ny"])
+			cmxtx.append(EMData(pathmx,2))
+			cmxty.append(EMData(pathmx,3))
+			cmxalpha.append(EMData(pathmx,4))
+			cmxmirror.append(EMData(pathmx,5))
+		except:
+			traceback.print_exc()
+			print "====\nError reading classification matrix. Must be full classification matrix with alignments"
+			sys.exit(1)
+
+		if options.verbose: print "{} even and {} odd particles in classmx".format(nptcl[0],nptcl[1])
+
+		# path to the even/odd particles used for the refinement
+		cptcl=jsparm["input"]
+		cptcl=[str(i) for i in cptcl]
+		
+		# this reads all of the EMData headers from the projections, should be same for even and odd
+		pathprj="{}/projections_{:02d}_even.hdf".format(args[0],options.iter)
+		nref=EMUtil.get_image_count(pathprj)
+		eulers=[EMData(pathprj,i,1)["xform.projection"] for i in range(nref)]
+
+		# The 3D reference volume we are using for subtraction
+		threed=EMData("{}/threed_{:02d}.hdf".format(args[0],options.iter),0)
+
+		# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching
+		ptclmask=EMData(args[0]+"/mask.hdf",0)
+		nx=ptclmask["nx"]
+		apix=threed["apix_x"]
+
+		# We expand the mask a bit, since we want to consider problems with "touching" particles
+		ptclmask.process_inplace("threshold.binary",{"value":0.2})
+		ptclmask.process_inplace("mask.addshells",{"nshells":nx//15})
+		ptclmask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
+
+		ring=(2*nx*apix/100.0,2*nx*apix/10)
+#		fout=open("ptclsnr.txt".format(i),"w")
+		fout=open("aniso_{:02d}.txt".format(options.anisotropy),"w")
+		# generate a projection for each particle so we can compare
+		for i in [options.anisotropy]:							# this is left as a loop in case we decide to do multiple classes later on
+			if options.verbose>1 : print "--- Class %d"%i
+
+			# The first projection is unmasked, used for scaling
+			proj=threed.project("standard",{"transform":eulers[i]})
+			projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
+
+			alt=eulers[i].get_rotation("eman")["alt"]
+			az=eulers[i].get_rotation("eman")["az"]
+			best=(0,0,1.01)
+
+			for angle in xrange(0,180,5):
+				rt=Transform({"type":"2d","alpha":angle})
+				xf=rt*Transform([1.01,0,0,0,0,1/1.01,0,0,0,0,1,0])*rt.inverse()
+				esum=0
+				
+				for eo in range(2):
+					for j in xrange(nptcl[eo]):
+						if classmx[eo][0,j]!=i : 
+	#						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
+							continue		# only proceed if the particle is in this class
+						if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
+
+						# the particle itself
+						try: ptcl=EMData(cptcl[eo],j)
+						except:
+							print "Unable to read particle: {} ({})".format(cptcl[eo],j)
+							sys.exit(1)
+						#try: defocus=ptcl["ctf"].defocus
+						#except: defocus=-1.0
+
+						# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
+						ptcl.transform(xf)		# anisotropy directly on the particle
+						ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
+						projc=proj.process("xform",{"transform":ptclxf})	# we transform the projection, not the particle (as in the original classification)
+
+						projmaskc=projmask.process("xform",{"transform":ptclxf})
+						ptcl.mult(projmaskc)
+
+
+						# Particle vs projection FSC
+						fsc = ptcl.calc_fourier_shell_correlation(projc)
+						third = len(fsc)/3
+						fsc=array(fsc[third:third*2])
+						esum+= sum(fsc[ring[0]:ring[1]])
+						
+						best=max(best,(esum,angle,1.01))
+	#					snr=fsc/(1.0-fsc)
+	#					sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
+	#					sums=[sum(snr[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
+	#					fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,defocus,j,cptcl[eo]))
+				fout.write("{}\t{}\t{}\n".format(angle,1.01,esum))
+
+			if options.verbose>1 : print "--- Class %d"%i
+
+			angle=best[1]
+			print best
+
+			for aniso in xrange(0,30):
+				ai=aniso/1000.0+1.0
+				rt=Transform({"type":"2d","alpha":angle})
+				xf=rt*Transform([ai,0,0,0,0,1/ai,0,0,0,0,1,0])*rt.inverse()
+				esum=0
+				
+				for eo in range(2):
+					for j in xrange(nptcl[eo]):
+						if classmx[eo][0,j]!=i : 
+	#						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
+							continue		# only proceed if the particle is in this class
+						if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
+
+						# the particle itself
+						try: ptcl=EMData(cptcl[eo],j)
+						except:
+							print "Unable to read particle: {} ({})".format(cptcl[eo],j)
+							sys.exit(1)
+						#try: defocus=ptcl["ctf"].defocus
+						#except: defocus=-1.0
+
+						# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
+						ptcl.transform(xf)		# anisotropy directly on the particle
+						ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
+						projc=proj.process("xform",{"transform":ptclxf})	# we transform the projection, not the particle (as in the original classification)
+
+						projmaskc=projmask.process("xform",{"transform":ptclxf})
+						ptcl.mult(projmaskc)
+
+
+						# Particle vs projection FSC
+						fsc = ptcl.calc_fourier_shell_correlation(projc)
+						third = len(fsc)/3
+						fsc=array(fsc[third:third*2])
+						esum+= sum(fsc[ring[0]:ring[1]])
+						
+						best=max(best,(esum,angle,ai))
+
+				fout.write("{}\t{}\t{}\n".format(angle,ai,esum))
+
+			print best
+		sys.exit(0)
+
+
+
 	if options.evalptclqual!=None:
+		print "Particle quality evaluation mode"
 		
 		try:
 			pathmx="{}/classmx_{:02d}_even.hdf".format(args[0],options.iter)
@@ -165,7 +323,10 @@ def main():
 					if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
 
 					# the particle itself
-					ptcl=EMData(cptcl[eo],j)
+					try: ptcl=EMData(cptcl[eo],j)
+					except:
+						print "Unable to read particle: {} ({})".format(cptcl[eo],j)
+						sys.exit(1)
 					try: defocus=ptcl["ctf"].defocus
 					except: defocus=-1.0
 
@@ -193,7 +354,7 @@ def main():
 ##					Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:-1],args[1])
 					#Util.save_data(xaxis[1],xaxis[1]-xaxis[0],fsc[1:-1],"ptclfsc/f{:04d}_{:1d}_{:06d}.txt".format(i,eo,j))
 
-	
+		print "Results in ptclfsc_{}.txt".format(args[0][-2:])
 		sys.exit(0)
 
 	if options.resolution:

@@ -23,7 +23,7 @@ cwd = os.getcwd()
 progname = os.path.basename(sys.argv[0])
 usage = """ prog [options]
 
-This program will extract the required information from an EMAN2 project and output it in EMX form. 
+This program will extract the required information from an EMAN2 project and output it in EMX form.
 
 """
 
@@ -36,6 +36,7 @@ parser.add_argument("--import_emx", type=str, help="Import emx information and c
 #parser.add_argument("--import_2d_alignment", type=str, help="Import particles and corresponding transformation information")
 parser.add_argument("--refinedefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refine the defocus by SNR optimization (+-0.1 micron from the current values, no astigmatism adjustment)")
 parser.add_argument("--refitdefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refit the defocus values (+-0.1 micron, astigmatism unchanged)")
+parser.add_argument("--writeimages",  action="store_true", help="If specified, micrographs and particles will be written to the emx directory.")
 parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
@@ -62,12 +63,12 @@ for option1 in optionList:
 <EMX version="1.0">
 <!--
 ##########################################################################
-#               EMX Exchange file 
+#               EMX Exchange file
 #               Produced by e2emx.py (EMAN2, version 2.11)
-# 
+#
 #  This is a EMX file.
 #
-#  Information on this file format is available at 
+#  Information on this file format is available at
 #  http://i2pc.cnb.csic.es/emx
 ##########################################################################
 -->\n""")
@@ -78,8 +79,9 @@ for option1 in optionList:
 			print "-----Writing Micrograph Information-----"
 			for image in os.listdir(cwd + "/micrographs"):
 				if not image[0] == '.':
-					s = "e2proc2d.py " + cwd + "/micrographs/" + image + " " + cwd + "/emx/" + base_name(image) + ".mrc --verbose=0"
-					call(s,shell=True)
+					if options.writeimages:
+						s = "e2proc2d.py " + cwd + "/micrographs/" + image + " " + cwd + "/emx/" + base_name(image) + ".mrc --verbose=0"
+						call(s,shell=True)
 					f.write("<micrograph fileName=\"" + base_name(image) + ".mrc\">\n")
 					micrograph = EMData()
 					micrograph.read_image(cwd + "/micrographs/" + image)
@@ -90,7 +92,7 @@ for option1 in optionList:
 					f.write("</micrograph>\n")
 			#f.write("  <acceleratingVoltage unit=\"kV\">" + str(particle['ctf'].to_dict()['voltage']) + "</acceleratingVoltage>\n")
 			#f.write("  <amplitudeContrast>" + str(particle['ctf'].to_dict()['ampcont']) + "</amplitudeContrast>\n")
-							
+
 			f.write("\n")
 		else:
 			temp_micrograph_list = []
@@ -106,25 +108,34 @@ for option1 in optionList:
 			print "-----Writing Particle Information-----"
 			for ptcl_by_micrograph in os.listdir(cwd + "/particles"):
 				if ptcl_by_micrograph.find("__") == -1 and ptcl_by_micrograph.find(".") != 0:
-					if os.path.exists(cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf"):
-						particle_stack = EMData().read_images(cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf")
-						s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf emx/" + ptcl_by_micrograph.replace(".hdf.",".mrcs")
-						call(s1,shell=True)
+					if os.path.exists(cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf","") + "__ctf_flip.hdf"):
+						particle_stack = EMData().read_images("{}/particles/{}__ctf_flip.hdf".format(cwd,ptcl_by_micrograph.replace(".hdf","")))
+						if options.writeimages:
+							s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf emx/" + ptcl_by_micrograph.replace(".hdf.",".mrcs")
+							call(s1,shell=True)
 					else:
 						particle_stack = EMData().read_images(cwd + "/particles/" + ptcl_by_micrograph)
-						s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph + " emx/" + ptcl_by_micrograph.replace(".hdf",".mrcs")
-						call(s1,shell=True)
-					#num_images = len(particle_stack)
-					
-					#print num_images
+						if options.writeimages:
+							s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph + " emx/" + ptcl_by_micrograph.replace(".hdf",".mrcs")
+							call(s1,shell=True)
+						#num_images = len(particle_stack)
+
+						#print num_images
 					index = 1
 					for particle in particle_stack:
-						f.write("<particle fileName=\"" + ptcl_by_micrograph.replace(".hdf",".mrcs") +"\" index=\"" + str(index) + "\">\n")
+						if options.writeimages:
+							f.write("<particle fileName=\"" + ptcl_by_micrograph.replace(".hdf",".mrcs") +"\" index=\"" + str(index) + "\">\n")
+						else:
+							f.write("<particle fileName=\"" + ptcl_by_micrograph +"\" index=\"" + str(index) + "\">\n")
 						f.write("  <micrograph fileName=\"" + base_name(ptcl_by_micrograph).split("_")[0] + ".mrc\"/>\n")
-						f.write("  <centerCoord>\n")
-						f.write("    <X unit=\"px\">" + str(particle['ptcl_source_coord'][0]) + "</X>\n")
-						f.write("    <Y unit=\"px\">" + str(particle['ptcl_source_coord'][1]) + "</Y>\n")
-						f.write("  </centerCoord>\n")
+						try:
+							test = particle['ptcl_source_coord'][0] # does this particle have this parameter?
+							f.write("  <centerCoord>\n")
+							f.write("    <X unit=\"px\">" + str(particle['ptcl_source_coord'][0]) + "</X>\n")
+							f.write("    <Y unit=\"px\">" + str(particle['ptcl_source_coord'][1]) + "</Y>\n")
+							f.write("  </centerCoord>\n")
+						except:
+							pass
 						f.write("  <boxSize>\n")
 						f.write("    <X unit=\"px\">" + str(particle['nx']) + "</X>\n")
 						f.write("    <Y unit=\"px\">" + str(particle['ny']) + "</Y>\n")
@@ -141,7 +152,7 @@ for option1 in optionList:
 						index = index + 1
 		f.write("</EMX>")
 		f.close()
-		
+
 	elif option1 == "import_emx":
 		found_per_particle = False
 		et = xml.etree.ElementTree.parse(options.import_emx)
@@ -272,7 +283,7 @@ for option1 in optionList:
 						centercoord = True
 					elif item2.tag == "fom":
 						particle_fom = item2.text # figure-of-merit (0->1)
-					
+
 					elif item2.tag == "transformationMatrix":
 						t = Transform([float(item2.find('t11').text),float(item2.find('t12').text),float(item2.find('t13').text),float(item2.find('t14').text),float(item2.find('t21').text),float(item2.find('t22').text),float(item2.find('t23').text),float(item2.find('t24').text),float(item2.find('t31').text),float(item2.find('t32').text),float(item2.find('t33').text),float(item2.find('t34').text)])
 						if item.find('micrograph').get('fileName') in transform_dict.keys():
@@ -314,20 +325,20 @@ for option1 in optionList:
 					else:
 						db['boxes'].append(tup)
 						db.setval("boxes",db['boxes'],deferupdate=True)
-		
-		if options.refinedefocus : 
+
+		if options.refinedefocus :
 			dfopt="--curdefocushint --refinebysnr"
 			if options.verbose>0 : print "CTF Refinement"
-		elif options.refitdefocus : 
+		elif options.refitdefocus :
 			dfopt="--curdefocushint"
 			if options.verbose>0 : print "CTF Refit"
-		else: 
+		else:
 			dfopt="--curdefocusfix"
 			if options.verbose>0 : print "Computing particle SNRs"
 		if not os.path.exists("particles"):
 			os.mkdir("particles")
 		for item in micro_dict.keys():
-			print "e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index']) 
+			print "e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index'])
 			launch_childprocess("e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index']))
 			launch_childprocess("e2ctf.py particles/{}_ptcls.hdf --voltage {} --cs {} --ac {} --apix {} --autofit --zerook --storeparm --astigmatism {} -v {}".format(base_name(item),micro_dict[item]['voltage'],micro_dict[item]['cs'],micro_dict[item]['ampcont'],micro_dict[item]['apix_x'],dfopt,options.verbose-1))
 		if twod_xform:
@@ -344,13 +355,13 @@ for option1 in optionList:
 					temp_images[i].write_image("particles/" + base_name(micrograph_xform) + "_ptcls.hdf",i)
 		if found_per_particle:
 			print "Per-particle defocus values or angles found. Please note that we do not support import of this information at the moment. Using the per-micrograph information provided"
-			
-print "e2emx.py finished!"	
-	
-	
-	
+
+print "e2emx.py finished!"
+
+
+
 	#------------------------Everything below here is legacy code for reference--------------------------------------------------
-	
+
 	#elif option1 == "import_box_coordinates":
 		#current_micrograph = ""
 		#et = xml.etree.ElementTree.parse(options.import_box_coordinates)
@@ -491,7 +502,7 @@ print "e2emx.py finished!"
 				#ctf.from_dict(pdbctf)
 				#pdb['ctf'] = ctf
 				#pdb.write_image("particles/"+base_name(part['particle_micrograph_filename'])+"_ptcls.hdf",int(part['index'])-1)
-	
+
 
 
 

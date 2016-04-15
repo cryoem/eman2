@@ -22785,7 +22785,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				ref_list[iref] -= stat[0]
 				Util.mul_scalar(ref_list[iref], 1.0/stat[1])
 				
-			if(Tracker["constants"]["PWadjustment"] !=""):
+			if(Tracker["constants"]["PWadjustment"] != None):
 				rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
 				ro = rops_table(ref_list[iref])
 				for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
