@@ -190,7 +190,7 @@ for scale in [0.02,0.04,0.07,0.1,0.5]:
 	locs=[int(floor(i*10+.5))/10.0 for i in locs]
 	print locs
 	if VERBOSE:
-		out=file("path_{:02d}.txt".format(int(1.0/scale),"w")
+		out=file("path_{:02d}.txt".format(int(1.0/scale)),"w")
 		for i in xrange(0,len(locs),2): out.write("%f\t%f\n"%(locs[i],locs[i+1]))
 	
 
