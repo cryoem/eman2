@@ -18661,7 +18661,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
 						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
 						rmin, rmax, fract,  npad, sym, user_func_name, \
-						pixel_size, debug, y_restrict, search_iter):
+						pixel_size, debug, y_restrict, search_iter, slowIO):
 
 	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1, directaligriddingconstrained
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
@@ -18862,8 +18862,15 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
 		k = k1
-
-	data = EMData.read_images(stack, list_of_particles)
+	for iproc in xrange(nproc):
+		if myid ==iproc:
+			data = EMData.read_images(stack, list_of_particles)
+			print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
+			if slowIO:  mpi_barrier(MPI_COMM_WORLD)
+		else:
+			if slowIO:  mpi_barrier(MPI_COMM_WORLD)
+			else:
+				print " it is going to read %6d images on process  : %4d"%(len(list_of_particles),myid)
 	nima = len(data)
 	data_nx = data[0].get_xsize()
 	data_ny = data[0].get_ysize()
