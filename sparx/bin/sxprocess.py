@@ -817,7 +817,7 @@ def main():
 		
 	elif options.adaptive_mask:
 		from utilities import get_im
-		from morphology import adaptive_mask, binarize, erosion, dilation
+		from morphology import adaptive_mask1, binarize, erosion, dilation
 		nsigma             = options.nsigma
 		ndilation          = options.ndilation
 		kernel_size        = options.kernel_size
@@ -839,7 +839,7 @@ def main():
 				for i in xrange(options.ne): mask3d = erosion(mask3d)
 				for i in xrange(options.nd): mask3d = dilation(mask3d)
 			else: 
-				mask3d = adaptive_mask(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
+				mask3d = adaptive_mask1(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
 			mask3d.write_image(mask_file_name)
 			
 	elif options.postprocess:
