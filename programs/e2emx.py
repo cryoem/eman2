@@ -114,12 +114,14 @@ for option1 in optionList:
 							s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf emx/" + ptcl_by_micrograph.replace(".hdf.",".mrcs")
 							call(s1,shell=True)
 					else:
+                                            try:
 						particle_stack = EMData().read_images(cwd + "/particles/" + ptcl_by_micrograph)
 						if options.writeimages:
 							s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph + " emx/" + ptcl_by_micrograph.replace(".hdf",".mrcs")
 							call(s1,shell=True)
 						#num_images = len(particle_stack)
-
+                                            except:
+                                                print(cwd+"/particles/"+ptcl_by_micrograph)
 						#print num_images
 					index = 1
 					for particle in particle_stack:
