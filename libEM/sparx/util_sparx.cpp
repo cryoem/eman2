@@ -18345,11 +18345,31 @@ void Util::mulclreal(EMData* img1, EMData* img2)
 }
 
 
+EMData* Util::mulnclreal(EMData* img1, EMData* img2)
+{
+	ENTERFUNC;
+	size_t nx=img2->get_xsize() ,ny=img2->get_ysize(), nz=img2->get_zsize();
+	EMData * img3   = img1->copy_head();
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+	float *img3_ptr  = img3->get_data();
+
+	for( size_t i = 0; i<(nx*ny*nz); i++) {
+		img3_ptr[2*i]   = img1_ptr[2*i]   * img2_ptr[i];
+		img3_ptr[2*i+1] = img1_ptr[2*i+1] * img2_ptr[i];
+	}
+
+	img3->update();
+	EXITFUNC;
+	return img3;
+}
+
+
 void Util::divabs(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
 	// img is real, img1 is complex
-	size_t nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t nx=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
 	size_t size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
@@ -18960,45 +18980,103 @@ void Util::div_filter(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
-#define data(ix,iy)          data[jx2 + (iy-1)*2*nx]
-#define dproj(ix,iy)         dproj[jx2 + (iy-1)*2*nx]
-#define dctfs(jx,iy)         dctfs[jx+(iy-1)*nx]
-float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, const vector<float>& bckgnoise )
+
+#define data(jx,iy)         data[jx+(iy-1)*nx]
+EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 {
 	ENTERFUNC;
-	int nb = bckgnoise.size();
-	//for(int i=0; i<nb; i++) cout<<i<<"    "<<bckgnoise[i]<<endl;
-	int nx=img->get_xsize(), ny=img->get_ysize();
-	nx /= 2;
-	if (nx != ctfs->get_xsize()) {
-		throw NullPointerException("incorrect image size");
-	}
-    float* data = img->get_data();
-    float* dproj = proj->get_data();
-    float* dctfs = ctfs->get_data();
+
     int nyp2 = ny/2;
+	int nx = nyp2+1;
+
+	int nb = bckgnoise.size();
+	EMData* power = new EMData();
+	power->set_size(nx,ny);
+	power->to_zero();
+
+    float* data = power->get_data();
+
     float argy, argx;
-    float edis = 0.0;
+	float rmax = nyp2 + 0.5;
 	for ( int iy = 1; iy <= ny; iy++) {
 		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
 		for ( int ix = 1; ix <= nx; ix++) {
 			int jx=ix-1; argx = argy + float(jx*jx);
 			float rf = sqrt( argx );
-			int  ir = int(rf);
-			float df = rf - float(ir);
-			float f = (bckgnoise[ir] + df * (bckgnoise[ir+1] - bckgnoise[ir]))/2.0;  // 2 on account of x^2/(2*s^2)
-			int jx2 = 2*jx;
-			edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*f;
-			edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*f;
+			if( rf <= rmax )  {
+				int  ir = int(rf);
+				float df = rf - float(ir);
+				data(jx,iy) = (bckgnoise[ir] + df * (bckgnoise[ir+1] - bckgnoise[ir]));///2.0;  // 2 on account of x^2/(2*s^2)
+			}
 		}
+	}
+	data[0] = 0.0f;
+	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+
+	power->update();
+	EXITFUNC;
+    return power;
+}
+
+EMData*  Util::unrollmask( int ny )
+{
+	ENTERFUNC;
+
+    int nyp2 = ny/2;
+	int nx = nyp2+1;
+
+	EMData* power = new EMData();
+	power->set_size(nx,ny);
+	power->to_one();
+
+    float* data = power->get_data();
+
+    float argy, argx;
+	float rmax = nyp2 + 0.5;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		for ( int ix = 1; ix <= nx; ix++) {
+			int jx=ix-1; argx = argy + float(jx*jx);
+			float rf = sqrt( argx );
+			if( rf > rmax )  {
+				int  ir = int(rf);
+				float df = rf - float(ir);
+				data(jx,iy) = 0.0f;
+			}
+		}
+	}
+	data[0] = 0.0f;
+	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+
+	power->update();
+	EXITFUNC;
+    return power;
+}
+#undef data
+
+float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
+{
+	ENTERFUNC;
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+    float* data = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfs = ctfs->get_data();
+	float *pbckgnoise = bckgnoise->get_data();
+
+	float edis = 0.0f;
+
+	for (size_t i=0;i<size/2;++i) {
+		int lol = i*2;
+		float p1 = data[lol]   - dctfs[i]*dproj[lol];
+		float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
+		edis += (p1*p1 + p2*p2)*pbckgnoise[i]*0.5;
 	}
 
     return edis;
 	EXITFUNC;
 }
-#undef data
-#undef dproj
-#undef dctfs
 
 
 void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq)
@@ -25051,7 +25129,7 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 }
 
 
-float Util::innerproduct(EMData* img, EMData* img1)
+float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 {
 	ENTERFUNC;
 	/* Exception Handle */
@@ -25065,7 +25143,51 @@ float Util::innerproduct(EMData* img, EMData* img1)
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	float ip = 0.0f;
-	for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+	if (mask == NULL) {
+		for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+	} else {
+		float *pmask = mask->get_data();
+		for (size_t i=0;i<size/2;++i) {
+
+			//if( pmask[i] > 0.5f)  {
+			int lol = i*2;
+			//	ip += img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1];
+			ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*pmask[i];
+			//}
+		}
+	}
+	return ip;
+}
+
+
+
+float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2, EMData* mask)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img || !img1) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img += img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float *img2_ptr = img2->get_data();
+	float ip = 0.0f;
+	if (mask == NULL) {
+		for (size_t i=0;i<size/2;++i) ip += (img_ptr[2*i]*img1_ptr[2*i]+img_ptr[2*i+1]*img1_ptr[2*i+1])*img2_ptr[i];
+	} else {
+		float *pmask = mask->get_data();
+		for (size_t i=0;i<size/2;++i) {
+			//if( pmask[i] > 0.5f)  {
+			int lol = i*2;
+				//ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*img2_ptr[i];
+			ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*img2_ptr[i]*pmask[i];
+			//}
+		}
+	}
 	return ip;
 }
 
