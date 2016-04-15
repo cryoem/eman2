@@ -20261,7 +20261,13 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		indcs.append([k,k1])
 		k = k1
 
-	data = EMData.read_images(stack, list_of_particles)
+	for i in xrange(number_of_proc):
+		if(myid == i):
+			data = EMData.read_images(stack, list_of_particles)
+			print_msg("Read %6d images on node  : %4d\n"%(len(list_of_particles),myid))
+			mpi_barrier(MPI_COMM_WORLD)
+		else:
+			mpi_barrier(MPI_COMM_WORLD)
 	nima = len(data)
 	data_nx = data[0].get_xsize()
 	data_ny = data[0].get_ysize()
@@ -22261,15 +22267,15 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
 					ref.set_value_at(0,0,0.0)
-					nrmref = sqrt(Util.innerproduct(ref, ref))
+					nrmref = sqrt(Util.innerproduct(ref, ref, None))
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fft(data[im]*mask2D)
 						tempx.set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, tempx)
+						peak = Util.innerproduct(ref, tempx, None)
 					else:
 						data[im].set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, data[im])
+						peak = Util.innerproduct(ref, data[im], None)
 						data[im].set_attr("is_complex",1)
 					peak /= nrmref
 
@@ -22618,7 +22624,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	user_func_name      = Tracker["constants"]["user_func"]
 	Tracker["lowpass"]  = Tracker["low_pass_filter"]
 	Tracker["falloff"]  = .1
-	if Tracker["constants"]["PWadjustment"]:
+	if Tracker["constants"]["PWadjustment"] !='':
 		Tracker["PWadjustment"] = Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
 	else:
 		Tracker["PWadjustment"] = None	
@@ -22785,7 +22791,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				ref_list[iref] -= stat[0]
 				Util.mul_scalar(ref_list[iref], 1.0/stat[1])
 				
-			if(Tracker["constants"]["PWadjustment"] !=""):
+			if(Tracker["constants"]["PWadjustment"] != ''):
 				rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
 				ro = rops_table(ref_list[iref])
 				for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
@@ -22909,15 +22915,15 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
 					ref.set_value_at(0,0,0.0)
-					nrmref = sqrt(Util.innerproduct(ref, ref))
+					nrmref = sqrt(Util.innerproduct(ref, ref, None))
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fft(data[im]*mask2D)
 						tempx.set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, tempx)
+						peak = Util.innerproduct(ref, tempx, None)
 					else:
 						data[im].set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, data[im])
+						peak = Util.innerproduct(ref, data[im], None)
 						data[im].set_attr("is_complex",1)
 					peak /= nrmref
 
@@ -23764,15 +23770,15 @@ def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker)
 					ref = filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
 					ref.set_value_at(0,0,0.0)
-					nrmref = sqrt(Util.innerproduct(ref, ref))
+					nrmref = sqrt(Util.innerproduct(ref, ref, None))
 					if(focus):
 						mask2D = binarize( prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
 						tempx = fft(data[im]*mask2D)
 						tempx.set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, tempx)
+						peak = Util.innerproduct(ref, tempx, None)
 					else:
 						data[im].set_attr("is_complex",0)
-						peak = Util.innerproduct(ref, data[im])
+						peak = Util.innerproduct(ref, data[im], None)
 						data[im].set_attr("is_complex",1)
 					peak /= nrmref
 

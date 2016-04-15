@@ -171,6 +171,13 @@ namespace EMAN
 		 */
 		static string str_to_lower(const string& s);
 
+		/** Replace any non-ASCII characters in a C string with a given character
+		 * @param str updated C string where non-ASCII characters to be replaced
+		 * @param max_size replace only in the first max_size characters of str
+		 * @param repl_char character to replace any non-ASCII characters in str
+		*/
+		static void replace_non_ascii(char *str, int max_size, char repl_char='?');
+
 		/** Safe string compare. It compares 's2' with the first N
 		 * characters of 's1', where N is the length of 's2'.
 		 *

@@ -61,7 +61,7 @@ def main():
 	parser.add_option("--group_size_for_unaccounted",  type="int",default=500,      help="size for unaccounted particles" )
 	parser.add_option("--chunkdir", type="string",               default='',        help="chunkdir for computing margin of error")
 	parser.add_option("--sausage",   action="store_true",        default=False,     help="way of filter volume")
-	parser.add_option("--PWadjustment", type="string",           default=None,      help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
+	parser.add_option("--PWadjustment", type="string",           default='',      help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
 	parser.add_option("--upscale", type="float",                 default=0.5,       help=" scaling parameter to adjust the power spectrum of EM volumes")
 	parser.add_option("--wn", type="int",                        default=0,         help="optimal window size for data processing")
 	(options, args) = parser.parse_args(arglist[1:])
@@ -763,6 +763,7 @@ def main():
 				except:
 					lowpass= 0.4
 					falloff= 0.1
+				print lowpass
 				lowpass=round(lowpass,4)
 				falloff=round(min(.1,falloff),4)
 				Tracker["lowpass"]= lowpass

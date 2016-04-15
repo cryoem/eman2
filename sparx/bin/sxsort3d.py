@@ -326,7 +326,7 @@ def main():
 				if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1)
 				mask_3D.write_image(Tracker["focus3D"])
 				del mask_3D
-		if Tracker["constants"]["PWadjustment"]:
+		if Tracker["constants"]["PWadjustment"] !='':
 			PW_dict              = {}
 			nxinit_pwsp          = sample_down_1D_curve(Tracker["constants"]["nxinit"],Tracker["constants"]["nnxo"],Tracker["constants"]["PWadjustment"])
 			Tracker["nxinit_PW"] = os.path.join(masterdir,"spwp.txt")
