@@ -18,9 +18,11 @@ DOFSC=0
 if len(argv)>2 :
 	normimg=EMData(argv[2])
 	print "Normalizing with ",argv[2]
+else: normimg=None
 
 data=EMData.read_images(argv[1])
-for i in data: i.mult(normimg)
+if normimg!=None:
+	for i in data: i.mult(normimg)
 n=len(data)
 nx=data[0]["nx"]
 ny=data[0]["ny"]
