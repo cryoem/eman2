@@ -23022,16 +23022,17 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 #define		quadpi	 	 	3.141592653589793238462643383279502884197 
 EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg)
 {  
+	ENTERFUNC;
 
    	int nx = img->get_xsize();
 	int ny = img->get_ysize();
 	int nz = img->get_zsize();
-	EMData* cmasked = new EMData();
-	cmasked->set_size( nx, ny, nz );
-	cmasked = img->copy_head();
+	EMData* cmasked = img->copy_head();
+	cmasked->to_zero();
 	int cz = nz/2;
 	int cy = ny/2;
 	int cx = nx/2;
+
 	int img_dim = img->get_ndim();
 	if (radius<0 ) {
 		switch (img_dim) {
@@ -23104,6 +23105,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 		}
 	}
 	cmasked->update();
+	EXITFUNC;
 	return cmasked;
 }
 #undef quadpi
