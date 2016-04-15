@@ -933,6 +933,8 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 					if (!pixel_at(xx,yy,zz,dt) || dt[2]==0) continue;
 
 //					printf("%f\t%f\t%f\t%f\t%f\n",dt[0],dt[1],dt[2],dt2[0],dt2[1]);
+//					float r=(float)Util::hypot_fast(x,y);
+//					if (r<6) continue; 
 					dot+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
 					vweight+=dt[2];
 					power+=(dt[0]*dt[0]+dt[1]*dt[1])*dt[2];
