@@ -23028,9 +23028,11 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	int ny = img->get_ysize();
 	int nz = img->get_zsize();
 	EMData* cmasked = img->copy_head();
+	cmasked->to_zero();
 	int cz = nz/2;
 	int cy = ny/2;
 	int cx = nx/2;
+
 	int img_dim = img->get_ndim();
 	if (radius<0 ) {
 		switch (img_dim) {
