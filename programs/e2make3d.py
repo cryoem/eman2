@@ -395,7 +395,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 
 		if verbose>0: print "Initializing the reconstructor ..."
 
-		if start : recon.setup(start,startweight)
+		if start : recon.setup_seed(start,startweight)
 		else : recon.setup()
 
 		if verbose>0:print "Inserting Slices (%d)"%len(data)

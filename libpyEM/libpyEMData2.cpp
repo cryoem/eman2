@@ -388,6 +388,23 @@ EMData *EMData_align_wrapper5(EMData &ths, const string & aligner_name, EMData *
 	return ret;
 }
 
+EMData *EMData_project_wrapper(EMData &ths,const std::string& name, const EMAN::Transform& xf) {
+	PyThreadState *_save = PyEval_SaveThread();
+	EMData *ret;
+
+	try {
+		ret=ths.project(name,xf);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
+	
+	return ret;
+}
+
 void EMData_process_inplace_wrapper1(EMData &ths,const string & processorname) {
 	PyThreadState *_save = PyEval_SaveThread();
 
@@ -600,7 +617,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("align", &EMData_align_wrapper4,args("aligner_name", "to_img", "params", "cmp_name"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
 	.def("align", &EMData_align_wrapper5,args("aligner_name", "to_img", "params", "cmp_name", "cmp_params"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
 	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::project, EMAN_EMData_project_overloads_1_2(args("projector_name", "params"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
-	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Transform&) )&EMAN::EMData::project, args("projector_name", "t3d"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nt3d - Transform object used to do projection.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.", return_value_policy< manage_new_object >() )
+	.def("project", &EMData_project_wrapper, args("projector_name", "t3d"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nt3d - Transform object used to do projection.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.", return_value_policy< manage_new_object >() )
+//	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Transform&) )&EMAN::EMData::project, args("projector_name", "t3d"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nt3d - Transform object used to do projection.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.", return_value_policy< manage_new_object >() )
 	.def("backproject", &EMAN::EMData::backproject, EMAN_EMData_backproject_overloads_1_2(args("peojector_name", "params"), "Calculate the backprojection of this image (stack) and return the result.\n \nprojector_name - Projection algorithm name. Only \"pawel\" and \"chao\" have been implemented now.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
 	.def("do_fft", &EMData_do_fft_wrapper, return_value_policy< manage_new_object >(), "return the fast fourier transform (FFT) image of the current\nimage. the current image is not changed. The result is in\nreal/imaginary format.\n \nreturn The FFT of the current image in real/imaginary format.")
 	.def("do_fft_inplace", &EMAN::EMData::do_fft_inplace, return_value_policy< reference_existing_object >(), "Do FFT inplace. And return the FFT image.\n \nreturn The FFT of the current image in real/imaginary format.")

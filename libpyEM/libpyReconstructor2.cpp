@@ -72,6 +72,13 @@ using namespace EMAN;
 		return ret;
  	}
 
+	int reconstructor_determine_slice_agreement(Reconstructor &self, EMData* slice, const Transform &euler, const float weight=1.0, bool sub=true) {
+		int ret;
+		Py_BEGIN_ALLOW_THREADS
+		ret=self.determine_slice_agreement(slice,euler,weight,sub);
+		Py_END_ALLOW_THREADS
+		return ret;
+	}
 
 struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 {
@@ -185,7 +192,8 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
 // 		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN_Reconstructor_Wrapper::insert_slice2)
 		.def("insert_slice", &reconstructor_insert_slice3)
 		.def("insert_slice", &reconstructor_insert_slice2)
-		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(EMAN::EMData* , const EMAN::Transform&, const float, bool))&EMAN::Reconstructor::determine_slice_agreement)
+		.def("determine_slice_agreement", &reconstructor_determine_slice_agreement)
+//		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(EMAN::EMData* , const EMAN::Transform&, const float, bool))&EMAN::Reconstructor::determine_slice_agreement)
         .def("preprocess_slice", (EMAN::EMData* (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN::Reconstructor::preprocess_slice, return_value_policy< manage_new_object >())
         .def("finish", (EMAN::EMData* (EMAN::Reconstructor::*)(bool))&EMAN::Reconstructor::finish, return_value_policy< manage_new_object >())
         .def("get_name", pure_virtual(&EMAN::Reconstructor::get_name))
