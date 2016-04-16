@@ -58,7 +58,7 @@ def main():
 	parser.add_option("--searchit",           type="int",            default= 1,                  help="Number of iterations to predict/search before doing reconstruction and updating of reference volume. Default is 1. If maxit=3 and searchit=2, then for each of the 3 inner iterations, 2 iterations of prediction/search will be performed before generating reconstruction.")
 	parser.add_option("--CTF",                action="store_true",   default=False,      		  help="CTF correction")
 	parser.add_option("--snr",                type="float",          default= 1.0,                help="Signal-to-Noise Ratio of the data")	
-	parser.add_option("--slowIO",             action="store_true",   default=False,               help="use slowIO version")
+	parser.add_option("--slowIO",             action="store_true",   default=False,               help="sequential reading data for each processor in MPI mode")
 	#parser.add_option("--fourvar",           action="store_true",   default=False,               help="compute Fourier variance")
 	parser.add_option("--apix",               type="float",			 default= -1.0,               help="Pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="Helical symmetry axial rise (Angstroms)")   
