@@ -18266,7 +18266,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=7
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
 
 def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search_rng, rng, ywobble, ystep, pixel_size, dp, dphi, fract, rmax, rmin, FindPsi = True, maskfile = None, \
-	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False, slowIO):
+	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False, slowIO = False):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local, proj_ali_incore_local_psi
 	from alignment       import ringwe, ang_n
