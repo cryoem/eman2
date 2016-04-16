@@ -141,12 +141,12 @@ def main():
 			txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, \
 				options.dp, options.dphi, options.psi_max, \
 			rminp, rmaxp, options.fract, options.npad,options.sym, options.function,\
-			options.apix, options.debug, y_restrict2, options.searchit, options.snakeknots)	
+			options.apix, options.debug, y_restrict2, options.searchit, options.snakeknots, slowIO.options)	
 		else:  localhelicon_MPI(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
 			txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, \
 				options.dp, options.dphi, options.psi_max, \
 			rminp, rmaxp, options.fract, options.npad,options.sym, options.function,\
-			options.apix, options.debug, y_restrict2, options.searchit)
+			options.apix, options.debug, y_restrict2, options.searchit, slowIO.options)
 		global_def.BATCH = False
 	
 		from mpi import mpi_finalize
