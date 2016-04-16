@@ -18266,7 +18266,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=7
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
 
 def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search_rng, rng, ywobble, ystep, pixel_size, dp, dphi, fract, rmax, rmin, FindPsi = True, maskfile = None, \
-	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False):
+	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False, slowIO = False):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local, proj_ali_incore_local_psi
 	from alignment       import ringwe, ang_n
@@ -18443,7 +18443,15 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
 		k = k1
-	data = EMData.read_images(stack, list_of_particles)
+		
+	if slowIO:
+		for iproc in xrange(number_of_proc):
+			if myid ==iproc:
+				data = EMData.read_images(stack, list_of_particles)
+				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
+			mpi_barrier(MPI_COMM_WORLD)
+	else: data = EMData.read_images(stack, list_of_particles)
+		
 	nima = len(data)
 	#print  " READ IMAGES ", myid,nima,nproc
 
@@ -18661,7 +18669,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
 						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
 						rmin, rmax, fract,  npad, sym, user_func_name, \
-						pixel_size, debug, y_restrict, search_iter):
+						pixel_size, debug, y_restrict, search_iter, slowIO):
 
 	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1, directaligriddingconstrained
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
@@ -18862,8 +18870,15 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
 		k = k1
-
-	data = EMData.read_images(stack, list_of_particles)
+		
+	if slowIO:
+		for iproc in xrange(number_of_proc):
+			if myid ==iproc:
+				data = EMData.read_images(stack, list_of_particles)
+				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
+			mpi_barrier(MPI_COMM_WORLD)
+	else: data = EMData.read_images(stack, list_of_particles)
+		
 	nima = len(data)
 	data_nx = data[0].get_xsize()
 	data_ny = data[0].get_ysize()
@@ -19154,7 +19169,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
 						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
 						rmin, rmax, fract,  npad, sym, user_func_name, \
-						pixel_size, debug, y_restrict, search_iter, snakeknots):
+						pixel_size, debug, y_restrict, search_iter, snakeknots, slowIO):
 	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1, directaligriddingconstrained, directaligriddingconstrained3dccf, alignment3Dsnake
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
@@ -19354,8 +19369,13 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
 		k = k1
-
-	data = EMData.read_images(stack, list_of_particles)
+	if slowIO:
+		for iproc in xrange(number_of_proc):
+			if myid ==iproc:
+				data = EMData.read_images(stack, list_of_particles)
+				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
+			mpi_barrier(MPI_COMM_WORLD)
+	else: data = EMData.read_images(stack, list_of_particles)	
 	nima = len(data)
 	data_nx = data[0].get_xsize()
 	data_ny = data[0].get_ysize()
@@ -19658,7 +19678,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 def localhelicon_MPInew_fullrefproj(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
 						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
 						rmin, rmax, fract,  npad, sym, user_func_name, \
-						pixel_size, debug, y_restrict, search_iter):
+						pixel_size, debug, y_restrict, search_iter, slowIO):
 
 	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
@@ -19860,7 +19880,13 @@ def localhelicon_MPInew_fullrefproj(stack, ref_vol, outdir, seg_ny, maskfile, ir
 		indcs.append([k,k1])
 		k = k1
 
-	data = EMData.read_images(stack, list_of_particles)
+	if slowIO:
+		for iproc in xrange(number_of_proc):
+			if myid ==iproc:
+				data = EMData.read_images(stack, list_of_particles)
+				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
+			mpi_barrier(MPI_COMM_WORLD)
+	else: data = EMData.read_images(stack, list_of_particles)
 	nima = len(data)
 	data_nx = data[0].get_xsize()
 	data_ny = data[0].get_ysize()
@@ -20058,7 +20084,7 @@ def localhelicon_MPInew_fullrefproj(stack, ref_vol, outdir, seg_ny, maskfile, ir
 def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
 						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
 						rmin, rmax, fract,  npad, sym, user_func_name, \
-						pixel_size, debug, y_restrict, search_iter):
+						pixel_size, debug, y_restrict, search_iter, slowIO):
 
 	from alignment      import Numrinit, prepare_refrings2, prepare_refrings
 	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local
@@ -20260,14 +20286,13 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
 		k = k1
-
-	for i in xrange(number_of_proc):
-		if(myid == i):
-			data = EMData.read_images(stack, list_of_particles)
-			print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
+	if slowIO:
+		for iproc in xrange(number_of_proc):
+			if myid ==iproc:
+				data = EMData.read_images(stack, list_of_particles)
+				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
 			mpi_barrier(MPI_COMM_WORLD)
-		else:
-			mpi_barrier(MPI_COMM_WORLD)
+	else: data = EMData.read_images(stack, list_of_particles)	
 	nima = len(data)
 	data_nx = data[0].get_xsize()
 	data_ny = data[0].get_ysize()
