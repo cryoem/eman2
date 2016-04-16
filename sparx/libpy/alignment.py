@@ -2068,6 +2068,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	at = time()
 	npsi = int(360./delta_psi)
 	nang = len(refang)
+	ndat = len(data)
 	newpar = [[i, [1.0e23,0.0], [] ] for i in xrange(ndat)]
 	#newpar = [[i, [1.0e23,1.0e23], []] for i in xrange(len(data))]
 	for i in xrange(nang):
@@ -2079,10 +2080,10 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
 			else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
 			temp.set_attr("is_complex",0)
-			nrmref = sqrt(Util.innerproduct(temp, temp))
+			nrmref = sqrt(Util.innerproduct(temp, temp, None))
 			for kl,emimage in enumerate(data):
 				for im in xrange(len(shifts)):
-					peak = Util.innerproduct(temp, emimage[im])
+					peak = Util.innerproduct(temp, emimage[im],None)
 					peak /= nrmref
 					#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
 					newpar[kl][-1].append([im + iangpsi, peak])
@@ -2100,7 +2101,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 					newpar[kl][1][1] += peak
 					#  Store the worst one
 					if( peak < newpar[kl][1][0]):  newpar[kl][1][0] = peak
-		for kl in xrange(len(data)):
+		for kl in xrange(ndat):
 			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]
 
@@ -2110,7 +2111,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	#mpi_barrier(MPI_COMM_WORLD)
 	#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
 	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
-	for kl in xrange(len(data)):
+	for kl in xrange(ndat):
 		newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 		newpar[kl][-1] = newpar[kl][-1][:1]
 	mpi_barrier(MPI_COMM_WORLD)

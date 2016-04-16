@@ -1513,6 +1513,7 @@ def adaptive_mask(vol, mass=2000, Pixel_size=3.6):
 	#Util.mul_img(vol, d)
 	#return threshold(vol, 0.0)
 
+"""
 def refine_with_mask(vol):
 	from filter     import filt_dilation
 	from utilities  import model_circle, model_gauss, drop_image
@@ -1543,7 +1544,7 @@ def refine_with_mask(vol):
 	#drop_image(mask,"m2.spi","s")
 	vol *= mask
 	return vol
-
+"""
 
 
 def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
