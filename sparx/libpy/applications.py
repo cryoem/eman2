@@ -18445,7 +18445,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		k = k1
 		
 	if slowIO:
-		for iproc in xrange(nproc):
+		for iproc in xrange(number_of_proc):
 			if myid ==iproc:
 				data = EMData.read_images(stack, list_of_particles)
 				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
@@ -18872,7 +18872,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 		k = k1
 		
 	if slowIO:
-		for iproc in xrange(nproc):
+		for iproc in xrange(number_of_proc):
 			if myid ==iproc:
 				data = EMData.read_images(stack, list_of_particles)
 				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
@@ -19370,7 +19370,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 		indcs.append([k,k1])
 		k = k1
 	if slowIO:
-		for iproc in xrange(nproc):
+		for iproc in xrange(number_of_proc):
 			if myid ==iproc:
 				data = EMData.read_images(stack, list_of_particles)
 				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
@@ -19881,7 +19881,7 @@ def localhelicon_MPInew_fullrefproj(stack, ref_vol, outdir, seg_ny, maskfile, ir
 		k = k1
 
 	if slowIO:
-		for iproc in xrange(nproc):
+		for iproc in xrange(number_of_proc):
 			if myid ==iproc:
 				data = EMData.read_images(stack, list_of_particles)
 				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
@@ -20287,7 +20287,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		indcs.append([k,k1])
 		k = k1
 	if slowIO:
-		for iproc in xrange(nproc):
+		for iproc in xrange(number_of_proc):
 			if myid ==iproc:
 				data = EMData.read_images(stack, list_of_particles)
 				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
