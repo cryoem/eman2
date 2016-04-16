@@ -23020,7 +23020,7 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 }
 		
 #define		quadpi	 	 	3.141592653589793238462643383279502884197 
-EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg)
+EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s)
 {  
 	ENTERFUNC;
 
@@ -23065,7 +23065,11 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				}
 			}
 		}
-	} else {
+	} else 
+	{
+	  if (s==999999.)
+	  
+	  {
 		float u =0.0f;
 		float s =0.0f;
 	  	for (int iz=0; iz<nz; iz++) {
@@ -23085,9 +23089,10 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 					}
 					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 				}
-			}
-		}
-		s /= u;
+			  }
+		   }
+		 s /= u;
+	   }
 		for (int iz=0; iz<nz; iz++) {
 			int tz =(iz-cz)*(iz-cz);
 			for (int iy=0; iy<ny; iy++) {

@@ -1121,7 +1121,7 @@ public:
 	static EMData* ctf_img_real(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
-	static EMData* cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg);
+	static EMData* cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s);
 
 	static inline int mono(int k1, int k2) {
 #ifdef _WIN32
