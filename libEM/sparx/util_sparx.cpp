@@ -23032,6 +23032,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	int cz = nz/2;
 	int cy = ny/2;
 	int cx = nx/2;
+	float s1;
 
 	int img_dim = img->get_ndim();
 	if (radius<0 ) {
@@ -23071,7 +23072,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	  
 	  {
 		float u =0.0f;
-		float s =0.0f;
+		s1 =0.0f;
 	  	for (int iz=0; iz<nz; iz++) {
 			int tz =(iz-cz)*(iz-cz);
 			for (int iy=0; iy<ny; iy++) {
@@ -23080,29 +23081,32 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
 					if (r>=radius_p) {	
 						u +=1.0f;
-						s +=(*img)(ix,iy,iz);
+						s1 +=(*img)(ix,iy,iz);
 					}
 					if ( r>=radius && r<radius_p) {
 						float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
 						u += temp;
-						s += (*img)(ix,iy,iz)*temp;
+						s1 += (*img)(ix,iy,iz)*temp;
 					}
 					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 				}
 			  }
 		   }
-		 s /= u;
+		 s1 /= u;
 	   }
+	else
+		s1=s;
+
 		for (int iz=0; iz<nz; iz++) {
 			int tz =(iz-cz)*(iz-cz);
 			for (int iy=0; iy<ny; iy++) {
 				int ty=tz+(iy-cy)*(iy-cy);
 				for (int ix=0; ix<nx; ix++) {
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
-					if (r>=radius_p)  (*cmasked) (ix,iy,iz) = s;
+					if (r>=radius_p)  (*cmasked) (ix,iy,iz) = s1;
 					if (r>=radius && r<radius_p) {
 						float temp = (0.5 + 0.5*cos(quadpi*(radius_p-r)/cosine_width));
-						(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s-(*img)(ix,iy,iz));
+						(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s1-(*img)(ix,iy,iz));
 					}
 					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 				}
