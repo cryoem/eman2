@@ -7816,7 +7816,7 @@ EMData *EMData::FourInterpol(int nxn, int nyn, int nzn, bool RetReal) {
 	return ret;
 }
 
-EMData *EMData::FourTruncate(int nxn, int nyn, int nzn, bool RetReal) {
+EMData *EMData::FourTruncate(int nxn, int nyn, int nzn, bool RetReal, bool normalize) {
 
 	int lsd, lsdn, inx, iny, inz;
 	int i, j, k;
@@ -7839,11 +7839,6 @@ EMData *EMData::FourTruncate(int nxn, int nyn, int nzn, bool RetReal) {
 	EMData *ret = this->copy_head();
 	ret->set_size(lsdn, nyn, nzn);
 	float *fout = ret->get_data();
-//  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
-//  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
-	//float  sq2 = std::sqrt(2.0f);
-	float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
-	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nx - nxn;  iny = ny - nyn;  inz = nz - nzn;
 	for (k=1; k<=nzn/2+1; k++) for (j=1; j<=nyn/2+1; j++) for (i=1; i<=lsdn; i++) fout(i,j,k)=fint(i,j,k);
 	if(nyn>1) {
@@ -7891,6 +7886,13 @@ EMData *EMData::FourTruncate(int nxn, int nyn, int nzn, bool RetReal) {
 			}
 		}
 	}*/
+//  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
+//  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
+	//float  sq2 = std::sqrt(2.0f);
+	if( normalize )  {
+		float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
+		for (i = 0; i < lsdn*nyn*nzn; i++)  fout[i] *= anorm;
+	}
 	ret->set_complex(true);
 	ret->set_ri(1);
 	ret->set_fftpad(true);

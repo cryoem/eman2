@@ -455,11 +455,11 @@ def fpol(image, nnx, nny=1, nnz=1, RetReal = True):
 	
 	return  image.FourInterpol(nnx, nny, nnz, RetReal)
 
-def fdecimate(image, nnx, nny=1, nnz=1, RetReal = True):
+def fdecimate(image, nnx, nny=1, nnz=1, RetReal = True, normalize = True):
 	"""
 		Decimate image by truncating its Fourier transform
 	"""
-	return  image.FourTruncate(nnx, nny, nnz, RetReal)	
+	return  image.FourTruncate(nnx, nny, nnz, RetReal, normalize)
     
 def fshift(e, delx=0, dely=0, delz=0):
 	"""
