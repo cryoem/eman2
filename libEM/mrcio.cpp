@@ -542,7 +542,7 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 
 	for (int i = 0; i < feimrch.nlabl; i++) {
 		sprintf(label, "MRC.label%d", i);
-		dict[string(label)] = string(feimrch.labl[i], 80);
+		dict[string(label)] = string(feimrch.labl[i], MRC_LABEL_SIZE);
 	}
 
 	/* Read extended image header by specified image index */
@@ -943,9 +943,9 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		for (size_t ipair = num_pairs; ipair >= 1; ipair--) {
 			unsigned int v = (unsigned int) cdata[ipair-1];
 			ipt--;
-			rdata[ipt] = (v >> 4); // v / 16;
+			rdata[ipt] = (float)(v >> 4); // v / 16;
 			ipt--;
-			rdata[ipt] = (v & 15); // v % 16;
+			rdata[ipt] = (float)(v & 15); // v % 16;
 		}
 	}
 	else if (mrch.mode == MRC_UCHAR) {
@@ -1022,9 +1022,9 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		nz = mrch.nz;
 	}
 	else {
-		nx = area->get_width();
-		ny = area->get_height();
-		nz = area->get_depth();
+		nx = (int)(area->get_width());
+		ny = (int)(area->get_height());
+		nz = (int)(area->get_depth());
 	}
 
 	bool got_one_image = (nz > 1);
@@ -1380,8 +1380,8 @@ void MrcIO::update_stats(void * data, size_t size)
 
 	mrch.amin  = min;
 	mrch.amax  = max;
-	mrch.amean = mean;
-	mrch.rms   = sigma;
+	mrch.amean = (float) mean;
+	mrch.rms   = (float) sigma;
 	
 //	MrcHeader mrch2 = mrch;
 //
