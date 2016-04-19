@@ -19053,7 +19053,7 @@ EMData*  Util::unrollmask( int ny )
     return power;
 }
 #undef data
-
+/*  This is linear version
 float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 {
 	ENTERFUNC;
@@ -19077,6 +19077,65 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
     return edis;
 	EXITFUNC;
 }
+*/
+
+
+#define data(ix,iy)          data[jx2 + (iy-1)*2*nx]
+#define dproj(ix,iy)         dproj[jx2 + (iy-1)*2*nx]
+#define dctfs(jx,iy)         dctfs[jx+(iy-1)*nx]
+#define bckg(jx,iy)          bckg[jx+(iy-1)*nx]
+float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
+{
+	ENTERFUNC;
+	int nx=img->get_xsize(), ny=img->get_ysize();
+	nx /= 2;
+	if (nx != ctfs->get_xsize()) {
+		throw NullPointerException("incorrect image size");
+	}
+    float* data  = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfs = ctfs->get_data();
+    float* bckg  = bckgnoise->get_data();
+    int nyp2 = ny/2;
+	int inc = nyp2+nyp2/2;  // add safety
+	float* ret = new float[inc+1];
+	float* n1  = new float[inc+1];
+	for (int i = 0; i <= inc; i++) {
+		ret[i] = 0.0f; n1[i] = 0.0f;
+	}
+
+
+    float argy, argx;
+    float edis = 0.0;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		for ( int ix = 1; ix <= nx; ix++) {
+			int jx=ix-1; argx = argy + float(jx*jx);
+			int rf = Util::round(sqrt( argx ));
+			int jx2 = 2*jx;
+			float  qtr = dctfs(jx,iy)*dproj(jx2,iy);
+			float  qti = dctfs(jx,iy)*dproj(jx2+1,iy);
+			float  prod1 = data(jx2,iy) * qtr + data(jx2+1,iy) * qti;
+			float  prod2 = qtr*qtr + qti*qti;
+			float  normim = data(jx2,iy)*data(jx2,iy) + data(jx2+1,iy)+data(jx2+1,iy);  // precalculate
+			edis += (normim - 2*prod1 + prod2)*bckg(jx,iy);
+			// edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*bckg(jx,iy);   //real
+			// edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*bckg(jx,iy); // imaginary
+			if( bckg(jx,iy) > 0.0 )  {
+				ret[rf] += prod1;
+				n1[rf]  += prod2;
+			}
+		}
+	}
+
+    return edis;
+	EXITFUNC;
+}
+#undef data
+#undef dproj
+#undef dctfs
+#undef bckg
+
 
 
 void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq)
