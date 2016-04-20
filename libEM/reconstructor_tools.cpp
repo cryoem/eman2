@@ -35,6 +35,8 @@
 
 
 #include <cstring>
+#include <math.h>
+#include <gsl/gsl_sf_bessel.h>
 #include "reconstructor_tools.h"
 
 using namespace EMAN;
@@ -47,6 +49,7 @@ const string FourierInserter3DMode5::NAME = "gauss_5";
 const string FourierInserter3DMode6::NAME = "gauss_5_slow";
 const string FourierInserter3DMode7::NAME = "hypergeom_5";
 const string FourierInserter3DMode8::NAME = "experimental";
+const string FourierInserter3DMode9::NAME = "kaiser_bessel";
 
 template <> Factory < FourierPixelInserter3D >::Factory()
 {
@@ -58,6 +61,7 @@ template <> Factory < FourierPixelInserter3D >::Factory()
 	force_add<FourierInserter3DMode6>();
 	force_add<FourierInserter3DMode7>();
 //	force_add(&FourierInserter3DMode8::NEW);
+	force_add<FourierInserter3DMode9>();
 }
 
 
@@ -87,7 +91,7 @@ void FourierPixelInserter3D::init()
 	nx2=nx/2-1;
 	ny2=ny/2;
 	nz2=nz/2;
-	
+
 	if (data->has_attr("subvolume_x0") && data->has_attr("subvolume_full_nx")) {
 		subx0=data->get_attr("subvolume_x0");
 		suby0=data->get_attr("subvolume_y0");
@@ -112,7 +116,7 @@ bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, cons
 	else off=data->add_complex_at(x0,y0,z0,subx0,suby0,subz0,fullnx,fullny,fullnz,dt*weight);
 	if (static_cast<int>(off)!=nxyz) norm[off/2]+=weight;
 	else return false;
-	
+
 	return true;
 }
 
@@ -121,7 +125,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 	int x0 = (int) floor(xx);
 	int y0 = (int) floor(yy);
 	int z0 = (int) floor(zz);
-	
+
 	// note that subnx differs in the inserters. In the reconstructors it subx0 is 0 for the full volume. Here it is -1
 	if (subx0<0) {			// normal full reconstruction
 		if (x0<-nx2-1 || y0<-ny2-1 || z0<-nz2-1 || x0>nx2 || y0>ny2 || z0>nz2 ) return false;
@@ -135,7 +139,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 // 		if (y1>ny2) y1=ny2;
 // 		if (z0<-nz2) z0=-nz2;
 // 		if (z1>nz2) z1=nz2;
-		
+
 //		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
 		float h=1.0f/EMConsts::I2G;
 		//size_t idx;
@@ -149,7 +153,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 					gg = Util::fast_exp(-r *h)*weight;
 //					gg = Util::fast_exp(-r / EMConsts::I2G)*weight;
 //					gg = sqrt(Util::fast_exp(-r / EMConsts::I2G))*weight;
-					
+
 					size_t off;
 					off=data->add_complex_at_fast(i,j,k,dt*gg);
 //					off=data->add_complex_at(i,j,k,dt*gg);
@@ -158,7 +162,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 			}
 		}
 		return true;
-	} 
+	}
 	else {					// for subvolumes, not optimized yet
 		//size_t idx;
 		float r, gg;
@@ -176,7 +180,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 				}
 			}
 		}
-		
+
 		if (pc>0)  return true;
 		return false;
 	}
@@ -188,7 +192,7 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 	int x0 = (int) floor(xx-.5);
 	int y0 = (int) floor(yy-.5);
 	int z0 = (int) floor(zz-.5);
-	
+
 	if (subx0<0) {			// normal full reconstruction
 		if (x0<-nx2-2 || y0<-ny2-2 || z0<-nz2-2 || x0>nx2+1 || y0>ny2+1 || z0>nz2+1 ) return false;
 
@@ -202,7 +206,7 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 		if (y1>ny2) y1=ny2;
 		if (z0<-nz2) z0=-nz2;
 		if (z1>nz2) z1=nz2;
-		
+
 //		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
 //		float h=2.0/EMConsts::I3G;
 		float h=32.0f/((8.0f+Util::hypot3(xx,yy,zz))*EMConsts::I3G);
@@ -219,7 +223,7 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 					gg = Util::fast_exp(-r *h)*w;
 //					gg = Util::fast_exp(-r / EMConsts::I2G)*weight;
 //					gg = sqrt(Util::fast_exp(-r / EMConsts::I2G))*weight;
-					
+
 					size_t off;
 					off=data->add_complex_at_fast(i,j,k,dt*gg);
 					norm[off/2]+=gg;
@@ -238,7 +242,7 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 	int x0 = (int) floor(xx-2.5);
 	int y0 = (int) floor(yy-2.5);
 	int z0 = (int) floor(zz-2.5);
-	
+
 	if (subx0<0) {			// normal full reconstruction
 		if (x0<-nx2-4 || y0<-ny2-4 || z0<-nz2-4 || x0>nx2+3 || y0>ny2+3 || z0>nz2+3 ) return false;
 
@@ -252,13 +256,13 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 		if (y1>ny2) y1=ny2;
 		if (z0<-nz2) z0=-nz2;
 		if (z1>nz2) z1=nz2;
-		
+
 //		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
 		float h=1.0f/EMConsts::I5G;
 		float w=weight;
-		
+
 		// Not sure exactly what this was doing? Using wider Gaussian at high radius?
-// 		float h=32.0f/((8.0f+Util::hypot3(xx,yy,zz))*EMConsts::I3G); 
+// 		float h=32.0f/((8.0f+Util::hypot3(xx,yy,zz))*EMConsts::I3G);
 // 		float w=weight/(1.0f+6.0f*Util::fast_exp(-h)+12*Util::fast_exp(-h*2.0f)+8*Util::fast_exp(-h*3.0f)+
 // 			6.0f*Util::fast_exp(-h*4.0f)+24.0f*Util::fast_exp(-h*5.0f)+24.0f*Util::fast_exp(-h*6.0f)+12.0f*Util::fast_exp(-h*8.0f)+
 // 			24.0f*Util::fast_exp(-h*9.0f)+8.0f*Util::fast_exp(-h*12.0f));	// approx normalization so higer radii aren't upweighted relative to lower due to wider Gaussian
@@ -273,13 +277,15 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 					gg = Util::fast_exp(-r *h);
 //					gg = Util::fast_exp(-r / EMConsts::I2G)*weight;
 //					gg = sqrt(Util::fast_exp(-r / EMConsts::I2G))*weight;
-					
+
 					size_t off;
 					off=data->add_complex_at_fast(i,j,k,dt*gg*w);
-					norm[off/2]+=gg*w;
+//					norm[off/2]+=gg*w;		// This would use a Gaussian WEIGHT with square kernel, can't seem to get it to work better tho
+					norm[off/2]+=w;			// This would use a Gaussian KERNEL rather than WEIGHT with square kernel, can't seem to get it to work better tho
+
 #ifdef RECONDEBUG
 					std::complex<double> v1=dt*gg*w,v2=gg*w;
-					
+
 					if (k<5 && j<5&& i<5&& k>=0 && j>=0 && i>=0) {
 						int idx=i*2+j*10+k*50;
 						ddata[idx]+=v1.real();
@@ -288,7 +294,6 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 						dnorm[idx+1]+=v2.imag();
 					}
 #endif
-//					norm[off/2]+=w;			// This would use a Gaussian kernel rather than just Gaussian weight with square kernel, can't seem to get it to work better tho
 				}
 			}
 		}
@@ -426,21 +431,77 @@ bool FourierInserter3DMode8::insert_pixel(const float&, const float&, const floa
 // 				if (idx >= sizeW) throw;
 // 				float residual = dist/mDFreq - (int)(dist/mDFreq);
 // 				if ( fabs(residual) > 1) throw;
-// 
+//
 // 				float factor = W[idx]*(1.0f-residual)+W[idx+1]*residual*weight;
-// 
+//
 // 				size_t k = z*nx*ny + y*nx + 2*x;
-// 
+//
 // // 				float c = Util::agauss(1, x-x0,y-y0,z-z0, EMConsts::I2G);
 // 				rdata[k] += fq[0]*factor;
 // 				rdata[k+1] += fq[1]*factor;
-// 
-// 
+//
+//
 // 				norm[k/2] += weight;
-// 
+//
 // 			}
 // 		}
 // 	}
 
 	return true;
+}
+
+
+bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt,const float& weight)
+{
+	int N = 5; // kernel width
+
+	int x0 = (int) floor(xx-N/2);
+	int y0 = (int) floor(yy-N/2);
+	int z0 = (int) floor(zz-N/2);
+
+	if (subx0<0) {		// normal full reconstruction
+		if (x0<-nx2-4 || y0<-ny2-4 || z0<-nz2-4 || x0>nx2+3 || y0>ny2+3 || z0>nz2+3 ) return false;
+
+		// no error checking on add_complex_fast, so we need to be careful here
+		int x1=x0+N;
+		int y1=y0+N;
+		int z1=z0+N;
+
+		if (x0<-nx2) x0=-nx2;
+		if (x1>nx2) x1=nx2;
+		if (y0<-ny2) y0=-ny2;
+		if (y1>ny2) y1=ny2;
+		if (z0<-nz2) z0=-nz2;
+		if (z1>nz2) z1=nz2;
+
+		float w=weight;
+		float a=8.0; // non-negative real number that determines the shape of the window. In the frequency domain, it determines the trade-off between main-lobe width and side lobe level
+
+		float r, kb;
+		for (int k = z0 ; k <= z1; k++) {
+			for (int j = y0 ; j <= y1; j++) {
+				for (int i = x0; i <= x1; i ++) {
+					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+					kb = gsl_sf_bessel_i0_scaled(M_PI * a * pow(1-pow(((2*r)/(nx2-1))-1,2),0.5)) / gsl_sf_bessel_i0_scaled(M_PI * a);
+					size_t off;
+					off = data->add_complex_at_fast(i,j,k,dt*kb*w);
+					norm[off/2]+=w*kb;
+#ifdef RECONDEBUG
+					std::complex<double> v1=dt*kb*w,v2=kb*w;
+
+					if (k<5 && j<5 && i<5 && k>=0 && j>=0 && i>=0) {
+						int idx=i*2+j*10+k*50;
+						ddata[idx]+=v1.real();
+						ddata[idx+1]+=v1.imag();
+						dnorm[idx]+=v2.real();
+						dnorm[idx+1]+=v2.imag();
+					}
+#endif
+				}
+			}
+		}
+		return true;
+	}
+	printf("region writing not supported in mode 9\n");
+	return false;
 }
