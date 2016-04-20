@@ -19053,7 +19053,8 @@ EMData*  Util::unrollmask( int ny )
     return power;
 }
 #undef data
-/*  This is linear version
+
+//  This is linear version
 float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 {
 	ENTERFUNC;
@@ -19077,14 +19078,15 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
     return edis;
 	EXITFUNC;
 }
-*/
+
 
 
 #define data(ix,iy)          data[jx2 + (iy-1)*2*nx]
 #define dproj(ix,iy)         dproj[jx2 + (iy-1)*2*nx]
 #define dctfs(jx,iy)         dctfs[jx+(iy-1)*nx]
 #define bckg(jx,iy)          bckg[jx+(iy-1)*nx]
-float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
+#define nrm(rf,kt)           nrm[rf+(kt-1)*inc]
+float Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas)
 {
 	ENTERFUNC;
 	int nx=img->get_xsize(), ny=img->get_ysize();
@@ -19097,13 +19099,11 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
     float* dctfs = ctfs->get_data();
     float* bckg  = bckgnoise->get_data();
     int nyp2 = ny/2;
-	int inc = nyp2+nyp2/2;  // add safety
-	float* ret = new float[inc+1];
-	float* n1  = new float[inc+1];
-	for (int i = 0; i <= inc; i++) {
-		ret[i] = 0.0f; n1[i] = 0.0f;
+	int inc = normas->get_xsize();
+	if (2 != normas->get_ysize()) {
+		throw NullPointerException("incorrect normas size in sqedfull");
 	}
-
+	float* nrm = normas->get_data();
 
     float argy, argx;
     float edis = 0.0;
@@ -19122,8 +19122,8 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 			// edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*bckg(jx,iy);   //real
 			// edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*bckg(jx,iy); // imaginary
 			if( bckg(jx,iy) > 0.0 )  {
-				ret[rf] += prod1;
-				n1[rf]  += prod2;
+				nrm(rf,0) += prod1;
+				nrm(rf,1) += prod2;
 			}
 		}
 	}
@@ -19135,6 +19135,7 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 #undef dproj
 #undef dctfs
 #undef bckg
+#undef nrm
 
 
 
