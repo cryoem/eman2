@@ -475,7 +475,7 @@ bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, cons
 		if (z1>nz2) z1=nz2;
 
 		float w=weight;
-		float a=8.0; // non-negative real number that determines the shape of the window. In the frequency domain, it determines the trade-off between main-lobe width and side lobe level
+		float a=0.1; // non-negative real number that determines the shape of the window. In the frequency domain, it determines the trade-off between main-lobe width and side lobe level
 
 		float r, kb;
 		for (int k = z0 ; k <= z1; k++) {
