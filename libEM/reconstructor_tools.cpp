@@ -453,7 +453,7 @@ bool FourierInserter3DMode8::insert_pixel(const float&, const float&, const floa
 
 bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt,const float& weight)
 {
-	int N = 5; // kernel width
+	int N = 5;		// kernel width
 
 	int x0 = (int) floor(xx-N/2);
 	int y0 = (int) floor(yy-N/2);
@@ -475,7 +475,7 @@ bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, cons
 		if (z1>nz2) z1=nz2;
 
 		float w=weight;
-		float a=0.1; // non-negative real number that determines the shape of the window. In the frequency domain, it determines the trade-off between main-lobe width and side lobe level
+		float a=10.0; // non-negative real number that determines the shape of the window. In the frequency domain, it determines the trade-off between main-lobe width and side lobe level
 
 		float r, kb;
 		for (int k = z0 ; k <= z1; k++) {
@@ -489,7 +489,7 @@ bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, cons
 #ifdef RECONDEBUG
 					std::complex<double> v1=dt*kb*w,v2=kb*w;
 
-					if (k<5 && j<5 && i<5 && k>=0 && j>=0 && i>=0) {
+					if (k<N && j<N && i<N && k>=0 && j>=0 && i>=0) {
 						int idx=i*2+j*10+k*50;
 						ddata[idx]+=v1.real();
 						ddata[idx+1]+=v1.imag();
