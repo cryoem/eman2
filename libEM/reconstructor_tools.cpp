@@ -475,14 +475,16 @@ bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, cons
 		if (z1>nz2) z1=nz2;
 
 		float w=weight;
-		float a=10.0; // non-negative real number that determines the shape of the window. In the frequency domain, it determines the trade-off between main-lobe width and side lobe level
+		float a=10.0; // non-negative real number that determines the shape of the window.
+						  // In the frequency domain, it determines the trade-off between main-lobe width and side lobe level
 
 		float r, kb;
 		for (int k = z0 ; k <= z1; k++) {
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
-					kb = gsl_sf_bessel_i0_scaled(M_PI * a * pow(1-pow(((2*r)/(nx2-1))-1,2),0.5)) / gsl_sf_bessel_i0_scaled(M_PI * a);
+					kb = gsl_sf_bessel_i0_scaled(M_PI * a * sqrt(1.0f - Util::square(((2*r)/(nx2-1))-1))) /
+					     gsl_sf_bessel_i0_scaled(M_PI * a);
 					size_t off;
 					off = data->add_complex_at_fast(i,j,k,dt*kb*w);
 					norm[off/2]+=w*kb;
