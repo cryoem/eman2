@@ -453,6 +453,45 @@ namespace EMAN
 		int nimg;
 	};
 
+		/** CtfWtAverager
+     */
+	class CtfWtFiltAverager:public Averager
+	{
+	  public:
+	    CtfWtFiltAverager();
+
+		void add_image( EMData * image);
+		EMData * finish();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Average without CTF correction but with CTF weighting and automatic filter estimated from the data. Smoothed SNR can still have large uncertainty, so weighting by envelope-free CTF may provide more uniform results.";
+		}
+
+		static Averager *NEW()
+		{
+			return new CtfWtFiltAverager();
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+//			outfile = params["outfile"];
+		}
+		
+		static const string NAME;
+		
+	  protected:
+		EMData *results[2];		// even/odd split for filter estimate
+		EMData *ctfsum[2];		// contains the summed SNR for the average
+		int nimg[2],eo;
+	};
+
 
 	/** CtfCWautoAverager averages the images with CTF correction with a Wiener filter.
      *  The Weiner filter is estimated directly from the data.
@@ -472,7 +511,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "Averaging with automatic CTF correction and SNR weight. No B-factor correction (as this is best done in 3-D). Does not require a structure factor, but only works with EMAN2's CTF model";
+			return "Averaging with automatic CTF correction and SNR weight. No B-factor correction (as this is best done in 3-D). Bases estimated SSNR on CTF parameters, so requires EMAN2 CTF parameters.";
 		}
 
 		static Averager *NEW()
