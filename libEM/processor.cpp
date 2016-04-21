@@ -249,6 +249,7 @@ const string ModelEMCylinderProcessor::NAME = "math.model_em_cylinder";
 const string ApplyPolynomialProfileToHelix::NAME = "math.poly_radial_profile";
 const string BinarySkeletonizerProcessor::NAME="gorgon.binary_skel";
 const string MirrorProcessor::NAME = "xform.mirror";
+const string ReverseProcessor::NAME = "xform.reverse";
 const string NewLowpassTopHatProcessor::NAME = "filter.lowpass.tophat";
 const string NewHighpassTopHatProcessor::NAME = "filter.highpass.tophat";
 const string NewBandpassTopHatProcessor::NAME = "filter.bandpass.tophat";
@@ -438,6 +439,7 @@ template <> Factory < Processor >::Factory()
 	force_add<FlipProcessor>();
 	force_add<TransposeProcessor>();
 	force_add<MirrorProcessor>();
+	force_add<ReverseProcessor>();
 
 	force_add<AddNoiseProcessor>();
 	force_add<AddSigmaNoiseProcessor>();
@@ -9453,6 +9455,76 @@ void RadialProcessor::process_inplace(EMData * image)
 
 				(*image)(ix-1,iy-1,iz-1) *= f;
 			}
+		}
+	}
+
+	image->update();
+}
+
+void ReverseProcessor::process_inplace(EMData *image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	string axis = (const char*)params["axis"];
+
+	float* data = image->EMData::get_data();
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	size_t nxy = nx*ny;
+
+	int x_start = 0;
+	int y_start = 0;
+	int z_start = 0;
+
+	if (axis == "x" || axis == "X") {
+		int offset = 0;
+		for (int iz = 0; iz < nz; iz++){
+			for (int iy = 0; iy < ny; iy++) {
+				offset = nx*iy + nxy*iz;
+				reverse(&data[x_start+offset],&data[offset+nx]);
+			}
+		}
+	} else if (axis == "y" || axis == "Y") {
+		float *tmp = new float[nx];
+		int nhalf = ny/2;
+		size_t beg = 0;
+		for (int iz = 0; iz < nz; iz++) {
+			beg = iz*nxy;
+			for (int iy = y_start; iy < nhalf; iy++) {
+				memcpy(tmp, &data[beg+iy*nx], nx*sizeof(float));
+				memcpy(&data[beg+iy*nx], &data[beg+(y_start+ny-iy-1)*nx], nx*sizeof(float));
+				memcpy(&data[beg+(y_start+ny-iy-1)*nx], tmp, nx*sizeof(float));
+			}
+		}
+		delete[] tmp;
+	} else if (axis == "z" || axis == "Z") {
+		if(1-z_start) {
+			int nhalf = nz/2;
+			float *tmp = new float[nxy];
+			for(int iz = 0;iz<nhalf;iz++){
+				memcpy(tmp,&data[iz*nxy],nxy*sizeof(float));
+				memcpy(&data[iz*nxy],&data[(nz-iz-1)*nxy],nxy*sizeof(float));
+				memcpy(&data[(nz-iz-1)*nxy],tmp,nxy*sizeof(float));
+			}
+			delete[] tmp;
+		} else {
+			float *tmp = new float[nx];
+			int nhalf = nz/2;
+			size_t beg = 0;
+			for (int iy = 0; iy < ny; iy++) {
+				beg = iy*nx;
+				for (int iz = z_start; iz < nhalf; iz++) {
+					memcpy(tmp, &data[beg+ iz*nxy], nx*sizeof(float));
+					memcpy(&data[beg+iz*nxy], &data[beg+(nz-iz-1+z_start)*nxy], nx*sizeof(float));
+					memcpy(&data[beg+(nz-iz-1+z_start)*nxy], tmp, nx*sizeof(float));
+				}
+			}
+			delete[] tmp;
 		}
 	}
 

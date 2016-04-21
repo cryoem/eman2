@@ -120,6 +120,10 @@ void MrcIO::init()
 			throw ImageReadException(filename, "invalid MRC");
 		}
 
+		for (int ilabel = 0; ilabel < mrch.nlabels; ilabel++) {
+			Util::replace_non_ascii(mrch.labels[ilabel], MRC_LABEL_SIZE);
+		}
+
 		is_big_endian = ByteOrder::is_data_big_endian(&mrch.nz);
 
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
@@ -411,10 +415,11 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	dict["sigma"] = mrch.rms;
 	dict["MRC.nlabels"] = mrch.nlabels;
 
+	char label[32];
+
 	for (int i = 0; i < mrch.nlabels; i++) {
-		char label[32];
 		sprintf(label, "MRC.label%d", i);
-		dict[string(label)] = string(mrch.labels[i],80);
+		dict[string(label)] = string(mrch.labels[i], MRC_LABEL_SIZE);
 	}
 
 	EMAN1Ctf ctf_;
@@ -438,7 +443,6 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 		dict["MRC.nxstart"] = mrch.nystart;
 		dict["MRC.nystart"] = mrch.nxstart;
 	}
-
 
 	EXITFUNC;
 
@@ -523,8 +527,9 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	dict["FEIMRC.vd1"] = feimrch.vd1;
 	dict["FEIMRC.vd2"] = feimrch.vd2;
 
+	char label[32];
+
 	for(int i=0; i<9; i++) {	// 9 tilt angles
-		char label[32];
 		sprintf(label, "MRC.tiltangles%d", i);
 		dict[string(label)] = feimrch.tiltangles[i];
 	}
@@ -536,9 +541,8 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	dict["FEIMRC.nlabl"] = feimrch.nlabl;
 
 	for (int i = 0; i < feimrch.nlabl; i++) {
-		char label[32];
 		sprintf(label, "MRC.label%d", i);
-		dict[string(label)] = string(feimrch.labl[i], 80);
+		dict[string(label)] = string(feimrch.labl[i], MRC_LABEL_SIZE);
 	}
 
 	/* Read extended image header by specified image index */
@@ -629,13 +633,13 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 			opposite_endian = true;
 		}
 
-#if 0
+/*
 		if (new_mode != mrch.mode) {
 			LOGERR("cannot write to different mode file %s", filename.c_str());
 
 			return 1;
 		}
-#endif
+*/
 
 		portable_fseek(mrcfile, 0, SEEK_SET);
 	}
@@ -647,7 +651,8 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.nxstart = mrch.nystart = mrch.nzstart = 0;
 	}
 
-	if (nz <= 1 && dict.has_key("xform.projection") && ! dict.has_key("UCSF.chimera")) {
+	if (nz <= 1 && dict.has_key("xform.projection") &&
+					 ! dict.has_key("UCSF.chimera")) {
 		Transform * t = dict["xform.projection"];
 		Dict d = t->get_params("eman");
 //		mrch.alpha   = d["alpha"];
@@ -659,7 +664,8 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 		if (t) {delete t; t = NULL;}
 	}
-	else if (nz > 1 && dict.has_key("xform.align3d") && ! dict.has_key("UCSF.chimera")) {
+	else if (nz > 1 && dict.has_key("xform.align3d") &&
+						  ! dict.has_key("UCSF.chimera")) {
 		Transform * t = dict["xform.align3d"];
 		Dict d = t->get_params("eman");
 //		mrch.alpha   = d["alpha"];
@@ -688,36 +694,27 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.nlabels = dict["MRC.nlabels"];
 	}
 
-	for (int i = 0; i < MRC_NUM_LABELS; i++) {
-		char label[32];
+	char label[32];
 
-#ifdef _WIN32
-		_snprintf(label,31, "MRC.label%d", i);
-#else
-		 snprintf(label,31, "MRC.label%d", i);
-#endif	// _WIN32
+	for (int i = 0; i < MRC_NUM_LABELS; i++) {
+		sprintf(label, "MRC.label%d", i);
 
 		if (dict.has_key(label)) {
-#ifdef _WIN32
-			_snprintf(&mrch.labels[i][0],80, "%s", (const char *) dict[label]);
-#else
-			 snprintf(&mrch.labels[i][0],80, "%s", (const char *) dict[label]);
-#endif	// _WIN32
+			strncpy(mrch.labels[i], (const char *) dict[label], MRC_LABEL_SIZE);
+			mrch.labels[i][MRC_LABEL_SIZE-1] = 0;
+
+			Util::replace_non_ascii(mrch.labels[i], MRC_LABEL_SIZE);
 
 			mrch.nlabels = i + 1;
 		}
 	}
 
 	if (mrch.nlabels < (MRC_NUM_LABELS - 1)) {
-#ifdef _WIN32
-		_snprintf(&mrch.labels[mrch.nlabels][0],79, "EMAN %s", Util::get_time_label().c_str());
-#else
-		 snprintf(&mrch.labels[mrch.nlabels][0],79, "EMAN %s", Util::get_time_label().c_str());
-#endif	// _WIN32
+		strcpy(mrch.labels[mrch.nlabels], "EMAN ");
+		strcat(mrch.labels[mrch.nlabels], Util::get_time_label().c_str());
 		mrch.nlabels++;
 	}
 
-	mrch.labels[mrch.nlabels][0] = '\0';
 	mrch.mode = new_mode;
 
 	if (is_complex_mode()) {
@@ -946,9 +943,9 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		for (size_t ipair = num_pairs; ipair >= 1; ipair--) {
 			unsigned int v = (unsigned int) cdata[ipair-1];
 			ipt--;
-			rdata[ipt] = (v >> 4); // v / 16;
+			rdata[ipt] = (float)(v >> 4); // v / 16;
 			ipt--;
-			rdata[ipt] = (v & 15); // v % 16;
+			rdata[ipt] = (float)(v & 15); // v % 16;
 		}
 	}
 	else if (mrch.mode == MRC_UCHAR) {
@@ -1025,9 +1022,9 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		nz = mrch.nz;
 	}
 	else {
-		nx = area->get_width();
-		ny = area->get_height();
-		nz = area->get_depth();
+		nx = (int)(area->get_width());
+		ny = (int)(area->get_height());
+		nz = (int)(area->get_depth());
 	}
 
 	bool got_one_image = (nz > 1);
@@ -1383,8 +1380,8 @@ void MrcIO::update_stats(void * data, size_t size)
 
 	mrch.amin  = min;
 	mrch.amax  = max;
-	mrch.amean = mean;
-	mrch.rms   = sigma;
+	mrch.amean = (float) mean;
+	mrch.rms   = (float) sigma;
 	
 //	MrcHeader mrch2 = mrch;
 //
@@ -1432,7 +1429,7 @@ int MrcIO::read_ctf(Ctf & ctf, int)
 	size_t n = strlen(CTF_MAGIC);
 	int err = 1;
 
-	if (strncmp(&mrch.labels[0][0], CTF_MAGIC, n) == 0) {
+	if (strncmp(mrch.labels[0], CTF_MAGIC, n) == 0) {
 		err = ctf.from_string(string(&mrch.labels[0][n]));
 	}
 
@@ -1449,11 +1446,9 @@ void MrcIO::write_ctf(const Ctf & ctf, int)
 
 	string ctf_str = ctf.to_string();
 
-#ifdef _WIN32
-	_snprintf(&mrch.labels[0][0],80, "%s%s", CTF_MAGIC, ctf_str.c_str());
-#else
-	 snprintf(&mrch.labels[0][0],80, "%s%s", CTF_MAGIC, ctf_str.c_str());
-#endif	//_WIN32
+	strcpy (mrch.labels[0], CTF_MAGIC);
+	strncat(mrch.labels[0], ctf_str.c_str(),
+			  MRC_LABEL_SIZE - strlen(CTF_MAGIC) - 1);
 
 	rewind(mrcfile);
 

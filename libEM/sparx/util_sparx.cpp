@@ -19054,6 +19054,7 @@ EMData*  Util::unrollmask( int ny )
 }
 #undef data
 
+//  This is linear version
 float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 {
 	ENTERFUNC;
@@ -19077,6 +19078,65 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
     return edis;
 	EXITFUNC;
 }
+
+
+
+#define data(ix,iy)          data[jx2 + (iy-1)*2*nx]
+#define dproj(ix,iy)         dproj[jx2 + (iy-1)*2*nx]
+#define dctfs(jx,iy)         dctfs[jx+(iy-1)*nx]
+#define bckg(jx,iy)          bckg[jx+(iy-1)*nx]
+#define nrm(rf,kt)           nrm[rf+(kt-1)*inc]
+float Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas)
+{
+	ENTERFUNC;
+	int nx=img->get_xsize(), ny=img->get_ysize();
+	nx /= 2;
+	if (nx != ctfs->get_xsize()) {
+		throw NullPointerException("incorrect image size");
+	}
+    float* data  = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfs = ctfs->get_data();
+    float* bckg  = bckgnoise->get_data();
+    int nyp2 = ny/2;
+	int inc = normas->get_xsize();
+	if (2 != normas->get_ysize()) {
+		throw NullPointerException("incorrect normas size in sqedfull");
+	}
+	float* nrm = normas->get_data();
+
+    float argy, argx;
+    float edis = 0.0;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		for ( int ix = 1; ix <= nx; ix++) {
+			int jx=ix-1; argx = argy + float(jx*jx);
+			int rf = Util::round(sqrt( argx ));
+			int jx2 = 2*jx;
+			float  qtr = dctfs(jx,iy)*dproj(jx2,iy);
+			float  qti = dctfs(jx,iy)*dproj(jx2+1,iy);
+			float  prod1 = data(jx2,iy) * qtr + data(jx2+1,iy) * qti;
+			float  prod2 = qtr*qtr + qti*qti;
+			float  normim = data(jx2,iy)*data(jx2,iy) + data(jx2+1,iy)+data(jx2+1,iy);  // precalculate
+			edis += (normim - 2*prod1 + prod2)*bckg(jx,iy);
+			// edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*bckg(jx,iy);   //real
+			// edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*bckg(jx,iy); // imaginary
+			if( bckg(jx,iy) > 0.0 )  {
+				nrm(rf,0) += prod1;
+				nrm(rf,1) += prod2;
+			}
+		}
+	}
+
+    return edis;
+	EXITFUNC;
+}
+#undef data
+#undef dproj
+#undef dctfs
+#undef bckg
+#undef nrm
+
 
 
 void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq)
@@ -23020,18 +23080,20 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 }
 		
 #define		quadpi	 	 	3.141592653589793238462643383279502884197 
-EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg)
+EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s)
 {  
+	ENTERFUNC;
 
    	int nx = img->get_xsize();
 	int ny = img->get_ysize();
 	int nz = img->get_zsize();
-	EMData* cmasked = new EMData();
-	cmasked->set_size( nx, ny, nz );
-	cmasked = img->copy_head();
+	EMData* cmasked = img->copy_head();
+	cmasked->to_zero();
 	int cz = nz/2;
 	int cy = ny/2;
 	int cx = nx/2;
+	float s1;
+
 	int img_dim = img->get_ndim();
 	if (radius<0 ) {
 		switch (img_dim) {
@@ -23064,9 +23126,13 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				}
 			}
 		}
-	} else {
+	} else 
+	{
+	  if (s==999999.)
+	  
+	  {
 		float u =0.0f;
-		float s =0.0f;
+		s1 =0.0f;
 	  	for (int iz=0; iz<nz; iz++) {
 			int tz =(iz-cz)*(iz-cz);
 			for (int iy=0; iy<ny; iy++) {
@@ -23075,28 +23141,32 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
 					if (r>=radius_p) {	
 						u +=1.0f;
-						s +=(*img)(ix,iy,iz);
+						s1 +=(*img)(ix,iy,iz);
 					}
 					if ( r>=radius && r<radius_p) {
 						float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
 						u += temp;
-						s += (*img)(ix,iy,iz)*temp;
+						s1 += (*img)(ix,iy,iz)*temp;
 					}
 					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 				}
-			}
-		}
-		s /= u;
+			  }
+		   }
+		 s1 /= u;
+	   }
+	else
+		s1=s;
+
 		for (int iz=0; iz<nz; iz++) {
 			int tz =(iz-cz)*(iz-cz);
 			for (int iy=0; iy<ny; iy++) {
 				int ty=tz+(iy-cy)*(iy-cy);
 				for (int ix=0; ix<nx; ix++) {
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
-					if (r>=radius_p)  (*cmasked) (ix,iy,iz) = s;
+					if (r>=radius_p)  (*cmasked) (ix,iy,iz) = s1;
 					if (r>=radius && r<radius_p) {
 						float temp = (0.5 + 0.5*cos(quadpi*(radius_p-r)/cosine_width));
-						(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s-(*img)(ix,iy,iz));
+						(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s1-(*img)(ix,iy,iz));
 					}
 					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 				}
@@ -23104,6 +23174,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 		}
 	}
 	cmasked->update();
+	EXITFUNC;
 	return cmasked;
 }
 #undef quadpi

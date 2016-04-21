@@ -1341,13 +1341,14 @@ def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_st
 	#mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
 	return mask
 
-def cosinemask(im, radius = -1, cosine_width = 5, bckg = None):
+def cosinemask(im, radius = -1, cosine_width = 5, bckg = None, s=999999.0):
 	"""
 		Apply mask with a cosine fall-off setting values outside of radius_cosine_width to the average computed outside.
 		The fall-off begins from pixel at a distance radius from the center,
 		i.e., mask(radius) = 1 and mask(radius+cosine_width)=0.
+		if s=999999.0 using average else program takes in user-provided s  
 	"""
-	return  Util.cosinemask(im, radius, cosine_width, bckg)
+	return  Util.cosinemask(im, radius, cosine_width, bckg, s)
 '''
 	from utilities import model_blank
 	from math import cos, sqrt, pi
@@ -1512,6 +1513,7 @@ def adaptive_mask(vol, mass=2000, Pixel_size=3.6):
 	#Util.mul_img(vol, d)
 	#return threshold(vol, 0.0)
 
+"""
 def refine_with_mask(vol):
 	from filter     import filt_dilation
 	from utilities  import model_circle, model_gauss, drop_image
@@ -1542,7 +1544,7 @@ def refine_with_mask(vol):
 	#drop_image(mask,"m2.spi","s")
 	vol *= mask
 	return vol
-
+"""
 
 
 def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
