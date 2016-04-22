@@ -40,6 +40,7 @@ import sys
 import datetime
 from numpy import array
 import traceback
+import json
 
 try:
 	import numpy as np
@@ -60,8 +61,10 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement the refine_xx folder name. This may be used to identify bad particles.")
+	parser.add_argument("--ptcltrace", default=False, action="store_true", help="This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison.")
 	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
 	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
+	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
 	parser.add_argument("--timing", default=False, action="store_true", help="report on how long each step of the refinement process took during the first iteration of each run")
 	parser.add_argument("--resolution", default=False, action="store_true", help="generates a resolution and convergence plot for a single refinement run.")
 	parser.add_argument("--resolution_all", default=False, action="store_true", help="generates resolution plot with the last iteration of all refine_xx directories")
@@ -87,7 +90,9 @@ def main():
 		jsparm=js_open_dict(args[0]+"/0_refine_parms.json")
 		
 		if options.iter==None: 
-			try: options.iter=int(jsparm["last_map"].split("_")[-1][:2])
+			try: 
+				options.iter=int(jsparm["last_map"].split("_")[-1][:2])
+				options.sym=jsparm["sym"]
 			except:
 				print "Could not find a completed iteration in ",args[0]
 				sys.exit(1)
@@ -244,10 +249,8 @@ def main():
 
 			print best
 		sys.exit(0)
-
-
-
-	if options.evalptclqual!=None:
+	
+	if options.evalptclqual:
 		print "Particle quality evaluation mode"
 		
 		try:
@@ -512,8 +515,126 @@ def main():
 				print "\t%s\t%1.2f hours\t%s"%(difftime(ttime),ttime/3600.0,hist[n][0])
 			
 			n+=1
-			
 
+	if options.ptcltrace:
+		print "Particle trace mode"
+		
+		if not os.path.isdir(args[0]):
+			print "You must provide the name of a refinement directory (e.g. refine_XX)"
+			sys.exit(1)
+		
+		refine_xx = os.listdir(args[0])
+				
+		cmx_even = []
+		cmx_odd = []
+		projs_even = []
+		projs_odd = []
+		
+		for f in refine_xx:
+			if "classmx" in f:
+				if "even" in f: 
+					cmx_even.append("{}/{}".format(args[0],f))
+				elif "odd" in f: 
+					cmx_odd.append("{}/{}".format(args[0],f))
+				else:
+					print("Something is funny about {}. You should investigate this.".format(f))
+					sys.exit(1)
+			elif "projections" in f:
+				if "even" in f: 
+					projs_even.append("{}/{}".format(args[0],f))
+				elif "odd" in f: 
+					projs_odd.append("{}/{}".format(args[0],f))
+				else:
+					print("ERROR: Something is funny about {}. You should investigate this.".format(f))
+					sys.exit(1)
+		
+		if len(cmx_even) != len(projs_even) or len(cmx_odd) != len(projs_odd):
+			print("At a minimum, there must be an equal number of classmx and projection files present to perform this analysis")
+			print("Although not required, it is recommended that all generated classmx and projections files be present in the specified refinement directory.")
+			sys.exit(1)
+		
+		if options.verbose: print("Examining Euler angles from even/odd classes and projections within {}.".format(args[0]))
+		
+		# read all classification matrix data into a list of lists
+		cls_even = [EMData.read_images(c) for c in cmx_even] 
+		cls_odd = [EMData.read_images(c) for c in cmx_odd]
+		
+		# particles are along the y axis, so the y height of the first image is the number of particles
+		nptcl_even = cls_even[0][0]['ny'] 
+		nptcl_odd = cls_odd[0][0]['ny']
+		
+		for i in cls_even[1:]:
+			if i[0]["ny"]!=nptcl_even:
+				print "ERROR: classmx files must have exactly the same number of particles"
+				sys.exit(1)
+		
+		for i in cls_odd[1:]:
+			if i[0]["ny"]!=nptcl_odd:
+				print "ERROR: classmx files must have exactly the same number of particles"
+				sys.exit(1)
+	
+		# Create a list of lists of Transforms representing the orientations of the reference projections 
+		# for each classmx file and try to get projection orientation information for each class
+		
+		clsort_even=[]
+		for c,p in zip(cmx_even,projs_even): 
+			ncls=EMUtil.get_image_count(p)
+			orts = []
+			for i in xrange(ncls):
+				orts.append( EMData(p,i,True)["xform.projection"] )
+			clsort_even.append(orts)
+		
+		clsort_odd=[]
+		for c,p in zip(cmx_odd,projs_odd):
+			ncls=EMUtil.get_image_count(p)
+			orts = []
+			for i in xrange(ncls):
+				orts.append( EMData(p,i,True)["xform.projection"] )
+			clsort_odd.append(orts)
+		
+		# Get a list of Transform objects to move to each other asymmetric unit in the symmetry group
+		syms=parsesym( str(options.sym) ).get_syms()
+		
+		s = args[0].split("refine_")[-1]
+		even_trace = "ptcltrace_{}_even.txt".format(s)
+		odd_trace = "ptcltrace_{}_odd.txt".format(s)
+		
+		with open(even_trace,"w") as outf: 
+			for p in xrange(nptcl_even):
+				outf.write("{}".format(p))
+				for i in xrange(1,len(cmx_even)):
+					if options.verbose: sys.stdout.write('\reven:\t{}/{}'.format(i,len(cmx_even)-1))
+					ort1=clsort_even[i-1][int(cls_even[i-1][0][0,p])]	# orientation of particle in first classmx
+					ort2=clsort_even[i][int(cls_even[i][0][0,p])]		# orientation of particle in second classmx
+					diffs=[] # make a list of the rotation angle to each other symmetry-related point
+					for t in syms:
+						ort2p=ort2*t
+						diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
+					diff=min(diffs)	# The angular error for the best-agreeing orientation
+					shift=abs(cls_even[i][0][0,p]-cls_even[i-1][0][0,p])
+					outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort1.get_rotation("eman")["alt"],ort1.get_rotation("eman")["phi"],ort1.get_rotation("eman")["az"],cls_even[i-1][0][0,p]))
+					outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort2.get_rotation("eman")["alt"],ort2.get_rotation("eman")["phi"],ort2.get_rotation("eman")["az"],cls_even[i][0][0,p]))
+					outf.write("{0:.0f}\t{0:.4f}\n".format(shift,diff))
+		
+		if options.verbose: print("")
+		with open(odd_trace,"w") as outf:
+			for p in xrange(nptcl_odd):
+				outf.write("{}".format(p))
+				for i in xrange(1,len(cmx_odd)):
+					if options.verbose: sys.stdout.write('\rodd:\t{}/{}'.format(i,len(cmx_odd)-1))
+					ort1=clsort_odd[i-1][int(cls_odd[i-1][0][0,p])]	# orientation of particle in first classmx
+					ort2=clsort_odd[i][int(cls_odd[i][0][0,p])]		# orientation of particle in second classmx
+					diffs=[] # make a list of the rotation angle to each other symmetry-related point
+					for t in syms: 
+						ort2p=ort2*t
+						diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
+					diff=min(diffs)	# The angular error for the best-agreeing orientation
+					shift=abs(cls_even[i][0][0,p]-cls_even[i-1][0][0,p])
+					outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort1.get_rotation("eman")["alt"],ort1.get_rotation("eman")["phi"],ort1.get_rotation("eman")["az"],cls_odd[i-1][0][0,p]))
+					outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort2.get_rotation("eman")["alt"],ort2.get_rotation("eman")["phi"],ort2.get_rotation("eman")["az"],cls_odd[i][0][0,p]))
+					outf.write("{0:.0f}\t{0:.4f}\n".format(shift,diff))
+		
+		print("\nResults stored in {} & {}.".format(even_trace, odd_trace))
 		
 if __name__ == "__main__":
     main()
