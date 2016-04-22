@@ -500,7 +500,7 @@ bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, cons
 // imprecise KBD kernel/window
 bool FourierInserter3DMode10::insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt,const float& weight)
 {
-	int N = 8;		// kernel width
+	const int N = 8;		// kernel width
 
 	int x0 = (int) floor(xx-N/2);
 	int y0 = (int) floor(yy-N/2);
@@ -540,7 +540,7 @@ bool FourierInserter3DMode10::insert_pixel(const float& xx, const float& yy, con
 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
 					kb = 0.0;
 					//quasi radial...true cumulative radial weights are much more time consuming to code.
-					for (int p = 0; p <= std::min(r,(float) N/2); p++) {
+					for (int p = 0; p <= Util::get_min(r,(float) N/2); p++) {
 						kb += ws[p];
 					}
 					dn = sqrt(kb/wm);
