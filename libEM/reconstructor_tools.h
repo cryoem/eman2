@@ -444,7 +444,7 @@ namespace EMAN
 
 			virtual string get_desc() const
 			{
-				return "Kaiser-bessel kernel 5x5x5";
+				return "Kaiser-bessel (KB) kernel 8x8x8";
 			}
 
 			static const string NAME;
@@ -453,6 +453,40 @@ namespace EMAN
 		// Disallow copy and assignment by default
 			FourierInserter3DMode9( const FourierInserter3DMode9& );
 			FourierInserter3DMode9& operator=( const FourierInserter3DMode9& );
+	};
+
+	/** FourierPixelInserter3DMode10  - encapsulates "method 10" for inserting a 2D Fourier slice into a 3D volume
+	 * See comments in FourierPixelInserter3D for explanations
+	 */
+	class FourierInserter3DMode10 : public FourierPixelInserter3D
+	{
+		public:
+			FourierInserter3DMode10() {}
+			virtual ~FourierInserter3DMode10() {}
+
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0);
+
+			static FourierPixelInserter3D *NEW()
+			{
+				return new FourierInserter3DMode10();
+			}
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual string get_desc() const
+			{
+				return "(imprecise) Kaiser-bessel derived (KBD) kernel 8x8x8";
+			}
+
+			static const string NAME;
+
+		private:
+		// Disallow copy and assignment by default
+			FourierInserter3DMode10( const FourierInserter3DMode10& );
+			FourierInserter3DMode10& operator=( const FourierInserter3DMode10& );
 	};
 
 	// Factory for FourierPixelInserter3D

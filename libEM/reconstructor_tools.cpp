@@ -50,6 +50,7 @@ const string FourierInserter3DMode6::NAME = "gauss_5_slow";
 const string FourierInserter3DMode7::NAME = "hypergeom_5";
 const string FourierInserter3DMode8::NAME = "experimental";
 const string FourierInserter3DMode9::NAME = "kaiser_bessel";
+const string FourierInserter3DMode10::NAME = "kaiser_bessel_derived";
 
 template <> Factory < FourierPixelInserter3D >::Factory()
 {
@@ -62,6 +63,7 @@ template <> Factory < FourierPixelInserter3D >::Factory()
 	force_add<FourierInserter3DMode7>();
 //	force_add(&FourierInserter3DMode8::NEW);
 	force_add<FourierInserter3DMode9>();
+	force_add<FourierInserter3DMode10>();
 }
 
 
@@ -450,17 +452,16 @@ bool FourierInserter3DMode8::insert_pixel(const float&, const float&, const floa
 	return true;
 }
 
-
 bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt,const float& weight)
 {
-	int N = 5;		// kernel width
+	int N = 8;		// kernel width
 
 	int x0 = (int) floor(xx-N/2);
 	int y0 = (int) floor(yy-N/2);
 	int z0 = (int) floor(zz-N/2);
 
 	if (subx0<0) {		// normal full reconstruction
-		if (x0<-nx2-4 || y0<-ny2-4 || z0<-nz2-4 || x0>nx2+3 || y0>ny2+3 || z0>nz2+3 ) return false;
+		if (x0<-nx2-7 || y0<-ny2-7 || z0<-nz2-7 || x0>nx2+6 || y0>ny2+6 || z0>nz2+6 ) return false;
 
 		// no error checking on add_complex_fast, so we need to be careful here
 		int x1=x0+N;
@@ -475,35 +476,81 @@ bool FourierInserter3DMode9::insert_pixel(const float& xx, const float& yy, cons
 		if (z1>nz2) z1=nz2;
 
 		float w=weight;
-		float a=10.0; // non-negative real number that determines the shape of the window.
-						  // In the frequency domain, it determines the trade-off between main-lobe width and side lobe level
-
+		float a=10.0;
 		float r, kb;
+
 		for (int k = z0 ; k <= z1; k++) {
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
-					kb = gsl_sf_bessel_i0_scaled(M_PI * a * sqrt(1.0f - Util::square(((2*r)/(nx2-1))-1))) /
+					kb = gsl_sf_bessel_i0_scaled(M_PI * a * sqrt(1.0f - Util::square((r/(nx2-1))-1))) /
 					     gsl_sf_bessel_i0_scaled(M_PI * a);
 					size_t off;
 					off = data->add_complex_at_fast(i,j,k,dt*kb*w);
-					norm[off/2]+=w*kb;
-#ifdef RECONDEBUG
-					std::complex<double> v1=dt*kb*w,v2=kb*w;
-
-					if (k<N && j<N && i<N && k>=0 && j>=0 && i>=0) {
-						int idx=i*2+j*10+k*50;
-						ddata[idx]+=v1.real();
-						ddata[idx+1]+=v1.imag();
-						dnorm[idx]+=v2.real();
-						dnorm[idx+1]+=v2.imag();
-					}
-#endif
+					norm[off/2]+=w;
 				}
 			}
 		}
 		return true;
 	}
 	printf("region writing not supported in mode 9\n");
+	return false;
+}
+
+// imprecise KBD kernel/window
+bool FourierInserter3DMode10::insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt,const float& weight)
+{
+	int N = 8;		// kernel width
+
+	int x0 = (int) floor(xx-N/2);
+	int y0 = (int) floor(yy-N/2);
+	int z0 = (int) floor(zz-N/2);
+
+	if (subx0<0) {		// normal full reconstruction
+		if (x0<-nx2-7 || y0<-ny2-7 || z0<-nz2-7 || x0>nx2+6 || y0>ny2+6 || z0>nz2+6 ) return false;
+
+		// no error checking on add_complex_fast, so we need to be careful here
+		int x1=x0+N;
+		int y1=y0+N;
+		int z1=z0+N;
+
+		if (x0<-nx2) x0=-nx2;
+		if (x1>nx2) x1=nx2;
+		if (y0<-ny2) y0=-ny2;
+		if (y1>ny2) y1=ny2;
+		if (z0<-nz2) z0=-nz2;
+		if (z1>nz2) z1=nz2;
+
+		float w=weight;
+		float ws [ N/2 + 1 ];
+		float alpha = 32.0;
+		float wm = 0.0;
+
+		// compute 1D weights... not exactly correct, but somewhat close.
+		for ( int p = 0; p <= N/2; p++) {
+			double tmp = gsl_sf_bessel_i0_scaled(M_PI * alpha * sqrt(1.0f - Util::square((((N/2)+p)/(N-1))-1))) / gsl_sf_bessel_i0_scaled(M_PI * alpha);
+			ws[p] = (float) tmp;
+			wm += (float) tmp;
+		}
+
+		float r, kb, dn;
+		for (int k = z0 ; k <= z1; k++) {
+			for (int j = y0 ; j <= y1; j++) {
+				for (int i = x0; i <= x1; i ++) {
+					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+					kb = 0.0;
+					//quasi radial...true cumulative radial weights are much more time consuming to code.
+					for (int p = 0; p <= std::min(r,(float) N/2); p++) {
+						kb += ws[p];
+					}
+					dn = sqrt(kb/wm);
+					size_t off = data->add_complex_at_fast(i,j,k,dt*dn*w);
+					norm[off/2]+=w;
+				}
+			}
+		}
+		return true;
+	}
+	printf("region writing not supported in mode 10\n");
 	return false;
 }
