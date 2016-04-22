@@ -30,7 +30,7 @@ class SXcmd_config:
 		# class variables
 		self.wiki = wiki                      # Wiki document file path
 		self.category = category              # Category of this command: pipe (pipeline), util (utility)
-		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue
+		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue. If it is true, this command will be registered to child_application_list of SXCmdWidget
 		self.exclude_list = exclude_list      # token key base list to be excluded
 		self.subconfig = subconfig            # Subset configuration of this command (e.g. sxprocess and sxlocres). None includes all command tokens, and do not make subcmd
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -57,65 +57,74 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# If a command token extracted from 'usage in command line' contains the keyword defined here
 	# the associated special data type will be assigned to this command token.
 	#
-	# - output      : Line edit box for formatted string type, and output info button.
-	#                 GUI also checks the existence of output directory/file before execution of the sx*.py
-	#                 GUI abort the execution if the directory/file exists already
-	# - image       : Line edit box for formatted string type, and open file buttons for .hdf and .bdb
-	# - any_image   : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .bdb
-	# - parameters  : Line edit box for formatted string type, and open file button for all file types
-	# - any_file    : Line edit box for formatted string type, and open file button for all file types
-	# - bdb         : Line edit box for formatted string type, and open file button for .bdb
-	# - pdb         : Line edit box for formatted string type, and open file button for .pdb
-	# - function    : Two line edit boxes for formatted string type (function name & file path of the container script),
-	#                 and open file button for .py
-	# - directory   : Line edit box for formatted string type, and open directory button (NOTE: Toshio Moriya 2016/03/03: Not used at this point)
+	# - output          : Line edit box for formatted string type, and output info button.
+	#                     GUI also checks the existence of output directory/file before execution of the sx*.py
+	#                     GUI abort the execution if the directory/file exists already
+	# - image           : Line edit box for formatted string type, and open file buttons for .hdf and .bdb
+	# - any_image       : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .bdb
+	# - parameters      : Line edit box for formatted string type, and open file button for all file types
+	# - any_file        : Line edit box for formatted string type, and open file button for all file types
+	# - bdb             : Line edit box for formatted string type, and open file button for .bdb
+	# - pdb             : Line edit box for formatted string type, and open file button for .pdb
+	# - mrc             : Line edit box for formatted string type, and open file button for .mrc
+	# - any_file_list   : Line edit box for formatted string type, and open file button for all file types
+	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
+	# - any_image_list  : Line edit box for formatted string type, and open file button for all file types (also mrc, tiff, and etc) and .bdb. 
+	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
+	# - function        : Two line edit boxes for formatted string type (function name & file path of the container script),
+	#                     and open file button for .py
+	# - directory       : Line edit box for formatted string type, and open directory button (NOTE: Toshio Moriya 2016/03/03: Not used at this point)
 	#
-	# - apix        : Project constant - float type
-	# - wn          : Project constant - int type
-	# - box         : Project constant - int type
-	# - radius      : Project constant - int type
-	# - sym         : Project constant - formatted string type
+	# - apix            : Project constant - float type
+	# - wn              : Project constant - int type
+	# - box             : Project constant - int type
+	# - radius          : Project constant - int type
+	# - sym             : Project constant - formatted string type
 	#
 
 	keyword_dict = {}
 
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
-	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "")           # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
-	keyword_dict["stack_file"]                    = SXkeyword_map(0, "bdb")        # stack_file (contains keyworkd 'stack' but this should be bdb type)
-	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "")           # stack_mode (contains keyworkd 'stack' but this should be bool type)
-	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")           # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
-	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")           # --symmetrize (contains keyworkd '--sym' but this should be bool type)
+	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "")               # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
+	keyword_dict["stack_file"]                    = SXkeyword_map(0, "bdb")            # stack_file (contains keyworkd 'stack' but this should be bdb type)
+	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "")               # stack_mode (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")               # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
+	keyword_dict["input_micrograph_list"]         = SXkeyword_map(0, "any_image_list") # input_micrograph_list (contains keyworkd 'input_micrograph' but this should be image_list type)
 	# Use priority 1 for output
-	keyword_dict["output"]                        = SXkeyword_map(1, "output")     # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT
-	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")     # outdir
-	keyword_dict["locres_volume"]                 = SXkeyword_map(1, "output")     # locres_volume (this contained keyword "volume" also... This is another reason why priority is introduced...)
-	keyword_dict["directory"]                     = SXkeyword_map(1, "output")     # directory
-	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")     # rotpw
-	keyword_dict["output_mask3D"]                 = SXkeyword_map(1, "output")     # output_mask3D
+	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT
+	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
+	keyword_dict["locres_volume"]                 = SXkeyword_map(1, "output")         # locres_volume (this contained keyword "volume" also... This is another reason why priority is introduced...)
+	keyword_dict["directory"]                     = SXkeyword_map(1, "output")         # directory
+	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")         # rotpw
+	keyword_dict["output_mask3D"]                 = SXkeyword_map(1, "output")         # output_mask3D
 	# Use priority 2 for the others
-	keyword_dict["stack"]                         = SXkeyword_map(2, "image")      # stack, prj_stack
-	keyword_dict["volume"]                        = SXkeyword_map(2, "image")      # initial_volume, firstvolume, secondvolume, input_volume
-	keyword_dict["mask"]                          = SXkeyword_map(2, "image")      # --mask3D=mask3D, maskfile, mask, --mask=MASK
-	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")      # --focus=3Dmask
-	keyword_dict["--input"]                       = SXkeyword_map(2, "image")      # --input=INPUT
-	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")  # input_micrograph_pattern
-	keyword_dict["input_image"]                   = SXkeyword_map(2, "any_image")  # input_image
-	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters") # --tr0=matrix_file
-	keyword_dict["input_coordinates"]             = SXkeyword_map(2, "parameters") # input_coordinates_pattern
-	keyword_dict["--import_ctf"]                  = SXkeyword_map(2, "parameters") # --import_ctf=ctf_file
-	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters") # --importctf=IMPORTCTF
-	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "parameters") # cter_ctf_file
-	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters") # --pwreference=pwreference
-	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")   # inputfile
-	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")        # input_pdb
-	keyword_dict["--function"]                    = SXkeyword_map(2, "function")   # --function=user_function
+	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack
+	keyword_dict["volume"]                        = SXkeyword_map(2, "image")          # initial_volume, firstvolume, secondvolume, input_volume
+	keyword_dict["mask"]                          = SXkeyword_map(2, "image")          # --mask3D=mask3D, maskfile, mask, --mask=MASK
+	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")          # --focus=3Dmask
+	keyword_dict["--input"]                       = SXkeyword_map(2, "image")          # --input=INPUT
+	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern
+	keyword_dict["input_image"]                   = SXkeyword_map(2, "any_image")      # input_image
+	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters")     # --tr0=matrix_file
+	keyword_dict["input_coordinates"]             = SXkeyword_map(2, "parameters")     # input_coordinates_pattern
+	keyword_dict["--import_ctf"]                  = SXkeyword_map(2, "parameters")     # --import_ctf=ctf_file
+	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
+	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "parameters")     # cter_ctf_file
+	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
+	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
+	keyword_dict["unblur"]                        = SXkeyword_map(2, "any_file")       # unblur
+	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
+	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
+	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
+	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
 
-	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")       # --apix=pixel_size, --apix
-	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")       # --pixel_size=PIXEL_SIZE
-	keyword_dict["--wn"]                          = SXkeyword_map(2, "ctfwin")     # --wn
-	keyword_dict["--box"]                         = SXkeyword_map(2, "box")        # --box=box_size, --box_size=box_size
-	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")     # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
-	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")        # --sym=c1, --sym=c1, --sym=c1, --sym=symmetry, --sym=c1, --sym=c4
+	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")           # --apix=pixel_size, --apix
+	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")           # --pixel_size=PIXEL_SIZE
+	keyword_dict["--wn"]                          = SXkeyword_map(2, "ctfwin")         # --wn
+	keyword_dict["--box"]                         = SXkeyword_map(2, "box")            # --box=box_size, --box_size=box_size
+	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")         # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
+	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")            # --sym=c1, --sym=c1, --sym=c1, --sym=symmetry, --sym=c1, --sym=c4
 
 	# NOTE: 2016/02/23 Toshio Moriya
 	# Below might be useful to include
@@ -505,7 +514,7 @@ def main():
 
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_cter.txt", "pipe", is_submittable = False))
 
-	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "pipe"))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "pipe", exclude_list=["gui", "do_ctf", "cter", "indir", "nameroot", "micsuffix", "wn", "Cs", "voltage", "ac", "kboot", "debug", "apix"], is_submittable = False))
 
 	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", "pipe"))
 
@@ -518,7 +527,7 @@ def main():
 
 	# NOTE: Toshio Moriya 2016/03/11
 	# Temporarily disabled sxrviper for the 03/07/2016 release
-	# sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", "pipe"))
+	sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", "pipe"))
 
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "pipe"))
 
@@ -560,7 +569,7 @@ def main():
 	# Define utility command settings
 	# --------------------------------------------------------------------------------
 
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "util"))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "util", is_submittable = False))
 
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "util"))
 
