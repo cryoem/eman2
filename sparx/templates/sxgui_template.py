@@ -160,10 +160,10 @@ def construct_sxconst_set():
 	sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "micrograph pixel size [A]"; sxconst.help = ""; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "ctfwin"; sxconst.label = "CTF window size [pixels]"; sxconst.help = "it should be slightly larger than particle box size"; sxconst.register = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "box"; sxconst.label = "particle box size [pixels]" ; sxconst.help = ""; sxconst.register = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "protein particle radius [pixels]"; sxconst.help = ""; sxconst.register = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "box"; sxconst.label = "particle box size [pixels]" ; sxconst.help = ""; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "protein particle radius [pixels]"; sxconst.help = ""; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "0.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "imaging configrations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configrations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	
 	return sxconst_set
@@ -303,7 +303,7 @@ class SXCmdWidget(QWidget):
 						
 						# For now, using line edit box for the other type
 						widget_text = str(sxcmd_token.widget.text())
-						if sxcmd_token.type not in ["int", "float", "apix", "wn", "box", "radius"]:
+						if sxcmd_token.type not in ["int", "float", "apix", "wn", "box", "radius", "any_file_list", "any_image_list"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
@@ -661,6 +661,16 @@ class SXCmdWidget(QWidget):
 			# Use relative path. 
 			if file_path:
 				file_path = os.path.relpath(file_path)
+		elif file_format == "mrc":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", "", "MRC files (*.mrc)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path. 
+			if file_path:
+				file_path = os.path.relpath(file_path)
+		elif file_format == "any_file_list" or file_format == "any_image_list":
+			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", "", "All files (*.*)", options = QFileDialog.DontUseNativeDialog)
+			# Use relative path. 
+			for a_file_path in file_path_list:
+				file_path += os.path.relpath(str(a_file_path)) + " "
 		else:
 			if file_format:
 				file_path = str(QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), "", "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog))
@@ -997,6 +1007,16 @@ class SXCmdTab(QWidget):
 # 							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
 # 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 # 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "any_file_list":
+							temp_btn = QPushButton("Select Files")
+							temp_btn.setToolTip("display open file dailog to select files (e.g. *.*)")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
+						elif cmd_token.type == "any_image_list":
+							temp_btn = QPushButton("Select Images")
+							temp_btn.setToolTip("display open file dailog to select standard format image files (e.g. .hdf, .mrc)")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
 						elif cmd_token.type == "bdb":
 							file_format = "bdb"
 #							temp_btn = QPushButton("Select .%s" % file_format, self)
@@ -1011,6 +1031,18 @@ class SXCmdTab(QWidget):
 #							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "pdb":
 							file_format = "pdb"
+#							temp_btn = QPushButton("Select .%s" % file_format, self)
+							temp_btn = QPushButton("Select .%s" % file_format)
+#							temp_btn.move(self.x3, self.y1 - 12)
+#							temp_btn.setMinimumWidth(token_widget_min_width)
+							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span* 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+#							spacer_frame = QFrame()
+#							spacer_frame.setMinimumWidth(token_widget_min_width)
+#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "mrc":
+							file_format = "mrc"
 #							temp_btn = QPushButton("Select .%s" % file_format, self)
 							temp_btn = QPushButton("Select .%s" % file_format)
 #							temp_btn.move(self.x3, self.y1 - 12)
