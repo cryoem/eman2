@@ -25522,3 +25522,152 @@ void Util::euler_direction2angles(vector <float> v0, float &alpha, float &beta)
 }/*Eulerdirection2angles end*/
 
 
+void Util::write_nd_array(EMData* em_data, vector<int> size_of_each_dimension, vector<int> location, float val)
+{
+
+   	if (!em_data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    float *data = em_data->get_data();
+
+   	if (!data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    int number_of_dimensions = size_of_each_dimension.size();
+
+    if (number_of_dimensions != location.size())
+        throw ImageDimensionException("number_of_dimensions != location.size()");
+
+    for(int i=0; i<number_of_dimensions; ++i)
+    {
+        if (location[i] >= size_of_each_dimension[i])
+            throw ImageDimensionException("location[i] >= size_of_each_dimension[i]");
+        if (location[i] < 0)
+            throw ImageDimensionException("location[i] < 0");
+     }
+    
+    long index_location = 0;
+    long multiplier = 1;
+    for(int i=0; i<number_of_dimensions; ++i)
+    {
+        index_location += location[i]*multiplier;
+        multiplier *= size_of_each_dimension[i];
+    }
+    data[index_location] = val;
+}
+
+float Util::read_nd_array(EMData* em_data, vector<int> size_of_each_dimension, vector<int> location)
+{
+    
+   	if (!em_data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    float *data = em_data->get_data();
+
+   	if (!data) {
+		throw NullPointerException("NULL input image");
+	}
+    
+    int number_of_dimensions = size_of_each_dimension.size();
+    
+    if (number_of_dimensions != location.size())
+        throw ImageDimensionException("number_of_dimensions != location.size()");
+
+    for(int i=0; i<number_of_dimensions; ++i)
+    {
+        if (location[i] >= size_of_each_dimension[i])
+            throw ImageDimensionException("location[i] >= size_of_each_dimension[i]");
+        if (location[i] < 0)
+            throw ImageDimensionException("location[i] < 0");
+     }
+    
+    long index_location = 0;
+    long multiplier = 1;
+    for(int i=0; i<number_of_dimensions; ++i)
+    {
+        index_location += location[i]*multiplier;
+        multiplier *= size_of_each_dimension[i];
+    }
+    return data[index_location];
+}
+
+float Util::read_nd_array_linear_interp(EMData* em_data, vector<int> size_of_each_dimension, vector<float> location)
+{
+
+   	if (!em_data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    float *data = em_data->get_data();
+
+   	if (!data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    int number_of_dimensions = size_of_each_dimension.size();
+
+    if (number_of_dimensions != location.size())
+        throw ImageDimensionException("number_of_dimensions != location.size()");
+
+//    for(int i=0; i<number_of_dimensions; ++i)
+//    {
+//        if (location[i] >= size_of_each_dimension[i])
+//            throw ImageDimensionException("location[i] >= size_of_each_dimension[i]");
+//        if (location[i] < 0)
+//            throw ImageDimensionException("location[i] < 0");
+//     }
+    
+    vector<int> current_location(number_of_dimensions);
+    vector<int> location_int(number_of_dimensions);
+    
+    for(int j=0; j<number_of_dimensions; ++j)
+    {
+        location_int[j] = (int) Util::fast_floor(location[j]);
+    }
+    
+    vector<float> N_dimensional_hypercube_values(1<<number_of_dimensions, -1); 
+
+    for(int j=0; j< (1<<number_of_dimensions); ++j)
+    {
+        for(int i=0; i<number_of_dimensions; ++i)
+        {
+            // ((j >> i) & 1) determines the position on the hypercube (0 or 1) for the ith dimension
+            current_location[i] = location_int[i] + ((j >> i) & 1);
+            
+            if ((current_location[i] >= size_of_each_dimension[i]) || (current_location[i] < 0))
+            {
+                N_dimensional_hypercube_values[j] = 0;
+                break;
+            }
+        }
+        
+        if (N_dimensional_hypercube_values[j] == 0) continue;
+    
+        long index_location = 0;
+        long multiplier = 1;
+        for(int i=0; i<number_of_dimensions; ++i)
+        {
+            index_location += current_location[i]*multiplier;
+            multiplier *= size_of_each_dimension[i];
+        }
+        
+        N_dimensional_hypercube_values[j] = data[index_location]; 
+    }
+     
+    float value = 0;
+    for(int j=0; j< (1<<number_of_dimensions); ++j)
+    {
+        float my_product = 1;
+        for(int i=0; i<number_of_dimensions; ++i)
+        {
+            // ((j >> i) & 1) determines the position on the hypercube (0 or 1) for the ith dimension
+            my_product *= ((j >> i) & 1) ? (location[i] - location_int[i]) : (1 - (location[i] - location_int[i]));
+        }
+        value += N_dimensional_hypercube_values[j]*my_product;
+    }
+    return value;
+}
+
