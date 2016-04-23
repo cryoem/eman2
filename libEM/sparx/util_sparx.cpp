@@ -25612,6 +25612,7 @@ float Util::read_nd_array_linear_interp(EMData* em_data, vector<int> size_of_eac
     if (number_of_dimensions != location.size())
         throw ImageDimensionException("number_of_dimensions != location.size()");
 
+//    removed boundary checking so that all sampling outside range returns zero
 //    for(int i=0; i<number_of_dimensions; ++i)
 //    {
 //        if (location[i] >= size_of_each_dimension[i])
@@ -25637,6 +25638,7 @@ float Util::read_nd_array_linear_interp(EMData* em_data, vector<int> size_of_eac
             // ((j >> i) & 1) determines the position on the hypercube (0 or 1) for the ith dimension
             current_location[i] = location_int[i] + ((j >> i) & 1);
             
+            // if location is outside range then return zero
             if ((current_location[i] >= size_of_each_dimension[i]) || (current_location[i] < 0))
             {
                 N_dimensional_hypercube_values[j] = 0;
