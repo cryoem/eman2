@@ -524,7 +524,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("square_img", &EMAN::Util::square_img, args("img"), "img = |img|^2")
 		.def("div_filter", &EMAN::Util::div_filter, args("img", "img1"), "img /= Re(img1) with zero check")
 		.def("sqed", &EMAN::Util::sqed, args("img", "proj", "ctfs", "bckgnoise"), "")
-		.def("sqedfull", &EMAN::Util::sqedfull, args("img", "proj", "ctfs", "bckgnoise", "normas"), "")
+		.def("sqedfull", &EMAN::Util::sqedfull, args("img", "proj", "ctfs", "bckgnoise", "normas", "prob"), "")
 		.def("unroll1dpw", &EMAN::Util::unroll1dpw, return_value_policy< manage_new_object >(), args("ny", "bckgnoise"), "out = power")
 		.def("unrollmask", &EMAN::Util::unrollmask, return_value_policy< manage_new_object >(), args("ny"), "out = mask")
 		.def("set_freq", &EMAN::Util::set_freq, args("freqvol", "freqvol"), "utility for sxlocres")

@@ -19072,7 +19072,7 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 		int lol = i*2;
 		float p1 = data[lol]   - dctfs[i]*dproj[lol];
 		float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
-		edis += (p1*p1 + p2*p2)*pbckgnoise[i]*0.5;
+		edis += (p1*p1 + p2*p2)*pbckgnoise[i]*0.5f;
 	}
 
     return edis;
@@ -19086,7 +19086,7 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 #define dctfs(jx,iy)         dctfs[jx+(iy-1)*nx]
 #define bckg(jx,iy)          bckg[jx+(iy-1)*nx]
 #define nrm(rf,kt)           nrm[rf+(kt-1)*inc]
-float Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas)
+float Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
 {
 	ENTERFUNC;
 	int nx=img->get_xsize(), ny=img->get_ysize();
@@ -19118,12 +19118,12 @@ float Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise
 			float  prod1 = data(jx2,iy) * qtr + data(jx2+1,iy) * qti;
 			float  prod2 = qtr*qtr + qti*qti;
 			float  normim = data(jx2,iy)*data(jx2,iy) + data(jx2+1,iy)+data(jx2+1,iy);  // precalculate
-			edis += (normim - 2*prod1 + prod2)*bckg(jx,iy);
+			edis += (normim - 2*prod1 + prod2)*bckg(jx,iy)*0.5f;
 			// edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*bckg(jx,iy);   //real
 			// edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*bckg(jx,iy); // imaginary
 			if( bckg(jx,iy) > 0.0 )  {
-				nrm(rf,0) += prod1;
-				nrm(rf,1) += prod2;
+				nrm(rf,0) += prod1*prob;
+				nrm(rf,1) += prod2*prob;
 			}
 		}
 	}
