@@ -886,6 +886,8 @@ costlist, int* curbranch);
 	static float read_nd_array(EMData* em_data, vector<int> size_of_each_dimension, vector<int> location);
 	static float read_nd_array_linear_interp(EMData* em_data, vector<int> size_of_each_dimension, vector<float> location);
 	
+    static float sum_along_line_in_nd_array(EMData* em_data, vector<int> size_of_each_dimension, vector<float> start_location, vector<float> end_location, int number_of_points_on_the_line);	
+	
 private:
 	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()
 public:
