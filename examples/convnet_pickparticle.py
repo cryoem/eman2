@@ -16,7 +16,7 @@ def import_theano():
 
 def main():
 
-	usage="""convnet_pickptcls.py  [options]
+	usage="""
 	*** This program requires Theano and cPickle in addition to normal EMAN2 requirments.
 	Start with "convnet_pickptcls.py [particles] --ngtvs [negative samples] --trainout" to train the neural net.
 	Look at result_conv0.hdf to see the training result. The images are arranged as (preprocessed particle / first layer output / last layer output ). Idealy last layer output should be gaussian balls for particles, dark for negative samples.
@@ -26,8 +26,9 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ngtvs", type=str,help="Negative samples for training", default=None)
+	parser.add_argument("--classify", type=str,help="Classify particles", default=None)
 	parser.add_argument("--ncopy", type=int,help="Number of copies made for input particles", default=10)
-	parser.add_argument("--learnrate", type=float,help="Learning rate for the auto-encoder", default=.05)
+	parser.add_argument("--learnrate", type=float,help="Learning rate for the neural network", default=.05)
 	parser.add_argument("--niter", type=int,help="Training iterations", default=10)
 	parser.add_argument("--nkernel", type=str,help="Number of kernels for each layer, from input to output. The number of kernels in the last layer must be 1. Default is 10,5,1", default="10,5,1")
 	parser.add_argument("--ksize", type=str,help="Width of kernels of each layer, the numbers must be odd. Note the number of layers should be the same as the nkernel option. Default is 11,11,5", default="11,11,5")
@@ -50,6 +51,15 @@ def main():
 	options.nkernel=[int(i) for i in options.nkernel.split(',')]
 	options.ksize=[int(i) for i in options.ksize.split(',')]
 	
+	
+	if options.classify!=None:
+		os.environ["THEANO_FLAGS"]="optimizer=fast_run"
+		#os.environ["THEANO_FLAGS"]="optimizer=None"
+		#print "Testing on large amount of particles(?), Theano optimizer disabled"
+		import_theano()
+		convnet=load_model(options.pretrainnet)
+		classify_particles(convnet,options)
+		exit()
 	
 	if options.teston!=None:
 		os.environ["THEANO_FLAGS"]="optimizer=None"
@@ -213,6 +223,67 @@ def load_model(fname):
 	convnet = cPickle.load(f)
 	f.close()
 	return convnet
+
+def classify_particles(convnet,options):
+	
+	print "Loading images.."
+	nptcls=EMUtil.get_image_count(options.classify)
+	
+	data=[]
+	for i in range(nptcls):
+		ptl=EMData(options.classify,i)
+		ptl.process_inplace("normalize.edgemean")
+		ptl.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
+		ptl.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
+		if (options.shrink>1):
+			ptl.process_inplace("math.meanshrink",{"n":options.shrink})
+		
+		ar=EMNumPy.em2numpy(ptl)
+		data.append(ar.flatten())
+	
+	shape=[ptl["nx"],ptl["ny"],ptl["nz"]]
+	data=np.asarray(data,dtype=theano.config.floatX)
+	data/=np.max(np.abs(data))
+	shared_data = theano.shared(data,borrow=True)
+	
+	convnet.update_shape((nptcls, 1, shape[0],shape[1]))
+	test_cls = theano.function(
+		inputs=[],
+		outputs=convnet.clslayer.get_image(),
+		givens={
+			convnet.x: shared_data
+		}
+	)
+	print "Classifying..."
+	clsout=test_cls()
+	shpout=clsout.shape
+	allscr=np.mean(clsout.reshape(shpout[0],shpout[2]*shpout[3]),axis=1)
+	#for i in range(nptcls):
+		#img=clsout[i].reshape(shpout[2], shpout[3]).copy()
+		#e=from_numpy(img)
+		#scr=e["mean"]
+		#allscr.append(scr)
+		#e.write_image("clsout.hdf",i)
+	#print allscr,allscr.shape
+	od=np.argsort(allscr)
+	loutfile="sortout.lst"
+	try: os.remove(loutfile)
+	except: pass
+	lout=LSXFile(loutfile)
+	if options.classify.endswith(".lst"):
+		lst=LSXFile(options.classify)
+		k=0
+		for i in od:
+			l=lst[i]
+			lout.write(k,l[0],l[1])
+			k+=1
+	else:
+		k=0
+		for i in od:
+			#l=lst[i]
+			lout.write(k,options.classify,i)
+			k+=1
+	lout=None
 	
 def box_particles(convnet,options):
 	
