@@ -127,7 +127,8 @@ class EMPlot2DWidget(EMGLWidget):
 		self.main_display_list = 0
 
 		self.resize(640,480)
-		self.particle_viewer = None
+		self.particle_viewer0 = None
+		self.particle_viewer1 = None
 		self.particle_viewer2 = None
 		self.particle_viewer3 = None
 		self.particle_viewer4 = None
@@ -755,27 +756,34 @@ lc is the cursor selection point in plot coords"""
 					imf = cmts[2*i+1]
 					ptclim=EMData(imf,imn)
 					if i == 0:
-						if self.particle_viewer==None :
-							self.particle_viewer=emimage2d.EMImage2DWidget(ptclim)
-							self.particle_viewer.show()
+						if self.particle_viewer0==None :
+							self.particle_viewer0=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer0.show()
 						else:
-							self.particle_viewer.set_data(ptclim)
-							self.particle_viewer.show()
+							self.particle_viewer0.set_data(ptclim)
+							self.particle_viewer0.show()
 					elif i == 1:
+						if self.particle_viewer1==None :
+							self.particle_viewer1=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer1.show()
+						else:
+							self.particle_viewer1.set_data(ptclim)
+							self.particle_viewer1.show()
+					elif i == 2:
 						if self.particle_viewer2==None :
 							self.particle_viewer2=emimage2d.EMImage2DWidget(ptclim)
 							self.particle_viewer2.show()
 						else:
 							self.particle_viewer2.set_data(ptclim)
 							self.particle_viewer2.show()
-					elif i == 2:
+					elif i == 3:
 						if self.particle_viewer3==None :
 							self.particle_viewer3=emimage2d.EMImage2DWidget(ptclim)
 							self.particle_viewer3.show()
 						else:
 							self.particle_viewer3.set_data(ptclim)
 							self.particle_viewer3.show()
-					elif i == 3:
+					elif i == 4:
 						if self.particle_viewer4==None :
 							self.particle_viewer4=emimage2d.EMImage2DWidget(ptclim)
 							self.particle_viewer4.show()
