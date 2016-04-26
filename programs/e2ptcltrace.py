@@ -111,28 +111,50 @@ def main():
 
 	if options.verbose: print("Tracing particles from input classmx files")
 	with open(options.trace,"w") as outf:
+
+		dat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
+		cmt = " # {};{};{};{};{};{};{};{}\n"
+
 		for p in xrange(nptcl):
 			if options.verbose:
 				sys.stdout.write('\rparticle: {0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
 			for i in xrange(1,len(cmx)):
 				ort1=clsort[i-1][int(cls[i-1][0][0,p])]	# orientation of particle in first classmx
 				ort2=clsort[i][int(cls[i][0][0,p])]		# orientation of particle in second classmx
+
 				diffs=[] # make a list of the rotation angle to each other symmetry-related point
 				for t in syms:
 					ort2p=ort2*t
 					diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
 				diff=min(diffs)	# The angular error for the best-agreeing orientation
+
 				e1 = ort1.get_rotation("eman")
 				alt1 = e1["alt"]
 				az1 = e1["az"]
-				cls1 = cls[i-1][0][0,p]
+				cls1 = int(cls[i-1][0][0,p])
+
 				e2 =  ort2.get_rotation("eman")
 				alt2 = e2["alt"]
 				az2 = e2["az"]
-				cls2 = cls[i][0][0,p]
+				cls2 = int(cls[i][0][0,p])
+
 				clsdiff = abs(cls2-cls1)
-				outf.write("\t".join(["{}".format(s) for s in [alt1,az1,int(cls1),alt2,az2,int(cls2),diff,int(clsdiff)]]))
-				outf.write(" # {};{}\n".format(int(cls2),cmx[i].replace("classmx","classes")))
+
+				try:
+					classes2 = cmx[i].replace("classmx","classes")
+					hdr2 = EMData(classes2,cls2,True)
+					idx2 = hdr2["projection_image_idx"]
+					proj2 = hdr2["projection_image"]
+
+					classes1 = cmx[i-1].replace("classmx","classes")
+					hdr1 = EMData(classes1,cls1,True)
+					idx1 = hdr1["projection_image_idx"]
+					proj1 = hdr1["projection_image"]
+
+					outf.write(dat.format(alt1,az1,int(cls1),alt2,az2,int(cls2),diff,int(clsdiff)))
+					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1))
+
+				except: pass # no data in class corresponding to projection
 
 	if ".txt" in options.trace: kf = options.trace.replace(".txt",".key")
 	else: kf = options.trace + ".key"
