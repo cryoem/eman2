@@ -56,7 +56,9 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--path", default=None, type=str,help="The name of an existing refine_xx folder, where e2refine_easy ran to completion",guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--basisn", default=1,type=int,help="Select which Eigenimage to use for separation. 1 = highest energy. max = 5", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--usebasis", default=1,type=int,help="Select which Eigenimage to use for separation. With novarimax, n=1 is highest energy.", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--nbasis", default=-1,type=int,help="Number of basis vectors to compute. Must be at least usebasis+1. Default 6 or usebasis+1.", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--novarimax", action="store_true",default=False, help="Disable varimax rotation among computed basis vectors.")
 	parser.add_argument("--mask", default=None, help="Optional 3D mask to focus the classification", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=5, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel", default="thread:2", help="Standard parallelism option. Default=thread:2", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -64,9 +66,11 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	if options.basisn<1 or options.basisn>5 : 
-		print "Error: basisn must be in the 1-5 range"
-		sys.exit(1)
+	if options.nbasis<=1 :
+		options.nbasis=6
+		if options.nbasis<=options.usebasis+1 :
+			options.nbasis=options.usebasis+1
+			print "--nbasis adjusted to ",options.nbasis
 
 	if options.path==None:
 		paths=[i for i in os.listdir(".") if "refine_" in i and len(i)==9]
@@ -147,7 +151,7 @@ def main():
 		if mask!=None :
 			maskp=mask.project("standard",eulers[c])
 		else: maskp=None
-		tasks.append(ClassSplitTask(ptcls,ns,cl,c,eulers[c],maskp,options.basisn,options.verbose-1))
+		tasks.append(ClassSplitTask(ptcls,ns,cl,c,eulers[c],maskp,options.usebasis,options.nbasis,options.novarimax,options.verbose-1))
 		gc+=1
 	
 #	for t in tasks: t.execute()
@@ -173,7 +177,7 @@ def main():
 					# note that the 2 results we get back are in arbitrary order!
 					# the next section of code with 3D reconstruction is designed to sort out
 					# which average should be paired with which
-					classes.append([ncls,rsltd["avg1"]["xform.projection"],rsltd["avg1"],rsltd["avg2"],rsltd["basis"]])	# list of (ptcl_repr,xform,avg1,avg2)
+					classes.append([ncls,rsltd["avg1"]["xform.projection"],rsltd["avg1"],rsltd["avg2"],rsltd["basis"],cls])	# list of (ptcl_repr,xform,avg1,avg2)
 				
 		taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
 
@@ -208,43 +212,59 @@ def main():
 
 	if options.verbose : print "Reconstruction: pass 1"
 	for i,c in enumerate(classes[1:]):
-		a2=c[2].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))		# first class-average
+		proj=EMData(projin,c[5])		# the projection corresponding to this average
+		# while this does cost us a final interpolation, high resolution isn't the primary aim anyway, and getting the alignment consistent is important
+		# also gives us a chance to normalize
+		c[2]["xform.align2d"]=Transform()
+		ali2=c[2].align("refine",proj)
+		ali2.process_inplace("normalize.toimage",{"to":proj,"ignore_zero":1})
+		c[3]["xform.align2d"]=Transform()
+		ali3=c[3].align("refine",proj)
+		ali3.process_inplace("normalize.toimage",{"to":proj,"ignore_zero":1})
+		
+#		print "ROT:\t",ali2["xform.align2d"].get_params("2d"),"\t",ali3["xform.align2d"].get_params("2d")
+		
+		# note that ali2 and c[2] are the same except for a final alignment
+		a2=ali2.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))		# first class-average
 		a3=recon[0].preprocess_slice(a2,classes[0][1])
 		a3n=c[2].get_attr_default("ptcl_repr",1.0)
 		
-		b2=c[3].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+		# similarly ali3 and c[3] are the same
+		b2=ali3.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
 		b3=recon[1].preprocess_slice(b2,classes[0][1])						# I don't believe it matters if we use recon[0] or 1 here, but haven't checked
 		b3n=c[3].get_attr_default("ptcl_repr",1.0)
 		
 		recon[0].determine_slice_agreement(a3,c[1],a3n,False)
-		q0a=a3["reconstruct_absqual"]		# quality for average a in reconstruction0
-		n0a=a3["reconstruct_norm"]			# normalization for same
+#		print a3.get_attr_dict()
+		q0a=a3["reconstruct_absqual_lowres"]		# quality for average a in reconstruction0
+#		n0a=a3["reconstruct_norm"]			# normalization for same
 		
 		recon[1].determine_slice_agreement(a3,c[1],a3n,False)
-		q1a=a3["reconstruct_absqual"]		# quality for average a in reconstruction0
-		n1a=a3["reconstruct_norm"]			# normalization for same
+		q1a=a3["reconstruct_absqual_lowres"]		# quality for average a in reconstruction0
+#		n1a=a3["reconstruct_norm"]			# normalization for same
 		
 		recon[0].determine_slice_agreement(b3,c[1],b3n,False)
-		q0b=b3["reconstruct_absqual"]		# quality for average a in reconstruction0
-		n0b=b3["reconstruct_norm"]			# normalization for same
+		q0b=b3["reconstruct_absqual_lowres"]		# quality for average a in reconstruction0
+#		n0b=b3["reconstruct_norm"]			# normalization for same
 		
 		recon[1].determine_slice_agreement(b3,c[1],b3n,False)
-		q1b=b3["reconstruct_absqual"]		# quality for average a in reconstruction0
-		n1b=b3["reconstruct_norm"]			# normalization for same
+		q1b=b3["reconstruct_absqual_lowres"]		# quality for average a in reconstruction0
+#		n1b=b3["reconstruct_norm"]			# normalization for same
 		
 		if options.verbose>1 : print i,q0a,q1a,q0b,q1b,q0a+q1b,q1a+q0b
+		if options.verbose>2 : print "\t\t",n0a,n1a,n0b,n1b
 			
 		if q0a+q1b>q1a+q0b :		# if true, a -> recon0 and b -> recon1 
 			c.append(0)				# we put a 0 at the end of the classes element if we use a->0,b->1 ordering, 1 if swapped
-			a3.mult(n0a)
+#			a3.mult(n0a)
 			recon[0].insert_slice(a3,c[1],a3n)
-			b3.mult(n1b)
+#			b3.mult(n1b)
 			recon[1].insert_slice(b3,c[1],b3n)
 		else:
 			c.append(1)
-			a3.mult(n1a)
+#			a3.mult(n1a)
 			recon[1].insert_slice(a3,c[1],a3n)
-			b3.mult(n0b)
+#			b3.mult(n0b)
 			recon[0].insert_slice(b3,c[1],b3n)
 
 	if options.verbose : print "Reconstruction: pass 2"
@@ -302,10 +322,10 @@ def main():
 
 	if mask!=None: msk="_msk"
 	else: msk=""
-	classout=["{}/classes_{:02d}_bas{}{}_split0.hdf".format(options.path,last_iter,options.basisn,msk),"{}/classes_{:02d}_bas{}_split1.hdf".format(options.path,last_iter,options.basisn,msk)]
+	classout=["{}/classes_{:02d}_bas{}{}_split0.hdf".format(options.path,last_iter,options.usebasis,msk),"{}/classes_{:02d}_bas{}{}_split1.hdf".format(options.path,last_iter,options.usebasis,msk)]
 	basisout="{}/classes_{:02d}{}_basis".format(options.path,last_iter,msk)
 	threedout="{}/threed_{:02d}{}_split.hdf".format(options.path,last_iter,msk)
-	threedout2="{}/threed_{:02d}{}_split_filt_bas{}.hdf".format(options.path,last_iter,msk,options.basisn)
+	threedout2="{}/threed_{:02d}{}_split_filt_bas{}.hdf".format(options.path,last_iter,msk,options.usebasis)
 	setout=["sets/split_{}{}_0.lst".format(pathnum,msk),"sets/split_{}{}_1.lst".format(pathnum,msk)]
 	split=[r.finish(True).get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize)) for r in recon]
 	split[0]["apix_x"]=apix
@@ -362,13 +382,13 @@ def main():
 class ClassSplitTask(JSTask):
 	"""This task will create a single task-average"""
 
-	def __init__(self,ptclfiles,ns,ptcls,nc,euler,mask,basisn,verbose):
+	def __init__(self,ptclfiles,ns,ptcls,nc,euler,mask,usebasis,nbasis,novarimax,verbose):
 		"""ptclfiles is a list of 2 (even/odd) particle stacks. ns is the number of particles in each of ptcfiles. ptcls is a list of lists containing [eo,ptcl#,Transform]"""
 #		sys.stderr=file("task.err","a")
 		data={"particles1":["cache",ptclfiles[0],(0,ns[0])],"particles2":["cache",ptclfiles[1],(0,ns[1])]}
 		JSTask.__init__(self,"ClassSplit",data,{},"")
 
-		self.options={"particles":ptcls,"classnum":nc,"euler":euler,"basisn":basisn,"mask":mask,"verbose":verbose}
+		self.options={"particles":ptcls,"classnum":nc,"euler":euler,"usebasis":usebasis,"novarimax":novarimax,"nbasis":nbasis,"mask":mask,"verbose":verbose}
 
 	def execute(self,callback=None):
 		"""This does the actual class-averaging, and returns the result"""
@@ -415,29 +435,31 @@ class ClassSplitTask(JSTask):
 			mask=options["mask"]
 
 #		print "basis start"
-		pca=Analyzers.get("pca_large",{"nvec":6,"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
+		pca=Analyzers.get("pca_large",{"nvec":options["nbasis"],"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
 		for p in ptcls: 
 			pca.insert_image(p[5])		# filter to focus on lower resolution differences
 		basis=pca.analyze()
 
 		# Varimax rotation... good idea?
-		#pca2=Analyzers.get("varimax",{"mask":mask})
-		#for im in basis1:
-			#pca2.insert_image(im)
+		if not options["novarimax"]:
+			pca2=Analyzers.get("varimax",{"mask":mask})
+			for im in basis:
+				pca2.insert_image(im)
 		
-		#basis=pca2.analyze()
+			basis=pca2.analyze()
 
 		
 		# if you turn this on multithreaded it will crash sometimes
-		#avg.mult(0.05)	#arbitrary for debugging
-		#avg.write_image("pca.hdf",-1)
-		#basis[0].write_image("pca.hdf",-1)
-		#basis[1].write_image("pca.hdf",-1)
-		#basis[2].write_image("pca.hdf",-1)
+		avg.mult(0.05)	#arbitrary for debugging
+		avg.write_image("pca.hdf",-1)
+		basis[0].write_image("pca.hdf",-1)
+		basis[1].write_image("pca.hdf",-1)
+		basis[2].write_image("pca.hdf",-1)
+		basis[3].write_image("pca.hdf",-1)
 #		print "basis"
 		
 		# at the moment we are just splitting into 2 classes, so we'll use the first eigenvector. A bit worried about defocus coming through, but hopefully ok...
-		dots=[p[5].cmp("ccc",basis[self.options["basisn"]]) for p in ptcls]	# NOTE: basis number is passed in as an option, may not be #1 or #3 (default)
+		dots=[p[5].cmp("ccc",basis[self.options["usebasis"]]) for p in ptcls]	# NOTE: basis number is passed in as an option, may not be #1 or #3 (default)
 		if len(dots)==0:
 			return {"failed":True}
 		dota=sum(dots)/len(dots)
