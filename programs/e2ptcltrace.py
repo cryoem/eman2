@@ -47,18 +47,18 @@ def main():
 
 	WARNING: experimental program
 
-	This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison. 
+	This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison.
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	
+
 	parser.add_argument("--trace",type=str,help="Name of output file.", default="ptcltrace.txt")
 	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
-	
+
 	cmx = []
 	proj = []
 	for c in args:
@@ -68,18 +68,18 @@ def main():
 			if os.path.isfile(p): proj.append(p)
 		else:
 			print("{} is not a classmx file. Will not process.".format(f))
-	
-	if len(cmx) < 2: 
+
+	if len(cmx) < 2:
 		print("ERROR: You must specify at least two classmx files.")
 		sys.exit(1)
-	
+
 	if len(cmx) != len(proj):
 		print("ERROR: Could not find matching projection files for your input classmx files.")
 		sys.exit(1)
-		
+
 	cls = [EMData.read_images(c) for c in cmx] # read all classification matrix data into a list of lists
 	nptcl = cls[0][0]['ny'] # particles are along the y axis
-	
+
 	for i in cls[1:]:
 		if i[0]["ny"]!=nptcl:
 			print "ERROR: classmx files must have exactly the same number of particles"
@@ -88,25 +88,25 @@ def main():
 	# wait until after error checking
 	E2n=E2init(sys.argv,options.ppid)
 
-	# Create a list of lists of Transforms representing the orientations of the reference projections 
+	# Create a list of lists of Transforms representing the orientations of the reference projections
 	# for each classmx file and try to get projection orientation information for each class
-	
+
 	clsort=[]
-	for c,p in zip(cmx,proj): 
+	for c,p in zip(cmx,proj):
 		ncls=EMUtil.get_image_count(p)
 		orts = []
 		for i in xrange(ncls):
 			orts.append( EMData(p,i,True)["xform.projection"] )
 		clsort.append(orts)
-	
+
 	# Get a list of Transform objects to move to each other asymmetric unit in the symmetry group
 	syms=parsesym( str(options.sym) ).get_syms()
-	
+
 	with open(options.trace,"w") as outf:
 		set = "placeholder.lst" # for use with 2D plot ptcl viewing
 		fmt = "{:.3f}\t{:.3f}\t{:.0f}\t{:.3f}\t{:.3f}\t{:.0f}\t{:.3f} # {};{}\n"
 		for p in xrange(nptcl):
-			if options.verbose: 
+			if options.verbose:
 				sys.stdout.write('\rparticle: {0:.0f} / {1:.0f}'.format(p+1,nptcl))
 			outf.write("{}".format(p))
 			for i in xrange(1,len(cmx)):
@@ -120,14 +120,15 @@ def main():
 				e1 = ort1.get_rotation("eman")
 				e2 = ort2.get_rotation("eman")
 				outf.write(fmt.format(e1["alt"],e1["az"],cls[i-1][0][0,p],e2["alt"],e2["az"],cls[i][0][0,p],diff,p,set))
-	
-	print("\nSUMMARY:\n")
+
+	print("\n\nSUMMARY:")
+	print("UNDER CONSTRUCTION!")
 	print("Argument\tMean\tConfidence\tShiftMag\tDispersion\t")
 	for i,(c,p) in enumerate(zip(cmx,proj)):
 		print("{}: {},{}".format(i,c,p))
-	
+
 	print("\nComparisons and assigned euler angles stored in {}.".format(options.trace))
-	
+
 	E2end(E2n)
 
 
