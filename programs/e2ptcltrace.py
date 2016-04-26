@@ -160,7 +160,6 @@ def main():
 					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1,ptcl_idx,ptcl_src))
 
 				except:
-					print(p)
 					pass # no data in class corresponding to projection
 
 	if ".txt" in options.trace: kf = options.trace.replace(".txt",".key")
