@@ -109,15 +109,11 @@ def main():
 	# Get a list of Transform objects to move to each other asymmetric unit in the symmetry group
 	syms=parsesym( str(options.sym) ).get_syms()
 
-	if options.verbose: print("Tracing particles from input classmx files")
+	if options.verbose: print("Tracing particles through input classmx files")
 	with open(options.trace,"w") as outf:
-
-		dat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
-		cmt = " # {};{};{};{};{};{};{};{}\n"
-
 		for p in xrange(nptcl):
 			if options.verbose:
-				sys.stdout.write('\rparticle: {0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
+				sys.stdout.write('\r{0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
 			for i in xrange(1,len(cmx)):
 				ort1=clsort[i-1][int(cls[i-1][0][0,p])]	# orientation of particle in first classmx
 				ort2=clsort[i][int(cls[i][0][0,p])]		# orientation of particle in second classmx
@@ -151,10 +147,21 @@ def main():
 					idx1 = hdr1["projection_image_idx"]
 					proj1 = hdr1["projection_image"]
 
-					outf.write(dat.format(alt1,az1,int(cls1),alt2,az2,int(cls2),diff,int(clsdiff)))
-					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1))
+					ptcl_src = hdr2["class_ptcl_src"]
+					ptcl_idx = [i for i in hdr2["class_ptcl_idxs"] if i == p]
 
-				except: pass # no data in class corresponding to projection
+					hdr1 = None
+					hdr2 = None
+
+					dat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
+					outf.write(dat.format(alt1,az1,cls1,alt2,az2,cls2,diff,clsdiff))
+
+					cmt = " # {};{};{};{};{};{};{};{};{};{}\n"
+					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1,ptcl_idx,ptcl_src))
+
+				except:
+					print(p)
+					pass # no data in class corresponding to projection
 
 	if ".txt" in options.trace: kf = options.trace.replace(".txt",".key")
 	else: kf = options.trace + ".key"
