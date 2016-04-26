@@ -279,7 +279,7 @@ def main():
    13. Postprocess 3-D or 2-D images: 
    			for 3-D volumes: calculate FSC with provided mask; weight summed volume with FSC; estimate B-factor from FSC weighted summed two volumes; apply negative B-factor to the weighted volume. 
    			for 2-D images:  calculate B-factor and apply negative B-factor to 2-D images.
-   14. Winow stack file -reduce size of images without changing the pixel size. 
+   14. Window stack file -reduce the size of images without changing the pixel size. 
 
 
 """
@@ -911,20 +911,17 @@ def main():
 			output_stack_name = None
 			inputstack = args[0]
 			if nargs ==2:output_stack_name = args[1]
-			input_path,input_file_name=os.path.split(inputstack)
-			input_file_name_root,ext=os.path.splitext(input_file_name)
-			if input_file_name_root[0:3]=="bdb":stack_is_bdb= True
-			else: stack_is_bdb= False
+			input_path,input_file_name     = os.path.split(inputstack)
+			input_file_name_root,ext       = os.path.splitext(input_file_name)
+			if input_file_name_root[0:3]=="bdb":stack_is_bdb = True
+			else:                               stack_is_bdb = False
 			if output_stack_name is None:
-				if stack_is_bdb: output_stack_name ="bdb:reduced_"+input_file_name_root[4:]
-				else:output_stack_name = "reduced_"+input_file_name_root+".hdf" # Only hdf file is output.
+				if stack_is_bdb: output_stack_name  = "bdb:reduced_"+input_file_name_root[4:]
+				else: output_stack_name = "reduced_"+input_file_name_root+".hdf" # Only hdf file is output.
 			nimage = EMUtil.get_image_count(inputstack)
 			from fundamentals import window2d
-			for i in xrange(nimage):
-				image = EMData()
-				image.read_image(inputstack,i)
-				w = window2d(image,options.box,options.box)
-				w.write_image(output_stack_name,i)
+			from utilities import get_im
+			for i in xrange(nimage): window2d(get_im(inputstack,i),options.box,options.box).write_image(output_stack_name,i)
 	else:  ERROR("Please provide option name","sxprocess.py",1)	
 
 if __name__ == "__main__":

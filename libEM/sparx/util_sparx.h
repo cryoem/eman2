@@ -872,7 +872,7 @@ costlist, int* curbranch);
 
 
 	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, EMData* bckgnoise);
-	static float sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas);
+	static float sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob);
 
 	//utility for sxlocres
 	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);
@@ -880,6 +880,12 @@ costlist, int* curbranch);
 
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);
+	
+	
+	static void write_nd_array(EMData* data, vector<int> size_of_each_dimension, vector<int> location, float val);
+	static float read_nd_array(EMData* em_data, vector<int> size_of_each_dimension, vector<int> location);
+	static float read_nd_array_linear_interp(EMData* em_data, vector<int> size_of_each_dimension, vector<float> location);
+	
 private:
 	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()
 public:
