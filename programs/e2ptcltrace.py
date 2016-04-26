@@ -111,6 +111,8 @@ def main():
 
 	if options.verbose: print("Tracing particles through input classmx files")
 	with open(options.trace,"w") as outf:
+		dat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
+		cmt = " # {};{};{};{};{};{};{};{};{};{}\n"
 		for p in xrange(nptcl):
 			if options.verbose:
 				sys.stdout.write('\r{0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
@@ -136,31 +138,22 @@ def main():
 
 				clsdiff = abs(cls2-cls1)
 
+				outf.write(dat.format(alt1,az1,cls1,alt2,az2,cls2,diff,clsdiff))
+
+				classes2 = cmx[i].replace("classmx","classes")
+				hdr2 = EMData(classes2,cls2,True)
+
+				classes1 = cmx[i-1].replace("classmx","classes")
+				hdr1 = EMData(classes1,cls1,True)
+
 				try:
-					classes2 = cmx[i].replace("classmx","classes")
-					hdr2 = EMData(classes2,cls2,True)
 					idx2 = hdr2["projection_image_idx"]
 					proj2 = hdr2["projection_image"]
-
-					classes1 = cmx[i-1].replace("classmx","classes")
-					hdr1 = EMData(classes1,cls1,True)
 					idx1 = hdr1["projection_image_idx"]
 					proj1 = hdr1["projection_image"]
-
-					ptcl_src = hdr2["class_ptcl_src"]
-					ptcl_idx = [i for i in hdr2["class_ptcl_idxs"] if i == p][0]
-
-					hdr1 = None
-					hdr2 = None
-
-					dat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
-					outf.write(dat.format(alt1,az1,cls1,alt2,az2,cls2,diff,clsdiff))
-
-					cmt = " # {};{};{};{};{};{};{};{};{};{}\n"
-					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1,ptcl_idx,ptcl_src))
-
+					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1,p,hdr2["class_ptcl_src"]))
 				except:
-					pass # no data in class corresponding to projection
+					outf.write(" # no particles in class corresponding to projection\n")
 
 	if ".txt" in options.trace: kf = options.trace.replace(".txt",".key")
 	else: kf = options.trace + ".key"
