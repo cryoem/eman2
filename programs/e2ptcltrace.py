@@ -148,7 +148,7 @@ def main():
 					proj1 = hdr1["projection_image"]
 
 					ptcl_src = hdr2["class_ptcl_src"]
-					ptcl_idx = [i for i in hdr2["class_ptcl_idxs"] if i == p]
+					ptcl_idx = [i for i in hdr2["class_ptcl_idxs"] if i == p][0]
 
 					hdr1 = None
 					hdr2 = None
