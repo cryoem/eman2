@@ -451,11 +451,11 @@ class ClassSplitTask(JSTask):
 		
 		# if you turn this on multithreaded it will crash sometimes
 		avg.mult(0.05)	#arbitrary for debugging
-		avg.write_image("pca.hdf",-1)
-		basis[0].write_image("pca.hdf",-1)
-		basis[1].write_image("pca.hdf",-1)
-		basis[2].write_image("pca.hdf",-1)
-		basis[3].write_image("pca.hdf",-1)
+		#avg.write_image("pca.hdf",-1)
+		#basis[0].write_image("pca.hdf",-1)
+		#basis[1].write_image("pca.hdf",-1)
+		#basis[2].write_image("pca.hdf",-1)
+		#basis[3].write_image("pca.hdf",-1)
 #		print "basis"
 		
 		# at the moment we are just splitting into 2 classes, so we'll use the first eigenvector. A bit worried about defocus coming through, but hopefully ok...
