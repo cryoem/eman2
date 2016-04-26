@@ -117,7 +117,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.rmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
 		self.selected=[]
-		self.comments={}			# IF reading from a file which contains per-point comments, this dictionary contains a list of comments for each point 
+		self.comments={}			# IF reading from a file which contains per-point comments, this dictionary contains a list of comments for each point
 
 		self.data={}				# List of Lists to plot
 		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
@@ -128,6 +128,9 @@ class EMPlot2DWidget(EMGLWidget):
 
 		self.resize(640,480)
 		self.particle_viewer = None
+		self.particle_viewer2 = None
+		self.particle_viewer3 = None
+		self.particle_viewer4 = None
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -245,7 +248,7 @@ class EMPlot2DWidget(EMGLWidget):
 					except: self.axes[key]=(0,1,-2,-2)
 				else : self.axes[key]=(0,1,-2,-2)
 			else : self.axes[key]=(-1,0,-2,-2)
-		except: 
+		except:
 			print "Data error:", data
 			return
 
@@ -739,22 +742,47 @@ lc is the cursor selection point in plot coords"""
 		self.selected=[srt[0]]
 		for i in xrange(1,5) :
 			if r[srt[i]]<3 : self.selected.append(srt[i])
-		
+
 		y0=35
 		if comments!=None:
 			# If the comment is "#;file", we display the image, otherwise show the comment on the plot
 			p=self.selected[0]
 			try:
-				imn,imf=comments[p].split(";")
-				imn=int(imn)
-				ptclim=EMData(imf,imn)
+				cmts = comments[p].split(";")
 
-				if self.particle_viewer==None : 
-					self.particle_viewer=emimage2d.EMImage2DWidget(ptclim)
-					self.particle_viewer.show()
-				else:
-					self.particle_viewer.set_data(ptclim)
-					self.particle_viewer.show()
+				for i in xrange(len(cmts)/2):
+					imn = int(cmts[2*i])
+					imf = cmts[2*i+1]
+					ptclim=EMData(imf,imn)
+					if i == 0:
+						if self.particle_viewer==None :
+							self.particle_viewer=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer.show()
+						else:
+							self.particle_viewer.set_data(ptclim)
+							self.particle_viewer.show()
+					elif i == 1:
+						if self.particle_viewer2==None :
+							self.particle_viewer2=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer2.show()
+						else:
+							self.particle_viewer2.set_data(ptclim)
+							self.particle_viewer2.show()
+					elif i == 2:
+						if self.particle_viewer3==None :
+							self.particle_viewer3=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer3.show()
+						else:
+							self.particle_viewer3.set_data(ptclim)
+							self.particle_viewer3.show()
+					elif i == 3:
+						if self.particle_viewer4==None :
+							self.particle_viewer4=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer4.show()
+						else:
+							self.particle_viewer4.set_data(ptclim)
+							self.particle_viewer4.show()
+
 			except:
 				self.add_shape("selpc",EMShape(("scrlabel",0,0,0,80,self.scrlim[3]-(35),comments[p],120.0,-1)))
 				y0+=18
@@ -762,7 +790,7 @@ lc is the cursor selection point in plot coords"""
 		for i,p in enumerate(self.selected):
 			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+y0),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
 
-			
+
 
 		self.emit(QtCore.SIGNAL("selected"),self.selected)
 
@@ -985,7 +1013,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	def closeEvent(self,event):
 		self.clear_gl_memory()
 		EMGLWidget.closeEvent(self, event)
-			
+
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_C:
@@ -1489,7 +1517,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.wnseg=ValBox(rng=(2,32),label="Nseg",value=3)
 		self.wnseg.intonly=1
 		gbl0.addWidget(self.wnseg,3,0)
-		
+
 		self.wnax=StringBox(label="axes:",value="all")
 		gbl0.addWidget(self.wnax,3,1)
 
@@ -1498,7 +1526,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 
 		self.wspfix=StringBox(label="Prefix:",value="split")
 		gbl0.addWidget(self.wspfix,12,0)
-		
+
 		self.wbmakeset=QtGui.QPushButton()
 		self.wbmakeset.setText("New Sets")
 		gbl0.addWidget(self.wbmakeset,12,1)
@@ -1515,7 +1543,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		insp=self.target().get_inspector()				# inspector
 		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently hilighted items
 		lsx={}
-		
+
 		nums=set()
 		for name in names:
 			try: num=int(name.rsplit("_",1)[1])
@@ -1526,22 +1554,22 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				QtGui.QMessageBox.warning(self, "Error","Please select only one group of sets at a time !")
 				return
 			nums.add(num)
-			
+
 			out=LSXFile("sets/{}_{}.lst".format(self.wspfix.getValue(),num))
 
 			try: comments=self.target().comments[name]
 			except:
 				QtGui.QMessageBox.warning(self,"Error", "No filenames stored in {}".format(name))
 				return
-			
+
 			for r in xrange(len(comments)):
 				try: imn,imf=comments[r].split(";")
 				except:
 					QtGui.QMessageBox.warning(self,"Error", "Invalid filename {} in {}, line {}".format(comments[r],name,r))
 					return
-				
+
 				imn=int(imn)
-				if not lsx.has_key(imf) : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading 
+				if not lsx.has_key(imf) : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
 				val=lsx[imf][imn]
 				out[r]=val
 
@@ -1567,13 +1595,13 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 			except:
 				QtGui.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
 				return
-		
+
 		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
 		if axnorm:
 			print "Normalize Axes"
 			datafix=[i.copy()/std(i) for i in data]
 		else: datafix=data
-		
+
 		# build our array data into images for analysis ... this may not be the most efficient approach
 		imdata=[]
 		for r in range(nrow):
@@ -1585,7 +1613,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":1,"slowseed":0,"mininclass":5})
 		an.insert_images_list(imdata)
 		centers=an.analyze()
-		
+
 		#print "centers ",centers
 
 		# extract classified results as new sets
@@ -1593,10 +1621,10 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		resultc=[[] for j in range(nseg)]							# nseg lists of comments
 		for r in range(nrow):
 			s=imdata[r]["class_id"]
-			for c in xrange(ncol): 
+			for c in xrange(ncol):
 				results[s][c].append(data[c][r])
 			if comments!=None: resultc[s].append(comments[r])
-				
+
 		for s in range(nseg) :
 			if comments!=None: self.target().set_data(results[s],key="{}_{}".format(name,s),comments=resultc[s])
 			else: self.target().set_data(results[s],key="{}_{}".format(name,s))
@@ -1756,9 +1784,9 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl.setMargin(2)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
-		
+
 		gbx = QtGui.QGroupBox("Data sets")
-		
+
 		vbl3 = QtGui.QVBoxLayout()
 		vbl3.setMargin(4)
 		vbl3.setSpacing(6)
@@ -1779,11 +1807,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl6 = QtGui.QHBoxLayout()
 		hbl.setObjectName("hbl6")
 		vbl3.addLayout(hbl6)
-		
+
 		self.nonebut=QtGui.QPushButton(self)
 		self.nonebut.setText("None")
 		hbl6.addWidget(self.nonebut)
-		
+
 		self.allbut=QtGui.QPushButton(self)
 		self.allbut.setText("All")
 		hbl6.addWidget(self.allbut)
@@ -1797,13 +1825,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl7 = QtGui.QHBoxLayout()
 		hbl.setObjectName("hbl7")
 		vbl3.addLayout(hbl7)
-		
+
 		self.nbox=ValBox(label="ns:",value=1)
 		hbl7.addWidget(self.nbox)
-		
+
 		self.stepbox=ValBox(label="stp:",value=1)
 		hbl7.addWidget(self.stepbox)
-		
+
 		vbl = QtGui.QVBoxLayout()
 		vbl.setMargin(0)
 		vbl.setSpacing(6)
@@ -2031,7 +2059,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.showslide, QtCore.SIGNAL("valueChanged"), self.selSlide)
 		QtCore.QObject.connect(self.allbut, QtCore.SIGNAL("clicked()"), self.selAll)
 		QtCore.QObject.connect(self.nonebut, QtCore.SIGNAL("clicked()"), self.selNone)
-		
+
 		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
@@ -2077,19 +2105,19 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
-		
+
 	def selAll(self):
 		for k in self.target().visibility.keys() : self.target().visibility[k]=True
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
-		
+
 	def selNone(self):
 		for k in self.target().visibility.keys() : self.target().visibility[k]=False
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
-		
+
 
 	def openClassWin(self):
 		"""This launches a separate window for classifying points in a 2-D plot"""
@@ -2330,7 +2358,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 			for name in names:
 				self.target().setAxes(name,self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value(),True)
 			self.target().updateGL()
-				
+
 #			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value())
 
 	def newLimits(self,val=None):
