@@ -91,23 +91,27 @@ def main():
 	# Create a list of lists of Transforms representing the orientations of the reference projections
 	# for each classmx file and try to get projection orientation information for each class
 
+	if options.verbose:
+		print("Parsing assigned projection orientations")
 	clsort=[]
 	for c,p in zip(cmx,proj):
 		ncls=EMUtil.get_image_count(p)
 		orts = []
 		for i in xrange(ncls):
+			if options.verbose:
+				sys.stdout.write('\r{}, {}\t{}/{}\t'.format(c,p,i+1,ncls))
 			orts.append( EMData(p,i,True)["xform.projection"] )
 		clsort.append(orts)
+		if options.verbose: print("")
 
 	# Get a list of Transform objects to move to each other asymmetric unit in the symmetry group
 	syms=parsesym( str(options.sym) ).get_syms()
 
+	if options.verbose: print("Tracing particles from input classmx files")
 	with open(options.trace,"w") as outf:
-		set = "placeholder.lst" # for use with 2D plot ptcl viewing
-		fmt = "{:.3f}\t{:.3f}\t{:.0f}\t{:.3f}\t{:.3f}\t{:.0f}\t{:.3f} # {};{}\n"
 		for p in xrange(nptcl):
 			if options.verbose:
-				sys.stdout.write('\rparticle: {0:.0f} / {1:.0f}'.format(p+1,nptcl))
+				sys.stdout.write('\rparticle: {0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
 			outf.write("{}".format(p))
 			for i in xrange(1,len(cmx)):
 				ort1=clsort[i-1][int(cls[i-1][0][0,p])]	# orientation of particle in first classmx
@@ -118,16 +122,44 @@ def main():
 					diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
 				diff=min(diffs)	# The angular error for the best-agreeing orientation
 				e1 = ort1.get_rotation("eman")
-				e2 = ort2.get_rotation("eman")
-				outf.write(fmt.format(e1["alt"],e1["az"],cls[i-1][0][0,p],e2["alt"],e2["az"],cls[i][0][0,p],diff,p,set))
+				alt1 = e1["alt"]
+				az1 = e1["az"]
+				cls1 = cls[i-1][0][0,p]
+				e2 =  ort2.get_rotation("eman")
+				alt2 = e2["alt"]
+				az2 = e2["az"]
+				cls2 = cls[i][0][0,p]
+				clsdiff = abs(cls2-cls1)
+				classnum = int(cls[i-1][0][0,p])
+				outf.write("\t".join(["{}".format(s) for s in [alt1,az1,cls1,alt2,az2,cls2,diff,clsdiff]]))
+				outf.write(" # {};{}\n".format(classnum,cmx[i].replace("classmx","classes")))
 
-	print("\n\nSUMMARY:")
-	print("UNDER CONSTRUCTION!")
-	print("Argument\tMean\tConfidence\tShiftMag\tDispersion\t")
-	for i,(c,p) in enumerate(zip(cmx,proj)):
-		print("{}: {},{}".format(i,c,p))
+	ctr = 0
+	with open("ptcltrace.key","w") as keyfile:
+		for i,c in enumerate(cmx):
+			if i > 0:
+				k = []
+				k.append("{}:\talt from {} (input {})".format(ctr,c,i-1))
+				k.append("{}\taz from {} (input {})".format(ctr+1,c,i-1))
+				k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+2,c,i-1))
+				k.append("{}:\talt from {} (input {})".format(ctr+3,c,i))
+				k.append("{}\taz from {} (input {})".format(ctr+4,c,i))
+				k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+5,c,i))
+				k.append("{}:\tangular error for best agreeing orientation (difference between input {} and {})".format(ctr+6,i,i-1))
+				k.append("{}:\tabsolute difference between class assignment {} and {}".format(ctr+7,i,i-1))
+				keyfile.write("\n".join([x for x in k])+"\n")
+				ctr+=len(k)
 
-	print("\nComparisons and assigned euler angles stored in {}.".format(options.trace))
+	#print("\n\nSUMMARY:")
+	#print("UNDER CONSTRUCTION!")
+	#print("DISPERSION")
+	#print("COVERAGE")
+	#print("mean/median diff")
+	#print("
+	#for i,(c,p) in enumerate(zip(cmx,proj)):
+	#	print("{}: {},{}".format(i,c,p))
+
+	print("Results stored in {}.\nThe file ptcltrace.key describes the contents of each column.".format(options.trace))
 
 	E2end(E2n)
 
