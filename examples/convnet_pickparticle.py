@@ -43,6 +43,7 @@ def main():
 	parser.add_argument("--boxptcl_boxsep", type=int,help="Minimum seperation for particle picking", default=25)
 	parser.add_argument("--boxptcl_minscore", type=int,help="Minimum score for particle picking", default=.1)
 	parser.add_argument("--shrink", type=int,help="Shrink particles", default=1)
+	parser.add_argument("--rmptcls", type=str,help="Mark particles from a list file as exclude for e2boxer", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -51,11 +52,15 @@ def main():
 	options.nkernel=[int(i) for i in options.nkernel.split(',')]
 	options.ksize=[int(i) for i in options.ksize.split(',')]
 	
+	if options.rmptcls:
+		remove_ptcls(options.rmptcls)
+		print "Done"
+		exit()
 	
 	if options.classify!=None:
-		os.environ["THEANO_FLAGS"]="optimizer=fast_run"
-		#os.environ["THEANO_FLAGS"]="optimizer=None"
-		#print "Testing on large amount of particles(?), Theano optimizer disabled"
+		#os.environ["THEANO_FLAGS"]="optimizer=fast_run"
+		os.environ["THEANO_FLAGS"]="optimizer=None"
+		print "Testing on large amount of particles(?), Theano optimizer disabled"
 		import_theano()
 		convnet=load_model(options.pretrainnet)
 		classify_particles(convnet,options)
@@ -760,5 +765,25 @@ class LeNetConvPoolLayer(object):
 
 			return (cost, updates)
 
+
+def remove_ptcls(lstfile):
+	num=EMUtil.get_image_count(lstfile)
+	for i in range(num):
+		e=EMData(lstfile,i,True)
+		try:
+			src=e["ptcl_source_image"]
+			cord=e["ptcl_source_coord"]
+		except:
+			continue
+		
+		cord=np.array(cord)
+		#print src,cord
+		js=js_open_dict(info_name(src))
+		bx=np.array([[i[0],i[1]] for i in js["boxes"]])
+		ptid=np.argmin(np.sum(abs(bx-cord),axis=1))
+		#print js["boxes"][ptid][2]
+		js["boxes"][ptid][2]="exclude"
+		js.update(js)
+		
 if __name__ == '__main__':
     main()

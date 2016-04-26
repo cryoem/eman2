@@ -743,6 +743,7 @@ class ManualBoxingTool:
 	'''
 #	SET_BOX_COLOR = True
 	BOX_TYPE = "manual"
+	EXCLUDE_TYPE="exclude"
 	EMBox.set_box_color(BOX_TYPE,[1,1,1])
 	def __init__(self,target):
 		self.target = weakref.ref(target)
@@ -792,7 +793,7 @@ class ManualBoxingTool:
 			self.moving=[m,box_num]
 		else:
 			box = self.target().get_box(box_num)
-			if box.type == ManualBoxingTool.BOX_TYPE:
+			if box.type == ManualBoxingTool.BOX_TYPE or box.type==ManualBoxingTool.EXCLUDE_TYPE:
 		 		if event.modifiers()&Qt.ShiftModifier :
 					self.target().remove_box(box_num)
 				else:
@@ -857,7 +858,7 @@ class ManualBoxingTool:
 		self.target().remove_box(box_num)
 
 	def get_unique_box_types(self):
-		return [ManualBoxingTool.BOX_TYPE]
+		return [ManualBoxingTool.BOX_TYPE,ManualBoxingTool.EXCLUDE_TYPE ]
 
 	def boxes_erased(self,list_of_boxes):
 		'''
@@ -1460,7 +1461,7 @@ class EMBoxList(object):
 		'''
 		for i in l: self.pop(i)
 
-	def write_particles(self,input_file_name,out_file_name,box_size,invert=False,normproc=None,noedges=False):
+	def write_particles(self,input_file_name,out_file_name,box_size,invert=False,normproc=None,noedges=False,doexclude=False):
 		hdr=EMData(input_file_name,0,True)
 		xsize=hdr["nx"]
 		ysize=hdr["ny"]
@@ -1481,7 +1482,10 @@ class EMBoxList(object):
 		for i,box in enumerate(self.boxes):
 			if noedges :
 				if box[0]-box_size/2<0 or box[1]-box_size/2<0 or box[0]+box_size/2>=xsize or box[1]+box_size/2>=ysize : continue
-				
+			if doexclude:
+				if box.type=="exclude":
+					print box
+					continue
 			image = box.get_image(input_file_name,box_size,norm=normproc)
 			if invert: image.mult(-1)
 			if str(normproc) != "None": image.process_inplace(normproc)
@@ -1495,7 +1499,7 @@ class EMBoxList(object):
 			j+=1
 
 
-	def write_coordinates(self,input_file_name,out_file_name,box_size,noedges=False):
+	def write_coordinates(self,input_file_name,out_file_name,box_size,noedges=False,doexclude=False):
 		hdr=EMData(input_file_name,0,True)
 		xsize=hdr["nx"]
 		ysize=hdr["ny"]
@@ -1512,6 +1516,10 @@ class EMBoxList(object):
 			for box in self.boxes:
 				if noedges :
 					if box[0]-box_size/2<0 or box[1]-box_size/2<0 or box[0]+box_size/2>=xsize or box[1]+box_size/2>=ysize : continue
+				
+				if doexclude:
+					if box.type=="exclude":
+						continue
 				xc = box.x-box_size/2
 				yc = box.y-box_size/2
 				f.write(str(int(xc))+'\t'+str(int(yc))+'\t'+str(box_size)+'\t'+str(box_size)+'\n')
