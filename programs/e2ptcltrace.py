@@ -61,11 +61,14 @@ def main():
 
 	cmx = []
 	proj = []
+	classes = []
 	for c in args:
 		if "classmx" in c:
 			if os.path.isfile(c): cmx.append(c)
 			p = c.replace("classmx","projections")
+			cs = c.replace("classmx","classes")
 			if os.path.isfile(p): proj.append(p)
+			if os.path.isfile(cs): classes.append(cs)
 		else:
 			print("{} is not a classmx file. Will not process.".format(f))
 
@@ -91,15 +94,14 @@ def main():
 	# Create a list of lists of Transforms representing the orientations of the reference projections
 	# for each classmx file and try to get projection orientation information for each class
 
-	if options.verbose:
-		print("Parsing assigned projection orientations")
+	if options.verbose: print("Parsing assigned projection orientations")
 	clsort=[]
-	for c,p in zip(cmx,proj):
+	for x,p,c in zip(cmx,proj,classes):
 		ncls=EMUtil.get_image_count(p)
 		orts = []
 		for i in xrange(ncls):
 			if options.verbose:
-				sys.stdout.write('\r{}, {}\t{}/{}\t'.format(c,p,i+1,ncls))
+				sys.stdout.write('\r{}, {}\t{}/{}\t'.format(x,p,i+1,ncls))
 			orts.append( EMData(p,i,True)["xform.projection"] )
 		clsort.append(orts)
 		if options.verbose: print("")
@@ -112,7 +114,6 @@ def main():
 		for p in xrange(nptcl):
 			if options.verbose:
 				sys.stdout.write('\rparticle: {0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
-			outf.write("{}".format(p))
 			for i in xrange(1,len(cmx)):
 				ort1=clsort[i-1][int(cls[i-1][0][0,p])]	# orientation of particle in first classmx
 				ort2=clsort[i][int(cls[i][0][0,p])]		# orientation of particle in second classmx
@@ -130,12 +131,14 @@ def main():
 				az2 = e2["az"]
 				cls2 = cls[i][0][0,p]
 				clsdiff = abs(cls2-cls1)
-				classnum = int(cls[i-1][0][0,p])
-				outf.write("\t".join(["{}".format(s) for s in [alt1,az1,cls1,alt2,az2,cls2,diff,clsdiff]]))
-				outf.write(" # {};{}\n".format(classnum,cmx[i].replace("classmx","classes")))
+				outf.write("\t".join(["{}".format(s) for s in [alt1,az1,int(cls1),alt2,az2,int(cls2),diff,int(clsdiff)]]))
+				outf.write(" # {};{}\n".format(int(cls2),cmx[i].replace("classmx","classes")))
 
-	ctr = 0
-	with open("ptcltrace.key","w") as keyfile:
+	if ".txt" in options.trace: kf = options.trace.replace(".txt",".key")
+	else: kf = options.trace + ".key"
+
+	with open(kf,"w") as keyfile:
+		ctr = 0
 		for i,c in enumerate(cmx):
 			if i > 0:
 				k = []
@@ -159,7 +162,7 @@ def main():
 	#for i,(c,p) in enumerate(zip(cmx,proj)):
 	#	print("{}: {},{}".format(i,c,p))
 
-	print("Results stored in {}.\nThe file ptcltrace.key describes the contents of each column.".format(options.trace))
+	print("Particle trace results stored in {}.\nThe file {} describes the contents of each column.".format(options.trace,kf))
 
 	E2end(E2n)
 
