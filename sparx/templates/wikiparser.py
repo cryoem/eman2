@@ -86,11 +86,11 @@ def construct_token_list_from_wiki(sxcmd_config):
 
 	# Use priority 0 to overrule the exceptional cases (This is a reason why priority is introduced...)
 	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "")               # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
-	keyword_dict["stack_file"]                    = SXkeyword_map(0, "bdb")            # stack_file (contains keyworkd 'stack' but this should be bdb type)
 	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "")               # stack_mode (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")               # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	keyword_dict["input_micrograph_list"]         = SXkeyword_map(0, "any_image_list") # input_micrograph_list (contains keyworkd 'input_micrograph' but this should be image_list type)
+	keyword_dict["isac_directory"]                = SXkeyword_map(0, "string")         # isac_directory (contains keyworkd 'directory' but this should be string type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
@@ -344,7 +344,11 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# DESIGN_NOTE: 2016/02/05 Toshio Moriya
 	# Handle exceptional cases due to the limitation of software design
 	# In future, we should remove these exception handling by reviewing the design
-	if sxcmd.name == "sxfilterlocal":
+	if sxcmd.name == "sxisac_post_processing":
+		assert(sxcmd.token_dict["stack_file"].key_base == "stack_file")
+		assert(sxcmd.token_dict["stack_file"].type == "image")
+		sxcmd.token_dict["stack_file"].type = "bdb"
+	elif sxcmd.name == "sxfilterlocal":
 		assert(sxcmd.token_dict["locres_volume"].key_base == "locres_volume")
 		assert(sxcmd.token_dict["locres_volume"].type == "output")
 		sxcmd.token_dict["locres_volume"].type = "image"
