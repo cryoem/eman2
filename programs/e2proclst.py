@@ -44,6 +44,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	####################
 #	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
 	parser.add_argument("--merge",type=str,help="Specify the output name here. This will concatenate all of the input .lst files into a single output",default=None)
+	parser.add_argument("--range",type=str,help="Range of particles to use. Works only with create option. Input of 0,10,2 means range(0,10, step=2).",default=None)
 	parser.add_argument("--create",type=str,help="Input files should be image files. Specify an .lst file to create here with references to all of the images in the inputs.")
 	parser.add_argument("--mergesort",type=str,help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output",default=None)
 	parser.add_argument("--retype",type=str,help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)",default=None)
@@ -64,12 +65,23 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	if options.create != None:
 		lst=LSXFile(options.create,False)
+		if options.range:
+			rg=eval("range({})".format(options.range))
+			
 		for f in args:
 			n=EMUtil.get_image_count(f)
-			if options.verbose : print "Processing {} images in {}".format(n,f)
-
-			for i in xrange(n):
-				lst.write(-1,i,f)
+			if options.verbose : 
+				if options.range:
+					print "Processing {} images in {}".format(len(rg),f)
+				else:
+					print "Processing {} images in {}".format(n,f)
+			if options.range:
+				for i in rg:
+					if i>=n: break
+					lst.write(-1,i,f)
+			else:
+				for i in xrange(n):
+					lst.write(-1,i,f)
 		
 		sys.exit(0)
 

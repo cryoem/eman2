@@ -3667,6 +3667,11 @@ def getfvec( phi, tht ):
 
 	return (x,y,z)
 
+def nearest_fang( vecs, phi, tht ) :
+	from utilities import getfvec
+	vec = getfvec( phi, tht )
+	return  Util.nearest_fang(vecs, vec[0],vec[1],vec[2])[0]
+
 def nearest_ang( vecs, phi, tht ) :
 	from utilities import getvec
 	vec = getvec( phi, tht )

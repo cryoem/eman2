@@ -872,7 +872,7 @@ costlist, int* curbranch);
 
 
 	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, EMData* bckgnoise);
-	static float sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas);
+	static float sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob);
 
 	//utility for sxlocres
 	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);

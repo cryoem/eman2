@@ -845,6 +845,7 @@ int FourierReconstructor::determine_slice_agreement(EMData*  input_slice, const 
 
 	input_slice->set_attr("reconstruct_norm",slice->get_attr("reconstruct_norm"));
 	input_slice->set_attr("reconstruct_absqual",slice->get_attr("reconstruct_absqual"));
+	input_slice->set_attr("reconstruct_absqual_lowres",slice->get_attr("reconstruct_absqual_lowres"));
 //	input_slice->set_attr("reconstruct_qual",slice->get_attr("reconstruct_qual"));
 	input_slice->set_attr("reconstruct_weight",slice->get_attr("reconstruct_weight"));
 
@@ -869,7 +870,15 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 
 	float inx=(float)(input_slice->get_xsize());		// x/y dimensions of the input image
 	float iny=(float)(input_slice->get_ysize());
-
+	float apix=input_slice->get_attr("apix_x");
+	float rmax=iny*apix/12.0;		// radius at 12 A, use as cutoff for low res insertion quality
+	if (rmax>iny/2.0-1.0) rmax=iny/2.0-1.0;		// in case of large A/pix
+	if (rmax<5.0) rmax=5.0;		// can't imagine this will happen
+	
+	double dotlow=0;	// low resolution dot product
+	double dlpow=0;
+	double dlpow2=0;
+	
 	double dot=0;		// summed pixel*weight dot product
 	double vweight=0;		// sum of weights
 	double power=0;		// sum of inten*weight from volume
@@ -933,7 +942,14 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 					if (!pixel_at(xx,yy,zz,dt) || dt[2]==0) continue;
 
 //					printf("%f\t%f\t%f\t%f\t%f\n",dt[0],dt[1],dt[2],dt2[0],dt2[1]);
-//					float r=(float)Util::hypot_fast(x,y);
+					float r=(float)Util::hypot_fast(x,y);
+					if (r>3 && r<rmax) {
+						dotlow+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
+						dlpow+=(dt[0]*dt[0]+dt[1]*dt[1])*dt[2];
+						dlpow2+=(dt2[0]*dt2[0]+dt2[1]*dt2[1])*dt[2];
+					}
+					
+					
 //					if (r<6) continue; 
 					dot+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
 					vweight+=dt[2];
@@ -946,9 +962,11 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	}
 	
 	dot/=sqrt(power*power2);		// normalize the dot product
+	if (dlpow*dlpow2>0) dotlow/=sqrt(dlpow*dlpow2);
 //	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)));
 	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)));
 	input_slice->set_attr("reconstruct_absqual",(float)dot);
+	input_slice->set_attr("reconstruct_absqual_lowres",(float)dotlow);
 	float rw=weight<=0?1.0f:1.0f/weight;
 	input_slice->set_attr("reconstruct_qual",(float)(dot*rw/((rw-1.0)*dot+1.0)));	// here weight is a proxy for SNR
 	input_slice->set_attr("reconstruct_weight",(float)vweight/(float)(subnx*subny*subnz));
