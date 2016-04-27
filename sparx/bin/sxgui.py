@@ -669,7 +669,7 @@ class SXCmdWidget(QWidget):
 				if external_file_path not in ["", sxcmd_token.default[external_file_path_index]]:
 					# Case 1: User specified an exteranl function different from default or empty string
 					if os.path.splitext(external_file_path)[1] != ".py": 
-						QMessageBox.warning(self, "Invalid paramter value", "Exteranl File Path (%s) should include the python script extension (.py)." % (external_file_path))
+						QMessageBox.warning(self, "Invalid parameter value", "Exteranl File Path (%s) should include the python script extension (.py)." % (external_file_path))
 						return ""
 					dir_path, file_basename = os.path.split(external_file_path)
 					file_basename = file_basename.replace(".py", "")
@@ -692,7 +692,7 @@ class SXCmdWidget(QWidget):
 					if sxcmd_token.widget.text() == sxcmd_token.default:
 						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == True:  # Error case
 						if sxcmd_token.is_required == True: 
-							QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("message_output")))
+							QMessageBox.warning(self, "Invalid parameter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("message_output")))
 							return ""
 						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == False: # Do not add this token to command line
 						# else: # assert(sxcmd_token.is_required == False) # Do not add to this command line
@@ -756,7 +756,7 @@ class SXCmdWidget(QWidget):
 					required_divisor = int(str(self.sxcmd.token_dict[required_key_base].widget.text()))
 					required_label =  self.sxcmd.token_dict[required_key_base].label
 					if required_divisor == 0:
-						QMessageBox.warning(self, "Invalid paramter value", "\"%s\" must be larger than 0. Please check the setting" % (required_label))
+						QMessageBox.warning(self, "Invalid parameter value", "\"%s\" must be larger than 0. Please check the setting" % (required_label))
 						return "" 
 					
 					valid_np = np
@@ -765,7 +765,7 @@ class SXCmdWidget(QWidget):
 							valid_np = required_divisor
 						else:
 							valid_np = valid_np - (valid_np % required_divisor)
-						QMessageBox.warning(self, "Invalid paramter value", "The number of \"MPI processes\" (%d) is invalid. It MUST BE multiplicity of \"%s\" (%d). Please check the setting. A close valid number is %d." % (np, required_label, required_divisor,valid_np))
+						QMessageBox.warning(self, "Invalid parameter value", "The number of \"MPI processes\" (%d) is invalid. It MUST BE multiplicity of \"%s\" (%d). Please check the setting. A close valid number is %d." % (np, required_label, required_divisor,valid_np))
 						return "" 
 							
 			# else: assert(np == 1) # because the "MPI Processes" is disabled for sx*.py process which does not support mpi
@@ -776,7 +776,7 @@ class SXCmdWidget(QWidget):
 				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
 				if os.path.exists(self.sxcmd_tab_main.qsub_script_edit.text()) != True: 
-					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s)." % (self.sxcmd_tab_main.qsub_script_edit.text()))
+					QMessageBox.warning(self, "Invalid parameter value", "Invalid file path for qsub script template (%s)." % (self.sxcmd_tab_main.qsub_script_edit.text()))
 					return "" 
 					
 				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
@@ -843,7 +843,7 @@ class SXCmdWidget(QWidget):
 				# Create script for queue submission from a give template
 				template_file_path = self.sxcmd_tab_main.qsub_script_edit.text()
 				if os.path.exists(template_file_path) == False: 
-					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
+					QMessageBox.warning(self, "Invalid parameter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
 					return
 				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
 				file_name_qsub_script = "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh"
@@ -951,7 +951,7 @@ class SXCmdWidget(QWidget):
 		# Write MPI parameters 
 		file_out.write("%s == %s \n" % ("MPI processors", str(self.sxcmd_tab_main.mpi_nproc_edit.text())))
 		file_out.write("%s == %s \n" % ("MPI Command Line Template", str(self.sxcmd_tab_main.mpi_cmd_line_edit.text())))
-		# Write Qsub paramters 
+		# Write Qsub parameters 
 		if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 			val_str = "YES"
 		else:
@@ -998,16 +998,16 @@ class SXCmdWidget(QWidget):
 					target_operator = "<"
 					item_tail = label_in.find(target_operator)
 					if item_tail != 0: 
-						QMessageBox.warning(self, "Invalid Paramter File Format", "Command token entry should start from \"%s\" for key base name in line (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should start from \"%s\" for key base name in line (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
 					label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
 					target_operator = ">"
 					item_tail = label_in.find(target_operator)
 					if item_tail == -1: 
-						QMessageBox.warning(self, "Invalid Paramter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
 					key_base = label_in[0:item_tail]
 					# Get corresponding cmd_token
 					if key_base not in self.sxcmd.token_dict.keys(): 
-						QMessageBox.warning(self, "Invalid Paramter File Format", "Invalid base name of command token \"%s\" is found in line (%s). This paramter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s). This parameter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in))
 					cmd_token = self.sxcmd.token_dict[key_base]
 					# First, handle very special cases
 					if cmd_token.type == "function":
@@ -1027,7 +1027,7 @@ class SXCmdWidget(QWidget):
 							cmd_token.widget.setText(val_str_in)
 						
 		else:
-			QMessageBox.warning(self, "Fail to load paramters", "The specified file is not paramter file for %s." % self.sxcmd.get_mode_name_for("human"))
+			QMessageBox.warning(self, "Fail to load parameters", "The specified file is not parameter file for %s." % self.sxcmd.get_mode_name_for("human"))
 		
 		file_in.close()
 	
@@ -1453,11 +1453,11 @@ class SXCmdTab(QWidget):
 #							spacer_frame.setMinimumWidth(token_widget_min_width)
 #							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "parameters":
-#							temp_btn = QPushButton("Select Paramter", self)
-							temp_btn = QPushButton("Select Paramter")
+#							temp_btn = QPushButton("Select Parameter", self)
+							temp_btn = QPushButton("Select Parameter")
 #							temp_btn.move(self.x3, self.y1 - 12)
 #							temp_btn.setMinimumWidth(token_widget_min_width)
-							temp_btn.setToolTip("display open file dailog to select paramter file (e.g. .txt)")
+							temp_btn.setToolTip("display open file dailog to select parameter file (e.g. .txt)")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 #							spacer_frame = QFrame()

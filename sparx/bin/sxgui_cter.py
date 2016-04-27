@@ -1148,7 +1148,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		if self.hist_map_list[self.curhist][self.idx_hist_item_val_min] == self.hist_map_list[self.curhist][self.idx_hist_item_val_max]:
 			param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
-			QtGui.QMessageBox.information(self, "Information","All entries have the same selected paramter values (%s). \n\nParameter Histogram & Plot will not be shown" % (param_label))
+			QtGui.QMessageBox.information(self, "Information","All entries have the same selected parameter values (%s). \n\nParameter Histogram & Plot will not be shown" % (param_label))
 		
 		if not os.path.exists(cter_micthumb_dir):
 			QtGui.QMessageBox.warning(None,"Warning","Can not find \"%s\" sub-directory associated with specified CTER CTF file (%s). Please check your project directory. \n\nMicrograph thumbnail display option is disabled for this session." % (cter_micthumb_dir, self.cter_partres_file_path))
@@ -1173,7 +1173,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		val_list = []
 		
-		# Create Histogram for selected paramter
+		# Create Histogram for selected parameter
 		idx_cter = self.hist_map_list[self.curhist][self.idx_hist_item_idx_cter]
 		for cter_entry in self.cter_entry_list:
 			val_list.append(cter_entry[idx_cter])
@@ -1263,7 +1263,7 @@ class SXGuiCter(QtGui.QWidget):
 		x_list = []
 		y_list = []
 		
-		# Create graph for selected paramter
+		# Create graph for selected parameter
 		idx_cter = self.hist_map_list[self.curhist][self.idx_hist_item_idx_cter]
 		for cter_id in xrange(len(self.cter_entry_list)):
 			x_list.append(cter_id)
@@ -1271,7 +1271,7 @@ class SXGuiCter(QtGui.QWidget):
 		# self.wplotparam.set_data((x_list,y_list),"plot_param",quiet=False,color=0)
 		self.wplotparam.set_data((x_list,y_list),"plot_param",quiet=False,color=0,linetype=0,symtype=0)
 		
-		# Create graph for single paramter value of selected entry
+		# Create graph for single parameter value of selected entry
 		# MRK_NOTE: 2015/12/17 Toshio Moriya
 		# This may NOT be good place to update the following information...
 		idx_cter = self.hist_map_list[self.curhist][self.idx_hist_item_idx_cter]
@@ -1677,7 +1677,7 @@ class SXGuiCter(QtGui.QWidget):
 				self.whistparam.hide()
 			if self.wplotparam.isVisible():
 				self.wplotparam.hide()
-			QtGui.QMessageBox.information(self, "Information","All entries have the same selected paramter values (%s). \n\nParameter Histogram & Plot will not be shown" % (param_label))
+			QtGui.QMessageBox.information(self, "Information","All entries have the same selected parameter values (%s). \n\nParameter Histogram & Plot will not be shown" % (param_label))
 		else:
 			if self.curthresholdcontrol == self.idx_threshold_control_lower:
 				self.hist_map_list[self.curhist][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
@@ -1829,7 +1829,7 @@ class SXGuiCter(QtGui.QWidget):
 		file_out.write(" @@@@@ \n")
 		file_out.write("# Associated CTER CTF File == %s\n" % (self.cter_partres_file_path))
 		file_out.write("# Saved Threshold Set == %s\n" % (self.thresholdset_map_list[idx_thresholdset][self.idx_thresholdset_item_label]))
-		file_out.write("# [Paramter Id] [Paramter Name] [Lower Threshold] [Upper Threshold]\n")
+		file_out.write("# [Parameter Id] [Parameter Name] [Lower Threshold] [Upper Threshold]\n")
 		
 		# Assigne the index of target threshold values
 		idx_threshold_lower = self.idx_hist_item_unapply_threshold_lower

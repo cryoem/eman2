@@ -1200,7 +1200,7 @@ def imf_residuals_B2(p,y,ctf,x):
 
 def imf_params_get(fstrN, fstrP, ctf_params, pu, nrank, q, lowf=0.01):
 	"""
-		Extract image formation paramters using optimization method
+		Extract image formation parameters using optimization method
 		Output params: 1. freq; 2.Pn1; 3.B factor.4. C; 5. C*Pu; 6. Pn2
 	"""
 	params = []

@@ -500,7 +500,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 def main():
 	# --------------------------------------------------------------------------------
 	# Get all necessary informations from wiki documents of sx*.py scripts
-	# and create gui generation paramter
+	# and create gui generation parameter
 	# --------------------------------------------------------------------------------
 	sxcmd_config_list = []
 
