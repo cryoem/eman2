@@ -882,9 +882,12 @@ costlist, int* curbranch);
 	static EMData* pack_complex_to_real(EMData* img);
 	
 	
-	static void write_nd_array(EMData* data, vector<int> size_of_each_dimension, vector<int> location, float val);
-	static float read_nd_array(EMData* em_data, vector<int> size_of_each_dimension, vector<int> location);
-	static float read_nd_array_linear_interp(EMData* em_data, vector<int> size_of_each_dimension, vector<float> location);
+	static void write_nd_array(EMData* data, const vector<int> &size_of_each_dimension, const vector<int> &location, float val);
+	static float read_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<int> &location);
+	static float read_nd_array_linear_interp(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<float> &location);
+	
+    static float sum_along_line_in_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<float> &start_location, const vector<float> &end_location, int number_of_points_on_the_line);
+	static vector<float> max_sum_along_line_in_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, int number_of_points_on_the_line);
 	
 private:
 	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()

@@ -1155,3 +1155,30 @@ def cml2_ori_collinearity(Ori):
 ## END COMMON LINES NEW VERSION ###############################################################
 ###############################################################################################
 
+def generate_templates(volft, kb, x_half_size, y_half_size, psi_half_size, projection_location):
+	
+	import numpy as np
+	
+	x_length = 2 * x_half_size + 1
+	y_length = 2 * y_half_size + 1
+	psi_length = 2 * psi_half_size + 1
+	
+	x = np.linspace(-x_half_size, x_half_size, x_length)
+	y = np.linspace(-y_half_size, y_half_size, y_length)
+	psi = np.linspace(-psi_half_size, psi_half_size, psi_length)
+	
+	all_templates = [[[None for i in range(psi_length)] for j in range(y_length)] for k in range(x_length)]
+	for x_i in range(x_length):
+		# print "x_i", x_i
+		for y_i in range(y_length):
+			for psi_i in range(psi_length):
+				projection_location_displacement = projection_location[:]
+				projection_location_displacement[2] += psi[psi_i] 
+				projection_location_displacement[3] += x[x_i] 
+				projection_location_displacement[4] += y[y_i] 
+				# print "x_i, y_i, psi", x_i, y_i, psi_i 
+				all_templates[x_i][y_i][psi_i] = prgs(volft, kb, projection_location_displacement)
+
+	return all_templates
+
+

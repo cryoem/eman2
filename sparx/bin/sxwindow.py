@@ -145,27 +145,51 @@ BDB files can not be selected as input micrographs.
 	
 	# Load CTFs if necessary
 	if options.import_ctf:
+		i_enum = -1
+		i_enum += 1; idx_cter_def          = i_enum # defocus [um]; index must be same as ctf object format
+		i_enum += 1; idx_cter_cs           = i_enum # Cs [mm]; index must be same as ctf object format
+		i_enum += 1; idx_cter_vol          = i_enum # voltage[kV]; index must be same as ctf object format
+		i_enum += 1; idx_cter_apix         = i_enum # pixel size [A]; index must be same as ctf object format
+		i_enum += 1; idx_cter_bfactor      = i_enum # B-factor [A^2]; index must be same as ctf object format
+		i_enum += 1; idx_cter_ac           = i_enum # amplitude contrast [%]; index must be same as ctf object format
+		i_enum += 1; idx_cter_astig_amp    = i_enum # astigmatism amplitude [um]; index must be same as ctf object format
+		i_enum += 1; idx_cter_astig_ang    = i_enum # astigmatism angle [degree]; index must be same as ctf object format
+		i_enum += 1; idx_cter_sd_def       = i_enum # std dev of defocus [um]
+		i_enum += 1; idx_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
+		i_enum += 1; idx_cter_sd_astig_ang = i_enum # std dev of ast angle [degree]
+		i_enum += 1; idx_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
+		i_enum += 1; idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp [%]
+		i_enum += 1; idx_cter_spectra_diff = i_enum # average of differences between with- and without-astig. experimental 1D spectra at extrema
+		i_enum += 1; idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
+		i_enum += 1; idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
+		i_enum += 1; idx_cter_error_ctf    = i_enum # limit frequency by CTF error [1/A]
+		i_enum += 1; idx_cter_mic_name     = i_enum # micrograph name
+		i_enum += 1; n_idx_cter            = i_enum
+		
 		# assert (os.path.exists(options.import_ctf))
 		ctf_list = read_text_row(options.import_ctf)
 		print("Detected CTF entries : %6d ..." % (len(ctf_list)))
 		if len(ctf_list) == 0:
 			ERROR("No CTF entry is found in %s. Please check --import_ctf option. Run %s -h for help." % (options.import_ctf, progname), "sxwindow", 1)
 			exit()
+		if (len(ctf_list[0]) != n_idx_cter):
+			ERROR("Number of columns (%d) must be %d in %s. The format might be old. Please run sxcter.py again." % (len(ctf_list[0]), n_idx_cter, options.import_ctf), "sxwindow", 1)
+			exit()
 		
 		ctf_dict={}
 		n_reject_defocus_error = 0
 		ctf_error_limit = [options.defocus_error/100.0, options.astigmatism_error]
 		for ctf_params in ctf_list:
-			# assert (len(ctf_params) == 14)
+			assert(len(ctf_params) == n_idx_cter)
 			# mic_basename is name of micrograph minus the path and extension
-			mic_basename = os.path.splitext(os.path.basename(ctf_params[-1]))[0]  # ctf_params[13:Micrograph name]
-			if(ctf_params[8] / ctf_params[0] > ctf_error_limit[0]): # ctf_params[8:std dev of defocus, 0:defocus] 
-				print("Defocus error %f exceeds the threshold. Micrograph %s is rejected." % (ctf_params[8] / ctf_params[0], mic_basename))
+			mic_basename = os.path.splitext(os.path.basename(ctf_params[idx_cter_mic_name]))[0]
+			if(ctf_params[idx_cter_sd_def] / ctf_params[idx_cter_def] > ctf_error_limit[0]):
+				print("Defocus error %f exceeds the threshold. Micrograph %s is rejected." % (ctf_params[idx_cter_sd_def] / ctf_params[idx_cter_def], mic_basename))
 				n_reject_defocus_error += 1
 			else:
-				if(ctf_params[10] > ctf_error_limit[1]): # ctf_params[10:std dev of ast angle] 
-					ctf_params[6] = 0.0 # ctf_params[6:astigmatism amplitude]
-					ctf_params[7] = 0.0 # ctf_params[7:astigmatism angle]
+				if(ctf_params[idx_cter_sd_astig_ang] > ctf_error_limit[1]):
+					ctf_params[idx_cter_astig_amp] = 0.0
+					ctf_params[idx_cter_astig_ang] = 0.0
 				ctf_dict[mic_basename] = ctf_params
 		print("Rejected micrographs by defocus error  : %6d ..." % (n_reject_defocus_error))
 		del ctf_list # Do not need this anymore
@@ -242,7 +266,7 @@ BDB files can not be selected as input micrographs.
 		
 		# Calculate the new pixel size
 		if options.import_ctf:
-			pixel_size_origin = ctf_params[3] # ctf_params[3:pixel size]
+			pixel_size_origin = ctf_params[idx_cter_apix]
 			
 			if resample_ratio < 1.0:
 				# assert (resample_ratio > 0.0)
@@ -253,7 +277,7 @@ BDB files can not be selected as input micrographs.
 				new_pixel_size = pixel_size_origin
 		
 			# Set ctf along with new pixel size in resampled micrograph
-			ctf_params[3] = new_pixel_size
+			ctf_params[idx_cter_apix] = new_pixel_size
 		else:
 			# assert (not options.import_ctf)
 			if resample_ratio < 1.0:
@@ -267,7 +291,7 @@ BDB files can not be selected as input micrographs.
 		if options.limit_ctf:
 			# assert (options.import_ctf)
 			# Cut off frequency components higher than CTF limit 
-			q1, q2 = ctflimit(box_size, ctf_params[0], ctf_params[1], ctf_params[2], new_pixel_size) # ctf_params[0:defocus, 1:Cs, 2:voltage]
+			q1, q2 = ctflimit(box_size, ctf_params[idx_cter_def], ctf_params[idx_cter_cs], ctf_params[idx_cter_vol], new_pixel_size)
 			
 			# This is absolute frequency of CTF limit in scale of original micrograph
 			if resample_ratio < 1.0:
@@ -298,7 +322,7 @@ BDB files can not be selected as input micrographs.
 		
 		if options.import_ctf:
 			from utilities import generate_ctf
-			ctf_obj = generate_ctf(ctf_params)
+			ctf_obj = generate_ctf(ctf_params) # indexes 0 to 7 (idx_cter_def to idx_cter_astig_ang) must be same in cter format & ctf object format.
 		
 		# Prepare loop variables
 		nx = mic_img.get_xsize() 

@@ -43,6 +43,7 @@ def main():
 	parser.add_argument("--boxptcl_boxsep", type=int,help="Minimum seperation for particle picking", default=25)
 	parser.add_argument("--boxptcl_minscore", type=int,help="Minimum score for particle picking", default=.1)
 	parser.add_argument("--shrink", type=int,help="Shrink particles", default=1)
+	parser.add_argument("--rmptcls", type=str,help="Mark particles from a list file as exclude for e2boxer", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -51,11 +52,15 @@ def main():
 	options.nkernel=[int(i) for i in options.nkernel.split(',')]
 	options.ksize=[int(i) for i in options.ksize.split(',')]
 	
+	if options.rmptcls:
+		remove_ptcls(options.rmptcls)
+		print "Done"
+		exit()
 	
 	if options.classify!=None:
 		os.environ["THEANO_FLAGS"]="optimizer=fast_run"
 		#os.environ["THEANO_FLAGS"]="optimizer=None"
-		#print "Testing on large amount of particles(?), Theano optimizer disabled"
+		print "Testing on large amount of particles(?), Theano optimizer disabled"
 		import_theano()
 		convnet=load_model(options.pretrainnet)
 		classify_particles(convnet,options)
@@ -228,42 +233,48 @@ def classify_particles(convnet,options):
 	
 	print "Loading images.."
 	nptcls=EMUtil.get_image_count(options.classify)
+	bigbatch=500
 	
-	data=[]
-	for i in range(nptcls):
-		ptl=EMData(options.classify,i)
-		ptl.process_inplace("normalize.edgemean")
-		ptl.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-		ptl.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
-		if (options.shrink>1):
-			ptl.process_inplace("math.meanshrink",{"n":options.shrink})
+	nbatch=nptcls/bigbatch+1
+	
+	allscr=[]
+	for nb in range(nbatch):
+		data=[]
+		print "Processing {} / {}".format(nb+1,nbatch)
+		for i in range(nb * bigbatch, min(nptcls,(nb+1) * bigbatch)):
+			ptl=EMData(options.classify,i)
+			ptl.process_inplace("normalize.edgemean")
+			ptl.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
+			ptl.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
+			if (options.shrink>1):
+				ptl.process_inplace("math.meanshrink",{"n":options.shrink})
+			
+			ar=EMNumPy.em2numpy(ptl)
+			data.append(ar.flatten())
 		
-		ar=EMNumPy.em2numpy(ptl)
-		data.append(ar.flatten())
-	
-	shape=[ptl["nx"],ptl["ny"],ptl["nz"]]
-	data=np.asarray(data,dtype=theano.config.floatX)
-	data/=np.max(np.abs(data))
-	shared_data = theano.shared(data,borrow=True)
-	
-	convnet.update_shape((nptcls, 1, shape[0],shape[1]))
-	test_cls = theano.function(
-		inputs=[],
-		outputs=convnet.clslayer.get_image(),
-		givens={
-			convnet.x: shared_data
-		}
-	)
-	print "Classifying..."
-	clsout=test_cls()
-	shpout=clsout.shape
-	allscr=np.mean(clsout.reshape(shpout[0],shpout[2]*shpout[3]),axis=1)
-	#for i in range(nptcls):
-		#img=clsout[i].reshape(shpout[2], shpout[3]).copy()
-		#e=from_numpy(img)
-		#scr=e["mean"]
-		#allscr.append(scr)
-		#e.write_image("clsout.hdf",i)
+		shape=[ptl["nx"],ptl["ny"],ptl["nz"]]
+		data=np.asarray(data,dtype=theano.config.floatX)
+		data/=3#np.max(np.abs(data))
+		shared_data = theano.shared(data,borrow=True)
+		convnet.update_shape((len(data), 1, shape[0],shape[1]))
+		test_cls = theano.function(
+			inputs=[],
+			outputs=convnet.clslayer.get_image(),
+			givens={
+				convnet.x: shared_data
+			}
+		)
+		#print nptcls%bigbatch
+			#if i==nbatch-1:
+				#convnet.update_shape((nptcls%bigbatch, 1, shape[0],shape[1]))
+		clsout=test_cls()
+		shpout=clsout.shape
+		#print shpout
+		scr=np.mean(clsout.reshape(shpout[0],shpout[2]*shpout[3]),axis=1)
+		print scr, np.shape(scr)
+		allscr.extend(scr)
+			
+	allscr=np.asarray(allscr).flatten()
 	#print allscr,allscr.shape
 	od=np.argsort(allscr)
 	loutfile="sortout.lst"
@@ -760,5 +771,25 @@ class LeNetConvPoolLayer(object):
 
 			return (cost, updates)
 
+
+def remove_ptcls(lstfile):
+	num=EMUtil.get_image_count(lstfile)
+	for i in range(num):
+		e=EMData(lstfile,i,True)
+		try:
+			src=e["ptcl_source_image"]
+			cord=e["ptcl_source_coord"]
+		except:
+			continue
+		
+		cord=np.array(cord)
+		#print src,cord
+		js=js_open_dict(info_name(src))
+		bx=np.array([[i[0],i[1]] for i in js["boxes"]])
+		ptid=np.argmin(np.sum(abs(bx-cord),axis=1))
+		#print js["boxes"][ptid][2]
+		js["boxes"][ptid][2]="exclude"
+		js.update(js)
+		
 if __name__ == '__main__':
     main()
