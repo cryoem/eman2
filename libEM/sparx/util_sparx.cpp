@@ -19085,7 +19085,7 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 #define dproj(ix,iy)         dproj[jx2 + (iy-1)*2*nx]
 #define dctfs(jx,iy)         dctfs[jx+(iy-1)*nx]
 #define bckg(jx,iy)          bckg[jx+(iy-1)*nx]
-#define nrm(rf,kt)           nrm[rf+(kt-1)*inc]
+#define nrm(rf,kt)           nrm[rf+kt*inc]
 float Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
 {
 	ENTERFUNC;
@@ -19113,6 +19113,8 @@ float Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise
 			int jx=ix-1; argx = argy + float(jx*jx);
 			int rf = Util::round(sqrt( argx ));
 			int jx2 = 2*jx;
+			//int kt = 1;
+			//cout<<"  "<<ix<<"  "<<iy<<"  "<<jx<<"  "<<jy<<"  "<<jx2 + (iy-1)*2*nx<<"  "<<jx+(iy-1)*nx<<"  "<<rf<<"  "<<rf+(kt-1)*inc<<endl;
 			float  qtr = dctfs(jx,iy)*dproj(jx2,iy);
 			float  qti = dctfs(jx,iy)*dproj(jx2+1,iy);
 			float  prod1 = data(jx2,iy) * qtr + data(jx2+1,iy) * qti;
