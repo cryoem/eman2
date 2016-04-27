@@ -163,6 +163,20 @@ class EMPlot2DWidget(EMGLWidget):
 	def closeEvent(self,event):
 		if self.particle_viewer!=None :
 			self.particle_viewer.close()
+
+		if self.particle_viewer0!=None :
+			self.particle_viewer0.close()
+		if self.particle_viewer1!=None :
+			self.particle_viewer1.close()
+		if self.particle_viewer2!=None :
+			self.particle_viewer2.close()
+		if self.particle_viewer3!=None :
+			self.particle_viewer3.close()
+		if self.particle_viewer4!=None :
+			self.particle_viewer5.close()
+		if self.particle_viewer5!=None :
+			self.particle_viewer.close()
+
 		self.clear_gl_memory()
 		EMGLWidget.closeEvent(self, event)
 
