@@ -58,8 +58,8 @@ def main():
 		exit()
 	
 	if options.classify!=None:
-		#os.environ["THEANO_FLAGS"]="optimizer=fast_run"
-		os.environ["THEANO_FLAGS"]="optimizer=None"
+		os.environ["THEANO_FLAGS"]="optimizer=fast_run"
+		#os.environ["THEANO_FLAGS"]="optimizer=None"
 		print "Testing on large amount of particles(?), Theano optimizer disabled"
 		import_theano()
 		convnet=load_model(options.pretrainnet)
@@ -233,7 +233,7 @@ def classify_particles(convnet,options):
 	
 	print "Loading images.."
 	nptcls=EMUtil.get_image_count(options.classify)
-	
+	bigbatch=500
 	data=[]
 	for i in range(nptcls):
 		ptl=EMData(options.classify,i)
@@ -250,25 +250,37 @@ def classify_particles(convnet,options):
 	data=np.asarray(data,dtype=theano.config.floatX)
 	data/=np.max(np.abs(data))
 	shared_data = theano.shared(data,borrow=True)
-	
-	convnet.update_shape((nptcls, 1, shape[0],shape[1]))
+	index = T.lscalar()
+	convnet.update_shape((bigbatch, 1, shape[0],shape[1]))
 	test_cls = theano.function(
-		inputs=[],
+		inputs=[index],
 		outputs=convnet.clslayer.get_image(),
 		givens={
-			convnet.x: shared_data
+			convnet.x: shared_data[index * bigbatch: (index+1) * bigbatch]
 		}
 	)
 	print "Classifying..."
-	clsout=test_cls()
-	shpout=clsout.shape
-	allscr=np.mean(clsout.reshape(shpout[0],shpout[2]*shpout[3]),axis=1)
+	nbatch=nptcls/bigbatch+1
+	#print nptcls%bigbatch
+	allscr=[]
+	for i in range(nbatch):
+		print "Processing {} / {}".format(i+1,nbatch)
+		if i==nbatch-1:
+			convnet.update_shape((nptcls%bigbatch, 1, shape[0],shape[1]))
+		clsout=test_cls(i)
+		shpout=clsout.shape
+		#print shpout
+		scr=np.mean(clsout.reshape(shpout[0],shpout[2]*shpout[3]),axis=1)
+		#print scr, np.shape(scr)
+		allscr.extend(scr)
 	#for i in range(nptcls):
 		#img=clsout[i].reshape(shpout[2], shpout[3]).copy()
 		#e=from_numpy(img)
 		#scr=e["mean"]
 		#allscr.append(scr)
 		#e.write_image("clsout.hdf",i)
+	#print allscr,allscr.shape
+	allscr=np.asarray(allscr).flatten()
 	#print allscr,allscr.shape
 	od=np.argsort(allscr)
 	loutfile="sortout.lst"
