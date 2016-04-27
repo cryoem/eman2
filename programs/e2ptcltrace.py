@@ -151,7 +151,7 @@ def main():
 					idx1 = hdr1["projection_image_idx"]
 					proj1 = hdr1["projection_image"]
 
-					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1,p,hdr2["class_ptcl_src"]))\
+					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1,p,hdr2["class_ptcl_src"]))
 
 				except: outf.write(" # no particles in class corresponding to projection\n")
 
