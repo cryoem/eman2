@@ -1181,6 +1181,4 @@ def generate_templates(volft, kb, x_half_size, y_half_size, psi_half_size, proje
 
 	return all_templates
 
-def calculate_space_size(x_half_size, y_half_size, psi_half_size):
-	return [2 * x_half_size + 1, 2 * y_half_size + 1, 2 * psi_half_size + 1]
 

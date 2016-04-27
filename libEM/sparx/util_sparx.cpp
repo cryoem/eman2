@@ -25522,7 +25522,7 @@ void Util::euler_direction2angles(vector <float> v0, float &alpha, float &beta)
 }/*Eulerdirection2angles end*/
 
 
-void Util::write_nd_array(EMData* em_data, vector<int> size_of_each_dimension, vector<int> location, float val)
+void Util::write_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<int> &location, float val)
 {
 
    	if (!em_data) {
@@ -25558,7 +25558,7 @@ void Util::write_nd_array(EMData* em_data, vector<int> size_of_each_dimension, v
     data[index_location] = val;
 }
 
-float Util::read_nd_array(EMData* em_data, vector<int> size_of_each_dimension, vector<int> location)
+float Util::read_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<int> &location)
 {
     
    	if (!em_data) {
@@ -25594,7 +25594,7 @@ float Util::read_nd_array(EMData* em_data, vector<int> size_of_each_dimension, v
     return data[index_location];
 }
 
-float Util::read_nd_array_linear_interp(EMData* em_data, vector<int> size_of_each_dimension, vector<float> location)
+float Util::read_nd_array_linear_interp(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<float> &location)
 {
 
    	if (!em_data) {
@@ -25771,7 +25771,6 @@ vector<float> Util::max_sum_along_line_in_nd_array(EMData* em_data, const vector
 							}
 
 						}
-
 	return result;
 }
 
