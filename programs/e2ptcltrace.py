@@ -140,20 +140,20 @@ def main():
 
 				outf.write(dat.format(alt1,az1,cls1,alt2,az2,cls2,diff,clsdiff))
 
-				classes2 = cmx[i].replace("classmx","classes")
-				hdr2 = EMData(classes2,cls2,True)
-
-				classes1 = cmx[i-1].replace("classmx","classes")
-				hdr1 = EMData(classes1,cls1,True)
-
 				try:
+					classes2 = cmx[i].replace("classmx","classes")
+					hdr2 = EMData(classes2,cls2,True)
 					idx2 = hdr2["projection_image_idx"]
 					proj2 = hdr2["projection_image"]
+
+					classes1 = cmx[i-1].replace("classmx","classes")
+					hdr1 = EMData(classes1,cls1,True)
 					idx1 = hdr1["projection_image_idx"]
 					proj1 = hdr1["projection_image"]
-					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1,p,hdr2["class_ptcl_src"]))
-				except:
-					outf.write(" # no particles in class corresponding to projection\n")
+
+					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1,p,hdr2["class_ptcl_src"]))\
+
+				except: outf.write(" # no particles in class corresponding to projection\n")
 
 	if ".txt" in options.trace: kf = options.trace.replace(".txt",".key")
 	else: kf = options.trace + ".key"
@@ -173,15 +173,6 @@ def main():
 				k.append("{}:\tabsolute difference between class assignment {} and {}".format(ctr+7,i,i-1))
 				keyfile.write("\n".join([x for x in k])+"\n")
 				ctr+=len(k)
-
-	#print("\n\nSUMMARY:")
-	#print("UNDER CONSTRUCTION!")
-	#print("DISPERSION")
-	#print("COVERAGE")
-	#print("mean/median diff")
-	#print("
-	#for i,(c,p) in enumerate(zip(cmx,proj)):
-	#	print("{}: {},{}".format(i,c,p))
 
 	print("Particle trace results stored in {}.\nThe file {} describes the contents of each column.".format(options.trace,kf))
 
