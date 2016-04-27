@@ -5655,3 +5655,50 @@ def generate_indices_and_refrings(nima, projangles, volft, kb, nx, delta, an, ra
 
 ### end: code that supports cone implementation
 ########################################################################################################################
+
+def frame_alignment(movie_stack, particle_radius, templates, x_half_size, psi_half_size, y_half_size = None, apply_alignment_in_place = False):
+	
+	from utilities import model_circle, list_prod, calculate_space_size
+	from statistics import ccc
+	import numpy as np
+	from fundamentals import rot_shift2D
+	
+	if y_half_size == None:
+		y_half_size = x_half_size
+	
+	NUMBER_OF_FRAMES = len(movie_stack)
+	# x_half_size, y_half_size, psi_half_size = 5, 5, 5
+	image_movement_space_size = x_length, y_length, psi_length = calculate_space_size(x_half_size, y_half_size, psi_half_size)
+	
+	nx = movie_stack[0].get_xsize()
+	mask = model_circle(particle_radius, nx, nx)
+	
+	space_size = [NUMBER_OF_FRAMES] + image_movement_space_size
+	new_ccEMData = EMData(list_prod(space_size), 1)
+
+	for k in range(NUMBER_OF_FRAMES):
+		# print "k", k
+		for psi_i in range(psi_length):
+			for y_i in range(y_length):
+				for x_i in range(x_length):
+					Util.write_nd_array(new_ccEMData, space_size, [k, x_i, y_i, psi_i], ccc(movie_stack[k], templates[x_i][y_i][psi_i], mask))
+	
+	result = Util.max_sum_along_line_in_nd_array(new_ccEMData, space_size, NUMBER_OF_FRAMES)
+	
+	if apply_alignment_in_place:
+		[x_i, y_i, psi_i, x_j, y_j, psi_j] = result
+		xxx = np.linspace(-x_half_size, x_half_size, x_length)
+		yyy = np.linspace(-y_half_size, y_half_size, y_length)
+		ppp = np.linspace(-psi_half_size, psi_half_size, psi_length)
+		
+		x = np.linspace(xxx[x_i], xxx[x_j], NUMBER_OF_FRAMES)
+		y = np.linspace(yyy[y_i], yyy[y_j], NUMBER_OF_FRAMES)
+		psi = np.linspace(ppp[psi_i], ppp[psi_j], NUMBER_OF_FRAMES)
+		
+		
+		for i in range(NUMBER_OF_FRAMES):
+			movie_stack[i] = rot_shift2D(movie_stack[i], -psi[i], -x[i], -y[i], 0, interpolation_method="linear")
+			return None
+			
+	else:
+		return result

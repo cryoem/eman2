@@ -5711,6 +5711,13 @@ def qw(s):
 	s = s.replace("\t"," ")
 	return tuple(s.split())
 
+def list_prod(list_whose_elements_are_going_to_be_multiplied):
+	import operator
+	return reduce(operator.mul, list_whose_elements_are_going_to_be_multiplied)
+
+def calculate_space_size(x_half_size, y_half_size, psi_half_size):
+	return [2 * x_half_size + 1, 2 * y_half_size + 1, 2 * psi_half_size + 1]
+
 
 def convert_json_fromunicode(data):
 	import  collections
