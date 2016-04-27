@@ -1572,8 +1572,10 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.wnax_thresh=StringBox(label="Axes:",value="0")
 		gbl0.addWidget(self.wnax_thresh,10,1)
 
-		self.wcbfracthr=CheckBox(label="Frac thresh(s):",value=0)
+		self.wcbfracthr=CheckBox(label="Frac thresh(s):",value=0) # needs to be a combo box to select fractional/percentage, sigma, robust (outliers), etc.
 		gbl0.addWidget(self.wcbfracthr,12,0)
+
+
 
 		hl2 = QtGui.QFrame()
 		hl2.setFrameStyle(QtGui.QFrame.HLine)
@@ -1691,7 +1693,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		"""Performs threshold-based classification, and produces nseg new data sets"""
 		axes=self.wnax_thresh.getValue()					# selected axes
 		vals=self.wnval.getValue()					# values
-		frac=self.wcbfracthr.getValue()				# fractional threshold
+		thresh_type=self.wcombotype.getValue()		# needs to be a combo box to select fractional/percentage, sigma, robust (outliers), etc.
 		insp=self.target().get_inspector()			# inspector
 		name=str(insp.setlist.currentItem().text())	# currently hilighted item
 		data=self.target().data[name]				# data set we will operate on
