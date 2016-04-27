@@ -134,6 +134,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.particle_viewer2 = None
 		self.particle_viewer3 = None
 		self.particle_viewer4 = None
+		self.particle_viewer5 = None
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -173,9 +174,9 @@ class EMPlot2DWidget(EMGLWidget):
 		if self.particle_viewer3!=None :
 			self.particle_viewer3.close()
 		if self.particle_viewer4!=None :
-			self.particle_viewer5.close()
+			self.particle_viewer4.close()
 		if self.particle_viewer5!=None :
-			self.particle_viewer.close()
+			self.particle_viewer5.close()
 
 		self.clear_gl_memory()
 		EMGLWidget.closeEvent(self, event)
@@ -806,6 +807,13 @@ lc is the cursor selection point in plot coords"""
 						else:
 							self.particle_viewer4.set_data(ptclim)
 							self.particle_viewer4.show()
+					elif i == 5:
+						if self.particle_viewer5==None :
+							self.particle_viewer5=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer5.show()
+						else:
+							self.particle_viewer5.set_data(ptclim)
+							self.particle_viewer5.show()
 
 			except:
 				self.add_shape("selpc",EMShape(("scrlabel",0,0,0,80,self.scrlim[3]-(35),comments[p],120.0,-1)))
