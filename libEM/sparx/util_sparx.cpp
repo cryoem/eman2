@@ -25675,7 +25675,7 @@ float Util::read_nd_array_linear_interp(EMData* em_data, vector<int> size_of_eac
 
 
 
-float Util::sum_along_line_in_nd_array(EMData* em_data, vector<int> size_of_each_dimension, vector<float> start_location, vector<float> end_location, int number_of_points_on_the_line)
+float Util::sum_along_line_in_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<float> &start_location, const vector<float> &end_location, int number_of_points_on_the_line)
 {
 
    	if (!em_data) {
@@ -25693,19 +25693,18 @@ float Util::sum_along_line_in_nd_array(EMData* em_data, vector<int> size_of_each
     if (number_of_dimensions != start_location.size())
         throw ImageDimensionException("number_of_dimensions != location.size()");
 
-    vector<vector<float> > along_line_location(number_of_dimensions, vector<float>(number_of_points_on_the_line)); 
-     
-    for(int dimension_iterator=0; dimension_iterator<number_of_dimensions; ++dimension_iterator)
-    {
-        along_line_location[dimension_iterator].back() = end_location[dimension_iterator];
-        along_line_location[dimension_iterator][0] = start_location[dimension_iterator];
-        float dimension_increment = (end_location[dimension_iterator] - start_location[dimension_iterator])/number_of_points_on_the_line;
+    vector<vector<float> > along_line_location(number_of_points_on_the_line, vector<float>(number_of_dimensions));
+	vector<float> dimension_increment(number_of_dimensions);
 
-        for(int point_iterator = 1; point_iterator<(number_of_points_on_the_line - 1); ++point_iterator)
-        {
-            along_line_location[dimension_iterator][point_iterator] += dimension_increment + along_line_location[dimension_iterator][point_iterator - 1];
-        }
-    }
+	for(int dimension_iterator=0; dimension_iterator<number_of_dimensions; ++dimension_iterator) {
+		along_line_location[number_of_points_on_the_line - 1][dimension_iterator] = end_location[dimension_iterator];
+		along_line_location[0][dimension_iterator] = start_location[dimension_iterator];
+		dimension_increment[dimension_iterator] = (end_location[dimension_iterator] - start_location[dimension_iterator])/(number_of_points_on_the_line - 1);
+	}
+
+	for(int point_iterator = 1; point_iterator<(number_of_points_on_the_line - 1); ++point_iterator)
+		for(int dimension_iterator=0; dimension_iterator<number_of_dimensions; ++dimension_iterator)
+				along_line_location[point_iterator][dimension_iterator] = dimension_increment[dimension_iterator] + along_line_location[point_iterator - 1][dimension_iterator];
 
     float my_sum = 0;
     for(int point_iterator = 0; point_iterator<number_of_points_on_the_line; ++point_iterator)
@@ -25713,5 +25712,66 @@ float Util::sum_along_line_in_nd_array(EMData* em_data, vector<int> size_of_each
         my_sum += Util::read_nd_array_linear_interp(em_data, size_of_each_dimension, along_line_location[point_iterator]);
     }
     return my_sum;
+}
+
+
+vector<float> Util::max_sum_along_line_in_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, int number_of_points_on_the_line)
+{
+
+   	if (!em_data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    float *data = em_data->get_data();
+
+   	if (!data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    int number_of_dimensions = size_of_each_dimension.size();
+	vector<float> result(2*(number_of_dimensions-1) + 1);
+
+
+	int psi_length = size_of_each_dimension[3];
+	int y_length = size_of_each_dimension[2];
+	int x_length = size_of_each_dimension[1];
+
+	float line_sum;
+	float line_sum_max = -1.0e23;
+	vector<float> start_point(number_of_dimensions);
+	vector<float> end_point(number_of_dimensions);
+	end_point[0] = number_of_points_on_the_line - 1;
+
+	for(int psi_i = 0; psi_i < psi_length; ++psi_i)
+		for(int y_i = 0; y_i < y_length; ++y_i)
+			for(int x_i = 0; x_i < x_length; ++x_i)
+				for(int psi_j = 0; psi_j < psi_length; ++psi_j)
+					for(int y_j = 0; y_j < y_length; ++y_j)
+						for(int x_j = 0; x_j < x_length; ++x_j)
+						{
+							start_point[1] = x_i;
+							start_point[2] = y_i;
+							start_point[3] = psi_i;
+							end_point[1] = x_j;
+							end_point[2] = y_j;
+							end_point[3] = psi_j;
+
+							line_sum = Util::sum_along_line_in_nd_array(em_data, size_of_each_dimension, start_point, end_point, number_of_points_on_the_line);
+							if (line_sum_max < line_sum)
+							{
+								line_sum_max = line_sum;
+								result[0] = x_i;
+								result[1] = y_i;
+								result[2] = psi_i;
+								result[3] = x_j;
+								result[4] = y_j;
+								result[5] = psi_j;
+								result[6] = line_sum_max;
+
+							}
+
+						}
+
+	return result;
 }
 

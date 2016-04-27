@@ -734,7 +734,11 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("sum_along_line_in_nd_array", &EMAN::Util::sum_along_line_in_nd_array, args("ndimensional_image", "size_of_each_dimension", "start_location", "end_location", "number_of_points_on_the_line"), "")
 		.def("sum_along_line_in_nd_array", &EMAN::Util::sum_along_line_in_nd_array)
 		.staticmethod("sum_along_line_in_nd_array")
-				
+
+		.def("max_sum_along_line_in_nd_array", &EMAN::Util::max_sum_along_line_in_nd_array, args("ndimensional_image", "size_of_each_dimension","number_of_points_on_the_line"), "")
+		.def("max_sum_along_line_in_nd_array", &EMAN::Util::max_sum_along_line_in_nd_array)
+		.staticmethod("max_sum_along_line_in_nd_array")
+
 		.def("bessel0", &EMAN::Util::bessel0, args("r", "a", "alpha"), "")
 		.staticmethod("bessel0")
 		.staticmethod("point_is_in_triangle_2d")
