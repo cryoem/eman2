@@ -221,24 +221,24 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum = -1
 		i_enum += 1; self.idx_cter_id           = i_enum # <extra> entry id
 		i_enum += 1; self.idx_cter_select       = i_enum # <extra> selected state
-		i_enum += 1; self.idx_cter_def          = i_enum # defocus (ym)
-		i_enum += 1; self.idx_cter_cs           = i_enum # Cs (mm)
-		i_enum += 1; self.idx_cter_vol          = i_enum # voltage(kV)
-		i_enum += 1; self.idx_cter_apix         = i_enum # pixel size (A)
-		i_enum += 1; self.idx_cter_bfactor      = i_enum # B-factor (A^2)
-		i_enum += 1; self.idx_cter_ac           = i_enum # amp contrast (%)
-		i_enum += 1; self.idx_cter_astig_amp    = i_enum # astigmatism amplitude (um)
-		i_enum += 1; self.idx_cter_astig_ang    = i_enum # astigmatism angle
-		i_enum += 1; self.idx_cter_sd_def       = i_enum # std dev of defocus (um)
-		i_enum += 1; self.idx_cter_sd_astig_amp = i_enum # std dev of ast amp (A)
-		i_enum += 1; self.idx_cter_sd_astig_ang = i_enum # std dev of ast angle
-		i_enum += 1; self.idx_cter_cv_def       = i_enum # coefficient of variation of defocus (%)
-		i_enum += 1; self.idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp (%)
-		i_enum += 1; self.idx_cter_spectra_diff = i_enum # Average of differences between with- and without-astig. experimental 1D spectra at extrema
-		i_enum += 1; self.idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone (1/A)
-		i_enum += 1; self.idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism (1/A)
-		i_enum += 1; self.idx_cter_error_ctf    = i_enum # limit frequency by CTF error 
-		i_enum += 1; self.idx_cter_mic_name     = i_enum # Micrograph name
+		i_enum += 1; self.idx_cter_def          = i_enum # defocus [um]
+		i_enum += 1; self.idx_cter_cs           = i_enum # Cs [mm]
+		i_enum += 1; self.idx_cter_vol          = i_enum # voltage[kV]
+		i_enum += 1; self.idx_cter_apix         = i_enum # pixel size [A]
+		i_enum += 1; self.idx_cter_bfactor      = i_enum # B-factor [A^2]
+		i_enum += 1; self.idx_cter_ac           = i_enum # amplitude contrast [%]
+		i_enum += 1; self.idx_cter_astig_amp    = i_enum # astigmatism amplitude [um]
+		i_enum += 1; self.idx_cter_astig_ang    = i_enum # astigmatism angle [degree]
+		i_enum += 1; self.idx_cter_sd_def       = i_enum # std dev of defocus [um]
+		i_enum += 1; self.idx_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
+		i_enum += 1; self.idx_cter_sd_astig_ang = i_enum # std dev of ast angle [degree]
+		i_enum += 1; self.idx_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
+		i_enum += 1; self.idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp [%]
+		i_enum += 1; self.idx_cter_spectra_diff = i_enum # average of differences between with- and without-astig. experimental 1D spectra at extrema
+		i_enum += 1; self.idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
+		i_enum += 1; self.idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
+		i_enum += 1; self.idx_cter_error_ctf    = i_enum # limit frequency by CTF error [1/A] 
+		i_enum += 1; self.idx_cter_mic_name     = i_enum # micrograph name
 #		i_enum += 1; self.idx_cter_pwrot_name   = i_enum # <extra> CTER power spectrum rotational average file name
 		if self.is_enable_max_power == True: i_enum += 1; self.idx_cter_max_power = i_enum # MRK_TEST: <extra> maximum power in experimental rotational average (with astigmatism)
 		i_enum += 1; self.n_idx_cter            = i_enum
@@ -1492,8 +1492,8 @@ class SXGuiCter(QtGui.QWidget):
 		new_cter_mic_file_path = self.cter_entry_list[self.curentry][self.idx_cter_mic_name]
 		
 		# Generate associated micthumb & pwrot file path of current entry
-		mic_basename_root, mic_extension = os.path.splitext(os.path.basename(new_cter_mic_file_path))
-		new_cter_micthumb_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "micthumb", "%s_thumb%s" % (mic_basename_root, mic_extension))
+		mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))[0]
+		new_cter_micthumb_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "micthumb", "%s_thumb.hdf" % (mic_basename_root))
 		new_cter_pwrot_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
 		
 		# Changing row does not always change the pwrot file path after resorting of the cter entry list
