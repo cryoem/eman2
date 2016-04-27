@@ -1200,7 +1200,7 @@ def imf_residuals_B2(p,y,ctf,x):
 
 def imf_params_get(fstrN, fstrP, ctf_params, pu, nrank, q, lowf=0.01):
 	"""
-		Extract image formation paramters using optimization method
+		Extract image formation parameters using optimization method
 		Output params: 1. freq; 2.Pn1; 3.B factor.4. C; 5. C*Pu; 6. Pn2
 	"""
 	params = []
@@ -2302,7 +2302,6 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 		img_type = ""
 		img_name = ""
 		img_basename_root = ""
-		img_extension = ""
 		img_name_for_print = ""
 		if stack == None:
 			img_type = "Micrograph"; img_name = namics[ifi]; img_name_for_print = " " + img_name
@@ -2312,7 +2311,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			# For now, dbd file is a invalid input_image for micrograph modes
 			# 
 			# assert(db_check_dict(img_name) == False)
-			img_basename_root, img_extension = os.path.splitext(os.path.basename(img_name))
+			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
 			# 
 			# NOTE: 2016/03/17 Toshio Moriya
 			# The following loop does not make sense because nf is not used in the loop body
@@ -2325,7 +2324,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 			img_type = "Stack"; img_name = stack; print_img_name = ""
 			numFM = EMUtil.get_image_count(img_name)
 			if db_check_dict(img_name) == False:
-				img_basename_root, img_extension = os.path.splitext(os.path.basename(img_name))
+				img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
 			else: # assert(db_check_dict(img_name) == True)
 				path, dictname, keys = db_parse_path(img_name)
 				img_basename_root = dictname
@@ -2336,7 +2335,6 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 		# assert(img_type != "")
 		# assert(img_name != "")
 		# assert(img_basename_root != "")
-		# assert(img_extension != "")
 		print  "  Process ID = %04d, %s Name = %s, Frame Counts = %03d" % (ifi, img_type, img_name, numFM)
 		
 		nimi = len(pw2)
@@ -2767,19 +2765,21 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				
 #		if stack == None and set_ctf_header:
 		if stack == None:
-			img = get_im(namics[ifi])
+			img_mic = get_im(namics[ifi])
 			# create micrograph thumbnail
 			nx_target = 512
-			nx = img.get_xsize()
+			nx = img_mic.get_xsize()
 			if nx > nx_target:
-				img_thumb = resample(img, float(nx_target)/nx)
-				fou = os.path.join(outmicthumb, "%s_thumb%s" % (img_basename_root, img_extension))
-				img_thumb.write_image(fou)
+				img_micthumb = resample(img_mic, float(nx_target)/nx)
+			else:
+				img_micthumb = img_mic
+			fou = os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root))
+			img_micthumb.write_image(fou)
 			if set_ctf_header:
 				from utilities import set_ctf
-				set_ctf(img, [totresi[-1][1], Cs, voltage, pixel_size, 0, wgh, totresi[-1][7], totresi[-1][8]])
+				set_ctf(img_mic, [totresi[-1][1], Cs, voltage, pixel_size, 0, wgh, totresi[-1][7], totresi[-1][8]])
 				# and rewrite image 
-				img.write_image(namics[ifi])
+				img_mic.write_image(namics[ifi])
 		#except:
 			#print  namics[ifi],"     FAILED"
 	#from utilities import write_text_row
@@ -2790,7 +2790,8 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	if myid == 0:
 		outf = open(os.path.join(output_directory, "partres.txt"), "w")
 		for i in xrange(len(totresi)):
-			for k in xrange(1, len(totresi[i])):  outf.write("  %12.5g" % totresi[i][k])
+			for k in xrange(1, len(totresi[i])):
+				outf.write("  %12.5g" % totresi[i][k])
 			outf.write("  %s\n" % totresi[i][0])
 		outf.close()
 		

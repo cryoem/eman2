@@ -138,6 +138,27 @@ def main():
 	
 	dir_name_coordinates           = 'Coordinates'
 	
+	i_enum = -1
+	i_enum += 1; idx_cter_def          = i_enum # defocus [um]; index must be same as ctf object format
+	i_enum += 1; idx_cter_cs           = i_enum # Cs [mm]; index must be same as ctf object format
+	i_enum += 1; idx_cter_vol          = i_enum # voltage[kV]; index must be same as ctf object format
+	i_enum += 1; idx_cter_apix         = i_enum # pixel size [A]; index must be same as ctf object format
+	i_enum += 1; idx_cter_bfactor      = i_enum # B-factor [A^2]; index must be same as ctf object format
+	i_enum += 1; idx_cter_ac           = i_enum # amplitude contrast [%]; index must be same as ctf object format
+	i_enum += 1; idx_cter_astig_amp    = i_enum # astigmatism amplitude [um]; index must be same as ctf object format
+	i_enum += 1; idx_cter_astig_ang    = i_enum # astigmatism angle [degree]; index must be same as ctf object format
+	i_enum += 1; idx_cter_sd_def       = i_enum # std dev of defocus [um]
+	i_enum += 1; idx_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
+	i_enum += 1; idx_cter_sd_astig_ang = i_enum # std dev of ast angle [degree]
+	i_enum += 1; idx_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
+	i_enum += 1; idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp [%]
+	i_enum += 1; idx_cter_spectra_diff = i_enum # average of differences between with- and without-astig. experimental 1D spectra at extrema
+	i_enum += 1; idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
+	i_enum += 1; idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
+	i_enum += 1; idx_cter_error_ctf    = i_enum # limit frequency by CTF error [1/A]
+	i_enum += 1; idx_cter_mic_name     = i_enum # micrograph name
+	i_enum += 1; n_idx_cter            = i_enum
+	
 	# ------------------------------------------------------------------------------------
 	# STEP 1: Prepare input/output file paths
 	# ------------------------------------------------------------------------------------
@@ -281,6 +302,7 @@ def main():
 						sparx_ctf['astig_angle'] -= 180
 					while sparx_ctf['astig_angle'] < 0:
 						sparx_ctf['astig_angle'] += 180
+					assert(sparx_ctf['astig_angle'] < 180 and sparx_ctf['astig_angle'] >= 0)
 					
 					sparx_ctf['cs'] = float(tokens_line[relion_dict['_rlnSphericalAberration'][idx_col] - 1])
 					
@@ -293,15 +315,23 @@ def main():
 					
 					sparx_ctf['bfactor'] = 0.0 # RELION does not use B-Factor, so set it zero always
 					
-					# Write to file	
-					file_sparx_stack_ctf.write('%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f \n' % (sparx_ctf['defocus'], sparx_ctf['cs'], sparx_ctf['acc_vol'], sparx_ctf['apix'], sparx_ctf['bfactor'], sparx_ctf['amp_contrast'], sparx_ctf['astig_amp'], sparx_ctf['astig_angle']))
+					# Write to file
+					# NOTE: Toshio Moriya 2016/04/26
+					# Use the file output of header() in application.py
+					# file_sparx_stack_ctf.write('%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f \n' % (sparx_ctf['defocus'], sparx_ctf['cs'], sparx_ctf['acc_vol'], sparx_ctf['apix'], sparx_ctf['bfactor'], sparx_ctf['amp_contrast'], sparx_ctf['astig_amp'], sparx_ctf['astig_angle']))
+					file_sparx_stack_ctf.write('%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f' % (sparx_ctf['defocus'], sparx_ctf['cs'], sparx_ctf['acc_vol'], sparx_ctf['apix'], sparx_ctf['bfactor'], sparx_ctf['amp_contrast'], sparx_ctf['astig_amp'], sparx_ctf['astig_angle']))
+					file_sparx_stack_ctf.write('\n')
 					
 					##### Store CTF related parameters in cter format ##### 
-					cter_entry = [sparx_ctf['defocus'], sparx_ctf['cs'], sparx_ctf['acc_vol'], sparx_ctf['apix'], sparx_ctf['bfactor'], sparx_ctf['amp_contrast'], sparx_ctf['astig_amp'], sparx_ctf['astig_angle'], 0.0, 0.0, 0.0, 0.5, 0.5, relion_micrograph_name]
+					cter_entry = [sparx_ctf['defocus'], sparx_ctf['cs'], sparx_ctf['acc_vol'], sparx_ctf['apix'], sparx_ctf['bfactor'], sparx_ctf['amp_contrast'], sparx_ctf['astig_amp'], sparx_ctf['astig_angle'], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, relion_micrograph_name]
+					assert(len(cter_entry) == n_idx_cter)
 					# Store one CTER entry for each micrograph
 					if micrograph_basename not in sparx_cter_dict:
 						sparx_cter_dict[micrograph_basename] = cter_entry
-						file_sparx_cter.write('%12.6f %12.6f %12d %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %s\n' % (cter_entry[0], cter_entry[1], cter_entry[2], cter_entry[3], cter_entry[4], cter_entry[5], cter_entry[6], cter_entry[7], cter_entry[8], cter_entry[9], cter_entry[10], cter_entry[11], cter_entry[12], cter_entry[13]))
+						# file_sparx_cter.write('%12.6f %12.6f %12d %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %s\n' % (cter_entry[0], cter_entry[1], cter_entry[2], cter_entry[3], cter_entry[4], cter_entry[5], cter_entry[6], cter_entry[7], cter_entry[8], cter_entry[9], cter_entry[10], cter_entry[11], cter_entry[12], cter_entry[13]))
+						for idx_cter in xrange(n_idx_cter - 1):
+							file_sparx_cter.write("  %12.5g" % cter_entry[idx_cter])
+						file_sparx_cter.write("  %s\n" % cter_entry[-1])
 					else:
 						assert(cmp(sparx_cter_dict[micrograph_basename], cter_entry) == 0)
 				

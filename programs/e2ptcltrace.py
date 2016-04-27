@@ -43,67 +43,140 @@ import copy
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <classify_xx> <classify_yy> ...
+	usage = """prog [options] <classmx_xx> <classmx_yy> ...
 
 	WARNING: experimental program
 
-	This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison. 
+	This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison.
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
+	parser.add_argument("--trace",type=str,help="Name of output file.", default="ptcltrace.txt")
 	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
-	
-	# read all classification matrix data into a list of lists
-	cls=[EMData.read_images(i) for i in args]			
-	nptcl=cls[0][0]["ny"]								# particles are along the y axis, so the y height of the first image is the number of particles
-	
-	for i in cls[1:]: 
+
+	cmx = []
+	proj = []
+	classes = []
+	for c in args:
+		if "classmx" in c:
+			if os.path.isfile(c): cmx.append(c)
+			p = c.replace("classmx","projections")
+			cs = c.replace("classmx","classes")
+			if os.path.isfile(p): proj.append(p)
+			if os.path.isfile(cs): classes.append(cs)
+		else:
+			print("{} is not a classmx file. Will not process.".format(f))
+
+	if len(cmx) < 2:
+		print("ERROR: You must specify at least two classmx files.")
+		sys.exit(1)
+
+	if len(cmx) != len(proj):
+		print("ERROR: Could not find matching projection files for your input classmx files.")
+		sys.exit(1)
+
+	cls = [EMData.read_images(c) for c in cmx] # read all classification matrix data into a list of lists
+	nptcl = cls[0][0]['ny'] # particles are along the y axis
+
+	for i in cls[1:]:
 		if i[0]["ny"]!=nptcl:
-			print "ERROR: classify files must have exactly the same number of particles"
+			print "ERROR: classmx files must have exactly the same number of particles"
 			sys.exit(1)
 
 	# wait until after error checking
 	E2n=E2init(sys.argv,options.ppid)
 
-	# This block creates a list of lists of Transforms representing the orientations of the reference projections for each classify file
+	# Create a list of lists of Transforms representing the orientations of the reference projections
+	# for each classmx file and try to get projection orientation information for each class
+
+	if options.verbose: print("Parsing assigned projection orientations")
 	clsort=[]
-	for i in args:
-		# Now we try to get projection orientation information for each class for each classify file
-		projfile=i.replace("classify","projections")
-		ncls=EMUtil.get_image_count(projfile)			# may be different for different classify files
-		
-		orts=[]
+	for x,p,c in zip(cmx,proj,classes):
+		ncls=EMUtil.get_image_count(p)
+		orts = []
 		for i in xrange(ncls):
-			orts.append(EMData(projfile,i,True)["xform.projection"])
-		
+			if options.verbose:
+				sys.stdout.write('\r{}, {}\t{}/{}\t'.format(x,p,i+1,ncls))
+			orts.append( EMData(p,i,True)["xform.projection"] )
 		clsort.append(orts)
-	
-	syms=parsesym(options.sym).get_syms()			# this gets a list of Transform objects to move to each other asymmetric unit in the symmetry group
-	
-	for p in xrange(nptcl):
-		print "%d. "%p,
-		for i in xrange(1,len(args)):
-			ort1=clsort[i-1][int(cls[i-1][0][0,p])]	# orientation of particle in first classify
-			ort2=clsort[i][int(cls[i][0][0,p])]		# orientation of particle in second classify
-			diffs=[]
-			for t in syms: 
-				ort2p=ort2*t
-				diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])		# make a list of the rotation angle to each other symmetry-related point
+		if options.verbose: print("")
 
-			diff=min(diffs)			# The angular error for the best-agreeing orientation
-				
-			
-			if options.verbose>0 : print "%1.1f,%1.1f (%d) -> %1.1f,%1.1f (%d)\t%1.2f"%(ort1.get_rotation("eman")["alt"],ort1.get_rotation("eman")["az"],cls[i-1][0][0,p],ort2.get_rotation("eman")["alt"],ort2.get_rotation("eman")["az"],cls[i][0][0,p],diff),
-		print ""
-		
-	
+	# Get a list of Transform objects to move to each other asymmetric unit in the symmetry group
+	syms=parsesym( str(options.sym) ).get_syms()
+
+	if options.verbose: print("Tracing particles through input classmx files")
+	with open(options.trace,"w") as outf:
+		dat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
+		cmt = " # {};{};{};{};{};{};{};{};{};{}\n"
+		for p in xrange(nptcl):
+			if options.verbose:
+				sys.stdout.write('\r{0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
+			for i in xrange(1,len(cmx)):
+				ort1=clsort[i-1][int(cls[i-1][0][0,p])]	# orientation of particle in first classmx
+				ort2=clsort[i][int(cls[i][0][0,p])]		# orientation of particle in second classmx
+
+				diffs=[] # make a list of the rotation angle to each other symmetry-related point
+				for t in syms:
+					ort2p=ort2*t
+					diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
+				diff=min(diffs)	# The angular error for the best-agreeing orientation
+
+				e1 = ort1.get_rotation("eman")
+				alt1 = e1["alt"]
+				az1 = e1["az"]
+				cls1 = int(cls[i-1][0][0,p])
+
+				e2 =  ort2.get_rotation("eman")
+				alt2 = e2["alt"]
+				az2 = e2["az"]
+				cls2 = int(cls[i][0][0,p])
+
+				clsdiff = abs(cls2-cls1)
+
+				outf.write(dat.format(alt1,az1,cls1,alt2,az2,cls2,diff,clsdiff))
+
+				try:
+					classes2 = cmx[i].replace("classmx","classes")
+					hdr2 = EMData(classes2,cls2,True)
+					idx2 = hdr2["projection_image_idx"]
+					proj2 = hdr2["projection_image"]
+
+					classes1 = cmx[i-1].replace("classmx","classes")
+					hdr1 = EMData(classes1,cls1,True)
+					idx1 = hdr1["projection_image_idx"]
+					proj1 = hdr1["projection_image"]
+
+					outf.write(cmt.format(cls2,classes2,cls1,classes1,idx2,proj2,idx1,proj1,p,hdr2["class_ptcl_src"]))
+
+				except: outf.write(" # no particles in class corresponding to projection\n")
+
+	if ".txt" in options.trace: kf = options.trace.replace(".txt",".key")
+	else: kf = options.trace + ".key"
+
+	with open(kf,"w") as keyfile:
+		ctr = 0
+		for i,c in enumerate(cmx):
+			if i > 0:
+				k = []
+				k.append("{}:\talt from {} (input {})".format(ctr,c,i-1))
+				k.append("{}\taz from {} (input {})".format(ctr+1,c,i-1))
+				k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+2,c,i-1))
+				k.append("{}:\talt from {} (input {})".format(ctr+3,c,i))
+				k.append("{}\taz from {} (input {})".format(ctr+4,c,i))
+				k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+5,c,i))
+				k.append("{}:\tangular error for best agreeing orientation (difference between input {} and {})".format(ctr+6,i,i-1))
+				k.append("{}:\tabsolute difference between class assignment {} and {}".format(ctr+7,i,i-1))
+				keyfile.write("\n".join([x for x in k])+"\n")
+				ctr+=len(k)
+
+	print("Particle trace results stored in {}.\nThe file {} describes the contents of each column.".format(options.trace,kf))
+
 	E2end(E2n)
-
 
 
 if __name__ == "__main__":

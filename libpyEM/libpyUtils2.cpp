@@ -718,15 +718,27 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("diff_between_matrix_of_3D_parameters_angles", &EMAN::Util::diff_between_matrix_of_3D_parameters_angles, args("all_params", "rotations"), "")
 		.def("max_clique", &EMAN::Util::max_clique, args("edges"), "")
 		.def("box_convolution", &EMAN::Util::box_convolution, return_value_policy< manage_new_object >(), args("input_volume", "window_size"), "")
+
 		.def("write_nd_array", &EMAN::Util::write_nd_array, args("ndimensional_image", "size_of_each_dimension", "location", "val"), "")
 		.def("write_nd_array", &EMAN::Util::write_nd_array)
 		.staticmethod("write_nd_array")		
+
 		.def("read_nd_array", &EMAN::Util::read_nd_array, args("ndimensional_image", "size_of_each_dimension", "location"), "")
 		.def("read_nd_array", &EMAN::Util::read_nd_array)
 		.staticmethod("read_nd_array")		
+
 		.def("read_nd_array_linear_interp", &EMAN::Util::read_nd_array_linear_interp, args("ndimensional_image", "size_of_each_dimension", "location"), "")
 		.def("read_nd_array_linear_interp", &EMAN::Util::read_nd_array_linear_interp)
-		.staticmethod("read_nd_array_linear_interp")		
+		.staticmethod("read_nd_array_linear_interp")
+
+		.def("sum_along_line_in_nd_array", &EMAN::Util::sum_along_line_in_nd_array, args("ndimensional_image", "size_of_each_dimension", "start_location", "end_location", "number_of_points_on_the_line"), "")
+		.def("sum_along_line_in_nd_array", &EMAN::Util::sum_along_line_in_nd_array)
+		.staticmethod("sum_along_line_in_nd_array")
+
+		.def("max_sum_along_line_in_nd_array", &EMAN::Util::max_sum_along_line_in_nd_array, args("ndimensional_image", "size_of_each_dimension","number_of_points_on_the_line"), "")
+		.def("max_sum_along_line_in_nd_array", &EMAN::Util::max_sum_along_line_in_nd_array)
+		.staticmethod("max_sum_along_line_in_nd_array")
+
 		.def("bessel0", &EMAN::Util::bessel0, args("r", "a", "alpha"), "")
 		.staticmethod("bessel0")
 		.staticmethod("point_is_in_triangle_2d")
