@@ -234,52 +234,46 @@ def classify_particles(convnet,options):
 	print "Loading images.."
 	nptcls=EMUtil.get_image_count(options.classify)
 	bigbatch=500
-	data=[]
-	for i in range(nptcls):
-		ptl=EMData(options.classify,i)
-		ptl.process_inplace("normalize.edgemean")
-		ptl.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-		ptl.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
-		if (options.shrink>1):
-			ptl.process_inplace("math.meanshrink",{"n":options.shrink})
-		
-		ar=EMNumPy.em2numpy(ptl)
-		data.append(ar.flatten())
 	
-	shape=[ptl["nx"],ptl["ny"],ptl["nz"]]
-	data=np.asarray(data,dtype=theano.config.floatX)
-	data/=np.max(np.abs(data))
-	shared_data = theano.shared(data,borrow=True)
-	index = T.lscalar()
-	convnet.update_shape((bigbatch, 1, shape[0],shape[1]))
-	test_cls = theano.function(
-		inputs=[index],
-		outputs=convnet.clslayer.get_image(),
-		givens={
-			convnet.x: shared_data[index * bigbatch: (index+1) * bigbatch]
-		}
-	)
-	print "Classifying..."
 	nbatch=nptcls/bigbatch+1
-	#print nptcls%bigbatch
+	
 	allscr=[]
-	for i in range(nbatch):
-		print "Processing {} / {}".format(i+1,nbatch)
-		if i==nbatch-1:
-			convnet.update_shape((nptcls%bigbatch, 1, shape[0],shape[1]))
-		clsout=test_cls(i)
+	for nb in range(nbatch):
+		data=[]
+		print "Processing {} / {}".format(nb+1,nbatch)
+		for i in range(nb * bigbatch, min(nptcls,(nb+1) * bigbatch)):
+			ptl=EMData(options.classify,i)
+			ptl.process_inplace("normalize.edgemean")
+			ptl.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
+			ptl.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
+			if (options.shrink>1):
+				ptl.process_inplace("math.meanshrink",{"n":options.shrink})
+			
+			ar=EMNumPy.em2numpy(ptl)
+			data.append(ar.flatten())
+		
+		shape=[ptl["nx"],ptl["ny"],ptl["nz"]]
+		data=np.asarray(data,dtype=theano.config.floatX)
+		data/=3#np.max(np.abs(data))
+		shared_data = theano.shared(data,borrow=True)
+		convnet.update_shape((len(data), 1, shape[0],shape[1]))
+		test_cls = theano.function(
+			inputs=[],
+			outputs=convnet.clslayer.get_image(),
+			givens={
+				convnet.x: shared_data
+			}
+		)
+		#print nptcls%bigbatch
+			#if i==nbatch-1:
+				#convnet.update_shape((nptcls%bigbatch, 1, shape[0],shape[1]))
+		clsout=test_cls()
 		shpout=clsout.shape
 		#print shpout
 		scr=np.mean(clsout.reshape(shpout[0],shpout[2]*shpout[3]),axis=1)
-		#print scr, np.shape(scr)
+		print scr, np.shape(scr)
 		allscr.extend(scr)
-	#for i in range(nptcls):
-		#img=clsout[i].reshape(shpout[2], shpout[3]).copy()
-		#e=from_numpy(img)
-		#scr=e["mean"]
-		#allscr.append(scr)
-		#e.write_image("clsout.hdf",i)
-	#print allscr,allscr.shape
+			
 	allscr=np.asarray(allscr).flatten()
 	#print allscr,allscr.shape
 	od=np.argsort(allscr)
