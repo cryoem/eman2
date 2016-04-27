@@ -262,7 +262,7 @@ def main():
 		mask.write_image("{path}mask_tight.hdf".format(path=path),0)
 
 	else:
-		amask3d=parsemodopt(automask3d)
+		amask3d=parsemodopt(options.automask3d)
 		if amask3d[0]=="mask.auto3d" :
 			vol=EMData("{path}tmp.hdf".format(path=path),0)
 			amask3d[1]["return_mask"]=1
