@@ -1730,12 +1730,14 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		
 		if thresh_type == "value":
 			axvals = {a:v for a,v in zip(axes,vals)}
+		
 		elif thresh_type == "fraction":
 			for i,(a,v) in enumerate(zip(axes,vals)):
 				tmp = np.asarray(data)[:,a]
 				idx = int(len(tmp)*v)
 				vals[i] = np.sort(tmp)[idx]
 			axvals = {a:v for a,v in zip(axes,vals)}
+		
 		elif thresh_type == "percent":
 			for i,(a,v) in enumerate(zip(axes,vals)):
 				tmp = np.asarray(data)[:,a]
@@ -1743,25 +1745,29 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				idx = int(len(tmp)*frac)
 				vals[i] = np.sort(tmp)[idx]
 			axvals = {a:v for a,v in zip(axes,vals)}
+		
 		elif thresh_type == "sigma":
 			tmp = np.asarray(data)[:,axes]
 			mu = np.mean(tmp,axis=0)
 			sig = np.std(tmp,axis=0)
 			axvals = {a:(m-v*s,m+v*s) for a,v,m,s in zip(axes,vals,mu,sig)}
+		
 		elif thresh_type == "median":
 			tmp = np.asarray(data)[:,axes]
 			vals = np.median(tmp,axis=0)
 			axvals = {a:v for a,v in zip(axes,vals)}
+		
 		elif thresh_type == "mean":
 			tmp = np.asarray(data)[:,axes]
 			vals = np.mean(tmp,axis=0)
 			axvals = {a:v for a,v in zip(axes,vals)}
+			
 		elif thresh_type == "percentile":
 			for i,(a,v) in enumerate(zip(axes,vals)):
 				tmp = np.asarray(data)[:,a]
 				vals[i] = np.percentile(tmp,v)
-				axvals = {a:v for a,v in zip(axes,vals)}
-
+			axvals = {a:v for a,v in zip(axes,vals)}
+		
 		# build our array data into images for analysis
 		imdata=[]
 		for r in range(nrow):
