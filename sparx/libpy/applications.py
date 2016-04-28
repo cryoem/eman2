@@ -18528,7 +18528,8 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		mode = "F"
 		cnx = data_nn//2+1
 		cny = cnx
-		numr = Numrinit(1, data_nn//2-2, 1, mode)
+		numr = Numrinit(1, data_nn//2-max(nwxc,nwyc)-1, 1, mode)
+		print  "  Radius Used  ",data_nn//2-max(nwxc,nwyc)-1
 		wr   = ringwe(numr, mode)
 		maxrin = numr[len(numr)-1]
 		crefim = [None]*nphi
@@ -18575,9 +18576,9 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		#exit()
 		#if myid == main_node:  
 		#astart_time = time()
+		if myid == main_node:  start_time = time()
 		terminate = 0
 		for ifil in xrange(nfils):
-			if myid == main_node:  start_time = time()
 			ldata = [data[im] for im in xrange(indcs[ifil][0],indcs[ifil][1])]
 			#for im in xrange(len(ldata)):  ldata[im].set_attr("bestang", 10000.0)
 			Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), rise, float(delta), ywobble, ystep], [int(nphi), symrestrict, int(phiwobble), int(rng), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
@@ -18614,7 +18615,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		del ldata
 		del refproj
 		if(not Dsym):  del rotproj
-		#print  "Time of alignment = ",myid,time()-astart_time
 		#mpi_barrier(MPI_COMM_WORLD)
 
 		"""
