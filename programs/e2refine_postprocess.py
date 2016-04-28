@@ -282,7 +282,7 @@ def main():
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 			mask.write_image("{path}mask.hdf".format(path=path),0)
 
-			mask.process_inplace("morph.erode.binary",{"k":2})
+#			mask.process_inplace("morph.erode.binary",{"k":2})
 			mask.write_image("{path}mask_tight.hdf".format(path=path),0)
 
 	combined2=0
