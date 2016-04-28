@@ -10075,7 +10075,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		float MatZX = sin(alt)*sin(phi);
 		float MatZY = sin(alt)*cos(phi);
 		float MatZZ = cos(alt)	;
-		float tempR; float tempI; float tempW;
+		//float tempR; float tempI; float tempW; # commented because variables were unused and produced warnings during compilation.
 		float Mid =(N+1.0)/2.0;	 // Check this
 		int lim=(N/2)*(N/2); // this is NOT N*N/4 !
 		int nxny = nx*ny;
@@ -10760,7 +10760,8 @@ void WatershedProcessor::process_inplace(EMData *image) {
 }
 
 EMData *WatershedProcessor::process(const EMData* const image) {
-	unsigned int nseg = params.set_default("nseg",12);
+	//unsigned int nseg = params.set_default("nseg",12);
+	int nseg = params.set_default("nseg",12);
 	float thr = params.set_default("thr",0.5f);
 	int segbymerge = params.set_default("segbymerge",0);
 	int verbose = params.set_default("verbose",0);
@@ -13144,7 +13145,8 @@ void GrowSkeletonProcessor::process_inplace(EMData * image){
 	}
 	image->update();
 
-	delete xlist,ylist;
+	delete xlist;
+	delete ylist;
 
 }
 
@@ -13157,30 +13159,48 @@ EMData* ManhattanDistanceProcessor::process(const EMData* const image)
 
 void ManhattanDistanceProcessor::process_inplace(EMData * image)
 {
-	if (image->get_zsize() != 1) throw ImageDimensionException("Only 2-D images supported");
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
-	int size = nx*ny;
+	int nz = image->get_zsize();
+	int size = nx*ny*nz;
+
 	// traverse from top left to bottom right
 	for (int i=0; i<nx; i++) {
 		for (int j=0; j<ny; j++) {
-			if (image->get_value_at(i,j) == 1) image->set_value_at_fast(i,j,0); // first pass and pixel was on, it gets a zero
-			else {
-				image->set_value_at_fast(i,j,size+nx); // pixel was off. It is at most the sum of the lengths of the array away from a pixel that is on
-				if (i>0) image->set_value_at_fast(i,j,Util::get_min(image->get_value_at(i,j),image->get_value_at(i-1,j)+1)); // or one more than the pixel to the north
-				if (j>0) image->set_value_at_fast(i,j,Util::get_min(image->get_value_at(i,j),image->get_value_at(i,j-1)+1)); // or one more than the pixel to the west
+			for (int k=0; k<nz; k++) {
+				if (image->get_value_at(i,j,k) == 1) {
+					image->set_value_at_fast(i,j,k,0); // first pass and pixel was on, it gets a zero
+				} else {
+					image->set_value_at_fast(i,j,k,size+nx); // pixel was off. It is at most the sum of the lengths of the array away from a pixel that is on...
+					float north = Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i-1,j,k)+1);
+					float west =  Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i,j-1,k)+1);
+					float above = Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i,j,k-1)+1);
+					if (i>0) image->set_value_at_fast(i,j,k,north); // or one more than the pixel to the north
+					if (j>0) image->set_value_at_fast(i,j,k,west); // or one more than the pixel to the west
+					if (k>0) image->set_value_at_fast(i,j,k,above); // or one more than the pixel above
+				}
 			}
 		}
 	}
 	// traverse from bottom right to top left. Pixels will either be what we had on the first pass...
 	for (int i=nx-1; i>=0; i--) {
 		for (int j=ny-1; j>=0; j--) {
-			if (i+1<nx) image->set_value_at_fast(i,j,Util::get_min(image->get_value_at(i,j),image->get_value_at(i+1,j)+1)); // or one more than the pixel to the south
-			if (j+1<ny) image->set_value_at_fast(i,j,Util::get_min(image->get_value_at(i,j),image->get_value_at(i,j+1)+1)); // or one more than the pixel to the east
+			for (int k=nz-1; k>=0; k--) {
+				float south = Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i+1,j,k)+1);
+				float east =  Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i,j+1,k)+1);
+				float below = Util::get_min(image->get_value_at(i,j,k),image->get_value_at(i,j,k+1)+1);
+				if (i+1<nx) image->set_value_at_fast(i,j,k,south); // or one more than the pixel to the south
+				if (j+1<ny) image->set_value_at_fast(i,j,k,east); // or one more than the pixel to the east
+				if (k+1<nz) image->set_value_at_fast(i,j,k,below); // or one more than the pixel below
+			}
 		}
 	}
 }
-
 
 EMData* BinaryDilationProcessor::process(const EMData* const image)
 {
@@ -13191,37 +13211,44 @@ EMData* BinaryDilationProcessor::process(const EMData* const image)
 
 void BinaryDilationProcessor::process_inplace(EMData *image)
 {
+	int iters = params.set_default("iters",1);
+	int radius = params.set_default("radius",1);
+	float thresh = params.set_default("threshold",0.01);
+
 	if (!image) {
 		LOGWARN("NULL Image");
 		return;
 	}
-	if (image->get_zsize() > 1) {
-		LOGERR("%s Processor doesn't support 3D data",get_name().c_str());
-		throw ImageDimensionException("Only 2-D images supported");
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	int imsize = nx*ny*nz;
+
+	EMData *binarized = image->process("threshold.binary",Dict("value",thresh));
+	memcpy(image->get_data(),binarized->get_data(),imsize*sizeof(float));
+	delete binarized;
+	image->update();
+
+	if ( radius == 0 || iters == 0) {
+		return;
 	}
-	if (params.has_key("selem")) {
-		EMData* selem = params["selem"];
-		if ( selem->get_xsize() % 2 == 0 || selem->get_ysize() % 2 == 0 ) {
-			LOGERR("%s Processor requires odd dimension mask (3,5,7,etc.).", get_name().c_str());
-			throw ImageDimensionException("Mask dimensions must be odd.");
-		}
-		EMData* proc = image->process("filter.convolution.kernel",params);
-		image->to_zero();
-		image->add(*proc);
-	}
-	else {
-		int k=params.set_default("k",1);
-		int nx = image->get_xsize();
-		int ny = image->get_ysize();
+
+	image->mult(-1);
+	image->add(1);
+	for (int iter = 0; iter < iters; iter++) {
 		image->process_inplace("math.distance.manhattan");
 		for (int i=0; i < nx; i++){
 			for (int j=0; j < ny; j++){
-				image->set_value_at_fast(i,j,(image->get_value_at(i,j)<=k)?1:0);
+				for ( int k=0; k < nz; k++) {
+					image->set_value_at_fast(i,j,k,(image->get_value_at(i,j,k)<=radius)?1:0);
+				}
 			}
 		}
 	}
+	image->sub(1);
+	image->mult(-1);
 }
-
 
 EMData* BinaryErosionProcessor::process(const EMData* const image)
 {
@@ -13232,36 +13259,59 @@ EMData* BinaryErosionProcessor::process(const EMData* const image)
 
 void BinaryErosionProcessor::process_inplace(EMData *image)
 {
-	int k=params.set_default("k",1);
-	if (image->get_zsize() != 1) throw ImageDimensionException("Only 2-D images supported");
+	int iters = params.set_default("iters",1);
+	int radius = params.set_default("radius",1);
+	float thresh = params.set_default("thresh",0.01);
 
-	image->mult(-1);
-	image->add(1);
-	image->process_inplace("math.distance.manhattan");
-	for (int i=0; i < image->get_xsize(); i++){
-		for (int j=0; j < image->get_ysize(); j++){
-			image->set_value_at_fast(i,j,(image->get_value_at(i,j)<=k)?1:0);
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	int imsize = nx*ny*nz;
+
+	EMData *binarized = image->process("threshold.binary",Dict("value",thresh));
+	memcpy(image->get_data(),binarized->get_data(),imsize*sizeof(float));
+	delete binarized;
+	image->update();
+
+	if ( radius == 0 || iters == 0) {
+		return;
+	}
+
+	for (int iter = 0; iter < iters; iter++) {
+		image->process_inplace("math.distance.manhattan");
+		for (int i=0; i < nx; i++){
+			for (int j=0; j < ny; j++){
+				for (int k=0; k < nz; k++) {
+					image->set_value_at_fast(i,j,k,(image->get_value_at(i,j,k)<=radius)?1:0);
+				}
+			}
 		}
 	}
-	image->sub(1);
-	image->mult(-1);
 }
-
 
 EMData* BinaryClosingProcessor::process(const EMData* const image)
 {
 	EMData* proc = image->copy();
-	proc->process_inplace("morph.open.binary",params);
+	proc->process_inplace("morph.close.binary",params);
 	return proc;
 }
 
 void BinaryClosingProcessor::process_inplace(EMData *image)
 {
-	int k=params.set_default("k",1);
-	image->process_inplace("morph.dilate.binary",params);
-	image->process_inplace("morph.erode.binary",params);
-}
+	int iters=params.set_default("iters",1);
+	float thresh = params.set_default("thresh",0.5);
+	image->process_inplace("threshold.binary",Dict("value",thresh));
 
+	for (int i = 0; i < iters; i++){
+		image->process_inplace("morph.dilate.binary",params);
+		image->process_inplace("morph.erode.binary",params);
+	}
+}
 
 EMData* BinaryOpeningProcessor::process(const EMData* const image)
 {
@@ -13272,11 +13322,15 @@ EMData* BinaryOpeningProcessor::process(const EMData* const image)
 
 void BinaryOpeningProcessor::process_inplace(EMData *image)
 {
-	int k=params.set_default("k",1);
-	image->process_inplace("morph.erode.binary",params);
-	image->process_inplace("morph.dilate.binary",params);
-}
+	int iters=params.set_default("iters",1);
+	float thresh = params.set_default("thresh",0.5);
+	image->process_inplace("threshold.binary",Dict("value",thresh));
 
+	for (int i = 0; i < iters; i++){
+		image->process_inplace("morph.erode.binary",params);
+		image->process_inplace("morph.dilate.binary",params);
+	}
+}
 
 EMData* BinaryInternalGradientProcessor::process(const EMData* const image)
 {
@@ -13287,13 +13341,17 @@ EMData* BinaryInternalGradientProcessor::process(const EMData* const image)
 
 void BinaryInternalGradientProcessor::process_inplace(EMData *image)
 {
-	int k=params.set_default("k",1);
-	EMData *eroded = image->process("morph.erode.binary",params);
-	image->process_inplace("morph.dilate.binary",params);
-	image->sub(*eroded);
-	delete eroded;
-}
+	int iters=params.set_default("iters",1);
+	float thresh = params.set_default("thresh",0.5);
+	image->process_inplace("threshold.binary",Dict("value",thresh));
 
+	for (int i = 0; i < iters; i++){
+		EMData *cpy = image->copy();
+		cpy->process_inplace("morph.erode.binary",params);
+		image->sub(*cpy);
+		delete cpy;
+	}
+}
 
 EMData* BinaryExternalGradientProcessor::process(const EMData* const image)
 {
@@ -13304,13 +13362,17 @@ EMData* BinaryExternalGradientProcessor::process(const EMData* const image)
 
 void BinaryExternalGradientProcessor::process_inplace(EMData *image)
 {
-	int k=params.set_default("k",1);
-	EMData *dilated = image->process("morph.dilate.binary",params);
-	image->process_inplace("morph.open.binary",params);
-	image->sub(*dilated);
-	delete dilated;
-}
+	int iters = params.set_default("iters",1);
+	float thresh = params.set_default("thresh",0.5);
+	image->process_inplace("threshold.binary",Dict("value",thresh));
 
+	for (int i = 0; i < iters; i++){
+		EMData *cpy = image->copy();
+		image->process_inplace("morph.dilate.binary",params);
+		image->sub(*cpy);
+		delete cpy;
+	}
+}
 
 EMData* BinaryMorphGradientProcessor::process(const EMData* const image)
 {
@@ -13321,13 +13383,17 @@ EMData* BinaryMorphGradientProcessor::process(const EMData* const image)
 
 void BinaryMorphGradientProcessor::process_inplace(EMData *image)
 {
-	int k=params.set_default("k",1);
-	EMData *eroded = image->process("morph.erode.binary",params);
-	image->process_inplace("morph.dilate.binary",params);
-	image->sub(*eroded);
-	delete eroded;
-}
+	int iters = params.set_default("iters",1);
+	float thresh = params.set_default("thresh",0.5);
+	image->process_inplace("threshold.binary",Dict("value",thresh));
 
+	for (int i = 0; i < iters; i++){
+		EMData *eroded = image->process("morph.erode.binary",params);
+		image->process_inplace("morph.dilate.binary",params);
+		image->sub(*eroded);
+		delete eroded;
+	}
+}
 
 EMData* BinaryTopHatProcessor::process(const EMData* const image)
 {
@@ -13338,12 +13404,16 @@ EMData* BinaryTopHatProcessor::process(const EMData* const image)
 
 void BinaryTopHatProcessor::process_inplace(EMData *image)
 {
-	int k=params.set_default("k",1);
-	EMData* open = image->process("morph.open.binary",params);
-	image->sub(*open);
-	delete open;
-}
+	int iters=params.set_default("iters",1);
+	float thresh = params.set_default("thresh",0.5);
+	image->process_inplace("threshold.binary",Dict("value",thresh));
 
+	for (int i = 0; i < iters; i++){
+		EMData* open = image->process("morph.open.binary",params);
+		image->sub(*open);
+		delete open;
+	}
+}
 
 EMData* BinaryBlackHatProcessor::process(const EMData* const image)
 {
@@ -13354,10 +13424,15 @@ EMData* BinaryBlackHatProcessor::process(const EMData* const image)
 
 void BinaryBlackHatProcessor::process_inplace(EMData *image)
 {
-	int k=params.set_default("k",1);
-	EMData* close = image->process("morph.close.binary",params);
-	image->sub(*close);
-	delete close;
+	int iters=params.set_default("iters",1);
+	float thresh = params.set_default("thresh",0.5);
+	image->process_inplace("threshold.binary",Dict("value",thresh));
+
+	for (int i = 0; i < iters; i++){
+		EMData* close = image->process("morph.close.binary",params);
+		image->sub(*close);
+		delete close;
+	}
 }
 
 EMData* ZThicknessProcessor::process(const EMData* const image)

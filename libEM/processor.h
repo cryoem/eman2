@@ -1018,6 +1018,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			//d.put("threshold", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1051,14 +1052,16 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological dilation of a (binary) 2D image.";
+			return "Performs a morphological dilation of a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to dilate the input image.");
-			d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
+			//d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
 			return d;
 		}
 
@@ -1091,13 +1094,16 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel erosion of a (binary) 2D image.";
+			return "Performs a morphological k-pixel erosion of a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
+			//d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
 			return d;
 		}
 
@@ -1131,13 +1137,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel opening of a (binary) 2D image.";
+			return "Performs a morphological k-pixel opening of a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1171,13 +1179,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel closing of a (binary) 2D image.";
+			return "Performs a morphological k-pixel closing of a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1211,13 +1221,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Computes an internal morphological graduent using k-pixel-width operations on a (binary) 2D image.";
+			return "Computes an internal morphological graduent using k-pixel-width operations on a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1251,13 +1263,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Computes an external morphological graduent using k-pixel-width operations on a (binary) 2D image.";
+			return "Computes an external morphological graduent using k-pixel-width operations on a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1291,13 +1305,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Computes the morphological graduent using k-pixel-width operations on a (binary) 2D image.";
+			return "Computes the morphological graduent using k-pixel-width operations on a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1331,13 +1347,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological top hat operation on a (binary) 2D image.";
+			return "Performs a morphological top hat operation on a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1371,13 +1389,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological black hat operation on a (binary) 2D image.";
+			return "Performs a morphological black hat operation on a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -8511,7 +8531,7 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			TypeDict d;
 			d.put("kernel", EMObject::FLOATARRAY, "the convolution kernel");
-			d.put("selem", EMObject::EMDATA, "the structuring element");
+			//d.put("selem", EMObject::EMDATA, "the structuring element");
 			return d;
 		}
 		static const string NAME;
