@@ -73,6 +73,7 @@ import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 #matplotlib.use('Agg')
+import numpy as np
 
 from emapplication import EMApp, EMGLWidget
 from emglobjects import EMOpenGLFlagsAndTools
@@ -1546,37 +1547,43 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.kmeansb.setText("K-means")
 		gbl0.addWidget(self.kmeansb,2,0,1,2)
 
-		self.threshb=QtGui.QPushButton(self)
-		self.threshb.setText("Threshold")
-		gbl0.addWidget(self.threshb,8,0,1,2)
-
 		self.wnseg=ValBox(rng=(2,32),label="Nseg:",value=2)
 		self.wnseg.intonly=1
 		gbl0.addWidget(self.wnseg,4,0)
-
+		
 		self.wnax=StringBox(label="Axes:",value="all")
 		gbl0.addWidget(self.wnax,4,1)
 
-		self.wnval=StringBox(label="Thresh:",value="0.50")
-		self.wnval.intonly=0
-		gbl0.addWidget(self.wnval,10,0)
-
 		self.wcbaxnorm=CheckBox(label="Eq Wt Axes:",value=0)
 		gbl0.addWidget(self.wcbaxnorm,6,0)
-
+		
 		hl1 = QtGui.QFrame()
 		hl1.setFrameStyle(QtGui.QFrame.HLine)
 		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
 		gbl0.addWidget(hl1,7,0,1,2)
 
+		self.threshb=QtGui.QPushButton(self)
+		self.threshb.setText("Threshold")
+		gbl0.addWidget(self.threshb,8,0,1,2)
+
+		self.wnval=StringBox(label="Value(s):",value="0.50")
+		self.wnval.intonly=0
+		gbl0.addWidget(self.wnval,10,0)
+		
 		self.wnax_thresh=StringBox(label="Axes:",value="0")
 		gbl0.addWidget(self.wnax_thresh,10,1)
-
-		self.wcbfracthr=CheckBox(label="Frac thresh(s):",value=0) # needs to be a combo box to select fractional/percentage, sigma, robust (outliers), etc.
-		gbl0.addWidget(self.wcbfracthr,12,0)
-
-
-
+		
+		self.wcomb_threshtype=QtGui.QComboBox(self)
+		self.wcomb_threshtype.addItem("value")
+		self.wcomb_threshtype.addItem("fraction")
+		self.wcomb_threshtype.addItem("percent")
+		self.wcomb_threshtype.addItem("sigma")
+		#self.wcomb_threshtype.addItem("variance")
+		self.wcomb_threshtype.addItem("median")
+		self.wcomb_threshtype.addItem("mean")
+		self.wcomb_threshtype.addItem("percentile")
+		gbl0.addWidget(self.wcomb_threshtype,12,0)
+		
 		hl2 = QtGui.QFrame()
 		hl2.setFrameStyle(QtGui.QFrame.HLine)
 		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
@@ -1691,13 +1698,13 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 
 	def doThresh(self):
 		"""Performs threshold-based classification, and produces nseg new data sets"""
-		axes=self.wnax_thresh.getValue()					# selected axes
-		vals=self.wnval.getValue()					# values
-		thresh_type=self.wcombotype.getValue()		# needs to be a combo box to select fractional/percentage, sigma, robust (outliers), etc.
-		insp=self.target().get_inspector()			# inspector
-		name=str(insp.setlist.currentItem().text())	# currently hilighted item
-		data=self.target().data[name]				# data set we will operate on
-		try: comments=self.target().comments[name]	# comments for copying to results
+		axes=self.wnax_thresh.getValue()						# selected axes
+		vals=self.wnval.getValue()								# values
+		thresh_type=str(self.wcomb_threshtype.currentText())	# type of threshold to perform
+		insp=self.target().get_inspector()						# inspector
+		name=str(insp.setlist.currentItem().text())				# currently hilighted item
+		data=self.target().data[name]							# data set we will operate on
+		try: comments=self.target().comments[name]				# comments for copying to results
 		except: comments=None
 
 		nseg = 2
@@ -1720,8 +1727,40 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		except:
 			QtGui.QMessageBox.warning(self, "You must specify one (comma separated) value for each axis.")
 			return
-
-		axvals = {a:v for a,v in zip(axes,vals)}
+		
+		if thresh_type == "value":
+			axvals = {a:v for a,v in zip(axes,vals)}
+		elif thresh_type == "fraction":
+			for i,(a,v) in enumerate(zip(axes,vals)):
+				tmp = np.asarray(data)[:,a]
+				idx = int(len(tmp)*v)
+				vals[i] = np.sort(tmp)[idx]
+			axvals = {a:v for a,v in zip(axes,vals)}
+		elif thresh_type == "percent":
+			for i,(a,v) in enumerate(zip(axes,vals)):
+				tmp = np.asarray(data)[:,a]
+				frac = v / 100.0
+				idx = int(len(tmp)*frac)
+				vals[i] = np.sort(tmp)[idx]
+			axvals = {a:v for a,v in zip(axes,vals)}
+		elif thresh_type == "sigma":
+			tmp = np.asarray(data)[:,axes]
+			mu = np.mean(tmp,axis=0)
+			sig = np.std(tmp,axis=0)
+			axvals = {a:(m-v*s,m+v*s) for a,v,m,s in zip(axes,vals,mu,sig)}
+		elif thresh_type == "median":
+			tmp = np.asarray(data)[:,axes]
+			vals = np.median(tmp,axis=0)
+			axvals = {a:v for a,v in zip(axes,vals)}
+		elif thresh_type == "mean":
+			tmp = np.asarray(data)[:,axes]
+			vals = np.mean(tmp,axis=0)
+			axvals = {a:v for a,v in zip(axes,vals)}
+		elif thresh_type == "percentile":
+			for i,(a,v) in enumerate(zip(axes,vals)):
+				tmp = np.asarray(data)[:,a]
+				vals[i] = np.percentile(tmp,v)
+				axvals = {a:v for a,v in zip(axes,vals)}
 
 		# build our array data into images for analysis
 		imdata=[]
@@ -1733,8 +1772,13 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				# We only want points satisfying ALL threshold values.
 				try: cid = imdata[r]["class_id"]
 				except:
-					if data[ax][r] < axvals[ax]: imdata[r]["class_id"] = 0
-					else: imdata[r]["class_id"] = 1
+					if thresh_type == "sigma":
+						if data[ax][r] > axvals[ax][0] and data[ax][r] < axvals[ax][1]:
+							imdata[r]["class_id"] = 0
+						else: imdata[r]["class_id"] = 1 # outlier
+					else:
+						if data[ax][r] < axvals[ax]: imdata[r]["class_id"] = 0
+						else: imdata[r]["class_id"] = 1
 
 		# extract classified results as new sets
 		results=[[[] for i in range(ncol)] for j in range(nseg)]	# nseg lists of data sets. Each data set is a list of ncol lists
