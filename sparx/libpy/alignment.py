@@ -4205,7 +4205,8 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	#  It makes no sense, as it still searches within the entire range of psi_max
 	# bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
 	# enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
-	psi_offset = abs(int(round(2*abs(reduced_psiref)/psistep)))
+	# psi_offset = abs(int(round(2*abs(reduced_psiref)/psistep)))
+	psi_offset = int(round(reduced_psiref / psistep)) + nc
 	upper_segment_length = nr - 1 - psi_offset
 	upper_segment_length_must_be_lower_bounded_by_zero = [0, upper_segment_length][upper_segment_length > 0]
 	psi_half_range = min(psi_offset, upper_segment_length_must_be_lower_bounded_by_zero)
@@ -4230,13 +4231,13 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	wyc = wny//2
 
 	if updown == "up" :
-		# print "up: psi_offset, psi_half_range, bnr, enr, len(ref)", psi_offset, psi_half_range, bnr, enr, len(ref)
+		# print "up: reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)", reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)
 		ima = inima
 		#ima = inima.FourInterpol(N, N, 1,0)
 		#ima = Processor.EMFourierFilter(ima,params)
 
 	if updown == "down" :
-		# print "down: psi_offset, psi_half_range, bnr, enr, len(ref)", psi_offset, psi_half_range, bnr, enr, len(ref)
+		# print "down: reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)", reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)
 		#  This yields rotation by 180 degrees.  There is no extra shift as the image was padded 2x, so it is even-sized, but two rows are incorrect
 		imm = inima.conjg()
 		#imm = rot_shift2D(inima,180.0, interpolation_method = 'linear')
