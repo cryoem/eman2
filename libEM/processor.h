@@ -2258,6 +2258,48 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	class DiscritizeProcessor:public RealPixelProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new DiscritizeProcessor();
+		}
+		
+		void set_params(const Dict & new_params)
+			{
+				params = new_params;
+				if (params.has_key("center")) center=params["center"];
+				else center=0.0;
+			}
+
+		TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("center", EMObject::FLOAT, "Center value from which number of standard deviations is computed (default = 0)");
+				return d;
+			}
+
+		string get_desc() const
+		{
+			return "Converts each pixel value to the integral number of standard deviations from the specified center. Rounds to the nearest integer, -0.5*sigma<x<0.5*sigma -> 0.0  ";
+		}
+
+		static const string NAME;
+
+	  protected:
+		float center;
+		
+		void process_pixel(float *x) const
+		{
+			*x = Util::fast_floor((*x-center)/sigma+0.5);
+		}
+	};
+
 	/**f(x) = x if x >= minval; f(x) = 0 if x < minval
 	*@param minval
 	 */

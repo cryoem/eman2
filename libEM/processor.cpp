@@ -101,6 +101,7 @@ const string SubtractOptProcessor::NAME = "math.sub.optimal";
 const string ValuePowProcessor::NAME = "math.pow";
 const string ValueSquaredProcessor::NAME = "math.squared";
 const string ValueSqrtProcessor::NAME = "math.sqrt";
+const string DiscritizeProcessor::NAME = "threshold.discritize.sigma";
 const string ToZeroProcessor::NAME = "threshold.belowtozero";
 const string AboveToZeroProcessor::NAME="threshold.abovetozero";
 const string OutlierProcessor::NAME="threshold.outlier.localmean";
@@ -332,6 +333,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ValuePowProcessor>();
 	force_add<ValueSquaredProcessor>();
 	force_add<ValueSqrtProcessor>();
+	force_add<DiscritizeProcessor>();
 	force_add<Rotate180Processor>();
 	force_add<TransformProcessor>();
 	force_add<ScaleTransformProcessor>();

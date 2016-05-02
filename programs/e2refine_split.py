@@ -56,7 +56,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--path", default=None, type=str,help="The name of an existing refine_xx folder, where e2refine_easy ran to completion",guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--usebasis", default=1,type=int,help="Select which Eigenimage to use for separation. With novarimax, n=1 is highest energy.", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--usebasis", default=0,type=int,help="Select which Eigenimage to use for separation. With novarimax, n=0 is highest energy.", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--nbasis", default=-1,type=int,help="Number of basis vectors to compute. Must be at least usebasis+1. Default 6 or usebasis+1.", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--novarimax", action="store_true",default=False, help="Disable varimax rotation among computed basis vectors.")
 	parser.add_argument("--mask", default=None, help="Optional 3D mask to focus the classification", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=5, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -326,7 +326,7 @@ def main():
 	basisout="{}/classes_{:02d}{}_basis".format(options.path,last_iter,msk)
 	threedout="{}/threed_{:02d}{}_split.hdf".format(options.path,last_iter,msk)
 	threedout2="{}/threed_{:02d}{}_split_filt_bas{}.hdf".format(options.path,last_iter,msk,options.usebasis)
-	setout=["sets/split_{}{}_0.lst".format(pathnum,msk),"sets/split_{}{}_1.lst".format(pathnum,msk)]
+	setout=["sets/split_{}{}_bas{}_0.lst".format(pathnum,msk,options.usebasis),"sets/split_{}{}_bas{}_1.lst".format(pathnum,msk,options.usebasis)]
 	split=[r.finish(True).get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize)) for r in recon]
 	split[0]["apix_x"]=apix
 	split[0]["apix_y"]=apix
@@ -380,7 +380,7 @@ def main():
 	E2end(logger)
 
 class ClassSplitTask(JSTask):
-	"""This task will create a single task-average"""
+	"""This task will create a single class-average"""
 
 	def __init__(self,ptclfiles,ns,ptcls,nc,euler,mask,usebasis,nbasis,novarimax,verbose):
 		"""ptclfiles is a list of 2 (even/odd) particle stacks. ns is the number of particles in each of ptcfiles. ptcls is a list of lists containing [eo,ptcl#,Transform]"""
@@ -450,7 +450,7 @@ class ClassSplitTask(JSTask):
 
 		
 		# if you turn this on multithreaded it will crash sometimes
-		avg.mult(0.05)	#arbitrary for debugging
+		#avg.mult(0.05)	#arbitrary for debugging
 		#avg.write_image("pca.hdf",-1)
 		#basis[0].write_image("pca.hdf",-1)
 		#basis[1].write_image("pca.hdf",-1)

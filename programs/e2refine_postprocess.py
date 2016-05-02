@@ -278,7 +278,7 @@ def main():
 		else:
 			mask=EMData(nx,ny,nz)
 			mask.to_one()
-			mask.process(amask3d[0],amask3d[1])
+			mask.process_inplace(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 			mask.write_image("{path}mask.hdf".format(path=path),0)
 
