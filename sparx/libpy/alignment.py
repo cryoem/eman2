@@ -4199,15 +4199,20 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	nr = int(2*psimax/psistep)+1
 	nc = nr//2
 	if updown == "up" :  reduced_psiref = psiref -  90.0
-	else:                reduced_psiref = psiref - 180.0
+	else:                reduced_psiref = psiref - 270.0
 
 	#  Limit psi search to within psimax range
 	#  It makes no sense, as it still searches within the entire range of psi_max
-	bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
-	enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
+	# bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
+	# enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
+	# psi_offset = abs(int(round(2*abs(reduced_psiref)/psistep)))
+	psi_offset = int(round(reduced_psiref / psistep)) + nc
+	upper_segment_length = nr - 1 - psi_offset
+	upper_segment_length_must_be_lower_bounded_by_zero = [0, upper_segment_length][upper_segment_length > 0]
+	psi_half_range = min(psi_offset, upper_segment_length_must_be_lower_bounded_by_zero)
+	bnr = psi_offset - psi_half_range 
+	enr = psi_offset + psi_half_range + 1 
 	
-	
-
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
 	#   We quietly assume the search range for translations is always much less than the ccf size,
@@ -4226,11 +4231,13 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	wyc = wny//2
 
 	if updown == "up" :
+		# print "up: reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)", reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)
 		ima = inima
 		#ima = inima.FourInterpol(N, N, 1,0)
 		#ima = Processor.EMFourierFilter(ima,params)
 
 	if updown == "down" :
+		# print "down: reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)", reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)
 		#  This yields rotation by 180 degrees.  There is no extra shift as the image was padded 2x, so it is even-sized, but two rows are incorrect
 		imm = inima.conjg()
 		#imm = rot_shift2D(inima,180.0, interpolation_method = 'linear')
@@ -4254,6 +4261,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23     ## do nothing for rny=0 @ming
 	for i in xrange(bnr, enr, 1):
 		if updown == "up" :
+			# print "up i, bnr, enr, len(ref)", i, bnr, enr, len(ref)
 			c = ccf(ima,ref[i])
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
@@ -4300,6 +4308,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 					ma2  = PEAKV
 					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
 		if updown == "down" :
+			# print "down i, bnr, enr, len(ref)", i, bnr, enr, len(ref)
 			c = ccf(imm,ref[i])
 			for iy in xrange(-rny, rny + 1):
 				for ix in xrange(-rnx, rnx + 1):
