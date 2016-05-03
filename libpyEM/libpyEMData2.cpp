@@ -130,7 +130,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_downsample_overloads_1_2, EMA
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_getconvpt2d_kbi0_overloads_3_4, EMAN::EMData::getconvpt2d_kbi0, 3, 4)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FourInterpol_overloads_1_4, EMAN::EMData::FourInterpol, 1, 4)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FourInterpol_overloads_1_4, EMAN::EMData::FourInterpol, 1, 5)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FourTruncate_overloads_1_5, EMAN::EMData::FourTruncate, 1, 5)
 
@@ -776,7 +776,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("center_origin_fft", &EMAN::EMData::center_origin_fft, "Multiply a Fourier image by (-1)**(ix+iy+iz) to center it.")
 	.def("depad", &EMAN::EMData::depad, "De-pad, and and remove Fourier extension convenience function.\nPurpose: De-pad, and and remove Fourier extension from a real image.\nMethod: Remove padding and extension along x for fft, and return the new  image.\n \nreturn depadded input image.")
 	.def("depad_corner", &EMAN::EMData::depad_corner, "De-pad, and and remove Fourier extension convenience function.\nPurpose: De-pad, and and remove Fourier extension from a real image.\nMethod: Remove padding and extension along x for fft, and return the new  image.\n \nreturn depadded input image.")
-	.def("FourInterpol", &EMAN::EMData::FourInterpol, EMAN_EMData_FourInterpol_overloads_1_4(args("nxn", "nyn", "nzn", "RetReal"), " ")[ return_value_policy< manage_new_object >() ])
+	.def("FourInterpol", &EMAN::EMData::FourInterpol, EMAN_EMData_FourInterpol_overloads_1_4(args("nxn", "nyn", "nzn", "RetReal", "normalize"), " ")[ return_value_policy< manage_new_object >() ])
 	.def("FourTruncate", &EMAN::EMData::FourTruncate, EMAN_EMData_FourTruncate_overloads_1_5(args("nxn", "nyn", "nzn", "RetReal", "normalize"), "Truncate Fourier transform of an image, it will reduce its size.  (It is a form of decimation).\n \nnxni - new x size (has to be larger/equal than the original x size)\nnyni - new y size (has to be larger/equal than the original y size)(default=0)\nnzni new z size (has to be larger/equal than the original z size)(default=0)\nRetReal - (default=True)\nnormalize - (default=True)\n \nreturn New truncated up image.")[ return_value_policy< manage_new_object >() ])
 	.def("Four_ds", &EMAN::EMData::Four_ds, EMAN_EMData_Four_ds_overloads_1_4(args("nxni", "nyni", "nzni", "RetReal"), "nxni - new x size (has to be larger/equal than the original x size)\nnyni - new y size (has to be larger/equal than the original y size)(default=0)\nnzni - new z size (has to be larger/equal than the original z size)(default=0)\nRetReal - (default=True)")[ return_value_policy< manage_new_object >() ])
 	.def("Four_shuf_ds_cen_us", &EMAN::EMData::Four_shuf_ds_cen_us, EMAN_EMData_Four_shuf_ds_cen_us_overloads_1_4(args("nxni", "nyni", "nzni", "RetReal"), "nxni - new x size (has to be larger/equal than the original x size)\nnyni - new y size (has to be larger/equal than the original y size)(default=0)\nnzni new z size (has to be larger/equal than the original z size)(default=0)\nRetReal - (default=True)")[ return_value_policy< manage_new_object >() ])
