@@ -90,7 +90,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")               # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	keyword_dict["input_micrograph_list"]         = SXkeyword_map(0, "any_image_list") # input_micrograph_list (contains keyworkd 'input_micrograph' but this should be image_list type)
-	keyword_dict["isac_directory"]                = SXkeyword_map(0, "string")         # isac_directory (contains keyworkd 'directory' but this should be string type)
+	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be string type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
@@ -112,12 +112,15 @@ def construct_token_list_from_wiki(sxcmd_config):
 	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "parameters")     # cter_ctf_file
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
+	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
 	keyword_dict["unblur"]                        = SXkeyword_map(2, "any_file")       # unblur
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
 	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
+	keyword_dict["--chunkdir"]                    = SXkeyword_map(2, "directory")      # --chunkdir=chunkdir
+	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=run1_directory, --previous_run2=run2_directory
 
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")           # --apix=pixel_size, --apix
 	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")           # --pixel_size=PIXEL_SIZE
