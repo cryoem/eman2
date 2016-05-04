@@ -111,7 +111,7 @@ def main():
 
 	if options.verbose: print("Tracing particles through input classmx files")
 	with open(options.trace,"w") as outf:
-		dat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
+		dat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
 		cmt = " # {};{};{};{};{};{};{};{};{};{}\n"
 		for p in xrange(nptcl):
 			if options.verbose:
@@ -129,16 +129,18 @@ def main():
 				e1 = ort1.get_rotation("eman")
 				alt1 = e1["alt"]
 				az1 = e1["az"]
+                phi1 = e1["phi"]
 				cls1 = int(cls[i-1][0][0,p])
 
 				e2 =  ort2.get_rotation("eman")
 				alt2 = e2["alt"]
 				az2 = e2["az"]
+                phi2 = e2["phi"]
 				cls2 = int(cls[i][0][0,p])
 
 				clsdiff = abs(cls2-cls1)
-
-				outf.write(dat.format(alt1,az1,cls1,alt2,az2,cls2,diff,clsdiff))
+                
+				outf.write(dat.format(az1,alt1,phi1,cls1,az2,alt2,phi2,cls2,diff,clsdiff))
 
 				try:
 					classes2 = cmx[i].replace("classmx","classes")
@@ -163,14 +165,16 @@ def main():
 		for i,c in enumerate(cmx):
 			if i > 0:
 				k = []
-				k.append("{}:\talt from {} (input {})".format(ctr,c,i-1))
-				k.append("{}\taz from {} (input {})".format(ctr+1,c,i-1))
-				k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+2,c,i-1))
-				k.append("{}:\talt from {} (input {})".format(ctr+3,c,i))
+				k.append("{}\taz from {} (input {})".format(ctr,c,i-1))
+                k.append("{}:\talt from {} (input {})".format(ctr+1,c,i-1))
+                k.append("{}:\tphi from {} (input {})".format(ctr+2,c,i-1))
+				k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+3,c,i-1))
 				k.append("{}\taz from {} (input {})".format(ctr+4,c,i))
-				k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+5,c,i))
-				k.append("{}:\tangular error for best agreeing orientation (difference between input {} and {})".format(ctr+6,i,i-1))
-				k.append("{}:\tabsolute difference between class assignment {} and {}".format(ctr+7,i,i-1))
+                k.append("{}:\talt from {} (input {})".format(ctr+5,c,i))
+                k.append("{}:\tphi from {} (input {})".format(ctr+6,c,i))
+				k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+7,c,i))
+				k.append("{}:\tangular error for best agreeing orientation (difference between input {} and {})".format(ctr+8,i,i-1))
+				k.append("{}:\tabsolute difference between class assignment {} and {}".format(ctr+9,i,i-1))
 				keyfile.write("\n".join([x for x in k])+"\n")
 				ctr+=len(k)
 
