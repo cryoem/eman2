@@ -401,6 +401,39 @@ BDB files can not be selected as input micrographs.
 		n_global_coords_process += local_particle_id
 		n_global_coords_reject_out_of_boundary += n_coords_reject_out_of_boundary
 		
+#		# MRK_DEBUG: Toshio Moriya 2016/05/03
+#		# Following codes are for debugging bdb. Delete in future
+#		result = db_check_dict(local_stack_name)
+#		print('# MRK_DEBUG: result = db_check_dict(local_stack_name): %s' % (result))
+#		result = db_list_dicts('bdb:%s' % out_dir)
+#		print('# MRK_DEBUG: result = db_list_dicts(out_dir): %s' % (result))
+#		result = db_get_image_info(local_stack_name)
+#		print('# MRK_DEBUG: result = db_get_image_info(local_stack_name)', result)
+		
+		# Append local stack to global virtual stack
+		print(" ")
+		print("Appending local stack to global virtual stack ...")
+		
+		# Release the data base of local stack from this process
+		# so that the subprocess can access to the data base
+		db_close_dict(local_stack_name)
+		
+#		# MRK_DEBUG: Toshio Moriya 2016/05/03
+#		# Following codes are for debugging bdb. Delete in future
+#		cmd_line = "e2iminfo.py %s" % (local_stack_name)
+#		print('# MRK_DEBUG: Executing the command: %s' % (cmd_line))
+#		cmdexecute(cmd_line)
+		
+		cmd_line = "e2bdb.py %s --appendvstack=bdb:%s#data" % (local_stack_name, out_dir)
+		# print('# MRK_DEBUG: Executing the command: %s' % (cmd_line))
+		cmdexecute(cmd_line)
+		
+#		# MRK_DEBUG: Toshio Moriya 2016/05/03
+#		# Following codes are for debugging bdb. Delete in future
+#		cmd_line = "e2iminfo.py bdb:%s#data" % (out_dir)
+#		print('# MRK_DEBUG: Executing the command: %s' % (cmd_line))
+#		cmdexecute(cmd_line)
+		
 		# Print out the summary of this micrograph
 		print(" ")
 		print("Micrograph summary of coordinates ...")

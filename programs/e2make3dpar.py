@@ -98,6 +98,8 @@ def main():
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
 	parser.add_argument("--mode", type=str, default="gauss_5", help="Fourier reconstruction 'mode' to use. The default should not normally be changed. default='gauss_5'")
 	parser.add_argument("--noradcor", action="store_true",default=False, help="Normally a radial correction will be applied based on the --mode used. This option disables that correction.")
+	parser.add_argument("--seedmap",type=str, default = None, help="If specified this volume will be used as a starting point for the reconstruction, filling any missing values in Fourier space. experimental.")
+	parser.add_argument("--seedweight", type=float, default=1.0, help="If seedmap specified, this is how strongly the seedmap will bias existing values. 1 is default, and is equivalent to a one particle weight.")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -217,7 +219,14 @@ def main():
 	threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
 			options.fillangle,options.verbose-1)) for i in xrange(options.threads)]
 
-	recon.setup()
+	if options.seedmap!=None :
+		seed==EMData(options.seedmap)
+		seed.process_inplace("normalize.edgemean")
+		seed.clip_inplace(Region((ny-padvol)/2,(ny-padvol)/2,(ny-padvol)/2,padvol,padvol,padvol))
+		seed.fft_inplace()
+		recon.setup_seed(seed,options.seedweight)
+	else : recon.setup()
+	
 	for i,t in enumerate(threads):
 		if options.verbose>1: print "started thread ",i
 		t.start()
