@@ -166,26 +166,24 @@ def main():
 				d = [e1["az"],e1["alt"],e1["phi"],cls1,e2["az"],e2["alt"],e2["phi"],cls2,diff,clsdiff]
 				dat.append("\t".join([str(i) for i in d]))
 				
-				if i == 0: # first class for this particle
-					if isodd: classes1 = cmx[1].replace("classmx","classes")
-					else: classes1 = cmx[0].replace("classmx","classes")
-					
-					hdr1 = EMData(classes1,cls1,True)
-					idx1 = hdr1["projection_image_idx"]
-					proj1 = hdr1["projection_image"]
-						
-			
-			# last class for this particle
-			if isodd: classes2 = cmx[-1].replace("classmx","classes")
-			else: classes2 = cmx[-2].replace("classmx","classes")
-			
-			hdr2 = EMData(classes2,cls2,True)
-			idx2 = hdr2["projection_image_idx"]
-			proj2 = hdr2["projection_image"]
+				if i == 0:
+					try:
+						if isodd: classes1 = cmx[1].replace("classmx","classes")
+						else: classes1 = cmx[0].replace("classmx","classes")
+						hdr1 = EMData(classes1,cls1,True)
+						idx1 = hdr1["projection_image_idx"]
+						proj1 = hdr1["projection_image"]
+					except:
+						pass
 			
 			data = "\t".join(dat)
 			
 			try:
+				if isodd: classes2 = cmx[-1].replace("classmx","classes")
+				else: classes2 = cmx[-2].replace("classmx","classes")
+				hdr2 = EMData(classes2,cls2,True)
+				idx2 = hdr2["projection_image_idx"]
+				proj2 = hdr2["projection_image"]
 				c = [cls1,classes1,cls2,classes2,idx1,proj1,idx2,proj2,p,hdr2["class_ptcl_src"]]
 				cmt = ";".join([str(i) for i in c])
 			except:
