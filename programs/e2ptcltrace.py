@@ -126,7 +126,7 @@ def main():
 		orts = []
 		for i in xrange(ncls):
 			if options.verbose:
-				sys.stdout.write('\r{}, {}\t{}/{}\t'.format(x,p,i+1,ncls))
+				sys.stdout.write('\r{}\t{}\t{}/{}\t'.format(x,p,i+1,ncls))
 			orts.append( EMData(p,i,True)["xform.projection"] )
 		clsort.append(orts)
 		if options.verbose: print("")
