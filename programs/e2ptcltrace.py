@@ -27,7 +27,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA	2111-1307 USA
 #
 #
 
@@ -52,7 +52,7 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--trace",type=str,help="Name of output file.", default="ptcltrace.txt")
+	parser.add_argument("--output",type=str,help="Name of output file.", default="ptcltrace.txt")
 	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -110,36 +110,36 @@ def main():
 	syms=parsesym( str(options.sym) ).get_syms()
 
 	if options.verbose: print("Tracing particles through input classmx files")
-	with open(options.trace,"w") as outf:
+	with open(options.output,"w") as outf:
 		dat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}"
 		cmt = " # {};{};{};{};{};{};{};{};{};{}\n"
 		for p in xrange(nptcl):
 			if options.verbose:
 				sys.stdout.write('\r{0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
 			for i in xrange(1,len(cmx)):
-				ort1=clsort[i-1][int(cls[i-1][0][0,p])]	# orientation of particle in first classmx
+				ort1=clsort[i-1][int(cls[i-1][0][0,p])] # orientation of particle in first classmx
 				ort2=clsort[i][int(cls[i][0][0,p])]		# orientation of particle in second classmx
 
 				diffs=[] # make a list of the rotation angle to each other symmetry-related point
 				for t in syms:
 					ort2p=ort2*t
 					diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
-				diff=min(diffs)	# The angular error for the best-agreeing orientation
+				diff=min(diffs) # The angular error for the best-agreeing orientation
 
 				e1 = ort1.get_rotation("eman")
 				alt1 = e1["alt"]
 				az1 = e1["az"]
-                phi1 = e1["phi"]
+				phi1 = e1["phi"]
 				cls1 = int(cls[i-1][0][0,p])
 
 				e2 =  ort2.get_rotation("eman")
 				alt2 = e2["alt"]
 				az2 = e2["az"]
-                phi2 = e2["phi"]
+				phi2 = e2["phi"]
 				cls2 = int(cls[i][0][0,p])
 
 				clsdiff = abs(cls2-cls1)
-                
+				
 				outf.write(dat.format(az1,alt1,phi1,cls1,az2,alt2,phi2,cls2,diff,clsdiff))
 
 				try:
@@ -157,8 +157,8 @@ def main():
 
 				except: outf.write(" # no particles in class corresponding to projection\n")
 
-	if ".txt" in options.trace: kf = options.trace.replace(".txt",".key")
-	else: kf = options.trace + ".key"
+	if ".txt" in options.output: kf = options.output.replace(".txt",".key")
+	else: kf = options.output + ".key"
 
 	with open(kf,"w") as keyfile:
 		ctr = 0
@@ -166,22 +166,22 @@ def main():
 			if i > 0:
 				k = []
 				k.append("{}\taz from {} (input {})".format(ctr,c,i-1))
-                k.append("{}:\talt from {} (input {})".format(ctr+1,c,i-1))
-                k.append("{}:\tphi from {} (input {})".format(ctr+2,c,i-1))
+				k.append("{}:\talt from {} (input {})".format(ctr+1,c,i-1))
+				k.append("{}:\tphi from {} (input {})".format(ctr+2,c,i-1))
 				k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+3,c,i-1))
 				k.append("{}\taz from {} (input {})".format(ctr+4,c,i))
-                k.append("{}:\talt from {} (input {})".format(ctr+5,c,i))
-                k.append("{}:\tphi from {} (input {})".format(ctr+6,c,i))
+				k.append("{}:\talt from {} (input {})".format(ctr+5,c,i))
+				k.append("{}:\tphi from {} (input {})".format(ctr+6,c,i))
 				k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+7,c,i))
 				k.append("{}:\tangular error for best agreeing orientation (difference between input {} and {})".format(ctr+8,i,i-1))
 				k.append("{}:\tabsolute difference between class assignment {} and {}".format(ctr+9,i,i-1))
 				keyfile.write("\n".join([x for x in k])+"\n")
 				ctr+=len(k)
 
-	print("Particle trace results stored in {}.\nThe file {} describes the contents of each column.".format(options.trace,kf))
+	print("Particle trace results stored in {}.\nThe file {} describes the contents of each column.".format(options.output,kf))
 
 	E2end(E2n)
 
 
 if __name__ == "__main__":
-    main()
+	main()
