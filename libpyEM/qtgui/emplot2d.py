@@ -53,9 +53,12 @@ ploticon = [
 
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtOpenGL import QGLWidget
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU
 from OpenGL.GL import *
+import OpenGL.GL as gl
+import OpenGL.arrays.vbo as glvbo
 from math import *
 from EMAN2 import *
 import sys
@@ -672,6 +675,9 @@ class EMPlot2DWidget(EMGLWidget):
 		self.autoscale(True)
 		self.needupd=1
 		if not quiet : self.updateGL()
+	
+	def getCurrentAxes(self,key):
+		return self.axes[key] (xa,ya,za,sa)
 
 	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False):
 		if color==None : color=self.pparm[key][0]
@@ -1298,9 +1304,9 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		if not quiet: self.updateGL()
 		#if self.inspector: self.inspector.datachange()
 
-        def setDataLabelsColor(self, color):
-                """ Set the color of the data labels """
-                self.datalabelscolor = color
+		def setDataLabelsColor(self, color):
+			""" Set the color of the data labels """
+			self.datalabelscolor = color
 
 	def setScatterColor(self, color):
 		""" Set a matplotlib color or list of colors. One list for each data set """
@@ -1529,6 +1535,203 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.shapechange=1
 		#self.updateGL()
 
+
+class EMPlot2DStatsInsp(QtGui.QWidget):
+	
+	"""This class implements the statistics pop-up from the EMPlot2DInspector"""
+	
+	def __init__(self,target) :
+		QtGui.QWidget.__init__(self,None)
+		self.target=weakref.ref(target)
+		gbl0=QtGui.QGridLayout(self)
+
+		self.summary=QtGui.QPushButton(self)
+		self.summary.setText("Summary")
+		gbl0.addWidget(self.summary,2,0,1,2)
+		
+		hl1 = QtGui.QFrame()
+		hl1.setFrameStyle(QtGui.QFrame.HLine)
+		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		gbl0.addWidget(hl1,3,0,1,2)
+		
+		self.wcomb_test=QtGui.QComboBox(self)
+		self.wcomb_test.addItem("T")
+		self.wcomb_test.addItem("F")
+		self.wcomb_test.addItem("Chi-Squared")
+		self.wcomb_test.addItem("Sharpio-Wilk")
+		self.wcomb_test.addItem("Kolomogorov-Smirnov")
+		gbl0.addWidget(self.wcomb_test,4,0)
+		
+		self.run=QtGui.QPushButton(self)
+		self.run.setText("Run Test")
+		gbl0.addWidget(self.run,4,1)
+		
+		QtCore.QObject.connect(self.summary,QtCore.SIGNAL("clicked()"),self.printSummary)
+		QtCore.QObject.connect(self.run,QtCore.SIGNAL("clicked()"),self.runTest)
+		
+		self.imgwin=None
+
+	def printSummary(self):
+		"""Computes and plots a polynomial fit (of order N) for the current x and y axes"""
+		
+		insp=self.target().get_inspector()				# inspector
+		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+		data=self.target().data[name]					# data set we will operate on
+
+		print("Mean: {}".format(np.mean(data)))
+		print("Median: {}".format(np.median(data)))
+		print("Std: {}".format(np.std(data)))
+		#print("Kurtosis: {}".format(np.kurt(data)))
+		#print("Skewness: {}".format(np.skewness(data)))
+		
+	def runTest(self):
+		name = str(self.wcomb_test.currentText())
+		print("{} not yet implemented!".format(name))
+
+	def imgSelect(self,sel=None):
+		if self.imgwin==None :
+			from emimagemx import EMImageMXWidget
+			self.imgwin=EMImageMXWidget()
+
+		try:
+			if sel==None: sel=self.target().selected
+		except:
+			print "imgSelect with no selection"
+			return
+
+		try:
+			data=[EMData(self.wimgfile.getValue(),int(i)) for i in sel]
+		except:
+			traceback.print_exc()
+			data=None
+
+		self.imgwin.set_data(data)
+		self.imgwin.show()
+
+	def selectImgFile(self):
+		from embrowser import EMBrowserWidget
+		self.browse = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.browse.show()
+		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("ok"),self.setImgFile)
+		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("cancel"),self.canImgFile)
+
+	def canImgFile(self,file=None):
+		return
+
+	def setImgFile(self,file=None):
+
+		if file==None :
+			try:
+				self.wimgfile.setValue(self.browse.getResult()[0])
+			except:
+				traceback.print_exc()
+				pass
+			return
+
+	def closeEvent(self, event):
+		try: self.imgwin.close()
+		except: pass
+
+
+class EMPlot2DRegrInsp(QtGui.QWidget):
+	"""This class implements the regression pop-up from the EMPlot2DInspector"""
+	def __init__(self,target) :
+		QtGui.QWidget.__init__(self,None)
+		self.target=weakref.ref(target)
+		gbl0=QtGui.QGridLayout(self)
+
+		self.regrb=QtGui.QPushButton(self)
+		self.regrb.setText("Regress")
+		gbl0.addWidget(self.regrb,2,0,1,2)
+		
+		self.wnord=ValBox(rng=(1,25),label="Order:",value=1)
+		self.wnord.intonly=1
+		gbl0.addWidget(self.wnord,4,0)
+
+		self.wcbaxnorm=CheckBox(label="Norm Axes:",value=0)
+		gbl0.addWidget(self.wcbaxnorm,4,1)
+		
+		QtCore.QObject.connect(self.regrb,QtCore.SIGNAL("clicked()"),self.doRegr2d)
+		
+		self.imgwin=None
+
+	def doRegr2d(self):
+		"""Computes and plots a polynomial fit (of order N) for the current x and y axes"""
+		
+		print("Plotting of reression results not yet implemented.")
+		return
+		
+		# ord=self.wnord.getValue()		# selected order
+# 		axnorm=self.wcbaxnorm.getValue() # equalize axes?
+# 		insp=self.target().get_inspector()				# inspector
+# 		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+# 		data=self.target().data[name]					# data set we will operate on
+# 
+# 		ncol=len(data)
+# 		nrow=len(data[0])
+# 		
+# 		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
+# 		if axnorm:
+# 			print "Normalize Axes"
+# 			datafix=[i.copy()/std(i) for i in data]
+# 		else: datafix=data
+# 		
+# 		cx,cy,cc,cs = self.target.axes["data"]
+# 		
+# 		x = datafix[:,cx]
+# 		y = datafix[:,cy]
+# 		fit = np.polyfit(x,y,deg=ord)
+# 		y = np.polyval(fit,x)
+		
+		
+		
+		#target.plot(x,y) # line plot
+
+	def imgSelect(self,sel=None):
+		if self.imgwin==None :
+			from emimagemx import EMImageMXWidget
+			self.imgwin=EMImageMXWidget()
+
+		try:
+			if sel==None: sel=self.target().selected
+		except:
+			print "imgSelect with no selection"
+			return
+
+		try:
+			data=[EMData(self.wimgfile.getValue(),int(i)) for i in sel]
+		except:
+			traceback.print_exc()
+			data=None
+
+		self.imgwin.set_data(data)
+		self.imgwin.show()
+
+	def selectImgFile(self):
+		from embrowser import EMBrowserWidget
+		self.browse = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.browse.show()
+		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("ok"),self.setImgFile)
+		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("cancel"),self.canImgFile)
+
+	def canImgFile(self,file=None):
+		return
+
+	def setImgFile(self,file=None):
+
+		if file==None :
+			try:
+				self.wimgfile.setValue(self.browse.getResult()[0])
+			except:
+				traceback.print_exc()
+				pass
+			return
+
+	def closeEvent(self, event):
+		try: self.imgwin.close()
+		except: pass
+
+
 class EMPlot2DClassInsp(QtGui.QWidget):
 	"""This class implements the classification pop-up from the EMPlot2DInspector"""
 	def __init__(self,target) :
@@ -1642,6 +1845,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				if not lsx.has_key(imf) : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
 				val=lsx[imf][imn]
 				out[r]=val
+
 
 	def doKMeans(self):
 		"""Performs K-means classification, and produces nseg new data sets"""
@@ -2014,6 +2218,20 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.pdfb.setText("PDF")
 #		self.pdfb.setEnabled(False)
 		hbl0.addWidget(self.pdfb)
+		
+		
+		hbl01=QtGui.QHBoxLayout()
+		hbl01.setMargin(0)
+		hbl01.setSpacing(6)
+		vbl.addLayout(hbl01)
+		
+		self.stats=QtGui.QPushButton(self)
+		self.stats.setText("Statistics")
+		hbl01.addWidget(self.stats)
+
+		self.regress=QtGui.QPushButton(self)
+		self.regress.setText("Regress")
+		hbl01.addWidget(self.regress)
 
 
 		hbl1 = QtGui.QHBoxLayout()
@@ -2213,6 +2431,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.quiet=0
 		self.busy=0
 		self.classwin=None
+		self.statswin=None
+		self.regresswin=None
 
 		QtCore.QObject.connect(self.showslide, QtCore.SIGNAL("valueChanged"), self.selSlide)
 		QtCore.QObject.connect(self.allbut, QtCore.SIGNAL("clicked()"), self.selAll)
@@ -2236,6 +2456,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlotLinwid)
 		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.stats,QtCore.SIGNAL("clicked()"),self.openStatsWin)
+		QtCore.QObject.connect(self.regress,QtCore.SIGNAL("clicked()"),self.openRegrWin)
 		QtCore.QObject.connect(self.saveb,QtCore.SIGNAL("clicked()"),self.savePlot)
 		QtCore.QObject.connect(self.pdfb,QtCore.SIGNAL("clicked()"),self.savePdf)
 		QtCore.QObject.connect(self.concatb,QtCore.SIGNAL("clicked()"),self.saveConcatPlot)
@@ -2275,6 +2497,18 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
+
+	def openStatsWin(self):
+		"""This launches a separate window for regressing points in a 2-D plot"""
+
+		if self.statswin==None : self.statswin=EMPlot2DStatsInsp(self.target())
+		self.statswin.show()
+
+	def openRegrWin(self):
+		"""This launches a separate window for regressing points in a 2-D plot"""
+
+		if self.regresswin==None : self.regresswin=EMPlot2DRegrInsp(self.target())
+		self.regresswin.show()
 
 
 	def openClassWin(self):
@@ -2676,3 +2910,60 @@ class EMDataFnPlotter(QtGui.QWidget):
 	def set_data(self, data, key):
 		self.plot.set_data(data,key)
 
+# 
+# class EMGLPlot2DItem(QGLWidget):
+# 
+# 	# default window size
+# 	width, height = 640, 480
+# 	
+# 	def set_data(self, data):
+# 		self.data = data
+# 		self.count = data.shape[0]
+# 		
+# 	def initializeGL(self):
+# 		gl.glClearColor(0,0,0,0)
+# 		self.vbo = glvbo.VBO(self.data)
+# 	
+# 	def paintGL(self):
+# 		# clear the buffer
+# 		gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+# 		# set yellow color for subsequent drawing rendering calls
+# 		gl.glColor(1,1,0)
+# 		# bind the VBO
+# 		self.vbo.bind()
+# 		# tell OpenGL that the VBO contains an array of vertices
+# 		gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+# 		# these vertices contain 2 single precision coordinates
+# 		gl.glVertexPointer(2, gl.GL_FLOAT, 0, self.vbo)
+# 		# draw "count" points from the VBO
+# 		gl.glDrawArrays(gl.GL_POINTS, 0, self.count)
+# 
+# 	def resizeGL(self, width, height):
+# 		# update the window size
+# 		self.width, self.height = width, height
+# 		# paint within the whole window
+# 		gl.glViewport(0, 0, width, height)
+# 		# set orthographic projection (2D only)
+# 		gl.glMatrixMode(gl.GL_PROJECTION)
+# 		gl.glLoadIdentity()
+# 		# the window corner OpenGL coordinates are (-+1, -+1)
+# 		gl.glOrtho(-1, 1, 1, -1, -1, 1)
+# 
+# class EMGLPlot2DWidget(QtGui.QMainWindow):
+# 
+# 	def __init__(self):
+# 		super(EMGLPlot2DWidget, self).__init__()
+# 		self.data = None
+# 	
+# 	def render(self):
+# 		self.plot = EMGLPlot2DItem()
+# 		self.plot.set_data(self.data)
+# 		
+# 		self.setGeometry(400, 400, self.plot.width, self.plot.height)
+# 		self.setCentralWidget(self.plot)
+# 		self.show()
+# 	
+# 	def set_data_from_file(self, f):
+# 		try: self.data = np.loadtxt(f,dtype=np.float32)
+# 		except: print("Could not read {}".format(f))
+# 		self.render()
