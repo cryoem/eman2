@@ -314,7 +314,7 @@ template <> Factory < Processor >::Factory()
 	force_add<LinearRampFourierProcessor>();
 	force_add<LoGFourierProcessor>();
 	force_add<DoGFourierProcessor>();
-	force_add<AzSharpProcessor>();
+//	force_add<AzSharpProcessor>();
 	force_add<FixSignProcessor>();
 
 	force_add<AmpweightFourierProcessor>();
@@ -740,6 +740,7 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
+// Looks like this hasn't actually been written yet...
 void AzSharpProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
