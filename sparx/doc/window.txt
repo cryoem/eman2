@@ -13,13 +13,13 @@ sxwindow.py  input_micrograph_pattern  input_coordinates_pattern  output_directo
 
 sxwindow does not support MPI.
 
-Specify name pattern of input micrographs and coordinates files with wild card (*) enclosed by single quotes (') or double quotes (") (Note: sxgui.py automatically adds single quotes (')). Use the wild card (*) to specify the place of micrograph ID (e.g. serial number, time stamp, and etc). BDB files can not be selected as input micrographs.
+Specify name pattern of input micrographs and coordinates files with wild card (*) and enclose the string by single quotes (') or double quotes (") (Note: sxgui.py automatically adds single quotes to the string (')). Use the wild card (*) to specify the place of micrograph ID (e.g. serial number, time stamp, and etc). BDB files can not be selected as input micrographs.
 
-''' sxwindow.py  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt '''
+''' sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt '''
 
-''' NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1. '''
+NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.
 
-''' NOTE: Passing a list of micrograph names as arguments is not supported since 2015/12/10 '''
+NOTE: Passing a list of micrograph names as arguments is not supported since 2015/12/10
 
 
 == Input ==
@@ -59,7 +59,7 @@ T. Durmaz and T.Moriya
 sxwindow.py
 
 = See also =
-[[http://sparx-em.org/sparxwiki/window|window]], [[http://sparx-em.org/sparxwiki/windowallmic|windowallmic]]
+[[http://sparx-em.org/sparxwiki/window|window]]
 
 = Maturity =
  alpha:: in development

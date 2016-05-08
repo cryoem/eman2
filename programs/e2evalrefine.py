@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 4/2/2010 
+# Author: Steven Ludtke, 4/2/2010
 # Copyright (c) 2010 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -56,12 +56,13 @@ except:
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] [refine_xx]
-	This program is still in its early stages. Eventually will provide a variety of tools for 
+	This program is still in its early stages. Eventually will provide a variety of tools for
 	evaluating a single particle reconstruction refinement run."""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	
+
 	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement the refine_xx folder name. This may be used to identify bad particles.")
-	parser.add_argument("--ptcltrace", default=False, action="store_true", help="This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison.")
+	parser.add_argument("--includeprojs", default=False, action="store_true", help="If specified with --evalptclqual, projections will be written to disk for easy comparison.")
+	#parser.add_argument("--ptcltrace", default=False, action="store_true", help="This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison.")
 	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
 	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
 	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
@@ -88,9 +89,9 @@ def main():
 
 	if args[0][:7]=="refine_":
 		jsparm=js_open_dict(args[0]+"/0_refine_parms.json")
-		
-		if options.iter==None: 
-			try: 
+
+		if options.iter==None:
+			try:
 				options.iter=int(jsparm["last_map"].split("_")[-1][:2])
 				options.sym=jsparm["sym"]
 			except:
@@ -126,7 +127,7 @@ def main():
 		# path to the even/odd particles used for the refinement
 		cptcl=jsparm["input"]
 		cptcl=[str(i) for i in cptcl]
-		
+
 		# this reads all of the EMData headers from the projections, should be same for even and odd
 		pathprj="{}/projections_{:02d}_even.hdf".format(args[0],options.iter)
 		nref=EMUtil.get_image_count(pathprj)
@@ -164,10 +165,10 @@ def main():
 				rt=Transform({"type":"2d","alpha":angle})
 				xf=rt*Transform([1.01,0,0,0,0,1/1.01,0,0,0,0,1,0])*rt.inverse()
 				esum=0
-				
+
 				for eo in range(2):
 					for j in xrange(nptcl[eo]):
-						if classmx[eo][0,j]!=i : 
+						if classmx[eo][0,j]!=i :
 	#						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
 							continue		# only proceed if the particle is in this class
 						if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
@@ -194,7 +195,7 @@ def main():
 						third = len(fsc)/3
 						fsc=array(fsc[third:third*2])
 						esum+= sum(fsc[ring[0]:ring[1]])
-						
+
 						best=max(best,(esum,angle,1.01))
 	#					snr=fsc/(1.0-fsc)
 	#					sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
@@ -212,10 +213,10 @@ def main():
 				rt=Transform({"type":"2d","alpha":angle})
 				xf=rt*Transform([ai,0,0,0,0,1/ai,0,0,0,0,1,0])*rt.inverse()
 				esum=0
-				
+
 				for eo in range(2):
 					for j in xrange(nptcl[eo]):
-						if classmx[eo][0,j]!=i : 
+						if classmx[eo][0,j]!=i :
 	#						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
 							continue		# only proceed if the particle is in this class
 						if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
@@ -242,17 +243,17 @@ def main():
 						third = len(fsc)/3
 						fsc=array(fsc[third:third*2])
 						esum+= sum(fsc[ring[0]:ring[1]])
-						
+
 						best=max(best,(esum,angle,ai))
 
 				fout.write("{}\t{}\t{}\n".format(angle,ai,esum))
 
 			print best
 		sys.exit(0)
-	
+
 	if options.evalptclqual:
 		print "Particle quality evaluation mode"
-		
+
 		try:
 			pathmx="{}/classmx_{:02d}_even.hdf".format(args[0],options.iter)
 			classmx=[EMData(pathmx,0)]
@@ -279,7 +280,7 @@ def main():
 		# path to the even/odd particles used for the refinement
 		cptcl=jsparm["input"]
 		cptcl=[str(i) for i in cptcl]
-		
+
 		# this reads all of the EMData headers from the projections, should be same for even and odd
 		pathprj="{}/projections_{:02d}_even.hdf".format(args[0],options.iter)
 		nref=EMUtil.get_image_count(pathprj)
@@ -307,8 +308,12 @@ def main():
 #		fout=open("ptclsnr.txt".format(i),"w")
 		fout=open("ptclfsc_{}.txt".format(args[0][-2:]),"w")
 		# generate a projection for each particle so we can compare
+
+		pj = 0
+		pf = "ptclfsc_{}_projections.hdf".format(args[0][-2:])
+
 		for i in xrange(nref):
-			if options.verbose>1 : print "--- Class %d"%i
+			if options.verbose>1 : print "--- Class %d/%d"%(i,nref-1)
 
 			# The first projection is unmasked, used for scaling
 			proj=threed.project("standard",{"transform":eulers[i]})
@@ -320,7 +325,7 @@ def main():
 #			fout=open("ptclfsc/f{:04d}.txt".format(i),"w")
 			for eo in range(2):
 				for j in xrange(nptcl[eo]):
-					if classmx[eo][0,j]!=i : 
+					if classmx[eo][0,j]!=i :
 #						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
 						continue		# only proceed if the particle is in this class
 					if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
@@ -337,6 +342,8 @@ def main():
 					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
 					projc=proj.process("xform",{"transform":ptclxf})	# we transform the projection, not the particle (as in the original classification)
 
+					if options.includeprojs: projc.write_image(pf,pj)
+
 					projmaskc=projmask.process("xform",{"transform":ptclxf})
 					ptcl.mult(projmaskc)
 
@@ -345,17 +352,24 @@ def main():
 
 					# Particle vs projection FSC
 					fsc = ptcl.calc_fourier_shell_correlation(projc)
+
 					third = len(fsc)/3
 					fsc=array(fsc[third:third*2])
 #					snr=fsc/(1.0-fsc)
 					sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 #					sums=[sum(snr[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
-					fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,defocus,j,cptcl[eo]))
+
+					if options.includeprojs:
+						fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,defocus,j,cptcl[eo],pj,pf))
+					else:
+						fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,defocus,j,cptcl[eo]))
 					#xaxis = fsc[0:third]
 					#fsc = fsc[third:2*third]
 ##					saxis = [x/apix for x in xaxis]
 ##					Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:-1],args[1])
 					#Util.save_data(xaxis[1],xaxis[1]-xaxis[0],fsc[1:-1],"ptclfsc/f{:04d}_{:1d}_{:06d}.txt".format(i,eo,j))
+
+					pj+=1
 
 		print "Results in ptclfsc_{}.txt".format(args[0][-2:])
 		sys.exit(0)
@@ -365,9 +379,9 @@ def main():
 		if not os.path.isdir(args[0]):
 			print "You must provide the name of the refine_XX folder"
 			sys.exit(1)
-		
+
 		### Convergenece plot
-		
+
 		plt.title("Convergence plot (not resolution)")
 		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
 		plt.ylabel("FSC")
@@ -381,7 +395,7 @@ def main():
 			if c[9:13]=="even" : plt.plot(d[0],d[1],label=c[14:-4],color=pltcolors[(nummx-num)%12])
 			else : plt.plot(d[0],d[1],color=pltcolors[(nummx-num)%12])
 			maxx=max(maxx,max(d[0]))
-			
+
 		if max(d[0])<max(xticlocs) :
 			xticlocs=[i for i in xticlocs if i<=max(d[0])]
 			xticlbl=xticlbl[:len(xticlocs)]
@@ -394,31 +408,31 @@ def main():
 		plt.savefig("converge_{}.pdf".format(args[0][-2:]))
 		print "Generated : converge_{}.pdf".format(args[0][-2:])
 		plt.clf()
-		
+
 		######################
 		### Resolution plot
 		### broken up into multiple try/except blocks because we need some of the info, even if plotting fails
 		plt.title("Gold Standard Resolution")
 		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
 		plt.ylabel("FSC")
-		
+
 		fscs=[i for i in os.listdir(args[0]) if "fsc_masked" in i and i[-4:]==".txt"]
 		fscs.sort(reverse=True)
 		nummx=int(fscs[0].split("_")[2][:2])
 		maxx=0.01
-		
+
 		# iterate over fsc curves
 		for f in fscs:
 			num=int(f.split("_")[2][:2])
-			
+
 			# read the fsc curve
 			d=np.loadtxt("{}/{}".format(args[0],f)).transpose()
-			
+
 			# plot the curve
 			try: plt.plot(d[0],d[1],label=f[4:],color=pltcolors[(nummx-num)%12])
 			except: pass
 			maxx=max(maxx,max(d[0]))
-		
+
 			# find the resolution from the first curve (the highest numbered one)
 			if f==fscs[0]:
 				# find the 0.143 crossing
@@ -432,7 +446,7 @@ def main():
 						except: pass
 						break
 				else : lastres=0
-			
+
 		plt.axhline(0.0,color="k")
 		plt.axhline(0.143,color="#306030",linestyle=":")
 		plt.axis((0,maxx,-.02,1.02))
@@ -450,26 +464,26 @@ def main():
 		plt.title("Gold Standard Resolution")
 		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
 		plt.ylabel("FSC")
-		
+
 		refines=[i for i in os.listdir(".") if "refine_" in i]
 		fscs=[]
 		for r in refines:
 			itr=max([i for i in os.listdir(r) if "fsc_masked" in i and i[-4:]==".txt"])
 			fscs.append("{}/{}".format(r,itr))
-		
+
 		fscs.sort(reverse=True)
 		maxx=0.01
-		
+
 		# iterate over fsc curves
 		for num,f in enumerate(fscs):
 			# read the fsc curve
 			d=np.loadtxt(f).transpose()
-			
+
 			# plot the curve
 			try: plt.plot(d[0],d[1],label=f[:9],color=pltcolors[(num)%12])
 			except: pass
 			maxx=max(maxx,max(d[0]))
-			
+
 		if max(d[0])<max(xticlocs) :
 			xticlocs=[i for i in xticlocs if i<=max(d[0])]
 			xticlbl=xticlbl[:len(xticlocs)]
@@ -493,18 +507,18 @@ def main():
 		while 1:
 			line=fin.readline()
 			if len(line)==0 : break
-			
+
 			spl=line.split("\t")
 			try: com=spl[4].split()[0].split("/")[-1]
 			except : continue
 
 			if com in ("e2refine.py","e2refine_easy.py","e2refinemulti.py","e2project3d.py","e2simmx.py","e2simmx2stage.py","e2classify.py","e2classaverage.py","e2make3d.py","e2make3dpar.py","e2refine_postprocess.py") : hist.append((com,spl))
-			
+
 		n=0
 		while n<len(hist):
 			com=hist[n][1][4]
 			ttime=timestamp_diff(hist[n][1][0],hist[n][1][1])
-			if hist[n][0] in ("e2refine.py","e2refine_easy.py"): 
+			if hist[n][0] in ("e2refine.py","e2refine_easy.py"):
 				pl=com.find("--path=")
 				parl=com.find("--parallel=")
 				print "%s\t%1.2f hours\te2refine %s"%(difftime(ttime),ttime/3600.0,com[pl+7:].split()[0]),
@@ -513,128 +527,128 @@ def main():
 
 			else:
 				print "\t%s\t%1.2f hours\t%s"%(difftime(ttime),ttime/3600.0,hist[n][0])
-			
+
 			n+=1
 
-	if options.ptcltrace:
-		print "Particle trace mode"
-		
-		if not os.path.isdir(args[0]):
-			print "You must provide the name of a refinement directory (e.g. refine_XX)"
-			sys.exit(1)
-		
-		refine_xx = os.listdir(args[0])
-				
-		cmx_even = []
-		cmx_odd = []
-		projs_even = []
-		projs_odd = []
-		
-		for f in refine_xx:
-			if "classmx" in f:
-				if "even" in f: 
-					cmx_even.append("{}/{}".format(args[0],f))
-				elif "odd" in f: 
-					cmx_odd.append("{}/{}".format(args[0],f))
-				else:
-					print("Something is funny about {}. You should investigate this.".format(f))
-					sys.exit(1)
-			elif "projections" in f:
-				if "even" in f: 
-					projs_even.append("{}/{}".format(args[0],f))
-				elif "odd" in f: 
-					projs_odd.append("{}/{}".format(args[0],f))
-				else:
-					print("ERROR: Something is funny about {}. You should investigate this.".format(f))
-					sys.exit(1)
-		
-		if len(cmx_even) != len(projs_even) or len(cmx_odd) != len(projs_odd):
-			print("At a minimum, there must be an equal number of classmx and projection files present to perform this analysis")
-			print("Although not required, it is recommended that all generated classmx and projections files be present in the specified refinement directory.")
-			sys.exit(1)
-		
-		if options.verbose: print("Examining Euler angles from even/odd classes and projections within {}.".format(args[0]))
-		
-		# read all classification matrix data into a list of lists
-		cls_even = [EMData.read_images(c) for c in cmx_even] 
-		cls_odd = [EMData.read_images(c) for c in cmx_odd]
-		
-		# particles are along the y axis, so the y height of the first image is the number of particles
-		nptcl_even = cls_even[0][0]['ny'] 
-		nptcl_odd = cls_odd[0][0]['ny']
-		
-		for i in cls_even[1:]:
-			if i[0]["ny"]!=nptcl_even:
-				print "ERROR: classmx files must have exactly the same number of particles"
-				sys.exit(1)
-		
-		for i in cls_odd[1:]:
-			if i[0]["ny"]!=nptcl_odd:
-				print "ERROR: classmx files must have exactly the same number of particles"
-				sys.exit(1)
-	
-		# Create a list of lists of Transforms representing the orientations of the reference projections 
-		# for each classmx file and try to get projection orientation information for each class
-		
-		clsort_even=[]
-		for c,p in zip(cmx_even,projs_even): 
-			ncls=EMUtil.get_image_count(p)
-			orts = []
-			for i in xrange(ncls):
-				orts.append( EMData(p,i,True)["xform.projection"] )
-			clsort_even.append(orts)
-		
-		clsort_odd=[]
-		for c,p in zip(cmx_odd,projs_odd):
-			ncls=EMUtil.get_image_count(p)
-			orts = []
-			for i in xrange(ncls):
-				orts.append( EMData(p,i,True)["xform.projection"] )
-			clsort_odd.append(orts)
-		
-		# Get a list of Transform objects to move to each other asymmetric unit in the symmetry group
-		syms=parsesym( str(options.sym) ).get_syms()
-		
-		s = args[0].split("refine_")[-1]
-		even_trace = "ptcltrace_{}_even.txt".format(s)
-		odd_trace = "ptcltrace_{}_odd.txt".format(s)
-		
-		with open(even_trace,"w") as outf: 
-			for p in xrange(nptcl_even):
-				outf.write("{}".format(p))
-				for i in xrange(1,len(cmx_even)):
-					if options.verbose: sys.stdout.write('\reven:\t{}/{}'.format(i,len(cmx_even)-1))
-					ort1=clsort_even[i-1][int(cls_even[i-1][0][0,p])]	# orientation of particle in first classmx
-					ort2=clsort_even[i][int(cls_even[i][0][0,p])]		# orientation of particle in second classmx
-					diffs=[] # make a list of the rotation angle to each other symmetry-related point
-					for t in syms:
-						ort2p=ort2*t
-						diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
-					diff=min(diffs)	# The angular error for the best-agreeing orientation
-					shift=abs(cls_even[i][0][0,p]-cls_even[i-1][0][0,p])
-					outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort1.get_rotation("eman")["alt"],ort1.get_rotation("eman")["phi"],ort1.get_rotation("eman")["az"],cls_even[i-1][0][0,p]))
-					outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort2.get_rotation("eman")["alt"],ort2.get_rotation("eman")["phi"],ort2.get_rotation("eman")["az"],cls_even[i][0][0,p]))
-					outf.write("{0:.0f}\t{0:.4f}\n".format(shift,diff))
-		
-		if options.verbose: print("")
-		with open(odd_trace,"w") as outf:
-			for p in xrange(nptcl_odd):
-				outf.write("{}".format(p))
-				for i in xrange(1,len(cmx_odd)):
-					if options.verbose: sys.stdout.write('\rodd:\t{}/{}'.format(i,len(cmx_odd)-1))
-					ort1=clsort_odd[i-1][int(cls_odd[i-1][0][0,p])]	# orientation of particle in first classmx
-					ort2=clsort_odd[i][int(cls_odd[i][0][0,p])]		# orientation of particle in second classmx
-					diffs=[] # make a list of the rotation angle to each other symmetry-related point
-					for t in syms: 
-						ort2p=ort2*t
-						diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
-					diff=min(diffs)	# The angular error for the best-agreeing orientation
-					shift=abs(cls_even[i][0][0,p]-cls_even[i-1][0][0,p])
-					outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort1.get_rotation("eman")["alt"],ort1.get_rotation("eman")["phi"],ort1.get_rotation("eman")["az"],cls_odd[i-1][0][0,p]))
-					outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort2.get_rotation("eman")["alt"],ort2.get_rotation("eman")["phi"],ort2.get_rotation("eman")["az"],cls_odd[i][0][0,p]))
-					outf.write("{0:.0f}\t{0:.4f}\n".format(shift,diff))
-		
-		print("\nResults stored in {} & {}.".format(even_trace, odd_trace))
-		
+	#if options.ptcltrace:
+		#print "Particle trace mode"
+
+		#if not os.path.isdir(args[0]):
+			#print "You must provide the name of a refinement directory (e.g. refine_XX)"
+			#sys.exit(1)
+
+		#refine_xx = os.listdir(args[0])
+
+		#cmx_even = []
+		#cmx_odd = []
+		#projs_even = []
+		#projs_odd = []
+
+		#for f in refine_xx:
+			#if "classmx" in f:
+				#if "even" in f:
+					#cmx_even.append("{}/{}".format(args[0],f))
+				#elif "odd" in f:
+					#cmx_odd.append("{}/{}".format(args[0],f))
+				#else:
+					#print("Something is funny about {}. You should investigate this.".format(f))
+					#sys.exit(1)
+			#elif "projections" in f:
+				#if "even" in f:
+					#projs_even.append("{}/{}".format(args[0],f))
+				#elif "odd" in f:
+					#projs_odd.append("{}/{}".format(args[0],f))
+				#else:
+					#print("ERROR: Something is funny about {}. You should investigate this.".format(f))
+					#sys.exit(1)
+
+		#if len(cmx_even) != len(projs_even) or len(cmx_odd) != len(projs_odd):
+			#print("At a minimum, there must be an equal number of classmx and projection files present to perform this analysis")
+			#print("Although not required, it is recommended that all generated classmx and projections files be present in the specified refinement directory.")
+			#sys.exit(1)
+
+		#if options.verbose: print("Examining Euler angles from even/odd classes and projections within {}.".format(args[0]))
+
+		## read all classification matrix data into a list of lists
+		#cls_even = [EMData.read_images(c) for c in cmx_even]
+		#cls_odd = [EMData.read_images(c) for c in cmx_odd]
+
+		## particles are along the y axis, so the y height of the first image is the number of particles
+		#nptcl_even = cls_even[0][0]['ny']
+		#nptcl_odd = cls_odd[0][0]['ny']
+
+		#for i in cls_even[1:]:
+			#if i[0]["ny"]!=nptcl_even:
+				#print "ERROR: classmx files must have exactly the same number of particles"
+				#sys.exit(1)
+
+		#for i in cls_odd[1:]:
+			#if i[0]["ny"]!=nptcl_odd:
+				#print "ERROR: classmx files must have exactly the same number of particles"
+				#sys.exit(1)
+
+		## Create a list of lists of Transforms representing the orientations of the reference projections
+		## for each classmx file and try to get projection orientation information for each class
+
+		#clsort_even=[]
+		#for c,p in zip(cmx_even,projs_even):
+			#ncls=EMUtil.get_image_count(p)
+			#orts = []
+			#for i in xrange(ncls):
+				#orts.append( EMData(p,i,True)["xform.projection"] )
+			#clsort_even.append(orts)
+
+		#clsort_odd=[]
+		#for c,p in zip(cmx_odd,projs_odd):
+			#ncls=EMUtil.get_image_count(p)
+			#orts = []
+			#for i in xrange(ncls):
+				#orts.append( EMData(p,i,True)["xform.projection"] )
+			#clsort_odd.append(orts)
+
+		## Get a list of Transform objects to move to each other asymmetric unit in the symmetry group
+		#syms=parsesym( str(options.sym) ).get_syms()
+
+		#s = args[0].split("refine_")[-1]
+		#even_trace = "ptcltrace_{}_even.txt".format(s)
+		#odd_trace = "ptcltrace_{}_odd.txt".format(s)
+
+		#with open(even_trace,"w") as outf:
+			#for p in xrange(nptcl_even):
+				#outf.write("{}".format(p))
+				#for i in xrange(1,len(cmx_even)):
+					#if options.verbose: sys.stdout.write('\reven:\t{}/{}'.format(i,len(cmx_even)-1))
+					#ort1=clsort_even[i-1][int(cls_even[i-1][0][0,p])]	# orientation of particle in first classmx
+					#ort2=clsort_even[i][int(cls_even[i][0][0,p])]		# orientation of particle in second classmx
+					#diffs=[] # make a list of the rotation angle to each other symmetry-related point
+					#for t in syms:
+						#ort2p=ort2*t
+						#diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
+					#diff=min(diffs)	# The angular error for the best-agreeing orientation
+					#shift=abs(cls_even[i][0][0,p]-cls_even[i-1][0][0,p])
+					#outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort1.get_rotation("eman")["alt"],ort1.get_rotation("eman")["phi"],ort1.get_rotation("eman")["az"],cls_even[i-1][0][0,p]))
+					#outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort2.get_rotation("eman")["alt"],ort2.get_rotation("eman")["phi"],ort2.get_rotation("eman")["az"],cls_even[i][0][0,p]))
+					#outf.write("{0:.0f}\t{0:.4f}\n".format(shift,diff))
+
+		#if options.verbose: print("")
+		#with open(odd_trace,"w") as outf:
+			#for p in xrange(nptcl_odd):
+				#outf.write("{}".format(p))
+				#for i in xrange(1,len(cmx_odd)):
+					#if options.verbose: sys.stdout.write('\rodd:\t{}/{}'.format(i,len(cmx_odd)-1))
+					#ort1=clsort_odd[i-1][int(cls_odd[i-1][0][0,p])]	# orientation of particle in first classmx
+					#ort2=clsort_odd[i][int(cls_odd[i][0][0,p])]		# orientation of particle in second classmx
+					#diffs=[] # make a list of the rotation angle to each other symmetry-related point
+					#for t in syms:
+						#ort2p=ort2*t
+						#diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
+					#diff=min(diffs)	# The angular error for the best-agreeing orientation
+					#shift=abs(cls_even[i][0][0,p]-cls_even[i-1][0][0,p])
+					#outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort1.get_rotation("eman")["alt"],ort1.get_rotation("eman")["phi"],ort1.get_rotation("eman")["az"],cls_odd[i-1][0][0,p]))
+					#outf.write("{0:.4f}\t{0:.4f}\t{0:.4f}\t{0:.0f}\t".format(ort2.get_rotation("eman")["alt"],ort2.get_rotation("eman")["phi"],ort2.get_rotation("eman")["az"],cls_odd[i][0][0,p]))
+					#outf.write("{0:.0f}\t{0:.4f}\n".format(shift,diff))
+
+		#print("\nResults stored in {} & {}.".format(even_trace, odd_trace))
+
 if __name__ == "__main__":
     main()

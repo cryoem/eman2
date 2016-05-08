@@ -744,7 +744,7 @@ void center_origin_yz();
 void center_origin_fft();
 
 
-EMData* FourInterpol(int nxn, int nyn = 1, int nzn = 1, bool RetReal = true);
+EMData* FourInterpol(int nxn, int nyn = 1, int nzn = 1, bool RetReal = true, bool normalize = true);
 
 /** Truncate Fourier transform of an image, it will reduce its size.  (It is a form of decimation).
 *
