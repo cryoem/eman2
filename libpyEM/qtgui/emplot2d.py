@@ -1684,7 +1684,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 			result = np.corrcoef(x,rowvar=False) #result = ["\t".join([str(round(j,2)) for j in i]) for i in corrcoef]
 		
 		else:
-			print("{} not yet implemented!".format(stat))
+			QtGui.QMessageBox.warning(self, "{} not yet implemented!".format(stat))
 			return
 		
 		self.table.setRowCount(result.shape[0])
