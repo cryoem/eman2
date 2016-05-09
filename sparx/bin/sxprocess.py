@@ -343,6 +343,7 @@ def main():
  	(options, args) = parser.parse_args()
 
  	# Special options for angular distribution
+ 	parser.add_option('--angular_distribution',    action="store_true",    default=False,        help='create an angular distribution file based on a project3d.txt')
 	parser.add_option('--round_digit',       type='int',          default=5,           help='accuracy of the loaded angle (default 5)')
 	parser.add_option('--box_size',       type='int',          default=500,           help='box size [px] (default 500')
 	parser.add_option('--prtcl_diameter',       type='int',          default=500,           help='particle diameter [A] (default 500)')
