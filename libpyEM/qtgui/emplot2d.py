@@ -1550,14 +1550,18 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		gbl0=QtGui.QGridLayout(self)
 
 		self.summary=QtGui.QPushButton(self)
-		self.summary.setText("Summary")
+		self.summary.setText("Summary Table")
 		gbl0.addWidget(self.summary,2,0,1,2)
 
 		hl1 = QtGui.QFrame()
 		hl1.setFrameStyle(QtGui.QFrame.HLine)
 		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
 		gbl0.addWidget(hl1,3,0,1,2)
-
+		
+		self.wlnorm=QtGui.QLabel(self)
+		self.wlnorm.setText("Test:")
+		gbl0.addWidget(self.wlnorm,4,0)
+		
 		self.wcomb_test=QtGui.QComboBox(self)
 		self.wcomb_test.addItem("Welch's t-test")
 		self.wcomb_test.addItem("Student's t-test")
@@ -1570,15 +1574,30 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		self.wcomb_test.addItem("Kolomogorov-Smirnov test")
 		self.wcomb_test.addItem("Mann-Whitney U-test")
 		self.wcomb_test.addItem("Covariance")
-		self.wcomb_test.addItem("Pearson Correlation") # numpy.corrcoef
-		gbl0.addWidget(self.wcomb_test,4,0)
+		self.wcomb_test.addItem("Pearson Correlation")
+		gbl0.addWidget(self.wcomb_test,4,1)
 		
 		self.wsbcols=StringBox(label="Col(s)",value="0,1")
-		gbl0.addWidget(self.wsbcols,4,1)
+		gbl0.addWidget(self.wsbcols,6,0)
+		
+		self.wnround=ValBox(rng=(0,10),label="Round:",value=2)
+		self.wnround.intonly=1
+		gbl0.addWidget(self.wnround,6,1)
 		
 		self.run=QtGui.QPushButton(self)
 		self.run.setText("Compute")
-		gbl0.addWidget(self.run,6,0,1,2)
+		gbl0.addWidget(self.run,8,0,1,2)
+		
+		hl2 = QtGui.QFrame()
+		hl2.setFrameStyle(QtGui.QFrame.HLine)
+		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		gbl0.addWidget(hl2,9,0,1,2)
+		
+		self.table = QtGui.QTableWidget() #QtGui.QTextEdit()
+		self.table.setRowCount(1)
+		self.table.setColumnCount(1)
+		self.table.setSortingEnabled(True)
+		gbl0.addWidget(self.table,10,0,2,2)
 		
 		QtCore.QObject.connect(self.summary,QtCore.SIGNAL("clicked()"),self.printSummary)
 		QtCore.QObject.connect(self.run,QtCore.SIGNAL("clicked()"),self.runTest)
@@ -1590,57 +1609,101 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		insp=self.target().get_inspector()				# inspector
 		name=str(insp.setlist.currentItem().text())		# currently hilighted item
 		data=self.target().data[name]					# data set we will operate on
-
-		print("Axis\tMean\tMedian\tStd\tVar\tMax\tMin\tRange\tq1\tq3\tIQR\tIQM\tMAD\tSkewness")
-		d = np.asarray(data)
-		for c in range(len(d)):
+		rnd=self.wnround.getValue()
+		
+		d = np.asarray(data).copy()
+		
+		self.table.clearContents()
+		column_labels = ["Axis","Mean","Median","Std","Var","Max","Min","Range","Q1","Q3","IQR","IQM","MAD","Skewness"]
+		row_labels = [str(i) for i in np.arange(len(d))]
+		self.table.setRowCount(len(d[0]))
+		self.table.setColumnCount(len(column_labels))
+		self.replaceRowLabels(row_labels)
+		self.replaceColumnLabels(column_labels)
+		
+		for c in range(len(d[0])):
 			col = d[:,c]
 			n = len(col)
-			mean = np.mean(col)
-			q2 = np.median(col)
-			std = np.std(col)
-			var = np.var(col)
-			min = np.min(col)
-			max = np.max(col)
-			rng = max-min
-			q3, q1 = np.percentile(col, [75 ,25])
-			iqr = q3-q1
-			mad = (q3+q1)/2
-			skew = (mad - q2) / mad
-			iq = np.where(np.logical_and(col>=q1, col<=q3))[0]
-			iqm = np.mean(col[iq])
-			print("{}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}".format(c,mean,q2,std,var,max,min,rng,q1,q3,iqr,iqm,mad,skew))
-
+			try: mean = np.mean(col)
+			except: mean = ""
+			try: q3, q2, q1 = np.percentile(col, [75, 50 ,25])
+			except: q3,q2,q1 = "","",""
+			try: std = np.std(col)
+			except: std = ""
+			try: var = np.var(col)
+			except: var = ""
+			try: min = np.min(col)
+			except: min = ""
+			try: max = np.max(col)
+			except: max = ""
+			try: rng = max-min
+			except: rng = ""
+			try: iqr = q3-q1
+			except: iqr = ""
+			try: mad = (q3+q1)/2
+			except: mad = ""
+			try: skew = (mad - q2) / mad
+			except: skew = ""
+			try: iq = np.where(np.logical_and(col>=q1, col<=q3))[0]
+			except: iq = ""
+			try: iqm = np.mean(col[iq])
+			except: iqm = ""
+			stats = [c,mean,q2,std,var,max,min,rng,q1,q3,iqr,iqm,mad,skew]
+			for s,stat in enumerate(stats):
+				if s == 0: item = str(int(stat))
+				else: item = str(round(stat,rnd))
+				self.table.setItem( c, s, QtGui.QTableWidgetItem(item) )
+	
 	def runTest(self):
 		stat = str(self.wcomb_test.currentText())
 		cols = [str(i) for i in self.wsbcols.getValue().split(",")]
 		insp = self.target().get_inspector() # inspector
 		names=[str(i.text()) for i in insp.setlist.selectedItems()]
+		rnd = 2
 		
 		if len(cols) <= 0:
-			print("Please specify the columns on which you wish to compute this test")
+			self.textout.setText("Please specify the columns on which you wish to compute this test or statistic")
 			return
 		
 		try:
 			datasets = [self.target().data[name] for name in names]
-			data = np.concatenate(datasets)
+			data = np.concatenate(datasets).copy()
 		except:
 			print("Selected datasets must contain the same number of columns.")
 			print("Using only the first dataset selected")
-			data = self.target().data[names[0]]
+			data = self.target().data[names[0]].copy()
+		
+		self.table.clearContents()
 		
 		x = np.asarray(data).T[:,cols]
-		
 		if stat == "Covariance":
-			result = np.cov(x,rowvar=False)
+			self.replaceTableLabels(cols)
+			result = np.cov(x,rowvar=False) #result = ["\t".join([str(round(j,rnd)) for j in i]) for i in cov]
 		elif stat == "Pearson Correlation":
-			result = np.corrcoef(x,rowvar=False)
+			self.replaceTableLabels(cols)
+			result = np.corrcoef(x,rowvar=False) #result = ["\t".join([str(round(j,2)) for j in i]) for i in corrcoef]
+		
 		else:
 			print("{} not yet implemented!".format(stat))
 			return
 		
-		print('{} (Columns: {}):'.format(stat,self.wsbcols.getValue()))
-		print(result)
+		self.table.setRowCount(result.shape[0])
+		self.table.setColumnCount(result.shape[1])
+		
+		for i, r in enumerate(result):
+			for j, c in enumerate(r):
+				item = str(c)
+				self.table.setItem( j, i, QtGui.QTableWidgetItem(item) )
+
+	def replaceRowLabels(self,rows):
+		self.table.setVerticalHeaderLabels(QtCore.QStringList(rows))
+
+	def replaceColumnLabels(self,cols):
+		self.table.setHorizontalHeaderLabels(QtCore.QStringList(cols))
+	
+	def replaceTableLabels(self,cols):
+		self.table.setHorizontalHeaderLabels(QtCore.QStringList(cols))
+		self.table.setVerticalHeaderLabels(QtCore.QStringList(cols))
 
 class EMPlot2DRegrInsp(QtGui.QWidget):
 	"""This class implements the regression pop-up from the EMPlot2DInspector"""
@@ -1669,13 +1732,13 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		gbl0.addWidget(self.wnpts,4,1)
 		
 		self.wlnorm=QtGui.QLabel(self)
-		self.wlnorm.setText("\tNorm:")
+		self.wlnorm.setText("Normalization:")
 		gbl0.addWidget(self.wlnorm,6,0)
 		
 		self.wcomb_norm=QtGui.QComboBox(self)
-		self.wcomb_norm.addItem("none")
-		self.wcomb_norm.addItem("standardize")
-		self.wcomb_norm.addItem("maxmin")
+		self.wcomb_norm.addItem("None")
+		self.wcomb_norm.addItem("Standardize")
+		self.wcomb_norm.addItem("Maxmin")
 		gbl0.addWidget(self.wcomb_norm,6,1)
 		
 		self.regrb=QtGui.QPushButton(self)
@@ -1761,15 +1824,15 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		return np.fliplr(F.T) # this matrix should have the form [x**n x**n-1 ... x**2 x 1]
 	
 	def normalize(self, x,norm="none"):
-		if norm == "standardize":
+		if norm == "Standardize":
 			mu = np.mean(x,axis=0)
 			sigma = np.std(x,axis=0)
 			return (x-mu)/sigma
-		elif norm == "maxmin":
+		elif norm == "Maxmin":
 			xmin = np.min(x,axis=0)
 			xmax = np.max(x,axis=0)
 			return (x-xmin)/(xmax-xmin)
-		elif norm == "none":
+		elif norm == "None":
 			return x
 
 class EMPlot2DClassInsp(QtGui.QWidget):
