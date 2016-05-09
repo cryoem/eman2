@@ -1559,18 +1559,27 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		gbl0.addWidget(hl1,3,0,1,2)
 
 		self.wcomb_test=QtGui.QComboBox(self)
-		self.wcomb_test.addItem("T")
-		self.wcomb_test.addItem("T^2")
-		self.wcomb_test.addItem("F")
-		self.wcomb_test.addItem("Chi-Squared")
-		self.wcomb_test.addItem("Sharpio-Wilk")
-		#self.wcomb_test.addItem("Kolomogorov-Smirnov")
+		self.wcomb_test.addItem("Welch's t-test")
+		self.wcomb_test.addItem("Student's t-test")
+		self.wcomb_test.addItem("Hotelling's T-squared test")
+		self.wcomb_test.addItem("F-test")
+		self.wcomb_test.addItem("Z-test")
+		self.wcomb_test.addItem("Chi-Squared test")
+		self.wcomb_test.addItem("Sharpio-Wilk test")
+		self.wcomb_test.addItem("Wilcoxon signed-rank test")
+		self.wcomb_test.addItem("Kolomogorov-Smirnov test")
+		self.wcomb_test.addItem("Mann-Whitney U-test")
+		self.wcomb_test.addItem("Covariance")
+		self.wcomb_test.addItem("Pearson Correlation") # numpy.corrcoef
 		gbl0.addWidget(self.wcomb_test,4,0)
-
+		
+		self.wsbcols=StringBox(label="Col(s)",value="0,1")
+		gbl0.addWidget(self.wsbcols,4,1)
+		
 		self.run=QtGui.QPushButton(self)
-		self.run.setText("Run Test")
-		gbl0.addWidget(self.run,4,1)
-
+		self.run.setText("Compute")
+		gbl0.addWidget(self.run,6,0,1,2)
+		
 		QtCore.QObject.connect(self.summary,QtCore.SIGNAL("clicked()"),self.printSummary)
 		QtCore.QObject.connect(self.run,QtCore.SIGNAL("clicked()"),self.runTest)
 
@@ -1578,68 +1587,60 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 
 	def printSummary(self):
 		"""Computes and plots a polynomial fit (of order N) for the current x and y axes"""
-
 		insp=self.target().get_inspector()				# inspector
 		name=str(insp.setlist.currentItem().text())		# currently hilighted item
 		data=self.target().data[name]					# data set we will operate on
 
-		print("Axis\tMean\tMedian\tStd")
-		da = np.asarray(data)
-		for c in range(len(da)):
-			mu = np.mean(da[:,c])
-			med = np.median(da[:,c])
-			std = np.std(da[:,c])
-			print("{}\t{:.3f}\t{:.3f}\t{:.3f}".format(c,mu,med,std))
+		print("Axis\tMean\tMedian\tStd\tVar\tMax\tMin\tRange\tq1\tq3\tIQR\tIQM\tMAD\tSkewness")
+		d = np.asarray(data)
+		for c in range(len(d)):
+			col = d[:,c]
+			n = len(col)
+			mean = np.mean(col)
+			q2 = np.median(col)
+			std = np.std(col)
+			var = np.var(col)
+			min = np.min(col)
+			max = np.max(col)
+			rng = max-min
+			q3, q1 = np.percentile(col, [75 ,25])
+			iqr = q3-q1
+			mad = (q3+q1)/2
+			skew = (mad - q2) / mad
+			iq = np.where(np.logical_and(col>=q1, col<=q3))[0]
+			iqm = np.mean(col[iq])
+			print("{}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}\t{:.1f}".format(c,mean,q2,std,var,max,min,rng,q1,q3,iqr,iqm,mad,skew))
 
 	def runTest(self):
-		name = str(self.wcomb_test.currentText())
-		print("{} not yet implemented!".format(name))
-
-	def imgSelect(self,sel=None):
-		if self.imgwin==None :
-			from emimagemx import EMImageMXWidget
-			self.imgwin=EMImageMXWidget()
-
-		try:
-			if sel==None: sel=self.target().selected
-		except:
-			print "imgSelect with no selection"
+		stat = str(self.wcomb_test.currentText())
+		cols = [str(i) for i in self.wsbcols.getValue().split(",")]
+		insp = self.target().get_inspector() # inspector
+		names=[str(i.text()) for i in insp.setlist.selectedItems()]
+		
+		if len(cols) <= 0:
+			print("Please specify the columns on which you wish to compute this test")
 			return
-
+		
 		try:
-			data=[EMData(self.wimgfile.getValue(),int(i)) for i in sel]
+			datasets = [self.target().data[name] for name in names]
+			data = np.concatenate(datasets)
 		except:
-			traceback.print_exc()
-			data=None
-
-		self.imgwin.set_data(data)
-		self.imgwin.show()
-
-	def selectImgFile(self):
-		from embrowser import EMBrowserWidget
-		self.browse = EMBrowserWidget(withmodal=True,multiselect=False)
-		self.browse.show()
-		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("ok"),self.setImgFile)
-		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("cancel"),self.canImgFile)
-
-	def canImgFile(self,file=None):
-		return
-
-	def setImgFile(self,file=None):
-
-		if file==None :
-			try:
-				self.wimgfile.setValue(self.browse.getResult()[0])
-			except:
-				traceback.print_exc()
-				pass
+			print("Selected datasets must contain the same number of columns.")
+			print("Using only the first dataset selected")
+			data = self.target().data[names[0]]
+		
+		x = np.asarray(data).T[:,cols]
+		
+		if stat == "Covariance":
+			result = np.cov(x,rowvar=False)
+		elif stat == "Pearson Correlation":
+			result = np.corrcoef(x,rowvar=False)
+		else:
+			print("{} not yet implemented!".format(stat))
 			return
-
-	def closeEvent(self, event):
-		try: self.imgwin.close()
-		except: pass
-		self.close()
-
+		
+		print('{} (Columns: {}):'.format(stat,self.wsbcols.getValue()))
+		print(result)
 
 class EMPlot2DRegrInsp(QtGui.QWidget):
 	"""This class implements the regression pop-up from the EMPlot2DInspector"""
