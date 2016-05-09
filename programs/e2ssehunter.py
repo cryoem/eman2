@@ -301,7 +301,7 @@ def model_mrc_helix(box_size, apix, res, length = 10.8, points = None, helixtype
 	helixtypeDict = {"gauss":0, "gauss_falloff":1, "polynomial":2, "helix_pdb":3, 0:0, 1:1, 2:2, 3:3}
 	
 	if helixtypeDict[helixtype] == 3:
-		mrcHelix=points.pdb2mrc_by_summation(box_size,apix,res)
+		mrcHelix=points.pdb2mrc_by_summation(box_size,apix,res,-1)
 		mrcHelix.process_inplace("normalize.edgemean")
 		mrcHelix.process_inplace("xform.centerofmass")
 		

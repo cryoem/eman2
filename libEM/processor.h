@@ -2275,12 +2275,16 @@ The basic design of EMAN Processors: <br>\
 				params = new_params;
 				if (params.has_key("center")) center=params["center"];
 				else center=0.0;
+				if (params.has_key("step")) center=params["step"];
+				else step=1.0;
+				if (step<=0) step=1.0;
 			}
 
 		TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("center", EMObject::FLOAT, "Center value from which number of standard deviations is computed (default = 0)");
+				d.put("step", EMObject::FLOAT, "Stepsize in terms of sigma. ie - 1.5 will discritize to 1.5*sigma steps (default = 1.0)");
 				return d;
 			}
 
@@ -2292,11 +2296,11 @@ The basic design of EMAN Processors: <br>\
 		static const string NAME;
 
 	  protected:
-		float center;
+		float center,step;
 		
 		void process_pixel(float *x) const
 		{
-			*x = Util::fast_floor((*x-center)/sigma+0.5);
+			*x = Util::fast_floor((*x-center)/(step*sigma)+0.5)*step;
 		}
 	};
 
@@ -3381,8 +3385,8 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 
-			d.put("inner_radius", EMObject::INT, "inner mask radius. optional");
-			d.put("outer_radius", EMObject::INT, "outer mask radius. Negative value -> box radius + outer_radius +1");
+			d.put("inner_radius", EMObject::FLOAT, "inner mask radius. optional");
+			d.put("outer_radius", EMObject::FLOAT, "outer mask radius. Negative value -> box radius + outer_radius +1");
 
 			d.put("dx", EMObject::FLOAT,
 				  "Modify mask center by dx relative to the default center nx/2");
@@ -3409,10 +3413,10 @@ The basic design of EMAN Processors: <br>\
 
 		virtual void process_dist_pixel(float *pixel, float dist) const = 0;		// note that this function gets the distance SQUARED !
 
-		int inner_radius;
-		int outer_radius;
-		int inner_radius_square;
-		int outer_radius_square;
+		float inner_radius;
+		float outer_radius;
+		float inner_radius_square;
+		float outer_radius_square;
 		float dx, dy, dz;
 		float xc, yc, zc;
 	};
