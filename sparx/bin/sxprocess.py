@@ -64,7 +64,7 @@ def TotalDistance(city, lccc):
 		dist += Distance(city[i], city[i+1], lccc)
 	dist += Distance(city[-1], city[0], lccc)
 	return dist
-    
+
 def reverse(city, n):
     nct = len(city)
     nn = (1+ ((n[1]-n[0]) % nct))/2 # half the lenght of the segment to be reversed
@@ -77,7 +77,7 @@ def reverse(city, n):
 
 def transpt(city, n):
     nct = len(city)
-    
+
     newcity=[]
     # Segment in the range n[0]...n[1]
     for j in range( (n[1]-n[0])%nct + 1):
@@ -136,7 +136,7 @@ def tsp(lccc):
 
 		accepted = 0
 		for i in range(maxSteps): # At each temperature, many Monte Carlo steps
-            
+
 			while True: # Will find two random cities sufficiently close by
 				# Two cities n[0] and n[1] are choosen at random
 				n[0] = int((nct)*rand())     # select one city
@@ -145,18 +145,18 @@ def tsp(lccc):
 				if (n[1] < n[0]): (n[0],n[1]) = (n[1],n[0]) # swap, because it must be: n[0]<n[1]
 				nn = (n[0]+nct -n[1]-1) % nct  # number of cities not on the segment n[0]..n[1]
 				if nn>=3: break
-        
+
 			# We want to have one index before and one after the two cities
 			# The order hence is [n2,n0,n1,n3]
 			n[2] = (n[0]-1) % nct  # index before n0  -- see figure in the lecture notes
 			n[3] = (n[1]+1) % nct  # index after n2   -- see figure in the lecture notes
-            
-			if Preverse > rand(): 
+
+			if Preverse > rand():
 				# Here we reverse a segment
 				# What would be the cost to reverse the path between city[n[0]]-city[n[1]]?
 				de = Distance(city[n[2]], city[n[1]], lccc) + Distance(city[n[3]], city[n[0]], lccc)\
 					 - Distance(city[n[2]], city[n[0]], lccc) - Distance(city[n[3]] ,city[n[1]], lccc)
-                
+
 				if de<0 or exp(-de/T)>rand(): # Metropolis
 					accepted += 1
 					dist += de
@@ -177,17 +177,17 @@ def tsp(lccc):
 					accepted += 1
 					dist += de
 					city = transpt(city, n)
-                    
+
 			if accepted > maxAccepted: break
 
 		# Plot
 		#         Plot(city, R, dist)
-            
+
 		print "T=%10.5f , distance= %10.5f , accepted steps= %d" %(T, dist, accepted)
 		T *= fCool             # The system is cooled down
 		if accepted == 0: break  # If the path does not want to change any more, we can stop
 
-        
+
 #     Plot(city, R, dist)
 	return city
 
@@ -221,7 +221,7 @@ def main():
 
 	1.  Phase flip a stack of images and write output to new file:
 		sxprocess.py input_stack.hdf output_stack.hdf --phase_flip
-	
+
 	2.  Resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.
 	    The window size will change accordingly.
 		sxprocess input.hdf output.hdf  --changesize --ratio=0.5
@@ -273,13 +273,13 @@ def main():
 
    11. Scale 3D shifts.  The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor
 		sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5
-   
+
    12. Generate 3D mask from a given 3-D volume automatically or using threshold provided by user.
-   
-   13. Postprocess 3-D or 2-D images: 
-   			for 3-D volumes: calculate FSC with provided mask; weight summed volume with FSC; estimate B-factor from FSC weighted summed two volumes; apply negative B-factor to the weighted volume. 
+
+   13. Postprocess 3-D or 2-D images:
+   			for 3-D volumes: calculate FSC with provided mask; weight summed volume with FSC; estimate B-factor from FSC weighted summed two volumes; apply negative B-factor to the weighted volume.
    			for 2-D images:  calculate B-factor and apply negative B-factor to 2-D images.
-   14. Window stack file -reduce the size of images without changing the pixel size. 
+   14. Window stack file -reduce the size of images without changing the pixel size.
 
 
 """
@@ -308,7 +308,7 @@ def main():
 	parser.add_option("--rotpw", 				type="string",   	default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
 	parser.add_option("--transformparams",		type="string",   	default=None,    help="Transform 3D projection orientation parameters using six 3D parameters (phi, theta,psi,sx,sy,sz).  Input: --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. Output: file with modified orientation parameters.")
 
-	
+
 	# import ctf estimates done using cter
 	parser.add_option("--input",              	type="string",		default= None,     		  help="Input particles.")
 	parser.add_option("--importctf",          	type="string",		default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
@@ -317,7 +317,7 @@ def main():
 
 	# import ctf estimates done using cter
 	parser.add_option("--scale",              	type="float", 		default=-1.0,      		  help="Divide shifts in the input 3D orientation parameters text file by the scale factor.")
-	
+
 	# generate adaptive mask from an given 3-D volume
 	parser.add_option("--adaptive_mask",        action="store_true",                      help="create adavptive 3-D mask from a given volume", default=False)
 	parser.add_option("--nsigma",              	type="float",	default= 1.,     	      help="number of times of sigma of the input volume to obtain the the large density cluster")
@@ -339,11 +339,18 @@ def main():
 	parser.add_option("--FSC_cutoff",     type="float",                                   help="stop frequency in Angstrom for B-factor estimation", default=0.143)
 	parser.add_option("--2d",          action="store_true",                      help="postprocess isac 2-D averaged images",default=False)
 	parser.add_option("--window_stack",                     action="store_true",          help="window stack images using a smaller window size", default=False)
-	parser.add_option("--box",           type="int",		default= 0,                   help="the new window size ") 
+	parser.add_option("--box",           type="int",		default= 0,                   help="the new window size ")
  	(options, args) = parser.parse_args()
 
+ 	# Special options for angular distribution
+	parser.add_option('--round_digit',       type='int',          default=5,           help='accuracy of the loaded angle (default 5)')
+	parser.add_option('--box_size',       type='int',          default=500,           help='box size [px] (default 500')
+	parser.add_option('--prtcl_diameter',       type='int',          default=500,           help='particle diameter [A] (default 500)')
+	parser.add_option('--bin_width',       type='int',          default=1,           help='width of the bin (default 1)')
+	parser.add_option('--bin_length',       type='int',          default=10000,           help='length of the bin (default 10000)')
+
 	global_def.BATCH = True
-		
+
 	if options.phase_flip:
 		nargs = len(args)
 		if nargs != 2:
@@ -362,12 +369,12 @@ def main():
 			except:
 				print "no ctf information in input stack! Exiting..."
 				return
-			
+
 			dopad = True
 			sign = 1
 			binary = 1  # phase flip
-				
-			assert img.get_ysize() > 1	
+
+			assert img.get_ysize() > 1
 			dict = ctf.to_dict()
 			dz = dict["defocus"]
 			cs = dict["cs"]
@@ -377,11 +384,11 @@ def main():
 			ampcont = dict["ampcont"]
 			dza = dict["dfdiff"]
 			azz = dict["dfang"]
-			
+
 			if dopad and not img.is_complex(): ip = 1
 			else:                             ip = 0
-	
-	
+
+
 			params = {"filter_type": Processor.fourier_filter_types.CTF_,
 	 			"defocus" : dz,
 				"Cs": cs,
@@ -394,10 +401,10 @@ def main():
 				"sign": sign,
 				"dza": dza,
 				"azz":azz}
-			
+
 			tmp = Processor.EMFourierFilter(img, params)
 			tmp.set_attr_dict({"ctf": ctf})
-			
+
 			tmp.write_image(outstack, i)
 
 	elif options.changesize:
@@ -409,7 +416,7 @@ def main():
 		instack = args[0]
 		outstack = args[1]
 		sub_rate = float(options.ratio)
-			
+
 		nima = EMUtil.get_image_count(instack)
 		from fundamentals import resample
 		for i in xrange(nima):
@@ -454,7 +461,7 @@ def main():
 		ndim = d.get_ndim()
 		if ndim ==3:
 			pw = rops_table(d)
-			write_text_file(pw, args[1])			
+			write_text_file(pw, args[1])
 		else:
 			nx = d.get_xsize()
 			ny = d.get_ysize()
@@ -468,7 +475,7 @@ def main():
 			from utilities import model_blank, model_circle, pad
 			from EMAN2 import periodogram
 			p = model_blank(wn,wn)
-		
+
 			for i in xrange(n):
 				d = get_im(args[0], i)
 				if nargs==3:
@@ -552,7 +559,7 @@ def main():
 		dbkey = args[0]
 		print "database key under which params will be stored: ", dbkey
 		gbdb = js_open_dict("e2boxercache/gauss_box_DB.json")
-				
+
 		parmstr = 'dummy:'+options.makedb[0]
 		(processorname, param_dict) = parsemodopt(parmstr)
 		dbdict = {}
@@ -562,7 +569,7 @@ def main():
 					dbdict[pkey] = True
 				else:
 					dbdict[pkey] = False
-			else:		
+			else:
 				dbdict[pkey] = param_dict[pkey]
 		gbdb[dbkey] = dbdict
 
@@ -607,7 +614,7 @@ def main():
 		sigma_mic       = 30.0
 		sigma2_mic      = 17.5
 		sigma_gauss_mic = 0.3
-		
+
 		if 'scale_mult' in param_dict:
 			scale_mult = float(param_dict['scale_mult'])
 		if 'sigma_add' in param_dict:
@@ -617,14 +624,14 @@ def main():
 		if 'sigma2_proj' in param_dict:
 			sigma2_proj = float(param_dict['sigma2_proj'])
 		if 'sigma_gauss' in param_dict:
-			sigma_gauss = float(param_dict['sigma_gauss'])	
+			sigma_gauss = float(param_dict['sigma_gauss'])
 		if 'sigma_mic' in param_dict:
 			sigma_mic = float(param_dict['sigma_mic'])
 		if 'sigma2_mic' in param_dict:
 			sigma2_mic = float(param_dict['sigma2_mic'])
 		if 'sigma_gauss_mic' in param_dict:
-			sigma_gauss_mic = float(param_dict['sigma_gauss_mic'])	
-			
+			sigma_gauss_mic = float(param_dict['sigma_gauss_mic'])
+
 		from filter import filt_gaussl, filt_ctf
 		from utilities import drop_spider_doc, even_angles, model_gauss, delete_bdb, model_blank,pad,model_gauss_noise,set_params2D, set_params_proj
 		from projection import prep_vol,prgs
@@ -632,14 +639,14 @@ def main():
 		delta = 29
 		angles = even_angles(delta, 0.0, 89.9, 0.0, 359.9, "S")
 		nangle = len(angles)
-		
+
 		modelvol = []
 		nvlms = EMUtil.get_image_count(inpstr)
 		from utilities import get_im
 		for k in xrange(nvlms):  modelvol.append(get_im(inpstr,k))
-		
+
 		nx = modelvol[0].get_xsize()
-		
+
 		if nx != boxsize:
 			ERROR("Requested box dimension does not match dimension of the input model.", \
 			"sxprocess - generate projections",1)
@@ -721,7 +728,7 @@ def main():
 					set_params_proj(proj, [phi, tht, psi, s2x, s2y])
 
 					proj.write_image(stack_data, iprj)
-			
+
 					icol += 1
 					if icol == rowlen:
 						icol = 0
@@ -734,9 +741,9 @@ def main():
 				#apply CTF
 				mic = filt_ctf(mic, ctf)
 			mic += filt_gaussl(model_gauss_noise(sigma2_mic, 4096, 4096), sigma_gauss_mic)
-	
+
 			mic.write_image(micpref + "%1d.hdf" % (idef-3), 0)
-		
+
 		drop_spider_doc("params.txt", params)
 
 	elif options.importctf != None:
@@ -798,7 +805,7 @@ def main():
 				subprocess.call(cmd, shell=True)
 			else:
 				print  ' >>>  Group ',name,'  skipped.'
-				
+
 		cmd = "{} {} {}".format("rm -f",grpfile,ctfpfile)
 		subprocess.call(cmd, shell=True)
 
@@ -814,7 +821,7 @@ def main():
 			p[i][3] /= scale
 			p[i][4] /= scale
 		write_text_row(p, args[1])
-		
+
 	elif options.adaptive_mask:
 		from utilities import get_im
 		from morphology import adaptive_mask1, binarize, erosion, dilation
@@ -838,10 +845,10 @@ def main():
 				mask3d = binarize(inputvol, options.threshold)
 				for i in xrange(options.ne): mask3d = erosion(mask3d)
 				for i in xrange(options.nd): mask3d = dilation(mask3d)
-			else: 
+			else:
 				mask3d = adaptive_mask1(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
 			mask3d.write_image(mask_file_name)
-			
+
 	elif options.postprocess:
 		from utilities    import get_im
 		from fundamentals import rot_avg_table
@@ -867,7 +874,7 @@ def main():
 				if options.low_pass_filter:
 					from filter import filt_tanl
 					e1 =filt_tanl(e1,options.ff, options.aa)
-				e1.write_image(options.output)							
+				e1.write_image(options.output)
 		else:
 			nargs = len(args)
 			e1    = get_im(args[0])
@@ -889,7 +896,7 @@ def main():
 					else: tmp = 0.0
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 			if nargs>1: e1 +=e2
-			if options.fsc_weighted: e1=filt_table(e1,fil) 
+			if options.fsc_weighted: e1=filt_table(e1,fil)
 			guinerline = rot_avg_table(power(periodogram(e1),.5))
 			freq_max   = 1/(2.*pixel_size)
 			freq_min   = 1./options.B_start
@@ -901,7 +908,7 @@ def main():
 				from filter       import filt_tanl
 				e1 =filt_tanl(e1,options.ff, options.aa)
 			e1.write_image(options.output)
-		 
+
 	elif options.window_stack:
 		nargs = len(args)
 		if nargs ==0:
@@ -922,7 +929,7 @@ def main():
 			from fundamentals import window2d
 			from utilities import get_im
 			for i in xrange(nimage): window2d(get_im(inputstack,i),options.box,options.box).write_image(output_stack_name,i)
-	else:  ERROR("Please provide option name","sxprocess.py",1)	
+	else:  ERROR("Please provide option name","sxprocess.py",1)
 
 if __name__ == "__main__":
 	main()
