@@ -682,7 +682,7 @@ def main():
 			if parm_CTF:
 				astampl=defocus*0.15
 				astangl=50.0
-				ctf = generate_ctf([defocus, Cs, voltage,  pixel, ampcont, 0.0, astampl, astangl])
+				ctf = generate_ctf([defocus, Cs, voltage,  pixel, 0.0, ampcont, astampl, astangl])
 
 			for i in xrange(nangle):
 				for k in xrange(12):
