@@ -4207,11 +4207,14 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	# enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
 	# psi_offset = abs(int(round(2*abs(reduced_psiref)/psistep)))
 	psi_offset = int(round(reduced_psiref / psistep)) + nc
+	lower_segment_length = psi_offset
 	upper_segment_length = nr - 1 - psi_offset
-	upper_segment_length_must_be_lower_bounded_by_zero = [0, upper_segment_length][upper_segment_length > 0]
-	psi_half_range = min(psi_offset, upper_segment_length_must_be_lower_bounded_by_zero)
-	bnr = psi_offset - psi_half_range 
-	enr = psi_offset + psi_half_range + 1 
+	if lower_segment_length >= 0 and upper_segment_length >= 0:
+		psi_half_range = min(lower_segment_length, upper_segment_length)
+		bnr = psi_offset - psi_half_range 
+		enr = psi_offset + psi_half_range + 1
+	else:
+		bnr = enr = 0
 	
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
