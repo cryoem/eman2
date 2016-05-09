@@ -72,6 +72,7 @@ from cStringIO import StringIO
 import re
 import emimage2d
 
+import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
@@ -238,7 +239,7 @@ class EMPlot2DWidget(EMGLWidget):
 			self.axes = {}
 			self.visibility = {}
 
-		if input_data==None :
+		if input_data is None :
 			self.data.pop(key)
 			self.visibility.pop(key)
 			self.axes.pop(key)
@@ -679,8 +680,8 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		if not quiet : self.updateGL()
 
-	def getCurrentAxes(self,key):
-		return self.axes[key] (xa,ya,za,sa)
+# 	def getCurrentAxes(self,key):
+# 		return self.axes[key] (xa,ya,za,sa)
 
 	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False):
 		if color==None : color=self.pparm[key][0]
@@ -1261,7 +1262,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			self.axes = {}
 			self.visibility = {}
 
-		if input_data==None :
+		if input_data is None :
 			if not quiet: self.updateGL()
 			return
 
@@ -1562,7 +1563,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		self.wcomb_test.addItem("T^2")
 		self.wcomb_test.addItem("F")
 		self.wcomb_test.addItem("Chi-Squared")
-		#self.wcomb_test.addItem("Sharpio-Wilk")
+		self.wcomb_test.addItem("Sharpio-Wilk")
 		#self.wcomb_test.addItem("Kolomogorov-Smirnov")
 		gbl0.addWidget(self.wcomb_test,4,0)
 
@@ -1642,100 +1643,133 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 
 class EMPlot2DRegrInsp(QtGui.QWidget):
 	"""This class implements the regression pop-up from the EMPlot2DInspector"""
+	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		gbl0=QtGui.QGridLayout(self)
 
-		self.regrb=QtGui.QPushButton(self)
-		self.regrb.setText("Regress")
-		gbl0.addWidget(self.regrb,2,0,1,2)
+		insp = self.target().get_inspector()
+		
+		cx = str(insp.slidex.value())
+		self.wsbnax=StringBox(label="X Cols:",value=cx)
+		gbl0.addWidget(self.wsbnax,2,0)
+		
+		cy = str(insp.slidey.value())
+		self.wsbnay=StringBox(label="Y Cols:",value=cy)
+		gbl0.addWidget(self.wsbnay,2,1)
 
-		self.wnord=ValBox(rng=(1,25),label="Order:",value=1)
+		self.wnord=ValBox(rng=(1,25),label="Degree:",value=2)
 		self.wnord.intonly=1
 		gbl0.addWidget(self.wnord,4,0)
+		
+		self.wnpts=ValBox(rng=(1,10000),label="N Interp:",value=100)
+		self.wnpts.intonly=1
+		gbl0.addWidget(self.wnpts,4,1)
+		
+		self.wlnorm=QtGui.QLabel(self)
+		self.wlnorm.setText("\tNorm:")
+		gbl0.addWidget(self.wlnorm,6,0)
+		
+		self.wcomb_norm=QtGui.QComboBox(self)
+		self.wcomb_norm.addItem("none")
+		self.wcomb_norm.addItem("standardize")
+		self.wcomb_norm.addItem("maxmin")
+		gbl0.addWidget(self.wcomb_norm,6,1)
+		
+		self.regrb=QtGui.QPushButton(self)
+		self.regrb.setText("Regress")
+		gbl0.addWidget(self.regrb,8,0,1,2)
 
-		self.wcbaxnorm=CheckBox(label="Norm Axes:",value=0)
-		gbl0.addWidget(self.wcbaxnorm,4,1)
-
-		QtCore.QObject.connect(self.regrb,QtCore.SIGNAL("clicked()"),self.doRegr2d)
+		QtCore.QObject.connect(self.regrb,QtCore.SIGNAL("clicked()"),self.doRegression)
 
 		self.imgwin=None
 
-	def doRegr2d(self):
+	def doRegression(self):
 		"""Computes and plots a polynomial fit (of order N) for the current x and y axes"""
 
-		print("Plotting of reression results not yet implemented.")
-		return
-
-		ord=self.wnord.getValue()		# selected order
-		axnorm=self.wcbaxnorm.getValue() # equalize axes?
-		insp=self.target().get_inspector()				# inspector
-		name=str(insp.setlist.currentItem().text())		# currently hilighted item
-		data=self.target().data[name]					# data set we will operate on
-
-		ncol=len(data)
-		nrow=len(data[0])
-
-		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
-		if axnorm:
-			print "Normalize Axes"
-			datafix=[i.copy()/std(i) for i in data]
-		else: datafix=data
-
-		cx,cy,cc,cs = self.target().axes["data"]
-
-		x = datafix[:,cx]
-		y = datafix[:,cy]
-		fit = np.polyfit(x,y,deg=ord)
-		y = np.polyval(fit,x)
-
-		self.target().axes["data"].plot(x,y) # line plot
-
-	def imgSelect(self,sel=None):
-		if self.imgwin==None :
-			from emimagemx import EMImageMXWidget
-			self.imgwin=EMImageMXWidget()
-
+		degree=self.wnord.getValue()	# selected order
+		xaxes = self.wsbnax.getValue()
+		yaxes = self.wsbnay.getValue()
+		norm = str(self.wcomb_norm.currentText())
+		npts = self.wnpts.getValue()
+		insp = self.target().get_inspector() # inspector
+		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently hilighted items
+		
 		try:
-			if sel==None: sel=self.target().selected
+			xaxes=[int(i) for i in xaxes.split(",")]
+			if max(xaxes)>=ncol : raise Exception
+			yaxes=[int(i) for i in yaxes.split(",")]
+			if max(yaxes)>=ncol : raise Exception
 		except:
-			print "imgSelect with no selection"
-			return
-
+			pass #QtGui.QMessageBox.warning(self, "Axes must be a comma separated list of column numbers")
+			#return
+		
+		xs = ",".join([str(i) for i in xaxes])
+		ys = ",".join([str(i) for i in yaxes])
+		result_name = "Regression (Degree {}; X: {}; Y: {})".format(degree,xs,ys)
+		
 		try:
-			data=[EMData(self.wimgfile.getValue(),int(i)) for i in sel]
+			datasets = [self.target().data[name] for name in names]
+			data = np.concatenate(datasets)
 		except:
-			traceback.print_exc()
-			data=None
+			print("Selected datasets must contain the same number of columns.")
+			print("Using only the first dataset selected")
+			data = self.target().data[names[0]]
+		
+		x = data[xaxes].T
+		y = data[yaxes].T
+		
+		x = self.normalize(x,norm) # normalize features
+		
+		if norm != "none":
+			normed = np.c_[x,y].T
+			color = insp.color.currentIndex() + 1
+			self.target().set_data(normed,"{}_{}".format(norm,xs),replace=False,quiet=False,color=color,linewidth=0,linetype=-1,symtype=0,symsize=10,comments=None)
+		
+		A = self.vandermonde(x,degree) # polynomial features
+		
+		# perform actual regression
+		coefs, _, _, _ = np.linalg.lstsq(A, y) #coefs, residuals, rank, svals
+		
+		print("Polynomial Regression (Degree {})".format(degree))
+		print("X: {}\tY: {}".format(xs,ys))
+		print("Coefficients:")
+		for i,c in enumerate(coefs):
+			print("{}:\t{}".format(i,c))
+		
+		# construct interpolated polynomial
+		xmin = np.min(x)
+		xmax = np.max(x)
+		xx = np.linspace(xmin,xmax,npts)
+		yy = np.polyval(coefs.flatten(),xx)
+		
+		result = np.c_[xx,yy].T
+		
+		color = insp.color.currentIndex() + 1
+		self.target().set_data(result,result_name,replace=False,quiet=False,color=color,linewidth=2,linetype=0,symtype=-1,symsize=0,comments=None)
+		self.target().render()
 
-		self.imgwin.set_data(data)
-		self.imgwin.show()
-
-	def selectImgFile(self):
-		from embrowser import EMBrowserWidget
-		self.browse = EMBrowserWidget(withmodal=True,multiselect=False)
-		self.browse.show()
-		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("ok"),self.setImgFile)
-		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("cancel"),self.canImgFile)
-
-	def canImgFile(self,file=None):
-		return
-
-	def setImgFile(self,file=None):
-
-		if file==None :
-			try:
-				self.wimgfile.setValue(self.browse.getResult()[0])
-			except:
-				traceback.print_exc()
-				pass
-			return
-
-	def closeEvent(self, event):
-		try: self.imgwin.close()
-		except: pass
-
+	def vandermonde(self, x, order): # Source: http://stackoverflow.com/questions/11723779/2d-numpy-power-for-polynomial-expansion
+		x = np.asarray(x).T[np.newaxis]
+		n = x.shape[1]
+		power_matrix = np.tile(np.arange(order + 1), (n, 1)).T[..., np.newaxis]
+		X = np.power(x, power_matrix)
+		I = np.indices((order + 1, ) * n).reshape((n, (order + 1) ** n)).T
+		F = np.product(np.diagonal(X[I], 0, 1, 2), axis=2)
+		return np.fliplr(F.T) # this matrix should have the form [x**n x**n-1 ... x**2 x 1]
+	
+	def normalize(self, x,norm="none"):
+		if norm == "standardize":
+			mu = np.mean(x,axis=0)
+			sigma = np.std(x,axis=0)
+			return (x-mu)/sigma
+		elif norm == "maxmin":
+			xmin = np.min(x,axis=0)
+			xmax = np.max(x,axis=0)
+			return (x-xmin)/(xmax-xmin)
+		elif norm == "none":
+			return x
 
 class EMPlot2DClassInsp(QtGui.QWidget):
 	"""This class implements the classification pop-up from the EMPlot2DInspector"""
@@ -2235,9 +2269,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl01.addWidget(self.stats)
 
 		self.regress=QtGui.QPushButton(self)
-		self.regress.setText("Regress")
+		self.regress.setText("Regression")
 		hbl01.addWidget(self.regress)
-
 
 		hbl1 = QtGui.QHBoxLayout()
 		hbl1.setMargin(0)
@@ -2255,7 +2288,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl1.addWidget(self.color)
 
 		self.classb=QtGui.QPushButton(self)
-		self.classb.setText("Classify")
+		self.classb.setText("Classification")
 		hbl1.addWidget(self.classb)
 
 		vbl.addLayout(hbl1)
@@ -2643,7 +2676,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 	def savePdf(self):
 		"""Saves the contents of the current plot to a pdf"""
-		matplotlib.pyplot.savefig("plot.pdf")
+		plt.savefig("plot.pdf")
 
 	def updPlot(self,s=None):
 		if self.quiet : return
