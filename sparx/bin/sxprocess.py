@@ -340,15 +340,15 @@ def main():
 	parser.add_option("--2d",          action="store_true",                      help="postprocess isac 2-D averaged images",default=False)
 	parser.add_option("--window_stack",                     action="store_true",          help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",           type="int",		default= 0,                   help="the new window size ")
- 	(options, args) = parser.parse_args()
 
- 	# Special options for angular distribution
- 	parser.add_option('--angular_distribution',    action="store_true",    default=False,        help='create an angular distribution file based on a project3d.txt')
+	# Options for angular distribution
+	parser.add_option('--angular_distribution',    action="store_true",    default=False,        help='create an angular distribution file based on a project3d.txt')
 	parser.add_option('--round_digit',       type='int',          default=5,           help='accuracy of the loaded angle (default 5)')
 	parser.add_option('--box_size',       type='int',          default=500,           help='box size [px] (default 500')
 	parser.add_option('--prtcl_diameter',       type='int',          default=500,           help='particle diameter [A] (default 500)')
 	parser.add_option('--bin_width',       type='int',          default=1,           help='width of the bin (default 1)')
 	parser.add_option('--bin_length',       type='int',          default=10000,           help='length of the bin (default 10000)')
+	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
 
@@ -930,6 +930,19 @@ def main():
 			from fundamentals import window2d
 			from utilities import get_im
 			for i in xrange(nimage): window2d(get_im(inputstack,i),options.box,options.box).write_image(output_stack_name,i)
+
+	elif option.angular_distribution:
+		from utilities import angular_distribution
+		nargs = len(args)
+		if nargs > 1:
+			print 'Too many inputs are given, see usage and restart the program!'
+		else:
+			if not path.exists(args[0]):
+				ERROR(
+					'Params file does not exists! Please rename and restart the program.', 1)
+			strInput = args[0]
+			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution.build'
+			angular_distribution(inputfile=strInput, options=options, output=strOutput)
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
 if __name__ == "__main__":
