@@ -1631,15 +1631,15 @@ class SXInformationWidget(QWidget):
 		grid_row += 1; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
 		grid_row += 1; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
 
-# ========================================================================================
-# Child Window status, used by only main window
-class SXChildStatus(object):
-	def __init__(self, window = None):
-		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		# class variables
-		self.window = window       # Child window widget
-		self.is_minimized = False  # Is this window currently minimized?
-		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+# # ========================================================================================
+# # Child Window status, used by only main window
+# class SXChildStatus(object):
+# 	def __init__(self, window = None):
+# 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+# 		# class variables
+# 		self.window = window       # Child window widget
+# 		self.is_minimized = False  # Is this window currently minimized?
+# 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
 # Main Window (started by class SXApplication)
@@ -1656,7 +1656,6 @@ class SXMainWindow(QWidget):
 		self.sxcmd_category_list = None
 		self.cur_sxmenu_item = None
 		self.sxcmd_menu_item_btn_group = None
-		self.child_status_list = [] 
 		
 		# Layout constants
 		self.sxmenu_btn_row_span = 1
@@ -2463,60 +2462,10 @@ class SXMainWindow(QWidget):
 			custom_style = "QPushButton {font: bold; color:blue; }"
 			self.cur_sxmenu_item.btn.setStyleSheet(custom_style)
 			
-	def eventFilter(self, source, event):
-		if event.type() == QEvent.WindowStateChange:
-			# print "MRK_DEBUG: Hello QEvent.WindowStateChange"
-			if self.windowState() & Qt.WindowMinimized:
-				# print "MRK_DEBUG: sxgui main window has minimized"
-				assert(self.isMinimized() == True)
-				#
-				# NOTE: 2016/03/07 Toshio Moriya
-				# Minimize icon button of child window should be disabled
-				#
-				for child_status in self.child_status_list:
-					if child_status.window.isVisible(): 
-						child_status.window.hide()
-						child_status.is_minimized = True
-			else:
-				# print "MRK_DEBUG: sxgui main window has not minimized"
-				assert(self.isMinimized() == False)
-				#
-				# NOTE: 2016/03/07 Toshio Moriya
-				# Minimize icon button of child window should be disabled
-				#
-				for child_status in self.child_status_list:
-					if child_status.is_minimized == True:
-						assert(not child_status.window.isVisible()) 
-						child_status.window.show()
-						child_status.window.raise_()
-						child_status.is_minimized = False
-				assert(self.isVisible()) 
-				self.raise_()
-		elif event.type() == QEvent.WindowActivate:
-			# print "MRK_DEBUG: sxgui main window has gained focus (beome active)"
-			for child_status in self.child_status_list:
-				if child_status.window.isVisible(): 
-					child_status.window.raise_()
-			assert(self.isVisible()) 
-			self.raise_()
-		# elif event.type()== QEvent.WindowDeactivate:
-		# 	print "MRK_DEBUG: sxgui main window has lost focus (beome deactive)"
-		# elif event.type()== QEvent.FocusIn:
-		# 	print "MRK_DEBUG: sxgui main has gained keyboard focus"
-		# elif event.type()== QEvent.FocusOut:
-		# 	print "MRK_DEBUG: sxgui main has lost keyboard focus"
-		
-		return super(SXMainWindow, self).eventFilter(source, event)
-	
 	def closeEvent(self, event):
 		# Quit child applications of all sxcmd widgets
 		for sxcmd_category in self.sxcmd_category_list:
 			sxcmd_category.widget.quit_all_child_applications()
-		
-		# close all child windows
-		for child_status in self.child_status_list:
-			if child_status.window:
-				child_status.window.close()
 		
 		event.accept()
 
