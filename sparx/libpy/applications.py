@@ -1201,7 +1201,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	if myid == main_node: log.add("Finished ali2d_base")
 
-	return params, data
+	return params #, data
 
 '''
 def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, \
