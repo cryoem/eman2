@@ -94,6 +94,8 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 
 		imagetypes["spi"] = IMAGE_SPIDER;
 		imagetypes["SPI"] = IMAGE_SPIDER;
+		imagetypes["dat"] = IMAGE_SPIDER;
+		imagetypes["DAT"] = IMAGE_SPIDER;
 
 		imagetypes["spider"] = IMAGE_SPIDER;
 		imagetypes["SPIDER"] = IMAGE_SPIDER;
