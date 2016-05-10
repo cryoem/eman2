@@ -148,7 +148,7 @@ periodogram(EMData* f) {
 	sz[1] = ny;
 	sz[2] = nz;
 	int max_size = *std::max_element(&sz[0],&sz[3]);
-	// set the pixel size for the power spectrum, only ration of the frequency pixel size is considered 	
+	// set the pixel size for the power spectrum, only ratio of the frequency pixel size is considered 	
 	power.set_attr("apix_x", float(max_size)/nx);
 	if(ny2 > 0) power.set_attr("apix_y", float(max_size)/ny);
 	if(nz2 > 0) power.set_attr("apix_z", float(max_size)/nz);

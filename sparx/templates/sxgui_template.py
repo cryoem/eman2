@@ -160,10 +160,10 @@ def construct_sxconst_set():
 	sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "micrograph pixel size [A]"; sxconst.help = ""; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "ctfwin"; sxconst.label = "CTF window size [pixels]"; sxconst.help = "it should be slightly larger than particle box size"; sxconst.register = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "box"; sxconst.label = "particle box size [pixels]" ; sxconst.help = ""; sxconst.register = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "protein particle radius [pixels]"; sxconst.help = ""; sxconst.register = "0"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "box"; sxconst.label = "particle box size [pixels]" ; sxconst.help = ""; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "protein particle radius [pixels]"; sxconst.help = ""; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-	sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "0.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+	sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "imaging configrations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configrations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 	
 	return sxconst_set
@@ -270,7 +270,7 @@ class SXCmdWidget(QWidget):
 				if external_file_path not in ["", sxcmd_token.default[external_file_path_index]]:
 					# Case 1: User specified an exteranl function different from default or empty string
 					if os.path.splitext(external_file_path)[1] != ".py": 
-						QMessageBox.warning(self, "Invalid paramter value", "Exteranl File Path (%s) should include the python script extension (.py)." % (external_file_path))
+						QMessageBox.warning(self, "Invalid parameter value", "Exteranl File Path (%s) should include the python script extension (.py)." % (external_file_path))
 						return ""
 					dir_path, file_basename = os.path.split(external_file_path)
 					file_basename = file_basename.replace(".py", "")
@@ -293,7 +293,7 @@ class SXCmdWidget(QWidget):
 					if sxcmd_token.widget.text() == sxcmd_token.default:
 						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == True:  # Error case
 						if sxcmd_token.is_required == True: 
-							QMessageBox.warning(self, "Invalid paramter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("message_output")))
+							QMessageBox.warning(self, "Invalid parameter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("message_output")))
 							return ""
 						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == False: # Do not add this token to command line
 						# else: # assert(sxcmd_token.is_required == False) # Do not add to this command line
@@ -303,7 +303,7 @@ class SXCmdWidget(QWidget):
 						
 						# For now, using line edit box for the other type
 						widget_text = str(sxcmd_token.widget.text())
-						if sxcmd_token.type not in ["int", "float", "apix", "wn", "box", "radius"]:
+						if sxcmd_token.type not in ["int", "float", "apix", "wn", "box", "radius", "any_file_list", "any_image_list"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
@@ -357,7 +357,7 @@ class SXCmdWidget(QWidget):
 					required_divisor = int(str(self.sxcmd.token_dict[required_key_base].widget.text()))
 					required_label =  self.sxcmd.token_dict[required_key_base].label
 					if required_divisor == 0:
-						QMessageBox.warning(self, "Invalid paramter value", "\"%s\" must be larger than 0. Please check the setting" % (required_label))
+						QMessageBox.warning(self, "Invalid parameter value", "\"%s\" must be larger than 0. Please check the setting" % (required_label))
 						return "" 
 					
 					valid_np = np
@@ -366,7 +366,7 @@ class SXCmdWidget(QWidget):
 							valid_np = required_divisor
 						else:
 							valid_np = valid_np - (valid_np % required_divisor)
-						QMessageBox.warning(self, "Invalid paramter value", "The number of \"MPI processes\" (%d) is invalid. It MUST BE multiplicity of \"%s\" (%d). Please check the setting. A close valid number is %d." % (np, required_label, required_divisor,valid_np))
+						QMessageBox.warning(self, "Invalid parameter value", "The number of \"MPI processes\" (%d) is invalid. It MUST BE multiplicity of \"%s\" (%d). Please check the setting. A close valid number is %d." % (np, required_label, required_divisor,valid_np))
 						return "" 
 							
 			# else: assert(np == 1) # because the "MPI Processes" is disabled for sx*.py process which does not support mpi
@@ -377,7 +377,7 @@ class SXCmdWidget(QWidget):
 				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
 				if os.path.exists(self.sxcmd_tab_main.qsub_script_edit.text()) != True: 
-					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s)." % (self.sxcmd_tab_main.qsub_script_edit.text()))
+					QMessageBox.warning(self, "Invalid parameter value", "Invalid file path for qsub script template (%s)." % (self.sxcmd_tab_main.qsub_script_edit.text()))
 					return "" 
 					
 				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
@@ -444,7 +444,7 @@ class SXCmdWidget(QWidget):
 				# Create script for queue submission from a give template
 				template_file_path = self.sxcmd_tab_main.qsub_script_edit.text()
 				if os.path.exists(template_file_path) == False: 
-					QMessageBox.warning(self, "Invalid paramter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
+					QMessageBox.warning(self, "Invalid parameter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
 					return
 				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
 				file_name_qsub_script = "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh"
@@ -552,7 +552,7 @@ class SXCmdWidget(QWidget):
 		# Write MPI parameters 
 		file_out.write("%s == %s \n" % ("MPI processors", str(self.sxcmd_tab_main.mpi_nproc_edit.text())))
 		file_out.write("%s == %s \n" % ("MPI Command Line Template", str(self.sxcmd_tab_main.mpi_cmd_line_edit.text())))
-		# Write Qsub paramters 
+		# Write Qsub parameters 
 		if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 			val_str = "YES"
 		else:
@@ -599,16 +599,16 @@ class SXCmdWidget(QWidget):
 					target_operator = "<"
 					item_tail = label_in.find(target_operator)
 					if item_tail != 0: 
-						QMessageBox.warning(self, "Invalid Paramter File Format", "Command token entry should start from \"%s\" for key base name in line (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should start from \"%s\" for key base name in line (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
 					label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
 					target_operator = ">"
 					item_tail = label_in.find(target_operator)
 					if item_tail == -1: 
-						QMessageBox.warning(self, "Invalid Paramter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
 					key_base = label_in[0:item_tail]
 					# Get corresponding cmd_token
 					if key_base not in self.sxcmd.token_dict.keys(): 
-						QMessageBox.warning(self, "Invalid Paramter File Format", "Invalid base name of command token \"%s\" is found in line (%s). This paramter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s). This parameter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in))
 					cmd_token = self.sxcmd.token_dict[key_base]
 					# First, handle very special cases
 					if cmd_token.type == "function":
@@ -628,7 +628,7 @@ class SXCmdWidget(QWidget):
 							cmd_token.widget.setText(val_str_in)
 						
 		else:
-			QMessageBox.warning(self, "Fail to load paramters", "The specified file is not paramter file for %s." % self.sxcmd.get_mode_name_for("human"))
+			QMessageBox.warning(self, "Fail to load parameters", "The specified file is not parameter file for %s." % self.sxcmd.get_mode_name_for("human"))
 		
 		file_in.close()
 	
@@ -661,6 +661,16 @@ class SXCmdWidget(QWidget):
 			# Use relative path. 
 			if file_path:
 				file_path = os.path.relpath(file_path)
+		elif file_format == "mrc":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", "", "MRC files (*.mrc)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path. 
+			if file_path:
+				file_path = os.path.relpath(file_path)
+		elif file_format == "any_file_list" or file_format == "any_image_list":
+			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", "", "All files (*.*)", options = QFileDialog.DontUseNativeDialog)
+			# Use relative path. 
+			for a_file_path in file_path_list:
+				file_path += os.path.relpath(str(a_file_path)) + " "
 		else:
 			if file_format:
 				file_path = str(QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), "", "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog))
@@ -997,6 +1007,16 @@ class SXCmdTab(QWidget):
 # 							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
 # 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 # 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "any_file_list":
+							temp_btn = QPushButton("Select Files")
+							temp_btn.setToolTip("display open file dailog to select files (e.g. *.*)")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
+						elif cmd_token.type == "any_image_list":
+							temp_btn = QPushButton("Select Images")
+							temp_btn.setToolTip("display open file dailog to select standard format image files (e.g. .hdf, .mrc)")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
 						elif cmd_token.type == "bdb":
 							file_format = "bdb"
 #							temp_btn = QPushButton("Select .%s" % file_format, self)
@@ -1021,12 +1041,24 @@ class SXCmdTab(QWidget):
 #							spacer_frame = QFrame()
 #							spacer_frame.setMinimumWidth(token_widget_min_width)
 #							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "parameters":
-#							temp_btn = QPushButton("Select Paramter", self)
-							temp_btn = QPushButton("Select Paramter")
+						elif cmd_token.type == "mrc":
+							file_format = "mrc"
+#							temp_btn = QPushButton("Select .%s" % file_format, self)
+							temp_btn = QPushButton("Select .%s" % file_format)
 #							temp_btn.move(self.x3, self.y1 - 12)
 #							temp_btn.setMinimumWidth(token_widget_min_width)
-							temp_btn.setToolTip("display open file dailog to select paramter file (e.g. .txt)")
+							temp_btn.setToolTip("display open file dailog to select .%s format image file" % file_format)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span* 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+#							spacer_frame = QFrame()
+#							spacer_frame.setMinimumWidth(token_widget_min_width)
+#							grid_layout.addWidget(spacer_frame, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "parameters":
+#							temp_btn = QPushButton("Select Parameter", self)
+							temp_btn = QPushButton("Select Parameter")
+#							temp_btn.move(self.x3, self.y1 - 12)
+#							temp_btn.setMinimumWidth(token_widget_min_width)
+							temp_btn.setToolTip("display open file dailog to select parameter file (e.g. .txt)")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 #							spacer_frame = QFrame()

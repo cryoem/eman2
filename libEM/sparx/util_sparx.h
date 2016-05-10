@@ -815,7 +815,9 @@ costlist, int* curbranch);
 
 	static EMData* shrinkfvol(EMData* img, int npad);
 	static EMData* mulreal(EMData* img1, EMData* img2);
+	static void mulreal_2D_in_place(EMData* img0, EMData* img1, EMData* img2, int slice_index);
 	static void mulclreal(EMData* img1, EMData* img2);
+	static EMData* mulnclreal(EMData* img1, EMData* img2);
 	static void divabs(EMData* img, EMData* img1);
     /*  Various operation on images */
 	/* out = img + scalar * img1  */
@@ -855,6 +857,8 @@ costlist, int* curbranch);
 	static void sub_img(EMData* img, EMData* img1);
 	/* img *= img1  */
 	static void mul_img(EMData* img, EMData* img1);
+	/* img *= img1  but tabularized */
+	static void mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab);
 	/* img /= img1  */
 	static void div_img(EMData* img, EMData* img1);
 	/* img = |img|^2  */
@@ -862,12 +866,29 @@ costlist, int* curbranch);
 	/* img /= Re(img1) with zero check  */
 	static void div_filter(EMData* img, EMData* img1);
 
+	static EMData*  unroll1dpw( int ny, const vector<float>& bckgnoise );
+
+	static EMData*  unrollmask( int ny );
+
+
+	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, EMData* bckgnoise);
+	static vector<float> sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob);
+
 	//utility for sxlocres
 	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);
 
 
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);
+	
+	
+	static void write_nd_array(EMData* data, const vector<int> &size_of_each_dimension, const vector<int> &location, float val);
+	static float read_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<int> &location);
+	static float read_nd_array_linear_interp(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<float> &location);
+	
+    static float sum_along_line_in_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<float> &start_location, const vector<float> &end_location, int number_of_points_on_the_line);
+	static vector<float> max_sum_along_line_in_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, int number_of_points_on_the_line);
+	
 private:
 	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()
 public:
@@ -1095,7 +1116,8 @@ public:
 
 	static float ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sx, float sy);
 
-	static float innerproduct(EMData* image1, EMData* image2);
+	static float innerproduct(EMData* image1, EMData* image2, EMData* mask);
+	static float innerproductwithctf(EMData* img, EMData* img1, EMData* img2, EMData* mask);
 
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
 	
@@ -1109,7 +1131,7 @@ public:
 	static EMData* ctf_img_real(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
-	static EMData* cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg);
+	static EMData* cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s);
 
 	static inline int mono(int k1, int k2) {
 #ifdef _WIN32

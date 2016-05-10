@@ -15,11 +15,19 @@ NTHREADS=28
 VERBOSE=1
 DOFSC=0
 
+if len(argv)>2 :
+	normimg=EMData(argv[2])
+	print "Normalizing with ",argv[2]
+else: normimg=None
+
 data=EMData.read_images(argv[1])
+if normimg!=None:
+	for i in data: i.mult(normimg)
 n=len(data)
 nx=data[0]["nx"]
 ny=data[0]["ny"]
 print "{} frames read {} x {}".format(n,nx,ny)
+
 
 ccfs=Queue.Queue(0)
 
@@ -183,6 +191,10 @@ for scale in [0.02,0.04,0.07,0.1,0.5]:
 	locs=simp.minimize(maxiters=int(100/scale),epsilon=.01)[0]
 	locs=[int(floor(i*10+.5))/10.0 for i in locs]
 	print locs
+	if VERBOSE:
+		out=file("path_{:02d}.txt".format(int(1.0/scale)),"w")
+		for i in xrange(0,len(locs),2): out.write("%f\t%f\n"%(locs[i],locs[i+1]))
+	
 
 
 # compute the quality of each frame

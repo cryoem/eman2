@@ -68,8 +68,8 @@ def main():
 	Generic 3-D image processing and file format conversion program.
 	All EMAN2 recognized file formats accepted (see Wiki for list).
 
-	To create a new image, rather than reading from a file, specify ':<nx>:<ny>:<nz>:<value>' 
-	as an input filename. 
+	To create a new image, rather than reading from a file, specify ':<nx>:<ny>:<nz>:<value>'
+	as an input filename.
 
 	Examples:
 
@@ -116,7 +116,7 @@ def main():
 								help="Scales the densities by a fixed number in the output")
 	parser.add_option("--multfile", type="string", action="append",
 								help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
-
+	parser.add_option("--matchto", type="string", action="append", help="Match filtration of input volume to this specified volume.")
 	parser.add_option("--outmode",type="string", default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
 	parser.add_option("--outnorescale",action="store_true",default=False,help="If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
 	parser.add_option("--mrc16bit",  action="store_true", default=False, help="(deprecated, use --outmode instead) output as 16 bit MRC file")
@@ -305,17 +305,17 @@ def main():
 		print "Computing radial real-space distribution. All other options ignored!"
 		curves=[]
 		for i in range(n0,n1+1,n2):
-			img=EMData(infile,i) 
+			img=EMData(infile,i)
 			c=img.calc_radial_dist(img["nx"]/2,0,1,options.calcradial)
 			curves.append(c)
-		
+
 		out=file(outfile,"w")
 		out.write("# {} mode {}".format(infile,options.calcradial))
 		for l in xrange(len(curves[0])):
 			out.write("\n{}".format(l))
 			for c in curves:
 				out.write("\t{}".format(c[l]))
-		
+
 		sys.exit(0)
 
 	if options.average:
@@ -327,7 +327,7 @@ def main():
 			if options.verbose:
 				print "Added ptcl %d / %d" %( i+1, (n1-n0)/n2 + 1)
 		avg=avgr.finish()
-		
+
 		try :
 			avg["ptcl_repr"]=sum([i["ptcl_repr"] for i in ptcls])
 		except:
@@ -335,8 +335,8 @@ def main():
 
 		avg.write_image(outfile,0)
 		sys.exit()
-			
-		
+
+
 		#ptcls = []
 		#for i in range(n0,n1+1,n2):
 		#	ptcls.append(EMData(infile,i))
@@ -349,8 +349,8 @@ def main():
 #		avg.process_inplace('normalize.edgemean')
 		#avg.write_image(outfile,0)
 		#sys.exit()
-	
-	
+
+
 	index_d = {}
 	for append_option in append_options:
 		index_d[append_option] = 0
@@ -394,25 +394,24 @@ def main():
 
 	if options.verbose>0:
 		print "%d images, processing %d-%d (step %d)......"%(nimg, n0, n1,n2)
-		
+
 	# processors that only work out of place
 	oopprocs={"misc.directional_sum"}
-	
+
 	#print 'start.....'
 	img_index = 0
 	#print "datalst is", datlst
 	for data in datlst:
 		# if this is a list of images, we have header-only, and need to read the actual volume
-		if len(datlst)>1 : 
+		if len(datlst)>1 :
 			data=EMData(data["source_path"],data["source_n"])
 			#print "Read image data from file %s for index %d" %(data["source_path"],data["source_n"])
-			
+
 		if options.apix:
 			data.set_attr('apix_x', apix)
 			data.set_attr('apix_y', apix)
 			data.set_attr('apix_z', apix)
-			
-		
+
 		if options.inputto1 : data.to_one()			# replace all voxel values with 1.0
 		if options.resetxf : data["xform.align3d"]=Transform()
 
@@ -425,6 +424,11 @@ def main():
 					return
 
 				data.set_xyz_origin(originx, originy, originz)
+
+			elif option1 == "matchto":
+				mt=EMData(options.matchto[0])
+				data.process_inplace("filter.matchto",{"to":mt})
+				mt=None
 
 			elif option1 == "calcfsc" :
 				datafsc=EMData(options.calcfsc)
@@ -488,36 +492,36 @@ def main():
 				dang=80.0/data["ny"];		# 1 pixel at ~3/4 radius
 				dzmax=data["ny"]/20			# max +-z shift
 				best=(1000,0,0,data)
-				
+
 				dsd=data.process("math.meanshrink",{"n":2})			# downsampled data
 				dsd.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})
-				
+
 				dsr=zalignref.process("math.meanshrink",{"n":2})	# downsampled reference
 				dsr.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})
-				
+
 				# coarse search on downsampled/filtered data
 				for it in xrange(3):
 					for z in xrange(best[1]-dzmax,best[1]+dzmax+1):
 						zimg=dsd.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":best[2]})})
 						best=min(best,(dsr.cmp("ccc",zimg),z,best[2],zimg))
 					if options.verbose>1: print best[:3]
-	
+
 					for phi in arange(best[2]-20.0,best[2]+20.0,dang*2.0):
 						zimg=dsd.process("xform",{"transform":Transform({"type":"eman","tz":best[1],"phi":phi})})
 						best=min(best,(dsr.cmp("ccc",zimg),best[1],phi,zimg))
 					if options.verbose>1: print best[:3]
-				
+
 				# Fix best() for full sampling
 				zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":best[1]*2,"phi":best[2]})})
 				best=(1000.0,best[1]*2,best[2],zimg)
-				
+
 				# now we do a fine search only in the neighborhood on the original data
 				for z in xrange(best[1]-3,best[1]+4):
 					for phi in arange(best[2]-dang*3.0,best[2]+dang*3.5,dang):
 						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":phi})})
 						best=min(best,(zalignref.cmp("ccc",zimg),z,best[2],zimg))
 				if options.verbose>1: print best[:3]
-	
+
 				data=best[3]
 				data["xform.align3d"]=Transform({"type":"eman","tz":best[1],"phi":best[2]})
 				if options.verbose>0 : print "Alignment: tz = ",best[1],"  dphi=",best[2]
@@ -530,7 +534,7 @@ def main():
 				angrange=360.0/nsym		# probably more than necessary, but we'll do it anyway...
 				astep=360.0/pi*atan(2.0/data["nx"])
 				nstep=int(angrange/astep)
-				
+
 				best=(1e23,0)
 				for azi in xrange(nstep):
 					az=azi*astep
@@ -546,7 +550,7 @@ def main():
 					c=data.cmp("ccc",datad)
 					best=min(best,(c,az))
 					if options.verbose: print azi,az,c,best
-				
+
 				print "alignctod, rotate:",best[1]/2.0
 				data.process_inplace("xform",{"transform":Transform({"type":"eman","az":best[1]/2.0})})	# 1/2 the angle to get it on the 2-fold
 
@@ -634,6 +638,9 @@ def main():
 				index_d[option1] += 1
 
 			elif option1 == "clip":
+				x=data["nx"]
+				y=data["ny"]
+				z=data["nz"]
 				if(len(options.clip) == 6):
 					(nx, ny, nz, xc, yc, zc) = options.clip
 				elif(len(options.clip) == 3):
@@ -754,11 +761,11 @@ def parse_infile(infile, first, last, step):
 		if len(parm)!=5 :
 			print "Error: please specify ':X:Y:Z:fillval' to create a new volume"
 			sys.exit(1)
-		
+
 		ret=EMData(int(parm[1]),int(parm[2]),int(parm[3]))
 		ret.to_value(float(parm[4]))
 		return [ret]
-		
+
 	nimg = EMUtil.get_image_count(infile)
 
 	if (nimg > 1):
@@ -783,10 +790,10 @@ def parse_infile(infile, first, last, step):
 			data = []
 			for i in xrange(first, last+1, step):
 				d = EMData(infile,i,True)	# header only
-				
+
 				if not first - last:
 					d = EMData(infile,i)	# header only
-				
+
 				data.append(d)
 			return data
 	else: return [EMData(infile,0)]

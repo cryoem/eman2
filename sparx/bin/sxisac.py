@@ -76,7 +76,7 @@ def main(args):
 	parser.add_option("--CTF",                   action="store_true",  default=False,      help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)")
 	parser.add_option("--ir",                    type="int",           default=1,          help="inner ring: of the resampling to polar coordinates. units - pixels (default 1)")
 	parser.add_option("--rs",                    type="int",           default=1,          help="ring step: of the resampling to polar coordinates. units - pixels (default 1)")
-	parser.add_option("--xr",                    type="int",           default=-1,         help="x range: of translational search. By default, set by the program. (default -1)")
+	parser.add_option("--xr",                    type="int",           default=1,         help="x range: of translational search. By default, set by the program. (default 1)")
 	parser.add_option("--yr",                    type="int",           default=-1,         help="y range: of translational search. By default, same as xr. (default -1)")
 	parser.add_option("--ts",                    type="float",         default=1.0,        help="search step: of translational search: units - pixels (default 1.0)")
 	parser.add_option("--maxit",                 type="int",           default=30,         help="number of iterations for reference-free alignment: (default 30)")
@@ -236,18 +236,28 @@ def main(args):
 	stack_processed_by_ali2d_base__filename__without_master_dir = \
 		send_string_to_all(stack_processed_by_ali2d_base__filename__without_master_dir)
 
-	#  PARAMETERS OF THE PROCEDURE
-	if( options.xr == -1 ):
-		#  Default values
-		# target_nx = 76
-		# target_radius = 29
-		target_xr = 1
-	else:  #  nx//2
-		#  Check below!
-		target_xr = options.xr
-		# target_nx = 76 + target_xr - 1 # subtract one, which is default
-		target_nx += target_xr - 1 # subtract one, which is default
-		# target_radius = 29
+	# previous code 2016-05-05--20-14-12-153
+	# #  PARAMETERS OF THE PROCEDURE
+	# if( options.xr == -1 ):
+	# 	#  Default values
+	# 	# target_nx = 76
+	# 	# target_radius = 29
+	# 	target_xr = 1
+	# else:  #  nx//2
+	# 	#  Check below!
+	# 	target_xr = options.xr
+	# 	# target_nx = 76 + target_xr - 1 # subtract one, which is default
+	# 	target_nx += target_xr - 1 # subtract one, which is default
+	# 	# target_radius = 29
+
+	target_xr = options.xr
+	target_nx += target_xr - 1 # subtract one, which is default
+	
+	if (options.yr == -1):
+		yr = options.xr
+	else:
+		yr = options.yr
+
 
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -650,7 +660,7 @@ def main(args):
 		program_state_stack.restart_location_title = "candidate_class_averages"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 
-			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, target_xr, options.ts, options.maxit, False, 1.0,\
+			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, yr, options.ts, options.maxit, False, 1.0,\
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
 				options.img_per_grp, isac_generation, False, random_seed=options.rand_seed, new=False)#options.new)
@@ -678,7 +688,7 @@ def main(args):
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 
 
-			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, target_xr, options.ts, options.maxit, False, 1.0,\
+			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, yr, options.ts, options.maxit, False, 1.0,\
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
 				options.img_per_grp, isac_generation, True, random_seed=options.rand_seed, new=False)#options.new)

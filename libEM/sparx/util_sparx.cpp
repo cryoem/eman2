@@ -2342,35 +2342,35 @@ float Util::triquad(float R, float S, float T, float* fdata)
     float  TP1  = (1+T);
 
     float triquad =
-    (-C8) * RST * RM1  * SM1  * TM1 * fdata[0] +
-	( C4) * ST  * RSQ  * SM1  * TM1 * fdata[1] +
-	( C8) * RST * RP1  * SM1  * TM1 * fdata[2] +
-	( C4) * RT  * RM1  * SSQ  * TM1 * fdata[3] +
-	(-C2) * T   * RSQ  * SSQ  * TM1 * fdata[4] +
-	(-C4) * RT  * RP1  * SSQ  * TM1 * fdata[5] +
-	( C8) * RST * RM1  * SP1  * TM1 * fdata[6] +
-	(-C4) * ST  * RSQ  * SP1  * TM1 * fdata[7] +
-	(-C8) * RST * RP1  * SP1  * TM1 * fdata[8] +
-//
-	( C4) * RS  * RM1  * SM1  * TSQ * fdata[9]  +
-	(-C2) * S   * RSQ  * SM1  * TSQ * fdata[10] +
-	(-C4) * RS  * RP1  * SM1  * TSQ * fdata[11] +
-	(-C2) * R   * RM1  * SSQ  * TSQ * fdata[12] +
-	              RSQ  * SSQ  * TSQ * fdata[13] +
-	( C2) * R   * RP1  * SSQ  * TSQ * fdata[14] +
-	(-C4) * RS  * RM1  * SP1  * TSQ * fdata[15] +
-	( C2) * S   * RSQ  * SP1  * TSQ * fdata[16] +
-	( C4) * RS  * RP1  * SP1  * TSQ * fdata[17] +
- //
-	( C8) * RST * RM1  * SM1  * TP1 * fdata[18] +
-	(-C4) * ST  * RSQ  * SM1  * TP1 * fdata[19] +
-	(-C8) * RST * RP1  * SM1  * TP1 * fdata[20] +
-	(-C4) * RT  * RM1  * SSQ  * TP1 * fdata[21] +
-	( C2) * T   * RSQ  * SSQ  * TP1 * fdata[22] +
-	( C4) * RT  * RP1  * SSQ  * TP1 * fdata[23] +
-	(-C8) * RST * RM1  * SP1  * TP1 * fdata[24] +
-	( C4) * ST  * RSQ  * SP1  * TP1 * fdata[25] +
-	( C8) * RST * RP1  * SP1  * TP1 * fdata[26]   ;
+					(-C8) * RST * RM1  * SM1  * TM1 * fdata[0] +
+					( C4) * ST  * RSQ  * SM1  * TM1 * fdata[1] +
+					( C8) * RST * RP1  * SM1  * TM1 * fdata[2] +
+					( C4) * RT  * RM1  * SSQ  * TM1 * fdata[3] +
+					(-C2) * T   * RSQ  * SSQ  * TM1 * fdata[4] +
+					(-C4) * RT  * RP1  * SSQ  * TM1 * fdata[5] +
+					( C8) * RST * RM1  * SP1  * TM1 * fdata[6] +
+					(-C4) * ST  * RSQ  * SP1  * TM1 * fdata[7] +
+					(-C8) * RST * RP1  * SP1  * TM1 * fdata[8] +
+				//
+					( C4) * RS  * RM1  * SM1  * TSQ * fdata[9]  +
+					(-C2) * S   * RSQ  * SM1  * TSQ * fdata[10] +
+					(-C4) * RS  * RP1  * SM1  * TSQ * fdata[11] +
+					(-C2) * R   * RM1  * SSQ  * TSQ * fdata[12] +
+								  RSQ  * SSQ  * TSQ * fdata[13] +
+					( C2) * R   * RP1  * SSQ  * TSQ * fdata[14] +
+					(-C4) * RS  * RM1  * SP1  * TSQ * fdata[15] +
+					( C2) * S   * RSQ  * SP1  * TSQ * fdata[16] +
+					( C4) * RS  * RP1  * SP1  * TSQ * fdata[17] +
+				 //
+					( C8) * RST * RM1  * SM1  * TP1 * fdata[18] +
+					(-C4) * ST  * RSQ  * SM1  * TP1 * fdata[19] +
+					(-C8) * RST * RP1  * SM1  * TP1 * fdata[20] +
+					(-C4) * RT  * RM1  * SSQ  * TP1 * fdata[21] +
+					( C2) * T   * RSQ  * SSQ  * TP1 * fdata[22] +
+					( C4) * RT  * RP1  * SSQ  * TP1 * fdata[23] +
+					(-C8) * RST * RM1  * SP1  * TP1 * fdata[24] +
+					( C4) * ST  * RSQ  * SP1  * TP1 * fdata[25] +
+					( C8) * RST * RP1  * SP1  * TP1 * fdata[26]   ;
      return triquad;
 }
 
@@ -18307,6 +18307,27 @@ EMData* Util::mulreal(EMData* img1, EMData* img2)
 }
 
 
+void Util::mulreal_2D_in_place(EMData* img0, EMData* img1, EMData* img2, int slice_index)
+{
+	ENTERFUNC;
+	int nx=img1->get_xsize(),ny=img1->get_ysize(),nz=img1->get_zsize();
+
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+	float *img0_ptr  = img0->get_data();
+
+	for( size_t i = 0; i<(nx*ny); i++)
+	{
+		img0_ptr[2*i + 2*nx*ny*slice_index] = img1_ptr[i  + nx*ny*slice_index]*img2_ptr[i];
+	}
+
+	img0->set_complex(true);
+	img0->set_ri(true);
+	if(ny%2==0) img0->set_fftodd(false); else img0->set_fftodd(true);
+	img0->update();
+}
+
+
 void Util::mulclreal(EMData* img1, EMData* img2)
 {
 	ENTERFUNC;
@@ -18324,11 +18345,31 @@ void Util::mulclreal(EMData* img1, EMData* img2)
 }
 
 
+EMData* Util::mulnclreal(EMData* img1, EMData* img2)
+{
+	ENTERFUNC;
+	size_t nx=img2->get_xsize() ,ny=img2->get_ysize(), nz=img2->get_zsize();
+	EMData * img3   = img1->copy_head();
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+	float *img3_ptr  = img3->get_data();
+
+	for( size_t i = 0; i<(nx*ny*nz); i++) {
+		img3_ptr[2*i]   = img1_ptr[2*i]   * img2_ptr[i];
+		img3_ptr[2*i+1] = img1_ptr[2*i+1] * img2_ptr[i];
+	}
+
+	img3->update();
+	EXITFUNC;
+	return img3;
+}
+
+
 void Util::divabs(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
 	// img is real, img1 is complex
-	size_t nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t nx=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
 	size_t size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
@@ -18823,6 +18864,39 @@ void Util::mul_img(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
+
+void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	int nbel = beltab.size();
+	//cout<<"  XXX nbel  "<<nbel<<endl;
+
+	int nx=img->get_xsize();  // NOTE:  here is extended!!
+	int ny=img->get_ysize();
+	int ncx = ny/2;
+	//cout<<"  mul_img_tabularized  "<<nx<<"   "<<ny<<endl;
+	float *img_ptr  = img->get_data();
+
+	for (size_t k=0;k<ny;++k)  {
+		float argz = (k-ncx)*(k-ncx);
+		for (size_t j=0;j<ny;++j)  {
+			float argy = argz +(j-ncx)*(j-ncx);
+			for (size_t i=0;i<ny;++i) {
+				float rr = sqrt(float((i-ncx)*(i-ncx)+ argy))/(nnxo*2.0f);
+				int iab = Util::get_min((int)((nbel-1)*rr*2.0 + 0.5), nbel -1 );
+				img_ptr[i + nx*(j + k*ny)] *= beltab[iab];
+			}
+		}
+	}
+	img->update();
+
+	EXITFUNC;
+}
+
 void Util::div_img(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
@@ -18907,6 +18981,172 @@ void Util::div_filter(EMData* img, EMData* img1)
 }
 
 
+#define data(jx,iy)         data[jx+(iy-1)*nx]
+EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
+{
+	ENTERFUNC;
+
+    int nyp2 = ny/2;
+	int nx = nyp2+1;
+
+	int nb = bckgnoise.size();
+	EMData* power = new EMData();
+	power->set_size(nx,ny);
+	power->to_zero();
+
+    float* data = power->get_data();
+
+    float argy, argx;
+	float rmax = nyp2 + 0.5;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		for ( int ix = 1; ix <= nx; ix++) {
+			int jx=ix-1; argx = argy + float(jx*jx);
+			float rf = sqrt( argx );
+			if( rf <= rmax )  {
+				int  ir = int(rf);
+				float df = rf - float(ir);
+				data(jx,iy) = (bckgnoise[ir] + df * (bckgnoise[ir+1] - bckgnoise[ir]));///2.0;  // 2 on account of x^2/(2*s^2)
+			}
+		}
+	}
+	data[0] = 0.0f;
+	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+
+	power->update();
+	EXITFUNC;
+    return power;
+}
+
+EMData*  Util::unrollmask( int ny )
+{
+	ENTERFUNC;
+
+    int nyp2 = ny/2;
+	int nx = nyp2+1;
+
+	EMData* power = new EMData();
+	power->set_size(nx,ny);
+	power->to_one();
+
+    float* data = power->get_data();
+
+    float argy, argx;
+	float rmax = nyp2 + 0.5;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		for ( int ix = 1; ix <= nx; ix++) {
+			int jx=ix-1; argx = argy + float(jx*jx);
+			float rf = sqrt( argx );
+			if( rf > rmax )  {
+				int  ir = int(rf);
+				float df = rf - float(ir);
+				data(jx,iy) = 0.0f;
+			}
+		}
+	}
+	data[0] = 0.0f;
+	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+
+	power->update();
+	EXITFUNC;
+    return power;
+}
+#undef data
+
+//  This is linear version
+float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
+{
+	ENTERFUNC;
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+    float* data = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfs = ctfs->get_data();
+	float *pbckgnoise = bckgnoise->get_data();
+
+	float edis = 0.0f;
+
+	for (size_t i=0;i<size/2;++i) {
+		int lol = i*2;
+		float p1 = data[lol]   - dctfs[i]*dproj[lol];
+		float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
+		edis += (p1*p1 + p2*p2)*pbckgnoise[i]*0.5f;
+	}
+
+    return edis;
+	EXITFUNC;
+}
+
+
+
+#define data(ix,iy)          data[jx2 + (iy-1)*2*nx]
+#define dproj(ix,iy)         dproj[jx2 + (iy-1)*2*nx]
+#define dctfs(jx,iy)         dctfs[jx+(iy-1)*nx]
+#define bckg(jx,iy)          bckg[jx+(iy-1)*nx]
+#define nrm(rf,kt)           nrm[rf+kt*inc]
+vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
+{
+	ENTERFUNC;
+	int nx=img->get_xsize(), ny=img->get_ysize();
+	nx /= 2;
+	if (nx != ctfs->get_xsize()) {
+		throw NullPointerException("incorrect image size");
+	}
+    float* data  = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfs = ctfs->get_data();
+    float* bckg  = bckgnoise->get_data();
+    int nyp2 = ny/2;
+	int inc = normas->get_xsize();
+	if (2 != normas->get_ysize()) {
+		throw NullPointerException("incorrect normas size in sqedfull");
+	}
+	float* nrm = normas->get_data();
+
+    float argy, argx;
+    float wdis = 0.0;
+    float edis = 0.0;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		for ( int ix = 1; ix <= nx; ix++) {
+			int jx=ix-1; argx = argy + float(jx*jx);
+			int rf = Util::round(sqrt( argx ));
+			int jx2 = 2*jx;
+			//int kt = 1;
+			//cout<<"  "<<ix<<"  "<<iy<<"  "<<jx<<"  "<<jy<<"  "<<jx2 + (iy-1)*2*nx<<"  "<<jx+(iy-1)*nx<<"  "<<rf<<"  "<<rf+(kt-1)*inc<<endl;
+			float  qtr = dctfs(jx,iy)*dproj(jx2,iy);
+			float  qti = dctfs(jx,iy)*dproj(jx2+1,iy);
+			float  prod1 = data(jx2,iy) * qtr + data(jx2+1,iy) * qti;
+			float  prod2 = qtr*qtr + qti*qti;
+			float  normim = data(jx2,iy)*data(jx2,iy) + data(jx2+1,iy)+data(jx2+1,iy);  // precalculate
+			float  temp = normim - 2*prod1 + prod2;
+			wdis += temp;
+			edis += temp*bckg(jx,iy)*0.5f;
+			// edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*bckg(jx,iy);   //real
+			// edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*bckg(jx,iy); // imaginary
+			if( bckg(jx,iy) > 0.0 )  {
+				nrm(rf,0) += prod1*prob;
+				nrm(rf,1) += prod2*prob;
+			}
+		}
+	}
+	wdis *= prob;
+	vector<float> retvals;
+	retvals.push_back(edis);
+	retvals.push_back(wdis);
+    return retvals;
+	EXITFUNC;
+}
+#undef data
+#undef dproj
+#undef dctfs
+#undef bckg
+#undef nrm
+
+
+
 void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq)
 {
 	ENTERFUNC;
@@ -18921,7 +19161,7 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 	float *temp_ptr = temp->get_data();
 	float *mask_ptr = mask->get_data();
 
-	for (size_t i=0;i<size;++i) {
+	for (size_t i=0; i<size; ++i) {
 		if(mask_ptr[i] >0.5f) {
 			if(freqvol_ptr[i]  == 0.0f) {
 				if(temp_ptr[i] < cutoff) freqvol_ptr[i] = freq;
@@ -22376,7 +22616,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  03/10/2016  05:14 PM double upweighting removed"<<endl;
+ cout <<"  VERSION  04/15/2016  12:49 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
 
@@ -22848,18 +23088,20 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 }
 		
 #define		quadpi	 	 	3.141592653589793238462643383279502884197 
-EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg)
+EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s)
 {  
+	ENTERFUNC;
 
    	int nx = img->get_xsize();
 	int ny = img->get_ysize();
 	int nz = img->get_zsize();
-	EMData* cmasked = new EMData();
-	cmasked->set_size( nx, ny, nz );
-	cmasked = img->copy_head();
+	EMData* cmasked = img->copy_head();
+	cmasked->to_zero();
 	int cz = nz/2;
 	int cy = ny/2;
 	int cx = nx/2;
+	float s1;
+
 	int img_dim = img->get_ndim();
 	if (radius<0 ) {
 		switch (img_dim) {
@@ -22892,9 +23134,13 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				}
 			}
 		}
-	} else {
+	} else 
+	{
+	  if (s==999999.)
+	  
+	  {
 		float u =0.0f;
-		float s =0.0f;
+		s1 =0.0f;
 	  	for (int iz=0; iz<nz; iz++) {
 			int tz =(iz-cz)*(iz-cz);
 			for (int iy=0; iy<ny; iy++) {
@@ -22903,28 +23149,32 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
 					if (r>=radius_p) {	
 						u +=1.0f;
-						s +=(*img)(ix,iy,iz);
+						s1 +=(*img)(ix,iy,iz);
 					}
 					if ( r>=radius && r<radius_p) {
 						float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
 						u += temp;
-						s += (*img)(ix,iy,iz)*temp;
+						s1 += (*img)(ix,iy,iz)*temp;
 					}
 					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 				}
-			}
-		}
-		s /= u;
+			  }
+		   }
+		 s1 /= u;
+	   }
+	else
+		s1=s;
+
 		for (int iz=0; iz<nz; iz++) {
 			int tz =(iz-cz)*(iz-cz);
 			for (int iy=0; iy<ny; iy++) {
 				int ty=tz+(iy-cy)*(iy-cy);
 				for (int ix=0; ix<nx; ix++) {
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
-					if (r>=radius_p)  (*cmasked) (ix,iy,iz) = s;
+					if (r>=radius_p)  (*cmasked) (ix,iy,iz) = s1;
 					if (r>=radius && r<radius_p) {
 						float temp = (0.5 + 0.5*cos(quadpi*(radius_p-r)/cosine_width));
-						(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s-(*img)(ix,iy,iz));
+						(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s1-(*img)(ix,iy,iz));
 					}
 					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
 				}
@@ -22932,6 +23182,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 		}
 	}
 	cmasked->update();
+	EXITFUNC;
 	return cmasked;
 }
 #undef quadpi
@@ -24957,7 +25208,7 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 }
 
 
-float Util::innerproduct(EMData* img, EMData* img1)
+float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 {
 	ENTERFUNC;
 	/* Exception Handle */
@@ -24971,7 +25222,51 @@ float Util::innerproduct(EMData* img, EMData* img1)
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	float ip = 0.0f;
-	for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+	if (mask == NULL) {
+		for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+	} else {
+		float *pmask = mask->get_data();
+		for (size_t i=0;i<size/2;++i) {
+
+			//if( pmask[i] > 0.5f)  {
+			int lol = i*2;
+			//	ip += img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1];
+			ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*pmask[i];
+			//}
+		}
+	}
+	return ip;
+}
+
+
+
+float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2, EMData* mask)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img || !img1) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img += img1 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float *img2_ptr = img2->get_data();
+	float ip = 0.0f;
+	if (mask == NULL) {
+		for (size_t i=0;i<size/2;++i) ip += (img_ptr[2*i]*img1_ptr[2*i]+img_ptr[2*i+1]*img1_ptr[2*i+1])*img2_ptr[i];
+	} else {
+		float *pmask = mask->get_data();
+		for (size_t i=0;i<size/2;++i) {
+			//if( pmask[i] > 0.5f)  {
+			int lol = i*2;
+				//ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*img2_ptr[i];
+			ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*img2_ptr[i]*pmask[i];
+			//}
+		}
+	}
 	return ip;
 }
 
@@ -25234,4 +25529,256 @@ void Util::euler_direction2angles(vector <float> v0, float &alpha, float &beta)
     alpha =alpha/180.*M_PI;
 }/*Eulerdirection2angles end*/
 
+
+void Util::write_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<int> &location, float val)
+{
+
+   	if (!em_data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    float *data = em_data->get_data();
+
+   	if (!data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    int number_of_dimensions = size_of_each_dimension.size();
+
+    if (number_of_dimensions != location.size())
+        throw ImageDimensionException("number_of_dimensions != location.size()");
+
+    for(int i=0; i<number_of_dimensions; ++i)
+    {
+        if (location[i] >= size_of_each_dimension[i])
+            throw ImageDimensionException("location[i] >= size_of_each_dimension[i]");
+        if (location[i] < 0)
+            throw ImageDimensionException("location[i] < 0");
+     }
+    
+    long index_location = 0;
+    long multiplier = 1;
+    for(int i=0; i<number_of_dimensions; ++i)
+    {
+        index_location += location[i]*multiplier;
+        multiplier *= size_of_each_dimension[i];
+    }
+    data[index_location] = val;
+}
+
+float Util::read_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<int> &location)
+{
+    
+   	if (!em_data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    float *data = em_data->get_data();
+
+   	if (!data) {
+		throw NullPointerException("NULL input image");
+	}
+    
+    int number_of_dimensions = size_of_each_dimension.size();
+    
+    if (number_of_dimensions != location.size())
+        throw ImageDimensionException("number_of_dimensions != location.size()");
+
+    for(int i=0; i<number_of_dimensions; ++i)
+    {
+        if (location[i] >= size_of_each_dimension[i])
+            throw ImageDimensionException("location[i] >= size_of_each_dimension[i]");
+        if (location[i] < 0)
+            throw ImageDimensionException("location[i] < 0");
+     }
+    
+    long index_location = 0;
+    long multiplier = 1;
+    for(int i=0; i<number_of_dimensions; ++i)
+    {
+        index_location += location[i]*multiplier;
+        multiplier *= size_of_each_dimension[i];
+    }
+    return data[index_location];
+}
+
+float Util::read_nd_array_linear_interp(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<float> &location)
+{
+
+   	if (!em_data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    float *data = em_data->get_data();
+
+   	if (!data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    int number_of_dimensions = size_of_each_dimension.size();
+
+    if (number_of_dimensions != location.size())
+        throw ImageDimensionException("number_of_dimensions != location.size()");
+
+//    removed boundary checking so that all sampling outside range returns zero
+//    for(int i=0; i<number_of_dimensions; ++i)
+//    {
+//        if (location[i] >= size_of_each_dimension[i])
+//            throw ImageDimensionException("location[i] >= size_of_each_dimension[i]");
+//        if (location[i] < 0)
+//            throw ImageDimensionException("location[i] < 0");
+//     }
+    
+    vector<int> current_location(number_of_dimensions);
+    vector<int> location_int(number_of_dimensions);
+    
+    for(int j=0; j<number_of_dimensions; ++j)
+    {
+        location_int[j] = (int) Util::fast_floor(location[j]);
+    }
+    
+    vector<float> N_dimensional_hypercube_values(1<<number_of_dimensions, -1); 
+
+    for(int j=0; j< (1<<number_of_dimensions); ++j)
+    {
+        for(int i=0; i<number_of_dimensions; ++i)
+        {
+            // ((j >> i) & 1) determines the position on the hypercube (0 or 1) for the ith dimension
+            current_location[i] = location_int[i] + ((j >> i) & 1);
+            
+            // if location is outside range then return zero
+            if ((current_location[i] >= size_of_each_dimension[i]) || (current_location[i] < 0))
+            {
+                N_dimensional_hypercube_values[j] = 0;
+                break;
+            }
+        }
+        
+        if (N_dimensional_hypercube_values[j] == 0) continue;
+    
+        long index_location = 0;
+        long multiplier = 1;
+        for(int i=0; i<number_of_dimensions; ++i)
+        {
+            index_location += current_location[i]*multiplier;
+            multiplier *= size_of_each_dimension[i];
+        }
+        
+        N_dimensional_hypercube_values[j] = data[index_location]; 
+    }
+     
+    float value = 0;
+    for(int j=0; j< (1<<number_of_dimensions); ++j)
+    {
+        float my_product = 1;
+        for(int i=0; i<number_of_dimensions; ++i)
+        {
+            // ((j >> i) & 1) determines the position on the hypercube (0 or 1) for the ith dimension
+            my_product *= ((j >> i) & 1) ? (location[i] - location_int[i]) : (1 - (location[i] - location_int[i]));
+        }
+        value += N_dimensional_hypercube_values[j]*my_product;
+    }
+    return value;
+}
+
+
+
+float Util::sum_along_line_in_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<float> &start_location, const vector<float> &end_location, int number_of_points_on_the_line)
+{
+
+   	if (!em_data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    float *data = em_data->get_data();
+
+   	if (!data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    int number_of_dimensions = size_of_each_dimension.size();
+
+    if (number_of_dimensions != start_location.size())
+        throw ImageDimensionException("number_of_dimensions != location.size()");
+
+    vector<vector<float> > along_line_location(number_of_points_on_the_line, vector<float>(number_of_dimensions));
+	vector<float> dimension_increment(number_of_dimensions);
+
+	for(int dimension_iterator=0; dimension_iterator<number_of_dimensions; ++dimension_iterator) {
+		along_line_location[number_of_points_on_the_line - 1][dimension_iterator] = end_location[dimension_iterator];
+		along_line_location[0][dimension_iterator] = start_location[dimension_iterator];
+		dimension_increment[dimension_iterator] = (end_location[dimension_iterator] - start_location[dimension_iterator])/(number_of_points_on_the_line - 1);
+	}
+
+	for(int point_iterator = 1; point_iterator<(number_of_points_on_the_line - 1); ++point_iterator)
+		for(int dimension_iterator=0; dimension_iterator<number_of_dimensions; ++dimension_iterator)
+				along_line_location[point_iterator][dimension_iterator] = dimension_increment[dimension_iterator] + along_line_location[point_iterator - 1][dimension_iterator];
+
+    float my_sum = 0;
+    for(int point_iterator = 0; point_iterator<number_of_points_on_the_line; ++point_iterator)
+    {
+        my_sum += Util::read_nd_array_linear_interp(em_data, size_of_each_dimension, along_line_location[point_iterator]);
+    }
+    return my_sum;
+}
+
+
+vector<float> Util::max_sum_along_line_in_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, int number_of_points_on_the_line)
+{
+
+   	if (!em_data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    float *data = em_data->get_data();
+
+   	if (!data) {
+		throw NullPointerException("NULL input image");
+	}
+
+    int number_of_dimensions = size_of_each_dimension.size();
+	vector<float> result(2*(number_of_dimensions-1) + 1);
+
+
+	int psi_length = size_of_each_dimension[3];
+	int y_length = size_of_each_dimension[2];
+	int x_length = size_of_each_dimension[1];
+
+	float line_sum;
+	float line_sum_max = -1.0e23;
+	vector<float> start_point(number_of_dimensions);
+	vector<float> end_point(number_of_dimensions);
+	end_point[0] = number_of_points_on_the_line - 1;
+
+	for(int psi_i = 0; psi_i < psi_length; ++psi_i)
+		for(int y_i = 0; y_i < y_length; ++y_i)
+			for(int x_i = 0; x_i < x_length; ++x_i)
+				for(int psi_j = 0; psi_j < psi_length; ++psi_j)
+					for(int y_j = 0; y_j < y_length; ++y_j)
+						for(int x_j = 0; x_j < x_length; ++x_j)
+						{
+							start_point[1] = x_i;
+							start_point[2] = y_i;
+							start_point[3] = psi_i;
+							end_point[1] = x_j;
+							end_point[2] = y_j;
+							end_point[3] = psi_j;
+
+							line_sum = Util::sum_along_line_in_nd_array(em_data, size_of_each_dimension, start_point, end_point, number_of_points_on_the_line);
+							if (line_sum_max < line_sum)
+							{
+								line_sum_max = line_sum;
+								result[0] = x_i;
+								result[1] = y_i;
+								result[2] = psi_i;
+								result[3] = x_j;
+								result[4] = y_j;
+								result[5] = psi_j;
+								result[6] = line_sum_max;
+
+							}
+
+						}
+	return result;
+}
 

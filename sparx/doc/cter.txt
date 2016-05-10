@@ -7,7 +7,7 @@ sxcter - CTF Estimation: Automated estimation of CTF parameters with error asses
 
 ''usage in command line''
 
-sxcter.py  input_image  output_directory  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLATEGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --MPI  --stack_mode  --debug  
+sxcter.py  input_image  output_directory  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --MPI  --stack_mode  --debug  
 
 
 === Typical usage ===
@@ -52,15 +52,17 @@ sxcter exists in for both MPI and non-MPI versions.
 
 
 == Output ==
-    output_directory:: output directory name: into which the partres file and rotinf**** files will be written. The program creates the directory automatically. The directory should not exists upon the execution. (default required string)
+    output_directory:: output directory name: into which the partres file, rotinf, and thumb files will be written. The program creates the directory automatically. The directory should not exists upon the execution. (default required string)
+
 
 Under the directory specified by argument output_directory, 
 
  1. CTF parameters are written to ''partres.txt''<<BR>><<BR>>
- 2. Rotational averages are written to ''pwrot/rotinf****.txt''.<<BR>><<BR>>
+ 2. Rotational averages are written to ''pwrot/*_rotinf.txt''.<<BR>><<BR>>
+ 3. Micrographs Thumbnails (512 x 512 pixels) are written to ''micthumb/*_thumb.hdf''.<<BR>><<BR>>
 
-File ''partres.txt'' contains 14 columns with the following information:<<BR>><<BR>>
 
+File ''partres.txt'' contains 18 columns with the following information:<<BR>><<BR>>
 
 || Column || Parameter ||
 || 1 || defocus [um] ||
@@ -68,18 +70,22 @@ File ''partres.txt'' contains 14 columns with the following information:<<BR>><<
 || 3 || voltage [kV] ||
 || 4 || pixel size [A] ||
 || 5 || B-factor [A^2] ||
-|| 6 || amp contrast [%] ||
+|| 6 || amp. contrast [%] ||
 || 7 || astigmatism amplitude [um] ||
 || 8 || astigmatism angle [degrees] ||
-|| 9 || std dev of defocus [um] ||
-|| 10 || std dev of ast amp [A] ||
-|| 11 || std dev of ast angle [degrees] ||
-|| 12 || frequency at which signal drops by 50% due to estimated error of defocus alone (1/A) ||
-|| 13 || frequency at which signal drops by 50% due to estimated error of defocus and astigmatism (1/A) ||
-|| 14 || Micrograph name ||
+|| 9 || std. dev. of defocus [um] ||
+|| 10 || std. dev. of astig. amp. [um] ||
+|| 11 || std. dev. of astig. angle [degrees] ||
+|| 12 || coefficient of variation of defocus [um] ||
+|| 13 || coefficient of variation of astig. amp. [um] ||
+|| 14 || averaged differences of no-astigmatism and with-astigmatism experimental rotational averages at extrema ||
+|| 15 || frequency at which signal drops by 50% due to estimated error of defocus alone (1/A) ||
+|| 16 || frequency at which signal drops by 50% due to estimated error of defocus and astigmatism (1/A) ||
+|| 17 || frequency at which CTF oscillation can't be expressed correctly by pixel size (1/A) ||
+|| 18 || Micrograph name ||
 
 <<BR>><<BR>>
-Files ''rotinf****.txt'' contain 6 columns with the following information:<<BR>><<BR>>
+Files ''pwrot/*_rotinf.txt'' contain 6 columns with the following information:<<BR>><<BR>>
 
 
 || Column || Parameter ||
@@ -94,6 +100,9 @@ Files ''rotinf****.txt'' contain 6 columns with the following information:<<BR>>
 == Description ==
 
 ''''This is work in progress since 11/30/2013''''
+
+''NOTE: 2016/04/27 Toshio Moriya'':
+IMPORTANT - Finished the major modification of I/O related arguments and options as well as formats of output files. Please update your installation if it is between 2015/12/27 - 2016/04/27.
 
 ''NOTE: 2016/03/17 Toshio Moriya'':
 IMPORTANT - Started another major modification of I/O related arguments and options as well as formats of output files. This work is currently in progress.
@@ -118,7 +127,7 @@ Pawel A. Penczek and Toshio Moriya
 sparx/bin/sxcter.py
 
 === See also ===
-[[http://sparx-em.org/sparxwiki/sxgui_cter|sxgui_cter]], [[http://sparx-em.org/sparxwiki/window|window]]
+[[http://sparx-em.org/sparxwiki/sxgui_cter|sxgui_cter]], [[http://sparx-em.org/sparxwiki/sxwindow|sxwindow]]
 
 === Maturity ===
     beta::     works for author, often works for others.

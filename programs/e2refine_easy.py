@@ -165,6 +165,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score. (default=0.9 -> 90%%)", default=0.9, guitype='floatbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.",guitype='boolbox', row=20, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--prethreshold",default=False, action="store_true", help="Applies a threshold to the volume just before generating projections. A sort of aggressive solvent flattening for the reference.",guitype='boolbox', row=20, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--eulerrefine",default=False, action="store_true", help="Refines Euler angles of class-averages before reconstruction")
 	parser.add_argument("--m3dkeep", type=float, help="The fraction of slices to keep in e2make3d.py. Default=0.8 -> 80%%", default=0.8, guitype='floatbox', row=18, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter should not normally be used here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),"filter.lowpass|filter.highpass|mask")', row=26, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=30, col=0, rowspan=1, colspan=2, mode="refinement[thread:4]")
@@ -783,6 +784,16 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		run(cmd)
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
+
+		### Refine Euler angles of class-averages
+		if options.eulerrefine and it>1 :
+			cmd="e2euler_refine.py --input {path}/classes_{itr:02d}_even.hdf --ref_volume {path}/threed_{itrm1:02d}_even.hdf --threads {threads} {verbose}".format(
+				path=options.path, itr=it, itrm1=it-1,threads=options.threads,verbose=verbose)
+			run(cmd)
+			
+			cmd="e2euler_refine.py --input {path}/classes_{itr:02d}_odd.hdf --ref_volume {path}/threed_{itrm1:02d}_odd.hdf --threads {threads} {verbose}".format(
+				path=options.path, itr=it, itrm1=it-1,threads=options.threads,verbose=verbose)
+			run(cmd)
 
 		### 3-D Reconstruction
 		# FIXME - --lowmem removed due to some tricky bug in e2make3d

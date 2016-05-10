@@ -1,0 +1,73 @@
+= Name =
+e2boxer - Particle Picking: Pick particles with e2boxer.
+
+= Usage =
+
+''usage in command line''
+
+e2boxer.py  input_micrograph_list  --boxsize=BOXSIZE  --write_dbbox  --write_ptcls  --exclude_edges  --force  --format=FORMAT  --norm=NORM  --invert  --suffix=SUFFIX  --dbls=DBLS  --autoboxer=AUTOBOXER  --ppid=PPID  --gui  --verbose=n  --gauss_autoboxer=GAUSS_AUTOBOXER  --do_ctf=DO_CTF  --cter  --indir=INDIR  --nameroot=NAMEROOT  --micsuffix=MICSUFFIX  --wn=WN  --Cs=CS  --voltage=VOLTAGE  --ac=AC  --kboot=KBOOT  --debug  --apix=APIX
+
+=== Typical usage ===
+
+e2boxer exists in non-MPI version.
+
+    Start the e2boxer GUI with a list of micrographs
+
+    e2boxer.py micrographs_number*
+
+
+== Input ==
+
+    input_micrograph_list:: list of input micrograph names: it is possible but not recommend to name with wild card * for multiple micrographs when the number is very large. (default required string)
+
+    boxsize:: box size in pixels: (default -1)
+
+    * The remaining parameters are optional. Normaly you will not touch this.
+    write_dbbox:: write coordinate file (eman1 dbbox) files: (default False)
+    write_ptcls:: write particles to disk: (default False)
+    exclude_edges:: don't generate output for any particles extending outside the micrograph: (default False)
+    force:: force overwrite: (default False)
+    format:: format of the output particle images [HDF]: (default hdf)
+    norm:: normalization processor to apply to written particle images: (default normalize.edgemean)
+    invert:: if writing outputt inverts pixel intensities: (default False)
+    suffix:: suffix which is appended to the names of output particle and coordinate files: (default _ptcls)
+    dbls:: data base list storage, used by the workflow: (default none)
+    autoboxer:: a key of the swarm_boxers dict in the local directory, used by the workflow: (default none)
+    ppid:: set the PID of the parent process, used for cross platform PPID: (default -1)
+    gui:: dummy option; used in older version of e2boxer: (default True)
+    verbose:: verbose level [0-9], higner number means higher level of verboseness: (default 0)
+    gauss_autoboxer:: name of autoboxed file whose autoboxing parameters should be used for automatic boxing: (default none)
+    do_ctf:: name of file whose ctf estimation parameters should be used for automatic ctf estimation: (default none)
+    cter:: CTF estimation using cter: (default False)
+    indir:: directory containing micrographs to be processed: (default current directory)
+    nameroot:: prefix of micrographs to be processed: (default none)
+    micsuffix:: a string denoting micrograph type: (default none)
+    wn:: size of window to use: (default 256)
+    Cs:: microscope Cs: (default 2.0)
+    voltage:: microscope voltage [KV]: (default 300.0)
+    ac:: Amplitude contrast: (default 10.0)
+    kboot:: kboot: (default 16)
+    debug:: debug mode: (default False)
+    apix:: pixel size [A]: (default -1.0)
+
+
+
+== Output ==
+The program creates the directory automatically in the micrograph directory.
+
+
+= Description =
+
+= Author / Maintainer =
+EMAN2 Group
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+e2boxer.py
+
+= See also =
+
+= Maturity =
+No Bugs known so far.

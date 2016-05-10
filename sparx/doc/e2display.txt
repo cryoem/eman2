@@ -1,0 +1,55 @@
+= Name =
+e2display - Display Data: Display 2D images, 3D volumes, or 1D plots with e2display.
+
+= Usage =
+
+''usage in command line''
+
+e2display.py  input_data_list  --classmx=CLASSMX  --classes=CLASSES  --pdb=PDB  --singleimage  --plot  --plot3  --fullrange  --newwidget  --ppid=PPID  --verbose=n
+
+=== Typical usage ===
+
+sxunblur exists in non-MPI version.
+
+    browser window with more flexible functionality
+
+    e2display.py
+
+    display images
+
+    e2display.py input_image1 input_image2 ...
+
+== Input ==
+
+    input_data_list::list of input 2D images, 3D volumes, or 1D plots: it is possible but not recommend to name with wild card * for multiple micrographs when the number is very large. (default none)
+
+    * The remaining parameters are optional.
+    classmx::show particles in one class from a classification matrix: (default none)
+    classes::show particles associated class-averages: (default none)
+    pdb::show PDB structure: (default none)
+    singleimage::display a stack in a single image view: (default False)
+    plot::data file(s) should be plotted rather than displayed in 2-D: (default False)
+    plot3::data file(s) should be plotted rather than displayed in 3-D: (default False)
+    fullrange::a specialized flag that disables auto contrast for the display of particles stacks and 2D images only: (default False)
+    newwidget::use the new 3D widgetD. Highly recommended!!!!: (default False)
+    ppid::set the PID of the parent process, used for cross platform PPID: (default -2)
+    verbose::verbose level [0-9], higher number means higher level of verboseness: (default 0)
+
+== Output ==
+
+
+= Description =
+
+= Author / Maintainer =
+EMAN2 Group
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+e2display.py
+
+= See also =
+
+= Maturity =
+No Bugs known so far.

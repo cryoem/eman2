@@ -46,6 +46,7 @@
 
 #include <cstring>
 
+#include <ctype.h>
 #include <sys/types.h>
 #include <gsl/gsl_linalg.h>
 #include <algorithm> // using accumulate, inner_product, transform
@@ -276,6 +277,23 @@ string Util::str_to_lower(const string& s) {
 	string ret(s);
 	std::transform(s.begin(),s.end(),ret.begin(), (int (*)(int) ) std::tolower);
 	return ret;
+}
+
+void Util::replace_non_ascii(char *str, int max_size, char repl_char)
+{
+	int ic;
+
+	if (str != NULL) {
+		ic = 0;
+
+		while (ic < max_size  &&  str[ic] != 0) {
+			if (! isascii (str[ic])) {
+				str[ic] = repl_char;
+			}
+
+			ic++;
+		}
+	}
 }
 
 bool Util::sstrncmp(const char *s1, const char *s2)

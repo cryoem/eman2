@@ -53,9 +53,12 @@ ploticon = [
 
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtOpenGL import QGLWidget
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU
 from OpenGL.GL import *
+import OpenGL.GL as gl
+import OpenGL.arrays.vbo as glvbo
 from math import *
 from EMAN2 import *
 import sys
@@ -67,11 +70,14 @@ from numpy import *
 from valslider import *
 from cStringIO import StringIO
 import re
+import emimage2d
 
+import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 #matplotlib.use('Agg')
+import numpy as np
 
 from emapplication import EMApp, EMGLWidget
 from emglobjects import EMOpenGLFlagsAndTools
@@ -116,6 +122,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.rmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
 		self.selected=[]
+		self.comments={}			# IF reading from a file which contains per-point comments, this dictionary contains a list of comments for each point
 
 		self.data={}				# List of Lists to plot
 		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
@@ -125,7 +132,14 @@ class EMPlot2DWidget(EMGLWidget):
 		self.main_display_list = 0
 
 		self.resize(640,480)
+
 		self.particle_viewer = None
+		self.particle_viewer0 = None
+		self.particle_viewer1 = None
+		self.particle_viewer2 = None
+		self.particle_viewer3 = None
+		self.particle_viewer4 = None
+		self.particle_viewer5 = None
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -153,8 +167,27 @@ class EMPlot2DWidget(EMGLWidget):
 		self.resize_event(width,height)
 
 	def closeEvent(self,event):
+		if self.particle_viewer!=None :
+			self.particle_viewer.close()
+
+		if self.particle_viewer0!=None :
+			self.particle_viewer0.close()
+		if self.particle_viewer1!=None :
+			self.particle_viewer1.close()
+		if self.particle_viewer2!=None :
+			self.particle_viewer2.close()
+		if self.particle_viewer3!=None :
+			self.particle_viewer3.close()
+		if self.particle_viewer4!=None :
+			self.particle_viewer4.close()
+		if self.particle_viewer5!=None :
+			self.particle_viewer5.close()
+
 		self.clear_gl_memory()
 		EMGLWidget.closeEvent(self, event)
+
+		if self.inspector :
+			self.inspector.closeEvent(self, event)
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_C:
@@ -184,7 +217,7 @@ class EMPlot2DWidget(EMGLWidget):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10,comments=None):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -206,9 +239,18 @@ class EMPlot2DWidget(EMGLWidget):
 			self.axes = {}
 			self.visibility = {}
 
-		if input_data==None :
+		if input_data is None :
+			self.data.pop(key)
+			self.visibility.pop(key)
+			self.axes.pop(key)
+			try: self.comments.pop(key)
+			except: pass
+			if self.inspector: self.inspector.datachange()
 			if not quiet: self.updateGL()
 			return
+
+		if self.data.has_key(key) : oldkey=True
+		else: oldkey=False
 
 		if isinstance(input_data,EMData):
 			data = input_data.get_data_as_vector()
@@ -220,33 +262,48 @@ class EMPlot2DWidget(EMGLWidget):
 			self.data[key]= data
 			self.visibility.setdefault(key,True)
 		else:
-			if data!=None :
-				self.data[key]=[array(i) for i in data]
-				self.visibility.setdefault(key,True)
-			else :
-				#del self.data[key] why del?
-				self.data.pop(key)
-				self.visibility.pop(key)
+			self.data[key]=[array(i) for i in data]
+			self.visibility.setdefault(key,True)
 
 		try:
 			if len(data)>1 :
 				if len(data)>2:
-					if data[0][2]-data[0][1]==1 : self.axes[key]=(1,2,-2,-2)	# if it looks like the first axis is a boring count
-					else : self.axes[key]=(0,1,-2,-2)
+					try:
+						if data[0][2]-data[0][1]==1 : self.axes[key]=(1,2,-2,-2)	# if it looks like the first axis is a boring count
+						else : self.axes[key]=(0,1,-2,-2)
+					except: self.axes[key]=(0,1,-2,-2)
 				else : self.axes[key]=(0,1,-2,-2)
 			else : self.axes[key]=(-1,0,-2,-2)
-		except: return
+		except:
+			print "Data error:", data
+			return
 
-		if symtype==-2 and linetype==-2:
-			if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
-			else : dosym,symtype=1,0
-		if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
-		if color >len(colortypes): color = 0 # there are only a certain number of colors
-		if linetype>=0 : doline=1
-		else : doline,linetype=0,0
-		if symtype>=0 : dosym=1
-		else : dosym,symtype=0,0
+		if oldkey:
+			pp=self.pparm[key]
+			if color<0 : color=pp[0]
+			if linetype==-2: doline=pp[1]
+			elif linetype==-1: doline=0
+			else: doline=1
+			if symtype==-2: dosym=pp[4]
+			elif symtype==-1: dosym=0
+			else: dosym=1
+			if symtype<0: symtype=pp[5]
+			if linewidth<0: linewidth=pp[3]
+			if symsize<0 : symsize=pp[6]
+		else:
+			if symtype==-2 and linetype==-2:
+				if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
+				else : dosym,symtype=1,0
+			if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
+			if color >len(colortypes): color = 0 # there are only a certain number of colors
+			if linetype>=0 : doline=1
+			else : doline,linetype=0,0
+			if symtype>=0 : dosym=1
+			else : dosym,symtype=0,0
 		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize)
+
+		if comments!=None:
+			self.comments[key]=comments
 
 		self.autoscale()
 
@@ -312,6 +369,10 @@ class EMPlot2DWidget(EMGLWidget):
 				fin=file(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
+				if '#' in rdata[0]:
+					try: comments=[i.split("#",1)[1].strip() for i in rdata if i[0]!="#"]
+					except: comments=None
+				else: comments=None
 				rdata=[i.split("#")[0] for i in rdata if i[0]!='#']
 				if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
 				else : rdata=[[float(j) for j in i.split()] for i in rdata]
@@ -319,7 +380,7 @@ class EMPlot2DWidget(EMGLWidget):
 				ny=len(rdata)
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
 
-				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet)
+				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet,comments=comments)
 			except:
 				traceback.print_exc()
 				print "couldn't read",filename
@@ -619,6 +680,9 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		if not quiet : self.updateGL()
 
+# 	def getCurrentAxes(self,key):
+# 		return self.axes[key] (xa,ya,za,sa)
+
 	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False):
 		if color==None : color=self.pparm[key][0]
 		if line==None : line=self.pparm[key][1]
@@ -688,6 +752,9 @@ lc is the cursor selection point in plot coords"""
 		if j[1]==-1 : y=arange(len(self.data[ak][0]))
 		else : y=self.data[ak][self.axes[ak][1]]
 
+		try: comments=self.comments[ak]
+		except: comments=None
+
 		x2,y2=self.plot2scr(x,y)
 
 		r=hypot(x2-evc[0],y2-evc[1])		# distance from cursor
@@ -695,7 +762,7 @@ lc is the cursor selection point in plot coords"""
 		# if the closest point is more than 5 pixels away, nothing is selected
 		if min(r)>5 :
 			self.selected=[]
-			self.del_shapes(("selp0","selp1","selp2","selp3","selp4"))
+			self.del_shapes(("selp0","selp1","selp2","selp3","selp4","selpc"))
 			return
 
 		srt=argsort(r)					# indices which would produce sorted array
@@ -705,8 +772,68 @@ lc is the cursor selection point in plot coords"""
 		for i in xrange(1,5) :
 			if r[srt[i]]<3 : self.selected.append(srt[i])
 
+		y0=35
+		if comments!=None:
+			# If the comment is "#;file", we display the image, otherwise show the comment on the plot
+			p=self.selected[0]
+			try:
+				cmts = comments[p].split(";")
+
+				for i in xrange(len(cmts)/2):
+					imn = int(cmts[2*i])
+					imf = cmts[2*i+1]
+					ptclim=EMData(imf,imn)
+					if i == 0:
+						if self.particle_viewer0==None :
+							self.particle_viewer0=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer0.show()
+						else:
+							self.particle_viewer0.set_data(ptclim)
+							self.particle_viewer0.show()
+					elif i == 1:
+						if self.particle_viewer1==None :
+							self.particle_viewer1=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer1.show()
+						else:
+							self.particle_viewer1.set_data(ptclim)
+							self.particle_viewer1.show()
+					elif i == 2:
+						if self.particle_viewer2==None :
+							self.particle_viewer2=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer2.show()
+						else:
+							self.particle_viewer2.set_data(ptclim)
+							self.particle_viewer2.show()
+					elif i == 3:
+						if self.particle_viewer3==None :
+							self.particle_viewer3=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer3.show()
+						else:
+							self.particle_viewer3.set_data(ptclim)
+							self.particle_viewer3.show()
+					elif i == 4:
+						if self.particle_viewer4==None :
+							self.particle_viewer4=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer4.show()
+						else:
+							self.particle_viewer4.set_data(ptclim)
+							self.particle_viewer4.show()
+					elif i == 5:
+						if self.particle_viewer5==None :
+							self.particle_viewer5=emimage2d.EMImage2DWidget(ptclim)
+							self.particle_viewer5.show()
+						else:
+							self.particle_viewer5.set_data(ptclim)
+							self.particle_viewer5.show()
+
+			except:
+				self.add_shape("selpc",EMShape(("scrlabel",0,0,0,80,self.scrlim[3]-(35),comments[p],120.0,-1)))
+				y0+=18
+
 		for i,p in enumerate(self.selected):
-			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+35),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
+			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+y0),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
+
+
 
 		self.emit(QtCore.SIGNAL("selected"),self.selected)
 
@@ -930,6 +1057,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.clear_gl_memory()
 		EMGLWidget.closeEvent(self, event)
 
+
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
@@ -1134,7 +1262,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			self.axes = {}
 			self.visibility = {}
 
-		if input_data==None :
+		if input_data is None :
 			if not quiet: self.updateGL()
 			return
 
@@ -1178,11 +1306,11 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.datap = datapoints
 
 		if not quiet: self.updateGL()
-		if self.inspector: self.inspector.datachange()
+		#if self.inspector: self.inspector.datachange()
 
-        def setDataLabelsColor(self, color):
-                """ Set the color of the data labels """
-                self.datalabelscolor = color
+		def setDataLabelsColor(self, color):
+			""" Set the color of the data labels """
+			self.datalabelscolor = color
 
 	def setScatterColor(self, color):
 		""" Set a matplotlib color or list of colors. One list for each data set """
@@ -1411,6 +1539,302 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.shapechange=1
 		#self.updateGL()
 
+
+class EMPlot2DStatsInsp(QtGui.QWidget):
+
+	"""This class implements the statistics pop-up from the EMPlot2DInspector"""
+
+	def __init__(self,target) :
+		QtGui.QWidget.__init__(self,None)
+		self.target=weakref.ref(target)
+		gbl0=QtGui.QGridLayout(self)
+
+		self.summary=QtGui.QPushButton(self)
+		self.summary.setText("Summary Table")
+		gbl0.addWidget(self.summary,2,0,1,2)
+
+		hl1 = QtGui.QFrame()
+		hl1.setFrameStyle(QtGui.QFrame.HLine)
+		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		gbl0.addWidget(hl1,3,0,1,2)
+		
+		self.wlnorm=QtGui.QLabel(self)
+		self.wlnorm.setText("Test:")
+		gbl0.addWidget(self.wlnorm,4,0)
+		
+		self.wcomb_test=QtGui.QComboBox(self)
+		self.wcomb_test.addItem("Welch's t-test")
+		self.wcomb_test.addItem("Student's t-test")
+		self.wcomb_test.addItem("Hotelling's T-squared test")
+		self.wcomb_test.addItem("F-test")
+		self.wcomb_test.addItem("Z-test")
+		self.wcomb_test.addItem("Chi-Squared test")
+		self.wcomb_test.addItem("Sharpio-Wilk test")
+		self.wcomb_test.addItem("Wilcoxon signed-rank test")
+		self.wcomb_test.addItem("Kolomogorov-Smirnov test")
+		self.wcomb_test.addItem("Mann-Whitney U-test")
+		self.wcomb_test.addItem("Covariance")
+		self.wcomb_test.addItem("Pearson Correlation")
+		gbl0.addWidget(self.wcomb_test,4,1)
+		
+		self.wsbcols=StringBox(label="Col(s)",value="0,1")
+		gbl0.addWidget(self.wsbcols,6,0)
+		
+		self.wnround=ValBox(rng=(0,10),label="Round:",value=2)
+		self.wnround.intonly=1
+		gbl0.addWidget(self.wnround,6,1)
+		
+		self.run=QtGui.QPushButton(self)
+		self.run.setText("Compute")
+		gbl0.addWidget(self.run,8,0,1,2)
+		
+		hl2 = QtGui.QFrame()
+		hl2.setFrameStyle(QtGui.QFrame.HLine)
+		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		gbl0.addWidget(hl2,9,0,1,2)
+		
+		self.table = QtGui.QTableWidget() #QtGui.QTextEdit()
+		self.table.setRowCount(1)
+		self.table.setColumnCount(1)
+		self.table.setSortingEnabled(True)
+		gbl0.addWidget(self.table,10,0,2,2)
+		
+		QtCore.QObject.connect(self.summary,QtCore.SIGNAL("clicked()"),self.printSummary)
+		QtCore.QObject.connect(self.run,QtCore.SIGNAL("clicked()"),self.runTest)
+
+		self.imgwin=None
+
+	def printSummary(self):
+		"""Computes and plots a polynomial fit (of order N) for the current x and y axes"""
+		insp=self.target().get_inspector()				# inspector
+		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+		data=self.target().data[name]					# data set we will operate on
+		rnd=self.wnround.getValue()
+		
+		d = np.asarray(data).copy()
+		
+		self.table.clearContents()
+		column_labels = ["Axis","Mean","Median","Std","Var","Max","Min","Range","Q1","Q3","IQR","IQM","MAD","Skewness"]
+		row_labels = [str(i) for i in np.arange(len(d))]
+		self.table.setRowCount(len(d[0]))
+		self.table.setColumnCount(len(column_labels))
+		self.replaceRowLabels(row_labels)
+		self.replaceColumnLabels(column_labels)
+		
+		for c in range(len(d[0])):
+			col = d[:,c]
+			n = len(col)
+			try: mean = np.mean(col)
+			except: mean = ""
+			try: q3, q2, q1 = np.percentile(col, [75, 50 ,25])
+			except: q3,q2,q1 = "","",""
+			try: std = np.std(col)
+			except: std = ""
+			try: var = np.var(col)
+			except: var = ""
+			try: min = np.min(col)
+			except: min = ""
+			try: max = np.max(col)
+			except: max = ""
+			try: rng = max-min
+			except: rng = ""
+			try: iqr = q3-q1
+			except: iqr = ""
+			try: mad = (q3+q1)/2
+			except: mad = ""
+			try: skew = (mad - q2) / mad
+			except: skew = ""
+			try: iq = np.where(np.logical_and(col>=q1, col<=q3))[0]
+			except: iq = ""
+			try: iqm = np.mean(col[iq])
+			except: iqm = ""
+			stats = [c,mean,q2,std,var,max,min,rng,q1,q3,iqr,iqm,mad,skew]
+			for s,stat in enumerate(stats):
+				if s == 0: item = str(int(stat))
+				else: item = str(round(stat,rnd))
+				self.table.setItem( c, s, QtGui.QTableWidgetItem(item) )
+	
+	def runTest(self):
+		stat = str(self.wcomb_test.currentText())
+		cols = [str(i) for i in self.wsbcols.getValue().split(",")]
+		insp = self.target().get_inspector() # inspector
+		names=[str(i.text()) for i in insp.setlist.selectedItems()]
+		rnd = 2
+		
+		if len(cols) <= 0:
+			self.textout.setText("Please specify the columns on which you wish to compute this test or statistic")
+			return
+		
+		try:
+			datasets = [self.target().data[name] for name in names]
+			data = np.concatenate(datasets).copy()
+		except:
+			print("Selected datasets must contain the same number of columns.")
+			print("Using only the first dataset selected")
+			data = self.target().data[names[0]].copy()
+		
+		self.table.clearContents()
+		
+		x = np.asarray(data).T[:,cols]
+		if stat == "Covariance":
+			self.replaceTableLabels(cols)
+			result = np.cov(x,rowvar=False) #result = ["\t".join([str(round(j,rnd)) for j in i]) for i in cov]
+		elif stat == "Pearson Correlation":
+			self.replaceTableLabels(cols)
+			result = np.corrcoef(x,rowvar=False) #result = ["\t".join([str(round(j,2)) for j in i]) for i in corrcoef]
+		
+		else:
+			print("{} not yet implemented!".format(stat))
+			return
+		
+		self.table.setRowCount(result.shape[0])
+		self.table.setColumnCount(result.shape[1])
+		
+		for i, r in enumerate(result):
+			for j, c in enumerate(r):
+				item = str(c)
+				self.table.setItem( j, i, QtGui.QTableWidgetItem(item) )
+
+	def replaceRowLabels(self,rows):
+		self.table.setVerticalHeaderLabels(QtCore.QStringList(rows))
+
+	def replaceColumnLabels(self,cols):
+		self.table.setHorizontalHeaderLabels(QtCore.QStringList(cols))
+	
+	def replaceTableLabels(self,cols):
+		self.table.setHorizontalHeaderLabels(QtCore.QStringList(cols))
+		self.table.setVerticalHeaderLabels(QtCore.QStringList(cols))
+
+class EMPlot2DRegrInsp(QtGui.QWidget):
+	"""This class implements the regression pop-up from the EMPlot2DInspector"""
+	
+	def __init__(self,target) :
+		QtGui.QWidget.__init__(self,None)
+		self.target=weakref.ref(target)
+		gbl0=QtGui.QGridLayout(self)
+
+		insp = self.target().get_inspector()
+		
+		cx = str(insp.slidex.value())
+		self.wsbnax=StringBox(label="X Cols:",value=cx)
+		gbl0.addWidget(self.wsbnax,2,0)
+		
+		cy = str(insp.slidey.value())
+		self.wsbnay=StringBox(label="Y Cols:",value=cy)
+		gbl0.addWidget(self.wsbnay,2,1)
+
+		self.wnord=ValBox(rng=(1,25),label="Degree:",value=2)
+		self.wnord.intonly=1
+		gbl0.addWidget(self.wnord,4,0)
+		
+		self.wnpts=ValBox(rng=(1,10000),label="N Interp:",value=100)
+		self.wnpts.intonly=1
+		gbl0.addWidget(self.wnpts,4,1)
+		
+		self.wlnorm=QtGui.QLabel(self)
+		self.wlnorm.setText("Normalization:")
+		gbl0.addWidget(self.wlnorm,6,0)
+		
+		self.wcomb_norm=QtGui.QComboBox(self)
+		self.wcomb_norm.addItem("None")
+		self.wcomb_norm.addItem("Standardize")
+		self.wcomb_norm.addItem("Maxmin")
+		gbl0.addWidget(self.wcomb_norm,6,1)
+		
+		self.regrb=QtGui.QPushButton(self)
+		self.regrb.setText("Regress")
+		gbl0.addWidget(self.regrb,8,0,1,2)
+
+		QtCore.QObject.connect(self.regrb,QtCore.SIGNAL("clicked()"),self.doRegression)
+
+		self.imgwin=None
+
+	def doRegression(self):
+		"""Computes and plots a polynomial fit (of order N) for the current x and y axes"""
+
+		degree=self.wnord.getValue()	# selected order
+		xaxes = self.wsbnax.getValue()
+		yaxes = self.wsbnay.getValue()
+		norm = str(self.wcomb_norm.currentText())
+		npts = self.wnpts.getValue()
+		insp = self.target().get_inspector() # inspector
+		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently hilighted items
+		
+		try:
+			xaxes=[int(i) for i in xaxes.split(",")]
+			if max(xaxes)>=ncol : raise Exception
+			yaxes=[int(i) for i in yaxes.split(",")]
+			if max(yaxes)>=ncol : raise Exception
+		except:
+			pass #QtGui.QMessageBox.warning(self, "Axes must be a comma separated list of column numbers")
+			#return
+		
+		xs = ",".join([str(i) for i in xaxes])
+		ys = ",".join([str(i) for i in yaxes])
+		result_name = "Regression (Degree {}; X: {}; Y: {})".format(degree,xs,ys)
+		
+		try:
+			datasets = [self.target().data[name] for name in names]
+			data = np.concatenate(datasets)
+		except:
+			print("Selected datasets must contain the same number of columns.")
+			print("Using only the first dataset selected")
+			data = self.target().data[names[0]]
+		
+		x = data[xaxes].T
+		y = data[yaxes].T
+		
+		x = self.normalize(x,norm) # normalize features
+		
+		if norm != "none":
+			normed = np.c_[x,y].T
+			color = insp.color.currentIndex() + 1
+			self.target().set_data(normed,"{}_{}".format(norm,xs),replace=False,quiet=False,color=color,linewidth=0,linetype=-1,symtype=0,symsize=10,comments=None)
+		
+		A = self.vandermonde(x,degree) # polynomial features
+		
+		# perform actual regression
+		coefs, _, _, _ = np.linalg.lstsq(A, y) #coefs, residuals, rank, svals
+		
+		print("Polynomial Regression (Degree {})".format(degree))
+		print("X: {}\tY: {}".format(xs,ys))
+		print("Coefficients:")
+		for i,c in enumerate(coefs):
+			print("{}:\t{}".format(i,c))
+		
+		# construct interpolated polynomial
+		xmin = np.min(x)
+		xmax = np.max(x)
+		xx = np.linspace(xmin,xmax,npts)
+		yy = np.polyval(coefs.flatten(),xx)
+		
+		result = np.c_[xx,yy].T
+		
+		color = insp.color.currentIndex() + 1
+		self.target().set_data(result,result_name,replace=False,quiet=False,color=color,linewidth=2,linetype=0,symtype=-1,symsize=0,comments=None)
+		self.target().render()
+
+	def vandermonde(self, x, order): # Source: http://stackoverflow.com/questions/11723779/2d-numpy-power-for-polynomial-expansion
+		x = np.asarray(x).T[np.newaxis]
+		n = x.shape[1]
+		power_matrix = np.tile(np.arange(order + 1), (n, 1)).T[..., np.newaxis]
+		X = np.power(x, power_matrix)
+		I = np.indices((order + 1, ) * n).reshape((n, (order + 1) ** n)).T
+		F = np.product(np.diagonal(X[I], 0, 1, 2), axis=2)
+		return np.fliplr(F.T) # this matrix should have the form [x**n x**n-1 ... x**2 x 1]
+	
+	def normalize(self, x,norm="none"):
+		if norm == "Standardize":
+			mu = np.mean(x,axis=0)
+			sigma = np.std(x,axis=0)
+			return (x-mu)/sigma
+		elif norm == "Maxmin":
+			xmin = np.min(x,axis=0)
+			xmax = np.max(x,axis=0)
+			return (x-xmin)/(xmax-xmin)
+		elif norm == "None":
+			return x
+
 class EMPlot2DClassInsp(QtGui.QWidget):
 	"""This class implements the classification pop-up from the EMPlot2DInspector"""
 	def __init__(self,target) :
@@ -1418,25 +1842,257 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.target=weakref.ref(target)
 		gbl0=QtGui.QGridLayout(self)
 
-		self.wimgfile=StringBox(label="Images:")
-		gbl0.addWidget(self.wimgfile,0,0)
+		#self.wimgfile=StringBox(label="Images:")
+		#gbl0.addWidget(self.wimgfile,0,0)
 
-		self.wimgfilebut=QtGui.QPushButton(self)
-		self.wimgfilebut.setText("Browse")
-		gbl0.addWidget(self.wimgfilebut,0,1)
+		#self.wimgfilebut=QtGui.QPushButton(self)
+		#self.wimgfilebut.setText("Browse")
+		#gbl0.addWidget(self.wimgfilebut,0,1)
 
 		self.kmeansb=QtGui.QPushButton(self)
 		self.kmeansb.setText("K-means")
 		gbl0.addWidget(self.kmeansb,2,0,1,2)
 
-		self.wnseg=ValBox(rng=(2,32),label="Nseg",value=3)
+		self.wnseg=ValBox(rng=(2,32),label="Nseg:",value=2)
 		self.wnseg.intonly=1
-		gbl0.addWidget(self.wnseg,3,0,1,2)
+		gbl0.addWidget(self.wnseg,4,0)
 
-		QtCore.QObject.connect(self.wimgfilebut,QtCore.SIGNAL("clicked()"),self.selectImgFile)
-		QtCore.QObject.connect(self.target(),QtCore.SIGNAL("selected"),self.imgSelect)
+		self.wnax=StringBox(label="Axes:",value="all")
+		gbl0.addWidget(self.wnax,4,1)
+
+		self.wcbaxnorm=CheckBox(label="Eq Wt Axes:",value=0)
+		gbl0.addWidget(self.wcbaxnorm,6,0)
+
+		hl1 = QtGui.QFrame()
+		hl1.setFrameStyle(QtGui.QFrame.HLine)
+		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		gbl0.addWidget(hl1,7,0,1,2)
+
+		self.threshb=QtGui.QPushButton(self)
+		self.threshb.setText("Threshold")
+		gbl0.addWidget(self.threshb,8,0,1,2)
+
+		self.wnval=StringBox(label="Value(s):",value="0.50")
+		self.wnval.intonly=0
+		gbl0.addWidget(self.wnval,10,0)
+
+		self.wnax_thresh=StringBox(label="Axes:",value="0")
+		gbl0.addWidget(self.wnax_thresh,10,1)
+
+		self.wcomb_threshtype=QtGui.QComboBox(self)
+		self.wcomb_threshtype.addItem("value")
+		self.wcomb_threshtype.addItem("sigma")
+		self.wcomb_threshtype.addItem("median")
+		self.wcomb_threshtype.addItem("mean")
+		self.wcomb_threshtype.addItem("percentile")
+		gbl0.addWidget(self.wcomb_threshtype,12,0)
+
+		hl2 = QtGui.QFrame()
+		hl2.setFrameStyle(QtGui.QFrame.HLine)
+		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		gbl0.addWidget(hl2,13,0,1,2)
+
+		self.wspfix=StringBox(label="Prefix:",value="split")
+		gbl0.addWidget(self.wspfix,14,0)
+
+		self.wbmakeset=QtGui.QPushButton()
+		self.wbmakeset.setText("New Sets")
+		gbl0.addWidget(self.wbmakeset,14,1)
+
+		QtCore.QObject.connect(self.kmeansb,QtCore.SIGNAL("clicked()"),self.doKMeans)
+		QtCore.QObject.connect(self.threshb,QtCore.SIGNAL("clicked()"),self.doThresh)
+		QtCore.QObject.connect(self.wbmakeset,QtCore.SIGNAL("clicked()"),self.doMakeSet)
+
+		#QtCore.QObject.connect(self.wimgfilebut,QtCore.SIGNAL("clicked()"),self.selectImgFile)
+		#QtCore.QObject.connect(self.target(),QtCore.SIGNAL("selected"),self.imgSelect)
 
 		self.imgwin=None
+
+	#def disableValue(self,event):
+	#	EMGLWidget.closeEvent(self, event)
+
+	#def enableValue(self,event):
+	#	EMGLWidget.closeEvent(self, event)
+
+	def doMakeSet(self):
+		"""Saves selected plots as new .lst files in sets/ if 'comment' field contains image specifiers"""
+		insp=self.target().get_inspector()				# inspector
+		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently hilighted items
+		lsx={}
+
+		nums=set()
+		for name in names:
+			try: num=int(name.rsplit("_",1)[1])
+			except:
+				QtGui.QMessageBox.warning(self,"Error","Please hilight sets with names ending in _# !")
+				return
+			if num in nums:
+				QtGui.QMessageBox.warning(self, "Error","Please select only one group of sets at a time !")
+				return
+			nums.add(num)
+
+			out=LSXFile("sets/{}_{}.lst".format(self.wspfix.getValue(),num))
+
+			try: comments=self.target().comments[name]
+			except:
+				QtGui.QMessageBox.warning(self,"Error", "No filenames stored in {}".format(name))
+				return
+
+			for r in xrange(len(comments)):
+				try: imn,imf=comments[r].split(";")
+				except:
+					QtGui.QMessageBox.warning(self,"Error", "Invalid filename {} in {}, line {}".format(comments[r],name,r))
+					return
+
+				imn=int(imn)
+				if not lsx.has_key(imf) : lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
+				val=lsx[imf][imn]
+				out[r]=val
+
+
+	def doKMeans(self):
+		"""Performs K-means classification, and produces nseg new data sets"""
+		nseg=self.wnseg.getValue()		# number of segments
+		axes=self.wnax.getValue()		# selected axes
+		axnorm=self.wcbaxnorm.getValue()
+		insp=self.target().get_inspector()				# inspector
+		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+		data=self.target().data[name]					# data set we will operate on
+		try: comments=self.target().comments[name]		# comments for copying to results
+		except: comments=None
+		ncol=len(data)
+		nrow=len(data[0])
+
+		if axes=="all":
+			axes=range(ncol)
+		else:
+			try:
+				axes=[int(i) for i in axes.split(",")]
+				if max(axes)>=ncol : raise Exception
+			except:
+				QtGui.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
+				return
+
+		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
+		if axnorm:
+			print "Normalize Axes"
+			datafix=[i.copy()/std(i) for i in data]
+		else: datafix=data
+
+		# build our array data into images for analysis ... this may not be the most efficient approach
+		imdata=[]
+		for r in range(nrow):
+			imdata.append(EMData(len(axes),1,1))
+			for c,ax in enumerate(axes):
+				imdata[r][c]=datafix[ax][r]
+
+		an=Analyzers.get("kmeans")
+		an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":1,"slowseed":0,"mininclass":5})
+		an.insert_images_list(imdata)
+		centers=an.analyze()
+
+		#print "centers ",centers
+
+		# extract classified results as new sets
+		results=[[[] for i in range(ncol)] for j in range(nseg)]	# nseg lists of data sets. Each data set is a list of ncol lists
+		resultc=[[] for j in range(nseg)]							# nseg lists of comments
+		for r in range(nrow):
+			s=imdata[r]["class_id"]
+			for c in xrange(ncol):
+				results[s][c].append(data[c][r])
+			if comments!=None: resultc[s].append(comments[r])
+
+		for s in range(nseg) :
+			if comments!=None: self.target().set_data(results[s],key="{}_{}".format(name,s),comments=resultc[s])
+			else: self.target().set_data(results[s],key="{}_{}".format(name,s))
+
+	def doThresh(self):
+		"""Performs threshold-based classification, and produces nseg new data sets"""
+		axes=self.wnax_thresh.getValue()						# selected axes
+		vals=self.wnval.getValue()								# values
+		thresh_type=str(self.wcomb_threshtype.currentText())	# type of threshold to perform
+		insp=self.target().get_inspector()						# inspector
+		name=str(insp.setlist.currentItem().text())				# currently hilighted item
+		data=self.target().data[name]							# data set we will operate on
+		try: comments=self.target().comments[name]				# comments for copying to results
+		except: comments=None
+
+		nseg = 2
+		ncol=len(data)
+		nrow=len(data[0])
+
+		if axes == "all":
+			axes=range(ncol)
+		else:
+			try:
+				axes=[int(i) for i in axes.split(",")]
+				if max(axes)>=ncol : raise Exception
+			except:
+				QtGui.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
+				return
+
+		try:
+			vals=[float(i) for i in vals.split(",")]
+			if len(vals) != len(axes): raise Exception
+		except:
+			QtGui.QMessageBox.warning(self, "You must specify one (comma separated) value for each axis.")
+			return
+
+		if thresh_type == "value":
+			axvals = {a:v for a,v in zip(axes,vals)}
+
+		elif thresh_type == "sigma":
+			tmp = np.asarray(data)[:,axes]
+			mu = np.mean(tmp,axis=0)
+			sig = np.std(tmp,axis=0)
+			axvals = {a:(m-v*s,m+v*s) for a,v,m,s in zip(axes,vals,mu,sig)}
+
+		elif thresh_type == "median":
+			tmp = np.asarray(data)[:,axes]
+			vals = np.median(tmp,axis=0)
+			axvals = {a:v for a,v in zip(axes,vals)}
+
+		elif thresh_type == "mean":
+			tmp = np.asarray(data)[:,axes]
+			vals = np.mean(tmp,axis=0)
+			axvals = {a:v for a,v in zip(axes,vals)}
+
+		elif thresh_type == "percentile":
+			for i,(a,v) in enumerate(zip(axes,vals)):
+				tmp = np.asarray(data)[:,a]
+				vals[i] = np.percentile(tmp,v)
+			axvals = {a:v for a,v in zip(axes,vals)}
+
+		# build our array data into images for analysis
+		imdata=[]
+		for r in range(nrow):
+			imdata.append(EMData(len(axes),1,1))
+			for c,ax in enumerate(axes):
+				imdata[r][c]=data[ax][r]
+				# Make sure this class doesn't already have an assigned class id.
+				# We only want points satisfying ALL threshold values.
+				try: cid = imdata[r]["class_id"]
+				except:
+					if thresh_type == "sigma":
+						if data[ax][r] > axvals[ax][0] and data[ax][r] < axvals[ax][1]:
+							imdata[r]["class_id"] = 0
+						else: imdata[r]["class_id"] = 1 # outlier
+					else:
+						if data[ax][r] < axvals[ax]: imdata[r]["class_id"] = 0
+						else: imdata[r]["class_id"] = 1
+
+		# extract classified results as new sets
+		results=[[[] for i in range(ncol)] for j in range(nseg)]	# nseg lists of data sets. Each data set is a list of ncol lists
+		resultc=[[] for j in range(nseg)]							# nseg lists of comments
+		for r in range(nrow):
+			s=imdata[r]["class_id"]
+			for c in xrange(ncol):
+				results[s][c].append(data[c][r])
+			if comments!=None: resultc[s].append(comments[r])
+
+		for s in range(nseg) :
+			if comments!=None: self.target().set_data(results[s],key="{}_{}".format(name,s),comments=resultc[s])
+			else: self.target().set_data(results[s],key="{}_{}".format(name,s))
 
 	def imgSelect(self,sel=None):
 		if self.imgwin==None :
@@ -1487,6 +2143,12 @@ class DragListWidget(QtGui.QListWidget):
 	def setDataSource(self,trg):
 		"""We keep a weak reference to our data source so we can pull the data only when dragging actually starts"""
 		self.datasource=weakref.ref(trg)
+
+	def keyPressEvent(self,event):
+		if event.key() == Qt.Key_Backspace:
+			name=str(self.currentItem().text())		# currently hilighted item
+			self.datasource().target().set_data(None,key=name)
+		else: QtGui.QListWidget.keyPressEvent(self,event)
 
 	def dragEnterEvent(self,e):
 		if e.mimeData().hasText() : e.acceptProposedAction()
@@ -1587,12 +2249,15 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl.setMargin(2)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
-		
+
+		gbx = QtGui.QGroupBox("Data sets")
+
 		vbl3 = QtGui.QVBoxLayout()
-		vbl3.setMargin(0)
+		vbl3.setMargin(4)
 		vbl3.setSpacing(6)
 		vbl3.setObjectName("vbl3")
-		hbl.addLayout(vbl3)
+		gbx.setLayout(vbl3)
+		hbl.addWidget(gbx)
 
 		# plot list
 		self.setlist=DragListWidget(self)
@@ -1607,11 +2272,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl6 = QtGui.QHBoxLayout()
 		hbl.setObjectName("hbl6")
 		vbl3.addLayout(hbl6)
-		
+
 		self.nonebut=QtGui.QPushButton(self)
 		self.nonebut.setText("None")
 		hbl6.addWidget(self.nonebut)
-		
+
 		self.allbut=QtGui.QPushButton(self)
 		self.allbut.setText("All")
 		hbl6.addWidget(self.allbut)
@@ -1625,13 +2290,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl7 = QtGui.QHBoxLayout()
 		hbl.setObjectName("hbl7")
 		vbl3.addLayout(hbl7)
-		
+
 		self.nbox=ValBox(label="ns:",value=1)
 		hbl7.addWidget(self.nbox)
-		
+
 		self.stepbox=ValBox(label="stp:",value=1)
 		hbl7.addWidget(self.stepbox)
-		
+
 		vbl = QtGui.QVBoxLayout()
 		vbl.setMargin(0)
 		vbl.setSpacing(6)
@@ -1658,6 +2323,19 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl0.addWidget(self.pdfb)
 
 
+		hbl01=QtGui.QHBoxLayout()
+		hbl01.setMargin(0)
+		hbl01.setSpacing(6)
+		vbl.addLayout(hbl01)
+
+		self.stats=QtGui.QPushButton(self)
+		self.stats.setText("Statistics")
+		hbl01.addWidget(self.stats)
+
+		self.regress=QtGui.QPushButton(self)
+		self.regress.setText("Regression")
+		hbl01.addWidget(self.regress)
+
 		hbl1 = QtGui.QHBoxLayout()
 		hbl1.setMargin(0)
 		hbl1.setSpacing(6)
@@ -1674,7 +2352,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl1.addWidget(self.color)
 
 		self.classb=QtGui.QPushButton(self)
-		self.classb.setText("Classify")
+		self.classb.setText("Classification")
 		hbl1.addWidget(self.classb)
 
 		vbl.addLayout(hbl1)
@@ -1855,11 +2533,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.quiet=0
 		self.busy=0
 		self.classwin=None
+		self.statswin=None
+		self.regresswin=None
 
 		QtCore.QObject.connect(self.showslide, QtCore.SIGNAL("valueChanged"), self.selSlide)
 		QtCore.QObject.connect(self.allbut, QtCore.SIGNAL("clicked()"), self.selAll)
 		QtCore.QObject.connect(self.nonebut, QtCore.SIGNAL("clicked()"), self.selNone)
-		
+
 		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
@@ -1878,6 +2558,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlotLinwid)
 		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.stats,QtCore.SIGNAL("clicked()"),self.openStatsWin)
+		QtCore.QObject.connect(self.regress,QtCore.SIGNAL("clicked()"),self.openRegrWin)
 		QtCore.QObject.connect(self.saveb,QtCore.SIGNAL("clicked()"),self.savePlot)
 		QtCore.QObject.connect(self.pdfb,QtCore.SIGNAL("clicked()"),self.savePdf)
 		QtCore.QObject.connect(self.concatb,QtCore.SIGNAL("clicked()"),self.saveConcatPlot)
@@ -1905,19 +2587,30 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
-		
+
 	def selAll(self):
 		for k in self.target().visibility.keys() : self.target().visibility[k]=True
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
-		
+
 	def selNone(self):
 		for k in self.target().visibility.keys() : self.target().visibility[k]=False
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
-		
+
+	def openStatsWin(self):
+		"""This launches a separate window for regressing points in a 2-D plot"""
+
+		if self.statswin==None : self.statswin=EMPlot2DStatsInsp(self.target())
+		self.statswin.show()
+
+	def openRegrWin(self):
+		"""This launches a separate window for regressing points in a 2-D plot"""
+
+		if self.regresswin==None : self.regresswin=EMPlot2DRegrInsp(self.target())
+		self.regresswin.show()
 
 	def openClassWin(self):
 		"""This launches a separate window for classifying points in a 2-D plot"""
@@ -2047,7 +2740,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 	def savePdf(self):
 		"""Saves the contents of the current plot to a pdf"""
-		matplotlib.pyplot.savefig("plot.pdf")
+		plt.savefig("plot.pdf")
 
 	def updPlot(self,s=None):
 		if self.quiet : return
@@ -2158,7 +2851,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 			for name in names:
 				self.target().setAxes(name,self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value(),True)
 			self.target().updateGL()
-				
+
 #			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value())
 
 	def newLimits(self,val=None):
@@ -2241,6 +2934,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 			except:
 				print "Color error"
+				print list(sorted(parms.keys()))
 				print parms[j][0]
 				print colortypes[parms[j][0]]
 				print qt_color_map[colortypes[parms[j][0]]]
@@ -2265,7 +2959,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 	def closeEvent(self, event):
 		try: self.classwin.close()
 		except: pass
-
+		try: self.statswin.close()
+		except: pass
+		try: self.regresswin.close()
+		except: pass
 
 class EMPlot2DModule(EMPlot2DWidget):
 	def __init__(self, application=None,winid=None):
@@ -2317,3 +3014,60 @@ class EMDataFnPlotter(QtGui.QWidget):
 	def set_data(self, data, key):
 		self.plot.set_data(data,key)
 
+#
+# class EMGLPlot2DItem(QGLWidget):
+#
+# 	# default window size
+# 	width, height = 640, 480
+#
+# 	def set_data(self, data):
+# 		self.data = data
+# 		self.count = data.shape[0]
+#
+# 	def initializeGL(self):
+# 		gl.glClearColor(0,0,0,0)
+# 		self.vbo = glvbo.VBO(self.data)
+#
+# 	def paintGL(self):
+# 		# clear the buffer
+# 		gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+# 		# set yellow color for subsequent drawing rendering calls
+# 		gl.glColor(1,1,0)
+# 		# bind the VBO
+# 		self.vbo.bind()
+# 		# tell OpenGL that the VBO contains an array of vertices
+# 		gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+# 		# these vertices contain 2 single precision coordinates
+# 		gl.glVertexPointer(2, gl.GL_FLOAT, 0, self.vbo)
+# 		# draw "count" points from the VBO
+# 		gl.glDrawArrays(gl.GL_POINTS, 0, self.count)
+#
+# 	def resizeGL(self, width, height):
+# 		# update the window size
+# 		self.width, self.height = width, height
+# 		# paint within the whole window
+# 		gl.glViewport(0, 0, width, height)
+# 		# set orthographic projection (2D only)
+# 		gl.glMatrixMode(gl.GL_PROJECTION)
+# 		gl.glLoadIdentity()
+# 		# the window corner OpenGL coordinates are (-+1, -+1)
+# 		gl.glOrtho(-1, 1, 1, -1, -1, 1)
+#
+# class EMGLPlot2DWidget(QtGui.QMainWindow):
+#
+# 	def __init__(self):
+# 		super(EMGLPlot2DWidget, self).__init__()
+# 		self.data = None
+#
+# 	def render(self):
+# 		self.plot = EMGLPlot2DItem()
+# 		self.plot.set_data(self.data)
+#
+# 		self.setGeometry(400, 400, self.plot.width, self.plot.height)
+# 		self.setCentralWidget(self.plot)
+# 		self.show()
+#
+# 	def set_data_from_file(self, f):
+# 		try: self.data = np.loadtxt(f,dtype=np.float32)
+# 		except: print("Could not read {}".format(f))
+# 		self.render()

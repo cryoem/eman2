@@ -487,7 +487,7 @@ class StringBox(QtGui.QWidget):
 		if showenable>=0 : self.setEnabled(showenable)
 
 	def setEnabled(self,ena):
-		self.text.setEnabled(ena)
+#		self.text.setEnabled(ena)
 		self.emit(QtCore.SIGNAL("enableChanged"),ena) 
 
 	def getEnabled(self):

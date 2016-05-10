@@ -1,5 +1,5 @@
 High priority
-2.1
+2/29/16		jenni@harvard noticed no automasking in e2refinemulti! option ignored. no other masking done
 2/2/16		Make sure split particles in e2refinesplit are being split correctly (matching maps)
 2/2/16		slice view in 3d contrast doesn't adjust well for maps with strange density ranges (Pawel)
 2/1/16		e2spt_average uses unmasked FSC for filter
@@ -66,6 +66,7 @@ Low priority
 9/23/15		Show stack/ Filter tool only work on the first image in 3D stacks
 
 Complete
+4/21/16		New ctf.weight.autofilt averager for 2-D class-averaging. Auto data-based Wiener filter on each average.
 3/26/16		Made "flatten" amplitude correction option added by M to be used in "auto" mode for high resolution.
 3/26/16		Mode 5 make3d radial real space correction enabled. Improved masking based on radial max profile.
 3/16		New movie alignment code in examples working very well!

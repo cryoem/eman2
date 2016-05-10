@@ -48,6 +48,7 @@ def main():
 	parser.add_option("--delta",              type="string",		 default= " 10 6 4  3   2",   help="angular step of reference projections")
 	parser.add_option("--maxit",              type="int",            default= 30,                 help="maximum number of iterations performed for each angular step (set to 30) ")
 	parser.add_option("--CTF",                action="store_true",   default=False,      		  help="CTF correction")
+	parser.add_option("--slowIO",             action="store_true",   default=False,      		  help="sequential reading data for each processor in MPI mode")
 	parser.add_option("--snr",                type="float",          default= 1.0,                help="Signal-to-Noise Ratio of the data")	
 	#parser.add_option("--MPI",                action="store_true",   default=False,               help="use MPI version")
 	#parser.add_option("--fourvar",           action="store_true",   default=False,               help="compute Fourier variance")
@@ -129,7 +130,7 @@ def main():
 		global_def.BATCH = True
 		ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.phiwobble, options.psi_max,\
 		 searchxshiftp, xwobblep, ywobble, ystep, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch,\
-		  mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+		  mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, options.slowIO)
 		global_def.BATCH = False
 
 

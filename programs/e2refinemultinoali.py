@@ -39,7 +39,7 @@ def main():
 	usage="""muticlass_noalign.py --model model1.hdf,model2.hdf --oldpath refine_01
 	Perform a 3d classification like e2refine_multi using the orientation of each particle in an e2refine_easy"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--newpath", type=str,help="Path for the classificaton. Default = newrefine_XX", default=None)
+	parser.add_argument("--newpath", type=str,help="Path for the classificaton. Default = multinoali_XX", default=None)
 	parser.add_argument("--oldpath", type=str,help="Path for the original refinement", default="refine_01")
 	parser.add_argument("--model", type=str,help="Model files for classification. With multiple file input, particle set is classified based on the similarity to each model. With only one input model, particle set is split to half.", default=None)
 	parser.add_argument("--simcmp",type=str,help="Default=ccc. The name of a 'cmp' to be used in comparing the aligned images", default="ccc")
@@ -64,9 +64,9 @@ def main():
 	
 	### make new folder
 	if options.newpath == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:10]=="newrefine_" and len(i)==12 and str.isdigit(i[-2:])]
+		fls=[int(i[-2:]) for i in os.listdir(".") if i[:11]=="multinoali_" and len(i)==13 and str.isdigit(i[-2:])]
 		if len(fls)==0 : fls=[0]
-		options.newpath = "newrefine_{:02d}".format(max(fls)+1)
+		options.newpath = "multinoali_{:02d}".format(max(fls)+1)
 	
 	print "Working directory: {}".format(options.newpath)
 	try: os.mkdir(options.newpath)
@@ -105,7 +105,7 @@ def main():
 		models=[0,1]
 		outfile="{path}/model_input.hdf".format(path=options.newpath)
 		run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[0],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask))
-		inputmodel[m]=outfile
+		inputmodel[0]=outfile
 		
 		
 	### make projections first, and use this for both even and odd	

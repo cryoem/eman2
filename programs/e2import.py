@@ -53,7 +53,11 @@ def main():
 	parser.add_argument("--import_particles",action="store_true",help="Import particles",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='parts[True]')
 	parser.add_argument("--import_eman1",action="store_true",help="This will import a phase-flipped particle stack from EMAN1",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='eman1[True]')
 	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='tomos[True]')
+	parser.add_argument("--shrink",type=int,help="Shrink tomograms before importing. Dose not work while not copying.",default=1, guitype='intbox', row=3, col=0, rowspan=1, colspan=1, mode='tomos')
+	parser.add_argument("--invert",action="store_true",help="Invert the contrast before importing tomograms",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='tomos')
+	parser.add_argument("--local_normalize",action="store_true",help="Apply a localized normalization before importing. Dose not work while not copying.",default=True, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='tomos')
 	parser.add_argument("--importation",help="Specify mode move, copy or link, for importing tomograms only",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode='tomos')
+	parser.add_argument("--preprocess",type=str,help="Other pre-processing operation before importing tomograms. Dose not work while not copying.",default="", guitype='strbox', row=4, col=0, rowspan=1, colspan=2, mode='tomos')
 	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='coords[True]')
 	parser.add_argument("--extension",type=str,help="Extension of the micrographs that the boxes match", default='dm3')
 	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default="boxes",guitype='combobox',choicelist='["boxes","coords","relion_star","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
@@ -288,7 +292,22 @@ with the same name, you should specify only the .hed files (no renaming is neces
 			if options.importation == "move":
 				os.rename(filename,os.path.join(tomosdir,os.path.basename(filename)))
 			if options.importation == "copy":
-				shutil.copy(filename,os.path.join(tomosdir,os.path.basename(filename)))
+				### use hdf file as output
+				tpos=filename.rfind('.')
+				if tpos>0:
+					newname=os.path.join(tomosdir,os.path.basename(filename[:tpos]+'.hdf'))
+				else:
+					newname=os.path.join(tomosdir,os.path.basename(filename))
+				cmd="e2proc3d.py {} {} ".format(filename, newname)
+				if options.shrink>1:
+					cmd+=" --meanshrink {:d} ".format(options.shrink)
+				if options.invert:
+					cmd+=" --mult -1 --process normalize "
+				if options.local_normalize:
+					cmd+=" --process normalize.local:radius=64 "
+				cmd+=options.preprocess
+				run(cmd)
+				#shutil.copy(filename,os.path.join(tomosdir,os.path.basename(filename)))
 			if options.importation == "link":
 				os.symlink(filename,os.path.join(tomosdir,os.path.basename(filename)))
 	E2end(logid)

@@ -14,7 +14,7 @@ sxgui_cter.py  cter_ctf_file
 
 sxgui_cter GUI tool can be run as a stand-alone program or run from sxgui.py.
 
-''' sxgui_cter.py  outdir_cter/partres/partres.txt''' 
+''' sxgui_cter.py  outdir_cter/partres.txt''' 
 
 
 == Input ==
@@ -45,7 +45,7 @@ Toshio Moriya
 sparx/bin/sxgui_cter.py
 
 === See also ===
-[[http://sparx-em.org/sparxwiki/sxcter|sxcter]], [[http://sparx-em.org/sparxwiki/window|window]]
+[[http://sparx-em.org/sparxwiki/sxcter|sxcter]], [[http://sparx-em.org/sparxwiki/sxwindow|sxwindow]]
 
 === Maturity ===
  alpha:: in development

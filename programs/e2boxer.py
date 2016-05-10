@@ -83,6 +83,7 @@ e2boxer.py ????.mrc --boxsize=256
 	parser.add_argument("--write_dbbox",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--write_ptcls",action="store_true",help="Write particles to disk",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
 	parser.add_argument("--exclude_edges",action="store_true",help="Don't generate output for any particles extending outside the micrograph",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="extraction[True]")
+	parser.add_argument("--exclude_bad",action="store_true",help="Don't generate output for any particles marked as exclude",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode="extraction[False]")
 	parser.add_argument("--force","-f",action="store_true",help="Force overwrite",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--format", help="Format of the output particle images. For EMAN2 refinement must be HDF.", default="hdf", guitype='combobox', choicelist="['hdf','img','spi']", row=6, col=0, rowspan=1, colspan=2, mode="extraction")
 	parser.add_argument("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=5, col=0, rowspan=1, colspan=2, mode="extraction")
@@ -354,7 +355,7 @@ def write_output(args,options,logid, database="e2boxercache"):
 	
 						gboxer.get_small_image(input,modecmd=True,boxsize=boxsize,ret_dummy=True)
 	
-				box_list.write_particles(input,output,options.boxsize,options.invert,options.norm,options.exclude_edges)
+				box_list.write_particles(input,output,options.boxsize,options.invert,options.norm,options.exclude_edges,options.exclude_bad)
 	
 	
 				progress += 1.0
@@ -367,7 +368,7 @@ def write_output(args,options,logid, database="e2boxercache"):
 			input = args[i]
 			box_list = EMBoxList()
 			box_list.load_boxes_from_database(input)
-			box_list.write_coordinates(input,output,options.boxsize,options.exclude_edges) # input is redundant but it makes output interfaces generic
+			box_list.write_coordinates(input,output,options.boxsize,options.exclude_edges,options.exclude_bad) # input is redundant but it makes output interfaces generic
 
 			progress += 1.0
 			E2progress(logid,progress/total_progress)

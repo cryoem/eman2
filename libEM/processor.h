@@ -426,12 +426,12 @@ The basic design of EMAN Processors: <br>\
 	{
 	  public:
 		void process_inplace(EMData * image);
-		
+
 		string get_name() const
 		{
 			return NAME;
 		}
-		
+
 		static Processor *NEW()
 		{
 			return new AzSharpProcessor();
@@ -448,12 +448,12 @@ The basic design of EMAN Processors: <br>\
 			d.put("az_scale", EMObject::FLOAT, "Scale factor, >1 enhances contrast <1 decreases");
 			return d;
 		}
-		
+
 		static const string NAME;
 
 	};
 
-	
+
 	/** Evaluate individual particle images using a tenchique similar to that used for CTF evaluation
 	 */
 	class SNREvalProcessor:public Processor
@@ -583,7 +583,7 @@ The basic design of EMAN Processors: <br>\
 		protected:
 	};
 
-	
+
 
 	/**Multiplies each Fourier pixel by its amplitude
 	 *@param sum Adds the weights to sum for normalization
@@ -1002,9 +1002,9 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData * image);
-		
+
 		static Processor *NEW()
 		{
 			return new ManhattanDistanceProcessor();
@@ -1018,6 +1018,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			//d.put("threshold", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1041,7 +1042,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		static Processor *NEW()
@@ -1051,14 +1052,16 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological dilation of a (binary) 2D image.";
+			return "Performs a morphological dilation of a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to dilate the input image.");
-			d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
+			//d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
 			return d;
 		}
 
@@ -1081,7 +1084,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		static Processor *NEW()
@@ -1091,13 +1094,16 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel erosion of a (binary) 2D image.";
+			return "Performs a morphological k-pixel erosion of a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
+			//d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
 			return d;
 		}
 
@@ -1121,7 +1127,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		static Processor *NEW()
@@ -1131,13 +1137,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel opening of a (binary) 2D image.";
+			return "Performs a morphological k-pixel opening of a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1161,7 +1169,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		static Processor *NEW()
@@ -1171,13 +1179,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel closing of a (binary) 2D image.";
+			return "Performs a morphological k-pixel closing of a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1201,7 +1211,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		static Processor *NEW()
@@ -1211,20 +1221,22 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Computes an internal morphological graduent using k-pixel-width operations on a (binary) 2D image.";
+			return "Computes an internal morphological graduent using k-pixel-width operations on a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
 		static const string NAME;
 	};
-	
-	
+
+
 	/** Computes an external morphological gradient operation on an image.
 	 *
 	 *@author James Michael Bell
@@ -1241,7 +1253,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		static Processor *NEW()
@@ -1251,20 +1263,22 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Computes an external morphological graduent using k-pixel-width operations on a (binary) 2D image.";
+			return "Computes an external morphological graduent using k-pixel-width operations on a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
 		static const string NAME;
 	};
-	
-	
+
+
 	/** Computes the morphological gradient operation on an image.
 	 *
 	 *@author James Michael Bell
@@ -1281,7 +1295,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		static Processor *NEW()
@@ -1291,20 +1305,22 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Computes the morphological graduent using k-pixel-width operations on a (binary) 2D image.";
+			return "Computes the morphological graduent using k-pixel-width operations on a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
 		static const string NAME;
 	};
-	
-	
+
+
 	/** Performs a morphological top hat operation on an image.
 	 *
 	 *@author James Michael Bell
@@ -1321,7 +1337,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		static Processor *NEW()
@@ -1331,13 +1347,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological top hat operation on a (binary) 2D image.";
+			return "Performs a morphological top hat operation on a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1361,7 +1379,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		virtual EMData* process(const EMData * const image);
-		
+
 		void process_inplace(EMData *image);
 
 		static Processor *NEW()
@@ -1371,13 +1389,15 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological black hat operation on a (binary) 2D image.";
+			return "Performs a morphological black hat operation on a (binary) image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
+			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
+			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
 			return d;
 		}
 
@@ -1717,7 +1737,7 @@ The basic design of EMAN Processors: <br>\
 			}
 			float apix=(float)image->get_attr("apix_x");
 			params["bfactor"] = pow(apix/(float)params["cutoff_abs"],0.0f);
-			
+
 			const Dict dict = image->get_attr_dict();
 			if (params.has_key("cutoff_abs")) {
 				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0f);
@@ -1928,12 +1948,12 @@ The basic design of EMAN Processors: <br>\
 				value = dict_values[0];
 			}
 		}
-		
+
 		static string get_group_desc()
 		{
 			return "The base class for real space processor working on individual pixels. The processor won't consider the pixel's coordinates and neighbors.";
 		}
-		
+
 	  protected:
 		virtual void process_pixel(float *x) const = 0;
 		virtual void calc_locals(EMData *)
@@ -2028,7 +2048,7 @@ The basic design of EMAN Processors: <br>\
 				else if (params.set_default("byte_utos",1)) mode=2;
 				else mode=0;
 			}
-		
+
 		TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -2048,14 +2068,14 @@ The basic design of EMAN Processors: <br>\
 				if (*x>127) *x-=256;
 				break;
 			}
-				
+
 		}
 
 		string get_desc() const
 		{
 			return "Fixes errors with reading signed/unsigned data. Need to specify the correct mode.";
 		}
-		
+
 		int mode;
 	};
 
@@ -2235,6 +2255,52 @@ The basic design of EMAN Processors: <br>\
 		void process_pixel(float *x) const
 		{
 			*x = sqrt(*x);
+		}
+	};
+
+	class DiscritizeProcessor:public RealPixelProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new DiscritizeProcessor();
+		}
+		
+		void set_params(const Dict & new_params)
+			{
+				params = new_params;
+				if (params.has_key("center")) center=params["center"];
+				else center=0.0;
+				if (params.has_key("step")) center=params["step"];
+				else step=1.0;
+				if (step<=0) step=1.0;
+			}
+
+		TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("center", EMObject::FLOAT, "Center value from which number of standard deviations is computed (default = 0)");
+				d.put("step", EMObject::FLOAT, "Stepsize in terms of sigma. ie - 1.5 will discritize to 1.5*sigma steps (default = 1.0)");
+				return d;
+			}
+
+		string get_desc() const
+		{
+			return "Converts each pixel value to the integral number of standard deviations from the specified center. Rounds to the nearest integer, -0.5*sigma<x<0.5*sigma -> 0.0  ";
+		}
+
+		static const string NAME;
+
+	  protected:
+		float center,step;
+		
+		void process_pixel(float *x) const
+		{
+			*x = Util::fast_floor((*x-center)/(step*sigma)+0.5)*step;
 		}
 	};
 
@@ -3231,17 +3297,17 @@ The basic design of EMAN Processors: <br>\
 	  public:
 
 		void process_inplace(EMData * image);
-		
+
 		static Processor *NEW()
 		{
 			return new MaskAzProcessor();
 		}
-		
+
 		string get_name() const
 		{
 			return NAME;
 		}
-		
+
 		static const string NAME;
 
 		string get_desc() const
@@ -3265,9 +3331,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	  protected:
 
-		
+
 	};
-	
+
 	/**CircularMaskProcessor applies a circular mask to the data.This is the base class for specific circular mask processors.Its subclass must implement process_dist_pixel().
 	 *@param inner_radius inner mask radius. optional, default=-1
 	 *@param outer_radius outer mask radius
@@ -3319,8 +3385,8 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 
-			d.put("inner_radius", EMObject::INT, "inner mask radius. optional");
-			d.put("outer_radius", EMObject::INT, "outer mask radius. Negative value -> box radius + outer_radius +1");
+			d.put("inner_radius", EMObject::FLOAT, "inner mask radius. optional");
+			d.put("outer_radius", EMObject::FLOAT, "outer mask radius. Negative value -> box radius + outer_radius +1");
 
 			d.put("dx", EMObject::FLOAT,
 				  "Modify mask center by dx relative to the default center nx/2");
@@ -3347,10 +3413,10 @@ The basic design of EMAN Processors: <br>\
 
 		virtual void process_dist_pixel(float *pixel, float dist) const = 0;		// note that this function gets the distance SQUARED !
 
-		int inner_radius;
-		int outer_radius;
-		int inner_radius_square;
-		int outer_radius_square;
+		float inner_radius;
+		float outer_radius;
+		float inner_radius_square;
+		float outer_radius_square;
 		float dx, dy, dz;
 		float xc, yc, zc;
 	};
@@ -3739,7 +3805,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		{
 			return new LinearPyramidProcessor();
 		}
-		
+
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -3919,9 +3985,9 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		{
 			return NAME;
 		}
-		
+
 		void process_inplace(EMData *image);
-		
+
 		static Processor *NEW()
 		{
 			return new LaplacianProcessor();
@@ -3933,7 +3999,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		}
 
 		static const string NAME;
-		
+
 
 	  protected:
 		void create_kernel() const;
@@ -5590,7 +5656,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
-	
+
 	/**use least square method to normalize
 	 * @param to reference image normalize to
 	 * @param low_threshold only take into account the reference image's pixel value between high and low threshold (zero is ignored)
@@ -5725,8 +5791,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
-
-	/** flip an image around an axis
+	/** flip/mirror an image around an axis
 	 * @param axis  'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;
 	 */
 	class FlipProcessor:public Processor
@@ -5753,7 +5818,40 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		virtual string get_desc() const
 		{
-			return "Mirrors an image along the specified axis, preserving the center. This will introduce a plane of 0's for even box sizes. Use 'xform.mirror' processor to avoid the zero plane, but not preserve the center.";
+			return "Flips an image along the specified axis, preserving the center. This will introduce a plane of 0's for even box sizes. Use 'xform.reverse' processor to avoid the zero plane, but not preserve the center.";
+		}
+
+		static const string NAME;
+	};
+
+	/** mirror an image around an axis (reverse pixels)
+	 * @param axis  'x', 'y', or 'z' axis. 'x' means horizonal mirror; 'y' means vertical mirror;
+	 */
+	class ReverseProcessor:public Processor
+	{
+	  public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new ReverseProcessor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis.");
+			return d;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Mirrors (reverses) an image along the specified axis, preserving the center. This will NOT introduce a plane of 0's for even box sizes. Use 'xform.mirror' or 'xform.flip' processor to include the zero plane and preserve the center.";
 		}
 
 		static const string NAME;
@@ -6385,7 +6483,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 
 			static const string NAME;
 	};
-	
+
 	/**ToCenterProcessor centers image, ignores old dx, dy.
 	 * @ingroup tested3c
 	 */
@@ -6721,7 +6819,7 @@ correction is not possible, this will allow you to approximate the correction to
 		static const string NAME;
 	};
 
-	
+
 	/** This processor will remove localized 'striping' along the x/y axes, caused by issues with CCD/CMOS readout. In theory this should be done by dark/gain correction, but in many cases, there are residual effects that this will help eliminate.
 	 *@param threshold an isosurface threshold at which all desired features are visible
 	 *@param radius a normalization size similar to an lp= value
@@ -6839,29 +6937,29 @@ correction is not possible, this will allow you to approximate the correction to
 // 	{
 // 	  public:
 // 		virtual void process_inplace(EMData * image);
-// 
+//
 // 		virtual string get_name() const
 // 		{
 // 			return NAME;
 // 		}
-// 
+//
 // 		static Processor *NEW()
 // 		{
 // 			return new CoordinateMaskFileProcessor();
 // 		}
-// 
+//
 // 		virtual string get_desc() const
 // 		{
 // 			return "Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.";
 // 		}
-// 
+//
 // 		virtual TypeDict get_param_types() const
 // 		{
 // 			TypeDict d;
 // 			d.put("filename", EMObject::STRING, "mask image file name");
 // 			return d;
 // 		}
-// 
+//
 // 		static const string NAME;
 // 	};
 
@@ -8479,7 +8577,7 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			TypeDict d;
 			d.put("kernel", EMObject::FLOATARRAY, "the convolution kernel");
-			d.put("selem", EMObject::EMDATA, "the structuring element");
+			//d.put("selem", EMObject::EMDATA, "the structuring element");
 			return d;
 		}
 		static const string NAME;
@@ -8515,9 +8613,9 @@ correction is not possible, this will allow you to approximate the correction to
 			}
 			static const string NAME;
 		};
-	
+
 	/*
-	 * The base class for morphological processors. 
+	 * The base class for morphological processors.
 	 */
 	class MorphologicalProcessor:public Processor
 	{
@@ -8526,7 +8624,7 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 		}
 		void process_inplace(EMData * image);
-		
+
 		virtual void set_params(const Dict & new_params)
 		{
 			params = new_params;
@@ -8535,12 +8633,12 @@ correction is not possible, this will allow you to approximate the correction to
 				value = dict_values[0];
 			}
 		}
-		
+
 		static string get_group_desc()
 		{
 			return "The base class for morphological image processors.";
 		}
-		
+
 	  protected:
 		virtual void process_pixel(float *x) const = 0;
 		virtual void calc_locals(EMData *)
@@ -8555,10 +8653,10 @@ correction is not possible, this will allow you to approximate the correction to
 		float mean;
 		float sigma;
 	};
-		
+
 	/**  Binarize an image based on the circular average around each pixel in real space.
-	 *   The pixel is set to 1 when the ring average around the pixel keeps decreasing for n 
-	 *   pixels as the radius of the ring increases. Here n is the threshold. This essentially 
+	 *   The pixel is set to 1 when the ring average around the pixel keeps decreasing for n
+	 *   pixels as the radius of the ring increases. Here n is the threshold. This essentially
 	 *   picks out the local maximum pixels with some noise tolerance.
 	 *   @author: Muyuan Chen
 	 *   @date: 03/2015
@@ -8589,12 +8687,12 @@ correction is not possible, this will allow you to approximate the correction to
 		}
 		static const string NAME;
 	};
-	
-	/**  Replace the value of each pixel with the sum of density of the object it belongs to. 
+
+	/**  Replace the value of each pixel with the sum of density of the object it belongs to.
 	 *   Objects are defined by continius density above the given threshold.
 	 *   @author: Muyuan Chen
 	 *   @date: 03/2015
-	 */	
+	 */
 	class ObjDensityProcessor:public Processor
 	{
 	public:
@@ -8621,11 +8719,11 @@ correction is not possible, this will allow you to approximate the correction to
 		}
 		static const string NAME;
 	};
-	
+
 	/**  Label each object in a black-white image. Also return the center of each object.
 	 *   @author: Muyuan Chen
 	 *   @date: 03/2015
-	 */	
+	 */
 	class ObjLabelProcessor:public Processor
 	{
 	public:
@@ -8652,11 +8750,11 @@ correction is not possible, this will allow you to approximate the correction to
 		}
 		static const string NAME;
 	};
-	
+
 	/**  Thinning a binary map to skelton using the Zhang-Suen thinning algorithm. (1984, ACM)
 	 *   @author: Muyuan Chen
 	 *   @date: 03/2015
-	 */	
+	 */
 	class BwThinningProcessor:public Processor
 	{
 	public:
@@ -8691,7 +8789,7 @@ correction is not possible, this will allow you to approximate the correction to
 	/**  Set a pixel to white when >= N neighbors are white.
 	 *   @author: Muyuan Chen
 	 *   @date: 04/2015
-	 */	
+	 */
 	class BwMajorityProcessor:public BoxStatProcessor
 	{
 	public:
@@ -8715,7 +8813,7 @@ correction is not possible, this will allow you to approximate the correction to
 			return d;
 		}
 		static const string NAME;
-		
+
 	protected:
 		void process_pixel(float *pixel, const float *array, int n) const
 		{
@@ -8725,16 +8823,16 @@ correction is not possible, this will allow you to approximate the correction to
 				if (array[i]>thresh)
 					nmaj--;
 			}
-			*pixel=nmaj<=0?1:0;			
+			*pixel=nmaj<=0?1:0;
 		}
 	};
-	
-	
-	/**  Prune branches from the skeleton. Remove a piece when the minimum distance through density 
+
+
+	/**  Prune branches from the skeleton. Remove a piece when the minimum distance through density
 	 *   from an endpoint to the nearest branch point is shorter than a given value.
 	 *   @author: Muyuan Chen
 	 *   @date: 04/2015
-	 */	
+	 */
 	class PruneSkeletonProcessor:public Processor
 	{
 	public:
@@ -8763,11 +8861,11 @@ correction is not possible, this will allow you to approximate the correction to
 		}
 		static const string NAME;
 	};
-	
+
 	/**  Grow a skeleton map toward a local direction. Image should be binarized.
 	 *   @author: Muyuan Chen
 	 *   @date: 06/2015
-	 */	
+	 */
 	class GrowSkeletonProcessor:public Processor
 	{
 	public:
@@ -8795,11 +8893,11 @@ correction is not possible, this will allow you to approximate the correction to
 		}
 		static const string NAME;
 	};
-	
+
 	/**  Calculate the z thickness of each pixel in a binarized 3d image
 	 *   @author: Muyuan Chen
 	 *   @date: 02/2016
-	 */	
+	 */
 	class ZThicknessProcessor:public Processor
 	{
 	public:
@@ -8826,7 +8924,7 @@ correction is not possible, this will allow you to approximate the correction to
 		}
 		static const string NAME;
 	};
-	
+
 	/** Replace the value of each pixel with a value in a given array.
 	 * i.e. given an array of [3,7,9], pixels with value of 0 will become 3, 1 becomes 7, 2 becomes 9.
 	 *   @author: Muyuan Chen
@@ -8869,7 +8967,7 @@ correction is not possible, this will allow you to approximate the correction to
 			return "Replace the value of each pixel with a value in a given array, i.e. given an array of [3,7,9], pixels with value of 0 will become 3, 1 becomes 7, 2 becomes 9. The input image has to be int, or it will be round down. Values exceed the length of array are set to zero. Designed for labeled image coloring.";
 		}
 	};
-	
+
 #ifdef SPARX_USING_CUDA
 	/* class MPI CUDA kmeans processor
 	 * 2009-02-13 17:34:45 JB first version

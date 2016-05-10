@@ -203,7 +203,8 @@ def main():
 			runcmd( options, cmd )
 			img2p = img2processED
 			
-			img2processApix = img2p['apix_x']
+			img2phdr = EMData(img2p,0,True)
+			img2processApix = img2phdr['apix_x']
 			
 			nStack2process = EMUtil.get_image_count( img2p )
 	
@@ -216,7 +217,7 @@ def main():
 			cmd = ' e2fixheader.py --input=' + img2p+ ' --stem=origin --stemval=0 && e2fixheader.py --input=' + img2p + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0" 
 			runcmd( options, cmd )
 		
-			img2phdr = EMData( img2p, 0, True )
+			#img2phdr = EMData( img2p, 0, True )
 			
 			
 			'''

@@ -427,7 +427,7 @@ def fftip(e):
 		# forward fft
 		e.do_fft_inplace()
 
-def fpol(image, nnx, nny=1, nnz=1, RetReal = True):
+def fpol(image, nnx, nny=1, nnz=1, RetReal = True, normalize = True):
 	"""
 		Name
 			fpol -Interpolate image up by padding its Fourier transform with zeroes
@@ -436,7 +436,8 @@ def fpol(image, nnx, nny=1, nnz=1, RetReal = True):
 			nnx: new nx dimension
 			nny: new ny dimension (default = 0, meaning equal to the original ny)
 			nnz: new nz dimension (default = 0, meaning equal to the original nz)
-			RetReal: Logical flag, if True, the returned image is real, if False, it is Fourier
+			RetReal:     Logical flag, if True, the returned image is real, if False, it is Fourier
+			normalize:   Logical flag, if True, the returned image is normalized such that the power (sum of amplitudes squared) is preserved
 		Output
 			the output interpolated up image
 	"""
@@ -453,13 +454,22 @@ def fpol(image, nnx, nny=1, nnz=1, RetReal = True):
 		if image.is_complex() and RetReal: return fft(image)
 		else: return image
 	
-	return  image.FourInterpol(nnx, nny, nnz, RetReal)
+	return  image.FourInterpol(nnx, nny, nnz, RetReal, normalize)
 
-def fdecimate(image, nnx, nny=1, nnz=1, RetReal = True):
+def fdecimate(image, nnx, nny=1, nnz=1, RetReal = True, normalize = True):
 	"""
 		Decimate image by truncating its Fourier transform
+		Input
+			image: image to be interpolated.
+			nnx: new nx dimension
+			nny: new ny dimension (default = 0, meaning equal to the original ny)
+			nnz: new nz dimension (default = 0, meaning equal to the original nz)
+			RetReal:     Logical flag, if True, the returned image is real, if False, it is Fourier
+			normalize:   Logical flag, if True, the returned image is normalized such that the power (sum of amplitudes squared) is preserved
+		Output
+			the output decimated image
 	"""
-	return  image.FourTruncate(nnx, nny, nnz, RetReal)	
+	return  image.FourTruncate(nnx, nny, nnz, RetReal, normalize)
     
 def fshift(e, delx=0, dely=0, delz=0):
 	"""

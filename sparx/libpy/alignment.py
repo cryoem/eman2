@@ -32,6 +32,7 @@ from global_def import *
 
 
 #  06-12-14 code lifted
+'''
 def XXali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \
 						random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
@@ -83,7 +84,7 @@ def XXali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		sy_sum += syn
 
 	return sx_sum, sy_sum
-
+'''
 
 def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \
@@ -2067,7 +2068,8 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	at = time()
 	npsi = int(360./delta_psi)
 	nang = len(refang)
-	newpar = [[i, [1.0e23,0.0], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	ndat = len(data)
+	newpar = [[i, [1.0e23,0.0], [] ] for i in xrange(ndat)]
 	#newpar = [[i, [1.0e23,1.0e23], []] for i in xrange(len(data))]
 	for i in xrange(nang):
 		#if myid == main_node:  print "  Angle :",i,time()-at
@@ -2078,10 +2080,10 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
 			else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
 			temp.set_attr("is_complex",0)
-			nrmref = sqrt(Util.innerproduct(temp, temp))
+			nrmref = sqrt(Util.innerproduct(temp, temp, None))
 			for kl,emimage in enumerate(data):
 				for im in xrange(len(shifts)):
-					peak = Util.innerproduct(temp, emimage[im])
+					peak = Util.innerproduct(temp, emimage[im],None)
 					peak /= nrmref
 					#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
 					newpar[kl][-1].append([im + iangpsi, peak])
@@ -2099,7 +2101,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 					newpar[kl][1][1] += peak
 					#  Store the worst one
 					if( peak < newpar[kl][1][0]):  newpar[kl][1][0] = peak
-		for kl in xrange(len(data)):
+		for kl in xrange(ndat):
 			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]
 
@@ -2109,7 +2111,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	#mpi_barrier(MPI_COMM_WORLD)
 	#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
 	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
-	for kl in xrange(len(data)):
+	for kl in xrange(ndat):
 		newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 		newpar[kl][-1] = newpar[kl][-1][:1]
 	mpi_barrier(MPI_COMM_WORLD)
@@ -4197,15 +4199,23 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	nr = int(2*psimax/psistep)+1
 	nc = nr//2
 	if updown == "up" :  reduced_psiref = psiref -  90.0
-	else:                reduced_psiref = psiref - 180.0
+	else:                reduced_psiref = psiref - 270.0
 
 	#  Limit psi search to within psimax range
 	#  It makes no sense, as it still searches within the entire range of psi_max
-	bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
-	enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
+	# bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
+	# enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
+	# psi_offset = abs(int(round(2*abs(reduced_psiref)/psistep)))
+	psi_offset = int(round(reduced_psiref / psistep)) + nc
+	lower_segment_length = psi_offset
+	upper_segment_length = nr - 1 - psi_offset
+	if lower_segment_length >= 0 and upper_segment_length >= 0:
+		psi_half_range = min(lower_segment_length, upper_segment_length)
+		bnr = psi_offset - psi_half_range 
+		enr = psi_offset + psi_half_range + 1
+	else:
+		bnr = enr = 0
 	
-	
-
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
 	#   We quietly assume the search range for translations is always much less than the ccf size,
@@ -4224,11 +4234,13 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	wyc = wny//2
 
 	if updown == "up" :
+		# print "up: reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)", reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)
 		ima = inima
 		#ima = inima.FourInterpol(N, N, 1,0)
 		#ima = Processor.EMFourierFilter(ima,params)
 
 	if updown == "down" :
+		# print "down: reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)", reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)
 		#  This yields rotation by 180 degrees.  There is no extra shift as the image was padded 2x, so it is even-sized, but two rows are incorrect
 		imm = inima.conjg()
 		#imm = rot_shift2D(inima,180.0, interpolation_method = 'linear')
@@ -4252,6 +4264,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23     ## do nothing for rny=0 @ming
 	for i in xrange(bnr, enr, 1):
 		if updown == "up" :
+			# print "up i, bnr, enr, len(ref)", i, bnr, enr, len(ref)
 			c = ccf(ima,ref[i])
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
@@ -4298,6 +4311,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 					ma2  = PEAKV
 					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
 		if updown == "down" :
+			# print "down i, bnr, enr, len(ref)", i, bnr, enr, len(ref)
 			c = ccf(imm,ref[i])
 			for iy in xrange(-rny, rny + 1):
 				for ix in xrange(-rnx, rnx + 1):
@@ -5653,3 +5667,50 @@ def generate_indices_and_refrings(nima, projangles, volft, kb, nx, delta, an, ra
 
 ### end: code that supports cone implementation
 ########################################################################################################################
+
+def frame_alignment(movie_stack, particle_radius, templates, x_half_size, psi_half_size, y_half_size = None, apply_alignment_in_place = False):
+	
+	from utilities import model_circle, list_prod, calculate_space_size
+	from statistics import ccc
+	import numpy as np
+	from fundamentals import rot_shift2D
+	
+	if y_half_size == None:
+		y_half_size = x_half_size
+	
+	NUMBER_OF_FRAMES = len(movie_stack)
+	# x_half_size, y_half_size, psi_half_size = 5, 5, 5
+	image_movement_space_size = x_length, y_length, psi_length = calculate_space_size(x_half_size, y_half_size, psi_half_size)
+	
+	nx = movie_stack[0].get_xsize()
+	mask = model_circle(particle_radius, nx, nx)
+	
+	space_size = [NUMBER_OF_FRAMES] + image_movement_space_size
+	new_ccEMData = EMData(list_prod(space_size), 1)
+
+	for k in range(NUMBER_OF_FRAMES):
+		# print "k", k
+		for psi_i in range(psi_length):
+			for y_i in range(y_length):
+				for x_i in range(x_length):
+					Util.write_nd_array(new_ccEMData, space_size, [k, x_i, y_i, psi_i], ccc(movie_stack[k], templates[x_i][y_i][psi_i], mask))
+	
+	result = Util.max_sum_along_line_in_nd_array(new_ccEMData, space_size, NUMBER_OF_FRAMES)
+	
+	if apply_alignment_in_place:
+		[x_i, y_i, psi_i, x_j, y_j, psi_j] = result
+		xxx = np.linspace(-x_half_size, x_half_size, x_length)
+		yyy = np.linspace(-y_half_size, y_half_size, y_length)
+		ppp = np.linspace(-psi_half_size, psi_half_size, psi_length)
+		
+		x = np.linspace(xxx[x_i], xxx[x_j], NUMBER_OF_FRAMES)
+		y = np.linspace(yyy[y_i], yyy[y_j], NUMBER_OF_FRAMES)
+		psi = np.linspace(ppp[psi_i], ppp[psi_j], NUMBER_OF_FRAMES)
+		
+		
+		for i in range(NUMBER_OF_FRAMES):
+			movie_stack[i] = rot_shift2D(movie_stack[i], -psi[i], -x[i], -y[i], 0, interpolation_method="linear")
+			return None
+			
+	else:
+		return result

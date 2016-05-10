@@ -845,6 +845,7 @@ int FourierReconstructor::determine_slice_agreement(EMData*  input_slice, const 
 
 	input_slice->set_attr("reconstruct_norm",slice->get_attr("reconstruct_norm"));
 	input_slice->set_attr("reconstruct_absqual",slice->get_attr("reconstruct_absqual"));
+	input_slice->set_attr("reconstruct_absqual_lowres",slice->get_attr("reconstruct_absqual_lowres"));
 //	input_slice->set_attr("reconstruct_qual",slice->get_attr("reconstruct_qual"));
 	input_slice->set_attr("reconstruct_weight",slice->get_attr("reconstruct_weight"));
 
@@ -869,7 +870,15 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 
 	float inx=(float)(input_slice->get_xsize());		// x/y dimensions of the input image
 	float iny=(float)(input_slice->get_ysize());
-
+	float apix=input_slice->get_attr("apix_x");
+	float rmax=iny*apix/12.0;		// radius at 12 A, use as cutoff for low res insertion quality
+	if (rmax>iny/2.0-1.0) rmax=iny/2.0-1.0;		// in case of large A/pix
+	if (rmax<5.0) rmax=5.0;		// can't imagine this will happen
+	
+	double dotlow=0;	// low resolution dot product
+	double dlpow=0;
+	double dlpow2=0;
+	
 	double dot=0;		// summed pixel*weight dot product
 	double vweight=0;		// sum of weights
 	double power=0;		// sum of inten*weight from volume
@@ -933,6 +942,15 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 					if (!pixel_at(xx,yy,zz,dt) || dt[2]==0) continue;
 
 //					printf("%f\t%f\t%f\t%f\t%f\n",dt[0],dt[1],dt[2],dt2[0],dt2[1]);
+					float r=(float)Util::hypot_fast(x,y);
+					if (r>3 && r<rmax) {
+						dotlow+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
+						dlpow+=(dt[0]*dt[0]+dt[1]*dt[1])*dt[2];
+						dlpow2+=(dt2[0]*dt2[0]+dt2[1]*dt2[1])*dt[2];
+					}
+					
+					
+//					if (r<6) continue; 
 					dot+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
 					vweight+=dt[2];
 					power+=(dt[0]*dt[0]+dt[1]*dt[1])*dt[2];
@@ -944,9 +962,11 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	}
 	
 	dot/=sqrt(power*power2);		// normalize the dot product
+	if (dlpow*dlpow2>0) dotlow/=sqrt(dlpow*dlpow2);
 //	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)));
 	input_slice->set_attr("reconstruct_norm",(float)(power2<=0?1.0:sqrt(power/power2)));
 	input_slice->set_attr("reconstruct_absqual",(float)dot);
+	input_slice->set_attr("reconstruct_absqual_lowres",(float)dotlow);
 	float rw=weight<=0?1.0f:1.0f/weight;
 	input_slice->set_attr("reconstruct_qual",(float)(dot*rw/((rw-1.0)*dot+1.0)));	// here weight is a proxy for SNR
 	input_slice->set_attr("reconstruct_weight",(float)vweight/(float)(subnx*subny*subnz));
@@ -2143,29 +2163,9 @@ EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int n
 	return padfftslice;
 }
 
-nn4Reconstructor::nn4Reconstructor()
-{
-	m_volume = NULL;
-	m_wptr   = NULL;
-}
 
-nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
-{
-	m_volume = NULL;
-	m_wptr   = NULL;
-	setup( symmetry, size, npad );
-	load_default_settings();
-	print_params();
-}
+//####################################################################################
 
-nn4Reconstructor::~nn4Reconstructor()
-{
-	//if( m_delete_volume ) checked_delete(m_volume); 
-
-	//if( m_delete_weight ) checked_delete( m_wptr );
-
-	//checked_delete( m_result );
-}
 
 enum weighting_method { NONE, ESTIMATE, VORONOI };
 
@@ -2205,11 +2205,193 @@ float max3d( int kc, const vector<float>& pow_a )
 }
 
 
+#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
+
+void circumfnn( EMData* win , int npad)
+{
+	float *tw = win->get_data();
+	//  correct for the fall-off of NN interpolation using sinc functions
+	//  mask and subtract circumference average
+	int ix = win->get_xsize();
+	int iy = win->get_ysize();
+	int iz = win->get_zsize();
+	int L2 = (ix/2)*(ix/2);
+	int L2P = (ix/2-1)*(ix/2-1);
+
+	int IP = ix/2+1;
+	int JP = iy/2+1;
+	int KP = iz/2+1;
+
+	//  sinc functions tabulated for fall-off
+	float* sincx = new float[IP+1];
+	float* sincy = new float[JP+1];
+	float* sincz = new float[KP+1];
+
+	sincx[0] = 1.0f;
+	sincy[0] = 1.0f;
+	sincz[0] = 1.0f;
+
+	float cor;
+	if( npad == 1 )  cor = 1.0;
+	else  cor = 4.0;
+
+	float cdf = M_PI/(cor*ix);
+	for (int i = 1; i <= IP; ++i)  sincx[i] = sin(i*cdf)/(i*cdf);
+	cdf = M_PI/(cor*iy);
+	for (int i = 1; i <= JP; ++i)  sincy[i] = sin(i*cdf)/(i*cdf);
+	cdf = M_PI/(cor*iz);
+	for (int i = 1; i <= KP; ++i)  sincz[i] = sin(i*cdf)/(i*cdf);
+	for (int k = 1; k <= iz; ++k) {
+		int kkp = abs(k-KP);
+		for (int j = 1; j <= iy; ++j) {
+			cdf = sincy[abs(j- JP)]*sincz[kkp];
+			for (int i = 1; i <= ix; ++i)  tw(i,j,k) /= (sincx[abs(i-IP)]*cdf);
+		}
+	}
+
+	delete[] sincx;
+	delete[] sincy;
+	delete[] sincz;
+
+	float  TNR = 0.0f;
+	size_t m = 0;
+	for (int k = 1; k <= iz; ++k) {
+		for (int j = 1; j <= iy; ++j) {
+			for (int i = 1; i <= ix; ++i) {
+				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR >= (size_t)L2P && LR<=(size_t)L2) {
+					TNR += tw(i,j,k);
+					++m;
+				}
+			}
+		}
+	}
+
+	TNR /=float(m);
+	
+	
+	for (int k = 1; k <= iz; ++k) {
+		for (int j = 1; j <= iy; ++j) {
+			for (int i = 1; i <= ix; ++i) {
+				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
+				else                tw(i,j,k)  = 0.0f;
+			}
+		}
+	}
+
+}
+
+
+void circumftrl( EMData* win , int npad)
+{
+	float *tw = win->get_data();
+	//  correct for the fall-off of tri-linear interpolation using sinc^2 functions
+	//  mask and subtract circumference average
+	int ix = win->get_xsize();
+	int iy = win->get_ysize();
+	int iz = win->get_zsize();
+	int L2 = (ix/2)*(ix/2);
+	int L2P = (ix/2-1)*(ix/2-1);
+
+	int IP = ix/2+1;
+	int JP = iy/2+1;
+	int KP = iz/2+1;
+
+	//  sinc functions tabulated for fall-off
+	float* sincx = new float[IP+1];
+	float* sincy = new float[JP+1];
+	float* sincz = new float[KP+1];
+
+	sincx[0] = 1.0f;
+	sincy[0] = 1.0f;
+	sincz[0] = 1.0f;
+
+	float cor;
+	if( npad == 1 )  cor = 1.0;
+	else  cor = 4.0;
+
+	float cdf = M_PI/(cor*ix);
+	for (int i = 1; i <= IP; ++i)  sincx[i] = pow(sin(i*cdf)/(i*cdf),2);
+	cdf = M_PI/(cor*iy);
+	for (int i = 1; i <= JP; ++i)  sincy[i] = pow(sin(i*cdf)/(i*cdf),2);
+	cdf = M_PI/(cor*iz);
+	for (int i = 1; i <= KP; ++i)  sincz[i] = pow(sin(i*cdf)/(i*cdf),2);
+	for (int k = 1; k <= iz; ++k) {
+		int kkp = abs(k-KP);
+		for (int j = 1; j <= iy; ++j) {
+			cdf = sincy[abs(j- JP)]*sincz[kkp];
+			for (int i = 1; i <= ix; ++i)  tw(i,j,k) /= (sincx[abs(i-IP)]*cdf);
+		}
+	}
+
+	delete[] sincx;
+	delete[] sincy;
+	delete[] sincz;
+
+	float  TNR = 0.0f;
+	size_t m = 0;
+	for (int k = 1; k <= iz; ++k) {
+		for (int j = 1; j <= iy; ++j) {
+			for (int i = 1; i <= ix; ++i) {
+				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR >= (size_t)L2P && LR<=(size_t)L2) {
+					TNR += tw(i,j,k);
+					++m;
+				}
+			}
+		}
+	}
+
+	TNR /=float(m);
+	
+	
+	for (int k = 1; k <= iz; ++k) {
+		for (int j = 1; j <= iy; ++j) {
+			for (int i = 1; i <= ix; ++i) {
+				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
+				else                tw(i,j,k)  = 0.0f;
+			}
+		}
+	}
+
+}
+
+
+
+//####################################################################################
+
+//** nn4 reconstructor
+
+nn4Reconstructor::nn4Reconstructor()
+{
+	m_volume = NULL;
+	m_wptr   = NULL;
+}
+
+nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
+{
+	setup( symmetry, size, npad );
+	load_default_settings();
+	//print_params();
+}
+
+nn4Reconstructor::~nn4Reconstructor()
+{
+	//if( m_delete_volume ) checked_delete(m_volume); 
+
+	//if( m_delete_weight ) checked_delete( m_wptr );
+
+	//checked_delete( m_result );
+}
+
+
 void nn4Reconstructor::setup()
 {
+
 	int size = params["size"];
 	int npad = params["npad"];
-
 
 	string symmetry;
 	if( params.has_key("symmetry") )  symmetry = params["symmetry"].to_str();
@@ -2247,7 +2429,7 @@ void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 
 	buildFFTVolume();
 	buildNormVolume();
-	
+
 }
 
 
@@ -2372,161 +2554,6 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, f
 }
 
 
-#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-
-void circumfnn( EMData* win , int npad)
-{
-	float *tw = win->get_data();
-	//  correct for the fall-off of NN interpolation using sinc functions
-	//  mask and subtract circumference average
-	int ix = win->get_xsize();
-	int iy = win->get_ysize();
-	int iz = win->get_zsize();
-	int L2 = (ix/2)*(ix/2);
-	int L2P = (ix/2-1)*(ix/2-1);
-
-	int IP = ix/2+1;
-	int JP = iy/2+1;
-	int KP = iz/2+1;
-
-	//  sinc functions tabulated for fall-off
-	float* sincx = new float[IP+1];
-	float* sincy = new float[JP+1];
-	float* sincz = new float[KP+1];
-
-	sincx[0] = 1.0f;
-	sincy[0] = 1.0f;
-	sincz[0] = 1.0f;
-
-	float cor;
-	if( npad == 1 )  cor = 1.0;
-	else  cor = 4.0;
-
-	float cdf = M_PI/(cor*ix);
-	for (int i = 1; i <= IP; ++i)  sincx[i] = sin(i*cdf)/(i*cdf);
-	cdf = M_PI/(cor*iy);
-	for (int i = 1; i <= JP; ++i)  sincy[i] = sin(i*cdf)/(i*cdf);
-	cdf = M_PI/(cor*iz);
-	for (int i = 1; i <= KP; ++i)  sincz[i] = sin(i*cdf)/(i*cdf);
-	for (int k = 1; k <= iz; ++k) {
-		int kkp = abs(k-KP);
-		for (int j = 1; j <= iy; ++j) {
-			cdf = sincy[abs(j- JP)]*sincz[kkp];
-			for (int i = 1; i <= ix; ++i)  tw(i,j,k) /= (sincx[abs(i-IP)]*cdf);
-		}
-	}
-
-	delete[] sincx;
-	delete[] sincy;
-	delete[] sincz;
-
-	float  TNR = 0.0f;
-	size_t m = 0;
-	for (int k = 1; k <= iz; ++k) {
-		for (int j = 1; j <= iy; ++j) {
-			for (int i = 1; i <= ix; ++i) {
-				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR >= (size_t)L2P && LR<=(size_t)L2) {
-					TNR += tw(i,j,k);
-					++m;
-				}
-			}
-		}
-	}
-
-	TNR /=float(m);
-	
-	
-	for (int k = 1; k <= iz; ++k) {
-		for (int j = 1; j <= iy; ++j) {
-			for (int i = 1; i <= ix; ++i) {
-				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
-				else                tw(i,j,k) = 0.0f;
-
-			}
-		}
-	}
-
-}
-
-
-void circumftrl( EMData* win , int npad)
-{
-	float *tw = win->get_data();
-	//  correct for the fall-off of tri-linear interpolation using sinc^2 functions
-	//  mask and subtract circumference average
-	int ix = win->get_xsize();
-	int iy = win->get_ysize();
-	int iz = win->get_zsize();
-	int L2 = (ix/2)*(ix/2);
-	int L2P = (ix/2-1)*(ix/2-1);
-
-	int IP = ix/2+1;
-	int JP = iy/2+1;
-	int KP = iz/2+1;
-
-	//  sinc functions tabulated for fall-off
-	float* sincx = new float[IP+1];
-	float* sincy = new float[JP+1];
-	float* sincz = new float[KP+1];
-
-	sincx[0] = 1.0f;
-	sincy[0] = 1.0f;
-	sincz[0] = 1.0f;
-
-	float cor;
-	if( npad == 1 )  cor = 1.0;
-	else  cor = 4.0;
-
-	float cdf = M_PI/(cor*ix);
-	for (int i = 1; i <= IP; ++i)  sincx[i] = pow(sin(i*cdf)/(i*cdf),2);
-	cdf = M_PI/(cor*iy);
-	for (int i = 1; i <= JP; ++i)  sincy[i] = pow(sin(i*cdf)/(i*cdf),2);
-	cdf = M_PI/(cor*iz);
-	for (int i = 1; i <= KP; ++i)  sincz[i] = pow(sin(i*cdf)/(i*cdf),2);
-	for (int k = 1; k <= iz; ++k) {
-		int kkp = abs(k-KP);
-		for (int j = 1; j <= iy; ++j) {
-			cdf = sincy[abs(j- JP)]*sincz[kkp];
-			for (int i = 1; i <= ix; ++i)  tw(i,j,k) /= (sincx[abs(i-IP)]*cdf);
-		}
-	}
-
-	delete[] sincx;
-	delete[] sincy;
-	delete[] sincz;
-
-	float  TNR = 0.0f;
-	size_t m = 0;
-	for (int k = 1; k <= iz; ++k) {
-		for (int j = 1; j <= iy; ++j) {
-			for (int i = 1; i <= ix; ++i) {
-				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR >= (size_t)L2P && LR<=(size_t)L2) {
-					TNR += tw(i,j,k);
-					++m;
-				}
-			}
-		}
-	}
-
-	TNR /=float(m);
-	
-	
-	for (int k = 1; k <= iz; ++k) {
-		for (int j = 1; j <= iy; ++j) {
-			for (int i = 1; i <= ix; ++i) {
-				size_t LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=(size_t)L2) tw(i,j,k) -= TNR;
-				else                tw(i,j,k) = 0.0f;
-
-			}
-		}
-	}
-
-}
-
 EMData* nn4Reconstructor::finish(bool) {
 
 	if( m_ndim == 3 ) {
@@ -2566,7 +2593,7 @@ EMData* nn4Reconstructor::finish(bool) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
 					float tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+m_osnr);
-					if( m_weighting == ESTIMATE ) {
+					if( m_weighting == ESTIMATE && false) {  // HERE
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
 						int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;

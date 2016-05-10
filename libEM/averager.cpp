@@ -51,6 +51,7 @@ const string IterationAverager::NAME = "iteration";
 const string CtfCWautoAverager::NAME = "ctfw.auto";
 const string CtfCAutoAverager::NAME = "ctf.auto";
 const string CtfWtAverager::NAME = "ctf.weight";
+const string CtfWtFiltAverager::NAME = "ctf.weight.autofilt";
 const string FourierWeightAverager::NAME = "weightedfourier";
 
 template <> Factory < Averager >::Factory()
@@ -63,6 +64,7 @@ template <> Factory < Averager >::Factory()
 	force_add<CtfCWautoAverager>();
 	force_add<CtfCAutoAverager>();
 	force_add<CtfWtAverager>();
+	force_add<CtfWtFiltAverager>();
 	force_add<TomoAverager>();
 	force_add<FourierWeightAverager>();
 //	force_add<XYZAverager>();
@@ -1122,6 +1124,145 @@ EMData * CtfWtAverager::finish()
 	EMData *ret=result->do_ift();
 	delete result;
 	result=NULL;
+	return ret;
+}
+
+CtfWtFiltAverager::CtfWtFiltAverager()
+{
+	nimg[0]=0;
+	nimg[1]=0;
+	eo=-1;
+}
+
+
+void CtfWtFiltAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+
+
+
+	EMData *fft=image->do_fft();
+
+	if (nimg[0] >= 1 && !EMUtil::is_same_size(fft, results[0])) {
+		LOGERR("%s Averager can only process images of the same size", get_name().c_str());
+		return;
+	}
+
+	if (eo==-1) {
+		results[0] = fft->copy_head();
+		results[0]->to_zero();
+		results[1] = fft->copy_head();
+		results[1]->to_zero();
+		eo=1;
+	}
+
+	eo^=1;
+	nimg[eo]++;
+
+	
+	EMData *ctfi = results[0]-> copy();
+	if (image->has_attr("ctf")) {
+		Ctf *ctf = (Ctf *)image->get_attr("ctf");
+
+		float b=ctf->bfactor;
+		ctf->bfactor=0;		// no B-factor used in weight, not strictly threadsafe, but shouldn't be a problem
+		ctf->compute_2d_complex(ctfi,Ctf::CTF_INTEN);
+		ctf->bfactor=b;	// return to its original value
+		delete ctf;
+	}
+	else {
+		ctfi->to_one();
+	}
+		
+	float *outd = results[eo]->get_data();
+	float *ind = fft->get_data();
+	float *ctfd = ctfi->get_data();
+
+	size_t sz=ctfi->get_xsize()*ctfi->get_ysize();
+	for (size_t i = 0; i < sz; i+=2) {
+		
+		// CTF weight
+		outd[i]+=ind[i]*ctfd[i];
+		outd[i+1]+=ind[i+1]*ctfd[i];
+	}
+
+	if (nimg[eo]==1) {
+		ctfsum[eo]=ctfi->copy_head();
+		ctfsum[eo]->to_zero();
+		ctfsum[eo]->add(0.1);		// we start with a value of 0.1 rather than zero to empirically help with situations where the data is incomplete
+	}
+	ctfsum[eo]->add(*ctfi);
+
+	delete fft;
+	delete ctfi;
+}
+
+EMData * CtfWtFiltAverager::finish()
+{
+	if (nimg[0]==0 && nimg[1]==0) return NULL;	// no images
+	// Only a single image, so we just return it. No way to filter
+	if (nimg[1]==0) {
+		EMData *ret=results[0]->do_ift();
+		delete results[0];
+		delete results[1];
+		delete ctfsum[0];
+		return ret;
+	}
+
+	int nx=results[0]->get_xsize();
+	int ny=results[0]->get_ysize();
+
+	for (int k=0; k<2; k++) {
+		float *outd=results[k]->get_data();
+		float *ctfsd=ctfsum[k]->get_data();
+		for (int j=0; j<ny; j++) {
+			for (int i=0; i<nx; i+=2) {
+				size_t ii=i+j*nx;
+				outd[ii]/=ctfsd[ii];
+				outd[ii+1]/=ctfsd[ii];
+			}
+		}
+		results[k]->update();
+	//	result->set_attr("ctf_total",ctfsum->calc_radial_dist(ctfsum->get_ysize()/2,0,1,false));
+		results[0]->set_attr("ctf_wiener_filtered",1);
+	}
+	
+	// compute the Wiener filter from the FSC
+	std::vector<float> fsc=results[0]->calc_fourier_shell_correlation(results[1]);
+	int third=fsc.size()/3;
+	for (int i=third; i<third*2; i++) {
+		if (fsc[i]>=.9999) fsc[i]=.9999;
+		if (fsc[i]<.001) fsc[i]=.001;
+		float snr=fsc[i]/(1.0-fsc[i]);
+		fsc[i]=snr*snr/(snr*snr+1.0);
+	}
+	
+	
+	results[0]->add(*results[1]);
+	
+	float c;
+	for (int j=-ny/2; j<ny/2; j++) {
+		for (int i=0; i<nx/2; i++) {
+			int r=(int)Util::hypot_fast(i,j);
+			if (r>=third) c=0.0;
+			else c=fsc[third+r];
+			results[0]->set_complex_at(i,j,results[0]->get_complex_at(i,j)*c);
+		}
+	}
+	
+	EMData *ret=results[0]->do_ift();
+	ret->set_attr("ptcl_repr",nimg[0]+nimg[1]);
+	
+/*	snrsum->write_image("snr.hdf",-1);
+	result->write_image("avg.hdf",-1);*/
+	
+	delete ctfsum[0];
+	delete ctfsum[1];
+	delete results[0];
+	delete results[1];
+	results[0]=results[1]=NULL;
 	return ret;
 }
 
