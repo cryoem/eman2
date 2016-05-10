@@ -724,6 +724,7 @@ def main():
 					proj = proj + filt_gaussl(model_gauss_noise(sigma2_proj, nx, nx), sigma_gauss)
 					proj.set_attr("origimgsrc",imgsrc)
 					proj.set_attr("test_id", iprj)
+					proj.set_attr("ptcl_source_image",micpref + "%1d.hdf" % (idef-3))
 					# flags describing the status of the image (1 = true, 0 = false)
 					set_params2D(proj, [0.0, 0.0, 0.0, 0, 1.0])
 					set_params_proj(proj, [phi, tht, psi, s2x, s2y])
