@@ -277,7 +277,10 @@ class EMProjectManager(QtGui.QMainWindow):
 		#self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/spt.json', 'SPT'))
 
 		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography'))
-		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomosegpanel.json', 'TomogramSegmentation'))
+		try :
+			self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomosegpanel.json', 'TomogramSegmentation'))
+		except :
+			pass
 		#Jesus
 
 		return self.tree_stacked_widget

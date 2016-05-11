@@ -480,12 +480,16 @@ important to use an angular step which is 90/integer.</p>")
 
 	if options.simaligncmp==None : options.simaligncmp="ccc"
 	if options.simralign==None and options.speed<7 :
-		if options.targetres>=11.0 or options.speed==6:
+		if options.targetres>=11.0 or options.speed>5:
 			options.simralign="refine"
 			if options.simraligncmp==None : options.simraligncmp="ccc"
 		else :
 			options.simralign="refine"
-			if options.simraligncmp==None : options.simraligncmp="frc:zeromask=1:snrweight=1"
+			# previously, the default minres/maxres was 500,10. In testing showed that 50,5 produced noticably improved results on IP3R
+			# changing the default to match targetres
+			if options.simraligncmp==None : 
+				options.simraligncmp="frc:zeromask=1:snrweight=1:minres=80:maxres={}".format(options.targetres)
+			
 		simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
 	elif options.speed==7 or options.simralign.lower()=="none" :
 		simralign=" "
@@ -512,7 +516,7 @@ important to use an angular step which is 90/integer.</p>")
 			if options.classraligncmp==None : options.classraligncmp="ccc"
 		else :
 			options.classralign="refine"
-			if options.classraligncmp==None : options.classraligncmp="frc:snrweight=1:zeromask=1"
+			if options.classraligncmp==None : options.classraligncmp="frc:snrweight=1:zeromask=1:minres=80:maxres={}".format(options.targetres)
 		classralign="--ralign {ralign} --raligncmp {raligncmp}".format(ralign=options.classralign,raligncmp=options.classraligncmp)
 	elif options.classralign.lower()=="none":
 		classralign=" "
@@ -755,7 +759,8 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		# we need to decide on a postprocessing amplitude correction scheme here, because it may impact class-averaging
 		if options.ampcorrect=="auto":
 			try:
-				if options.targetres<=8 and lastres!=0 and lastres[1]<9.0 : ampcorrect="flatten"
+				# In the first iteration if targetres is 7 or better, we give it the benefit of the doubt and use flatten (changed 5/11/16)
+				if options.targetres<=7 and lastres[1]<9.0 : ampcorrect="flatten"
 				else: ampcorrect="strucfac"
 			except:
 				ampcorrect="strucfac"		# first iteration
