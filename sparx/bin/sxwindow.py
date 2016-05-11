@@ -40,27 +40,24 @@ from EMAN2jsondb import *
 from sparx import *
 
 def check_options(options, progname):
-
-	error_status = None
 	if options.coordinates_format.lower() not in ["sparx", "eman1", "eman2", "spider"]:
-		error_status = ("Invalid option value: --coordinates_format=%s. Please run %s -h for help." % (options.coordinates_format, progname), getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
-
-	error_status = None
+		ERROR("Invalid option value: --coordinates_format=%s. Please run %s -h for help." % (options.coordinates_format, progname), "sxwindow", 1)
+		exit()
+	
 	if options.import_ctf:
 		if os.path.exists(options.import_ctf) == False:
-			error_status = ("Specified CTER CTF File is not found. Please check --import_ctf option. Run %s -h for help." % (progname), getframeinfo(currentframe()))
+			ERROR("Specified CTER CTF File is not found. Please check --import_ctf option. Run %s -h for help." % (progname), "sxwindow", 1)
+			exit()
 	else:
 		# assert (not options.import_ctf)
 		if options.limit_ctf:
-			error_status = ("--limit_ctf option requires valid CTER CTF File (--import_ctf). Please run %s -h for help." % (progname), getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
-
-	error_status = None
+			ERROR("--limit_ctf option requires valid CTER CTF File (--import_ctf). Please run %s -h for help." % (progname), "sxwindow", 1)
+			exit()
+	
 	if (options.resample_ratio <= 0.0 or options.resample_ratio > 1.0):
-		error_status = ("Invalid option value: --resample_ratio=%s. Please run %s -h for help." % (options.resample_ratio, progname), getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
-
+		# assert (not options.import_ctf)
+		ERROR("Invalid option value: --resample_ratio=%s. Please run %s -h for help." % (options.resample_ratio, progname), "sxwindow", 1)
+		exit()
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -83,130 +80,56 @@ BDB files can not be selected as input micrographs.
 	parser.add_option("--resample_ratio",      type="float",         default=1.0,       help="ratio of new to old image size (or old to new pixel size) for resampling: Valid range is 0.0 < resample_ratio <= 1.0. (default 1.0)")
 	parser.add_option("--defocus_error",       type="float",         default=1000000.0, help="defocus errror limit: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocus_error percent. the error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)" )
 	parser.add_option("--astigmatism_error",   type="float",         default=360.0,     help="astigmatism error limit: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatism_error degrees. (default 360.0)")
-
-	### detect if program is running under MPI
-	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
-	
-	######################################################################################################################################################################################################
-	#  switch to MPI - Begin
-	######################################################################################################################################################################################################
-	if RUNNING_UNDER_MPI:
-		from mpi import mpi_init
-		from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
-		
-		mpi_init(0, [])
-		myid = mpi_comm_rank(MPI_COMM_WORLD)
-		number_of_processes = mpi_comm_size(MPI_COMM_WORLD)
-		main_node = 0
-	else:
-		number_of_processes = 1
-	######################################################################################################################################################################################################
-	#  switch to MPI - END
-	######################################################################################################################################################################################################
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
-	# Check invalid conditions of arguments
-	error_status = None
+	# Check invalid conditions of arugments
 	if len(args) != 3:
-		error_status = ("Please check usage for number of arguments.\n Usage: " + usage + "\n" + "Please run %s -h for help." % (progname), getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
+		print("usage: " + usage)
+		print("Please run %s -h for help." % (progname))
+		return 1
 	# assert (len(args) == 3)
 	
 	mic_pattern = args[0]
-	error_status = None
 	if mic_pattern[:len("bdb:")].lower() == "bdb":
-		error_status = ("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (progname), getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
+		ERROR("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (progname), "sxwindow", 1)
+		exit()
 	
-	error_status = None
 	if mic_pattern.find("*") == -1:
-		error_status = ("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
+		ERROR("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (progname), "sxwindow", 1)
+		exit()
 	
 	coords_pattern = args[1]
-	error_status = None
 	if coords_pattern.find("*") == -1:
-		error_status = ("Input coordinates file name pattern must contain wild card (*). Please check input_coordinates_pattern argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
+		ERROR("Input coordinates file name pattern must contain wild card (*). Please check input_coordinates_pattern argument. Run %s -h for help." % (progname), "sxwindow", 1)
+		exit()
 		
 	out_dir = args[2]
-	original_out_dir = out_dir 
-	error_status = None
 	if os.path.exists(out_dir):
-		error_status = ("Output directory exists. Please change the name and restart the program.", getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
-		
+		ERROR("Output directory exists. Please change the name and restart the program.", "sxwindow", 1)
+		exit()
+	# assert (not os.path.exists(out_dir))
+	
 	# Check invalid conditions of options
 	check_options(options, progname)
 	
+	# Build list of micrograph names
+	mic_name_list = glob.glob(mic_pattern)
+	print("Detected micrograph files  : %6d ..." % (len(mic_name_list)))
+	if len(mic_name_list) == 0:
+		ERROR("No mcicrograph file is found. Please check input_micrograph_pattern argument. Run %s -h for help." % (progname), "sxwindow", 1)
+		exit()
 	
-	if RUNNING_UNDER_MPI:
-		mic_name_list = None
-		if myid == main_node:
-			mic_name_list = glob.glob(mic_pattern)
-		mic_name_list = wrap_mpi_bcast(mic_name_list, main_node)
-		error_status = None
-		if len(mic_name_list) == 0:
-			error_status = ("No micrograph file is found. Please check input_micrograph_pattern argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
-		if_error_then_all_processes_exit_program(error_status)
-		
-		coords_name_list = None
-		if myid == main_node:
-			coords_name_list = glob.glob(coords_pattern)
-		coords_name_list = wrap_mpi_bcast(coords_name_list, main_node)
-		error_status = None
-		if len(coords_name_list) == 0:
-			error_status = ("No coordinates file is found. Please check input_coordinates_pattern argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
-		if_error_then_all_processes_exit_program(error_status)
-		del coords_name_list  # Do not need this anymore
-	else:
-		# Build list of micrograph names
-		mic_name_list = glob.glob(mic_pattern)
-		error_status = None
-		if len(mic_name_list) == 0:
-			error_status = ("No micrograph file is found. Please check input_micrograph_pattern argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
-		if_error_then_all_processes_exit_program(error_status)
-		
-		# Check input_coordinates_pattern argument
-		coords_name_list = glob.glob(coords_pattern)
-		error_status = None
-		if len(coords_name_list) == 0:
-			error_status = ("No coordinates file is found. Please check input_coordinates_pattern argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
-		if_error_then_all_processes_exit_program(error_status)
-		del coords_name_list # Do not need this anymore
-
-
-	error_status = None
-	if len(mic_name_list) < number_of_processes:
-		error_status = ('Number of processes (%d) supplied by --np in mpirun cannot be greater than %d (number of micrographs) ' % (number_of_processes, len(mic_name_list)), getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
-
-
-	
-	######################################################################################################################################################################################################
-	#  switch to MPI - Begin
-	######################################################################################################################################################################################################
-	if RUNNING_UNDER_MPI:
-		
-		# generate subdirectories of out_dir, one for each process
-		out_dir = os.path.join(out_dir,"%03d"%myid)
-
-		# assign micrographs to processors		
-		from applications import MPI_start_end
-		mic_start, mic_end = MPI_start_end(len(mic_name_list), number_of_processes, myid)
-		# mic_name_list = mic_name_list[mic_start:mic_end]
-	else:
-		mic_start, mic_end = 0, len(mic_name_list)
-	
-	######################################################################################################################################################################################################
-	#  switch to MPI - END
-	######################################################################################################################################################################################################
-	
-	
+	# Check input_coordinates_pattern argument
+	coords_name_list = glob.glob(coords_pattern)
+	print("Detected coordinates files : %6d ..." % (len(coords_name_list)))
+	if len(coords_name_list) == 0:
+		ERROR("No coordinates file is found. Please check input_coordinates_pattern argument. Run %s -h for help." % (progname), "sxwindow", 1)
+		exit()
+	del coords_name_list # Do not need this anymore
 
 	# Create list of micrograph serial ID
-	# Break micrograph name pattern into prefix and suffix to find the head index of the micrograph serial id
+	# Break micrograph name pattern into prefix and surffix to find the head index of the micrograph serial id
 	mic_tokens = mic_pattern.split('*')
 	# assert (len(mic_tokens) == 2)
 	serial_id_head_index = len(mic_tokens[0])
@@ -243,26 +166,15 @@ BDB files can not be selected as input micrographs.
 		i_enum += 1; idx_cter_mic_name     = i_enum # micrograph name
 		i_enum += 1; n_idx_cter            = i_enum
 		
-		if RUNNING_UNDER_MPI:
-			ctf_list = None
-			if myid == main_node:
-				ctf_list = read_text_row(options.import_ctf)
-			ctf_list = wrap_mpi_bcast(ctf_list, main_node)
-			ctf_list = ctf_list[mic_start:mic_end]
-		else:		
-			# assert (os.path.exists(options.import_ctf))
-			ctf_list = read_text_row(options.import_ctf)
-		# print("Detected CTF entries : %6d ..." % (len(ctf_list)))
-		
-		error_status = None
+		# assert (os.path.exists(options.import_ctf))
+		ctf_list = read_text_row(options.import_ctf)
+		print("Detected CTF entries : %6d ..." % (len(ctf_list)))
 		if len(ctf_list) == 0:
-			error_status = ("No CTF entry is found in %s. Please check --import_ctf option. Run %s -h for help." % (options.import_ctf, progname), getframeinfo(currentframe()))
-		if_error_then_all_processes_exit_program(error_status)
-		
-		error_status = None
+			ERROR("No CTF entry is found in %s. Please check --import_ctf option. Run %s -h for help." % (options.import_ctf, progname), "sxwindow", 1)
+			exit()
 		if (len(ctf_list[0]) != n_idx_cter):
-			error_status = ("Number of columns (%d) must be %d in %s. The format might be old. Please run sxcter.py again." % (len(ctf_list[0]), n_idx_cter, options.import_ctf), getframeinfo(currentframe()))
-		if_error_then_all_processes_exit_program(error_status)
+			ERROR("Number of columns (%d) must be %d in %s. The format might be old. Please run sxcter.py again." % (len(ctf_list[0]), n_idx_cter, options.import_ctf), "sxwindow", 1)
+			exit()
 		
 		ctf_dict={}
 		n_reject_defocus_error = 0
@@ -516,11 +428,6 @@ BDB files can not be selected as input micrographs.
 		# print('# MRK_DEBUG: Executing the command: %s' % (cmd_line))
 		cmdexecute(cmd_line)
 		
-		from EMAN2db import db_open_dict
-		DB = db_open_dict("bdb:%s#data" % (out_dir))
-		DB.close()
-
-		
 #		# MRK_DEBUG: Toshio Moriya 2016/05/03
 #		# Following codes are for debugging bdb. Delete in future
 #		cmd_line = "e2iminfo.py bdb:%s#data" % (out_dir)
@@ -566,35 +473,5 @@ BDB files can not be selected as input micrographs.
 	print(" ")
 	print("DONE!!!")
 	
-	######################################################################################################################################################################################################
-	#  switch back from MPI - Begin
-	######################################################################################################################################################################################################
-	
-	if RUNNING_UNDER_MPI:
-	
-		mpi_barrier(MPI_COMM_WORLD)
-		if main_node == myid:
-			for i in range(number_of_processes):
-				cmd_line = "e2bdb.py bdb:%s/data --appendvstack=bdb:%s/data" % (os.path.join(original_out_dir,"%03d"%i), original_out_dir)
-				cmdexecute(cmd_line)
-		
-		from EMAN2db import db_open_dict
-		DB = db_open_dict("bdb:%s/data" % (original_out_dir))
-		DB.close()
-		
-		from mpi import mpi_finalize
-		mpi_finalize()
-		sys.stdout.flush()
-		sys.exit(0)
-		
-	######################################################################################################################################################################################################
-	#  switch back from MPI - END
-	######################################################################################################################################################################################################
-
-
-	from EMAN2db import db_open_dict
-	DB = db_open_dict("bdb:%s/data" % (original_out_dir))
-	DB.close()
-
 if __name__=="__main__":
 	main()
