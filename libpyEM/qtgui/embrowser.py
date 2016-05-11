@@ -39,6 +39,7 @@ from emimage2d import *
 from emimagemx import *
 from empdbitem3d import *
 from emplot2d import *
+from emhist import *
 from emplot3d import *
 from expand_string import expand_string
 from libpyUtils2 import EMUtil
@@ -662,14 +663,15 @@ class EMPlotFileType(EMFileType) :
 		"""Returns a list of (name, help, callback) tuples detailing the operations the user can call on the current file.
 		callbacks will also be passed a reference to the browser object."""
 
-		if self.numc > 2 : return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew), 
-			("Plot 3D+", "Make new 3-D plot", self.plot3dNew), ("Plot 3D", "Add to current 3-D plot", self.plot3dApp)]
-
-		return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew)]
+		if self.numc > 2 : return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew),
+			("Histogram", "Add to current histogram", self.histApp),("Histogram +", "Make new histogram", self.histNew),
+			("Plot 3D", "Add to current 3-D plot", self.plot3dApp),("Plot 3D+", "Make new 3-D plot", self.plot3dNew)]
+		
+		return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew),("Hist 2D", "Add to current histogram", self.histApp),("Hist 2D+", "Make new histogram", self.histNew)]
 
 	def plot2dApp(self, brws) :
 		"""Append self to current plot"""
-
+		
 		brws.busy()
 
 		data1 = []
@@ -721,6 +723,66 @@ class EMPlotFileType(EMFileType) :
 		brws.viewplot2d.append(target)
 		target.set_data(data, remove_directories_from_name(self.path, 1))
 
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+	
+	def histNew(self, brws) :
+		"""Make a new plot"""
+
+		brws.busy()
+
+		data1 = []
+		fin = file(self.path, "r")
+		numr = 0
+
+		for l in fin :
+			if l[0] == "#" or "nan" in l : continue
+			data1.append([float(i) for i in renumfind.findall(l)])
+
+		data = []
+
+		for c in xrange(self.numc) :
+			data.append([i[c] for i in data1])
+
+		target = EMHistogramWidget()
+		brws.viewhist.append(target)
+		target.set_data(data, remove_directories_from_name(self.path, 1))
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def histApp(self, brws) :
+		"""Append self to current plot"""
+		
+		brws.busy()
+
+		data1 = []
+		fin = file(self.path, "r")
+		numr = 0
+
+		for l in fin :
+			if l[0] == "#" or "nan" in l : continue
+			data1.append([float(i) for i in renumfind.findall(l)])
+
+		data = []
+
+		for c in xrange(self.numc) :
+			data.append([i[c] for i in data1])
+
+		try :
+			target = brws.viewplot2d[-1]
+			target.set_data(data, remove_directories_from_name(self.path, 1))
+		except :
+			target = EMHistogramWidget()
+			brws.viewhist.append(target)
+			target.set_data(data, remove_directories_from_name(self.path, 1))
+		
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
 
 		brws.notbusy()
@@ -923,7 +985,7 @@ class EMImageFileType(EMFileType) :
 
 		self.updthreadexit = True
 
-		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d :
+		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d+self.viewhist :
 			w.close()
 
 		if self.infowin != None :
@@ -2201,6 +2263,7 @@ class EMBDBInfoPane(EMInfoPane) :
 		self.view3d = []
 		self.view2ds = []
 		self.viewplot2d = []
+		self.viewhist = []
 
 	def hideEvent(self, event) :
 		"""If this pane is no longer visible close any child views"""
@@ -2671,13 +2734,14 @@ class EMStackInfoPane(EMInfoPane) :
 		self.view3d = []
 		self.view2ds = []
 		self.viewplot2d = []
+		self.viewhist = []
 
 	def closeEvent(self, event) :
 #		E2saveappwin("e2display", "main", self)
 
 		self.updthreadexit = True
 
-		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d :
+		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewhist:
 			w.close()
 
 		if self.infowin != None :
@@ -3129,6 +3193,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.view3d = []
 		self.viewplot2d = []
 		self.viewplot3d = []
+		self.viewhist = []
 
 		# These items are used to do gradually filling in of file details for better interactivity
 
@@ -3567,7 +3632,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		E2saveappwin("e2display", "main", self)
 		self.updthreadexit = True
 
-		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d :
+		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d+self.viewhist :
 			w.close()
 
 		if self.infowin != None :

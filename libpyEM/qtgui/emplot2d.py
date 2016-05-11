@@ -680,9 +680,6 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		if not quiet : self.updateGL()
 
-# 	def getCurrentAxes(self,key):
-# 		return self.axes[key] (xa,ya,za,sa)
-
 	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False):
 		if color==None : color=self.pparm[key][0]
 		if line==None : line=self.pparm[key][1]
@@ -1611,7 +1608,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		data=self.target().data[name]					# data set we will operate on
 		rnd=self.wnround.getValue()
 		
-		d = np.asarray(data).copy()
+		d = np.asarray(self.target().data[name])
 		
 		self.table.clearContents()
 		column_labels = ["Axis","Mean","Median","Std","Var","Max","Min","Range","Q1","Q3","IQR","IQM","MAD","Skewness"]
@@ -1658,20 +1655,14 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		stat = str(self.wcomb_test.currentText())
 		cols = [str(i) for i in self.wsbcols.getValue().split(",")]
 		insp = self.target().get_inspector() # inspector
-		names=[str(i.text()) for i in insp.setlist.selectedItems()]
+		name=str(insp.setlist.currentItem().text())
 		rnd = 2
 		
 		if len(cols) <= 0:
 			self.textout.setText("Please specify the columns on which you wish to compute this test or statistic")
 			return
 		
-		try:
-			datasets = [self.target().data[name] for name in names]
-			data = np.concatenate(datasets).copy()
-		except:
-			print("Selected datasets must contain the same number of columns.")
-			print("Using only the first dataset selected")
-			data = self.target().data[names[0]].copy()
+		data = self.target().data[name].copy()
 		
 		self.table.clearContents()
 		
@@ -1684,7 +1675,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 			result = np.corrcoef(x,rowvar=False) #result = ["\t".join([str(round(j,2)) for j in i]) for i in corrcoef]
 		
 		else:
-			QtGui.QMessageBox.warning(self, "{} not yet implemented!".format(stat))
+			print("{} not yet implemented!".format(stat))
 			return
 		
 		self.table.setRowCount(result.shape[0])
@@ -1758,7 +1749,7 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		norm = str(self.wcomb_norm.currentText())
 		npts = self.wnpts.getValue()
 		insp = self.target().get_inspector() # inspector
-		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently hilighted items
+		name=str(insp.setlist.currentItem().text())	# currently hilighted items
 		
 		try:
 			xaxes=[int(i) for i in xaxes.split(",")]
@@ -1773,13 +1764,7 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		ys = ",".join([str(i) for i in yaxes])
 		result_name = "Regression (Degree {}; X: {}; Y: {})".format(degree,xs,ys)
 		
-		try:
-			datasets = [self.target().data[name] for name in names]
-			data = np.concatenate(datasets)
-		except:
-			print("Selected datasets must contain the same number of columns.")
-			print("Using only the first dataset selected")
-			data = self.target().data[names[0]]
+		data = np.asarray(self.target().data[name])
 		
 		x = data[xaxes].T
 		y = data[yaxes].T
@@ -2316,12 +2301,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.concatb.setText("Concat")
 		hbl0.addWidget(self.concatb)
 
-
 		self.pdfb=QtGui.QPushButton(self)
 		self.pdfb.setText("PDF")
 #		self.pdfb.setEnabled(False)
 		hbl0.addWidget(self.pdfb)
-
 
 		hbl01=QtGui.QHBoxLayout()
 		hbl01.setMargin(0)
@@ -2335,7 +2318,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.regress=QtGui.QPushButton(self)
 		self.regress.setText("Regression")
 		hbl01.addWidget(self.regress)
-
+		
+		self.classb=QtGui.QPushButton(self)
+		self.classb.setText("Classification")
+		hbl01.addWidget(self.classb)
+		
 		hbl1 = QtGui.QHBoxLayout()
 		hbl1.setMargin(0)
 		hbl1.setSpacing(6)
@@ -2350,11 +2337,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.color.addItem("magenta")
 		self.color.addItem("grey")
 		hbl1.addWidget(self.color)
-
-		self.classb=QtGui.QPushButton(self)
-		self.classb.setText("Classification")
-		hbl1.addWidget(self.classb)
-
+		
 		vbl.addLayout(hbl1)
 
 		hbl2 = QtGui.QHBoxLayout()
@@ -2822,7 +2805,6 @@ class EMPlot2DInspector(QtGui.QWidget):
 #			print "plot error"
 			return
 
-
 		self.slidex.setRange(-1,len(self.target().data[i])-1)
 		self.slidey.setRange(-1,len(self.target().data[i])-1)
 		self.slidec.setRange(-2,len(self.target().data[i])-1)
@@ -2926,7 +2908,6 @@ class EMPlot2DInspector(QtGui.QWidget):
 		visible = self.target().visibility
 		keys.sort()
 		parms = self.target().pparm # get the colors from this
-
 
 		for i,j in enumerate(keys) :
 			a = QtGui.QListWidgetItem(j)
