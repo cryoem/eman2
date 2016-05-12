@@ -634,22 +634,37 @@ class SXCmdWidget(QWidget):
 			self.write_params(self.gui_settings_file_path)
 		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
 	
-	def save_cmd_line(self):
+#	def save_cmd_line(self):
+#		# Generate command line 
+#		cmd_line = self.generate_cmd_line()
+#		if cmd_line:
+#			file_path_out = QFileDialog.getSaveFileName(self, "Generate Command Line", options = QFileDialog.DontUseNativeDialog)
+#			if file_path_out != "":
+#				file_out = open(file_path_out,"w")
+#				file_out.write(cmd_line + "\n")
+#				file_out.close()
+#				print "Saved the following command to %s:" % file_path_out
+#				print cmd_line
+#				
+#				# Save the current state of GUI settings
+#				if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
+#					os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
+#				self.write_params(self.gui_settings_file_path)
+#		# else: Do nothing
+	
+	def print_cmd_line(self):
 		# Generate command line 
 		cmd_line = self.generate_cmd_line()
 		if cmd_line:
-			file_path_out = QFileDialog.getSaveFileName(self, "Generate Command Line", options = QFileDialog.DontUseNativeDialog)
-			if file_path_out != "":
-				file_out = open(file_path_out,"w")
-				file_out.write(cmd_line + "\n")
-				file_out.close()
-				print "Saved the following command to %s:" % file_path_out
-				print cmd_line
-				
-				# Save the current state of GUI settings
-				if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
-					os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
-				self.write_params(self.gui_settings_file_path)
+			message_line = "Generated the following command line:"
+			print message_line
+			print cmd_line
+			QtGui.QMessageBox.information(self, "Information","%s \n\n%s" % (message_line, cmd_line))
+			
+			# Save the current state of GUI settings
+			if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
+				os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
+			self.write_params(self.gui_settings_file_path)
 		# else: Do nothing
 	
 	def write_params(self, file_path_out):
@@ -1274,7 +1289,8 @@ class SXCmdTab(QWidget):
 			self.cmd_line_btn = QPushButton("Generate command line")
 			self.cmd_line_btn.setMinimumWidth(func_btn_min_width)
 			self.cmd_line_btn.setToolTip("generate command line from gui parameter settings and automatically save settings")
-			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_cmd_line)
+#			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_cmd_line)
+			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.print_cmd_line)
 			grid_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 			
 			grid_row += 1
