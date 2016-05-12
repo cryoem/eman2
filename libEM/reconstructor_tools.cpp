@@ -308,30 +308,58 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 
 bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt,const float& weight)
 {
-	int x0 = 2 * (int) floor(xx + 0.5f);
-	int y0 = (int) floor(yy + 0.5f);
-	int z0 = (int) floor(zz + 0.5f);
+	int x0 = (int) floor(xx-2.5);
+	int y0 = (int) floor(yy-2.5);
+	int z0 = (int) floor(zz-2.5);
 
-	if (x0<-6||y0<-3||z0<-3||x0>nx+6||y0>ny+3||z0>nz+3) return false;
+	if (subx0<0) {			// normal full reconstruction
+		if (x0<-nx2-4 || y0<-ny2-4 || z0<-nz2-4 || x0>nx2+3 || y0>ny2+3 || z0>nz2+3 ) return false;
+		if (xx == 0 && yy == 0 && zz == 0) return false;
+		
+		// no error checking on add_complex_fast, so we need to be careful here
+		int x1=x0+5;
+		int y1=y0+5;
+		int z1=z0+5;
+		if (x0<-nx2) x0=-nx2;
+		if (x1>nx2) x1=nx2;
+		if (y0<-ny2) y0=-ny2;
+		if (y1>ny2) y1=ny2;
+		if (z0<-nz2) z0=-nz2;
+		if (z1>nz2) z1=nz2;
 
-	//size_t idx;
-	float r, gg;
-	for (int k = z0 - 1; k <= z0 + 1; k++) {
-		for (int j = y0 - 1; j <= y0 + 1; j++) {
-			for (int i = x0 -2; i <= x0 + 2; i += 2) {
-				if (k<0 || j<0 || i<0 || k>=nz || j>=ny || i>=nx) continue;
-				r = Util::hypot3sq((float) i / 2 - xx, j - yy, k - zz);
-				gg = exp(-r / EMConsts::I5G)*weight;
+		float h=1.0f/EMConsts::I5G;
+		float ha=1.0f/(pow(1.2,2));		// 1.2 degree hwhm
+		float w=weight;
 
-				size_t off;
-				if (subx0<0) off=data->add_complex_at(i,j,k,dt*gg);
-				else off=data->add_complex_at(i,j,k,subx0,suby0,subz0,fullnx,fullny,fullnz,dt*gg);
-				if (static_cast<int>(off)!=nxyz) norm[off/2]+=gg;
+//		float mxgg=0,nxp=0;
+		for (int k = z0 ; k <= z1; k++) {
+			for (int j = y0 ; j <= y1; j++) {
+				for (int i = x0; i <= x1; i ++) {
+					if (k==0 && j==0 && i==0) continue;
+					float r = Util::hypot3sq((float) i - xx, (float)j - yy, (float)k - zz);
+					//float rt = Util::hypot3sq((float)i,(float)j,(float)k);
+					float ang = Util::angle3((float)i,(float)j,(float)k,(float)xx,(float)yy,(float)zz)*57.296;
+//					if (!Util::goodf(&ang)) printf("%1.1f %1.1f %1.1f   %d %d %d   %1.4f\n",xx,yy,zz,i,j,k,ang);
+//					printf("%1.4f\n",ang*20.0);
+//					gg = Util::fast_exp(-(r+ang*20.0) *h);	// exponential falloff with angle on top of kernel
+					float gg = exp(-r*h);			// normal gaussian kernel
+					float ga = exp(-ang*ang*ha);	// angle compensation
+//					if (gg>mxgg) mxgg=gg;
+//					nxp++;
+//					gg = exp(-r*h);	// exponential falloff with angle on top of kernel
 
+					size_t off;
+					off=data->add_complex_at_fast(i,j,k,dt*gg*ga*w);
+					norm[off/2]+=w;			// Gaussian KERNEL rather than WEIGHT with square kernel, can't seem to get it to work better tho
+
+				}
 			}
 		}
+//		if (mxgg<0.05) printf("%5.1f %5.1f %5.1f   %1.0f %1.4g\n",xx,yy,zz,nxp,mxgg);
+		return true;
 	}
-	return true;
+	printf("region writing not supported in mode 5\n");
+	return false;
  }
 
 

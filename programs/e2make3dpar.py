@@ -252,7 +252,7 @@ def main():
 
 	# Correct for Gaussian falloff
 	if not options.noradcor :
-		cor={"gauss_2":4.0,"gauss_3":6.4,"gauss_4":8.8,"gauss_5":10.4}		# Gaussian widths for different reconstruction modes
+		cor={"gauss_2":4.0,"gauss_3":6.4,"gauss_4":8.8,"gauss_5":10.4,"gauss_5_slow":10.4}		# Gaussian widths for different reconstruction modes
 		if options.mode in cor :
 			output.process_inplace("math.gausskernelfix",{"gauss_width":cor[options.mode]})
 		else:
