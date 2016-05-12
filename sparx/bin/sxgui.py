@@ -1021,10 +1021,10 @@ class SXCmdTab(QWidget):
 					
 					grid_row +=  1
 					
-					temp_label = QLabel(cmd_token.help[widget_index])
-					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
-					
-					grid_row +=  1
+#					temp_label = QLabel(cmd_token.help[widget_index])
+#					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+#					
+#					grid_row +=  1
 					
 				# Then, handle the other cases
 				else:
@@ -2471,8 +2471,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 				# Handle very special cases
 				if sxcmd_token.type == "function":
 					n_widgets = 2 # function type has two line edit boxes
-					sxcmd_token.label = [sxcmd_token.label, "enter name of external file with .py extension containing user function"]
-					sxcmd_token.help = [sxcmd_token.help, "(leave blank if file is not external to sphire)"]
+					sxcmd_token.label = [sxcmd_token.label, "Python script containing the user function"]
+					sxcmd_token.help = [sxcmd_token.help, "Please leave it blank if file is not external to sphire"]
 					sxcmd_token.default = [sxcmd_token.default, "None"]
 					sxcmd_token.restore = sxcmd_token.default
 				# else: Do nothing for the other types
