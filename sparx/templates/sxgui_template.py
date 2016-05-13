@@ -181,7 +181,7 @@ class SXLookFeelConst(object):
 	project_dir = "sxgui_settings"
 	sxmain_window_left = 0
 	sxmain_window_top = 0
-	sxmain_window_min_width = 1024 # Requirement of specification
+	sxmain_window_min_width = 500 / 0.62 # Requirement of specification
 	sxmain_window_min_height = 500 # Requirement of specification
 	expected_cmd_counts = 32
 	grid_margin = 6 # grid_margin = 12
