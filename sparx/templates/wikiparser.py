@@ -598,8 +598,9 @@ def main():
 	sxcmd_category_list.append(SXcmd_category("sxc_particle_stack", "Particle Stack", "particle picking, and particle windowing"))
 	sxcmd_category_list.append(SXcmd_category("sxc_2d_clustering", "2D Clustering", "2d clustering with isac, and post-processing"))
 	sxcmd_category_list.append(SXcmd_category("sxc_initial_3d_modeling", "Initial 3D Modeling", "initial 3d modeling with viper/rviper"))
-	sxcmd_category_list.append(SXcmd_category("sxc_3d_refinement", "3D Refinement", "3d refinement, post-processing, local resolution, and local filter"))
+	sxcmd_category_list.append(SXcmd_category("sxc_3d_refinement", "3D Refinement", "3d refinement and post-processing"))
 	sxcmd_category_list.append(SXcmd_category("sxc_3d_clustering", "3D Clustering", "3d variability, and 3d clustering protocol I & II"))
+	sxcmd_category_list.append(SXcmd_category("sxc_localres", "Local Resolution", "local resolution, and local filter"))
 	sxcmd_category_list.append(SXcmd_category("sxc_utilities", "Utilities", "miscellaneous utlitity commands"))
 
 	# --------------------------------------------------------------------------------
@@ -669,8 +670,6 @@ def main():
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
-	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
@@ -685,6 +684,18 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", sxcmd_category, sxcmd_role))
+
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
+
+	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_localres"
+
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
