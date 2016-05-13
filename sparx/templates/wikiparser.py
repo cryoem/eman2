@@ -70,7 +70,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# - mrc             : Line edit box for formatted string type, and open file button for .mrc
 	# - any_file_list   : Line edit box for formatted string type, and open file button for all file types
 	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
-	# - any_image_list  : Line edit box for formatted string type, and open file button for all file types (also mrc, tiff, and etc) and .bdb. 
+	# - any_image_list  : Line edit box for formatted string type, and open file button for all file types (also mrc, tiff, and etc) and .bdb.
 	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
 	# - function        : Two line edit boxes for formatted string type (function name & file path of the container script),
 	#                     and open file button for .py
@@ -476,7 +476,7 @@ def insert_sxcmd_category_list_to_file(sxcmd_category_list, output_file):
 		output_file.write("\t\t")
 		output_file.write("%s_list.append(%s)" % (sxcmd_category_variable_name, sxcmd_category_variable_name))
 		output_file.write("\n")
-		
+
 	output_file.write("\n")
 	return
 
@@ -522,7 +522,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	output_file.write("\n")
 	output_file.write("\t\t%s_list.append(%s)\n" % (sxcmd_variable_name, sxcmd_variable_name))
 	output_file.write("\n")
-	
+
 	return
 
 # ========================================================================================
@@ -540,7 +540,7 @@ def create_sxcmd_subconfig_adaptive_mask3d():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nd"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", token_edit_list, sxsubcmd_mpi_support)
-	
+
 	return sxcmd_subconfig
 
 def create_sxcmd_subconfig_refine3d_postprocess():
@@ -559,9 +559,9 @@ def create_sxcmd_subconfig_refine3d_postprocess():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("FSC_cutoff"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("3D Refinement Postprocess", token_edit_list, sxsubcmd_mpi_support)
-	
+
 	return sxcmd_subconfig
-	
+
 def create_sxcmd_subconfig_variability_preprocess():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
@@ -569,7 +569,7 @@ def create_sxcmd_subconfig_variability_preprocess():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
-	
+
 	return sxcmd_subconfig
 
 # ========================================================================================
@@ -586,101 +586,102 @@ def main():
 	sxcmd_category_list.append(SXcmd_category("sxc_3d_refinement", "3D Refinement", "3d refinement, post-processing, local resolution, and local filter"))
 	sxcmd_category_list.append(SXcmd_category("sxc_3d_clustering", "3D Clustering", "3d variability, and 3d clustering protocol I & II"))
 	sxcmd_category_list.append(SXcmd_category("sxc_utilities", "Utilities", "miscellaneous utlitity commands"))
-	
+
 	# --------------------------------------------------------------------------------
 	# Get all necessary informations from wiki documents of sx*.py scripts
 	# and create gui generation parameter
 	# --------------------------------------------------------------------------------
 	sxcmd_config_list = []
-	
+
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_movie_micrograph"
-	
+
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/unblur.txt", sxcmd_category, sxcmd_role))
-	
+	sxcmd_config_list.append(SXcmd_config("../doc/gui_unblur.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
-	
+
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_ctf"
-	
+
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", sxcmd_category, sxcmd_role, exclude_list=["stack_mode"]))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_cter.txt", sxcmd_category, sxcmd_role, is_submittable = False))
-	
+
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
-	
+
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_particle_stack"
-	
+
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", sxcmd_category, sxcmd_role, exclude_list=["gui", "do_ctf", "cter", "indir", "nameroot", "micsuffix", "wn", "Cs", "voltage", "ac", "kboot", "debug", "apix"], is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", sxcmd_category, sxcmd_role))
-	
+
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
-	
+
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_2d_clustering"
-	
+
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", sxcmd_category, sxcmd_role))
-	
+
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
-	
+
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_initial_3d_modeling"
-	
+
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", sxcmd_category, sxcmd_role))
-	
+
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/viper.txt", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", sxcmd_category, sxcmd_role))
-	
+
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
-	
+
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_3d_refinement"
-	
+
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", sxcmd_category, sxcmd_role))
-	
+
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
-	
+
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_3d_clustering"
-	
+
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", sxcmd_category, sxcmd_role))
-	
+
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
-	
+
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_utilities"
-	
+
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role))
-	
+
 #	token_edit_list = []
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("stack_mode"); token_edit.group = "main"; token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.key_prefix = ""; token_edit.label = "2D images in a stack file (bdb or hdf)"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
@@ -707,11 +708,11 @@ def main():
 	sxcmd_category_names = []
 	for sxcmd_category in sxcmd_category_list:
 		sxcmd_category_names.append(sxcmd_category.name)
-	
+
 	for sxcmd_config in sxcmd_config_list:
-		if not sxcmd_config.category in sxcmd_category_names: 
+		if not sxcmd_config.category in sxcmd_category_names:
 			ERROR("Logical Error: sxcmd_config for %s is using invalid category %s." % (sxcmd_config.wiki, sxcmd_config.category), "%s in %s" % (__name__, os.path.basename(__file__)))
-	
+
 	# --------------------------------------------------------------------------------
 	# Generate sxgui.py
 	# --------------------------------------------------------------------------------
@@ -737,7 +738,7 @@ def main():
 				current_state = state_insertion
 				# Insert Command Category
 				insert_sxcmd_category_list_to_file(sxcmd_category_list, output_file)
-				
+
 				# Insert Command List
 				sxcmd_variable_name = "sxcmd"
 				for sxcmd_config in sxcmd_config_list:
