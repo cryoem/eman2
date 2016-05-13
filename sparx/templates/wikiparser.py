@@ -600,7 +600,7 @@ def main():
 	sxcmd_category_list.append(SXcmd_category("sxc_initial_3d_modeling", "Initial 3D Modeling", "initial 3d modeling with viper/rviper"))
 	sxcmd_category_list.append(SXcmd_category("sxc_3d_refinement", "3D Refinement", "3d refinement and post-processing"))
 	sxcmd_category_list.append(SXcmd_category("sxc_3d_clustering", "3D Clustering", "3d variability, and 3d clustering protocol I & II"))
-	sxcmd_category_list.append(SXcmd_category("sxc_local_resolution", "Local Resolution", "local resolution, and local filter"))
+	sxcmd_category_list.append(SXcmd_category("sxc_localres", "Local Resolution", "local resolution, and local filter"))
 	sxcmd_category_list.append(SXcmd_category("sxc_utilities", "Utilities", "miscellaneous utlitity commands"))
 
 	# --------------------------------------------------------------------------------
@@ -691,7 +691,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
 	# --------------------------------------------------------------------------------
-	sxcmd_category = "sxc_local_resolution"
+	sxcmd_category = "sxc_localres"
 
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", sxcmd_category, sxcmd_role))
