@@ -64,12 +64,13 @@ def write_montage_file(stack, montage_file, N, gx, gy, bg, scale, number, begin_
 			im /= st[1]
 			
 	nx = data[0].get_xsize()
+	ny = data[0].get_ysize()
 	
 	K = len(data)
 	M = (K-1)/N+1
 	
 	NX = (nx+gx)*N
-	NY = (nx+gy)*M
+	NY = (ny+gy)*M
 	
 	maxn = -1.e-20
 	minn = 1.e+20
@@ -96,14 +97,14 @@ def write_montage_file(stack, montage_file, N, gx, gy, bg, scale, number, begin_
 		col = i%N
 		row = M-1-i/N
 		for s in xrange(nx):
-			for t in xrange(nx):
+			for t in xrange(ny):
 				v = data[i].get_value_at(s, t)
-				montage.set_value_at(col*(nx+gx)+s, row*(nx+gy)+t, v)
+				montage.set_value_at(col*(nx+gx)+s, row*(ny+gy)+t, v)
 		if number:
 			for s in xrange(10):
 				for t in xrange(7):
 					if font[i%10][s*7+t] == '1':
-						montage.set_value_at(col*(nx+gx)+2+t, row*(nx+gy)+2+10-s, maxn)
+						montage.set_value_at(col*(nx+gx)+2+t, row*(ny+gy)+2+10-s, maxn)
 	montage.write_image(montage_file)
 
 def main():
@@ -119,8 +120,8 @@ def main():
 	parser.add_option("--begin_zero", action="store_true",  default=False,   help="whether to use zero as the starting point")	
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
