@@ -1793,7 +1793,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		central_widget = QWidget(self)
 		central_widget.setObjectName('central')
 		central_widget.setStyleSheet(
-			'QWidget#central {{border-image: url("{0}")}}'.format(background_image_file_path)
+			'QWidget#central {{background-image: url("{0}")}}'.format(background_image_file_path)
 			)
 		self.setCentralWidget(central_widget)
 
