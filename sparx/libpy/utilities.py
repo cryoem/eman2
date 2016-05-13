@@ -7030,3 +7030,16 @@ def angular_distribution(inputfile, options, output):
 			)
 
 #####---------------------------------------------------
+# used in new meridien
+def tabessel(nx, nnxo, nbel = 5000):
+	beltab = [0.0]*nbel
+	radius = 1.9
+	alpha = 15
+	#order = 0
+	normk = Util.bessel0(0., radius, alpha)
+	for i in xrange(nbel):
+		rr = i/float(nbel-1)/2.0
+		beltab[i] = Util.bessel0(rr, radius, alpha)/normk
+	return beltab
+
+####	
