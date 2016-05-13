@@ -1925,7 +1925,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxgui_unblur"; sxcmd.mode = ""; sxcmd.label = "Drift Assessment"; sxcmd.short_info = "GUI tool to assess micrographs based on drift estimation produced by Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie_micrograph"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
-		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "a set of shift files"; token.help = "name with wild card * to process multiple micrographs "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "a set of shift files"; token.help = "name with wild card * to process multiple shift files "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
@@ -2199,6 +2199,18 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "angular_distribution"; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "create angular distribution file. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_initial_3d_modeling"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "create angular distribution file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "params.txt file"; token.help = "main"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "pixel size of the input data"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "round_digit"; token.key_prefix = "--"; token.label = "accuracy of the angle"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "box size [px]"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "500"; token.restore = "500"; token.type = "box"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "prtcl_diameter"; token.key_prefix = "--"; token.label = "particle diameter [A]"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "500"; token.restore = "500"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "bin_width"; token.key_prefix = "--"; token.label = "width of the bin"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "bin_length"; token.key_prefix = "--"; token.label = "length of the bin"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "10000"; token.restore = "10000"; token.type = "int"; sxcmd.token_list.append(token)
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "sxmeridien"; sxcmd.mode = ""; sxcmd.label = "3D Refinement"; sxcmd.short_info = "Performs 3D structure refinement."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_refinement"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "name of input stack"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "output folder"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.restore = "current directory"; token.type = "output"; sxcmd.token_list.append(token)
@@ -2284,6 +2296,18 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "threshold"; token.key_prefix = "--"; token.label = "threshold to binarize input volume"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "9999.0"; token.restore = "9999.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ne"; token.key_prefix = "--"; token.label = "number of erosions applied to the binarized input image"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nd"; token.key_prefix = "--"; token.label = "number of dilations applied to the binarized input image"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
+
+		sxcmd_list.append(sxcmd)
+
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "angular_distribution"; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "create angular distribution file. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_refinement"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "create angular distribution file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "params.txt file"; token.help = "main"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "pixel size of the input data"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "round_digit"; token.key_prefix = "--"; token.label = "accuracy of the angle"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "box size [px]"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "500"; token.restore = "500"; token.type = "box"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "prtcl_diameter"; token.key_prefix = "--"; token.label = "particle diameter [A]"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "500"; token.restore = "500"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "bin_width"; token.key_prefix = "--"; token.label = "width of the bin"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "bin_length"; token.key_prefix = "--"; token.label = "length of the bin"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "10000"; token.restore = "10000"; token.type = "int"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
@@ -2418,6 +2442,18 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "angular_distribution"; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "create angular distribution file. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "create angular distribution file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "params.txt file"; token.help = "main"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "pixel size of the input data"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "round_digit"; token.key_prefix = "--"; token.label = "accuracy of the angle"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "box size [px]"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "500"; token.restore = "500"; token.type = "box"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "prtcl_diameter"; token.key_prefix = "--"; token.label = "particle diameter [A]"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "500"; token.restore = "500"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "bin_width"; token.key_prefix = "--"; token.label = "width of the bin"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "bin_length"; token.key_prefix = "--"; token.label = "length of the bin"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "10000"; token.restore = "10000"; token.type = "int"; sxcmd.token_list.append(token)
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Display 2D images, 3D volumes, or 1D plots with e2display."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "list of input 2D images, 3D volumes, or 1D plots"; token.help = "it is possible but not recommend to name with wild card * for multiple micrographs when the number is very large. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "classmx"; token.key_prefix = "--"; token.label = "show particles in one class from a classification matrix"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
@@ -2457,6 +2493,18 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "threshold"; token.key_prefix = "--"; token.label = "threshold to binarize input volume"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "9999.0"; token.restore = "9999.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ne"; token.key_prefix = "--"; token.label = "number of erosions applied to the binarized input image"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nd"; token.key_prefix = "--"; token.label = "number of dilations applied to the binarized input image"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
+
+		sxcmd_list.append(sxcmd)
+
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "angular_distribution"; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "create angular distribution file. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "create angular distribution file"; token.help = ""; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "params.txt file"; token.help = "main"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "pixel size of the input data"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "round_digit"; token.key_prefix = "--"; token.label = "accuracy of the angle"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "5"; token.restore = "5"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "box size [px]"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "500"; token.restore = "500"; token.type = "box"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "prtcl_diameter"; token.key_prefix = "--"; token.label = "particle diameter [A]"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "500"; token.restore = "500"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "bin_width"; token.key_prefix = "--"; token.label = "width of the bin"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "bin_length"; token.key_prefix = "--"; token.label = "length of the bin"; token.help = "main"; token.group = "main"; token.is_required = False; token.default = "10000"; token.restore = "10000"; token.type = "int"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
