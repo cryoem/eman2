@@ -458,7 +458,6 @@ class EMFileType(object) :
 		target.show()
 		target.raise_()
 
-
 	def show2dSingleNew(self, brws) :
 		"""Show a single 2-D image"""
 
@@ -776,7 +775,7 @@ class EMPlotFileType(EMFileType) :
 			data.append([i[c] for i in data1])
 
 		try :
-			target = brws.viewplot2d[-1]
+			target = brws.viewhist[-1]
 			target.set_data(data, remove_directories_from_name(self.path, 1))
 		except :
 			target = EMHistogramWidget()

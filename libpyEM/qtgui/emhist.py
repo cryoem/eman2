@@ -85,10 +85,14 @@ from emglobjects import EMOpenGLFlagsAndTools
 
 import traceback
 
+#plt.style.use('fivethirtyeight')
+
 alignments=["mid","right","left"]
-histtypes=["bar","barstacked","step","stepfilled"]
-orientations=["vertical","horizontal"]
+histtypes=["bar","step","stepfilled"]
+orientations=["vertical"] #,"horizontal"] # need to implement
 colortypes=["k","b","r","g","y","c","m","gray"]
+matplotlib.rcParams['axes.color_cycle'] = colortypes[1:-1] # temporary hack
+
 qt_color_map = {}
 qt_color_map["k"] = QtGui.QColor(0,0,0)
 qt_color_map["b"] = QtGui.QColor(0,0,255)
@@ -182,7 +186,7 @@ class EMHistogramWidget(EMGLWidget):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,nbins=10,color=-1,htype="bar",orient="vertical",align="middle",alpha=0.8,width=0.8,norm=False,cumul=False,logy=False,stacked=False):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,nbins=10,color=-1,htype="bar",orient="vertical",align="mid",alpha=0.8,width=0.8,norm=False,cumul=False,logy=False,stacked=False):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -232,16 +236,8 @@ class EMHistogramWidget(EMGLWidget):
 			print "Data error:", data
 			return
 		
-		if alpha == None or alpha == 0:
-			alpha = 0.8
-			self.inspector.alpha.setValue(0.8)
-		if width == None or width == 0: 
-			width = 0.8
-			self.inspector.rwidth.setValue(0.8)
-		if nbins == None or nbins == 0: 
-			nbins = 10
-			self.inspector.nbins.setValue(10)
-		#self.inspector.color = colortypes[color]
+# 		self.inspector.slidecol.setRange(-1,len(self.data[key])-1)
+# 		self.inspector.slidecol.setValue(self.axes[key][0])
 		
 		if oldkey:
 			pp=self.pparm[key]
@@ -251,13 +247,12 @@ class EMHistogramWidget(EMGLWidget):
 			if alpha > 1.0: alpha = pp[5]
 			if alpha < 0.0: alpha = pp[5]
 		else:
-			if nbins < 0: nbins = 1
-			if color  <0: color=len(self.data)%len(colortypes)
+			if nbins < 1: nbins = 1
+			if color < 0: color=len(self.data)%len(colortypes)
 			if color > len(colortypes): color = 0
 			if alpha > 1.0: alpha = 1.0
-			if alpha <= 0.0: alpha = 0.8
-			if width <= 0.0: width = 0.8
-			if align == "middle": align = "mid"
+			if alpha < 0.0: alpha = 0.8
+			if width < 0.0: width = 0.8
 		self.pparm[key]=(nbins,color,htype,orient,align,alpha,width,norm,cumul,logy,stacked)
 		
 		self.autoscale()
@@ -442,41 +437,82 @@ class EMHistogramWidget(EMGLWidget):
 			ax.tick_params(axis='y', labelsize="x-large")
 			canvas=FigureCanvasAgg(fig)
 			
+			if self.inspector == None: 
+				self.inspector = self.get_inspector()
+			
+			x = []
+			colors = []
 			for i in self.axes.keys():
 				if not self.visibility[i]: continue
-				
-				x=self.data[i][self.axes[i][0]]
-				
-				bins=int(self.pparm[i][0])
-				color=colortypes[self.pparm[i][1]]
-				histtype=self.pparm[i][2]
-				orientation=self.pparm[i][3]
-				align=self.pparm[i][4]
-				alpha=self.pparm[i][5]
-				rwidth=self.pparm[i][6]
-				normed=self.pparm[i][7]
-				cumulative=self.pparm[i][8]
-				log=self.pparm[i][9]
-				stacked=self.pparm[i][10]
-				rng = self.xlimits
-				
-				self.hist,self.hist_edges = np.histogram(x,bins,range=rng,density=normed)
-				ax.hist(x,bins=self.hist_edges,color=color,range=rng,histtype=histtype,orientation=orientation,align=align,alpha=alpha,rwidth=rwidth,normed=normed,cumulative=cumulative,log=log,stacked=stacked)
-				
-				if log: 
-					if cumulative: 
-						ymax = max(np.cumsum(np.log10(self.hist)))
-					else: 
-						ymax = max(self.hist)
-				elif cumulative: 
-					ymax = max(np.cumsum(self.hist))
+				x.append(self.data[i][self.axes[i][0]])
+				colors.append(colortypes[self.inspector.color.currentIndex()])
+			
+			stacked = self.inspector.stacked.isChecked()
+			bins=int(self.inspector.slidenbs.value())
+			rng = self.xlimits
+			normed=self.inspector.normed.isChecked()
+			histtype=histtypes[self.inspector.histtype.currentIndex()]
+			orient=orientations[self.inspector.orient.currentIndex()]
+			align=alignments[self.inspector.align.currentIndex()]
+			alpha = self.inspector.alpha.getValue()
+			rwidth = self.inspector.rwidth.getValue()
+			cumulative = self.inspector.cumulative.isChecked()
+			logtog = self.inspector.logtogy.isChecked()
+			
+			self.hist,self.hist_edges = np.histogram(x,bins,range=rng,density=normed)
+			ax.hist(x,bins=self.hist_edges,color=None,range=rng,histtype=histtype,orientation=orient,align=align,alpha=alpha,rwidth=rwidth,normed=normed,cumulative=cumulative,log=logtog,stacked=stacked)
+			
+			if logtog:
+				if cumulative: 
+					ymax = max(np.cumsum(np.log10(self.hist)))
 				else: 
 					ymax = max(self.hist)
+			elif cumulative: 
+				ymax = max(np.cumsum(self.hist))
+			else: 
+				ymax = max(self.hist)
+		
+			if not stacked: ymax /= len(x)
+			
+			margin = ymax*0.025
+			ax.set_ylim([0-margin,ymax+margin])
+			self.ylimits=(0-margin,ymax+margin)
 				
-				margin = ymax*0.025
-				ax.set_ylim([0-margin,ymax+margin])
-				self.ylimits=(0-margin,ymax+margin)
-				
+# 			for i in self.axes.keys():
+# 				if not self.visibility[i]: continue
+# 			
+# 				x=self.data[i][self.axes[i][0]]
+# 			
+# 				bins=int(self.pparm[i][0])
+# 				color=colortypes[self.pparm[i][1]]
+# 				histtype=self.pparm[i][2]
+# 				orient=self.pparm[i][3]
+# 				align=self.pparm[i][4]
+# 				alpha=self.pparm[i][5]
+# 				rwidth=self.pparm[i][6]
+# 				normed=self.pparm[i][7]
+# 				cumulative=self.pparm[i][8]
+# 				log=self.pparm[i][9]
+# 				#stacked=self.pparm[i][10]
+# 				rng = self.xlimits
+# 			
+# 				self.hist,self.hist_edges = np.histogram(x,bins,range=rng,density=normed)
+# 				ax.hist(x,bins=self.hist_edges,color=color,range=rng,histtype=histtype,orientation=orient,align=align,alpha=alpha,rwidth=rwidth,normed=normed,cumulative=cumulative,log=log,stacked=False)
+# 			
+# 				if log: 
+# 					if cumulative: 
+# 						ymax = max(np.cumsum(np.log10(self.hist)))
+# 					else: 
+# 						ymax = max(self.hist)
+# 				elif cumulative: 
+# 					ymax = max(np.cumsum(self.hist))
+# 				else: 
+# 					ymax = max(self.hist)
+# 			
+# 				margin = ymax*0.025
+# 				ax.set_ylim([0-margin,ymax+margin])
+# 				self.ylimits=(0-margin,ymax+margin)
+# 			
 			canvas.draw()
 			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 
@@ -850,18 +886,18 @@ class EMHistogramInspector(QtGui.QWidget):
 
 		self.histtype=QtGui.QComboBox(self)
 		self.histtype.addItem("bar")
-		self.histtype.addItem("barstacked")
+		#self.histtype.addItem("barstacked")
 		self.histtype.addItem("step")
 		self.histtype.addItem("stepfilled")
 		hbl01.addWidget(self.histtype)
 
 		self.orient=QtGui.QComboBox(self)
 		self.orient.addItem("vertical")
-		self.orient.addItem("horizontal")
+		#self.orient.addItem("horizontal")
 		hbl01.addWidget(self.orient)
 		
 		self.align=QtGui.QComboBox(self)
-		self.align.addItem("middle")
+		self.align.addItem("mid")
 		self.align.addItem("left")
 		self.align.addItem("right")
 		hbl01.addWidget(self.align)
@@ -871,6 +907,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl1.setSpacing(6)
 		
 		self.color=QtGui.QComboBox(self)
+		self.color.addItem("black")
 		self.color.addItem("blue")
 		self.color.addItem("red")
 		self.color.addItem("green")
@@ -887,6 +924,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl000.setSpacing(6)
 		
 		self.alpha=ValSlider(self,(0,1),"Alpha:",0,25)
+		self.alpha.setValue(0.8)
 		hbl000.addWidget(self.alpha)
 		vbl.addLayout(hbl000)
 		
@@ -895,6 +933,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl001.setSpacing(6)
 		
 		self.rwidth=ValSlider(self,(0,1),"Width:",0,25)
+		self.rwidth.setValue(0.8)
 		hbl001.addWidget(self.rwidth)
 		
 		vbl.addLayout(hbl001)
@@ -915,11 +954,13 @@ class EMHistogramInspector(QtGui.QWidget):
 		gl.addWidget(QtGui.QLabel("Column:",self),0,0,Qt.AlignRight)
 		self.slidecol=QtGui.QSpinBox(self)
 		self.slidecol.setRange(0,1)
+		self.slidecol.setValue(1)
 		gl.addWidget(self.slidecol,0,1,Qt.AlignLeft)
 
 		gl.addWidget(QtGui.QLabel("N Bins:",self),0,2,Qt.AlignRight)
 		self.slidenbs=QtGui.QSpinBox(self)
 		self.slidenbs.setRange(1,10000)
+		self.slidenbs.setValue(10)
 		gl.addWidget(self.slidenbs,0,3,Qt.AlignLeft)
 		
 		vbl.addLayout(gl)
@@ -1143,22 +1184,6 @@ class EMHistogramInspector(QtGui.QWidget):
 
 	def updPlot(self,s=None):
 		"""
-		PPARM REFERENCE:
-		
-		0 nbins=self.pparm[key][0]
-		1 color=self.pparm[key][1]
-		2 htype=self.pparm[key][2]
-		3 orient=self.pparm[key][3]
-		4 align=self.pparm[key][4]
-		5 alpha=self.pparm[key][5]
-		6 width=self.pparm[key][6]
-		7 norm=self.pparm[key][7]
-		8 cumul=self.pparm[key][8]
-		9 logy=self.pparm[key][9]
-		10 stacked=self.pparm[key][10]
-		
-		GUI REFERENCE:
-		
 		self.setlist=DragListWidget(self)
 		self.nonebut=QtGui.QPushButton(self)
 		self.allbut=QtGui.QPushButton(self)
@@ -1219,10 +1244,8 @@ class EMHistogramInspector(QtGui.QWidget):
 
 	def newSet(self,row):
 		self.quiet=1
-		try:
-			i=str(self.setlist.item(row).text())
-		except:
-			return
+		try: i=str(self.setlist.item(row).text())
+		except: return
 		self.slidecol.setRange(-1,len(self.target().data[i])-1)
 		self.slidecol.setValue(self.target().axes[i][0])
 		pp=self.target().pparm[i]
@@ -1298,9 +1321,7 @@ class EMHistogramInspector(QtGui.QWidget):
 			self.target().updateGL()
 
 	def closeEvent(self, event):
-		try: self.statswin.close()
-		except: pass
-
+		pass
 
 class DragListWidget(QtGui.QListWidget):
 	"This is a minor modification of the QListWidget to support drag-drop of data sets"
