@@ -71,7 +71,7 @@ def main():
 	parser.add_argument("--parallel",type=str,default='',help="""Default=Auto. This program will detect the number of CPU cores on your machine and parallelize some of the tasks using all of them. To disable, provide --parallel=None""")
 	parser.add_argument("--pad", action='store_true', help="""Provide this if the particles in the --particlestack used to create a template, or the template supplied 
 															through --template are in a tight box. The size""",default=False)
-	parser.add_argument("--rotationalsearch", action='store_true', help="""At each translation position, vary euler angles as well when searching for particles.""",default=False)
+	parser.add_argument("--rotsearch", action='store_true', help="""At each translation position, vary euler angles as well when searching for particles.""",default=False)
 	
 	parser.add_argument('--tiltangles',type=str,default='',help="""File in .tlt or .txt format containing the tilt angle of each tilt image in the tiltseries.""")
 	
@@ -111,10 +111,10 @@ def main():
 
 	parser.add_argument("--nkeep", type=int, default=0,help="""Default=0 (not used). Total number of particles to keep right before writing the coordinates file and output stack. Supersedes --keep""")
 	
-	parser.add_argument("--tomogram", type=str, help="Name of the tomogram.",default='')
-	parser.add_argument("--goldstack", type=str, help="Name of the stack containing a few gold particles picked from the tomogram.",default=None)
-	parser.add_argument("--ptclstack", type=str, help="""Name of the stack containing a few sample particles picked from the tomogram, used to create an initial template.
-															with which to search for particles throughout the tomogram.""",default=None)
+	parser.add_argument("--tomogram", type=str, default='', help="Name of the tomogram.")
+	parser.add_argument("--goldstack", type=str, default='', help="Name of the stack containing a few gold particles picked from the tomogram.")
+	parser.add_argument("--ptclstack", type=str, default='', help="""Name of the stack containing a few sample particles picked from the tomogram, used to create an initial template.
+															with which to search for particles throughout the tomogram.""")
 	
 	parser.add_argument("--template", type=str, help="""Default=None. Path to file containing the template 
 		to search for particles throughout the tomogram. Alternatively, provide --template=sphere 
@@ -176,7 +176,7 @@ def main():
 
 	
 	#parser.add_argument("--yshort",action="store_true",default=False,help="This means you have provided a --tomogram in which 'y' is the short axis.")
-	parser.add_argument("--test",action="store_true",default=False,help="This means you have provided a --tomogram in which 'y' is the short axis.")
+	parser.add_argument("--test",action="store_true",default=False,help="N.A.")
 	parser.add_argument("--templatethreshold",type=float,default=0.0,help="""A binary threshold will be applied to the template which will zero out all the densities below the supplied value, 
 												and will make the densities above the supplied value equal to one.""")
 	parser.add_argument("--goldthreshtomo",action='store_true',default=False,help="""Zero out all densities above mean of max and min.""")
@@ -297,6 +297,8 @@ def main():
 	'''
 	tomochunkscenters = tomosubblocks( options, boxsize )
 	
+
+	
 	
 	'''
 	c:simulate the template in different orientations with a missing wedge and missing slices
@@ -337,13 +339,17 @@ def main():
 	dataf = []
 	
 	for i in range( n ):
-		datan = scanchunks( options, tomochunkscenters, i )		#c:this should return a list of lists [ [score1,x1,y1,z1],[score2,x2,y2,z2], ...,[score3,xn,yn,zn] ]
-	
+		datas = scanchunks( options, tomochunkscenters, i )		#c:this should return a list of lists [ [score1,x1,y1,z1],[score2,x2,y2,z2], ...,[score3,xn,yn,zn] ]
+		
+		#print "scanchunks returned",datan
+		#print "scanchunks returned"
+
+
 		'''
 		c:a first easy way to remove IDENTICAL repeated particles is to turn the list into a set
 		'''
 	
-		datas = sorted(datan, key=itemgetter(1,2,3))	#?????
+		#datas = sorted(datan, key=itemgetter(0))	#?????
 		
 		if not datas:
 			print "WARNING: no particles found for template", i
@@ -351,13 +357,13 @@ def main():
 		
 		print "before any pruning, datalen is", len(datas)
 		
-		for d in datas:
-			print d
+		#for d in datas:
+		#	print d
 			
-		setdata = set()
+		setdata = []
 		for d in datas:
-			if (d[0],d[1],d[2],d[3]) not in setdata:
-				setdata.add( (d[0],d[1],d[2],d[3]) )	
+			if ( d[0],d[1],d[2],d[3] ) not in setdata:
+				setdata.append( ( d[0],d[1],d[2],d[3] ) )	
 			else:
 				print "repeated particle when pruning by set data explicitly!"
 		
@@ -366,7 +372,9 @@ def main():
 
 		print "\nafter set pruning by set, len data is", len(dataf)
 
-	
+		dataf = sorted(dataf, key=itemgetter(0))
+		#print "the final sorted data is",dataf
+		#print "final sorted data"
 		
 		
 		####### START OF NON-TESTED SECTION -JULY 2015
@@ -418,6 +426,9 @@ def main():
 			dataf = prjpruner( options, dataf )
 		
 		
+		print "after pruneprj data is",dataf
+		print "after pruneprj"
+		#sys.exit()
 		####### END OF NON-TESTED SECTION -JULY 2015
 		
 		
@@ -889,7 +900,7 @@ def templategen( options ):
 		
 		if options.template == 'sphere':
 			if options.boxsize and options.ptclradius:
-				options = gensph( options )
+				options = gensph( options, tomogramapix )
 			else: 
 				print "\nERROR: when --template=sphere, you must specify --boxsize AND --ptclradius"
 				sys.exit()
@@ -936,7 +947,7 @@ def templategen( options ):
 
 			options.template = hdfmodel
 			
-			if not options.rotationalsearch:
+			if not options.rotsearch:
 				'''
 				c: make a spherical version of --template with the radius of 
 				c: gyration of the actual template for purposes of quick translational template matching 
@@ -1141,8 +1152,6 @@ c:(amenable to parallelization, not yet implemented)
 '''
 def tomosubblocks( options, boxsize ):
 	
-	
-		
 	tomohdr = EMData(options.tomogram,0,True)
 	tomox = tomohdr['nx']
 	tomoy = tomohdr['ny']
@@ -1191,23 +1200,55 @@ def tomosubblocks( options, boxsize ):
 	the last cube from the far most edge (this might overlap greatly with the penultimate
 	cube depending on the specific tomogram, but will be accounted for later
 	'''
-	nxs = tomox/cubesize
-	xcenters = [ cubesize/2 + i*(cubesize - boxsize ) for i in range( nxs ) ] + [ tomox - cubesize/2 ]
+	nxs = tomox/(cubesize - boxsize/2)
+	print "nxs",nxs
+	xcenters = [ cubesize/2 + i*(cubesize - boxsize/2 ) for i in range( nxs ) ] 
 	
-	nys = tomoy/cubesize
-	ycenters = [ cubesize/2 + i*(cubesize - boxsize ) for i in range( nys ) ] + [ tomoy - cubesize/2 ]
+	lastx = xcenters[-1]+cubesize/2
+	unscannedx = tomox-lastx
+	print "unscannedx",unscannedx
+	if unscannedx > boxsize/2:
+		lastxc = tomox - cubesize/2
+
+		if lastxc not in xcenters:
+			xcenters += [lastxc]
+
+	print "xcenters",xcenters
+	nys = tomoy/(cubesize - boxsize/2)
+	print "nys",nys
+	ycenters = [ cubesize/2 + i*(cubesize - boxsize/2 ) for i in range( nys ) ] 
 	
-	
+	lasty = ycenters[-1]+cubesize/2
+	unscannedy = tomoy-lasty
+	print "unscannedy",unscannedy
+	if unscannedy > boxsize/2:
+		lastyc = tomoy - cubesize/2
+		print "lastyc",lastyc
+		if lastyc not in ycenters:
+			
+			ycenters += [lastyc]
+
+	print "ycenters",ycenters
+	#sys.exit()
 	'''
 	now iterate through rows and columns of tomogram SUBREGIONS or 'cubes'
 	'''
 	centers = []
 	
+
+
 	for xc in xcenters:
 		for yc in ycenters:
 			#centers.append( [xc,yc,zc] )		
+	
 			centers.append( [xc,yc] )
 	
+	f=open(options.path+'/centers.txt','w')
+	f.writelines([ str(center[0])+' '+str(center[1])+'\n' for center in centers ])
+	f.close()
+
+	#sys.exit()
+
 	return centers
 	
 
@@ -1224,7 +1265,7 @@ def scanchunks( options, centers, templateindx ):
 	if options.ptclradius:
 		radius = options.ptclradius
 	elif options.boxsize:
-		radius = options.boxsize/2.0
+		radius = options.boxsize/4.0
 	
 	ptclvol = (4.0/3.0)* math.pi *math.pow(options.ptclradius,3)
 	
@@ -1274,6 +1315,8 @@ def scanchunks( options, centers, templateindx ):
 	
 	results=[]
 	
+
+
 	for i in range(len(centers)):
 		xc = centers[i][0]
 		yc = centers[i][1]
@@ -1313,7 +1356,7 @@ def scanchunks( options, centers, templateindx ):
 			template2use = templatesphavg.copy()
 		
 			#subboxnorm = subbox.process('normalize.edgemean')
-			subboxnorm = subbox
+			subboxnorm = subbox.copy()
 			
 			if options.goldthreshtomo and options.goldstack:
 				#print "I will THRESHOLD the subsection based on gold stats"
@@ -1423,7 +1466,7 @@ def scanchunks( options, centers, templateindx ):
 				if locmaxX < edgeminval or locmaxX > edgemaxval or locmaxY < edgeminval or locmaxY > edgemaxval or locmaxZ < edgeminval or locmaxZ > edgemaxval:
 					#print "Either the max was less than 1; lets see", max
 					#print "Or one of the coordinates of the maximum was too close to the edge", locmax
-					if options.verbose:
+					if options.verbose > 11:
 						print "\npotential particle skipped based on EDGE VALUES! cubesize=%d, edgeminval=%d, edgemaxval=%d" %( cubesize, edgeminval, edgemaxval )
 						print "locmax", locmax
 					#pass			
@@ -1501,23 +1544,27 @@ def scanchunks( options, centers, templateindx ):
 				#print "zeroing out mask radius", radius
 				#print "at mask dx,dy,dz", maskx,masky,maskz
 				
-				ccf.process_inplace('mask.sharp',{'inner_radius':radius,'dx':maskx,'dy':masky,'dz':maskz})		
-	
+				ccf.process_inplace('mask.sharp',{'inner_radius':radius,'dx':maskx,'dy':masky,'dz':maskz})
+				subboxnorm.process_inplace('mask.sharp',{'inner_radius':radius,'dx':maskx,'dy':masky,'dz':maskz})	
+				subboxnorm.write_image(options.path+'/masked.hdf',i)
+
+
 	return results
 
 
 '''
 c:function to prune picked particles by distance to one another (RMSD)
 '''
-def rmsdpruner( data, options ):		
+def rmsdpruner( datar, options ):		
 	
 	elementstoremove = set()
-	data = list(data)     #list of lists with per particle info [ [score1,x1,y1,z1], [score2,x2,y2,z2],...,[scoren,xn,yn,zn] ]
+	data = list(datar)     #list of lists with per particle info [ [score1,x1,y1,z1], [score2,x2,y2,z2],...,[scoren,xn,yn,zn] ]
 	print "\nin rmsdpruner data length is", len(data)
     #perform all-vs-all comparisons with two nested loops
 	numcomp = (len(data)*(len(data)-1))/2
 	print "which will require %d comparisons\n" %(numcomp)
 	cn=0
+	ntoremove = 0
 	for d in range( len(data) ):
     	
         #model each particle center as a vector
@@ -1529,27 +1576,49 @@ def rmsdpruner( data, options ):
 		for e in range(d+1,len(data)):
 			evector = numpy.array( [ data[e][1],data[e][2],data[e][3] ] )
 			ecoeff = data[e][0]
-			#print "\rcomparison %d/%d" %(cn,numcomp) 	
-			#print "evector",evector
+			print "\rrmsd comparison %d/%d" %(cn,numcomp) 	
+			cn+=1
+			print'cn',cn
+			print "dvector",dvector
+			print "evector",evector
 			
             #compute the angle and rmsd between the two particle vectors
 			angle = float( numpy.degrees( numpy.arccos( numpy.dot(dvector,evector) / ( numpy.dot(evector,evector) * numpy.dot(dvector,dvector) ) )) )
 			rmsd = float( numpy.linalg.norm(dvector - evector) )
-			#print "rmsd is", rmsd
-            
-            #don't allow overlaps within the diameter of the particle (twice the hydrodynamic radius [Stoke radius].
-        	if float(rmsd) < float( options.ptclradius) * 2.0 :
-        		#however, if two particles overlap, keep the one with the highest score.
-        		if dcoeff > ecoeff:
-        			elementstoremove.add( data[e] )
-        		elif ecoeff > dcoeff:
-        			elementstoremove.add( data[d] )
+			print "rmsd is", rmsd
+			print "ptclradius, diameters",options.ptclradius,options.ptclradius*2.0
+			print "EXCLUDE because rmsd < ptclradius*2.0", float(rmsd) < float(options.ptclradius*2.0)
+
+
+			diameter = options.ptclradius*2.0
+			if rmsd < diameter:
+				print "TRUE!"
+				if rmsd < diameter:
+					print "\nREMOVING a particle that overlapped with another with an RMSD of", rmsd
+					ntoremove+=1
+					print  rmsd < diameter
+					#however, if two particles overlap, keep the one with the highest score
+	        		elementoremove = data[e]
+	        		#if dcoeff > ecoeff:
+	        		if ecoeff > dcoeff:
+	        			elementoremove = data[d]
+					print "elementoremove",elementoremove
+					elementstoremove.add( elementoremove )
 				
-				print "\nremoving a particle that overlapped with another with an RMSD of", rmsd
-			cn+=1	
-	print "\n(e2spt_autoboxer)(rmsdpruner), removing %d / %d particles" %( len(elementstoremove), len(data) )
+				
+			print '\n'
+				
+
+	print "\n(e2spt_autoboxer)(rmsdpruner), removing %d / %d particles, because ntoremove is %d" %( len(elementstoremove), len(data), ntoremove )
 	
-	finaldata = list( set(data) - elementstoremove )
+	print "type of data is",type(data)
+	print "len(data)",len(data)
+	#print "data list is",data
+
+	#finaldataset = set(data)
+	finaldata = data
+	if elementstoremove:
+		finaldata = list( set(data) - set(elementstoremove) )
 	
 	return finaldata
 
@@ -1985,21 +2054,21 @@ def statspruner( options, data ):
 def prjpruner( options, data ):
 	print "I will do projection based pruning"
 	bxf = options.boxsize
-	tempcrop = transtemplate.copy()
+	tempcrop = EMData( options.template, 0 )
 
-	bxi=tempcrop['nx']
-	byi=tempcrop['ny']
-	bzi=tempcrop['nz']
-	xct=bxi/2
-	yct=byi/2
-	zct=bzi/2
+	#bxi=tempcrop['nx']
+	#byi=tempcrop['ny']
+	#bzi=tempcrop['nz']
+	#xct=bxi/2
+	#yct=byi/2
+	#zct=bzi/2
 
-	r=Region( (2*xct - bxf)/2, (2*yct - bxf)/2, (2*zct - bxf)/2, bxf,bxf,bxf)	
+	#r=Region( (2*xct - bxf)/2, (2*yct - bxf)/2, (2*zct - bxf)/2, bxf,bxf,bxf)	
 
-	tempcrop.clip_inplace(r)
+	#tempcrop.clip_inplace(r)
 	#print "THe copy if the template has this mean and max and size", tempcrop['mean'], tempcrop['maximum'], tempcrop['nx']
 
-	tempcrop.write_image(options.path + '/' + 'tempcrop.hdf',0)
+	#tempcrop.write_image(options.path + '/' + 'tempcrop.hdf',0)
 
 	t = Transform({'type':'eman','az':0,'alt':0,'phi':0})	
 	tprj = tempcrop.project("standard",t)
@@ -2158,7 +2227,7 @@ def prjpruner( options, data ):
 	
 			kkk+=1
 		else:
-			print "TRying to add repeated particle in FIRST PRJ loop!"
+			print "Trying to add repeated particle in FIRST PRJ loop!"
 		newdata.sort()
 
 	#print "\n\n\nsorted newdata are", newdata
@@ -2340,9 +2409,9 @@ def prjpruner( options, data ):
 	#print "Therefore data len is now", len(newestdata)
 
 		
-	newestdata=sorted(newestdata, key=itemgetter(1,2,3))
+	newestdata = sorted(newestdata, key=itemgetter(1,2,3))
 	
-	return newwestdata
+	return newestdata
 
 
 

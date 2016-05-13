@@ -128,15 +128,16 @@ class SXcmd_category(SXmenu_item):
 		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		# self.name = name              # <Inherit from SXmenu_item>  Name of this command category (i.e. sxc_movie_micrograph, sxc_ctf, sxc_particle_stack, sxc_2d_clustering, sxc_initial_3d_modeling, sxc_3d_refinement, sxc_3d_clustering, sxc_utilities), used as a key of dictionary
+		# self.name = name              # <Inherit from SXmenu_item> Name of this command category (i.e. sxc_movie_micrograph, sxc_ctf, sxc_particle_stack, sxc_2d_clustering, sxc_initial_3d_modeling, sxc_3d_refinement, sxc_3d_clustering, sxc_utilities), used as a key of dictionary
 		# self.label = label            # <Inherit from SXmenu_item> User friendly name of this command category
 		# self.short_info = short_info  # <Inherit from SXmenu_item> Short description of this command category
 		self.cmd_list = []              # <Used only in sxgui.py> list of commands in this category. Need this to keep the order of commands 
-#		self.cmd_dict = {}              # <Used only in sxgui.py> dictionary of commands in this category, organised by name of categories. Easy to access a command but looses their order
+#		self.cmd_dict = {}              # <Used only in sxgui.py> dictionary of commands in this category, organised by names of commands. Easy to access a command but looses their order
 		# self.btn = None               # <Inherit from SXmenu_item> QPushButton button instance associating with this category
 		# self.widget = None            # <Inherit from SXmenu_item> SXCmdWidget instance associating with this category
+		
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-
+	
 # ========================================================================================
 class SXconst(object):
 	def __init__(self):
@@ -157,13 +158,13 @@ class SXconst_set(SXmenu_item):
 		super(SXconst_set, self).__init__()
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		# self.name = ""               # <Inherit from SXmenu_item> Name of this constant parameter set
-		# self.label = ""              # <Inherit from SXmenu_item> User friendly name of this set
-		# self.short_info = ""         # <Inherit from SXmenu_item> Short description of this set
-		self.list = []                 # <Used only in sxgui.py> list of constant parameters. Need this to keep the order of constant parameters
-		self.dict = {}                 # <Used only in sxgui.py> dictionary of constant parameters, organised by keys of constant parameters. Easy to access each constant parameter but looses their order
-		# self.btn = None              # <Inherit from SXmenu_item> QPushButton button instance associating with this set
-		# self.widget = None           # <Inherit from SXmenu_item> Widget instance associating with this set
+		# self.name = ""        # <Inherit from SXmenu_item> Name of this constant parameter set
+		# self.label = ""       # <Inherit from SXmenu_item> User friendly name of this set
+		# self.short_info = ""  # <Inherit from SXmenu_item> Short description of this set
+		self.list = []          # <Used only in sxgui.py> list of constant parameters. Need this to keep the order of constant parameters
+		self.dict = {}          # <Used only in sxgui.py> dictionary of constant parameters, organised by keys of constant parameters. Easy to access each constant parameter but looses their order
+		# self.btn = None       # <Inherit from SXmenu_item> QPushButton button instance associating with this set
+		# self.widget = None    # <Inherit from SXmenu_item> Widget instance associating with this set
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
@@ -171,35 +172,190 @@ class SXLookFeelConst(object):
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# static class variables
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-	default_bg_color = QColor(195, 195, 230) # Blueish Non-Transparent
-	cmd_settings_bg_color = QColor(195, 195, 230, 240) # Blueish Transparent
-	expected_cmd_counts = 32
+	default_bg_color = QColor(229, 229, 229, 192) # default_bg_color = QColor(229, 229, 229, 242) # Greyish-White Transparent
+	sxinfo_widget_bg_color = QColor(0, 0, 0, 10) # Almost-Completely Transparent
+	sxcmd_widget_bg_color = QColor(0, 0, 0, 0) # Completely Transparent
+	sxcmd_tab_bg_color = QColor(255, 255, 255, 64) # White Transparent
 	
+	# Constants
+	project_dir = "sxgui_settings"
 	sxmain_window_left = 0
 	sxmain_window_top = 0
-	sxmain_window_width = 1280 # Requirement of specification
-	sxmain_window_height = 800 # Requirement of specification
-	
+	sxmain_window_min_width = 1280 # Requirement of specification
+	sxmain_window_min_height = 720 # Requirement of specification
+	expected_cmd_counts = 32
 	grid_margin = 6 # grid_margin = 12
 	grid_spacing = 6
 	
-	sxmenu_btn_area_min_width = 160 # sxmenu_btn_area_min_width = 240
-	sxmenu_btn_area_min_height = sxmain_window_height
+	# Constants initialised with invalid values.  
+	# Valid values should be set by initialise() function
+	screen_height = -1
+	sxmain_window_width = -1
+	sxmain_window_height = -1
+	sxmenu_item_btn_width = -1
+	grid_distance = -1
+	sxmenu_btn_area_min_width = -1
+	sxcmd_btn_area_min_width = -1
+	sxcmd_widget_area_min_width = -1
 	
-	sxmenu_widget_area_min_width = sxmain_window_width - sxmenu_btn_area_min_width
-	sxmenu_widget_area_min_height = sxmain_window_height
-	sxmenu_widget_area_min_half_width = (sxmenu_widget_area_min_width - grid_spacing * 1) // 2
+	@staticmethod
+	def initialise(sxapp):
+		# Search for maximun screen height and set it to SXLookFeelConst singleton class
+		max_screen_height = sxapp.desktop().screenGeometry().height()
+		for index in range(sxapp.desktop().screenCount()):
+			screen_height = sxapp.desktop().screenGeometry(index).height()
+			if max_screen_height < screen_height:
+				max_screen_height = screen_height
+		SXLookFeelConst.screen_height = max_screen_height
+		
+		# Set size of the main window depending on the screen size
+		if SXLookFeelConst.screen_height > SXLookFeelConst.sxmain_window_min_width:
+			SXLookFeelConst.sxmain_window_height = SXLookFeelConst.screen_height / 2
+		else:
+			SXLookFeelConst.sxmain_window_height = SXLookFeelConst.sxmain_window_min_width
+		
+		SXLookFeelConst.sxmain_window_width = SXLookFeelConst.sxmain_window_height / (float(SXLookFeelConst.sxmain_window_min_height) / float(SXLookFeelConst.sxmain_window_min_width))
 	
-	sxconst_set_area_min_width = sxmenu_widget_area_min_half_width
-	sxconst_set_area_min_height = sxmain_window_height
-	
-	sxcmd_btn_area_min_width = 200 # sxcmd_btn_area_min_width = sxmenu_btn_area_min_width
-	sxcmd_btn_area_min_height = sxmain_window_height
-	
-	sxcmd_widget_area_min_width = sxmenu_widget_area_min_width - sxcmd_btn_area_min_width
-	sxcmd_widget_area_min_height = sxmain_window_height
-	
-	project_dir = "sxgui_settings"
+		SXLookFeelConst.sxmenu_item_btn_width = SXLookFeelConst.sxmain_window_width / 13
+		SXLookFeelConst.grid_distance = SXLookFeelConst.sxmenu_item_btn_width / 10
+		
+		SXLookFeelConst.sxmenu_btn_area_min_width = 2 * SXLookFeelConst.sxmenu_item_btn_width + SXLookFeelConst.grid_distance + 18
+		SXLookFeelConst.sxcmd_btn_area_min_width = 240
+		SXLookFeelConst.sxcmd_widget_area_min_width = SXLookFeelConst.sxmain_window_width - SXLookFeelConst.sxmenu_btn_area_min_width - SXLookFeelConst.sxcmd_btn_area_min_width
+
+# ========================================================================================
+class SXLogoButton(QPushButton):
+	def __init__(self, logo_file_path, parent = None):
+		super(SXLogoButton, self).__init__(parent)
+		
+		# print "MRK_DEBUG: logo_file_path = %s" % logo_file_path
+		# print "MRK_DEBUG: os.path.exists(logo_file_path) %s" % os.path.exists(logo_file_path)
+		
+		# Width of logo image
+		logo_width = SXLookFeelConst.sxmenu_item_btn_width * 2 + SXLookFeelConst.grid_distance
+		
+		# Style of widget
+		self.setFixedSize(logo_width, 0.434 * logo_width)
+		self.customButtonStyle = """
+			SXLogoButton {{background-color: rgba(0, 0, 0, 0); border: 0px solid black; border-radius: 0px; image: url("{0}");}}
+			SXLogoButton:focus {{background-color: rgba(0, 0, 0, 0); border: 0px solid grey; border-radius: 0px; image: url("{0}");}}
+			SXLogoButton:pressed {{background-color: rgba(0, 0, 0, 0); border: 0px solid red; border-radius: 0px; image: url("{0}");}}
+			""".format(logo_file_path)
+		self.customButtonStyleClicked = """
+			SXLogoButton {{background-color: rgba(0, 0, 0, 0); border: 0px solid black; border-radius: 0px; image: url("{0}");}}
+			SXLogoButton:focus {{background-color: rgba(0, 0, 0, 0); border: 0px solid grey; border-radius: 0px; image: url("{0}");}}
+			SXLogoButton:pressed {{background-color: rgba(0, 0, 0, 0); border: 0px solid red; border-radius: 0px; image: url("{0}");}}
+			""".format(logo_file_path)
+		
+		# Set style and add click event
+		self.setStyleSheet(self.customButtonStyle)
+
+# ========================================================================================
+class SXPictogramButton(QPushButton):
+	def __init__(self, pictogram_file_path, parent = None):
+		super(SXPictogramButton, self).__init__(parent)
+		
+		# print "MRK_DEBUG: pictogram_file_path = %s" % pictogram_file_path
+		# print "MRK_DEBUG: os.path.exists(logo_file_path) %s" % os.path.exists(pictogram_file_path)
+		
+		# Width of pictogram image
+		pictogram_width = SXLookFeelConst.sxmenu_item_btn_width
+		
+		# Style of widget
+		self.setFixedSize(pictogram_width, pictogram_width)
+		self.customButtonStyle = """
+			SXPictogramButton {{background-color: rgba(0, 0, 0, 0); border: 2px solid rgba(0, 0, 0, 0); border-radius: {1}px; image: url("{0}");}}
+			SXPictogramButton:focus {{background-color: rgba(0, 0, 0, 0); border: 2px solid grey; border-radius: {1}px; image: url("{0}");}}
+			SXPictogramButton:pressed {{background-color: rgba(0, 0, 0, 0); border: 2px solid rgb(153, 153, 153); border-radius: {1}px; image: url("{0}");}}
+			""".format(pictogram_file_path, pictogram_width / 4)
+		self.customButtonStyleClicked = """
+			SXPictogramButton:pressed {{background-color: rgba(0, 0, 0, 0); border: 2px solid rgb(153, 153, 153); border-radius: {1}px; image: url("{0}");}}
+			SXPictogramButton {{background-color: rgba(0, 0, 0, 0); border: 2px solid rgb(220, 220, 220); border-radius: {1}px; image: url("{0}");}}
+			""".format(pictogram_file_path, pictogram_width / 4)
+		
+		# Set style and add click event
+		self.setStyleSheet(self.customButtonStyle)
+
+class SXMenuItemBtnAreaWidget(QWidget):
+	def __init__(self, sxconst_set, sxcmd_category_list, sxinfo, parent = None):
+		super(SXMenuItemBtnAreaWidget, self).__init__(parent)
+		
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		# class variables
+		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+		
+		# Create widgets for pipeline command category button area and miscellaneous function button area
+		sxcmd_category_btn_subarea_widget = self.create_sxmenu_item_btn_subarea_widget()
+		misc_func_btn_subarea_widget = self.create_sxmenu_item_btn_subarea_widget()
+		for sxcmd_category in sxcmd_category_list:
+			if sxcmd_category.name != "sxc_utilities":
+				self.add_sxmenu_item_btn_widget(sxcmd_category, sxcmd_category_btn_subarea_widget)
+			else: # assert(sxcmd_category.name == "sxc_utilities")
+				self.add_sxmenu_item_btn_widget(sxcmd_category, misc_func_btn_subarea_widget)
+		self.add_sxmenu_item_btn_widget(sxconst_set, misc_func_btn_subarea_widget)
+		
+		global_layout = QVBoxLayout()
+		global_layout.setContentsMargins(0, 0, 0, 0)
+		
+		sxmenu_item_btn_area_widget = QWidget(self)
+		sxmenu_item_btn_area_widget.setObjectName('SXMenuItemBtnAreaWidget')
+		sxmenu_item_btn_area_widget.setStyleSheet('QWidget#SXMenuItemBtnAreaWidget {background-color: rgba(0, 0, 0, 153);}')
+		sxmenu_item_btn_area_widget.setFixedWidth(SXLookFeelConst.sxmenu_btn_area_min_width)
+		
+		sxmenu_item_btn_area_layout = QVBoxLayout()
+		
+		# Add widget of pipeline command category button area to layout
+		sxmenu_item_btn_area_layout.addWidget(sxcmd_category_btn_subarea_widget)
+		
+		# Create and Add separator label
+		layout_label = QHBoxLayout()
+		line_label = QLabel(sxmenu_item_btn_area_widget)
+		line_label.setFixedHeight(1)
+		line_label.setFixedWidth(SXLookFeelConst.sxmenu_item_btn_width * 2)
+		line_label.setStyleSheet('background-color: rgba(220, 220, 220, 100)')
+		layout_label.addWidget(line_label)
+		layout_label.setContentsMargins(0, 7, 0, 7)
+		
+		sxmenu_item_btn_area_layout.addLayout(layout_label)
+		
+		# Add widget of miscellaneous function button area to layout
+		sxmenu_item_btn_area_layout.addWidget(misc_func_btn_subarea_widget)
+		
+		# Add stretch to make a space and keep sizes of the other widgets to be constant
+		sxmenu_item_btn_area_layout.addStretch(1)
+		
+		# Add menu item button for application information
+		sxmenu_item_btn_pictograph_file_path = '{0}sxgui_logo_sphire.png'.format(get_image_directory())
+		sxmenu_item_btn = SXLogoButton(sxmenu_item_btn_pictograph_file_path)
+		sxinfo.btn = sxmenu_item_btn
+		
+		sxmenu_item_btn_area_layout.addWidget(sxmenu_item_btn)
+		
+		# Set menu item button area layout to the widget
+		sxmenu_item_btn_area_widget.setLayout(sxmenu_item_btn_area_layout)
+		
+		# self related settings
+		global_layout.addWidget(sxmenu_item_btn_area_widget)
+		self.setLayout(global_layout)
+		
+	def create_sxmenu_item_btn_subarea_widget(self):
+		sxmenu_item_btn_subarea_widget = QWidget()
+		
+		grid_layout = QGridLayout()
+		grid_layout.setSpacing(SXLookFeelConst.grid_distance)
+		grid_layout.setContentsMargins(0, 0, 0, 0)
+		
+		sxmenu_item_btn_subarea_widget.setLayout(grid_layout)
+		
+		return sxmenu_item_btn_subarea_widget
+		
+	def add_sxmenu_item_btn_widget(self, sxmenu_item, sxmenu_item_btn_subarea_widget):
+		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
+		
+		sxmenu_item_btn_pictograph_file_path = "{0}sxgui_pictograph_{1}.png".format(get_image_directory(), sxmenu_item.name.replace("sxc_", ""))
+		sxmenu_item.btn = SXPictogramButton(sxmenu_item_btn_pictograph_file_path, self)
+		cur_widget_counts = sxmenu_item_btn_subarea_widget.layout().count()
+		sxmenu_item_btn_subarea_widget.layout().addWidget(sxmenu_item.btn, cur_widget_counts // 2, cur_widget_counts % 2)
 
 # ========================================================================================
 # Provides all necessary functionarity
@@ -212,8 +368,10 @@ class SXCmdWidget(QWidget):
 		# class variables
 		self.sxconst_set = sxconst_set
 		self.sxcmd = sxcmd
+		
 		self.sxcmd_tab_main = None
 		self.sxcmd_tab_advance = None
+		
 		self.child_application_list = []
 		
 		self.gui_settings_file_path = "%s/gui_settings_%s.txt" % (self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir), self.sxcmd.get_mode_name_for("file_path"))
@@ -227,19 +385,19 @@ class SXCmdWidget(QWidget):
 		
 		self.setAutoFillBackground(True)
 		palette = QPalette()
-		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.cmd_settings_bg_color))
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxcmd_widget_bg_color))
 		self.setPalette(palette)
 		
 		self.sxcmd_tab_main = SXCmdTab("Main", self)
 		self.sxcmd_tab_advance = SXCmdTab("Advanced", self)
-		self.tab_widget = QTabWidget()
-		self.tab_widget.insertTab(0, self.sxcmd_tab_main, self.sxcmd_tab_main.name)
-		self.tab_widget.insertTab(1, self.sxcmd_tab_advance, self.sxcmd_tab_advance.name)
-		# self.tab_widget.setAutoFillBackground(True)
-		# palette = self.tab_widget.palette()
-		# palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.cmd_settings_bg_color))
-		# self.tab_widget.setPalette(palette)
-		grid_layout.addWidget(self.tab_widget, 0, 0)
+		tab_widget = QTabWidget()
+		tab_widget.insertTab(0, self.sxcmd_tab_main, self.sxcmd_tab_main.name)
+		tab_widget.insertTab(1, self.sxcmd_tab_advance, self.sxcmd_tab_advance.name)
+		tab_widget.setAutoFillBackground(True)
+		palette = tab_widget.palette()
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxcmd_widget_bg_color))
+		tab_widget.setPalette(palette)
+		grid_layout.addWidget(tab_widget, 0, 0)
 		
 	def map_widgets_to_sxcmd_line(self):
 		# Add program name to command line
@@ -463,7 +621,7 @@ class SXCmdWidget(QWidget):
 				print cmd_line
 		
 			# Execute the generated command line
- 			process = subprocess.Popen(cmd_line, shell=True)
+			process = subprocess.Popen(cmd_line, shell=True)
 			self.emit(SIGNAL("process_started"), process.pid)
 			if self.sxcmd.is_submittable == False:
 				assert(self.sxcmd.mpi_support == False)
@@ -476,22 +634,19 @@ class SXCmdWidget(QWidget):
 			self.write_params(self.gui_settings_file_path)
 		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
 	
-	def save_cmd_line(self):
+	def print_cmd_line(self):
 		# Generate command line 
 		cmd_line = self.generate_cmd_line()
 		if cmd_line:
-			file_path_out = QFileDialog.getSaveFileName(self, "Generate Command Line", options = QFileDialog.DontUseNativeDialog)
-			if file_path_out != "":
-				file_out = open(file_path_out,"w")
-				file_out.write(cmd_line + "\n")
-				file_out.close()
-				print "Saved the following command to %s:" % file_path_out
-				print cmd_line
-				
-				# Save the current state of GUI settings
-				if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
-					os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
-				self.write_params(self.gui_settings_file_path)
+			message_line = "Generated the following command line:"
+			print message_line
+			print cmd_line
+			QtGui.QMessageBox.information(self, "Information","%s \n\n%s" % (message_line, cmd_line))
+			
+			# Save the current state of GUI settings
+			if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
+				os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
+			self.write_params(self.gui_settings_file_path)
 		# else: Do nothing
 	
 	def write_params(self, file_path_out):
@@ -728,14 +883,16 @@ class SXCmdTab(QWidget):
 		global_layout.setSpacing(0)
 		# Setup scroll area and its widget 
 		scroll_area = QScrollArea()
-		scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+		# scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 		# scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn) # MRK_DEBUG: Useful during designing layout
 		scroll_area.setWidgetResizable(True)
 		scroll_area_widget = QWidget(scroll_area)
 		# Setup scroll widget and its background color
+		scroll_area.setStyleSheet("QScrollArea {background-color:transparent;}");
+		### scroll_area_widget.setStyleSheet("background-color:transparent;");
 		scroll_area_widget.setAutoFillBackground(True)
 		palette = QPalette()
-		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxcmd_tab_bg_color))
 		scroll_area_widget.setPalette(palette)
 		# Register the widget to scroll area
 		scroll_area.setWidget(scroll_area_widget)
@@ -861,10 +1018,10 @@ class SXCmdTab(QWidget):
 					
 					grid_row +=  1
 					
-					temp_label = QLabel(cmd_token.help[widget_index])
-					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
-					
-					grid_row +=  1
+#					temp_label = QLabel(cmd_token.help[widget_index])
+#					grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+#					
+#					grid_row +=  1
 					
 				# Then, handle the other cases
 				else:
@@ -1114,7 +1271,7 @@ class SXCmdTab(QWidget):
 			self.cmd_line_btn = QPushButton("Generate command line")
 			self.cmd_line_btn.setMinimumWidth(func_btn_min_width)
 			self.cmd_line_btn.setToolTip("generate command line from gui parameter settings and automatically save settings")
-			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_cmd_line)
+			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.print_cmd_line)
 			grid_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 			
 			grid_row += 1
@@ -1200,7 +1357,7 @@ class SXCmdCategoryWidget(QWidget):
 		self.grid_row = self.grid_row_origin # Keep current row
 		self.grid_col = self.grid_col_origin # keep current column
 		
-		self.sxcmd_category_btn_group = None
+		self.sxcmd_btn_group = None
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 		# --------------------------------------------------------------------------------
@@ -1242,22 +1399,10 @@ class SXCmdCategoryWidget(QWidget):
 		# Give the column of the command settings area a higher stretch priority so that the other area does not stretch horizontally
 		self.grid_layout.setColumnStretch(self.grid_col_origin + self.sxcmd_btn_area_col_span, self.grid_layout.columnStretch(self.grid_col_origin + self.sxcmd_btn_area_col_span) + 1)
 		
-		# # MRK_DEBUG: Add the command button area frame for checking
-		# sxcmd_btn_area_frame = QFrame()
-		# sxcmd_btn_area_frame.resize(SXLookFeelConst.sxcmd_btn_area_min_width , SXLookFeelConst.sxcmd_btn_area_min_height)
-		# sxcmd_btn_area_frame.setFrameStyle(QFrame.StyledPanel)
-		# self.grid_layout.addWidget(sxcmd_btn_area_frame, self.grid_row_origin, self.grid_col_origin, self.sxcmd_btn_area_row_span, self.sxcmd_btn_area_col_span)
-		
-		# # MRK_DEBUG: Add the sx command widget area frame for checking
-		# sxcmd_widget_area_frame = QFrame()
-		# sxcmd_widget_area_frame.resize(SXLookFeelConst.sxcmd_widget_area_min_width, SXLookFeelConst.sxcmd_widget_area_min_height)
-		# sxcmd_widget_area_frame.setFrameStyle(QFrame.StyledPanel)
-		# self.grid_layout.addWidget(sxcmd_widget_area_frame, self.grid_row_origin, self.grid_col_origin + self.sxcmd_btn_area_col_span, self.sxcmd_widget_area_row_span, self.sxcmd_widget_area_col_span)
-	
 	# Add Pipeline SX Commands (sx*.py) associated widgets
 	def add_sxcmd_widgets(self):
-		self.sxcmd_menu_item_btn_group = QButtonGroup()
-		# self.sxcmd_menu_item_btn_group.setExclusive(True) # NOTE: 2016/02/18 Toshio Moriya: Without QPushButton.setCheckable(True). This does not do anything. Let manually do this
+		self.sxcmd_btn_group = QButtonGroup()
+		# self.sxcmd_btn_group.setExclusive(True) # NOTE: 2016/02/18 Toshio Moriya: Without QPushButton.setCheckable(True). This does not do anything. Let manually do this
 		
 		current_role = None
 		
@@ -1269,29 +1414,28 @@ class SXCmdCategoryWidget(QWidget):
 				if sxcmd.role == "sxr_pipe":
 					label_text = "COMMANDS"
 				elif sxcmd.role == "sxr_alt":
-					self.grid_row += 1
 					label_text = "ALTERNATIVES"
 				elif sxcmd.role == "sxr_util":
-					self.grid_row += 1
 					label_text = "UTILITIES"
 				else:
-					self.grid_row += 1
 					label_text = "UNKNOWN"
 				
+				if current_role !=  None:
+					self.grid_row += 1
 				
-				title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>%s </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>" % label_text)
+				# title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#aa0000;\'><b>%s </b></span><span style=\'font-size:12pt; font-weight:60; color:#aa0000;\'>(shift-click for wiki)</span>" % label_text)
+				title=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#000000;\'><b>%s </b></span><span style=\'font-size:12pt; font-weight:60; color:#000000;\'>(shift-click for wiki)</span>" % label_text)
 				self.grid_layout.addWidget(title, self.grid_row, self.grid_col_origin, self.sxcmd_btn_row_span, self.sxcmd_btn_col_span)
 				
 				self.grid_row += 1
 				
 				current_role = sxcmd.role
 				
-				
 			# Add buttons for this sx*.py processe
 			sxcmd.btn = QPushButton(sxcmd.label)
 			# sxcmd.btn.setCheckable(True) # NOTE: 2016/02/18 Toshio Moriya: With this setting, we can not move the focus to the unchecked butttons... PyQt bug?
 			sxcmd.btn.setToolTip(sxcmd.short_info)
-			self.sxcmd_menu_item_btn_group.addButton(sxcmd.btn)
+			self.sxcmd_btn_group.addButton(sxcmd.btn)
 			self.grid_layout.addWidget(sxcmd.btn, self.grid_row, self.grid_col_origin, self.sxcmd_btn_row_span, self.sxcmd_btn_col_span)
 			
 			# Create SXCmdWidget for this sx*.py processe
@@ -1369,25 +1513,13 @@ class SXConstSetWidget(QWidget):
 		func_btn_min_width = 150
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
-		box_layout = QVBoxLayout(self)
-		box_layout.setContentsMargins(0,0,0,0)
-		box_layout.setSpacing(0)
-		scroll_area = QScrollArea()
-		scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-		# scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn) # MRK_DEBUG: Useful during designing layout
-		scroll_area.setWidgetResizable(True)
-		scroll_area_widgets = QWidget(scroll_area)
-		
-		# Set the background color of scroll area
-		scroll_area_widgets.setAutoFillBackground(True)
+		# Set the background color of this widget
+		self.setAutoFillBackground(True)
 		palette = QPalette()
 		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
-		scroll_area_widgets.setPalette(palette)
+		self.setPalette(palette)
 		
-		scroll_area.setWidget(scroll_area_widgets)
-		box_layout.addWidget(scroll_area)
-		
-		global_layout = QGridLayout(scroll_area_widgets)
+		global_layout = QGridLayout(self)
 		global_layout.setMargin(SXLookFeelConst.grid_margin)
 		global_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		global_layout.setRowStretch(global_row_span - 1, global_layout.rowStretch(global_row_origin) + 1)
@@ -1404,18 +1536,13 @@ class SXConstSetWidget(QWidget):
 		btn_layout.setMargin(SXLookFeelConst.grid_margin)
 		btn_layout.setSpacing(SXLookFeelConst.grid_spacing * 2)
 		
-		# # Define the frame within the widget layout
-		# widget_frame = QFrame()
-		# # widget_frame.setFrameStyle(QFrame.StyledPanel)
-		# global_layout.addWidget(widget_frame, global_row_origin, global_col_origin, global_row_span, global_col_span)
-		
 		global_grid_row = global_row_origin
 		
 		# Start add title widgets to the grid layout
 		header_grid_row = header_row_origin
 		
 		# Set a label and its position in this tab
-		temp_label = QLabel("<b>%s</b>" % (self.sxconst_set.name))
+		temp_label = QLabel("<b>%s</b>" % (self.sxconst_set.label))
 		temp_label.setMinimumWidth(title_min_width)
 		header_layout.addWidget(temp_label, header_grid_row, header_col_origin, title_row_span, title_col_span)
 		
@@ -1598,14 +1725,14 @@ class SXConstSetWidget(QWidget):
 
 # ========================================================================================
 # Layout of the information widget; owned by the main window
-class SXInformationWidget(QWidget):
+class SXInfoWidget(QWidget):
 	def __init__(self, parent = None):
-		super(SXInformationWidget, self).__init__(parent)
+		super(SXInfoWidget, self).__init__(parent)
 		
 		# Set the background color of this widget
 		self.setAutoFillBackground(True)
 		palette = QPalette()
-		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
+		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxinfo_widget_bg_color))
 		self.setPalette(palette)
 		
 		label_row_span = 1; label_col_span = 3
@@ -1618,32 +1745,22 @@ class SXInformationWidget(QWidget):
 		
 		grid_col = 0
 		grid_row = 0; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
-		grid_row += 1; temp_label=QLabel("<b>SPHIRE GUI Prototype</b>", self)
+		grid_row += 10; temp_label=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#ffffff;\'><b>SPHIRE GUI Prototype</b></span>")
 		temp_label.setAlignment(Qt.AlignHCenter)
 		grid_layout.addWidget(temp_label, grid_row, grid_col, label_row_span, label_col_span)
-		grid_row += 1; temp_label=QLabel("<b>Author: Toshio Moriya</b> ", self)
-		temp_label.setAlignment(Qt.AlignHCenter)
-		grid_layout.addWidget(temp_label, grid_row, grid_col, label_row_span, label_col_span)
-		grid_row += 1; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
-		grid_row += 1; temp_label=QLabel("For more information visit:%s " % SPARX_DOCUMENTATION_WEBSITE, self)
+		grid_row += 1; temp_label=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#ffffff;\'><b>Author: Toshio Moriya</b></span>")
 		temp_label.setAlignment(Qt.AlignHCenter)
 		grid_layout.addWidget(temp_label, grid_row, grid_col, label_row_span, label_col_span)
 		grid_row += 1; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
+		grid_row += 1; temp_label=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#ffffff;\'><b>For more information visit:%s </b></span>" % SPARX_DOCUMENTATION_WEBSITE)
+		temp_label.setAlignment(Qt.AlignHCenter)
+		grid_layout.addWidget(temp_label, grid_row, grid_col, label_row_span, label_col_span)
 		grid_row += 1; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
-
-# # ========================================================================================
-# # Child Window status, used by only main window
-# class SXChildStatus(object):
-# 	def __init__(self, window = None):
-# 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-# 		# class variables
-# 		self.window = window       # Child window widget
-# 		self.is_minimized = False  # Is this window currently minimized?
-# 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+		grid_row += 1; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
 
 # ========================================================================================
 # Main Window (started by class SXApplication)
-class SXMainWindow(QWidget):
+class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 	
 	def __init__(self, parent = None):
 		super(SXMainWindow, self).__init__(parent)
@@ -1654,105 +1771,85 @@ class SXMainWindow(QWidget):
 		self.sxinfo = None
 		self.sxconst_set = None
 		self.sxcmd_category_list = None
+		
 		self.cur_sxmenu_item = None
-		self.sxcmd_menu_item_btn_group = None
+		self.sxmenu_item_widget_stacked_layout = None
 		
-		# Layout constants
-		self.sxmenu_btn_row_span = 1
-		self.sxmenu_btn_col_span = 1
-		
-		self.sxmenu_btn_area_row_span = self.sxmenu_btn_row_span * SXLookFeelConst.expected_cmd_counts
-		self.sxmenu_btn_area_col_span = self.sxmenu_btn_col_span
-		
-		self.sxmenu_widget_area_row_span = self.sxmenu_btn_area_row_span
-		self.sxmenu_widget_area_col_span = 2
-		
-		self.sxcmd_category_widget_area_row_span = self.sxmenu_widget_area_row_span
-		self.sxcmd_category_widget_area_col_span = self.sxmenu_widget_area_col_span
-		
-		self.sxinfo_widget_area_row_span = self.sxmenu_widget_area_row_span
-		self.sxinfo_widget_area_col_span = self.sxmenu_widget_area_col_span // 2
-		
-		self.sxconst_set_widget_area_row_span = self.sxmenu_widget_area_row_span
-		self.sxconst_set_widget_area_col_span = self.sxmenu_widget_area_col_span // 2
-		
-		self.grid_row_origin = 0
-		self.grid_col_origin = 0
-		
-		# Layout variables
-		self.grid_layout = None # grid layout
-		
-		self.grid_row = self.grid_row_origin # Keep current row
-		self.grid_col = self.grid_col_origin # keep current column
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		
 		# --------------------------------------------------------------------------------
 		# Construct menu items
 		# --------------------------------------------------------------------------------
-		self.construct_sxinfo()              # Construct menu item for GUI application information widget
-		self.construct_sxconst_set()         # Construct project constant parameter set for project settings and its menu item
-		self.construct_sxcmd_category_list() # Construct list of categorised sxscript objects (extracted from associated wiki documents) and their menu items
-		
-		# --------------------------------------------------------------------------------
-		# Setup Window Properties
-		# --------------------------------------------------------------------------------
-		self.installEventFilter(self) # Necessary for self.eventFilter()
+		self.construct_sxinfo()              # Construct application information
+		self.construct_sxconst_set()         # Construct project constant set for project settings
+		self.construct_sxcmd_category_list() # Construct list of categorised sxscript objects (extracted from associated wiki documents)
 		
 		# --------------------------------------------------------------------------------
 		# Setup Window Layout
 		# --------------------------------------------------------------------------------
-		self.setup_layout(QBrush(QPixmap(get_image_directory() + "sxgui.py_main_window_background_image.png")))
+		background_image_file_path = '{0}sxgui_background.png'.format(get_image_directory())
+		
+		# Central widget
+		central_widget = QWidget(self)
+		central_widget.setObjectName('central')
+		central_widget.setStyleSheet(
+			'QWidget#central {{border-image: url("{0}")}}'.format(background_image_file_path)
+			)
+		self.setCentralWidget(central_widget)
+		
+		# Layout for central widget
+		central_layout = QHBoxLayout(central_widget)
+		central_widget.setLayout(central_layout)
 		
 		# --------------------------------------------------------------------------------
-		# Add Pipeline SX Commands (sx*.py) associated widgets
+		# Construct and add a widget for menu item button area (containing all menu item buttons)
 		# --------------------------------------------------------------------------------
-		self.add_sxcmd_category_widgets()
+		sxmenu_item_btn_area_widget = SXMenuItemBtnAreaWidget(self.sxconst_set, self.sxcmd_category_list, self.sxinfo, central_widget)
+		central_layout.addWidget(sxmenu_item_btn_area_widget)
 		
 		# --------------------------------------------------------------------------------
-		# Create and add SXConstSetWidget
+		# Construct and add widgets for menu item widget area (containing all menu item widgets)
 		# --------------------------------------------------------------------------------
-		# Construct a widget for project constants settings page
+		# Stacked layout for sx menu item widgets area
+		self.sxmenu_item_widget_stacked_layout = QStackedLayout()
+		central_layout.addLayout(self.sxmenu_item_widget_stacked_layout, stretch = 1)
+		
+		# Construct and add widgets for sx command categories
+		for sxcmd_category in self.sxcmd_category_list:
+			# Create SXCmdCategoryWidget for this command category
+			sxcmd_category.widget = SXCmdCategoryWidget(self.sxconst_set, sxcmd_category)
+			self.sxmenu_item_widget_stacked_layout.addWidget(sxcmd_category.widget)
+		
+		# Construct and add a widget for project constants settings
 		self.sxconst_set.widget = SXConstSetWidget(self.sxconst_set, self.sxcmd_category_list)
-		self.sxconst_set.widget.hide()
-		self.grid_layout.addWidget(self.sxconst_set.widget, self.grid_row_origin, self.grid_col_origin + self.sxmenu_btn_area_col_span, self.sxconst_set_widget_area_row_span, self.sxconst_set_widget_area_col_span)
+		self.sxmenu_item_widget_stacked_layout.addWidget(self.sxconst_set.widget)
 		
-		# Add a menu push button for project constants settings page
-		self.sxconst_set.btn = QPushButton("%s" % self.sxconst_set.label)
-		self.sxconst_set.btn.setToolTip(self.sxconst_set.short_info)
-		self.grid_layout.addWidget(self.sxconst_set.btn, self.grid_row, self.grid_col_origin, self.sxmenu_btn_row_span, self.sxmenu_btn_col_span)
-		
-		# Connect widget signals
-		self.connect(self.sxconst_set.btn, SIGNAL("clicked()"), partial(self.handle_sxmenu_item_btn, self.sxconst_set))
-		
-		self.grid_row += 1
-		
-		# Make space
-		self.grid_row += 1
+		# Construct and add a widget for GUI application information
+		self.sxinfo.widget = SXInfoWidget()
+		self.sxmenu_item_widget_stacked_layout.addWidget(self.sxinfo.widget)
 		
 		# --------------------------------------------------------------------------------
-		# Create and add SXInformationWidget
+		# Set up event handler of all menu item buttons
 		# --------------------------------------------------------------------------------
-		# Construct a widget for GUI application information page
-		self.sxinfo.widget = SXInformationWidget()
-		self.sxinfo.widget.hide()
-		self.grid_layout.addWidget(self.sxinfo.widget, self.grid_row_origin, self.grid_col_origin + self.sxmenu_btn_area_col_span, self.sxinfo_widget_area_row_span, self.sxinfo_widget_area_col_span)
-		
-		# Add a menu pubh button for GUI application information page
-		self.sxinfo.btn = QPushButton()
-		icon = QIcon(get_image_directory() + "sparxicon.png") # Decorates the button with the sphire image
-		self.sxinfo.btn.setIcon(icon)
-		self.sxinfo.btn.setToolTip("open info page")
-		self.grid_layout.addWidget(self.sxinfo.btn, self.grid_row, self.grid_col_origin, self.sxmenu_btn_row_span, self.sxmenu_btn_col_span)
-		
-		# Connect widget signals
-		self.connect(self.sxinfo.btn, SIGNAL("clicked()"), partial(self.handle_sxmenu_item_btn, self.sxinfo))
-		
-		self.grid_row += 1
+		for sxcmd_category in self.sxcmd_category_list:
+			sxcmd_category.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, sxcmd_category))
+		self.sxconst_set.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, self.sxconst_set))
+		self.sxinfo.btn.clicked.connect(partial(self.handle_sxmenu_item_btn_event, self.sxinfo))
 		
 		# --------------------------------------------------------------------------------
 		# Register project constant parameter settings upon initialization
 		# --------------------------------------------------------------------------------
 		self.sxconst_set.widget.register_const_set()
+		
+		# --------------------------------------------------------------------------------
+		# Display application information upon startup
+		# --------------------------------------------------------------------------------
+		self.sxmenu_item_widget_stacked_layout.setCurrentWidget(self.sxinfo.widget)
+		
+		# --------------------------------------------------------------------------------
+		# Get focus to main window
+		# --------------------------------------------------------------------------------
+		self.setFocus()
 		
 	def construct_sxinfo(self):
 		sxinfo = SXmenu_item(); sxinfo.name = "GUI Information"; sxinfo.label = "GUI Appliation Information"; sxinfo.short_info = "DUMMY STRING"
@@ -1761,7 +1858,7 @@ class SXMainWindow(QWidget):
 		self.sxinfo = sxinfo
 		
 	def construct_sxconst_set(self):
-		sxconst_set = SXconst_set(); sxconst_set.name = "Project Settings"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
+		sxconst_set = SXconst_set(); sxconst_set.name = "sxc_project_settings"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
 		sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "micrograph pixel size [A]"; sxconst.help = ""; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "ctfwin"; sxconst.label = "CTF window size [pixels]"; sxconst.help = "it should be slightly larger than particle box size"; sxconst.register = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
@@ -1795,8 +1892,8 @@ class SXMainWindow(QWidget):
 				# Handle very special cases
 				if sxcmd_token.type == "function":
 					n_widgets = 2 # function type has two line edit boxes
-					sxcmd_token.label = [sxcmd_token.label, "enter name of external file with .py extension containing user function"]
-					sxcmd_token.help = [sxcmd_token.help, "(leave blank if file is not external to sphire)"]
+					sxcmd_token.label = [sxcmd_token.label, "Python script containing the user function"]
+					sxcmd_token.help = [sxcmd_token.help, "Please leave it blank if file is not external to sphire"]
 					sxcmd_token.default = [sxcmd_token.default, "None"]
 					sxcmd_token.restore = sxcmd_token.default
 				# else: Do nothing for the other types
@@ -1810,150 +1907,66 @@ class SXMainWindow(QWidget):
 			
 		# Store the constructed lists and dictionary as a class data member
 		self.sxcmd_category_list = sxcmd_category_list
-		
-	def setup_layout(self, background_brush):
-		# Setup background color of this widget
-		self.setAutoFillBackground(True)
-		palette = QPalette()
-		palette.setBrush(QPalette.Background, background_brush)
-		self.setPalette(palette)
-		
-		# Setup grid layout in the scroll area
-		self.grid_layout = QGridLayout(self)
-		self.grid_layout.setMargin(SXLookFeelConst.grid_margin)
-		self.grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
-		self.grid_layout.setColumnMinimumWidth(0, SXLookFeelConst.sxmenu_btn_area_min_width)
-		self.grid_layout.setColumnMinimumWidth(1, SXLookFeelConst.sxmenu_widget_area_min_half_width)
-		self.grid_layout.setColumnMinimumWidth(2, SXLookFeelConst.sxmenu_widget_area_min_half_width)
-		# Give the column of the command settings area a higher stretch priority so that the other area does not stretch horizontally
-		self.grid_layout.setColumnStretch(self.grid_col_origin + self.sxmenu_btn_area_col_span, self.grid_layout.columnStretch(self.grid_col_origin + self.sxmenu_btn_area_col_span) + 1)
-		
-		# # MRK_DEBUG: Add the menu button area frame for checking
-		# sxmenu_btn_area_frame = QFrame()
-		# sxmenu_btn_area_frame.resize(SXLookFeelConst.sxmenu_btn_area_min_width , SXLookFeelConst.sxmenu_btn_area_min_height)
-		# sxmenu_btn_area_frame.setFrameStyle(QFrame.StyledPanel)
-		# self.grid_layout.addWidget(sxmenu_btn_area_frame, self.grid_row_origin, self.grid_col_origin, self.sxmenu_btn_area_row_span, self.sxmenu_btn_area_col_span)
-		
-		# # MRK_DEBUG: Add the menu widget area frame for checking
-		# sxmenu_widget_area_frame = QFrame()
-		# sxmenu_widget_area_frame.resize(SXLookFeelConst.sxmenu_widget_area_min_width, SXLookFeelConst.sxmenu_widget_area_min_height)
-		# sxmenu_widget_area_frame.setFrameStyle(QFrame.StyledPanel)
-		# self.grid_layout.addWidget(sxmenu_widget_area_frame, self.grid_row_origin, self.grid_col_origin + self.sxmenu_btn_area_col_span, self.sxmenu_widget_area_row_span, self.sxmenu_widget_area_col_span)
 	
-	# Add SX Command Category Widgets
-	def add_sxcmd_category_widgets(self):
-		self.sxcmd_category_btn_group = QButtonGroup()
-		
-		# Add SX Command Category Widgets
-		for sxcmd_category in self.sxcmd_category_list:
-			# Add buttons for this sx*.py processe
-			sxcmd_category.btn = QPushButton(sxcmd_category.label)
-			sxcmd_category.btn.setToolTip(sxcmd_category.short_info)
-			self.sxcmd_category_btn_group.addButton(sxcmd_category.btn)
-			self.grid_layout.addWidget(sxcmd_category.btn, self.grid_row, self.grid_col_origin, self.sxmenu_btn_row_span, self.sxmenu_btn_col_span)
-		
-			# Create SXCmdCategoryWidget for this command category
-			sxcmd_category.widget = SXCmdCategoryWidget(self.sxconst_set, sxcmd_category)
-			sxcmd_category.widget.hide()
-			self.grid_layout.addWidget(sxcmd_category.widget, self.grid_row_origin, self.grid_col_origin + self.sxmenu_btn_area_col_span, self.sxcmd_category_widget_area_row_span, self.sxcmd_category_widget_area_col_span)
-		
-			# connect widget signals
-			self.connect(sxcmd_category.btn, SIGNAL("clicked()"), partial(self.handle_sxmenu_item_btn, sxcmd_category))
-		
-			self.grid_row += 1
-	
-	def handle_sxmenu_item_btn(self, sxmenu_item):
+	def handle_sxmenu_item_btn_event(self, sxmenu_item):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
-		
-		# modifiers = QApplication.keyboardModifiers()
-		# if modifiers == Qt.ShiftModifier:
-		# 	os.system("python -m webbrowser %s%s" % (SPARX_DOCUMENTATION_WEBSITE, sxmenu_item.name))
-		# 	return
 		
 		if self.cur_sxmenu_item == sxmenu_item: return
 		
 		if self.cur_sxmenu_item != None:
-			assert(self.cur_sxmenu_item.widget.isVisible() == True)
-			self.cur_sxmenu_item.widget.hide()
-			custom_style = "QPushButton {font: normal; color:black; }"
-			self.cur_sxmenu_item.btn.setStyleSheet(custom_style)
-			
+			self.cur_sxmenu_item.btn.setStyleSheet(self.cur_sxmenu_item.btn.customButtonStyle)
+		
 		self.cur_sxmenu_item = sxmenu_item
 		
 		if self.cur_sxmenu_item != None:
-			assert(self.cur_sxmenu_item.widget.isVisible() == False)
-			self.cur_sxmenu_item.widget.show()
-			custom_style = "QPushButton {font: bold; color:blue; }"
-			self.cur_sxmenu_item.btn.setStyleSheet(custom_style)
-			
+			self.cur_sxmenu_item.btn.setStyleSheet(self.cur_sxmenu_item.btn.customButtonStyleClicked)
+			self.sxmenu_item_widget_stacked_layout.setCurrentWidget(self.cur_sxmenu_item.widget)
+	
 	def closeEvent(self, event):
+		event.ignore() # event.accept()
+		
 		# Quit child applications of all sxcmd widgets
 		for sxcmd_category in self.sxcmd_category_list:
 			sxcmd_category.widget.quit_all_child_applications()
 		
-		event.accept()
-
-# ========================================================================================
-class SXApplication(QApplication):
-	def __init__(self, *args):
-#		QApplication.__init__(self, *args)
-		super(SXApplication, self).__init__(*args)
-		
-		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		# class variables
-		self.sxmain_window = None
-		
-		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		"""
-		style=QtGui.QStyleFactory.create("Cleanlooks")
-		if style==None:
-			print "Note: standard Cleanlooks style not available, controls may be distorted. Using ",
-			# the first one should work, but we have the loop, just in case
-			for s in list(QtGui.QStyleFactory.keys()):
-				style=QtGui.QStyleFactory.create(s)
-				if style!=None: 
-					print s
-					break
-		if style!=None: self.setStyle(style)
-		"""
-		
-		# Define the main window (class SXMainWindow)
-		self.sxmain_window = SXMainWindow()
-		self.sxmain_window.setWindowTitle("SPHIRE-GUI Main (Alpha Version)")
-		self.sxmain_window.resize(SXLookFeelConst.sxmain_window_width, SXLookFeelConst.sxmain_window_height)
-		self.sxmain_window.move(QPoint(SXLookFeelConst.sxmain_window_left, SXLookFeelConst.sxmain_window_top));
-		
-		# When all windows are closed, function byebye of class SXApplication will be called
-		self.connect(self, SIGNAL("lastWindowClosed()"), self.byebye )
-		
-		# Show main window
-		self.sxmain_window.show()
-		self.sxmain_window.raise_()
-		
-	#function byebye (just quit)  
-	def byebye( self ):
-		print" bye bye!"
-		self.exit(0)
+		print("bye bye")
+		QtCore.QCoreApplication.instance().quit()
 
 # ========================================================================================
 def main(args):
-	sxapp = SXApplication(args)
+	sxapp = QApplication(args)
+	# The valid keys can be retrieved using the keys() function. 
+	# Typically they include "windows", "motif", "cde", "plastique" and "cleanlooks".
+	# Depending on the platform, "windowsxp", "windowsvista" and "macintosh" may be available. Note that keys are case insensitive.
+	# sxapp.setStyle("macintosh")
+	sxapp.setStyle("cleanlooks")
+	# sxapp.setStyle("plastique")
+	
+	# print "MRK_DEBUG:"
+	# print "MRK_DEBUG: sxapp.style().metaObject().className() == %s" % (str(sxapp.style().metaObject().className()))
+	# for key in QStyleFactory.keys():
+	# 	print "MRK_DEBUG: str(key) == %s" % str(key)
+	# 	print "MRK_DEBUG: QStyleFactory.create(key) = %s" % (str(QStyleFactory.create(key).metaObject().className()))
+	# 	if sxapp.style().metaObject().className() == QStyleFactory.create(key).metaObject().className():
+	# 		print "MRK_DEBUG: !!!USING THE STYLE: %s!!!" % str(key)
+	# print "MRK_DEBUG:"
+	
 	sxapp.setWindowIcon(QIcon(get_image_directory()+"sparxicon.png"))
 	
-	app_font = sxapp.font()
-	app_font_info = QFontInfo(sxapp.font())
-	new_point_size = app_font_info.pointSize() + 1
+	sxapp_font = sxapp.font()
+	sxapp_font_info = QFontInfo(sxapp.font())
+	new_point_size = sxapp_font_info.pointSize() + 1
 	# # MRK_DEBUG: Check the default system font
-	# print "MRK_DEBUG: app_font_info.style()      = ", app_font_info.style()
-	# print "MRK_DEBUG: app_font_info.styleHint()  = ", app_font_info.styleHint()
-	# print "MRK_DEBUG: app_font_info.styleName()  = ", app_font_info.styleName()
-	# print "MRK_DEBUG: app_font_info.family()     = ", app_font_info.family()
-	# print "MRK_DEBUG: app_font_info.fixedPitch() = ", app_font_info.fixedPitch()
-	# print "MRK_DEBUG: app_font_info.pixelSize()  = ", app_font_info.pixelSize()
-	# print "MRK_DEBUG: app_font_info.pointSize()  = ", app_font_info.pointSize()
-	# print "MRK_DEBUG: app_font_info.pointSizeF() = ", app_font_info.pointSizeF()
-	# print "MRK_DEBUG: app_font_info.bold ()      = ", app_font_info.bold()
-	# print "MRK_DEBUG: app_font_info.italic()     = ", app_font_info.italic()
+	# print "MRK_DEBUG: sxapp_font_info.style()      = ", sxapp_font_info.style()
+	# print "MRK_DEBUG: sxapp_font_info.styleHint()  = ", sxapp_font_info.styleHint()
+	# print "MRK_DEBUG: sxapp_font_info.styleName()  = ", sxapp_font_info.styleName()
+	# print "MRK_DEBUG: sxapp_font_info.family()     = ", sxapp_font_info.family()
+	# print "MRK_DEBUG: sxapp_font_info.fixedPitch() = ", sxapp_font_info.fixedPitch()
+	# print "MRK_DEBUG: sxapp_font_info.pixelSize()  = ", sxapp_font_info.pixelSize()
+	# print "MRK_DEBUG: sxapp_font_info.pointSize()  = ", sxapp_font_info.pointSize()
+	# print "MRK_DEBUG: sxapp_font_info.pointSizeF() = ", sxapp_font_info.pointSizeF()
+	# print "MRK_DEBUG: sxapp_font_info.bold ()      = ", sxapp_font_info.bold()
+	# print "MRK_DEBUG: sxapp_font_info.italic()     = ", sxapp_font_info.italic()
 	# 
 	# NOTE: 2019/02/19 Toshio Moriya
 	# The following method of changing font size works with Linux.
@@ -1961,16 +1974,30 @@ def main(args):
 	# still showing the default font size:
 	# QPushButton, QLable, Window Title, and QToolTip
 	# 
-	app_font.setPointSize(new_point_size) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
-	sxapp.setFont(app_font)
+	sxapp_font.setPointSize(new_point_size) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
+	sxapp.setFont(sxapp_font)
 	
 	# sxapp.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
 	# sxapp.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work 
 	# sxapp.setStyleSheet("QToolTip {font-size:14pt; color:white; padding:2px; border-width:2px; border-style:solid; border-radius:20px; background-color: black; border: 1px solid white;}");
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 	
-	sxapp.sxmain_window.show()
-	sxapp.sxmain_window.raise_()
+	# Initialise a singleton class for look & feel constants
+	SXLookFeelConst.initialise(sxapp)
+	
+	# Define the main window (class SXMainWindow)
+	sxmain_window = SXMainWindow()
+	sxmain_window.setWindowTitle("SPHIRE-GUI Main (Alpha Version)")
+	sxmain_window.setMinimumWidth(SXLookFeelConst.sxmain_window_width)
+	sxmain_window.setMinimumHeight(SXLookFeelConst.sxmain_window_height)
+	sxmain_window.resize(SXLookFeelConst.sxmain_window_width, SXLookFeelConst.sxmain_window_height)
+	sxmain_window.move(QPoint(SXLookFeelConst.sxmain_window_left, SXLookFeelConst.sxmain_window_top));
+	
+	# Show main window
+	sxmain_window.show()
+	sxmain_window.raise_()
+	
+	# Start event handling loop
 	sxapp.exec_()
 
 # ========================================================================================
