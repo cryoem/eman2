@@ -89,9 +89,10 @@ import traceback
 
 alignments=["mid","right","left"]
 histtypes=["bar","step","stepfilled"]
-orientations=["vertical"]#,"horizontal"]
+orientations=["vertical"] #,"horizontal"] # need to implement
 colortypes=["k","b","r","g","y","c","m","gray"]
-fullcolortypes=["black","blue","red","green","yellow","cyan","magenta","grey"]
+matplotlib.rcParams['axes.color_cycle'] = colortypes[1:-1] # temporary hack
+
 qt_color_map = {}
 qt_color_map["k"] = QtGui.QColor(0,0,0)
 qt_color_map["b"] = QtGui.QColor(0,0,255)
