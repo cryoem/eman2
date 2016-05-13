@@ -1842,9 +1842,27 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		self.sxconst_set.widget.register_const_set()
 
 		# --------------------------------------------------------------------------------
+		# Start widget
+		# --------------------------------------------------------------------------------
+		start_widget = QtGui.QWidget()
+		logo_container = QtGui.QWidget()
+		layout_start_widget = QtGui.QHBoxLayout()
+		layout_logo_container = QtGui.QVBoxLayout()
+		logo_container.setStyleSheet('border-image: url("{0}sxgui_pictograph_info.png")'.format(get_image_directory()))
+		logo_container.setFixedSize(100, 100)
+		layout_start_widget.setContentsMargins(0, 0, 0, 20)
+
+		layout_logo_container.addStretch(1)
+		layout_logo_container.addWidget(logo_container)
+		layout_start_widget.addLayout(layout_logo_container)
+		layout_start_widget.addStretch(1)
+		start_widget.setLayout(layout_start_widget)
+		self.sxmenu_item_widget_stacked_layout.addWidget(start_widget)
+
+		# --------------------------------------------------------------------------------
 		# Display application information upon startup
 		# --------------------------------------------------------------------------------
-		self.sxmenu_item_widget_stacked_layout.setCurrentWidget(self.sxinfo.widget)
+		self.sxmenu_item_widget_stacked_layout.setCurrentWidget(start_widget)
 
 		# --------------------------------------------------------------------------------
 		# Get focus to main window
