@@ -5121,7 +5121,7 @@ def combinations_of_n_taken_by_k(n, k):
 	from fractions import Fraction
 	return int(reduce(lambda x, y: x * y, (Fraction(n-i, i+1) for i in range(k)), 1))
 
-def cmdexecute(cmd):
+def cmdexecute(cmd, printing_on_success = True):
 	from   time import localtime, strftime
 	import subprocess
 	outcome = subprocess.call(cmd, shell=True)
@@ -5130,7 +5130,8 @@ def cmdexecute(cmd):
 		print  line,"ERROR!!   Command failed:  ", cmd
 		from sys import exit
 		exit()
-	else:  print line,"Executed successfully: ",cmd
+	elif printing_on_success:  
+		print line,"Executed successfully: ",cmd
 
 def string_found_in_file(myregex, filename):
 	import re
