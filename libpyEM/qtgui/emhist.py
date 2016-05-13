@@ -478,42 +478,41 @@ class EMHistogramWidget(EMGLWidget):
 			ax.set_ylim([0-margin,ymax+margin])
 			self.ylimits=(0-margin,ymax+margin)
 				
-			# else:
-# 				for i in self.axes.keys():
-# 					if not self.visibility[i]: continue
-# 				
-# 					x=self.data[i][self.axes[i][0]]
-# 				
-# 					bins=int(self.pparm[i][0])
-# 					color=colortypes[self.pparm[i][1]]
-# 					histtype=self.pparm[i][2]
-# 					orient=self.pparm[i][3]
-# 					align=self.pparm[i][4]
-# 					alpha=self.pparm[i][5]
-# 					rwidth=self.pparm[i][6]
-# 					normed=self.pparm[i][7]
-# 					cumulative=self.pparm[i][8]
-# 					log=self.pparm[i][9]
-# 					#stacked=self.pparm[i][10]
-# 					rng = self.xlimits
-# 				
-# 					self.hist,self.hist_edges = np.histogram(x,bins,range=rng,density=normed)
-# 					ax.hist(x,bins=self.hist_edges,color=color,range=rng,histtype=histtype,orientation=orient,align=align,alpha=alpha,rwidth=rwidth,normed=normed,cumulative=cumulative,log=log,stacked=False)
-# 				
-# 					if log: 
-# 						if cumulative: 
-# 							ymax = max(np.cumsum(np.log10(self.hist)))
-# 						else: 
-# 							ymax = max(self.hist)
-# 					elif cumulative: 
-# 						ymax = max(np.cumsum(self.hist))
+# 			for i in self.axes.keys():
+# 				if not self.visibility[i]: continue
+# 			
+# 				x=self.data[i][self.axes[i][0]]
+# 			
+# 				bins=int(self.pparm[i][0])
+# 				color=colortypes[self.pparm[i][1]]
+# 				histtype=self.pparm[i][2]
+# 				orient=self.pparm[i][3]
+# 				align=self.pparm[i][4]
+# 				alpha=self.pparm[i][5]
+# 				rwidth=self.pparm[i][6]
+# 				normed=self.pparm[i][7]
+# 				cumulative=self.pparm[i][8]
+# 				log=self.pparm[i][9]
+# 				#stacked=self.pparm[i][10]
+# 				rng = self.xlimits
+# 			
+# 				self.hist,self.hist_edges = np.histogram(x,bins,range=rng,density=normed)
+# 				ax.hist(x,bins=self.hist_edges,color=color,range=rng,histtype=histtype,orientation=orient,align=align,alpha=alpha,rwidth=rwidth,normed=normed,cumulative=cumulative,log=log,stacked=False)
+# 			
+# 				if log: 
+# 					if cumulative: 
+# 						ymax = max(np.cumsum(np.log10(self.hist)))
 # 					else: 
 # 						ymax = max(self.hist)
-# 				
-# 					margin = ymax*0.025
-# 					ax.set_ylim([0-margin,ymax+margin])
-# 					self.ylimits=(0-margin,ymax+margin)
-# 				
+# 				elif cumulative: 
+# 					ymax = max(np.cumsum(self.hist))
+# 				else: 
+# 					ymax = max(self.hist)
+# 			
+# 				margin = ymax*0.025
+# 				ax.set_ylim([0-margin,ymax+margin])
+# 				self.ylimits=(0-margin,ymax+margin)
+# 			
 			canvas.draw()
 			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 
