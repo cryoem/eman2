@@ -13718,9 +13718,9 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 		data.set_attr("xform.align2d", t)
 		data.write_image(stack_data_ali, im)
 
-def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI = False,xysize=-1, zsize = -1, smearstep = 0.0, trl = False, niter = 10):
+def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI = False,xysize=-1, zsize = -1, smearstep = 0.0, trl = False, niter = 10, upweighted = False, compensate = False):
 	if MPI:
-		if trl:   recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, niter, verbose)
+		if trl:   recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, niter, verbose, upweighted, compensate)
 		else  :   recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
 		##newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
 		return
@@ -13805,7 +13805,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 			finfo.write( "Total time: %10.3f\n" % (time()-time_start) )
 			finfo.flush()
 
-def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, niter, verbose):
+def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, niter, verbose, upweighted, compensate):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file, info
 	from string         import replace
@@ -13885,8 +13885,9 @@ def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	m = [1.0]*nnnx
 	upweighted = False
 	compensate = False
+	is_complex = prjlist[0].get_attr("is_complex")
 	for image in prjlist:
-		image = fft(image)
+		if not is_complex: image = fft(image)
 		image.set_attr("padffted",1)
 		image.set_attr("npad",1)
 		image.set_attr("bckgnoise",m)

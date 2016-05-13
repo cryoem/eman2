@@ -61,7 +61,8 @@ def main():
 	parser.add_option("--smearstep",   type   ="float",	default=0.0,   help="Rotational smear step (default 0.0, no smear)" )
 	parser.add_option("--trl",         action ="store_true",	default=False, help="trillinear interpolation reconstruction" )
 	parser.add_option("--niter",       type="int",	            default=10,    help="number of iterations for convolution" )
-
+	parser.add_option("--upweighted",     action="store_true", default=False, help="apply background noise")
+	parser.add_option("--compensate",     action="store_true", default=False, help="compensate in reconstruction")
 	(options,args) = parser.parse_args(arglist[1:])
 
 
@@ -97,7 +98,7 @@ def main():
 
 	global_def.BATCH = True
 	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
-		 options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize, options.zsize, options.smearstep, options.trl, options.niter)
+		 options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize, options.zsize, options.smearstep, options.trl, options.niter, options.upweighted, options.compensate)
 	global_def.BATCH = False
 
 	if options.MPI:
