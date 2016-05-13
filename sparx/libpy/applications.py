@@ -13883,8 +13883,6 @@ def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	m = [1.0]*nnnx
-	upweighted = False
-	compensate = False
 	is_complex = prjlist[0].get_attr("is_complex")
 	for image in prjlist:
 		if not is_complex: image = fft(image)
