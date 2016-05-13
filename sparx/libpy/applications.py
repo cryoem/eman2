@@ -13940,21 +13940,6 @@ def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		fftvol = cosinemask(fftvol, nnxo//2-1,5,None)
 		fftvol.div_sinc(1)
 		fftvol.write_image(vol_stack)
-		"""
-		if(vol_stack[-3:] == "spi"):
-			drop_image(vol, vol_stack, "s")
-		else:
-			fft(fftvol).write_image( vol_stack )
-			weight.write_image("w"+vol_stack)
-			refvol.write_image("r"+vol_stack)
-		#drop_image(vol1, "nvol0.hdf")
-		#drop_image(vol2, "nvol1.hdf")
-		#write_text_file(fff,"nfsc.txt")
-		if not(finfo is None):
-			finfo.write( "result written to " + vol_stack + "\n")
-			finfo.write( "Total time: %10.3f\n" % (time()-time_start) )
-			finfo.flush()
-		"""
 
 def newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
