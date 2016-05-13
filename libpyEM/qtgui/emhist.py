@@ -459,7 +459,7 @@ class EMHistogramWidget(EMGLWidget):
 			logtog = self.inspector.logtogy.isChecked()
 			
 			self.hist,self.hist_edges = np.histogram(x,bins,range=rng,density=normed)
-			ax.hist(x,bins=self.hist_edges,color=colors,range=rng,histtype=histtype,orientation=orient,align=align,alpha=alpha,rwidth=rwidth,normed=normed,cumulative=cumulative,log=logtog,stacked=stacked)
+			ax.hist(x,bins=self.hist_edges,color=None,range=rng,histtype=histtype,orientation=orient,align=align,alpha=alpha,rwidth=rwidth,normed=normed,cumulative=cumulative,log=logtog,stacked=stacked)
 			
 			if logtog:
 				if cumulative: 
