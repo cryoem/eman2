@@ -1,5 +1,5 @@
 = Name =
-sxrsort3d - 3D Clustering Protocol II (P2): Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters (xform.projection) have been determined already using 3D sorting protocol I (P1).
+sxrsort3d - 3D Clustering Protocol II: Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters (xform.projection) have been determined already using 3D sorting protocol I (P1).
 
 = Usage =
 
@@ -19,47 +19,47 @@ sxrsort3d.py exists only in MPI version
 On lonestar cluster of TACC, using 264 cpus, it takes about 2 hours and 23 minutes to accomplish 95953 128x128 images for one sxsort3d.py independent run, 2 hours 24 minutes to accomplish one independent sxrsort3d.py run with number_of_images_per_group set as 30000. 
 
 == Input ==
-    stack:: input visual 2D stack file: (default required string)
-    mask:: global 3D mask: this is optional. (default none)
+    stack:: Input images stack: (default required string)
+    mask:: 3D mask: (default none)
     
-    focus:: 3D mask for focused clustering: (default none)
-    radius:: radius of the protein particles in pixel: Please set to the radius of the particle. (default -1)
-    delta:: angular step of the reference projections: (default '2')
-    CTF:: Consider CTF correction: during the alignment. (default False) 
-    sym:: point-group symmetry of the structure: (default c1) 
-    number_of_images_per_group:: number of images per group: critical number defined by user. (default 1000) 
-    nxinit:: initial image size for sorting: (default 64)
-    smallest_group:: minimum members for identified group: (default 500) 
-    previous_run1:: master directory of first sxsort3d.py run: (default required string)
-    previous_run2:: master directory of second sxsort3d.py run: (default required string)
-    chunkdir:: chunkdir for computing margin of error: two chunks of arbitrary assigned data while refined independently during the 3-D reconstruction: By default the program generates it internally. (default none)
+    focus:: Focus 3D mask: Mask used for focused clustering (default none)
+    radius:: Outer radius for rotational correlation [Pixels]: Must be smaller than half the box size. Please set to the radius of the particle. (default -1)
+    delta:: Angular step for projections: (default '2')
+    CTF:: Use CTF: Do a full CTF correction during the alignment. (default False) 
+    sym:: Point-group symmetry: (default c1) 
+    number_of_images_per_group:: Images per group: Critical number of images per group, defined by user. (default 1000) 
+    nxinit:: Initial image size for sorting: (default 64)
+    smallest_group:: Smallest group size: Minimum members for identified group. (default 500) 
+    previous_run1:: Directory of first sxsort3d.py run: (default required string)
+    previous_run2:: Directory of second sxsort3d.py run: (default required string)
+    chunkdir:: Chunkdir: Used for computing margin of error. (default none) 
 
     * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
-    ir:: inner radius for rotational correlation: > 0 (default 1)
-    maxit:: maximum number of iteration: (default 50)
-    rs:: step between rings in rotational correlation: > 0. (default 1)
-    xr:: range for translation search in x direction: search is +/-xr. (default '1')
-    yr:: range for translation search in y direction: search is +/-yr. By default, same as xr. (default '-1')
-    ts:: step size of the translation search: in both directions direction. search is -xr, -xr+ts, 0, xr-ts, xr. (default '0.25')
-    an:: angular neighborhood for local search:(default '-1')
-    center:: centering method: 0 - if you do not want the volume to be centered, 1 - center the volume using cog. (default 0)
-    nassign:: number of assignment during one iteration cycle: (default 1)
-    nrefine:: number of alignment iterations: performed for each angular step. (default 0)
-    stoprnct:: Minimum percentage of assignment change to stop the program: (default 3.0) 
-    function:: name of the reference preparation function: (default do_volume_mrk02) 
-    independent:: number of independent run of equal-Kmeans clustering: (default 3) 
-    low_pass_filter:: absolute frequency of low-pass filter: for 3d sorting on the original image size. (default -1.0)
-    unaccounted:: reconstruct the unaccounted images: (default False) 
-    seed:: random seed: for create initial random assignment for EQ Kmeans (default -1) 
-    group_size_for_unaccounted:: group size for unaccounted particles: (default none) 
-    sausage:: the way of filtering reference volume:(default False)
-    PWadjustment:: 1-D power spectrum of PDB file: used for EM volume power spectrum correction (default none) 
-    upscale:: scaling parameter to adjust the power spectrum: of EM volumes (default 0.5) 
-    wn:: optimal window size for data processing: of EM volumes (default 0) 
+    ir:: Inner radius for rotational correlation [Pixels]: Must be bigger than 1. (default 1)
+    maxit:: Maximum iterations: (default 25)
+    rs:: Step between rings in rotational correlation: Must be bigger than 0. (default 1)
+    xr:: X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default 1)
+    yr:: Y search range [Pixels]: The translational search range in the y direction. If omitted it will be set as xr. (default -1)
+    ts:: Translational search step [Pixels]: The search will be performed in -xr, -xr+ts, 0, xr-ts, xr, can be fractional. (default 0.25)
+    an:: Angular neighborhood for local searches [Degrees]: (default '-1')
+    center:: Centering method: 0 - if you do not want the volume to be centered, 1 - center the volume using the center of gravity. (default 0)
+    nassign:: Number of reassignment iterations: Performed for each angular step. (default 1)
+    nrefine:: Number of alignment iterations: Performed for each angular step. (default 0)
+    stoprnct:: Assigment convergence threshold [%]: Used to asses convergence of the run. It is the minimum percentage of assignment change required to stop the run.  (default 3.0) 
+    function:: Reference preparation function: Function used to prepare the reference volume. (default do_volume_mrk02) 
+    independent:: Number of independent runs: Number of independent equal-Kmeans(default 3) 
+    low_pass_filter:: Low-pass filter frequency [1/Pixel]: Low-pass filter used for the 3D sorting on the original image size. (default -1.0)
+    unaccounted:: Reconstruct unaccounted images: (default False) 
+    seed:: Seed: Seed used for the initial random assignment for EQ Kmeans. The program generates a random integer by default. (default -1) 
+    group_size_for_unaccounted:: Unaccounted particles group size: (default none) 
+    sausage:: Use sausage filter: (default False)
+    PWadjustment:: Power spectrum reference: Text file containing a 1D reference power spectrum. (default none) 
+    upscale:: Power spectrum adjustment strength: This parameters adjusts how strongly the power spectrum of the volume should be modified to match the reference. A value of 1 brings the volume's power spectrum completely to the reference, while a value of 0 means no modification.  (default 0.5) 
+    wn:: Target image size [Pixels]: If different than 0, then the images will be rescaled to fit this size. (default 0) 
 
 
 == Output ==
-    outdir:: output master directory: that contains multiple subdirectories and a log file termed as "log.txt", which records the sequences of major computational operations. (default required string)
+    outdir:: Output directory: There is a log.txt that describes the sequences of computations in the program. (default required string)
 
 
 = Description =

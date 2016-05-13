@@ -1,6 +1,6 @@
 = Name =
 
-sxrviper - Initial 3D Model with RVIPER: Reproducible ''ab initio'' 3D structure determination, aka Reproducible VIPER.  The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]. 
+sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]. 
 
 = Usage =
 
@@ -26,43 +26,42 @@ Since RVIPER makes use of group of processors working together, it is important 
 On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 processors. Memory needs are about 0.5GB per processor.
 
 == Input ==
-    stack:: set of 2-D images in a stack file (format hdf): images have to be squares (''nx''=''ny'', nx, ny denotes the image size) (default required string)
+    stack:: Input images stack: The images must be square. (default required string)
 
-    radius:: radius of the particle: has to be less than < int(nx/2)-1 (default required int)
-    sym:: point-group symmetry of the structure: (default c1)
+    radius:: Particle radius [Pixels]: has to be less than half the box size. (default required int)
+    sym:: Point-group symmetry: (default c1)
 
     * The remaining parameters are optional.  
-    Note '''ir, ou, rs, xr, yr, ts''' are in pixels while '''delta, an''' are in degrees.
 
-    ir:: inner radius for rotational search: > 0 (default 1)
-    rs:: step between rings in rotational search: >0 (default 1)
-    xr:: range for translation search in x direction: search is +/xr in pixels (default '0')
-    yr:: range for translation search in y direction: if omitted will be set to xr, search is +/yr in pixels (default '0')
-    ts:: step size of the translation search in x-y directions: search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional (default '1.0')
-    delta::  angular step of reference projections: (default '2.0')
-    center:: centering of 3D template: average shift method; 0: no centering; 1: center of gravity (default -1.0)
-    maxit1:: maximum number of iterations performed for the GA part: (default 400)
-    maxit2:: maximum number of iterations performed for the finishing up part: (default 50)
-    L2threshold:: stopping criterion of GA: given as a maximum relative dispersion of volumes' L2 norms: (default 0.03)
-    doga:: do GA when fraction of orientation changes less than 1.0 degrees is at least doga: (default 0.1)
-    n_shc_runs:: number of quasi-independent shc runs (same as '--nruns' parameter from sxviper.py): (default 4)
-    n_rv_runs:: number of rviper iterations: (default 10)
-    n_v_runs:: number of viper runs for each r_viper cycle: (default 3)
-    outlier_percentile:: percentile above which outliers are removed every rviper iteration: (default 95.0)
-    iteration_start:: starting iteration for rviper: 0 means go to the most recent one (default 0)
-    ref_a:: method for generating the quasi-uniformly distributed projection directions: (default S)
-    npad:: padding size for 3D reconstruction: (default 2)
-    fl:: cut-off frequency applied to the template volume: using a hyperbolic tangent low-pass filter (default 0.25)
-    aa:: fall-off of hyperbolic tangent low-pass filter: (default 0.1)    
-    pwreference:: text file with a reference power spectrum: (default none)
-    mask3D:: 3D mask file: (default sphere)
-    moon_elimination:: elimination of disconnected pieces: two arguments: mass in KDa and pixel size in px/A separated by comma, no space (default none)
-    criterion_name:: criterion deciding if volumes have a core set of stable projections: '80th percentile', other options:'fastest increase in the last quartile' (default 80th percentile)
-    outlier_index_threshold_method:: method that decides which images to keep: discontinuity_in_derivative, other options:percentile, angle_measure (default discontinuity_in_derivative)
-    angle_threshold:: angle threshold for projection removal if using 'angle_measure': (default 30)
+    ir:: Inner rotational search radius [Pixles]: (default 1)
+    rs:: Ring step size: Step between rings used for the rotational search. (default 1)
+    xr:: X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default '0')
+    yr:: Y search range [Pixels]: The translational search range in the y direction. If omitted it will be xr. (default '0')
+    ts:: Translational search step [Pixels]: The search will be performed in -xr, -xr+ts, 0, xr-ts, xr, can be fractional. (default '1.0')
+    delta::  Projection angular step [Degree]: (default '2.0')
+    center:: Center 3D template: 0: no centering; 1: center of gravity. (default -1.0)
+    maxit1:: Maximum iterations - GA step: (default 400)
+    maxit2:: Maximum iterations - Finish step: (default 50)
+    L2threshold:: GA stop threshold: Defines the maximum relative dispersion of volumes' L2 norms. (default 0.03)
+    doga:: Threshold to start GA: Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. (default 0.1)
+    n_shc_runs:: GA population size: This defines the number of quasi-independent volumes generated. (same as '--nruns' parameter from [[sxviper.py]]. (default 4)
+    n_rv_runs:: Number of iterations: (default 10)
+    n_v_runs:: Number of viper runs per cycle: (default 3)
+    outlier_percentile:: Percentile for outlier: Threshold above which images are considered outliers and removed if 'percentile' is used as outlier selection method. (default 95.0)
+    iteration_start:: Starting iteration: Iteration from which to start the program. 0 means go to the most recent one. (default 0)
+    ref_a:: Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
+    npad:: 3D reconstruction padding: (default 2)
+    fl:: Low-pass filter frequency [1/Pixel]: Using a hyperbolic tangent low-pass filter. (default 0.25)
+    aa:: Low-pass filter fall-off: Fall-off of for the hyperbolic tangent low-pass filter. (default 0.1)
+    pwreference:: Power spectrum reference: Text file containing a 1D reference power spectrum. (default none)
+    mask3D:: 3D mask: (default sphere)
+    moon_elimination:: Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
+    criterion_name:: Stable projection criterion: Used to decide if the volumes have a set of stable projections. Valid options are - '80th percentile',  or 'fastest increase in the last quartile'. (default 80th percentile)
+    outlier_index_threshold_method:: Outlier selection method: Used to decide which images to keep. Valid options are -  'discontinuity_in_derivative', 'percentile', or 'angle_measure'. (default discontinuity_in_derivative)
+    angle_threshold:: Angle threshold: Threshold used to remove projections if 'angle_measure' is used to decide the outliers. (default 30)
 
 == Output ==
-    output_directory:: directory name into which the results will be written: if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results. (default required string)
+    output_directory:: Output directory: The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. (default required string)
 
 The directory structure generated by sxrviper is shown in the figure below. Each "runXXX" directory contains the output of running the VIPER algorithm (please see [[sxviper]]). The "runXXX" directory contains the reconstructed volume of stage1, refvolf2.hdf, and parameters into refparams2.txt. After stage 2, the final volume and parameters will be written to volf.hdf and params.txt. Other output files are log.txt and previousmax.txt. Each "mainXXX" directory contains the output of "n_v_runs" viper runs (default 3). The number of "mainXXX" directories is given by "n_rv_runs".
 
