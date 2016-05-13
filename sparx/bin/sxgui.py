@@ -634,24 +634,6 @@ class SXCmdWidget(QWidget):
 			self.write_params(self.gui_settings_file_path)
 		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
 	
-#	def save_cmd_line(self):
-#		# Generate command line 
-#		cmd_line = self.generate_cmd_line()
-#		if cmd_line:
-#			file_path_out = QFileDialog.getSaveFileName(self, "Generate Command Line", options = QFileDialog.DontUseNativeDialog)
-#			if file_path_out != "":
-#				file_out = open(file_path_out,"w")
-#				file_out.write(cmd_line + "\n")
-#				file_out.close()
-#				print "Saved the following command to %s:" % file_path_out
-#				print cmd_line
-#				
-#				# Save the current state of GUI settings
-#				if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
-#					os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
-#				self.write_params(self.gui_settings_file_path)
-#		# else: Do nothing
-	
 	def print_cmd_line(self):
 		# Generate command line 
 		cmd_line = self.generate_cmd_line()
@@ -1289,7 +1271,6 @@ class SXCmdTab(QWidget):
 			self.cmd_line_btn = QPushButton("Generate command line")
 			self.cmd_line_btn.setMinimumWidth(func_btn_min_width)
 			self.cmd_line_btn.setToolTip("generate command line from gui parameter settings and automatically save settings")
-#			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_cmd_line)
 			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.print_cmd_line)
 			grid_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 			
@@ -1940,6 +1921,11 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "lowpass"; token.key_prefix = "--"; token.label = "apply a lowpass filter"; token.help = "abolute frequency. "; token.group = "main"; token.is_required = False; token.default = "0.033"; token.restore = "0.033"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "highpass"; token.key_prefix = "--"; token.label = "apply a highpass filter"; token.help = "abolute frequency. "; token.group = "main"; token.is_required = False; token.default = "0.00033"; token.restore = "0.00033"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "remove_sum"; token.key_prefix = "--"; token.label = "remove the calculated sum files"; token.help = ""; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+
+		sxcmd_list.append(sxcmd)
+
+		sxcmd = SXcmd(); sxcmd.name = "sxgui_unblur"; sxcmd.mode = ""; sxcmd.label = "Drift Assessment"; sxcmd.short_info = "GUI tool to assess micrographs based on drift estimation produced by Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie_micrograph"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "a set of shift files"; token.help = "name with wild card * to process multiple micrographs "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
