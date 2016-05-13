@@ -572,6 +572,20 @@ def create_sxcmd_subconfig_variability_preprocess():
 
 	return sxcmd_subconfig
 
+def create_sxcmd_subconfig_refine3d_angular_distribution():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("angular_distribution"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("round_digit"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("box_size"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("prtcl_diameter"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_width"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_length"); token_edit.help = "main"; token_edit_list.append(token_edit)
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("Angular Distribution", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
 # ========================================================================================
 def main():
 	# --------------------------------------------------------------------------------
@@ -646,6 +660,7 @@ def main():
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_3d_refinement"
@@ -659,6 +674,7 @@ def main():
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_3d_clustering"
