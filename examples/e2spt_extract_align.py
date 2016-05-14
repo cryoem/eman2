@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Author: Jesus Galaz-Montoya, March 2014; last update by Jesus Galaz-Montoya on March/20/2014
+# Author: Jesus Galaz-Montoya, March 2014; last update by Jesus Galaz-Montoya on May/22/2016
 # Copyright (c) 2000-2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -44,7 +44,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--input", default='',type=str, help="The name of the hdf stack of volumes to process.")
-	parser.add_argument("--output", default="avg.hdf",type=str, help="The name of the output average volume.")
+	#parser.add_argument("--output", default="avg.hdf",type=str, help="The name of the output average volume.")
 	parser.add_argument("--rotationtype", default="eman",type=str, help="Valid options are: eman,imagic,mrc,spider,quaternion,sgirot,spi,xyz")
 	
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean")
@@ -63,6 +63,8 @@ def main():
 	parser.add_argument("--saveali",action="store_true", default=False,help="""If set, will save the 
 		aligned particle volumes.""")
 
+	parser.add_argument("--extractsymsearch",action="store_true", default=False,help="""If set, this will look for the symxform among the particles' header parameters to produce a .json file with alignment info from e2symsearch3d.py. Works only if --alifile is NOT provided.""")
+
 	(options, args) = parser.parse_args()
 
 
@@ -73,9 +75,9 @@ def main():
 		parser.print_help()
 		sys.exit(0)
 
-	if ".hdf" not in options.output and ".mrc" not in options.output:
-		print "ERROR. The output must contain a valid format ending, for example '.hdf.' TERMINATING!"
-		sys.exit()
+	#if ".hdf" not in options.output and ".mrc" not in options.output:
+	#	print "ERROR. The output must contain a valid format ending, for example '.hdf.' TERMINATING!"
+	#	sys.exit()
 	
 	if ".hdf" not in options.input:
 		print "ERROR. HDF is the only supported input format."
@@ -97,6 +99,10 @@ def main():
 			
 			coords=a['ptcl_source_coord']
 			tomogram=a['ptcl_source_image']
+			try:
+				tomogram=a['spt_tomogram']
+			except:
+				pass
 			
 			if tomogram not in tomograms:
 				print "Indentified a new tomogram",tomogram
@@ -127,17 +133,47 @@ def main():
 		else: 
 			print "#{},{},{},{}".format(k)
 
+		jsAliParamsPath = options.path + '/xform_align3d.json'
+		jsA = js_open_dict( jsAliParamsPath )
+		if options.extractsymsearch:
+			symjsAliParamsPath = options.path + '/symxform.json'
+			symjsA = js_open_dict( symjsAliParamsPath )
+
 		for i in range(n):
 			#You only need to load the header
 			im=EMData( options.input ,i, True)
 			#xf=im["spt_ali_param"]
 			
 			xf=im['xform.align3d']
+			#score=1.0
+			
+			score=im['spt_score']
+			if options.extractsymsearch:
+				symxformslabel = 'subtomo_' + str( i ).zfill( len( str( n ) ) )			
+				symxf=Transform()
+				
+				try:
+					symxf=im['symxform']
+					#symscore=im['spt_symsearch_score']
+					
+				except:
+					print "\nERROR: particle %d does not have 'symxform' parameter in its header. Defaulting to identity transform."
+				symjsA.setval( symxformslabel, [ symxf , score ] )
+
+			
+			xformslabel = 'subtomo_' + str( 0 ).zfill( len( str( n ) ) )			
+			jsA.setval( xformslabel, [ xf , score ] )
+
 			r=xf.get_rotation( options.rotationtype )
 			print "{}".format(i),
 			for j in k: 
 				print ", {}".format(r[j]),
 			print ""
+		
+		jsA.close()
+		if options.extractsymsearch:
+			symjsA.close()
+
 	
 	elif options.alifile:
 		preOrientationsDict = js_open_dict(options.alifile)
@@ -150,7 +186,7 @@ def main():
 			
 			ptcl = a.copy()
 			
-			#The forst case works with .json files from e2spt_hac.py
+			#The first case works with .json files from e2spt_hac.py
 			#The second works for .json files from e2spt_classaverage.py
 			try:
 				ID=unicode(i)
@@ -158,7 +194,7 @@ def main():
 				t = preOrientationsDict[0][ID]
 				#print "t 1 is",t
 			except:
-				ID='tomo_' + str(i)
+				ID='subtomo_' + str(i).zfill(len(str(n)))
 				#print "ID is", ID
 				t = preOrientationsDict[ID][0]
 				#print "t 2 is", t

@@ -37,6 +37,9 @@ from numpy import *
 import numpy.linalg as LA
 
 def main():
+	print """NOTICE - we have a newer algorithm which performs much more reliably (and with better results) than this program currently provides, but it has not yet been integrated with this program. Please see examples/movieccf.py."""
+
+
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <ddd_movie_stack>
 

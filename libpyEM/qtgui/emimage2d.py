@@ -275,6 +275,7 @@ class EMImage2DWidget(EMGLWidget):
 			print "unknown mouse mode:",mode_num
 			return
 		self.mouse_mode = mode_num
+		self.del_shapes()
 
 	def get_minden(self): return self.minden
 	def get_maxden(self): return self.maxden

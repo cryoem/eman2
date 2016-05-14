@@ -122,3 +122,6 @@ Complete
 10/15	6/12/14		isosurface color on mac (and other machines with older opengl). Why no newer opengl working on mac?
 10/19/15	10/18/15	gauss_5 falloff?, dealt with this by expanding the --pad amount with some testing
 2/2/16		2/3/16		tiled display of 2d image stack from MRCS file has funny contrast (C.J.)
+4/15/16		anisotropy correction program added
+4/16/16		Added euler_refine option for refining orientation of class-averages
+5/12/16		Changed mode_5_slow to do a sort of rotational deblurring in Fourier space. Produces a high-pass filter effect as well. Not sure if it's really useful

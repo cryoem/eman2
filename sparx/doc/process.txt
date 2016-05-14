@@ -8,7 +8,7 @@ sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image se
 
 ''usage in command line''
 
-sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --threshold=THRESHOLD  --ne=NE  --nd=ND  --postprocess  --fsc_weighted  --low_pass_filter  --ff=FF  --aa=AA  --mask=MASK  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --FSC_cutoff=FSC_CUTOFF  --2d  --window_stack  --box=BOX
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --threshold=THRESHOLD  --ne=NE  --nd=ND  --postprocess  --fsc_weighted  --low_pass_filter  --ff=FF  --aa=AA  --mask=MASK  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --FSC_cutoff=FSC_CUTOFF  --2d  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --prtcl_diameter=PRTL_DIAMETER  --bin_width=BIN_WIDTH  --bin_length=BIN_LENGTH
 
 
 === Typical usage ===
@@ -72,9 +72,9 @@ The reconstructed volume is in the position of the volume computed using the inp
 
 ''' sxprocess.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0 '''
 
-To concatenate output files, 
+To concatenate output files,
 
-''' cd directory ''' 
+''' cd directory '''
 ''' e2bdb.py  .  --makevstack=bdb:allparticles  --filt=G '''
 
 IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
@@ -91,8 +91,10 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
 ''' sxprocess.py  --postprocess  run1_half1_class001_unfil.mrc  run1_half2_class001_unfil.mrc  --fsc_weighted  --pixel_size=1.12 '''
 
-14.  Window stack file -reduce size of images without changing the pixel size. 
+14.  Window stack file -reduce size of images without changing the pixel size.
 
+15. Create angular distribution .build file
+'''sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --prtcl_diameter=500  --bin_width=1  --bin_length=10000'''
 
 == Input ==
     inputfile:: input file: required for some options. (default none)
@@ -106,24 +108,24 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     phase_flip:: Phase flip the input stack: (default False)
 
     generate_projections:: Generate projections and simulated micrographs from 3D volume: three arguments are required. name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). if an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64. (default none)
-    
+
     isacgroup:: Retrieve original image numbers in selected ISAC group: see ISAC documentation for details. (default -1)
-    
+
     isacselect:: Retrieve original image numbers listed in ISAC output average stack: see ISAC documentation for details. (default False)
-    
+
     params:: name of parameter in image file header: which one depends on specific option. (default none)
-    
+
     adjpw:: Adjust rotationally averaged power spectrum of an image: (default False)
-    
+
     rotpw:: Compute rotationally averaged power spectrum of the input image: store to output text file name specified by this option. (default none)
-    
+
     importctf:: Import sxcter CTF parameters to stack file: specify file name containing CTF parameters produced by sxcter with this option. (default none)
     input:: input particle image stack file: to which CTF parameters will be imported. (default none)
     defocuserror:: defocus error threshold: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent. the error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)
     astigmatismerror:: astigmatism error threshold: set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees. (default 360.0)
-    
+
     scale:: Divide shifts in input 3D orientation parameters text file by this scale factor: (default -1.0)
-    
+
     adaptive_mask:: Create adavptive 3D mask from a given 3D volume: (default False)
     nsigma:: factor of input volume sigma to obtain large density cluster: (default 1.0)
     ndilation:: number of dilations applied to the largest density cluster: (default 3)
@@ -132,11 +134,11 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     threshold:: threshold to binarize input volume: (default 9999.0)
     ne:: number of erosions applied to the binarized input image: (default 0)
     nd:: number of dilations applied to the binarized input image: (default 0)
-    
+
     postprocess:: Adjust power spectrum of 3D or 2D images based on B-factor: B-factor is estimated from unfiltered odd-even 3D volumes or a 2D image. (default False)
     fsc_weighted:: apply FSC-based low-pass-filter: to merged 3D volume before B-factor estimation (not applicable to 2D image). (default False)
     low_pass_filter:: apply generic tangent low-pass-filter: to merged 3D volume after B-factor adjustment. (default False)
-    ff:: tangent low-pass-filter stop band frequency: in absolute frequency. (default 0.25) 
+    ff:: tangent low-pass-filter stop band frequency: in absolute frequency. (default 0.25)
     aa:: tangent low-pass-filter falloff: (default 0.1)
     mask:: input 3D or 2D mask file name: (default none)
     output:: output file name: (default postprocessed.hdf)
@@ -146,7 +148,15 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
     window_stack:: Window stack images using a smaller window size: (default False)
     box:: new window size: (default 0)
-    
+
+    angular_distribution:: create angular distribution file: (default False)
+    pixel_size:: pixel size of the input data: (default 1.0)
+    round_digit:: accuracy of the angle: (default 5)
+    box_size:: box size [px]: (default 500)
+    prtcl_diameter:: particle diameter [A]: (default 500)
+    bin_width:: width of the bin: (default 1)
+    bin_length:: length of the bin: (default 10000)
+
     * The remaining parameters are optional.
     order:: Order (unimplemented): two arguments are required, (1) name of input stack and (2) desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficient. (default False)
     order_lookup:: order_lookup (unimplemented): test/debug. (default False)

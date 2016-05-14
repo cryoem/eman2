@@ -1,5 +1,5 @@
 = Name =
-e2boxer - Particle Picking: Pick particles with e2boxer.
+e2boxer - Particle Picking: Manual and automatic particle picking.
 
 = Usage =
 
@@ -18,37 +18,37 @@ e2boxer exists in non-MPI version.
 
 == Input ==
 
-    input_micrograph_list:: list of input micrograph names: it is possible but not recommend to name with wild card * for multiple micrographs when the number is very large. (default required string)
+    input_micrograph_list:: Input micrographs: Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if the number is very large. (default required string)
 
-    boxsize:: box size in pixels: (default -1)
+    boxsize:: Box size [Pixels]: (default -1)
 
     * The remaining parameters are optional. Normaly you will not touch this.
-    write_dbbox:: write coordinate file (eman1 dbbox) files: (default False)
-    write_ptcls:: write particles to disk: (default False)
-    exclude_edges:: don't generate output for any particles extending outside the micrograph: (default False)
-    force:: force overwrite: (default False)
-    format:: format of the output particle images [HDF]: (default hdf)
-    norm:: normalization processor to apply to written particle images: (default normalize.edgemean)
-    invert:: if writing outputt inverts pixel intensities: (default False)
-    suffix:: suffix which is appended to the names of output particle and coordinate files: (default _ptcls)
+    write_dbbox:: Write coordinate files: (default False)
+    write_ptcls:: Write particle images: (default False)
+    exclude_edges:: Exclude edge images: Exclude particles extending outside the micrograph: (default False)
+    force:: Force overwrite: (default False)
+    format:: Particle image format: Format of the output particles images. (default hdf)
+    norm:: Particle normalization: Normalization processor applied to the final particle images: (default normalize.edgemean)
+    invert:: Invert contrast: (default False)
+    suffix:: Particle name suffix: Suffix used for the name of the output images and coordinates. (default _ptcls)
     dbls:: data base list storage, used by the workflow: (default none)
     autoboxer:: a key of the swarm_boxers dict in the local directory, used by the workflow: (default none)
-    ppid:: set the PID of the parent process, used for cross platform PPID: (default -1)
+    ppid:: Set PPID: Sets the PPID of the process. (default -1)
     gui:: dummy option; used in older version of e2boxer: (default True)
-    verbose:: verbose level [0-9], higner number means higher level of verboseness: (default 0)
-    gauss_autoboxer:: name of autoboxed file whose autoboxing parameters should be used for automatic boxing: (default none)
+    verbose:: Verbose: Accepted values 0-9. (default 0)
+    gauss_autoboxer:: Sample autoboxed image: Gets the parameters used for autoboxing from the EMANDB. It requires the name of a micrograph used for automatic boxing previously. (default none)
     do_ctf:: name of file whose ctf estimation parameters should be used for automatic ctf estimation: (default none)
     cter:: CTF estimation using cter: (default False)
     indir:: directory containing micrographs to be processed: (default current directory)
     nameroot:: prefix of micrographs to be processed: (default none)
     micsuffix:: a string denoting micrograph type: (default none)
     wn:: size of window to use: (default 256)
-    Cs:: microscope Cs: (default 2.0)
-    voltage:: microscope voltage [KV]: (default 300.0)
+    Cs:: Spherical aberration [mm]: (default 2.0)
+    voltage:: Microscope voltage [kV]: (default 300.0)
     ac:: Amplitude contrast: (default 10.0)
     kboot:: kboot: (default 16)
-    debug:: debug mode: (default False)
-    apix:: pixel size [A]: (default -1.0)
+    debug:: Debug mode: (default False)
+    apix:: Pixel size [A]: (default -1.0)
 
 
 
