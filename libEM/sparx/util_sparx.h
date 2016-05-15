@@ -839,7 +839,7 @@ costlist, int* curbranch);
 	/* out = img /= img1 with zero check , img is complex, img1 real */
 	static EMData* divn_cbyr(EMData* img, EMData* img1);
 	/* img /= img1 with zero check , img is complex, img1 real */
-	static void read_slice_and_multiply( EMData* vol, const string stacked_slices_in);
+	static EMData* read_slice_and_multiply( EMData* vol, const string stacked_slices_in);
 	/* img /=vol[index]* stacked_slice[index] */
 	static void div_cbyr(EMData* img, EMData* img1);
 	static void save_slices_on_disk(EMData* vol, const string stacked_slices_out);

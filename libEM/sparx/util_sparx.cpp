@@ -25798,7 +25798,7 @@ void Util::save_slices_on_disk(EMData* vol, const string stacked_slices_out) {
      delete slice;
 }
 
-void Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_in) {
+EMData* Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_in) {
 
 	ENTERFUNC;
 	int nx = vol->get_xsize();
@@ -25808,7 +25808,10 @@ void Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_in)
 	//  read stacked slices
 	EMData *image_slice = new EMData();
 	image_slice->read_image(stacked_slices_in, 0);
-	
+	EMData *vol2 = new EMData();
+	vol2->set_size(nx*2, ny, nz);
+	vol2->to_zero();
+	float *vol2_data = vol2->get_data();
 	int snx = image_slice->get_xsize();
 	int sny = image_slice->get_ysize();
 	int snz = EMUtil::get_image_count(stacked_slices_in);
@@ -25823,11 +25826,14 @@ void Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_in)
 	 	for (int x=0; x<nx; x++)
 	 		{
 	 			for (int y=0; y<ny; y++)
-	 				 vol_data[((size_t)index*ny+y)*nx+x] *=slice_data[y*nx+x];
+	 				 vol2_data[(((size_t)index*ny+y)*nx*2+x*2)] = vol_data[((size_t)index*ny+y)*nx+x]*slice_data[y*nx+x];
 	 		}
 	 }
-	 vol->update();
+	 vol2->set_complex(true);
+	 vol2->set_ri(true);
+	 if(ny%2==0) vol2->set_fftodd(false); else vol2->set_fftodd(true);
+	 vol2->update();
 	 delete image_slice;
 	 EXITFUNC;
-	 	
+	 return vol2;	
 }
