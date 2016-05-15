@@ -13920,14 +13920,15 @@ def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		from morphology import notzero
 		beltab = tabessel(ny, nnxo) # iterative process
 		nwe    = notzero(weight)
-		Util.save_slices_on_disk(weight,vol_stack)
+		Util.save_slices_on_disk(weight,"slices.hdf")
 		for i in xrange(niter):
 			#cvv = Util.mulreal(nwe, weight)
-			Util.read_slice_and_multiply(nwe,vol_stack)
+			Util.read_slice_and_multiply(nwe,"slices.hdf")
 			cvv = fft(cvv)
 			Util.mul_img_tabularized(cvv, nnxo, beltab)
 			cvv = fft(cvv)
 			Util.divabs(nwe, cvv)
+		os.system(" rm slices.hdf")
 		del  beltab
 		from morphology   import cosinemask, threshold_outside
 		from fundamentals import fshift, fpol
