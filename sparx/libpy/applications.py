@@ -13923,7 +13923,7 @@ def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		Util.save_slices_on_disk(weight,"slices.hdf")
 		for i in xrange(niter):
 			#cvv = Util.mulreal(nwe, weight)
-			Util.read_slice_and_multiply(nwe,"slices.hdf")
+			cvv = Util.read_slice_and_multiply(nwe,"slices.hdf")
 			cvv = fft(cvv)
 			Util.mul_img_tabularized(cvv, nnxo, beltab)
 			cvv = fft(cvv)
