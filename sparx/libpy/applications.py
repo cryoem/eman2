@@ -13928,6 +13928,7 @@ def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 			Util.mul_img_tabularized(cvv, nnxo, beltab)
 			cvv = fft(cvv)
 			Util.divabs(nwe, cvv)
+		import os
 		os.system(" rm slices.hdf")
 		del  beltab
 		from morphology   import cosinemask, threshold_outside
