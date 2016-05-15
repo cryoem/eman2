@@ -25772,3 +25772,62 @@ vector<float> Util::max_sum_along_line_in_nd_array(EMData* em_data, const vector
 	return result;
 }
 
+void Util::save_slices_on_disk(EMData* vol, const string stacked_slices_out) {
+
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	int new_nx= nx, new_ny =ny;
+
+	if (nz == 1)
+		throw ImageDimensionException("Error: Input must be a 3-D object");
+
+	EMData *slice = new EMData();
+	slice->set_size(new_nx, new_ny, 1);
+	float *slice_data = slice->get_data();
+    for (int index =0; index<nz; index++)
+     { 
+		for (int x=0; x<new_nx; x++)
+			{
+				for (int y=0; y<new_ny; y++)
+					slice_data[y*new_nx+x] = vol_data[((size_t)index*ny+y)*nx+x];
+			}
+		slice->write_image(stacked_slices_out, index);
+     }
+     delete slice;
+}
+
+void Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_in) {
+
+	ENTERFUNC;
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	//  read stacked slices
+	EMData *image_slice = new EMData();
+	image_slice->read_image(stacked_slices_in, 0);
+	
+	int snx = image_slice->get_xsize();
+	int sny = image_slice->get_ysize();
+	int snz = EMUtil::get_image_count(stacked_slices_in);
+	if ((snz != nz) ||(sny != ny) || (snx != nx)) {
+		
+		throw ImageDimensionException("Error: two images have different dimensions");
+		}
+	for (int index =0; index<nz; index++)
+	 {
+	 	image_slice->read_image(stacked_slices_in, index);
+	 	float * slice_data = image_slice->get_data();
+	 	for (int x=0; x<nx; x++)
+	 		{
+	 			for (int y=0; y<ny; y++)
+	 				 vol_data[((size_t)index*ny+y)*nx+x] *=slice_data[y*nx+x];
+	 		}
+	 }
+	 vol->update();
+	 delete image_slice;
+	 EXITFUNC;
+	 	
+}

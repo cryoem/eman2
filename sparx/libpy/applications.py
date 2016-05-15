@@ -13920,6 +13920,7 @@ def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		from morphology import notzero
 		beltab = tabessel(ny, nnxo) # iterative process
 		nwe    = notzero(weight)
+		weight.write_image(vol_stack)
 		for i in xrange(niter):
 			cvv = Util.mulreal(nwe, weight)
 			ccv = fft(cvv)
