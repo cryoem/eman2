@@ -50,7 +50,7 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
     outlier_percentile:: Percentile for outlier: Threshold above which images are considered outliers and removed if 'percentile' is used as outlier selection method. (default 95.0)
     iteration_start:: Starting iteration: Iteration from which to start the program. 0 means go to the most recent one. (default 0)
     ref_a:: Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
-    npad:: 3D reconstruction padding: (default 2)
+    npad:: Image padding factor: The images are padded to achive the original size times this option. (default 2)
     fl:: Low-pass filter frequency [1/Pixel]: Using a hyperbolic tangent low-pass filter. (default 0.25)
     aa:: Low-pass filter fall-off: Fall-off of for the hyperbolic tangent low-pass filter. (default 0.1)
     pwreference:: Power spectrum reference: Text file containing a 1D reference power spectrum. (default none)

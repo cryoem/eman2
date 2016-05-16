@@ -1542,7 +1542,7 @@ class SXConstSetWidget(QWidget):
 		btn_row_origin = 0; btn_col_origin = 0
 		func_btn_row_span = 1; func_btn_col_span = 1
 		register_btn_row_span = 1; register_btn_col_span = 2
-		func_btn_min_width = 150
+		func_btn_min_width = 50
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 		# Set the background color of this widget
@@ -1551,7 +1551,7 @@ class SXConstSetWidget(QWidget):
 		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.default_bg_color))
 		self.setPalette(palette)
 
-		global_layout = QGridLayout(self)
+		global_layout = QGridLayout()
 		global_layout.setMargin(SXLookFeelConst.grid_margin)
 		global_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		global_layout.setRowStretch(global_row_span - 1, global_layout.rowStretch(global_row_origin) + 1)
@@ -1625,7 +1625,7 @@ class SXConstSetWidget(QWidget):
 
 		# Add const set grid layout to global layout
 		global_layout.addLayout(const_set_layout, global_grid_row, global_col_origin)
-		global_grid_row += 1
+		# global_grid_row += 1
 
 		# Start add buttons to the grid layout
 		btn_grid_row = btn_row_origin
@@ -1659,11 +1659,20 @@ class SXConstSetWidget(QWidget):
 		btn_grid_row += 1
 
 		# Add button grid layout to global layout
-		global_layout.addLayout(btn_layout, global_grid_row, global_col_origin)
+		# global_layout.addLayout(btn_layout, global_grid_row, global_col_origin) # Maybe later :)
 
 		# Load the previously saved parameter setting of this sx command
 		if os.path.exists(self.gui_settings_file_path):
 			self.read_consts(self.gui_settings_file_path)
+
+		# Layout for a constant size
+		constant_height_layout = QVBoxLayout()
+		constant_height_layout.addLayout(global_layout)
+		constant_height_layout.addLayout(btn_layout)
+		constant_height_layout.addStretch(1)
+		constant_width_layout = QHBoxLayout(self)
+		constant_width_layout.addLayout(constant_height_layout)
+		constant_width_layout.addStretch(1)
 
 	def handle_regster_widget_event(self, sxconst):
 		sxconst.widget.setText(sxconst.register)
@@ -2057,4 +2066,3 @@ if __name__ == "__main__":
 # ========================================================================================
 # END OF SCRIPT
 # ========================================================================================
-

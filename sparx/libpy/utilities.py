@@ -7044,3 +7044,23 @@ def tabessel(nx, nnxo, nbel = 5000):
 	return beltab
 
 ####	
+
+
+def split_chunks(l, n):
+	""" 
+	   Splits list l into n chunks with approximately equals sum of values
+	   see  http://stackoverflow.com/questions/6855394/splitting-list-in-chunks-of-balanced-weight
+	"""
+	result = [[] for i in range(n)]
+	sums   = {i:0 for i in range(n)}
+	c = 0
+	for e in l:
+		for i in sums:
+			if c == sums[i]:
+				result[i].append(e)
+				break
+		sums[i] += e
+		c = min(sums.values())    
+	for i in xrange(len(result)):
+		result[i].sort()
+	return result
