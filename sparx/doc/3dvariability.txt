@@ -39,7 +39,7 @@ for structures that have symmetries:
     * The remaining parameters are optional.
     no_norm:: Skip normalization: (default False)
     radiusvar:: Radius for 3D variability [Pixels]: (default -1)
-    npad:: number of time to pad the original images: (default 2)
+    npad:: Image padding factor: The images are padded to achive the original size times this option. (default 2)
     VAR:: stack on input consists of 2D variances: (default False)
     SND:: Squared normalized differences: If set to true, it computes the squared normalized differences. (default False)
 

@@ -156,12 +156,6 @@ BDB files can not be selected as input micrographs.
 	if RUNNING_UNDER_MPI:
 		coords_name_list = wrap_mpi_bcast(coords_name_list, main_node)
 	
-	error_status = None
-	if len(mic_name_list) < number_of_processes:
-		error_status = ('Number of processes (%d) supplied by --np in mpirun cannot be greater than %d (number of micrographs) ' % (number_of_processes, len(mic_name_list)), getframeinfo(currentframe()))
-	if_error_then_all_processes_exit_program(error_status)
-
-	
 ##################################################################################################################################################################################################################	
 ##################################################################################################################################################################################################################	
 ##################################################################################################################################################################################################################	
@@ -302,6 +296,11 @@ BDB files can not be selected as input micrographs.
 	if myid != main_node:
 		if options.import_ctf:
 			ctf_dict = None
+
+	error_status = None
+	if len(restricted_serial_id_list) < number_of_processes:
+		error_status = ('Number of processes (%d) supplied by --np in mpirun cannot be greater than %d (number of micrographs that satisfy all criteria to be processed) ' % (number_of_processes, len(restricted_serial_id_list)), getframeinfo(currentframe()))
+	if_error_then_all_processes_exit_program(error_status)
 
 	## keep a copy of the original output directory where the final bdb will be created
 	original_out_dir = out_dir

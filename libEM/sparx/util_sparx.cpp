@@ -25772,3 +25772,69 @@ vector<float> Util::max_sum_along_line_in_nd_array(EMData* em_data, const vector
 	return result;
 }
 
+void Util::save_slices_on_disk(EMData* vol, const string stacked_slices_out) {
+
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	int new_nx= nx, new_ny =ny;
+
+	if (nz == 1)
+		throw ImageDimensionException("Error: Input must be a 3-D object");
+
+	EMData *slice = new EMData();
+	slice->set_size(new_nx, new_ny, 1);
+	float *slice_data = slice->get_data();
+    for (int index =0; index<nz; index++)
+     { 
+		for (int x=0; x<new_nx; x++)
+			{
+				for (int y=0; y<new_ny; y++)
+					slice_data[y*new_nx+x] = vol_data[((size_t)index*ny+y)*nx+x];
+			}
+		slice->write_image(stacked_slices_out, index);
+     }
+     delete slice;
+}
+
+EMData* Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_in) {
+
+	ENTERFUNC;
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	//  read stacked slices
+	EMData *image_slice = new EMData();
+	image_slice->read_image(stacked_slices_in, 0);
+	float * slice_data = image_slice->get_data();
+	EMData *vol2 = new EMData();
+	vol2->set_size(nx*2, ny, nz);
+	vol2->to_zero();
+	float *vol2_data = vol2->get_data();
+	int snx = image_slice->get_xsize();
+	int sny = image_slice->get_ysize();
+	int snz = EMUtil::get_image_count(stacked_slices_in);
+	if ((snz != nz) ||(sny != ny) || (snx != nx)) {
+		
+		throw ImageDimensionException("Error: two images have different dimensions");
+		}
+	for (size_t i =0; i<(nx*ny*nz); i++)
+	 {
+	 	int index_slice =int(i/(nx*ny));
+	 	if (i%(nx*ny) ==0)
+	 	 {
+	 	     image_slice->read_image(stacked_slices_in, index_slice);
+	 	     float * slice_data = image_slice->get_data();
+	 	 }
+	 	vol2_data[i*2] = vol_data[i]*slice_data[i-index_slice*nx*ny];
+	 }
+	 vol2->set_complex(true);
+	 vol2->set_ri(true);
+	 if(ny%2==0) vol2->set_fftodd(false); else vol2->set_fftodd(true);
+	 vol2->update();
+	 delete image_slice;
+	 EXITFUNC;
+	 return vol2;	
+}
