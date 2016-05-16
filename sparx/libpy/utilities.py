@@ -5121,7 +5121,7 @@ def combinations_of_n_taken_by_k(n, k):
 	from fractions import Fraction
 	return int(reduce(lambda x, y: x * y, (Fraction(n-i, i+1) for i in range(k)), 1))
 
-def cmdexecute(cmd):
+def cmdexecute(cmd, printing_on_success = True):
 	from   time import localtime, strftime
 	import subprocess
 	outcome = subprocess.call(cmd, shell=True)
@@ -5130,7 +5130,8 @@ def cmdexecute(cmd):
 		print  line,"ERROR!!   Command failed:  ", cmd
 		from sys import exit
 		exit()
-	else:  print line,"Executed successfully: ",cmd
+	elif printing_on_success:  
+		print line,"Executed successfully: ",cmd
 
 def string_found_in_file(myregex, filename):
 	import re
@@ -7030,3 +7031,36 @@ def angular_distribution(inputfile, options, output):
 			)
 
 #####---------------------------------------------------
+# used in new meridien
+def tabessel(nx, nnxo, nbel = 5000):
+	beltab = [0.0]*nbel
+	radius = 1.9
+	alpha = 15
+	#order = 0
+	normk = Util.bessel0(0., radius, alpha)
+	for i in xrange(nbel):
+		rr = i/float(nbel-1)/2.0
+		beltab[i] = Util.bessel0(rr, radius, alpha)/normk
+	return beltab
+
+####	
+
+
+def split_chunks(l, n):
+	""" 
+	   Splits list l into n chunks with approximately equals sum of values
+	   see  http://stackoverflow.com/questions/6855394/splitting-list-in-chunks-of-balanced-weight
+	"""
+	result = [[] for i in range(n)]
+	sums   = {i:0 for i in range(n)}
+	c = 0
+	for e in l:
+		for i in sums:
+			if c == sums[i]:
+				result[i].append(e)
+				break
+		sums[i] += e
+		c = min(sums.values())    
+	for i in xrange(len(result)):
+		result[i].sort()
+	return result

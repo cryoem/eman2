@@ -1,5 +1,5 @@
 = Name =
-sxisac_post_processing - 2D Clustering Postprocess: Postprocess 2D clustering result produced by ISAC.
+sxisac_post_processing - ISAC - Postprocessing: Postprocess of the 2D clustering result produced by ISAC.
 
 = Usage =
 
@@ -16,11 +16,11 @@ sxisac_post_processing.py exists only in MPI version
 
 
 == Input ==
-    stack_file:: 2-D images in a stack file (format must be bdb): images have to be square (''nx''=''ny'') (default required string)
-    isac_directory:: isac output directory name: (default required string)
+    stack_file:: Original image stack: Particles required to create the full-sized class averages. The images must be square (''nx''=''ny'') (default required string)
+    isac_directory:: Isac output directory: Name of the directory where isac was run previously. (default required string)
 
-    radius:: particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)
-    CTF:: apply phase-flip for CTF correction: if set, the data will be phase-flipped using CTF information included in image headers (default False)
+    radius:: Particle radius [Pixels]: The is no default radius. (default required int)
+    CTF:: Phase-flip: If set, the data will be phase-flipped using CTF information included in the image headers. (default False)
 
     * The remaining parameters are optional.
 

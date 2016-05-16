@@ -1,5 +1,5 @@
 = Name =
-sxlocres - Local Resolution Estimation: Compute local resolution in real space within are outlined by the maskfile and within regions wn x wn x wn.
+sxlocres - Local Resolution: Compute local resolution of a map.
 
 = Usage =
 
@@ -16,22 +16,22 @@ sxlocres exists in for both MPI and non-MPI versions.
 
 
 == Input ==
-    firstvolume:: first half-volume: (default required string)
-    secondvolume:: second half-volume: (default required string)
-    maskfile:: mask volume: outlining the region within which local resolution values will be computed (optional). (default none)
+    firstvolume:: First half-volume: (default required string)
+    secondvolume:: Second half-volume: (default required string)
+    maskfile:: 3D mask: Defines the region where the local filtering should be applied. (default none)
     
-    wn:: size of window within which local real-space FSC is computed: (default 7)
-    step:: shell step in Fourier size in pixels: (default 1.0)
-    cutoff:: resolution cut-off for FSC: (default 0.5)
-    radius:: radius for the mask in pixels: (default -1)
+    wn:: FSC window size: Defines the size of window where the local real-space FSC is computed. (default 7)
+    step:: Fourier shell step size [Pixels]: (default 1.0)
+    cutoff:: Resolution cut-off [1/Pixel]: Cut-off for the FSC. By default it goes to the Nyquist frequencies. (default 0.5)
+    radius:: Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
     
     * The remaining parameters are optional.
-    MPI:: use MPI version: (default False)
+    MPI:: Use MPI: (default False)
 
 
 == Output ==
-    outputfile:: output local resolution volume: contains, for each voxel, an [[absolute_frequency_units|absolute frequency]] value for which local resolution at this location drops below the specified cut-off FSC value (only regions specified by the mask film or within a sphere have non-zero values). (default required string)
-    fsc:: name output file: that will contain the overall FSC curve computed by rotational averaging of local resolution values (migh be truncated) (default no curve)
+    outputfile:: Output volume: Each voxel contains the resolution for this area in [[absolute_frequency_units|absolute frequency]]  units. (default required string)
+    fsc:: FSC output file: Contains the overall FSC curve computed by rotational averaging of local resolution values. It might be truncated. (default no curve)
 
 
 = Description =

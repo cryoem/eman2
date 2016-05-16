@@ -344,7 +344,7 @@ def main():
 	# Options for angular distribution
 	parser.add_option('--angular_distribution',    action="store_true",    default=False,        help='create an angular distribution file based on a project3d.txt')
 	parser.add_option('--round_digit',       type='int',          default=5,           help='accuracy of the loaded angle (default 5)')
-	parser.add_option('--box_size',       type='int',          default=500,           help='box size [px] (default 500')
+	parser.add_option('--box_size',       type='int',          default=500,           help='box size [px] (default 500)')
 	parser.add_option('--prtcl_diameter',       type='int',          default=500,           help='particle diameter [A] (default 500)')
 	parser.add_option('--bin_width',       type='int',          default=1,           help='width of the bin (default 1)')
 	parser.add_option('--bin_length',       type='int',          default=10000,           help='length of the bin (default 10000)')
@@ -724,6 +724,7 @@ def main():
 					proj = proj + filt_gaussl(model_gauss_noise(sigma2_proj, nx, nx), sigma_gauss)
 					proj.set_attr("origimgsrc",imgsrc)
 					proj.set_attr("test_id", iprj)
+					proj.set_attr("ptcl_source_image",micpref + "%1d.hdf" % (idef-3))
 					# flags describing the status of the image (1 = true, 0 = false)
 					set_params2D(proj, [0.0, 0.0, 0.0, 0, 1.0])
 					set_params_proj(proj, [phi, tht, psi, s2x, s2y])
@@ -931,15 +932,16 @@ def main():
 			from utilities import get_im
 			for i in xrange(nimage): window2d(get_im(inputstack,i),options.box,options.box).write_image(output_stack_name,i)
 
-	elif option.angular_distribution:
+	elif options.angular_distribution:
 		from utilities import angular_distribution
 		nargs = len(args)
 		if nargs > 1:
 			print 'Too many inputs are given, see usage and restart the program!'
 		else:
-			if not path.exists(args[0]):
+			if not os.path.exists(args[0]):
 				ERROR(
-					'Params file does not exists! Please rename and restart the program.', 1)
+					'Params file does not exists! Please rename and restart the program.', 1
+					)
 			strInput = args[0]
 			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution.build'
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)

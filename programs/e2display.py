@@ -61,7 +61,8 @@ def main():
 	parser.add_argument("--pdb",type=str,help="<pdb file> Show PDB structure.")
 	parser.add_argument("--singleimage",action="store_true",default=False,help="Display a stack in a single image view")
 	parser.add_argument("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
-	parser.add_argument("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
+	parser.add_argument("--hist",action="store_true",default=False,help="Data file(s) should be plotted as a histogram rather than displayed in 2-D.")
+	parser.add_argument("--plot3d",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
 	parser.add_argument("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
 	parser.add_argument("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -94,9 +95,12 @@ def main():
 	elif options.plot:
 		plot(args,app)
 		
-	elif options.plot3:
+	elif options.hist:
+		hist(args,app)
+	
+	elif options.plot3d:
 		plot_3d(args,app)
-		
+	
 	elif options.classes:
 		options.classes=options.classes.split(",")
 		imgs=EMData.read_images(args[0])
@@ -224,14 +228,12 @@ def getmxim(fsp,fsp2,clsnum):
 def display_file(filename,app,force_2d=False,usescenegraph=False):
 	w = EMWidgetFromFile(filename,application=app,force_2d=force_2d)
 	w.setWindowTitle(base_name(filename))
-
 	app.show_specific(w)
 	try: w.optimally_resize()
 	except: pass
 	try: w.raise_()
 	except: pass
 	return w
-
 
 def display(img,app,title="EMAN2 image"):
 	if len(img)==1 : img=img[0]
@@ -255,9 +257,18 @@ def plot(files,app):
 	app.show_specific(plotw)
 	return plotw
 
+def hist(files,app):
+	from emhist import EMHistogramWidget
+	histw=EMHistogramWidget(application=app)
+	for f in files:
+		histw.set_data_from_file(f,quiet=True)
+	histw.setWindowTitle(f)
+	app.show_specific(histw)
+	return histw
+
 def plot_3d(files,app):
-	from emplot3d import EMPlot3DWidget
-	plotw=EMPlot3DWidget()
+	from emplot3d import EMPlot3DWidgetNew
+	plotw=EMPlot3DWidgetNew(application=app)
 	for f in files:
 		plotw.set_data_from_file(f)
 	plotw.setWindowTitle("3D Plot")
