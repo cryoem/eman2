@@ -91,7 +91,7 @@ alignments=["edge","center"] #["mid","right","left"]
 histtypes=["bar","step","stepfilled"]
 orientations=["vertical"] #,"horizontal"] # need to implement
 colortypes=["k","b","r","g","y","c","m","gray"]
-from cycler import cycler
+#from cycler import cycler
 
 #matplotlib.rcParams['axes.color_cycle'] = colortypes[1:-1] # old mpl way
 #plt.rc('axes', prop_cycle=(cycler('color', colortypes[1:-1]))) # new mpl way
@@ -136,7 +136,7 @@ class EMHistogramWidget(EMGLWidget):
 		self.tex_name = 0
 		self.main_display_list = 0
 		self.resize(640,480)
-		
+
 		self.nbins = 10 # start with 10. user can modify via inspector.
 		self.stacked = False #self.inspector.stacked.isChecked()
 		self.normed=False #self.inspector.normed.isChecked()
@@ -145,7 +145,7 @@ class EMHistogramWidget(EMGLWidget):
 		self.alignment="edge" #alignments[self.inspector.align.currentIndex()]
 		self.cumulative = False #self.inspector.cumulative.isChecked()
 		self.logy = False #self.inspector.logtogy.isChecked()
-	
+
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
@@ -251,9 +251,9 @@ class EMHistogramWidget(EMGLWidget):
 		except:
 			print "Data error:", data
 			return
-		
+
 		self.bins[key],self.edges = np.histogram(self.data[key][self.axes[key][0]],self.nbins,range=self.xlimits,density=self.normed)
-		
+
 		if oldkey:
 			pp=self.pparm[key]
 			if color < 0 or color > len(colortypes): color= pp[0]
@@ -267,7 +267,7 @@ class EMHistogramWidget(EMGLWidget):
 			if rwidth < 0.0: rwidth = 0.8
 			if rwidth > 1.0: rwidth = 1.0
 		self.pparm[key]=(color,alpha,rwidth)
-		
+
 		self.autoscale()
 		if self.inspector: self.inspector.datachange()
 		if not quiet: self.updateGL()
@@ -449,36 +449,36 @@ class EMHistogramWidget(EMGLWidget):
 			ax.tick_params(axis='x', labelsize="x-large")
 			ax.tick_params(axis='y', labelsize="x-large")
 			canvas=FigureCanvasAgg(fig)
-			
-			if self.inspector == None: 
+
+			if self.inspector == None:
 				self.inspector = self.get_inspector()
-			
+
 			#tostack = []
 			usedkeys = []
 			#colors = []
-			
+
 			if self.alignment == "center":
 				histalign = "mid"
 			elif self.alignment == "edge":
 				histalign = "left"
-			
+
 			for k in self.axes.keys():
 				if not self.visibility[k]: continue
-				
+
 				dcurr = self.data[k][self.axes[k][0]]
 				color = colortypes[self.pparm[k][0]]
 				alpha = self.pparm[k][1]
 				rwidth = self.pparm[k][2]
-				
+
 				self.bins[k],self.edges = np.histogram(dcurr,self.nbins,range=self.xlimits,density=self.normed)
 				width = (self.edges[1]-self.edges[0])*rwidth
-				
+
 				if self.cumulative:
 					self.bins[k] = np.cumsum(self.bins[k])
 				if self.normed:
 					self.bins[k] /= np.sum(self.bins[k])
 					self.bins[k] /= len(self.axes.keys())
-				
+
 				if self.histtype == "bar":
 					if self.stacked and len(usedkeys) > 0:
 						bottom = self.getTotals(keys=usedkeys)
@@ -486,21 +486,21 @@ class EMHistogramWidget(EMGLWidget):
 					else:
 						ax.bar(self.edges[:-1],self.bins[k], width, color=color, align=self.alignment, log=self.logy, orientation=self.orientation, alpha=alpha)
 						usedkeys.append(k)
-				
+
 				elif self.histtype == "step" or self.histtype == "stepfilled":
 					if self.stacked == False:
 						ax.hist(self.bins[k],bins=self.edges,color=None,range=self.xlimits,histtype=self.histtype, align=histalign, orientation=self.orientation,alpha=self.inspector.alpha.getValue(),normed=self.normed,cumulative=self.cumulative,log=self.logy,stacked=self.stacked)
 					else:
 						tostack.append(self.bins[k])
 						colors.append(color)
-			
+
 			if self.histtype == "step" or self.histtype == "stepfilled":
 				if self.stacked == True:
 					ax.hist(tostack,bins=self.edges,color=colors,range=self.xlimits,histtype=self.histtype,orientation=self.orientation,align=histalign,alpha=self.inspector.alpha.getValue(),normed=self.normed,cumulative=self.cumulative,log=self.logy,stacked=self.stacked)
-			
+
 			self.autoscale(True)
 			ax.set_ylim(self.ylimits)
-			
+
 			canvas.draw()
 			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 
@@ -514,7 +514,7 @@ class EMHistogramWidget(EMGLWidget):
 					print 'there is a problem with your matplotlib'
 					return
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
-			
+
 			if not self.glflags.npt_textures_unsupported():
 				self.__texture_plot(self.plotimg)
 			else:
@@ -532,7 +532,7 @@ class EMHistogramWidget(EMGLWidget):
 			glEndList()
 			try: glCallList(self.main_display_list)
 			except: pass
-		
+
 		if lighting : glEnable(GL_LIGHTING)
 
 
@@ -604,17 +604,17 @@ class EMHistogramWidget(EMGLWidget):
 		#self.axisparms=(xlabel,ylabel,xlog,ylog)
 		self.needupd=1
 		self.updateGL()
-	
+
 	def setAxes(self,key,xa,quiet=False):
 		if self.axes[key]==(xa,) : return
 		self.axes[key]=(xa,)
 		self.autoscale(True)
 		self.needupd=1
 		if not quiet : self.updateGL()
-	
+
 	def setPlotParms(self,key,color=-1,alpha=0.8,rwidth=0.8,quiet=False):
-		if self.pparm[key]==(color,alpha,rwidth): return 
-		self.pparm[key]=(color,alpha,rwidth) 
+		if self.pparm[key]==(color,alpha,rwidth): return
+		self.pparm[key]=(color,alpha,rwidth)
 		self.needupd=1
 		if not quiet: self.updateGL()
 
@@ -681,7 +681,7 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("lcrosshist",EMShape(("scrlabel",0,0,0,self.scrlim[2]-175,self.scrlim[3]-10,histlabel,120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
-	
+
 	def mouseMoveEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
 		if  self.rmousedrag:
@@ -704,7 +704,7 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("lcrosshist",EMShape(("scrlabel",0,0,0,self.scrlim[2]-175,self.scrlim[3]-10,histlabel,120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
-	
+
 	def getBinIndex(self,x):
 		if x < self.edges[0] or x > self.edges[-1]: return None
 		else:
@@ -713,19 +713,19 @@ lc is the cursor selection point in plot coords"""
 				if x > x0 and x < x1: break
 				else: idx+=1
 			return idx
-	
+
 	def getTotals(self,bins=[],keys=[]):
 		if len(bins) == 0:
 			return [self.getBinCount(n,keys) for n in range(self.nbins)]
 		else:
 			return [self.getBinCount(n,keys) for n in bins]
-	
+
 	def getBinCount(self,n,keys=[]):
 		if len(keys) == 0:
 			return sum([self.bins[k][n] for k in self.bins.keys()])
 		else:
 			return sum([self.bins[k][n] for k in keys])
-	
+
 	def setPlotRepr(self,repr):
 		if self.histtype != repr["histtype"]:
 			self. histtype = repr["histtype"]
@@ -748,12 +748,12 @@ lc is the cursor selection point in plot coords"""
 		if self.stacked != repr["stacked"]:
 			self. stacked = repr["stacked"]
 			self.needupd = 1
-	
+
 	def setNBins(self,nbins):
 		if nbins != self.nbins:
 			self.nbins = nbins
 			self.needupd = 1
-	
+
 	def mouseReleaseEvent(self, event):
 		lc =self.scr2plot(event.x(),event.y())
 		if self.rmousedrag:
@@ -763,7 +763,7 @@ lc is the cursor selection point in plot coords"""
 				self.autoscale(True)
 				self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),self.ylimits[0],self.ylimits[1])
 			self.rmousedrag=None
-	
+
 	def rescale(self,x0,x1,y0,y1,quiet=False):
 		"adjusts the value range for the x/y axes"
 		self.xlimits=(x0,x1)
@@ -783,7 +783,7 @@ lc is the cursor selection point in plot coords"""
 
 	def autoscale(self,force=False,xmin=1.0e38,xmax=-1.0e38,ymin = 0,ymax = -1e38):
 		"This autoscales, but only axes which currently have invalid settings"
-		
+
 		if force or self.xlimits==None or self.xlimits[1]<=self.xlimits[0] :
 			for k in self.axes.keys():
 				if not self.visibility[k]: continue
@@ -793,7 +793,7 @@ lc is the cursor selection point in plot coords"""
 			else:
 				margin=(xmax-xmin)*0.025
 				self.xlimits=(xmin-margin,xmax+margin)
-		
+
 		if force or self.ylimits==None or self.ylimits[1]<=self.ylimits[0] :
 			if self.stacked:
 				counts = self.getTotals()
@@ -804,12 +804,12 @@ lc is the cursor selection point in plot coords"""
 					#print(self.bins[k])
 					ymax = max(ymax,max(self.bins[k]))
 					ymin = min(ymin,min(self.bins[k]))
-			if self.axisparms[3]!="linear" : 
+			if self.axisparms[3]!="linear" :
 				self.ylimits=(ymin/1.1,ymax*1.1)
 			else:
 				margin = ymax*0.025
 				self.ylimits = (ymin-margin, ymax+margin)
-		
+
 		if self.inspector: self.inspector.update()
 
 	def wheelEvent(self, event):
@@ -832,7 +832,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.target=weakref.ref(target)
-		
+
 		vbl0=QtGui.QVBoxLayout(self)
 
 		hbl = QtGui.QHBoxLayout()
@@ -926,17 +926,17 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.orient.addItem("vertical")
 		#self.orient.addItem("horizontal")
 		hbl01.addWidget(self.orient)
-		
+
 		self.align=QtGui.QComboBox(self)
 		self.align.addItem("center")
 		self.align.addItem("edge")
 		#self.align.addItem("right")
 		hbl01.addWidget(self.align)
-		
+
 		hbl1 = QtGui.QHBoxLayout()
 		hbl1.setMargin(0)
 		hbl1.setSpacing(6)
-		
+
 		self.color=QtGui.QComboBox(self)
 		self.color.addItem("black")
 		self.color.addItem("blue")
@@ -947,39 +947,39 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.color.addItem("magenta")
 		self.color.addItem("grey")
 		hbl1.addWidget(self.color)
-		
+
 		vbl.addLayout(hbl1)
-		
+
 		hbl000 = QtGui.QHBoxLayout()
 		hbl000.setMargin(0)
 		hbl000.setSpacing(6)
-		
+
 		self.alpha=ValSlider(self,(0,1),"Alpha:",0,25)
 		self.alpha.setValue(0.8)
 		hbl000.addWidget(self.alpha)
 		vbl.addLayout(hbl000)
-		
+
 		hbl001 = QtGui.QHBoxLayout()
 		hbl001.setMargin(0)
 		hbl001.setSpacing(6)
-		
+
 		self.rwidth=ValSlider(self,(0,1),"Width:",0,25)
 		self.rwidth.setValue(0.8)
 		hbl001.addWidget(self.rwidth)
-		
+
 		vbl.addLayout(hbl001)
-		
+
 		hbl2 = QtGui.QHBoxLayout()
 		hbl2.setMargin(0)
 		hbl2.setSpacing(6)
-		
+
 		vbl.addLayout(hbl2)
-		
+
 		hbl2 = QtGui.QHBoxLayout()
 		hbl2.setMargin(0)
 		hbl2.setSpacing(6)
 		vbl.addLayout(hbl2)
-		
+
 		# per plot column selectors
 		gl=QtGui.QGridLayout()
 		gl.addWidget(QtGui.QLabel("Column:",self),0,0,Qt.AlignRight)
@@ -993,9 +993,9 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.slidenbs.setRange(1,10000)
 		self.slidenbs.setValue(10)
 		gl.addWidget(self.slidenbs,0,3,Qt.AlignLeft)
-		
+
 		vbl.addLayout(gl)
-		
+
 		hbl02=QtGui.QHBoxLayout()
 		hbl02.setMargin(0)
 		hbl02.setSpacing(6)
@@ -1008,16 +1008,16 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.cumulative=QtGui.QCheckBox(self)
 		self.cumulative.setText("Cumulative")
 		hbl02.addWidget(self.cumulative)
-		
+
 		hbl03=QtGui.QHBoxLayout()
 		hbl03.setMargin(0)
 		hbl03.setSpacing(6)
 		vbl.addLayout(hbl03)
-		
+
 		self.logtogy=QtGui.QCheckBox(self)
 		self.logtogy.setText("Log Y")
 		hbl03.addWidget(self.logtogy)
-		
+
 		self.stacked=QtGui.QCheckBox(self)
 		self.stacked.setText("Stacked")
 		hbl03.addWidget(self.stacked)
@@ -1025,7 +1025,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.wrescale=QtGui.QPushButton(self)
 		self.wrescale.setText("Rescale")
 		vbl.addWidget(self.wrescale)
-		
+
 		vbl0.addLayout(hbl)
 
 		hbl2a=QtGui.QHBoxLayout()
@@ -1057,13 +1057,13 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl2.addWidget(self.wymax)
 
 		vbl0.addLayout(hbl2)
-# 
+#
 # 		hbl4 = QtGui.QHBoxLayout()
 # 		hbl4.addWidget(QtGui.QLabel("X Label:",self))
 # 		self.xlabel=QtGui.QLineEdit(self)
 # 		hbl4.addWidget(self.xlabel)
 # 		vbl0.addLayout(hbl4)
-# 
+#
 # 		hbl5 = QtGui.QHBoxLayout()
 # 		hbl5.addWidget(QtGui.QLabel("Y Label:",self))
 # 		self.ylabel=QtGui.QLineEdit(self)
@@ -1224,13 +1224,13 @@ class EMHistogramInspector(QtGui.QWidget):
 			self.target().setPlotParms(name,self.color.currentIndex(),alpha=self.alpha.value,rwidth=self.rwidth.value,quiet=False)
 		self.target().needupd=1 #rescale(0,0,0,0)
 		self.target().updateGL()
-	
+
 	def newNBins(self):
 		if self.target and not self.quiet:
 			if self.quiet : return
 			self.target().setNBins(self.slidenbs.value())
 			self.target().updateGL()
-	
+
 	def updPlotRepr(self):
 		if self.quiet: return
 		repr = {}
@@ -1269,7 +1269,7 @@ class EMHistogramInspector(QtGui.QWidget):
 			for name in names:
 				self.target().setAxes(name,self.slidecol.value(),True)
 			self.target().updateGL()
-	
+
 	def newLimits(self,val=None):
 		if self.busy: return
 		try:
@@ -1424,6 +1424,6 @@ class DragListWidget(QtGui.QListWidget):
 # 	else:
 # 		for i in range(1,len(sys.argv)):
 # 			window.set_data_from_file(sys.argv[i])
-# 
+#
 # 	app.show()
 # 	app.execute()
