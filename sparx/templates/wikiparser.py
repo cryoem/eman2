@@ -529,8 +529,8 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 def create_sxcmd_subconfig_adaptive_mask3d():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("adaptive_mask"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "output 3D mask"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "Output mask"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ndilation"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("kernel_size"); token_edit.help = "main"; token_edit_list.append(token_edit)
@@ -546,8 +546,8 @@ def create_sxcmd_subconfig_adaptive_mask3d():
 def create_sxcmd_subconfig_refine3d_postprocess():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("postprocess"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "first unfiltered half-volume "; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "second unfiltered half-volume "; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "First unfiltered half-volume "; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "Second unfiltered half-volume "; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("fsc_weighted"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("low_pass_filter"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ff"); token_edit.help = "main"; token_edit_list.append(token_edit)
@@ -565,7 +565,7 @@ def create_sxcmd_subconfig_refine3d_postprocess():
 def create_sxcmd_subconfig_variability_preprocess():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
@@ -575,7 +575,7 @@ def create_sxcmd_subconfig_variability_preprocess():
 def create_sxcmd_subconfig_refine3d_angular_distribution():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("angular_distribution"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("inputfile"); token_edit.label = "params.txt file"; token_edit.help = "main"; token_edit.is_required = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("inputfile"); token_edit.label = "Alignment Parameter file"; token_edit.help = "main"; token_edit.is_required = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("round_digit"); token_edit.help = "main"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("box_size"); token_edit.help = "main"; token_edit_list.append(token_edit)
