@@ -31,14 +31,16 @@
 #
 #
 
-from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict,EMArgumentParser
-from EMAN2db import db_check_dict
-from EMAN2jsondb import *
-from pyemtbx.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
-from copy import deepcopy
 from EMAN2 import *
-from emboxerbase import *
-import os
+from EMAN2jsondb import *
+import os,sys
+try: 
+	from PyQt4 import QtCore, QtGui, Qt
+	from emimage2d import EMImage2DWidget
+	from emplot2d import EMPlot2DWidget
+	from emimagemx import EMImageMXWidget
+except:
+	QtGui=None
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -51,43 +53,94 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_pos_argument(name="micrographs",help="List the file to process with e2boxer here.", default="", guitype='filebox', browser="EMBoxesTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_argument("--invert",action="store_true",help="If specified, inverts input contrast. Particles MUST be white on a darker background.",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--ptclsize","-P",type=int,help="Longest axis of particle in pixels (diameter, not radius)",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
-	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getAPIX()']")
-	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=300, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="autofit['self.pm().getVoltage()']")
-	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=4.0, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getCS()']")
+	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=-1, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getAPIX()']")
+	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=-1, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="autofit['self.pm().getVoltage()']")
+	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=-1, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
-	parser.add_argument("--write_dbbox",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
-	parser.add_argument("--write_ptcls",action="store_true",help="Write particles to disk",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
-	parser.add_argument("--invert",action="store_true",help="If writing outputt inverts pixel intensities",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--no_ctf",action="store_true",default=False,help="Disable CTF determination", guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--autopick",type=str,default=None,help="Perform automatick particle picking. e2boxer21.py --help for details")
+	parser.add_argument("--write_dbbox",action="store_true",default=False,help="Export EMAN1 .box files",guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
+	parser.add_argument("--gui", action="store_true", default=False, help="Interactive GUI mode")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--gui", action="store_true", default=True, help="Dummy option; used in older version of e2boxer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
+
+	#####
+	# Parameter Validation
+	project_db = js_open_dict("info/project.json")
+
+	if not (options.gui or options.write_ptcls or options.write_dbbox or options.autopick):
+		print "Error: No actions specified. Try --gui for interactive/semi-automated particle picking." 
+
+	if not options.no_ctf :
+		if options.voltage>1500 :
+			options.voltage/=1000
+			print "Voltage specified in kV. Adjusting specified value to ",options.voltage
+		if options.voltage<10 :
+			try: 
+				options.voltage=project_db["global.microscope_voltage"]
+				print "Using project voltage setting of ",options.voltage
+			except:
+				print "Error: No voltage specified, and no project settings available. Disabling CTF mode."
+				options.no_ctf=True
+		if options.cs<0 :
+			try:
+				options.cs=project_db["global.microscope_cs"]
+				print "Using project Cs of ",options.cs
+			except:
+				print "Error: No Cs specified, and no project settings available. Disabling CTF mode."
+				options.no_ctf=True
+		if options.ac<0 and not options.no_ctf:
+			print "Error: Invalid %AC value. Disabling CTF mode."
+			options.no_ctf=True
+		if options.ac<1.0 :
+			print "Warning: %AC should be specified as a %. If you intended a %AC>1%, please try again. Will proceed with the specified value"
+	
+	if options.apix<=0 :
+		try:
+			options.apix=project_db["global.apix"]
+			print "Warning: No A/pix specified. Using ",options.apix," from project. Please insure this is correct for the images being boxed!"
+		except:
+			print "Error: Value required for A/pixel. If this is a non TEM image, suggest --apix=1 and --no_ctf."
+			sys.exit(1)
+		
+	logid=E2init(sys.argv,options.ppid)
+
+	if options.autopick!=None :
+		pass
+
+	if options.gui :
+		if QtGui==None :
+			print "GUI mode unavailable without PyQt4"
+			sys.exit(1)
+		from emapplication import EMApp
+		app=EMApp()
+		gui=GUIBoxer(args,options.voltage,options.apix,options.cs,options.ac,options.boxsize,options.ptclsize)
+		gui.show()
+		app.exec_()
+
+	if options.write_dbbox:
+		pass
+	
+	if options.write_ptcls:
+		pass
+		
+
+	E2end(logid)
+	
 class GUIBoxer(QtGui.QWidget):
-	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512):
+	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=256,ptcl=200):
 		"""The 'new' e2boxer interface.
 		"""
-		try:
-			from emimage2d import EMImage2DWidget
-		except:
-			print "Cannot import EMAN image GUI objects (EMImage2DWidget)"
-			sys.exit(1)
-		try:
-			from emimagemx import EMImageMXWidget
-		except:
-			print "Cannot import EMAN image GUI objects (EMImageMXWidget)"
-			sys.exit(1)
-		try:
-			from emplot2d import EMPlot2DWidget
-		except:
-			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
-			sys.exit(1)
 
 		QtGui.QWidget.__init__(self,None)
-		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
+#		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.data=None
 		self.curfilename = None
@@ -110,12 +163,12 @@ class GUIBoxer(QtGui.QWidget):
 		#self.wplot=EMPlot2DWidget()
 		#self.wplot.setWindowTitle("e2evalimage - Plot")
 
-		self.wimage.connect(QtCore.SIGNAL("mousedown"),self.imgmousedown)
-		self.wimage.connect(QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
-		self.wimage.connect(QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
-		self.wparticles.connect(QtCore.SIGNAL("mousedown"),self.ptclmousedown)
-		self.wparticles.connect(QtCore.SIGNAL("mousedrag"),self.ptclmousedrag)
-		self.wparticles.connect(QtCore.SIGNAL("mouseup")  ,self.ptclmouseup)
+		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
+		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
+		self.wimage.connect(self.wimage,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
+		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mousedown"),self.ptclmousedown)
+		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mousedrag"),self.ptclmousedrag)
+		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mouseup")  ,self.ptclmouseup)
 
 		self.wimage.mmode="app"
 		self.wparticles.mmode="app"
@@ -776,6 +829,14 @@ class GUIBoxer(QtGui.QWidget):
 			self.needredisp=True
 			self.recalc()
 
+	def ptclmousedown(self,event) :
+		return
+	
+	def ptclmousedrag(self,event) :
+		return
+
+	def ptclmouseup(self,event) :
+		return
 
 	def fftmousedown(self,event,m) :
 		#m=self.wfft.scr_to_img((event.x(),event.y()))
