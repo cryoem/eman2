@@ -336,7 +336,7 @@ def main():
 	parser.add_option("--output",         type="string",                                  help="output file name", default="postprocessed.hdf")
 	parser.add_option("--pixel_size",     type="float",                                   help="pixel size of the data", default=1.0)
 	parser.add_option("--B_start",     type="float",                                      help="starting frequency in Angstrom for B-factor estimation", default=10.)
-	parser.add_option("--FSC_cutoff",     type="float",                                   help="stop frequency in Angstrom for B-factor estimation", default=0.143)
+	parser.add_option("--FSC_cutoff",     type="float",                                   help="FSC value that cuts off FSC ", default=0.143)
 	parser.add_option("--2d",          action="store_true",                      help="postprocess isac 2-D averaged images",default=False)
 	parser.add_option("--window_stack",                     action="store_true",          help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",           type="int",		default= 0,                   help="the new window size ")
