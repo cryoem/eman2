@@ -37,7 +37,7 @@ sxsort3d exists only in MPI version.
     xr:: X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default 1)
     yr:: Y search range [Pixels]: The translational search range in the y direction. If omitted it will be set as xr. (default -1)
     ts:: Translational search step [Pixels]: The search will be performed in -xr, -xr+ts, 0, xr-ts, xr, can be fractional. (default 0.25)
-    an:: Angular neighborhood for local searches [Degrees]: (default '-1')
+    an:: Local angular search width [Degrees]: This defines the neighborhood where the local angular search will be performed. (default '-1')
     center:: Centering method: 0 - if you do not want the volume to be centered, 1 - center the volume using the center of gravity. (default 0)
     nassign:: Number of reassignment iterations: Performed for each angular step. (default 1)
     nrefine:: Number of alignment iterations: Performed for each angular step. (default 0)
