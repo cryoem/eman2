@@ -1,5 +1,5 @@
 = Name =
-sxgui_unblur - Drift Assessment: GUI tool to assess micrographs based on drift estimation produced by Unblur.
+sxgui_unblur - Drift Assessment: Assess micrographs based on drift estimation produced by Unblur.
 
 
 = Usage =
@@ -21,7 +21,7 @@ sxgui_unblur.py 'example-*_shift.txt'
 
 == Input ==
 
-inputfile::a set of shift files: name with wild card * to process multiple shift files (default none)
+inputfile::Shift files: A wild card * can be used to process multiple shift files. (default none)
 
 == Output ==
 
