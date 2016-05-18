@@ -33,14 +33,14 @@ for structures that have symmetries:
     aa:: Low-pass filter fall-off: Filter to be applied to the images prior to variability calculation. By default, no filtering. (default 0.0) 
     CTF:: Use CTF: If set to true, the a CTF correction will be applied using the parameters found in the image headers. (default False) 
     img_per_grp:: Number of projections: from the angular neighborhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. (default 10)
-    symmetrize:: Symmetrize input stack: This preparation step is required when the structure has internal symmetry. (default False)
+    symmetrize:: Symmetrize input stack: Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. (default False)
     sym:: Point-group symmetry: Only required if the structure has symmetry higher than c1. Notice this step can be run with only one CPU and there is no MPI version for it. (default c1)
 
     * The remaining parameters are optional.
     no_norm:: Skip normalization: (default False)
     radiusvar:: Radius for 3D variability [Pixels]: (default -1)
     npad:: Image padding factor: The images are padded to achive the original size times this option. (default 2)
-    VAR:: stack on input consists of 2D variances: (default False)
+    VAR:: Stack on input consists of 2D variances: (default False)
     SND:: Squared normalized differences: If set to true, it computes the squared normalized differences. (default False)
 
     VERBOSE:: Verbose: Useful for debugging. (default False) 
