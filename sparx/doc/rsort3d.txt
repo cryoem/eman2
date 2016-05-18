@@ -56,7 +56,7 @@ On lonestar cluster of TACC, using 264 cpus, it takes about 2 hours and 23 minut
     PWadjustment:: Power spectrum reference: Text file containing a 1D reference power spectrum. (default none) 
     upscale:: Power spectrum adjustment strength: This parameters adjusts how strongly the power spectrum of the volume should be modified to match the reference. A value of 1 brings the volume's power spectrum completely to the reference, while a value of 0 means no modification.  (default 0.5) 
     wn:: Target image size [Pixels]: If different than 0, then the images will be rescaled to fit this size. (default 0) 
-    interpolation:: 3D reconstruction interpolation: Method used to reconstruct the volume from the particle images. Options are tr1 or 4nn. (default '4nn')
+    interpolation:: 3D interpolation method: Method interpolation in 3D. Options are tr1 or 4nn. (default '4nn')
 
 == Output ==
     outdir:: Output directory: There is a log.txt that describes the sequences of computations in the program. (default required string)
