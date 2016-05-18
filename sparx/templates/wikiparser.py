@@ -587,6 +587,46 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 
 	return sxcmd_subconfig
 
+def create_exclude_list_boxer():
+	exclude_list = []
+	
+	exclude_list.append("write_dbbox")
+	exclude_list.append("write_ptcls")
+	exclude_list.append("force")
+	exclude_list.append("format")
+	exclude_list.append("suffix")
+	exclude_list.append("dbls")
+	exclude_list.append("autoboxer")
+	exclude_list.append("ppid")
+	exclude_list.append("gui")
+	exclude_list.append("do_ctf")
+	exclude_list.append("cter")
+	exclude_list.append("indir")
+	exclude_list.append("nameroot")
+	exclude_list.append("micsuffix")
+	exclude_list.append("wn")
+	exclude_list.append("Cs")
+	exclude_list.append("voltage")
+	exclude_list.append("ac")
+	exclude_list.append("kboot")
+	exclude_list.append("debug")
+	exclude_list.append("apix")
+	
+	return exclude_list
+
+def create_exclude_list_display():
+	exclude_list = []
+	
+	exclude_list.append("classmx")
+	exclude_list.append("classes")
+	exclude_list.append("pdb")
+	exclude_list.append("plot")
+	exclude_list.append("plot3")
+	exclude_list.append("newwidget")
+	exclude_list.append("ppid")
+	
+	return exclude_list
+
 # ========================================================================================
 def main():
 	# --------------------------------------------------------------------------------
@@ -617,7 +657,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_unblur.txt", sxcmd_category, sxcmd_role, is_submittable = False))
 
 	sxcmd_role = "sxr_util"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_ctf"
@@ -627,17 +667,17 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_cter.txt", sxcmd_category, sxcmd_role, is_submittable = False))
 
 	sxcmd_role = "sxr_util"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_particle_stack"
 
 	sxcmd_role = "sxr_pipe"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", sxcmd_category, sxcmd_role, exclude_list=["gui", "do_ctf", "cter", "indir", "nameroot", "micsuffix", "wn", "Cs", "voltage", "ac", "kboot", "debug", "apix"], is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_2d_clustering"
@@ -647,7 +687,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_initial_3d_modeling"
@@ -660,7 +700,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
@@ -672,7 +712,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_util"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
@@ -686,7 +726,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
@@ -698,7 +738,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
@@ -706,7 +746,7 @@ def main():
 	sxcmd_category = "sxc_utilities"
 
 	sxcmd_role = "sxr_util"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))

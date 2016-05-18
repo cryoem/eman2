@@ -1003,6 +1003,9 @@ class SXCmdTab(QWidget):
 					n_widgets = 2 # function type has two line edit boxes
 					cmd_token_widget = [None] * n_widgets
 					cmd_token_restore_widget = [None] * n_widgets
+					
+					# Define custom style for restore widgets
+					custom_style = "QPushButton {color:gray; }"
 
 					# Create widgets for user function name
 					widget_index = 0
@@ -1012,6 +1015,7 @@ class SXCmdTab(QWidget):
 
 					assert(cmd_token.is_required == False)
 					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index])
+					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
 					cmd_token_restore_widget[widget_index].setToolTip(default_cmd_token_restore_tooltip)
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -1032,6 +1036,7 @@ class SXCmdTab(QWidget):
 
 					assert(cmd_token.is_required == False)
 					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index])
+					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
 					cmd_token_restore_widget[widget_index].setToolTip(default_cmd_token_restore_tooltip)
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -1953,7 +1958,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 					n_widgets = 2 # function type has two line edit boxes
 					sxcmd_token.label = [sxcmd_token.label, "Python script for user function"]
 					sxcmd_token.help = [sxcmd_token.help, "Please leave it blank if file is not external to sphire"]
-					sxcmd_token.default = [sxcmd_token.default, "None"]
+					sxcmd_token.default = [sxcmd_token.default, "none"]
 					sxcmd_token.restore = sxcmd_token.default
 				# else: Do nothing for the other types
 
