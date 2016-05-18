@@ -906,7 +906,7 @@ class SXCmdTab(QWidget):
 		short_info_min_width = 260 # short_info_min_width = 360
 		short_info_min_height = 80
 		func_btn_min_width = 150
-		token_label_min_width = 360 # token_label_min_width = 560
+		token_label_min_width = 300 # token_label_min_width = 360
 		token_widget_min_width = 120
 
 		# Setup global layout
