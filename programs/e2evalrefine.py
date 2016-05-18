@@ -41,6 +41,7 @@ import datetime
 from numpy import array
 import traceback
 import json
+from time import time
 
 try:
 	import numpy as np
@@ -56,12 +57,12 @@ except:
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] [refine_xx]
-	This program is still in its early stages. Eventually will provide a variety of tools for
-	evaluating a single particle reconstruction refinement run."""
+	Use --evalptclqual to assess particle quality. e2display.py ptclfsc_*.txt --plot """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement the refine_xx folder name. This may be used to identify bad particles.")
-	parser.add_argument("--includeprojs", default=False, action="store_true", help="If specified with --evalptclqual, projections will be written to disk for easy comparison.")
+	parser.add_pos_argument(name="refinexx",help="Name of a completed refine_xx folder.", default="", guitype='filebox', browser="EMRefine2dTable(withmodal=True,multiselect=False)",  filecheck=False, row=0, col=0,rowspan=1, colspan=2, mode='evalptcl')
+	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement using the refine_xx folder name. This may be used to identify bad particles.",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='evalptcl[True]')
+	parser.add_argument("--includeprojs", default=False, action="store_true", help="If specified with --evalptclqual, projections will be written to disk for easy comparison.",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='evalptcl[True]')
 	#parser.add_argument("--ptcltrace", default=False, action="store_true", help="This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison.")
 	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
 	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
@@ -277,6 +278,8 @@ def main():
 
 		if options.verbose: print "{} even and {} odd particles in classmx".format(nptcl[0],nptcl[1])
 
+		logid=E2init(sys.argv,options.ppid)
+
 		# path to the even/odd particles used for the refinement
 		cptcl=jsparm["input"]
 		cptcl=[str(i) for i in cptcl]
@@ -323,8 +326,14 @@ def main():
 			az=eulers[i].get_rotation("eman")["az"]
 
 #			fout=open("ptclfsc/f{:04d}.txt".format(i),"w")
+			tlast=time()
 			for eo in range(2):
 				for j in xrange(nptcl[eo]):
+					# update progress every 10s
+					if time()-tlast>10 :
+						E2progress((j+eo*j)/float(nptcl[0]+nptcl[1]))
+						tlast=time()
+						
 					if classmx[eo][0,j]!=i :
 #						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
 						continue		# only proceed if the particle is in this class
@@ -371,7 +380,18 @@ def main():
 
 					pj+=1
 
+		print """Evaluation complete. Each column in the resulting text file includes information at a different resolution range. 
+Columns 0 and 1 are almost always useful, and column 2 is useful for high resolution data. Column 3 is only useful for near-atomic
+resolution, and even then, not always. 
+
+e2display.py --plot ptclfsc_{}.txt
+
+will allow you to visualize the data, and apply various segmentation methods through the control-panel. You can also mouse-over 
+specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.
+""".format(args[0][-2:])
+
 		print "Results in ptclfsc_{}.txt".format(args[0][-2:])
+		E2end(logid)
 		sys.exit(0)
 
 	if options.resolution:
