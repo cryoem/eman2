@@ -61,6 +61,7 @@ def main():
 	parser.add_option("--PWadjustment",                  type="string",        default='',                    help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
 	parser.add_option("--upscale",                       type="float",         default=0.5,                   help=" scaling parameter to adjust the power spectrum of EM volumes")
 	parser.add_option("--wn",                            type="int",           default=0,                     help="optimal window size for data processing")
+	parser.add_option("--interpolation",                 type="string",        default="4nn",                 help="3-d reconstruction interpolation method, two options trl and 4nn")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1  or len(args) > 4:
     		print "usage: " + usage
@@ -135,7 +136,8 @@ def main():
 		Constants["chunkdir"]            =options.chunkdir
 		Constants["PWadjustment"]        =options.PWadjustment
 		Constants["upscale"]             =options.upscale
-		Constants["wn"]                  =options.wn 
+		Constants["wn"]                  =options.wn
+		Constants["3d-interpolation"]    =options.interpolation 
 		# -----------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options
