@@ -143,8 +143,8 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     mask:: Input mask: (default none)
     output:: Output file: (default postprocessed.hdf)
     pixel_size:: Pixel size [A]: (default 1.0)
-    B_start:: starting frequency in Angstrom for B-factor estimation: (default 10.0)
-    FSC_cutoff:: stop frequency in Angstrom for B-factor estimation: (default 0.143))
+    B_start:: Lower limit for B-factor estimation [A]: (default 10.0)
+    FSC_cutoff:: FSC cut-off value: (default 0.143)
 
     window_stack:: Window stack images using a smaller window size: (default False)
     box:: new window size: (default 0)

@@ -6,7 +6,7 @@ sxrsort3d - 3D Clustering Protocol II: Sort out 3D heterogeneity of 2D data whos
 
 '' usage in command line''
 
-sxrsort3d.py  stack  outdir  mask  --previous_run1=run1_directory   --previous_run2=run2_directory  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --function=user_function  --seed=random_seed  --smallest_group=smallest_group  --group_size_for_unaccounted=group_size_for_unaccounted  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --upscale=upscale  --wn=wn
+sxrsort3d.py  stack  outdir  mask  --previous_run1=run1_directory   --previous_run2=run2_directory  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --function=user_function  --seed=random_seed  --smallest_group=smallest_group  --group_size_for_unaccounted=group_size_for_unaccounted  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --upscale=upscale  --wn=wn --interpolation=method
 
 
 === Typical usage ===
@@ -56,7 +56,7 @@ On lonestar cluster of TACC, using 264 cpus, it takes about 2 hours and 23 minut
     PWadjustment:: Power spectrum reference: Text file containing a 1D reference power spectrum. (default none) 
     upscale:: Power spectrum adjustment strength: This parameters adjusts how strongly the power spectrum of the volume should be modified to match the reference. A value of 1 brings the volume's power spectrum completely to the reference, while a value of 0 means no modification.  (default 0.5) 
     wn:: Target image size [Pixels]: If different than 0, then the images will be rescaled to fit this size. (default 0) 
-
+    interpolation:: 3D reconstruction interpolation: Method used to reconstruct the volume from the particle images. Options are tr1 or 4nn. (default '4nn')
 
 == Output ==
     outdir:: Output directory: There is a log.txt that describes the sequences of computations in the program. (default required string)
