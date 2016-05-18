@@ -1406,7 +1406,7 @@ class SXUnblurPlot(QtGui.QWidget):
         self.mode = mode
 
         # Create Navigation widget for the canvas
-        self.toolbar = NavigationToolbar2QTAgg(self.canvas, self.widgetPlot)
+        self.toolbar = NavigationToolbar2QT(self.canvas, self.widgetPlot)
         # Set Layout
         self.layoutPlot.addWidget(self.toolbar)
         self.layoutPlot.addWidget(self.canvas)
