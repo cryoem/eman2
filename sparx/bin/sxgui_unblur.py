@@ -18,12 +18,19 @@
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from matplotlib import pylab
-from matplotlib.backends.backend_qt4agg \
-    import FigureCanvasQTAgg, NavigationToolbar2QTAgg
 import os
 import sys
 import glob
 import numpy
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
+
+# The name changed in newer versions of matplotlib
+try:
+    from matplotlib.backends.backend_qt4agg \
+        import NavigationToolbar2QTAgg as NavigationToolbar2QT
+except:
+    from matplotlib.backends.backend_qt4agg \
+        import NavigationToolbar2QT as NavigationToolbar2QT
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
