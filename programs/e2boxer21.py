@@ -160,6 +160,7 @@ class GUIBoxer(QtGui.QWidget):
 	# picker_execution_function(self,...
 
 	aboxmodes = [ ("by Ref",boxerByRef), ("Gauss",boxerGauss) ]
+	
 
 	
 	def __init__(self,imagenames,voltage=None,apix=None,cs=None,ac=10.0,box=256,ptcl=200):
@@ -170,12 +171,15 @@ class GUIBoxer(QtGui.QWidget):
 #		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.data=None
-		self.curfilename = None
+		self.curfilename = None				# current selected file for boxing
+		self.filenames=imagenames			# list of available filenames
 
 		self.defaultvoltage=voltage
 		self.defaultapix=apix
 		self.defaultcs=cs
 		self.defaultac=ac
+		
+		self.db = None						# open JSON file for current image
 
 		self.wimage=EMImage2DWidget()
 		self.wimage.setWindowTitle("Micrograph")

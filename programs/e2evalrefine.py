@@ -315,8 +315,13 @@ def main():
 		pj = 0
 		pf = "ptclfsc_{}_projections.hdf".format(args[0][-2:])
 
+		tlast=time()
 		for i in xrange(nref):
 			if options.verbose>1 : print "--- Class %d/%d"%(i,nref-1)
+			# update progress every 10s
+			if time()-tlast>10 :
+				E2progress(logid,i/float(nref))
+				tlast=time()
 
 			# The first projection is unmasked, used for scaling
 			proj=threed.project("standard",{"transform":eulers[i]})
@@ -326,14 +331,8 @@ def main():
 			az=eulers[i].get_rotation("eman")["az"]
 
 #			fout=open("ptclfsc/f{:04d}.txt".format(i),"w")
-			tlast=time()
 			for eo in range(2):
 				for j in xrange(nptcl[eo]):
-					# update progress every 10s
-					if time()-tlast>10 :
-						E2progress((j+eo*j)/float(nptcl[0]+nptcl[1]))
-						tlast=time()
-						
 					if classmx[eo][0,j]!=i :
 #						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
 						continue		# only proceed if the particle is in this class
