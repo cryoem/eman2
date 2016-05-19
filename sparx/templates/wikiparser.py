@@ -37,6 +37,37 @@ class SXcmd_config:
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
+def remove_wiki_makeup(target_text):
+	# makeup for link 
+	# [[URL|DISPLAY_TEXT]]
+	makeup_begin = "[["
+	makeup_end = "]]"
+	makeup_separator = "|"
+	
+	item_head = target_text.find(makeup_begin)
+	while item_head != -1:
+		# Found a start of wiki makeup
+		item_tail = target_text.find(makeup_end)
+		if item_tail == -1: 
+			ERROR("Wiki Format Warning: The string \"%s\" contains \"%s\" but not \"%s\". Removing \"%s\", but please check the format in Wiki document." % (target_text, makeup_begin, makeup_end, makeup_begin), "%s in %s" % (__name__, os.path.basename(__file__)))
+			target_text = target_text.replace(makeup_begin, "", 1)
+		else: # assert (item_tail > -1)
+			makeup_token = target_text[item_head:item_tail+len(makeup_end)]
+			display_item = makeup_token.replace(makeup_begin, "")
+			display_item = display_item.replace(makeup_end, "")
+			if display_item.find(makeup_separator) != -1:
+				item_tokens = display_item.split(makeup_separator)
+				assert (len(item_tokens) == 2)
+				display_item = item_tokens[1] # 2nd one should be display text
+			print "### Found a wiki makeup token \"%s\". Changed to \"%s\"" % (makeup_token, display_item)
+			target_text = target_text.replace(makeup_token, display_item, 1)
+		
+		# Try to find the next
+		item_head = target_text.find(makeup_begin)
+	
+	return target_text
+
+# ----------------------------------------------------------------------------------------
 def construct_token_list_from_wiki(sxcmd_config):
 	# Private helper class used only in this function
 	class SXkeyword_map:
@@ -214,7 +245,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 					if item_tail == -1: ERROR("Wiki Format Error: '= Name =' section should contain a label ended with ':' after 'sx* - ' or 'e2* - ': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 					sxcmd.label = line_buffer[0:item_tail].strip()
 					# Extract the short info about this sxscript (can be empty)
-					sxcmd.short_info = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
+					sxcmd.short_info = remove_wiki_makeup(line_buffer[item_tail + len(target_operator):].strip()) # Get the rest of line
 				elif current_section == section_usage:
 					# Extract 'usage in command line' to identify each command token is either an argument (no-prefix) or option ('--' prefix)
 					# This information is also used to check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
@@ -291,7 +322,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 						target_operator = "(default"
 						item_tail = line_buffer.find(target_operator)
 						if item_tail == -1: ERROR("Wiki Format Error: This line (%s) is missing default setting. Please check the format in Wiki document." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
-						token.help = line_buffer[0:item_tail]
+						token.help = remove_wiki_makeup(line_buffer[0:item_tail])
 						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 						# Extract default value of command token
 						target_operator = ")"

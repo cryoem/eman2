@@ -1,5 +1,5 @@
 = Name =
-sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set  of class averages produced by ISAC [[sxisac]]. 
+sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set  of class averages produced by [[sxisac|ISAC]]. 
 
 = Usage =
 
