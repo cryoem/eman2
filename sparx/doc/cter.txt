@@ -19,7 +19,7 @@ sxcter exists in for both MPI and non-MPI versions.
 
     ''' mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI ''' <<BR>><<BR>>
 
-    Single-Micrograph Mode - Processes a single micrograph:: Only the micropgrah name and output directory are used as arguments. BDB files can not be selected as input micrograph. Use single processor for this mode. 
+    Single-Micrograph Mode - Processes a single micrograph:: Only the micrograph name and output directory are used as arguments. BDB files can not be selected as input micrograph. Use single processor for this mode. 
 
     ''' sxcter.py Micrographs/mic0.mrc outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 ''' <<BR>><<BR>>
 
@@ -52,13 +52,13 @@ sxcter exists in for both MPI and non-MPI versions.
 
 
 == Output ==
-    output_directory:: Output directory: The CTF paramaters (partres file), rotationally averaged power spectra (rotinf), and micrograph thumbnailst (humb files) will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+    output_directory:: Output directory: The CTF parameters (partres file), rotationally averaged power spectra (rotinf), and micrograph thumbnails (thumb files) will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
 
-After succesful excecution, sxcter will create in the output_directory: 
+After successful execution, sxcter will create in the output_directory: 
 
  1. A CTF parameters file, written to ''partres.txt''<<BR>><<BR>>
- 2. A list of totationally averaged power spectra, written to ''pwrot/*_rotinf.txt''.<<BR>><<BR>>
+ 2. A list of rotationally averaged power spectra, written to ''pwrot/*_rotinf.txt''.<<BR>><<BR>>
  3. A collection of micrographs Thumbnails (512 x 512 pixels), written to ''micthumb/*_thumb.hdf''.<<BR>><<BR>>
 
 
@@ -78,10 +78,10 @@ The CTF parameter file, ''partres.txt'', contains 18 columns with the following 
 || 11 || Standard deviation of astigmatism angle [degrees] ||
 || 12 || Coefficient of variation of defocus [um] ||
 || 13 || Coefficient of variation of astigmatism amplitude [um] ||
-|| 14 || Mean difference between the experimental rotational averages calculated with and without considering astigmatism. The subtraction is only perfomed at frequencies where the CTF model has a local minimum or maximum. ||
+|| 14 || Mean difference between the experimental rotational averages calculated with and without considering astigmatism. The subtraction is only performed at frequencies where the CTF model has a local minimum or maximum. ||
 || 15 || Frequency at which the signal drops by 50% due to estimated error of defocus alone [1/A] ||
 || 16 || Frequency at which the signal drops by 50% due to estimated error of defocus and astigmatism [1/A] ||
-|| 17 || Frequency at which the CTF oscillation can no longer be modeled correctly due the pixel size of the image [1/A] ||
+|| 17 || Frequency at which the CTF oscillation can no longer be modelled correctly due the pixel size of the image [1/A] ||
 || 18 || Micrograph name ||
 
 <<BR>><<BR>>

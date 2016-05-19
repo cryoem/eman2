@@ -1,5 +1,5 @@
 = Name =
-sxwindow - Particle Extraction: Create a particle stacks from a list micrographs and particle coordinates.
+sxwindow - Particle Extraction: Create a particle stack from a list of micrographs and particle coordinates.
 
 
 = Usage =
@@ -45,7 +45,7 @@ The program creates the output directory automatically and inside a local BDB st
 
 
 = Description =
- 1. Takes micrographs and coordinates as input and wirtes the particle images to a local stack.
+ 1. Takes micrographs and coordinates as input and writes the particle images to a local stack.
  2. Normalization is done by subtracting the average of the region outside of a circle with radius half the box size.
  3. Micrographs are applied a Gaussian high-pass filter equivalent to the box size.
 

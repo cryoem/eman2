@@ -36,7 +36,7 @@ Also, different systems have different ways of storing the printout.  On some cl
 
  *nohup mpirun -np 32 sxisac.py bdb:test --img_per_grp=150 --generation=1
 
-If there is no '''nohup''' on your system, it is recommended to redirect the printout to a textfile.
+If there is no '''nohup''' on your system, it is recommended to redirect the printout to a text file.
 
  *mpirun -np 32 sxisac.py bdb:test --img_per_grp=150 --generation=1 > output.txt
 
@@ -46,7 +46,7 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
 == Input ==
     stack_file:: Input image stack: The images must to be square (''nx''=''ny''). The stack can be either in bdb or hdf formats. (default required string)
     
-    radius:: Particle radius [Pixels]: The is no default radius. (default required int)
+    radius:: Particle radius [Pixels]: Radius of the particle (pixels) (default required int)
     img_per_grp:: Images per class: Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes. (default 100)
     CTF:: Phase-flip: If set, the data will be phase-flipped using CTF information included in the image headers. (default False)
     restart_section:: Restart section: Each iteration contains three sections: 'restart', 'candidate_class_averages', and 'reproducible_class_averages'. To restart, for example, from generation 4 - section 'candidate_class_averages', then set to: '--restart_section=candidate_class_averages,4'. \\ The option requires no white space before or after the comma. By default, the execution restarts from where it stopped. A default restart requires also to provide the name of the directory as argument. Alternatively, the '--use_latest_master_directory' option can be used. (default ' ')
@@ -60,7 +60,7 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
     yr:: Y search range [Pixels]: The translational search range in the y direction. Set as xr by default. (default -1)
     ts:: Search step [Pixels]: Translational search step. (default 1.0)
     maxit:: Reference-free alignment iterations: (default 30)
-    center_method:: Centering method: Methof to center global 2D average during the initial prealignment of the data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7). (default -1)
+    center_method:: Centering method: Method to center global 2D average during the initial prealignment of the data (0 : no centering; -1 : average shift method; please see center_2D in utilities.py for methods 1-7). (default -1)
     dst:: Discrete angle used for within-group alignment: (default 90.0)
     FL:: Lowest filter frequency [1/Pixel]: Lowest frequency used for the tangent filter. (default 0.2)
     FH:: Highest filter frequency [1/Pixel]: Highest frequency used for the tangent filter. (default 0.3)
@@ -69,7 +69,7 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
     main_iter:: SAC main iterations: Number of ab-initio-within-cluster alignment runs used for stability evaluation during the main SAC. (default 3)
     iter_reali:: SAC stability check interval: Defines every how many iterations the SAC stability checking is performed. (default 1)
     match_first:: Initial phase 2-way matching iterations: (default 1)
-    max_round:: Maximum candidate generation rounds: Maximum nunber of rounds to generate the candidate class averages in the first phase. (default 20)
+    max_round:: Maximum candidate generation rounds: Maximum number of rounds to generate the candidate class averages in the first phase. (default 20)
     match_second:: Second phae 2- or 3-way matching iterations: (default 5)
     stab_ali:: Number of alignments for stability check: (default 5)
     thld_err:: Pixel error threshold [Pixels]: Used for checking stability. It is defined as the root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou). units - pixels. (default 0.7)
