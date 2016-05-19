@@ -1,7 +1,5 @@
 = Name =
-
 sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image series, and generate data and initialize database for demo script.
-
 
 = Usage =
 
@@ -133,7 +131,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     gauss_standard_dev:: Kernel standard deviation : Standard deviation used in the construction of the gaussian smoothing of the mask. (default 9)
     threshold:: Binarization threshold: Below this value the data is assumed to not belong to the main volume. If set to 9999.0 the option will be ignored and the mask will be set according to nsigma. (default 9999.0)
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
-    nd:: Dialition cycles: After erosing the binary volume is dialated back to smooth the surface and match the original size. (default 0)
+    nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
 
     postprocess:: Adjust power spectrum based on B-factor: B-factor is estimated from unfiltered odd-even volumes or an image. (default False)
     fsc_weighted:: FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (not applicable to 2D image). (default False)
@@ -142,7 +140,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     aa:: Low-pass filter fall-off: (default 0.1)
     mask:: Input mask: (default none)
     output:: Output file: (default postprocessed.hdf)
-    pixel_size:: Pixel size [A]: (default 1.0)
+    pixel_size:: Pixel size [A]: Pixel size in A. (default 1.0)
     B_start:: Lower limit for B-factor estimation [A]: (default 10.0)
     FSC_cutoff:: FSC cut-off value: (default 0.143)
 
@@ -152,7 +150,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     angular_distribution:: Create angular distribution file: The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera (default False)
     pixel_size:: Pixel size [A]: (default 1.0)
     round_digit:: Number precision: Decimal numbers will be rounded to this number of decimal points. (default 5)
-    box_size:: Box size [Pixles]: (default 500)
+    box_size:: Box size [Pixels]: (default 500)
     prtcl_diameter:: Particle diameter [A]: Used for the representation in Chimera. Defines where the cylinders representing the histogram must start. (default 500)
     bin_width:: Bin width: (default 1)
     bin_length:: Cylinder length: Used for the representation in Chimera. This will define the relative size of the cylinders representing the histogram. (default 10000)

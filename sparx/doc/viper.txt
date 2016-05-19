@@ -1,5 +1,5 @@
 = Name =
-sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set  of class averages produced by ISAC [[sxisac]]. 
+sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by [[sxisac|ISAC]].
 
 = Usage =
 
@@ -27,7 +27,7 @@ Since VIPER makes use of group of processors working together, it is important f
 
 
 == Input ==
-    stack:: Input images stack: The images must be square. (default required string)
+    stack:: Input images stack: A small set of Class averages produced by ISAC. (default required string)
 
     radius:: Particle radius [Pixels]: has to be less than half the box size. (default required int)
     sym:: Point-group symmetry: (default c1)
@@ -38,7 +38,7 @@ Since VIPER makes use of group of processors working together, it is important f
     mask3D:: 3D mask: (default sphere)
     moon_elimination:: Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
 
-    ir:: Inner rotational search radius [Pixles]: (default 1)
+    ir:: Inner rotational search radius [Pixels]: (default 1)
     rs:: Ring step size: Step between rings used for the rotational search. (default 1)
     ts:: Translational search step [Pixels]: The search will be performed in -xr, -xr+ts, 0, xr-ts, xr, can be fractional. (default '1.0')
     delta::  Projection angular step [Degree]: (default '2.0')

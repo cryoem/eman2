@@ -1,6 +1,5 @@
 = Name =
-sxwindow - Particle Extraction: Create a particle stacks from a list micrographs and particle coordinates.
-
+sxwindow - Particle Extraction: Create a particle stack from a list of micrographs and particle coordinates.
 
 = Usage =
 
@@ -11,12 +10,12 @@ sxwindow.py  input_micrograph_pattern  input_coordinates_pattern  output_directo
 
 === Typical usage ===
 
-sxwindow does not support MPI.
+sxwindow exists in for both MPI and non-MPI versions, but does not require --MPI flag.
 
 You can specify a list of input micrographs and their corresponding coordinates using wild card (e.g. *). Running from the command line requires enclosing the string by single quotes (') or double quotes ("). sxgui.py will automatically adds single quotes to the string (').  BDB stacks can not be
  used as input.
 
-''' sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt '''
+''' mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt '''
 
 NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.
 
@@ -45,7 +44,7 @@ The program creates the output directory automatically and inside a local BDB st
 
 
 = Description =
- 1. Takes micrographs and coordinates as input and wirtes the particle images to a local stack.
+ 1. Takes micrographs and coordinates as input and writes the particle images to a local stack.
  2. Normalization is done by subtracting the average of the region outside of a circle with radius half the box size.
  3. Micrographs are applied a Gaussian high-pass filter equivalent to the box size.
 
