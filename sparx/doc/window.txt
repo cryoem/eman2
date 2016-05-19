@@ -11,12 +11,12 @@ sxwindow.py  input_micrograph_pattern  input_coordinates_pattern  output_directo
 
 === Typical usage ===
 
-sxwindow does not support MPI.
+sxwindow exists in for both MPI and non-MPI versions, but does not require --MPI flag.
 
 You can specify a list of input micrographs and their corresponding coordinates using wild card (e.g. *). Running from the command line requires enclosing the string by single quotes (') or double quotes ("). sxgui.py will automatically adds single quotes to the string (').  BDB stacks can not be
  used as input.
 
-''' sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt '''
+''' mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt '''
 
 NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.
 

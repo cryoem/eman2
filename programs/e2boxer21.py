@@ -135,7 +135,34 @@ def main():
 
 	E2end(logid)
 	
+class boxerByRef(QtCore.QObject):
+	@staticmethod
+	def setup_gui(gridlay):
+		return
+	
+	@staticmethod
+	def do_autobox(gridlay):
+		return
+	
+class boxerGauss(QtCore.QObject):
+	@staticmethod
+	def setup_gui(gridlay):
+		return
+	
+	@staticmethod
+	def do_autobox(gridlay):
+		return
+	
 class GUIBoxer(QtGui.QWidget):
+	# Dictionary of autopickers
+	# to add a new one, provide name:(Qt_setup_function,picker_execution_function)
+	# Qt_setup_function(self,empty_grid_layout)
+	# picker_execution_function(self,...
+
+	aboxmodes = [ ("by Ref",boxerByRef), ("Gauss",boxerGauss) ]
+	
+
+	
 	def __init__(self,imagenames,voltage=None,apix=None,cs=None,ac=10.0,box=256,ptcl=200):
 		"""The 'new' e2boxer interface.
 		"""
@@ -144,12 +171,15 @@ class GUIBoxer(QtGui.QWidget):
 #		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.data=None
-		self.curfilename = None
+		self.curfilename = None				# current selected file for boxing
+		self.filenames=imagenames			# list of available filenames
 
 		self.defaultvoltage=voltage
 		self.defaultapix=apix
 		self.defaultcs=cs
 		self.defaultac=ac
+		
+		self.db = None						# open JSON file for current image
 
 		self.wimage=EMImage2DWidget()
 		self.wimage.setWindowTitle("Micrograph")
@@ -184,7 +214,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		for i in imagenames:
 			self.setlist.addItem(i)
-		self.gbl.addWidget(self.setlist,0,0,10,2)
+		self.gbl.addWidget(self.setlist,0,0,12,2)
 		
 		# Mouse Modes
 		self.mmbox=QtGui.QGroupBox("Mouse Mode",self)
@@ -194,22 +224,26 @@ class GUIBoxer(QtGui.QWidget):
 		self.hbl0=QtGui.QHBoxLayout(self.mmbox)
 		
 		self.bmmanual=QtGui.QPushButton("Manual")
+		self.bmmanual.setToolTip("Manual selection of particles. No impact on autoselection."
 		self.bmmanual.setAutoExclusive(True)
 		self.bmmanual.setCheckable(True)
 		self.bmmanual.setChecked(True)
 		self.hbl0.addWidget(self.bmmanual)
 		
 		self.bmdel=QtGui.QPushButton("Delete")
+		self.bmdel.setToolTip("Delete particles from any mode. Can also shift-click in other mouse modes.")
 		self.bmdel.setAutoExclusive(True)
 		self.bmdel.setCheckable(True)
 		self.hbl0.addWidget(self.bmdel)
 		
 		self.bmgref=QtGui.QPushButton("Good Refs")
+		self.bmref.setToolTip("Identify some good particles. Available to all autoboxers.")
 		self.bmgref.setAutoExclusive(True)
 		self.bmgref.setCheckable(True)
 		self.hbl0.addWidget(self.bmgref)
 
 		self.bmbref=QtGui.QPushButton("Bad Refs")
+		self.bmbref.setToolTip("Identify regions which should not be selected as particles.")
 		self.bmbref.setAutoExclusive(True)
 		self.bmbref.setCheckable(True)
 		self.hbl0.addWidget(self.bmbref)
@@ -219,25 +253,25 @@ class GUIBoxer(QtGui.QWidget):
 		QtCore.QObject.connect(self.bmgref,QtCore.SIGNAL("clicked(bool)"),self.setMouseGoodRef)
 		QtCore.QObject.connect(self.bmbref,QtCore.SIGNAL("clicked(bool)"),self.setMouseBadRef)
 
-		 QWidget *firstPageWidget = new QWidget;
-    QWidget *secondPageWidget = new QWidget;
-    QWidget *thirdPageWidget = new QWidget;
-
-    QStackedWidget *stackedWidget = new QStackedWidget;
-    stackedWidget->addWidget(firstPageWidget);
-    stackedWidget->addWidget(secondPageWidget);
-    stackedWidget->addWidget(thirdPageWidget);
-
-    QVBoxLayout *layout = new QVBoxLayout;
-    layout->addWidget(stackedWidget);
-    setLayout(layout);
+		# Autoboxing Tabs
+		self.autolbl = QtGui.QLabel("Autoboxing Methods:")
+		self.gbl.addWidget(self.autolbl,3,2,1,2)
+		self.autotab = QtGui.QTabWidget()
+		self.gbl.addWidget(self.autotab,4,2,6,3)
 		
-		 QComboBox *pageComboBox = new QComboBox;
-    pageComboBox->addItem(tr("Page 1"));
-    pageComboBox->addItem(tr("Page 2"));
-    pageComboBox->addItem(tr("Page 3"));
-    connect(pageComboBox, SIGNAL(activated(int)),
-            stackedWidget, SLOT(setCurrentIndex(int)));
+		# Individual tabs from Dictionary
+		self.abwid=[]
+		for name,cls in GUIBoxer.aboxmodes:
+			w=QtGui.QWidget()
+			gl=QtGui.QGridLayout(w)
+			self.abwid.append((w,gl))
+			cls.setup_gui(gl)
+			self.autotab.addTab(w,name)
+			
+		self.bautobox = QtGui.QPushButton("Autobox")
+		self.gbl.addWidget(self.bautobox,10,4,1,1)
+		
+		QtCore.QObject.connect(self.bautobox,QtCore.SIGNAL("clicked(bool)"),self.doAutoBox)
 		
 		self.setWindowTitle("e2boxer21 - Control Panel")
 
@@ -247,6 +281,26 @@ class GUIBoxer(QtGui.QWidget):
 		E2loadappwin("e2boxer21","main",self)
 		E2loadappwin("e2boxer21","image",self.wimage.qt_parent)
 		E2loadappwin("e2boxer21","particles",self.wparticles.qt_parent)
+
+
+	#QWidget *firstPageWidget = new QWidget;
+    #QWidget *secondPageWidget = new QWidget;
+    #QWidget *thirdPageWidget = new QWidget;
+
+    #QStackedWidget *stackedWidget = new QStackedWidget;
+    #stackedWidget->addWidget(firstPageWidget);
+    #stackedWidget->addWidget(secondPageWidget);
+    #stackedWidget->addWidget(thirdPageWidget);
+
+    #QVBoxLayout *layout = new QVBoxLayout;
+    #layout->addWidget(stackedWidget);
+    #setLayout(layout);
+		
+		 #QComboBox *pageComboBox = new QComboBox;
+    #pageComboBox->addItem(tr("Page 1"));
+    #pageComboBox->addItem(tr("Page 2"));
+    #pageComboBox->addItem(tr("Page 3"));
+    #connect(pageComboBox, SIGNAL(activated(int)),stackedWidget, SLOT(setCurrentIndex(int)));
 
 		#self.lboxmode=QtGui.QLabel("Mode:",self)
 		#self.gbl.addWidget(self.lboxmode,10,0)
@@ -384,6 +438,14 @@ class GUIBoxer(QtGui.QWidget):
 
 	def ptclmouseup(self,event) :
 		return
+
+		
+	def doAutoBox(self,b):
+		"""Autobox button pressed, find the right algorithm and call it"""
+		
+		name,fn1,fn2=self.aboxmodes[self.autotab.currentIndex()]
+		
+		print name," called"
 
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)

@@ -1,6 +1,7 @@
 = Name =
 
-sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure determination.  
+sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by [[sxisac|ISAC ]]. 
+
 
 = Usage =
 
@@ -44,7 +45,7 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
     maxit2:: Maximum iterations - Finish step: (default 50)
     L2threshold:: GA stop threshold: Defines the maximum relative dispersion of volumes' L2 norms. (default 0.03)
     doga:: Threshold to start GA: Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. (default 0.1)
-    n_shc_runs:: GA population size: This defines the number of quasi-independent volumes generated. (same as '--nruns' parameter from [[sxviper.py]]. (default 4)
+    n_shc_runs:: GA population size: This defines the number of quasi-independent volumes generated. (same as '--nruns' parameter from [[sxviper.py]]). (default 4)
     n_rv_runs:: Number of iterations: (default 10)
     n_v_runs:: Number of viper runs per cycle: (default 3)
     outlier_percentile:: Percentile for outlier: Threshold above which images are considered outliers and removed if 'percentile' is used as outlier selection method. (default 95.0)

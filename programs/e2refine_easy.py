@@ -315,8 +315,7 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	###################################
 	append_html("<h1>e2refine_easy.py report</h1>\n")
 
-	append_html("""<h4>Note - This is a beta release version of EMAN2.1</h4> <p>This program is fully functional, but we will continue
-to add new features and refinements as we approach the final release. If you are curious to see a list of the exact refinement parameters
+	append_html("""<p>If you are curious to see a list of the exact refinement parameters
 used, browse to the 0_refine_parms.json file in the refinement directory. You can use 'Info' in the file browser or just read the file directly
 (.json files are plain text)""")
 	append_html("""<h3>Explantion of Refinement Parameters</h3>""")
@@ -958,7 +957,7 @@ path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3
 			append_html("<p>Error generating resolution plot in report. Please look at fsc* files in the refine_xx folder</p>")
 
 		if lastres==0 :
-			append_html("<p>No valid resolution found for iteration {}".format(it))
+			append_html("<p>No valid resolution found for iteration {}.".format(it))
 		else:
 			append_html("<p>Iteration {}: Resolution = {:1.1f} &Aring; (gold standard refinement with tight mask, FSC @0.143)</p>".format(it,1.0/lastres))
 
@@ -1026,9 +1025,11 @@ path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3
 
 		E2progress(logid,progress/total_procs)
 
-	if lastres==0 :
-		append_html("""<p>I was unable to determine a resolution for your final iteration. This should not happen, and indicates a problem.
-You may consider consulting the EMAN2 mailing list if you cannot figure out what's going wrong</p>""")
+	if len(lastres)==0 :
+		append_html("""<p>I was unable to determine a resolution for your final iteration. This should not normally happen, and generally indicates a problem. 
+One exception is when working with heavily downsampled data, the data may be of sufficient quality to achieve resolutions beyond Nyquist. If the resolution curve
+falls smoothly to the edge of the plot, this may be what is happening, and you should try continuing the processing with finer A/pix sampling.
+Consider consulting the EMAN2 mailing list if you cannot figure out what's going wrong</p>""")
 	else:
 		try:
 			if 1.0/lastres[1]>randomres*.9 :

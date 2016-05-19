@@ -30,7 +30,7 @@ sxlocres exists in for both MPI and non-MPI versions.
 
 
 == Output ==
-    outputfile:: Output volume: Each voxel contains the resolution for this area in [[absolute_frequency_units|absolute frequency]]  units. (default required string)
+    outputfile:: Output volume: Each voxel contains the resolution for this area in [[absolute_frequency_units|absolute frequency]] units. (default required string)
     fsc:: FSC output file: Contains the overall FSC curve computed by rotational averaging of local resolution values. It might be truncated. (default no curve)
 
 

@@ -18,12 +18,19 @@
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from matplotlib import pylab
-from matplotlib.backends.backend_qt4agg \
-    import FigureCanvasQTAgg, NavigationToolbar2QTAgg
 import os
 import sys
 import glob
 import numpy
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
+
+# The name changed in newer versions of matplotlib
+try:
+    from matplotlib.backends.backend_qt4agg \
+        import NavigationToolbar2QTAgg as NavigationToolbar2QT
+except:
+    from matplotlib.backends.backend_qt4agg \
+        import NavigationToolbar2QT as NavigationToolbar2QT
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -1399,7 +1406,7 @@ class SXUnblurPlot(QtGui.QWidget):
         self.mode = mode
 
         # Create Navigation widget for the canvas
-        self.toolbar = NavigationToolbar2QTAgg(self.canvas, self.widgetPlot)
+        self.toolbar = NavigationToolbar2QT(self.canvas, self.widgetPlot)
         # Set Layout
         self.layoutPlot.addWidget(self.toolbar)
         self.layoutPlot.addWidget(self.canvas)
