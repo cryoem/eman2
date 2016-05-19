@@ -1,7 +1,6 @@
 = Name =
 sxcter - CTF Estimation: Automated estimation of CTF parameters with error assessment.
 
-
 = Usage =
 
 

@@ -1,7 +1,5 @@
 = Name =
-
 sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image series, and generate data and initialize database for demo script.
-
 
 = Usage =
 
@@ -142,7 +140,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     aa:: Low-pass filter fall-off: (default 0.1)
     mask:: Input mask: (default none)
     output:: Output file: (default postprocessed.hdf)
-    pixel_size:: Pixel size [A]: Pixel size in A.: (default 1.0)
+    pixel_size:: Pixel size [A]: Pixel size in A. (default 1.0)
     B_start:: Lower limit for B-factor estimation [A]: (default 10.0)
     FSC_cutoff:: FSC cut-off value: (default 0.143)
 

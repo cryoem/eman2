@@ -1,5 +1,5 @@
 = Name =
-sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set  of class averages produced by [[sxisac|ISAC]]. 
+sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by [[sxisac|ISAC]].
 
 = Usage =
 
@@ -27,7 +27,7 @@ Since VIPER makes use of group of processors working together, it is important f
 
 
 == Input ==
-    stack:: Input images stack: A small set of Class averages produced by ISAC  (default required string)
+    stack:: Input images stack: A small set of Class averages produced by ISAC. (default required string)
 
     radius:: Particle radius [Pixels]: has to be less than half the box size. (default required int)
     sym:: Point-group symmetry: (default c1)

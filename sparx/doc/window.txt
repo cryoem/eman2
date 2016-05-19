@@ -1,7 +1,6 @@
 = Name =
 sxwindow - Particle Extraction: Create a particle stack from a list of micrographs and particle coordinates.
 
-
 = Usage =
 
 ''usage in command line''
