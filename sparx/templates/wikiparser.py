@@ -95,6 +95,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# - image           : Line edit box for formatted string type, and open file buttons for .hdf and .bdb
 	# - any_image       : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .bdb
 	# - parameters      : Line edit box for formatted string type, and open file button for all file types
+	# - txt             : Line edit box for formatted string type, and open file button for .txt
 	# - any_file        : Line edit box for formatted string type, and open file button for all file types
 	# - bdb             : Line edit box for formatted string type, and open file button for .bdb
 	# - pdb             : Line edit box for formatted string type, and open file button for .pdb
@@ -121,7 +122,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "")               # stack_mode (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")               # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
-	keyword_dict["input_micrograph_list"]         = SXkeyword_map(0, "any_image_list") # input_micrograph_list (contains keyworkd 'input_micrograph' but this should be image_list type)
+	keyword_dict["input_micrograph_list_file"]    = SXkeyword_map(0, "txt")            # input_micrograph_list_file (contains keyworkd 'input_micrograph_list' but this should be parameters type)
 	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be string type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT
@@ -130,6 +131,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	keyword_dict["directory"]                     = SXkeyword_map(1, "output")         # directory
 	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")         # rotpw
 	keyword_dict["output_mask3D"]                 = SXkeyword_map(1, "output")         # output_mask3D
+	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "any_image_list") # input_micrograph_list (contains keyworkd 'input_micrograph' but this should be image_list type)
 	# Use priority 2 for the others
 	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack
 	keyword_dict["volume"]                        = SXkeyword_map(2, "image")          # initial_volume, firstvolume, secondvolume, input_volume

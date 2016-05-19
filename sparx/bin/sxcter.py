@@ -45,14 +45,18 @@ def main():
 	usage = progname + """  input_image  output_directory  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLATEGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --MPI  --stack_mode  --debug  
 sxcter exists in for both MPI and non-MPI versions.
 
-Milti-Micrograph Mode - Process a set of micrographs:
+Milti-Micrograph Mode - Process a set of micrographs in a list file or in a directory:
 
-	Specify micrograph name pattern with wild card [*] enclosed by single quotes ['] or double quotes ["] 
+	Specify a micrograph list file name (e.g. output of sxgui_unblur.py or sxgui_cter.py) and output directory as arguments. The file extension must be ".txt".
+	
+	mpirun -np 16 sxcter.py mic_list.txt outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
+	
+	Alternativel, specify micrograph name pattern with wild card [*] enclosed by single quotes ['] or double quotes ["] 
 	(Note: sxgui.py automatically adds single quotes [']) and output directory as arguments. 
 	BDB files can not be selected as input micrographs.
 	
 	mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
-		
+	
 Single-Micrograph Mode - Process a single micrograph:
 
 	Specify micrograph name (without wild card "*") and output directory as arguments.
