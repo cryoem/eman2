@@ -34,7 +34,7 @@ sxunblur exists in non-MPI version.
     save_frames:: Save aligned frames: (default False)
     filter_sum:: Apply filter to micrographs: When selected, an extra set images will be created by applying a band-pass filter to the corrected sums. Useful for picking purposes. (default False)
     lowpass:: Highest frequency cut-off: Absolute frequency cut-off for the low-pass filter. (default 0.033)
-    highpass:: Lowest frequency cut-off: absolute frequency cut-off for the high-pass filter. (default 0.00033)
+    highpass:: Lowest frequency cut-off: Absolute frequency cut-off for the high-pass filter. (default 0.00033)
     remove_sum:: Remove corrected sums: Discards the micrographs containing the corrected sums. (default False)
 
     * The remaining parameters are optional.

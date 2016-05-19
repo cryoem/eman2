@@ -1,7 +1,5 @@
 = Name =
-
-sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by [[sxisac|ISAC ]]. 
-
+sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by [[sxisac|ISAC]].
 
 = Usage =
 
