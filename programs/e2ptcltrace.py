@@ -65,7 +65,8 @@ def main():
 	classes = []
 	
 	if options.refine != None:
-		for f in os.listdir(options.refine):
+		dirs = sorted(os.listdir(options.refine))
+		for f in dirs:
 			path = options.refine+"/"+f
 			if "classmx" in f: cmx.append(path)
 			elif "projections" in f: proj.append(path)
@@ -138,7 +139,7 @@ def main():
 	
 	with open(options.output,"w") as outf:
 	
-		for p in xrange(nptcl): 
+		for p in xrange(nptcl):
 			isodd = p%2
 			
 			if options.verbose:
@@ -156,14 +157,24 @@ def main():
 					diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
 				diff=min(diffs) # The angular error for the best-agreeing orientation
 
+				cls1 = int(cls[i-1][0][0,p])
 				e1 = ort1.get_rotation("eman")
-				e2 = ort2.get_rotation("eman")
+				az1 = e1["az"]
+				alt1 = e1["alt"]
+				phi1 = e1["phi"]
 				
-				cls1 = int(cls[i-1][0][0,p])				
 				cls2 = int(cls[i][0][0,p])
-				clsdiff = abs(cls2-cls1)
+				e2 = ort2.get_rotation("eman")
+				az2 = e2["az"]
+				alt2 = e2["alt"]
+				phi2 = e2["phi"]
 				
-				d = [e1["az"],e1["alt"],e1["phi"],cls1,e2["az"],e2["alt"],e2["phi"],cls2,diff,clsdiff]
+				clsdiff = abs(cls2-cls1)
+				azdiff = abs(az2-az1)
+				altdiff = abs(alt2-alt1)
+				phidiff = abs(phi2-phi1)
+				
+				d = [az1,alt1,phi1,cls1,az2,alt2,phi2,cls2,diff,clsdiff,azdiff,altdiff,phidiff]
 				dat.append("\t".join([str(i) for i in d]))
 				
 				if i == 0:
@@ -191,42 +202,47 @@ def main():
 
 			line = data + " # " + cmt + "\n"			
 			outf.write(line)
-	
+
 	if ".txt" in options.output: kf = options.output.replace(".txt",".key")
 	else: kf = options.output + ".key"
+	
 	with open(kf,"w") as keyfile:
 		ctr = 0
-		if options.refine:
-			for i in range(1,len(cls)):
-				k = []
-				k.append("{}\taz from {} and {}".format(ctr,cmx[i],cmx[i-1]))
-				k.append("{}:\talt from {} and {}".format(ctr+1,cmx[i],cmx[i-1]))
-				k.append("{}:\tphi from {} and {}".format(ctr+2,cmx[i],cmx[i-1]))
-				k.append("{}:\trotation of classes {} and {} to axis of symmetry".format(ctr+3,cmx[i],cmx[i-1]))
-				k.append("{}\taz from {} and {}".format(ctr+4,cmx[i],cmx[i-1]))
-				k.append("{}:\talt from {} and {}".format(ctr+5,cmx[2*i],cmx[2*i-1]))
-				k.append("{}:\tphi from {} and {}".format(ctr+6,cmx[2*i],cmx[2*i-1]))
-				k.append("{}:\trotation of classes {} and {} to axis of symmetry".format(ctr+7,cmx[2*i],cmx[2*i-1]))
-				k.append("{}:\tangular error for best agreeing orientation (iterations {} and {})".format(ctr+8,i,i-1))
-				k.append("{}:\tabsolute difference between class assignments (iterations {} and {})".format(ctr+9,i,i-1))
+		for i in range(1,len(cls)+1):
+			k = []
+			if options.refine:
+				k.append("{}:\taz (iter {})".format(ctr,i-1))
+				k.append("{}:\talt (iter {})".format(ctr+1,i-1))
+				k.append("{}:\tphi (iter {})".format(ctr+2,i-1))
+				k.append("{}:\tclass num (iter {})".format(ctr+3,i-1))
+				k.append("{}\taz (iter {})".format(ctr+4,i))
+				k.append("{}:\talt (iter {})".format(ctr+5,i))
+				k.append("{}:\tphi (iter {})".format(ctr+6,i))
+				k.append("{}:\tclass num (iter {})".format(ctr+7,i))
+				k.append("{}:\tangular error (iters {} and {})".format(ctr+8,i-1,i))
+				k.append("{}:\tclass num diff (iters {} and {})".format(ctr+9,i-1,i))
+				k.append("{}:\taz diff (iters {} and {})".format(ctr+10,i-1,i))
+				k.append("{}:\talt diff (iters {} and {})".format(ctr+11,i-1,i))
+				k.append("{}:\tphi diff (iters {} and {})".format(ctr+12,i-1,i))
 				keyfile.write("\n".join([x for x in k])+"\n")
 				ctr+=len(k)
-		else:
-			for i,c in enumerate(cmx):
-				if i > 0:
-					k = []
-					k.append("{}\taz from {} (input {})".format(ctr,c,i-1))
-					k.append("{}:\talt from {} (input {})".format(ctr+1,c,i-1))
-					k.append("{}:\tphi from {} (input {})".format(ctr+2,c,i-1))
-					k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+3,c,i-1))
-					k.append("{}\taz from {} (input {})".format(ctr+4,c,i))
-					k.append("{}:\talt from {} (input {})".format(ctr+5,c,i))
-					k.append("{}:\tphi from {} (input {})".format(ctr+6,c,i))
-					k.append("{}:\trotation of class {} to axis of symmetry (input {})".format(ctr+7,c,i))
-					k.append("{}:\tangular error for best agreeing orientation (difference between input {} and {})".format(ctr+8,i,i-1))
-					k.append("{}:\tabsolute difference between class assignment {} and {}".format(ctr+9,i,i-1))
-					keyfile.write("\n".join([x for x in k])+"\n")
-					ctr+=len(k)
+			else:
+				k = []
+				k.append("{}\taz from {} (input #{})".format(ctr,cmx[i-1],i-1))
+				k.append("{}:\talt from {} (input #{})".format(ctr+1,cmx[i-1],i-1))
+				k.append("{}:\tphi from {} (input #{})".format(ctr+2,cmx[i-1],i-1))
+				k.append("{}:\tclass num (input #{})".format(ctr+3,cmx[i-1],i-1))
+				k.append("{}\taz from {} (input #{})".format(ctr+4,cmx[i],i))
+				k.append("{}:\talt from {} (input #{})".format(ctr+5,cmx[i],i))
+				k.append("{}:\tphi from {} (input #{})".format(ctr+6,cmx[i],i))
+				k.append("{}:\tclass num (input #{})".format(ctr+7,cmx[i],i))
+				k.append("{}:\tangular difference between {} and {} (inputs #{},{})".format(ctr+8,cmx[i],cmx[i-1],i,i-1))
+				k.append("{}:\tclass number difference between {} and {} (inputs #{},{})".format(ctr+9,cmx[i],cmx[i-1],i,i-1))
+				k.append("{}:\taz difference between {} and {} (inputs #{},{})".format(ctr+10,cmx[i],cmx[i-1],i,i-1))
+				k.append("{}:\talt difference between {} and {} (inputs #{},{})".format(ctr+11,cmx[i],cmx[i-1],i,i-1))
+				k.append("{}:\tphi difference between {} and {} (inputs #{},{})".format(ctr+12,cmx[i],cmx[i-1],i,i-1))
+				keyfile.write("\n".join([x for x in k])+"\n")
+				ctr+=len(k)
 
 	print("Particle trace results stored in {}.\nThe file {} describes the contents of each column.".format(options.output,kf))
 
