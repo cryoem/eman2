@@ -200,7 +200,7 @@ def main():
 			except:
 				cmt = "no particles in class corresponding to this projection"
 
-			line = data + " # " + cmt + "\n"			
+			line = data + "\t# " + cmt + "\n"			
 			outf.write(line)
 
 	if ".txt" in options.output: kf = options.output.replace(".txt",".key")
