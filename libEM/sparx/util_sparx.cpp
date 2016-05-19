@@ -25816,19 +25816,15 @@ EMData* Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_
 	int snx = image_slice->get_xsize();
 	int sny = image_slice->get_ysize();
 	int snz = EMUtil::get_image_count(stacked_slices_in);
-	if ((snz != nz) ||(sny != ny) || (snx != nx)) {
-		
-		throw ImageDimensionException("Error: two images have different dimensions");
+	if ((snz != nz) ||(sny != ny) || (snx != nx)) throw ImageDimensionException("Error: two images have different dimensions");
+
+	for (size_t i =0; i<(nx*ny*nz); i++)  {
+		int index_slice =int(i/(nx*ny));
+		if (i%(nx*ny) ==0)  {
+			 image_slice->read_image(stacked_slices_in, index_slice);
+			 float * slice_data = image_slice->get_data();
 		}
-	for (size_t i =0; i<(nx*ny*nz); i++)
-	 {
-	 	int index_slice =int(i/(nx*ny));
-	 	if (i%(nx*ny) ==0)
-	 	 {
-	 	     image_slice->read_image(stacked_slices_in, index_slice);
-	 	     float * slice_data = image_slice->get_data();
-	 	 }
-	 	vol2_data[i*2] = vol_data[i]*slice_data[i-index_slice*nx*ny];
+		vol2_data[i*2] = vol_data[i]*slice_data[i-index_slice*nx*ny];
 	 }
 	 vol2->set_complex(true);
 	 vol2->set_ri(true);
