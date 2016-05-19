@@ -1,6 +1,5 @@
 = Name =
-
-sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC [[sxisac]]. 
+sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by [[sxisac|ISAC]].
 
 = Usage =
 
@@ -26,14 +25,14 @@ Since RVIPER makes use of group of processors working together, it is important 
 On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 processors. Memory needs are about 0.5GB per processor.
 
 == Input ==
-    stack:: Input images stack: The images must be square. (default required string)
+    stack:: Input images stack: A small set (<100) of class averages produced by ISAC. (default required string)
 
     radius:: Particle radius [Pixels]: has to be less than half the box size. (default required int)
     sym:: Point-group symmetry: (default c1)
 
     * The remaining parameters are optional.  
 
-    ir:: Inner rotational search radius [Pixles]: (default 1)
+    ir:: Inner rotational search radius [Pixels]: (default 1)
     rs:: Ring step size: Step between rings used for the rotational search. (default 1)
     xr:: X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default '0')
     yr:: Y search range [Pixels]: The translational search range in the y direction. If omitted it will be xr. (default '0')
@@ -44,13 +43,13 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
     maxit2:: Maximum iterations - Finish step: (default 50)
     L2threshold:: GA stop threshold: Defines the maximum relative dispersion of volumes' L2 norms. (default 0.03)
     doga:: Threshold to start GA: Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. (default 0.1)
-    n_shc_runs:: GA population size: This defines the number of quasi-independent volumes generated. (same as '--nruns' parameter from [[sxviper.py]]. (default 4)
+    n_shc_runs:: GA population size: This defines the number of quasi-independent volumes generated. (same as '--nruns' parameter from [[sxviper.py]]). (default 4)
     n_rv_runs:: Number of iterations: (default 10)
     n_v_runs:: Number of viper runs per cycle: (default 3)
     outlier_percentile:: Percentile for outlier: Threshold above which images are considered outliers and removed if 'percentile' is used as outlier selection method. (default 95.0)
     iteration_start:: Starting iteration: Iteration from which to start the program. 0 means go to the most recent one. (default 0)
     ref_a:: Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
-    npad:: Image padding factor: The images are padded to achive the original size times this option. (default 2)
+    npad:: Image padding factor: The images are padded to achieve the original size times this option. (default 2)
     fl:: Low-pass filter frequency [1/Pixel]: Using a hyperbolic tangent low-pass filter. (default 0.25)
     aa:: Low-pass filter fall-off: Fall-off of for the hyperbolic tangent low-pass filter. (default 0.1)
     pwreference:: Power spectrum reference: Text file containing a 1D reference power spectrum. (default none)

@@ -354,6 +354,14 @@
     "NAME":"Validation and Analysis",
     "CHILDREN": [
       {
+        "ICON": "resolution",
+        "PROGRAM": "e2evalrefine.py",
+        "NAME": "Eval particle qual",
+        "MODE":"evalptcl",
+		"WIKIPAGE":"http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2evalrefine",
+        "CHILDREN": []
+      },
+      {
         "ICON": "eulers",
         "PROGRAM": "e2eulerxplor.py",
         "NAME": "Run e2eulerxplor",

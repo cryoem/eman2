@@ -18,12 +18,19 @@
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from matplotlib import pylab
-from matplotlib.backends.backend_qt4agg \
-    import FigureCanvasQTAgg, NavigationToolbar2QTAgg
 import os
 import sys
 import glob
 import numpy
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
+
+# The name changed in newer versions of matplotlib
+try:
+    from matplotlib.backends.backend_qt4agg \
+        import NavigationToolbar2QTAgg as NavigationToolbar2QT
+except:
+    from matplotlib.backends.backend_qt4agg \
+        import NavigationToolbar2QT as NavigationToolbar2QT
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -1399,7 +1406,7 @@ class SXUnblurPlot(QtGui.QWidget):
         self.mode = mode
 
         # Create Navigation widget for the canvas
-        self.toolbar = NavigationToolbar2QTAgg(self.canvas, self.widgetPlot)
+        self.toolbar = NavigationToolbar2QT(self.canvas, self.widgetPlot)
         # Set Layout
         self.layoutPlot.addWidget(self.toolbar)
         self.layoutPlot.addWidget(self.canvas)
@@ -2168,8 +2175,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         for number, file in enumerate(self.listFile):
 
             # Get the micrograph name
-            with open(file, 'r') as f:
-                self.arrData[self.dMic][number] = f.readline().split()[-1]
+            try:
+                with open(file, 'r') as f:
+                    self.arrData[self.dMic][number] = f.readline().split()[-1]
+            except Exception:
+                print('Error in file {0}, please check the file!'.format(file))
 
             # Get the file name
             self.arrData[self.dFile][number] = file.split('/')[-1]
@@ -3578,22 +3588,32 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             os.mkdir('unblur_GUI_output')
 
         # Create output directory
-        strOutput = '{:s}/{:s}/{:s}'.format(
-            os.getcwd(),
+        strOutput = '{:s}/{:s}'.format(
             self.outputDir,
             str(self.leOutputName.text())
             )
 
         # Write output
-        with open(strOutput, 'w') as f:
+        with open('{:s}_uncorrected.txt'.format(strOutput), 'w') as f:
             for name in sorted(self.listChecked):
                 arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                f.write('{:s}\n'.format(arrCurrentEntry[self.dMic][0]))
+                f.write('{:s}/Doseuncorrected/{:s}\n'.format(
+                    str(self.strInputDir).split('/')[-2],
+                    arrCurrentEntry[self.dMic][0])
+                    )
+
+        with open('{:s}_corrected.txt'.format(strOutput), 'w') as f:
+            for name in sorted(self.listChecked):
+                arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
+                f.write('{:s}/Dosecorrected/{:s}\n'.format(
+                    str(self.strInputDir).split('/')[-2],
+                    arrCurrentEntry[self.dMic][0])
+                    )
 
         # Show message with the save path
         messageBox = QtGui.QMessageBox(self)
         messageBox.setText(
-            'File saved!\n{:s}'.format(strOutput)
+            'File saved!\n{0:s}_corrected.txt and {0:s}_uncorrected.txt'.format(strOutput)
             )
         messageBox.exec_()
 

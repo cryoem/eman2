@@ -812,8 +812,18 @@ performance than many individual changes."""
 		if noupdate:
 			if self.lasttime==0 : self.sync()		# if DB is closed, sync anyway
 			if key in self.delkeys and key not in self.changes and key not in self.data : raise KeyError,key
-			if key in self.changes : return self.changes[key]
-			return self.data[key]
+			if key in self.changes : 
+				ret=self.changes[key]
+				if isinstance(ret,EMData) :
+					ret.del_attr("json_path")
+					ret.del_attr("json_n")
+				return ret
+			ret=self.data[key]
+			if isinstance(ret,EMData) :
+				ret.del_attr("json_path")
+				ret.del_attr("json_n")
+			return ret
+
 
 		self.sync()
 		if key in self.data : return self.data[key]
@@ -827,6 +837,22 @@ performance than many individual changes."""
 #		if not isinstance(key,str) : raise Exception,"JSONDB keys must be strings"
 		key=str(key)
 		if key in self.delkeys : self.delkeys.remove(key)
+		# for EMData objects we need to figure out what file they will get stored in
+		if isinstance(val,EMData) : 
+			try: 
+				val["json_path"]=self.changes[key]["json_path"]
+				val["json_n"]=self.changes[key]["json_n"]
+			except: 
+				try: 
+					val["json_path"]=self.data[key]["json_path"]
+					val["json_n"]=self.data[key]["json_n"]
+				except: 
+					val["json_path"] = self.path.replace(".json","_jsonimg.hdf")
+					try: 
+						val["json_n"] = EMUtil.get_image_count(val["json_path"])
+					except: val["json_n"] = 0
+#			print key,val["json_path"],val["json_n"]
+
 		self.changes[key]=val
 		if not deferupdate : self.sync()
 
@@ -856,11 +882,25 @@ def json_to_obj(jsdata):
 	if jsdata.has_key("__pickle__") :
 		try: return cPickle.loads(str(jsdata["__pickle__"]))
 		except: return str(jsdata["__pickle__"])				# This shouldn't happen. Means a module hasn't been loaded. This is an emergency stopgap to avoid crashing
+	elif jsdata.has_key("__image__") :							# images now stored in a separate HDF file
+		try: 
+			ret= EMData(str(jsdata["__image__"][0]),int(jsdata["__image__"][1]))
+		except:
+			print "Error reading image from JSON: ",jsdata["__image__"]
+			ret= None
+		return ret
 	elif jsdata.has_key("__class__") : return jsonclasses[jsdata["__class__"]](jsdata)
 	else: return jsdata
 
 def obj_to_json(obj):
 	"""converts a python object to a supportable json type"""
+	if isinstance(obj,EMData) :
+		try: fnm = (obj["json_path"],obj["json_n"])
+		except: 
+			print "ERROR: Cannot store image. Images cannot be embedded in lists."
+			fnm=["BAD_JSON.hdf",0]
+		obj.write_image(fnm[0],fnm[1])
+		return {"__image__":fnm}
 	try:
 		return obj.to_jsondict()
 	except:
