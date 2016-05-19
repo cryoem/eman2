@@ -5,7 +5,7 @@ sxmeridien - 3D Refinement: Performs 3D structure refinement.
 
 ''usage in command line''
 
-sxmeridien.py stack  output_directory  initial_volume  --radius=particle_radius  --outlier_percentile=outlier_percentile  --ref_a=S --sym=c1  --startangles  --restrict_shifts=restriction  --local_filter  --smear  --sausage  --inires  --mask3D  --CTF  --function=user_function
+sxmeridien.py stack  output_directory  initial_volume  --radius=particle_radius --ref_a=S --sym=c1  --startangles  --restrict_shifts=restriction  --local_filter  --smear  --sausage  --inires  --mask3D  --CTF  --function=user_function
 
 === Typical usage ===
 
@@ -14,28 +14,27 @@ sxmeridien exists only in MPI version.
 '''mpirun -np 88 --host n2,n7,n8,n9,n10,n0,n1,n6,n3,n4,n5  sxmeridien.py bdb:data refinementdir outdir_rviper/main001/run007/ref_clip.hdf --CTF --radius=28 > cou &'''
 
 == Input ==
-    stack:: name of input stack: (default required string)
-    initial_volume:: initial 3D structure: (default required string)
+    stack:: Input image stack: (default required string)
+    initial_volume:: Initial 3D reference: (default required string)
     
-    radius:: particle radius: radius of the structure in pixels. if not sure, set to boxsize/2-2 (default -1)
-    outlier_percentile::percentile above which outliers: are removed every iteration. (default 95.0)
-    CTF:: Use CTF: (default False)
-    ref_a::method for generating the quasi-uniformly distributed projection directions: (default S)
-    sym:: point-group symmetry of the structure: cn, dn, where n is multiplicity (for example c5 or d3). (default c1)
-    startangles:: Use orientation parameters in the input file header: to jumpstart the procedure (default False)
-    restrict_shifts:: Restrict initial searches for translation: unit - original size pixel. By default, no restriction. (default -1)
-    local_filter:: Use local filtration: By default, uses generic tangent filter. (default False)
+    radius:: Particle radius [Pixels]: Radius of the structure. If not sure, set to boxsize/2 - 2 (default -1) 
+    CTF:: Use CTF: If set to true, meridien will use the CTF information in the header to apply a full CTF correction. (default False)
+    ref_a::Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
+    sym:: Point-group symmetry: Symmetry of the structure. Acceptable values are: cn, dn, where n is multiplicity. (default c1)
+    startangles:: Read orientation from header: Start with the orientation parameters stored in the image headers. Useful to jumpstart the procedure. (default False)
+    restrict_shifts:: Restrict initial translational search: The value must be provided in pixel numbers from the *original image*. (default -1)
+    local_filter:: Use local filtering: By default, meridien uses a tangent filter. (default False)
     smear:: Use rotational smear: (default False)
-    sausage:: Sausage-making filter: (default False)
-    inires:: initial resolution: of the initial_volume: unit - angstroms.(default 25.0)
-    mask3D:: 3D mask: that defines outline of the structure, preferable with soft edges if not given, set to spherical mask with radius boxsize/2-1. (default none)
+    sausage:: Use sausage filter: (default False)
+    inires:: Starting resolution [A]: Resolution used to start the refinement. (default 25.0)
+    mask3D:: 3D mask: Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. (default none)
 
     * The remaining parameters are optional.
-    function:: name of the reference preparation function: (default do_volume_mrk02)
+    function:: Reference preparation function: Function used to prepare the reference volume after each iteration. (default do_volume_mrk02)
 
 
 == Output ==
-    output_directory:: output folder: (default current directory)
+    output_directory:: Output directory: (default current directory)
 
 
 = Description =

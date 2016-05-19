@@ -1396,8 +1396,8 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	int sweight = params.set_default("sweight", 1);
 	int nweight = params.set_default("nweight", 0);
 	int zeromask = params.set_default("zeromask",0);
-	float minres = params.set_default("minres",500.0f);
-	float maxres = params.set_default("maxres",10.0f);
+	float minres = params.set_default("minres",200.0f);
+	float maxres = params.set_default("maxres",8.0f);
 
 	vector < float >fsc;
 	bool use_cpu = true;

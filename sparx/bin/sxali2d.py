@@ -116,7 +116,7 @@ def main():
 			if(outcome == 1):
 				 ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
 
-			dummy, dummy = ali2d_base(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
+			dummy = ali2d_base(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
 				options.ts, options.nomirror, options.dst, \
 				options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
 				options.function, random_method = options.random_method, log = log, \

@@ -177,7 +177,7 @@ def main():
 
 	### Masking
 	if options.automask3d2==None: automask3d2=None
-	else: automask3d2=parsemodopt(options.automask3d)
+	else: automask3d2=parsemodopt(options.automask3d2)
 
 	if options.automask3d==None or options.automask3d.lower()=="auto" or len(options.automask3d.strip())==0 :
 		## This loop runs automatic masking with real parameters to test if the mask is extending to the edge of the box
@@ -278,11 +278,11 @@ def main():
 		else:
 			mask=EMData(nx,ny,nz)
 			mask.to_one()
-			mask.process(amask3d[0],amask3d[1])
+			mask.process_inplace(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 			mask.write_image("{path}mask.hdf".format(path=path),0)
 
-			mask.process_inplace("morph.erode.binary",{"k":2})
+#			mask.process_inplace("morph.erode.binary",{"k":2})
 			mask.write_image("{path}mask_tight.hdf".format(path=path),0)
 
 	combined2=0

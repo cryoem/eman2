@@ -1,5 +1,5 @@
 = Name =
-sx3dvariability - 3D Variablity: Calculate 3D variability field using a set of aligned 2D projection images as an input. The structures with symmetry require preparing data before calculating variability. The data preparation step would symmetrize the data and output a bdb:sdata for variability calculation.
+sx3dvariability - 3D Variablity Estimation: Calculate 3D variability using a set of aligned projection images as an input.
 
 = Usage =
 
@@ -27,34 +27,34 @@ for structures that have symmetries:
 
 
 == Input ==
-    prj_stack:: stack of 2D images: with 3D orientation parameters in header and (optionally) CTF information (default required string)
+    prj_stack:: Input image stack: The images must containt the 3D orientation parameters in the header and optionally CTF information. (default required string)
 
-    fl:: stop-band frequency of the low pass filter: to be applied to 2D data prior to variability calculation By default, no filtration. (default 0.0)
-    aa:: fall-off frequency of the low pass filter: to be applied to 2D data prior to variability calculation By default, no filtration. (default 0.0) 
-    CTF:: use CFT correction: (default False) 
-    img_per_grp:: number of projections: from the angular neighborhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. (default 10)
-    symmetrize:: Prepare input stack for handling symmetry: (default False)
-    sym:: point-group symmetry of the structure: specified in case the input structure has symmetry higher than c1. It is specified together with option --sym in the first step for preparing data. Notice this step can be run with only one CPU and there is no MPI version for it. (default c1)
+    fl:: Low-pass filter frequency [1/Pixel]: Filter to be applied to the images prior to variability calculation. By default, no filtering. (default 0.0)
+    aa:: Low-pass filter fall-off: Filter to be applied to the images prior to variability calculation. By default, no filtering. (default 0.0) 
+    CTF:: Use CTF: If set to true, the a CTF correction will be applied using the parameters found in the image headers. (default False) 
+    img_per_grp:: Number of projections: from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. (default 10)
+    symmetrize:: Symmetrise input stack: Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. (default False)
+    sym:: Point-group symmetry: Only required if the structure has symmetry higher than c1. Notice this step can be run with only one CPU and there is no MPI version for it. (default c1)
 
     * The remaining parameters are optional.
-    no_norm:: do not use normalization: (default False)
-    radiusvar:: radius for 3D var: (default -1)
-    npad:: number of time to pad the original images: (default 2)
-    VAR:: stack on input consists of 2D variances: (default False)
-    SND:: compute squared normalized differences: (default False)
+    no_norm:: Skip normalization: (default False)
+    radiusvar:: Radius for 3D variability [Pixels]: (default -1)
+    npad:: Image padding factor: The images are padded to achieve the original size times this option. (default 2)
+    VAR:: Stack on input consists of 2D variances: (default False)
+    SND:: Squared normalized differences: If set to true, it computes the squared normalised differences. (default False)
 
-    VERBOSE:: Long output for debugging: (default False) 
+    VERBOSE:: Verbose: Useful for debugging. (default False) 
 
 
 == Output ==
-    ave2D:: write to the disk a stack of 2D averages: (default none)
-    var2D:: write to the disk a stack of 2D variances: (default none)
-    ave3D:: write to the disk reconstructed 3D average: 3D reconstruction computed from projections averaged within respective angular neighborhood. It should be used to assess the resolvability and possible artifacts of the variability map. (default none)
-    var3D:: compute 3D variability: time consuming! (default none)
+    ave2D:: Output 2D averages: (default none)
+    var2D:: Output 2D variances: (default none)
+    ave3D:: Output 3D average: 3D reconstruction computed from projections averaged within respective angular neighbourhood. It should be used to assess the resolvability and possible artifacts of the variability map. (default none)
+    var3D:: Output 3D variability: It creates a volume containing, for each voxel, a measure of the variability in the dataset. Careful, time consuming! (default none)
 
 
 = Description =
-It can be slow.
+The program calculates the variability observed in a collection of image projections. Structures with symmetry require preparing data before calculating the variability. The data preparation step would symmetrise the data and output a bdb:sdata for variability calculation. sx3dvariability.py can be slow.
 
 = Method =
 

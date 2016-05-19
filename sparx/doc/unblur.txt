@@ -1,5 +1,5 @@
 = Name =
-sxunblur - Micrograph Alignment: Performs 2D Micrograph alignment with Unblur.
+sxunblur - Micrograph movie alignment: Align micrograph movies with Unblur.
 
 = Usage =
 
@@ -25,33 +25,33 @@ sxunblur exists in non-MPI version.
 
 == Input ==
 
-    unblur:: path to unblur executable: (default required string)
-    input_mrc_micrograph:: name pattern of input micrographs (mrc): use the wild card (*) to specify the place of micrograph id (e.g. serial number, time stamp, or etc). (default required string)
-    output:: output directory: (default required string)
+    unblur:: Path to unblur executable: (default required string)
+    input_mrc_micrograph:: Input micrographs: You can use the wild cards (e.g. *) to specify a list of micrographs. (default required string)
+    output:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
-    nr_frames:: number of frames in the set of micrographs: (default 3)
-    pixel_size:: pixel size [A]: (default  required -1.0)
-    save_frames:: save aligned frames: (default False)
-    filter_sum:: filter the output images: (default False)
-    lowpass:: apply a lowpass filter: abolute frequency. (default 0.033)
-    highpass:: apply a highpass filter: abolute frequency. (default 0.00033)
-    remove_sum:: remove the calculated sum files: (default False)
+    nr_frames:: Number of frames: (default 3)
+    pixel_size:: Pixel size [A]: (default  required -1.0)
+    save_frames:: Save aligned frames: (default False)
+    filter_sum:: Apply filter to micrographs: When selected, an extra set images will be created by applying a band-pass filter to the corrected sums. Useful for picking purposes. (default False)
+    lowpass:: Highest frequency cut-off: Absolute frequency cut-off for the low-pass filter. (default 0.033)
+    highpass:: Lowest frequency cut-off: Absolute frequency cut-off for the high-pass filter. (default 0.00033)
+    remove_sum:: Remove corrected sums: Discards the micrographs containing the corrected sums. (default False)
 
     * The remaining parameters are optional.
-    dose_filter:: apply dose filter options: exposure_per_frame, voltage, pre_exposure. (default False)
-    exposure_per_frame:: exposure per frame [e/A^2]: (default 1.0)
-    voltage:: accelerate voltage [kV]: (default 300.0)
-    pre_exposure:: pre exposure amount [e/A^2]: (default 0.0)
-    expert_mode:: set expert mode settings: shift_initial, shift_radius, b_factor, fourier_vertical, fourier_horizontal, shift_threshold, iterations, restore_noise, verbose. (default False)
-    shift_initial:: minimum shift for inital search [A]: (default 2.0)
-    shift_radius:: outer radius shift limit [A]: (default 200.0)
-    b_factor:: b-factor to appy to image [A^2]: (default 1500.0)
-    fourier_vertical:: half-width of central vertical line of fourier mask: (default 1)
-    fourier_horizontal:: half-width of central horizontal line of fourier mask: (default 1)
-    shift_threshold:: termination shift threshold: (default 0.1)
-    iterations:: maximum number of iterations: (default 10)
-    restore_noise:: restore noise power: (default False)
-    verbose:: verbose output: (default False)
+    dose_filter:: Apply dose filter: Requires additionally to set the correct exposure per frame, voltage, and pre exposure. (default False)
+    exposure_per_frame:: Per frame exposure [e/A^2]: (default 1.0)
+    voltage:: Microscope voltage [kV]: (default 300.0)
+    pre_exposure:: Pre exposure [e/A^2]: (default 0.0)
+    expert_mode:: Set expert mode: Requires the options initial shift, shift radius, b-factor, fourier_vertical, fourier_horizontal, shift threshold, iterations, restore noise, and verbosity. (default False)
+    shift_initial:: Minimum shift for initial search [A]: (default 2.0)
+    shift_radius:: Outer radius shift limit [A]: (default 200.0)
+    b_factor:: Apply B-factor to images [A^2]: (default 1500.0)
+    fourier_vertical:: Half-width of central vertical line of fourier mask: (default 1)
+    fourier_horizontal:: Half-width of central horizontal line of fourier mask: (default 1)
+    shift_threshold:: Termination shift threshold: (default 0.1)
+    iterations:: Maximum iterations: (default 10)
+    restore_noise:: Restore noise power: (default False)
+    verbose:: Verbose: (default False)
 
 
 == Output ==

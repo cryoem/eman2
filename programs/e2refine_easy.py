@@ -315,8 +315,7 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	###################################
 	append_html("<h1>e2refine_easy.py report</h1>\n")
 
-	append_html("""<h4>Note - This is a beta release version of EMAN2.1</h4> <p>This program is fully functional, but we will continue
-to add new features and refinements as we approach the final release. If you are curious to see a list of the exact refinement parameters
+	append_html("""<p>If you are curious to see a list of the exact refinement parameters
 used, browse to the 0_refine_parms.json file in the refinement directory. You can use 'Info' in the file browser or just read the file directly
 (.json files are plain text)""")
 	append_html("""<h3>Explantion of Refinement Parameters</h3>""")
@@ -480,12 +479,16 @@ important to use an angular step which is 90/integer.</p>")
 
 	if options.simaligncmp==None : options.simaligncmp="ccc"
 	if options.simralign==None and options.speed<7 :
-		if options.targetres>=11.0 or options.speed==6:
+		if options.targetres>=11.0 or options.speed>5:
 			options.simralign="refine"
 			if options.simraligncmp==None : options.simraligncmp="ccc"
 		else :
 			options.simralign="refine"
-			if options.simraligncmp==None : options.simraligncmp="frc:zeromask=1:snrweight=1"
+			# previously, the default minres/maxres was 500,10. In testing showed that 50,5 produced noticably improved results on IP3R
+			# changing the default to match targetres
+			if options.simraligncmp==None : 
+				options.simraligncmp="frc:zeromask=1:snrweight=1:minres=80:maxres={}".format(options.targetres)
+			
 		simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
 	elif options.speed==7 or options.simralign.lower()=="none" :
 		simralign=" "
@@ -512,7 +515,7 @@ important to use an angular step which is 90/integer.</p>")
 			if options.classraligncmp==None : options.classraligncmp="ccc"
 		else :
 			options.classralign="refine"
-			if options.classraligncmp==None : options.classraligncmp="frc:snrweight=1:zeromask=1"
+			if options.classraligncmp==None : options.classraligncmp="frc:snrweight=1:zeromask=1:minres=80:maxres={}".format(options.targetres)
 		classralign="--ralign {ralign} --raligncmp {raligncmp}".format(ralign=options.classralign,raligncmp=options.classraligncmp)
 	elif options.classralign.lower()=="none":
 		classralign=" "
@@ -755,7 +758,8 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		# we need to decide on a postprocessing amplitude correction scheme here, because it may impact class-averaging
 		if options.ampcorrect=="auto":
 			try:
-				if options.targetres<=8 and lastres!=0 and lastres[1]<9.0 : ampcorrect="flatten"
+				# In the first iteration if targetres is 7 or better, we give it the benefit of the doubt and use flatten (changed 5/11/16)
+				if options.targetres<=7 and lastres[1]<9.0 : ampcorrect="flatten"
 				else: ampcorrect="strucfac"
 			except:
 				ampcorrect="strucfac"		# first iteration
@@ -953,7 +957,7 @@ path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3
 			append_html("<p>Error generating resolution plot in report. Please look at fsc* files in the refine_xx folder</p>")
 
 		if lastres==0 :
-			append_html("<p>No valid resolution found for iteration {}".format(it))
+			append_html("<p>No valid resolution found for iteration {}.".format(it))
 		else:
 			append_html("<p>Iteration {}: Resolution = {:1.1f} &Aring; (gold standard refinement with tight mask, FSC @0.143)</p>".format(it,1.0/lastres))
 
@@ -1021,9 +1025,11 @@ path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3
 
 		E2progress(logid,progress/total_procs)
 
-	if lastres==0 :
-		append_html("""<p>I was unable to determine a resolution for your final iteration. This should not happen, and indicates a problem.
-You may consider consulting the EMAN2 mailing list if you cannot figure out what's going wrong</p>""")
+	if len(lastres)==0 :
+		append_html("""<p>I was unable to determine a resolution for your final iteration. This should not normally happen, and generally indicates a problem. 
+One exception is when working with heavily downsampled data, the data may be of sufficient quality to achieve resolutions beyond Nyquist. If the resolution curve
+falls smoothly to the edge of the plot, this may be what is happening, and you should try continuing the processing with finer A/pix sampling.
+Consider consulting the EMAN2 mailing list if you cannot figure out what's going wrong</p>""")
 	else:
 		try:
 			if 1.0/lastres[1]>randomres*.9 :

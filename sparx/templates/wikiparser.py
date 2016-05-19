@@ -11,7 +11,7 @@ import sys
 import copy
 from global_def import ERROR
 
-from sxgui_template import SXcmd_token, SXcmd
+from sxgui_template import SXcmd_token, SXcmd, SXcmd_category
 
 # ========================================================================================
 class SXsubcmd_config:
@@ -25,17 +25,49 @@ class SXsubcmd_config:
 
 # ========================================================================================
 class SXcmd_config:
-	def __init__(self, wiki, category, is_submittable = True, exclude_list = [], subconfig = None):
+	def __init__(self, wiki, category, role, is_submittable = True, exclude_list = [], subconfig = None):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.wiki = wiki                      # Wiki document file path
-		self.category = category              # Category of this command: pipe (pipeline), util (utility)
+		self.category = category              # Category of this command: sxc_movie_micrograph, sxc_ctf, sxc_particle_stack, sxc_2d_clustering, sxc_initial_3d_modeling, sxc_3d_refinement, sxc_3d_clustering, sxc_utilities
+		self.role = role                      # Role of this command; sxr_pipe (pipeline), sxr_alt (alternative) sxr_util (utility)
 		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue. If it is true, this command will be registered to child_application_list of SXCmdWidget
 		self.exclude_list = exclude_list      # token key base list to be excluded
 		self.subconfig = subconfig            # Subset configuration of this command (e.g. sxprocess and sxlocres). None includes all command tokens, and do not make subcmd
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
+def remove_wiki_makeup(target_text):
+	# makeup for link 
+	# [[URL|DISPLAY_TEXT]]
+	makeup_begin = "[["
+	makeup_end = "]]"
+	makeup_separator = "|"
+	
+	item_head = target_text.find(makeup_begin)
+	while item_head != -1:
+		# Found a start of wiki makeup
+		item_tail = target_text.find(makeup_end)
+		if item_tail == -1: 
+			ERROR("Wiki Format Warning: The string \"%s\" contains \"%s\" but not \"%s\". Removing \"%s\", but please check the format in Wiki document." % (target_text, makeup_begin, makeup_end, makeup_begin), "%s in %s" % (__name__, os.path.basename(__file__)))
+			target_text = target_text.replace(makeup_begin, "", 1)
+		else: # assert (item_tail > -1)
+			makeup_token = target_text[item_head:item_tail+len(makeup_end)]
+			display_item = makeup_token.replace(makeup_begin, "")
+			display_item = display_item.replace(makeup_end, "")
+			if display_item.find(makeup_separator) != -1:
+				item_tokens = display_item.split(makeup_separator)
+				assert (len(item_tokens) == 2)
+				display_item = item_tokens[1] # 2nd one should be display text
+			print "### Found a wiki makeup token \"%s\". Changed to \"%s\"" % (makeup_token, display_item)
+			target_text = target_text.replace(makeup_token, display_item, 1)
+		
+		# Try to find the next
+		item_head = target_text.find(makeup_begin)
+	
+	return target_text
+
+# ----------------------------------------------------------------------------------------
 def construct_token_list_from_wiki(sxcmd_config):
 	# Private helper class used only in this function
 	class SXkeyword_map:
@@ -47,10 +79,10 @@ def construct_token_list_from_wiki(sxcmd_config):
 			self.token_type = token_type  # Token value type
 			# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
-	print "Start parsing Wiki document (%s as %s command) " % (sxcmd_config.wiki, sxcmd_config.category)
+	print "Start parsing Wiki document (%s as %s %s command) " % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
 	# Allocate memory for new SXcmd instance
-	sxcmd = SXcmd(sxcmd_config.category, sxcmd_config.is_submittable)
+	sxcmd = SXcmd(sxcmd_config.category, sxcmd_config.role, sxcmd_config.is_submittable)
 
 	# Define dictionary of keywords:
 	# The dictionary maps command token to special data types
@@ -69,7 +101,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# - mrc             : Line edit box for formatted string type, and open file button for .mrc
 	# - any_file_list   : Line edit box for formatted string type, and open file button for all file types
 	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
-	# - any_image_list  : Line edit box for formatted string type, and open file button for all file types (also mrc, tiff, and etc) and .bdb. 
+	# - any_image_list  : Line edit box for formatted string type, and open file button for all file types (also mrc, tiff, and etc) and .bdb.
 	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
 	# - function        : Two line edit boxes for formatted string type (function name & file path of the container script),
 	#                     and open file button for .py
@@ -90,7 +122,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")               # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	keyword_dict["input_micrograph_list"]         = SXkeyword_map(0, "any_image_list") # input_micrograph_list (contains keyworkd 'input_micrograph' but this should be image_list type)
-	keyword_dict["isac_directory"]                = SXkeyword_map(0, "string")         # isac_directory (contains keyworkd 'directory' but this should be string type)
+	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be string type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
@@ -112,12 +144,15 @@ def construct_token_list_from_wiki(sxcmd_config):
 	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "parameters")     # cter_ctf_file
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
+	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
 	keyword_dict["unblur"]                        = SXkeyword_map(2, "any_file")       # unblur
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
 	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
+	keyword_dict["--chunkdir"]                    = SXkeyword_map(2, "directory")      # --chunkdir=chunkdir
+	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=run1_directory, --previous_run2=run2_directory
 
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")           # --apix=pixel_size, --apix
 	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")           # --pixel_size=PIXEL_SIZE
@@ -210,7 +245,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 					if item_tail == -1: ERROR("Wiki Format Error: '= Name =' section should contain a label ended with ':' after 'sx* - ' or 'e2* - ': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 					sxcmd.label = line_buffer[0:item_tail].strip()
 					# Extract the short info about this sxscript (can be empty)
-					sxcmd.short_info = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
+					sxcmd.short_info = remove_wiki_makeup(line_buffer[item_tail + len(target_operator):].strip()) # Get the rest of line
 				elif current_section == section_usage:
 					# Extract 'usage in command line' to identify each command token is either an argument (no-prefix) or option ('--' prefix)
 					# This information is also used to check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
@@ -287,7 +322,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 						target_operator = "(default"
 						item_tail = line_buffer.find(target_operator)
 						if item_tail == -1: ERROR("Wiki Format Error: This line (%s) is missing default setting. Please check the format in Wiki document." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
-						token.help = line_buffer[0:item_tail]
+						token.help = remove_wiki_makeup(line_buffer[0:item_tail])
 						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 						# Extract default value of command token
 						target_operator = ")"
@@ -357,7 +392,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 		assert(sxcmd.token_dict["wn"].type == "ctfwin")
 		sxcmd.token_dict["wn"].type = "int"
 
-	print "Succeed to parse Wiki document (%s as %s command)" % (sxcmd_config.wiki, sxcmd_config.category)
+	print "Succeed to parse Wiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
 	"""
 	# For DEBUG
@@ -460,8 +495,24 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 	assert(len(sxcmd.token_list) == len(sxsubcmd_config.token_edit_list))
 	assert(len(sxcmd.token_dict) == len(sxsubcmd_config.token_edit_list))
 
+def insert_sxcmd_category_list_to_file(sxcmd_category_list, output_file):
+	sxcmd_category_variable_name = "sxcmd_category"
+	for sxcmd_category in sxcmd_category_list:
+		output_file.write("\t\t")
+		output_file.write("%s = SXcmd_category()" % sxcmd_category_variable_name)
+		output_file.write("; %s.name = \"%s\"" % (sxcmd_category_variable_name, sxcmd_category.name))
+		output_file.write("; %s.label = \"%s\"" % (sxcmd_category_variable_name, sxcmd_category.label))
+		output_file.write("; %s.short_info = \"%s\"" % (sxcmd_category_variable_name, sxcmd_category.short_info.replace("\"", "'")))
+		output_file.write("\n")
+		output_file.write("\t\t")
+		output_file.write("%s_list.append(%s)" % (sxcmd_category_variable_name, sxcmd_category_variable_name))
+		output_file.write("\n")
+
+	output_file.write("\n")
+	return
+
 def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
-	output_file.write("\t")
+	output_file.write("\t\t")
 	output_file.write("%s = SXcmd()" % sxcmd_variable_name)
 	output_file.write("; %s.name = \"%s\"" % (sxcmd_variable_name, sxcmd.name))
 	output_file.write("; %s.mode = \"%s\"" % (sxcmd_variable_name, sxcmd.mode))
@@ -470,11 +521,12 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	output_file.write("; %s.mpi_support = %s" % (sxcmd_variable_name, sxcmd.mpi_support))
 	output_file.write("; %s.mpi_add_flag = %s" % (sxcmd_variable_name, sxcmd.mpi_add_flag))
 	output_file.write("; %s.category = \"%s\"" % (sxcmd_variable_name, sxcmd.category))
+	output_file.write("; %s.role = \"%s\"" % (sxcmd_variable_name, sxcmd.role))
 	output_file.write("; %s.is_submittable = %s" % (sxcmd_variable_name, sxcmd.is_submittable))
 	output_file.write("\n")
 
 	for token in sxcmd.token_list:
-		output_file.write("\t")
+		output_file.write("\t\t")
 		output_file.write("token = SXcmd_token()")
 		output_file.write("; token.key_base = \"%s\"" % token.key_base)
 		output_file.write("; token.key_prefix = \"%s\"" % token.key_prefix)
@@ -498,10 +550,130 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		output_file.write("; %s.token_list.append(token)" % sxcmd_variable_name)
 		output_file.write("\n")
 
+	output_file.write("\n")
+	output_file.write("\t\t%s_list.append(%s)\n" % (sxcmd_variable_name, sxcmd_variable_name))
+	output_file.write("\n")
+
 	return
 
 # ========================================================================================
+def create_sxcmd_subconfig_adaptive_mask3d():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("adaptive_mask"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "Output mask"; token_edit.help = "Output 3D mask"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ndilation"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("kernel_size"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("gauss_standard_dev"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("threshold"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ne"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nd"); token_edit_list.append(token_edit)
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_refine3d_postprocess():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("postprocess"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "First unfiltered half-volume "; token_edit.help = "Generated by sxmeridien"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "Second unfiltered half-volume "; token_edit.help = "Generated by sxmeridien"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fsc_weighted"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("low_pass_filter"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ff"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("FSC_cutoff"); token_edit_list.append(token_edit)
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("3D Refinement Postprocess", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_variability_preprocess():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_refine3d_angular_distribution():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("angular_distribution"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("inputfile"); token_edit.label = "Alignment Parameter file"; token_edit.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token_edit.is_required = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("round_digit"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("box_size"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("prtcl_diameter"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_width"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_length"); token_edit_list.append(token_edit)
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("Angular Distribution", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_exclude_list_boxer():
+	exclude_list = []
+	
+	exclude_list.append("write_dbbox")
+	exclude_list.append("write_ptcls")
+	exclude_list.append("force")
+	exclude_list.append("format")
+	exclude_list.append("suffix")
+	exclude_list.append("dbls")
+	exclude_list.append("autoboxer")
+	exclude_list.append("ppid")
+	exclude_list.append("gui")
+	exclude_list.append("do_ctf")
+	exclude_list.append("cter")
+	exclude_list.append("indir")
+	exclude_list.append("nameroot")
+	exclude_list.append("micsuffix")
+	exclude_list.append("wn")
+	exclude_list.append("Cs")
+	exclude_list.append("voltage")
+	exclude_list.append("ac")
+	exclude_list.append("kboot")
+	exclude_list.append("debug")
+	exclude_list.append("apix")
+	
+	return exclude_list
+
+def create_exclude_list_display():
+	exclude_list = []
+	
+	exclude_list.append("classmx")
+	exclude_list.append("classes")
+	exclude_list.append("pdb")
+	exclude_list.append("plot")
+	exclude_list.append("plot3")
+	exclude_list.append("newwidget")
+	exclude_list.append("ppid")
+	
+	return exclude_list
+
+# ========================================================================================
 def main():
+	# --------------------------------------------------------------------------------
+	# Define command categories used in GUI
+	# --------------------------------------------------------------------------------
+	sxcmd_category_list = []
+	sxcmd_category_list.append(SXcmd_category("sxc_movie_micrograph", "Movie Micrograph", "movie frame alignemnt, and drift assessment"))
+	sxcmd_category_list.append(SXcmd_category("sxc_ctf", "CTF", "ctf estinatim, and ctf assessment"))
+	sxcmd_category_list.append(SXcmd_category("sxc_particle_stack", "Particle Stack", "particle picking, and particle windowing"))
+	sxcmd_category_list.append(SXcmd_category("sxc_2d_clustering", "2D Clustering", "2d clustering with isac, and post-processing"))
+	sxcmd_category_list.append(SXcmd_category("sxc_initial_3d_modeling", "Initial 3D Modeling", "initial 3d modeling with viper/rviper"))
+	sxcmd_category_list.append(SXcmd_category("sxc_3d_refinement", "3D Refinement", "3d refinement and post-processing"))
+	sxcmd_category_list.append(SXcmd_category("sxc_3d_clustering", "3D Clustering", "3d variability, and 3d clustering protocol I & II"))
+	sxcmd_category_list.append(SXcmd_category("sxc_localres", "Local Resolution", "local resolution, and local filter"))
+	sxcmd_category_list.append(SXcmd_category("sxc_utilities", "Utilities", "miscellaneous utlitity commands"))
+
 	# --------------------------------------------------------------------------------
 	# Get all necessary informations from wiki documents of sx*.py scripts
 	# and create gui generation parameter
@@ -509,92 +681,107 @@ def main():
 	sxcmd_config_list = []
 
 	# --------------------------------------------------------------------------------
-	# Define pipeline command settings
-	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_movie_micrograph"
 
-	sxcmd_config_list.append(SXcmd_config("../doc/unblur.txt", "pipe"))
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/unblur.txt", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/gui_unblur.txt", sxcmd_category, sxcmd_role, is_submittable = False))
 
-	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "pipe", exclude_list=["stack_mode"]))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/gui_cter.txt", "pipe", is_submittable = False))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "pipe", exclude_list=["gui", "do_ctf", "cter", "indir", "nameroot", "micsuffix", "wn", "Cs", "voltage", "ac", "kboot", "debug", "apix"], is_submittable = False))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", "pipe"))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "pipe"))
-	# sxcmd_config_list.append(SXcmd_config("../doc/isac_snr4.txt", "pipe"))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "pipe"))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/viper.txt", "pipe"))
-
-	# NOTE: Toshio Moriya 2016/03/11
-	# Temporarily disabled sxrviper for the 03/07/2016 release
-	sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", "pipe"))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "pipe"))
-
-
-	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("postprocess"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "first unfiltered half-volume "; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "second unfiltered half-volume "; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("fsc_weighted"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("low_pass_filter"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ff"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("B_start"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("FSC_cutoff"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement Postprocess", token_edit_list, sxsubcmd_mpi_support)
-	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "pipe", subconfig = sxcmd_subconfig))
-
-	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("3D Variability Preprocess", token_edit_list, sxsubcmd_mpi_support)
-	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "pipe", subconfig = sxcmd_subconfig))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "pipe", exclude_list=["symmetrize"]))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", "pipe"))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "pipe"))
-
-	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "pipe"))
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 
 	# --------------------------------------------------------------------------------
-	# Define utility command settings
+	sxcmd_category = "sxc_ctf"
+
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", sxcmd_category, sxcmd_role, exclude_list=["stack_mode"]))
+	sxcmd_config_list.append(SXcmd_config("../doc/gui_cter.txt", sxcmd_category, sxcmd_role, is_submittable = False))
+
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+
 	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_particle_stack"
 
-	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "util", is_submittable = False))
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", sxcmd_category, sxcmd_role))
 
-	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "util"))
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 
-	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("adaptive_mask"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "input volume"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "output 3D mask"; token_edit.help = ""; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ndilation"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("kernel_size"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("gauss_standard_dev"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("threshold"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("ne"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("nd"); token_edit.help = "main"; token_edit_list.append(token_edit)
-	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", token_edit_list, sxsubcmd_mpi_support)
-	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util", subconfig = sxcmd_subconfig))
+	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_2d_clustering"
 
-	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "util"))
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", sxcmd_category, sxcmd_role))
 
-	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "util"))
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+
+	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_initial_3d_modeling"
+
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/rviper.txt", sxcmd_category, sxcmd_role))
+
+	sxcmd_role = "sxr_alt"
+	sxcmd_config_list.append(SXcmd_config("../doc/viper.txt", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", sxcmd_category, sxcmd_role))
+
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
+
+	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_3d_refinement"
+
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
+
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
+
+	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_3d_clustering"
+
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
+	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
+	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", sxcmd_category, sxcmd_role))
+
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
+
+	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_localres"
+
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", sxcmd_category, sxcmd_role))
+
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
+
+	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_utilities"
+
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
+	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", sxcmd_category, sxcmd_role))
 
 #	token_edit_list = []
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("stack_mode"); token_edit.group = "main"; token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
@@ -614,7 +801,18 @@ def main():
 #	token_edit = SXcmd_token(); token_edit.initialize_edit("debug"); token_edit_list.append(token_edit)
 #	sxsubcmd_mpi_support = False
 #	sxcmd_subconfig = SXsubcmd_config("CTF Estimation (Stack Mode)", token_edit_list, sxsubcmd_mpi_support)
-#	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "util", subconfig = sxcmd_subconfig))
+#	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "sxr_util", subconfig = sxcmd_subconfig))
+
+	# --------------------------------------------------------------------------------
+	# Check consistency between sxcmd_category_list and sxcmd_config_list
+	# --------------------------------------------------------------------------------
+	sxcmd_category_names = []
+	for sxcmd_category in sxcmd_category_list:
+		sxcmd_category_names.append(sxcmd_category.name)
+
+	for sxcmd_config in sxcmd_config_list:
+		if not sxcmd_config.category in sxcmd_category_names:
+			ERROR("Logical Error: sxcmd_config for %s is using invalid category %s." % (sxcmd_config.wiki, sxcmd_config.category), "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	# --------------------------------------------------------------------------------
 	# Generate sxgui.py
@@ -639,6 +837,10 @@ def main():
 		if current_state == state_template:
 			if line.find("# @@@@@ START_INSERTION @@@@@") != -1:
 				current_state = state_insertion
+				# Insert Command Category
+				insert_sxcmd_category_list_to_file(sxcmd_category_list, output_file)
+
+				# Insert Command List
 				sxcmd_variable_name = "sxcmd"
 				for sxcmd_config in sxcmd_config_list:
 					# Construct sxscript object associated with this wiki document
@@ -648,9 +850,6 @@ def main():
 					if len(sxcmd_config.exclude_list) > 0:
 						apply_exclude_list(sxcmd_config.exclude_list, sxcmd)
 					insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name)
-					output_file.write("\n")
-					output_file.write("\tsxcmd_list.append(%s)\n" % sxcmd_variable_name)
-					output_file.write("\n")
 			# else: do nothing
 		else:
 			if current_state != state_insertion: ERROR("Logical Error: This condition should not happen! State setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))

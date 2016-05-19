@@ -1201,7 +1201,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	if myid == main_node: log.add("Finished ali2d_base")
 
-	return params#, data
+	return params #, data
 
 '''
 def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, \
@@ -13718,11 +13718,11 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 		data.set_attr("xform.align2d", t)
 		data.write_image(stack_data_ali, im)
 
-def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1, smearstep = 0.0):
+def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI = False, xysize=-1, zsize = -1, smearstep = 0.0, trl = False, niter = 10, upweighted = False, compensate = False, chunk_id = -1):
 	if MPI:
-		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
+		if trl:   recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, niter, verbose, upweighted, compensate, chunk_id)
+		else  :   recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
 		##newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
-		###   newsrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -13804,6 +13804,267 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 			finfo.write( "result written to " + vol_stack + "\n")
 			finfo.write( "Total time: %10.3f\n" % (time()-time_start) )
 			finfo.flush()
+
+def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, niter, verbose, upweighted, compensate, chunk_id):
+	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
+	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file, info
+	from string         import replace
+	from time           import time
+	from mpi            import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD, mpi_barrier
+	from EMAN2      import Reconstructors
+	from fundamentals import fftip, fft
+	
+	myid       = mpi_comm_rank(MPI_COMM_WORLD)
+	nproc      = mpi_comm_size(MPI_COMM_WORLD)
+	mpi_comm   = MPI_COMM_WORLD
+	time_start = time()
+	nnxo = 0
+	
+	if(myid == 0):
+		nnxo = get_im(prj_stack).get_xsize()
+		print "  trilinear interpolation used in reconstruction"
+		if(listfile):
+			from utilities import read_text_file
+			pid_list = read_text_file(listfile, 0)
+			pid_list = map(int, pid_list)
+		elif(group > -1):
+			tmp_list = EMUtil.get_all_attributes(prj_stack, 'group')
+			pid_list = []
+			for i in xrange(len(tmp_list)):
+				if(tmp_list[i] == group):  pid_list.append(i)
+			del tmp_list
+		nima = len(pid_list)
+	else:
+		nima = 0
+	nima = bcast_number_to_all(nima, source_node = 0)
+	nnxo = bcast_number_to_all(nnxo, source_node = 0)
+	
+	if(listfile or group > -1):
+		if myid != 0:
+			pid_list = [-1]*nima
+		pid_list = mpi_bcast(pid_list, nima, MPI_INT, 0, MPI_COMM_WORLD)
+		pid_list = map(int, pid_list)
+	else:
+		if(not pid_list):  pid_list = range(nima)
+
+	if verbose==0:
+		finfo = None
+	else:
+		infofile = "progress%04d.txt"%(myid+1)
+		finfo = open( infofile, 'w' )
+
+	pid_list = mpi_bcast(pid_list, nima, MPI_INT, 0, MPI_COMM_WORLD)
+	pid_list = map(int, pid_list)
+	
+	image_start, image_end = MPI_start_end(nima, nproc, myid)
+	prjlist = EMData.read_images(prj_stack, pid_list[image_start:image_end])
+
+	#if myid == 0 :  print "  NEW  "
+	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)	
+	
+	nnnx = ((prjlist[0].get_ysize())*2+3)	
+
+	from utilities      import read_text_file, read_text_row, write_text_file, info, model_blank, get_im
+	from fundamentals   import fft,fshift
+	from reconstruction import insert_slices, insert_slices_pdf
+	from utilities      import reduce_EMData_to_root, model_blank
+	from filter         import filt_table
+	# reconstruction step 
+	refvol = model_blank(nnnx)
+	refvol.set_attr("fudge", 1.0)
+	if CTF: do_ctf = 1
+	else:   do_ctf = 0
+	if not (finfo is None): nimg = 0
+	
+	fftvol = EMData()
+	weight = EMData()
+	
+	params = {"size":nnnx, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
+	r = Reconstructors.get( "nn4_ctfw", params )
+	r.setup()
+	m = [1.0]*nnnx
+	is_complex = prjlist[0].get_attr("is_complex")
+	for image in prjlist:
+		if not is_complex: image = fft(image)
+		image.set_attr("padffted",1)
+		image.set_attr("npad",1)
+		image.set_attr("bckgnoise",m)
+		if not upweighted:  insert_slices_pdf(r, filt_table(image, image.get_attr("bckgnoise")) )
+		else: insert_slices_pdf(r, image)
+
+	if not (finfo is None): 
+		finfo.write( "begin reduce\n" )
+		finfo.flush()
+
+	reduce_EMData_to_root(fftvol, myid, 0, comm=mpi_comm)
+	reduce_EMData_to_root(weight, myid, 0, comm=mpi_comm)
+
+	if not (finfo is None): 
+		finfo.write( "after reduce\n" )
+		finfo.flush()
+
+	if myid == 0: dummy = r.finish(compensate)
+	mpi_barrier(mpi_comm)
+
+	if myid == 0 : # post-insertion operations, done only in main_node
+		fftvol = Util.shrinkfvol(fftvol,2)
+		weight = Util.shrinkfvol(weight,2) # reduce size 
+		if( sym != "c1" ):
+			fftvol    = fftvol.symfvol(sym, -1)
+			weight    = weight.symfvol(sym, -1)  # symmetrize if not asymmetric
+		#fftvol = Util.divn_cbyr(fftvol, weight)
+		nz     = weight.get_zsize()
+		ny     = weight.get_ysize()
+		nx     = weight.get_xsize()
+		from utilities  import tabessel
+		from morphology import notzero
+		beltab = tabessel(ny, nnxo) # iterative process
+		nwe    = notzero(weight)
+		Util.save_slices_on_disk(weight,"slices.hdf")
+		for i in xrange(niter):
+			#cvv = Util.mulreal(nwe, weight)
+			cvv = Util.read_slice_and_multiply(nwe,"slices.hdf")
+			cvv = fft(cvv)
+			Util.mul_img_tabularized(cvv, nnxo, beltab)
+			cvv = fft(cvv)
+			Util.divabs(nwe, cvv)
+		import os
+		os.system(" rm slices.hdf")
+		del  beltab
+		from morphology   import cosinemask, threshold_outside
+		from fundamentals import fshift, fpol
+		
+		nwe    = threshold_outside(nwe, 0.0, 1.0e20)
+		nx     = fftvol.get_ysize()
+		fftvol = fshift(fftvol,nx//2,nx//2,nx//2)
+		Util.mulclreal(fftvol, nwe)
+		fftvol = fft(fftvol) 
+		fftvol = Util.window(fftvol, nnxo, nnxo, nnxo)
+		fftvol = fpol(fftvol, nnxo, nnxo, nnxo, True, False)
+		fftvol = cosinemask(fftvol, nnxo//2-1,5,None)
+		fftvol.div_sinc(1)
+		fftvol.write_image(vol_stack)
+		
+def recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter, verbose, upweighted, compensate, chunk_id):
+	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
+	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file, info
+	from string         import replace
+	from time           import time
+	from mpi            import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD, mpi_barrier
+	from EMAN2      import Reconstructors
+	from fundamentals import fftip, fft
+	
+	myid       = mpi_comm_rank(MPI_COMM_WORLD)
+	nproc      = mpi_comm_size(MPI_COMM_WORLD)
+	mpi_comm   = MPI_COMM_WORLD
+	time_start = time()
+	nnxo       = 0
+	if(myid == 0): nnxo = prjlist[0].get_ysize()
+	else:          nnxo = 0
+	nnxo = bcast_number_to_all(nnxo, source_node = 0)
+	
+	if verbose==0:
+		finfo = None
+	else:
+		infofile = "progress%04d.txt"%(myid+1)
+		finfo = open( infofile, 'w' )
+
+	nnnx = ((prjlist[0].get_ysize())*2+3)
+
+	from utilities      import read_text_file, read_text_row, write_text_file, info, model_blank, get_im
+	from fundamentals   import fft,fshift
+	from reconstruction import insert_slices, insert_slices_pdf
+	from utilities      import reduce_EMData_to_root, model_blank
+	from filter         import filt_table
+	# reconstruction step 
+	refvol = model_blank(nnnx)
+	refvol.set_attr("fudge", 1.0)
+	if CTF: do_ctf = 1
+	else:   do_ctf = 0
+	if not (finfo is None): nimg = 0
+	
+	fftvol = EMData()
+	weight = EMData()
+	
+	params = {"size":nnnx, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
+	r = Reconstructors.get( "nn4_ctfw", params )
+	r.setup()
+	m = [1.0]*nnnx
+	is_complex = prjlist[0].get_attr("is_complex")
+	if chunk_id== -1:
+		for image in prjlist:
+			if not is_complex: image = fft(image)
+			image.set_attr("padffted",1)
+			image.set_attr("npad",1)
+			image.set_attr("bckgnoise",m)
+			if (image.get_attr("group") == group): 
+				if not upweighted:  insert_slices_pdf(r, filt_table(image, image.get_attr("bckgnoise")) )
+				else: insert_slices_pdf(r, image)
+	else:
+		for image in prjlist:
+			if not is_complex: image = fft(image)
+			image.set_attr("padffted",1)
+			image.set_attr("npad",1)
+			image.set_attr("bckgnoise",m)
+			if (image.get_attr("group") == group) and (image.get_attr("chunk_id") == chunk_id): 
+				if not upweighted:  insert_slices_pdf(r, filt_table(image, image.get_attr("bckgnoise")) )
+				else: insert_slices_pdf(r, image)		
+
+	if not (finfo is None): 
+		finfo.write( "begin reduce\n" )
+		finfo.flush()
+
+	reduce_EMData_to_root(fftvol, myid, 0, comm=mpi_comm)
+	reduce_EMData_to_root(weight, myid, 0, comm=mpi_comm)
+
+	if not (finfo is None): 
+		finfo.write( "after reduce\n" )
+		finfo.flush()
+
+	if myid == 0: dummy = r.finish(compensate)
+	mpi_barrier(mpi_comm)
+	dummy  = EMData()
+	if myid == 0 : # post-insertion operations, done only in main_node
+		fftvol = Util.shrinkfvol(fftvol,2)
+		weight = Util.shrinkfvol(weight,2) # reduce size 
+		if( sym != "c1" ):
+			fftvol    = fftvol.symfvol(sym, -1)
+			weight    = weight.symfvol(sym, -1)  # symmetrize if not asymmetric
+		#fftvol = Util.divn_cbyr(fftvol, weight)
+		nz     = weight.get_zsize()
+		ny     = weight.get_ysize()
+		nx     = weight.get_xsize()
+		from utilities  import tabessel
+		from morphology import notzero
+		beltab = tabessel(ny, nnxo) # iterative process
+		nwe    = notzero(weight)
+		#Util.save_slices_on_disk(weight,"slices.hdf")
+		for i in xrange(niter):
+			cvv = Util.mulreal(nwe, weight)
+			#cvv = Util.read_slice_and_multiply(nwe,weight)
+			cvv = fft(cvv)
+			Util.mul_img_tabularized(cvv, nnxo, beltab)
+			cvv = fft(cvv)
+			Util.divabs(nwe, cvv)
+		import os
+		#os.system(" rm slices.hdf")
+		del  beltab
+		from morphology   import cosinemask, threshold_outside
+		from fundamentals import fshift, fpol
+		
+		nwe    = threshold_outside(nwe, 0.0, 1.0e20)
+		nx     = fftvol.get_ysize()
+		fftvol = fshift(fftvol,nx//2,nx//2,nx//2)
+		Util.mulclreal(fftvol, nwe)
+		fftvol = fft(fftvol) 
+		fftvol = Util.window(fftvol, nnxo, nnxo, nnxo)
+		fftvol = fpol(fftvol, nnxo, nnxo, nnxo, True, False)
+		fftvol = cosinemask(fftvol, nnxo//2-1,5,None)
+		fftvol.div_sinc(1)
+		#fftvol.write_image(vol_stack)
+		return fftvol
+	else:
+		return dummy
 
 
 
@@ -18528,7 +18789,8 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		mode = "F"
 		cnx = data_nn//2+1
 		cny = cnx
-		numr = Numrinit(1, data_nn//2-2, 1, mode)
+		numr = Numrinit(1, data_nn//2-max(nwxc,nwyc)-1, 1, mode)
+		print  "  Radius Used  ",data_nn//2-max(nwxc,nwyc)-1
 		wr   = ringwe(numr, mode)
 		maxrin = numr[len(numr)-1]
 		crefim = [None]*nphi
@@ -18575,9 +18837,9 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		#exit()
 		#if myid == main_node:  
 		#astart_time = time()
+		if myid == main_node:  start_time = time()
 		terminate = 0
 		for ifil in xrange(nfils):
-			if myid == main_node:  start_time = time()
 			ldata = [data[im] for im in xrange(indcs[ifil][0],indcs[ifil][1])]
 			#for im in xrange(len(ldata)):  ldata[im].set_attr("bestang", 10000.0)
 			Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), rise, float(delta), ywobble, ystep], [int(nphi), symrestrict, int(phiwobble), int(rng), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
@@ -18614,7 +18876,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		del ldata
 		del refproj
 		if(not Dsym):  del rotproj
-		#print  "Time of alignment = ",myid,time()-astart_time
 		#mpi_barrier(MPI_COMM_WORLD)
 
 		"""
@@ -22443,11 +22704,30 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		highres = []
 		lowpass_tmp =[]
 		tmpref =[]
+		from statistics import fsc
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
-			if CTF: volref, fscc[iref] = rec3D_two_chunks_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
-			else:   volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			if Tracker["constants"]["3d-interpolation"]=="trl":
+				chunk_id   = 0
+				niter      = 10
+				upweighted = False
+				compensate = False
+				verbose    =  0
+				sign       = 1
+				volref0    = recons3d_n_trl_MPI_one_node(data, CTF, snr, sign, npad, sym, iref, niter, verbose, upweighted, compensate, chunk_id)
+				chunk_id   = 1
+				volref1    = recons3d_n_trl_MPI_one_node(data, CTF, snr, sign, npad, sym, iref, niter, verbose, upweighted, compensate, chunk_id)
+				if myid == main_node:
+					fscc[iref] = fsc(volref0, volref1)
+					volref  = volref0 + volref1
+					del volref1
+					del volref0
+				#chunk_id   = -1
+				#volref = recons3d_n_trl_MPI_one_node(data, CTF, snr, sign, npad, sym, iref, niter, verbose, upweighted, compensate, chunk_id)
+			else:
+				if CTF: volref, fscc[iref] = rec3D_two_chunks_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+				else:   volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			if myid == main_node:
 				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
@@ -22800,7 +23080,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	highres = []
 	for  iref in xrange(numref): highres.append(int(res*Tracker["nxinit"] + 0.5))
 	Tracker["lowpass"] = min(0.45, res-0.05)
-	Tracker["lowpass"] =max(0.11,res)
+	Tracker["lowpass"] = max(0.11,res)
 	Tracker["falloff"] = 0.1
 	##-----------------------------------------------
 	if myid == main_node:  ### 3-D mask, low pass filter, and power spectrum adjustment
@@ -23301,10 +23581,28 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
-			if(CTF): volref, fscc[iref] = rec3D_two_chunks_MPI(data, snr, sym, mask3D,\
-			 	os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
-			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym,mask3D,\
-			 	os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
+			if Tracker["constants"]["3d-interpolation"]=="trl":
+				chunk_id   = 0
+				niter      = 10
+				upweighted = False
+				compensate = False
+				verbose    =  0
+				sign       = 1 
+				volref0    = recons3d_n_trl_MPI_one_node(data, CTF, snr, sign, npad, sym, iref, niter, verbose, upweighted, compensate, chunk_id)
+				chunk_id   = 1
+				volref1    = recons3d_n_trl_MPI_one_node(data, CTF, snr, sign, npad, sym, iref, niter, verbose, upweighted, compensate, chunk_id)
+				if myid == main_node:
+					fscc[iref] = fsc(volref0, volref1)
+					volref = volref1+volref0
+					del volref1
+					del volref0
+				#chunk_id   = -1
+				#volref = recons3d_n_trl_MPI_one_node(data, CTF, snr, sign, npad, sym, iref, niter, verbose, upweighted, compensate, chunk_id)
+			else:
+				if(CTF): volref, fscc[iref] = rec3D_two_chunks_MPI(data, snr, sym, mask3D,\
+					os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
+				else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym,mask3D,\
+					os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
 			if(myid == 0):
 				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
@@ -23504,10 +23802,8 @@ def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker)
 	user_func_name      = Tracker["constants"]["user_func"]
 	Tracker["lowpass"]  = Tracker["low_pass_filter"]
 	Tracker["falloff"]  = .1
-	if Tracker["constants"]["PWadjustment"]:
-		Tracker["PWadjustment"] = Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
-	else:
-		Tracker["PWadjustment"] = None	
+	if Tracker["constants"]["PWadjustment"]: Tracker["PWadjustment"] = Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
+	else:                                    Tracker["PWadjustment"] = None	
 	####################################################
 	from time import sleep
 	#Tracker["applyctf"] = True # 

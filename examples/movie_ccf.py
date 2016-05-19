@@ -11,14 +11,24 @@ from time import sleep,time
 
 BOX=256
 STEP=256
-NTHREADS=28
+#NTHREADS=28
 VERBOSE=1
 DOFSC=0
 
-if len(argv)>2 :
-	normimg=EMData(argv[2])
-	print "Normalizing with ",argv[2]
+if len(argv)<3 :
+	print """Usage:
+	movie_ccf <movie stack> <num threads> [gain norm img]
+
+Will align a movie stack using all-vs-all CCFs with a global optimization strategy. Several outputs
+including different frame subsets are produced, as well as a text file with the translation vector map.
+"""
+
+if len(argv)>3 :
+	normimg=EMData(argv[3])
+	print "Normalizing with ",argv[3]
 else: normimg=None
+
+NTHREADS=int(argv[2])
 
 data=EMData.read_images(argv[1])
 if normimg!=None:

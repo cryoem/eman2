@@ -19069,24 +19069,21 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 	float edis = 0.0f;
 
 	for (size_t i=0;i<size/2;++i) {
-		int lol = i*2;
-		float p1 = data[lol]   - dctfs[i]*dproj[lol];
-		float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
-		edis += (p1*p1 + p2*p2)*pbckgnoise[i]*0.5f;
+		if( pbckgnoise[i] > 0.0f ) {
+			int lol = i*2;
+			float p1 = data[lol]   - dctfs[i]*dproj[lol];
+			float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
+			edis += (p1*p1 + p2*p2)*pbckgnoise[i];
+		}
 	}
-
+	edis *= 0.5f;
     return edis;
 	EXITFUNC;
 }
 
 
 
-#define data(ix,iy)          data[jx2 + (iy-1)*2*nx]
-#define dproj(ix,iy)         dproj[jx2 + (iy-1)*2*nx]
-#define dctfs(jx,iy)         dctfs[jx+(iy-1)*nx]
-#define bckg(jx,iy)          bckg[jx+(iy-1)*nx]
-#define nrm(rf,kt)           nrm[rf+kt*inc]
-float Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
+vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
 {
 	ENTERFUNC;
 	int nx=img->get_xsize(), ny=img->get_ysize();
@@ -19105,40 +19102,39 @@ float Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise
 	}
 	float* nrm = normas->get_data();
 
-    float argy, argx;
+    float wdis = 0.0;
     float edis = 0.0;
 	for ( int iy = 1; iy <= ny; iy++) {
-		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		int jy=iy-1;
+		if (jy>nyp2) jy=jy-ny;
+		float argy = float(jy*jy);
 		for ( int ix = 1; ix <= nx; ix++) {
-			int jx=ix-1; argx = argy + float(jx*jx);
-			int rf = Util::round(sqrt( argx ));
-			int jx2 = 2*jx;
-			//int kt = 1;
-			//cout<<"  "<<ix<<"  "<<iy<<"  "<<jx<<"  "<<jy<<"  "<<jx2 + (iy-1)*2*nx<<"  "<<jx+(iy-1)*nx<<"  "<<rf<<"  "<<rf+(kt-1)*inc<<endl;
-			float  qtr = dctfs(jx,iy)*dproj(jx2,iy);
-			float  qti = dctfs(jx,iy)*dproj(jx2+1,iy);
-			float  prod1 = data(jx2,iy) * qtr + data(jx2+1,iy) * qti;
-			float  prod2 = qtr*qtr + qti*qti;
-			float  normim = data(jx2,iy)*data(jx2,iy) + data(jx2+1,iy)+data(jx2+1,iy);  // precalculate
-			edis += (normim - 2*prod1 + prod2)*bckg(jx,iy)*0.5f;
-			// edis += pow(data(jx2,iy)   - dctfs(jx,iy)*dproj(jx2,iy), 2)*bckg(jx,iy);   //real
-			// edis += pow(data(jx2+1,iy) - dctfs(jx,iy)*dproj(jx2+1,iy), 2)*bckg(jx,iy); // imaginary
-			if( bckg(jx,iy) > 0.0 )  {
-				nrm(rf,0) += prod1*prob;
-				nrm(rf,1) += prod2*prob;
+			int jx=ix-1;
+			if( bckg[jx+(iy-1)*nx] > 0.0f ) {
+				int rf = Util::round(sqrt( argy + float(jx*jx) ));
+				int jx2 = 2*jx;
+				//int kt = 1;
+				//cout<<"  "<<ix<<"  "<<iy<<"  "<<jx<<"  "<<jy<<"  "<<jx2 + (iy-1)*2*nx<<"  "<<jx+(iy-1)*nx<<"  "<<rf<<"  "<<rf+kt*inc<<endl;
+				float  qtr = dctfs[jx+(iy-1)*nx] * dproj[jx2 + (iy-1)*2*nx];
+				float  qti = dctfs[jx+(iy-1)*nx] * dproj[jx2+1 + (iy-1)*2*nx];
+				float  prod1 = data[jx2 + (iy-1)*2*nx] * qtr + data[jx2+1 + (iy-1)*2*nx] * qti;
+				float  prod2 = qtr*qtr + qti*qti;
+				float  normim = data[jx2 + (iy-1)*2*nx]*data[jx2 + (iy-1)*2*nx] + data[jx2+1 + (iy-1)*2*nx]*data[jx2+1 + (iy-1)*2*nx];  // precalculate
+				float  temp = normim - 2*prod1 + prod2;
+				edis += temp*bckg[jx+(iy-1)*nx]*0.5f;
+				wdis += temp;
+				nrm[rf] += prod1*prob;
+				nrm[rf+inc] += prod2*prob;
 			}
 		}
 	}
-
-    return edis;
+	wdis *= prob;
+	vector<float> retvals;
+	retvals.push_back(edis);
+	retvals.push_back(wdis);
+    return retvals;
 	EXITFUNC;
 }
-#undef data
-#undef dproj
-#undef dctfs
-#undef bckg
-#undef nrm
-
 
 
 void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq)
@@ -25776,3 +25772,65 @@ vector<float> Util::max_sum_along_line_in_nd_array(EMData* em_data, const vector
 	return result;
 }
 
+void Util::save_slices_on_disk(EMData* vol, const string stacked_slices_out) {
+
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	int new_nx= nx, new_ny =ny;
+
+	if (nz == 1)
+		throw ImageDimensionException("Error: Input must be a 3-D object");
+
+	EMData *slice = new EMData();
+	slice->set_size(new_nx, new_ny, 1);
+	float *slice_data = slice->get_data();
+    for (int index =0; index<nz; index++)
+     { 
+		for (int x=0; x<new_nx; x++)
+			{
+				for (int y=0; y<new_ny; y++)
+					slice_data[y*new_nx+x] = vol_data[((size_t)index*ny+y)*nx+x];
+			}
+		slice->write_image(stacked_slices_out, index);
+     }
+     delete slice;
+}
+
+EMData* Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_in) {
+
+	ENTERFUNC;
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	//  read stacked slices
+	EMData *image_slice = new EMData();
+	image_slice->read_image(stacked_slices_in, 0);
+	float * slice_data = image_slice->get_data();
+	EMData *vol2 = new EMData();
+	vol2->set_size(nx*2, ny, nz);
+	vol2->to_zero();
+	float *vol2_data = vol2->get_data();
+	int snx = image_slice->get_xsize();
+	int sny = image_slice->get_ysize();
+	int snz = EMUtil::get_image_count(stacked_slices_in);
+	if ((snz != nz) ||(sny != ny) || (snx != nx)) throw ImageDimensionException("Error: two images have different dimensions");
+
+	for (size_t i =0; i<(nx*ny*nz); i++)  {
+		int index_slice =int(i/(nx*ny));
+		if (i%(nx*ny) ==0)  {
+			 image_slice->read_image(stacked_slices_in, index_slice);
+			 float * slice_data = image_slice->get_data();
+		}
+		vol2_data[i*2] = vol_data[i]*slice_data[i-index_slice*nx*ny];
+	 }
+	 vol2->set_complex(true);
+	 vol2->set_ri(true);
+	 if(ny%2==0) vol2->set_fftodd(false); else vol2->set_fftodd(true);
+	 vol2->update();
+	 delete image_slice;
+	 EXITFUNC;
+	 return vol2;	
+}
