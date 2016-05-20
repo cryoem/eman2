@@ -44,7 +44,7 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
 
 
 == Input ==
-    stack_file:: Input image stack: The images must to be square (''nx''=''ny''). The stack can be either in bdb or hdf formats. (default required string)
+    stack_file:: Input image stack: The images must to be square (''nx''=''ny''). The stack can be either in bdb or hdf format. (default required string)
     
     radius:: Particle radius [Pixels]: Radius of the particle (pixels) (default required int)
     img_per_grp:: Images per class: Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes. (default 100)

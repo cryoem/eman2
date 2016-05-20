@@ -94,13 +94,15 @@ def construct_token_list_from_wiki(sxcmd_config):
 	#                     GUI abort the execution if the directory/file exists already
 	# - image           : Line edit box for formatted string type, and open file buttons for .hdf and .bdb
 	# - any_image       : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .bdb
+	# - any_micrograph  : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .txt
 	# - parameters      : Line edit box for formatted string type, and open file button for all file types
-	# - txt             : Line edit box for formatted string type, and open file button for .txt
 	# - any_file        : Line edit box for formatted string type, and open file button for all file types
 	# - bdb             : Line edit box for formatted string type, and open file button for .bdb
+	# - hdf             : Line edit box for formatted string type, and open file button for .hdf
 	# - pdb             : Line edit box for formatted string type, and open file button for .pdb
 	# - mrc             : Line edit box for formatted string type, and open file button for .mrc
-	# - any_file_list   : Line edit box for formatted string type, and open file button for all file types
+	# - txt             : Line edit box for formatted string type, and open file button for .txt
+	# - any_file_list   : Line edit box for formatted string type, and open file button for all file types and .bdb
 	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
 	# - any_image_list  : Line edit box for formatted string type, and open file button for all file types (also mrc, tiff, and etc) and .bdb.
 	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
@@ -139,18 +141,18 @@ def construct_token_list_from_wiki(sxcmd_config):
 	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")          # --focus=3Dmask
 	keyword_dict["--input"]                       = SXkeyword_map(2, "image")          # --input=INPUT
 	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern
-	keyword_dict["input_image"]                   = SXkeyword_map(2, "any_image")      # input_image
+	keyword_dict["input_image"]                   = SXkeyword_map(2, "any_micrograph") # input_image
 	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters")     # --tr0=matrix_file
 	keyword_dict["input_coordinates"]             = SXkeyword_map(2, "parameters")     # input_coordinates_pattern
 	keyword_dict["--import_ctf"]                  = SXkeyword_map(2, "parameters")     # --import_ctf=ctf_file
 	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
-	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "parameters")     # cter_ctf_file
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
 	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
 	keyword_dict["unblur"]                        = SXkeyword_map(2, "any_file")       # unblur
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
 	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
+	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "txt")            # cter_ctf_file
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
 	keyword_dict["--chunkdir"]                    = SXkeyword_map(2, "directory")      # --chunkdir=chunkdir
@@ -393,6 +395,10 @@ def construct_token_list_from_wiki(sxcmd_config):
 		assert(sxcmd.token_dict["wn"].key_base == "wn")
 		assert(sxcmd.token_dict["wn"].type == "ctfwin")
 		sxcmd.token_dict["wn"].type = "int"
+	elif sxcmd.name in ["sxrviper"]:
+		assert(sxcmd.token_dict["stack"].key_base == "stack")
+		assert(sxcmd.token_dict["stack"].type == "image")
+		sxcmd.token_dict["stack"].type = "hdf"
 
 	print "Succeed to parse Wiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
