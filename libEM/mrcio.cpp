@@ -120,14 +120,14 @@ void MrcIO::init()
 			throw ImageReadException(filename, "invalid MRC");
 		}
 
-		for (int ilabel = 0; ilabel < mrch.nlabels; ilabel++) {
-			Util::replace_non_ascii(mrch.labels[ilabel], MRC_LABEL_SIZE);
-		}
-
 		is_big_endian = ByteOrder::is_data_big_endian(&mrch.nz);
 
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
 			swap_header(mrch);
+		}
+
+		for (int ilabel = 0; ilabel < std::min(mrch.nlabels,int(MRC_NUM_LABELS)); ilabel++) {
+			Util::replace_non_ascii(mrch.labels[ilabel], MRC_LABEL_SIZE);
 		}
 
 		// become_host_endian((int *) &mrch, NUM_4BYTES_PRE_MAP);
