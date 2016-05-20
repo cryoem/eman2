@@ -126,7 +126,9 @@ void MrcIO::init()
 			swap_header(mrch);
 		}
 
-		for (int ilabel = 0; ilabel < std::min(mrch.nlabels,int(MRC_NUM_LABELS)); ilabel++) {
+		int max_labels = Util::get_min(mrch.nlabels, (int) MRC_NUM_LABELS);
+
+		for (int ilabel = 0; ilabel < max_labels; ilabel++) {
 			Util::replace_non_ascii(mrch.labels[ilabel], MRC_LABEL_SIZE);
 		}
 
