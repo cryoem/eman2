@@ -14,7 +14,11 @@ sxcter.py  input_image  output_directory  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE
 sxcter exists in for both MPI and non-MPI versions.
 
 
-    Multi-Micrograph Mode - Processes a set of micrographs:: Specify a list of input micrographs and their corresponding coordinates using wild card (e.g. *). Running from the command line requires enclosing the string by single quotes (') or double quotes ("). sxgui.py will automatically adds single quotes to the string (').  BDB stacks can not be used as input.
+    Multi-Micrograph Mode - Processes a set of micrographs in a list file or in a directory:: Specify a micrograph list file name (e.g. output of sxgui_unblur.py or sxgui_cter.py) and output directory as arguments. The file extension must be ".txt".
+
+    ''' mpirun -np 16 sxcter.py mic_list.txt outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI ''' <<BR>><<BR>>
+
+    Alternatively, specify a list of input micrographs and their corresponding coordinates using wild card (e.g. *). Running from the command line requires enclosing the string by single quotes (') or double quotes ("). sxgui.py will automatically adds single quotes to the string (').  BDB stacks can not be used as input.
 
     ''' mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI ''' <<BR>><<BR>>
 
@@ -28,7 +32,7 @@ sxcter exists in for both MPI and non-MPI versions.
 
 
 == Input ==
-    input_image:: Input micrographs: Wild cards (e.g. *) can be used to specify the list of micrographs for the multi-micrograph mode. A particle stack can also be supplied with --stack_mode, but this mode is not supported by sxgui.  (default required string)
+    input_image:: Input micrographs: For the multi-micrograph mode, specify micrograph list file name or file name pattern with a wild card (i.e. *). A particle stack can also be supplied with --stack_mode, but this mode is not supported by sxgui.  (default required string)
     
     wn:: CTF window size [Pixels]: It should be slightly larger than particle box size. This is ignored in the stack mode. (default 512)
     apix:: Pixel size [A]: (default -1.0)

@@ -837,11 +837,11 @@ class SXCmdWidget(QWidget):
 			# Use relative path.
 			if file_path:
 				file_path = os.path.relpath(file_path)
-		elif file_format == "mrc":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", "", "MRC files (*.mrc)", options = QFileDialog.DontUseNativeDialog))
-			# Use relative path.
-			if file_path:
-				file_path = os.path.relpath(file_path)
+#		elif file_format == "mrc":
+#			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", "", "MRC files (*.mrc)", options = QFileDialog.DontUseNativeDialog))
+#			# Use relative path.
+#			if file_path:
+#				file_path = os.path.relpath(file_path)
 		elif file_format == "any_file_list" or file_format == "any_image_list":
 			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", "", "All files (*.*)", options = QFileDialog.DontUseNativeDialog)
 			# Use relative path.
@@ -1173,12 +1173,18 @@ class SXCmdTab(QWidget):
 							temp_btn.setToolTip("Display open file dailog to select parameter file (e.g. .txt)")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
+						elif cmd_token.type == "txt":
+							file_format = "txt"
+							temp_btn = QPushButton("Select .%s" % file_format)
+							temp_btn.setToolTip("Display open file dailog to select .%s parameter file" % file_format)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span* 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 						elif cmd_token.type == "any_file":
 							temp_btn = QPushButton("Select File")
 							temp_btn.setToolTip("Display open file dailog to select file (e.g. *.*)")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
-						elif cmd_token.type == "Directory":
+						elif cmd_token.type == "directory":
 							temp_btn = QPushButton("Select directory")
 							temp_btn.setToolTip("Display select directory dailog")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
@@ -2004,7 +2010,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.mode = ""; sxcmd.label = "CTF Estimation"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_ctf"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "input_image"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "Wild cards (e.g. *) can be used to specify the list of micrographs for the multi-micrograph mode. A particle stack can also be supplied with --stack_mode, but this mode is not supported by sxgui.  "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_image"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "For the multi-micrograph mode, specify micrograph list file name or file name pattern with a wild card (i.e. *). A particle stack can also be supplied with --stack_mode, but this mode is not supported by sxgui.  "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The CTF parameters (partres file), rotationally averaged power spectra (rotinf), and micrograph thumbnails (thumb files) will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "CTF window size [Pixels]"; token.help = "It should be slightly larger than particle box size. This is ignored in the stack mode. "; token.group = "main"; token.is_required = False; token.default = "512"; token.restore = "512"; token.type = "ctfwin"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "-1.0"; token.restore = "-1.0"; token.type = "apix"; sxcmd.token_list.append(token)
@@ -2048,8 +2054,9 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_list.append(sxcmd)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.mode = ""; sxcmd.label = "Particle Extraction"; sxcmd.short_info = "Create a particle stack from a list of micrographs and particle coordinates."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "Wild cards (e.g. *) can be used to specify the list of micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_coordinates_pattern"; token.key_prefix = ""; token.label = "Input coordinates files"; token.help = "Wild cards (e.g. *) can be used to specify a list of coordinates for the corresponding micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_micrograph_list_file"; token.key_prefix = ""; token.label = "Input micrograph list file"; token.help = "Extension of input micrograph list file must be '.txt'. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "txt"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrograph name pattern"; token.help = "Please use wild cards (e.g. *) to specify the name pattern of the micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_coordinates_pattern"; token.key_prefix = ""; token.label = "Input coordinates name pattern"; token.help = "Please use wild cards (e.g. *) to specify a name pattern of coordinates corresponding to the micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "coordinates_format"; token.key_prefix = "--"; token.label = "Coordinate file format"; token.help = "Allowed values are 'sparx', 'eman1', 'eman2', or 'spider'. sparx, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. "; token.group = "main"; token.is_required = False; token.default = "eman1"; token.restore = "eman1"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "Particle box size [Pixels]"; token.help = "The pixel size is automatically recalculated when resample_ratio < 1.0 is used. "; token.group = "main"; token.is_required = False; token.default = "256"; token.restore = "256"; token.type = "box"; sxcmd.token_list.append(token)

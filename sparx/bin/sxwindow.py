@@ -65,12 +65,16 @@ def check_options(options, progname):
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + """  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --invert  --import_ctf=ctf_file  --limit_ctf  --resample_ratio=resample_ratio  --defocus_error=defocus_error  --astigmatism_error=astigmatism_error
+	usage = progname + """  input_micrograph_list_file  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --invert  --import_ctf=ctf_file  --limit_ctf  --resample_ratio=resample_ratio  --defocus_error=defocus_error  --astigmatism_error=astigmatism_error
 	
-Window particles from a micrograph. The coordinates of the particles should be given as input.
-Specify name pattern of input micrographs and coordinates files with wild card (*) enclosed by single quotes (') or double quotes (") 
-(Note: sxgui.py automatically adds single quotes (')). Use the wild card (*) to specify the place of micrograph ID (e.g. serial number, time stamp, and etc). 
+Window particles from micrographs in input list file. The coordinates of the particles should be given as input.
+Please specify name pattern of input micrographs and coordinates files with a wild card (*). Use the wild card to indicate the place of micrograph ID (e.g. serial number, time stamp, and etc). 
+The name patterns must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). 
 BDB files can not be selected as input micrographs.
+	
+	sxwindow.py  mic_list.txt  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt
+	
+If micrograph list file name is not provided, all files matched with the micrograph name pattern will be processed.
 	
 	sxwindow.py  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt
 	
@@ -104,27 +108,42 @@ BDB files can not be selected as input micrographs.
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
+	mic_list_file_path = None
+	mic_pattern = None
+	coords_pattern = None
 	error_status = None
 	while True:
-		if len(args) != 3:
+		if len(args) < 3 or len(args) > 4:
 			error_status = ("Please check usage for number of arguments.\n Usage: " + usage + "\n" + "Please run %s -h for help." % (progname), getframeinfo(currentframe()))
 			break
 		
-		mic_pattern = args[0]
+		if len(args) == 3:
+			mic_pattern = args[0]
+			coords_pattern = args[1]
+			out_dir = args[2]
+		else: # assert(len(args) == 4)
+			mic_list_file_path = args[0]
+			mic_pattern = args[1]
+			coords_pattern = args[2]
+			out_dir = args[3]
+		
+		if mic_list_file_path != None:
+			if os.path.splitext(mic_list_file_path)[1] != ".txt":
+				error_status = ("Extension of input micrograph list file must be \".txt\". Please check input_micrograph_list_file argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
+				break
+		
 		if mic_pattern[:len("bdb:")].lower() == "bdb":
 			error_status = ("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (progname), getframeinfo(currentframe()))
 			break
-
+		
 		if mic_pattern.find("*") == -1:
 			error_status = ("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
 			break
-
-		coords_pattern = args[1]
+		
 		if coords_pattern.find("*") == -1:
 			error_status = ("Input coordinates file name pattern must contain wild card (*). Please check input_coordinates_pattern argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
 			break
-
-		out_dir = args[2]
+		
 		if myid == main_node:
 			if os.path.exists(out_dir):
 				error_status = ("Output directory exists. Please change the name and restart the program.", getframeinfo(currentframe()))
@@ -139,9 +158,12 @@ BDB files can not be selected as input micrographs.
 	mic_name_list = None
 	error_status = None
 	if myid == main_node:
-		mic_name_list = glob.glob(mic_pattern)
+		if mic_name_list != None:
+			mic_name_list = read_text_file(mic_list_file_path)
+		else:
+			mic_name_list = glob.glob(mic_pattern)
 		if len(mic_name_list) == 0:
-			error_status = ("No micrograph file is found. Please check input_micrograph_pattern argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
+			error_status = ("No micrograph file is found. Please check input_micrograph_pattern and/or input_micrograph_list_file argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
 	if_error_then_all_processes_exit_program(error_status)
 	if RUNNING_UNDER_MPI:
 		mic_name_list = wrap_mpi_bcast(mic_name_list, main_node)
@@ -266,7 +288,6 @@ BDB files can not be selected as input micrographs.
 		# Loop over serial IDs of micrographs
 		for serial_id in serial_id_list:
 			# mic_basename is name of micrograph minus the path and extension
-			# Here, assuming micrograph and coordinates have the same file basename
 			mic_basename = mic_basename_pattern.replace("*", serial_id)
 			mic_name = mic_pattern.replace("*", serial_id)
 			coords_name = coords_pattern.replace("*", serial_id)

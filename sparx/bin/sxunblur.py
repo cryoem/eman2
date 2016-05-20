@@ -91,7 +91,7 @@ def main():
     parser.add_option('--voltage',                         type='float',                    default=300.0,                    help='accelerate voltage [kV]')
     parser.add_option('--pre_exposure',                type='float',                    default=0.0,                       help='pre exposure amount [e/A^2]')
     parser.add_option('--save_frames',                  action='store_true',        default=False,                     help='save aligned frames')
-    parser.add_option('--frames_suffix',                type='string',                  default='_sum_frames',       help=SUPPRESS_HELP)
+    parser.add_option('--frames_suffix',                type='string',                  default='_frames',       help=SUPPRESS_HELP)
     parser.add_option('--expert_mode',                 action='store_true',        default=False,                    help='set expert mode settings')
     parser.add_option('--frc_suffix',                       type='string',                  default='_frc',                     help=SUPPRESS_HELP)
     parser.add_option('--shift_initial',                    type='float',                   default=2.0,                        help='minimum shift for inital search [A]')
@@ -167,14 +167,18 @@ def main():
         input_dir = ''
 
     # Create output directorys
-    mkdir('{:s}'.format(output_dir))
-    if not path.exists('{:s}/Micrographs'.format(output_dir)):
-        mkdir('{:s}/Micrographs'.format(output_dir))
+    if not path.exists('{:s}'.format(output_dir)):
+        mkdir('{:s}'.format(output_dir))
+    if not path.exists('{:s}/Doseuncorrected'.format(output_dir)):
+        mkdir('{:s}/Doseuncorrected'.format(output_dir))
     if not path.exists('{:s}/Shift'.format(output_dir)):
         mkdir('{:s}/Shift'.format(output_dir))
     if not path.exists('{:s}/Filtered'.format(output_dir)) \
             and options.filter_sum:
         mkdir('{:s}/Filtered'.format(output_dir))
+    if not path.exists('{:s}/Dosecorrected'.format(output_dir)) \
+            and options.dose_filter:
+        mkdir('{:s}/Dosecorrected'.format(output_dir))
     if not path.exists('{:s}/FRC'.format(output_dir)) \
             and options.expert_mode:
         mkdir('{:s}/FRC'.format(output_dir))
@@ -211,12 +215,15 @@ def create_sh_script(
             )
 
         # Create folders
-        strSh += 'mkdir {:s}/Micrographs\n'.format(output_dir)
+        strSh += 'mkdir {:s}/Doseuncorrected\n'.format(output_dir)
 
         strSh += 'mkdir {:s}/Shift\n'.format(output_dir)
 
         if options.filter_sum:
             strSh += 'mkdir {:s}/Filtered\n'.format(output_dir)
+
+        if options.dose_filter:
+            strSh += 'mkdir {:s}/Dosecorrected\n'.format(output_dir)
 
         if options.expert_mode:
             strSh += 'mkdir {:s}/FRC\n'.format(output_dir)
@@ -233,7 +240,7 @@ def create_sh_script(
         # Remove some temporary files that unblur makes
         strSh += 'rm .UnBlur*\n'
 
-        # Start Unblur
+        # Start Unblur without dose correction
         strSh += '{:s} << eof\n'.format(unblur_path)
 
         # Input File
@@ -241,7 +248,7 @@ def create_sh_script(
         # Number of Frames
         strSh += '{:d}\n'.format(options.nr_frames)
         # Sum File
-        strSh += '{:s}/Micrographs/${{baseName}}{:s}.mrc\n'.format(
+        strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}.mrc\n'.format(
             output_dir,
             options.sum_suffix
             )
@@ -253,24 +260,14 @@ def create_sh_script(
         # Pixel Size
         strSh += '{:f}\n'.format(options.pixel_size)
 
-        if options.dose_filter:
-            # Say yes to Dose Filtering
-            strSh += 'YES\n'
-            # Exposure per Frame
-            strSh += '{:f}\n'.format(options.exposure_per_frame)
-            # Acceleration Voltage
-            strSh += '{:f}\n'.format(options.voltage)
-            # Pre Exposure
-            strSh += '{:f}\n'.format(options.pre_exposure)
-        else:
-            # Say no to Dose Filtering
-            strSh += 'NO\n'
+        # Say no to Dose Filtering
+        strSh += 'NO\n'
 
         if options.save_frames:
             # Say yes to Save Frames
             strSh += 'YES\n'
             # Frames file
-            strSh += '{:s}/Micrographs/${{baseName}}{:s}.mrc\n'.format(
+            strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}.mrc\n'.format(
                 output_dir,
                 options.frames_suffix
                 )
@@ -320,6 +317,93 @@ def create_sh_script(
 
         # Enf of file reached
         strSh += 'eof\n\n'
+
+        # =========== #
+        if options.dose_filter:
+
+            # Start Unblur with dose correction
+            strSh += '{:s} << eof\n'.format(unblur_path)
+
+            # Input File
+            strSh += 'tempUnblur.mrc\n'
+            # Number of Frames
+            strSh += '{:d}\n'.format(options.nr_frames)
+            # Sum File
+            strSh += '{:s}/Dosecorrected/${{baseName}}{:s}.mrc\n'.format(
+                output_dir,
+                options.sum_suffix
+                )
+            # Shift File
+            strSh += '{:s}/Shift/${{baseName}}{:s}.txt\n'.format(
+                output_dir,
+                options.shift_suffix
+                )
+            # Pixel Size
+            strSh += '{:f}\n'.format(options.pixel_size)
+
+            # Say yes to Dose Filtering
+            strSh += 'YES\n'
+            # Exposure per Frame
+            strSh += '{:f}\n'.format(options.exposure_per_frame)
+            # Acceleration Voltage
+            strSh += '{:f}\n'.format(options.voltage)
+            # Pre Exposure
+            strSh += '{:f}\n'.format(options.pre_exposure)
+
+            if options.save_frames:
+                # Say yes to Save Frames
+                strSh += 'YES\n'
+                # Frames file
+                strSh += '{:s}/Dosecorrected/${{baseName}}{:s}.mrc\n'.format(
+                    output_dir,
+                    options.frames_suffix
+                    )
+            else:
+                # Say no to Save Frames
+                strSh += 'NO\n'
+
+            if options.expert_mode:
+                # Say yes to Expert Mode
+                strSh += 'YES\n'
+                # FRC File
+                strSh += '{:s}/FRC/${{baseName}}{:s}.txt\n'.format(
+                    output_dir,
+                    options.frc_suffix
+                    )
+                # Minimum Shift for initial search
+                strSh += '{:f}\n'.format(options.shift_initial)
+                # Outer Radius Shift Limit
+                strSh += '{:f}\n'.format(options.shift_radius)
+                # B-Factor to Apply
+                strSh += '{:f}\n'.format(options.b_factor)
+                # Half-Width Vertical
+                strSh += '{:d}\n'.format(options.fourier_vertical)
+                # Hald-Width Horizontal
+                strSh += '{:d}\n'.format(options.fourier_horizontal)
+                # Termination Shift Threshold
+                strSh += '{:f}\n'.format(options.shift_threshold)
+                # Maximum Iterations
+                strSh += '{:d}\n'.format(options.iterations)
+                # Restore Noise Power
+                if options.restore_noise:
+                    # Say yes to Restore Noise Power
+                    strSh += 'YES\n'
+                else:
+                    # Say no to Restore Noise Power
+                    strSh += 'NO\n'
+                # Verbose Output
+                if options.verbose:
+                    # Say yes to Verbose Output
+                    strSh += 'YES\n'
+                else:
+                    # Say no to Verbose Output
+                    strSh += 'NO\n'
+            else:
+                # Say no to Expert Mode
+                strSh += 'NO\n'
+
+            # Enf of file reached
+            strSh += 'eof\n\n'
 
         # Remove temporary file
         strSh += 'rm tempUnblur.mrc\n'
