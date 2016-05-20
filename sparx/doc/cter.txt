@@ -32,7 +32,7 @@ sxcter exists in for both MPI and non-MPI versions.
 
 
 == Input ==
-    input_image:: Input micrographs: For the multi-micrograph mode, specify micrograph list file name or file name pattern with a wild card (i.e. *). A particle stack can also be supplied with --stack_mode, but this mode is not supported by sxgui.  (default required string)
+    input_image:: Input micrographs: For the multi-micrograph mode, specify micrograph list file name or file name pattern with a wild card (i.e. *). A particle stack can also be supplied with --stack_mode, but this mode is not supported by sxgui. Images of bdb format can not be used. (default required string)
     
     wn:: CTF window size [Pixels]: It should be slightly larger than particle box size. This is ignored in the stack mode. (default 512)
     apix:: Pixel size [A]: (default -1.0)
