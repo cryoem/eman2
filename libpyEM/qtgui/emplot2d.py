@@ -366,6 +366,7 @@ class EMPlot2DWidget(EMGLWidget):
 			self.set_data(data,filename,quiet=quiet)
 		else:
 			try:
+				# this should probably be replaced with something more flexible
 				fin=file(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
@@ -1906,6 +1907,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		lsx={}
 
 		nums=set()
+		outs=[]
 		for name in names:
 			try: num=int(name.rsplit("_",1)[1])
 			except:
@@ -1916,7 +1918,8 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				return
 			nums.add(num)
 
-			out=LSXFile("sets/{}_{}.lst".format(self.wspfix.getValue(),num))
+			outs.append("sets/{}_{}.lst".format(self.wspfix.getValue(),num))
+			out=LSXFile(outs[-1])
 
 			try: comments=self.target().comments[name]
 			except:
@@ -1924,7 +1927,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				return
 
 			for r in xrange(len(comments)):
-				try: imn,imf=comments[r].split(";")
+				try: imn,imf=comments[r].split(";")[:2]
 				except:
 					QtGui.QMessageBox.warning(self,"Error", "Invalid filename {} in {}, line {}".format(comments[r],name,r))
 					return
@@ -1934,6 +1937,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				val=lsx[imf][imn]
 				out[r]=val
 
+		QtGui.QMessageBox.information(None,"Finished","New sets created: "+", ".join(outs))
 
 	def doKMeans(self):
 		"""Performs K-means classification, and produces nseg new data sets"""
