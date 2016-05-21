@@ -32,7 +32,7 @@ for structures that have symmetries:
     fl:: Low-pass filter frequency [1/Pixel]: Filter to be applied to the images prior to variability calculation. By default, no filtering. (default 0.0)
     aa:: Low-pass filter fall-off: Filter to be applied to the images prior to variability calculation. By default, no filtering. (default 0.0) 
     CTF:: Use CTF: If set to true, the a CTF correction will be applied using the parameters found in the image headers. (default False) 
-    img_per_grp:: Number of projections: from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. (default 10)
+    img_per_grp:: Number of projections: Images from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. (default 10)
     symmetrize:: Symmetrise input stack: Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. (default False)
     sym:: Point-group symmetry: Only required if the structure has symmetry higher than c1. Notice this step can be run with only one CPU and there is no MPI version for it. (default c1)
 

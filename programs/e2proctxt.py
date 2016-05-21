@@ -43,6 +43,7 @@ Simple manipulations of text files conatining multi-column data, as would be use
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
 	parser.add_argument("--merge",type=str,help="Merge several files into a single output. All inputs must have the same number of rows. Row comments stripped.",default=None)
+	parser.add_argument("--sortcomment",action="store_true",default=False,help="Sorts rows based on per-row comment (after #) before merging")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -63,27 +64,35 @@ Simple manipulations of text files conatining multi-column data, as would be use
 			fin=open(filename,"r")
 			data=[]
 			for line in fin:
-				if "#" in line : line=line.split("#")[0].strip()
+				if "#" in line : 
+					comment=line.split("#")[1].strip()
+					line=line.split("#")[0].strip()
 				if len(line)==0 : continue
 				if "," in line : line=line.split(",")
 				elif ";" in line : line=line.split(";")
 				else : line=line.split()
+				if options.sortcomment : line.insert(0,comment)
 				data.append(line)
+			
+			if options.sortcomment:
+				data.sort()
+				data=[i[1:] for i in data]
 				
 			data_sets.append(data)
 			
 		# merge all of the columns into data_sets[0]
-		for i in range(len(args-1)):
+		for i in range(len(args)-1):
 			if len(data_sets[i])!=len(data_sets[i+1]) :
 				print "Error: {} has {} rows and {} has {}".format(args[i],len(data_sets[i]),args[i+1],len(data_sets[i]))
 				sys.exit(1)
 			
 			for row in xrange(len(data_sets[i+1])): 
-				data_sets[0][row].extend(data_sets[i][row])
+				data_sets[0][row].extend(data_sets[i+1][row])
 
 		out=open(options.merge,"w")
 		for row in data_sets[0]:
 			out.write("\t".join(row))
+			out.write("\n")
 			
 
 	E2end(logid)

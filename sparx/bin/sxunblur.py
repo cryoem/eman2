@@ -318,6 +318,8 @@ def create_sh_script(
         # Enf of file reached
         strSh += 'eof\n\n'
 
+        strSh += 'rm .UnBlur*\n\n'
+
         # =========== #
         if options.dose_filter:
 

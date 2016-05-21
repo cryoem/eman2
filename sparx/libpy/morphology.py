@@ -2093,7 +2093,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50 , edge_x = 0, edge_y = 0, set_ctf_header = False, MPI = False, stack_mode = False, debug_mode = False):
 	"""
 	Arguments
-		input_image       : micrograph file name pattern ('Micrographs/mic*.mrc'), single micrograph file name ('Micrographs/mic0.mrc'), or particle stack file name ('bdb:stack'; must be stack_mode = True).
+		input_image       : micrograph list file name (e.g. mic_list.txt), micrograph file name pattern (e.g. 'Micrographs/mic*.mrc'), single micrograph file name (e.g. 'Micrographs/mic0.mrc'), or particle stack file name (e.g. 'bdb:stack'; must be stack_mode = True).
 		output_directory  : output directory
 	"""
 	from   EMAN2 import periodogram
@@ -2130,19 +2130,24 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 		main_node = 0
 	
 	# Find the cter mode from arguments
-	i_enum = -1; the_cter_mode_invalid    = i_enum; 
-	i_enum += 1; the_cter_mode_multi_mic  = i_enum # Multi-Micrograph Mode
-	i_enum += 1; the_cter_mode_single_mic = i_enum # Single-Micrograph Mode
-	i_enum += 1; the_cter_mode_stack      = i_enum # (Particle) Stack Mode
-	i_enum += 1; the_n_cter_mode          = i_enum
+	i_enum = -1; the_cter_mode_invalid        = i_enum; 
+	i_enum += 1; the_cter_mode_multi_mic_file = i_enum # Multi-Micrograph Mode by list file
+	i_enum += 1; the_cter_mode_multi_mic_dir  = i_enum # Multi-Micrograph Mode by directory
+	i_enum += 1; the_cter_mode_single_mic     = i_enum # Single-Micrograph Mode
+	i_enum += 1; the_cter_mode_stack          = i_enum # (Particle) Stack Mode
+	i_enum += 1; the_n_cter_mode              = i_enum
 	
 	cter_mode = the_cter_mode_invalid
 	cter_mode_name = ""
 	if stack_mode == False:
 		# One of two Micrograph Modes
-		if input_image.find("*") != -1:
+		if os.path.splitext(input_image)[1] == ".txt":
+			# multi-micrograph mode because input image file name contains ".txt"
+			cter_mode = the_cter_mode_multi_mic_file
+			cter_mode_name = "multi-micrograph"
+		elif input_image.find("*") != -1:
 			# multi-micrograph mode because input image file name contains wild card "*"
-			cter_mode = the_cter_mode_multi_mic
+			cter_mode = the_cter_mode_multi_mic_dir
 			cter_mode_name = "multi-micrograph"
 		else: # assert input_image.find("*") == -1:
 			# single-micrograph mode because input image file name does not contain wild card "*"
@@ -2159,7 +2164,14 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	
 	# input-related errors (mode-dependent) and also create the input file name list
 	input_file_path_list = []
-	if cter_mode == the_cter_mode_multi_mic:
+	if cter_mode == the_cter_mode_multi_mic_file:
+		# assert(input_image.find("*") != -1)
+		# Get the list of micrograph file names
+		input_file_path_list = read_text_file(input_image)
+		if len(input_file_path_list) == 0:
+			# The result shouldn't be empty if the specified micrograph file name pattern is invalid
+			error_message_list.append("The provided micrograph list file (%s) for %s mode contains no entries. Please make sure the file contains a micrograph list, and restart the program." % (input_image, cter_mode_name))
+	elif cter_mode == the_cter_mode_multi_mic_dir:
 		# assert(input_image.find("*") != -1)
 		# Get the list of micrograph file names
 		input_file_path_list = glob.glob(input_image)
@@ -2199,7 +2211,6 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	from utilities import if_error_then_all_processes_exit_program
 	if_error_then_all_processes_exit_program(error_status)
 	
-	
 	# option-related errors
 	if pixel_size <= 0.0:
 		error_message_list.append("Pixel size has to be specified. Please set it and restart the program.")
@@ -2234,7 +2245,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	# 
 	stack = None # (particle) stack file name: if it is not None, cter runs with stack mode. Otherwise, runs with micrograph mode
 	namics = []  # micrograph file name list
-	if cter_mode == the_cter_mode_multi_mic:
+	if cter_mode == the_cter_mode_multi_mic_dir or cter_mode == the_cter_mode_multi_mic_file:
 		namics = input_file_path_list
 		namics.sort(key=str.lower) # Sort list of micrographs using case insensitive string comparison
 		# asssert(stack == None)
@@ -2295,6 +2306,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 		set_end = 1
 	
 	totresi = []
+	missing_img_names = []
 	rejected_img_names = []
 	for ifi in xrange(set_start,set_end):
 		# set pw2 (image used for CTF estimation) and basename root of image file depending on the cter mode
@@ -2305,6 +2317,12 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 		img_name_for_print = ""
 		if stack == None:
 			img_type = "Micrograph"; img_name = namics[ifi]; img_name_for_print = " " + img_name
+			
+			if os.path.exists(img_name) == False:
+				missing_img_names.append(img_name)
+				print "  Can not find %s. Skipping this micrograph..." % (img_name_for_print)
+				continue
+			
 			numFM = EMUtil.get_image_count(img_name)
 			#
 			# NOTE: 2016/03/21 Toshio Moriya
@@ -2786,6 +2804,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	if MPI:
 		from utilities import wrap_mpi_gatherv
 		totresi = wrap_mpi_gatherv(totresi, 0, MPI_COMM_WORLD)
+		missing_img_names = wrap_mpi_gatherv(missing_img_names, 0, MPI_COMM_WORLD)
 		rejected_img_names = wrap_mpi_gatherv(rejected_img_names, 0, MPI_COMM_WORLD)
 	if myid == 0:
 		outf = open(os.path.join(output_directory, "partres.txt"), "w")
@@ -2794,6 +2813,16 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 				outf.write("  %12.5g" % totresi[i][k])
 			outf.write("  %s\n" % totresi[i][0])
 		outf.close()
+		
+		missing_counts = len(missing_img_names)
+		print "  Num. of missing %s(s): %d." % (img_type.lower(), missing_counts)
+		if missing_counts > 0:
+			outfile_path = os.path.join(output_directory, "missing_%s_list.txt" % (img_type.lower()))
+			print "  Saving list of missing %s(s) in %s..." % (img_type.lower(), outfile_path)
+			outf = open(outfile_path, "w")
+			for missing_img_name in missing_img_names:
+				outf.write("%s\n" % missing_img_name)
+			outf.close()
 		
 		rejected_counts = len(rejected_img_names)
 		print "  Num. of rejected %s(s): %d." % (img_type.lower(), rejected_counts)

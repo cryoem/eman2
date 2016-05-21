@@ -25,7 +25,7 @@ Since RVIPER makes use of group of processors working together, it is important 
 On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 processors. Memory needs are about 0.5GB per processor.
 
 == Input ==
-    stack:: Input images stack: A small set (<100) of class averages produced by ISAC. (default required string)
+    stack:: Input images stack: A small set (<100) of class averages produced by ISAC. The images must be square and the stack must be hdf format . (default required string)
 
     radius:: Particle radius [Pixels]: has to be less than half the box size. (default required int)
     sym:: Point-group symmetry: (default c1)
