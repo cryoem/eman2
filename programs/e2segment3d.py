@@ -96,8 +96,8 @@ def main():
 		volume.process_inplace("mask.dust3d",{"threshold":0,"voxels":10})
 		volume.process_inplace("mask.dust3d",{"threshold":volume["mean_nonzero"]+volume["sigma_nonzero"],"voxels":100})
 		volume.write_image("asym.hdf")
-	
-	if options.helixfile!=None:
+
+	if options.helixfile!=None and options.process.find("nseg")>0:
 		helix=read_helix(options.helixfile,sx,sy,sz,volume["apix_x"],volume["apix_y"],volume["apix_z"])
 		ps=options.process
 		p1=ps.find("nseg")
