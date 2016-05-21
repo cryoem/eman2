@@ -19122,7 +19122,7 @@ vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* b
 				float  normim = data[jx2 + (iy-1)*2*nx]*data[jx2 + (iy-1)*2*nx] + data[jx2+1 + (iy-1)*2*nx]*data[jx2+1 + (iy-1)*2*nx];  // precalculate
 				float  temp = normim - 2*prod1 + prod2;
 				edis += temp*bckg[jx+(iy-1)*nx]*0.5f;
-				wdis += temp*prob;
+				wdis += temp;
 				nrm[rf] += prod1*prob;
 				nrm[rf+inc] += prod2*prob;
 			}
