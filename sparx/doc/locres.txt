@@ -6,13 +6,13 @@ sxlocres - Local Resolution: Compute local resolution of a map.
 
 ''Usage in command lines'':
 
-sxlocres.py  firstvolume  secondvolume  maskfile  outputfile  --wn=window_size  --step=shell_step_size  --cutoff=res_cutoff  --radius=radius  --fsc=output_file_name  --MPI
+sxlocres.py  firstvolume  secondvolume  maskfile  outputfile  --wn=window_size  --step=shell_step_size  --cutoff=res_cutoff --res_overall=overall_resolution --radius=radius  --fsc=output_file_name  --MPI
 
 === Typical usage ===
 
 sxlocres exists in for both MPI and non-MPI versions.
 
-''' mpirun -np 32  sxlocres.py refinementdir/main002/vol0.hdf  refinementdir/main002/vol2.hdf locres.hdf --cutoff=0.5 --radius=28 --fsc=fscvol.txt --MPI '''
+''' mpirun -np 32  sxlocres.py refinementdir/main002/vol0.hdf  refinementdir/main002/vol2.hdf locres.hdf --cutoff=0.5 --radius=28 --res_overall=0.3  --fsc=fscvol.txt --MPI '''
 
 
 == Input ==
@@ -24,6 +24,7 @@ sxlocres exists in for both MPI and non-MPI versions.
     step:: Fourier shell step size [Pixels]: (default 1.0)
     cutoff:: Resolution cut-off [1/Pixel]: Cut-off for the FSC. By default it goes to the Nyquist frequencies. (default 0.5)
     radius:: Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
+    res_overall:: Overall resolution estimated by user, a number between 0.0, 0.5. User has to know it before running this command.
     
     * The remaining parameters are optional.
     MPI:: Use MPI: (default False)
@@ -36,6 +37,9 @@ sxlocres exists in for both MPI and non-MPI versions.
 
 = Description =
    FSC
+   The rationale of local resolutions are to split odd and even volumes into multiple small areas and then compute the FSC between these multiple volume pairs. So the average of the local resolution output volume would correspond to the global resolution.
+   However FSC calculation in quite small area could result in inaccurate resolution and the average of the local resolution volume differs from the global resolution estimated from FSC between two full size volumes. In order to systematically calibrate the inaccuracy, we use the user provided global 
+   resolution value, either calculated from FSC of two full volumes or else, to replace the average of the local resolution volume. So the final output local resolution volume are in fact actually average replaced.
 
 = Method =
 

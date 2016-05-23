@@ -2181,7 +2181,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             try:
                 with open(file, 'r') as f:
                     self.arrData[self.dMic][number] = \
-                        f.readline().split()[-1].replace('_temp', '_frames')
+                        f.readline().split()[-1].replace('_temp', '_sum')
             except Exception:
                 print('Error in file {0}, please check the file!'.format(file))
 
