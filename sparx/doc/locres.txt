@@ -24,7 +24,7 @@ sxlocres exists in for both MPI and non-MPI versions.
     step:: Fourier shell step size [Pixels]: (default 1.0)
     cutoff:: Resolution cut-off [1/Pixel]: Cut-off for the FSC. By default it goes to the Nyquist frequencies. (default 0.5)
     radius:: Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
-    res_overall:: Overall resolution calibration option. res_overall has a float value between 0.0, 0.5. The default value is -1.0, and the program won't do overall resolution calibration.
+    res_overall:: Overall resolution calibration (0 to 0.5). See Description below for details. (default -1)
     
     * The remaining parameters are optional.
     MPI:: Use MPI: (default False)
@@ -36,10 +36,10 @@ sxlocres exists in for both MPI and non-MPI versions.
 
 
 = Description =
-   FSC
-   The rationale of local resolutions are to split odd and even volumes into multiple small areas and then compute the FSC between these multiple volume pairs. So the average of the local resolution output volume would correspond to the global resolution.
-   However FSC calculation in quite small area could result in inaccurate resolution and the average of the local resolution volume differs from the global resolution estimated from FSC between two full size volumes. In order to systematically calibrate the inaccuracy, we use the user provided global 
-   resolution value, either calculated from FSC of two full volumes or else, to replace the average of the local resolution volume. So the final output local resolution volume are in fact actually average replaced.
+   Local resolution values are computed within small windowed areas (size wn^3). Due to small sample size the values are inaccurate and tend to underestimate resolution.
+   Therefore, option res_overall allows to calibrate the average value of all local resolutions to the overall resolution, as estimated by the FSC between two full size volumes. I
+   This value has to be independently obtained by the user - for example using sximgstat.py to compute (masked) FSC from half-volumes and reading the absolute frequency crresponding
+   to 0.5 (or other) cut-off value.
 
 = Method =
 
