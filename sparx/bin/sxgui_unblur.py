@@ -2038,9 +2038,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             strSuffix = str(self.leSuffix.text())
         else:
             self.strInputDir = os.path.realpath(inputfile)[
-                :-len(os.path.realpath(inputfile).split('/')[-1]) + 1
+                :-len(os.path.realpath(inputfile).split('/')[-1]) - 1
                 ]
             strSuffix = os.path.realpath(inputfile).split('/')[-1]
+            print(self.strInputDir)
         self.listFile = glob.glob('{:s}/{:s}'.format(self.strInputDir, strSuffix))
 
         if not self.listFile:
@@ -2179,7 +2180,8 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             # Get the micrograph name
             try:
                 with open(file, 'r') as f:
-                    self.arrData[self.dMic][number] = f.readline().split()[-1]
+                    self.arrData[self.dMic][number] = \
+                        f.readline().split()[-1].replace('_temp', '_frames')
             except Exception:
                 print('Error in file {0}, please check the file!'.format(file))
 
