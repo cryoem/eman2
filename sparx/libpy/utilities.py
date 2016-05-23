@@ -7046,7 +7046,7 @@ def tabessel(nx, nnxo, nbel = 5000):
 ####	
 
 
-def split_chunks(l, n):
+def split_chunks_bad(l, n):
 	""" 
 	   Splits list l into n chunks with approximately equals sum of values
 	   see  http://stackoverflow.com/questions/6855394/splitting-list-in-chunks-of-balanced-weight
