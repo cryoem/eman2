@@ -31,7 +31,7 @@ sxunblur exists in non-MPI version.
 
     nr_frames:: Number of frames: (default 3)
     pixel_size:: Pixel size [A]: (default  required -1.0)
-    dose_filter:: Apply dose filter: Requires additionally to set the correct exposure per frame, voltage, and pre exposure. (default True)
+    dose_filter:: Apply dose filter: Requires additionally to set the correct exposure per frame, voltage, and pre exposure. (default False)
     exposure_per_frame:: Per frame exposure [e/A^2]: (default 1.0)
     voltage:: Microscope voltage [kV]: (default 300.0)
     pre_exposure:: Pre exposure [e/A^2]: (default 0.0)

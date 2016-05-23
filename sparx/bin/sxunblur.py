@@ -235,7 +235,7 @@ def create_sh_script(
         strSh += 'baseName=${{baseName#{:s}}}\n'.format(input_dir)
 
         # Create a temporary file to work with to prevent format issues
-        strSh += 'e2proc3d.py $file tempUnblur.mrc\n\n'
+        strSh += 'e2proc3d.py $file ${baseName}_temp.mrc\n\n'
 
         # Remove some temporary files that unblur makes
         strSh += 'rm .UnBlur*\n'
@@ -244,7 +244,7 @@ def create_sh_script(
         strSh += '{:s} << eof\n'.format(unblur_path)
 
         # Input File
-        strSh += 'tempUnblur.mrc\n'
+        strSh += '${baseName}_temp.mrc\n'
         # Number of Frames
         strSh += '{:d}\n'.format(options.nr_frames)
         # Sum File
@@ -327,7 +327,7 @@ def create_sh_script(
             strSh += '{:s} << eof\n'.format(unblur_path)
 
             # Input File
-            strSh += 'tempUnblur.mrc\n'
+            strSh += '${baseName}_temp.mrc\n'
             # Number of Frames
             strSh += '{:d}\n'.format(options.nr_frames)
             # Sum File
@@ -408,7 +408,7 @@ def create_sh_script(
             strSh += 'eof\n\n'
 
         # Remove temporary file
-        strSh += 'rm tempUnblur.mrc\n'
+        strSh += 'rm ${baseName}_temp.mrc\n'
 
         # Remove some temporary files that unblur makes
         strSh += 'rm .UnBlur*\n\n'
