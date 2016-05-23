@@ -130,10 +130,15 @@ def main():
 					break
 		res_overall = bcast_number_to_all(res_overall, main_node)
 		"""
-		freqvol, resolut = locres(vi, ui, m, nk, cutoff, options.step, res_overall, myid, main_node, number_of_proc)
+		freqvol, resolut = locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
 		if(myid == 0):
 			if res_overall !=-1.0:
 				freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
+				for ifreq in xrange(len(resolut)):
+					if resolut[ifreq][0] >res_overall:
+						 break
+				for jfreq in xrange(ifreq, len(resolut)):
+					resolut[jfreq][1] = 0.0	
 			freqvol.write_image(outvol)
 			if(options.fsc != None): write_text_row(resolut, options.fsc)
 		from mpi import mpi_finalize
@@ -218,8 +223,14 @@ def main():
 								else:
 									bailout = False
 			if(bailout):  break
+		print len(resolut)
 		if res_overall !=-1.0:
 			freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
+			for ifreq in xrange(len(resolut)):
+				if resolut[ifreq][1] >res_overall:
+					 break
+			for jfreq in xrange(ifreq, len(resolut)):
+				resolut[jfreq][2] = 0.0	
 		freqvol.write_image(outvol)
 		if(options.fsc != None): write_text_row(resolut, options.fsc)
 
