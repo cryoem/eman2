@@ -204,7 +204,6 @@ class SXLookFeelConst(object):
 	def initialise(sxapp):
 		# Set the directory for all file dialogs to script directory
 		SXLookFeelConst.file_dialog_dir = os.getcwd()
-		print "MRK_DEBUG: ", SXLookFeelConst.file_dialog_dir
 		
 		# Search for maximun screen height and set it to SXLookFeelConst singleton class
 		max_screen_height = sxapp.desktop().screenGeometry().height()
@@ -228,6 +227,19 @@ class SXLookFeelConst(object):
 		SXLookFeelConst.sxmenu_btn_area_min_width = 2 * SXLookFeelConst.sxmenu_item_btn_width + SXLookFeelConst.grid_distance + 18
 		SXLookFeelConst.sxcmd_btn_area_min_width = 240
 		SXLookFeelConst.sxcmd_widget_area_min_width = SXLookFeelConst.sxmain_window_width - SXLookFeelConst.sxmenu_btn_area_min_width - SXLookFeelConst.sxcmd_btn_area_min_width
+		
+	@staticmethod
+	def format_path(path):
+		formatted_path = os.path.relpath(path)
+		if formatted_path[:len("../")] == "../":
+			# if the path is above the project root directory (current directory)
+			# use absolute path
+			formatted_path = path
+		# else: 
+			# if the path is project subdirectory 
+			# use relative path
+		
+		return formatted_path
 
 # ========================================================================================
 class SXLogoButton(QPushButton):
@@ -830,7 +842,7 @@ class SXCmdWidget(QWidget):
 			file_path = str(QFileDialog.getOpenFileName(self, "Select BDB File", SXLookFeelConst.file_dialog_dir, "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
-				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", "#").replace(".bdb", "")
+				file_path = "bdb:./" + SXLookFeelConst.format_path(file_path).replace("EMAN2DB/", "#").replace(".bdb", "")
 				file_path = file_path.replace("/#", "#")
 				# If the input directory is the current directory, use the simplified DBD file path format
 				if file_path.find(".#") != -1:
@@ -842,22 +854,22 @@ class SXCmdWidget(QWidget):
 			file_path = str(QFileDialog.getOpenFileName(self, "Select PDB File", SXLookFeelConst.file_dialog_dir, "PDB files (*.pdb *.pdb*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
-				file_path = os.path.relpath(file_path)
+				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "mrc":
 			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", SXLookFeelConst.file_dialog_dir, "MRC files (*.mrc *.mrcs)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
-				file_path = os.path.relpath(file_path)
+				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "exe":
 			file_path = str(QFileDialog.getOpenFileName(self, "Select EXE File", SXLookFeelConst.file_dialog_dir, "EXE files (*.exe );; All files (*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
-				file_path = os.path.relpath(file_path)
+				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "any_file_list" or file_format == "any_image_list":
 			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", SXLookFeelConst.file_dialog_dir, "All files (*)", options = QFileDialog.DontUseNativeDialog)
 			# Use relative path.
 			for a_file_path in file_path_list:
-				file_path += os.path.relpath(str(a_file_path)) + " "
+				file_path += SXLookFeelConst.format_path(str(a_file_path)) + " "
 		else:
 			if file_format:
 				file_path = str(QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), SXLookFeelConst.file_dialog_dir, "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog))
@@ -865,7 +877,7 @@ class SXCmdWidget(QWidget):
 				file_path = str(QFileDialog.getOpenFileName(self, "Select File", SXLookFeelConst.file_dialog_dir, "All files (*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
-				file_path = os.path.relpath(file_path)
+				file_path = SXLookFeelConst.format_path(file_path)
 
 		if file_path != "":
 			target_widget.setText(file_path)
@@ -874,7 +886,7 @@ class SXCmdWidget(QWidget):
 		dir_path = str(QFileDialog.getExistingDirectory(self, "Select Directory", SXLookFeelConst.file_dialog_dir, options = QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog))
 		if dir_path != "":
 			# Use relative path.
-			target_widget.setText(os.path.relpath(dir_path))
+			target_widget.setText(SXLookFeelConst.format_path(dir_path))
 
 	def quit_all_child_applications(self):
 		# Quit all child applications
