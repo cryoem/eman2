@@ -55,7 +55,7 @@ def main():
 	parser.add_option("--cutoff",   type="float",	default= 0.5,       help="resolution cut-off for FSC (default 0.5)")
 	parser.add_option("--radius",	type="int",		default=-1, 		help="if there is no maskfile, sphere with r=radius will be used, by default the radius is nx/2-wn")
 	parser.add_option("--fsc",      type="string",	default= None,      help="overall FSC curve (might be truncated) (default no curve)")
-	parser.add_option("--res_overall",  type="float",	default= 0.5,   help="overall resolution estimated by users")
+	parser.add_option("--res_overall",  type="float",	default= -1.0,   help="overall resolution estimated by users")
 	parser.add_option("--MPI",      action="store_true",   	default=False,  help="use MPI version")
 
 	(options, args) = parser.parse_args(arglist[1:])
@@ -132,6 +132,8 @@ def main():
 		"""
 		freqvol, resolut = locres(vi, ui, m, nk, cutoff, options.step, res_overall, myid, main_node, number_of_proc)
 		if(myid == 0):
+			if res_overall !=-1.0:
+				freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
 			freqvol.write_image(outvol)
 			if(options.fsc != None): write_text_row(resolut, options.fsc)
 		from mpi import mpi_finalize
@@ -216,7 +218,8 @@ def main():
 								else:
 									bailout = False
 			if(bailout):  break
-		freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
+		if res_overall !=-1.0:
+			freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
 		freqvol.write_image(outvol)
 		if(options.fsc != None): write_text_row(resolut, options.fsc)
 
