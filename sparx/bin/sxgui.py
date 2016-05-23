@@ -833,15 +833,15 @@ class SXCmdWidget(QWidget):
 			file_path = str(QFileDialog.getOpenFileName(self, "Select Python File", "", "PY files (*.py)", options = QFileDialog.DontUseNativeDialog))
 			# Use full path
 		elif file_format == "pdb":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select PDB File", "", "PDB files (*.pdb *.pdb1)", options = QFileDialog.DontUseNativeDialog))
+			file_path = str(QFileDialog.getOpenFileName(self, "Select PDB File", "", "PDB files (*.pdb *.pdb*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
 				file_path = os.path.relpath(file_path)
-#		elif file_format == "mrc":
-#			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", "", "MRC files (*.mrc)", options = QFileDialog.DontUseNativeDialog))
-#			# Use relative path.
-#			if file_path:
-#				file_path = os.path.relpath(file_path)
+		elif file_format == "mrc":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", "", "MRC files (*.mrc *.mrcs)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = os.path.relpath(file_path)
 		elif file_format == "any_file_list" or file_format == "any_image_list":
 			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", "", "All files (*.*)", options = QFileDialog.DontUseNativeDialog)
 			# Use relative path.
@@ -2344,7 +2344,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "var2D"; token.key_prefix = "--"; token.label = "Output 2D variances"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ave3D"; token.key_prefix = "--"; token.label = "Output 3D average"; token.help = "3D reconstruction computed from projections averaged within respective angular neighbourhood. It should be used to assess the resolvability and possible artifacts of the variability map. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "var3D"; token.key_prefix = "--"; token.label = "Output 3D variability"; token.help = "It creates a volume containing, for each voxel, a measure of the variability in the dataset. Careful, time consuming! "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "Number of projections"; token.help = "from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. "; token.group = "main"; token.is_required = False; token.default = "10"; token.restore = "10"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "Number of projections"; token.help = "Images from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. "; token.group = "main"; token.is_required = False; token.default = "10"; token.restore = "10"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "no_norm"; token.key_prefix = "--"; token.label = "Skip normalization"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radiusvar"; token.key_prefix = "--"; token.label = "Radius for 3D variability [Pixels]"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "npad"; token.key_prefix = "--"; token.label = "Image padding factor"; token.help = "The images are padded to achieve the original size times this option. "; token.group = "advanced"; token.is_required = False; token.default = "2"; token.restore = "2"; token.type = "int"; sxcmd.token_list.append(token)

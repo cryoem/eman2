@@ -833,15 +833,15 @@ class SXCmdWidget(QWidget):
 			file_path = str(QFileDialog.getOpenFileName(self, "Select Python File", "", "PY files (*.py)", options = QFileDialog.DontUseNativeDialog))
 			# Use full path
 		elif file_format == "pdb":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select PDB File", "", "PDB files (*.pdb *.pdb1)", options = QFileDialog.DontUseNativeDialog))
+			file_path = str(QFileDialog.getOpenFileName(self, "Select PDB File", "", "PDB files (*.pdb *.pdb*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
 				file_path = os.path.relpath(file_path)
-#		elif file_format == "mrc":
-#			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", "", "MRC files (*.mrc)", options = QFileDialog.DontUseNativeDialog))
-#			# Use relative path.
-#			if file_path:
-#				file_path = os.path.relpath(file_path)
+		elif file_format == "mrc":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", "", "MRC files (*.mrc *.mrcs)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = os.path.relpath(file_path)
 		elif file_format == "any_file_list" or file_format == "any_image_list":
 			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", "", "All files (*.*)", options = QFileDialog.DontUseNativeDialog)
 			# Use relative path.
