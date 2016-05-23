@@ -197,9 +197,14 @@ class SXLookFeelConst(object):
 	sxmenu_btn_area_min_width = -1
 	sxcmd_btn_area_min_width = -1
 	sxcmd_widget_area_min_width = -1
-
+	
+	file_dialog_dir = ""
+	
 	@staticmethod
 	def initialise(sxapp):
+		# Set the directory for all file dialogs to script directory
+		SXLookFeelConst.file_dialog_dir = os.getcwd()
+		
 		# Search for maximun screen height and set it to SXLookFeelConst singleton class
 		max_screen_height = sxapp.desktop().screenGeometry().height()
 		for index in range(sxapp.desktop().screenCount()):
@@ -222,6 +227,19 @@ class SXLookFeelConst(object):
 		SXLookFeelConst.sxmenu_btn_area_min_width = 2 * SXLookFeelConst.sxmenu_item_btn_width + SXLookFeelConst.grid_distance + 18
 		SXLookFeelConst.sxcmd_btn_area_min_width = 240
 		SXLookFeelConst.sxcmd_widget_area_min_width = SXLookFeelConst.sxmain_window_width - SXLookFeelConst.sxmenu_btn_area_min_width - SXLookFeelConst.sxcmd_btn_area_min_width
+		
+	@staticmethod
+	def format_path(path):
+		formatted_path = os.path.relpath(path)
+		if formatted_path[:len("../")] == "../":
+			# if the path is above the project root directory (current directory)
+			# use absolute path
+			formatted_path = path
+		# else: 
+			# if the path is project subdirectory 
+			# use relative path
+		
+		return formatted_path
 
 # ========================================================================================
 class SXLogoButton(QPushButton):
@@ -809,61 +827,66 @@ class SXCmdWidget(QWidget):
 		file_in.close()
 
 	def save_params(self):
-		file_path_out = str(QFileDialog.getSaveFileName(self, "Save Parameters", options = QFileDialog.DontUseNativeDialog))
+		file_path_out = str(QFileDialog.getSaveFileName(self, "Save Parameters", SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog))
 		if file_path_out != "":
 			self.write_params(file_path_out)
 
 	def load_params(self):
-		file_path_in = str(QFileDialog.getOpenFileName(self, "Load parameters", options = QFileDialog.DontUseNativeDialog))
+		file_path_in = str(QFileDialog.getOpenFileName(self, "Load parameters", SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog))
 		if file_path_in != "":
 			self.read_params(file_path_in)
 
 	def select_file(self, target_widget, file_format = ""):
 		file_path = ""
 		if file_format == "bdb":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select BDB File", "", "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog))
+			file_path = str(QFileDialog.getOpenFileName(self, "Select BDB File", SXLookFeelConst.file_dialog_dir, "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
-				file_path = "bdb:./" + os.path.relpath(file_path).replace("EMAN2DB/", "#").replace(".bdb", "")
+				file_path = "bdb:./" + SXLookFeelConst.format_path(file_path).replace("EMAN2DB/", "#").replace(".bdb", "")
 				file_path = file_path.replace("/#", "#")
 				# If the input directory is the current directory, use the simplified DBD file path format
 				if file_path.find(".#") != -1:
 					file_path = file_path.replace(".#", "")
 		elif file_format == "py":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select Python File", "", "PY files (*.py)", options = QFileDialog.DontUseNativeDialog))
+			file_path = str(QFileDialog.getOpenFileName(self, "Select Python File", SXLookFeelConst.file_dialog_dir, "PY files (*.py)", options = QFileDialog.DontUseNativeDialog))
 			# Use full path
 		elif file_format == "pdb":
-			file_path = str(QFileDialog.getOpenFileName(self, "Select PDB File", "", "PDB files (*.pdb *.pdb1)", options = QFileDialog.DontUseNativeDialog))
+			file_path = str(QFileDialog.getOpenFileName(self, "Select PDB File", SXLookFeelConst.file_dialog_dir, "PDB files (*.pdb *.pdb*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
-				file_path = os.path.relpath(file_path)
-#		elif file_format == "mrc":
-#			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", "", "MRC files (*.mrc)", options = QFileDialog.DontUseNativeDialog))
-#			# Use relative path.
-#			if file_path:
-#				file_path = os.path.relpath(file_path)
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "mrc":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select MRC File", SXLookFeelConst.file_dialog_dir, "MRC files (*.mrc *.mrcs)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "exe":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select EXE File", SXLookFeelConst.file_dialog_dir, "EXE files (*.exe );; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "any_file_list" or file_format == "any_image_list":
-			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", "", "All files (*.*)", options = QFileDialog.DontUseNativeDialog)
+			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", SXLookFeelConst.file_dialog_dir, "All files (*)", options = QFileDialog.DontUseNativeDialog)
 			# Use relative path.
 			for a_file_path in file_path_list:
-				file_path += os.path.relpath(str(a_file_path)) + " "
+				file_path += SXLookFeelConst.format_path(str(a_file_path)) + " "
 		else:
 			if file_format:
-				file_path = str(QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), "", "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog))
+				file_path = str(QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), SXLookFeelConst.file_dialog_dir, "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog))
 			else:
-				file_path = str(QFileDialog.getOpenFileName(self, "Select File", "", "All files (*.*)", options = QFileDialog.DontUseNativeDialog))
+				file_path = str(QFileDialog.getOpenFileName(self, "Select File", SXLookFeelConst.file_dialog_dir, "All files (*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
-				file_path = os.path.relpath(file_path)
+				file_path = SXLookFeelConst.format_path(file_path)
 
 		if file_path != "":
 			target_widget.setText(file_path)
 
 	def select_dir(self, target_widget):
-		dir_path = str(QFileDialog.getExistingDirectory(self, "Select Directory", "", options = QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog))
+		dir_path = str(QFileDialog.getExistingDirectory(self, "Select Directory", SXLookFeelConst.file_dialog_dir, options = QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog))
 		if dir_path != "":
 			# Use relative path.
-			target_widget.setText(os.path.relpath(dir_path))
+			target_widget.setText(SXLookFeelConst.format_path(dir_path))
 
 	def quit_all_child_applications(self):
 		# Quit all child applications
@@ -1196,6 +1219,12 @@ class SXCmdTab(QWidget):
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 						elif cmd_token.type == "txt":
 							file_format = "txt"
+							temp_btn = QPushButton("Select .%s" % file_format)
+							temp_btn.setToolTip("Display open file dailog to select .%s parameter file" % file_format)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "exe":
+							file_format = "exe"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setToolTip("Display open file dailog to select .%s parameter file" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
@@ -1787,12 +1816,12 @@ class SXConstSetWidget(QWidget):
 		file_in.close()
 
 	def save_consts(self):
-		file_path_out = str(QFileDialog.getSaveFileName(self, "Save settings", options = QFileDialog.DontUseNativeDialog))
+		file_path_out = str(QFileDialog.getSaveFileName(self, "Save settings", SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog))
 		if file_path_out != "":
 			self.write_consts(file_path_out)
 
 	def load_consts(self):
-		file_path_in = str(QFileDialog.getOpenFileName(self, "Load settings", options = QFileDialog.DontUseNativeDialog))
+		file_path_in = str(QFileDialog.getOpenFileName(self, "Load settings", SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog))
 		if file_path_in != "":
 			self.read_consts(file_path_in)
 
@@ -1990,12 +2019,12 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_category_list.append(sxcmd_category)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxunblur"; sxcmd.mode = ""; sxcmd.label = "Micrograph movie alignment"; sxcmd.short_info = "Align micrograph movies with Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie_micrograph"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "unblur"; token.key_prefix = ""; token.label = "Path to unblur executable"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "unblur"; token.key_prefix = ""; token.label = "Path to unblur executable"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "exe"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_mrc_micrograph"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "You can use the wild cards (e.g. *) to specify a list of micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "mrc"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nr_frames"; token.key_prefix = "--"; token.label = "Number of frames"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "3"; token.restore = "3"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "apix"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "dose_filter"; token.key_prefix = "--"; token.label = "Apply dose filter"; token.help = "Requires additionally to set the correct exposure per frame, voltage, and pre exposure. "; token.group = "main"; token.is_required = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "dose_filter"; token.key_prefix = "--"; token.label = "Apply dose filter"; token.help = "Requires additionally to set the correct exposure per frame, voltage, and pre exposure. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "exposure_per_frame"; token.key_prefix = "--"; token.label = "Per frame exposure [e/A^2]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "voltage"; token.key_prefix = "--"; token.label = "Microscope voltage [kV]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "300.0"; token.restore = "300.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pre_exposure"; token.key_prefix = "--"; token.label = "Pre exposure [e/A^2]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2344,7 +2373,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "var2D"; token.key_prefix = "--"; token.label = "Output 2D variances"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ave3D"; token.key_prefix = "--"; token.label = "Output 3D average"; token.help = "3D reconstruction computed from projections averaged within respective angular neighbourhood. It should be used to assess the resolvability and possible artifacts of the variability map. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "var3D"; token.key_prefix = "--"; token.label = "Output 3D variability"; token.help = "It creates a volume containing, for each voxel, a measure of the variability in the dataset. Careful, time consuming! "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "Number of projections"; token.help = "from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. "; token.group = "main"; token.is_required = False; token.default = "10"; token.restore = "10"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "Number of projections"; token.help = "Images from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. "; token.group = "main"; token.is_required = False; token.default = "10"; token.restore = "10"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "no_norm"; token.key_prefix = "--"; token.label = "Skip normalization"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radiusvar"; token.key_prefix = "--"; token.label = "Radius for 3D variability [Pixels]"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "npad"; token.key_prefix = "--"; token.label = "Image padding factor"; token.help = "The images are padded to achieve the original size times this option. "; token.group = "advanced"; token.is_required = False; token.default = "2"; token.restore = "2"; token.type = "int"; sxcmd.token_list.append(token)

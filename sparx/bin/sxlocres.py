@@ -120,10 +120,7 @@ def main():
 		from statistics import locres
 		res_overall = 0.5
 		if myid ==main_node:
-			if options.fsc != None:
-				fsc_curve = read_text_file(options.fsc, -1)
-			else:
-				fsc_curve = fsc(vi, ui)
+			fsc_curve = fsc(vi, ui)
 			for ifreq in xrange(len(fsc_curve[0])-1, -1, -1):
 				if fsc_curve[1][ifreq] > options.cutoff:
 					res_overall = fsc_curve[0][ifreq]
@@ -158,10 +155,7 @@ def main():
 		uf = fft(ui)
 		
 		res_overall = 0.5
-		if options.fsc != None:
-			fsc_curve = read_text_file(options.fsc, -1)
-		else:
-			fsc_curve = fsc(vi, ui)
+		fsc_curve = fsc(vi, ui)
 		for ifreq in xrange(len(fsc_curve[0])-1, -1, -1):
 			if fsc_curve[1][ifreq] > options.cutoff:
 				res_overall = fsc_curve[0][ifreq]

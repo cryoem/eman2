@@ -40,11 +40,13 @@ except AttributeError:
 
 try:
     _encoding = QtGui.QApplication.UnicodeUTF8
+
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
+
 
 class Ui_MSMainWidget(object):
     def setupUi(self, MSMainWidget):
@@ -1194,7 +1196,6 @@ class Ui_MSMainWidget(object):
         self.pbAbout.setText(_translate("MSMainWidget", "About", None))
 
 
-
 class SXUnblurPlot(QtGui.QWidget):
 
     # Refresh Signal, Frame Changed Signal, Close Signal
@@ -1929,10 +1930,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Open the drift files and do the drift calculations"""
 
         # Find Directory
-        self.strInputDir = QtGui.QFileDialog.getExistingDirectory(
+        self.strInputDir = str(QtGui.QFileDialog.getExistingDirectory(
             directory=os.getcwd(),
             options=QtGui.QFileDialog.DontUseNativeDialog
-            )
+            ))
 
         # If the return value is not empty, fill the gui
         if self.strInputDir != '':
@@ -2034,12 +2035,14 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Clear the list widget and load the shift files as list
         self.lsFiles.clear()
         if inputfile is None:
-            strDirectory = self.strInputDir
             strSuffix = str(self.leSuffix.text())
         else:
-            strDirectory = os.getcwd()
-            strSuffix = inputfile
-        self.listFile = glob.glob('{:s}/{:s}'.format(strDirectory, strSuffix))
+            self.strInputDir = os.path.realpath(inputfile)[
+                :-len(os.path.realpath(inputfile).split('/')[-1]) - 1
+                ]
+            strSuffix = os.path.realpath(inputfile).split('/')[-1]
+            print(self.strInputDir)
+        self.listFile = glob.glob('{:s}/{:s}'.format(self.strInputDir, strSuffix))
 
         if not self.listFile:
             messageBox2 = QtGui.QMessageBox()
@@ -2177,7 +2180,8 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             # Get the micrograph name
             try:
                 with open(file, 'r') as f:
-                    self.arrData[self.dMic][number] = f.readline().split()[-1]
+                    self.arrData[self.dMic][number] = \
+                        f.readline().split()[-1].replace('_temp', '_sum')
             except Exception:
                 print('Error in file {0}, please check the file!'.format(file))
 
@@ -2234,7 +2238,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         if self.idxFirstFrame < 1:
             # Warning box when refreshing frames
             warningBox = QtGui.QMessageBox(self)
-            warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
+            warningBox.setStandardButtons(
+                QtGui.QMessageBox.No | QtGui.QMessageBox.Yes
+                )
             warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
             warningBox.setText(
                 'Start frame too small (minimum 1)!\n' +
@@ -2253,10 +2259,14 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         if self.idxLastFrame > self.intFrames:
             warningBox = QtGui.QMessageBox(self)
-            warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
+            warningBox.setStandardButtons(
+                QtGui.QMessageBox.No | QtGui.QMessageBox.Yes
+                )
             warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
             warningBox.setText(
-                'Stop frame too large (maximum {:d})!\n'.format(self.intFrames) +
+                'Stop frame too large (maximum {:d})!\n'.format(
+                    self.intFrames
+                    ) +
                 'Continue with maximum value?'
                 )
             warningBox.exec_()
@@ -2509,10 +2519,13 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Warning box when refreshing frames
         warningBox = QtGui.QMessageBox(self)
-        warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
+        warningBox.setStandardButtons(
+            QtGui.QMessageBox.No | QtGui.QMessageBox.Yes
+            )
         warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
         warningBox.setText(
-            'Threshold settings will be lost when calculating new drift data!\n' +
+            'Threshold settings will be ' +
+            'lost when calculating new drift data!\n' +
             'Do you really want to continue?'
             )
         if not goon:
@@ -2532,7 +2545,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 self.dictThresh[key][self.idxCriterion] = False
 
             # If the input is correct continue
-            varContinue = self._calculations(oldfirst=intOldFirst, oldlast=intOldLast)
+            varContinue = self._calculations(
+                oldfirst=intOldFirst, oldlast=intOldLast
+                )
             if varContinue:
 
                 # Refresh GUI
@@ -2604,10 +2619,18 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             self.dictButton[mode].setEnabled(True)
 
         # Black is the color
-        self.dictWidgets[mode][self.idxStart].setStyleSheet(self.dictColor['done'])
-        self.dictWidgets[mode][self.idxStop].setStyleSheet(self.dictColor['done'])
-        self.dictWidgets[mode][self.idxStartSave].setStyleSheet(self.dictColor['done'])
-        self.dictWidgets[mode][self.idxStopSave].setStyleSheet(self.dictColor['done'])
+        self.dictWidgets[mode][self.idxStart].setStyleSheet(
+            self.dictColor['done']
+            )
+        self.dictWidgets[mode][self.idxStop].setStyleSheet(
+            self.dictColor['done']
+            )
+        self.dictWidgets[mode][self.idxStartSave].setStyleSheet(
+            self.dictColor['done']
+            )
+        self.dictWidgets[mode][self.idxStopSave].setStyleSheet(
+            self.dictColor['done']
+            )
 
     def _plot_scroll(self, mode):
         """Plot the plots for the Scroll Widget"""
@@ -2691,7 +2714,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 figFrames = pylab.figure(figsize=(3, 2), dpi=100)
                 intBins = self.lsFiles.count() // 3
                 if intBins <= 10:
-                    intBins = self.lsFiles.count()
+                    if intBins <= 1:
+                        intBins = 2
+                    else:
+                        intBins = self.lsFiles.count()
                 arrBins = numpy.linspace(
                     numpy.min(self.arrData[strName]),
                     numpy.max(self.arrData[strName]) + 0.0001,
@@ -2704,7 +2730,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 pylab.plot(hist[1][:-1], hist[0], 'k.')
                 pylab.grid()
                 pylab.xlim([hist[1][0] - hist[1][-1] * 0.1, hist[1][-1] * 1.1])
-                pylab.ylim([0, numpy.max(hist[0]) + 1])
+                if len(hist[0]) > 1:
+                    ymax = numpy.max(hist[0])
+                else:
+                    ymax = hist[0]
+                pylab.ylim([0, ymax + 1])
                 if mode == self.modeFrame:
                     pylab.xlabel(r'Drift / Angstrom')
                 if mode == self.modeAngle:
@@ -2747,7 +2777,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         figThresh = pylab.figure(figsize=(5, 4), dpi=100)
         intBins = self.lsFiles.count() // 3
         if intBins <= 10:
-            intBins = self.lsFiles.count()
+            if intBins <= 1:
+                intBins = 2
+            else:
+                intBins = self.lsFiles.count()
 
         # Special case, if there is no angle available
         if self.idxFirstFrame == self.idxLastFrame - 1 and \
@@ -2858,20 +2891,25 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 bins=arrBins
                 )
             pylab.plot(hist[1][:-1], hist[0], 'k.')
+            if len(hist[0]) > 1:
+                ymax = numpy.max(hist[0])
+            else:
+                ymax = hist[0]
+            pylab.ylim([0, ymax + 1])
             pylab.vlines(
-                fltStart, 0, numpy.max(hist[0]) + 1,
+                fltStart, 0, ymax + 1,
                 color='b', linestyle='dashed'
                 )
             pylab.vlines(
-                fltStop, 0, numpy.max(hist[0]) + 1,
+                fltStop, 0, ymax + 1,
                 color='r', linestyle='dashed'
                 )
             pylab.vlines(
-                fltStartSave, 0, numpy.max(hist[0]) + 1,
+                fltStartSave, 0, ymax + 1,
                 color='b', linestyle='solid'
                 )
             pylab.vlines(
-                fltStopSave, 0, numpy.max(hist[0]) + 1,
+                fltStopSave, 0, ymax + 1,
                 color='r', linestyle='solid'
                 )
             pylab.vlines(
@@ -2884,7 +2922,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 )
             pylab.grid()
             pylab.xlim([hist[1][0] - hist[1][-1] * 0.1, hist[1][-1] * 1.1])
-            pylab.ylim([0, numpy.max(hist[0]) + 1])
+            pylab.ylim([0, ymax + 1])
             pylab.xlabel(strXLabel)
             pylab.ylabel(r'Nr. of Micrographs')
             pylab.title(strTitle)
@@ -3601,16 +3639,16 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         with open('{:s}_uncorrected.txt'.format(strOutput), 'w') as f:
             for name in sorted(self.listChecked):
                 arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                f.write('{:s}/Doseuncorrected/{:s}\n'.format(
-                    str(self.strInputDir).split('/')[-2],
+                f.write('{:s}/{:s}\n'.format(
+                    os.path.relpath(self.strInputDir).replace('Shift', 'Doseuncorrected'),
                     arrCurrentEntry[self.dMic][0])
                     )
 
         with open('{:s}_corrected.txt'.format(strOutput), 'w') as f:
             for name in sorted(self.listChecked):
                 arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                f.write('{:s}/Dosecorrected/{:s}\n'.format(
-                    str(self.strInputDir).split('/')[-2],
+                f.write('{:s}/{:s}\n'.format(
+                    os.path.relpath(self.strInputDir).replace('Shift', 'Dosecorrected'),
                     arrCurrentEntry[self.dMic][0])
                     )
 
