@@ -13884,8 +13884,10 @@ def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 	r.setup()
 	m = [1.0]*nnnx
 	is_complex = prjlist[0].get_attr("is_complex")
+	from filter		import filt_ctf
 	for image in prjlist:
 		if not is_complex: image = fft(image)
+		image =filt_ctf(image, image.get_attr("ctf"))
 		image.set_attr("padffted",1)
 		image.set_attr("npad",1)
 		image.set_attr("bckgnoise",m)
@@ -13898,7 +13900,7 @@ def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 
 	reduce_EMData_to_root(fftvol, myid, 0, comm=mpi_comm)
 	reduce_EMData_to_root(weight, myid, 0, comm=mpi_comm)
-
+	reduce_EMData_to_root(refvol, myid, 0, comm=mpi_comm)
 	if not (finfo is None): 
 		finfo.write( "after reduce\n" )
 		finfo.flush()
@@ -13918,18 +13920,21 @@ def recons3d_n_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym
 		nx     = weight.get_xsize()
 		from utilities  import tabessel
 		from morphology import notzero
+		it = model_blank(2*ny)
+		it +=1.0
+		Util.reg_weights(weight, refvol, it)
 		beltab = tabessel(ny, nnxo) # iterative process
 		nwe    = notzero(weight)
-		Util.save_slices_on_disk(weight,"slices.hdf")
+		#Util.save_slices_on_disk(weight,"slices.hdf")
 		for i in xrange(niter):
-			#cvv = Util.mulreal(nwe, weight)
-			cvv = Util.read_slice_and_multiply(nwe,"slices.hdf")
+			cvv = Util.mulreal(nwe, weight)
+			#cvv = Util.read_slice_and_multiply(nwe,"slices.hdf")
 			cvv = fft(cvv)
 			Util.mul_img_tabularized(cvv, nnxo, beltab)
 			cvv = fft(cvv)
 			Util.divabs(nwe, cvv)
 		import os
-		os.system(" rm slices.hdf")
+		#os.system(" rm slices.hdf")
 		del  beltab
 		from morphology   import cosinemask, threshold_outside
 		from fundamentals import fshift, fpol
@@ -13976,6 +13981,7 @@ def recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter
 	from reconstruction import insert_slices, insert_slices_pdf
 	from utilities      import reduce_EMData_to_root, model_blank
 	from filter         import filt_table
+	from filter		    import filt_ctf
 	# reconstruction step 
 	refvol = model_blank(nnnx)
 	refvol.set_attr("fudge", 1.0)
@@ -13994,6 +14000,7 @@ def recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter
 	if chunk_id== -1:
 		for image in prjlist:
 			if not is_complex: image = fft(image)
+			image = filt_ctf(image, image.get_attr("ctf"))
 			image.set_attr("padffted",1)
 			image.set_attr("npad",1)
 			image.set_attr("bckgnoise",m)
@@ -14003,6 +14010,7 @@ def recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter
 	else:
 		for image in prjlist:
 			if not is_complex: image = fft(image)
+			image =filt_ctf(image, image.get_attr("ctf"))
 			image.set_attr("padffted",1)
 			image.set_attr("npad",1)
 			image.set_attr("bckgnoise",m)
@@ -22708,7 +22716,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
-			if Tracker["constants"]["3d-interpolation"]=="trl":
+			if Tracker["constants"]["3d-interpolation"]==" ":
 				chunk_id   = 0
 				niter      = 10
 				upweighted = False
