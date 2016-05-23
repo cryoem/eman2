@@ -102,6 +102,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	# - pdb             : Line edit box for formatted string type, and open file button for .pdb
 	# - mrc             : Line edit box for formatted string type, and open file button for .mrc
 	# - txt             : Line edit box for formatted string type, and open file button for .txt
+	# - exe             : Line edit box for formatted string type, and open file button for .exe and no extension
 	# - any_file_list   : Line edit box for formatted string type, and open file button for all file types and .bdb
 	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
 	# - any_image_list  : Line edit box for formatted string type, and open file button for all file types (also mrc, tiff, and etc) and .bdb.
@@ -149,7 +150,7 @@ def construct_token_list_from_wiki(sxcmd_config):
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
 	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
-	keyword_dict["unblur"]                        = SXkeyword_map(2, "any_file")       # unblur
+	keyword_dict["unblur"]                        = SXkeyword_map(2, "exe")            # unblur
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
 	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "txt")            # cter_ctf_file

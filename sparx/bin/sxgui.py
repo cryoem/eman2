@@ -842,8 +842,13 @@ class SXCmdWidget(QWidget):
 			# Use relative path.
 			if file_path:
 				file_path = os.path.relpath(file_path)
+		elif file_format == "exe":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select EXE File", "", "EXE files (*.exe );; All files (*)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = os.path.relpath(file_path)
 		elif file_format == "any_file_list" or file_format == "any_image_list":
-			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", "", "All files (*.*)", options = QFileDialog.DontUseNativeDialog)
+			file_path_list = QFileDialog.getOpenFileNames(self, "Select Files", "", "All files (*)", options = QFileDialog.DontUseNativeDialog)
 			# Use relative path.
 			for a_file_path in file_path_list:
 				file_path += os.path.relpath(str(a_file_path)) + " "
@@ -851,7 +856,7 @@ class SXCmdWidget(QWidget):
 			if file_format:
 				file_path = str(QFileDialog.getOpenFileName(self, "Select %s File" % (file_format.upper()), "", "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog))
 			else:
-				file_path = str(QFileDialog.getOpenFileName(self, "Select File", "", "All files (*.*)", options = QFileDialog.DontUseNativeDialog))
+				file_path = str(QFileDialog.getOpenFileName(self, "Select File", "", "All files (*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
 				file_path = os.path.relpath(file_path)
@@ -1196,6 +1201,12 @@ class SXCmdTab(QWidget):
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 						elif cmd_token.type == "txt":
 							file_format = "txt"
+							temp_btn = QPushButton("Select .%s" % file_format)
+							temp_btn.setToolTip("Display open file dailog to select .%s parameter file" % file_format)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+						elif cmd_token.type == "exe":
+							file_format = "exe"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setToolTip("Display open file dailog to select .%s parameter file" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
@@ -1990,7 +2001,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_category_list.append(sxcmd_category)
 
 		sxcmd = SXcmd(); sxcmd.name = "sxunblur"; sxcmd.mode = ""; sxcmd.label = "Micrograph movie alignment"; sxcmd.short_info = "Align micrograph movies with Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie_micrograph"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "unblur"; token.key_prefix = ""; token.label = "Path to unblur executable"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "unblur"; token.key_prefix = ""; token.label = "Path to unblur executable"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "exe"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_mrc_micrograph"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "You can use the wild cards (e.g. *) to specify a list of micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "mrc"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nr_frames"; token.key_prefix = "--"; token.label = "Number of frames"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "3"; token.restore = "3"; token.type = "int"; sxcmd.token_list.append(token)
