@@ -19025,17 +19025,17 @@ EMData*  Util::unrollmask( int ny )
 {
 	ENTERFUNC;
 
-    int nyp2 = ny/2;
+	int nyp2 = ny/2;
 	int nx = nyp2+1;
 
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
 	power->to_one();
 
-    float* data = power->get_data();
+	float* data = power->get_data();
 
-    float argy, argx;
-	float rmax = nyp2 + 0.5;
+	float argy, argx;
+	float rmax = (float)nyp2 + 0.5f;
 	for ( int iy = 1; iy <= ny; iy++) {
 		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
 		for ( int ix = 1; ix <= nx; ix++) {
@@ -19053,14 +19053,14 @@ EMData*  Util::unrollmask( int ny )
 
 	power->update();
 	EXITFUNC;
-    return power;
+	return power;
 }
 #undef data
 
 vector<float> Util::rotavg_fourier(EMData* img)
 {
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-    int nyp2 = ny/2;
+	int nyp2 = ny/2;
 	int lsd = (nx + 2 - nx%2)/2;
 	EMData *fimg = img->do_fft();
 	fimg->set_attr("is_complex", false);
@@ -19069,15 +19069,14 @@ vector<float> Util::rotavg_fourier(EMData* img)
 	for (int i=0; i<2*lsd; i++)  rotav[i] = 0.0f; 
 	vector<float> count(lsd);
 	for (int i=0; i<lsd; i++)  count[i] = 0.0f; 
-	
-	
+
 	float tsum = 0.0;
-    float argy, argx;
+	float argy, argx;
 	for ( int iy = 1; iy <= ny; iy++) {
 		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
 		for ( int ix = 1; ix <= lsd; ix++) {
 			int jx=ix-1;
-			if(not ((jx == 0) and (jy <= 0)) ) {
+			if(! ((jx == 0) && (jy <= 0)) ) {
 				argx = argy + float(jx*jx);
 				float rf = sqrt( argx );
 				int  ir = int(rf);
@@ -19093,19 +19092,13 @@ vector<float> Util::rotavg_fourier(EMData* img)
 					count[ir]   += qres;
 					count[ir+1] += frac;
 				}
-
-
 			}
 		}
 	}
 	rotav[0] = fint[0]*fint[0];
 	for (int ir=0; ir<lsd; ir++) {
 		rotav[ir+lsd] = rotav[ir];
-		#ifdef _WIN32
-			rotav[ir] /= _cpp_max(count[ir],1.0f);
-		#else
-			rotav[ir] /= std::max(count[ir],1.0f);
-		#endif	//_WIN32
+		rotav[ir] /= Util::get_max(count[ir],1.0f);
 		if(rotav[ir] > 0.0f)  rotav[ir] = 1.0f/rotav[ir];
 	}
 	rotav[lsd] = 0.0f;
