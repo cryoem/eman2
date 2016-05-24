@@ -481,6 +481,33 @@ namespace EMAN
 			return (int) (x + 0.5);
 		}
 
+		/** Get the log base 2 of a float x.
+		 * @param[in] x Given float number.
+		 * @return log base 2 of x.
+		 */
+		static inline float log_2(float x)
+		{
+			return (float) (log(x) / log(2.0f));
+		}
+
+		/** Get the log base 2 of a double x.
+		 * @param[in] x Given double.
+		 * @return log base 2 of x.
+		 */
+		static inline double log_2(double x)
+		{
+			return (double) (log(x) / log(2.0));
+		}
+
+		/** Get the log base 2 of an integer i.
+		 * @param[in] i Given integer.
+		 * @return log base 2 of i.
+		 */
+		static inline float log_2(int i)
+		{
+			return (float) (log((float)i) / log(2.0f));
+		}
+
 		/** Calculate linear interpolation.
 		 * @param[in] p1 The first number (at x1).
 		 * @param[in] p2 The second number (at x2).
