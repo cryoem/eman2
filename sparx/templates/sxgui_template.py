@@ -1522,13 +1522,13 @@ class SXCmdCategoryWidget(QWidget):
 		self.setPalette(palette)
 
 		# Setup grid layout in the scroll area
-		self.grid_layout = QGridLayout(self)
+		self.grid_layout = QGridLayout()
 		self.grid_layout.setMargin(SXLookFeelConst.grid_margin)
 		self.grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		self.grid_layout.setColumnMinimumWidth(0, SXLookFeelConst.sxcmd_btn_area_min_width)
-		self.grid_layout.setColumnMinimumWidth(1, SXLookFeelConst.sxcmd_widget_area_min_width)
+		# self.grid_layout.setColumnMinimumWidth(1, SXLookFeelConst.sxcmd_widget_area_min_width)
 		# Give the column of the command settings area a higher stretch priority so that the other area does not stretch horizontally
-		self.grid_layout.setColumnStretch(self.grid_col_origin + self.sxcmd_btn_area_col_span, self.grid_layout.columnStretch(self.grid_col_origin + self.sxcmd_btn_area_col_span) + 1)
+		# self.grid_layout.setColumnStretch(self.grid_col_origin + self.sxcmd_btn_area_col_span, self.grid_layout.columnStretch(self.grid_col_origin + self.sxcmd_btn_area_col_span) + 1)
 
 	# Add Pipeline SX Commands (sx*.py) associated widgets
 	def add_sxcmd_widgets(self):
@@ -1536,6 +1536,14 @@ class SXCmdCategoryWidget(QWidget):
 		# self.sxcmd_btn_group.setExclusive(True) # NOTE: 2016/02/18 Toshio Moriya: Without QPushButton.setCheckable(True). This does not do anything. Let manually do this
 
 		current_role = None
+		self.stacked_layout = QStackedLayout()
+		grid_box_layout = QVBoxLayout()
+		grid_box_layout.addLayout(self.grid_layout)
+		grid_box_layout.addStretch(1)
+		global_layout = QHBoxLayout()
+		global_layout.addLayout(grid_box_layout)
+		global_layout.addLayout(self.stacked_layout, stretch=1)
+		self.setLayout(global_layout)
 
 		# Add SX Commands (sx*.py) associated widgets
 		for sxcmd in self.sxcmd_category.cmd_list:
@@ -1571,8 +1579,7 @@ class SXCmdCategoryWidget(QWidget):
 
 			# Create SXCmdWidget for this sx*.py processe
 			sxcmd.widget = SXCmdWidget(self.sxconst_set, sxcmd)
-			sxcmd.widget.hide()
-			self.grid_layout.addWidget(sxcmd.widget, self.grid_row_origin, self.grid_col_origin + self.sxcmd_btn_area_col_span, self.sxcmd_widget_area_row_span, self.sxcmd_widget_area_col_span)
+			self.stacked_layout.addWidget(sxcmd.widget)
 
 			# connect widget signals
 			self.connect(sxcmd.btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
@@ -1588,16 +1595,13 @@ class SXCmdCategoryWidget(QWidget):
 		if self.cur_sxcmd == sxcmd: return
 
 		if self.cur_sxcmd != None:
-			assert(self.cur_sxcmd.widget.isVisible() == True)
-			self.cur_sxcmd.widget.hide()
 			custom_style = "QPushButton {font: normal; color:black; }" # custom_style = "QPushButton {color:#000; }"
 			self.cur_sxcmd.btn.setStyleSheet(custom_style)
 
 		self.cur_sxcmd = sxcmd
 
 		if self.cur_sxcmd != None:
-			assert(self.cur_sxcmd.widget.isVisible() == False)
-			self.cur_sxcmd.widget.show()
+			self.stacked_layout.setCurrentWidget(self.cur_sxcmd.widget)
 			custom_style = "QPushButton {font: bold; color:blue; }" # custom_style = "QPushButton {font: bold; color:#8D0; }"
 			self.cur_sxcmd.btn.setStyleSheet(custom_style)
 
