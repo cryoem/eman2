@@ -988,6 +988,7 @@ class SXCmdTab(QWidget):
 		scroll_layout.addLayout(grid_layout)
 		scroll_layout.addLayout(submit_layout)
 		scroll_layout.addLayout(btn_layout)
+		scroll_layout.addStretch(1)
 		# # Give the columns of token label a higher priority to stretch relative to the others
 		# for col_span in xrange(token_label_col_span):
 		# 	grid_layout.setColumnStretch(grid_row_origin + col_span, grid_layout.columnStretch(grid_row_origin+col_span) + 1)
