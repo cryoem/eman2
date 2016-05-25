@@ -1285,6 +1285,7 @@ class SXCmdTab(QWidget):
 
 			# Add gui components for MPI related paramaters
 			temp_label = QLabel("MPI processors")
+			temp_label.setMinimumWidth(token_label_min_width)
 			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			# self.mpi_nproc_edit = QLineEdit(self)
@@ -1296,6 +1297,7 @@ class SXCmdTab(QWidget):
 			grid_row += 1
 
 			temp_label = QLabel("MPI command line template")
+			temp_label.setMinimumWidth(token_label_min_width)
 			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.mpi_cmd_line_edit = QLineEdit()
@@ -1312,6 +1314,7 @@ class SXCmdTab(QWidget):
 			# Add gui components for queue submission (qsub)
 			is_qsub_enabled = False
 			temp_label = QLabel("Submit job to queue")
+			temp_label.setMinimumWidth(token_label_min_width)
 			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.qsub_enable_checkbox = QCheckBox("")
@@ -1327,6 +1330,7 @@ class SXCmdTab(QWidget):
 			grid_row += 1
 
 			temp_label = QLabel("Job name")
+			temp_label.setMinimumWidth(token_label_min_width)
 			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.qsub_job_name_edit = QLineEdit()
@@ -1341,6 +1345,7 @@ class SXCmdTab(QWidget):
 			grid_row += 1
 
 			temp_label = QLabel("Submission command")
+			temp_label.setMinimumWidth(token_label_min_width)
 			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.qsub_cmd_edit = QLineEdit()
@@ -1355,6 +1360,7 @@ class SXCmdTab(QWidget):
 			grid_row += 1
 
 			temp_label = QLabel("Submission script template")
+			temp_label.setMinimumWidth(token_label_min_width)
 			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.qsub_script_edit = QLineEdit()
