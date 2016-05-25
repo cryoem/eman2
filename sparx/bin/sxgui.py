@@ -197,14 +197,14 @@ class SXLookFeelConst(object):
 	sxmenu_btn_area_min_width = -1
 	sxcmd_btn_area_min_width = -1
 	sxcmd_widget_area_min_width = -1
-	
+
 	file_dialog_dir = ""
-	
+
 	@staticmethod
 	def initialise(sxapp):
 		# Set the directory for all file dialogs to script directory
 		SXLookFeelConst.file_dialog_dir = os.getcwd()
-		
+
 		# Search for maximun screen height and set it to SXLookFeelConst singleton class
 		max_screen_height = sxapp.desktop().screenGeometry().height()
 		for index in range(sxapp.desktop().screenCount()):
@@ -227,7 +227,7 @@ class SXLookFeelConst(object):
 		SXLookFeelConst.sxmenu_btn_area_min_width = 2 * SXLookFeelConst.sxmenu_item_btn_width + SXLookFeelConst.grid_distance + 18
 		SXLookFeelConst.sxcmd_btn_area_min_width = 240
 		SXLookFeelConst.sxcmd_widget_area_min_width = SXLookFeelConst.sxmain_window_width - SXLookFeelConst.sxmenu_btn_area_min_width - SXLookFeelConst.sxcmd_btn_area_min_width
-		
+
 	@staticmethod
 	def format_path(path):
 		formatted_path = os.path.relpath(path)
@@ -235,10 +235,10 @@ class SXLookFeelConst(object):
 			# if the path is above the project root directory (current directory)
 			# use absolute path
 			formatted_path = path
-		# else: 
-			# if the path is project subdirectory 
+		# else:
+			# if the path is project subdirectory
 			# use relative path
-		
+
 		return formatted_path
 
 # ========================================================================================
@@ -954,21 +954,55 @@ class SXCmdTab(QWidget):
 		# Register the scroll area to the global layout
 		global_layout.addWidget(scroll_area)
 
-		# Setup grid layout in the scroll area
-		grid_layout = QGridLayout(scroll_area_widget)
+		# Setup other layouts
+		scroll_layout = QVBoxLayout(scroll_area_widget)
+		scroll_layout.setContentsMargins(0,0,0,0)
+		btn_hbox = QHBoxLayout()
+		title_hbox = QHBoxLayout()
+		title_layout = QGridLayout()
+		title_layout.setMargin(SXLookFeelConst.grid_margin)
+		title_layout.setSpacing(SXLookFeelConst.grid_spacing)
+		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
+		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
+		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
+		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
+		grid_layout = QGridLayout()
 		grid_layout.setMargin(SXLookFeelConst.grid_margin)
 		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
+		submit_layout = QGridLayout()
+		submit_layout.setMargin(SXLookFeelConst.grid_margin)
+		submit_layout.setSpacing(SXLookFeelConst.grid_spacing)
+		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
+		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
+		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
+		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
+		btn_layout = QGridLayout()
+		btn_layout.setMargin(SXLookFeelConst.grid_margin)
+		btn_layout.setSpacing(SXLookFeelConst.grid_spacing)
+		btn_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
+		btn_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
+		btn_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
+		btn_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
+		title_hbox.addLayout(title_layout)
+		title_hbox.addStretch(1)
+		scroll_layout.addLayout(title_hbox)
+		scroll_layout.addLayout(grid_layout)
+		scroll_layout.addLayout(submit_layout)
+		btn_hbox.addLayout(btn_layout)
+		btn_hbox.addStretch(1)
+		scroll_layout.addLayout(btn_hbox)
+		scroll_layout.addStretch(1)
 		# # Give the columns of token label a higher priority to stretch relative to the others
 		# for col_span in xrange(token_label_col_span):
 		# 	grid_layout.setColumnStretch(grid_row_origin + col_span, grid_layout.columnStretch(grid_row_origin+col_span) + 1)
 
 		# Define the tab frame within the tab layout
-		tab_frame = QFrame()
-		grid_layout.addWidget(tab_frame, grid_row_origin, grid_col_origin, cmd_frame_row_span, cmd_frame_col_span)
+		# tab_frame = QFrame()
+		# grid_layout.addWidget(tab_frame, grid_row_origin, grid_col_origin, cmd_frame_row_span, cmd_frame_col_span)
 
 		# Start add command token widgets to the grid layout
 		grid_row = grid_row_origin
@@ -979,7 +1013,7 @@ class SXCmdTab(QWidget):
 			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
-			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
+			title_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
 
 			#
 			# NOTE: 2015/11/17 Toshio Moriya
@@ -990,29 +1024,22 @@ class SXCmdTab(QWidget):
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
-			grid_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
+			title_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 
 			grid_row += short_info_row_span
-
-			# Add load paramaters button
-			self.load_params_btn = QPushButton("Load parameters")
-			self.load_params_btn.setMinimumWidth(func_btn_min_width)
-			self.load_params_btn.setToolTip("Load gui parameter settings to retrieve a previously-saved one")
-			self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.load_params)
-			grid_layout.addWidget(self.load_params_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 
 		elif tab_group == "advanced":
 			# Set a label and its position in this tab
 			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
-			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
+			title_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
 
 			temp_label = QLabel("Set advanced parameters", self)
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
-			grid_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
+			title_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 
 		# Add space
 		grid_row += 2
@@ -1026,7 +1053,7 @@ class SXCmdTab(QWidget):
 					n_widgets = 2 # function type has two line edit boxes
 					cmd_token_widget = [None] * n_widgets
 					cmd_token_restore_widget = [None] * n_widgets
-					
+
 					# Define custom style for restore widgets
 					custom_style = "QPushButton {color:gray; }"
 
@@ -1258,23 +1285,23 @@ class SXCmdTab(QWidget):
 
 			# Add gui components for MPI related paramaters
 			temp_label = QLabel("MPI processors")
-			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			# self.mpi_nproc_edit = QLineEdit(self)
 			self.mpi_nproc_edit = QLineEdit()
 			self.mpi_nproc_edit.setText("1")
 			self.mpi_nproc_edit.setToolTip("Number of processors to use. default is single processor mode")
-			grid_layout.addWidget(self.mpi_nproc_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+			submit_layout.addWidget(self.mpi_nproc_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 			grid_row += 1
 
 			temp_label = QLabel("MPI command line template")
-			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.mpi_cmd_line_edit = QLineEdit()
 			self.mpi_cmd_line_edit.setText("")
 			self.mpi_cmd_line_edit.setToolTip("Template of MPI command line (e.g. \"mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX\"). if empty, use \"mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX\"")
-			grid_layout.addWidget(self.mpi_cmd_line_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+			submit_layout.addWidget(self.mpi_cmd_line_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 			grid_row += 1
 
@@ -1285,7 +1312,7 @@ class SXCmdTab(QWidget):
 			# Add gui components for queue submission (qsub)
 			is_qsub_enabled = False
 			temp_label = QLabel("Submit job to queue")
-			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.qsub_enable_checkbox = QCheckBox("")
 			if is_qsub_enabled == True:
@@ -1295,12 +1322,12 @@ class SXCmdTab(QWidget):
 			self.qsub_enable_checkbox.setToolTip("Submit job to queue")
 			self.qsub_enable_checkbox.stateChanged.connect(self.set_qsub_enable_state) # To control enable state of the following qsub related widgets
 			self.qsub_enable_checkbox.setEnabled(self.sxcmdwidget.sxcmd.is_submittable)
-			grid_layout.addWidget(self.qsub_enable_checkbox, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+			submit_layout.addWidget(self.qsub_enable_checkbox, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 			grid_row += 1
 
 			temp_label = QLabel("Job name")
-			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.qsub_job_name_edit = QLineEdit()
 			if self.sxcmdwidget.sxcmd.is_submittable == True:
@@ -1309,12 +1336,12 @@ class SXCmdTab(QWidget):
 				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
 				self.qsub_job_name_edit.setText("N/A")
 			self.qsub_job_name_edit.setToolTip("Name of this job")
-			grid_layout.addWidget(self.qsub_job_name_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+			submit_layout.addWidget(self.qsub_job_name_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 			grid_row += 1
 
 			temp_label = QLabel("Submission command")
-			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.qsub_cmd_edit = QLineEdit()
 			if self.sxcmdwidget.sxcmd.is_submittable == True:
@@ -1323,12 +1350,12 @@ class SXCmdTab(QWidget):
 				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
 				self.qsub_cmd_edit.setText("N/A")
 			self.qsub_cmd_edit.setToolTip("Name of submission command to queue job")
-			grid_layout.addWidget(self.qsub_cmd_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+			submit_layout.addWidget(self.qsub_cmd_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 			grid_row += 1
 
 			temp_label = QLabel("Submission script template")
-			grid_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
+			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
 
 			self.qsub_script_edit = QLineEdit()
 			if self.sxcmdwidget.sxcmd.is_submittable == True:
@@ -1337,12 +1364,12 @@ class SXCmdTab(QWidget):
 				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
 				self.qsub_script_edit.setText("N/A")
 			self.qsub_script_edit.setToolTip("File name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh)")
-			grid_layout.addWidget(self.qsub_script_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
+			submit_layout.addWidget(self.qsub_script_edit, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 			self.qsub_script_open_btn = QPushButton("Select Template")
 			self.qsub_script_open_btn.setToolTip("Display open file dailog to select job submission script template file")
 			self.connect(self.qsub_script_open_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, self.qsub_script_edit))
-			grid_layout.addWidget(self.qsub_script_open_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+			submit_layout.addWidget(self.qsub_script_open_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 
 			grid_row += 1
 
@@ -1357,7 +1384,14 @@ class SXCmdTab(QWidget):
 			self.save_params_btn.setMinimumWidth(func_btn_min_width)
 			self.save_params_btn.setToolTip("Save gui parameter settings")
 			self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_params)
-			grid_layout.addWidget(self.save_params_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
+			btn_layout.addWidget(self.save_params_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
+
+			# Add load paramaters button
+			self.load_params_btn = QPushButton("Load parameters")
+			self.load_params_btn.setMinimumWidth(func_btn_min_width)
+			self.load_params_btn.setToolTip("Load gui parameter settings to retrieve a previously-saved one")
+			self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.load_params)
+			btn_layout.addWidget(self.load_params_btn, grid_row, grid_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
 
 			grid_row += 1
 
@@ -1365,9 +1399,7 @@ class SXCmdTab(QWidget):
 			self.cmd_line_btn.setMinimumWidth(func_btn_min_width)
 			self.cmd_line_btn.setToolTip("Generate command line from gui parameter settings and automatically save settings")
 			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.print_cmd_line)
-			grid_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
-
-			grid_row += 1
+			btn_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin, func_btn_row_span, func_btn_col_span)
 
 			# Add a run button
 			self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.get_mode_name_for("human"))
@@ -1377,7 +1409,7 @@ class SXCmdTab(QWidget):
 			self.execute_btn.setMinimumWidth(func_btn_min_width)
 			self.execute_btn.setToolTip("Run %s and automatically save gui parameter settings" % self.sxcmdwidget.sxcmd.get_mode_name_for("human"))
 			self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxcmdwidget.execute_cmd_line)
-			grid_layout.addWidget(self.execute_btn, grid_row, grid_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
+			btn_layout.addWidget(self.execute_btn, grid_row, grid_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
 
 	def set_text_entry_widget_enable_state(self, widget, is_enabled):
 		# Set enable state and background color of text entry widget according to enable state
