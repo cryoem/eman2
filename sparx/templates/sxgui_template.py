@@ -956,6 +956,8 @@ class SXCmdTab(QWidget):
 
 		# Setup other layouts
 		scroll_layout = QVBoxLayout(scroll_area_widget)
+		btn_hbox = QHBoxLayout()
+		title_hbox = QHBoxLayout()
 		title_layout = QGridLayout()
 		title_layout.setMargin(SXLookFeelConst.grid_margin)
 		title_layout.setSpacing(SXLookFeelConst.grid_spacing)
@@ -984,10 +986,14 @@ class SXCmdTab(QWidget):
 		btn_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
 		btn_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
 		btn_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
-		scroll_layout.addLayout(title_layout)
+		title_hbox.addLayout(title_layout)
+		title_hbox.addStretch(1)
+		scroll_layout.addLayout(title_hbox)
 		scroll_layout.addLayout(grid_layout)
 		scroll_layout.addLayout(submit_layout)
-		scroll_layout.addLayout(btn_layout)
+		btn_hbox.addLayout(btn_layout)
+		btn_hbox.addStretch(1)
+		scroll_layout.addLayout(btn_hbox)
 		scroll_layout.addStretch(1)
 		# # Give the columns of token label a higher priority to stretch relative to the others
 		# for col_span in xrange(token_label_col_span):
