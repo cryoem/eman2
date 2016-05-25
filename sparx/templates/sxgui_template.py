@@ -956,6 +956,7 @@ class SXCmdTab(QWidget):
 
 		# Setup other layouts
 		scroll_layout = QVBoxLayout(scroll_area_widget)
+		scroll_layout.setContentsMargins(0,0,0,0)
 		btn_hbox = QHBoxLayout()
 		title_hbox = QHBoxLayout()
 		title_layout = QGridLayout()
