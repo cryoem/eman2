@@ -1001,8 +1001,8 @@ class SXCmdTab(QWidget):
 		# 	grid_layout.setColumnStretch(grid_row_origin + col_span, grid_layout.columnStretch(grid_row_origin+col_span) + 1)
 
 		# Define the tab frame within the tab layout
-		tab_frame = QFrame()
-		grid_layout.addWidget(tab_frame, grid_row_origin, grid_col_origin, cmd_frame_row_span, cmd_frame_col_span)
+		# tab_frame = QFrame()
+		# grid_layout.addWidget(tab_frame, grid_row_origin, grid_col_origin, cmd_frame_row_span, cmd_frame_col_span)
 
 		# Start add command token widgets to the grid layout
 		grid_row = grid_row_origin
