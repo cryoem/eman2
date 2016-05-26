@@ -19106,7 +19106,6 @@ vector<float> Util::rotavg_fourier(EMData* img)
 		#else
 			rotav[ir] /= std::max(count[ir],1.0f);
 		#endif	//_WIN32
-		if(rotav[ir] > 0.0f)  rotav[ir] = 1.0f/rotav[ir];
 	}
 	rotav[lsd] = 0.0f;
 	for (int ir=1; ir<lsd-1; ir++) rotav[2*lsd-ir-1] += rotav[2*lsd-ir];
