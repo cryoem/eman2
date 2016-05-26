@@ -24,7 +24,7 @@ sxlocres exists in for both MPI and non-MPI versions.
     step:: Fourier shell step size [Pixels]: (default 1.0)
     cutoff:: Resolution cut-off [1/Pixel]: Cut-off for the FSC. By default it goes to the Nyquist frequencies. (default 0.5)
     radius:: Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
-    res_overall:: Overall resolution calibration (0 to 0.5). See Description below for details. (default -1)
+    res_overall:: Overall resolution [1/Pixel]: A value between 0 to 0.5 for calibration of the average local resolution. See Description section in the wiki page for details. (default -1.0)
     
     * The remaining parameters are optional.
     MPI:: Use MPI: (default False)
