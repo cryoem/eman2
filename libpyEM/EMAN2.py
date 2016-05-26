@@ -1928,7 +1928,7 @@ if the lst file does not exist."""
 		self.normalize()
 
 	def __del__(self):
-		self.normalize()
+		self.close()
 
 	def __getitem__(self,n):
 		return self.read(n)
@@ -1939,6 +1939,7 @@ if the lst file does not exist."""
 
 	def close(self):
 		"""Once you call this, you should not try to access this object any more"""
+		self.normalize()
 		self.ptr=None
 
 	def write(self,n,nextfile,extfile,comment=None):

@@ -74,7 +74,7 @@ power spectrum in various ways."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="image",help="Image to process with e2evalimage.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode="eval")
+	parser.add_pos_argument(name="image",help="Image to process with e2evalimage.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode="eval")
 	parser.add_header(name="evalimageheader", help='Options below this label are specific to e2evalimage', title="### e2evalimage options ###", default=None, row=1, col=0, rowspan=1, colspan=2, mode="eval")
 
 	parser.add_argument("--gui",action="store_true",help="This is a GUI-only program. This option is provided for self-consistency",default=True)
@@ -498,7 +498,7 @@ class GUIEvalImage(QtGui.QWidget):
 			except:
 				print "Error computing bgsub on this image"
 				return
-			self.wplot.set_data((s,bgsub),"fg-bg",quiet=True,color=0)
+			self.wplot.set_data((s,bgsub),"fg-bg",quiet=True,color=0,linetype=0)
 
 			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			fit=fit*fit			# squared
@@ -515,11 +515,11 @@ class GUIEvalImage(QtGui.QWidget):
 
 #			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 
-			self.wplot.set_data((s,fit),"fit",color=1)
+			self.wplot.set_data((s,fit),"fit",color=1,linetype=0)
 			self.wplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
 		elif self.plotmode==1:
 			self.wplot.set_data((s[1:],self.fft1d[1:]),"fg",quiet=True,color=1)
-			self.wplot.set_data((s[1:],bg1d[1:]),"bg",color=0)
+			self.wplot.set_data((s[1:],bg1d[1:]),"bg",color=0,linetype=0)
 			self.wplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
 		elif self.plotmode==2:
 			if self.fft1dang==None: self.recalc_real()
@@ -528,11 +528,11 @@ class GUIEvalImage(QtGui.QWidget):
 					# Write the current image parameters to the database
 
 #			for i in xrange(4): bgsuba[i][0]=0
-			self.wplot.set_data((s,bgsub),"fg",quiet=True,color=0)
-			self.wplot.set_data((s[3:],bgsuba[0][3:]),"fg 0-45",quiet=True,color=2)
-			self.wplot.set_data((s[3:],bgsuba[1][3:]),"fg 45-90",quiet=True,color=3)
-			self.wplot.set_data((s[3:],bgsuba[2][3:]),"fg 90-135",quiet=True,color=4)
-			self.wplot.set_data((s[3:],bgsuba[3][3:]),"fg 135-180",quiet=True,color=6)
+			self.wplot.set_data((s,bgsub),"fg",quiet=True,color=0,linetype=0)
+			self.wplot.set_data((s[3:],bgsuba[0][3:]),"fg 0-45",quiet=True,color=2,linetype=0)
+			self.wplot.set_data((s[3:],bgsuba[1][3:]),"fg 45-90",quiet=True,color=3,linetype=0)
+			self.wplot.set_data((s[3:],bgsuba[2][3:]),"fg 90-135",quiet=True,color=4,linetype=0)
+			self.wplot.set_data((s[3:],bgsuba[3][3:]),"fg 135-180",quiet=True,color=6,linetype=0)
 
 			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			fit=fit*fit			# squared
@@ -558,11 +558,11 @@ class GUIEvalImage(QtGui.QWidget):
 			fga=[array(self.fft1dang[i]) for i in xrange(4)]
 
 			for i in xrange(4): fga[i][0]=0
-			self.wplot.set_data((s,fg),"fg",quiet=True,color=0)
-			self.wplot.set_data((s,fga[0]),"fg 0-45",quiet=True,color=2)
-			self.wplot.set_data((s,fga[1]),"fg 45-90",quiet=True,color=3)
-			self.wplot.set_data((s,fga[2]),"fg 90-135",quiet=True,color=4)
-			self.wplot.set_data((s,fga[3]),"fg 135-180",quiet=True,color=6)
+			self.wplot.set_data((s,fg),"fg",quiet=True,color=0,linetype=0)
+			self.wplot.set_data((s,fga[0]),"fg 0-45",quiet=True,color=2,linetype=0)
+			self.wplot.set_data((s,fga[1]),"fg 45-90",quiet=True,color=3,linetype=0)
+			self.wplot.set_data((s,fga[2]),"fg 90-135",quiet=True,color=4,linetype=0)
+			self.wplot.set_data((s,fga[3]),"fg 135-180",quiet=True,color=6,linetype=0)
 
 			#fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			#fit=fit*fit			# squared
@@ -582,7 +582,7 @@ class GUIEvalImage(QtGui.QWidget):
 		if self.plotmode==4:
 			if min(bg1d)<=0.0 : bg1d+=min(bg1d)+max(bg1d)/10000.0
 			ssnr=(self.fft1d-bg1d)/bg1d
-			self.wplot.set_data((s,ssnr),"SSNR",quiet=True,color=0)
+			self.wplot.set_data((s,ssnr),"SSNR",quiet=True,color=0,linetype=0)
 
 			#fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			#fit=fit*fit			# squared
@@ -712,6 +712,7 @@ class GUIEvalImage(QtGui.QWidget):
 			self.data=EMData(fsp,0,False,Region(0,0,int(n),hdr["nx"],hdr["ny"],1))	# read the image from disk
 		else :
 			self.data=EMData(fsp,0)	# read the image from disk
+		self.data.process_inplace("normalize.circlemean")
 
 		self.wimage.setWindowTitle("e2evalimage - " + fsp.split("/")[-1])
 		self.wfft.setWindowTitle("e2evalimage - 2D FFT - "+fsp.split("/")[-1])
