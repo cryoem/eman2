@@ -25875,7 +25875,7 @@ EMData* Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_
 
 	for (size_t i =0; i<(nx*ny*nz); i++)  {
 		int index_slice =int(i/(nx*ny));
-		if (i%(nx*ny) ==0)  {
+		if (i%(nx*ny) ==0 && index_slice !=0)  {
 			 image_slice->read_image(stacked_slices_in, index_slice);
 			 float * slice_data = image_slice->get_data();
 		}
