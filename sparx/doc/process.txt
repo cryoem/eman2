@@ -6,7 +6,7 @@ sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image se
 
 ''usage in command line''
 
-sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --threshold=THRESHOLD  --ne=NE  --nd=ND  --postprocess  --fsc_weighted  --low_pass_filter  --ff=FF  --aa=AA  --mask=MASK  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --FSC_cutoff=FSC_CUTOFF  --2d  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --prtcl_diameter=PRTL_DIAMETER  --bin_width=BIN_WIDTH  --bin_length=BIN_LENGTH
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --threshold=THRESHOLD  --ne=NE  --nd=ND  --postprocess  --fsc_weighted  --low_pass_filter  --ff=FF  --aa=AA  --mask=MASK  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --FSC_cutoff=FSC_CUTOFF  --2d  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
 
 
 === Typical usage ===
@@ -92,7 +92,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 14.  Window stack file -reduce size of images without changing the pixel size.
 
 15. Create angular distribution .build file
-'''sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --prtcl_diameter=500  --bin_width=1  --bin_length=10000'''
+'''sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=500  --cylinder_width=1  --cylinder_length=10000'''
 
 == Input ==
     inputfile:: input file: required for some options. (default none)
@@ -148,12 +148,12 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     box:: new window size: (default 0)
 
     angular_distribution:: Create angular distribution file: The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera (default False)
-    pixel_size:: Pixel size [A]: (default 1.0)
+    pixel_size:: Pixel size [A]: Pixel size in A. (default 1.0)
     round_digit:: Number precision: Decimal numbers will be rounded to this number of decimal points. (default 5)
-    box_size:: Box size [Pixels]: (default 500)
-    prtcl_diameter:: Particle diameter [A]: Used for the representation in Chimera. Defines where the cylinders representing the histogram must start. (default 500)
-    bin_width:: Bin width: (default 1)
-    bin_length:: Cylinder length: Used for the representation in Chimera. This will define the relative size of the cylinders representing the histogram. (default 10000)
+    box_size:: Box size [Pixels]: Box size in Pixel. (default 500)
+    particle_radius:: Particle radius [Pixels]: Used for the representation in Chimera. Defines where the cylinders representing the histogram must start. (default 500)
+    cylinder_width:: Cylinder width: Used for the representation in Chimera. This will define the width of the cylinders representing the histogram.(default 1)
+    cylinder_length:: Cylinder length: Used for the representation in Chimera. This will define the relative size of the cylinders representing the histogram. (default 10000)
 
     * The remaining parameters are optional.
     order:: Order (unimplemented): two arguments are required, (1) name of input stack and (2) desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficient. (default False)

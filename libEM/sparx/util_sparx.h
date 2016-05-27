@@ -873,6 +873,7 @@ costlist, int* curbranch);
 
 	static EMData*  unrollmask( int ny );
 
+	static vector<float> rotavg_fourier(EMData* img);
 
 	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, EMData* bckgnoise);
 	static vector<float> sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob);

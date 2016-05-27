@@ -345,9 +345,9 @@ def main():
 	parser.add_option('--angular_distribution',    action="store_true",    default=False,        help='create an angular distribution file based on a project3d.txt')
 	parser.add_option('--round_digit',       type='int',          default=5,           help='accuracy of the loaded angle (default 5)')
 	parser.add_option('--box_size',       type='int',          default=500,           help='box size [px] (default 500)')
-	parser.add_option('--prtcl_diameter',       type='int',          default=500,           help='particle diameter [A] (default 500)')
-	parser.add_option('--bin_width',       type='int',          default=1,           help='width of the bin (default 1)')
-	parser.add_option('--bin_length',       type='int',          default=10000,           help='length of the bin (default 10000)')
+	parser.add_option('--particle_radius',       type='int',          default=500,           help='Particle radius [Pixels] (default 500)')
+	parser.add_option('--cylinder_width',       type='int',          default=1,           help='width of the cylinder (default 1)')
+	parser.add_option('--cylinder_length',       type='int',          default=10000,           help='length of the cylinder (default 10000)')
 	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
@@ -943,7 +943,7 @@ def main():
 					'Params file does not exists! Please rename and restart the program.', 1
 					)
 			strInput = args[0]
-			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution.build'
+			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution.bild'
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 

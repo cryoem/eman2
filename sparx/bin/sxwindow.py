@@ -158,12 +158,19 @@ If micrograph list file name is not provided, all files matched with the microgr
 	mic_name_list = None
 	error_status = None
 	if myid == main_node:
-		if mic_name_list != None:
+		if mic_list_file_path != None:
+			print("Loading micrograph list from %s file ..." % (mic_list_file_path))
 			mic_name_list = read_text_file(mic_list_file_path)
-		else:
+			if len(mic_name_list) == 0:
+				print("Directory of first micrograph entry is " % (os.path.dirname(mic_name_list[0])))
+		else: # assert (mic_list_file_path == None)
+			print("Generating micrograph list in %s directory..." % (os.path.dirname(mic_pattern)))
 			mic_name_list = glob.glob(mic_pattern)
 		if len(mic_name_list) == 0:
 			error_status = ("No micrograph file is found. Please check input_micrograph_pattern and/or input_micrograph_list_file argument. Run %s -h for help." % (progname), getframeinfo(currentframe()))
+		else:
+			print("Found %d microgarphs" % len(mic_name_list))
+			
 	if_error_then_all_processes_exit_program(error_status)
 	if RUNNING_UNDER_MPI:
 		mic_name_list = wrap_mpi_bcast(mic_name_list, main_node)
@@ -207,7 +214,8 @@ If micrograph list file name is not provided, all files matched with the microgr
 	
 	
 	# Prepare loop variables
-	mic_basename_pattern = os.path.splitext(os.path.basename(mic_pattern))[0]
+	mic_basename_pattern = os.path.basename(mic_pattern)              # file pattern without path
+	mic_baseroot_pattern = os.path.splitext(mic_basename_pattern)[0]  # file pattern without path and extension
 	coords_format = options.coordinates_format.lower()
 	box_size = options.box_size
 	box_half = box_size // 2
@@ -225,17 +233,23 @@ If micrograph list file name is not provided, all files matched with the microgr
 	error_status = None
 	## not a real while, an if with the opportunity to use break when errors need to be reported
 	while myid == main_node:
-
+		# 
+		# NOTE: 2016/05/24 Toshio Moriya
+		# Now, ignores the path in mic_pattern and entries of mic_name_list to create serial ID
+		# Only the basename (file name) in micrograph path must be match
+		# 
 		# Create list of micrograph serial ID
 		# Break micrograph name pattern into prefix and suffix to find the head index of the micrograph serial id
-		mic_tokens = mic_pattern.split('*')
-		# assert (len(mic_tokens) == 2)
-		serial_id_head_index = len(mic_tokens[0])
+		# 
+		mic_basename_tokens = mic_basename_pattern.split('*')
+		# assert (len(mic_basename_tokens) == 2)
+		serial_id_head_index = len(mic_basename_tokens[0])
 		# Loop through micrograph names
 		for mic_name in mic_name_list:
 			# Find the tail index of the serial id and extract serial id from the micrograph name
-			serial_id_tail_index = mic_name.index(mic_tokens[1])
-			serial_id = mic_name[serial_id_head_index:serial_id_tail_index]
+			mic_basename = os.path.basename(mic_name)
+			serial_id_tail_index = mic_basename.index(mic_basename_tokens[1])
+			serial_id = mic_basename[serial_id_head_index:serial_id_tail_index]
 			serial_id_list.append(serial_id)
 		# assert (len(serial_id_list) == len(mic_name))
 		del mic_name_list # Do not need this anymore
@@ -259,16 +273,16 @@ If micrograph list file name is not provided, all files matched with the microgr
 			ctf_error_limit = [options.defocus_error/100.0, options.astigmatism_error]
 			for ctf_params in ctf_list:
 				assert(len(ctf_params) == n_idx_cter)
-				# mic_basename is name of micrograph minus the path and extension
-				mic_basename = os.path.splitext(os.path.basename(ctf_params[idx_cter_mic_name]))[0]
+				# mic_baseroot is name of micrograph minus the path and extension
+				mic_baseroot = os.path.splitext(os.path.basename(ctf_params[idx_cter_mic_name]))[0]
 				if(ctf_params[idx_cter_sd_def] / ctf_params[idx_cter_def] > ctf_error_limit[0]):
-					print("Defocus error %f exceeds the threshold. Micrograph %s is rejected." % (ctf_params[idx_cter_sd_def] / ctf_params[idx_cter_def], mic_basename))
+					print("Defocus error %f exceeds the threshold. Micrograph %s is rejected." % (ctf_params[idx_cter_sd_def] / ctf_params[idx_cter_def], mic_baseroot))
 					n_reject_defocus_error += 1
 				else:
 					if(ctf_params[idx_cter_sd_astig_ang] > ctf_error_limit[1]):
 						ctf_params[idx_cter_astig_amp] = 0.0
 						ctf_params[idx_cter_astig_ang] = 0.0
-					ctf_dict[mic_basename] = ctf_params
+					ctf_dict[mic_baseroot] = ctf_params
 			del ctf_list # Do not need this anymore
 		
 		break
@@ -287,25 +301,25 @@ If micrograph list file name is not provided, all files matched with the microgr
 	if myid == main_node:
 		# Loop over serial IDs of micrographs
 		for serial_id in serial_id_list:
-			# mic_basename is name of micrograph minus the path and extension
-			mic_basename = mic_basename_pattern.replace("*", serial_id)
+			# mic_baseroot is name of micrograph minus the path and extension
+			mic_baseroot = mic_baseroot_pattern.replace("*", serial_id)
 			mic_name = mic_pattern.replace("*", serial_id)
 			coords_name = coords_pattern.replace("*", serial_id)
 			
 			########### # CHECKS: BEGIN
 			if coords_name not in coords_name_list:
-				print("    Cannot read %s. Skipping %s ..." % (coords_name, mic_basename))
+				print("    Cannot read %s. Skipping %s ..." % (coords_name, mic_baseroot))
 				n_mic_reject_no_coords += 1
 				continue
 			
 			# IF mic is in CTER results
 			if options.import_ctf:
-				if mic_basename not in ctf_dict:
-					print("    Is not listed in CTER results. Skipping %s ..." % (mic_basename))
+				if mic_baseroot not in ctf_dict:
+					print("    Is not listed in CTER results. Skipping %s ..." % (mic_baseroot))
 					n_mic_reject_no_cter_entry += 1
 					continue
 				else:
-					ctf_params = ctf_dict[mic_basename]
+					ctf_params = ctf_dict[mic_baseroot]
 			# CHECKS: END
 			
 			n_mic_process += 1
@@ -349,7 +363,7 @@ If micrograph list file name is not provided, all files matched with the microgr
 #####  Starting main parallel execution
 
 	for my_idx, serial_id in enumerate(restricted_serial_id_list):
-		mic_basename = mic_basename_pattern.replace("*", serial_id)
+		mic_baseroot = mic_baseroot_pattern.replace("*", serial_id)
 		mic_name = mic_pattern.replace("*", serial_id)
 		coords_name = coords_pattern.replace("*", serial_id)
 
@@ -357,7 +371,7 @@ If micrograph list file name is not provided, all files matched with the microgr
 			print(mic_name, " ---> % 2.2f%%"%(my_idx/len_processed_by_main_node_divided_by_100))
 		mic_img = get_im(mic_name)
 
-		ctf_params = ctf_dict[mic_basename]
+		ctf_params = ctf_dict[mic_baseroot]
 
 		# Read coordinates according to the specified format and 
 		# make the coordinates the center of particle image 
@@ -421,7 +435,6 @@ If micrograph list file name is not provided, all files matched with the microgr
 		# Cut off frequency components lower than the box size can express 
 		mic_img = fft(filt_gaussh(mic_img, resample_ratio / box_size))
 		
-		
 		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
 		# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
 		# NOTE: 2015/04/13 Toshio Moriya
@@ -445,7 +458,7 @@ If micrograph list file name is not provided, all files matched with the microgr
 		y0 = ny//2
 
 		n_coords_reject_out_of_boundary = 0
-		local_stack_name  = "bdb:%s#" % out_dir + mic_basename + '_ptcls'
+		local_stack_name  = "bdb:%s#" % out_dir + mic_baseroot + '_ptcls'
 		local_particle_id = 0 # can be different from coordinates_id
 		# Loop over coordinates
 		for coords_id in xrange(len(coords_list)):
@@ -463,7 +476,7 @@ If micrograph list file name is not provided, all files matched with the microgr
 			if( (0 <= x - box_half) and ( x + box_half <= nx ) and (0 <= y - box_half) and ( y + box_half <= ny ) ):
 				particle_img = Util.window(mic_img, box_size, box_size, 1, x-x0, y-y0)
 			else:
-				print("Coordinates ID = %04d (x = %4d, y = %4d, box_size = %4d) is out of micrograph bound, skipping ..." % (coords_id, x, y, box_size))
+				print("In %s, coordinates ID = %04d (x = %4d, y = %4d, box_size = %4d) is out of micrograph bound, skipping ..." % (mic_baseroot, coords_id, x, y, box_size))
 				n_coords_reject_out_of_boundary += 1
 				continue
 			
@@ -596,11 +609,11 @@ If micrograph list file name is not provided, all files matched with the microgr
 			mic_start, mic_end = MPI_start_end(len(restricted_serial_id_list_not_sliced), number_of_processes, proc_i)
 			for serial_id in restricted_serial_id_list_not_sliced[mic_start:mic_end]:
 				e2bdb_command = "e2bdb.py "
-				mic_basename = mic_basename_pattern.replace("*", serial_id)
+				mic_baseroot = mic_baseroot_pattern.replace("*", serial_id)
 				if number_of_processes > 1:
-					e2bdb_command += "bdb:" + os.path.join(original_out_dir,"%03d/"%proc_i) + mic_basename + "_ptcls "
+					e2bdb_command += "bdb:" + os.path.join(original_out_dir,"%03d/"%proc_i) + mic_baseroot + "_ptcls "
 				else:
-					e2bdb_command += "bdb:" + os.path.join(original_out_dir, mic_basename + "_ptcls ") 
+					e2bdb_command += "bdb:" + os.path.join(original_out_dir, mic_baseroot + "_ptcls ") 
 				
 				e2bdb_command += " --appendvstack=bdb:%s/data  1>/dev/null"%original_out_dir
 				cmdexecute(e2bdb_command, printing_on_success = False)

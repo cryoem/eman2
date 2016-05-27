@@ -1945,7 +1945,7 @@ def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 	return fsc((img1-s1[0])*mask, (img2-s2[0])*mask, w, filename)
 
 
-def locres(vi, ui, m, nk, cutoff, step, res_overall, myid, main_node, number_of_proc):
+def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
 	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
@@ -2059,7 +2059,12 @@ def locres(vi, ui, m, nk, cutoff, step, res_overall, myid, main_node, number_of_
 										if(k == number_of_proc-1):
 											bailout = 0
 				"""
-			freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
+			"""
+			if res_overall !=-1.0:
+				t = res_overall- Util.infomask(freqvol, m, True)[0]
+				print t
+				freqvol += t
+			"""
 
 		else:
 			tag_node = myid+1001

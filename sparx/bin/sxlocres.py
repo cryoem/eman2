@@ -44,7 +44,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + """ firstvolume  secondvolume maskfile outputfile --wn --step --cutoff  --radius  --fsc --MPI
+	usage = progname + """ firstvolume  secondvolume maskfile outputfile --wn --step --cutoff  --radius  --fsc  --res_overall  --MPI
 
 	Compute local resolution in real space within area outlined by the maskfile and within regions wn x wn x wn
 	"""
@@ -55,6 +55,7 @@ def main():
 	parser.add_option("--cutoff",   type="float",	default= 0.5,       help="resolution cut-off for FSC (default 0.5)")
 	parser.add_option("--radius",	type="int",		default=-1, 		help="if there is no maskfile, sphere with r=radius will be used, by default the radius is nx/2-wn")
 	parser.add_option("--fsc",      type="string",	default= None,      help="overall FSC curve (might be truncated) (default no curve)")
+	parser.add_option("--res_overall",  type="float",	default= -1.0,   help="overall resolution estimated by users")
 	parser.add_option("--MPI",      action="store_true",   	default=False,  help="use MPI version")
 
 	(options, args) = parser.parse_args(arglist[1:])
@@ -67,7 +68,8 @@ def main():
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
 
-
+	res_overall = options.res_overall
+	
 	if options.MPI:
 		from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 		from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
@@ -118,6 +120,7 @@ def main():
 		bcast_EMData_to_all(m, myid, main_node)
 
 		from statistics import locres
+		"""
 		res_overall = 0.5
 		if myid ==main_node:
 			fsc_curve = fsc(vi, ui)
@@ -126,8 +129,16 @@ def main():
 					res_overall = fsc_curve[0][ifreq]
 					break
 		res_overall = bcast_number_to_all(res_overall, main_node)
-		freqvol, resolut = locres(vi, ui, m, nk, cutoff, options.step, res_overall, myid, main_node, number_of_proc)
+		"""
+		freqvol, resolut = locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
 		if(myid == 0):
+			if res_overall !=-1.0:
+				freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
+				for ifreq in xrange(len(resolut)):
+					if resolut[ifreq][0] >res_overall:
+						 break
+				for jfreq in xrange(ifreq, len(resolut)):
+					resolut[jfreq][1] = 0.0	
 			freqvol.write_image(outvol)
 			if(options.fsc != None): write_text_row(resolut, options.fsc)
 		from mpi import mpi_finalize
@@ -153,14 +164,14 @@ def main():
 
 		vf = fft(vi)
 		uf = fft(ui)
-		
+		"""		
 		res_overall = 0.5
 		fsc_curve = fsc(vi, ui)
 		for ifreq in xrange(len(fsc_curve[0])-1, -1, -1):
 			if fsc_curve[1][ifreq] > options.cutoff:
 				res_overall = fsc_curve[0][ifreq]
 				break
-				
+		"""		
 		lp = int(nn/2/options.step+0.5)
 		step = 0.5/lp
 
@@ -212,7 +223,14 @@ def main():
 								else:
 									bailout = False
 			if(bailout):  break
-		freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
+		print len(resolut)
+		if res_overall !=-1.0:
+			freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
+			for ifreq in xrange(len(resolut)):
+				if resolut[ifreq][1] >res_overall:
+					 break
+			for jfreq in xrange(ifreq, len(resolut)):
+				resolut[jfreq][2] = 0.0	
 		freqvol.write_image(outvol)
 		if(options.fsc != None): write_text_row(resolut, options.fsc)
 
