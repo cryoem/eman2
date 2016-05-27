@@ -38,12 +38,12 @@ class SXcmd_config:
 
 # ========================================================================================
 def remove_wiki_makeup(target_text):
-	# makeup for link 
+	# makeup for link
 	# [[URL|DISPLAY_TEXT]]
 	makeup_begin = "[["
 	makeup_end = "]]"
 	makeup_separator = "|"
-	
+
 	item_head = target_text.find(makeup_begin)
 	while item_head != -1:
 		# Found a start of wiki makeup
@@ -61,10 +61,10 @@ def remove_wiki_makeup(target_text):
 				display_item = item_tokens[1] # 2nd one should be display text
 			print "### Found a wiki makeup token \"%s\". Changed to \"%s\"" % (makeup_token, display_item)
 			target_text = target_text.replace(makeup_token, display_item, 1)
-		
+
 		# Try to find the next
 		item_head = target_text.find(makeup_begin)
-	
+
 	return target_text
 
 # ----------------------------------------------------------------------------------------
@@ -629,7 +629,7 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 
 def create_exclude_list_boxer():
 	exclude_list = []
-	
+
 	exclude_list.append("write_dbbox")
 	exclude_list.append("write_ptcls")
 	exclude_list.append("force")
@@ -651,12 +651,12 @@ def create_exclude_list_boxer():
 	exclude_list.append("kboot")
 	exclude_list.append("debug")
 	exclude_list.append("apix")
-	
+
 	return exclude_list
 
 def create_exclude_list_display():
 	exclude_list = []
-	
+
 	exclude_list.append("classmx")
 	exclude_list.append("classes")
 	exclude_list.append("pdb")
@@ -664,7 +664,7 @@ def create_exclude_list_display():
 	exclude_list.append("plot3")
 	exclude_list.append("newwidget")
 	exclude_list.append("ppid")
-	
+
 	return exclude_list
 
 # ========================================================================================
