@@ -211,23 +211,33 @@ def load_model(fname):
 	
 def apply_neuralnet(convnet,options):
 	
-	try: os.remove(options.output)
+	try: 
+		os.remove(options.output)
+		print "Overwriting the output.."
 	except: pass
 	
+	
 	nframe=EMUtil.get_image_count(options.tomograms)
+	is3d=False
+	### deal with 3D volume or image stack
+	if nframe==1:
+		e=EMData(options.tomograms, 0, True)
+		nframe=e["nz"]
+		if nframe>1:
+			esz=e["nx"]
+			is3d=True
 	
 	for nf in range(nframe):
-		e=EMData(options.tomograms,nf)
+		if is3d:
+			e=EMData(options.tomograms,0,False,Region(0,0,nf,esz,esz,1))
+		else:
+			e=EMData(options.tomograms,nf)
 		
 		print "Preprocessing image No {}...".format(nf)
 
-		#e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-		#e.process_inplace("filter.highpass.gauss",{"cutoff_abs":.005})
+
+
 		e.process_inplace("normalize")
-		#e.process_inplace("threshold.abovetozero",{"maxval":3})
-		#e.process_inplace("threshold.belowtozero",{"minval":-3})
-		#e.process_inplace("threshold.belowtozero")
-		#e.div(e["maximum"])
 		enp=EMNumPy.em2numpy(e)
 		enp[enp>3.0]=3.0
 		enp/=np.max(enp)
@@ -305,7 +315,7 @@ def load_particles(ptcls,labelshrink,ncopy=5):
 	label=[label[i] for i in rndid]
 	
 	data=np.asarray(data,dtype=theano.config.floatX)
-	data/=np.max(np.abs(data))
+	data/=np.std(data.flatten())*3  #np.max(np.abs(data))
 	label=np.asarray(label,dtype=theano.config.floatX)
 	label/=np.max(np.abs(label))
 	

@@ -73,7 +73,6 @@ def main():
 		w.set_mouse_mode(5)
 		app.show_specific(w)
 		app.exec_()
-		print "Writing labels to {}".format(options.output)
 		try: os.remove(options.output)
 		except:pass
 		for e in img:
@@ -87,40 +86,46 @@ def main():
 		tomo_in=options.particles_raw
 		seg_in=options.particles_label
 		neg_in=options.boxes_negative
-		n_ptcl=EMUtil.get_image_count(tomo_in)
-		n_neg=EMUtil.get_image_count(neg_in)
-		if options.trainset_output==None:
-			options.trainset_output=tomo_in[:-4]+"_trainset.hdf"
+		if tomo_in and neg_in and seg_in:
+			n_ptcl=EMUtil.get_image_count(tomo_in)
+			n_neg=EMUtil.get_image_count(neg_in)
+			if options.trainset_output==None:
+				options.trainset_output=tomo_in[:-4]+"_trainset.hdf"
+			p_copy=options.ncopy*n_neg/n_ptcl
+		else:
+			p_copy=options.ncopy
 		try: os.remove(options.trainset_output)
 		except: pass
-		p_copy=options.ncopy*n_neg/n_ptcl
 		print "making {} copies for particles, and {} copies for negative samples".format(p_copy,options.ncopy)
-		for i in range(n_ptcl):
-			t=EMData(tomo_in,i)
-			s=EMData(seg_in,i)
-			for c in range(p_copy):
-				tr=Transform()
-				rd=random.random()*360
-				tr.set_rotation({"type":"2d","alpha":rd})
-				e=t.process("xform",{"transform":tr})
-				e.process_inplace("normalize")
-				e.write_image(options.trainset_output,-1)
-				e=s.process("xform",{"transform":tr})
-				e.write_image(options.trainset_output,-1)
-		
-		s=EMData(neg_in,0)
-		s.to_zero()
-		for i in range(n_neg):
-			t=EMData(neg_in,i)
-			for c in range(options.ncopy):
-				tr=Transform()
-				rd=random.random()*360
-				tr.set_rotation({"type":"2d","alpha":rd})
-				e=t.process("xform",{"transform":tr})
-				e.process_inplace("normalize")
-				e.write_image(options.trainset_output,-1)
-				e=s.process("xform",{"transform":tr})
-				e.write_image(options.trainset_output,-1)
+		if tomo_in and seg_in:
+			n_ptcl=EMUtil.get_image_count(tomo_in)
+			for i in range(n_ptcl):
+				t=EMData(tomo_in,i)
+				s=EMData(seg_in,i)
+				for c in range(p_copy):
+					tr=Transform()
+					rd=random.random()*360
+					tr.set_rotation({"type":"2d","alpha":rd})
+					e=t.process("xform",{"transform":tr})
+					#e.process_inplace("normalize")
+					e.write_image(options.trainset_output,-1)
+					e=s.process("xform",{"transform":tr})
+					e.write_image(options.trainset_output,-1)
+		if neg_in:
+			s=EMData(neg_in,0)
+			s.to_zero()
+			n_neg=EMUtil.get_image_count(neg_in)
+			for i in range(n_neg):
+				t=EMData(neg_in,i)
+				for c in range(options.ncopy):
+					tr=Transform()
+					rd=random.random()*360
+					tr.set_rotation({"type":"2d","alpha":rd})
+					e=t.process("xform",{"transform":tr})
+					#e.process_inplace("normalize")
+					e.write_image(options.trainset_output,-1)
+					e=s.process("xform",{"transform":tr})
+					e.write_image(options.trainset_output,-1)
 
 		print "Shuffling particles..."
 		### randomize
@@ -130,7 +135,7 @@ def main():
 		tmpfile="tmpfile_maketomotrainset.hdf"
 		for i in idx:
 			e=EMData(options.trainset_output,i*2)
-			e.process_inplace("normalize")
+			#e.process_inplace("normalize")
 			e.write_image(tmpfile,-1)
 			e=EMData(options.trainset_output,i*2+1)
 			e.write_image(tmpfile,-1)
