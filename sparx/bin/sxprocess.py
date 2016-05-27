@@ -943,7 +943,7 @@ def main():
 					'Params file does not exists! Please rename and restart the program.', 1
 					)
 			strInput = args[0]
-			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution.build'
+			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution.bild'
 			angular_distribution(inputfile=strInput, options=options, output=strOutput)
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
