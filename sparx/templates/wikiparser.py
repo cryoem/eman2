@@ -48,7 +48,7 @@ def remove_wiki_makeup(target_text):
 	while item_head != -1:
 		# Found a start of wiki makeup
 		item_tail = target_text.find(makeup_end)
-		if item_tail == -1: 
+		if item_tail == -1:
 			ERROR("Wiki Format Warning: The string \"%s\" contains \"%s\" but not \"%s\". Removing \"%s\", but please check the format in Wiki document." % (target_text, makeup_begin, makeup_end, makeup_begin), "%s in %s" % (__name__, os.path.basename(__file__)))
 			target_text = target_text.replace(makeup_begin, "", 1)
 		else: # assert (item_tail > -1)
@@ -619,9 +619,9 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("round_digit"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("box_size"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("prtcl_diameter"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_width"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_length"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("particle_radius"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("cylinder_width"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("cylinder_length"); token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Angular Distribution", token_edit_list, sxsubcmd_mpi_support)
 
