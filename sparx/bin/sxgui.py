@@ -1391,6 +1391,13 @@ class SXCmdTab(QWidget):
 			self.mpi_nproc_edit.setToolTip("Number of processors to use. default is single processor mode")
 			submit_layout.addWidget(self.mpi_nproc_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
+			# Add save paramaters button
+			self.save_params_btn = QPushButton("Save parameters")
+			self.save_params_btn.setMinimumWidth(btn_min_width)
+			self.save_params_btn.setToolTip("Save gui parameter settings")
+			self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_params)
+			submit_layout.addWidget(self.save_params_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
+
 			grid_row += 1
 
 			temp_label = QLabel("MPI command line template")
@@ -1401,6 +1408,13 @@ class SXCmdTab(QWidget):
 			self.mpi_cmd_line_edit.setText("")
 			self.mpi_cmd_line_edit.setToolTip("Template of MPI command line (e.g. \"mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX\"). if empty, use \"mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX\"")
 			submit_layout.addWidget(self.mpi_cmd_line_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
+
+			# Add load paramaters button
+			self.load_params_btn = QPushButton("Load parameters")
+			self.load_params_btn.setMinimumWidth(btn_min_width)
+			self.load_params_btn.setToolTip("Load gui parameter settings to retrieve a previously-saved one")
+			self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.load_params)
+			submit_layout.addWidget(self.load_params_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
 
 			grid_row += 1
 
@@ -1424,13 +1438,6 @@ class SXCmdTab(QWidget):
 			self.qsub_enable_checkbox.setEnabled(self.sxcmdwidget.sxcmd.is_submittable)
 			submit_layout.addWidget(self.qsub_enable_checkbox, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
-			# Add save paramaters button
-			self.save_params_btn = QPushButton("Save parameters")
-			self.save_params_btn.setMinimumWidth(btn_min_width)
-			self.save_params_btn.setToolTip("Save gui parameter settings")
-			self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_params)
-			submit_layout.addWidget(self.save_params_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
-
 			grid_row += 1
 
 			temp_label = QLabel("Job name")
@@ -1445,13 +1452,6 @@ class SXCmdTab(QWidget):
 				self.qsub_job_name_edit.setText("N/A")
 			self.qsub_job_name_edit.setToolTip("Name of this job")
 			submit_layout.addWidget(self.qsub_job_name_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
-
-			# Add load paramaters button
-			self.load_params_btn = QPushButton("Load parameters")
-			self.load_params_btn.setMinimumWidth(btn_min_width)
-			self.load_params_btn.setToolTip("Load gui parameter settings to retrieve a previously-saved one")
-			self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.load_params)
-			submit_layout.addWidget(self.load_params_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
 
 			grid_row += 1
 
