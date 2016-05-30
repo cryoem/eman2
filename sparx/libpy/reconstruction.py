@@ -1458,7 +1458,7 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 			recdata.set_attr("bckgnoise", bckgn )
 			ipsi = tdir[ii]%100000
 			iang = tdir[ii]/100000
-			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":ipsi*delta}), toprab)
+			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab)
 	#  clean stuff
 	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
 	if not (finfo is None):

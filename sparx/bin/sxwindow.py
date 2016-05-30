@@ -610,7 +610,7 @@ If micrograph list file name is not provided, all files matched with the microgr
 			for serial_id in restricted_serial_id_list_not_sliced[mic_start:mic_end]:
 				e2bdb_command = "e2bdb.py "
 				mic_baseroot = mic_baseroot_pattern.replace("*", serial_id)
-				if number_of_processes > 1:
+				if RUNNING_UNDER_MPI:
 					e2bdb_command += "bdb:" + os.path.join(original_out_dir,"%03d/"%proc_i) + mic_baseroot + "_ptcls "
 				else:
 					e2bdb_command += "bdb:" + os.path.join(original_out_dir, mic_baseroot + "_ptcls ") 
