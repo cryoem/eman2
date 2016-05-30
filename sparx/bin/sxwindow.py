@@ -371,8 +371,6 @@ If micrograph list file name is not provided, all files matched with the microgr
 			print(mic_name, " ---> % 2.2f%%"%(my_idx/len_processed_by_main_node_divided_by_100))
 		mic_img = get_im(mic_name)
 
-		ctf_params = ctf_dict[mic_baseroot]
-
 		# Read coordinates according to the specified format and 
 		# make the coordinates the center of particle image 
 		if coords_format == "sparx":
@@ -393,6 +391,7 @@ If micrograph list file name is not provided, all files matched with the microgr
 		
 		# Calculate the new pixel size
 		if options.import_ctf:
+			ctf_params = ctf_dict[mic_baseroot]
 			pixel_size_origin = ctf_params[idx_cter_apix]
 			
 			if resample_ratio < 1.0:
