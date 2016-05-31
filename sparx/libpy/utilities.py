@@ -3750,8 +3750,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 		refvec = getfvec(q["phi"], q["theta"])
 		#print  "refvec   ",q["phi"], q["theta"]
 
-		tempan =  [None]*len(projangles)
-		for i in xrange(len(projangles)): tempan[i] = projangles[i]
+		tempan = projangles[:]
 		del tempan[whichone], lookup[whichone]
 		assignments = [-1]*howmany
 
@@ -3781,10 +3780,10 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 		t = get_symt(sym)
 		phir = 360.0/int(sym[1:])
 
-		tempan =  [None]*len(projangles)
-		for i in xrange(len(projangles)): tempan[i] = projangles[i]
+		tempan =  projangles[:]
 		del tempan[whichone], lookup[whichone]
 		assignments = [-1]*howmany
+		refvec = getvec(projangles[whichone][0], projangles[whichone][1])
 
 		for i in xrange(howmany):
 			best = -1
