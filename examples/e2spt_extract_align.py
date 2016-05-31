@@ -85,11 +85,12 @@ def main():
 	
 	logid=E2init(sys.argv,options.ppid)
 	
+
+	n = EMUtil.get_image_count( options.input )
+
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath(options,'sptextractali')
-	
-	n = EMUtil.get_image_count( os.getcwd() + '/' + options.input )
-	
+
 	if options.extractcoords:
 		lines=[]
 		tomograms={}
@@ -125,13 +126,13 @@ def main():
 		a=Transform({"type":"eman","alt":1.0})
 		#k=list(a.get_rotation(sys.argv[2]).keys())
 	
-		k=list(a.get_rotation( options.rotationtype ).keys())
+		#k=list(a.get_rotation( options.rotationtype ).keys())
 
-		k.remove("type")
-		if len(k)==3: 
-			print "#{},{},{}".format(*k)
-		else: 
-			print "#{},{},{},{}".format(k)
+		#k.remove("type")
+		#if len(k)==3: 
+		#	print "#{},{},{}".format(*k)
+		#else: 
+		#	print "#{},{},{},{}".format(k)
 
 		jsAliParamsPath = options.path + '/xform_align3d.json'
 		jsA = js_open_dict( jsAliParamsPath )
@@ -164,11 +165,11 @@ def main():
 			xformslabel = 'subtomo_' + str( 0 ).zfill( len( str( n ) ) )			
 			jsA.setval( xformslabel, [ xf , score ] )
 
-			r=xf.get_rotation( options.rotationtype )
-			print "{}".format(i),
-			for j in k: 
-				print ", {}".format(r[j]),
-			print ""
+			#r=xf.get_rotation( options.rotationtype )
+			#print "{}".format(i),
+			#for j in k: 
+			#	print ", {}".format(r[j]),
+			#print ""
 		
 		jsA.close()
 		if options.extractsymsearch:
@@ -186,6 +187,7 @@ def main():
 			
 			ptcl = a.copy()
 			
+			'''
 			#The first case works with .json files from e2spt_hac.py
 			#The second works for .json files from e2spt_classaverage.py
 			try:
@@ -198,8 +200,11 @@ def main():
 				#print "ID is", ID
 				t = preOrientationsDict[ID][0]
 				#print "t 2 is", t
-					
-			print "Transform is",t
+			'''
+			ID='subtomo_' + str(i).zfill(len(str(n)))
+			t = preOrientationsDict[ID][0]	
+			print "\nfor particle",i
+			print "transform is", t
 			
 			ptcl['origin_x'] = 0
 			ptcl['origin_y'] = 0
@@ -208,18 +213,26 @@ def main():
 			
 			if t:
 				ptcl.transform(t)
+				ptcl['xform.align3d'] = t
+				alistack = os.path.basename(options.input).replace('.hdf','_ali.hdf')
+				if options.saveali:
+					print "\nsaving aligned particle",i
+					ptcl.write_image(options.path + '/' + alistack, i )
 			
 			avgr.add_image(ptcl)
 			
-			if options.saveali:
-				print "\nAligned particle should be saved",i
-				pass
+			#if options.saveali:
+				
+				#pass
 				
 		avg=avgr.finish()
+
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1':
-			avg=avg.process('xform.applysym',{'sym':options.sym})
+			avg.process_inplace('xform.applysym',{'sym':options.sym})
+		avg.process_inplace('normalize.edgemean')
 		
-		avg.write_image( options.path + '/' + options.output, 0 )
+		output = os.path.basename(options.input).replace('.hdf','_recomp.hdf')
+		avg.write_image( options.path + '/' + output, 0 )
 		
 		preOrientationsDict.close()			
 	
