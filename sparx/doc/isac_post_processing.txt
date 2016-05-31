@@ -19,7 +19,7 @@ sxisac_post_processing.py exists only in MPI version
     stack_file:: Original image stack: Particles required to create the full-sized class averages. The images must be square (''nx''=''ny'') and the stack must be bdb format (default required string)
     isac_directory:: Isac output directory: Name of the directory where isac was run previously. (default required string)
 
-    radius:: Particle radius [Pixels]: The is no default radius. (default required int)
+    radius:: Particle radius [Pixels]: There is no default radius. (default required int)
     CTF:: Phase-flip: If set, the data will be phase-flipped using CTF information included in the image headers. (default False)
 
     * The remaining parameters are optional.

@@ -400,6 +400,15 @@ def construct_token_list_from_wiki(sxcmd_config):
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "image")
 		sxcmd.token_dict["stack"].type = "hdf"
+		# Typically, this is target particle radius used by ISAC.
+		assert(sxcmd.token_dict["radius"].key_base == "radius")
+		assert(sxcmd.token_dict["radius"].type == "radius")
+		sxcmd.token_dict["radius"].type = "int"
+	elif sxcmd.name in ["sxviper"]:
+		# Typically, this is target particle radius used by ISAC.
+		assert(sxcmd.token_dict["radius"].key_base == "radius")
+		assert(sxcmd.token_dict["radius"].type == "radius")
+		sxcmd.token_dict["radius"].type = "int"
 
 	print "Succeed to parse Wiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
