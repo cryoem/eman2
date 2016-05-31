@@ -103,6 +103,8 @@ def main():
 								help="Rescales the image by 'n', generally used with clip option.")
 	parser.add_option("--sym", dest = "sym", action="append",
 								help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+	parser.add_option("--averager", type="string", default="mean",
+								help="Averager used for --average and --sym options")
 	parser.add_option("--clip", metavar="x[,y,z[,xc,yc,zc]]", type='string', action="callback", callback=intvararg_callback,
 								help="Make the output have this size by padding/clipping. 1, 3 or 6 arguments. ")
 	parser.add_option("--fftclip", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback,
@@ -320,8 +322,8 @@ def main():
 
 	if options.average:
 		print "Averaging particles from %d to %d stepping by %d. All other options ignored !"%(n0,n1,n2)
-
-		avgr = Averagers.get("mean")
+		avg_dict=parsemodopt(options.averager)
+		avgr = Averagers.get(avg_dict[0],avg_dict[1])
 		for i in range(n0,n1+1,n2):
 			avgr.add_image( EMData(infile,i) )
 			if options.verbose:
@@ -673,12 +675,15 @@ def main():
 				xf = Transform()
 				xf.to_identity()
 				nsym=xf.get_nsym(sym)
-				ref=data.copy()
-				for i in range(1,nsym):
-					dc=ref.copy()
-					dc.transform(xf.get_sym(sym,i))
-					data.add(dc)
-				data.mult(1.0/nsym)
+				avg_dict=parsemodopt(options.averager)
+				symavgr = Averagers.get(avg_dict[0],avg_dict[1])
+				
+				
+				for i in range(nsym):
+					ref=data.copy()
+					ref.transform(xf.get_sym(sym,i))
+					symavgr.add_image(ref)
+				data=symavgr.finish()
 
 			elif option1 == "scale":
 				scale_f = options.scale[index_d[option1]]

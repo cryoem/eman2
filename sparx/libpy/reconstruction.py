@@ -1447,19 +1447,18 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 		for ii in xrange(len(tdir)):
 			#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
 			lshifts = findall(tdir[ii], ipsiandiang)
-			ki = 0
-			recdata = prjlist[im][allshifts[lshifts[ki]]].copy()
+			toprab  = 0.0
+			for ki in xrange(len(lshifts)):  toprab += probs[lshifts[ki]]
+			recdata = Util.mult_scalar(prjlist[im][allshifts[lshifts[0]]], probs[lshifts[0]]/toprab)
 			recdata.set_attr_dict({"padffted":1, "is_complex":0})
-			toprab  = probs[lshifts[ki]]
 			for ki in xrange(1,len(lshifts)):
-				Util.add_img(recdata, prjlist[im][allshifts[lshifts[ki]]])
-				toprab += probs[lshifts[ki]]
+				Util.add_img(recdata, Util.mult_scalar(prjlist[im][allshifts[lshifts[ki]]], probs[lshifts[ki]]/toprab))
 			recdata.set_attr_dict({"padffted":1, "is_complex":1})
 			if not upweighted:  recdata = filt_table(recdata, bckgn )
 			recdata.set_attr("bckgnoise", bckgn )
 			ipsi = tdir[ii]%100000
 			iang = tdir[ii]/100000
-			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":ipsi*delta}), toprab)
+			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab)
 	#  clean stuff
 	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
 	if not (finfo is None):

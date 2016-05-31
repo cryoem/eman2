@@ -19018,21 +19018,24 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
     return power;
 }
 
+
+
+
 EMData*  Util::unrollmask( int ny )
 {
 	ENTERFUNC;
 
-    int nyp2 = ny/2;
+	int nyp2 = ny/2;
 	int nx = nyp2+1;
 
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
 	power->to_one();
 
-    float* data = power->get_data();
+	float* data = power->get_data();
 
-    float argy, argx;
-	float rmax = nyp2 + 0.5;
+	float argy, argx;
+	float rmax = (float)nyp2 + 0.5f;
 	for ( int iy = 1; iy <= ny; iy++) {
 		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
 		for ( int ix = 1; ix <= nx; ix++) {
@@ -19050,9 +19053,61 @@ EMData*  Util::unrollmask( int ny )
 
 	power->update();
 	EXITFUNC;
-    return power;
+	return power;
 }
 #undef data
+
+vector<float> Util::rotavg_fourier(EMData* img)
+{
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int nyp2 = ny/2;
+	int lsd = (nx + 2 - nx%2)/2;
+	EMData *fimg = img->do_fft();
+	fimg->set_attr("is_complex", false);
+	float *fint = fimg->get_data();
+	vector<float> rotav(2*lsd);
+	for (int i=0; i<2*lsd; i++)  rotav[i] = 0.0f; 
+	vector<float> count(lsd);
+	for (int i=0; i<lsd; i++)  count[i] = 0.0f; 
+
+	float tsum = 0.0;
+	float argy, argx;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
+		for ( int ix = 1; ix <= lsd; ix++) {
+			int jx=ix-1;
+			if(! ((jx == 0) && (jy <= 0)) ) {
+				argx = argy + float(jx*jx);
+				float rf = sqrt( argx );
+				int  ir = int(rf);
+				if( ir < lsd-1) {
+					float frac = rf - float(ir);
+					float qres = 1.0f - frac;
+					int ioff = 2*(jx+(iy-1)*lsd);
+					float temp = fint[ioff]*fint[ioff] + fint[ioff+1]*fint[ioff+1];
+					tsum += temp;
+					//cout<<"  jx  "<<jx<<"  jy  "<<jy<<"  ir  "<<ir<<"  "<<ioff<<"  temp  "<<temp<<endl;
+					rotav[ir]   += temp*qres;
+					rotav[ir+1] += temp*frac;
+					count[ir]   += qres;
+					count[ir+1] += frac;
+				}
+			}
+		}
+	}
+	rotav[0] = fint[0]*fint[0];
+	for (int ir=0; ir<lsd; ir++) {
+		rotav[ir+lsd] = rotav[ir];
+		rotav[ir] /= Util::get_max(count[ir],1.0f);
+	}
+	rotav[lsd] = 0.0f;
+	for (int ir=1; ir<lsd-1; ir++) rotav[2*lsd-ir-1] += rotav[2*lsd-ir];
+	for (int ir=0; ir<lsd-1; ir++) rotav[ir+lsd] = rotav[ir+1+lsd];
+	rotav[2*lsd-1] = 0.0;
+	delete fimg;
+	fimg = 0;
+	return rotav;
+}
 
 //  This is linear version
 float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
@@ -25772,3 +25827,65 @@ vector<float> Util::max_sum_along_line_in_nd_array(EMData* em_data, const vector
 	return result;
 }
 
+void Util::save_slices_on_disk(EMData* vol, const string stacked_slices_out) {
+
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	int new_nx= nx, new_ny =ny;
+
+	if (nz == 1)
+		throw ImageDimensionException("Error: Input must be a 3-D object");
+
+	EMData *slice = new EMData();
+	slice->set_size(new_nx, new_ny, 1);
+	float *slice_data = slice->get_data();
+    for (int index =0; index<nz; index++)
+     { 
+		for (int x=0; x<new_nx; x++)
+			{
+				for (int y=0; y<new_ny; y++)
+					slice_data[y*new_nx+x] = vol_data[((size_t)index*ny+y)*nx+x];
+			}
+		slice->write_image(stacked_slices_out, index);
+     }
+     delete slice;
+}
+
+EMData* Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_in) {
+
+	ENTERFUNC;
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	//  read stacked slices
+	EMData *image_slice = new EMData();
+	image_slice->read_image(stacked_slices_in, 0);
+	float * slice_data = image_slice->get_data();
+	EMData *vol2 = new EMData();
+	vol2->set_size(nx*2, ny, nz);
+	vol2->to_zero();
+	float *vol2_data = vol2->get_data();
+	int snx = image_slice->get_xsize();
+	int sny = image_slice->get_ysize();
+	int snz = EMUtil::get_image_count(stacked_slices_in);
+	if ((snz != nz) ||(sny != ny) || (snx != nx)) throw ImageDimensionException("Error: two images have different dimensions");
+
+	for (size_t i =0; i<(nx*ny*nz); i++)  {
+		int index_slice =int(i/(nx*ny));
+		if (i%(nx*ny) ==0 && index_slice !=0)  {
+			 image_slice->read_image(stacked_slices_in, index_slice);
+			 float * slice_data = image_slice->get_data();
+		}
+		vol2_data[i*2] = vol_data[i]*slice_data[i-index_slice*nx*ny];
+	 }
+	 vol2->set_complex(true);
+	 vol2->set_ri(true);
+	 if(ny%2==0) vol2->set_fftodd(false); else vol2->set_fftodd(true);
+	 vol2->update();
+	 delete image_slice;
+	 EXITFUNC;
+	 return vol2;	
+}

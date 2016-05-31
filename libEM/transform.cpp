@@ -588,10 +588,16 @@ void Transform::set_rotation(const Dict& rotation)
 // 		validate_and_set_type(THREED);
 		is_quaternion = 1;
 		omega = (double)rotation["omega"];
-		e0 = cos(omega*EMConsts::deg2rad/2.0);
-		e1 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n1"];
-		e2 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n2"];
-		e3 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n3"];
+		double norm=Util::hypot3((double)rotation["n1"],(double)rotation["n2"],(double)rotation["n3"]);
+		if (norm==0.0) {
+			e0=1.0;
+			e1=e2=e3=0.0;
+		} else {
+			e0 = cos(omega*EMConsts::deg2rad/2.0);
+			e1 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n1"]/norm;
+			e2 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n2"]/norm;
+			e3 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n3"]/norm;
+		}
 	} else if ( type == "sgirot" ) {
 // 		validate_and_set_type(THREED);
 		is_quaternion = 1;

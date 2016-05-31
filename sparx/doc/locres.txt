@@ -6,13 +6,13 @@ sxlocres - Local Resolution: Compute local resolution of a map.
 
 ''Usage in command lines'':
 
-sxlocres.py  firstvolume  secondvolume  maskfile  outputfile  --wn=window_size  --step=shell_step_size  --cutoff=res_cutoff  --radius=radius  --fsc=output_file_name  --MPI
+sxlocres.py  firstvolume  secondvolume  maskfile  outputfile  --wn=window_size  --step=shell_step_size  --cutoff=res_cutoff --res_overall=overall_resolution --radius=radius  --fsc=output_file_name  --MPI
 
 === Typical usage ===
 
 sxlocres exists in for both MPI and non-MPI versions.
 
-''' mpirun -np 32  sxlocres.py refinementdir/main002/vol0.hdf  refinementdir/main002/vol2.hdf locres.hdf --cutoff=0.5 --radius=28 --fsc=fscvol.txt --MPI '''
+''' mpirun -np 32  sxlocres.py refinementdir/main002/vol0.hdf  refinementdir/main002/vol2.hdf locres.hdf --cutoff=0.5 --radius=28 --res_overall=0.3  --fsc=fscvol.txt --MPI '''
 
 
 == Input ==
@@ -24,18 +24,22 @@ sxlocres exists in for both MPI and non-MPI versions.
     step:: Fourier shell step size [Pixels]: (default 1.0)
     cutoff:: Resolution cut-off [1/Pixel]: Cut-off for the FSC. By default it goes to the Nyquist frequencies. (default 0.5)
     radius:: Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. (default -1)
+    res_overall:: Overall resolution [1/Pixel]: A value between 0 to 0.5 for calibration of the average local resolution. See Description section in the wiki page for details. (default -1.0)
     
     * The remaining parameters are optional.
     MPI:: Use MPI: (default False)
 
 
 == Output ==
-    outputfile:: Output volume: Each voxel contains the resolution for this area in [[absolute_frequency_units|absolute frequency]]  units. (default required string)
-    fsc:: FSC output file: Contains the overall FSC curve computed by rotational averaging of local resolution values. It might be truncated. (default no curve)
+    outputfile:: Output volume: Each voxel contains the resolution for this area in [[absolute_frequency_units|absolute frequency]] units. (default required string)
+    fsc:: FSC output file: Contains the overall FSC curve computed by rotational averaging of local resolution values. It is truncated to res_overall. (default no curve) 
 
 
 = Description =
-   FSC
+   Local resolution values are computed within small windowed areas (size wn^3). Due to small sample size the values are inaccurate and tend to underestimate resolution.
+   Therefore, option res_overall allows to calibrate the average value of all local resolutions to the overall resolution, as estimated by the FSC between two full size volumes. I
+   This value has to be independently obtained by the user - for example using sximgstat.py to compute (masked) FSC from half-volumes and reading the absolute frequency crresponding
+   to 0.5 (or other) cut-off value.
 
 = Method =
 

@@ -338,6 +338,10 @@ def get_gui_arg_img_sets(filenames):
 		try:
 			js_parms=js_open_dict(info_name(fsp))
 			img_set=js_parms["ctf"]
+			# new style info file, splits image data into separate fields
+			if len(img_set)==3: 
+				img_set.append(js_parms["ctf_im2d"])
+				img_set.append(js_parms["ctf_bg2d"])
 		except:
 			print "Warning, you must run auto-fit before running the GUI. No parameters for ",info_name(fsp)
 #			traceback.print_exc()
@@ -604,7 +608,9 @@ def pspec_and_ctf_fit(options,debug=False):
 		# store the results back in the database. We omit the filename, quality and bg_1d_low (which can be easily recomputed)
 		if img_sets[-1][-1]==None: js_parms.delete("ctf_microbox")
 		else: js_parms["ctf_microbox"]=img_sets[-1][-1]
-		js_parms["ctf"]=img_sets[-1][1:-3]
+		js_parms["ctf"]=img_sets[-1][1:4]
+		js_parms["ctf_im2d"]=img_sets[-1][4]
+		js_parms["ctf_bg2d"]=img_sets[-1][5]
 		js_parms.close()
 
 		if logid : E2progress(logid,float(i+1)/len(options.filenames))

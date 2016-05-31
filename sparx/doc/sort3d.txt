@@ -6,7 +6,7 @@ sxsort3d - 3D Clustering Protocol I: Sort 3D heterogeneity based on the reproduc
 
 ''usage in command line''
 
-sxsort3d.py  stack  outdir  mask  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --function=user_function  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --seed=random_seed  --smallest_group=smallest_group  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --upscale=upscale  --wn=wn
+sxsort3d.py  stack  outdir  mask  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --function=user_function  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --seed=random_seed  --smallest_group=smallest_group  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --upscale=upscale  --wn=wn --interpolation=method
 
 
 === Typical usage ===
@@ -37,11 +37,11 @@ sxsort3d exists only in MPI version.
     xr:: X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default 1)
     yr:: Y search range [Pixels]: The translational search range in the y direction. If omitted it will be set as xr. (default -1)
     ts:: Translational search step [Pixels]: The search will be performed in -xr, -xr+ts, 0, xr-ts, xr, can be fractional. (default 0.25)
-    an:: Angular neighborhood for local searches [Degrees]: (default '-1')
+    an:: Local angular search width [Degrees]: This defines the neighbourhood where the local angular search will be performed. (default '-1')
     center:: Centering method: 0 - if you do not want the volume to be centered, 1 - center the volume using the center of gravity. (default 0)
     nassign:: Number of reassignment iterations: Performed for each angular step. (default 1)
     nrefine:: Number of alignment iterations: Performed for each angular step. (default 0)
-    stoprnct:: Assigment convergence threshold [%]: Used to asses convergence of the run. It is the minimum percentage of assignment change required to stop the run.  (default 3.0) 
+    stoprnct:: Assignment convergence threshold [%]: Used to asses convergence of the run. It is the minimum percentage of assignment change required to stop the run.  (default 3.0) 
     function:: Reference preparation function: Function used to prepare the reference volume. (default do_volume_mrk02) 
     independent:: Number of independent runs: Number of independent equal-Kmeans(default 3) 
     low_pass_filter:: Low-pass filter frequency [1/Pixel]: Low-pass filter used for the 3D sorting on the original image size. (default -1.0)
@@ -51,7 +51,7 @@ sxsort3d exists only in MPI version.
     PWadjustment:: Power spectrum reference: Text file containing a 1D reference power spectrum. (default none) 
     upscale:: Power spectrum adjustment strength: This parameters adjusts how strongly the power spectrum of the volume should be modified to match the reference. A value of 1 brings the volume's power spectrum completely to the reference, while a value of 0 means no modification. (default 0.5) 
     wn:: Target image size [Pixels]: If different than 0, then the images will be rescaled to fit this size. (default 0) 
-
+    interpolation:: 3D interpolation method: Method interpolation in 3D. Options are tr1 or 4nn. (default '4nn')
 
 == Output ==
     outdir:: Output directory: There is a log.txt that describes the sequences of computations in the program. (default required string)

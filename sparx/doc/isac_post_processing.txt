@@ -16,7 +16,7 @@ sxisac_post_processing.py exists only in MPI version
 
 
 == Input ==
-    stack_file:: Original image stack: Particles required to create the full-sized class averages. The images must be square (''nx''=''ny'') (default required string)
+    stack_file:: Original image stack: Particles required to create the full-sized class averages. The images must be square (''nx''=''ny'') and the stack must be bdb format (default required string)
     isac_directory:: Isac output directory: Name of the directory where isac was run previously. (default required string)
 
     radius:: Particle radius [Pixels]: The is no default radius. (default required int)

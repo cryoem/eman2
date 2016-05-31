@@ -839,7 +839,10 @@ costlist, int* curbranch);
 	/* out = img /= img1 with zero check , img is complex, img1 real */
 	static EMData* divn_cbyr(EMData* img, EMData* img1);
 	/* img /= img1 with zero check , img is complex, img1 real */
+	static EMData* read_slice_and_multiply( EMData* vol, const string stacked_slices_in);
+	/* img /=vol[index]* stacked_slice[index] */
 	static void div_cbyr(EMData* img, EMData* img1);
+	static void save_slices_on_disk(EMData* vol, const string stacked_slices_out);
 
 	static void reg_weights(EMData* img, EMData* img1, EMData* cfsc);
 
@@ -870,6 +873,7 @@ costlist, int* curbranch);
 
 	static EMData*  unrollmask( int ny );
 
+	static vector<float> rotavg_fourier(EMData* img);
 
 	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, EMData* bckgnoise);
 	static vector<float> sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob);
