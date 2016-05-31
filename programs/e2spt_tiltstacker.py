@@ -411,10 +411,13 @@ def findtiltimgfiles( options ):
 	intilts = []
 	#k=0
 	extensions = ['dm3','DM3','mrc','MRC','mrcs','MRCS','hdf','HDF','tif','TIF']
+	#print "these many files will be examined",len(filesindir)
 	if options.stem2stack:
 		intilt = ''	
 		for f in filesindir:
+			#print "examining file",f
 			if options.stem2stack in f:
+				#print "which contains stem2stack",options.stem2stack
 				if '.txt' not in f and '.db' not in f:
 					print "potential tilt image", f
 					#if 'dm3' in f.split('.')[-1] or 'DM3' in f.split('.')[-1] or 'tif' in f.split('.')[-1] or 'TIF' in f.split('.')[-1] or 'MRC' in f.split('.')[-1] or 'mrc' in f.split('.')[-1] or 'hdf' in f.split('.')[-1] or 'mrcs' in f.split('.')[-1] or 'MRCS' in in f.split('.')[-1]: 
@@ -515,7 +518,7 @@ def organizetilts( intilts, options ):
 		anglesdict = {}
 		for intilt in intilts:
 
-			parsedname = intilt.replace(',',' ').replace('-',' ').replace('_',' ').split()
+			parsedname = intilt.replace(',',' ').replace('-',' ').replace('_',' ').replace('.mrcs',' ').replace('.mrc',' ').split()
 			#dividerstoadd = options.anglesindxinfilename - 1
 			print 'parsedname is',parsedname
 			charsum = 0
