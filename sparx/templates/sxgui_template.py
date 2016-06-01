@@ -790,9 +790,10 @@ class SXCmdWidget(QWidget):
 					self.sxcmd_tab_main.mpi_cmd_line_edit.setText(val_str_in)
 				elif label_in == "Submit Job to Queue":
 					if val_str_in == "YES":
-						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(True)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(Qt.Checked)
 					else: # assert(val_str_in == "NO")
-						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(False)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(Qt.Unchecked)
+					# self.sxcmd_tab_main.set_qsub_enable_state() # Somehow this place does not paint the text boxes upon application startup
 				elif label_in == "Job Name":
 					self.sxcmd_tab_main.qsub_job_name_edit.setText(val_str_in)
 				elif label_in == "Submission Command":
@@ -846,6 +847,7 @@ class SXCmdWidget(QWidget):
 		file_path_in = str(QFileDialog.getOpenFileName(self, "Load parameters", SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog))
 		if file_path_in != "":
 			self.read_params(file_path_in)
+			self.sxcmd_tab_main.set_qsub_enable_state()
 
 	def select_file(self, target_widget, file_format = ""):
 		file_path = ""
@@ -2163,6 +2165,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# Store the constructed lists and dictionary as a class data member
 		self.sxcmd_category_list = sxcmd_category_list
 
+	def update_qsub_enable_states(self):
+		# Construct and add widgets for sx command categories
+		for sxcmd_category in self.sxcmd_category_list:
+			# Create SXCmdCategoryWidget for this command category
+			for sxcmd in sxcmd_category.cmd_list:
+				sxcmd.widget.sxcmd_tab_main.set_qsub_enable_state()
+
 	def handle_sxmenu_item_btn_event(self, sxmenu_item):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
@@ -2254,6 +2263,9 @@ def main(args):
 	# Show main window
 	sxmain_window.show()
 	sxmain_window.raise_()
+
+	# Update qsub enable state of all sx command category widgets after window is displayed and raised
+	sxmain_window.update_qsub_enable_states()
 
 	# Start event handling loop
 	sxapp.exec_()
