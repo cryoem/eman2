@@ -123,11 +123,10 @@
     "CHILDREN": [
       {
         "ICON": "ctf",
-        "PROGRAM": "e2ctf.py",
-        "MODE": "autofit",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
-        "WIZARD":"/lib/pmconfig/ctfautofit.json",
-        "NAME": "Automated Fitting (e2ctf)",
+        "PROGRAM": "e2ctf_auto.py",
+        "MODE": "auto",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf_auto",
+        "NAME": "CTF Autoprocess (e2ctf_auto)",
         "NOTELEVEL": "1",
         "CHILDREN": []
       },
@@ -137,28 +136,44 @@
         "MODE": "tuning",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
         "WIZARD":"/lib/pmconfig/ctftuning.json",
-        "NAME": "Interactive Tuning (e2ctf)",
+        "NAME": "Visual CTF (e2ctf)",
         "CHILDREN": []
       },
       {
         "ICON": "ctf",
-        "PROGRAM": "e2ctf.py",
-        "MODE": "gensf",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
-        "WIZARD":"/lib/pmconfig/ctfsf.json",
-        "NAME": "Generate Structure Factor (e2ctf)",
-        "NOTELEVEL": "1",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "ctf",
-        "PROGRAM": "e2ctf.py",
-        "MODE": "genoutp",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
-        "WIZARD":"/lib/pmconfig/ctfgo.json",
-        "NAME": "Generate Output (e2ctf)",
-        "NOTELEVEL": "1",
-        "CHILDREN": []
+        "NAME": "Manual CTF processing",
+        "CHILDREN": [
+			{
+				"ICON": "ctf",
+				"PROGRAM": "e2ctf.py",
+				"MODE": "autofit",
+				"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
+				"WIZARD":"/lib/pmconfig/ctfautofit.json",
+				"NAME": "Automated Fitting (e2ctf)",
+				"NOTELEVEL": "1",
+				"CHILDREN": []
+			},
+			{
+				"ICON": "ctf",
+				"PROGRAM": "e2ctf.py",
+				"MODE": "gensf",
+				"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
+				"WIZARD":"/lib/pmconfig/ctfsf.json",
+				"NAME": "Generate Structure Factor (e2ctf)",
+				"NOTELEVEL": "1",
+				"CHILDREN": []
+			},
+			{
+				"ICON": "ctf",
+				"PROGRAM": "e2ctf.py",
+				"MODE": "genoutp",
+				"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
+				"WIZARD":"/lib/pmconfig/ctfgo.json",
+				"NAME": "Generate Output (e2ctf)",
+				"NOTELEVEL": "1",
+				"CHILDREN": []
+			}
+      ]
       },
       {
       "ICON": "green_boxes",
@@ -191,6 +206,7 @@
         "ICON": "multiple_images",
         "PROGRAM": "e2buildsets.py",
         "NAME": "Build Particle Sets",
+        "MODE": "build",
         "WIZARD":"/lib/pmconfig/buildsets.json",
         "NOTELEVEL": "1",
         "CHILDREN": []
