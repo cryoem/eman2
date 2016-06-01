@@ -31,6 +31,9 @@ def main():
 	
 	### run~
 	for td in range(nthd):
+		if td*step>=num:
+			nthd=td
+			break
 		cmd=newcmd.format(fname=tmpfname[td])
 		cmd+= " --first {} --last {} ".format(td*step, min(num-1,td*step+step-1))
 		t[td]=threading.Thread(target=run,args=([cmd]))
@@ -40,7 +43,8 @@ def main():
 	
 	### put outputs together
 	print "Merging outputs..."
-	for fm in tmpfname:
+	for i in range(nthd):
+		fm=tmpfname[i]
 		n=EMUtil.get_image_count(fm)
 		for i in range(n):
 			e=EMData(fm,i)

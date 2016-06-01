@@ -38,17 +38,17 @@ class SXcmd_config:
 
 # ========================================================================================
 def remove_wiki_makeup(target_text):
-	# makeup for link 
+	# makeup for link
 	# [[URL|DISPLAY_TEXT]]
 	makeup_begin = "[["
 	makeup_end = "]]"
 	makeup_separator = "|"
-	
+
 	item_head = target_text.find(makeup_begin)
 	while item_head != -1:
 		# Found a start of wiki makeup
 		item_tail = target_text.find(makeup_end)
-		if item_tail == -1: 
+		if item_tail == -1:
 			ERROR("Wiki Format Warning: The string \"%s\" contains \"%s\" but not \"%s\". Removing \"%s\", but please check the format in Wiki document." % (target_text, makeup_begin, makeup_end, makeup_begin), "%s in %s" % (__name__, os.path.basename(__file__)))
 			target_text = target_text.replace(makeup_begin, "", 1)
 		else: # assert (item_tail > -1)
@@ -61,10 +61,10 @@ def remove_wiki_makeup(target_text):
 				display_item = item_tokens[1] # 2nd one should be display text
 			print "### Found a wiki makeup token \"%s\". Changed to \"%s\"" % (makeup_token, display_item)
 			target_text = target_text.replace(makeup_token, display_item, 1)
-		
+
 		# Try to find the next
 		item_head = target_text.find(makeup_begin)
-	
+
 	return target_text
 
 # ----------------------------------------------------------------------------------------
@@ -400,6 +400,15 @@ def construct_token_list_from_wiki(sxcmd_config):
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "image")
 		sxcmd.token_dict["stack"].type = "hdf"
+		# Typically, this is target particle radius used by ISAC.
+		assert(sxcmd.token_dict["radius"].key_base == "radius")
+		assert(sxcmd.token_dict["radius"].type == "radius")
+		sxcmd.token_dict["radius"].type = "int"
+	elif sxcmd.name in ["sxviper"]:
+		# Typically, this is target particle radius used by ISAC.
+		assert(sxcmd.token_dict["radius"].key_base == "radius")
+		assert(sxcmd.token_dict["radius"].type == "radius")
+		sxcmd.token_dict["radius"].type = "int"
 
 	print "Succeed to parse Wiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
@@ -619,9 +628,9 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("round_digit"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("box_size"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("prtcl_diameter"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_width"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_length"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("particle_radius"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("cylinder_width"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("cylinder_length"); token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Angular Distribution", token_edit_list, sxsubcmd_mpi_support)
 
@@ -629,7 +638,7 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 
 def create_exclude_list_boxer():
 	exclude_list = []
-	
+
 	exclude_list.append("write_dbbox")
 	exclude_list.append("write_ptcls")
 	exclude_list.append("force")
@@ -651,12 +660,12 @@ def create_exclude_list_boxer():
 	exclude_list.append("kboot")
 	exclude_list.append("debug")
 	exclude_list.append("apix")
-	
+
 	return exclude_list
 
 def create_exclude_list_display():
 	exclude_list = []
-	
+
 	exclude_list.append("classmx")
 	exclude_list.append("classes")
 	exclude_list.append("pdb")
@@ -664,7 +673,7 @@ def create_exclude_list_display():
 	exclude_list.append("plot3")
 	exclude_list.append("newwidget")
 	exclude_list.append("ppid")
-	
+
 	return exclude_list
 
 # ========================================================================================

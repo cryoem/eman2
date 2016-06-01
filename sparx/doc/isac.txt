@@ -50,8 +50,8 @@ To restart a run that stopped intentionally or unintentionally use the '--restar
     img_per_grp:: Images per class: Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes. (default 100)
     CTF:: Phase-flip: If set, the data will be phase-flipped using CTF information included in the image headers. (default False)
     restart_section:: Restart section: Each iteration contains three sections: 'restart', 'candidate_class_averages', and 'reproducible_class_averages'. To restart, for example, from generation 4 - section 'candidate_class_averages', then set to: '--restart_section=candidate_class_averages,4'. \\ The option requires no white space before or after the comma. By default, the execution restarts from where it stopped. A default restart requires also to provide the name of the directory as argument. Alternatively, the '--use_latest_master_directory' option can be used. (default ' ')
-    target_radius:: Target particle radius: Particle radius used by isac to process the data. The images will be resized to fit this radius (default 29)
-    target_nx:: Target particle image size: Image size used by isac to process the data. The images will be resized according to target particle radius and then cut/padded to achieve the target image size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  (default 76)
+    target_radius:: Target particle radius [Pixels]: Particle radius used by isac to process the data. The images will be resized to fit this radius (default 29)
+    target_nx:: Target particle image size [Pixels]: Image size used by isac to process the data. The images will be resized according to target particle radius and then cut/padded to achieve the target image size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  (default 76)
     xr:: X search range [Pixels]: The translational search range in the x direction. Set by the program by default. (default 1)
 
     * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
