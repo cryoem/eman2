@@ -1596,13 +1596,13 @@ class SXCmdCategoryWidget(QWidget):
 		# --------------------------------------------------------------------------------
 		self.add_sxcmd_widgets()
 
-		# --------------------------------------------------------------------------------
-		# Load the previously saved parameter setting of this sx command
-		# Override the registration of project constant parameter settings with the previously-saved one
-		# --------------------------------------------------------------------------------
-		for sxcmd in self.sxcmd_category.cmd_list:
-			if os.path.exists(sxcmd.widget.gui_settings_file_path):
-				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
+#		# --------------------------------------------------------------------------------
+#		# Load the previously saved parameter setting of this sx command
+#		# Override the registration of project constant parameter settings with the previously-saved one
+#		# --------------------------------------------------------------------------------
+#		for sxcmd in self.sxcmd_category.cmd_list:
+#			if os.path.exists(sxcmd.widget.gui_settings_file_path):
+#				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
 
 		# --------------------------------------------------------------------------------
 		# Alway select the 1st entry of the command list upon startup
@@ -1680,6 +1680,11 @@ class SXCmdCategoryWidget(QWidget):
 			self.connect(sxcmd.btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
 
 			self.grid_row += 1
+
+	def load_previous_session(self):
+		for sxcmd in self.sxcmd_category.cmd_list:
+			if os.path.exists(sxcmd.widget.gui_settings_file_path):
+				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
 
 	def handle_sxcmd_btn_event(self, sxcmd):
 		modifiers = QApplication.keyboardModifiers()
@@ -2079,6 +2084,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# Register project constant parameter settings upon initialization
 		# --------------------------------------------------------------------------------
 		self.sxconst_set.widget.register_const_set()
+
+		# --------------------------------------------------------------------------------
+		# Load the previously saved parameter setting of all sx commands
+		# Override the registration of project constant parameter settings with the previously-saved one
+		# --------------------------------------------------------------------------------
+		for sxcmd_category in self.sxcmd_category_list:
+			sxcmd_category.widget.load_previous_session()
 
 		# --------------------------------------------------------------------------------
 		# Start widget
