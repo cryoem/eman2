@@ -881,11 +881,11 @@ def main():
 			nargs = len(args)
 			e1    = get_im(args[0])
 			if nargs >1: e2 = get_im(args[1])
-			if options.mask !=None: m = get_im(options.mask)
-			else: m =None
+			if options.mask != None: m = get_im(options.mask)
+			else: m = None
 			pixel_size = options.pixel_size
 			from math import sqrt
-			if m !=None:
+			if m != None:
 				e1 *=m
 				if nargs >1 :e2 *=m
 			if options.fsc_weighted:
@@ -918,6 +918,7 @@ def main():
 			e1  = filt_gaussinv(e1,sigma_of_inverse)
 			if options.low_pass_filter:
 				from filter       import filt_tanl
+				print " additional low-pass filter is applied"
 				e1 =filt_tanl(e1,options.ff, options.aa)
 			e1.write_image(options.output)
 
