@@ -346,8 +346,9 @@ def create_sh_script(
             # Say yes to Save Frames
             strSh += 'YES\n'
             # Frames file
-            strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}.mrc\n'.format(
+            strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}{:s}.mrc\n'.format(
                 output_dir,
+                options.sum_suffix,
                 options.frames_suffix
                 )
         else:
@@ -445,8 +446,9 @@ def create_sh_script(
                 # Say yes to Save Frames
                 strSh += 'YES\n'
                 # Frames file
-                strSh += '{:s}/Dosecorrected/${{baseName}}{:s}.mrc\n'.format(
+                strSh += '{:s}/Dosecorrected/${{baseName}}{:s}{:s}.mrc\n'.format(
                     output_dir,
+                    options.sum_suffix,
                     options.frames_suffix
                     )
             else:
@@ -521,11 +523,10 @@ def create_sh_script(
                     output_dir,
                     options.sum_suffix
                     )
-            strSh += '{:s}/Filtered/${{baseName}}_lp{:d}_hp{:d}.mrc ' \
+            strSh += '{:s}/Filtered/${{baseName}}{:s}.mrc ' \
                 .format(
                     output_dir,
-                    int(lowpass_angstrom),
-                    int(highpass_angstrom)
+                    options.sum_suffix
                     )
             strSh += '--process=filter.lowpass.gauss:cutoff_freq={:f} '.format(
                 options.lowpass
