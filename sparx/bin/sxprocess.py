@@ -889,7 +889,16 @@ def main():
 				e1 *=m
 				if nargs >1 :e2 *=m
 			if options.fsc_weighted:
-				frc = fsc(e1,e2,1)
+				print "Use fsc to weight merged volume"
+				print "Current cutoff is %f"%options.FSC_cutoff
+				print " pixel_size is %f Angstrom"%options.pixel_size
+				frc = fsc(e1,e2,1, "fsc.txt")
+				resolution = 0.0
+				for ifreq in xrange(len(frc[1])):
+					if frc[1][ifreq] <options.FSC_cutoff:
+						resolution = frc[0][ifreq-1]
+						break
+				print " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
 				## FSC is done on masked two images
 				#### FSC weighting sqrt((2.*fsc)/(1+fsc));
 				fil = len(frc[1])*[None]
@@ -903,6 +912,7 @@ def main():
 			freq_max   = 1/(2.*pixel_size)
 			freq_min   = 1./options.B_start
 			b,junk     = compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
+			print "the estimated B-factor is %f"%round(b,2)
 			tmp        = b/pixel_size**2
 			sigma_of_inverse=sqrt(2./tmp)
 			e1  = filt_gaussinv(e1,sigma_of_inverse)
