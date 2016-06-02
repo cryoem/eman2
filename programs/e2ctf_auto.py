@@ -345,6 +345,11 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		if options.verbose: print com
 		launch_childprocess(com)
 		print "Phase-flipped output files:\n__ctf_flip_lp14 - masked, downsampled, filtered to 14 A resolution\n__ctf_flip_lp5 - masked, downsampled, filtered to 5 A resolution\n__ctf_flip_fullres - masked, full sampling"
+
+	print "Building default set with all particles for convenience"
+	com="e2buildsets.py --setname=all --excludebad --allparticles"
+	if options.verbose: print com
+	launch_childprocess(com)
 	
 	E2end(logid)
 	print """

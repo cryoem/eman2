@@ -1052,11 +1052,16 @@ artifact territory. </p>
 rather than specifying --input and --model. When you use --startfrom, it will not re-randomize the phases. Since you have already achieved
 sufficient resolution to validate the gold-standard approach, continuing to extend this resolution is valid, and more efficient.""".format(1.0/lastres[1]))
 		except:
-			append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring (or {:1.1f} &Aring with a more conservative mask);.
+			try:
+				append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring (or {:1.1f} &Aring with a more conservative mask);.
 Since this refinement continued from an existing refinement (or something funny happened), it is impossible to tell if the gold-standard criteria have been met, but
 if they were met in the refinement this run continued, then your resolution should still be valid.""".format(1.0/lastres[0],1.0/lastres[1],options.path))
-			traceback.print_exc()
-			print "Note: the above traceback is just a warning for debugging purposes, and can be ignored"
+				traceback.print_exc()
+				print "Note: the above traceback is just a warning for debugging purposes, and can be ignored"
+			except:
+				append_html("""<p> Congratulations, your refinement is complete, but there was some difficulty in assessing the resolution. This could just mean that your data was 
+sampling-limited (meaning a smaller A/pix value would have been required to achieve data-limited resolution. If you cannot figure out what is going on, suggest asking for help
+on the <a href=https://groups.google.com/forum/#!forum/eman2>Google Group</a>."""
 
 	append_html("""<h2>Explore your results</h2><p>Here are some useful output files to look at:</p><ul>
 <li>Your final 3-D map from this run is {path}/threed_{iter:02d}.hdf</li>
