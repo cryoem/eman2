@@ -1061,7 +1061,7 @@ if they were met in the refinement this run continued, then your resolution shou
 			except:
 				append_html("""<p> Congratulations, your refinement is complete, but there was some difficulty in assessing the resolution. This could just mean that your data was 
 sampling-limited (meaning a smaller A/pix value would have been required to achieve data-limited resolution. If you cannot figure out what is going on, suggest asking for help
-on the <a href=https://groups.google.com/forum/#!forum/eman2>Google Group</a>."""
+on the <a href=https://groups.google.com/forum/#!forum/eman2>Google Group</a>.""")
 
 	append_html("""<h2>Explore your results</h2><p>Here are some useful output files to look at:</p><ul>
 <li>Your final 3-D map from this run is {path}/threed_{iter:02d}.hdf</li>
