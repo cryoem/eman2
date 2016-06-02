@@ -790,9 +790,10 @@ class SXCmdWidget(QWidget):
 					self.sxcmd_tab_main.mpi_cmd_line_edit.setText(val_str_in)
 				elif label_in == "Submit Job to Queue":
 					if val_str_in == "YES":
-						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(True)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(Qt.Checked)
 					else: # assert(val_str_in == "NO")
-						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(False)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(Qt.Unchecked)
+					# self.sxcmd_tab_main.set_qsub_enable_state() # Somehow this place does not paint the text boxes upon application startup
 				elif label_in == "Job Name":
 					self.sxcmd_tab_main.qsub_job_name_edit.setText(val_str_in)
 				elif label_in == "Submission Command":
@@ -846,6 +847,7 @@ class SXCmdWidget(QWidget):
 		file_path_in = str(QFileDialog.getOpenFileName(self, "Load parameters", SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog))
 		if file_path_in != "":
 			self.read_params(file_path_in)
+			self.sxcmd_tab_main.set_qsub_enable_state()
 
 	def select_file(self, target_widget, file_format = ""):
 		file_path = ""
@@ -1594,13 +1596,13 @@ class SXCmdCategoryWidget(QWidget):
 		# --------------------------------------------------------------------------------
 		self.add_sxcmd_widgets()
 
-		# --------------------------------------------------------------------------------
-		# Load the previously saved parameter setting of this sx command
-		# Override the registration of project constant parameter settings with the previously-saved one
-		# --------------------------------------------------------------------------------
-		for sxcmd in self.sxcmd_category.cmd_list:
-			if os.path.exists(sxcmd.widget.gui_settings_file_path):
-				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
+#		# --------------------------------------------------------------------------------
+#		# Load the previously saved parameter setting of this sx command
+#		# Override the registration of project constant parameter settings with the previously-saved one
+#		# --------------------------------------------------------------------------------
+#		for sxcmd in self.sxcmd_category.cmd_list:
+#			if os.path.exists(sxcmd.widget.gui_settings_file_path):
+#				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
 
 		# --------------------------------------------------------------------------------
 		# Alway select the 1st entry of the command list upon startup
@@ -1678,6 +1680,11 @@ class SXCmdCategoryWidget(QWidget):
 			self.connect(sxcmd.btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
 
 			self.grid_row += 1
+
+	def load_previous_session(self):
+		for sxcmd in self.sxcmd_category.cmd_list:
+			if os.path.exists(sxcmd.widget.gui_settings_file_path):
+				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
 
 	def handle_sxcmd_btn_event(self, sxcmd):
 		modifiers = QApplication.keyboardModifiers()
@@ -2079,6 +2086,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		self.sxconst_set.widget.register_const_set()
 
 		# --------------------------------------------------------------------------------
+		# Load the previously saved parameter setting of all sx commands
+		# Override the registration of project constant parameter settings with the previously-saved one
+		# --------------------------------------------------------------------------------
+		for sxcmd_category in self.sxcmd_category_list:
+			sxcmd_category.widget.load_previous_session()
+
+		# --------------------------------------------------------------------------------
 		# Start widget
 		# --------------------------------------------------------------------------------
 		start_widget = QtGui.QWidget()
@@ -2162,6 +2176,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		# Store the constructed lists and dictionary as a class data member
 		self.sxcmd_category_list = sxcmd_category_list
+
+	def update_qsub_enable_states(self):
+		# Construct and add widgets for sx command categories
+		for sxcmd_category in self.sxcmd_category_list:
+			# Create SXCmdCategoryWidget for this command category
+			for sxcmd in sxcmd_category.cmd_list:
+				sxcmd.widget.sxcmd_tab_main.set_qsub_enable_state()
 
 	def handle_sxmenu_item_btn_event(self, sxmenu_item):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
@@ -2254,6 +2275,9 @@ def main(args):
 	# Show main window
 	sxmain_window.show()
 	sxmain_window.raise_()
+
+	# Update qsub enable state of all sx command category widgets after window is displayed and raised
+	sxmain_window.update_qsub_enable_states()
 
 	# Start event handling loop
 	sxapp.exec_()
