@@ -912,8 +912,9 @@ def main():
 			freq_max   = 1/(2.*pixel_size)
 			freq_min   = 1./options.B_start
 			b,junk     = compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
-			print "the estimated B-factor is %f"%round(b,2)
-			tmp        = b/pixel_size**2
+			print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
+			print "Equivalent to relion global-B-factor %f"%(4.*b)
+			tmp        = b/pixel_size**2 # this is for application of filt_gaussinv
 			sigma_of_inverse=sqrt(2./tmp)
 			e1  = filt_gaussinv(e1,sigma_of_inverse)
 			if options.low_pass_filter:
