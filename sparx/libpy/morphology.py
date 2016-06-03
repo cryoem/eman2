@@ -1572,17 +1572,17 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 	q = min(pws)
 	for i in range(1,nr):
 		pws_log[i] = log(pws[i])  #/q)
-		x[i] = (float(i)/(2*nr)/pixel_size)**2
+		x[i] = (float(i)/(2*nr)/pixel_size)
 	idx_freq_min = 1
 	for i in range(1,nr):
-		if(x[i] > freq_min**2):
+		if(x[i] > freq_min):
 			idx_freq_min = i
 			break
 
 	idx_freq_max = 1
 	for i in range(1,nr):
 		idx_freq_max = i
-		if(x[i] > freq_max**2):
+		if(x[i] > freq_max):
 			break
 
 	B, s = linreg(x[idx_freq_min:idx_freq_max], pws_log[idx_freq_min:idx_freq_max])
@@ -1592,7 +1592,7 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 	from math import exp
 	for i in xrange(nr):  ff[i] = B*x[i] + s
 
-	return -B/4.0, [x,ff,pws_log]
+	return -B, [x,ff,pws_log]
 
 	
 ################
