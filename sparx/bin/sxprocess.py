@@ -329,6 +329,7 @@ def main():
 	parser.add_option("--nd",                   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
 	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
 	parser.add_option("--fsc_weighted",         action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes")
+	parser.add_option("--adhoc_bfactor",        type="float",         default=0.0 ,        help="User provided B-factor for map sharpening")
 	parser.add_option("--low_pass_filter",      action="store_true",      default=False,  help="postprocess unfiltered odd, even 3-D volumes")
 	parser.add_option("--ff",                   type="float", default=.25,                help="low pass filter stop band frequency in absolute unit")
 	parser.add_option("--aa",                   type="float", default=.1,                 help="low pass filter falloff" )
@@ -869,7 +870,9 @@ def main():
 				guinerline = rot_avg_table(power(periodogram(e1),.5))
 				freq_max   =  1/(2.*pixel_size)
 				freq_min   =  1./options.B_start
+				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*pixel_size)
 				b,junk=compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
+				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
 				tmp = b/pixel_size**2
 				sigma_of_inverse=sqrt(2./tmp)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
@@ -889,8 +892,8 @@ def main():
 				e1 *=m
 				if nargs >1 :e2 *=m
 			if options.fsc_weighted:
-				print "Use fsc to weight merged volume"
-				print "Current cutoff is %f"%options.FSC_cutoff
+				print "use fsc to weight merged volume"
+				print "current cutoff is %f"%options.FSC_cutoff
 				print " pixel_size is %f Angstrom"%options.pixel_size
 				frc = fsc(e1,e2,1, "fsc.txt")
 				resolution = 0.0
@@ -908,14 +911,19 @@ def main():
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 			if nargs>1: e1 +=e2
 			if options.fsc_weighted: e1=filt_table(e1,fil)
-			guinerline = rot_avg_table(power(periodogram(e1),.5))
-			freq_max   = 1/(2.*pixel_size)
-			freq_min   = 1./options.B_start
-			b,junk     = compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
-			print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
-			print "Equivalent to relion global-B-factor %f"%(4.*b)
-			tmp        = b/pixel_size**2 # this is for application of filt_gaussinv
-			sigma_of_inverse=sqrt(2./tmp)
+			if options.adhoc_bfactor==0.0:
+				guinerline   = rot_avg_table(power(periodogram(e1),.5))
+				freq_max     = 1/(2.*pixel_size)
+				freq_min     = 1./options.B_start
+				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*pixel_size)
+				b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
+				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
+				print "equivalent to relion global-B-factor %f"%(4.*b)
+				tmp          = b/pixel_size**2 # this is for application of filt_gaussinv
+			else:
+				print " apply user provided B-factor to enhance map!"
+				tmp          = options.adhoc_bfactor/pixel_size**2 
+			sigma_of_inverse = sqrt(2./tmp)
 			e1  = filt_gaussinv(e1,sigma_of_inverse)
 			if options.low_pass_filter:
 				from filter       import filt_tanl
@@ -926,7 +934,7 @@ def main():
 	elif options.window_stack:
 		nargs = len(args)
 		if nargs ==0:
-			print "  Reduce image size of a stack"
+			print "  reduce image size of a stack"
 			return
 		else:
 			output_stack_name = None
