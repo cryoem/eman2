@@ -21,12 +21,17 @@ sxisac_post_processing.py exists only in MPI version
 
     radius:: Particle radius [Pixels]: There is no default radius. (default required int)
     CTF:: Phase-flip: If set, the data will be phase-flipped using CTF information included in the image headers. (default False)
+    single_stack_output:: Single stack output: If set, only one stack for all classes will be generated. Otherwise, which is the default, one file per class will be generated. (default False) 
 
     * The remaining parameters are optional.
 
 
 == Output ==
-
+    The output directory is created in the isac directory and has the format: post_processing_YYYY-MM-DD--HH-MM-SS
+    It contains all the output files: 
+    "original_image_number_in_each_class_average.txt",
+    "twoD_params_info_list.txt" and
+    "radius_adjusted_class_averages.hdf" (one file or multiple files according to the --single_stack_output option). 
 
 = Description =
 
