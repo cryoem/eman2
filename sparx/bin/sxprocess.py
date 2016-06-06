@@ -860,7 +860,7 @@ def main():
 		from filter       import filt_table, filt_gaussinv
 		from EMAN2 import periodogram
 		e1   = get_im(args[0],0)
-		if e1.get_zsize()==1:
+		if e1.get_zsize() == 1:
 			nimage = EMUtil.get_image_count(args[0])
 			if options.mask !=None: m = get_im(options.mask)
 			else: m = None
@@ -887,22 +887,25 @@ def main():
 			if options.mask != None: m = get_im(options.mask)
 			else: m = None
 			pixel_size = options.pixel_size
+			if pixel_size == 1.0:
+				print "Be sure pixel_size is correct!"
 			from math import sqrt
+			resolution = 0.5
 			if m != None:
 				e1 *=m
-				if nargs >1 :e2 *=m
+				if nargs >1 :
+					e2 *=m
+					frc = fsc(e1,e2,1, "fsc.txt")
+					for ifreq in xrange(len(frc[1])):
+						if frc[1][ifreq] <options.FSC_cutoff:
+							resolution = frc[0][ifreq-1]
+							break
+					print " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
+					## FSC is done on masked two images
 			if options.fsc_weighted:
 				print "use fsc to weight merged volume"
 				print "current cutoff is %f"%options.FSC_cutoff
 				print " pixel_size is %f Angstrom"%options.pixel_size
-				frc = fsc(e1,e2,1, "fsc.txt")
-				resolution = 0.0
-				for ifreq in xrange(len(frc[1])):
-					if frc[1][ifreq] <options.FSC_cutoff:
-						resolution = frc[0][ifreq-1]
-						break
-				print " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
-				## FSC is done on masked two images
 				#### FSC weighting sqrt((2.*fsc)/(1+fsc));
 				fil = len(frc[1])*[None]
 				for i in xrange(len(fil)):
@@ -911,19 +914,18 @@ def main():
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 			if nargs>1: e1 +=e2
 			if options.fsc_weighted: e1=filt_table(e1,fil)
-			if options.adhoc_bfactor==0.0:
+			if options.adhoc_bfactor == 0.0:
 				guinerline   = rot_avg_table(power(periodogram(e1),.5))
-				freq_max     = 1/(2.*pixel_size)
-				freq_min     = 1./options.B_start
+				freq_max     = min(1/(2.*pixel_size), resolution/pixel_size)
+				freq_min     = 1./options.B_start # given frequency in Angstrom
 				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*pixel_size)
 				b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
 				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
 				print "equivalent to relion global-B-factor %f"%(4.*b)
-				tmp          = b/pixel_size**2 # this is for application of filt_gaussinv
+				sigma_of_inverse = sqrt(2./(b/pixel_size**2))
 			else:
 				print " apply user provided B-factor to enhance map!"
-				tmp          = options.adhoc_bfactor/pixel_size**2 
-			sigma_of_inverse = sqrt(2./tmp)
+				sigma_of_inverse = sqrt(2./(options.adhoc_bfactor/pixel_size**2))
 			e1  = filt_gaussinv(e1,sigma_of_inverse)
 			if options.low_pass_filter:
 				from filter       import filt_tanl
