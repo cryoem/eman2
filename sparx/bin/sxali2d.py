@@ -71,8 +71,8 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args) < 2 or len(args) > 3:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
 	elif(options.rotational):
 		from applications import ali2d_rotationaltop
 		global_def.BATCH = True
@@ -114,7 +114,7 @@ def main():
 			from utilities       import bcast_number_to_all
 			outcome  = bcast_number_to_all(outcome, source_node = main_node)
 			if(outcome == 1):
-				 ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
+				ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
 
 			dummy = ali2d_base(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
 				options.ts, options.nomirror, options.dst, \
