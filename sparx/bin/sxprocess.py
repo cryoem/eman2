@@ -892,7 +892,7 @@ def main():
 			from math import sqrt
 			resolution = 0.5
 			if nargs >1 :
-				if m !=None:
+				if m != None:
 					e1 *=m
 					e2 *=m
 				frc = fsc(e1,e2,1, "fsc.txt")
@@ -922,18 +922,29 @@ def main():
 				write_text_file(guinerline, "guinerline.txt")
 				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
 				b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
+				global_b     =  4.*b 
 				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
-				print "equivalent to relion global-B-factor  %f Angstrom^2  "%(round((4.*b),2))
-				sigma_of_inverse = sqrt(2./(b/pixel_size**2))
+				print "the estimated B-factor is  %f Angstrom^2  "%(round((global_b),2))
+				sigma_of_inverse = sqrt(2./(global_b/pixel_size**2))
 			else:
 				print " apply user provided B-factor to enhance map!"
 				print " User provided B-factor is %f Angstrom^2   "%options.adhoc_bfactor
-				sigma_of_inverse = sqrt(2./((options.adhoc_bfactor/4.)/pixel_size**2))
+				sigma_of_inverse = sqrt(2./((options.adhoc_bfactor)/pixel_size**2))
 			e1  = filt_gaussinv(e1,sigma_of_inverse)
+			from filter       import filt_tanl
 			if options.low_pass_filter:
-				from filter       import filt_tanl
-				print " additional low-pass filter is applied"
-				e1 =filt_tanl(e1,options.ff, options.aa)
+				print " User provided additional low-pass filter is applied" 
+				if options.ff>1.:
+					print "cut to %f    Angstrom "%round(options.ff,2) 
+					e1 =filt_tanl(e1,options.pixel_size/options.ff, min(options.aa,.1))
+				else:
+					print "low_pass filtered to %f    Angstrom "%round(options.pixel_size/options.ff,2)   
+					e1 =filt_tanl(e1,options.ff, options.aa)
+			else:
+				print "low-pass filter to resolution %f"%round(pixel_size/resolution,2)
+				print "  absolution frequency is  %f  "%round(resolution,2)				
+				aa = .1
+				e1 = filt_tanl(e1,resolution, options.aa)
 			e1.write_image(options.output)
 
 	elif options.window_stack:
