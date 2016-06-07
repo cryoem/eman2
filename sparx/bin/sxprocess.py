@@ -871,10 +871,10 @@ def main():
 				freq_max   =  1/(2.*pixel_size)
 				freq_min   =  1./options.B_start
 				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*pixel_size)
-				b,junk=compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
-				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
-				tmp = b/pixel_size**2
-				sigma_of_inverse=sqrt(2./tmp)
+				b,junk =compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
+				global_b = b*4
+				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(global_b,2)
+				sigma_of_inverse=sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.low_pass_filter:
 					from filter import filt_tanl
