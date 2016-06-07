@@ -927,7 +927,7 @@ def main():
 				sigma_of_inverse = sqrt(2./(b/pixel_size**2))
 			else:
 				print " apply user provided B-factor to enhance map!"
-				print " User provided B-factor is %f Angstrom^2"%options.adhoc_bfactor
+				print " User provided B-factor is %f Angstrom^2   "%options.adhoc_bfactor
 				sigma_of_inverse = sqrt(2./((options.adhoc_bfactor/4.)/pixel_size**2))
 			e1  = filt_gaussinv(e1,sigma_of_inverse)
 			if options.low_pass_filter:
