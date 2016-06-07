@@ -891,17 +891,18 @@ def main():
 				print "Be sure pixel_size is correct!"
 			from math import sqrt
 			resolution = 0.5
-			if m != None:
-				e1 *=m
-				if nargs >1 :
+			if nargs >1 :
+				if m !=None:
+					e1 *=m
 					e2 *=m
-					frc = fsc(e1,e2,1, "fsc.txt")
-					for ifreq in xrange(len(frc[1])):
-						if frc[1][ifreq] <options.FSC_cutoff:
-							resolution = frc[0][ifreq-1]
-							break
-					print " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
-					## FSC is done on masked two images
+				frc = fsc(e1,e2,1, "fsc.txt")
+				for ifreq in xrange(len(frc[1])):
+					if frc[1][ifreq] <options.FSC_cutoff:
+						resolution = frc[0][ifreq-1]
+						break
+				print " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
+				## FSC is done on masked two images
+			if nargs>1: e1 +=e2
 			if options.fsc_weighted:
 				print "use fsc to weight merged volume"
 				print "current cutoff is %f"%options.FSC_cutoff
@@ -912,13 +913,14 @@ def main():
 					if frc[1][i]>=options.FSC_cutoff: tmp = frc[1][i]
 					else: tmp = 0.0
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
-			if nargs>1: e1 +=e2
-			if options.fsc_weighted: e1=filt_table(e1,fil)
+				e1=filt_table(e1,fil)
 			if options.adhoc_bfactor == 0.0:
 				guinerline   = rot_avg_table(power(periodogram(e1),.5))
 				freq_max     = min(1/(2.*pixel_size), resolution/pixel_size)
 				freq_min     = 1./options.B_start # given frequency in Angstrom
-				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*pixel_size)
+				from utilities import write_text_file
+				write_text_file(guinerline, "guinerline.txt")
+				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(1./freq_min, 1./freq_max)
 				b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
 				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
 				print "equivalent to relion global-B-factor %f"%(4.*b)
