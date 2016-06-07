@@ -895,6 +895,8 @@ def main():
 				if m != None:
 					e1 *=m
 					e2 *=m
+				print "calculate FSC "
+				print " the FSC_cutoff is %f  "%options.FSC_cutoff
 				frc = fsc(e1,e2,1, "fsc.txt")
 				for ifreq in xrange(len(frc[1])):
 					if frc[1][ifreq] <options.FSC_cutoff:
@@ -904,7 +906,7 @@ def main():
 				## FSC is done on masked two images
 			if nargs>1: e1 +=e2
 			if options.fsc_weighted:
-				print "use fsc to weight merged volume"
+				print " apply sqrt((2*FSC)/(1+FSC)) weighting "
 				print "current cutoff is %f"%options.FSC_cutoff
 				print " pixel_size is %f Angstrom"%options.pixel_size
 				#### FSC weighting sqrt((2.*fsc)/(1+fsc));
