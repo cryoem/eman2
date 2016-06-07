@@ -920,10 +920,10 @@ def main():
 				freq_min     = 1./options.B_start # given frequency in Angstrom
 				from utilities import write_text_file
 				write_text_file(guinerline, "guinerline.txt")
-				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(1./freq_min, 1./freq_max)
+				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
 				b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
 				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
-				print "equivalent to relion global-B-factor  %f Angstrom^2  "%(4.*b)
+				print "equivalent to relion global-B-factor  %f Angstrom^2  "%(round((4.*b),2))
 				sigma_of_inverse = sqrt(2./(b/pixel_size**2))
 			else:
 				print " apply user provided B-factor to enhance map!"
