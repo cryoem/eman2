@@ -923,11 +923,12 @@ def main():
 				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(1./freq_min, 1./freq_max)
 				b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
 				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
-				print "equivalent to relion global-B-factor %f"%(4.*b)
+				print "equivalent to relion global-B-factor Angstrom^2%f"%(4.*b)
 				sigma_of_inverse = sqrt(2./(b/pixel_size**2))
 			else:
 				print " apply user provided B-factor to enhance map!"
-				sigma_of_inverse = sqrt(2./(options.adhoc_bfactor/pixel_size**2))
+				print " User provided B-factor is %f Angstrom^2"%options.adhoc_bfactor
+				sigma_of_inverse = sqrt(2./((options.adhoc_bfactor/4.)/pixel_size**2))
 			e1  = filt_gaussinv(e1,sigma_of_inverse)
 			if options.low_pass_filter:
 				from filter       import filt_tanl
