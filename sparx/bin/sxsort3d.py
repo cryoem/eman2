@@ -269,7 +269,8 @@ def main():
 				sleep(5)
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node:
-			log_main.add("sort3d starts in "+masterdir)
+			log_main.add("Sphire sort3d ")
+			log_main.add("the sort3d master directory is "+masterdir)
 		#####
 		###----------------------------------------------------------------------------------
 		# Initial data analysis and handle two chunk files
