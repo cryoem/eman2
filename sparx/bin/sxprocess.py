@@ -855,6 +855,7 @@ def main():
 			mask3d.write_image(mask_file_name)
 
 	elif options.postprocess:
+		print "Sphire postprocess"
 		from utilities    import get_im
 		from fundamentals import rot_avg_table
 		from morphology   import compute_bfactor,power
@@ -887,13 +888,21 @@ def main():
 				e1.write_image(options.output)
 		else:   # 3D case
 			nargs = len(args)
+			print "the first input volume is %s"%args[0] 
 			e1    = get_im(args[0])
-			if nargs >1: e2 = get_im(args[1])
-			if options.mask != None: m = get_im(options.mask)
-			else: m = None
+			if nargs >1:
+				print "the second input volume is %s"%args[1]  
+				e2 = get_im(args[1])
+			if options.mask != None:
+				print "user provided mask is %s"%options.mask 
+				m = get_im(options.mask)
+			else: 
+				m = None
+				print " do not use mask in postprocess"
 			from math import sqrt
 			resolution = 0.5
 			if nargs >1 :
+				print "Sphire always calculates FSC between two volumes!"
 				if m != None:
 					e1 *=m
 					e2 *=m
@@ -907,8 +916,10 @@ def main():
 				print " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
 				## FSC is done on masked two images
 			if nargs>1: e1 +=e2
-			if options.mtf: # divided by the mtf 
+			if options.mtf: # divided by the mtf
+				print "MTF correction: Fourier facors will be divided by detector MTF" 
 				from utilities import read_text_file
+				print "MTF file is %s"%options.mtf
 				mtf_value  = read_text_file(options.mtf, -1)
 				from utilities import sample_down_1D_curve
 				fil_mtf = sample_down_1D_curve(e1.get_xsize(),len(mtf_value[1])*2,options.mtf)
@@ -918,7 +929,7 @@ def main():
 					except:
 						fil_mtf[ifil] = 0.0
 				from filter import filt_table
-				e1 = filt_table(e1, fil_mtf) 
+				e1 = filt_table(e1, fil_mtf)
 			if options.fsc_weighted:
 				print " apply sqrt((2*FSC)/(1+FSC)) weighting "
 				print "current cutoff is %f"%options.FSC_cutoff
@@ -956,7 +967,7 @@ def main():
 				e1  = filt_gaussinv(e1,sigma_of_inverse)
 			if options.low_pass_filter: # User provided low-pass filter
 				from filter       import filt_tanl
-				print " User provided additional low-pass filter is applied" 
+				print " apply low-pass filter" 
 				if options.ff>1.:
 					print "low_pass filter to %f    Angstrom "%round(options.ff,2) 
 					e1 =filt_tanl(e1,options.pixel_size/options.ff, min(options.aa,.1))
