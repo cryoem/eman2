@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #
-# Author: Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
+# Authors:
+# Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
+# Markus Stabrin, 09/06/2016 (markus.stabrin@mpi-dortmund.mpg.de)
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
