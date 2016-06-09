@@ -328,9 +328,10 @@ def main():
 	parser.add_option("--ne",                   type="int",		default= 0,     		  help="number of times to erode the binarized  input image")
 	parser.add_option("--nd",                   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
 	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
+	parser.add_option("--mtf",                  type="string",   default= None,            help="mtf file")
 	parser.add_option("--fsc_weighted",         action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes")
-	parser.add_option("--adhoc_bfactor",        type="float",         default=0.0 ,        help="User provided B-factor for map sharpening")
-	parser.add_option("--low_pass_filter",      action="store_true",      default=False,  help="postprocess unfiltered odd, even 3-D volumes")
+	parser.add_option("--adhoc_bfactor",        type="float",         default=0.0 ,       help="User provided B-factor for map sharpening")
+	parser.add_option("--low_pass_filter",      action="store_true",  default=False,      help="postprocess unfiltered odd, even 3-D volumes")
 	parser.add_option("--ff",                   type="float", default=.25,                help="low pass filter stop band frequency in absolute unit")
 	parser.add_option("--aa",                   type="float", default=.1,                 help="low pass filter falloff" )
 	parser.add_option("--mask",           type="string",                                  help="input mask file",  default=None)
@@ -338,7 +339,7 @@ def main():
 	parser.add_option("--pixel_size",     type="float",                                   help="pixel size of the data", default=1.0)
 	parser.add_option("--B_start",     type="float",                                      help="starting frequency in Angstrom for B-factor estimation", default=10.)
 	parser.add_option("--FSC_cutoff",     type="float",                                   help="FSC value that cuts off FSC ", default=0.143)
-	parser.add_option("--2d",          action="store_true",                      help="postprocess isac 2-D averaged images",default=False)
+	parser.add_option("--2d",          action="store_true",                               help="postprocess isac 2-D averaged images",default=False)
 	parser.add_option("--window_stack",                     action="store_true",          help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",           type="int",		default= 0,                   help="the new window size ")
 
@@ -886,9 +887,8 @@ def main():
 			if nargs >1: e2 = get_im(args[1])
 			if options.mask != None: m = get_im(options.mask)
 			else: m = None
-			pixel_size = options.pixel_size
-			if pixel_size == 1.0:
-				print "Be sure pixel_size is correct!"
+			if options.pixel_size == 1.0:
+				print "Be sure pixel_size is correctly set !"
 			from math import sqrt
 			resolution = 0.5
 			if nargs >1 :
@@ -905,6 +905,18 @@ def main():
 				print " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
 				## FSC is done on masked two images
 			if nargs>1: e1 +=e2
+			if options.mtf: # divided by the mtf 
+				from utilities import read_text_file
+				mtf_value  = read_text_file(options.mtf, -1)
+				from utilities import sample_down_1D_curve
+				fil_mtf = sample_down_1D_curve(e1.get_xsize(),len(mtf_value[1])*2,options.mtf)
+				for ifil in xrange(len(fil_mtf)):
+					try: 
+						fil_mtf[ifil] = 1./sqrt(fil_mtf[ifil])
+					except:
+						fil_mtf[ifil] = 0.0
+				from filter import filt_table
+				e1 = filt_table(e1, fil_mtf) 
 			if options.fsc_weighted:
 				print " apply sqrt((2*FSC)/(1+FSC)) weighting "
 				print "current cutoff is %f"%options.FSC_cutoff
@@ -918,20 +930,20 @@ def main():
 				e1=filt_table(e1,fil)
 			if options.adhoc_bfactor == 0.0:
 				guinerline   = rot_avg_table(power(periodogram(e1),.5))
-				freq_max     = min(1/(2.*pixel_size), resolution/pixel_size)
+				freq_max     = min(1/(2.*options.pixel_size), resolution/options.pixel_size)
 				freq_min     = 1./options.B_start # given frequency in Angstrom
 				from utilities import write_text_file
 				write_text_file(guinerline, "guinerline.txt")
 				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
-				b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
+				b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
 				global_b     =  4.*b 
-				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(b,2)
+				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(b,2)
 				print "the estimated B-factor is  %f Angstrom^2  "%(round((global_b),2))
-				sigma_of_inverse = sqrt(2./(global_b/pixel_size**2))
+				sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 			else:
 				print " apply user provided B-factor to enhance map!"
 				print " User provided B-factor is %f Angstrom^2   "%options.adhoc_bfactor
-				sigma_of_inverse = sqrt(2./((options.adhoc_bfactor)/pixel_size**2))
+				sigma_of_inverse = sqrt(2./((options.adhoc_bfactor)/options.pixel_size**2))
 			e1  = filt_gaussinv(e1,sigma_of_inverse)
 			from filter       import filt_tanl
 			if options.low_pass_filter:
@@ -943,7 +955,7 @@ def main():
 					print "low_pass filtered to %f    Angstrom "%round(options.pixel_size/options.ff,2)   
 					e1 =filt_tanl(e1,options.ff, options.aa)
 			else:
-				print "low-pass filter to resolution %f"%round(pixel_size/resolution,2)
+				print "low-pass filter to resolution %f"%round(options.pixel_size/resolution,2)
 				print "  absolution frequency is  %f  "%round(resolution,2)				
 				aa = .1
 				e1 = filt_tanl(e1,resolution, options.aa)
