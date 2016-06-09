@@ -78,11 +78,12 @@ def main(args):
 	from alignment import align2d
 
 	progname = os.path.basename(sys.argv[0])
-	usage = ( progname + " stack_file isac_directory --radius=particle_radius")
+	usage = ( progname + " stack_file isac_directory class_file_name_no_dir_info --radius=particle_radius")
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--radius",                type="int",           help="particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)")
 	parser.add_option("--CTF",                   action="store_true",  default=False,      help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)")
+	parser.add_option("--single_stack_output",   action="store_true",  default=False,      help="Single stack output: If set, only one stack for all classes will be generated. Otherwise, which is the default, one file per class will be generated. (default False)")
 
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--return_options", action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)
@@ -93,7 +94,7 @@ def main(args):
 	if options.return_options:
 		return parser
 	
-	if len(args) > 2:
+	if len(args) != 3:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 		sys.exit()
@@ -111,6 +112,7 @@ def main(args):
 	comm = MPI_COMM_WORLD
 
 	CTF = options.CTF
+	single_stack_output = options.single_stack_output
 
 	error_status = None
 	# Making sure all required options appeared.
@@ -125,13 +127,15 @@ def main(args):
 
 	command_line_provided_stack_filename = args[0]
 
-	# in this directory 'class_averages.hdf' must be found!
+	# in this directory 'class_file_name_no_dir_info' must be found!
 	masterdir = args[1]
 	if masterdir == "" or masterdir == None: ERROR("Isac directory has to be provided!","sxisac",1,myid)
 	# masterdir = send_string_to_all(masterdir)
 
-	class_averages_file_name = os.path.join(masterdir, "class_averages.hdf")
-	if not os.path.exists(class_averages_file_name): ERROR("Isac directory does not contain class_averages.hdf!","sxisac_post_processing",1,myid)
+	class_averages_file_name_no_dir_info = args[2]
+	
+	class_averages_file_name = os.path.join(masterdir, class_averages_file_name_no_dir_info)
+	if not os.path.exists(class_averages_file_name): ERROR("Isac directory does not contain %s!"%class_averages_file_name,"sxisac_post_processing",1,myid)
 
 	if (myid == main_node):
 		isac_post_processing_output_directory = os.path.join(masterdir,"post_processing_{}".format(datetime.datetime.now().strftime('%Y-%m-%d--%H-%M-%S')))
@@ -141,7 +145,7 @@ def main(args):
 	
 	isac_post_processing_output_directory = send_string_to_all(isac_post_processing_output_directory)
 
-	size_adjusted_class_averages_file_name = os.path.join(isac_post_processing_output_directory, "radius_adjusted_class_averages.hdf")
+	size_adjusted_class_averages_file_name = os.path.join(isac_post_processing_output_directory, "radius_adjusted_" + class_averages_file_name_no_dir_info)
 
 # pseudo-code:
 ########################################################################################################################
@@ -152,7 +156,10 @@ def main(args):
 	total_class_averages_nima = bcast_number_to_all(total_class_averages_nima, source_node = main_node)
 	list_of_particles = range(total_class_averages_nima)
 
+	# for testing
+	# total_class_averages_nima = 10
 	image_start, image_end = MPI_start_end(total_class_averages_nima, nproc, myid)
+	# print image_start, image_end
 	list_of_particles = list_of_particles[image_start: image_end]
 	
 	class_averages_nima = len(list_of_particles)
@@ -269,9 +276,16 @@ def main(args):
 ### end: 4. Output the new averages using the newly aligned images
 ########################################################################################################################
 
+	mpi_barrier(MPI_COMM_WORLD)
+	if main_node == myid:
+		if single_stack_output:
+			cpy([size_adjusted_class_averages_file_name[:-4] + "_%04d"%(class_avg_img_iter) +".hdf" for class_avg_img_iter in range(total_class_averages_nima)], size_adjusted_class_averages_file_name)
+			for class_avg_img_iter in range(total_class_averages_nima):
+				cmdexecute("rm -f " + size_adjusted_class_averages_file_name[:-4] + "_%04d"%(class_avg_img_iter) +".hdf", printing_on_success = False)
+
+	mpi_barrier(MPI_COMM_WORLD)
 	mpi_finalize()
 
 if __name__=="__main__":
 	main(sys.argv[1:])
-
 

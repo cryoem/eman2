@@ -371,8 +371,6 @@ If micrograph list file name is not provided, all files matched with the microgr
 			print(mic_name, " ---> % 2.2f%%"%(my_idx/len_processed_by_main_node_divided_by_100))
 		mic_img = get_im(mic_name)
 
-		ctf_params = ctf_dict[mic_baseroot]
-
 		# Read coordinates according to the specified format and 
 		# make the coordinates the center of particle image 
 		if coords_format == "sparx":
@@ -393,6 +391,7 @@ If micrograph list file name is not provided, all files matched with the microgr
 		
 		# Calculate the new pixel size
 		if options.import_ctf:
+			ctf_params = ctf_dict[mic_baseroot]
 			pixel_size_origin = ctf_params[idx_cter_apix]
 			
 			if resample_ratio < 1.0:
@@ -610,7 +609,7 @@ If micrograph list file name is not provided, all files matched with the microgr
 			for serial_id in restricted_serial_id_list_not_sliced[mic_start:mic_end]:
 				e2bdb_command = "e2bdb.py "
 				mic_baseroot = mic_baseroot_pattern.replace("*", serial_id)
-				if number_of_processes > 1:
+				if RUNNING_UNDER_MPI:
 					e2bdb_command += "bdb:" + os.path.join(original_out_dir,"%03d/"%proc_i) + mic_baseroot + "_ptcls "
 				else:
 					e2bdb_command += "bdb:" + os.path.join(original_out_dir, mic_baseroot + "_ptcls ") 

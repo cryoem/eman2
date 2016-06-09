@@ -790,9 +790,10 @@ class SXCmdWidget(QWidget):
 					self.sxcmd_tab_main.mpi_cmd_line_edit.setText(val_str_in)
 				elif label_in == "Submit Job to Queue":
 					if val_str_in == "YES":
-						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(True)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(Qt.Checked)
 					else: # assert(val_str_in == "NO")
-						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(False)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(Qt.Unchecked)
+					# self.sxcmd_tab_main.set_qsub_enable_state() # Somehow this place does not paint the text boxes upon application startup
 				elif label_in == "Job Name":
 					self.sxcmd_tab_main.qsub_job_name_edit.setText(val_str_in)
 				elif label_in == "Submission Command":
@@ -846,6 +847,7 @@ class SXCmdWidget(QWidget):
 		file_path_in = str(QFileDialog.getOpenFileName(self, "Load parameters", SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog))
 		if file_path_in != "":
 			self.read_params(file_path_in)
+			self.sxcmd_tab_main.set_qsub_enable_state()
 
 	def select_file(self, target_widget, file_format = ""):
 		file_path = ""
@@ -935,10 +937,10 @@ class SXCmdTab(QWidget):
 		token_widget_row_span = 1; token_widget_col_span = 1
 		cmd_frame_row_span = 32; cmd_frame_col_span = 7
 
-		title_label_min_width = 150
-		title_label_min_height = 80
+		title_label_min_width = 180 # title_label_min_width = 150
+		title_label_min_height = 40 #title_label_min_height = 80
 		short_info_min_width = 260 # short_info_min_width = 360
-		short_info_min_height = 80
+		short_info_min_height = 40 # short_info_min_height = 80
 		func_btn_min_width = 150
 		btn_min_width = 300
 		token_label_min_width = 300 # token_label_min_width = 360
@@ -975,10 +977,10 @@ class SXCmdTab(QWidget):
 		title_layout = QGridLayout()
 		title_layout.setMargin(SXLookFeelConst.grid_margin)
 		title_layout.setSpacing(SXLookFeelConst.grid_spacing)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		grid_layout = QGridLayout()
 		grid_layout.setMargin(SXLookFeelConst.grid_margin)
 		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
@@ -994,7 +996,8 @@ class SXCmdTab(QWidget):
 		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
 		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		title_hbox.addLayout(title_layout)
-		title_hbox.addStretch(1)
+#		title_hbox.addStretch(1)
+		title_layout.setColumnStretch(grid_row_origin + token_label_col_span, title_layout.columnStretch(grid_row_origin+token_label_col_span) + 1)
 		scroll_layout.addLayout(title_hbox)
 		scroll_layout.addLayout(grid_layout)
 		scroll_layout.addLayout(submit_layout)
@@ -1016,6 +1019,8 @@ class SXCmdTab(QWidget):
 			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
+#			temp_label.setFixedWidth(title_label_min_width)
+#			temp_label.setFixedHeight(title_label_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
 
 			#
@@ -1027,6 +1032,7 @@ class SXCmdTab(QWidget):
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
+#			temp_label.setFixedHeight(short_info_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 
 			grid_row += short_info_row_span
@@ -1036,12 +1042,15 @@ class SXCmdTab(QWidget):
 			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
+#			temp_label.setFixedWidth(title_label_min_width)
+#			temp_label.setFixedHeight(title_label_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
 
 			temp_label = QLabel("Set advanced parameters", self)
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
+#			temp_label.setFixedHeight(short_info_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 
 		# Add space
@@ -1594,13 +1603,13 @@ class SXCmdCategoryWidget(QWidget):
 		# --------------------------------------------------------------------------------
 		self.add_sxcmd_widgets()
 
-		# --------------------------------------------------------------------------------
-		# Load the previously saved parameter setting of this sx command
-		# Override the registration of project constant parameter settings with the previously-saved one
-		# --------------------------------------------------------------------------------
-		for sxcmd in self.sxcmd_category.cmd_list:
-			if os.path.exists(sxcmd.widget.gui_settings_file_path):
-				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
+#		# --------------------------------------------------------------------------------
+#		# Load the previously saved parameter setting of this sx command
+#		# Override the registration of project constant parameter settings with the previously-saved one
+#		# --------------------------------------------------------------------------------
+#		for sxcmd in self.sxcmd_category.cmd_list:
+#			if os.path.exists(sxcmd.widget.gui_settings_file_path):
+#				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
 
 		# --------------------------------------------------------------------------------
 		# Alway select the 1st entry of the command list upon startup
@@ -1678,6 +1687,11 @@ class SXCmdCategoryWidget(QWidget):
 			self.connect(sxcmd.btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
 
 			self.grid_row += 1
+
+	def load_previous_session(self):
+		for sxcmd in self.sxcmd_category.cmd_list:
+			if os.path.exists(sxcmd.widget.gui_settings_file_path):
+				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
 
 	def handle_sxcmd_btn_event(self, sxcmd):
 		modifiers = QApplication.keyboardModifiers()
@@ -2079,6 +2093,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		self.sxconst_set.widget.register_const_set()
 
 		# --------------------------------------------------------------------------------
+		# Load the previously saved parameter setting of all sx commands
+		# Override the registration of project constant parameter settings with the previously-saved one
+		# --------------------------------------------------------------------------------
+		for sxcmd_category in self.sxcmd_category_list:
+			sxcmd_category.widget.load_previous_session()
+
+		# --------------------------------------------------------------------------------
 		# Start widget
 		# --------------------------------------------------------------------------------
 		start_widget = QtGui.QWidget()
@@ -2157,6 +2178,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "unblur"; token.key_prefix = ""; token.label = "Path to unblur executable"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "exe"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_mrc_micrograph"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "You can use the wild cards (e.g. *) to specify a list of micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "mrc"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "nr_threads"; token.key_prefix = "--"; token.label = "Number of threads"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "2"; token.restore = "2"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nr_frames"; token.key_prefix = "--"; token.label = "Number of frames"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "3"; token.restore = "3"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "dose_filter"; token.key_prefix = "--"; token.label = "Apply dose filter"; token.help = "Requires additionally to set the correct exposure per frame, voltage, and pre exposure. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2269,8 +2291,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "Images per class"; token.help = "Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes. "; token.group = "main"; token.is_required = False; token.default = "100"; token.restore = "100"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "Phase-flip"; token.help = "If set, the data will be phase-flipped using CTF information included in the image headers. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "restart_section"; token.key_prefix = "--"; token.label = "Restart section"; token.help = "Each iteration contains three sections: 'restart', 'candidate_class_averages', and 'reproducible_class_averages'. To restart, for example, from generation 4 - section 'candidate_class_averages', then set to: '--restart_section=candidate_class_averages,4'. \\ The option requires no white space before or after the comma. By default, the execution restarts from where it stopped. A default restart requires also to provide the name of the directory as argument. Alternatively, the '--use_latest_master_directory' option can be used. "; token.group = "main"; token.is_required = False; token.default = "' '"; token.restore = "' '"; token.type = "string"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "target_radius"; token.key_prefix = "--"; token.label = "Target particle radius"; token.help = "Particle radius used by isac to process the data. The images will be resized to fit this radius "; token.group = "main"; token.is_required = False; token.default = "29"; token.restore = "29"; token.type = "int"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "target_nx"; token.key_prefix = "--"; token.label = "Target particle image size"; token.help = "Image size used by isac to process the data. The images will be resized according to target particle radius and then cut/padded to achieve the target image size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  "; token.group = "main"; token.is_required = False; token.default = "76"; token.restore = "76"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "target_radius"; token.key_prefix = "--"; token.label = "Target particle radius [Pixels]"; token.help = "Particle radius used by isac to process the data. The images will be resized to fit this radius "; token.group = "main"; token.is_required = False; token.default = "29"; token.restore = "29"; token.type = "int"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "target_nx"; token.key_prefix = "--"; token.label = "Target particle image size [Pixels]"; token.help = "Image size used by isac to process the data. The images will be resized according to target particle radius and then cut/padded to achieve the target image size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  "; token.group = "main"; token.is_required = False; token.default = "76"; token.restore = "76"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "Inner ring [Pixels]"; token.help = "Inner of the resampling to polar coordinates. "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "rs"; token.key_prefix = "--"; token.label = "Ring step [Pixels]"; token.help = "Step of the resampling to polar coordinates. "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "X search range [Pixels]"; token.help = "The translational search range in the x direction. Set by the program by default. "; token.group = "main"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2305,8 +2327,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd = SXcmd(); sxcmd.name = "sxisac_post_processing"; sxcmd.mode = ""; sxcmd.label = "ISAC - Postprocessing"; sxcmd.short_info = "Postprocess of the 2D clustering result produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_2d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "Original image stack"; token.help = "Particles required to create the full-sized class averages. The images must be square (''nx''=''ny'') and the stack must be bdb format "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "bdb"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "isac_directory"; token.key_prefix = ""; token.label = "Isac output directory"; token.help = "Name of the directory where isac was run previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "The is no default radius. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "radius"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "class_file_name_no_dir_info"; token.key_prefix = ""; token.label = "Isac class file name"; token.help = "Name of the file (no directory info) that contains the class averages. It is located in the Isac directory. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "There is no default radius. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "Phase-flip"; token.help = "If set, the data will be phase-flipped using CTF information included in the image headers. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "single_stack_output"; token.key_prefix = "--"; token.label = "Single stack output"; token.help = "If set, only one stack for all classes will be generated. Otherwise, which is the default, one file per class will be generated. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
@@ -2322,7 +2346,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input images stack"; token.help = "A small set (<100) of class averages produced by ISAC. The images must be square and the stack must be hdf format . "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "hdf"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "Inner rotational search radius [Pixels]"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "has to be less than half the box size. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "radius"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Target particle radius [Pixels]"; token.help = "Use the same value as in ISAC. It has to be less than half the box size. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "rs"; token.key_prefix = "--"; token.label = "Ring step size"; token.help = "Step between rings used for the rotational search. "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "X search range [Pixels]"; token.help = "The translational search range in the x direction will take place in a +/xr range. "; token.group = "advanced"; token.is_required = False; token.default = "'0'"; token.restore = "'0'"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "yr"; token.key_prefix = "--"; token.label = "Y search range [Pixels]"; token.help = "The translational search range in the y direction. If omitted it will be xr. "; token.group = "advanced"; token.is_required = False; token.default = "'0'"; token.restore = "'0'"; token.type = "string"; sxcmd.token_list.append(token)
@@ -2356,7 +2380,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input images stack"; token.help = "A small set of Class averages produced by ISAC. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "Inner rotational search radius [Pixels]"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "has to be less than half the box size. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "radius"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Target particle radius [Pixels]"; token.help = "Use the same value as in ISAC. It has to be less than half the box size. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "rs"; token.key_prefix = "--"; token.label = "Ring step size"; token.help = "Step between rings used for the rotational search. "; token.group = "advanced"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "xr"; token.key_prefix = "--"; token.label = "X search range [Pixels]"; token.help = "The translational search range in the x direction will take place in a +/xr range. "; token.group = "advanced"; token.is_required = False; token.default = "'0'"; token.restore = "'0'"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "yr"; token.key_prefix = "--"; token.label = "Y search range [Pixels]"; token.help = "The translational search range in the y direction. If omitted it will be xr. "; token.group = "advanced"; token.is_required = False; token.default = "'0'"; token.restore = "'0'"; token.type = "string"; sxcmd.token_list.append(token)
@@ -2450,6 +2474,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First unfiltered half-volume "; token.help = "Generated by sxmeridien"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second unfiltered half-volume "; token.help = "Generated by sxmeridien"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fsc_weighted"; token.key_prefix = "--"; token.label = "FSC-based low-pass filter"; token.help = "Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (not applicable to 2D image). "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "adhoc_bfactor"; token.key_prefix = "--"; token.label = "User provided B-factor"; token.help = "Use user provided B-factor for map sharpening instead of estimating the value. "; token.group = "main"; token.is_required = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "low_pass_filter"; token.key_prefix = "--"; token.label = "Secondary low-pass filter"; token.help = "Applies a low-pass filter to merged volume after B-factor adjustment. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ff"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0.25"; token.restore = "0.25"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "Low-pass filter fall-off"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0.1"; token.restore = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2497,7 +2522,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.mode = "symmetrize"; sxcmd.label = "3D Variability Preprocess"; sxcmd.short_info = "Symmetrise input stack. Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "symmetrize"; token.key_prefix = "--"; token.label = "Symmetrise input stack"; token.help = "Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Only required if the structure has symmetry higher than c1. Notice this step can be run with only one CPU and there is no MPI version for it. "; token.group = "main"; token.is_required = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
@@ -2767,6 +2792,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# Store the constructed lists and dictionary as a class data member
 		self.sxcmd_category_list = sxcmd_category_list
 
+	def update_qsub_enable_states(self):
+		# Construct and add widgets for sx command categories
+		for sxcmd_category in self.sxcmd_category_list:
+			# Create SXCmdCategoryWidget for this command category
+			for sxcmd in sxcmd_category.cmd_list:
+				sxcmd.widget.sxcmd_tab_main.set_qsub_enable_state()
+
 	def handle_sxmenu_item_btn_event(self, sxmenu_item):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
@@ -2817,7 +2849,8 @@ def main(args):
 
 	sxapp_font = sxapp.font()
 	sxapp_font_info = QFontInfo(sxapp.font())
-	new_point_size = sxapp_font_info.pointSize() + 1
+#	new_point_size = sxapp_font_info.pointSize() + 1
+	new_point_size = sxapp_font_info.pointSize()
 	# # MRK_DEBUG: Check the default system font
 	# print "MRK_DEBUG: sxapp_font_info.style()      = ", sxapp_font_info.style()
 	# print "MRK_DEBUG: sxapp_font_info.styleHint()  = ", sxapp_font_info.styleHint()
@@ -2836,8 +2869,8 @@ def main(args):
 	# still showing the default font size:
 	# QPushButton, QLable, Window Title, and QToolTip
 	#
-	sxapp_font.setPointSize(new_point_size) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
-	sxapp.setFont(sxapp_font)
+#	sxapp_font.setPointSize(new_point_size) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
+#	sxapp.setFont(sxapp_font)
 
 	# sxapp.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work
 	# sxapp.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work
@@ -2858,6 +2891,9 @@ def main(args):
 	# Show main window
 	sxmain_window.show()
 	sxmain_window.raise_()
+
+	# Update qsub enable state of all sx command category widgets after window is displayed and raised
+	sxmain_window.update_qsub_enable_states()
 
 	# Start event handling loop
 	sxapp.exec_()

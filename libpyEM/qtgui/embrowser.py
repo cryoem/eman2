@@ -673,26 +673,27 @@ class EMPlotFileType(EMFileType) :
 		
 		brws.busy()
 
-		data1 = []
-		fin = file(self.path, "r")
-		numr = 0
+		#data1 = []
+		#fin = file(self.path, "r")
+		#numr = 0
 
-		for l in fin :
-			if l[0] == "#" or "nan" in l : continue
-			data1.append([float(i) for i in renumfind.findall(l)])
+		#for l in fin :
+			#if l[0] == "#" or "nan" in l : continue
+			#data1.append([float(i) for i in renumfind.findall(l)])
 
-		data = []
+		#data = []
 
-		for c in xrange(self.numc) :
-			data.append([i[c] for i in data1])
+		#for c in xrange(self.numc) :
+			#data.append([i[c] for i in data1])
 
 		try :
 			target = brws.viewplot2d[-1]
-			target.set_data(data, remove_directories_from_name(self.path, 1))
+			target.set_data_from_file(self.path)
+			#target.set_data(data, remove_directories_from_name(self.path, 1))
 		except :
 			target = EMPlot2DWidget()
 			brws.viewplot2d.append(target)
-			target.set_data(data, remove_directories_from_name(self.path, 1))
+			target.set_data_from_file(self.path)
 
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
 
@@ -705,22 +706,23 @@ class EMPlotFileType(EMFileType) :
 
 		brws.busy()
 
-		data1 = []
-		fin = file(self.path, "r")
-		numr = 0
+		#data1 = []
+		#fin = file(self.path, "r")
+		#numr = 0
 
-		for l in fin :
-			if l[0] == "#" or "nan" in l : continue
-			data1.append([float(i) for i in renumfind.findall(l)])
+		#for l in fin :
+			#if l[0] == "#" or "nan" in l : continue
+			#data1.append([float(i) for i in renumfind.findall(l)])
 
-		data = []
+		#data = []
 
-		for c in xrange(self.numc) :
-			data.append([i[c] for i in data1])
+		#for c in xrange(self.numc) :
+			#data.append([i[c] for i in data1])
 
 		target = EMPlot2DWidget()
 		brws.viewplot2d.append(target)
-		target.set_data(data, remove_directories_from_name(self.path, 1))
+		target.set_data_from_file(self.path)
+		#target.set_data(data, remove_directories_from_name(self.path, 1))
 
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
 

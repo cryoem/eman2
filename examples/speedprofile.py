@@ -60,7 +60,7 @@ def catime(SIZE=96,NTT=100):
 	for i in xrange(NTT):
 		x=data[i].align("rotate_translate_flip",ref,{"maxshift":6.0},"dot",{"normalize":0})
 		x=x.align("refine",ref,{"maxshift":6.0},"dot",{"normalize":0})
-		y=x.cmp("phase",ref)
+#		y=x.cmp("phase",ref)
 
 	return (time.time()-start)/NTT
 
@@ -69,7 +69,7 @@ base=catime(SIZE=32,NTT=10000)
 
 print "testing"
 out=file("profile.txt","w")
-for i in xrange(32,513):
+for i in xrange(32,1024):
 	t=catime(i,16000/i)
 	print	"%d\t%1.2f\t%1.3f"%(i,t/base,t)
 	out.write("%d\t%1.3f\n"%(i,t/base))

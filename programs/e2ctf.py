@@ -86,9 +86,9 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_pos_argument(name="particles",help="List the file to process with e2ctf here.", default="", guitype='filebox', browser="EMCTFParticlesTable(withmodal=True,multiselect=True)",  filecheck=False, row=0, col=0,rowspan=1, colspan=2, mode='autofit,tuning,genoutp,gensf')
 #	parser.add_header(name="ctfheader", help='Options below this label are specific to e2ctflassaverage3d', title="### e2ctf options ###", default=None, row=1, col=0, rowspan=1, colspan=2, mode="autofit,tuning,genoutp,gensf")
 
-	parser.add_argument("--allparticles",action="store_true",help="Will process all particle stacks stored in the particles subdirectory (no list of files required)",default=False, guitype='boolbox',row=1, col=0, mode='autofit,tuning,genoutp,gensf')
+	parser.add_argument("--allparticles",action="store_true",help="Will process all particle stacks stored in the particles subdirectory (no list of files required)",default=False, guitype='boolbox',row=1, col=0, mode='autofit[True],tuning[True],genoutp[True],gensf[False]')
 	parser.add_argument("--onlynew",action="store_true",help="Will skip any files for which __ctf_flip files already exist.",default=False)
-	parser.add_argument("--sortdefocus",action="store_true",help="Sorts the micrographs in order by defocus",default=False,guitype='boolbox',row=3,col=1, mode='tuning')
+	parser.add_argument("--sortdefocus",action="store_true",help="Sorts the micrographs in order by defocus",default=False,guitype='boolbox',row=3,col=1, mode='tuning[True]')
 	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0,guitype='intbox', row=2, col=0, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=2, col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--chunk",type=str,help="<chunksize>,<nchunk>. Will process files in groups of chunksize, and process the <nchunk>th group. eg - 100,3 will read files 300-399 ",default=None,guitype='strbox',row=1,col=1, mode='autofit,tuning,genoutp,gensf')
@@ -148,7 +148,7 @@ NOTE: This program should be run from the project directory, not from within the
 	if options.threads : nthreads=options.threads
 	elif options.parallel!=None :
 		if options.parallel[:7]!="thread:":
-			print "ERROR: only thread:<n> parallelism supported by this program. It is i/o limited."
+			print "ERROR: only thread:<n> parallelism supported by this program"
 			sys.exit(1)
 		nthreads=int(options.parallel[7:])
 	else: nthreads=1
@@ -362,7 +362,7 @@ def write_e2ctf_output(options):
 	"write wiener filtered and/or phase flipped particle data to the local database"
 	global logid
 
-	if options.phaseflip or options.wiener or options.phasefliphp or options.storeparm:
+	if options.phaseflip or options.wiener or options.phasefliphp or options.phaseflipproc!=None or options.storeparm:
 		for i,filename in enumerate(options.filenames):
 			name=base_name(filename)
 			if debug: print "Processing ",filename
@@ -797,7 +797,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 		except : ctf=default_ctf
 		if storeparm :
 			if stackfile[-4:].lower()!=".hdf" and stackfile[:4].lower()!="bdb:" :
-				if i==0: print "Warning, --storeparm option ignored. Input file must be HDF or BDB for this option to work."
+				if i==0: print "Warning, --storeparm option ignored. Input paticle stack must be HDF or BDB for this option to work."
 			else :
 				ctf=default_ctf		# otherwise we're stuck with the values in the file forever
 				im1["ctf"]=ctf
@@ -827,8 +827,6 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 			if invert: out.mult(-1.0)
 			if edgenorm: out.process("normalize.edgemean")
 			if phaseflip:
-
-
 				try:
 					out.write_image(phaseflip,i)
 				except:

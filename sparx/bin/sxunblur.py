@@ -55,7 +55,8 @@ def main():
     --filter_sum
     --lowpass=lowpass
     --highpass=highpass
-    --remove_sum'
+    --remove_sum
+    --nr_threads'
 
     sxunblur exists in non-MPI version.
 
@@ -68,7 +69,7 @@ def main():
 
     sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
     --nr_frames=25 --pixel_size=1.19 --save_frames --filter_sum
-    --lowpass=0.033 --highpass=0.00033
+    --lowpass=0.033 --highpass=0.00033 --nr_threads=2
 
     Dose filter and Expert Options
 
@@ -78,35 +79,36 @@ def main():
     --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0
     --fourier_vertical=1 --fourier_horizontal=1 --shift_threshold=0.1
     --iterations=10 --restore_noise --verbose --filter_sum --lowpass=0.033
-    --highpass=0.00033
+    --highpass=0.00033 --nr_threads=2
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--nr_frames',                   type='int',                  default=3,                                  help='number of frames in the set of micrographs')
-    parser.add_option('--sum_suffix',                  type='str',                  default='_sum',                           help=SUPPRESS_HELP)
-    parser.add_option('--shift_suffix',                  type='str',                    default='_shift',                        help=SUPPRESS_HELP)
-    parser.add_option('--pixel_size',                    type='float',                  default=-1.0,                          help='pixel size [A]')
-    parser.add_option('--dose_filter',                   action='store_true',       default=False,                        help='apply dose filter options')
-    parser.add_option('--exposure_per_frame',    type='float',                  default=2.0,                           help='exposure per frame [e/A^2]')
-    parser.add_option('--voltage',                         type='float',                    default=300.0,                    help='accelerate voltage [kV]')
-    parser.add_option('--pre_exposure',                type='float',                    default=0.0,                       help='pre exposure amount [e/A^2]')
-    parser.add_option('--save_frames',                  action='store_true',        default=False,                     help='save aligned frames')
-    parser.add_option('--frames_suffix',                type='string',                  default='_frames',       help=SUPPRESS_HELP)
-    parser.add_option('--expert_mode',                 action='store_true',        default=False,                    help='set expert mode settings')
-    parser.add_option('--frc_suffix',                       type='string',                  default='_frc',                     help=SUPPRESS_HELP)
-    parser.add_option('--shift_initial',                    type='float',                   default=2.0,                        help='minimum shift for inital search [A]')
-    parser.add_option('--shift_radius',                    type='float',                    default=200.0,                   help='outer radius shift limit [A]')
-    parser.add_option('--b_factor',                         type='float',                   default=1500.0,                  help='b-factor to appy to image [A^2]')
-    parser.add_option('--fourier_vertical',              type='int',                    default=1,                             help='half-width of central vertical line of fourier mask')
-    parser.add_option('--fourier_horizontal',         type='int',                   default=1,                               help='half-width of central horizontal line of fourier mask')
-    parser.add_option('--shift_threshold',               type='float',                  default=0.1,                         help='termination shift threshold')
-    parser.add_option('--iterations',                       type='int',                     default=10,                           help='maximum number of iterations')
-    parser.add_option('--restore_noise',                action='store_true',         default=False,                     help='restore noise power')
-    parser.add_option('--verbose',                          action='store_true',         default=False,                    help='verbose output')
-    parser.add_option('--filter_sum',                       action='store_true',        default=False,                     help='filter the output images')
-    parser.add_option('--lowpass',                          type='float',                   default=0.033,                     help='apply a lowpass filter: abolute frequency')
-    parser.add_option('--highpass',                         type='float',                   default=0.00033,                help='apply a highpass filter: abolute frequency')
-    parser.add_option('--remove_sum',                   action='store_true',        default=False,                     help='remove the calculated sum files')
+    parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
+    parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
+    parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=SUPPRESS_HELP)
+    parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='pixel size [A]')
+    parser.add_option('--dose_filter',        action='store_true', default=False,     help='apply dose filter options')
+    parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='exposure per frame [e/A^2]')
+    parser.add_option('--voltage',            type='float',        default=300.0,     help='accelerate voltage [kV]')
+    parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='pre exposure amount [e/A^2]')
+    parser.add_option('--save_frames',        action='store_true', default=False,     help='save aligned frames')
+    parser.add_option('--frames_suffix',      type='string',       default='_frames', help=SUPPRESS_HELP)
+    parser.add_option('--expert_mode',        action='store_true', default=False,     help='set expert mode settings')
+    parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=SUPPRESS_HELP)
+    parser.add_option('--shift_initial',      type='float',        default=2.0,       help='minimum shift for inital search [A]')
+    parser.add_option('--shift_radius',       type='float',        default=200.0,     help='outer radius shift limit [A]')
+    parser.add_option('--b_factor',           type='float',        default=1500.0,    help='b-factor to appy to image [A^2]')
+    parser.add_option('--fourier_vertical',   type='int',          default=1,         help='half-width of central vertical line of fourier mask')
+    parser.add_option('--fourier_horizontal', type='int',          default=1,         help='half-width of central horizontal line of fourier mask')
+    parser.add_option('--shift_threshold',    type='float',        default=0.1,       help='termination shift threshold')
+    parser.add_option('--iterations',         type='int',          default=10,        help='maximum number of iterations')
+    parser.add_option('--restore_noise',      action='store_true', default=False,     help='restore noise power')
+    parser.add_option('--verbose',            action='store_true', default=False,     help='verbose output')
+    parser.add_option('--filter_sum',         action='store_true', default=False,     help='filter the output images')
+    parser.add_option('--lowpass',            type='float',        default=0.033,     help='apply a lowpass filter: abolute frequency')
+    parser.add_option('--highpass',           type='float',        default=0.00033,   help='apply a highpass filter: abolute frequency')
+    parser.add_option('--remove_sum',         action='store_true', default=False,     help='remove the calculated sum files')
+    parser.add_option('--nr_threads',         type='int',          default=2,         help='Number of threads')
 
     # list of the options and the arguments
     (options, args) = parser.parse_args(argv[1:])
@@ -209,24 +211,95 @@ def create_sh_script(
         # To make sure it is a bash script
         strSh += '#!/bin/bash\n\n'
 
+        # Export number of threads
+        strSh += 'export OMP_NUM_THREADS={:d}\n'.format(options.nr_threads)
+
+        # The script will abort with non-zero exit values
+        strSh += '# The script will abort with non-zero exit values\n'
+        strSh += 'set -e\n'
+
         # Create a file list of all files
+        strSh += '# Create a file list of all files\n'
         strSh += 'fileList=$(ls {:s})\n'.format(
             input_image
             )
 
         # Create folders
-        strSh += 'mkdir {:s}/Doseuncorrected\n'.format(output_dir)
+        strSh += '# Create folders\n'
+        strSh += 'mkdir -p {:s}/Doseuncorrected\n'.format(output_dir)
 
-        strSh += 'mkdir {:s}/Shift\n'.format(output_dir)
+        strSh += 'mkdir -p {:s}/Shift\n'.format(output_dir)
+
+        strSh += 'mkdir -p {:s}/Temp\n'.format(output_dir)
 
         if options.filter_sum:
-            strSh += 'mkdir {:s}/Filtered\n'.format(output_dir)
+            strSh += 'mkdir -p {:s}/Filtered\n'.format(output_dir)
 
         if options.dose_filter:
-            strSh += 'mkdir {:s}/Dosecorrected\n'.format(output_dir)
+            strSh += 'mkdir -p {:s}/Dosecorrected\n'.format(output_dir)
 
         if options.expert_mode:
-            strSh += 'mkdir {:s}/FRC\n'.format(output_dir)
+            strSh += 'mkdir -p {:s}/FRC\n\n'.format(output_dir)
+
+        # Abort script if files in Doseuncorrected already exists
+        strSh += '# Abort script if files in Doseuncorrected already exists\n'
+        strSh += 'for f in {:s}/Doseuncorrected/*\n'.format(output_dir)
+        strSh += 'do\n'
+        strSh += 'if [ -e $f ]\n'
+        strSh += 'then\n'
+        strSh += 'echo "Some files already exists, please choose another output directory"\n'
+        strSh += 'exit 1\n'
+        strSh += 'break\n'
+        strSh += 'fi\n'
+        strSh += 'done\n\n'
+
+        # Abort script if files in shift already exists
+        strSh += '# Abort script if files in shift already exists\n'
+        strSh += 'for f in {:s}/Shift/*\n'.format(output_dir)
+        strSh += 'do\n'
+        strSh += 'if [ -e $f ]\n'
+        strSh += 'then\n'
+        strSh += 'echo "Some files already exists, please choose another output directory"\n'
+        strSh += 'exit 1\n'
+        strSh += 'break\n'
+        strSh += 'fi\n'
+        strSh += 'done\n\n'
+
+        # Abort script if files in Dosecorrected already exists
+        strSh += '# Abort script if files in Dosecorrected already exists\n'
+        strSh += 'for f in {:s}/Dosecorrected/*\n'.format(output_dir)
+        strSh += 'do\n'
+        strSh += 'if [ -e $f ]\n'
+        strSh += 'then\n'
+        strSh += 'echo "Some files already exists, please choose another output directory"\n'
+        strSh += 'exit 1\n'
+        strSh += 'break\n'
+        strSh += 'fi\n'
+        strSh += 'done\n\n'
+
+        # Abort script if files in Filtered already exists
+        strSh += '# Abort script if files in Filtered already exists\n'
+        strSh += 'for f in {:s}/Filtered/*\n'.format(output_dir)
+        strSh += 'do\n'
+        strSh += 'if [ -e $f ]\n'
+        strSh += 'then\n'
+        strSh += 'echo "Some files already exists, please choose another output directory"\n'
+        strSh += 'exit 1\n'
+        strSh += 'break\n'
+        strSh += 'fi\n'
+        strSh += 'done\n\n'
+
+        # Abort script if files in FRC already exists
+        strSh += '# Abort script if files in FRC already exists\n'
+        strSh += 'for f in {:s}/FRC/*\n'.format(output_dir)
+        strSh += 'do\n'
+        strSh += 'if [ -e $f ]\n'
+        strSh += 'then\n'
+        strSh += 'echo "Some files already exists, please choose another output directory"\n'
+        strSh += 'exit 1\n'
+        strSh += 'break\n'
+        strSh += 'fi\n'
+        strSh += 'done\n\n'
 
         # Loop over all files
         strSh += '\nfor file in $fileList\ndo\n\n'
@@ -235,16 +308,27 @@ def create_sh_script(
         strSh += 'baseName=${{baseName#{:s}}}\n'.format(input_dir)
 
         # Create a temporary file to work with to prevent format issues
-        strSh += 'e2proc3d.py $file ${baseName}_temp.mrc\n\n'
+        strSh += '# Create a temporary file to work with to prevent format issues\n'
+        strSh += 'e2proc3d.py $file {:s}/Temp/${{baseName}}_temp.mrc\n\n'.format(output_dir)
 
         # Remove some temporary files that unblur makes
+        strSh += '# Remove some temporary files that unblur makes\n'
+        strSh += 'for f in .UnBlur*\n'
+        strSh += 'do\n'
+        strSh += 'if [ -e $f ]\n'
+        strSh += 'then\n'
         strSh += 'rm .UnBlur*\n'
+        strSh += 'break\n'
+        strSh += 'else\n'
+        strSh += 'true\n'
+        strSh += 'fi\n'
+        strSh += 'done\n\n'
 
         # Start Unblur without dose correction
         strSh += '{:s} << eof\n'.format(unblur_path)
 
         # Input File
-        strSh += '${baseName}_temp.mrc\n'
+        strSh += '{:s}/Temp/${{baseName}}_temp.mrc\n'.format(output_dir)
         # Number of Frames
         strSh += '{:d}\n'.format(options.nr_frames)
         # Sum File
@@ -267,8 +351,9 @@ def create_sh_script(
             # Say yes to Save Frames
             strSh += 'YES\n'
             # Frames file
-            strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}.mrc\n'.format(
+            strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}{:s}.mrc\n'.format(
                 output_dir,
+                options.sum_suffix,
                 options.frames_suffix
                 )
         else:
@@ -318,7 +403,17 @@ def create_sh_script(
         # Enf of file reached
         strSh += 'eof\n\n'
 
-        strSh += 'rm .UnBlur*\n\n'
+        # Remove some temporary files that unblur makes
+        strSh += 'for f in .UnBlur*\n'
+        strSh += 'do\n'
+        strSh += 'if [ -e $f ]\n'
+        strSh += 'then\n'
+        strSh += 'rm .UnBlur*\n'
+        strSh += 'break\n'
+        strSh += 'else\n'
+        strSh += 'true\n'
+        strSh += 'fi\n'
+        strSh += 'done\n\n'
 
         # =========== #
         if options.dose_filter:
@@ -327,7 +422,7 @@ def create_sh_script(
             strSh += '{:s} << eof\n'.format(unblur_path)
 
             # Input File
-            strSh += '${baseName}_temp.mrc\n'
+            strSh += '{:s}/Temp/${{baseName}}_temp.mrc\n'.format(output_dir)
             # Number of Frames
             strSh += '{:d}\n'.format(options.nr_frames)
             # Sum File
@@ -356,8 +451,9 @@ def create_sh_script(
                 # Say yes to Save Frames
                 strSh += 'YES\n'
                 # Frames file
-                strSh += '{:s}/Dosecorrected/${{baseName}}{:s}.mrc\n'.format(
+                strSh += '{:s}/Dosecorrected/${{baseName}}{:s}{:s}.mrc\n'.format(
                     output_dir,
+                    options.sum_suffix,
                     options.frames_suffix
                     )
             else:
@@ -408,25 +504,34 @@ def create_sh_script(
             strSh += 'eof\n\n'
 
         # Remove temporary file
-        strSh += 'rm ${baseName}_temp.mrc\n'
+        strSh += 'rm {:s}/Temp/${{baseName}}_temp.mrc\n'.format(output_dir)
 
         # Remove some temporary files that unblur makes
-        strSh += 'rm .UnBlur*\n\n'
+        # Remove some temporary files that unblur makes
+        strSh += 'for f in .UnBlur*\n'
+        strSh += 'do\n'
+        strSh += 'if [ -e $f ]\n'
+        strSh += 'then\n'
+        strSh += 'rm .UnBlur*\n'
+        strSh += 'break\n'
+        strSh += 'else\n'
+        strSh += 'true\n'
+        strSh += 'fi\n'
+        strSh += 'done\n\n'
 
         if options.filter_sum:
             # Filter Images
             lowpass_angstrom = options.pixel_size / options.lowpass
             highpass_angstrom = options.pixel_size / options.highpass
             strSh += \
-                'e2proc3d.py {:s}/Micrographs/${{baseName}}{:s}.mrc '.format(
+                'e2proc3d.py {:s}/Doseuncorrected/${{baseName}}{:s}.mrc '.format(
                     output_dir,
                     options.sum_suffix
                     )
-            strSh += '{:s}/Filtered/${{baseName}}_lp{:d}_hp{:d}.mrc ' \
+            strSh += '{:s}/Filtered/${{baseName}}{:s}.mrc ' \
                 .format(
                     output_dir,
-                    int(lowpass_angstrom),
-                    int(highpass_angstrom)
+                    options.sum_suffix
                     )
             strSh += '--process=filter.lowpass.gauss:cutoff_freq={:f} '.format(
                 options.lowpass
@@ -438,13 +543,18 @@ def create_sh_script(
 
         if options.remove_sum:
             # Remove sum files
-            strSh += 'rm {:s}/Micrographs/${{baseName}}{:s}.mrc\n'.format(
+            strSh += 'rm {:s}/Doseuncorrected/${{baseName}}{:s}.mrc\n'.format(
                 output_dir,
                 options.sum_suffix
                 )
 
         # Done
-        strSh += 'done\n'
+        strSh += 'done\n\n'
+
+        # Remove temp folder
+        strSh += 'rm -r {:s}/Temp\n'.format(output_dir)
+
+        strSh += 'echo "All done!"'
 
         # Write Output
         with open('{:s}/scriptUnblur.sh'.format(output_dir), 'w') as f:

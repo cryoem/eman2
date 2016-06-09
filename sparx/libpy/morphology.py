@@ -1592,7 +1592,7 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 	from math import exp
 	for i in xrange(nr):  ff[i] = B*x[i] + s
 
-	return -B/4.0, [x,ff,pws_log]
+	return -B, [x,ff,pws_log]
 
 	
 ################
