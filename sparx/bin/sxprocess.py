@@ -328,8 +328,9 @@ def main():
 	parser.add_option("--ne",                   type="int",		default= 0,     		  help="number of times to erode the binarized  input image")
 	parser.add_option("--nd",                   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
 	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
-	parser.add_option("--mtf",                  type="string",   default= None,            help="mtf file")
+	parser.add_option("--mtf",                  type="string",        default= None,      help="mtf file")
 	parser.add_option("--fsc_weighted",         action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes")
+	parser.add_option("--B_enhance",            action="store_true",                      help="apply Bfactor to enhance map or not")
 	parser.add_option("--adhoc_bfactor",        type="float",         default=0.0 ,       help="User provided B-factor for map sharpening")
 	parser.add_option("--low_pass_filter",      action="store_true",  default=False,      help="postprocess unfiltered odd, even 3-D volumes")
 	parser.add_option("--ff",                   type="float", default=.25,                help="low pass filter stop band frequency in absolute unit")
@@ -861,7 +862,9 @@ def main():
 		from filter       import filt_table, filt_gaussinv
 		from EMAN2 import periodogram
 		e1   = get_im(args[0],0)
-		if e1.get_zsize() == 1:
+		if options.pixel_size == 1.0:
+			print "Be sure the pixel_size is correctly set !"
+		if e1.get_zsize() == 1:  # 2D case
 			nimage = EMUtil.get_image_count(args[0])
 			if options.mask !=None: m = get_im(options.mask)
 			else: m = None
@@ -869,26 +872,25 @@ def main():
 				e1 = get_im(args[0],i)
 				if m: e1 *=m
 				guinerline = rot_avg_table(power(periodogram(e1),.5))
-				freq_max   =  1/(2.*pixel_size)
+				freq_max   =  1/(2.*options.pixel_size)
 				freq_min   =  1./options.B_start
-				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*pixel_size)
-				b,junk =compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
+				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size)
+				b,junk =compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
 				global_b = b*4
-				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(global_b,2)
+				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2)
+				print "the estimated B-factor is  %f Angstrom^2  "%(round((-global_b),2))
 				sigma_of_inverse=sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.low_pass_filter:
 					from filter import filt_tanl
 					e1 =filt_tanl(e1,options.ff, options.aa)
 				e1.write_image(options.output)
-		else:
+		else:   # 3D case
 			nargs = len(args)
 			e1    = get_im(args[0])
 			if nargs >1: e2 = get_im(args[1])
 			if options.mask != None: m = get_im(options.mask)
 			else: m = None
-			if options.pixel_size == 1.0:
-				print "Be sure pixel_size is correctly set !"
 			from math import sqrt
 			resolution = 0.5
 			if nargs >1 :
@@ -928,39 +930,45 @@ def main():
 					else: tmp = 0.0
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 				e1=filt_table(e1,fil)
-			if options.adhoc_bfactor == 0.0:
-				guinerline   = rot_avg_table(power(periodogram(e1),.5))
-				freq_max     = min(1/(2.*options.pixel_size), resolution/options.pixel_size)
-				freq_min     = 1./options.B_start # given frequency in Angstrom
-				from utilities import write_text_file
-				write_text_file(guinerline, "guinerline.txt")
-				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
-				b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
-				global_b     =  4.*b 
-				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(b,2)
-				print "the estimated B-factor is  %f Angstrom^2  "%(round((global_b),2))
-				sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
-			else:
-				print " apply user provided B-factor to enhance map!"
-				print " User provided B-factor is %f Angstrom^2   "%options.adhoc_bfactor
-				sigma_of_inverse = sqrt(2./((options.adhoc_bfactor)/options.pixel_size**2))
-			e1  = filt_gaussinv(e1,sigma_of_inverse)
-			from filter       import filt_tanl
-			if options.low_pass_filter:
+			if options.B_enhance:
+				print "Use negative B-factor to enhance image"
+				if options.adhoc_bfactor == 0.0: # auto mode
+					print "B-factor estimation auto mode"
+					guinerline   = rot_avg_table(power(periodogram(e1),.5))
+					freq_max     = min(1/(2.*options.pixel_size), resolution/options.pixel_size)
+					freq_min     = 1./options.B_start # given frequency in Angstrom
+					if freq_min>=freq_max:
+						print "your B_start is too high! Decrease it and rerun the program!"
+						exit()
+					from utilities import write_text_file
+					write_text_file(guinerline, "guinerline.txt")
+					print " guinerline is saved in guinerline.txt file"
+					print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
+					b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
+					global_b     =  4.*b 
+					print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(-b,2)
+					print "the estimated B-factor is  %f Angstrom^2  "%(round((-global_b),2))
+					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
+				else: # User provided value
+					print " apply user provided B-factor to enhance map!"
+					print " User provided B-factor is %f Angstrom^2   "%options.adhoc_bfactor
+					sigma_of_inverse = sqrt(2./((abs(options.adhoc_bfactor))/options.pixel_size**2))
+				e1  = filt_gaussinv(e1,sigma_of_inverse)
+			if options.low_pass_filter: # User provided low-pass filter
+				from filter       import filt_tanl
 				print " User provided additional low-pass filter is applied" 
 				if options.ff>1.:
-					print "cut to %f    Angstrom "%round(options.ff,2) 
+					print "low_pass filter to %f    Angstrom "%round(options.ff,2) 
 					e1 =filt_tanl(e1,options.pixel_size/options.ff, min(options.aa,.1))
-				else:
+				elif options.ff>0.0 and options.ff<1.:
 					print "low_pass filtered to %f    Angstrom "%round(options.pixel_size/options.ff,2)   
-					e1 =filt_tanl(e1,options.ff, options.aa)
-			else:
-				print "low-pass filter to resolution %f"%round(options.pixel_size/resolution,2)
-				print "  absolution frequency is  %f  "%round(resolution,2)				
-				aa = .1
-				e1 = filt_tanl(e1,resolution, options.aa)
+					e1 =filt_tanl(e1,options.ff, min(options.aa,.1))
+				else: # low-pass filter to resolution
+					print "low-pass filter to resolution %f"%round(options.pixel_size/resolution,2)
+					print "  absolution frequency is  %f  "%round(resolution,2)				
+					e1 = filt_tanl(e1,resolution, options.aa)
 			e1.write_image(options.output)
-
+			
 	elif options.window_stack:
 		nargs = len(args)
 		if nargs ==0:
