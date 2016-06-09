@@ -4,16 +4,17 @@
 #  08/13/2015
 #  New version.
 #  
-from sparx import *
-from EMAN2 import *
+
 import os
+import sys
+import types
 import global_def
 from   global_def import *
-from   optparse  import OptionParser
-import sys
-from   numpy     import array
-import types
-from   logger    import Logger, BaseLogger_Files
+from   optparse   import OptionParser
+from   sparx      import *
+from   EMAN2      import *
+from   numpy      import array
+from   logger     import Logger, BaseLogger_Files
 
 
 def main():
@@ -608,7 +609,7 @@ def main():
 					refdata[1] = Tracker
 					refdata[2] = Tracker["constants"]["myid"]
 					refdata[3] = Tracker["constants"]["nproc"] 
-					volref = user_func(refdata)
+					volref     = user_func(refdata)
 					volref.write_image(os.path.join(workdir, "volf_of_Classes.hdf"),ivol)
 				log_main.add("number of unaccounted particles  %10d"%len(Tracker["this_unaccounted_list"]))
 				log_main.add("number of accounted particles  %10d"%len(Tracker["this_accounted_list"]))
@@ -631,9 +632,9 @@ def main():
 				refdata[0] = volref
 				refdata[1] = Tracker
 				refdata[2] = Tracker["constants"]["myid"]
-				refdata[3] =  Tracker["constants"]["nproc"]
+				refdata[3] = Tracker["constants"]["nproc"]
 				volref     = user_func(refdata)
-				#volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
+				#volref    = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
 				volref.write_image(os.path.join(workdir,"volf_unaccounted.hdf"))
 		# Finish program
 		if myid ==main_node: log_main.add("sxsort3d finishes")
