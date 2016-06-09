@@ -5898,7 +5898,7 @@ def sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file):
 	new_curv=int(1.5*len(curv_orgn))*[0.0]
 	for index in xrange(len(curv_orgn)):
 		new_index = int(index/shrinkage)
-		fraction  =  index/shrinkage-new_index
+		fraction  = index/shrinkage-new_index
 		if fraction <=0:
 			new_curv[new_index] +=curv_orgn[index]
 		else:

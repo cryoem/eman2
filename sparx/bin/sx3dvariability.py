@@ -585,7 +585,7 @@ def main():
 								members = mpi_recv(3, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 								ave.set_attr('refprojdir', map(float, members))
 								"""
-								tmpvol=fpol(ave, Tracker["nx"],Tracker["nx"],Tracker["nx"])								
+								tmpvol=fpol(ave, Tracker["nx"],Tracker["nx"],1)								
 								tmpvol.write_image(options.ave2D, km)
 								km += 1
 				else:
