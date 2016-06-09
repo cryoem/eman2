@@ -62,6 +62,7 @@ def main():
 	parser.add_option("--chunkdir",                      type="string",               default='',                help="chunkdir for computing margin of error")
 	parser.add_option("--sausage",                       action="store_true",         default=False,             help="way of filter volume")
 	parser.add_option("--PWadjustment",                  type="string",               default='',                help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
+	parser.add_option("--protein_shape",                 type="string",               default='g',               help="protein shape. It defines protein preferred orientation angles. Currently it has g and f two types ")
 	parser.add_option("--upscale",                       type="float",                default=0.5,               help=" scaling parameter to adjust the power spectrum of EM volumes")
 	parser.add_option("--wn",                            type="int",                  default=0,                 help="optimal window size for data processing")
 	parser.add_option("--interpolation",                 type="string",               default="4nn",             help="3-d reconstruction interpolation method, two options, trl and 4nn")
@@ -141,7 +142,8 @@ def main():
 		Constants["PWadjustment"]        =options.PWadjustment
 		Constants["upscale"]             =options.upscale
 		Constants["wn"]                  =options.wn
-		Constants["3d-interpolation"]    =options.interpolation  
+		Constants["3d-interpolation"]    =options.interpolation 
+		Constants["protein_shape"]       =options.protein_shape  
 		#Constants["frequency_stop_search"] = options.frequency_stop_search
 		#Constants["scale_of_number"]    = options.scale_of_number
 		# -------------------------------------------------------------
@@ -485,12 +487,12 @@ def main():
 					falloff = round(min(0.1,falloff),4)
 					Tracker["lowpass"] = lowpass
 					Tracker["falloff"] = falloff
-					refdata           = [None]*4
-					refdata[0]        = volref
-					refdata[1]        = Tracker
-					refdata[2]        = Tracker["constants"]["myid"]
-					refdata[3]        = Tracker["constants"]["nproc"]
-					volref            = user_func(refdata)
+					refdata            = [None]*4
+					refdata[0]         = volref
+					refdata[1]         = Tracker
+					refdata[2]         = Tracker["constants"]["myid"]
+					refdata[3]         = Tracker["constants"]["nproc"]
+					volref             = user_func(refdata)
 					cutoff = Tracker["constants"]["pixel_size"]/lowpass
 					log_main.add("%d vol low pass filer %f   %f  cut to  %f Angstrom"%(igrp,Tracker["lowpass"],Tracker["falloff"],cutoff))
 					volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))
