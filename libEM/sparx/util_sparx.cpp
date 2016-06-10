@@ -25889,3 +25889,64 @@ EMData* Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_
 	 EXITFUNC;
 	 return vol2;	
 }
+EMData* Util::divide_mtf( EMData* img, vector<float> mtf, vector<float> res) {
+
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img  ===================== */
+
+	int nx = img->get_xsize(),ny = img->get_ysize(),nz = img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	if(img->is_complex()) {
+		for (size_t i=0; i<size; i+=2) {
+			int jp  = int((i%(nx*ny))/nx); 
+			int kp  = int(i/(nx*ny)); 
+			int ip  = int(i%(nx*ny))%nx;
+			int icp = 0;
+			int jcp = 0;
+			int kcp = 0;  
+			if (ip <= nx/2)
+				icp  = ip;
+			else 
+				icp =nx/2-icp;
+			if (jp <= ny/2) 
+				jcp  = jp;
+			else 
+				jcp =ny/2-jcp;
+			if (kp <= nz/2) 
+				kcp  = kp;
+			else 
+				kcp =nz/2-kcp;
+			int r2 = icp*icp+jcp*jcp+kcp*kcp;
+			float ires =sqrt(r2)/nx;
+			if (ires <0.5) {
+			int ix_0 =0;
+			for (int jres =0; jres<res.size(); jres++){
+			  if (res[jres] >ires)
+			    break;
+			    ix_0 =jres;
+			}
+			float mtfv;
+			float x_0 = res[ix_0];
+			if (ix_0 ==res.size()-1 || ix_0 ==0)
+				mtfv = mtf[ix_0];
+			else
+			{
+				float x_1 = res[ix_0+1];
+				float y_0 = mtf[ix_0];
+				float y_1 = res[ix_0+1];
+				 mtfv = y_0 + (y_1 - y_0)*(ires - x_0)/(x_1 - x_0);
+			}
+			   img_ptr[i] /=1./mtfv;	
+	     }
+	  }	
+	} else  throw ImageFormatException("Only Fourier image allowed");
+	img->update();
+	EXITFUNC;
+	return img;
+};
+
