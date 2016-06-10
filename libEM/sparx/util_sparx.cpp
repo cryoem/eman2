@@ -25935,8 +25935,8 @@ EMData* Util::divide_mtf( EMData* img, vector<float> mtf, vector<float> res) {
 			else 
 				kcp =kp-nz;
 			int r2 = icp*icp+jcp*jcp+kcp*kcp;
-			float ires =sqrt((float)r2)/nx;
-			if (ires <0.5) {
+			float xres =sqrt((float)r2)/nx;
+			if (xres <0.5) {
 			int ix_0 =0;
 			for (int jres =0; jres<res.size(); jres++){
 			  if (res[jres] >xres)
