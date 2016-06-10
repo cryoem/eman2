@@ -936,21 +936,24 @@ def main():
 				## FSC is done on masked two images
 			if nargs>1: e1 +=e2
 			if options.mtf: # divided by the mtf
+				from fundamentals import fft
 				print_msg = "MTF correction: Fourier facors will be divided by detector MTF"
 				log_main.add(print_msg) 
 				from utilities import read_text_file
 				print_msg = "MTF file is %s"%options.mtf
 				log_main.add(print_msg)
-				mtf_value  = read_text_file(options.mtf, -1)
+				mtf_core  = read_text_file(options.mtf, -1)
 				from utilities import sample_down_1D_curve
-				fil_mtf = sample_down_1D_curve(e1.get_xsize(),len(mtf_value[1])*2,options.mtf)
-				for ifil in xrange(len(fil_mtf)):
-					try: 
-						fil_mtf[ifil] = 1./sqrt(fil_mtf[ifil])
-					except:
-						fil_mtf[ifil] = 0.0
-				from filter import filt_table
-				e1 = filt_table(e1, fil_mtf)
+				#fil_mtf = sample_down_1D_curve(e1.get_xsize(),len(mtf_value[1])*2,options.mtf)
+				#for ifil in xrange(len(fil_mtf)):
+				#	try: 
+				#		fil_mtf[ifil] = 1./sqrt(fil_mtf[ifil])
+				#	except:
+				#		fil_mtf[ifil] = 0.0
+				#from filter import filt_table
+				#e1 = filt_table(e1, fil_mtf)
+				e1 = Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0])
+				e1 =fft(e1)
 			if options.fsc_weighted:
 				print_msg = " apply sqrt((2*FSC)/(1+FSC)) weighting "
 				log_main.add(print_msg)
