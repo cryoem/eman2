@@ -25952,7 +25952,7 @@ EMData* Util::divide_mtf( EMData* img, vector<float> mtf, vector<float> res) {
 				float x_1 = res[ix_0+1];
 				float y_0 = mtf[ix_0];
 				float y_1 = res[ix_0+1];
-				mtfv     = y_0 + (y_1 - y_0)*(xres - x_0)/(x_1 - x_0);
+				mtfv      = y_0 + (y_1 - y_0)*(xres - x_0)/(x_1 - x_0);
 			}  
 			   	 img_ptr1[i] *=1./mtfv; 
 	     } 

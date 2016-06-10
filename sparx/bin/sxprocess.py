@@ -935,6 +935,9 @@ def main():
 				log_main.add(print_msg)
 				## FSC is done on masked two images
 			if nargs>1: e1 +=e2
+			guinerlinein   = rot_avg_table(power(periodogram(e1),.5))
+			from utilities import write_text_file
+			write_text_file(guinerlinein, "guinerlinein.txt")	
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
 				print_msg = "MTF correction: Fourier facors will be divided by detector MTF"
@@ -943,17 +946,13 @@ def main():
 				print_msg = "MTF file is %s"%options.mtf
 				log_main.add(print_msg)
 				mtf_core  = read_text_file(options.mtf, -1)
-				from utilities import sample_down_1D_curve
-				#fil_mtf = sample_down_1D_curve(e1.get_xsize(),len(mtf_value[1])*2,options.mtf)
-				#for ifil in xrange(len(fil_mtf)):
-				#	try: 
-				#		fil_mtf[ifil] = 1./sqrt(fil_mtf[ifil])
-				#	except:
-				#		fil_mtf[ifil] = 0.0
-				#from filter import filt_table
-				#e1 = filt_table(e1, fil_mtf)
+				print_msg="The first column is frequency, and the second one is MTF"
+				log_main.add(print_msg)
 				e1 = Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0])
 				e1 =fft(e1)
+				guinerlinemtf   = rot_avg_table(power(periodogram(e1),.5))
+				from utilities import write_text_file
+				write_text_file(guinerlinein, "guinerlinemtf.txt")	
 			if options.fsc_weighted:
 				print_msg = " apply sqrt((2*FSC)/(1+FSC)) weighting "
 				log_main.add(print_msg)
@@ -969,7 +968,7 @@ def main():
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 				e1=filt_table(e1,fil)
 			if options.B_enhance:
-				print_msg = "Use negative B-factor to enhance image"
+				print_msg = "use negative B-factor to enhance image"
 				log_main.add(print_msg)
 				if options.adhoc_bfactor == 0.0: # auto mode
 					print_msg = "B-factor estimation auto mode"
