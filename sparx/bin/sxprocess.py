@@ -858,6 +858,8 @@ def main():
 		from logger import Logger,BaseLogger_Files
 		log_main=Logger(BaseLogger_Files())
 		log_main.prefix="./"
+		print_msg ="--------------------------------------------"
+		log_main.add(print_msg)
 		print_msg="Sphire postprocess"
 		log_main.add(print_msg)
 		from utilities    import get_im
@@ -948,8 +950,7 @@ def main():
 				mtf_core  = read_text_file(options.mtf, -1)
 				print_msg="The first column is frequency, and the second one is MTF"
 				log_main.add(print_msg)
-				e1 = Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0])
-				e1 =fft(e1)
+				e1 = fft(Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0]))
 				guinerlinemtf   = rot_avg_table(power(periodogram(e1),.5))
 				from utilities import write_text_file
 				write_text_file(guinerlinein, "guinerlinemtf.txt")	
