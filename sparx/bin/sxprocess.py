@@ -942,7 +942,7 @@ def main():
 			write_text_file(guinerlinein, "guinerlinein.txt")	
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
-				print_msg = "MTF correction: Fourier facors will be divided by detector MTF"
+				print_msg = "MTF correction: Fourier factors will be divided by detector MTF"
 				log_main.add(print_msg) 
 				from utilities import read_text_file
 				print_msg = "MTF file is %s"%options.mtf
@@ -953,7 +953,7 @@ def main():
 				e1 = fft(Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0]))
 				guinerlinemtf   = rot_avg_table(power(periodogram(e1),.5))
 				from utilities import write_text_file
-				write_text_file(guinerlinein, "guinerlinemtf.txt")	
+				write_text_file(guinerlinemtf, "guinerlinemtf.txt")	
 			if options.fsc_weighted:
 				print_msg = " apply sqrt((2*FSC)/(1+FSC)) weighting "
 				log_main.add(print_msg)
@@ -968,6 +968,8 @@ def main():
 					else: tmp = 0.0
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 				e1=filt_table(e1,fil)
+				guinerlineweighted   = rot_avg_table(power(periodogram(e1),.5))
+				write_text_file(guinerlineweighted, "guinerlineweighted.txt")
 			if options.B_enhance:
 				print_msg = "use negative B-factor to enhance image"
 				log_main.add(print_msg)
@@ -982,8 +984,8 @@ def main():
 						log_main.add(print_msg)
 						exit()
 					from utilities import write_text_file
-					write_text_file(guinerline, "guinerline.txt")
-					print_msg =  " guinerline is saved in guinerline.txt file"
+					write_text_file(guinerline, "guinerlineBcalc.txt")
+					print_msg =  " guinerline is saved in guinerlineBcalc.txt file"
 					log_main.add(print_msg)
 					print_msg = " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
 					log_main.add(print_msg)
