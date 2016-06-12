@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #
-# Author: Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
+# Authors:
+# Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
+# Markus Stabrin, 09/06/2016 (markus.stabrin@mpi-dortmund.mpg.de)
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -937,10 +939,10 @@ class SXCmdTab(QWidget):
 		token_widget_row_span = 1; token_widget_col_span = 1
 		cmd_frame_row_span = 32; cmd_frame_col_span = 7
 
-		title_label_min_width = 150
-		title_label_min_height = 80
+		title_label_min_width = 180 # title_label_min_width = 150
+		title_label_min_height = 40 #title_label_min_height = 80
 		short_info_min_width = 260 # short_info_min_width = 360
-		short_info_min_height = 80
+		short_info_min_height = 40 # short_info_min_height = 80
 		func_btn_min_width = 150
 		btn_min_width = 300
 		token_label_min_width = 300 # token_label_min_width = 360
@@ -977,10 +979,10 @@ class SXCmdTab(QWidget):
 		title_layout = QGridLayout()
 		title_layout.setMargin(SXLookFeelConst.grid_margin)
 		title_layout.setSpacing(SXLookFeelConst.grid_spacing)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		grid_layout = QGridLayout()
 		grid_layout.setMargin(SXLookFeelConst.grid_margin)
 		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
@@ -996,7 +998,8 @@ class SXCmdTab(QWidget):
 		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
 		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		title_hbox.addLayout(title_layout)
-		title_hbox.addStretch(1)
+#		title_hbox.addStretch(1)
+		title_layout.setColumnStretch(grid_row_origin + token_label_col_span, title_layout.columnStretch(grid_row_origin+token_label_col_span) + 1)
 		scroll_layout.addLayout(title_hbox)
 		scroll_layout.addLayout(grid_layout)
 		scroll_layout.addLayout(submit_layout)
@@ -1018,6 +1021,8 @@ class SXCmdTab(QWidget):
 			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
+#			temp_label.setFixedWidth(title_label_min_width)
+#			temp_label.setFixedHeight(title_label_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
 
 			#
@@ -1029,6 +1034,7 @@ class SXCmdTab(QWidget):
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
+#			temp_label.setFixedHeight(short_info_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 
 			grid_row += short_info_row_span
@@ -1038,12 +1044,15 @@ class SXCmdTab(QWidget):
 			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
+#			temp_label.setFixedWidth(title_label_min_width)
+#			temp_label.setFixedHeight(title_label_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
 
 			temp_label = QLabel("Set advanced parameters", self)
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
+#			temp_label.setFixedHeight(short_info_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 
 		# Add space
@@ -2171,6 +2180,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "unblur"; token.key_prefix = ""; token.label = "Path to unblur executable"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "exe"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_mrc_micrograph"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "You can use the wild cards (e.g. *) to specify a list of micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "mrc"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "nr_threads"; token.key_prefix = "--"; token.label = "Number of threads"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "2"; token.restore = "2"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "nr_frames"; token.key_prefix = "--"; token.label = "Number of frames"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "3"; token.restore = "3"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "apix"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "dose_filter"; token.key_prefix = "--"; token.label = "Apply dose filter"; token.help = "Requires additionally to set the correct exposure per frame, voltage, and pre exposure. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2319,8 +2329,10 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd = SXcmd(); sxcmd.name = "sxisac_post_processing"; sxcmd.mode = ""; sxcmd.label = "ISAC - Postprocessing"; sxcmd.short_info = "Postprocess of the 2D clustering result produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_2d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "Original image stack"; token.help = "Particles required to create the full-sized class averages. The images must be square (''nx''=''ny'') and the stack must be bdb format "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "bdb"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "isac_directory"; token.key_prefix = ""; token.label = "Isac output directory"; token.help = "Name of the directory where isac was run previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "class_file_name_no_dir_info"; token.key_prefix = ""; token.label = "Isac class file name"; token.help = "Name of the file (no directory info) that contains the class averages. It is located in the Isac directory. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "There is no default radius. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "CTF"; token.key_prefix = "--"; token.label = "Phase-flip"; token.help = "If set, the data will be phase-flipped using CTF information included in the image headers. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "single_stack_output"; token.key_prefix = "--"; token.label = "Single stack output"; token.help = "If set, only one stack for all classes will be generated. Otherwise, which is the default, one file per class will be generated. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
@@ -2463,9 +2475,12 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "postprocess"; token.key_prefix = "--"; token.label = "Adjust power spectrum based on B-factor"; token.help = "B-factor is estimated from unfiltered odd-even volumes or an image. "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First unfiltered half-volume "; token.help = "Generated by sxmeridien"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second unfiltered half-volume "; token.help = "Generated by sxmeridien"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "mtf"; token.key_prefix = "--"; token.label = "MTF file"; token.help = "File contains the MTF (modulation transfer function) of the detector used. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fsc_weighted"; token.key_prefix = "--"; token.label = "FSC-based low-pass filter"; token.help = "Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (not applicable to 2D image). "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "B_enhance"; token.key_prefix = "--"; token.label = "B-factor adjustment"; token.help = "Applies B-factor adjustment to the input volume "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "adhoc_bfactor"; token.key_prefix = "--"; token.label = "User provided B-factor"; token.help = "Use user provided B-factor for map sharpening instead of estimating the value. "; token.group = "main"; token.is_required = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "low_pass_filter"; token.key_prefix = "--"; token.label = "Secondary low-pass filter"; token.help = "Applies a low-pass filter to merged volume after B-factor adjustment. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "ff"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0.25"; token.restore = "0.25"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "ff"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "aa"; token.key_prefix = "--"; token.label = "Low-pass filter fall-off"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "0.1"; token.restore = "0.1"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = "--"; token.label = "Input mask"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output"; token.key_prefix = "--"; token.label = "Output file"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "postprocessed.hdf"; token.restore = "postprocessed.hdf"; token.type = "output"; sxcmd.token_list.append(token)
@@ -2511,7 +2526,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.mode = "symmetrize"; sxcmd.label = "3D Variability Preprocess"; sxcmd.short_info = "Symmetrise input stack. Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "symmetrize"; token.key_prefix = "--"; token.label = "Symmetrise input stack"; token.help = "Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Only required if the structure has symmetry higher than c1. Notice this step can be run with only one CPU and there is no MPI version for it. "; token.group = "main"; token.is_required = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
@@ -2524,7 +2539,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "var3D"; token.key_prefix = "--"; token.label = "Output 3D variability"; token.help = "It creates a volume containing, for each voxel, a measure of the variability in the dataset. Careful, time consuming! "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "img_per_grp"; token.key_prefix = "--"; token.label = "Number of projections"; token.help = "Images from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability volume. "; token.group = "main"; token.is_required = False; token.default = "10"; token.restore = "10"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "no_norm"; token.key_prefix = "--"; token.label = "Skip normalization"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "radiusvar"; token.key_prefix = "--"; token.label = "Radius for 3D variability [Pixels]"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Radius for 3D variability [Pixels]"; token.help = "Normally, use the particle radius. "; token.group = "advanced"; token.is_required = False; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "npad"; token.key_prefix = "--"; token.label = "Image padding factor"; token.help = "The images are padded to achieve the original size times this option. "; token.group = "advanced"; token.is_required = False; token.default = "2"; token.restore = "2"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Only required if the structure has symmetry higher than c1. Notice this step can be run with only one CPU and there is no MPI version for it. "; token.group = "main"; token.is_required = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fl"; token.key_prefix = "--"; token.label = "Low-pass filter frequency [1/Pixel]"; token.help = "Filter to be applied to the images prior to variability calculation. By default, no filtering. "; token.group = "main"; token.is_required = False; token.default = "0.0"; token.restore = "0.0"; token.type = "float"; sxcmd.token_list.append(token)
@@ -2567,6 +2582,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "sausage"; token.key_prefix = "--"; token.label = "Use sausage filter"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "chunkdir"; token.key_prefix = "--"; token.label = "Chunkdir"; token.help = "Used for computing margin of error. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "directory"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "PWadjustment"; token.key_prefix = "--"; token.label = "Power spectrum reference"; token.help = "Text file containing a 1D reference power spectrum. "; token.group = "advanced"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "protein_shape"; token.key_prefix = "--"; token.label = "Protein Shape"; token.help = "It defines protein preferred orientation angles. 'g' is for globular proteins and 'f' is for filament proteins. "; token.group = "advanced"; token.is_required = False; token.default = "'g'"; token.restore = "'g'"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "upscale"; token.key_prefix = "--"; token.label = "Power spectrum adjustment strength"; token.help = "This parameters adjusts how strongly the power spectrum of the volume should be modified to match the reference. A value of 1 brings the volume's power spectrum completely to the reference, while a value of 0 means no modification. "; token.group = "advanced"; token.is_required = False; token.default = "0.5"; token.restore = "0.5"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "Target image size [Pixels]"; token.help = "If different than 0, then the images will be rescaled to fit this size. "; token.group = "advanced"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "interpolation"; token.key_prefix = "--"; token.label = "3D interpolation method"; token.help = "Method interpolation in 3D. Options are tr1 or 4nn. "; token.group = "advanced"; token.is_required = False; token.default = "'4nn'"; token.restore = "'4nn'"; token.type = "string"; sxcmd.token_list.append(token)
@@ -2607,6 +2623,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "sausage"; token.key_prefix = "--"; token.label = "Use sausage filter"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "chunkdir"; token.key_prefix = "--"; token.label = "Chunkdir"; token.help = "Used for computing margin of error. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "directory"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "PWadjustment"; token.key_prefix = "--"; token.label = "Power spectrum reference"; token.help = "Text file containing a 1D reference power spectrum. "; token.group = "advanced"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "protein_shape"; token.key_prefix = "--"; token.label = "Protein Shape"; token.help = "It defines protein preferred orientation angles. 'g' is for globular proteins and 'f' is for filament proteins. "; token.group = "advanced"; token.is_required = False; token.default = "'g'"; token.restore = "'g'"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "upscale"; token.key_prefix = "--"; token.label = "Power spectrum adjustment strength"; token.help = "This parameters adjusts how strongly the power spectrum of the volume should be modified to match the reference. A value of 1 brings the volume's power spectrum completely to the reference, while a value of 0 means no modification.  "; token.group = "advanced"; token.is_required = False; token.default = "0.5"; token.restore = "0.5"; token.type = "float"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "Target image size [Pixels]"; token.help = "If different than 0, then the images will be rescaled to fit this size. "; token.group = "advanced"; token.is_required = False; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "interpolation"; token.key_prefix = "--"; token.label = "3D interpolation method"; token.help = "Method interpolation in 3D. Options are tr1 or 4nn. "; token.group = "advanced"; token.is_required = False; token.default = "'4nn'"; token.restore = "'4nn'"; token.type = "string"; sxcmd.token_list.append(token)
@@ -2838,7 +2855,8 @@ def main(args):
 
 	sxapp_font = sxapp.font()
 	sxapp_font_info = QFontInfo(sxapp.font())
-	new_point_size = sxapp_font_info.pointSize() + 1
+#	new_point_size = sxapp_font_info.pointSize() + 1
+	new_point_size = sxapp_font_info.pointSize()
 	# # MRK_DEBUG: Check the default system font
 	# print "MRK_DEBUG: sxapp_font_info.style()      = ", sxapp_font_info.style()
 	# print "MRK_DEBUG: sxapp_font_info.styleHint()  = ", sxapp_font_info.styleHint()
@@ -2857,8 +2875,8 @@ def main(args):
 	# still showing the default font size:
 	# QPushButton, QLable, Window Title, and QToolTip
 	#
-	sxapp_font.setPointSize(new_point_size) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
-	sxapp.setFont(sxapp_font)
+#	sxapp_font.setPointSize(new_point_size) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
+#	sxapp.setFont(sxapp_font)
 
 	# sxapp.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work
 	# sxapp.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work

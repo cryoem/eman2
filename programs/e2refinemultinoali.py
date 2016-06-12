@@ -33,6 +33,7 @@ import numpy as np
 from multiprocessing import Pool
 import time
 import json
+from shutil import copyfile
 
 def main():
 	
@@ -248,6 +249,16 @@ def main():
 	for s in models:
 		final3d="{path}/threed_00_{n}.hdf".format(path=options.newpath,n=s)
 		run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter 0 {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(even3d=output_3d["even"][s], odd3d=output_3d["odd"][s], final3d=final3d, mass=db["mass"], amask3d=db["automask3d"], sym=db["sym"], amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db["automaskexpand"]))
+		
+		### copy the fsc files..
+		fscs=["fsc_unmasked_00.txt","fsc_masked_00.txt","fsc_maskedtight_00.txt"]
+		for fsc in fscs:
+			fm=os.path.join(options.newpath,fsc)
+			fmnew=os.path.join(options.newpath,fsc[:-4]+"_model_{:02d}.txt".format(s))
+			try:
+				copyfile(fm,fmnew)
+				os.remove(fm)
+			except: pass
 		
 		### make lists
 		tmpcls=["tmpcls_even.lst","tmpcls_odd.lst"]

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #
-# Author: Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
+# Authors:
+# Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
+# Markus Stabrin, 09/06/2016 (markus.stabrin@mpi-dortmund.mpg.de)
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -937,10 +939,10 @@ class SXCmdTab(QWidget):
 		token_widget_row_span = 1; token_widget_col_span = 1
 		cmd_frame_row_span = 32; cmd_frame_col_span = 7
 
-		title_label_min_width = 150
-		title_label_min_height = 80
+		title_label_min_width = 180 # title_label_min_width = 150
+		title_label_min_height = 40 #title_label_min_height = 80
 		short_info_min_width = 260 # short_info_min_width = 360
-		short_info_min_height = 80
+		short_info_min_height = 40 # short_info_min_height = 80
 		func_btn_min_width = 150
 		btn_min_width = 300
 		token_label_min_width = 300 # token_label_min_width = 360
@@ -977,10 +979,10 @@ class SXCmdTab(QWidget):
 		title_layout = QGridLayout()
 		title_layout.setMargin(SXLookFeelConst.grid_margin)
 		title_layout.setSpacing(SXLookFeelConst.grid_spacing)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		grid_layout = QGridLayout()
 		grid_layout.setMargin(SXLookFeelConst.grid_margin)
 		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
@@ -996,7 +998,8 @@ class SXCmdTab(QWidget):
 		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
 		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		title_hbox.addLayout(title_layout)
-		title_hbox.addStretch(1)
+#		title_hbox.addStretch(1)
+		title_layout.setColumnStretch(grid_row_origin + token_label_col_span, title_layout.columnStretch(grid_row_origin+token_label_col_span) + 1)
 		scroll_layout.addLayout(title_hbox)
 		scroll_layout.addLayout(grid_layout)
 		scroll_layout.addLayout(submit_layout)
@@ -1018,6 +1021,8 @@ class SXCmdTab(QWidget):
 			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
+#			temp_label.setFixedWidth(title_label_min_width)
+#			temp_label.setFixedHeight(title_label_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
 
 			#
@@ -1029,6 +1034,7 @@ class SXCmdTab(QWidget):
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
+#			temp_label.setFixedHeight(short_info_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 
 			grid_row += short_info_row_span
@@ -1038,12 +1044,15 @@ class SXCmdTab(QWidget):
 			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
+#			temp_label.setFixedWidth(title_label_min_width)
+#			temp_label.setFixedHeight(title_label_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
 
 			temp_label = QLabel("Set advanced parameters", self)
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
+#			temp_label.setFixedHeight(short_info_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 
 		# Add space
@@ -2234,7 +2243,8 @@ def main(args):
 
 	sxapp_font = sxapp.font()
 	sxapp_font_info = QFontInfo(sxapp.font())
-	new_point_size = sxapp_font_info.pointSize() + 1
+#	new_point_size = sxapp_font_info.pointSize() + 1
+	new_point_size = sxapp_font_info.pointSize()
 	# # MRK_DEBUG: Check the default system font
 	# print "MRK_DEBUG: sxapp_font_info.style()      = ", sxapp_font_info.style()
 	# print "MRK_DEBUG: sxapp_font_info.styleHint()  = ", sxapp_font_info.styleHint()
@@ -2253,8 +2263,8 @@ def main(args):
 	# still showing the default font size:
 	# QPushButton, QLable, Window Title, and QToolTip
 	#
-	sxapp_font.setPointSize(new_point_size) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
-	sxapp.setFont(sxapp_font)
+#	sxapp_font.setPointSize(new_point_size) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
+#	sxapp.setFont(sxapp_font)
 
 	# sxapp.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work
 	# sxapp.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work

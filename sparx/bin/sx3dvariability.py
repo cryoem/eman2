@@ -106,7 +106,7 @@ def main():
 	parser.add_option("--var3D",		type="string"	   ,	default=False,				help="compute 3D variability (time consuming!)")
 	parser.add_option("--img_per_grp",	type="int"         ,	default=10   ,				help="number of neighbouring projections")
 	parser.add_option("--no_norm",		action="store_true",	default=False,				help="do not use normalization")
-	parser.add_option("--radiusvar", 	type="int"         ,	default=-1   ,				help="radius for 3D var" )
+	parser.add_option("--radius", 	    type="int"         ,	default=-1   ,				help="radius for 3D variability" )
 	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="number of time to pad the original images")
 	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry")
 	parser.add_option("--fl",			type="float"       ,	default=0.0  ,				help="stop-band frequency (Default - no filtration)")
@@ -197,8 +197,8 @@ def main():
 
 	else:
 
-		sys.argv = mpi_init(len(sys.argv), sys.argv)
-		myid     = mpi_comm_rank(MPI_COMM_WORLD)
+		sys.argv       = mpi_init(len(sys.argv), sys.argv)
+		myid           = mpi_comm_rank(MPI_COMM_WORLD)
 		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 		main_node = 0
 
@@ -209,15 +209,14 @@ def main():
 			print( "Please run '" + progname + " -h' for detailed options")
 			return 1
 
-		t0 = time()
-	
+		t0 = time()	
 		# obsolete flags
-		options.MPI = True
+		options.MPI  = True
 		options.nvec = 0
 		options.radiuspca = -1
 		options.iter = 40
-		options.abs = 0.0
-		options.squ = 0.0
+		options.abs  = 0.0
+		options.squ  = 0.0
 
 		if options.fl > 0.0 and options.aa == 0.0:
 			ERROR("Fall off has to be given for the low-pass filter", "sx3dvariability", 1, myid)
@@ -276,11 +275,11 @@ def main():
 			nima = 0
 			nx = 0
 			ny = 0
-		nima = bcast_number_to_all(nima)
-		nx   = bcast_number_to_all(nx)
-		ny   = bcast_number_to_all(ny)
+		nima    = bcast_number_to_all(nima)
+		nx      = bcast_number_to_all(nx)
+		ny      = bcast_number_to_all(ny)
 		Tracker ={}
-		Tracker["total_stack"]=nima
+		Tracker["total_stack"] = nima
 		if options.decimate==1.:
 			if options.window !=0:
 				nx = options.window
@@ -292,10 +291,10 @@ def main():
 			else:
 				nx = int(options.window/options.decimate)
 				ny = nx
-		Tracker["nx"]  =nx
-		Tracker["ny"]  =ny
-		Tracker["nz"]  =nx
-		symbaselen = bcast_number_to_all(symbaselen)
+		Tracker["nx"]  = nx
+		Tracker["ny"]  = ny
+		Tracker["nz"]  = nx
+		symbaselen     = bcast_number_to_all(symbaselen)
 		if radiuspca == -1: radiuspca = nx/2-2
 
 		if myid == main_node:
@@ -335,8 +334,8 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 		"""
 		if options.VAR:
-			#varList = EMData.read_images(stack, range(img_begin, img_end))
-			varList = []
+			#varList   = EMData.read_images(stack, range(img_begin, img_end))
+			varList    = []
 			this_image = EMData()
 			for index_of_particle in xrange(img_begin,img_end):
 				this_image.read_image(stack,index_of_particle)
@@ -353,9 +352,9 @@ def main():
 			from sets		    import Set
 
 			if myid == main_node:
-				t1 = time()
+				t1          = time()
 				proj_angles = []
-				aveList = []
+				aveList     = []
 				tab = EMUtil.get_all_attributes(stack, 'xform.projection')
 				for i in xrange(nima):
 					t     = tab[i].get_params('spider')
@@ -373,7 +372,6 @@ def main():
 					print "Number of images per group: ", img_per_grp
 					print "Now grouping projections"
 				proj_angles.sort()
-
 			proj_angles_list = [0.0]*(nima*4)
 			if myid == main_node:
 				for i in xrange(nima):
@@ -382,11 +380,10 @@ def main():
 					proj_angles_list[i*4+2] = proj_angles[i][3]
 					proj_angles_list[i*4+3] = proj_angles[i][4]
 			proj_angles_list = bcast_list_to_all(proj_angles_list, myid, main_node)
-			proj_angles = []
+			proj_angles      = []
 			for i in xrange(nima):
 				proj_angles.append([proj_angles_list[i*4], proj_angles_list[i*4+1], proj_angles_list[i*4+2], int(proj_angles_list[i*4+3])])
 			del proj_angles_list
-
 			proj_list, mirror_list = nearest_proj(proj_angles, img_per_grp, range(img_begin, img_end))
 
 			all_proj = Set()
@@ -588,7 +585,7 @@ def main():
 								members = mpi_recv(3, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 								ave.set_attr('refprojdir', map(float, members))
 								"""
-								tmpvol=fpol(ave, Tracker["nx"],Tracker["nx"],Tracker["nx"])								
+								tmpvol=fpol(ave, Tracker["nx"],Tracker["nx"],1)								
 								tmpvol.write_image(options.ave2D, km)
 								km += 1
 				else:
@@ -695,7 +692,7 @@ def main():
 				print "Reconstructing 3D variability volume"
 
 			t6 = time()
-			radiusvar = options.radiusvar
+			radiusvar = options.radius
 			if( radiusvar < 0 ):  radiusvar = nx//2 -3
 			res = recons3d_4nn_MPI(myid, varList, symmetry=options.sym, npad=options.npad)
 			#res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)

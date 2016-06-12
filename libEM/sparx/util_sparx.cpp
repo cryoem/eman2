@@ -25889,3 +25889,74 @@ EMData* Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_
 	 EXITFUNC;
 	 return vol2;	
 }
+
+EMData* Util::divide_mtf( EMData* img, vector<float> mtf, vector<float> res) {
+
+	ENTERFUNC;
+
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img  ===================== */
+
+	int nx = img->get_xsize(),ny = img->get_ysize(),nz = img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	EMData *img1    = new EMData();
+	img1->set_size(nx, ny, nz);
+	img1->set_complex(true);
+    img1->to_zero();
+    //---_____ Check MTF ------------
+    for (int imtf =0; imtf<mtf.size(); imtf++) {
+     if(mtf[imtf] <1.e-10) throw NullPointerException("incorrect MTF value!");
+	}
+	float *img_ptr1  = img1->get_data();
+	int n2x = nx/2;
+	int n2y = ny/2;
+	int n2z = nz/2;
+	if(img->is_complex()) {
+		for (size_t i=0; i<size; i++)  img_ptr1[i] = img_ptr[i];
+		for (size_t i=0; i<size; i++) {				    
+			int ip  = int(i%(nx*ny))%nx;
+			int jp  = int((i%(nx*ny))/nx);
+			int kp  = int(i/float(nx*ny));
+			float icp = 0.0;
+			float jcp = 0.0;
+			float kcp = 0.0;
+			icp  = ip/2.;
+			if (jp < n2y)  jcp = jp;
+			else           jcp =jp-ny;
+			if (kp < n2z)  kcp = kp;
+			else           kcp =kp-nz;
+			int r2 = icp*icp+jcp*jcp+kcp*kcp;
+			float xres =sqrt((float)r2)/nx;
+			if (xres <0.5) {
+				int ix_0 =0;
+				for (int jres =0; jres<res.size(); jres++) {
+				  if (res[jres] >xres)
+					break;
+					ix_0 =jres;
+				}
+				float mtfv;
+				if (ix_0 == res.size()-1 || ix_0 ==0)
+					mtfv = mtf[ix_0];
+				else {
+					float y_0 = mtf[ix_0];
+					float y_1 = mtf[ix_0+1];
+					float x_0 = res[ix_0];
+					float x_1 = res[ix_0+1];
+					mtfv 	= y_0 + (y_1 - y_0)*(xres - x_0)/(x_1 - x_0);
+				}
+				img_ptr1[i] /= mtfv; 
+			}
+		}
+	} else  throw ImageFormatException("Only Fourier image allowed");
+
+	img1->set_ri(true);
+	if(ny%2==0) img1->set_fftodd(false); else img1->set_fftodd(true);
+	img1->update();
+	EXITFUNC;
+	return img1;
+}
+

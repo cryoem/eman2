@@ -5,7 +5,7 @@ sxunblur - Micrograph movie alignment: Align micrograph movies with Unblur.
 
 ''usage in command line''
 
-sxunblur.py  unblur  input_mrc_micrograph  output  --nr_frames=nr_frames  --pixel_size=pixel_size  --dose_filter  --exposure_per_frame=exposure_per_frame  --voltage=voltage  --pre_exposure=pre_exposure  --save_frames  --expert_mode  --shift_initial=shift_initial  --shift_radius=shift_radius  --b_factor=b_factor  --fourier_vertical=fourier_vertical  --fourier_horizontal=fourier_horizontal  --shift_threshold=shift_threshold  --iterations=iterations  --restore_noise --verbose  --filter_sum  --lowpass=lowpass  --highpass=highpass  --remove_sum
+sxunblur.py  unblur  input_mrc_micrograph  output  --nr_threads=NR_THREADS  --nr_frames=nr_frames  --pixel_size=pixel_size  --dose_filter  --exposure_per_frame=exposure_per_frame  --voltage=voltage  --pre_exposure=pre_exposure  --save_frames  --expert_mode  --shift_initial=shift_initial  --shift_radius=shift_radius  --b_factor=b_factor  --fourier_vertical=fourier_vertical  --fourier_horizontal=fourier_horizontal  --shift_threshold=shift_threshold  --iterations=iterations  --restore_noise --verbose  --filter_sum  --lowpass=lowpass  --highpass=highpass  --remove_sum
 
 === Typical usage ===
 
@@ -13,15 +13,15 @@ sxunblur exists in non-MPI version.
 
     Just shift data.
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory--nr_frames=25 --pixel_size=1.19 --remove_sum
+    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory--nr_frames=25 --pixel_size=1.19 --remove_sum --nr_threads=2
 
     Shift data with aligned sum files, filtered sum files and aligned frames.
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory --nr_frames=25 --pixel_size=1.19 --save_frames --filter_sum --lowpass=0.033 --highpass=0.00033
+    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory --nr_frames=25 --pixel_size=1.19 --save_frames --filter_sum --lowpass=0.033 --highpass=0.00033 --nr_threads=2
 
     Dose filter and Expert Options
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory --nr_frames=25 --pixel_size=1.19 --dose_filter --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0 --fourier_vertical=1 --fourier_horizontal=1 --shift_threshold=0.1 --iterations=10 --restore_noise --verbose --filter_sum --lowpass=0.033 --highpass=0.00033
+    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory --nr_frames=25 --pixel_size=1.19 --dose_filter --exposure_per_frame=1.0 --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0 --fourier_vertical=1 --fourier_horizontal=1 --shift_threshold=0.1 --iterations=10 --restore_noise --verbose --filter_sum --lowpass=0.033 --highpass=0.00033 --nr_threads=2
 
 == Input ==
 
@@ -29,6 +29,7 @@ sxunblur exists in non-MPI version.
     input_mrc_micrograph:: Input micrographs: You can use the wild cards (e.g. *) to specify a list of micrographs. (default required string)
     output:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
+    nr_threads:: Number of threads: (default 2)
     nr_frames:: Number of frames: (default 3)
     pixel_size:: Pixel size [A]: (default  required -1.0)
     dose_filter:: Apply dose filter: Requires additionally to set the correct exposure per frame, voltage, and pre exposure. (default False)
@@ -57,9 +58,17 @@ sxunblur exists in non-MPI version.
 == Output ==
 The program creates the directory automatically in the current directory. (default required string)
 
-Sum files will be written to the "Micrographs" Folder.
+Without dosefilter
+Sum files will be written to the "Doseuncorrected" Folder.
 Filtered sum files will be written to the "Filtered" Folder.
-Aligned frames will be written to the "Micrographs" Folder.
+Aligned frames will be written to the "Doseuncorrected" Folder.
+Shift files  will be written to the "Shift" folder.
+FRC files will be written to the "FRC" folder.
+
+With dosefilter
+Sum files will be written to the "Dosecorrected" Folder.
+Filtered sum files will be written to the "Filtered" Folder.
+Aligned frames will be written to the "Dosecorrected" Folder.
 Shift files  will be written to the "Shift" folder.
 FRC files will be written to the "FRC" folder.
 

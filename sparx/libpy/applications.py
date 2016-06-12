@@ -23291,7 +23291,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		#  The while loop over even angles delta should start here.
 		#  prepare reference directions
 		from utilities import even_angles, getvec
-		refa = even_angles(60.0)
+		if   Tracker["constants"]["protein_shape"]=="g"  :refa = even_angles(60.0)     # globular proteins
+		elif Tracker["constants"]["protein_shape"]=="f"  :refa = even_angles(40.0, theta1=65, theta2=115) # filament proteins
 		numrefang = len(refa)
 		refanorm = empty( (numrefang, 3), dtype = float32)
 		for i in xrange(numrefang):

@@ -83,7 +83,7 @@ def main(args):
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--radius",                type="int",           help="particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)")
 	parser.add_option("--CTF",                   action="store_true",  default=False,      help="apply phase-flip for CTF correction: if set the data will be phase-flipped using CTF information included in image headers (default False)")
-	parser.add_option("--single_stack_output",   action="store_true",  default=False,      help="generate one file per class average (default) as opposed to one stack for all classes (default False)")
+	parser.add_option("--single_stack_output",   action="store_true",  default=False,      help="Single stack output: If set, only one stack for all classes will be generated. Otherwise, which is the default, one file per class will be generated. (default False)")
 
 	##### XXXXXXXXXXXXXXXXXXXXXX option does not exist in docs XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	parser.add_option("--return_options", action="store_true", dest="return_options", default=False, help = SUPPRESS_HELP)
@@ -94,7 +94,6 @@ def main(args):
 	if options.return_options:
 		return parser
 	
-	# if len(args) > 2:
 	if len(args) != 3:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
@@ -284,6 +283,7 @@ def main(args):
 			for class_avg_img_iter in range(total_class_averages_nima):
 				cmdexecute("rm -f " + size_adjusted_class_averages_file_name[:-4] + "_%04d"%(class_avg_img_iter) +".hdf", printing_on_success = False)
 
+	mpi_barrier(MPI_COMM_WORLD)
 	mpi_finalize()
 
 if __name__=="__main__":
