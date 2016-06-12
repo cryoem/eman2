@@ -1314,7 +1314,7 @@ def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	else:
 		apath=os.path.relpath(file_name).replace("\\","/").split("/")
 		# for specific directories, we want any references to the same micrograph to share an id
-		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","ddd","raw","info")) :
+		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","movies","movieparticles","ddd","raw","info")) :
 			if extension :
 				return os.path.basename(file_name)
 			else :

@@ -87,47 +87,47 @@ namespace EMAN
 		/* updated to MRC Image2000 format which is compatible with CCP4 format */
 		struct MrcHeader
 		{
-			int nx;				/* number of columns */
-			int ny;				/* number of rows */
-			int nz;				/* number of sections */
+			int nx;				/* 0 - number of columns */
+			int ny;				/* 1 - number of rows */
+			int nz;				/* 2 - number of sections */
 
-			int mode;			/* See modes above. */
+			int mode;			/* 3 - See modes above. */
 
-			int nxstart;		/* No. of first column in map, default 0. */
-			int nystart;		/* No. of first row in map, default 0. */
-			int nzstart;		/* No. of first section in map,default 0. */
+			int nxstart;		/* 4 - No. of first column in map, default 0. */
+			int nystart;		/* 5 - No. of first row in map, default 0. */
+			int nzstart;		/* 6 - No. of first section in map,default 0. */
 
-			int mx;				/* Number of intervals along X. */
-			int my;				/* Number of intervals along Y. */
-			int mz;				/* Number of intervals along Z. */
+			int mx;				/* 7 - Number of intervals along X. */
+			int my;				/* 8 - Number of intervals along Y. */
+			int mz;				/* 9 - Number of intervals along Z. */
 
 			/* Cell: treat a whole 2D image as a cell */
-			float xlen;			/* Cell dimensions (Angstroms). */
-			float ylen;			/* Cell dimensions (Angstroms). */
-			float zlen;			/* Cell dimensions (Angstroms). */
+			float xlen;			/* 10 - Cell dimensions (Angstroms). */
+			float ylen;			/* 11 - Cell dimensions (Angstroms). */
+			float zlen;			/* 12 - Cell dimensions (Angstroms). */
 
-			float alpha;		/* Cell angles (Degrees). */
-			float beta;			/* Cell angles (Degrees). */
-			float gamma;		/* Cell angles (Degrees). */
+			float alpha;		/* 13 - Cell angles (Degrees). */
+			float beta;			/* 14 - Cell angles (Degrees). */
+			float gamma;		/* 15 - Cell angles (Degrees). */
 
 			/* axis X => 1, Y => 2, Z => 3 */
-			int mapc;			/* Which axis corresponds to Columns.  */
-			int mapr;			/* Which axis corresponds to Rows.     */
-			int maps;			/* Which axis corresponds to Sections. */
+			int mapc;			/* 16 - Which axis corresponds to Columns.  */
+			int mapr;			/* 17 - Which axis corresponds to Rows.     */
+			int maps;			/* 18 - Which axis corresponds to Sections. */
 
-			float amin;			/* Minimum density value. */
-			float amax;			/* Maximum density value. */
-			float amean;		/* Mean density value.    */
+			float amin;			/* 19 - Minimum density value. */
+			float amax;			/* 20 - Maximum density value. */
+			float amean;		/* 21 - Mean density value.    */
 
-			int ispg;			/* Space group number (0 for images). */
+			int ispg;			/* 22 - Space group number (0 for images). */
 
-			int nsymbt;			/* Number of chars used for storing symmetry operators. */
+			int nsymbt;			/* 23 - Number of chars used for storing symmetry operators. */
 
-			int user1[15];
-			int imod_flags;	/* bit flags used by IMOD - >= 16 for 8 bit packed */
+			int user1[15];			// 24 - 38
+			int imod_flags;			/* 39 - bit flags used by IMOD - >= 16 for 8 bit packed */
 			int user2[9];
 
-			float xorigin;		/* X origin. */
+			float xorigin;		/* 40 - X origin. */
 			float yorigin;		/* Y origin. */
 			float zorigin;		/* Z origin. */
 

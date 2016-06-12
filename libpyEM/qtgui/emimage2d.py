@@ -512,10 +512,18 @@ class EMImage2DWidget(EMGLWidget):
 		auto_contrast = db.get("display_2d_auto_contrast",dfl=True)
 		if self.curfft == 0:
 			if self.data == None: return
-			mean=self.data.get_attr("mean")
-			sigma=self.data.get_attr("sigma")
-			m0=self.data.get_attr("minimum")
-			m1=self.data.get_attr("maximum")
+			# histogram is impacted by downsampling, so we need to compensate
+			if self.scale<=0.5 :
+				down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
+				mean=down["mean"]
+				sigma=down["sigma"]
+				m0=down["minimum"]
+				m1=down["maximum"]
+			else:
+				mean=self.data.get_attr("mean")
+				sigma=self.data.get_attr("sigma")
+				m0=self.data.get_attr("minimum")
+				m1=self.data.get_attr("maximum")
 			self.minden=m0
 			self.maxden=m1
 			if auto_contrast:
@@ -1330,11 +1338,9 @@ class EMImage2DWidget(EMGLWidget):
 					p = s.shape
 					GL.glColor(*p[1:4])
 					v= (p[4],p[5])
-					v2=(p[4]+1,p[5]+1)
-					sc=v2[0]-v[0]
 					GL.glLineWidth(p[7])
 					GL.glTranslate(v[0],v[1],0)
-					GL.glScalef(p[6]*(v2[0]-v[0]),p[6]*(v2[1]-v[1]),1.0)
+					GL.glScalef(p[6],p[6],1.0)
 					glCallList(self.circle_dl)
 					GL.glPopMatrix()
 				elif s.shape[0] == "ellipse":

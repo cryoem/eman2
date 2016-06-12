@@ -367,12 +367,13 @@ class EMShape:
 			GL.glPopMatrix()
 			
 		elif s[0]=="circle":
-#			print s[6],v,v2
+#			print s[6],v
 			GL.glPushMatrix()
 			GL.glColor(*col)
 			GL.glLineWidth(s[7])
 			GL.glTranslate(v[0],v[1],0)
-			GL.glScalef(s[6]*(v2[0]-v[0]),s[6]*(v2[1]-v[1]),1.0)
+#			GL.glScalef(s[6]*(v2[0]-v[0]),s[6]*(v2[1]-v[1]),1.0)
+			GL.glScalef(s[6],s[6],1.0)
 			GL.glCallList(EMShape.dlists)
 			GL.glPopMatrix()
 		elif s[0]=="ellipse":
