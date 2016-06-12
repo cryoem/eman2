@@ -1163,7 +1163,7 @@ def main():
             for k in boxes.keys():
                 out=file(k+".box","w")
                 for c in boxes[k]:
-                    out.write("{:1d}\t{:1d}\t{:1d}\t{:1d}\n".format(int(c[0]),int(c[1]),int(boxsize),int(boxsize)))
+                    out.write("{:1d}\t{:1d}\t{:1d}\t{:1d}\n".format(int(c[0]-boxsize/2),int(c[1]-boxsize/2),int(boxsize),int(boxsize)))
 
 	E2end(logid)
 
