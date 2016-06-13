@@ -156,7 +156,7 @@ def main():
 				convnet.x: train_set_x[index * batch_size: (index+1) * batch_size]
 			}
 		)
-		fname="result_conv0.hdf"
+		fname="result_conv_{}.hdf".format(options.netout)
 		try:os.remove(fname)
 		except: pass
 		for idi in range(2):
@@ -279,6 +279,13 @@ def apply_neuralnet(convnet,options):
 			e.process_inplace("normalize")
 		e.write_image(options.output,-1)
 		print "Output written to {}.".format(options.output)
+	
+	if nframe>1:
+		ss=options.output
+		fout=ss[:ss.rfind('.')]+"_pp.hdf"
+		e=EMData(ss,0,True)
+		apix=e["apix_x"]
+		launch_childprocess("e2proc2d.py {} {} --process math.fft.resample:n=.5 --apix {} --twod2threed".format(ss,fout, apix))
 		
 
 def load_particles(ptcls,labelshrink,ncopy=5):

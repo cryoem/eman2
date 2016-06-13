@@ -125,6 +125,10 @@ def main():
 
 	logid=E2init(sys.argv,options.ppid)
 	
+	if options.input==None :
+		options.input=db["input"][0].replace("_even","")
+		print "No --input specified, using: ",options.input
+	
 	if options.output == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:10]=="refinevar_" and len(i)==12 and str.isdigit(i[-2:])]
 		if len(fls)==0 : fls=[0]
