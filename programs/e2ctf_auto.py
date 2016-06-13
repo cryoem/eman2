@@ -93,7 +93,7 @@ Important: This program must be run from the project directory, not from within 
 
 	osum=int(options.hires)+int(options.midres)+int(options.lores)
 	if osum!=1 :
-		print "ERROR: Please specify one of --hires --lowres --midres"
+		print "ERROR: Please specify one of --hires --lores --midres"
 		sys.exit(1)
 
 	ptcls=["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
@@ -282,7 +282,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	newbox=good_size(boxsize/resample2)
 	resample2=boxsize/(newbox+0.1)
 	if resample2<1.0:
-		if not options.lowres : print "Warning: original sampling is too large for ideal midres resolution results. Suggest <=2.6 A/pix"
+		if not options.lores : print "Warning: original sampling is too large for ideal midres resolution results. Suggest <=2.6 A/pix"
 		resample2=1.0
 	maskwid2=12.0/options.apix
 	maskrad2=int(boxsize/2-maskwid2*1.2)
