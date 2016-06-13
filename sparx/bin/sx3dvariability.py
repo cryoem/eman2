@@ -106,7 +106,7 @@ def main():
 	parser.add_option("--var3D",		type="string"	   ,	default=False,				help="compute 3D variability (time consuming!)")
 	parser.add_option("--img_per_grp",	type="int"         ,	default=10   ,				help="number of neighbouring projections")
 	parser.add_option("--no_norm",		action="store_true",	default=False,				help="do not use normalization")
-	parser.add_option("--radiusvar", 	type="int"         ,	default=-1   ,				help="radius for 3D var" )
+	parser.add_option("--radius", 	    type="int"         ,	default=-1   ,				help="radius for 3D variability" )
 	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="number of time to pad the original images")
 	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry")
 	parser.add_option("--fl",			type="float"       ,	default=0.0  ,				help="stop-band frequency (Default - no filtration)")
@@ -585,7 +585,7 @@ def main():
 								members = mpi_recv(3, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 								ave.set_attr('refprojdir', map(float, members))
 								"""
-								tmpvol=fpol(ave, Tracker["nx"],Tracker["nx"],Tracker["nx"])								
+								tmpvol=fpol(ave, Tracker["nx"],Tracker["nx"],1)								
 								tmpvol.write_image(options.ave2D, km)
 								km += 1
 				else:
@@ -692,7 +692,7 @@ def main():
 				print "Reconstructing 3D variability volume"
 
 			t6 = time()
-			radiusvar = options.radiusvar
+			radiusvar = options.radius
 			if( radiusvar < 0 ):  radiusvar = nx//2 -3
 			res = recons3d_4nn_MPI(myid, varList, symmetry=options.sym, npad=options.npad)
 			#res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)

@@ -6,7 +6,7 @@ sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image se
 
 ''usage in command line''
 
-sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --threshold=THRESHOLD  --ne=NE  --nd=ND  --postprocess  --fsc_weighted  --adhoc_bfactor  --low_pass_filter  --ff=FF  --aa=AA  --mask=MASK  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --FSC_cutoff=FSC_CUTOFF  --2d  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --threshold=THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_weighted  --B_enhance=B_ENHANCE  --adhoc_bfactor  --low_pass_filter  --ff=FF  --aa=AA  --mask=MASK  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --FSC_cutoff=FSC_CUTOFF  --2d  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
 
 
 === Typical usage ===
@@ -85,7 +85,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
 ''' sxprocess.py  --adaptive_mask vol001.hdf '''
 
-13. Postprocess 3-D or 2-D images: For 3-D volumes, (1) calculate FSC with provided mask, (2) weight summed volume with FSC, (3) estimate B-factor from FSC weighted summed two volumes, then (4) apply negative B-factor to the weighted volume. For 2-D images, calculate B-factor and apply negative B-factor to 2-D images.
+13. Postprocess 3-D or 2-D images: For 3-D volumes, (1) calculate FSC with provided mask, (2)MTF correction, (3) weight summed volume with FSC, (4) estimate B-factor from given resolution ranges of summed two volumes, then (5) apply negative B-factor to the weighted volume. For 2-D images, calculate B-factor and apply negative B-factor to 2-D images.
 
 ''' sxprocess.py  --postprocess  run1_half1_class001_unfil.mrc  run1_half2_class001_unfil.mrc  --fsc_weighted  --pixel_size=1.12 '''
 
@@ -133,11 +133,13 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
     nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
 
-    postprocess:: Adjust power spectrum based on B-factor: B-factor is estimated from unfiltered odd-even volumes or an image. (default False)
+    postprocess:: Adjust power spectrum based on B-factor: B-factor is estimated from unfiltered odd-even 3-D volumes, one volume, or ISAC 2-D averages. (default False)
+    mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
     fsc_weighted:: FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (not applicable to 2D image). (default False)
+    B_enhance:: B-factor adjustment: Applies B-factor adjustment to the input volume (default False)
     adhoc_bfactor:: User provided B-factor: Use user provided B-factor for map sharpening instead of estimating the value. (default 0.0)
     low_pass_filter:: Secondary low-pass filter: Applies a low-pass filter to merged volume after B-factor adjustment. (default False)
-    ff:: Low-pass filter frequency [1/Pixel]: (default 0.25)
+    ff:: Low-pass filter frequency [either Angstrom or1/Pixel]: (default 0.0)
     aa:: Low-pass filter fall-off: (default 0.1)
     mask:: Input mask: (default none)
     output:: Output file: (default postprocessed.hdf)
@@ -169,7 +171,6 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
     transformparams:: Transform 3D projection orientation parameters: using six 3D parameters (phi,theta,psi,sx,sy,sz). input is --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. output is file with modified orientation parameters. (default none)
 
-    2d:: postprocess isac 2D averaged images (unimplemented): (default False)
 
 
 == Output ==

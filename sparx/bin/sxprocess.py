@@ -328,19 +328,20 @@ def main():
 	parser.add_option("--ne",                   type="int",		default= 0,     		  help="number of times to erode the binarized  input image")
 	parser.add_option("--nd",                   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
 	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
-	parser.add_option("--mtf",                  type="string",   default= None,            help="mtf file")
+	parser.add_option("--mtf",                  type="string",        default= None,      help="mtf file")
 	parser.add_option("--fsc_weighted",         action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes")
+	parser.add_option("--B_enhance",            action="store_true",                      help="apply Bfactor to enhance map or not")
 	parser.add_option("--adhoc_bfactor",        type="float",         default=0.0 ,       help="User provided B-factor for map sharpening")
 	parser.add_option("--low_pass_filter",      action="store_true",  default=False,      help="postprocess unfiltered odd, even 3-D volumes")
-	parser.add_option("--ff",                   type="float", default=.25,                help="low pass filter stop band frequency in absolute unit")
+	parser.add_option("--ff",                   type="float", default=0.0,                help="low pass filter stop band frequency in absolute unit. By default, low_pass filter to resolution")
 	parser.add_option("--aa",                   type="float", default=.1,                 help="low pass filter falloff" )
-	parser.add_option("--mask",           type="string",                                  help="input mask file",  default=None)
-	parser.add_option("--output",         type="string",                                  help="output file name", default="postprocessed.hdf")
-	parser.add_option("--pixel_size",     type="float",                                   help="pixel size of the data", default=1.0)
-	parser.add_option("--B_start",     type="float",                                      help="starting frequency in Angstrom for B-factor estimation", default=10.)
-	parser.add_option("--FSC_cutoff",     type="float",                                   help="FSC value that cuts off FSC ", default=0.143)
-	parser.add_option("--2d",          action="store_true",                               help="postprocess isac 2-D averaged images",default=False)
-	parser.add_option("--window_stack",                     action="store_true",          help="window stack images using a smaller window size", default=False)
+	parser.add_option("--mask",                 type="string",                            help="input mask file",  default= None)
+	parser.add_option("--output",               type="string",                            help="output file name", default = "postprocessed.hdf")
+	parser.add_option("--pixel_size",           type="float",                             help="pixel size of the data", default=1.0)
+	parser.add_option("--B_start",              type="float",                             help="starting frequency in Angstrom for B-factor estimation", default=10.)
+	parser.add_option("--FSC_cutoff",           type="float",                             help="FSC value that cuts off FSC ", default=0.143)
+	parser.add_option("--2d",                   action="store_true",                      help="postprocess isac 2-D averaged images",default=False)
+	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",           type="int",		default= 0,                   help="the new window size ")
 
 	# Options for angular distribution
@@ -854,6 +855,13 @@ def main():
 			mask3d.write_image(mask_file_name)
 
 	elif options.postprocess:
+		from logger import Logger,BaseLogger_Files
+		log_main=Logger(BaseLogger_Files())
+		log_main.prefix="./"
+		print_msg ="--------------------------------------------"
+		log_main.add(print_msg)
+		print_msg="Sphire postprocess"
+		log_main.add(print_msg)
 		from utilities    import get_im
 		from fundamentals import rot_avg_table
 		from morphology   import compute_bfactor,power
@@ -861,7 +869,12 @@ def main():
 		from filter       import filt_table, filt_gaussinv
 		from EMAN2 import periodogram
 		e1   = get_im(args[0],0)
-		if e1.get_zsize() == 1:
+		if options.pixel_size == 1.0:
+			print_msg = "Be sure the pixel_size is correctly set !"
+			log_main.add(print_msg)
+		if e1.get_zsize() == 1:  # 2D case
+			print_msg = "2-D postprocess for ISAC averaged images"
+			log_main.add(print_msg)
 			nimage = EMUtil.get_image_count(args[0])
 			if options.mask !=None: m = get_im(options.mask)
 			else: m = None
@@ -869,58 +882,85 @@ def main():
 				e1 = get_im(args[0],i)
 				if m: e1 *=m
 				guinerline = rot_avg_table(power(periodogram(e1),.5))
-				freq_max   =  1/(2.*pixel_size)
+				freq_max   =  1/(2.*options.pixel_size)
 				freq_min   =  1./options.B_start
-				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*pixel_size)
-				b,junk =compute_bfactor(guinerline, freq_min, freq_max, pixel_size)
+				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size)
+				b,junk =compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
 				global_b = b*4
-				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(global_b,2)
+				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2)
+				print "the estimated B-factor is  %f Angstrom^2  "%(round((-global_b),2))
 				sigma_of_inverse=sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.low_pass_filter:
 					from filter import filt_tanl
 					e1 =filt_tanl(e1,options.ff, options.aa)
 				e1.write_image(options.output)
-		else:
+		else:   # 3D case
+			print_msg = "postprocess for 3-D refinement"
+			log_main.add(print_msg)
 			nargs = len(args)
+			print_msg = "the first input volume is %s"%args[0]
+			log_main.add(print_msg) 
 			e1    = get_im(args[0])
-			if nargs >1: e2 = get_im(args[1])
-			if options.mask != None: m = get_im(options.mask)
-			else: m = None
-			if options.pixel_size == 1.0:
-				print "Be sure pixel_size is correctly set !"
+			if nargs >1:
+				print_msg="the second input volume is %s"%args[1]
+				log_main.add(print_msg)  
+				e2 = get_im(args[1])
+			if options.mask != None:
+				print_msg ="user provided mask is %s"%options.mask
+				log_main.add(print_msg) 
+				m = get_im(options.mask)
+			else: 
+				m = None
+				print_msg= " do not use mask in postprocess"
+				log_main.add(print_msg)
 			from math import sqrt
 			resolution = 0.5
 			if nargs >1 :
+				print_msg="Sphire always calculates FSC between two volumes!"
+				log_main.add(print_msg)
 				if m != None:
 					e1 *=m
 					e2 *=m
-				print "calculate FSC "
-				print " the FSC_cutoff is %f  "%options.FSC_cutoff
+				print_msg = "calculate FSC "
+				log_main.add(print_msg)
+				print_msg=" the FSC_cutoff is %f  "%options.FSC_cutoff
+				log_main.add(print_msg)
 				frc = fsc(e1,e2,1, "fsc.txt")
+				print_msg = "FSC is saved in fsc.txt"
+				log_main.add(print_msg)
 				for ifreq in xrange(len(frc[1])):
 					if frc[1][ifreq] <options.FSC_cutoff:
 						resolution = frc[0][ifreq-1]
 						break
-				print " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
+				print_msg = " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
+				log_main.add(print_msg)
 				## FSC is done on masked two images
 			if nargs>1: e1 +=e2
-			if options.mtf: # divided by the mtf 
+			guinerlinein   = rot_avg_table(power(periodogram(e1),.5))
+			from utilities import write_text_file
+			write_text_file(guinerlinein, "guinerlinein.txt")	
+			if options.mtf: # divided by the mtf
+				from fundamentals import fft
+				print_msg = "MTF correction: Fourier factors will be divided by detector MTF"
+				log_main.add(print_msg) 
 				from utilities import read_text_file
-				mtf_value  = read_text_file(options.mtf, -1)
-				from utilities import sample_down_1D_curve
-				fil_mtf = sample_down_1D_curve(e1.get_xsize(),len(mtf_value[1])*2,options.mtf)
-				for ifil in xrange(len(fil_mtf)):
-					try: 
-						fil_mtf[ifil] = 1./sqrt(fil_mtf[ifil])
-					except:
-						fil_mtf[ifil] = 0.0
-				from filter import filt_table
-				e1 = filt_table(e1, fil_mtf) 
+				print_msg = "MTF file is %s"%options.mtf
+				log_main.add(print_msg)
+				mtf_core  = read_text_file(options.mtf, -1)
+				print_msg="The first column is frequency, and the second one is MTF"
+				log_main.add(print_msg)
+				e1 = fft(Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0]))
+				guinerlinemtf   = rot_avg_table(power(periodogram(e1),.5))
+				from utilities import write_text_file
+				write_text_file(guinerlinemtf, "guinerlinemtf.txt")	
 			if options.fsc_weighted:
-				print " apply sqrt((2*FSC)/(1+FSC)) weighting "
-				print "current cutoff is %f"%options.FSC_cutoff
-				print " pixel_size is %f Angstrom"%options.pixel_size
+				print_msg = " apply sqrt((2*FSC)/(1+FSC)) weighting "
+				log_main.add(print_msg)
+				print_msg = "current cutoff is %f"%options.FSC_cutoff
+				log_main.add(print_msg)
+				print_msg = " pixel_size is %f Angstrom"%options.pixel_size
+				log_main.add(print_msg)
 				#### FSC weighting sqrt((2.*fsc)/(1+fsc));
 				fil = len(frc[1])*[None]
 				for i in xrange(len(fil)):
@@ -928,39 +968,64 @@ def main():
 					else: tmp = 0.0
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 				e1=filt_table(e1,fil)
-			if options.adhoc_bfactor == 0.0:
-				guinerline   = rot_avg_table(power(periodogram(e1),.5))
-				freq_max     = min(1/(2.*options.pixel_size), resolution/options.pixel_size)
-				freq_min     = 1./options.B_start # given frequency in Angstrom
-				from utilities import write_text_file
-				write_text_file(guinerline, "guinerline.txt")
-				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
-				b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
-				global_b     =  4.*b 
-				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(b,2)
-				print "the estimated B-factor is  %f Angstrom^2  "%(round((global_b),2))
-				sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
-			else:
-				print " apply user provided B-factor to enhance map!"
-				print " User provided B-factor is %f Angstrom^2   "%options.adhoc_bfactor
-				sigma_of_inverse = sqrt(2./((options.adhoc_bfactor)/options.pixel_size**2))
-			e1  = filt_gaussinv(e1,sigma_of_inverse)
-			from filter       import filt_tanl
-			if options.low_pass_filter:
-				print " User provided additional low-pass filter is applied" 
+				guinerlineweighted   = rot_avg_table(power(periodogram(e1),.5))
+				write_text_file(guinerlineweighted, "guinerlineweighted.txt")
+			if options.B_enhance:
+				print_msg = "use negative B-factor to enhance image"
+				log_main.add(print_msg)
+				if options.adhoc_bfactor == 0.0: # auto mode
+					print_msg = "B-factor estimation auto mode"
+					log_main.add(print_msg)
+					guinerline   = rot_avg_table(power(periodogram(e1),.5))
+					freq_max     = min(1/(2.*options.pixel_size), resolution/options.pixel_size)
+					freq_min     = 1./options.B_start # given frequency in Angstrom
+					if freq_min>=freq_max:
+						print_msg =  "your B_start is too high! Decrease it and rerun the program!"
+						log_main.add(print_msg)
+						exit()
+					from utilities import write_text_file
+					write_text_file(guinerline, "guinerlineBcalc.txt")
+					print_msg =  " guinerline is saved in guinerlineBcalc.txt file"
+					log_main.add(print_msg)
+					print_msg = " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
+					log_main.add(print_msg)
+					b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
+					global_b     =  4.*b 
+					print_msg =  "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(-b,2)
+					log_main.add(print_msg)
+					print_msg =  "the estimated B-factor is  %f Angstrom^2  "%(round((-global_b),2))
+					log_main.add(print_msg)
+					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
+				else: # User provided value
+					print_msg = " apply user provided B-factor to enhance map!"
+					log_main.add(print_msg)
+					print_msg =  " User provided B-factor is %f Angstrom^2   "%options.adhoc_bfactor
+					log_main.add(print_msg)
+					sigma_of_inverse = sqrt(2./((abs(options.adhoc_bfactor))/options.pixel_size**2))
+				e1  = filt_gaussinv(e1,sigma_of_inverse)
+			if options.low_pass_filter: # User provided low-pass filter
+				from filter       import filt_tanl
+				print_msg =  " apply low-pass filter"
+				log_main.add(print_msg) 
 				if options.ff>1.:
-					print "cut to %f    Angstrom "%round(options.ff,2) 
+					print_msg =  "low_pass filter to %f    Angstrom "%round(options.ff,2)
+					log_main.add(print_msg) 
 					e1 =filt_tanl(e1,options.pixel_size/options.ff, min(options.aa,.1))
-				else:
-					print "low_pass filtered to %f    Angstrom "%round(options.pixel_size/options.ff,2)   
-					e1 =filt_tanl(e1,options.ff, options.aa)
-			else:
-				print "low-pass filter to resolution %f"%round(options.pixel_size/resolution,2)
-				print "  absolution frequency is  %f  "%round(resolution,2)				
-				aa = .1
-				e1 = filt_tanl(e1,resolution, options.aa)
+				elif options.ff>0.0 and options.ff<1.:
+					print_msg =  "low_pass filtered to %f    Angstrom "%round(options.pixel_size/options.ff,2)
+					log_main.add(print_msg)   
+					e1 =filt_tanl(e1,options.ff, min(options.aa,.1))
+				else: # low-pass filter to resolution
+					print_msg = "low-pass filter to the current resolution %f"%round(options.pixel_size/resolution,2)
+					log_main.add(print_msg)
+					print_msg =  "  absolution frequency is  %f  "%round(resolution,2)	
+					log_main.add(print_msg)			
+					e1 = filt_tanl(e1,resolution, options.aa)
 			e1.write_image(options.output)
-
+			print_msg =  " final volume is "+options.output
+			log_main.add(print_msg)	
+			log_main.add("Sphire postprocess is done")	
+			
 	elif options.window_stack:
 		nargs = len(args)
 		if nargs ==0:

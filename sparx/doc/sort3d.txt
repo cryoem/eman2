@@ -6,7 +6,7 @@ sxsort3d - 3D Clustering Protocol I: Sort 3D heterogeneity based on the reproduc
 
 ''usage in command line''
 
-sxsort3d.py  stack  outdir  mask  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --function=user_function  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --seed=random_seed  --smallest_group=smallest_group  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --upscale=upscale  --wn=wn --interpolation=method
+sxsort3d.py  stack  outdir  mask  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --function=user_function  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --seed=random_seed  --smallest_group=smallest_group  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --protein_shape=protein_shape  --upscale=upscale  --wn=wn --interpolation=method --protein_shape=g
 
 
 === Typical usage ===
@@ -49,6 +49,7 @@ sxsort3d exists only in MPI version.
     seed:: Seed: Seed used for the initial random assignment for EQ Kmeans. The program generates a random integer by default. (default -1) 
     sausage:: Use sausage filter: (default False) 
     PWadjustment:: Power spectrum reference: Text file containing a 1D reference power spectrum. (default none) 
+    protein_shape:: Protein Shape: It defines protein preferred orientation angles. "g" is for globular proteins and "f" is for filament proteins. (default 'g')
     upscale:: Power spectrum adjustment strength: This parameters adjusts how strongly the power spectrum of the volume should be modified to match the reference. A value of 1 brings the volume's power spectrum completely to the reference, while a value of 0 means no modification. (default 0.5) 
     wn:: Target image size [Pixels]: If different than 0, then the images will be rescaled to fit this size. (default 0) 
     interpolation:: 3D interpolation method: Method interpolation in 3D. Options are tr1 or 4nn. (default '4nn')

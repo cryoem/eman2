@@ -6,14 +6,14 @@ sxrsort3d - 3D Clustering Protocol II: Sort out 3D heterogeneity of 2D data whos
 
 '' usage in command line''
 
-sxrsort3d.py  stack  outdir  mask  --previous_run1=run1_directory   --previous_run2=run2_directory  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --function=user_function  --seed=random_seed  --smallest_group=smallest_group  --group_size_for_unaccounted=group_size_for_unaccounted  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --upscale=upscale  --wn=wn --interpolation=method
+sxrsort3d.py  stack  outdir  mask  --previous_run1=run1_directory   --previous_run2=run2_directory  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --function=user_function  --seed=random_seed  --smallest_group=smallest_group  --group_size_for_unaccounted=group_size_for_unaccounted  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --protein_shape=protein_shape  --upscale=upscale  --wn=wn --interpolation=method --protein_shape=g
 
 
 === Typical usage ===
 
 sxrsort3d.py exists only in MPI version
 
-''' mpirun -np 176 --host n1,n5,n6,n8,n9,n10,n0,n4,n3,n7 sxrsort3d.py bdb:data rsort3d mask.hdf --previous_run1=sort3d1 --previous_run2=sort3d2 --radius=88 --maxit=25 --independent=3 --CTF --number_of_images_per_group=11000 --low_pass_filter=.20 --chunkdir=./ --sym=c4 --PWadjustment=pwrec.txt ''' 
+''' mpirun -np 176 --host n1,n5,n6,n8,n9,n10,n0,n4,n3,n7 sxrsort3d.py bdb:data rsort3d mask.hdf --previous_run1=sort3d1 --previous_run2=sort3d2 --radius=88 --maxit=25 --independent=3 --CTF --number_of_images_per_group=11000 --low_pass_filter=.20 --chunkdir=./ --sym=c4 --PWadjustment=pwrec.txt --protein_shape=g''' 
 
 === Time and Memory ===
 On lonestar cluster of TACC, using 264 cpus, it takes about 2 hours and 23 minutes to accomplish 95953 128x128 images for one sxsort3d.py independent run, 2 hours 24 minutes to accomplish one independent sxrsort3d.py run with number_of_images_per_group set as 30000. 
@@ -32,7 +32,8 @@ On lonestar cluster of TACC, using 264 cpus, it takes about 2 hours and 23 minut
     smallest_group:: Smallest group size: Minimum members for identified group. (default 500) 
     previous_run1:: Directory of first sxsort3d.py run: (default required string)
     previous_run2:: Directory of second sxsort3d.py run: (default required string)
-    chunkdir:: Chunkdir: Used for computing margin of error. (default none) 
+    chunkdir:: Chunkdir: Used for computing margin of error. (default none)
+    protein_shape::g: Shape of protein. (default) 
 
     * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
     ir:: Inner radius for rotational correlation [Pixels]: Must be bigger than 1. (default 1)
@@ -54,6 +55,7 @@ On lonestar cluster of TACC, using 264 cpus, it takes about 2 hours and 23 minut
     group_size_for_unaccounted:: Unaccounted particles group size: (default none) 
     sausage:: Use sausage filter: (default False)
     PWadjustment:: Power spectrum reference: Text file containing a 1D reference power spectrum. (default none) 
+    protein_shape:: Protein Shape: It defines protein preferred orientation angles. "g" is for globular proteins and "f" is for filament proteins. (default 'g')
     upscale:: Power spectrum adjustment strength: This parameters adjusts how strongly the power spectrum of the volume should be modified to match the reference. A value of 1 brings the volume's power spectrum completely to the reference, while a value of 0 means no modification.  (default 0.5) 
     wn:: Target image size [Pixels]: If different than 0, then the images will be rescaled to fit this size. (default 0) 
     interpolation:: 3D interpolation method: Method interpolation in 3D. Options are tr1 or 4nn. (default '4nn')

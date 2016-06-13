@@ -4,16 +4,17 @@
 #  08/13/2015
 #  New version.
 #  
-from sparx import *
-from EMAN2 import *
+
 import os
+import sys
+import types
 import global_def
 from   global_def import *
-from   optparse  import OptionParser
-import sys
-from   numpy     import array
-import types
-from   logger    import Logger, BaseLogger_Files
+from   optparse   import OptionParser
+from   sparx      import *
+from   EMAN2      import *
+from   numpy      import array
+from   logger     import Logger, BaseLogger_Files
 
 
 def main():
@@ -59,6 +60,7 @@ def main():
 	parser.add_option("--sausage",                       action="store_true",  default=False,                 help="way of filter volume")
 	parser.add_option("--chunkdir",                      type="string",        default='',                    help="chunkdir for computing margin of error")
 	parser.add_option("--PWadjustment",                  type="string",        default='',                    help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
+	parser.add_option("--protein_shape",                 type="string",        default='g',                   help="protein shape. It defines protein preferred orientation angles. Currently it has g and f two types ")
 	parser.add_option("--upscale",                       type="float",         default=0.5,                   help=" scaling parameter to adjust the power spectrum of EM volumes")
 	parser.add_option("--wn",                            type="int",           default=0,                     help="optimal window size for data processing")
 	parser.add_option("--interpolation",                 type="string",        default="4nn",                 help="3-d reconstruction interpolation method, two options trl and 4nn")
@@ -96,55 +98,56 @@ def main():
 		else:
 			log_main =None
 		#--- fill input parameters into dictionary named after Constants
-		Constants		         ={}
-		Constants["stack"]               = args[0]
-		Constants["masterdir"]           = masterdir
-		Constants["mask3D"]              = mask_file
-		Constants["focus3Dmask"]         = options.focus
-		Constants["indep_runs"]          = options.independent
-		Constants["stoprnct"]            = options.stoprnct
+		Constants		                         ={}
+		Constants["stack"]                       = args[0]
+		Constants["masterdir"]                   = masterdir
+		Constants["mask3D"]                      = mask_file
+		Constants["focus3Dmask"]                 = options.focus
+		Constants["indep_runs"]                  = options.independent
+		Constants["stoprnct"]                    = options.stoprnct
 		Constants["number_of_images_per_group"]  = options.number_of_images_per_group
-		Constants["CTF"]                 = options.CTF
-		Constants["maxit"]               = options.maxit
-		Constants["ir"]                  = options.ir 
-		Constants["radius"]              = options.radius 
-		Constants["nassign"]             = options.nassign
-		Constants["rs"]                  = options.rs 
-		Constants["xr"]                  = options.xr
-		Constants["yr"]                  = options.yr
-		Constants["ts"]                  = options.ts
-		Constants["delta"]               = options.delta
-		Constants["an"]                  = options.an
-		Constants["sym"]                 = options.sym
-		Constants["center"]              = options.center
-		Constants["nrefine"]             = options.nrefine
-		#Constants["fourvar"]            = options.fourvar 
-		Constants["user_func"]           = options.function
-		Constants["low_pass_filter"]     = options.low_pass_filter # enforced low_pass_filter
-		#Constants["debug"]              = options.debug
-		Constants["main_log_prefix"]     =args[1]
-		#Constants["importali3d"]        =options.importali3d
-		Constants["myid"]	             = myid
-		Constants["main_node"]           =main_node
-		Constants["nproc"]               =nproc
-		Constants["log_main"]            =log_main
-		Constants["nxinit"]              =options.nxinit
-		Constants["unaccounted"]         =options.unaccounted
-		Constants["seed"]                =options.seed
-		Constants["smallest_group"]      =options.smallest_group
-		Constants["sausage"]             =options.sausage
-		Constants["chunkdir"]            =options.chunkdir
-		Constants["PWadjustment"]        =options.PWadjustment
-		Constants["upscale"]             =options.upscale
-		Constants["wn"]                  =options.wn
-		Constants["3d-interpolation"]    =options.interpolation 
+		Constants["CTF"]                         = options.CTF
+		Constants["maxit"]                       = options.maxit
+		Constants["ir"]                          = options.ir 
+		Constants["radius"]                      = options.radius 
+		Constants["nassign"]                     = options.nassign
+		Constants["rs"]                          = options.rs 
+		Constants["xr"]                          = options.xr
+		Constants["yr"]                          = options.yr
+		Constants["ts"]                          = options.ts
+		Constants["delta"]               		 = options.delta
+		Constants["an"]                  		 = options.an
+		Constants["sym"]                 		 = options.sym
+		Constants["center"]              		 = options.center
+		Constants["nrefine"]             		 = options.nrefine
+		#Constants["fourvar"]            		 = options.fourvar 
+		Constants["user_func"]           		 = options.function
+		Constants["low_pass_filter"]     		 = options.low_pass_filter # enforced low_pass_filter
+		#Constants["debug"]              		 = options.debug
+		Constants["main_log_prefix"]     		 = args[1]
+		#Constants["importali3d"]        		 = options.importali3d
+		Constants["myid"]	             		 = myid
+		Constants["main_node"]           		 = main_node
+		Constants["nproc"]               		 = nproc
+		Constants["log_main"]            		 = log_main
+		Constants["nxinit"]              		 = options.nxinit
+		Constants["unaccounted"]         		 = options.unaccounted
+		Constants["seed"]                		 = options.seed
+		Constants["smallest_group"]      		 = options.smallest_group
+		Constants["sausage"]             		 = options.sausage
+		Constants["chunkdir"]            		 = options.chunkdir
+		Constants["PWadjustment"]        		 = options.PWadjustment
+		Constants["upscale"]             		 = options.upscale
+		Constants["wn"]                  		 = options.wn
+		Constants["3d-interpolation"]    		 = options.interpolation
+		Constants["protein_shape"]    		     = options.protein_shape 
 		# -----------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options
 		Tracker = 			    		{}
-		Tracker["constants"]=				Constants
-		Tracker["maxit"]          = Tracker["constants"]["maxit"]
-		Tracker["radius"]         = Tracker["constants"]["radius"]
+		Tracker["constants"]       = Constants
+		Tracker["maxit"]           = Tracker["constants"]["maxit"]
+		Tracker["radius"]          = Tracker["constants"]["radius"]
 		#Tracker["xr"]             = ""
 		#Tracker["yr"]             = "-1"  # Do not change!
 		#Tracker["ts"]             = 1
@@ -154,18 +157,18 @@ def main():
 		#Tracker["nsoft"]          = 0
 		#Tracker["local"]          = False
 		#Tracker["PWadjustment"]   = Tracker["constants"]["PWadjustment"]
-		Tracker["upscale"]        = Tracker["constants"]["upscale"]
+		Tracker["upscale"]         = Tracker["constants"]["upscale"]
 		#Tracker["upscale"]        = 0.5
-		Tracker["applyctf"]       = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
+		Tracker["applyctf"]        = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
 		#Tracker["refvol"]         = None
-		Tracker["nxinit"]         = Tracker["constants"]["nxinit"]
+		Tracker["nxinit"]          = Tracker["constants"]["nxinit"]
 		#Tracker["nxstep"]         = 32
-		Tracker["icurrentres"]    = -1
+		Tracker["icurrentres"]     = -1
 		#Tracker["ireachedres"]    = -1
 		#Tracker["lowpass"]        = 0.4
 		#Tracker["falloff"]        = 0.2
 		#Tracker["inires"]         = options.inires  # Now in A, convert to absolute before using
-		Tracker["fuse_freq"]      = 50  # Now in A, convert to absolute before using
+		Tracker["fuse_freq"]       = 50  # Now in A, convert to absolute before using
 		#Tracker["delpreviousmax"] = False
 		#Tracker["anger"]          = -1.0
 		#Tracker["shifter"]        = -1.0
@@ -188,8 +191,6 @@ def main():
 		from utilities import apply_low_pass_filter, get_groups_from_partition, get_number_of_groups, get_complementary_elements_total, update_full_dict
 		from utilities import count_chunk_members, set_filter_parameters_from_adjusted_fsc, adjust_fsc_down, get_two_chunks_from_stack
 		####------------------------------------------------------------------
-		
-		
 		#
 		# Get the pixel size; if none, set to 1.0, and the original image size
 		from utilities import get_shrink_data_huang
@@ -269,7 +270,8 @@ def main():
 				sleep(5)
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node:
-			log_main.add("sort3d starts in "+masterdir)
+			log_main.add("Sphire sort3d ")
+			log_main.add("the sort3d master directory is "+masterdir)
 		#####
 		###----------------------------------------------------------------------------------
 		# Initial data analysis and handle two chunk files
@@ -607,7 +609,7 @@ def main():
 					refdata[1] = Tracker
 					refdata[2] = Tracker["constants"]["myid"]
 					refdata[3] = Tracker["constants"]["nproc"] 
-					volref = user_func(refdata)
+					volref     = user_func(refdata)
 					volref.write_image(os.path.join(workdir, "volf_of_Classes.hdf"),ivol)
 				log_main.add("number of unaccounted particles  %10d"%len(Tracker["this_unaccounted_list"]))
 				log_main.add("number of accounted particles  %10d"%len(Tracker["this_accounted_list"]))
@@ -630,9 +632,9 @@ def main():
 				refdata[0] = volref
 				refdata[1] = Tracker
 				refdata[2] = Tracker["constants"]["myid"]
-				refdata[3] =  Tracker["constants"]["nproc"]
+				refdata[3] = Tracker["constants"]["nproc"]
 				volref     = user_func(refdata)
-				#volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
+				#volref    = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
 				volref.write_image(os.path.join(workdir,"volf_unaccounted.hdf"))
 		# Finish program
 		if myid ==main_node: log_main.add("sxsort3d finishes")
