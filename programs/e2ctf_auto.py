@@ -112,6 +112,7 @@ Important: This program must be run from the project directory, not from within 
 	# After this, frame_ctf true if this info available, and frame_stig true if any of the first 10 frames had non-zero astigmatism
 	db=js_open_dict(info_name(ptcls[0]))
 	frame_stig=False
+	frame_ctf=False
 	if db.has_key("ctf_frame") : 
 		frame_ctf=True
 		for f in ptcls[:10]:
