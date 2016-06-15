@@ -4010,15 +4010,61 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.WindowStateChange:
+
+            idxVisible = 0
+            idxRect = 1
+            idxPos = 2
             if self.isMinimized():
                 self.dictVisible = {}
-                self.dictVisible.update({self.msPlotDrift: self.msPlotDrift.isVisible()})
-                self.dictVisible.update({self.msPlotFrame: self.msPlotFrame.isVisible()})
-                self.dictVisible.update({self.msPlotAngle: self.msPlotAngle.isVisible()})
-                self.dictVisible.update({self.msAllPlotFrameAvg: self.msAllPlotFrameAvg.isVisible()})
-                self.dictVisible.update({self.msAllPlotDrift: self.msAllPlotDrift.isVisible()})
-                self.dictVisible.update({self.msAllPlotFrame: self.msAllPlotFrame.isVisible()})
-                self.dictVisible.update({self.msAllPlotAngle: self.msAllPlotAngle.isVisible()})
+                self.dictVisible.update({
+                    self.msPlotDrift: [
+                        self.msPlotDrift.isVisible(),
+                        self.msPlotDrift.rect(),
+                        self.msPlotDrift.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msPlotFrame: [
+                        self.msPlotFrame.isVisible(),
+                        self.msPlotFrame.rect(),
+                        self.msPlotFrame.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msPlotAngle: [
+                        self.msPlotAngle.isVisible(),
+                        self.msPlotAngle.rect(),
+                        self.msPlotAngle.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msAllPlotFrameAvg: [
+                        self.msAllPlotFrameAvg.isVisible(),
+                        self.msAllPlotFrameAvg.rect(),
+                        self.msAllPlotFrameAvg.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msAllPlotDrift: [
+                        self.msAllPlotDrift.isVisible(),
+                        self.msAllPlotDrift.rect(),
+                        self.msAllPlotDrift.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msAllPlotFrame: [
+                        self.msAllPlotFrame.isVisible(),
+                        self.msAllPlotFrame.rect(),
+                        self.msAllPlotFrame.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msAllPlotAngle: [
+                        self.msAllPlotAngle.isVisible(),
+                        self.msAllPlotAngle.rect(),
+                        self.msAllPlotAngle.pos()
+                        ]
+                    })
 
                 for key in self.dictVisible:
                     if self.dictVisible[key]:
@@ -4028,9 +4074,15 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             elif self.minimized:
                 self.minimized = False
                 for key in self.dictVisible:
-                    if self.dictVisible[key]:
-                        key.show()
+                    if self.dictVisible[key][idxVisible]:
+                        key.setGeometry(self.dictVisible[key][idxRect])
+                        key.move(self.dictVisible[key][idxPos])
                         key.activateWindow()
+                        key.show()
+
+                if self.isVisible():
+                    self.raise_()
+                    self.activateWindow()
 
     def closeEvent(self, event):
         """Change the closeEvent to close the application cleanly"""
