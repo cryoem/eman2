@@ -301,12 +301,12 @@ def main():
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
 	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type="string",
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
-	parser.add_option("--isacgroup", 			type="int", 		help="Retrieve original image numbers in the selected ISAC group. See ISAC documentation for details.", default=-1)
+	parser.add_option("--isacgroup", 			type="int", 		        help="Retrieve original image numbers in the selected ISAC group. See ISAC documentation for details.", default=-1)
 	parser.add_option("--isacselect", 			action="store_true", 		help="Retrieve original image numbers of images listed in ISAC output stack of averages. See ISAC documentation for details.", default=False)
-	parser.add_option("--params",	   			type="string",      default=None,    help="Name of header of parameter, which one depends on specific option")
-	parser.add_option("--adjpw", 				action="store_true",	help="Adjust rotationally averaged power spectrum of an image", default=False)
-	parser.add_option("--rotpw", 				type="string",   	default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
-	parser.add_option("--transformparams",		type="string",   	default=None,    help="Transform 3D projection orientation parameters using six 3D parameters (phi, theta,psi,sx,sy,sz).  Input: --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. Output: file with modified orientation parameters.")
+	parser.add_option("--params",	   			type="string",              default=None,    help="Name of header of parameter, which one depends on specific option")
+	parser.add_option("--adjpw", 				action="store_true",	    help="Adjust rotationally averaged power spectrum of an image", default=False)
+	parser.add_option("--rotpw", 				type="string",   	        default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
+	parser.add_option("--transformparams",		type="string",   	        default=None,    help="Transform 3D projection orientation parameters using six 3D parameters (phi, theta,psi,sx,sy,sz).  Input: --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. Output: file with modified orientation parameters.")
 
 
 	# import ctf estimates done using cter
@@ -333,8 +333,8 @@ def main():
 	parser.add_option("--B_enhance",            action="store_true",                      help="apply Bfactor to enhance map or not")
 	parser.add_option("--adhoc_bfactor",        type="float",         default=0.0 ,       help="User provided B-factor for map sharpening")
 	parser.add_option("--low_pass_filter",      action="store_true",  default=False,      help="postprocess unfiltered odd, even 3-D volumes")
-	parser.add_option("--ff",                   type="float", default=0.0,                help="low pass filter stop band frequency in absolute unit. By default, low_pass filter to resolution")
-	parser.add_option("--aa",                   type="float", default=.1,                 help="low pass filter falloff" )
+	parser.add_option("--ff",                   type="float",         default=0.0,        help="low pass filter stop band frequency in absolute unit. By default, low_pass filter to resolution")
+	parser.add_option("--aa",                   type="float",         default=.1,         help="low pass filter falloff" )
 	parser.add_option("--mask",                 type="string",                            help="input mask file",  default= None)
 	parser.add_option("--output",               type="string",                            help="output file name", default = "postprocessed.hdf")
 	parser.add_option("--pixel_size",           type="float",                             help="pixel size of the data", default=1.0)
@@ -342,15 +342,15 @@ def main():
 	parser.add_option("--FSC_cutoff",           type="float",                             help="FSC value that cuts off FSC ", default=0.143)
 	parser.add_option("--2d",                   action="store_true",                      help="postprocess isac 2-D averaged images",default=False)
 	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
-	parser.add_option("--box",           type="int",		default= 0,                   help="the new window size ")
+	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
 
 	# Options for angular distribution
-	parser.add_option('--angular_distribution',    action="store_true",    default=False,        help='create an angular distribution file based on a project3d.txt')
-	parser.add_option('--round_digit',       type='int',          default=5,           help='accuracy of the loaded angle (default 5)')
-	parser.add_option('--box_size',       type='int',          default=500,           help='box size [px] (default 500)')
-	parser.add_option('--particle_radius',       type='int',          default=500,           help='Particle radius [Pixels] (default 500)')
-	parser.add_option('--cylinder_width',       type='int',          default=1,           help='width of the cylinder (default 1)')
-	parser.add_option('--cylinder_length',       type='int',          default=10000,           help='length of the cylinder (default 10000)')
+	parser.add_option('--angular_distribution',    	qaction="store_true",  	default=False,        	help='create an angular distribution file based on a project3d.txt')
+	parser.add_option('--round_digit',             	type='int',          	default=5,           	help='accuracy of the loaded angle (default 5)')
+	parser.add_option('--box_size',                	type='int',          	default=500,         	help='box size [px] (default 500)')
+	parser.add_option('--particle_radius',     		type='int',          	default=500,         	help='Particle radius [Pixels] (default 500)')
+	parser.add_option('--cylinder_width',      		type='int',          	default=1,           	help='width of the cylinder (default 1)')
+	parser.add_option('--cylinder_length',     		type='int',          	default=10000,       	help='length of the cylinder (default 10000)')
 	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
