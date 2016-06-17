@@ -56,10 +56,10 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--path", default=None, type=str,help="The name of an existing refine_xx folder, where e2refine_easy ran to completion",guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--usebasis", default=0,type=int,help="Select which Eigenimage to use for separation. With novarimax, n=0 is highest energy.", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--usebasis", default=0,type=int,help="Select which Eigenimage to use for separation. With novarimax, n=0 is highest energy.", guitype='intbox', row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--nbasis", default=-1,type=int,help="Number of basis vectors to compute. Must be at least usebasis+1. Default 6 or usebasis+1.", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--novarimax", action="store_true",default=False, help="Disable varimax rotation among computed basis vectors.")
-	parser.add_argument("--mask", default=None, help="Optional 3D mask to focus the classification", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=5, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--novarimax", action="store_true",default=False, help="Disable varimax rotation among computed basis vectors.",guitype='boolbox', row=7, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--mask", default=None, help="Optional 3D mask to focus the classification", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=6, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel", default="thread:2", help="Standard parallelism option. Default=thread:2", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)

@@ -310,10 +310,18 @@
       },
       {
         "ICON": "refine",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinemultinoali",
+        "PROGRAM": "e2refinemultinoali.py",
+        "NAME": "Multireference data separation (e2refinemultinoali)",
+        "NOTELEVEL": "1",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "refine",
         "MODE": "refinement",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinemulti",
         "PROGRAM": "e2refinemulti.py",
-        "NAME": "Multiple map refinement (e2refinemulti)",
+        "NAME": "Multireference refinement (e2refinemulti)",
         "NOTELEVEL": "1",
         "CHILDREN": []
       },

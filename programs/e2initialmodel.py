@@ -61,6 +61,7 @@ def main():
 	parser.add_argument("--tries", type=int, default=10, help="The number of different initial models to generate in search of a good one", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer factor prior to reconstruction. Default=0, no shrinking", guitype='shrinkbox', row=2, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=4, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--randorient",action="store_true",help="Instead of seeding with a random volume, seeds by randomizing input orientations",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--maskproc", default=None, type=str,help="Default=none. If specified, this mask will be performed after the built-in automask, eg - mask.soft to remove the core of a virus", )
 #	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -139,7 +140,7 @@ def main():
 
 	tasks=[]
 	for t in xrange(options.tries):
-		tasks.append(InitMdlTask(particles_name,len(ptcls),orts,t,sfcurve,options.iter,options.sym,mask2,options.verbose))
+		tasks.append(InitMdlTask(particles_name,len(ptcls),orts,t,sfcurve,options.iter,options.sym,mask2,options.randorient,options.verbose))
 
 	taskids=etc.send_tasks(tasks)
 	alltaskids=taskids[:]			# we keep a copy for monitoring progress
@@ -180,9 +181,9 @@ def main():
 
 class InitMdlTask(JSTask):
 
-	def __init__(self,ptclfile=None,ptcln=0,orts=[],tryid=0,strucfac=None,niter=5,sym="c1",mask2=None,verbose=0) :
+	def __init__(self,ptclfile=None,ptcln=0,orts=[],tryid=0,strucfac=None,niter=5,sym="c1",mask2=None,randorient=False,verbose=0) :
 		data={"images":["cache",ptclfile,(0,ptcln)],"strucfac":strucfac,"orts":orts,"mask2":mask2}
-		JSTask.__init__(self,"InitMdl",data,{"tryid":tryid,"iter":niter,"sym":sym,"verbose":verbose},"")
+		JSTask.__init__(self,"InitMdl",data,{"tryid":tryid,"iter":niter,"sym":sym,"randorient":randorient,"verbose":verbose},"")
 
 
 	def execute(self,progress=None):
@@ -196,7 +197,8 @@ class InitMdlTask(JSTask):
 		mask2=self.data["mask2"]
 
 		# We make one new reconstruction for each loop of t
-		threed=[make_random_map(boxsize,sfcurve)]		# initial model
+		if options["randorient"] : threed=[make_random_map_byort(ptcls)]		# initial model
+		else: threed=[make_random_map(boxsize,sfcurve)]		# initial model
 		apply_sym(threed[0],options["sym"])		# with the correct symmetry
 
 		# This is the refinement loop
@@ -211,8 +213,9 @@ class InitMdlTask(JSTask):
 			# determine particle orientation
 			bss=0.0
 			bslst=[]
+			quals=[]
 			for i in range(len(ptcls)):
-				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),cmp=("frc",{"maxres":20}))
+				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
 				bs=min(sim)
 #				print bs[0]
 				bss+=bs[0]
@@ -220,7 +223,7 @@ class InitMdlTask(JSTask):
 				if verbose>2 : print "align %d \t(%1.3f)\t%1.3g"%(i,bs[0],bss)
 				n=sim.index(bs)
 				ptcls[i]["match_n"]=n
-				ptcls[i]["match_qual"]=bs[0]
+				ptcls[i]["match_qual"]=-bs[0]
 				ptcls[i]["xform.projection"]=orts[n]	# best orientation set in the original particle
 
 			bslst.sort()					# sorted list of all particle qualities
@@ -229,14 +232,16 @@ class InitMdlTask(JSTask):
 #			for i in range(len(ptcls)*3/4):		# We used to include 3/4 of the particles
 			for i in range(len(ptcls)*7/8):
 				n=ptcls[bslst[i][1]]["match_n"]
+				quals.append(ptcls[bslst[i][1]]["match_qual"])
 				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n][0],{},"ccc",{}))
 				if it<2 : aptcls[-1].process_inplace("xform.centerofmass",{})
+				aptcls[-1].process_inplace("normalize.toimage",{"to":projs[n][0]})
+				aptcls[-1].add(-aptcls[-1]["mean"])
 
 			bss/=len(ptcls)
 
 			# 3-D reconstruction
-			pad=(boxsize*3/2)
-			pad-=pad%8
+			pad=good_size(boxsize*3/2)
 			recon=Reconstructors.get("fourier", {"sym":options["sym"],"size":[pad,pad,pad]})
 
 			# insert slices into initial volume
@@ -246,38 +251,38 @@ class InitMdlTask(JSTask):
 				p3=recon.preprocess_slice(p2,p["xform.projection"])
 				recon.insert_slice(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0))
 
-			# check particle qualities
-			quals=[]
-			for i,p in enumerate(aptcls):
-				p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
-				p3=recon.preprocess_slice(p2,p["xform.projection"])
-				recon.determine_slice_agreement(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0),True)
-				p.mult(p3["reconstruct_norm"])
-				p["reconstruct_absqual"]=p3["reconstruct_absqual"]
-				quals.append(p3["reconstruct_absqual"])
+			## check particle qualities
+			#quals=[]
+			#for i,p in enumerate(aptcls):
+				#p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+				#p3=recon.preprocess_slice(p2,p["xform.projection"])
+				#recon.determine_slice_agreement(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0),True)
+				#p.mult(p3["reconstruct_norm"])
+				#p["reconstruct_absqual"]=p3["reconstruct_absqual"]
+				#quals.append(p3["reconstruct_absqual"])
 
-			quals.sort()
-			qual_cutoff=quals[len(quals)/8]		#not using this right now
+			#quals.sort()
+			#qual_cutoff=quals[len(quals)/8]		#not using this right now
 			qual=sum(quals)
 
-			mdl=recon.finish(True)
-
-			# insert normalized slices
-			recon.setup()
-			for p in aptcls:
-				p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
-				p3=recon.preprocess_slice(p2,p["xform.projection"])
-				recon.insert_slice(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0))
-
 			threed.append(recon.finish(True))
+
+			## insert normalized slices
+			#recon.setup()
+			#for p in aptcls:
+				#p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+				#p3=recon.preprocess_slice(p2,p["xform.projection"])
+				#recon.insert_slice(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0))
+
+			#threed.append(recon.finish(True))
 
 			if verbose>1 : print "Iter %d \t %1.4g (%1.4g)"%(it,bss,qual)
 
 			threed[-1].process_inplace("xform.centerofmass")
 			threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+			threed[-1].process_inplace("normalize.edgemean")
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
 			threed[-1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-			threed[-1].process_inplace("normalize.edgemean")
 			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":threed[-1]["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
 			if mask2!=None:threed[-1].mult(mask2)
 			threed[-1]["apix_x"]=apix
@@ -318,6 +323,30 @@ def make_random_map(boxsize,sfcurve=None):
 	ret.process_inplace("mask.gaussian.nonuniform",{"radius_x":boxsize/random.uniform(2.0,5.0),"radius_y":boxsize/random.uniform(2.0,5.0),"radius_z":boxsize/random.uniform(2.0,5.0)})
 
 	return ret
+
+def make_random_map_byort(ptcls):
+	"""This will make a map by randomly assigning Euler angles to each particle"""
+
+	boxsize=ptcls[0]["ny"]
+	
+	# 3-D reconstruction
+	pad=good_size(boxsize*3/2)
+	recon=Reconstructors.get("fourier", {"sym":"c1","size":[pad,pad,pad]})
+
+	# insert slices into initial volume
+	recon.setup()
+	for p in ptcls:
+		p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+		p3=recon.preprocess_slice(p2,Transform())
+#		recon.insert_slice(p3,Transform({"type":"spin","n1":random.uniform(-1.0,1.0),"n2":random.uniform(-1.0,1.0),"n3":random.uniform(-1.0,1.0),"omega":random.uniform(0,360.0)}),p.get_attr_default("ptcl_repr",1.0))
+		recon.insert_slice(p3,Transform({"type":"spin","n1":random.uniform(-1.0,1.0),"n2":random.uniform(-1.0,1.0),"n3":random.uniform(-1.0,1.0),"omega":random.uniform(0,360.0)}),1.0)
+
+	ret=recon.finish(True)
+	ret.clip_inplace(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+	ret.process_inplace("normalize.edgemean")
+	return ret
+
+
 
 def apply_sym(data,sym):
 	"""applies a symmetry to a 3-D volume in-place"""

@@ -117,6 +117,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Requires good starting defocus. Important: also replaces the SNR with a smoothed version.",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False, guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='genoutp')
+	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding, but only to processed output particles",default=False, guitype='boolbox', row=5, col=2, rowspan=1, colspan=1, mode='genoutp[False]')
 	parser.add_argument("--phaseflipsmall",action="store_true",help="Produce an output set with 1/2 size particles for faster initial model work",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--proctag",help="Tag added to the name of each particle when using the phaseflipproc options",default="proc", guitype='strbox', row=8, col=0, rowspan=1, colspan=1, mode='genoutp["proc"]')
@@ -417,7 +418,7 @@ def write_e2ctf_output(options):
 			if wienerout : print "Wiener image out: ",wienerout,
 			print "  defocus=",ctf.defocus
 
-			process_stack(filename,phaseout,phasehpout,phasesmout,wienerout,phaseprocout,not options.nonorm,options.oversamp,ctf,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook)
+			process_stack(filename,phaseout,phasehpout,phasesmout,wienerout,phaseprocout,options.extrapad,not options.nonorm,options.oversamp,ctf,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook)
 
 			if logid : E2progress(logid,float(i+1)/len(options.filenames))
 
@@ -717,7 +718,7 @@ def env_cmp(sca,envelopes):
 
 	return ret
 
-def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=None,phaseproc=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,storeparm=False,source_image=None,zero_ok=False):
+def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=None,phaseproc=None,extrapad=False,edgenorm=True,oversamp=1,default_ctf=None,invert=False,storeparm=False,source_image=None,zero_ok=False):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -848,6 +849,9 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 #				print fft2.get_ysize(),len(hpfilt)
 
 				if edgenorm: out2.process_inplace("normalize.edgemean")
+				if extrapad:
+					pad=good_size(out2["ny"]*1.25)
+					out2.clip_inplace(Region(-(pad-out2["nx"])/2,-(pad-out2["ny"])/2,pad,pad))
 				out2.write_image(phaseproc[0],i)
 
 			if phasehp:
