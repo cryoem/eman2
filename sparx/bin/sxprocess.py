@@ -918,7 +918,7 @@ def main():
 				m = get_im(options.mask)
 			else: 
 				m = None
-				print_msg= " do not use mask in postprocess"
+				print_msg= " mask is not used in postprocess"
 				log_main.add(print_msg)
 			from math import sqrt
 			resolution = 0.5
