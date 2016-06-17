@@ -2385,6 +2385,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                         angleCos = 1
                     else:
                         angleCos = fltPointProduct / fltAbsProduct
+                    if angleCos > 1:
+                        angleCos = 1
+
                     angleRad = numpy.arccos(angleCos)
                     angleDeg = angleRad * 180 / numpy.pi
 
