@@ -70,6 +70,11 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			
 		for f in args:
 			n=EMUtil.get_image_count(f)
+			if f.endswith(".lst"):
+				lstin=LSXFile(f,True)
+				fromlst=True
+			else:
+				fromlst=False
 			if options.verbose : 
 				if options.range:
 					print "Processing {} images in {}".format(len(rg),f)
@@ -78,10 +83,18 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			if options.range:
 				for i in rg:
 					if i>=n: break
-					lst.write(-1,i,f)
+					if fromlst:
+						ln=lstin.read(i)
+						lst.write(-1,ln[0],ln[1],ln[2])
+					else:
+						lst.write(-1,i,f)
 			else:
 				for i in xrange(n):
-					lst.write(-1,i,f)
+					if fromlst:
+						ln=lstin.read(i)
+						lst.write(-1,ln[0],ln[1],ln[2])
+					else:
+						lst.write(-1,i,f)
 		
 		sys.exit(0)
 

@@ -877,6 +877,7 @@ costlist, int* curbranch);
 	static vector<float> rotavg_fourier(EMData* img);
 
 	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, EMData* bckgnoise);
+	static float sqedac(EMData* img,  EMData* proj, EMData* ctfsbckgnoise);
 	static vector<float> sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob);
 
 	//utility for sxlocres

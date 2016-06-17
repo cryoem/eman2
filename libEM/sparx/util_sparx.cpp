@@ -19137,6 +19137,34 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 }
 
 
+//  This version is for alignment accuracy estimation
+float Util::sqedac( EMData* img, EMData* proj, EMData* ctfsbckgnoise )
+{
+	ENTERFUNC;
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+    float* data = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfsbckgnoise = ctfsbckgnoise->get_data();
+
+
+	float edis = 0.0f;
+
+	for (size_t i=0;i<size/2;++i) {
+		if( dctfsbckgnoise[i] > 0.0f ) {
+			int lol = i*2;
+			float p1 = data[lol]   - dproj[lol];
+			float p2 = data[lol+1] - dproj[lol+1];
+			edis += (p1*p1 + p2*p2)*dctfsbckgnoise[i];
+		}
+	}
+	edis *= 0.5f;
+    return edis;
+	EXITFUNC;
+}
+
+
 
 vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
 {
