@@ -343,9 +343,8 @@ def main():
 	parser.add_option("--2d",                   action="store_true",                      help="postprocess isac 2-D averaged images",default=False)
 	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
-
 	# Options for angular distribution
-	parser.add_option('--angular_distribution',    	qaction="store_true",  	default=False,        	help='create an angular distribution file based on a project3d.txt')
+	parser.add_option('--angular_distribution',    	action="store_true",  	default=False,        	help='create an angular distribution file based on a project3d.txt')
 	parser.add_option('--round_digit',             	type='int',          	default=5,           	help='accuracy of the loaded angle (default 5)')
 	parser.add_option('--box_size',                	type='int',          	default=500,         	help='box size [px] (default 500)')
 	parser.add_option('--particle_radius',     		type='int',          	default=500,         	help='Particle radius [Pixels] (default 500)')
@@ -898,8 +897,8 @@ def main():
 				sigma_of_inverse=sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.low_pass_filter:
-					log_main.add(" low-pass filter ff %   aa  %f"%(options.ff, options.aa)
-)					from filter import filt_tanl
+					log_main.add(" low-pass filter ff %   aa  %f"%(options.ff, options.aa))
+					from filter import filt_tanl
 					e1 =filt_tanl(e1,options.ff, options.aa)
 				e1.write_image(options.output)
 		else:   # 3D case
@@ -919,7 +918,7 @@ def main():
 				m = get_im(options.mask)
 			else: 
 				m = None
-				print_msg= " do not use mask in postprocess"
+				print_msg= " mask is not used in postprocess"
 				log_main.add(print_msg)
 			from math import sqrt
 			resolution = 0.5
