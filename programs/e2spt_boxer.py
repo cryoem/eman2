@@ -848,7 +848,7 @@ class EMBoxViewer(QtGui.QWidget):
 
 			return
 
-		if self.wfilt.getValue()!=0.0 :
+		if self.wfilt.getValue()>4 :
 			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']}) #JESUS
 
 		xyd=self.fdata.process("misc.directional_sum",{"axis":"z"})
@@ -958,7 +958,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl2.addWidget(self.wscale,4,0,1,2)
 
 		# 2-D filters
-		self.wfilt = ValSlider(rng=(0,50),label="Filt:",value=0.0)
+		self.wfilt = ValSlider(rng=(0,150),label="Filt:",value=0.0)
 		self.gbl2.addWidget(self.wfilt,5,0,1,2)
 
 		self.curbox=-1

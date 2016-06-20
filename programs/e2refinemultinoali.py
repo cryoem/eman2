@@ -239,7 +239,7 @@ def main():
 			### make 3d
 			run("e2make3dpar.py --input {clsout} --sym {sym} --output {threed} {preprocess} --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_5 --threads {threads} ".format(
 			clsout=classout[s],threed=threedout[s], sym=db["sym"], recon=db["recon"], preprocess=db["m3dpreprocess"],  m3dkeep=db["m3dkeep"], keepsig=db["m3dkeepsig"],
-			m3dpad=db["pad"],fillangle=db["astep"] ,threads=options.threads, apix=db_apix))
+			m3dpad=db["pad"],threads=options.threads, apix=db_apix))
  
 	### post process
 	print "Post processing..."
@@ -250,7 +250,7 @@ def main():
 		
 	for s in models:
 		final3d="{path}/threed_00_{n}.hdf".format(path=options.newpath,n=s)
-		run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter 0 {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(even3d=output_3d["even"][s], odd3d=output_3d["odd"][s], final3d=final3d, mass=db["mass"], amask3d=db["automask3d"], sym=db["sym"], amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db["automaskexpand"]))
+		run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter 0 {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(even3d=output_3d["even"][s], odd3d=output_3d["odd"][s], final3d=final3d, mass=db["mass"], amask3d=db["automask3d"], sym=db["sym"], amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db.setdefault("automaskexpand","0")))
 		
 		### copy the fsc files..
 		fscs=["fsc_unmasked_00.txt","fsc_masked_00.txt","fsc_maskedtight_00.txt"]

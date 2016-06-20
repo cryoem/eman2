@@ -742,6 +742,7 @@ def main():
 			else:
 				data["render_min"]=data["minimum"]
 				data["render_max"]=data["maximum"]
+				print "rescale output to range {} - {}".format(data["render_min"],data["render_max"])
 
 		if options.unstacking:	#output a series numbered single image files
 			data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+ '.' + outfile.split('.')[-1], -1, EMUtil.ImageType.IMAGE_UNKNOWN, False, None, file_mode_map[options.outmode], not(options.swap))
