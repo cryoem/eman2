@@ -1217,7 +1217,13 @@ public:
 	static EMData* box_convolution(EMData* img, int w);
 /*    Bessel function */
 
-static float bessel0(float r, float a, float alpha);
+static float   bessel0(float r, float a, float alpha);
+static inline  void bessjy(double x, double xnu, double *rj, double *ry, double *rjp, double *ryp);
+static double  bessi1_5(double x);
+static double  bessj1_5(double x);
+static inline  void beschb(double x, double *gam1, double *gam2, double *gampl, double *gammi);
+static inline double chebev(double a, double b, double c[], int m, double x);
 static inline double bessi0(double x);
+static double  kfv(double w, double a, double alpha, int m);
 static void euler_direction2angles(vector<float>v, float &alpha, float &beta);
 #endif	//util__sparx_h__

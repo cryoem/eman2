@@ -749,7 +749,13 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("max_sum_along_line_in_nd_array")
 
 		.def("bessel0", &EMAN::Util::bessel0, args("r", "a", "alpha"), "")
+		.def("bessi1_5", &EMAN::Util::bessi1_5, args("x"), "")
+		.def("bessj1_5", &EMAN::Util::bessj1_5, args("x"), "")
+		.def("kfv", &EMAN::Util::kfv, args("w","a","alpha","m"), "")
 		.staticmethod("bessel0")
+		.staticmethod("bessi1_5")
+		.staticmethod("bessj1_5")
+		.staticmethod("kfv")
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")
