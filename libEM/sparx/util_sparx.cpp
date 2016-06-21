@@ -25667,9 +25667,38 @@ void Util::bessjy(DOUBLE x, DOUBLE xnu, DOUBLE *rj, DOUBLE *ry, DOUBLE *rjp, DOU
 #undef FPMIN
 #undef MAXIT
 #undef XMIN
-#undef DOUBLE
 #undef XMIPP_MAX
 #undef NRSIGN
+#define ABS(x) (((x) >= 0) ? (x) : (-(x)))
+DOUBLE Util::kfv(DOUBLE w, DOUBLE a, DOUBLE alpha, int m)
+{
+    DOUBLE sigma = sqrt(ABS(alpha * alpha - (2. * PI * a * w) * (2. * PI * a * w)));
+    // The blocked area requires bessj3_5 and bessi3_5 in case m !=0.
+  /***  if (m == 2)
+    {
+        if (2.*PI*a*w > alpha)
+            return  pow(2.*PI, 3. / 2.)*pow(a, 3.)*pow(alpha, 2.)*Utill::bessj3_5(sigma)
+                    / (Util::bessi0(alpha)*pow(sigma, 3.5));
+        else
+            return  pow(2.*PI, 3. / 2.)*pow(a, 3.)*pow(alpha, 2.)*Util::bessi3_5(sigma)
+                    / (Util::bessi0(alpha)*pow(sigma, 3.5));
+    }
+***/
+    if (m == 0)
+    {
+        if (2*PI*a*w > alpha)
+            return  pow(2.*PI, 3. / 2.)*pow(a, 3)*Util::bessj1_5(sigma)
+                    / (bessi0(alpha)*pow(sigma, 1.5));
+        else
+            return  pow(2.*PI, 3. / 2.)*pow(a, 3)*Util::bessi1_5(sigma)
+                    / (Util::bessi0(alpha)*pow(sigma, 1.5));
+    }
+    else
+    	throw ImageFormatException("m out of range in kaiser_Fourier_value()");
+}
+#undef ABS
+#undef DOUBLE
+
 double Util::bessi1_5(double x)
 {
     return (x == 0) ? 0 : sqrt(2/(PI*x))*(cosh(x)-sinh(x)/x);
@@ -25680,10 +25709,11 @@ double Util::bessj1_5(double x)
     Util::bessjy(x, 1.5, &rj, &ry, &rjp, &ryp);
     return rj;
 }
-#undef PI
 
 #define NUSE1 5
 #define NUSE2 5
+#undef PI
+
 #define DOUBLE double
 void Util::beschb(DOUBLE x, DOUBLE *gam1, DOUBLE *gam2, DOUBLE *gampl, DOUBLE *gammi)
 {
