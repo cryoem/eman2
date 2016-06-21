@@ -1582,7 +1582,7 @@ void EMData::symplane0(EMData* wptr) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
 	int n = nxc*2;
-	// let's treat the local data as a matrix
+
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,1,1);
 	for (int iza = 2; iza <= nxc; iza++) {
@@ -1712,9 +1712,10 @@ void EMData::symplane0_ctf(EMData* w) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
 	int n = nxc*2;
-
+	int nr = nxc-1;
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,1,1);
+
 	for (int iza = 2; iza <= nxc; iza++) {
 		for (int iya = 2; iya <= nxc; iya++) {
 			cmplx(0,iya,iza) += conj(cmplx(0,n-iya+2,n-iza+2));
@@ -1757,6 +1758,52 @@ void EMData::symplane0_odd(EMData* w) {
 	set_array_offsets(0,0,0);
 	vector<int> saved_offsets_w = w->get_array_offsets();
 	w->set_array_offsets(0,0,0);
+
+	int iyb,iza,izc,iyc;
+	for (int iz = -nyh; iz <= nyh; iz++) {
+		if( iz < 0 )  {
+			iyb = 0;
+			iza = iz + nz;
+			izc = -iz;
+		} else if( iz > 0 )  {
+			iyb = 1;
+			iza = iz;
+			izc = nz - iz;
+		} else  {
+			iyb = 1;
+			iza = iz;
+			izc = iz;
+		}
+		for (int iy = iyb; iy <= nyh; iy++) {
+			if( iy == 0 ) iyc = iy;
+			else  iyc = ny - iy;
+			cmplx(0,iy,iza) += conj(cmplx(0,iyc,izc));
+			(*w)(0,iy,iza) += (*w)(0,iyc,izc);
+			cmplx(0,iyc,izc) = conj(cmplx(0,iy,iza));
+			(*w)(0,iyc,izc) = (*w)(0,iy,iza);
+		}
+	}
+	set_array_offsets(saved_offsets);
+	w->set_array_offsets(saved_offsets_w);
+	EXITFUNC;
+}
+
+/*
+void EMData::symplane0_odd(EMData* w) {
+	ENTERFUNC;
+	ny=get_ysize();
+	nz=get_zsize();
+	if( ny != nz ) {
+		LOGERR("symplane0_odd requires ny = nz.");
+		throw InvalidValueException(ny, "symplane0_odd requires ny = nz.");
+	}
+	int nyh = ny/2;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	vector<int> saved_offsets_w = w->get_array_offsets();
+	w->set_array_offsets(0,0,0);
+cout <<"  symplane0_odd   "<<ny<<"   "<<nyh<<endl;
+
 	for (int iza = 1; iza <= nyh; iza++) {
 		for (int iya = 1; iya < ny; iya++) {
 			cmplx(0,iya,iza) += conj(cmplx(0,ny-iya,nz-iza));
@@ -1779,7 +1826,7 @@ void EMData::symplane0_odd(EMData* w) {
 	w->set_array_offsets(saved_offsets_w);
 	EXITFUNC;
 }
-
+*/
 
 void EMData::symplane0_rect(EMData* w) {
 	ENTERFUNC;
