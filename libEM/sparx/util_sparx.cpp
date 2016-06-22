@@ -18872,6 +18872,7 @@ void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
+	//  ONLY WORKS for odd image dimensions and nx longer by one for fftip
 	int nbel = beltab.size();
 	//cout<<"  XXX nbel  "<<nbel<<endl;
 
@@ -18882,13 +18883,15 @@ void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab)
 	float *img_ptr  = img->get_data();
 
 	for (size_t k=0;k<ny;++k)  {
-		float argz = (k-ncx)*(k-ncx);
+		float argz = (k<ncx)?(k*k) : (k-ny)*(k-ny);
 		for (size_t j=0;j<ny;++j)  {
-			float argy = argz +(j-ncx)*(j-ncx);
+			float argy = (j<ncx)?(j*j) : (j-ny)*(j-ny);
 			for (size_t i=0;i<ny;++i) {
-				float rr = sqrt(float((i-ncx)*(i-ncx)+ argy))/(nnxo*2.0f);
-				int iab = Util::get_min((int)((nbel-1)*rr*2.0 + 0.5), nbel -1 );
-				img_ptr[i + nx*(j + k*ny)] *= beltab[iab];
+				float argx = (i<ncx)?(i*i) : (i-ny)*(i-ny);
+				float rr = sqrt(argx + argy + argz)/(nnxo*2.0f);
+				int iab = (int)((nbel-1)*rr*2.0f + 0.5f);
+				if(iab < nbel) img_ptr[i + nx*(j + k*ny)] *= beltab[iab];
+				else  img_ptr[i + nx*(j + k*ny)] = 0.0f;
 			}
 		}
 	}
