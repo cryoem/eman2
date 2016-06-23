@@ -7743,15 +7743,19 @@ EMData *EMData::FourInterpol(int nxn, int nyn, int nzn, bool RetReal, bool norma
 
 	int lsd, lsdn, inx, iny, inz;
 	int i, j, k;
-	if (is_complex())
-		throw ImageFormatException("Input image has to be real");
-
-	if(nxn<nx || nyn<ny || nzn<nz)	throw ImageDimensionException("Cannot reduce the image size");
-	lsd = nx + 2 - nx%2;
+	EMData *temp_ft = new EMData();
+	if (is_complex()) {
+		temp_ft = this->copy();
+		lsd = nx;
+		nx = lsd - 2 + this->is_fftodd();
+	} else {
+		//  do out of place ft
+		temp_ft = do_fft();
+		lsd = nx + 2 - nx%2;
+	}
 	lsdn = nxn + 2 - nxn%2;
-//  do out of place ft
-	EMData *temp_ft = do_fft();
-	EMData *ret = this->copy();
+	if(nxn<nx || nyn<ny || nzn<nz)	throw ImageDimensionException("Cannot reduce the image size");
+	EMData *ret = this->copy_head();
 	ret->set_size(lsdn, nyn, nzn);
 	ret->to_zero();
 	float *fout = ret->get_data();
