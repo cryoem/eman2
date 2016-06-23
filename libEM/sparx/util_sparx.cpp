@@ -26253,7 +26253,7 @@ EMData* Util::divide_mtf( EMData* img, vector<float> mtf, vector<float> res) {
 	return img1;
 }
 
-void Util::iterefa(EMData* &tvol, EMData* tweight, int maxr2, int nnxo) {
+void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	ENTERFUNC;
 	/* Exception Handle */
 	if (!tvol) {

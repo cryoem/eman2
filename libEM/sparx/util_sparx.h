@@ -1226,5 +1226,5 @@ static inline double chebev(double a, double b, double c[], int m, double x);
 static inline double bessi0(double x);
 static double  kfv(double w, double a, double alpha, int m);
 static void euler_direction2angles(vector<float>v, float &alpha, float &beta);
-static void  iterefa(EMData* &tvol, EMData* tweight, int maxr2, int nnxo);
+static void  iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
 #endif	//util__sparx_h__
