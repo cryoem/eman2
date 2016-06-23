@@ -26253,3 +26253,24 @@ EMData* Util::divide_mtf( EMData* img, vector<float> mtf, vector<float> res) {
 	return img1;
 }
 
+void Util::iterefa(EMData* &tvol, EMData* tweight, int maxr2, int nnxo){
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!tvol) {
+		throw NullPointerException("NULL input image");
+	}
+	
+	if(tvol->is_complex())
+	{
+	int nxt = tvol->get_xsize(),nyt = tvol->get_ysize(),nzt = tvol->get_zsize();
+	float *tvol_ptr  = tvol->get_data();
+	size_t size = (size_t)nxt*nyt*nzt;
+	float *tw_ptr  = tweight->get_data();
+	}
+	else throw ImageFormatException("Only Fourier image allowed");
+	
+	tvol->update();
+
+	EXITFUNC;
+
+}
