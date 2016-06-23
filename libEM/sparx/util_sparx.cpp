@@ -25682,6 +25682,7 @@ DOUBLE Util::kfv(DOUBLE w, DOUBLE a, DOUBLE alpha, int m)
                     / (Util::bessi0(alpha)*pow(sigma, 3.5));
     }
 ***/
+
     if (m == 0)
     {
         if (2*PI*a*w > alpha)
