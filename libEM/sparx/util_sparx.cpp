@@ -19022,8 +19022,6 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 }
 
 
-
-
 EMData*  Util::unrollmask( int ny )
 {
 	ENTERFUNC;
@@ -19166,7 +19164,6 @@ float Util::sqedac( EMData* img, EMData* proj, EMData* ctfsbckgnoise )
     return edis;
 	EXITFUNC;
 }
-
 
 
 vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
@@ -19340,6 +19337,59 @@ float Util::ang_n(float peakp, string mode, int maxrin)
     else
         return fmodf(((peakp-1.0f) / maxrin+1.0f)*180.0f,180.0f);
 }
+
+
+void Util::fuse_low_freq(EMData* img1, EMData* img2, EMData* w1, EMData* w2, int limit)
+{
+	ENTERFUNC;
+	/* ========= combine to limit ===================== */
+
+	int nx=w1->get_xsize(),ny=w1->get_ysize(),nz=w1->get_zsize();
+	int nzc = nz/2;
+	int nyc = ny/2;
+
+	size_t size = (size_t)nx*ny*nz;
+	float *img1_ptr = img1->get_data();
+	float *img2_ptr = img2->get_data();
+	float *w1_ptr = w1->get_data();
+	float *w2_ptr = w2->get_data();
+
+	int flimit = limit*limit;
+
+	for (size_t k=0;k<nz;++k)  {
+		int argz = (k<nzc)?(k*k) : (k-nz)*(k-nz);
+		for (size_t j=0;j<ny;++j)  {
+			int argy = (j<nyc)?(j*j) : (j-ny)*(j-ny);
+			for (size_t i=0;i<nx;++i) {
+				if( (i*i + argy + argz) <= flimit ) {
+					int l1 = i+(j+(k*ny))*nx;
+					float qt = (w1_ptr[l1] + w2_ptr[l1])*0.5f;
+					w1_ptr[l1] = qt;
+					w2_ptr[l1] = qt;
+					l1 += i;
+					qt = (img1_ptr[l1] + img2_ptr[l1])*0.5f;
+					img1_ptr[l1] = qt;
+					img2_ptr[l1] = qt;
+					l1 += 1;
+					qt = (img1_ptr[l1] + img2_ptr[l1])*0.5f;
+					img1_ptr[l1] = qt;
+					img2_ptr[l1] = qt;
+				}
+			}
+		}
+	}
+
+
+
+	img1->update();
+	img2->update();
+	w1->update();
+	w1->update();
+
+	EXITFUNC;
+}
+
+
 
 
 void Util::Normalize_ring( EMData* ring, const vector<int>& numr )

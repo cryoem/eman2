@@ -886,8 +886,9 @@ costlist, int* curbranch);
 
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);
-	
-	
+
+	static void fuse_low_freq(EMData* img1, EMData* img2, EMData* w1, EMData* w2, int limit);
+
 	static void write_nd_array(EMData* data, const vector<int> &size_of_each_dimension, const vector<int> &location, float val);
 	static float read_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<int> &location);
 	static float read_nd_array_linear_interp(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<float> &location);
