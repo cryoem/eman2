@@ -19366,7 +19366,7 @@ void Util::fuse_low_freq(EMData* img1, EMData* img2, EMData* w1, EMData* w2, int
 					float qt = (w1_ptr[l1] + w2_ptr[l1])*0.5f;
 					w1_ptr[l1] = qt;
 					w2_ptr[l1] = qt;
-					l1 += i;
+					l1 += l1;
 					qt = (img1_ptr[l1] + img2_ptr[l1])*0.5f;
 					img1_ptr[l1] = qt;
 					img2_ptr[l1] = qt;
