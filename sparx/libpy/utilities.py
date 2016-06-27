@@ -221,6 +221,8 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	of lower level refinement.
 	"""
 	#print " ENTER AMOEBA MULTI LEVEL"
+	from mpi import mpi_comm_rank, MPI_COMM_WORLD
+	
 	nvar = len(var)       # number of variables in the minimization
 	nsimplex = nvar + 1   # number of vertices in the simplex
 
@@ -309,7 +311,10 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 			simplex[ssworst][i] = pnew[i]
 		fvalue[ssworst] = fnew
 		iteration += 1
-		#print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
+
+
+		# if mpi_comm_rank(MPI_COMM_WORLD) == 7:
+		# 	print "Iteration:",iteration,"  ",ssbest,"  ", simplex[ssbest], "  ",fvalue[ssbest]
 
 '''
 def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):

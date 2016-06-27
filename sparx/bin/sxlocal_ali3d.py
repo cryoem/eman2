@@ -60,6 +60,7 @@ def main():
 	parser.add_option("--debug",    action="store_true", default=False,   help="Debug printout")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use MPI version")
 	parser.add_option("--fourvar",  action="store_true", default=False,   help="compute Fourier variance")
+	parser.add_option("--scipy_minimization",  action="store_true", default=False,   help="use scipy minimization instead of amoeba")
 	(options, args) = parser.parse_args(arglist[1:])
 	if(len(args) < 2 or len(args) > 3):
 		print "usage: " + usage
@@ -86,6 +87,12 @@ def main():
 			nlocal_ali3d_MPI(args[0], args[1], mask, options.ou, options.delta, options.ts, options.center, options.maxit,
 			options.CTF, options.snr, options.sym, options.chunk, options.function, options.fourvar,
 			options.npad, options.debug)
+		elif options.scipy_minimization:
+			if options.MPI:
+				from applications import local_ali3d_MPI_scipy_minimization
+				local_ali3d_MPI_scipy_minimization(args[0], args[1], mask, options.ou, options.delta, options.ts, options.center, options.maxit,
+				options.CTF, options.snr, options.sym, options.chunk, options.function, options.fourvar,
+				options.npad, options.debug)
 		else:
 			from applications import local_ali3d
 			local_ali3d(args[0], args[1], mask, options.ou, options.delta, options.ts, options.center, options.maxit,
