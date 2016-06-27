@@ -176,7 +176,7 @@ def main():
 	parser.add_argument("--apix", type=float, help="A/pixel for S scaling")
 	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
 	parser.add_argument("--averager",type=str,help="If --average is specified, this is the averager to use (e2help.py averager). Default=mean",default="mean")
-	parser.add_argument("--calcsf", metavar="n outputfile", type=str, nargs=2, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")
+	parser.add_argument("--calcsf", metavar="outputfile", type=str, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")
 	parser.add_argument("--calccont", action="store_true", help="Compute the low resolution azimuthal contrast of each image and put it in the header as eval_contrast_lowres. Larger values imply more 'interesting' images.")
 	parser.add_argument("--clip", metavar="xsize,ysize", type=str, action="append", help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
 	parser.add_argument("--exclude", metavar="exclude-list-file", type=str, help="Excludes image numbers in EXCLUDE file")
@@ -888,30 +888,14 @@ def main():
 					continue
 
 				elif option1 == "calcsf":
-					sfout_n = int(options.calcsf[0])
-					sfout = options.calcsf[1]
-					sf_amwid = 2 * math.pi / sfout_n
-
+					sfout = options.calcsf
 					dataf = d.do_fft()
-	#				d.gimme_fft()
-					curve = dataf.calc_radial_dist(ny, 0, 0.5)
+					curve = dataf.calc_radial_dist(ny/2, 0, 1.0,True)
+					curve=[i/(dataf["nx"]*dataf["ny"]*dataf["nz"]) for i in curve]
 					outfile2 = sfout
 
-					if n1 != 0:
-						outfile2 = sfout + ".%03d" % (i+100)
-
-					sf_dx = 1.0 / (apix * 2.0 * ny)
+					sf_dx = 1.0 / (d["apix_x"] * ny)
 					Util.save_data(0, sf_dx, curve, outfile2)
-
-					if sfout_n > 0:
-						for j in range(0, sfout_n):
-							curve = dataf.calc_radial_dist(ny, 0, 0.5, j * sf_amwid, sf_amwid)
-							outfile2 = os.path.basename(sfout) + "-" + str(j) + "-" + str(sfout_n) + ".pwr"
-
-							if n1 != 0:
-								outfile2 = outfile2 + ".%03d" % (i+100)
-
-							Util.save_data(0, sf_dx, curve, outfile2)
 
 				elif option1 == "interlv":
 					if not options.outtype:
