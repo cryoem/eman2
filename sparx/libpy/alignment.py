@@ -423,8 +423,8 @@ def objective_function_just_ccc_has_maximum(args, data):
 	# rrr = -reference_projection.cmp("dot", prj, dict(negative = 0, mask = mask2D))/ norm_of_reference_projection
 
 
-	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection))
-	rrr =  Util.innerproduct(prj, reference_projection) / norm_of_reference_projection
+	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection, None))
+	rrr =  Util.innerproduct(prj, reference_projection, None) / norm_of_reference_projection
 
 	# print "ccc:", format_list(args[0:5]), rrr
 	# with open("test.txt", "a") as myfile:
@@ -449,8 +449,8 @@ def objective_function_just_ccc_has_minimum(args, data):
 	reference_projection = prgl(data[0], args[0:5], interpolation_method = 1, return_real = False)
 	reference_projection.set_attr("is_complex",0)
 
-	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection))
-	return  -Util.innerproduct(data[2], reference_projection) / norm_of_reference_projection
+	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection, None))
+	return  -Util.innerproduct(data[2], reference_projection, None) / norm_of_reference_projection
 	# rrr =  -Util.innerproduct(prj, reference_projection) / norm_of_reference_projection
 
 	# print "ccc:", format_list(args[0:5]), rrr
@@ -475,8 +475,8 @@ def objective_function_just_ccc_has_minimum_reduced(args, data):
 	reference_projection = prgl(data[0], args1 , interpolation_method = 1, return_real = False)
 	reference_projection.set_attr("is_complex",0)
 
-	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection))
-	return  -Util.innerproduct(data[2], reference_projection) / norm_of_reference_projection
+	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection, None))
+	return  -Util.innerproduct(data[2], reference_projection, None) / norm_of_reference_projection
 	# rrr =  -Util.innerproduct(prj, reference_projection) / norm_of_reference_projection
 
 	# print "ccc:", format_list(args[0:5]), rrr
