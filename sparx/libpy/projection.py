@@ -184,7 +184,7 @@ def prgl(volft, params, interpolation_method = 0, return_real = True):
 		temp = Processor.EMFourierFilter(temp, filt_params)
 	if return_real:
 		temp.do_ift_inplace()
-		if(interpolation_method = 1):   temp.set_attr_dict({'ctf_applied':0, 'npad':1})
+		if(interpolation_method == 1):   temp.set_attr_dict({'ctf_applied':0, 'npad':1})
 		else:  temp.set_attr_dict({'ctf_applied':0, 'npad':npad})
 		temp.depad()
 	else:
