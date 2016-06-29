@@ -6,7 +6,7 @@ sxsort3d - 3D Clustering Protocol I: Sort 3D heterogeneity based on the reproduc
 
 ''usage in command line''
 
-sxsort3d.py  stack  outdir  mask  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --function=user_function  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --seed=random_seed  --smallest_group=smallest_group  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --protein_shape=protein_shape  --upscale=upscale  --wn=wn --interpolation=method --protein_shape=g
+sxsort3d.py  stack  outdir  mask  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --function=user_function  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --seed=random_seed  --smallest_group=smallest_group  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --protein_shape=protein_shape  --upscale=upscale  --wn=wn --interpolation=method
 
 
 === Typical usage ===

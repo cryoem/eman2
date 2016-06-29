@@ -1018,7 +1018,7 @@ def main():
 					sigma_of_inverse = sqrt(2./((abs(options.adhoc_bfactor))/options.pixel_size**2))
 				e1  = filt_gaussinv(e1,sigma_of_inverse)
 				
-			if options.low_pass_filter: # User provided low-pass filter
+			if options.low_pass_filter or options.ff: # User provided low-pass filter
 				from filter       import filt_tanl
 				print_msg  = " apply low-pass filter"
 				log_main.add(print_msg) 

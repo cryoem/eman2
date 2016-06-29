@@ -134,7 +134,7 @@ def main():
 			r4=int(ceil(1.0/(4.0*ctf.dsbg)))
 			losnr=sum(ctf.snr[r1:r2])/(r2-r1)
 			hisnr=sum(ctf.snr[r3:r4])/(r4-r3)
-			if ctf.defocus>=options.mindf and ctf.defocus<=options.maxdf and ctf.bfactor>=options.minbfactor and ctf.bfactor<=options.maxbfactor and losnr>options.minlosnr and hisnr>options.minhisnr : outargs.append(i)
+			if ctf.defocus>=options.mindf and ctf.defocus<=options.maxdf and ctf.bfactor>=options.minbfactor and ctf.bfactor<=options.maxbfactor and losnr>=options.minlosnr and hisnr>=options.minhisnr : outargs.append(i)
 			if options.verbose > 1: print "{}<{}<{}   {}<{}<{}   {}>{}   {}>{}".format(options.mindf,ctf.defocus,options.maxdf,options.minbfactor,ctf.bfactor,options.maxbfactor, losnr,options.minlosnr,hisnr,options.minhisnr)
 		except:
 			if options.verbose>2 : traceback.print_exc()
