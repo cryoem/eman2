@@ -18569,7 +18569,7 @@ EMData* Util::squaren_img(EMData* img)
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
 	} else {
-		for (size_t i=0;i<size;++i) img_ptr[i] *= img_ptr[i];
+		for (size_t i=0;i<size;++i) img2_ptr[i] = img_ptr[i]*img_ptr[i];
 	}
 	img2->update();
 
