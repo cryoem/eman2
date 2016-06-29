@@ -169,61 +169,28 @@ def prgl(volft, params, interpolation_method = 0, return_real = True):
 	"""
 	#  params:  phi, theta, psi, sx, sy
 	from fundamentals import fft
-	from utilities import set_params_proj
+	from utilities import set_params_proj, info
 	from EMAN2 import Processor
-
+	npad = volft.get_attr_default("npad",1)
 	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
-	temp = volft.extract_section(R, interpolation_method)
-
+	if(npad == 1):  temp = volft.extract_section(R, interpolation_method)
+	if(npad == 2):  temp = volft.extract_section2(R, interpolation_method)
 	temp.fft_shuffle()
 	temp.center_origin_fft()
 
 	if(params[3]!=0. or params[4]!=0.):
 		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
 				  "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
-		temp=Processor.EMFourierFilter(temp, filt_params)
+		temp = Processor.EMFourierFilter(temp, filt_params)
 	if return_real:
 		temp.do_ift_inplace()
-		temp.set_attr_dict({'ctf_applied':0, 'npad':volft.get_attr("npad")})
+		if(interpolation_method = 1):   temp.set_attr_dict({'ctf_applied':0, 'npad':1})
+		else:  temp.set_attr_dict({'ctf_applied':0, 'npad':npad})
 		temp.depad()
 	else:
 		temp.set_attr_dict({'ctf_applied':0, 'npad':volft.get_attr("npad")})
 	set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
 	return temp
-
-def gen_rings_ctf( prjref, nx, ctf, numr):
-	"""
-	  Convert set of ffts of projections to Fourier rings with additional multiplication by a ctf
-	  The command returns list of rings
-	"""
-        from math         import sin, cos, pi
-	from fundamentals import fft
-	from alignment    import ringwe
-	from filter       import filt_ctf
-	mode = "F"
-	wr_four  = ringwe(numr, "F")
-	cnx = nx//2 + 1
-	cny = nx//2 + 1
-	qv = pi/180.0
-
-	refrings = []     # list of (image objects) reference projections in Fourier representation
-
-        for i in xrange( len(prjref) ):
-		cimage = Util.Polar2Dm(filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
-		Util.Normalize_ring(cimage, numr)
-
-		Util.Frngs(cimage, numr)
-		Util.Applyws(cimage, numr, wr_four)
-		refrings.append(cimage)
-		phi   = prjref[i].get_attr('phi')
-		theta = prjref[i].get_attr('theta')
-		psi   = prjref[i].get_attr('psi')
-		n1 = sin(theta*qv)*cos(phi*qv)
-		n2 = sin(theta*qv)*sin(phi*qv)
-		n3 = cos(theta*qv)
-		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3, "phi": phi, "theta": theta,"psi": psi} )
-
-	return refrings
 
 def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 	"""
@@ -381,6 +348,42 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 		volft.fft_shuffle()
 		return  volft
 		
+
+def gen_rings_ctf( prjref, nx, ctf, numr):
+	"""
+	  Convert set of ffts of projections to Fourier rings with additional multiplication by a ctf
+	  The command returns list of rings
+	"""
+        from math         import sin, cos, pi
+	from fundamentals import fft
+	from alignment    import ringwe
+	from filter       import filt_ctf
+	mode = "F"
+	wr_four  = ringwe(numr, "F")
+	cnx = nx//2 + 1
+	cny = nx//2 + 1
+	qv = pi/180.0
+
+	refrings = []     # list of (image objects) reference projections in Fourier representation
+
+        for i in xrange( len(prjref) ):
+		cimage = Util.Polar2Dm(filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
+		Util.Normalize_ring(cimage, numr)
+
+		Util.Frngs(cimage, numr)
+		Util.Applyws(cimage, numr, wr_four)
+		refrings.append(cimage)
+		phi   = prjref[i].get_attr('phi')
+		theta = prjref[i].get_attr('theta')
+		psi   = prjref[i].get_attr('psi')
+		n1 = sin(theta*qv)*cos(phi*qv)
+		n2 = sin(theta*qv)*sin(phi*qv)
+		n3 = cos(theta*qv)
+		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3, "phi": phi, "theta": theta,"psi": psi} )
+
+	return refrings
+
+
 
 ###############################################################################################
 ## COMMON LINES NEW VERSION ###################################################################
