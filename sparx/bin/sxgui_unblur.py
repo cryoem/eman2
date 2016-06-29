@@ -3708,17 +3708,21 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         with open('{:s}_uncorrected.txt'.format(strOutput), 'w') as f:
             for name in sorted(self.listChecked):
                 arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                f.write('{:s}/{:s}\n'.format(
-                    os.path.relpath(self.strInputDir).replace('Shift', 'Doseuncorrected'),
-                    arrCurrentEntry[self.dMic][0])
+                strDirectory = arrCurrentEntry[self.dMic][0].replace('Temp', 'Doseuncorrected')
+                f.write(
+                    '{:s}\n'.format(
+                        os.path.relpath(strDirectory)
+                        )
                     )
 
         with open('{:s}_corrected.txt'.format(strOutput), 'w') as f:
             for name in sorted(self.listChecked):
                 arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                f.write('{:s}/{:s}\n'.format(
-                    os.path.relpath(self.strInputDir).replace('Shift', 'Dosecorrected'),
-                    arrCurrentEntry[self.dMic][0])
+                strDirectory = arrCurrentEntry[self.dMic][0].replace('Temp', 'Dosecorrected')
+                f.write(
+                    '{:s}\n'.format(
+                        os.path.relpath(strDirectory)
+                        )
                     )
 
         # Show message with the save path
