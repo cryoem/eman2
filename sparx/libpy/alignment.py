@@ -4164,6 +4164,47 @@ def preparerefsgrid(refs, psimax=1.0, psistep=1.0):
 
 	return  ref
 
+
+def preparerefsgrid1(refs, psimax=1.0, psistep=1.0):
+	from fundamentals import prepi, fft
+	from EMAN2 import Processor
+
+	M = refs.get_xsize()
+	alpha = 1.75
+	K = 6
+	N = M*2  # npad*image size
+	r = M/2
+	v = K/2.0/N
+	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+
+	nr = int(2*psimax/psistep)+1
+	nc = nr//2
+# 	if updown == "up" :  reduced_psiref = psiref -  90.0
+# 	else:                reduced_psiref = psiref - 270.0
+
+
+	
+	ref = [None]*nr
+	ima,kb = prepi(refs)
+	from math import radians
+	psisteprad = radians(psistep)
+# if psimax > 0:
+# 		bnr = int(round(reduced_psiref/psistep)) - nc
+# 		enr = nr + bnr
+	for i in xrange(0,nr):
+		# gridding rotation
+		ref[i] = fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
+
+# 	if psimax == 0:
+# 		ref[0] = fft(ima.rot_scale_conv_new_background_twice(radians(reduced_psiref), 0.,0., kb, 1.))
+
+		
+		
+	return  ref
+	
+	
 def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, stepx = 1.0, stepy = 1.0, updown = "both"):
 	"""
 	Direct 2D alignment within a predefined angular range.  If the range is large the method will be very slow.
@@ -4569,6 +4610,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
 	from alignment    import parabl
 	from EMAN2 import Processor
+	#from time  import time
 	#print  "  directaligridding1  ",psimax, psistep, xrng, yrng, stepx, stepy, updown
 	#print  "IN         %6.2f %6.2f  %6.2f"%(psiref, txref, tyref)
 
@@ -4589,22 +4631,17 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	nc = nr//2
 	if updown == "up" :  reduced_psiref = psiref -  90.0
 	else:                reduced_psiref = psiref - 270.0
-
-	#  Limit psi search to within psimax range
-	#  It makes no sense, as it still searches within the entire range of psi_max
-	# bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
-	# enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
-	# psi_offset = abs(int(round(2*abs(reduced_psiref)/psistep)))
-	psi_offset = int(round(reduced_psiref / psistep)) + nc
-	lower_segment_length = psi_offset
-	upper_segment_length = nr - 1 - psi_offset
-	if lower_segment_length >= 0 and upper_segment_length >= 0:
-		psi_half_range = min(lower_segment_length, upper_segment_length)
-		bnr = psi_offset - psi_half_range 
-		enr = psi_offset + psi_half_range + 1
-	else:
-		bnr = enr = 0
 	
+
+#  Limit psi search to within psimax range
+#  It makes no sense, as it still searches within the entire range of psi_max
+# 	bnr = int(round(reduced_psiref/psistep)) - nc
+# 	enr = nr + bnr
+	
+	bnr = min(max(int(round(reduced_psiref/psistep)) - nc, -nc), nr-nc-1)
+	enr = max(min(int(round(reduced_psiref/psistep))+nr-nc,nr-nc),-nc)
+
+	if enr <= bnr: return 0.0, 0.0, 0.0, peak
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
 	#   We quietly assume the search range for translations is always much less than the ccf size,
@@ -4617,21 +4654,23 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	w = model_blank( wnx, wny)
 	stepxx = 2*stepx
 	stepyy = 2*stepy
-	nicx = N//2 - 2*txref #  here one would have to add or subtract the old value.
-	nicy = N//2 - 2*tyref
+	
+	nicx = N//2 + 2*txref #  here one would have to add or subtract the old value.
+	nicy = N//2 + 2*tyref
 	wxc = wnx//2
 	wyc = wny//2
 
 	if updown == "up" :
-		# print "up: reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)", reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)
 		ima = inima
+		nicx = N//2 - 2*txref #  here one would have to add or subtract the old value.
+		nicy = N//2 - 2*tyref
 		#ima = inima.FourInterpol(N, N, 1,0)
 		#ima = Processor.EMFourierFilter(ima,params)
 
 	if updown == "down" :
-		# print "down: reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)", reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)
 		#  This yields rotation by 180 degrees.  There is no extra shift as the image was padded 2x, so it is even-sized, but two rows are incorrect
 		imm = inima.conjg()
+
 		#imm = rot_shift2D(inima,180.0, interpolation_method = 'linear')
 		#imm = imm.FourInterpol(N, N, 1,0)
 		#imm = Processor.EMFourierFilter(imm,params)
@@ -4650,19 +4689,22 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	from sys import exit
 	exit()
 	"""
-	if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23     ## do nothing for rny=0 @ming
-	for i in xrange(bnr, enr, 1):
+	#if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23     ## do nothing for rny=0 @ming
+	
+	for i in xrange(bnr, enr):
 		if updown == "up" :
-			# print "up i, bnr, enr, len(ref)", i, bnr, enr, len(ref)
-			c = ccf(ima,ref[i])
+			c = ccf(ima,ref[nc+i])
+			#print "compute ccf time", time() - startc
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
 			#for q in p: print q
 			for iy in xrange(-rny, rny + 1):
 				for ix in xrange(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
-
+	
 			pp = peak_search(w)[0]
+			
+			#print "find peak time", time()-startpp
 			#print '  peak   ',i,pp
 			#from sys import exit
 			#exit()
@@ -4698,10 +4740,12 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 				"""
 				if(PEAKV>ma2):
 					ma2  = PEAKV
-					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+					#if psimax > 0:
+					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,i*psistep]
+					# if psimax == 0: 
+# 						oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,reduced_psiref]
 		if updown == "down" :
-			# print "down i, bnr, enr, len(ref)", i, bnr, enr, len(ref)
-			c = ccf(imm,ref[i])
+			c = ccf(imm,ref[nc+i])
 			for iy in xrange(-rny, rny + 1):
 				for ix in xrange(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
@@ -4734,7 +4778,10 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 				"""
 				if(PEAKV>ma4):
 					ma4 = PEAKV
-					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+					#if psimax > 0:
+					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,i*psistep]
+				# 	if psimax == 0:
+# 						oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,reduced_psiref]
 
 	if( oma2[-2] > oma4[-2] ):
 		peak = oma2[-2]
@@ -4750,6 +4797,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 		nalpha = oma2[-1]
 		ntx    = oma2[-4]*stepx - txref
 		nty    = oma2[-3]*stepy - tyref
+		#print "oma2[-4]*stepx - txref",oma2[-4]*stepx,  txref
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	else:
 		peak = oma4[-2]
@@ -4758,7 +4806,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 		#print oma3
 		#print oma4
 
-		nalpha, ntx, nty, junk = compose_transform2(-oma4[-1], oma4[-4]*stepx - txref,oma4[-3]*stepy - tyref,1.0,180.,0,0,1)
+		nalpha, ntx, nty, junk = compose_transform2(-oma4[-1], oma4[-4]*stepx + txref,oma4[-3]*stepy + tyref,1.0,180.,0,0,1)
 		#nalpha = oma4[-1] + 180.0
 		#ntx    = oma4[-4]*stepx
 		#nty    = oma4[-3]*stepy
@@ -4767,7 +4815,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	#print  "OUT        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	return  nalpha, ntx, nty, peak
-
+	
 def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, \
 			stepx = 1.0, stepy = 1.0, psiref = 0., txref = 0., tyref = 0., updown = "up"):
 	"""

@@ -19318,7 +19318,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						rmin, rmax, fract,  npad, sym, user_func_name, \
 						pixel_size, debug, y_restrict, search_iter, slowIO):
 
-	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1, directaligriddingconstrained
+	from alignment      import Numrinit, proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1, directaligriddingconstrained
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict, read_text_row, sym_vol
@@ -19328,7 +19328,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	from pixel_error    import max_3D_pixel_error, ordersegments
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_recv,  mpi_send
+	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
@@ -19517,7 +19517,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
 		k = k1
-		
+
 	if slowIO:
 		for iproc in xrange(number_of_proc):
 			if myid ==iproc:
@@ -19525,7 +19525,8 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
 			mpi_barrier(MPI_COMM_WORLD)
 	else: data = EMData.read_images(stack, list_of_particles)
-		
+
+	
 	nima = len(data)
 	data_nx = data[0].get_xsize()
 	data_ny = data[0].get_ysize()
@@ -19537,7 +19538,12 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	
 	if last_ring < 0:
 		last_ring = (max(seg_ny, 2*int(rmax)))//2 - 2
+		
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 
+	maxrin = numr[len(numr)-1]
+	psistep = 360./maxrin
+	print "psistep", psistep
 	#if fourvar:  original_data = []
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
@@ -19599,8 +19605,9 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				stepx[ii] = 1.0 # this is to prevent division by zero in c++ code
 
 	#  TURN INTO PARAMETER OR COMPUTE FROM OU
-	psistep=0.5
+	#psistep=0.5
 	# do the projection matching
+	startl = time()
 	ooiter = 0
 	for N_step in xrange(lstp):
 		terminate = 0
@@ -19620,7 +19627,6 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 			pixer  = [0.0]*nima
 
 			neworient = [[0.0, 0.0, 0.0, 0.0, 0.0, -2.0e23] for i in xrange(nima)]
-
 			ooiter += 1
 			Iter += 1
 			if Iter%search_iter == 0:  total_iter += 1
@@ -19663,15 +19669,20 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				for im in xrange( seg_start, seg_end ):
 					Torg.append(data[im].get_attr('xform.projection'))
 
-				#  Fit predicted locations as new starting points
-				if (seg_end - seg_start) > 1:
-					setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
+				#Fit predicted locations as new starting points
+#  				if (seg_end - seg_start) > 1:
+#  					setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
 				
 			#  Generate list of reference angles, all nodes have the entire list
 			ref_angles = prepare_helical_refangles(delta[N_step], initial_theta =initial_theta, delta_theta = delta_theta)
 			#  count how many projections did not have a peak.  If too many, something is wrong
 			nopeak = 0
 			#  DO ORIENTATION SEARCHES
+			#print "len_refang", len(ref_angles)
+
+			reftime = 0
+			searchtime = 0
+	
 			for refang in ref_angles:
 				n1 = sin(radians(refang[1]))*cos(radians(refang[0]))
 				n2 = sin(radians(refang[1]))*sin(radians(refang[0]))
@@ -19699,13 +19710,18 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						imn3 = cos(radians(theta))
 						if( (n1*imn1 + n2*imn2 + n3*imn3)>=ant ):
 
-							if(refrings[0] == None):
-								#print  "  reffft1  ",im,refang
-								refrings = prepare_reffft1(volft, kbv, refang, segmask, psi_max, psistep)
+						
 
 							if psi < 180.0 :  direction = "up"
 							else:             direction = "down"
-
+							
+							if(refrings[0] == None):
+			
+								startref = time()
+								refrings = prepare_reffft2(volft, kbv, refang, segmask, psi_max, psistep)
+								endref = time()
+								#print " compute ref timing",  endref-startref,  refang,  idd
+								reftime = reftime + endref-startref
 							#angb, tx, ty, pik = directaligridding1(dataft[im], kb, refrings, \
 							#	psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, direction)
 
@@ -19720,21 +19736,26 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 							#
 							
 							
-							tyrng = max(stepy,min(yrng[N_step],abs(y_restrict[N_step]-ty),abs(-y_restrict[N_step]-ty)))
-							
+							#tyrng = max(stepy,min(yrng[N_step],abs(y_restrict[N_step]-ty),abs(-y_restrict[N_step]-ty)))
+							tyrng = min(yrng[N_step],abs(y_restrict[N_step]))
 							#print  "IMAGE  ",im
-							angb, tx, ty, pik = directaligriddingconstrained(dataft[im], kb, refrings, \
+		
+							startsearch = time()
+							angb, tx, ty, pik, = directaligriddingconstrained(dataft[im], kb, refrings, \
 								psi_max, psistep, xrng[N_step], tyrng, stepx[N_step], stepy, psi, tx, ty, direction)
-							
+							endsearch = time()	
+							#print "image id, searching time is ", im, endsearch-startsearch, iddi
+							searchtime = searchtime +endsearch-startsearch 
 							if(pik > -1.0e23):
 								if(pik > neworient[im][-1]):
 									neworient[im][-1] = pik
 									neworient[im][:4] = [angb, tx, ty, refang]
-
-
+						
+			print "total time of calculating references", reftime
+			print "total time of searching", searchtime
+			
 			for im in xrange(nima):
 				if(neworient[im][-1] > -1.0e23):
-					#print " neworient  ",im,neworient[im]
 					#from utilities import inverse_transform2
 					#t1, t2, t3, tp = inverse_transform2(neworient[im][3][1]+neworient[im][0])
 					tp = Transform({"type":"spider","phi":neworient[im][3][0],"theta":neworient[im][3][1],"psi":neworient[im][3][2]+neworient[im][0]})
@@ -19747,6 +19768,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 
 				else:
 					# peak not found, parameters not modified
+					print "peak not found image id", im
 					nopeak += 1
 					pixer[im]  = 0.0
 					data[im].set_attr("pixerr", pixer[im])
@@ -19768,7 +19790,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 			if (Iter-1) % search_iter == 0 :
 
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
-				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
+				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
 
 				if myid == main_node:
 					print_msg("3D reconstruction time = %d\n"%(time()-start_time))
@@ -19795,7 +19817,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 			mpi_barrier(MPI_COMM_WORLD)
 
 			# write out headers, under MPI writing has to be done sequentially
-			from mpi import mpi_recv, mpi_send, MPI_COMM_WORLD, MPI_FLOAT
+			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
 			par_str = ['xform.projection', 'ID','pixerr']
 			if myid == main_node:
 				if(file_type(stack) == "bdb"):
@@ -19811,8 +19833,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				# write params to text file
 				header(stack, params='xform.projection', fexport=os.path.join(outdir, "parameters%04d.txt"%(ooiter)))
 				header(stack, params='pixerr', fexport=os.path.join(outdir, "pixelerror%04d.txt"%(ooiter)))
-
-
+	print "new method runing time", time()-startl
 def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
 						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
 						rmin, rmax, fract,  npad, sym, user_func_name, \
@@ -21510,6 +21531,38 @@ def prepare_reffft1( volft, kb, ref_angles, segmask, psimax=1.0, psistep=1.0, kb
 
 	return refrings
 
+
+def prepare_reffft2( volft, kb, ref_angles, segmask, psimax=1.0, psistep=1.0, kbx = None, kby = None):
+
+	from projection   import prgs
+	from alignment    import preparerefsgrid, preparerefsgrid1
+	from math         import sin, cos, radians
+
+	#refrings = []     # list of (image objects) reference projections in Fourier representation
+
+	
+	if kbx is None:
+		prjref = prgs(volft, kb, [ref_angles[0], ref_angles[1], ref_angles[2], 0.0, 0.0])
+		Util.mul_img(prjref, segmask )
+		#  EVENTUALLY PASS kb inside
+		refrings = preparerefsgrid1(prjref, psimax, psistep)
+	else:
+		ERROR("do not handle this case","prepare_refffts",1)
+		sys.exit()
+
+	q0  = radians(ref_angles[0])
+	q1  = radians(ref_angles[1])
+	sq1 = sin(q1)
+	n1 = sq1*cos(q0)
+	n2 = sq1*sin(q0)
+	n3 = cos(q1)
+	refrings[0].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
+	refrings[0].set_attr("phi",   ref_angles[0])
+	refrings[0].set_attr("theta", ref_angles[1])
+	refrings[0].set_attr("psi",   ref_angles[2])
+
+	return refrings
+	
 def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi_step,\
 	rmin, rmax, fract, sym, user_func_name, datasym,\
 	pixel_size, debug):
