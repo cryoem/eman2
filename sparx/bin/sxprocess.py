@@ -346,8 +346,8 @@ def main():
 	# Options for angular distribution
 	parser.add_option('--angular_distribution',    	action="store_true",  	default=False,        	help='create an angular distribution file based on a project3d.txt')
 	parser.add_option('--round_digit',             	type='int',          	default=5,           	help='accuracy of the loaded angle (default 5)')
-	parser.add_option('--box_size',                	type='int',          	default=500,         	help='box size [px] (default 500)')
-	parser.add_option('--particle_radius',     		type='int',          	default=500,         	help='Particle radius [Pixels] (default 500)')
+	parser.add_option('--box_size',                	type='int',          	default=500,         	help='box size in pixel used for calculating the center of the particle [px] (default 500)')
+	parser.add_option('--particle_radius',     		type='int',          	default=175,         	help='particle radius [Pixels] (default 175)')
 	parser.add_option('--cylinder_width',      		type='int',          	default=1,           	help='width of the cylinder (default 1)')
 	parser.add_option('--cylinder_length',     		type='int',          	default=10000,       	help='length of the cylinder (default 10000)')
 	(options, args) = parser.parse_args()
@@ -875,11 +875,11 @@ def main():
 			print_msg = "2-D postprocess for ISAC averaged images"
 			log_main.add(print_msg)
 			nimage = EMUtil.get_image_count(args[0])
-			if options.mask !=None: 
+			if options.mask !=None:
 				m = get_im(options.mask)
 				print_msg ="user provided mask is %s"%options.mask
-				log_main.add(print_msg) 
-			else: 
+				log_main.add(print_msg)
+			else:
 				m = None
 				log_main.add("mask is not used")
 			log_main.add("total number of average images is %d"%nimage)
@@ -906,17 +906,17 @@ def main():
 			log_main.add(print_msg)
 			nargs     = len(args)
 			print_msg = "the first input volume is %s"%args[0]
-			log_main.add(print_msg) 
+			log_main.add(print_msg)
 			e1    = get_im(args[0])
 			if nargs >1:
 				print_msg ="the second input volume is %s"%args[1]
-				log_main.add(print_msg)  
+				log_main.add(print_msg)
 				e2  = get_im(args[1])
 			if options.mask != None:
 				print_msg ="user provided mask is %s"%options.mask
-				log_main.add(print_msg) 
+				log_main.add(print_msg)
 				m = get_im(options.mask)
-			else: 
+			else:
 				m = None
 				print_msg= " mask is not used in postprocess"
 				log_main.add(print_msg)
@@ -945,13 +945,13 @@ def main():
 			if nargs>1: e1 += e2
 			guinerlinein    = rot_avg_table(power(periodogram(e1),.5))
 			from utilities import write_text_file
-			log_main.add(" the guinerline of merged two volume is saved in guinerline.txt") 
+			log_main.add(" the guinerline of merged two volume is saved in guinerline.txt")
 			write_text_file(guinerlinein, "guinerlinein.txt")
-				
+
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
 				print_msg = "MTF correction: Fourier factors will be divided by detector MTF"
-				log_main.add(print_msg) 
+				log_main.add(print_msg)
 				from utilities import read_text_file
 				print_msg = "MTF file is %s"%options.mtf
 				log_main.add(print_msg)
@@ -961,9 +961,9 @@ def main():
 				e1 = fft(Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0]))
 				guinerlinemtf   = rot_avg_table(power(periodogram(e1),.5))
 				from utilities import write_text_file
-				log_main.add("MTF corrected guinerline is saved in guinerlinemtf.txt") 
+				log_main.add("MTF corrected guinerline is saved in guinerlinemtf.txt")
 				write_text_file(guinerlinemtf, "guinerlinemtf.txt")
-					
+
 			if options.fsc_weighted:
 				print_msg = " apply sqrt((2*FSC)/(1+FSC)) weighting "
 				log_main.add(print_msg)
@@ -979,13 +979,13 @@ def main():
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 				e1=filt_table(e1,fil)
 				guinerlineweighted   = rot_avg_table(power(periodogram(e1),.5))
-				log_main.add("FSC weighted guinerline is saved in guinerlineweighted.txt") 
+				log_main.add("FSC weighted guinerline is saved in guinerlineweighted.txt")
 				write_text_file(guinerlineweighted, "guinerlineweighted.txt")
-				
+
 			if options.B_enhance:
 				print_msg = "use negative B-factor to enhance image"
 				log_main.add(print_msg)
-				
+
 				if options.adhoc_bfactor == 0.0: # auto mode
 					print_msg = "B-factor estimation auto mode"
 					log_main.add(print_msg)
@@ -1003,13 +1003,13 @@ def main():
 					print_msg = " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
 					log_main.add(print_msg)
 					b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
-					global_b     =  4.*b 
+					global_b     =  4.*b
 					print_msg =  "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(-b,2)
 					log_main.add(print_msg)
 					print_msg =  "the estimated B-factor is  %f Angstrom^2  "%(round((-global_b),2))
 					log_main.add(print_msg)
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
-					
+
 				else: # User provided value
 					print_msg = " apply user provided B-factor to enhance map!"
 					log_main.add(print_msg)
@@ -1017,30 +1017,30 @@ def main():
 					log_main.add(print_msg)
 					sigma_of_inverse = sqrt(2./((abs(options.adhoc_bfactor))/options.pixel_size**2))
 				e1  = filt_gaussinv(e1,sigma_of_inverse)
-				
+
 			if options.low_pass_filter or options.ff: # User provided low-pass filter
 				from filter       import filt_tanl
 				print_msg  = " apply low-pass filter"
-				log_main.add(print_msg) 
+				log_main.add(print_msg)
 				if options.ff>1.:
 					print_msg =  "low_pass filter to %f    Angstrom "%round(options.ff,2)
-					log_main.add(print_msg) 
+					log_main.add(print_msg)
 					e1 =filt_tanl(e1,options.pixel_size/options.ff, min(options.aa,.1))
 				elif options.ff>0.0 and options.ff<1.:
 					print_msg =  "low_pass filtered to %f    Angstrom "%round(options.pixel_size/options.ff,2)
-					log_main.add(print_msg)   
+					log_main.add(print_msg)
 					e1 =filt_tanl(e1,options.ff, min(options.aa,.1))
 				else: # low-pass filter to resolution
 					print_msg = "low-pass filter to the current resolution %f"%round(options.pixel_size/resolution,2)
 					log_main.add(print_msg)
-					print_msg =  "  absolution frequency is  %f  "%round(resolution,2)	
-					log_main.add(print_msg)			
+					print_msg =  "  absolution frequency is  %f  "%round(resolution,2)
+					log_main.add(print_msg)
 					e1 = filt_tanl(e1,resolution, options.aa)
 			e1.write_image(options.output)
 			print_msg =  " final volume is "+options.output
-			log_main.add(print_msg)	
-			log_main.add("Sphire postprocess is done")	
-			
+			log_main.add(print_msg)
+			log_main.add("Sphire postprocess is done")
+
 	elif options.window_stack:
 		nargs = len(args)
 		if nargs ==0:

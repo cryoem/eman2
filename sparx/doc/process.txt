@@ -92,7 +92,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 14.  Window stack file -reduce size of images without changing the pixel size.
 
 15. Create angular distribution .build file
-'''sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=500  --cylinder_width=1  --cylinder_length=10000'''
+'''sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000'''
 
 == Input ==
     inputfile:: input file: required for some options. (default none)
@@ -153,8 +153,8 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     angular_distribution:: Create angular distribution file: The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera (default False)
     pixel_size:: Pixel size [A]: Pixel size in A. (default 1.0)
     round_digit:: Number precision: Decimal numbers will be rounded to this number of decimal points. (default 5)
-    box_size:: Box size [Pixels]: Box size in Pixel. (default 500)
-    particle_radius:: Particle radius [Pixels]: Used for the representation in Chimera. Defines where the cylinders representing the histogram must start. (default 500)
+    box_size:: Box size [Pixels]: Box size in pixel used for calculating the center of the particle. (default 500)
+    particle_radius:: Particle radius [Pixels]: Used for the representation in Chimera. Defines where the cylinders representing the histogram must start. (default 175)
     cylinder_width:: Cylinder width: Used for the representation in Chimera. This will define the width of the cylinders representing the histogram.(default 1)
     cylinder_length:: Cylinder length: Used for the representation in Chimera. This will define the relative size of the cylinders representing the histogram. (default 10000)
 
