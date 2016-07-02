@@ -6048,7 +6048,7 @@ def generate_indices_and_refrings(nima, projangles, volft, kb, nx, delta, an, ra
 			# assignments = assign_projangles_f(projangles, coneangles)
 
 			mapped_projangles = [[0.0, 0.0, 0.0] for i in xrange(len(projangles))]
-			
+
 			for i in xrange(len(projangles)):
 				mapped_projangles[i][1] = projangles[i][1]
 				if projangles[i][1] < 90:
