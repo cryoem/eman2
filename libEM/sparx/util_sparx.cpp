@@ -19006,7 +19006,7 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 		for ( int ix = 1; ix <= nx; ix++) {
 			int jx=ix-1; argx = argy + float(jx*jx);
 			int rf = sqrt( argx +0.5f );
-			if( rf <= nyp2 )  {
+			if( rf <= nyp2+1 )  {
 				data(jx,iy) = bckgnoise[rf];///2.0;  // 2 on account of x^2/(2*s^2)
 			}
 		}
