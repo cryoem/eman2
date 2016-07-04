@@ -18984,13 +18984,11 @@ void Util::div_filter(EMData* img, EMData* img1)
 }
 
 
-#define data(jx,iy)         data[jx+(iy-1)*nx]
 EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 {
 	ENTERFUNC;
 
-    int nyp2 = ny/2;
-	int nx = nyp2+1;
+	int nx = ny/2 + 1;
 
 	int nb = bckgnoise.size();
 	EMData* power = new EMData();
@@ -18999,16 +18997,14 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 
     float* data = power->get_data();
 
-    float argy, argx;
 	//float rmax = nyp2 + 0.5;
-	for ( int iy = 1; iy <= ny; iy++) {
-		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
-		for ( int ix = 1; ix <= nx; ix++) {
-			int jx=ix-1; argx = argy + float(jx*jx);
-			int rf = sqrt( argx +0.5f );
-			if( rf <= nyp2+1 )  {
-				data(jx,iy) = bckgnoise[rf];///2.0;  // 2 on account of x^2/(2*s^2)
-			}
+	for ( int iy = 0; iy < ny; iy++) {
+		int jy = (iy<nx) ? iy : iy-ny;
+		float argy = float(jy*jy);
+		for ( int ix = 0; ix < nx; ix++) {
+			float argx = argy + ix*ix;
+			int rf = (int)(sqrt( argx) + 0.5f );
+			if( rf < nx )  data[ix+iy*nx] = bckgnoise[rf];///2.0;  // 2 on account of x^2/(2*s^2)
 		}
 	}
 	/*
@@ -19028,7 +19024,7 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 	}
 	*/
 	data[0] = 0.0f;
-	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
@@ -19040,37 +19036,31 @@ EMData*  Util::unrollmask( int ny )
 {
 	ENTERFUNC;
 
-	int nyp2 = ny/2;
-	int nx = nyp2+1;
+	int nx = ny/2 + 1;
 
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
-	power->to_one();
+	power->to_zero();
 
 	float* data = power->get_data();
 
-	float argy, argx;
-	float rmax = (float)nyp2 + 0.5f;
-	for ( int iy = 1; iy <= ny; iy++) {
-		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
-		for ( int ix = 1; ix <= nx; ix++) {
-			int jx=ix-1; argx = argy + float(jx*jx);
-			float rf = sqrt( argx );
-			if( rf > rmax )  {
-				int  ir = int(rf);
-				float df = rf - float(ir);
-				data(jx,iy) = 0.0f;
-			}
+	for ( int iy = 0; iy < ny; iy++) {
+		int jy = (iy<nx) ? iy : iy-ny;
+		float argy = float(jy*jy);
+		for ( int ix = 0; ix < nx; ix++) {
+			float argx = argy + ix*ix;
+			int rf = (int)(sqrt( argx) + 0.5f );
+			if( rf < nx )  data[ix+iy*nx] = 1.0f;///2.0;  // 2 on account of x^2/(2*s^2)
 		}
 	}
+
 	data[0] = 0.0f;
-	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
 	return power;
 }
-#undef data
 
 vector<float> Util::rotavg_fourier(EMData* img)
 {
@@ -22756,7 +22746,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  06/30/2016  09:40 AM "<<endl;
+ cout <<"  VERSION  07/04/2016  02:25 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
 
@@ -22772,7 +22762,6 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	}
 	qprob = 0.0f;
 	/*
-	cout <<"  VERSION  12/19/2015  5:40 PM"<<endl;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	EMData * img2 = new EMData();
 	img2->set_size(nx,ny,nz);
