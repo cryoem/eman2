@@ -83,6 +83,9 @@ class EMImage2DWidget(EMGLWidget):
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
+		
+		self.fftorigincenter = E2getappval("emimage2d","origincenter")
+		if self.fftorigincenter == None : self.fftorigincenter=False
 
 		#sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(7))
 		#sizePolicy.setHorizontalStretch(7)
@@ -418,6 +421,8 @@ class EMImage2DWidget(EMGLWidget):
 				self.list_data = data
 				self.data = self.list_data[self.list_idx]
 				self.list_fft_data = [d.do_fft() for d in data]
+				if self.fftorigincenter :
+					for im in self.list_fft_data : im.process_inplace("xform.phaseorigin.tocorner")
 				self.__set_display_image(self.curfft)
 			else:
 				self.list_data = data
@@ -441,6 +446,7 @@ class EMImage2DWidget(EMGLWidget):
 						inspector.set_fft_amp_pressed()
 				else:
 					self.fft = data.do_fft()
+					if self.fftorigincenter : self.fft.process_inplace("xform.phaseorigin.tocorner")
 				self.fft.set_value_at(0,0,0,0) # get rid of the DC component
 				self.fft.set_value_at(1,0,0,0) # this should already by 0... ?
 
@@ -738,6 +744,7 @@ class EMImage2DWidget(EMGLWidget):
 						self.fft = self.data.do_fft()
 						self.fft.set_value_at(0,0,0,0)
 						self.fft.set_value_at(1,0,0,0)
+						if self.fftorigincenter : self.fft.process_inplace("xform.phaseorigin.tocorner")
 					if val==1 :
 #						self.display_fft = self.fft.process("xform.phaseorigin.tocorner")
 						self.display_fft = self.fft.copy()
@@ -764,8 +771,9 @@ class EMImage2DWidget(EMGLWidget):
 			if val > 0 :
 				try:
 					if self.list_fft_data[self.list_idx] == None:
-						 self.list_fft_data[self.list_idx] = self.list_data[self.list_idx].do_fft()
-
+						self.list_fft_data[self.list_idx] = self.list_data[self.list_idx].do_fft()
+						if self.fftorigincenter : 
+							self.list_fft_data[self.list_idx].process_inplace("xform.phaseorigin.tocorner")
 					fft = self.list_fft_data[self.list_idx]
 					if val==1 :
 #						self.display_fft = fft.process("xform.phaseorigin.tocorner")
@@ -2335,7 +2343,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		if self.target().data==None : return
 		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion")
 		fsp=str(fsp)
-		self.target().data.write_image(fsp)
+		self.target().data.write_image(fsp,-1)
 
 	def do_savestack(self,du) :
 		if self.target().list_data==None : return

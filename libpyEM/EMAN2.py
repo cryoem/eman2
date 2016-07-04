@@ -188,6 +188,9 @@ is complete. If the process is killed, 'end' may never be set."""
 #	hist.flush()
 	hist.close()
 
+	# update, we use JSON now!
+	if os.path.exists(".eman2settings.db") : E2convertappval()
+
 	#if EMAN2db.BDB_CACHE_DISABLE :
 		#print "Note: Cache disabled"
 
@@ -247,6 +250,17 @@ def E2loadappwin(app,key,win):
 	except: return
 
 
+# We're using JSON here now instead of shelve
+def E2convertappval():
+	try:
+		db=shelve.open(".eman2settings","r")
+		js=js_open_dict(".eman2settings.json")
+		for k in keys: js[k]=db[k]
+		db=None
+		os.unlink(".eman2settings.db")
+	except:
+		pass
+
 def E2setappval(app,key,value):
 	"""E2setappval
 This function will set an application default value both in the local directory and ~/.eman2
@@ -259,9 +273,9 @@ When settings are read, the local value is checked first, then if necessary, the
 		return
 
 	try:
-		db=shelve.open(".eman2settings")
+		db=js_open_dict(".eman2settings.json")
 		db[app+"."+key]=value
-		db.close()
+#		db.close()
 	except:
 		pass
 
@@ -270,10 +284,10 @@ When settings are read, the local value is checked first, then if necessary, the
 		dir+="/.eman2"
 		os.mkdir(dir)
 	except:
-		return
+		pass
 
 	try:
-		db=shelve.open(dir+"/appdefaults")
+		db=js_open_dict(dir+"/eman2settings.json")
 		db[app+"."+key]=value
 		db.close()
 	except:
@@ -292,17 +306,17 @@ This function will get an application default by first checking the local direct
 		return None
 
 	try:
-		db=shelve.open(".eman2settings")
-		ret=db[app+"."+key]
-		db.close()
-		return ret
+		db=js_open_dict(".eman2settings.json")
+		return db[app+"."+key]
+#		db.close()
+#		return ret
 	except:
 		pass
 
 	try:
 		dir=e2gethome()
 		dir+="/.eman2"
-		db=shelve.open(dir+"/appdefaults")
+		db=js_open_dict(dir+"/eman2settings.json")
 		ret=db[app+"."+key]
 		db.close()
 
