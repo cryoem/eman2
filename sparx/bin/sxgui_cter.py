@@ -867,44 +867,70 @@ class SXGuiCter(QtGui.QWidget):
 		self.setWindowTitle("sxgui_cter - Control Panel")
 		
 		# Set default sizes & positions of windows in case this is the first time to run in this project directory
-		# figured these values out by printing the width and height in resize event
-		win_height = 512  # Let use the same height for all windows
-		win_height_margin = 46
-		main_win_width = 1200
-		graph_win_width = 980
-		img_win_width = win_height
-		# Top Left
-		win_top = 0
-		win_left = 0
-		win_width = graph_win_width
-		self.whistparam.qt_parent.resize(win_width,win_height)
-		self.whistparam.qt_parent.move(win_left,win_top)
-		self.wplotparam.qt_parent.resize(win_width,win_height)
-		self.wplotparam.qt_parent.move(win_left,win_top)
-		# Top Right
-		win_left = graph_win_width
-		win_width = main_win_width;
-		self.resize(win_width,win_height)
-		self.move(win_left,win_top)
-		# Bottom Left
-		win_top = win_height + win_height_margin; 
-		win_left = 0
-		win_width = graph_win_width
-		self.wplotrotavgcoarse.qt_parent.resize(win_width,win_height)
-		self.wplotrotavgcoarse.qt_parent.move(win_left,win_top)
-		self.wplotrotavgfine.qt_parent.resize(win_width,win_height)
-		self.wplotrotavgfine.qt_parent.move(win_left,win_top)
-		# Bottom Right
-		# Set the image window
-		win_left = graph_win_width
-		win_width = img_win_width
+		# (I figured these values out by printing the width and height in resize event)
+		main_win_width = 1166
+		main_win_height = 726
+		child_win_width = 1166
+		child_win_height = 726
 		img_size = 512
-		# scale_factor = float(win_width)/img_size
+		
+		win_left = 0
+		win_top = 0
+		win_left_shift = 30
+		win_top_shift = 30
+		self.resize(main_win_width, main_win_height)
+		self.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
+		self.wplotparam.qt_parent.resize(child_win_width,child_win_height)
+		self.wplotparam.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
+		self.whistparam.qt_parent.resize(child_win_width,child_win_height)
+		self.whistparam.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
+		self.wplotrotavgfine.qt_parent.resize(child_win_width,child_win_height)
+		self.wplotrotavgfine.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
+		self.wplotrotavgcoarse.qt_parent.resize(child_win_width,child_win_height)
+		self.wplotrotavgcoarse.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.wimgmicthumb.set_data(model_blank(img_size,img_size, bckg=1.0)) # resize does not work if no image is set
-		self.wimgmicthumb.qt_parent.resize(win_width,win_height)
-		self.wimgmicthumb.qt_parent.move(win_left,win_top)
+		self.wimgmicthumb.qt_parent.resize(child_win_width,child_win_height)
+		self.wimgmicthumb.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.wimgmicthumb.scroll_to(-1 * img_size,-1 * img_size)
-		# self.wimgmicthumb.set_scale(scale_factor)
+		
+#		# The following are obsolete after 2016/07/04
+#		win_height = 512  # Let use the same height for all windows
+#		win_height_margin = 46
+#		main_win_width = 1200
+#		graph_win_width = 980
+#		img_win_width = win_height
+#		# Top Left
+#		win_top = 0
+#		win_left = 0
+#		win_width = graph_win_width
+#		self.whistparam.qt_parent.resize(win_width,win_height)
+#		self.whistparam.qt_parent.move(win_left,win_top)
+#		self.wplotparam.qt_parent.resize(win_width,win_height)
+#		self.wplotparam.qt_parent.move(win_left,win_top)
+#		# Top Right
+#		win_left = graph_win_width
+#		win_width = main_win_width;
+#		self.resize(win_width,win_height)
+#		self.move(win_left,win_top)
+#		# Bottom Left
+#		win_top = win_height + win_height_margin; 
+#		win_left = 0
+#		win_width = graph_win_width
+#		self.wplotrotavgcoarse.qt_parent.resize(win_width,win_height)
+#		self.wplotrotavgcoarse.qt_parent.move(win_left,win_top)
+#		self.wplotrotavgfine.qt_parent.resize(win_width,win_height)
+#		self.wplotrotavgfine.qt_parent.move(win_left,win_top)
+#		# Bottom Right
+#		# Set the image window
+#		win_left = graph_win_width
+#		win_width = img_win_width
+#		img_size = 512
+#		# scale_factor = float(win_width)/img_size
+#		self.wimgmicthumb.set_data(model_blank(img_size,img_size, bckg=1.0)) # resize does not work if no image is set
+#		self.wimgmicthumb.qt_parent.resize(win_width,win_height)
+#		self.wimgmicthumb.qt_parent.move(win_left,win_top)
+#		self.wimgmicthumb.scroll_to(-1 * img_size,-1 * img_size)
+#		# self.wimgmicthumb.set_scale(scale_factor)
 		
 		# Try to recover sizes & positions of windows of the previous GUI session
 		E2loadappwin("sxgui_cter","main",self)
