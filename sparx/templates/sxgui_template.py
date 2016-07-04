@@ -594,7 +594,11 @@ class SXCmdWidget(QWidget):
 				# Extract command line from qsub script template
 				for line in file_template:
 					if line.find("XXX_SXCMD_LINE_XXX") != -1:
-						cmd_line = line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
+						if np > 1:
+							cmd_line = line
+						else:
+							cmd_line = "XXX_SXCMD_LINE_XXX"
+						cmd_line = cmd_line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
 						if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 							cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
 						if cmd_line.find("XXX_SXMPI_JOB_NAME_XXX") != -1:
@@ -607,7 +611,10 @@ class SXCmdWidget(QWidget):
 				cmd_line = str(self.sxcmd_tab_main.mpi_cmd_line_edit.text())
 				# If empty string is entered, use a default template
 				if cmd_line == "":
-					cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
+					if np > 1:
+						cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
+					else:
+						cmd_line = "XXX_SXCMD_LINE_XXX"
 				if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 					cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
 				if cmd_line.find("XXX_SXCMD_LINE_XXX") != -1:
