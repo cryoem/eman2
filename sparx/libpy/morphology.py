@@ -1406,7 +1406,6 @@ def cosinemask(im, radius = -1, cosine_width = 5, bckg = None, s=999999.0):
 						om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z) + temp*(s-om.get_value_at(x,y,z)))
 						#om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z)*(0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width )))
 	return om
-	"""
 '''
 
 
