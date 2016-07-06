@@ -5718,7 +5718,8 @@ void EMData::div_sinc(int interpolate_method) {
 	int nz = this->get_zsize();
 	if (nx != ny || ny != nz)
 		throw ImageDimensionException("div_sinc requires ny == nx == nz");
-	float cdf = M_PI/nx/2;
+	int npad = this->get_attr("npad");
+	float cdf = M_PI/(nx);
 /*
 	int IP = nx/2+1;
 
@@ -5743,9 +5744,12 @@ void EMData::div_sinc(int interpolate_method) {
 		}
 	}
 */
-	for (int k = -nz/2; k < nz/2 + nz%2; k++) {
-		for (int j = -ny/2; j < ny/2 + ny%2; j++) {
-			for (int i = -nx/2; i < nx/2 + nx%2; i++) {
+	int nzb = nz/2/npad;
+	int nyb = ny/2/npad;
+	int nxb = nx/2/npad;
+	for (int k = -nzb; k < nzb + nzb%2; k++) {
+		for (int j = -nyb; j < nyb + nyb%2; j++) {
+			for (int i = -nxb; i < nxb + nxb%2; i++) {
 				float  rrr = std::sqrt(k*k+j*j+float(i*i));
 				if(rrr>0.0f)  {
 					if( interpolate_method == 1 ) (*this)(i,j,k) *= pow((rrr*cdf)/sin(rrr*cdf),2);
@@ -5974,16 +5978,15 @@ EMData* EMData::extract_section2(const Transform& tf, int interpolate_method) {
 	res->set_ri(true);
 	// Array offsets: (0..nhalf,-nhalf..nhalf-1,-nhalf..nhalf-1)
 	int n = nxreal;
-	int nhalf = n/2;
+	int nhalf = ny/2;
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,-nhalf,-nhalf);
 	int nhalfo = nyo/2;
 	res->set_array_offsets(0,-nhalfo,0);
 
+//	int ixg =0, iyg=0, izg=0;
+	float rim = nhalfo*float(nhalfo);
 
-	float rim = nhalf*float(nhalf);
-	int count = 0;
-	float wsum = 0.f;
 	Transform tftrans = tf; // need transpose of tf here for consistency
 	tftrans.invert();      // with spider
 	if( interpolate_method == 0 ) {
@@ -6055,13 +6058,15 @@ EMData* EMData::extract_section2(const Transform& tf, int interpolate_method) {
 		}
 	} else {
 		// tri-linear interpolation
-		for (int jy = -nhalf; jy < nhalf; jy++)  {
-			for (int jx = 0; jx <= nhalf; jx++) {
-				Vec3f nucur((float)(2*jx), (float)(2*jy), 0.f);
-				Vec3f nunew = tftrans*nucur;
-				float xnew = nunew[0], ynew = nunew[1], znew = nunew[2];
-				if (xnew*xnew+ynew*ynew+znew*znew <= rim) {
+		for (int jy = -nhalfo; jy < nhalfo; jy++)  {
+			for (int jx = 0; jx <= nhalfo; jx++) {
+				if (jx*jx+jy*jy <= rim) {
+					Vec3f nucur((float)(2*jx), (float)(2*jy), 0.f);
+					Vec3f nunew = tftrans*nucur;
+					float xnew = nunew[0], ynew = nunew[1], znew = nunew[2];
+//	std::cout<<"INDX  "<<jy+nhalf<<"  "<<jy<<"  "<<jx<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<std::endl;
 					bool flip = false;
+					bool xmirror;
 					if (xnew < 0.f) {
 						flip = true;
 						xnew = -xnew;
@@ -6084,8 +6089,10 @@ EMData* EMData::extract_section2(const Transform& tf, int interpolate_method) {
 					if(   ixn >= 0      && ixn <= nhalf-2
 					   && iyn >= -nhalf && iyn <= nhalf-2
 					   && izn >= -nhalf && izn <= nhalf-2) {
-						//std::cout<<"    2D: "<<jx<<"  "<<jy<<"        3D: "<<ixn<<"  "<<iyn<<"  "<<izn<<"  "<<flip<<"  "<<std::endl;
-
+				/*		std::cout<<"    2D: "<<jx<<"  "<<jy<<"        3D: "<<ixn<<"  "<<iyn<<"  "<<izn<<"  "<<flip<<"  "<<std::endl;
+						ixg = ixn;
+						iyg = iyn;
+						izg = izn; */
 						std::complex<float> a1 = cmplx(ixn,iyn,izn);
 						std::complex<float> a2 = cmplx(ixn+1,iyn,izn) - cmplx(ixn,iyn,izn);
 						std::complex<float> a3 = cmplx(ixn,iyn+1,izn) - cmplx(ixn,iyn,izn);
@@ -6139,7 +6146,16 @@ EMData* EMData::extract_section2(const Transform& tf, int interpolate_method) {
 						if (izt == nhalf) izt = -nhalf;
 						if (mirror)   res->cmplx(jx,jy) = conj(cmplx(ixt,iyt,izt));
 						else          res->cmplx(jx,jy) = cmplx(ixt,iyt,izt);
+						
+						
+					/*	xmirror = mirror;
+						ixg = ixt;
+						iyg = iyt;
+						izg = izt; */
+
+
 					}
+	//std::cout<<"PROJ  "<<jy+nhalfo<<"  "<<jy<<"  "<<jx<<" | "<<xnew<<"  "<<ynew<<"  "<<znew<<" | "<<ixn<<"  "<<iyn<<"  "<<izn<<"  |  "<<std::real(res->cmplx(jx,jy))<<"  " <<std::imag(res->cmplx(jx,jy))<<" | "<<xmirror<<" | "<<std::real(cmplx(ixg,iyg,izg))<<"  "<<std::imag(cmplx(ixg,iyg,izg))<<std::endl;
 				}
 			}
 		}

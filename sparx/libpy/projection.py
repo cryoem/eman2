@@ -340,12 +340,13 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 		assert  interpolation_method >= 0
 		from utilities import pad
 		volft = pad(vol, Mx*npad, My*npad, My*npad, 0.0)
+		volft.set_attr("npad", npad)
 		volft.div_sinc(interpolation_method)
 		volft = volft.norm_pad(False, 1)
-		volft.set_attr("npad", npad)
 		volft.do_fft_inplace()
 		volft.center_origin_fft()
 		volft.fft_shuffle()
+		volft.set_attr("npad", npad)
 		return  volft
 		
 
