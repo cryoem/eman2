@@ -3983,7 +3983,7 @@ def assign_projangles_f(projangles, refangles, return_asg = False):
 	return assignments
 
 
-def cone_ang( projangles, phi, tht, ant ):
+def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
 
@@ -4010,7 +4010,23 @@ def cone_ang( projangles, phi, tht, ant ):
 				if(vc > qt):  qt = vc
 			if(qt >= cone):
 				la.append(projangles[i])	
-
+	elif( symmetry[:1] == "d" ):
+		nsym = int(symmetry[1:])
+		qt = 360.0/nsym
+		dvec = 	[0.0]*2*nsym
+		for nsm in xrange(nsym):
+			dvec[2*nsm] = getvec(phi+nsm*qt, tht)
+			dvec[2*nsm+1] = getvec(-(phi+nsm*qt), -tht)
+		for i in xrange( len(projangles) ):
+			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			qt = -2.0
+			for nsm in xrange(2*nsym):
+				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
+				if(vc > qt):  qt = vc
+			if(qt >= cone):
+				la.append(projangles[i])	
+	
+	else:  print  "Symmetry not supported ",symmetry
 	return la
 
 def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
@@ -4041,6 +4057,23 @@ def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 				if(vc > qt):  qt = vc
 			if(qt >= cone):
 				la.append(projangles[i])	
+	elif( symmetry[:1] == "d" ):
+		nsym = int(symmetry[1:])
+		qt = 360.0/nsym
+		dvec = 	[0.0]*2*nsym
+		for nsm in xrange(nsym):
+			dvec[2*nsm] = getfvec(phi+nsm*qt, tht)
+			dvec[2*nsm+1] = getfvec(-(phi+nsm*qt), -tht)
+		for i in xrange( len(projangles) ):
+			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			qt = -2.0
+			for nsm in xrange(2*nsym):
+				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
+				if(vc > qt):  qt = vc
+			if(qt >= cone):
+				la.append(projangles[i])	
+	
+	else:  print  "Symmetry not supported ",symmetry
 
 	return la
 
