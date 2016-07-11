@@ -3986,32 +3986,62 @@ def assign_projangles_f(projangles, refangles, return_asg = False):
 def cone_ang( projangles, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
-	vec = getvec( phi, tht )
 
 	cone = cos(radians(ant))
 	la = []
-	for i in xrange( len(projangles) ):
-		vecs = getvec( projangles[i][0], projangles[i][1] )
-		s = abs(vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2])
-		if s >= cone:
-			la.append(projangles[i])
+	if( symmetry == 'c1' ):
+		vec = getfvec( phi, tht )
+		for i in xrange( len(projangles) ):
+			vecs = getvec( projangles[i][0], projangles[i][1] )
+			s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
+			if s >= cone:
+				la.append(projangles[i])
+	elif( symmetry[:1] == "c" ):
+		nsym = int(symmetry[1:])
+		qt = 360.0/nsym
+		dvec = 	[0.0]*nsym
+		for nsm in xrange(nsym):
+			dvec[nsm] = getvec(phi+nsm*qt, tht)
+		for i in xrange( len(projangles) ):
+			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			qt = -2.0
+			for nsm in xrange(nsym):
+				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
+				if(vc > qt):  qt = vc
+			if(qt >= cone):
+				la.append(projangles[i])	
 
 	return la
 
-def cone_ang_f( projangles, phi, tht, ant ):
+def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
 	# vec = getfvec( phi, tht )
-	vec = getfvec( phi, tht )
 
 	cone = cos(radians(ant))
 	la = []
-	for i in xrange( len(projangles) ):
-		# vecs = getfvec( projangles[i][0], projangles[i][1] )
-		vecs = getfvec( projangles[i][0], projangles[i][1] )
-		s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
-		if s >= cone:
-			la.append(projangles[i])
+	if( symmetry == 'c1' ):
+		vec = getfvec( phi, tht )
+		for i in xrange( len(projangles) ):
+			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
+			if s >= cone:
+				la.append(projangles[i])
+	elif( symmetry[:1] == "c" ):
+		nsym = int(symmetry[1:])
+		qt = 360.0/nsym
+		dvec = 	[0.0]*nsym
+		for nsm in xrange(nsym):
+			dvec[nsm] = getfvec(phi+nsm*qt, tht)
+		for i in xrange( len(projangles) ):
+			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			qt = -2.0
+			for nsm in xrange(nsym):
+				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
+				if(vc > qt):  qt = vc
+			if(qt >= cone):
+				la.append(projangles[i])	
+
 	return la
 
 def cone_ang_f_with_index( projangles, phi, tht, ant ):
