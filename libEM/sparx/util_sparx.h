@@ -993,8 +993,11 @@ public:
 
 	/* Group projection angles by (phi, theta) */
 	static vector<int> group_proj_by_phitheta(const vector<float>& projangles, const vector<float>& ref_ang, const int img_per_grp);
+//	static std::vector<float> my_real_to_complex_1d(vector<float> real_data_v, int n);
+	static vector<float> my_real_to_complex_1d(vector<float> real_data_v);
 
-	/** formerly known as apmq
+
+/** formerly known as apmq
 	 * Determine shift and rotation between image and many reference
 	 * images (crefim, weights have to be applied) quadratic
 	 * interpolation
@@ -1228,4 +1231,6 @@ static inline double bessi0(double x);
 static double  kfv(double w, double a, double alpha, int m);
 static void euler_direction2angles(vector<float>v, float &alpha, float &beta);
 static void  iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
+static void  make_fft_ifft(EMData* tvol);
+//static void  my_real_to_complex_1d(vector<float> real_data_v, vector<float> complex_data_v, int n);
 #endif	//util__sparx_h__
