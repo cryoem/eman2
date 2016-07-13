@@ -60,6 +60,7 @@ using namespace EMAN;
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <cmath>
+#include <fftw3.h>
 //#include <omp.h>
 using namespace std;
 using std::complex;
@@ -18569,7 +18570,7 @@ EMData* Util::squaren_img(EMData* img)
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
 	} else {
-		for (size_t i=0;i<size;++i) img_ptr[i] *= img_ptr[i];
+		for (size_t i=0;i<size;++i) img2_ptr[i] = img_ptr[i]*img_ptr[i];
 	}
 	img2->update();
 
@@ -18872,6 +18873,7 @@ void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
+	//  ONLY WORKS for odd image dimensions and nx longer by one for fftip
 	int nbel = beltab.size();
 	//cout<<"  XXX nbel  "<<nbel<<endl;
 
@@ -18882,13 +18884,15 @@ void Util::mul_img_tabularized(EMData* img, int nnxo, vector<float> beltab)
 	float *img_ptr  = img->get_data();
 
 	for (size_t k=0;k<ny;++k)  {
-		float argz = (k-ncx)*(k-ncx);
+		float argz = (k<ncx)?(k*k) : (k-ny)*(k-ny);
 		for (size_t j=0;j<ny;++j)  {
-			float argy = argz +(j-ncx)*(j-ncx);
+			float argy = (j<ncx)?(j*j) : (j-ny)*(j-ny);
 			for (size_t i=0;i<ny;++i) {
-				float rr = sqrt(float((i-ncx)*(i-ncx)+ argy))/(nnxo*2.0f);
-				int iab = Util::get_min((int)((nbel-1)*rr*2.0 + 0.5), nbel -1 );
-				img_ptr[i + nx*(j + k*ny)] *= beltab[iab];
+				float argx = (i<ncx)?(i*i) : (i-ny)*(i-ny);
+				float rr = sqrt(argx + argy + argz)/(nnxo*2.0f);
+				int iab = (int)((nbel-1)*rr*2.0f + 0.5f);
+				if(iab < nbel) img_ptr[i + nx*(j + k*ny)] *= beltab[iab];
+				else  img_ptr[i + nx*(j + k*ny)] = 0.0f;
 			}
 		}
 	}
@@ -18981,13 +18985,11 @@ void Util::div_filter(EMData* img, EMData* img1)
 }
 
 
-#define data(jx,iy)         data[jx+(iy-1)*nx]
 EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 {
 	ENTERFUNC;
 
-    int nyp2 = ny/2;
-	int nx = nyp2+1;
+	int nx = ny/2 + 1;
 
 	int nb = bckgnoise.size();
 	EMData* power = new EMData();
@@ -18996,6 +18998,17 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 
     float* data = power->get_data();
 
+	//float rmax = nyp2 + 0.5;
+	for ( int iy = 0; iy < ny; iy++) {
+		int jy = (iy<nx) ? iy : iy-ny;
+		float argy = float(jy*jy);
+		for ( int ix = 0; ix < nx; ix++) {
+			float argx = argy + ix*ix;
+			int rf = (int)(sqrt( argx) + 0.5f );
+			if( rf < nx )  data[ix+iy*nx] = bckgnoise[rf];///2.0;  // 2 on account of x^2/(2*s^2)
+		}
+	}
+	/*
     float argy, argx;
 	float rmax = nyp2 + 0.5;
 	for ( int iy = 1; iy <= ny; iy++) {
@@ -19010,8 +19023,9 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 			}
 		}
 	}
+	*/
 	data[0] = 0.0f;
-	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
@@ -19019,43 +19033,35 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 }
 
 
-
-
 EMData*  Util::unrollmask( int ny )
 {
 	ENTERFUNC;
 
-	int nyp2 = ny/2;
-	int nx = nyp2+1;
+	int nx = ny/2 + 1;
 
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
-	power->to_one();
+	power->to_zero();
 
 	float* data = power->get_data();
 
-	float argy, argx;
-	float rmax = (float)nyp2 + 0.5f;
-	for ( int iy = 1; iy <= ny; iy++) {
-		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
-		for ( int ix = 1; ix <= nx; ix++) {
-			int jx=ix-1; argx = argy + float(jx*jx);
-			float rf = sqrt( argx );
-			if( rf > rmax )  {
-				int  ir = int(rf);
-				float df = rf - float(ir);
-				data(jx,iy) = 0.0f;
-			}
+	for ( int iy = 0; iy < ny; iy++) {
+		int jy = (iy<nx) ? iy : iy-ny;
+		float argy = float(jy*jy);
+		for ( int ix = 0; ix < nx; ix++) {
+			float argx = argy + ix*ix;
+			int rf = (int)(sqrt( argx) + 0.5f );
+			if( rf < nx )  data[ix+iy*nx] = 1.0f;///2.0;  // 2 on account of x^2/(2*s^2)
 		}
 	}
+
 	data[0] = 0.0f;
-	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
 	return power;
 }
-#undef data
 
 vector<float> Util::rotavg_fourier(EMData* img)
 {
@@ -19137,6 +19143,33 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 }
 
 
+//  This version is for alignment accuracy estimation
+float Util::sqedac( EMData* img, EMData* proj, EMData* ctfsbckgnoise )
+{
+	ENTERFUNC;
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+    float* data = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfsbckgnoise = ctfsbckgnoise->get_data();
+
+
+	float edis = 0.0f;
+
+	for (size_t i=0;i<size/2;++i) {
+		if( dctfsbckgnoise[i] > 0.0f ) {
+			int lol = i*2;
+			float p1 = data[lol]   - dproj[lol];
+			float p2 = data[lol+1] - dproj[lol+1];
+			edis += (p1*p1 + p2*p2)*dctfsbckgnoise[i];
+		}
+	}
+	edis *= 0.5f;
+    return edis;
+	EXITFUNC;
+}
+
 
 vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
 {
@@ -19176,7 +19209,7 @@ vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* b
 				float  prod2 = qtr*qtr + qti*qti;
 				float  normim = data[jx2 + (iy-1)*2*nx]*data[jx2 + (iy-1)*2*nx] + data[jx2+1 + (iy-1)*2*nx]*data[jx2+1 + (iy-1)*2*nx];  // precalculate
 				float  temp = normim - 2*prod1 + prod2;
-				edis += temp*bckg[jx+(iy-1)*nx]*0.5f;
+				edis += temp*bckg[jx+(iy-1)*nx];
 				wdis += temp;
 				nrm[rf] += prod1*prob;
 				nrm[rf+inc] += prod2*prob;
@@ -19185,7 +19218,7 @@ vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* b
 	}
 	wdis *= prob;
 	vector<float> retvals;
-	retvals.push_back(edis);
+	retvals.push_back(edis*0.5f);
 	retvals.push_back(wdis);
     return retvals;
 	EXITFUNC;
@@ -19216,6 +19249,56 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 
 	freqvol->update();
 	EXITFUNC;
+}
+
+
+
+vector<int> Util::pickup_references( vector<vector<float> > refang, float delta, float an,
+                vector<vector<float> > datang, string symmetry) {
+
+	size_t nrefang = refang.size();
+	size_t ndatang = datang.size();
+	const float qv = static_cast<float>( pi/180.0 );
+	int nsym = 1; //????
+	float ac = cos(qv*an);
+
+	int npsi = int(360.0f/delta);
+	vector<int> ltable;
+
+	if( symmetry == "c1" ) {
+		vector<float> dang(3*ndatang);
+		for (int kl=0; kl<ndatang; kl++)  getfvec(datang[kl][0], datang[kl][1], dang[3*kl], dang[3*kl+1], dang[3*kl+2]);
+
+		for (int n=0; n<nrefang; n++) {
+			vector<float> refvec(3);
+			getfvec(refang[n][0], refang[n][1], refvec[0], refvec[1], refvec[2]);
+			for (int l=0; l<npsi; l++) {
+				float psi = l*delta;
+				bool start = true;
+				for (int kl=0; kl<ndatang; kl++) {
+					//  first check psi
+					float qt = fmod(datang[kl][2]-psi,360.0f);
+					qt = min(qt, 360.0f - qt);
+					if(qt<an) {
+						qt = dang[3*kl]*refvec[0] + dang[3*kl+1]*refvec[1] + dang[3*kl+2]*refvec[2];
+						if( qt >= ac ) {
+							if( start ) {
+								ltable.push_back(n);  //  refang
+								ltable.push_back(l);  //  psi
+								start = false;
+							}
+						}
+						ltable.push_back(kl);
+					}
+				}
+				if( !start )  ltable.push_back(-1);
+			}
+		}
+
+
+	}
+	ltable.push_back(-1);
+	return ltable;
 }
 
 
@@ -19309,6 +19392,59 @@ float Util::ang_n(float peakp, string mode, int maxrin)
     else
         return fmodf(((peakp-1.0f) / maxrin+1.0f)*180.0f,180.0f);
 }
+
+
+void Util::fuse_low_freq(EMData* img1, EMData* img2, EMData* w1, EMData* w2, int limit)
+{
+	ENTERFUNC;
+	/* ========= combine to limit ===================== */
+
+	int nx=w1->get_xsize(),ny=w1->get_ysize(),nz=w1->get_zsize();
+	int nzc = nz/2;
+	int nyc = ny/2;
+
+	size_t size = (size_t)nx*ny*nz;
+	float *img1_ptr = img1->get_data();
+	float *img2_ptr = img2->get_data();
+	float *w1_ptr = w1->get_data();
+	float *w2_ptr = w2->get_data();
+
+	int flimit = limit*limit;
+
+	for (size_t k=0;k<nz;++k)  {
+		int argz = (k<nzc)?(k*k) : (k-nz)*(k-nz);
+		for (size_t j=0;j<ny;++j)  {
+			int argy = (j<nyc)?(j*j) : (j-ny)*(j-ny);
+			for (size_t i=0;i<nx;++i) {
+				if( (i*i + argy + argz) <= flimit ) {
+					int l1 = i+(j+(k*ny))*nx;
+					float qt = (w1_ptr[l1] + w2_ptr[l1])*0.5f;
+					w1_ptr[l1] = qt;
+					w2_ptr[l1] = qt;
+					l1 += l1;
+					qt = (img1_ptr[l1] + img2_ptr[l1])*0.5f;
+					img1_ptr[l1] = qt;
+					img2_ptr[l1] = qt;
+					l1 += 1;
+					qt = (img1_ptr[l1] + img2_ptr[l1])*0.5f;
+					img1_ptr[l1] = qt;
+					img2_ptr[l1] = qt;
+				}
+			}
+		}
+	}
+
+
+
+	img1->update();
+	img2->update();
+	w1->update();
+	w1->update();
+
+	EXITFUNC;
+}
+
+
 
 
 void Util::Normalize_ring( EMData* ring, const vector<int>& numr )
@@ -22661,7 +22797,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  04/15/2016  12:49 PM "<<endl;
+ cout <<"  VERSION  07/06/2016  02:35 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
 
@@ -22677,7 +22813,6 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	}
 	qprob = 0.0f;
 	/*
-	cout <<"  VERSION  12/19/2015  5:40 PM"<<endl;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	EMData * img2 = new EMData();
 	img2->set_size(nx,ny,nz);
@@ -25434,37 +25569,299 @@ EMData* Util::box_convolution(EMData* img, int w)
 
 double Util::bessi0(double x)
 {
-    double y, ax, ans;
-    if ((ax = fabs(x)) < 3.75)
+	double y, ax, ans;
+	if ((ax = fabs(x)) < 3.75) {
+		y = x / 3.75;
+		y *= y;
+		ans = 1.0 + y * (3.5156229 + y * (3.0899424 + y * (1.2067492+ y * (0.2659732 + y * (0.360768e-1 + y * 0.45813e-2)))));
+	}  else {
+		y = 3.75 / ax;
+		ans = (exp(ax) / sqrt(ax)) * (0.39894228 + y * (0.1328592e-1+ y * (0.225319e-2 + y * (-0.157565e-2 + y * (0.916281e-2+ y * (-0.2057706e-1 + y * (0.2635537e-1 + y * (-0.1647633e-1 + y * 0.392377e-2))))))));
+	}
+	return ans;
+}
+
+float Util::bessel0(float r, float a, float alpha)
+{
+	double rda, rdas, arg;
+	rda = (double) (r / a);
+	rdas = rda * rda;
+	if (rdas <= 1.0) {
+		arg = (double)alpha * sqrt(1.0 - rdas);
+		float w = (float) (bessi0(arg) /(float)bessi0(alpha));
+		return w;
+	} else  {
+		float w =0.0;
+		return w;
+	}
+}
+
+#define PI  3.141592653589793238462643383279502884197
+#define EPS 1.0e-16
+#define FPMIN 1.0e-30
+#define MAXIT 10000
+#define XMIN 2.0
+#define DOUBLE double
+#define XMIPP_MAX max
+#define NRSIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
+
+void Util::bessjy(DOUBLE x, DOUBLE xnu, DOUBLE *rj, DOUBLE *ry, DOUBLE *rjp, DOUBLE *ryp)
+{
+    int i, isign, l, nl;
+    DOUBLE a, b, br, bi, c, cr, ci, d, del, del1, den, di, dlr, dli, dr, e, f, fact, fact2,
+    fact3, ff, gam, gam1, gam2, gammi, gampl, h, p, pimu, pimu2, q, r, rjl,
+    rjl1, rjmu, rjp1, rjpl, rjtemp, ry1, rymu, rymup, rytemp, sum, sum1,
+    temp, w, x2, xi, xi2, xmu, xmu2;
+
+    if (x <= 0.0 || xnu < 0.0)
+        throw ImageFormatException("bad arguments in bessjy");
+    nl = (x < XMIN ? (int)(xnu + 0.5) : XMIPP_MAX(0, (int)(xnu - x + 1.5)));
+    xmu = xnu - nl;
+    xmu2 = xmu * xmu;
+    xi = 1.0 / x;
+    xi2 = 2.0 * xi;
+    w = xi2 / PI;
+    isign = 1;
+    h = xnu * xi;
+    if (h < FPMIN)
+        h = FPMIN;
+    b = xi2 * xnu;
+    d = 0.0;
+    c = h;
+    for (i = 1;i <= MAXIT;i++)
     {
-        y = x / 3.75;
-        y *= y;
-        ans = 1.0 + y * (3.5156229 + y * (3.0899424 + y * (1.2067492+ y * (0.2659732 + y * (0.360768e-1 + y * 0.45813e-2)))));
+        b += xi2;
+        d = b - d;
+        if (fabs(d) < FPMIN)
+            d = FPMIN;
+        c = b - 1.0 / c;
+        if (fabs(c) < FPMIN)
+            c = FPMIN;
+        d = 1.0 / d;
+        del = c * d;
+        h = del * h;
+        if (d < 0.0)
+            isign = -isign;
+        if (fabs(del - 1.0) < EPS)
+            break;
+    }
+    if (i > MAXIT)
+        throw ImageFormatException("x too large in bessjy; try asymptotic expansion");
+    rjl = isign * FPMIN;
+    rjpl = h * rjl;
+    rjl1 = rjl;
+    rjp1 = rjpl;
+    fact = xnu * xi;
+    for (l = nl;l >= 1;l--)
+    {
+        rjtemp = fact * rjl + rjpl;
+        fact -= xi;
+        rjpl = fact * rjtemp - rjl;
+        rjl = rjtemp;
+    }
+    if (rjl == 0.0)
+        rjl = EPS;
+    f = rjpl / rjl;
+    if (x < XMIN)
+    {
+        x2 = 0.5 * x;
+        pimu = PI * xmu;
+        fact = (fabs(pimu) < EPS ? 1.0 : pimu / sin(pimu));
+        d = -log(x2);
+        e = xmu * d;
+        fact2 = (fabs(e) < EPS ? 1.0 : sinh(e) / e);
+        beschb(xmu, &gam1, &gam2, &gampl, &gammi);
+        ff = 2.0 / PI * fact * (gam1 * cosh(e) + gam2 * fact2 * d);
+        e = exp(e);
+        p = e / (gampl * PI);
+        q = 1.0 / (e * PI * gammi);
+        pimu2 = 0.5 * pimu;
+        fact3 = (fabs(pimu2) < EPS ? 1.0 : sin(pimu2) / pimu2);
+        r = PI * pimu2 * fact3 * fact3;
+        c = 1.0;
+        d = -x2 * x2;
+        sum = ff + r * q;
+        sum1 = p;
+        for (i = 1;i <= MAXIT;i++)
+        {
+            ff = (i * ff + p + q) / (i * i - xmu2);
+            c *= (d / i);
+            p /= (i - xmu);
+            q /= (i + xmu);
+            del = c * (ff + r * q);
+            sum += del;
+            del1 = c * p - i * del;
+            sum1 += del1;
+            if (fabs(del) < (1.0 + fabs(sum))*EPS)
+                break;
+        }
+        if (i > MAXIT)
+            throw ImageFormatException("bessy series failed to converge");
+        rymu = -sum;
+        ry1 = -sum1 * xi2;
+        rymup = xmu * xi * rymu - ry1;
+        rjmu = w / (rymup - f * rymu);
     }
     else
     {
-        y = 3.75 / ax;
-        ans = (exp(ax) / sqrt(ax)) * (0.39894228 + y * (0.1328592e-1+ y * (0.225319e-2 + y * (-0.157565e-2 + y * (0.916281e-2+ y * (-0.2057706e-1 + y * (0.2635537e-1 + y * (-0.1647633e-1 + y * 0.392377e-2))))))));
+        a = 0.25 - xmu2;
+        p = -0.5 * xi;
+        q = 1.0;
+        br = 2.0 * x;
+        bi = 2.0;
+        fact = a * xi / (p * p + q * q);
+        cr = br + q * fact;
+        ci = bi + p * fact;
+        den = br * br + bi * bi;
+        dr = br / den;
+        di = -bi / den;
+        dlr = cr * dr - ci * di;
+        dli = cr * di + ci * dr;
+        temp = p * dlr - q * dli;
+        q = p * dli + q * dlr;
+        p = temp;
+        for (i = 2;i <= MAXIT;i++)
+        {
+            a += 2 * (i - 1);
+            bi += 2.0;
+            dr = a * dr + br;
+            di = a * di + bi;
+            if (fabs(dr) + fabs(di) < FPMIN)
+                dr = FPMIN;
+            fact = a / (cr * cr + ci * ci);
+            cr = br + cr * fact;
+            ci = bi - ci * fact;
+            if (fabs(cr) + fabs(ci) < FPMIN)
+                cr = FPMIN;
+            den = dr * dr + di * di;
+            dr /= den;
+            di /= -den;
+            dlr = cr * dr - ci * di;
+            dli = cr * di + ci * dr;
+            temp = p * dlr - q * dli;
+            q = p * dli + q * dlr;
+            p = temp;
+            if (fabs(dlr - 1.0) + fabs(dli) < EPS)
+                break;
+        }
+        if (i > MAXIT)
+            throw ImageFormatException("cf2 failed in bessjy");
+        gam = (p - f) / q;
+        rjmu = sqrt(w / ((p - f) * gam + q));
+        rjmu = NRSIGN(rjmu, rjl);
+        rymu = rjmu * gam;
+        rymup = rymu * (p + q / gam);
+        ry1 = xmu * xi * rymu - rymup;
     }
-    return ans;
-}
-float Util::bessel0(float r, float a, float alpha)
-{
-    double rda, rdas, arg;
-    rda = (double) (r / a);
-    rdas = rda * rda;
-    if (rdas <= 1.0)
+    fact = rjmu / rjl;
+    *rj = rjl1 * fact;
+    *rjp = rjp1 * fact;
+    for (i = 1;i <= nl;i++)
     {
-        arg = (double)alpha * sqrt(1.0 - rdas);
-        float w = (float) (bessi0(arg) /(float)bessi0(alpha));
-        return w;
+        rytemp = (xmu + i) * xi2 * ry1 - rymu;
+        rymu = ry1;
+        ry1 = rytemp;
     }
-    else 
-      {
-    	float w =0.0;
-    	return w;
-     }
+    *ry = rymu;
+    *ryp = xnu * xi * rymu - ry1;
 }
+#undef EPS
+#undef FPMIN
+#undef MAXIT
+#undef XMIN
+#undef XMIPP_MAX
+#undef NRSIGN
+#define ABS(x) (((x) >= 0) ? (x) : (-(x)))
+DOUBLE Util::kfv(DOUBLE w, DOUBLE a, DOUBLE alpha, int m)
+{
+    DOUBLE sigma = sqrt(ABS(alpha * alpha - (2. * PI * a * w) * (2. * PI * a * w)));
+    // The blocked area requires bessj3_5 and bessi3_5 in case m !=0.
+  /***  if (m == 2)
+    {
+        if (2.*PI*a*w > alpha)
+            return  pow(2.*PI, 3. / 2.)*pow(a, 3.)*pow(alpha, 2.)*Utill::bessj3_5(sigma)
+                    / (Util::bessi0(alpha)*pow(sigma, 3.5));
+        else
+            return  pow(2.*PI, 3. / 2.)*pow(a, 3.)*pow(alpha, 2.)*Util::bessi3_5(sigma)
+                    / (Util::bessi0(alpha)*pow(sigma, 3.5));
+    }
+***/
+
+    if (m == 0)
+    {
+        if (2*PI*a*w > alpha)
+            return  pow(2.*PI, 3. / 2.)*pow(a, 3)*Util::bessj1_5(sigma)
+                    / (bessi0(alpha)*pow(sigma, 1.5));
+        else
+            return  pow(2.*PI, 3. / 2.)*pow(a, 3)*Util::bessi1_5(sigma)
+                    / (Util::bessi0(alpha)*pow(sigma, 1.5));
+    }
+    else
+    	throw ImageFormatException("m out of range in kaiser_Fourier_value()");
+}
+#undef ABS
+#undef DOUBLE
+
+double Util::bessi1_5(double x)
+{
+    return (x == 0) ? 0 : sqrt(2/(PI*x))*(cosh(x)-sinh(x)/x);
+}
+double Util::bessj1_5(double x)
+{
+    double rj, ry, rjp, ryp;
+    Util::bessjy(x, 1.5, &rj, &ry, &rjp, &ryp);
+    return rj;
+}
+
+#define NUSE1 5
+#define NUSE2 5
+#undef PI
+
+#define DOUBLE double
+void Util::beschb(DOUBLE x, DOUBLE *gam1, DOUBLE *gam2, DOUBLE *gampl, DOUBLE *gammi)
+{
+    DOUBLE xx;
+    static DOUBLE c1[] =
+        {
+            -1.142022680371172e0, 6.516511267076e-3,
+            3.08709017308e-4, -3.470626964e-6, 6.943764e-9,
+            3.6780e-11, -1.36e-13
+        };
+    static DOUBLE c2[] =
+        {
+            1.843740587300906e0, -0.076852840844786e0,
+            1.271927136655e-3, -4.971736704e-6, -3.3126120e-8,
+            2.42310e-10, -1.70e-13, -1.0e-15
+        };
+
+    xx = 8.0 * x * x - 1.0;
+    *gam1 = chebev(-1.0, 1.0, c1, NUSE1, xx);
+    *gam2 = chebev(-1.0, 1.0, c2, NUSE2, xx);
+    *gampl = *gam2 - x * (*gam1);
+    *gammi = *gam2 + x * (*gam1);
+}
+
+DOUBLE Util::chebev(DOUBLE a, DOUBLE b, DOUBLE c[], int m, DOUBLE x)
+{
+    DOUBLE d = 0.0, dd = 0.0, sv, y, y2;
+    int j;
+
+    if ((x - a)*(x - b) > 0.0)
+        throw ImageFormatException("x not in range in routine chebev");
+    y2 = 2.0 * (y = (2.0 * x - a - b) / (b - a));
+    for (j = m - 1;j >= 1;j--)
+    {
+        sv = d;
+        d = y2 * d - dd + c[j];
+        dd = sv;
+    }
+    return y*d - dd + 0.5*c[0];
+}
+
+#undef DOUBLE
+#undef NUSE1
+#undef NUSE2
+
 
 void Util::euler_direction2angles(vector <float> v0, float &alpha, float &beta)
 {
@@ -25889,3 +26286,459 @@ EMData* Util::read_slice_and_multiply( EMData* vol, const string stacked_slices_
 	 EXITFUNC;
 	 return vol2;	
 }
+
+EMData* Util::divide_mtf( EMData* img, vector<float> mtf, vector<float> res) {
+
+	ENTERFUNC;
+
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img  ===================== */
+
+	int nx = img->get_xsize(),ny = img->get_ysize(),nz = img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	EMData *img1    = new EMData();
+	img1->set_size(nx, ny, nz);
+	img1->set_complex(true);
+    img1->to_zero();
+    //---_____ Check MTF ------------
+    for (int imtf =0; imtf<mtf.size(); imtf++) {
+     if(mtf[imtf] <1.e-10) throw NullPointerException("incorrect MTF value!");
+	}
+	float *img_ptr1  = img1->get_data();
+	int n2x = nx/2;
+	int n2y = ny/2;
+	int n2z = nz/2;
+	if(img->is_complex()) {
+		for (size_t i=0; i<size; i++)  img_ptr1[i] = img_ptr[i];
+		for (size_t i=0; i<size; i++) {				    
+			int ip  = int(i%(nx*ny))%nx;
+			int jp  = int((i%(nx*ny))/nx);
+			int kp  = int(i/float(nx*ny));
+			float icp = 0.0;
+			float jcp = 0.0;
+			float kcp = 0.0;
+			icp  = ip/2.;
+			if (jp < n2y)  jcp = jp;
+			else           jcp =jp-ny;
+			if (kp < n2z)  kcp = kp;
+			else           kcp =kp-nz;
+			int r2 = icp*icp+jcp*jcp+kcp*kcp;
+			float xres =sqrt((float)r2)/nx;
+			if (xres <0.5) {
+				int ix_0 =0;
+				for (int jres =0; jres<res.size(); jres++) {
+				  if (res[jres] >xres)
+					break;
+					ix_0 =jres;
+				}
+				float mtfv;
+				if (ix_0 == res.size()-1 || ix_0 ==0)
+					mtfv = mtf[ix_0];
+				else {
+					float y_0 = mtf[ix_0];
+					float y_1 = mtf[ix_0+1];
+					float x_0 = res[ix_0];
+					float x_1 = res[ix_0+1];
+					mtfv 	= y_0 + (y_1 - y_0)*(xres - x_0)/(x_1 - x_0);
+				}
+				img_ptr1[i] /= mtfv; 
+			}
+		}
+	} else  throw ImageFormatException("Only Fourier image allowed");
+
+	img1->set_ri(true);
+	if(ny%2==0) img1->set_fftodd(false); else img1->set_fftodd(true);
+	img1->update();
+	EXITFUNC;
+	return img1;
+}
+
+void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!tvol) {
+		throw NullPointerException("NULL input image");
+	}
+	if(!tvol->is_complex())  throw ImageFormatException("Only Fourier volume allowed");
+
+	size_t nxt = tweight->get_xsize(), nyt = tweight->get_ysize(), nzt = tweight->get_zsize();
+	int nzc = nzt/2;
+	int nyc = nyt/2;
+	float *tvol_ptr = tvol->get_data();
+	float *tw_ptr   = tweight->get_data();
+	size_t size = (size_t)nxt*nyt*nzt;
+	vector<double> nwe(size);
+
+	for (size_t k=0;k<nzt;++k) {
+		int kk = (k>nzc)?(k-nzt):k;
+		for (size_t j=0;j<nyt;++j) {
+			int jj = (j>nyc)?(j-nyt):j;
+			for (size_t i=0;i<nxt;++i) {
+				if( (kk*kk+jj*jj+i*i) >= maxr2) {
+					tw_ptr[i + nxt*(j + k*nyt)] = 0.0f;
+					nwe[i + nxt*(j + k*nyt)] = 0.0L;
+				}  else nwe[i + nxt*(j + k*nyt)] = 1.0L;
+			}
+		}
+	}
+	int nbel = 5000;
+	vector<float> beltab(nbel);
+	double radius = 1.9*2;
+	double alpha = 15.0;
+	int order = 0;
+	double normk = kfv(0.0L, radius, alpha, order);
+	for (size_t i=0;i<nbel;++i) {
+		double rr = i/double(nbel-1)/2.0L;
+		beltab[i] = float(kfv(rr, radius, alpha, order)/normk);
+	}
+
+	size_t nx_extended = nyt + 1;
+	EMData *cvvi    = new EMData();
+	cvvi->set_size(nx_extended, nyt, nzt);
+	cvvi->set_ri(true);
+	cvvi->set_fftodd(true);
+	float *cvv = cvvi->get_data();
+	int ncx = nyt/2;
+	
+	size_t niter = 10;
+	for (size_t i=0;i<niter;++i) {
+
+		cvvi->set_complex(false);
+		for( size_t i = 0; i<size; i++) {
+			double prd = nwe[i]*tw_ptr[i];
+			if(prd > 1.0e23L) cout<<"  we have a problem A"<<endl;
+			cvv[2*i]   = float(prd);
+			cvv[2*i+1] = 0.0f;
+		}
+
+		cvvi->set_complex(true);
+		cvvi->do_ift_inplace();
+
+		for (size_t k=0;k<nzt;++k)  {
+			float argz = (k<nzc)?(k*k) : (k-nzt)*(k-nzt);
+			for (size_t j=0;j<nyt;++j)  {
+				float argy = (j<nyc)?(j*j) : (j-nyt)*(j-nyt);
+				for (size_t i=0;i<nyt;++i) {
+					float argx = (i<ncx)?(i*i) : (i-nyt)*(i-nyt);
+					float rr = sqrt(argx + argy + argz)/(nnxo*2.0f);
+					int iab = (int)((nbel-1)*rr*2.0f + 0.5f);
+					if(iab < nbel) cvv[i + nx_extended*(j + k*nyt)] *= beltab[iab];
+					else  cvv[i + nx_extended*(j + k*nyt)] = 0.0f;
+				}
+			}
+		}
+
+		cvvi->do_fft_inplace();
+
+		for (size_t i=0; i<size; ++i) nwe[i] /= Util::get_max(1.0e-5f, sqrt(cvv[2*i]*cvv[2*i]+cvv[2*i+1]*cvv[2*i+1]));
+
+
+	}
+
+	beltab.resize(0);
+	delete cvvi; cvvi = 0;
+
+	for( size_t i = 0; i<size; i++) {
+		double prr = tvol_ptr[2*i]   * nwe[i];
+		double pim = tvol_ptr[2*i+1] * nwe[i];
+		if(prr < 1.0e23 &&  pim < 1.0e23) {
+			tvol_ptr[2*i]   = (float)prr;
+			tvol_ptr[2*i+1] = (float)pim;
+		} else {
+			double fits = 1.0e23/Util::get_max(prr,pim);
+			tvol_ptr[2*i]   = (float)(prr*fits);
+			tvol_ptr[2*i+1] = (float)(pim*fits);
+		}
+	}
+
+	nwe.resize(0);
+
+	tvol->update();
+
+	EXITFUNC;
+
+}
+
+
+
+//void Util::make_fft_ifft(EMData* tvol) {
+//	ENTERFUNC;
+//	/* Exception Handle */
+//	if (!tvol) {
+//		throw NullPointerException("NULL input image");
+//	}
+//
+//	float *real_data = tvol->get_data();
+//	int nx = tvol->get_xsize();
+//	int ny = tvol->get_ysize();
+//	int nz = tvol->get_zsize();
+//
+//	int dims[3];
+//	dims[0] = nz;
+//	dims[1] = ny;
+//	dims[2] = nx;
+//
+//	float * complex_data = new float[nx*ny*nz*2];
+//
+//	fftwf_plan plan_real_to_complex = fftwf_plan_dft_r2c(3, dims, real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+//	fftwf_plan plan_complex_to_real = fftwf_plan_dft_c2r(3, dims, (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
+//
+//
+////	size_t niter = 20;
+////	size_t niter = 1;
+//	size_t niter = 4;
+//	for (size_t i=0;i<niter;++i) {
+//		fftwf_execute(plan_real_to_complex);
+//		fftwf_execute(plan_complex_to_real);
+//	}
+//
+//	fftwf_destroy_plan(plan_real_to_complex);
+//	fftwf_destroy_plan(plan_complex_to_real);
+//
+//
+//	delete[] complex_data;
+//
+//	tvol->update();
+//
+//	EXITFUNC;
+//
+//}
+
+void Util::make_fft_ifft(EMData* tvol) {
+
+}
+
+// this one
+//void Util::make_fft_ifft(EMData* tvol) {
+//	ENTERFUNC;
+//	/* Exception Handle */
+//	if (!tvol) {
+//		throw NullPointerException("NULL input image");
+//	}
+//
+//	if ( tvol->is_complex() ) {
+//		LOGERR("real image expected. Input image is complex image.");
+//		throw ImageFormatException("real image expected. Input image is complex image.");
+//	}
+//
+//
+//	float *real_data_float = tvol->get_data();
+//	int nx = tvol->get_xsize();
+//	int ny = tvol->get_ysize();
+//	int nz = tvol->get_zsize();
+//
+//	int dims[3];
+//	dims[0] = nz;
+//	dims[1] = ny;
+//	dims[2] = nx;
+//
+//
+////	int size_complex_data = nx*ny*(nz/2 +1)*2;
+//	int size_complex_data = nx*ny*(nz/2 + 1);
+//	double * complex_data = new double[size_complex_data];
+//	double * real_data = new double[nx*ny*nz];
+//
+//
+//	size_t offset;
+//	int nxreal;
+//	// need to extend the matrix along x
+//	// meaning nx is the un-fftpadded size
+//	nxreal = nx;
+//	offset = 2 - nx%2;
+////	if (1 == offset) set_fftodd(true);
+////	else             set_fftodd(false);
+//	bool fft_odd = (1 == offset);
+//	int nxnew = nx + offset;
+////	set_size(nxnew, ny, nz);
+//	double * real_data_padded = new double[nxnew*ny*nz];
+//	for(int i=0; i<nxnew*ny*nz; ++i) real_data_padded[i] = (double)real_data_float[i];
+//	for (int iz = nz-1; iz >= 0; iz--) {
+//		for (int iy = ny-1; iy >= 0; iy--) {
+//			for (int ix = nxreal-1; ix >= 0; ix--) {
+//				size_t oldxpos = ix + (iy + iz*ny)*(size_t)nxreal;
+//				size_t newxpos = ix + (iy + iz*ny)*(size_t)nxnew;
+//				real_data_padded[newxpos] = real_data_padded[oldxpos];
+//			}
+//		}
+//	}
+//
+//
+//
+////	for(int i=0; i<nx*ny*nz; ++i) real_data[i] = 0.0;
+//
+////	fftwf_plan plan_real_to_complex = fftwf_plan_dft_r2c(3, dims, real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+////	fftwf_plan plan_complex_to_real = fftwf_plan_dft_c2r(3, dims, (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
+//
+////	fftw_plan plan_real_to_complex = fftw_plan_dft_r2c(3, dims, real_data, (fftw_complex *) complex_data, FFTW_ESTIMATE);
+////	fftw_plan plan_complex_to_real = fftw_plan_dft_c2r(3, dims, (fftw_complex *) complex_data, real_data, FFTW_ESTIMATE);
+//	fftw_plan plan_real_to_complex = fftw_plan_dft_r2c(3, dims, real_data_padded, (fftw_complex *) real_data_padded, FFTW_ESTIMATE);
+//	fftw_plan plan_complex_to_real = fftw_plan_dft_c2r(3, dims, (fftw_complex *) real_data_padded, real_data_padded, FFTW_ESTIMATE);
+//
+//
+////	size_t niter = 5;
+//	size_t niter = 1;
+////	size_t niter = 4;
+//	for (size_t i=0;i<niter;++i) {
+//		fftw_plan plan_real_to_complex = fftw_plan_dft_r2c(3, dims, real_data_padded, (fftw_complex *) real_data_padded, FFTW_ESTIMATE);
+//		fftw_execute(plan_real_to_complex);
+//		Util::ap2ri(real_data_padded, (size_t)nxnew * ny * nz);
+//		fftw_plan plan_complex_to_real = fftw_plan_dft_c2r(3, dims, (fftw_complex *) real_data_padded, real_data_padded, FFTW_ESTIMATE);
+//		fftw_execute(plan_complex_to_real);
+//
+//		int offset = fft_odd ? 1 : 2;
+//
+//		int nxo = nx - offset;
+//		float scale = 1.0f / ((size_t)nxo * ny * nz);
+////		double scale = 1.0/nx*ny*nz;
+//		for(int i=0; i<nx*ny*nz; ++i) real_data_padded[i] = real_data_padded[i]*scale;
+//	}
+//
+////	tvol->set_size(nxnew, ny, nz);
+////	for(int i=0; i<nxnew*ny*nz; ++i) real_data_float[i] = (float)real_data[i];
+//	for(int i=0; i<nx*ny*nz; ++i) real_data_float[i] = (float)real_data_padded[i];
+//
+//	fftw_destroy_plan(plan_real_to_complex);
+//	fftw_destroy_plan(plan_complex_to_real);
+//
+//
+//	delete[] complex_data;
+//	delete[] real_data;
+//	delete[] real_data_padded;
+//
+////	tvol->update();
+//
+//	EXITFUNC;
+//
+//}
+
+//void Util::make_fft_ifft(EMData* tvol) {
+//	ENTERFUNC;
+//	/* Exception Handle */
+//	if (!tvol) {
+//		throw NullPointerException("NULL input image");
+//	}
+//
+//	size_t niter = 20;
+////	size_t niter = 4;
+//	for (size_t i=0;i<niter;++i) {
+//		tvol->do_fft_inplace();
+//		tvol->do_ift_inplace();
+//	}
+//
+//
+//	tvol->update();
+//
+//	EXITFUNC;
+//
+//}
+
+
+//void Util::make_fft_ifft(EMData* tvol) {
+//	ENTERFUNC;
+//	/* Exception Handle */
+//	if (!tvol) {
+//		throw NullPointerException("NULL input image");
+//	}
+//
+////	size_t niter = 10;
+//	size_t niter = 1;
+//	for (size_t i = 0; i < niter; ++i) {
+//		tvol->do_fft_inplace();
+//		tvol->do_ift_inplace();
+//	}
+//	tvol->update();
+//
+//	EXITFUNC;
+//}
+
+//void Util::my_real_to_complex_1d(float *real_data, float *complex_data, int n)
+vector<float> Util::my_real_to_complex_1d(vector<float> real_data_v)
+{//cout<<"doing fftw3"<<endl;
+
+	int n = real_data_v.size();
+	float * real_data = &real_data_v[0];
+
+	vector<float> complex_data_v(2*n);
+	float * complex_data = &complex_data_v[0];
+
+//	complex_data[0] = 11;
+//	complex_data[1] = 22;
+
+#ifdef WITH_FFTW_PLAN_CACHING
+		bool ip = ( complex_data == real_data );
+		fftwf_plan plan = plan_cache.get_plan(1,n,1,1,EMAN2_REAL_2_COMPLEX,ip,(fftwf_complex *) complex_data, real_data);
+		// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be reused
+		fftwf_execute_dft_r2c(plan, real_data,(fftwf_complex *) complex_data);
+#else
+//	int mrt = Util::MUTEX_LOCK(&fft_mutex);
+	fftwf_plan plan = fftwf_plan_dft_r2c_1d(n, real_data, (fftwf_complex *) complex_data,
+											FFTW_ESTIMATE);
+//	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+
+	fftwf_execute(plan);
+//	mrt = Util::MUTEX_LOCK(&fft_mutex);
+	fftwf_destroy_plan(plan);
+//	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+#endif // WITH_FFTW_PLAN_CACHING
+
+//	complex_data[2] = 33;
+//	complex_data[3] = 44;
+
+	return complex_data_v;
+
+}
+
+//void Util::my_real_to_complex_3d(float *real_data)
+////int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
+//{
+//	const int rank = get_rank(ny, nz);
+//	int dims[3];
+//	dims[0] = nz;
+//	dims[1] = ny;
+//	dims[2] = nx;
+//
+//	switch(rank) {
+//		case 1:
+//			real_to_complex_1d(real_data, complex_data, nx);
+//			break;
+//
+//		case 2:
+//		case 3:
+//		{
+//#ifdef FFTW_PLAN_CACHING
+//			bool ip = ( complex_data == real_data );
+//			fftwf_plan plan = plan_cache.get_plan(rank,nx,ny,nz,EMAN2_REAL_2_COMPLEX,ip,(fftwf_complex *) complex_data, real_data);
+//			// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be re-used
+//			fftwf_execute_dft_r2c(plan, real_data,(fftwf_complex *) complex_data );
+//#else
+//			int mrt = Util::MUTEX_LOCK(&fft_mutex);
+//			fftwf_plan plan = fftwf_plan_dft_r2c(rank, dims + (3 - rank),
+//					real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+//			mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+//
+//			fftwf_execute(plan);
+//
+//			mrt = Util::MUTEX_LOCK(&fft_mutex);
+//			fftwf_destroy_plan(plan);
+//			mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+//
+//#endif // FFTW_PLAN_CACHING
+//		}
+//			break;
+//
+//		default:
+//			LOGERR("Should NEVER be here!!!");
+//			break;
+//	}
+//
+//	return 0;
+//}
+//
+//
+//
+//
+

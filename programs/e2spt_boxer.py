@@ -139,8 +139,8 @@ def main():
 
 	options.centerbox = options.autocenter
 
-	print "\n\n\n\n\nAUTOCENTER IS", options.autocenter
-	print "Therefore center is", options.centerbox
+	#print "\n\n\n\n\nAUTOCENTER IS", options.autocenter
+	#print "Therefore center is", options.centerbox
 
 
 	'''
@@ -336,24 +336,24 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram):
 			ec = ec*-1
 
 			if options.autocentermask:
-				print "\nMasking for autocentering"
+				if options.verbose : print "\nMasking for autocentering"
 				ec.process_inplace(options.autocentermask[0],options.autocentermask[1])
 
 			ec.process_inplace('normalize')
 
 			if options.autocentermask:
-				print "\nMasking for autocentering"
+				if options.verbose : print "\nMasking for autocentering"
 				ec.process_inplace(options.autocentermask[0],options.autocentermask[1])
 
 			ec.process_inplace("threshold.belowtozero",{'minval':0.0})
 
 			if center == 'xform.centerofmass':
 				ec.process_inplace('xform.centerofmass')
-				print "\nApplying center of mass"
+				if options.verbose : print "\nApplying center of mass"
 
 			elif center == 'xform.centeracf':
 				ec.process_inplace('xform.centeracf')
-				print "\nApplying xform.centeracf"
+				if options.verbose : print "\nApplying xform.centeracf"
 
 
 			#rad = boxsize/2.0+1.0
@@ -365,13 +365,14 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram):
 			ty = trans[1]
 			tz = trans[2]
 
-			print "\nAutocentering translations are", tx,ty,tz
-			print "\n\nThe old coordinates were", x, y, z
+			if options.verbose : 
+				print "\nAutocentering translations are", tx,ty,tz
+				print "\n\nThe old coordinates were", x, y, z
 
 			x = x - tx
 			y = y - ty
 			z = z - tz
-			print "Thus the new ones are", x, y, z
+			if options.verbose : print "Thus the new ones are", x, y, z
 
 			r = Region((2*x - boxsize)/2,(2*y - boxsize)/2, (2*z - boxsize)/2, boxsize, boxsize, boxsize)
 			e = EMData()
@@ -394,11 +395,12 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram):
 		#Make sure the transform parameter on the header is "clean", so that any later processing transformations are meaningful
 		e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
 
-		print "The extracted particle has this boxsize", e['nx'],e['ny'],e['nz']
-		print "And the following mean BEFORE normalization", e['mean']
+		if options.verbose : 
+			print "The extracted particle has this boxsize", e['nx'],e['ny'],e['nz']
+			print "And the following mean BEFORE normalization", e['mean']
 
 		if options.normproc:
-			print "WARNING! particle being normalized!"
+			if options.verbose : print "WARNING! particle being normalized!"
 			if options.normproc[0]=="normalize.mask":
 				mask=EMData(e["nx"],e["ny"],e["nz"])
 				mask.to_one()
@@ -408,16 +410,16 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram):
 
 			e.process_inplace(options.normproc[0],options.normproc[1])
 			e['spt_normalization'] = str(options.normproc[0])+' '+str(options.normproc[1])
-			print "This is the mean AFTER normalization", e['mean']
+			if options.verbose : print "This is the mean AFTER normalization", e['mean']
 
 		if invert:
-			print "Particle has the following mean BEFORE contrast inversion", e['mean']
-			print "Inverting contrast because --invert is", invert
+			if options.verbose : print "Particle has the following mean BEFORE contrast inversion", e['mean']
+			if options.verbose : print "Inverting contrast because --invert is", invert
 			e=e*-1
-			print "Particle has the following mean AFTER contrast inversion", e['mean']
+			if options.verbose : print "Particle has the following mean AFTER contrast inversion", e['mean']
 
 		if options.thresh:
-			print "The thresh to apply is", options.thresh
+			if options.verbose : print "The thresh to apply is", options.thresh
 			e.process_inplace(options.thresh[0],options.thresh[1])
 
 		prjT = Transform({'type':'eman','az':0,'alt':0,'phi':0})
@@ -514,16 +516,16 @@ def commandline_tomoboxer(tomogram,options):
 		
 		#coordsdict.update({i:[x,y,z]})
 		
-		print "The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
+		if options.verbose : print "The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
 		if options.swapyz:
-			print "You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped"
+			if options.verbose : print "You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped"
 			aux = y
 			y = z
 			z = aux
-			print "Therefore, the swapped coordinates are", x, y, z
+			if options.verbose : print "Therefore, the swapped coordinates are", x, y, z
 
-		print "\n\nBefore calling unbinned extractor, options.centerbox is", options.centerbox
+		if options.verbose : print "\n\nBefore calling unbinned extractor, options.centerbox is", options.centerbox
 		ret = unbinned_extractor(options,options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox,args[0])
 
 		if ret:
@@ -531,9 +533,10 @@ def commandline_tomoboxer(tomogram,options):
 			eprj=ret[1]
 
 			if e:
-				print "There was a particle successfully returned, with the following box size and mean value"
-				print e['nx'],e['ny'],e['nz']
-				print e['mean']
+				if options.verbose : 
+					print "There was a particle successfully returned, with the following box size and mean value"
+					print e['nx'],e['ny'],e['nz']
+					print e['mean']
 
 				if options.apix:
 					e['apix_x'] = options.apix
@@ -657,12 +660,14 @@ class EMAverageViewer(QtGui.QWidget):
 		#self.zyview = EMImage2DWidget()
 		#self.gbl.addWidget(self.zyview,0,0)
 
-		self.d3view = EMScene3D()
-		self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
-		isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
-		self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
-		self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata)
+		# This code puts an isosurface in the lower left, but we seem to get a lot of segfaults in the isosurfaces. Replacing it with a 2-D view for now
+		#self.d3view = EMScene3D()
+		#self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+		#isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
+		#self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
+		#self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata)
 
+		self.d3view = EMImage2DWidget()
 		self.gbl.addWidget(self.d3view,0,0)
 
 		self.gbl2 = QtGui.QGridLayout()
@@ -721,22 +726,22 @@ class EMAverageViewer(QtGui.QWidget):
 		self.needupd=0
 
 	def event_symchange(self):
-		print "sym"
+		#print "sym"
 		self.sym=self.wsym.text()
 		self.wrestart.setEnabled(True)
 
 	def event_filter(self,value):
-		print "filt"
+		#print "filt"
 		self.filt=value
 		self.wrestart.setEnabled(True)
 
 	def event_mask(self,value):
-		print "mask"
+		#print "mask"
 		self.mask=value
 		self.wrestart.setEnabled(True)
 
 	def event_restart(self):
-		print "restart"
+		#print "restart"
 		self.threadrestart=True
 		self.wrestart.setEnabled(False)
 
@@ -760,8 +765,9 @@ class EMAverageViewer(QtGui.QWidget):
 		#self.xzview.set_data(xzd)
 		#self.zyview.set_data(zyd)
 
-		self.d3viewdata.setData(self.data)
-		self.d3view.updateSG()
+		#self.d3viewdata.setData(self.data)
+		#self.d3view.updateSG()
+		self.d3view.set_data(self.data)
 
 	def thread_process(self):
 
@@ -790,12 +796,14 @@ class EMBoxViewer(QtGui.QWidget):
 		self.data = None
 
 
-		self.d3view = EMScene3D()
-		self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
-		isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
-		self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
-		self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata )
+		# This puts an isosurface view in the lower left corner, but was causing a lot of segfaults, so switching to 2-D slices for now
+		#self.d3view = EMScene3D()
+		#self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+		#isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
+		#self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
+		#self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata )
 
+		self.d3view = EMImage2DWidget()
 		self.gbl.addWidget(self.d3view,1,0)
 
 		self.wfilt = ValSlider(rng=(0,50),label="Filter:",value=0.0)
@@ -843,12 +851,13 @@ class EMBoxViewer(QtGui.QWidget):
 			self.xzview.set_data(None)
 			self.zyview.set_data(None)
 
-			self.d3viewdata.setData(test_image_3d(3))
-			self.d3view.updateSG()
+			#self.d3viewdata.setData(test_image_3d(3))
+			#self.d3view.updateSG()
+			self.d3view.set_data(test_image_3d(3))
 
 			return
 
-		if self.wfilt.getValue()!=0.0 :
+		if self.wfilt.getValue()>4 :
 			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']}) #JESUS
 
 		xyd=self.fdata.process("misc.directional_sum",{"axis":"z"})
@@ -859,8 +868,9 @@ class EMBoxViewer(QtGui.QWidget):
 		self.xzview.set_data(xzd)
 		self.zyview.set_data(zyd)
 
-		self.d3viewdata.setData(self.fdata)
-		self.d3view.updateSG()
+		#self.d3viewdata.setData(self.fdata)
+		#self.d3view.updateSG()
+		self.d3view.set_data(self.fdata)
 
 
 	def event_filter(self,value):
@@ -958,7 +968,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl2.addWidget(self.wscale,4,0,1,2)
 
 		# 2-D filters
-		self.wfilt = ValSlider(rng=(0,50),label="Filt:",value=0.0)
+		self.wfilt = ValSlider(rng=(0,150),label="Filt:",value=0.0)
 		self.gbl2.addWidget(self.wfilt,5,0,1,2)
 
 		self.curbox=-1
@@ -1471,8 +1481,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def update_sides(self):
 		"""updates xz and yz views due to a new center location"""
 
-		print "\n\n\n\n\nIn update sides, self.datafile is", self.datafile
-		print "\n\n\n\n"
+		#print "\n\n\n\n\nIn update sides, self.datafile is", self.datafile
+		#print "\n\n\n\n"
 
 		if self.datafile==None and self.data==None:
 			return
@@ -1584,8 +1594,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def update_xy(self):
 		"""updates xy view due to a new slice range"""
 
-		print "\n\n\n\n\nIn update_xy, self.datafile is", self.datafile
-		print "\n\n\n\n"
+		#print "\n\n\n\n\nIn update_xy, self.datafile is", self.datafile
+		#print "\n\n\n\n"
 
 		if self.datafile==None and self.data==None:
 			return
@@ -1636,7 +1646,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		av=avgr.finish()
 
-		print "\n\nIn update xy, av and type are", av, type(av)
+		#print "\n\nIn update xy, av and type are", av, type(av)
 
 		if self.wfilt.getValue()!=0.0:
 
@@ -1646,8 +1656,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def update_all(self):
 		"""redisplay of all widgets"""
 
-		print "\n\n\n\n\nIn update all, self.datafile is", self.datafile
-		print "\n\n\n\n"
+		#print "\n\n\n\n\nIn update all, self.datafile is", self.datafile
+		#print "\n\n\n\n"
 		if self.datafile==None and self.data==None:
 			return
 

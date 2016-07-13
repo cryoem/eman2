@@ -148,6 +148,8 @@ def main():
 	':<nx>:<ny>:<expression_in_x_y>' or ':<nx>:<ny>:<nz>:<expression_in_x_y_z>' as an input filename,
 	where 0 <= x < nx, 0 <= y < ny, 0 <= z < nz, and the expression can be just a number.
 
+        If performing certain operations which do not require an output file, specify "none" as the output file.
+
 	Examples:
 
 	convert IMAGIC format test.hed to HDF format:
@@ -174,7 +176,7 @@ def main():
 	parser.add_argument("--apix", type=float, help="A/pixel for S scaling")
 	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
 	parser.add_argument("--averager",type=str,help="If --average is specified, this is the averager to use (e2help.py averager). Default=mean",default="mean")
-	parser.add_argument("--calcsf", metavar="n outputfile", type=str, nargs=2, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")
+	parser.add_argument("--calcsf", metavar="outputfile", type=str, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")
 	parser.add_argument("--calccont", action="store_true", help="Compute the low resolution azimuthal contrast of each image and put it in the header as eval_contrast_lowres. Larger values imply more 'interesting' images.")
 	parser.add_argument("--clip", metavar="xsize,ysize", type=str, action="append", help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
 	parser.add_argument("--exclude", metavar="exclude-list-file", type=str, help="Excludes image numbers in EXCLUDE file")
@@ -189,6 +191,7 @@ def main():
 	parser.add_argument("--select", metavar="selectname", type=str, help="Works only on the images in named selection set from bdb:select")
 	parser.add_argument("--inplace", action="store_true", help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
 	parser.add_argument("--interlv", metavar="interleave-file", type=str, help="Specifies a 2nd input file. Output will be 2 files interleaved.")
+	parser.add_argument("--extractboxes",default=False, action="store_true",help="Extracts box locations from the image header to produce a set of .box files for only the particles in the .lst files")
 	parser.add_argument("--meanshrink", metavar="n", type=float, action="append", help="Reduce an image size by an integral (1.5 also allowed) scaling factor using average. eg - 2 will reduce image size to 1/2. Clip is not required.")
 	parser.add_argument("--medianshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor, uses median filter. eg - 2 will reduce image size to 1/2. Clip is not required.")
 	parser.add_argument("--fouriershrink", metavar="n", type=float, action="append", help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
@@ -273,28 +276,43 @@ def main():
 	outpattern = args[num_input_files]
 
 	multiple_files = (num_input_files > 1)
+	
+	if options.extractboxes:
+			boxes={}
+			boxesbad=0
+			boxsize=128
 
 	inp_num = 0
 
 	for infile in args[0 : num_input_files] :
 		inp_num = inp_num + 1
 		
-		outfile = changed_file_name(infile, outpattern, inp_num, multiple_files)
+		if outpattern.lower()=="none" : 
+			outfile=None
+			is_inp_bdb = False
+			is_out_bdb = False
 
-		is_inp_bdb = (len (infile)  >= 4 and infile.lower() [0:4] == "bdb:")
-		is_out_bdb = (len (outfile) >= 4 and outfile.lower()[0:4] == "bdb:")
+			if (infile[0]==":") : inp_ext=".hdf"
+			else : inp_ext = os.path.splitext(infile)[1]
+			out_ext = None
 
-		if (infile[0]==":") : inp_ext=".hdf"
-		else : inp_ext = os.path.splitext(infile)[1]
-		out_ext = os.path.splitext(outfile)[1]
+		else : 
+			outfile = changed_file_name(infile, outpattern, inp_num, multiple_files)
 
-		if out_ext == "" and multiple_files and not is_out_bdb :
-			out_ext = inp_ext
-			outfile = outfile + out_ext
+			is_inp_bdb = (len (infile)  >= 4 and infile.lower() [0:4] == "bdb:")
+			is_out_bdb = (len (outfile) >= 4 and outfile.lower()[0:4] == "bdb:")
 
-		if out_ext == ".lst" :
-			print "Output file extension may not be .lst: " + outfile
-			continue
+			if (infile[0]==":") : inp_ext=".hdf"
+			else : inp_ext = os.path.splitext(infile)[1]
+			out_ext = os.path.splitext(outfile)[1]
+
+			if out_ext == "" and multiple_files and not is_out_bdb :
+					out_ext = inp_ext
+					outfile = outfile + out_ext
+
+			if out_ext == ".lst" :
+					print "Output file extension may not be .lst: " + outfile
+					continue
 
 		is_single_2d_image = False
 
@@ -490,11 +508,12 @@ def main():
 		sfcurve1 = None
 
 		lasttime = time.time()
-		outfilename_no_ext = outfile[:-4]
-		outfilename_ext = outfile[-3:]
+		if outfile!=None :
+			outfilename_no_ext = outfile[:-4]
+			outfilename_ext = outfile[-3:]
 
-		if outfilename_ext == "rcs" and outfile[-4:] == "mrcs":
-			outfilename_ext = outfile[-4:]
+			if outfilename_ext == "rcs" and outfile[-4:] == "mrcs":
+				outfilename_ext = outfile[-4:]
 
 		dummy = 0										#JESUS
 
@@ -630,6 +649,16 @@ def main():
 
 					d.process_inplace(processorname, param_dict)
 					index_d[option1] += 1
+
+                                elif option1 == "extractboxes":
+                                    try:
+                                        bf=base_name(d["ptcl_source_image"])
+                                        bl=d["ptcl_source_coord"]
+                                        if boxes.has_key(bf) : boxes[bf].append(bl)
+                                        else : boxes[bf]=[bl]
+                                        boxsize=d["nx"]
+                                    except:
+                                        boxesbad+=1
 
 				elif option1 == "addfile":
 					af=EMData(options.addfile[index_d[option1]],0)
@@ -859,30 +888,14 @@ def main():
 					continue
 
 				elif option1 == "calcsf":
-					sfout_n = int(options.calcsf[0])
-					sfout = options.calcsf[1]
-					sf_amwid = 2 * math.pi / sfout_n
-
+					sfout = options.calcsf
 					dataf = d.do_fft()
-	#				d.gimme_fft()
-					curve = dataf.calc_radial_dist(ny, 0, 0.5)
+					curve = dataf.calc_radial_dist(ny/2, 0, 1.0,True)
+					curve=[i/(dataf["nx"]*dataf["ny"]*dataf["nz"]) for i in curve]
 					outfile2 = sfout
 
-					if n1 != 0:
-						outfile2 = sfout + ".%03d" % (i+100)
-
-					sf_dx = 1.0 / (apix * 2.0 * ny)
+					sf_dx = 1.0 / (d["apix_x"] * ny)
 					Util.save_data(0, sf_dx, curve, outfile2)
-
-					if sfout_n > 0:
-						for j in range(0, sfout_n):
-							curve = dataf.calc_radial_dist(ny, 0, 0.5, j * sf_amwid, sf_amwid)
-							outfile2 = os.path.basename(sfout) + "-" + str(j) + "-" + str(sfout_n) + ".pwr"
-
-							if n1 != 0:
-								outfile2 = outfile2 + ".%03d" % (i+100)
-
-							Util.save_data(0, sf_dx, curve, outfile2)
 
 				elif option1 == "interlv":
 					if not options.outtype:
@@ -1091,10 +1104,11 @@ def main():
 										print "Use the writejunk option to force writing this image to disk"
 									continue
 
-							if options.inplace:
-								d.write_image(outfile, i, out_type, False, None, out_mode, not_swap)
-							else: # append the image
-								d.write_image(outfile, -1, out_type, False, None, out_mode, not_swap)
+							if outfile!=None :
+								if options.inplace:
+									d.write_image(outfile, i, out_type, False, None, out_mode, not_swap)
+								else: # append the image
+									d.write_image(outfile, -1, out_type, False, None, out_mode, not_swap)
 
 		# end of image loop
 
@@ -1128,6 +1142,12 @@ def main():
 		options.threed2threed = opt3to3
 		options.threed2twod   = opt3to2
 		options.twod2threed   = opt2to3
+
+        if options.extractboxes:
+            for k in boxes.keys():
+                out=file(k+".box","w")
+                for c in boxes[k]:
+                    out.write("{:1d}\t{:1d}\t{:1d}\t{:1d}\n".format(int(c[0]-boxsize/2),int(c[1]-boxsize/2),int(boxsize),int(boxsize)))
 
 	E2end(logid)
 

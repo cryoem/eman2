@@ -3173,37 +3173,46 @@ def sptmakepath(options, stem='spt'):
 	#	sys.exit(1)
 
 
-	files=os.listdir(os.getcwd())
-
-	if not options.path:		
-		#options.path = stem + '_01'
-		options.path = stem
-		if options.verbose:
-			print """\n(e2spt_classaverage)(sptmakepath)--path was not specified, 
-			therefore it will have the default value""", options.path 	
-
-	while options.path in files:
-		if '_' not in options.path:
-			options.path = options.path + '_00'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('00')
-						
-			options.path = '_'.join(components)
-			#options.path = path
+	if options.path!=None and len(options.path)>0 : stem=options.path
 	
-	print "The new options.path is", options.path
+	i=1
+	while os.path.exists("{}_{:02d}".format(stem,i)): i+=1
+	
+	options.path="{}_{:02d}".format(stem,i)
+	try: os.mkdir(options.path)
+	except: pass
 
-	if options.path not in files:
-		if options.verbose:
-			print "I will make THIS path", options.path
+	#files=os.listdir(os.getcwd())
+
+	#if not options.path:		
+		##options.path = stem + '_01'
+		#options.path = stem
+		#if options.verbose:
+			#print """\n(e2spt_classaverage)(sptmakepath)--path was not specified, 
+			#therefore it will have the default value""", options.path 	
+
+	#while options.path in files:
+		#if '_' not in options.path:
+			#options.path = options.path + '_00'
+		#else:
+			#jobtag=''
+			#components=options.path.split('_')
+			#if components[-1].isdigit():
+				#components[-1] = str(int(components[-1])+1).zfill(2)
+			#else:
+				#components.append('00')
+						
+			#options.path = '_'.join(components)
+			##options.path = path
+	
+	#print "The new options.path is", options.path
+
+	#if options.path not in files:
+		#if options.verbose:
+			#print "I will make THIS path", options.path
 		
-		#os.system('mkdir ' + options.path)
-		os.mkdir( options.path )
+		##os.system('mkdir ' + options.path)
+		#os.mkdir( options.path )
 	
 	return options
 

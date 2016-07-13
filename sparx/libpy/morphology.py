@@ -1406,7 +1406,6 @@ def cosinemask(im, radius = -1, cosine_width = 5, bckg = None, s=999999.0):
 						om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z) + temp*(s-om.get_value_at(x,y,z)))
 						#om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z)*(0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width )))
 	return om
-	"""
 '''
 
 
@@ -1592,7 +1591,7 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 	from math import exp
 	for i in xrange(nr):  ff[i] = B*x[i] + s
 
-	return -B/4.0, [x,ff,pws_log]
+	return -B, [x,ff,pws_log]
 
 	
 ################

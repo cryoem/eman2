@@ -6,7 +6,7 @@ sx3dvariability - 3D Variablity Estimation: Calculate 3D variability using a set
 
 ''usage in command line''
 
-sx3dvariability.py  prj_stack  --ave2D=ave2D  --var2D=var2D  --ave3D=ave3D  --var3D=var3D  --img_per_grp=img_per_grp  --no_norm  --radiusvar=radiusvar  --npad=npad  --sym=symmetry  --fl=fl  --aa=aa  --CTF  --VERBOSE  --VAR  --SND  --symmetrize
+sx3dvariability.py  prj_stack  --ave2D=ave2D  --var2D=var2D  --ave3D=ave3D  --var3D=var3D  --img_per_grp=img_per_grp  --no_norm  --radius=radius  --npad=npad  --sym=symmetry  --fl=fl  --aa=aa  --CTF  --VERBOSE  --VAR  --SND  --symmetrize
 
 
 
@@ -38,7 +38,7 @@ for structures that have symmetries:
 
     * The remaining parameters are optional.
     no_norm:: Skip normalization: (default False)
-    radiusvar:: Radius for 3D variability [Pixels]: (default -1)
+    radius:: Radius for 3D variability [Pixels]: Normally, use the particle radius. (default -1)
     npad:: Image padding factor: The images are padded to achieve the original size times this option. (default 2)
     VAR:: Stack on input consists of 2D variances: (default False)
     SND:: Squared normalized differences: If set to true, it computes the squared normalised differences. (default False)

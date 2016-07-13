@@ -113,6 +113,7 @@ namespace EMAN
 		 * @param n array size.
 		 */
 		static void ap2ri(float *data, size_t n);
+		static void ap2ri(double *data, size_t n);
 
 		/** flip the phase of a complex data array.
 		 * @param data complex data array.

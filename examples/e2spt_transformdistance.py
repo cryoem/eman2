@@ -213,8 +213,18 @@ def main():
 		t2 = Transform({'type':'eman','az':float(angles[3]),'alt':float(angles[4]),'phi':float(angles[5]) })
 		#t2i = t2.inverse()
 		aDistance = angdist(t1,t2)
+		
+		print "!!!!"
 		print "The angular distance between t1=" + str(t1) + " and t2=" + str(t2) + "is: " + str(aDistance)
-	
+		print "sym is", options.sym
+		
+		if options.sym:
+			t1sym = accountForSym( options, t1, t2 )
+			
+			aDistanceSym = angdist(t1sym,t2)
+			print "accounting for symmetry, the distance is",aDistanceSym
+			
+		
 	if not options.nolog and log:
 		E2end(logger)
 	
@@ -297,20 +307,32 @@ def accountForSym( options, solutionT, simT ):
 	kk=0
 	for o in orientations:
 		
-		oi = o.inverse()
+		solutionTsym = None
+		
+		if not options.angles:
+			oi = o.inverse()
 			
-		diff = solutionT * simT				#The solution applied to the known random transformation
+			diff = solutionT * simT				#The solution applied to the known random transformation
 											#will give you a large "difference" if the solution found
 											#is far from the symmetry axis. Otherwise, they'll cancel each other out 
 		
-		distance = angdist( o,  diff,kk+1 )	 	#Find the distance between this difference and all symmetry-related positions
+			distance = angdist( o,  diff, kk+1 )	 	#Find the distance between this difference and all symmetry-related positions
 		
-		solutionTsym = oi * solutionT		#For each possible symmetry related position, you calculate a
+		
+			solutionTsym = oi * solutionT		#For each possible symmetry related position, you calculate a
 											#symmetry-related "variant" of the solution by multiplying the 
 											#inverse of the symmetry-related orientation times the solution 
-											#(in an ideal case, the solution by itself would be the inverse of random transform "simT")
+											#(in an ideal case, the solution by itself would 
+											#be the inverse of random transform "simT")
 		
-		symDistances.update( {distance: solutionTsym } )	#Keep track of all symmetry-related solutions and their transforms
+		if options.angles:
+			solutionTsym = o * solutionT
+			distance = angdist( solutionTsym,  simT, kk+1 )
+			
+		
+		if solutionTsym:
+		
+			symDistances.update( {distance: solutionTsym } )	#Keep track of all symmetry-related solutions and their transforms
 		
 		kk+=1
 		

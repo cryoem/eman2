@@ -2678,6 +2678,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	for (int sexp=4; sexp<10; sexp++) {
 		int ss=pow(2.0,sexp);
 		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
+		if (ss==32) ss=48;		// 16 may be too small, but 32 takes too long...
 		if (ss>ny) ss=ny;
 		if (verbose>0) printf("\nSize %d\n",ss);
 

@@ -125,3 +125,5 @@ Complete
 4/15/16		anisotropy correction program added
 4/16/16		Added euler_refine option for refining orientation of class-averages
 5/12/16		Changed mode_5_slow to do a sort of rotational deblurring in Fourier space. Produces a high-pass filter effect as well. Not sure if it's really useful
+6/1/16		New e2ctf_auto.py for automated CTF processing. Related improvements to workflow.
+6/15/16		Fixed problem with slice normalization in e2initialmodel. Made some initial models really streaky and awful.

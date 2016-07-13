@@ -64,7 +64,7 @@ def main():
 
 	#options associated with e2refine2d.py
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
-	parser.add_argument("--input", default="start.hdf",type=str, help="The name of the file containing the particle data", browser='EMSetsTable(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3, mode="spr")
+	parser.add_argument("--input", default=None,type=str, help="The name of the file containing the particle data", browser='EMSetsTable(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--ncls", default=32, type=int, help="Number of classes to generate", guitype='intbox', row=1, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[True]")
 	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results. Always use this when generating >~100 classes.",guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")

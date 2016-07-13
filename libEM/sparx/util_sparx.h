@@ -841,6 +841,7 @@ costlist, int* curbranch);
 	/* img /= img1 with zero check , img is complex, img1 real */
 	static EMData* read_slice_and_multiply( EMData* vol, const string stacked_slices_in);
 	/* img /=vol[index]* stacked_slice[index] */
+	static EMData* divide_mtf(EMData* img, vector<float>mtf, vector<float>res);
 	static void div_cbyr(EMData* img, EMData* img1);
 	static void save_slices_on_disk(EMData* vol, const string stacked_slices_out);
 
@@ -876,16 +877,20 @@ costlist, int* curbranch);
 	static vector<float> rotavg_fourier(EMData* img);
 
 	static float sqed(EMData* img,  EMData* proj, EMData* ctfs, EMData* bckgnoise);
+	static float sqedac(EMData* img,  EMData* proj, EMData* ctfsbckgnoise);
 	static vector<float> sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob);
 
 	//utility for sxlocres
 	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);
 
+	static vector<int> pickup_references( vector<vector<float> > refang, float delta, float an,
+                vector<vector<float> > datang, string symmetry);
 
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);
-	
-	
+
+	static void fuse_low_freq(EMData* img1, EMData* img2, EMData* w1, EMData* w2, int limit);
+
 	static void write_nd_array(EMData* data, const vector<int> &size_of_each_dimension, const vector<int> &location, float val);
 	static float read_nd_array(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<int> &location);
 	static float read_nd_array_linear_interp(EMData* em_data, const vector<int> &size_of_each_dimension, const vector<float> &location);
@@ -990,8 +995,11 @@ public:
 
 	/* Group projection angles by (phi, theta) */
 	static vector<int> group_proj_by_phitheta(const vector<float>& projangles, const vector<float>& ref_ang, const int img_per_grp);
+//	static std::vector<float> my_real_to_complex_1d(vector<float> real_data_v, int n);
+	static vector<float> my_real_to_complex_1d(vector<float> real_data_v);
 
-	/** formerly known as apmq
+
+/** formerly known as apmq
 	 * Determine shift and rotation between image and many reference
 	 * images (crefim, weights have to be applied) quadratic
 	 * interpolation
@@ -1215,7 +1223,16 @@ public:
 	static EMData* box_convolution(EMData* img, int w);
 /*    Bessel function */
 
-static float bessel0(float r, float a, float alpha);
+static float   bessel0(float r, float a, float alpha);
+static inline  void bessjy(double x, double xnu, double *rj, double *ry, double *rjp, double *ryp);
+static double  bessi1_5(double x);
+static double  bessj1_5(double x);
+static inline  void beschb(double x, double *gam1, double *gam2, double *gampl, double *gammi);
+static inline double chebev(double a, double b, double c[], int m, double x);
 static inline double bessi0(double x);
+static double  kfv(double w, double a, double alpha, int m);
 static void euler_direction2angles(vector<float>v, float &alpha, float &beta);
+static void  iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
+static void  make_fft_ifft(EMData* tvol);
+//static void  my_real_to_complex_1d(vector<float> real_data_v, vector<float> complex_data_v, int n);
 #endif	//util__sparx_h__

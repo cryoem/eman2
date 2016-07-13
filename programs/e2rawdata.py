@@ -36,15 +36,14 @@ from EMAN2 import *
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <micrograph1, micrograph2....>
-	Use this program to import and filter raw micrographs. If you choose to filter and/or convert format, this program will process each micrograph
-	and dump them into the directory './micrographs.', otherwise the micrographs will simply be moved into './micrographs'. If you select the option
+	Use this program to import and filter raw micrographs, including automatic micrograph-based CTF determination. This program will process each micrograph
+	and copy them into the directory './micrographs.', otherwise the micrographs will simply be moved into './micrographs'. If you select the option
 	--moverawdata AND you filter or change format, your original micrographs will be moved into the directory './raw_micrographs' and your
-	filtered micrographs will be in './micrographs as usual. BDB files are not moved, but they can be processed."""
+	filtered micrographs will be in './micrographs as usual. """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="micrographs",help="List the micrographs to filter here.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode='filter')
-	parser.add_pos_argument(name="import_files",help="List the files to import/filter here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode='import')
+	parser.add_pos_argument(name="micrographs",help="List the micrographs to filter here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode='filter')
 	parser.add_header(name="filterheader", help='Options below this label are specific to filtering', title="### filtering options ###", row=1, col=0, rowspan=1, colspan=2, mode='import,filter')
 	parser.add_argument("--invert",action="store_true",help="Invert contrast",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--edgenorm",action="store_true",help="Edge normalize",default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode='filter[True]')
@@ -139,6 +138,7 @@ def main():
 			#ctf.dsbg=ds
 			db=js_open_dict(info_name(arg,nodir=not options.usefoldername))
 			db["ctf_frame"]=[box,ctf,(box/2,box/2),set(),5,1]
+			db["quality"]=5
 			print info_name(arg,nodir=not options.usefoldername),ctf
 
 		E2progress(logid,(float(i)/float(len(args))))

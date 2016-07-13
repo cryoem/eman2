@@ -219,7 +219,7 @@ not need to specify any of the following other than the ones already listed abov
 #	parser.add_argument("--m3dsetsf", type=str,dest="m3dsetsf", default=None, help="Default=auto. Name of a file containing a structure factor to apply after refinement")
 	parser.add_argument("--m3dpreprocess", type=str, default=None, help="Default=auto. Normalization processor applied before 3D reconstruction")
 
-	parser.add_argument("--ampcorrect",choices=['auto','strucfac','flatten','none'],default='auto',help="Will perform amplitude correction via the specified method.  'flatten' requires a target resolution better than 8 angstroms (experimental). 'none' will disable amplitude correction (experimental).", guitype='combobox', row=28, col=0, rowspan=1, colspan=2, mode="refinement['strucfac']", choicelist="('strucfac','flatten','none','auto')")
+	parser.add_argument("--ampcorrect",choices=['auto','strucfac','flatten','none'],default='auto',help="Will perform amplitude correction via the specified method.  'flatten' requires a target resolution better than 8 angstroms (experimental). 'none' will disable amplitude correction (experimental).", guitype='combobox', row=28, col=0, rowspan=1, colspan=2, mode="refinement['auto']", choicelist="('strucfac','flatten','none','auto')")
 
 	#parser.add_argument("--classweight",choices=['sqrt','count','no_wt'],default='count',help="Alter the weight of each class in the reconstruction (experimental).", guitype='combobox', row=24, col=0, rowspan=1, colspan=2, mode="refinement['count']", choicelist="('sqrt','count','no_wt')")
 	#parser.add_argument("--sqrtnorm",action="store_true",default=False, dest="sqrtnorm", help="If set, the sqrt of the number of particles in each class will be used to weight the direct fourier inversion.",guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, mode="refinement")
@@ -1052,11 +1052,16 @@ artifact territory. </p>
 rather than specifying --input and --model. When you use --startfrom, it will not re-randomize the phases. Since you have already achieved
 sufficient resolution to validate the gold-standard approach, continuing to extend this resolution is valid, and more efficient.""".format(1.0/lastres[1]))
 		except:
-			append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring (or {:1.1f} &Aring with a more conservative mask);.
+			try:
+				append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring (or {:1.1f} &Aring with a more conservative mask);.
 Since this refinement continued from an existing refinement (or something funny happened), it is impossible to tell if the gold-standard criteria have been met, but
 if they were met in the refinement this run continued, then your resolution should still be valid.""".format(1.0/lastres[0],1.0/lastres[1],options.path))
-			traceback.print_exc()
-			print "Note: the above traceback is just a warning for debugging purposes, and can be ignored"
+				traceback.print_exc()
+				print "Note: the above traceback is just a warning for debugging purposes, and can be ignored"
+			except:
+				append_html("""<p> Congratulations, your refinement is complete, but there was some difficulty in assessing the resolution. This could just mean that your data was 
+sampling-limited (meaning a smaller A/pix value would have been required to achieve data-limited resolution. If you cannot figure out what is going on, suggest asking for help
+on the <a href=https://groups.google.com/forum/#!forum/eman2>Google Group</a>.""")
 
 	append_html("""<h2>Explore your results</h2><p>Here are some useful output files to look at:</p><ul>
 <li>Your final 3-D map from this run is {path}/threed_{iter:02d}.hdf</li>

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #
-# Author: Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
+# Authors:
+# Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
+# Markus Stabrin, 09/06/2016 (markus.stabrin@mpi-dortmund.mpg.de)
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -592,7 +594,11 @@ class SXCmdWidget(QWidget):
 				# Extract command line from qsub script template
 				for line in file_template:
 					if line.find("XXX_SXCMD_LINE_XXX") != -1:
-						cmd_line = line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
+						if np > 1:
+							cmd_line = line
+						else:
+							cmd_line = "XXX_SXCMD_LINE_XXX"
+						cmd_line = cmd_line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
 						if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 							cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
 						if cmd_line.find("XXX_SXMPI_JOB_NAME_XXX") != -1:
@@ -605,7 +611,10 @@ class SXCmdWidget(QWidget):
 				cmd_line = str(self.sxcmd_tab_main.mpi_cmd_line_edit.text())
 				# If empty string is entered, use a default template
 				if cmd_line == "":
-					cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
+					if np > 1:
+						cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
+					else:
+						cmd_line = "XXX_SXCMD_LINE_XXX"
 				if cmd_line.find("XXX_SXMPI_NPROC_XXX") != -1:
 					cmd_line = cmd_line.replace("XXX_SXMPI_NPROC_XXX", str(np))
 				if cmd_line.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -790,9 +799,10 @@ class SXCmdWidget(QWidget):
 					self.sxcmd_tab_main.mpi_cmd_line_edit.setText(val_str_in)
 				elif label_in == "Submit Job to Queue":
 					if val_str_in == "YES":
-						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(True)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(Qt.Checked)
 					else: # assert(val_str_in == "NO")
-						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(False)
+						self.sxcmd_tab_main.qsub_enable_checkbox.setChecked(Qt.Unchecked)
+					# self.sxcmd_tab_main.set_qsub_enable_state() # Somehow this place does not paint the text boxes upon application startup
 				elif label_in == "Job Name":
 					self.sxcmd_tab_main.qsub_job_name_edit.setText(val_str_in)
 				elif label_in == "Submission Command":
@@ -846,6 +856,7 @@ class SXCmdWidget(QWidget):
 		file_path_in = str(QFileDialog.getOpenFileName(self, "Load parameters", SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog))
 		if file_path_in != "":
 			self.read_params(file_path_in)
+			self.sxcmd_tab_main.set_qsub_enable_state()
 
 	def select_file(self, target_widget, file_format = ""):
 		file_path = ""
@@ -935,10 +946,10 @@ class SXCmdTab(QWidget):
 		token_widget_row_span = 1; token_widget_col_span = 1
 		cmd_frame_row_span = 32; cmd_frame_col_span = 7
 
-		title_label_min_width = 150
-		title_label_min_height = 80
+		title_label_min_width = 180 # title_label_min_width = 150
+		title_label_min_height = 40 #title_label_min_height = 80
 		short_info_min_width = 260 # short_info_min_width = 360
-		short_info_min_height = 80
+		short_info_min_height = 40 # short_info_min_height = 80
 		func_btn_min_width = 150
 		btn_min_width = 300
 		token_label_min_width = 300 # token_label_min_width = 360
@@ -975,10 +986,10 @@ class SXCmdTab(QWidget):
 		title_layout = QGridLayout()
 		title_layout.setMargin(SXLookFeelConst.grid_margin)
 		title_layout.setSpacing(SXLookFeelConst.grid_spacing)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
-		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
+#		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		grid_layout = QGridLayout()
 		grid_layout.setMargin(SXLookFeelConst.grid_margin)
 		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
@@ -994,7 +1005,8 @@ class SXCmdTab(QWidget):
 		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
 		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		title_hbox.addLayout(title_layout)
-		title_hbox.addStretch(1)
+#		title_hbox.addStretch(1)
+		title_layout.setColumnStretch(grid_row_origin + token_label_col_span, title_layout.columnStretch(grid_row_origin+token_label_col_span) + 1)
 		scroll_layout.addLayout(title_hbox)
 		scroll_layout.addLayout(grid_layout)
 		scroll_layout.addLayout(submit_layout)
@@ -1016,6 +1028,8 @@ class SXCmdTab(QWidget):
 			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
+#			temp_label.setFixedWidth(title_label_min_width)
+#			temp_label.setFixedHeight(title_label_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
 
 			#
@@ -1027,6 +1041,7 @@ class SXCmdTab(QWidget):
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
+#			temp_label.setFixedHeight(short_info_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 
 			grid_row += short_info_row_span
@@ -1036,12 +1051,15 @@ class SXCmdTab(QWidget):
 			temp_label = QLabel("<b>%s</b>" % (self.sxcmdwidget.sxcmd.get_mode_name_for("human")))
 			temp_label.setMinimumWidth(title_label_min_width)
 			temp_label.setMinimumHeight(title_label_min_height)
+#			temp_label.setFixedWidth(title_label_min_width)
+#			temp_label.setFixedHeight(title_label_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin, title_row_span, title_col_span)
 
 			temp_label = QLabel("Set advanced parameters", self)
 			temp_label.setWordWrap(True)
 			temp_label.setMinimumWidth(short_info_min_width)
 			temp_label.setMinimumHeight(short_info_min_height)
+#			temp_label.setFixedHeight(short_info_min_height)
 			title_layout.addWidget(temp_label, grid_row, grid_col_origin + title_col_span, short_info_row_span, short_info_col_span)
 
 		# Add space
@@ -1594,13 +1612,13 @@ class SXCmdCategoryWidget(QWidget):
 		# --------------------------------------------------------------------------------
 		self.add_sxcmd_widgets()
 
-		# --------------------------------------------------------------------------------
-		# Load the previously saved parameter setting of this sx command
-		# Override the registration of project constant parameter settings with the previously-saved one
-		# --------------------------------------------------------------------------------
-		for sxcmd in self.sxcmd_category.cmd_list:
-			if os.path.exists(sxcmd.widget.gui_settings_file_path):
-				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
+#		# --------------------------------------------------------------------------------
+#		# Load the previously saved parameter setting of this sx command
+#		# Override the registration of project constant parameter settings with the previously-saved one
+#		# --------------------------------------------------------------------------------
+#		for sxcmd in self.sxcmd_category.cmd_list:
+#			if os.path.exists(sxcmd.widget.gui_settings_file_path):
+#				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
 
 		# --------------------------------------------------------------------------------
 		# Alway select the 1st entry of the command list upon startup
@@ -1678,6 +1696,11 @@ class SXCmdCategoryWidget(QWidget):
 			self.connect(sxcmd.btn, SIGNAL("clicked()"), partial(self.handle_sxcmd_btn_event, sxcmd))
 
 			self.grid_row += 1
+
+	def load_previous_session(self):
+		for sxcmd in self.sxcmd_category.cmd_list:
+			if os.path.exists(sxcmd.widget.gui_settings_file_path):
+				sxcmd.widget.read_params(sxcmd.widget.gui_settings_file_path)
 
 	def handle_sxcmd_btn_event(self, sxcmd):
 		modifiers = QApplication.keyboardModifiers()
@@ -2079,6 +2102,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		self.sxconst_set.widget.register_const_set()
 
 		# --------------------------------------------------------------------------------
+		# Load the previously saved parameter setting of all sx commands
+		# Override the registration of project constant parameter settings with the previously-saved one
+		# --------------------------------------------------------------------------------
+		for sxcmd_category in self.sxcmd_category_list:
+			sxcmd_category.widget.load_previous_session()
+
+		# --------------------------------------------------------------------------------
 		# Start widget
 		# --------------------------------------------------------------------------------
 		start_widget = QtGui.QWidget()
@@ -2163,6 +2193,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# Store the constructed lists and dictionary as a class data member
 		self.sxcmd_category_list = sxcmd_category_list
 
+	def update_qsub_enable_states(self):
+		# Construct and add widgets for sx command categories
+		for sxcmd_category in self.sxcmd_category_list:
+			# Create SXCmdCategoryWidget for this command category
+			for sxcmd in sxcmd_category.cmd_list:
+				sxcmd.widget.sxcmd_tab_main.set_qsub_enable_state()
+
 	def handle_sxmenu_item_btn_event(self, sxmenu_item):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
@@ -2213,7 +2250,8 @@ def main(args):
 
 	sxapp_font = sxapp.font()
 	sxapp_font_info = QFontInfo(sxapp.font())
-	new_point_size = sxapp_font_info.pointSize() + 1
+#	new_point_size = sxapp_font_info.pointSize() + 1
+	new_point_size = sxapp_font_info.pointSize()
 	# # MRK_DEBUG: Check the default system font
 	# print "MRK_DEBUG: sxapp_font_info.style()      = ", sxapp_font_info.style()
 	# print "MRK_DEBUG: sxapp_font_info.styleHint()  = ", sxapp_font_info.styleHint()
@@ -2232,8 +2270,8 @@ def main(args):
 	# still showing the default font size:
 	# QPushButton, QLable, Window Title, and QToolTip
 	#
-	sxapp_font.setPointSize(new_point_size) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
-	sxapp.setFont(sxapp_font)
+#	sxapp_font.setPointSize(new_point_size) # and setPointSizeF() are device independent, while setPixelSize() is device dependent
+#	sxapp.setFont(sxapp_font)
 
 	# sxapp.setStyleSheet("QPushButton {font-size:18pt;}");  # NOTE: 2016/02/19 Toshio Moriya: Doesn't work
 	# sxapp.setStyleSheet("QLabel {font-size:18pt;}"); # NOTE: 2016/02/19 Toshio Moriya: Doesn't work
@@ -2254,6 +2292,9 @@ def main(args):
 	# Show main window
 	sxmain_window.show()
 	sxmain_window.raise_()
+
+	# Update qsub enable state of all sx command category widgets after window is displayed and raised
+	sxmain_window.update_qsub_enable_states()
 
 	# Start event handling loop
 	sxapp.exec_()

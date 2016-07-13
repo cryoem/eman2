@@ -50,7 +50,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 
 	usage = """prog [options]
-A simple CTF simulation program. Doesn't read or process data. Just does mathematical simulations.
+A simple CTF simulation program.
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -60,13 +60,14 @@ A simple CTF simulation program. Doesn't read or process data. Just does mathema
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=4.1, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--samples",type=int,help="Number of samples in the plotted curve",default=256)
+	parser.add_argument("--apply",type=str,default=None,help="A 2-D image file which the CTF will be applied to in real-time")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
 	from emapplication import EMApp
 	app=EMApp()
-	gui=GUIctfsim(app,options.apix,options.voltage,options.cs,options.ac,options.samples)
+	gui=GUIctfsim(app,options.apix,options.voltage,options.cs,options.ac,options.samples,options.apply)
 	gui.show_guis()
 	app.exec_()
 
@@ -79,16 +80,8 @@ try:
 	from emshape import *
 	from valslider import ValSlider
 except:
-	print "Warning: PyQt4 must be installed to use the --gui option"
-	class dummy:
-		pass
-	class QWidget:
-		"A dummy class for use when Qt not installed"
-		def __init__(self,parent):
-			print "Qt4 has not been loaded"
-	QtGui=dummy()
-	QtGui.QWidget=QWidget
-
+	print "Error: PyQt4 must be installed"
+	sys.exit(1)
 
 class MyListWidget(QtGui.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
@@ -104,7 +97,7 @@ class MyListWidget(QtGui.QListWidget):
 
 
 class GUIctfsim(QtGui.QWidget):
-	def __init__(self,application,apix=1.0,voltage=300.0,cs=4.1,ac=10.0,samples=256):
+	def __init__(self,application,apix=1.0,voltage=300.0,cs=4.1,ac=10.0,samples=256,apply=None):
 		"""CTF simulation dialog
 		"""
 		try:
@@ -126,6 +119,15 @@ class GUIctfsim(QtGui.QWidget):
 		self.df_ac=ac
 		self.df_samples=samples
 		self.img=None
+
+		if apply==None : 
+			self.apply=None
+			self.applyim=None
+		else : 
+			self.apply=EMData(apply,0)
+			self.df_apix=self.apply["apix_x"]
+			print "A/pix reset to ",self.df_apix
+			self.applyim=EMImage2DWidget(application=self.app())
 
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
@@ -183,7 +185,7 @@ class GUIctfsim(QtGui.QWidget):
 		self.sdefocus=ValSlider(self,(0,5),"Defocus:",0,90)
 		self.vbl.addWidget(self.sdefocus)
 
-		self.sbfactor=ValSlider(self,(0,1600),"B factor:",0,90)
+		self.sbfactor=ValSlider(self,(0,1600),"B factor:",100,90)
 		self.vbl.addWidget(self.sbfactor)
 
 		self.sdfdiff=ValSlider(self,(0,1),"DF Diff:",0,90)
@@ -258,6 +260,7 @@ class GUIctfsim(QtGui.QWidget):
 	def on_new_but(self):
 		ctf=EMAN2Ctf()
 		ctf.defocus=1.0
+		ctf.bfactor=100.0
 		ctf.voltage=self.df_voltage
 		ctf.apix=self.df_apix
 		ctf.cs=self.df_cs
@@ -270,6 +273,8 @@ class GUIctfsim(QtGui.QWidget):
 	def show_guis(self):
 		if self.guiim != None:
 			self.app().show_specific(self.guiim)
+		if self.applyim != None:
+			self.app().show_specific(self.applyim)
 		if self.guiplot != None:
 			self.app().show_specific(self.guiplot)
 		#if self.guirealim != None:
@@ -286,6 +291,9 @@ class GUIctfsim(QtGui.QWidget):
 			E2saveappwin("e2ctf","image",self.guiim.qt_parent)
 			self.app().close_specific(self.guiim)
 			self.guiim = None
+		if self.applyim != None:
+			self.app().close_specific(self.applyim)
+			self.applyim = None
 		if self.guiplot != None:
 			E2saveappwin("e2ctf","plot",self.guiplot.qt_parent)
 			self.app().close_specific(self.guiplot)
@@ -333,6 +341,16 @@ class GUIctfsim(QtGui.QWidget):
 
 		ctf.compute_2d_complex(self.img,Ctf.CtfType.CTF_AMP,None)
 		self.guiim.set_data(self.img)
+
+		if self.applyim!=None:
+			applyf=self.apply.do_fft()
+			ctfmul=applyf.copy()
+			ctf.compute_2d_complex(ctfmul,Ctf.CtfType.CTF_AMP)
+			applyf.mult(ctfmul)
+			apply2=applyf.do_ift()
+			apply2.mult(5.0)	# roughly compensate for contrast reduction so apply comparable
+			self.applyim.set_data([apply2,self.apply])
+		
 
 	def newSet(self,val=0):
 		"called when a new data set is selected from the list"

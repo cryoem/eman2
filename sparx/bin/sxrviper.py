@@ -19,7 +19,7 @@ MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER = 10
 # NORMALIZED_AREA_THRESHOLD_FOR_OUTLIER_DETECTION = 0.2
 PERCENT_THRESHOLD_X = .8
 PERCENT_THRESHOLD_Y = .2
-ANGLE_ERROR_THRESHOLD = 24
+ANGLE_ERROR_THRESHOLD = 24.0
 TRIPLET_WITH_ANGLE_ERROR_LESS_THAN_THRESHOLD_HAS_BEEN_FOUND = -100
 MUST_END_PROGRAM_THIS_ITERATION = -101
 EMPTY_VIPER_RUN_INDICES_LIST = -102
@@ -90,7 +90,7 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 
 def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, 
 	no_of_viper_runs_analyzed_together_from_user_options, masterdir, bdb_stack_location, outlier_percentile, 
-	criterion_name, outlier_index_threshold_method):
+	criterion_name, outlier_index_threshold_method, angle_threshold):
 	
 	no_of_viper_runs_analyzed_together_must_be_incremented = 0
 	do_calculation = 1
@@ -120,6 +120,7 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 		if list_of_independent_viper_run_indices_used_for_outlier_elimination[0] == EMPTY_VIPER_RUN_INDICES_LIST:
 			if no_of_viper_runs_analyzed_together > MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER:
 				error_status = 1
+				print "RVIPER reached maximum number of VIPER runs analyzed together without finding a core set of stable projections for the current RVIPER iteration (%d)! Finishing."%rviper_iter
 				cmd = "{} {}".format("mkdir ", masterdir + "MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER__Reached"); cmdexecute(cmd)
 			else:
 				# No set of solutions has been found to make a selection for outlier elimination.
@@ -132,11 +133,11 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 			if list_of_independent_viper_run_indices_used_for_outlier_elimination[0] == MUST_END_PROGRAM_THIS_ITERATION:
 				no_of_viper_runs_analyzed_together_must_be_incremented = MUST_END_PROGRAM_THIS_ITERATION
 				found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination[1:], outlier_percentile, 
-					rviper_iter, masterdir, bdb_stack_location, "use all images")
+					rviper_iter, masterdir, bdb_stack_location, "use all images", angle_threshold)
 			else:
 				# still need to eliminate DUMMY_INDEX_USED_AS_BUFFER
 				found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination[1:], outlier_percentile, 
-					rviper_iter, masterdir, bdb_stack_location, outlier_index_threshold_method)
+					rviper_iter, masterdir, bdb_stack_location, outlier_index_threshold_method, angle_threshold)
 
 	if_error_then_all_processes_exit_program(error_status)
 
@@ -313,7 +314,7 @@ def measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_o
 
 
 def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, masterdir,  bdb_stack_location,
-	outlier_index_threshold_method):
+	outlier_index_threshold_method, angle_threshold):
 	
 	# sxheader.py bdb:nj  --consecutive  --params=OID
 	import numpy as np
@@ -639,6 +640,14 @@ output_directory: directory name into which the output files will be written.  I
 			print "Please run '" + progname + " -h' for detailed options"
 			return 1
 
+	mpi_barrier(MPI_COMM_WORLD)
+	if(myid == main_node):
+		print "****************************************************************"
+		Util.version()
+		print "****************************************************************"
+		sys.stdout.flush()
+	mpi_barrier(MPI_COMM_WORLD)
+
 	# this is just for benefiting from a user friendly parameter name
 	options.ou = options.radius 
 	my_random_seed = options.my_random_seed
@@ -820,7 +829,7 @@ output_directory: directory name into which the output files will be written.  I
 					cmd = "{} {}".format("mkdir -p", masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM)%(rviper_iter)); cmdexecute(cmd)
 					cmd = "{} {}".format("rm -rf", independent_run_dir); cmdexecute(cmd)
 					cmd = "{} {}".format("cp -r", get_already_processed_viper_runs() + " " +  independent_run_dir); cmdexecute(cmd)
-				
+
 				if os.path.exists(independent_run_dir + "log.txt") and (string_found_in_file("Finish VIPER2", independent_run_dir + "log.txt")):
 					this_run_is_NOT_complete = 0
 				else:
@@ -863,14 +872,14 @@ output_directory: directory name into which the output files will be written.  I
 					store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', locals(), exclude_list_of_vars=["usage"], 
 						vars_that_will_show_only_size = ["subset"])
 					store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', options.__dict__, write_or_append='a')
-				
+
 				# mpi_barrier(mpi_comm)
 				# from mpi import mpi_finalize
 				# mpi_finalize()
 				# print "mpi finalize"
 				# from sys import exit
 				# exit()
-				
+
 				out_params, out_vol, out_peaks = multi_shc(all_projs, subset, no_of_shc_runs_analyzed_together, options,
 				mpi_comm=mpi_comm, log=log, ref_vol=ref_vol)
 
@@ -879,27 +888,33 @@ output_directory: directory name into which the output files will be written.  I
 			if runs_iter >= (no_of_viper_runs_analyzed_together_from_user_options - 1):
 				increment_for_current_iteration = identify_outliers(myid, main_node, rviper_iter,
 				no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options, masterdir,
-				bdb_stack_location, outlier_percentile, criterion_name, outlier_index_threshold_method)
-				
+				bdb_stack_location, outlier_percentile, criterion_name, outlier_index_threshold_method, angle_threshold)
+
 				if increment_for_current_iteration == MUST_END_PROGRAM_THIS_ITERATION:
 					break
-				
+
 				no_of_viper_runs_analyzed_together += increment_for_current_iteration
 
 		# end of independent viper loop
 
 		calculate_volumes_after_rotation_and_save_them(options, rviper_iter, masterdir, bdb_stack_location, myid,
 		mpi_size, no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options)
-		
-		if increment_for_current_iteration == MUST_END_PROGRAM_THIS_ITERATION:
-			break
 
-	# end of R viper loop
+		if increment_for_current_iteration == MUST_END_PROGRAM_THIS_ITERATION:
+			if (myid == main_node):
+				print "RVIPER found a core set of stable projections for the current RVIPER iteration (%d), the maximum angle difference between corresponding projections from different VIPER volumes is less than %.2f. Finishing."%(rviper_iter, ANGLE_ERROR_THRESHOLD)
+			break
+	else:
+		if (myid == main_node):
+			print "After running the last iteration (%d), RVIPER did not find a set of projections with the maximum angle difference between corresponding projections from different VIPER volumes less than %.2f Finishing."%(rviper_iter, ANGLE_ERROR_THRESHOLD)
+		
+			
+	# end of RVIPER loop
 
 	#mpi_finalize()
 	#sys.exit()
 
-	
+	mpi_barrier(MPI_COMM_WORLD)
 	mpi_finalize()
 
 

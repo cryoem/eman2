@@ -55,7 +55,8 @@ def main():
     --filter_sum
     --lowpass=lowpass
     --highpass=highpass
-    --remove_sum'
+    --remove_sum
+    --nr_threads'
 
     sxunblur exists in non-MPI version.
 
@@ -68,7 +69,7 @@ def main():
 
     sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
     --nr_frames=25 --pixel_size=1.19 --save_frames --filter_sum
-    --lowpass=0.033 --highpass=0.00033
+    --lowpass=0.033 --highpass=0.00033 --nr_threads=2
 
     Dose filter and Expert Options
 
@@ -78,35 +79,36 @@ def main():
     --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0
     --fourier_vertical=1 --fourier_horizontal=1 --shift_threshold=0.1
     --iterations=10 --restore_noise --verbose --filter_sum --lowpass=0.033
-    --highpass=0.00033
+    --highpass=0.00033 --nr_threads=2
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--nr_frames',                   type='int',                  default=3,                                  help='number of frames in the set of micrographs')
-    parser.add_option('--sum_suffix',                  type='str',                  default='_sum',                           help=SUPPRESS_HELP)
-    parser.add_option('--shift_suffix',                  type='str',                    default='_shift',                        help=SUPPRESS_HELP)
-    parser.add_option('--pixel_size',                    type='float',                  default=-1.0,                          help='pixel size [A]')
-    parser.add_option('--dose_filter',                   action='store_true',       default=False,                        help='apply dose filter options')
-    parser.add_option('--exposure_per_frame',    type='float',                  default=2.0,                           help='exposure per frame [e/A^2]')
-    parser.add_option('--voltage',                         type='float',                    default=300.0,                    help='accelerate voltage [kV]')
-    parser.add_option('--pre_exposure',                type='float',                    default=0.0,                       help='pre exposure amount [e/A^2]')
-    parser.add_option('--save_frames',                  action='store_true',        default=False,                     help='save aligned frames')
-    parser.add_option('--frames_suffix',                type='string',                  default='_frames',       help=SUPPRESS_HELP)
-    parser.add_option('--expert_mode',                 action='store_true',        default=False,                    help='set expert mode settings')
-    parser.add_option('--frc_suffix',                       type='string',                  default='_frc',                     help=SUPPRESS_HELP)
-    parser.add_option('--shift_initial',                    type='float',                   default=2.0,                        help='minimum shift for inital search [A]')
-    parser.add_option('--shift_radius',                    type='float',                    default=200.0,                   help='outer radius shift limit [A]')
-    parser.add_option('--b_factor',                         type='float',                   default=1500.0,                  help='b-factor to appy to image [A^2]')
-    parser.add_option('--fourier_vertical',              type='int',                    default=1,                             help='half-width of central vertical line of fourier mask')
-    parser.add_option('--fourier_horizontal',         type='int',                   default=1,                               help='half-width of central horizontal line of fourier mask')
-    parser.add_option('--shift_threshold',               type='float',                  default=0.1,                         help='termination shift threshold')
-    parser.add_option('--iterations',                       type='int',                     default=10,                           help='maximum number of iterations')
-    parser.add_option('--restore_noise',                action='store_true',         default=False,                     help='restore noise power')
-    parser.add_option('--verbose',                          action='store_true',         default=False,                    help='verbose output')
-    parser.add_option('--filter_sum',                       action='store_true',        default=False,                     help='filter the output images')
-    parser.add_option('--lowpass',                          type='float',                   default=0.033,                     help='apply a lowpass filter: abolute frequency')
-    parser.add_option('--highpass',                         type='float',                   default=0.00033,                help='apply a highpass filter: abolute frequency')
-    parser.add_option('--remove_sum',                   action='store_true',        default=False,                     help='remove the calculated sum files')
+    parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
+    parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
+    parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=SUPPRESS_HELP)
+    parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='pixel size [A]')
+    parser.add_option('--dose_filter',        action='store_true', default=False,     help='apply dose filter options')
+    parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='exposure per frame [e/A^2]')
+    parser.add_option('--voltage',            type='float',        default=300.0,     help='accelerate voltage [kV]')
+    parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='pre exposure amount [e/A^2]')
+    parser.add_option('--save_frames',        action='store_true', default=False,     help='save aligned frames')
+    parser.add_option('--frames_suffix',      type='string',       default='_frames', help=SUPPRESS_HELP)
+    parser.add_option('--expert_mode',        action='store_true', default=False,     help='set expert mode settings')
+    parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=SUPPRESS_HELP)
+    parser.add_option('--shift_initial',      type='float',        default=2.0,       help='minimum shift for inital search [A]')
+    parser.add_option('--shift_radius',       type='float',        default=200.0,     help='outer radius shift limit [A]')
+    parser.add_option('--b_factor',           type='float',        default=1500.0,    help='b-factor to appy to image [A^2]')
+    parser.add_option('--fourier_vertical',   type='int',          default=1,         help='half-width of central vertical line of fourier mask')
+    parser.add_option('--fourier_horizontal', type='int',          default=1,         help='half-width of central horizontal line of fourier mask')
+    parser.add_option('--shift_threshold',    type='float',        default=0.1,       help='termination shift threshold')
+    parser.add_option('--iterations',         type='int',          default=10,        help='maximum number of iterations')
+    parser.add_option('--restore_noise',      action='store_true', default=False,     help='restore noise power')
+    parser.add_option('--verbose',            action='store_true', default=False,     help='verbose output')
+    parser.add_option('--filter_sum',         action='store_true', default=False,     help='filter the output images')
+    parser.add_option('--lowpass',            type='float',        default=0.033,     help='apply a lowpass filter: abolute frequency')
+    parser.add_option('--highpass',           type='float',        default=0.00033,   help='apply a highpass filter: abolute frequency')
+    parser.add_option('--remove_sum',         action='store_true', default=False,     help='remove the calculated sum files')
+    parser.add_option('--nr_threads',         type='int',          default=2,         help='Number of threads')
 
     # list of the options and the arguments
     (options, args) = parser.parse_args(argv[1:])
@@ -208,6 +210,9 @@ def create_sh_script(
 
         # To make sure it is a bash script
         strSh += '#!/bin/bash\n\n'
+
+        # Export number of threads
+        strSh += 'export OMP_NUM_THREADS={:d}\n'.format(options.nr_threads)
 
         # The script will abort with non-zero exit values
         strSh += '# The script will abort with non-zero exit values\n'
@@ -346,8 +351,9 @@ def create_sh_script(
             # Say yes to Save Frames
             strSh += 'YES\n'
             # Frames file
-            strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}.mrc\n'.format(
+            strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}{:s}.mrc\n'.format(
                 output_dir,
+                options.sum_suffix,
                 options.frames_suffix
                 )
         else:
@@ -445,8 +451,9 @@ def create_sh_script(
                 # Say yes to Save Frames
                 strSh += 'YES\n'
                 # Frames file
-                strSh += '{:s}/Dosecorrected/${{baseName}}{:s}.mrc\n'.format(
+                strSh += '{:s}/Dosecorrected/${{baseName}}{:s}{:s}.mrc\n'.format(
                     output_dir,
+                    options.sum_suffix,
                     options.frames_suffix
                     )
             else:
@@ -521,11 +528,10 @@ def create_sh_script(
                     output_dir,
                     options.sum_suffix
                     )
-            strSh += '{:s}/Filtered/${{baseName}}_lp{:d}_hp{:d}.mrc ' \
+            strSh += '{:s}/Filtered/${{baseName}}{:s}.mrc ' \
                 .format(
                     output_dir,
-                    int(lowpass_angstrom),
-                    int(highpass_angstrom)
+                    options.sum_suffix
                     )
             strSh += '--process=filter.lowpass.gauss:cutoff_freq={:f} '.format(
                 options.lowpass
