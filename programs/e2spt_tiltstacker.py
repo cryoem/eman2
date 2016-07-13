@@ -524,10 +524,12 @@ def organizetilts( intilts, options ):
 			charsum = 0
 			for i in range(options.anglesindxinfilename):
 				charsum += len(parsedname[i])
-			charsum += i
+				if len(parsedname[i]) == 0:
+					charsum += 1 
+			charsum += options.anglesindxinfilename
 
 			sign = intilt[charsum+1]
-			print "by position, sign is",sign
+			print "by position %d sign is %s" % (charsum+1,sign)
 			angle = float(parsedname[options.anglesindxinfilename])
 			if sign == '-':
 				angle *= -1
