@@ -19253,6 +19253,56 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 
 
 
+vector<int> Util::pickup_references( vector<vector<float> > refang, float delta, float an,
+                vector<vector<float> > datang, string symmetry) {
+
+	size_t nrefang = refang.size();
+	size_t ndatang = datang.size();
+	const float qv = static_cast<float>( pi/180.0 );
+	int nsym = 1; //????
+	float ac = cos(qv*an);
+
+	int npsi = int(360.0f/delta);
+	vector<int> ltable;
+
+	if( symmetry == "c1" ) {
+		vector<float> dang(3*ndatang);
+		for (int kl=0; kl<ndatang; kl++)  getfvec(datang[kl][0], datang[kl][1], dang[3*kl], dang[3*kl+1], dang[3*kl+2]);
+
+		for (int n=0; n<nrefang; n++) {
+			vector<float> refvec(3);
+			getfvec(refang[n][0], refang[n][1], refvec[0], refvec[1], refvec[2]);
+			for (int l=0; l<npsi; l++) {
+				float psi = l*delta;
+				bool start = true;
+				for (int kl=0; kl<ndatang; kl++) {
+					//  first check psi
+					float qt = fmod(datang[kl][2]-psi,360.0f);
+					qt = min(qt, 360.0f - qt);
+					if(qt<an) {
+						qt = dang[3*kl]*refvec[0] + dang[3*kl+1]*refvec[1] + dang[3*kl+2]*refvec[2];
+						if( qt >= ac ) {
+							if( start ) {
+								ltable.push_back(n);  //  refang
+								ltable.push_back(l);  //  psi
+								start = false;
+							}
+						}
+						ltable.push_back(kl);
+					}
+				}
+				if( !start )  ltable.push_back(-1);
+			}
+		}
+
+
+	}
+	ltable.push_back(-1);
+	return ltable;
+}
+
+
+
 #define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*(size_t)nxo]
 EMData* Util::pack_complex_to_real(EMData* img)
 {
