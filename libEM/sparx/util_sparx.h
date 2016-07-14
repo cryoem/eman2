@@ -883,8 +883,8 @@ costlist, int* curbranch);
 	//utility for sxlocres
 	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);
 
-	static vector<int> pickup_references( vector<vector<float> > refang, float delta, float an,
-                vector<vector<float> > datang, string symmetry);
+	static vector<int> pickup_references(const vector<vector<float> >& refang, float delta, float an,
+                const vector<vector<float> >& datang, string symmetry);
 
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);
@@ -945,21 +945,23 @@ public:
 		phi   *= pi180;
 		theta *= pi180;
 
-		x = sin(theta)*cos(phi);
-		y = sin(theta)*sin(phi);
+		float qs = sin(theta);
+		x = qs*cos(phi);
+		y = qs*sin(phi);
 		z = cos(theta);
 
 		return;
 	}
 
-	static inline void getfvec(float phi, float theta, float& x, float& y, float& z, int option=0) {
+	static inline void getfvec(float phi, float theta, float& x, float& y, float& z) {
 		float pi180 = M_PI/180.0f;
 		
 		phi   *= pi180;
 		theta *= pi180;
 
-		x = sin(theta)*cos(phi);
-		y = sin(theta)*sin(phi);
+		float qs = sin(theta);
+		x = qs*cos(phi);
+		y = qs*sin(phi);
 		z = cos(theta);
 
 		return;
