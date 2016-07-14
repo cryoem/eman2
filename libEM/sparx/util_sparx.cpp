@@ -19251,8 +19251,8 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 	freqvol->update();
 	EXITFUNC;
 }
-
-
+using namespace std;
+#include <string>
 
 vector<int> Util::pickup_references(const vector<vector<float> >& refang, float delta, float an,
                 const vector<vector<float> >& datang, string symmetry) {
@@ -19261,7 +19261,7 @@ vector<int> Util::pickup_references(const vector<vector<float> >& refang, float 
 	size_t ndatang = datang.size();
 	const float qv = static_cast<float>( pi/180.0 );
 
-	int nsym = string::stoi(symmetry.substr(1,1000));
+	int nsym = std::stoi(symmetry.substr(1,1000));
 
 	float ac = cos(qv*an);
 
