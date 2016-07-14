@@ -7961,7 +7961,7 @@ L640:
     return;
 }
 
-float Util::eval(char * images,EMData * img, vector<int> S,int N, int ,int size)
+float Util::eval(char * images, EMData * img, vector<int> S, int N, int, int size)
 {
 	int j,d;
 	EMData * e = new EMData();
@@ -19253,13 +19253,15 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 
 
 
-vector<int> Util::pickup_references( vector<vector<float> > refang, float delta, float an,
-                vector<vector<float> > datang, string symmetry) {
+vector<int> Util::pickup_references(const vector<vector<float> >& refang, float delta, float an,
+                const vector<vector<float> >& datang, string symmetry) {
 
 	size_t nrefang = refang.size();
 	size_t ndatang = datang.size();
 	const float qv = static_cast<float>( pi/180.0 );
-	int nsym = 1; //????
+
+	int nsym = stoi(symmetry.substr(1,1000));
+
 	float ac = cos(qv*an);
 
 	int npsi = int(360.0f/delta);
@@ -19277,9 +19279,10 @@ vector<int> Util::pickup_references( vector<vector<float> > refang, float delta,
 				bool start = true;
 				for (int kl=0; kl<ndatang; kl++) {
 					//  first check psi
-					float qt = fmod(datang[kl][2]-psi,360.0f);
+					float qt = fmod(datang[kl][2]-psi+1440.0f,360.0f);
 					qt = min(qt, 360.0f - qt);
 					if(qt<an) {
+						//cout<<datang[kl][2]<<"   "<<psi<<"   "<<qt<<"   "<<an<<"   "<<n<<endl;
 						qt = dang[3*kl]*refvec[0] + dang[3*kl+1]*refvec[1] + dang[3*kl+2]*refvec[2];
 						if( qt >= ac ) {
 							if( start ) {
@@ -19287,8 +19290,8 @@ vector<int> Util::pickup_references( vector<vector<float> > refang, float delta,
 								ltable.push_back(l);  //  psi
 								start = false;
 							}
+							ltable.push_back(kl);
 						}
-						ltable.push_back(kl);
 					}
 				}
 				if( !start )  ltable.push_back(-1);
@@ -19296,6 +19299,94 @@ vector<int> Util::pickup_references( vector<vector<float> > refang, float delta,
 		}
 
 
+	} else if( symmetry.substr(0,1) == "c")  {
+		float qt = 360.0f/nsym;
+		vector<float> dang(3*3*ndatang);
+		for (int kl=0; kl<ndatang; kl++)  {
+			for (int n=0; n<3; n++)  getfvec(datang[kl][0]+(n-1)*qt, datang[kl][1], dang[3*n + 9*kl], dang[1 + 3*n + 9*kl], dang[2 + 3*n + 9*kl]);
+		}
+		for (int n=0; n<nrefang; n++) {
+			vector<float> refvec(3);
+			getfvec(refang[n][0], refang[n][1], refvec[0], refvec[1], refvec[2]);
+			for (int l=0; l<npsi; l++) {
+				float psi = l*delta;
+				bool start = true;
+				for (int kl=0; kl<ndatang; kl++) {
+					//  first check psi
+					float qt = fmod(datang[kl][2]-psi+1440.0f,360.0f);
+					qt = min(qt, 360.0f - qt);
+					if(qt<an) {
+						qt = -2.0f;
+						for (int nsm=0; nsm<3; nsm++)  {
+							float vc = dang[3*nsm + 9*kl]*refvec[0] + dang[1 + 3*nsm + 9*kl]*refvec[1] + dang[2+ 3*nsm + 9*kl]*refvec[2];
+							if(vc > qt)  qt = vc;
+						}
+						if( qt >= ac ) {
+							if( start ) {
+								ltable.push_back(n);  //  refang
+								ltable.push_back(l);  //  psi
+								start = false;
+							}
+							ltable.push_back(kl);
+						}
+					}
+				}
+				if( !start )  ltable.push_back(-1);
+			}
+		}
+	} else if( symmetry.substr(0,1) == "d")  {
+		float qt = 360.0f/nsym;
+		vector<float> dvecup(3*3*ndatang);
+		vector<float> dvecdown(3*3*ndatang);
+		for (int kl=0; kl<ndatang; kl++)  {
+			for (int n=0; n<3; n++)  getfvec(datang[kl][0]+(n-1)*qt, datang[kl][1], dvecup[3*n + 9*kl], dvecup[1 + 3*n + 9*kl], dvecup[2 + 3*n + 9*kl]);
+			for (int n=0; n<3; n++)  getfvec(-datang[kl][0]+(n-1)*qt, 180.0f-datang[kl][1], dvecdown[3*n + 9*kl], dvecdown[1 + 3*n + 9*kl], dvecdown[2 + 3*n + 9*kl]);
+		}
+		for (int n=0; n<nrefang; n++) {
+			vector<float> refvec(3);
+			getfvec(refang[n][0], refang[n][1], refvec[0], refvec[1], refvec[2]);
+			for (int l=0; l<npsi; l++) {
+				float psi = l*delta;
+				bool start = true;
+				for (int kl=0; kl<ndatang; kl++) {
+					//  first check psi
+					float qt = fmod(datang[kl][2]-psi+1440.0f,360.0f);
+					qt = min(qt, 360.0f - qt);
+					float qr = fmod(180.0f + datang[kl][2]-psi+1440.0f,360.0f);
+					qr = min(qr, 360.0f - qr);
+					if( (qt <= qr) and (qt<an) ) {
+						qt = -2.0f;
+						for (int nsm=0; nsm<3; nsm++)  {
+							float vc = dvecup[3*nsm + 9*kl]*refvec[0] + dvecup[1 + 3*nsm + 9*kl]*refvec[1] + dvecup[2+ 3*nsm + 9*kl]*refvec[2];
+							if(vc > qt)  qt = vc;
+						}
+						if( qt >= ac ) {
+							if( start ) {
+								ltable.push_back(n);  //  refang
+								ltable.push_back(l);  //  psi
+								start = false;
+							}
+							ltable.push_back(kl);
+						}
+					} else if ( (qt > qr) and (qr<an) ) {
+						qt = -2.0f;
+						for (int nsm=0; nsm<3; nsm++)  {
+							float vc = dvecdown[3*nsm + 9*kl]*refvec[0] + dvecdown[1 + 3*nsm + 9*kl]*refvec[1] + dvecdown[2+ 3*nsm + 9*kl]*refvec[2];
+							if(vc > qt)  qt = vc;
+						}
+						if( qt >= ac ) {
+							if( start ) {
+								ltable.push_back(n);  //  refang
+								ltable.push_back(l);  //  psi
+								start = false;
+							}
+							ltable.push_back(kl);
+						}
+					}
+				}
+				if( !start )  ltable.push_back(-1);
+			}
+		}
 	}
 	ltable.push_back(-1);
 	return ltable;
