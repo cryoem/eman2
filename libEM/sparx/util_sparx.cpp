@@ -38,6 +38,7 @@
 #endif	//_WIN32
 
 #include <cstring>
+#include <string>
 #include <ctime>
 #include <iostream>
 #include <boost/shared_ptr.hpp>
@@ -19260,7 +19261,7 @@ vector<int> Util::pickup_references(const vector<vector<float> >& refang, float 
 	size_t ndatang = datang.size();
 	const float qv = static_cast<float>( pi/180.0 );
 
-	int nsym = stoi(symmetry.substr(1,1000));
+	int nsym = string::stoi(symmetry.substr(1,1000));
 
 	float ac = cos(qv*an);
 
