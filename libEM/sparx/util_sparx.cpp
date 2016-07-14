@@ -19261,7 +19261,7 @@ vector<int> Util::pickup_references(const vector<vector<float> >& refang, float 
 	size_t ndatang = datang.size();
 	const float qv = static_cast<float>( pi/180.0 );
 
-	int nsym = std::stoi(symmetry.substr(1,1000));
+	int nsym = atoi(symmetry.substr(1,1000).c_str());//std::stoi(symmetry.substr(1,1000));
 
 	float ac = cos(qv*an);
 
