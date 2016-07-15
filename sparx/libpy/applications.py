@@ -14096,10 +14096,9 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 		data.set_attr("xform.align2d", t)
 		data.write_image(stack_data_ali, im)
 
-def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI = False, xysize=-1, zsize = -1, smearstep = 0.0, trl = False, niter = 10, upweighted = False, compensate = False, chunk_id = -1):
+def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI = False, xysize=-1, zsize = -1, smearstep = 0.0, upweighted = False, compensate = False, chunk_id = -1):
 	if MPI:
-		if trl:   recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, niter, verbose, upweighted, compensate, chunk_id)
-		else  :   recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
+		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
 		##newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
 		return
 
@@ -14124,7 +14123,7 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 	else:
 		drop_image(vol, vol_stack)
 
-def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=2, sym="c1", listfile="", group=-1, verbose=0,xysize=-1, zsize=-1, smearstep = 0.0):
+def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=2, sym="c1", listfile="", group=-1, verbose=0, xysize=-1, zsize=-1, smearstep = 0.0):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all
 	from string         import replace
@@ -14190,14 +14189,14 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 	from string         import replace
 	from time           import time
 	from mpi            import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD, mpi_barrier
-	from EMAN2      import Reconstructors
-	from fundamentals import fftip, fft
+	from EMAN2          import Reconstructors
+	from fundamentals   import fftip, fft
 	# flags reconstruct(Iunreg(), gridding_nr_iter,false, 1., dummy, dummy, dummy, dummy, 1., false, true, nr_threads, -1
 	myid       = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc      = mpi_comm_size(MPI_COMM_WORLD)
 	mpi_comm   = MPI_COMM_WORLD
 	time_start = time()
-	nnxo = 0
+	nnxo       = 0
 	
 	if(myid == 0):
 		nnxo = get_im(prj_stack).get_xsize()
@@ -14226,8 +14225,7 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 	else:
 		if(not pid_list):  pid_list = range(nima)
 
-	if verbose==0:
-		finfo = None
+	if verbose==0: finfo = None
 	else:
 		infofile = "progress%04d.txt"%(myid+1)
 		finfo = open( infofile, 'w' )
@@ -14279,7 +14277,8 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 
 	reduce_EMData_to_root(fftvol, myid, 0, comm=mpi_comm)
 	reduce_EMData_to_root(weight, myid, 0, comm=mpi_comm)
-	reduce_EMData_to_root(refvol, myid, 0, comm=mpi_comm)
+	
+	#reduce_EMData_to_root(refvol, myid, 0, comm=mpi_comm)
 	if not (finfo is None): 
 		finfo.write( "after reduce\n" )
 		finfo.flush()
@@ -14288,25 +14287,19 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 	mpi_barrier(mpi_comm)
 
 	if myid == 0 : # post-insertion operations, done only in main_node
-		fftvol = Util.shrinkfvol(fftvol,2)
-		weight = Util.shrinkfvol(weight,2) # reduce size 
 		if( sym != "c1" ):
 			fftvol    = fftvol.symfvol(sym, -1)
 			weight    = weight.symfvol(sym, -1)  # symmetrize if not asymmetric
 		#fftvol = Util.divn_cbyr(fftvol, weight)
-		nz     = weight.get_zsize()
-		ny     = weight.get_ysize()
-		nx     = weight.get_xsize()
 		from utilities  import tabessel
 		from morphology import notzero
-		it = model_blank(2*ny)
-		it +=1.0
-		Util.reg_weights(weight, refvol, it)
-		#beltab = tabessel(ny, nnxo) # iterative process
-		#nwe    = notzero(weight)
+		"""
+		beltab = tabessel(ny, nnxo) # iterative process
+		nwe    = notzero(weight)
+		"""
 		#Util.save_slices_on_disk(weight,"slices.hdf")
-		maxr2 = Tracker["constants"]["nnxo"]//2 
-		Util.iterefa(fftvol, weight, maxr2, Tracker["constants"]["nnxo"])
+		maxr2 = (nnxo//2)**2 
+		Util.iterefa(fftvol, weight, maxr2, nnxo)
 		"""
 		for iter in xrange(niter):
 			cvv = Util.mulreal(nwe, weight)
@@ -14315,14 +14308,13 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 			Util.mul_img_tabularized(cvv, nnxo, beltab)
 			cvv = fft(cvv)
 			Util.divabs(nwe, cvv)
-		"""
-		"""
+		
 		import os
 		#os.system(" rm slices.hdf")
 		del  beltab
 		from morphology   import cosinemask, threshold_outside
 		from fundamentals import fshift, fpol
-		nwe    = threshold_outside(nwe, 0.0, 1.0e20)
+		#nwe    = threshold_outside(nwe, 0.0, 1.0e20)
 		nx     = fftvol.get_ysize()
 		fftvol = fshift(fftvol,nx//2,nx//2,nx//2)
 		Util.mulclreal(fftvol, nwe)
@@ -14333,19 +14325,19 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 		fftvol.div_sinc(1)
 		fftvol.write_image(vol_stack)
 		"""
-		from morphology import cosinemask, threshold_outside
+		from morphology import cosinemask
+		from fundamentals import fshift, fpol, fdecimate
 		nx = fftvol.get_ysize()
-		if( nx > 2*Tracker["constants"]["nnxo"]):
-			fftvol = fdecimate(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], False, False)
-		elif(nx < 2*Tracker["constants"]["nnxo"] ):
-			fftvol = fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
+		if( nx > 2*nnxo):
+			fftvol = fdecimate(fftvol, 2*nnxo, 2*nnxo, 2*nnxo, False, False)
+		elif(nx < 2*nnxo ):
+			fftvol = fpol(fftvol, 2*nnxo, 2*nnxo, 2*nnxo, RetReal = False, normalize = False)
 
-		fftvol = fft(fshift(fftvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]))
-		fftvol = Util.window(fftvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-		fftvol = cosinemask(fftvol, Tracker["constants"]["nnxo"]//2-1,5, None)
+		fftvol = fft(fshift(fftvol,nnxo,nnxo,nnxo))
+		fftvol = Util.window(fftvol, nnxo,nnxo,nnxo)
+		fftvol = cosinemask(fftvol, nnxo//2-1,5, None)
 		fftvol.div_sinc(1)
 		fftvol.write_image(vol_stack)
-
 		
 		
 		
