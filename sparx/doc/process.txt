@@ -6,7 +6,7 @@ sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image se
 
 ''usage in command line''
 
-sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --threshold=THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_weighted  --B_enhance=B_ENHANCE  --adhoc_bfactor  --low_pass_filter  --ff=FF  --aa=AA  --mask=MASK  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --FSC_cutoff=FSC_CUTOFF  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_weighted  --B_enhance=B_ENHANCE  --adhoc_bfactor  --low_pass_filter  --ff=FF  --aa=AA  --mask=MASK  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --FSC_cutoff=FSC_CUTOFF  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
 
 
 === Typical usage ===
@@ -81,17 +81,27 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
 ''' sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5 '''
 
-12. Generate 3D mask from a given 3D volume automatically or using threshold provided by user.
+12. Generate soft-edged 3D mask from input 3D volume automatically or using the user-provided threshold.
 
-''' sxprocess.py  --adaptive_mask vol001.hdf '''
+# Automatically compute the threshold to intially obtain the largest density cluster.
 
-13. Postprocess 3-D or 2-D images: For 3-D volumes, (1) calculate FSC with provided mask, (2) MTF correction, (3) weight summed volume with FSC, (4) estimate B-factor from given resolution ranges of summed two volumes, then (5) apply negative B-factor to the weighted volume. For 2-D images, calculate B-factor and apply negative B-factor to 2-D images.
+''' sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --nsigma=3.0  --ndilation=1  --kernel_size=9  --gauss_standard_dev=5 '''
+
+# Use the user-provided threshold to intially obtain the largest density cluster.
+
+''' sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  -ndilation=0  --kernel_size=9  --gauss_standard_dev=5 '''
+
+13. Generate binary 3D mask from input 3D volume using the user-provided threshold.
+
+''' sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3 '''
+
+14. Postprocess 3-D or 2-D images: For 3-D volumes, (1) calculate FSC with provided mask, (2) MTF correction, (3) weight summed volume with FSC, (4) estimate B-factor from given resolution ranges of summed two volumes, then (5) apply negative B-factor to the weighted volume. For 2-D images, calculate B-factor and apply negative B-factor to 2-D images.
 
 ''' sxprocess.py  --postprocess  run1_half1_class001_unfil.mrc  run1_half2_class001_unfil.mrc  --fsc_weighted  --pixel_size=1.12 '''
 
-14.  Window stack file -reduce size of images without changing the pixel size.
+15. Window stack file -reduce size of images without changing the pixel size.
 
-15. Create angular distribution .build file
+16. Create angular distribution .build file
 '''sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000'''
 
 == Input ==
@@ -124,12 +134,15 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
     scale:: Divide shifts in input 3D orientation parameters text file by this scale factor: (default -1.0)
 
-    adaptive_mask:: Create 3D mask from reference volume: (default False)
-    nsigma:: Density standard deviations threshold: Defines the threshold used to find the main volume within the data. All voxels with density <= mean + nsigma standard deviations will be included into the main volume. This option will not be used if the optioh threshold is different than 999.0. (default 1.0)
-    ndilation:: Mask extension cycles: The initial mask will be extended this number of cycles. (default 3)
+    adaptive_mask:: Create soft-edged 3D mask from reference volume: (default False)
+    nsigma:: Density standard deviations threshold: Defines the threshold used to find the main volume within the data. All voxels with density <= mean + nsigma standard deviations will be included into the main volume. This option will not be used if the option threshold is larger than -9999.0. (default 1.0)
+    threshold:: Binarization threshold: Below this value the data is assumed to not belong to the main volume. With the value lower than the default, the option will be ignored and the mask will be set according to nsigma. (default -9999.0)
+    ndilation:: Mask extension cycles: The initial mask will be extended this number of cycles. To keep the size of the main volume, set this to kernel_size/2 (default 3)
     kernel_size:: Gaussian kernel size: Size of the gaussian kernel used to smooth the binary mask. (default 11)
     gauss_standard_dev:: Kernel standard deviation : Standard deviation used in the construction of the gaussian smoothing of the mask. (default 9)
-    threshold:: Binarization threshold: Below this value the data is assumed to not belong to the main volume. If set to 9999.0 the option will be ignored and the mask will be set according to nsigma. (default 9999.0)
+
+    binary_mask:: Create binary 3D mask from reference volume: (default False)
+    bin_threshold:: Binarization threshold: Below this value the data is assumed to not belong to the main volume. (default 0.0)
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
     nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
 

@@ -1298,7 +1298,7 @@ def residual_1dpw2(list_1dpw2, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0
 			freq.append(i/(2*Pixel_size*len(list_1dpw2)))
 	return res, freq
 
-def adaptive_mask1(vol, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
+def adaptive_mask1(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
 	"""
 		Name
 			adaptive_mask - create a mask from a given image.
@@ -1314,12 +1314,23 @@ def adaptive_mask1(vol, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_sta
 	ny = vol.get_ysize()
 	nz = vol.get_zsize()
 	mc = model_circle(nx//2, nx, ny, nz) - model_circle(nx//3, nx, ny, nz)
-	s1 = Util.infomask(vol, mc, True)
-	mask = Util.get_biggest_cluster(binarize(vol, s1[0]+s1[1]*nsigma))
+	s1 = Util.infomask(vol, mc, True) # flip true: find statistics under the mask (mask >0.5)
+	if threshold <= -9999.0:
+		# Use automatic mode
+		s1 = [s1[0] + s1[1] * nsigma, s1[0], s1[1], nsigma] 
+		# new s1[0] is calculated threshold for binarize
+	else: 
+		# use the user-provided threshold
+		if s1[1] != 0.0:
+			s1 = [threshold, s1[0], s1[1], (threshold - s1[0])/s1[1]] 
+		else:
+			s1 = [threshold, s1[0], s1[1], 0.0]
+		# new s1[3] is calculated nsigma corresponding to user-provided threshold
+	mask = Util.get_biggest_cluster(binarize(vol, s1[0]))
 	for i in xrange(ndilation):   mask = dilation(mask)
 	mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
-	return mask
-
+	return mask, s1 # s1[0]: threshold for binarize, s1[1]: background density average, s1[2]: background density sigma, s1[3]: sigma factor (nsigma)
+	
 def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
 	"""
 		Name
@@ -1406,6 +1417,7 @@ def cosinemask(im, radius = -1, cosine_width = 5, bckg = None, s=999999.0):
 						om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z) + temp*(s-om.get_value_at(x,y,z)))
 						#om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z)*(0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width )))
 	return om
+	"""
 '''
 
 

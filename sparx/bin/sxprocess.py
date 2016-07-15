@@ -274,13 +274,24 @@ def main():
    11. Scale 3D shifts.  The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor
 		sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5
 
-   12. Generate 3D mask from a given 3-D volume automatically or using threshold provided by user.
+   12. Generate soft-edged 3D mask from input 3D volume automatically or using the user-provided threshold.
+        Automatically compute the threshold to intially obtain the largest density cluster.
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --nsigma=3.0  --ndilation=1  --kernel_size=9  --gauss_standard_dev=5
+        
+        Use the user-provided threshold to intially obtain the largest density cluster.
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  -ndilation=0  --kernel_size=9  --gauss_standard_dev=5
 
-   13. Postprocess 3-D or 2-D images:
+   13. Generate binary 3D mask from input 3D volume using the user-provided threshold.
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3
+
+   14. Postprocess 3-D or 2-D images:
    			for 3-D volumes: calculate FSC with provided mask; weight summed volume with FSC; estimate B-factor from FSC weighted summed two volumes; apply negative B-factor to the weighted volume.
    			for 2-D images:  calculate B-factor and apply negative B-factor to 2-D images.
-   14. Window stack file -reduce the size of images without changing the pixel size.
+   			
+   15. Window stack file -reduce the size of images without changing the pixel size.
 
+   16. Create angular distribution .build file
+        sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
 
 """
 
@@ -318,15 +329,21 @@ def main():
 	# import ctf estimates done using cter
 	parser.add_option("--scale",              	type="float", 		default=-1.0,      		  help="Divide shifts in the input 3D orientation parameters text file by the scale factor.")
 
-	# generate adaptive mask from an given 3-D volume
-	parser.add_option("--adaptive_mask",        action="store_true",                      help="create adavptive 3-D mask from a given volume", default=False)
-	parser.add_option("--nsigma",              	type="float",	default= 1.,     	      help="number of times of sigma of the input volume to obtain the the large density cluster")
-	parser.add_option("--ndilation",            type="int",		default= 3,     		  help="number of times of dilation applied to the largest cluster of density")
-	parser.add_option("--kernel_size",          type="int",		default= 11,     		  help="convolution kernel for smoothing the edge of the mask")
-	parser.add_option("--gauss_standard_dev",   type="int",		default= 9,     		  help="stanadard deviation value to generate Gaussian edge")
-	parser.add_option("--threshold",            type="float",	default= 9999.,           help="threshold provided by user to binarize input volume")
-	parser.add_option("--ne",                   type="int",		default= 0,     		  help="number of times to erode the binarized  input image")
-	parser.add_option("--nd",                   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
+	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
+	parser.add_option("--adaptive_mask",        action="store_true",                      help="generate soft-edged 3D mask from input 3D volume", default= False)
+	parser.add_option("--nsigma",               type="float",        default= 1.0,        help="number of times of sigma of the input volume to intially obtain the largest density cluster")
+	parser.add_option("--threshold",            type="float",        default= -9999.0,    help="threshold provided by user to intially obtain the largest density cluster")
+	parser.add_option("--ndilation",            type="int",          default= 3,          help="number of times of dilation applied to the largest cluster of density")
+	parser.add_option("--kernel_size",          type="int",          default= 11,         help="convolution kernel for smoothing the edge of the mask")
+	parser.add_option("--gauss_standard_dev",   type="int",          default= 9,          help="stanadard deviation value to generate Gaussian edge")
+	
+	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
+	parser.add_option("--binary_mask",          action="store_true",                      help="generate binary 3D mask from input 3D volume", default=False)
+	parser.add_option("--bin_threshold",        type="float",        default= 0.0,        help="threshold provided by user to binarize input volume")
+	parser.add_option("--ne",                   type="int",          default= 0,          help="number of times to erode binarized volume")
+	parser.add_option("--nd",                   type="int",          default= 0,          help="number of times to dilate binarized volume")
+
+	# Postprocess 3-D or 2-D images
 	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
 	parser.add_option("--mtf",                  type="string",        default= None,      help="mtf file")
 	parser.add_option("--fsc_weighted",         action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes")
@@ -343,6 +360,7 @@ def main():
 	parser.add_option("--2d",                   action="store_true",                      help="postprocess isac 2-D averaged images",default=False)
 	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
+	
 	# Options for angular distribution
 	parser.add_option('--angular_distribution',    	action="store_true",  	default=False,        	help='create an angular distribution file based on a project3d.txt')
 	parser.add_option('--round_digit',             	type='int',          	default=5,           	help='accuracy of the loaded angle (default 5)')
@@ -828,30 +846,52 @@ def main():
 
 	elif options.adaptive_mask:
 		from utilities import get_im
-		from morphology import adaptive_mask1, binarize, erosion, dilation
-		nsigma             = options.nsigma
-		ndilation          = options.ndilation
-		kernel_size        = options.kernel_size
-		gauss_standard_dev = options.gauss_standard_dev
+		from morphology import adaptive_mask1
 		nargs = len(args)
 		if nargs ==0:
-			print " Create 3D mask from a given volume, either automatically or from the user provided threshold."
-		elif nargs > 2:
-			print "Too many inputs are given, try again!"
+			print " Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold."
 			return
-		else:
-			inputvol = get_im(args[0])
-			input_path, input_file_name = os.path.split(args[0])
-			input_file_name_root,ext=os.path.splitext(input_file_name)
-			if nargs == 2:  mask_file_name = args[1]
-			else:           mask_file_name = "adaptive_mask_for_"+input_file_name_root+".hdf" # Only hdf file is output.
-			if options.threshold !=9999.:
-				mask3d = binarize(inputvol, options.threshold)
-				for i in xrange(options.ne): mask3d = erosion(mask3d)
-				for i in xrange(options.nd): mask3d = dilation(mask3d)
-			else:
-				mask3d = adaptive_mask1(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
-			mask3d.write_image(mask_file_name)
+		elif nargs > 2:
+			print "Too many arguments are given, try again!"
+			return
+		
+		print "Started sxprocess.py  --adaptive_mask"
+		inputvol = get_im(args[0]) # args[0]: input 3D volume file path
+		input_path, input_file_name = os.path.split(args[0])
+		input_file_name_root,ext=os.path.splitext(input_file_name)
+		if nargs == 2:  mask_file_name = args[1] # args[1]: output 3D mask file path
+		else:           mask_file_name = "adaptive_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
+		mask3d, density_stats = adaptive_mask1(inputvol, options.nsigma, options.threshold, options.ndilation, options.kernel_size, options.gauss_standard_dev)
+		mask3d.write_image(mask_file_name)
+		print "  Applied threshold for binarize: %f" % density_stats[0]
+		print "  Background density average    : %f" % density_stats[1]
+		print "  Background density sigma      : %f" % density_stats[2]
+		print "  Sigma factor (nsigma)         : %f" % density_stats[3]
+		print "Finished sxprocess.py  --adaptive_mask"
+	
+	elif options.binary_mask:
+		from utilities import get_im
+		from morphology import binarize, erosion, dilation
+		nargs = len(args)
+		if nargs == 0:
+			print " Generate binary 3D mask from input 3D volume using the user-provided threshold."
+			return
+		elif nargs > 2:
+			print "Too many arguments are given, try again!"
+			return
+		
+		print "Started sxprocess.py  --binary_mask"
+		inputvol = get_im(args[0])
+		input_path, input_file_name = os.path.split(args[0])
+		input_file_name_root,ext=os.path.splitext(input_file_name)
+		if nargs == 2:  mask_file_name = args[1]
+		else:           mask_file_name = "binary_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
+		mask3d = binarize(inputvol, options.bin_threshold)
+		for i in xrange(options.ne): mask3d = erosion(mask3d)
+		for i in xrange(options.nd): mask3d = dilation(mask3d)
+		mask3d.write_image(mask_file_name)
+		print "Applied threshold value for binarization is %f" % options.bin_threshold
+		print "Finished sxprocess.py  --binary_mask"
 
 	elif options.postprocess:
 		from logger import Logger,BaseLogger_Files
