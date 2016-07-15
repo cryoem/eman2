@@ -19355,7 +19355,7 @@ vector<int> Util::pickup_references(const vector<vector<float> >& refang, float 
 					qt = min(qt, 360.0f - qt);
 					float qr = fmod(180.0f + datang[kl][2]-psi+1440.0f,360.0f);
 					qr = min(qr, 360.0f - qr);
-					if( (qt <= qr) and (qt<an) ) {
+					if( (qt <= qr) && (qt<an) ) {
 						qt = -2.0f;
 						for (int nsm=0; nsm<3; nsm++)  {
 							float vc = dvecup[3*nsm + 9*kl]*refvec[0] + dvecup[1 + 3*nsm + 9*kl]*refvec[1] + dvecup[2+ 3*nsm + 9*kl]*refvec[2];
@@ -19369,7 +19369,7 @@ vector<int> Util::pickup_references(const vector<vector<float> >& refang, float 
 							}
 							ltable.push_back(kl);
 						}
-					} else if ( (qt > qr) and (qr<an) ) {
+					} else if ( (qt > qr) && (qr<an) ) {
 						qt = -2.0f;
 						for (int nsm=0; nsm<3; nsm++)  {
 							float vc = dvecdown[3*nsm + 9*kl]*refvec[0] + dvecdown[1 + 3*nsm + 9*kl]*refvec[1] + dvecdown[2+ 3*nsm + 9*kl]*refvec[2];
