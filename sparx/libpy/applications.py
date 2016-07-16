@@ -14183,7 +14183,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 			finfo.flush()
 
 def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, verbose = None, niter =10, compensate = False, target_window_size=-1):
-	# unregularized reconstruction  
+	# unregularized reconstruction  flags reconstruct(Iunreg(), gridding_nr_iter,false, 1., dummy, dummy, dummy, dummy, 1., false, true, nr_threads, -1
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file, info
 	from string         import replace
@@ -14191,7 +14191,6 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 	from mpi            import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD, mpi_barrier
 	from EMAN2          import Reconstructors
 	from fundamentals   import fftip, fft
-	# flags reconstruct(Iunreg(), gridding_nr_iter,false, 1., dummy, dummy, dummy, dummy, 1., false, true, nr_threads, -1
 	myid       = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc      = mpi_comm_size(MPI_COMM_WORLD)
 	mpi_comm   = MPI_COMM_WORLD
@@ -14234,7 +14233,7 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 	weight = EMData()
 	
 	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
-	r = Reconstructors.get( "nn4_ctfw", params )
+	r      = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	m = [1.0]*target_size
 	is_complex = prjlist[0].get_attr("is_complex")
@@ -14245,9 +14244,7 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 		image.set_attr("padffted",1)
 		image.set_attr("npad",1)
 		image.set_attr("bckgnoise",m)
-		#if not upweighted:  insert_slices_pdf(r, filt_table(image, image.get_attr("bckgnoise")) )
-		insert_slices(r, image)
-
+		r.insert_slice(image, image.get_attr_default("xform.projection", None), 1.0)
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )
 		finfo.flush()
@@ -14269,19 +14266,15 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 		if( sym != "c1" ):
 			fftvol    = fftvol.symfvol(sym, -1)
 			weight    = weight.symfvol(sym, -1)  # symmetrize if not asymmetric
-		from utilities  import tabessel
-		from morphology import notzero
-		maxr2 = (target_window_size//2)**2 
-		Util.iterefa(fftvol, weight, maxr2, target_window_size )
-		from morphology import cosinemask
+		maxr2 = ((target_window_size//-1)*2)**2 
+		Util.iterefa(fftvol, weight, maxr2, target_window_size)
+		from morphology   import cosinemask
 		from fundamentals import fshift, fpol, fdecimate
 		fftvol = fft(fshift(fftvol,target_window_size, target_window_size, target_window_size))
 		fftvol = Util.window(fftvol, target_window_size, target_window_size, target_window_size)
 		fftvol = cosinemask(fftvol, target_window_size//2-1,5, None)
 		fftvol.div_sinc(1)
 		fftvol.write_image(vol_stack)
-		
-		
 		
 def recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter, verbose, upweighted, compensate, chunk_id):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
