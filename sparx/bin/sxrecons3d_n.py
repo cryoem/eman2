@@ -64,6 +64,7 @@ def main():
 	parser.add_option("--upweighted",             action="store_true",  default=False,  help="apply background noise")
 	parser.add_option("--compensate",             action="store_true",  default=False,  help="compensate in reconstruction")
 	parser.add_option("--chunk_id",               type="int",           default=-1,     help="reconstruct both odd and even groups of particles")
+	parser.add_option("--target_window_size",               type="int",           default=-1,     help=" size of the targeted reconstruction ")
 	(options,args) = parser.parse_args(arglist[1:])
 
 
@@ -106,7 +107,7 @@ def main():
 			ERROR(" trillinear interpolation reconstruction has MPI version only!")
 			sys.exit()
 		recons3d_trl_MPI(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
-		 options.sym, options.list, options.group, options.verbose, options.niter, options.upweighted, options.compensate,options.chunk_id)
+		 options.sym, options.verbose, options.niter, options.compensate, options.target_window_size)
 		
 	else:
 		ERROR(" Wrong interpolation method. The current options are 4nn, and tril. 4nn is the defalut one. ")
