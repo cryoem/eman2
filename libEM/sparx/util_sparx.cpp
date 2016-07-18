@@ -26489,17 +26489,25 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	}
 
 	size_t nx_extended = nyt + 1;
+	/*
 	EMData *cvvi    = new EMData();
 	cvvi->set_size(nx_extended, nyt, nzt);
 	cvvi->set_ri(true);
 	cvvi->set_fftodd(true);
 	float *cvv = cvvi->get_data();
+	*/
+	vector<float> cvvi(2*size);
+	float *cvv = cvvi.data();
 	int ncx = nyt/2;
+
+	float fnorma = 1.0f/float(nyt*nyt*nzt);
+	fftwf_plan plan_real_to_complex = fftwf_plan_dft_r2c_3d(nyt, nyt, nzt, cvv, (fftwf_complex *) cvv, FFTW_ESTIMATE);
+	fftwf_plan plan_complex_to_real = fftwf_plan_dft_c2r_3d(nyt, nyt, nzt, (fftwf_complex *) cvv, cvv, FFTW_ESTIMATE);
 	
 	size_t niter = 10;
 	for (size_t i=0;i<niter;++i) {
 
-		cvvi->set_complex(false);
+		//cvvi->set_complex(false);
 		for( size_t i = 0; i<size; i++) {
 			double prd = nwe[i]*tw_ptr[i];
 			if(prd > 1.0e23L) cout<<"  we have a problem A"<<endl;
@@ -26507,8 +26515,12 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 			cvv[2*i+1] = 0.0f;
 		}
 
-		cvvi->set_complex(true);
-		cvvi->do_ift_inplace();
+		//cvvi->set_complex(true);
+		//cvvi->do_ift_inplace();
+
+		fftwf_execute(plan_complex_to_real);
+
+		for (size_t i=0; i<2*size; ++i)  cvv[i] *= fnorma;
 
 		for (size_t k=0;k<nzt;++k)  {
 			float argz = (k<nzc)?(k*k) : (k-nzt)*(k-nzt);
@@ -26524,15 +26536,19 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 			}
 		}
 
-		cvvi->do_fft_inplace();
+		//cvvi->do_fft_inplace();
+		fftwf_execute(plan_real_to_complex);
 
 		for (size_t i=0; i<size; ++i) nwe[i] /= Util::get_max(1.0e-5f, sqrt(cvv[2*i]*cvv[2*i]+cvv[2*i+1]*cvv[2*i+1]));
 
 
 	}
+	fftwf_destroy_plan(plan_real_to_complex);
+	fftwf_destroy_plan(plan_complex_to_real);
 
 	beltab.resize(0);
-	delete cvvi; cvvi = 0;
+	cvvi.resize(0);
+	//delete cvvi; cvvi = 0;
 
 	for( size_t i = 0; i<size; i++) {
 		double prr = tvol_ptr[2*i]   * nwe[i];
@@ -26555,50 +26571,6 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 
 }
 
-
-
-//void Util::make_fft_ifft(EMData* tvol) {
-//	ENTERFUNC;
-//	/* Exception Handle */
-//	if (!tvol) {
-//		throw NullPointerException("NULL input image");
-//	}
-//
-//	float *real_data = tvol->get_data();
-//	int nx = tvol->get_xsize();
-//	int ny = tvol->get_ysize();
-//	int nz = tvol->get_zsize();
-//
-//	int dims[3];
-//	dims[0] = nz;
-//	dims[1] = ny;
-//	dims[2] = nx;
-//
-//	float * complex_data = new float[nx*ny*nz*2];
-//
-//	fftwf_plan plan_real_to_complex = fftwf_plan_dft_r2c(3, dims, real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
-//	fftwf_plan plan_complex_to_real = fftwf_plan_dft_c2r(3, dims, (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
-//
-//
-////	size_t niter = 20;
-////	size_t niter = 1;
-//	size_t niter = 4;
-//	for (size_t i=0;i<niter;++i) {
-//		fftwf_execute(plan_real_to_complex);
-//		fftwf_execute(plan_complex_to_real);
-//	}
-//
-//	fftwf_destroy_plan(plan_real_to_complex);
-//	fftwf_destroy_plan(plan_complex_to_real);
-//
-//
-//	delete[] complex_data;
-//
-//	tvol->update();
-//
-//	EXITFUNC;
-//
-//}
 
 void Util::make_fft_ifft(EMData* tvol) {
 
@@ -26728,24 +26700,6 @@ void Util::make_fft_ifft(EMData* tvol) {
 //
 //}
 
-
-//void Util::make_fft_ifft(EMData* tvol) {
-//	ENTERFUNC;
-//	/* Exception Handle */
-//	if (!tvol) {
-//		throw NullPointerException("NULL input image");
-//	}
-//
-////	size_t niter = 10;
-//	size_t niter = 1;
-//	for (size_t i = 0; i < niter; ++i) {
-//		tvol->do_fft_inplace();
-//		tvol->do_ift_inplace();
-//	}
-//	tvol->update();
-//
-//	EXITFUNC;
-//}
 
 //void Util::my_real_to_complex_1d(float *real_data, float *complex_data, int n)
 vector<float> Util::my_real_to_complex_1d(vector<float> real_data_v)
