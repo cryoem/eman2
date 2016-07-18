@@ -76,7 +76,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
-	parser.add_argument("--usenufft", action="store_true", help="Use the summation calculation",default=False)
+	parser.add_argument("--quick", action="store_true", help="Use a slight approximation to the Gaussian during insertion. Does not support B-factors.",default=False)
 	parser.add_argument("--addpdbbfactor", action="store_true", help="Use the bfactor/temperature factor as the atom blurring radius, equivalent to Gaussian lowpass with 1/e width at 1/bfactor",default=False)
 	
 	(options, args) = parser.parse_args()
@@ -88,7 +88,7 @@ def main():
 
 	logger = E2init(sys.argv,options.ppid)
 		
-	if (options.usenufft):
+	if not options.quick:
 		
 		try: boxs=options.box.split(',')
 		except:
@@ -166,8 +166,10 @@ def main():
 				amax[2]=max(z,amax[2])
 	
 				try:
-					nelec+=atomdefs[a.upper()][0]
-					mass+=atomdefs[a.upper()][1]
+					nelec+=atomdefs[a[0].translate(None,"0123456789").upper()][0]
+					mass+=atomdefs[a[0].translate(None,"0123456789").upper()][1]
+					#nelec+=atomdefs[a.upper()][0]
+					#mass+=atomdefs[a.upper()][1]
 				except:
 					print("Unknown atom %s ignored at %d"%(a,aseq))
 							
@@ -194,6 +196,7 @@ def main():
 		print '\r   %d\nConversion complete'%len(atoms)
 
 	else:
+		if options.addpdbbfactor : print "WARNING: B-factors not supported in quick mode"
 		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.model,options.quiet)
 		outmap.write_image(args[1])
 
@@ -339,7 +342,9 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 		try:
 			# This insertion strategy ensures the output is centered.
 			elec=atomdefs[a[0].translate(None,"0123456789").upper()][0]
-			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
+# This was producing different results than the "quick" mode, and did not match the statement printed above!!!
+#			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
+			outmap.insert_scaled_sum(gaus,(a[1]/apix+outbox[0]/2,a[2]/apix+outbox[1]/2,a[3]/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
 		except: print "Skipping %d '%s'"%(i,a[0])		
 	if not quiet: print '\r   %d\nConversion complete'%len(atoms)		
 	outmap.set_attr("apix_x",apix)
