@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
 # sxgui_drift for analyzing drift parameters made by Unblur
 # Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 #
@@ -18,19 +18,12 @@
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from matplotlib import pylab
+from matplotlib.backends.backend_qt4agg \
+    import FigureCanvasQTAgg, NavigationToolbar2QTAgg
 import os
 import sys
 import glob
 import numpy
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
-
-# The name changed in newer versions of matplotlib
-try:
-    from matplotlib.backends.backend_qt4agg \
-        import NavigationToolbar2QTAgg as NavigationToolbar2QT
-except:
-    from matplotlib.backends.backend_qt4agg \
-        import NavigationToolbar2QT as NavigationToolbar2QT
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -40,13 +33,11 @@ except AttributeError:
 
 try:
     _encoding = QtGui.QApplication.UnicodeUTF8
-
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
-
 
 class Ui_MSMainWidget(object):
     def setupUi(self, MSMainWidget):
@@ -537,6 +528,10 @@ class Ui_MSMainWidget(object):
         self.chPlotAngle.setSizePolicy(sizePolicy)
         self.chPlotAngle.setObjectName(_fromUtf8("chPlotAngle"))
         self.verticalLayout_5.addWidget(self.chPlotAngle)
+        self.chPlotPerMic = QtGui.QCheckBox(self.layoutWidget)
+        self.chPlotPerMic.setEnabled(False)
+        self.chPlotPerMic.setObjectName(_fromUtf8("chPlotPerMic"))
+        self.verticalLayout_5.addWidget(self.chPlotPerMic)
         self.horizontalLayout_9.addLayout(self.verticalLayout_5)
         self.verticalLayout_6.addLayout(self.horizontalLayout_9)
         self.horizontalLayout_32 = QtGui.QHBoxLayout()
@@ -1157,6 +1152,7 @@ class Ui_MSMainWidget(object):
         self.chPlotDrift.setText(_translate("MSMainWidget", "Overall Drift Histogram", None))
         self.chPlotFrame.setText(_translate("MSMainWidget", "Drift per Frame Histogram", None))
         self.chPlotAngle.setText(_translate("MSMainWidget", "Angle per Frame Histogram", None))
+        self.chPlotPerMic.setText(_translate("MSMainWidget", "Overall Drift per Micrograph", None))
         self.label_5.setText(_translate("MSMainWidget", "Start Frame", None))
         self.label_11.setText(_translate("MSMainWidget", "End Frame", None))
         self.label_21.setText(_translate("MSMainWidget", "Threshold Overall Drift", None))
@@ -1194,6 +1190,7 @@ class Ui_MSMainWidget(object):
         self.pbSaveSettings.setText(_translate("MSMainWidget", "Save Settings", None))
         self.pbLoadSettings.setText(_translate("MSMainWidget", "Load Settings", None))
         self.pbAbout.setText(_translate("MSMainWidget", "About", None))
+
 
 
 class SXUnblurPlot(QtGui.QWidget):
@@ -1293,7 +1290,7 @@ class SXUnblurPlot(QtGui.QWidget):
             intLenUpper += 1
 
         # First half of the figure add to the upper widget
-        for number in range(intLenUpper):
+        for number in xrange(intLenUpper):
             # Create a Widget for each figure.
             figWidgetUpper = QtGui.QWidget(scrollContentUpper)
             figWidgetLower = QtGui.QWidget(scrollContentLower)
@@ -1407,7 +1404,7 @@ class SXUnblurPlot(QtGui.QWidget):
         self.mode = mode
 
         # Create Navigation widget for the canvas
-        self.toolbar = NavigationToolbar2QT(self.canvas, self.widgetPlot)
+        self.toolbar = NavigationToolbar2QTAgg(self.canvas, self.widgetPlot)
         # Set Layout
         self.layoutPlot.addWidget(self.toolbar)
         self.layoutPlot.addWidget(self.canvas)
@@ -1516,6 +1513,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Arrays
         self.arrData = None
+        self.arrMicNumber = None
 
         # Variables
         self.strInputDir = None
@@ -1532,11 +1530,6 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.idxSaved = 5
         self.idxName = 6
 
-        # Indices show and hide
-        self.idxVisible = 0
-        self.idxRect = 1
-        self.idxPos = 2
-
         # output directory
         self.outputDir = 'unblur_GUI_output'
 
@@ -1549,6 +1542,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.modeDrift = 'Drift'
         self.modeDriftPerFrame = 'Drift per Frame'
         self.modeAnglePerFrame = 'Angle per Frame'
+        self.modePerMic = 'Drift per Micrograph'
 
         # DType
         self.dFile = 'fileName'
@@ -1581,6 +1575,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.msAllPlotAngle = SXUnblurPlot(
             title='Angle per Frame Histogram', setframes=True
             )
+        self.msAllPlotPerMic = SXUnblurPlot(title='Drift per Micrograph')
 
         # Dictionarys
         self.dictThresh = {}
@@ -1614,7 +1609,8 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             self.chAverageDriftPerFrame: self.msAllPlotFrameAvg,
             self.chPlotDrift: self.msAllPlotDrift,
             self.chPlotFrame: self.msAllPlotFrame,
-            self.chPlotAngle: self.msAllPlotAngle
+            self.chPlotAngle: self.msAllPlotAngle,
+            self.chPlotPerMic: self.msAllPlotPerMic
             }
         self.dictHide = {
             self.msPlotDrift: self.chPlotDriftMic,
@@ -1623,7 +1619,8 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             self.msAllPlotFrameAvg: self.chAverageDriftPerFrame,
             self.msAllPlotDrift: self.chPlotDrift,
             self.msAllPlotFrame: self.chPlotFrame,
-            self.msAllPlotAngle: self.chPlotAngle
+            self.msAllPlotAngle: self.chPlotAngle,
+            self.msAllPlotPerMic: self.chPlotPerMic
             }
         self.dictSort = {
             self.sortFile: self.dMic,
@@ -1645,43 +1642,6 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.dictColor = {
             'modified': "color: rgb(0, 150, 255);",
             'done': "color: rgb(0, 0, 0);"
-            }
-        self.dictVisible = {
-            self.msPlotDrift: [
-                self.msPlotDrift.isVisible(),
-                self.msPlotDrift.rect(),
-                self.msPlotDrift.pos()
-                ],
-            self.msPlotFrame: [
-                self.msPlotFrame.isVisible(),
-                self.msPlotFrame.rect(),
-                self.msPlotFrame.pos()
-                ],
-            self.msPlotAngle: [
-                self.msPlotAngle.isVisible(),
-                self.msPlotAngle.rect(),
-                self.msPlotAngle.pos()
-                ],
-            self.msAllPlotFrameAvg: [
-                self.msAllPlotFrameAvg.isVisible(),
-                self.msAllPlotFrameAvg.rect(),
-                self.msAllPlotFrameAvg.pos()
-                ],
-            self.msAllPlotDrift: [
-                self.msAllPlotDrift.isVisible(),
-                self.msAllPlotDrift.rect(),
-                self.msAllPlotDrift.pos()
-                ],
-            self.msAllPlotFrame: [
-                self.msAllPlotFrame.isVisible(),
-                self.msAllPlotFrame.rect(),
-                self.msAllPlotFrame.pos()
-                ],
-            self.msAllPlotAngle: [
-                self.msAllPlotAngle.isVisible(),
-                self.msAllPlotAngle.rect(),
-                self.msAllPlotAngle.pos()
-                ]
             }
 
         # Lists
@@ -1861,6 +1821,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.chPlotAngle.stateChanged.connect(
             lambda: self._show_plot(checkbox=self.chPlotAngle)
             )
+        self.chPlotPerMic.stateChanged.connect(
+            lambda: self._show_plot(checkbox=self.chPlotPerMic)
+            )
 
         # Connect combo boxes
         self.cbSort.activated.connect(self._apply_sorting)
@@ -1892,6 +1855,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             )
         self.msAllPlotAngle.sigClose.connect(
             lambda: self._hide_plot(msplot=self.msAllPlotAngle)
+            )
+        self.msAllPlotPerMic.sigClose.connect(
+            lambda: self._hide_plot(msplot=self.msAllPlotPerMic)
             )
 
         # Connect canvas refresh frame event
@@ -1945,6 +1911,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.chPlotDrift.setEnabled(True)
         self.chPlotFrame.setEnabled(True)
         self.chPlotAngle.setEnabled(True)
+        self.chPlotPerMic.setEnabled(True)
         self.cbSort.setEnabled(True)
         self.cbFrame.setEnabled(True)
         self.cbAngle.setEnabled(True)
@@ -1972,10 +1939,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Open the drift files and do the drift calculations"""
 
         # Find Directory
-        self.strInputDir = str(QtGui.QFileDialog.getExistingDirectory(
+        self.strInputDir = QtGui.QFileDialog.getExistingDirectory(
             directory=os.getcwd(),
             options=QtGui.QFileDialog.DontUseNativeDialog
-            ))
+            )
 
         # If the return value is not empty, fill the gui
         if self.strInputDir != '':
@@ -2077,15 +2044,50 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Clear the list widget and load the shift files as list
         self.lsFiles.clear()
         if inputfile is None:
+            strDirectory = self.strInputDir
             strSuffix = str(self.leSuffix.text())
         else:
-            self.strInputDir = os.path.realpath(inputfile)[
-                :-len(os.path.realpath(inputfile).split('/')[-1]) - 1
-                ]
-            strSuffix = os.path.realpath(inputfile).split('/')[-1]
-            print(self.strInputDir)
-        self.listFile = glob.glob('{:s}/{:s}'.format(self.strInputDir, strSuffix))
+            strDirectory = os.getcwd()
+            strSuffix = inputfile
 
+        self.listFile = glob.glob('{:s}/{:s}'.format(strDirectory, strSuffix))
+
+        # Try to find micrograph numbers
+        if len(strSuffix.split('/')) == 1:
+            listSplit = strSuffix.split('*')
+        else:
+            listSplit = strSuffix.split('/')[-1].split('*')
+        if len(listSplit) != 2:
+            self.arrMicNumber = numpy.arange(len(self.listFile))
+            print(
+                'Could not identify micrograph number.\n' +
+                'Drift per micrograph number is ' +
+                'not the real micrograph number.'
+                )
+        else:
+            listMicNumber = []
+            varBreak = False
+            for file in self.listFile:
+                name = file.split('/')[-1]
+                prefix = name.split(listSplit[-1])
+                try:
+                    number = int(prefix[0].split(listSplit[0])[-1])
+                except:
+                    self.arrMicNumber = numpy.arange(len(self.listFile))
+                    varBreak = True
+                    print(
+                        'Could not identify micrograph number.\n' +
+                        'Drift per micrograph number is ' +
+                        'not the real micrograph number.'
+                        )
+                    break
+                else:
+                    listMicNumber.append(number)
+
+            if not varBreak:
+                self.arrMicNumber = numpy.array(listMicNumber)
+
+        # If no files were found
         if not self.listFile:
             messageBox2 = QtGui.QMessageBox()
             messageBox2.setText('No drift files found ({:s})'.format(strSuffix))
@@ -2151,6 +2153,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self._plot_scroll(mode=self.modeFrame)
         self._plot_scroll(mode=self.modeAngle)
         self._plot_single(mode=self.modeAverage)
+        self._plot_single(mode=self.modePerMic)
         self._plot_threshold(mode=self.modeOverall)
         self._plot_threshold(mode=self.modeFrame)
         self._plot_threshold(mode=self.modeAngle)
@@ -2191,7 +2194,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             (self.dMax, '<f8'),
             (self.dMaxFirst, '<f8')
             ]
-        for index in range(1, self.intFrames + 1):
+        for index in xrange(1, self.intFrames + 1):
             self.listDType.append(('x{:d}'.format(index), '<f8'))
             self.listDType.append(('y{:d}'.format(index), '<f8'))
             self.listCoordX.append('x{:d}'.format(index))
@@ -2220,12 +2223,8 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         for number, file in enumerate(self.listFile):
 
             # Get the micrograph name
-            try:
-                with open(file, 'r') as f:
-                    self.arrData[self.dMic][number] = \
-                        f.readline().split()[-1].replace('_temp', '_sum')
-            except Exception:
-                print('Error in file {0}, please check the file!'.format(file))
+            with open(file, 'r') as f:
+                self.arrData[self.dMic][number] = f.readline().split()[-1]
 
             # Get the file name
             self.arrData[self.dFile][number] = file.split('/')[-1]
@@ -2240,7 +2239,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     round(coord[idxY], 6)
 
             # Calculate per frame drift
-            for index in range(1, self.intFrames):
+            for index in xrange(1, self.intFrames):
 
                 fltDistanceX = \
                     self.arrData['x{:d}'.format(index)][number] - \
@@ -2280,9 +2279,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         if self.idxFirstFrame < 1:
             # Warning box when refreshing frames
             warningBox = QtGui.QMessageBox(self)
-            warningBox.setStandardButtons(
-                QtGui.QMessageBox.No | QtGui.QMessageBox.Yes
-                )
+            warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
             warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
             warningBox.setText(
                 'Start frame too small (minimum 1)!\n' +
@@ -2301,14 +2298,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         if self.idxLastFrame > self.intFrames:
             warningBox = QtGui.QMessageBox(self)
-            warningBox.setStandardButtons(
-                QtGui.QMessageBox.No | QtGui.QMessageBox.Yes
-                )
+            warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
             warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
             warningBox.setText(
-                'Stop frame too large (maximum {:d})!\n'.format(
-                    self.intFrames
-                    ) +
+                'Stop frame too large (maximum {:d})!\n'.format(self.intFrames) +
                 'Continue with maximum value?'
                 )
             warningBox.exec_()
@@ -2345,7 +2338,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             varOverallDrift = 0
 
             # Use all wanted frames
-            for index in range(self.idxFirstFrame, self.idxLastFrame):
+            for index in xrange(self.idxFirstFrame, self.idxLastFrame):
 
                 # Calculate Angles
                 if index <= self.idxLastFrame - 2:
@@ -2385,9 +2378,6 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                         angleCos = 1
                     else:
                         angleCos = fltPointProduct / fltAbsProduct
-                    if angleCos > 1:
-                        angleCos = 1
-
                     angleRad = numpy.arccos(angleCos)
                     angleDeg = angleRad * 180 / numpy.pi
 
@@ -2470,7 +2460,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             ] = True
 
         # Fill the dictionary with frame and angle
-        for index in range(self.idxFirstFrame, self.idxLastFrame):
+        for index in xrange(self.idxFirstFrame, self.idxLastFrame):
 
             # With angles
             if index <= self.idxLastFrame - 1 \
@@ -2564,13 +2554,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Warning box when refreshing frames
         warningBox = QtGui.QMessageBox(self)
-        warningBox.setStandardButtons(
-            QtGui.QMessageBox.No | QtGui.QMessageBox.Yes
-            )
+        warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
         warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
         warningBox.setText(
-            'Threshold settings will be ' +
-            'lost when calculating new drift data!\n' +
+            'Threshold settings will be lost when calculating new drift data!\n' +
             'Do you really want to continue?'
             )
         if not goon:
@@ -2590,9 +2577,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 self.dictThresh[key][self.idxCriterion] = False
 
             # If the input is correct continue
-            varContinue = self._calculations(
-                oldfirst=intOldFirst, oldlast=intOldLast
-                )
+            varContinue = self._calculations(oldfirst=intOldFirst, oldlast=intOldLast)
             if varContinue:
 
                 # Refresh GUI
@@ -2664,18 +2649,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             self.dictButton[mode].setEnabled(True)
 
         # Black is the color
-        self.dictWidgets[mode][self.idxStart].setStyleSheet(
-            self.dictColor['done']
-            )
-        self.dictWidgets[mode][self.idxStop].setStyleSheet(
-            self.dictColor['done']
-            )
-        self.dictWidgets[mode][self.idxStartSave].setStyleSheet(
-            self.dictColor['done']
-            )
-        self.dictWidgets[mode][self.idxStopSave].setStyleSheet(
-            self.dictColor['done']
-            )
+        self.dictWidgets[mode][self.idxStart].setStyleSheet(self.dictColor['done'])
+        self.dictWidgets[mode][self.idxStop].setStyleSheet(self.dictColor['done'])
+        self.dictWidgets[mode][self.idxStartSave].setStyleSheet(self.dictColor['done'])
+        self.dictWidgets[mode][self.idxStopSave].setStyleSheet(self.dictColor['done'])
 
     def _plot_scroll(self, mode):
         """Plot the plots for the Scroll Widget"""
@@ -2746,7 +2723,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             self.leStopAngle.setEnabled(True)
             self.cbAngle.setEnabled(True)
 
-            for number in range(self.idxFirstFrame, self.idxLastFrame):
+            for number in xrange(self.idxFirstFrame, self.idxLastFrame):
 
                 # Special case for angle: break if the number is too huge
                 if mode == self.modeAngle and number > self.intFrames - 2:
@@ -2757,12 +2734,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     self.idxName
                     ]
                 figFrames = pylab.figure(figsize=(3, 2), dpi=100)
-                intBins = self.lsFiles.count() // 3
-                if intBins <= 10:
-                    if intBins <= 1:
-                        intBins = 2
-                    else:
-                        intBins = self.lsFiles.count()
+                intBins = self.lsFiles.count() / 3
                 arrBins = numpy.linspace(
                     numpy.min(self.arrData[strName]),
                     numpy.max(self.arrData[strName]) + 0.0001,
@@ -2775,11 +2747,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 pylab.plot(hist[1][:-1], hist[0], 'k.')
                 pylab.grid()
                 pylab.xlim([hist[1][0] - hist[1][-1] * 0.1, hist[1][-1] * 1.1])
-                if len(hist[0]) > 1:
-                    ymax = numpy.max(hist[0])
-                else:
-                    ymax = hist[0]
-                pylab.ylim([0, ymax + 1])
+                pylab.ylim([0, numpy.max(hist[0]) + 1])
                 if mode == self.modeFrame:
                     pylab.xlabel(r'Drift / Angstrom')
                 if mode == self.modeAngle:
@@ -2820,12 +2788,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Figure and bin size for all plots
         figThresh = pylab.figure(figsize=(5, 4), dpi=100)
-        intBins = self.lsFiles.count() // 3
-        if intBins <= 10:
-            if intBins <= 1:
-                intBins = 2
-            else:
-                intBins = self.lsFiles.count()
+        intBins = self.lsFiles.count() / 3
 
         # Special case, if there is no angle available
         if self.idxFirstFrame == self.idxLastFrame - 1 and \
@@ -2936,25 +2899,20 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 bins=arrBins
                 )
             pylab.plot(hist[1][:-1], hist[0], 'k.')
-            if len(hist[0]) > 1:
-                ymax = numpy.max(hist[0])
-            else:
-                ymax = hist[0]
-            pylab.ylim([0, ymax + 1])
             pylab.vlines(
-                fltStart, 0, ymax + 1,
+                fltStart, 0, numpy.max(hist[0]) + 1,
                 color='b', linestyle='dashed'
                 )
             pylab.vlines(
-                fltStop, 0, ymax + 1,
+                fltStop, 0, numpy.max(hist[0]) + 1,
                 color='r', linestyle='dashed'
                 )
             pylab.vlines(
-                fltStartSave, 0, ymax + 1,
+                fltStartSave, 0, numpy.max(hist[0]) + 1,
                 color='b', linestyle='solid'
                 )
             pylab.vlines(
-                fltStopSave, 0, ymax + 1,
+                fltStopSave, 0, numpy.max(hist[0]) + 1,
                 color='r', linestyle='solid'
                 )
             pylab.vlines(
@@ -2967,7 +2925,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 )
             pylab.grid()
             pylab.xlim([hist[1][0] - hist[1][-1] * 0.1, hist[1][-1] * 1.1])
-            pylab.ylim([0, ymax + 1])
+            pylab.ylim([0, numpy.max(hist[0]) + 1])
             pylab.xlabel(strXLabel)
             pylab.ylabel(r'Nr. of Micrographs')
             pylab.title(strTitle)
@@ -3034,7 +2992,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             else:
 
                 # Set all frames to the general settings
-                for index in range(self.idxFirstFrame, self.idxLastFrame):
+                for index in xrange(self.idxFirstFrame, self.idxLastFrame):
                     self.dictThresh['Frame {:d}'.format(index)][
                         self.idxStartSave
                         ] = fltStart
@@ -3051,7 +3009,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 # Disable the general and frame save button
                 # and set the mode to frames.
                 self.dictButton[mode].setEnabled(False)
-                for index in range(self.idxFirstFrame, self.idxLastFrame):
+                for index in xrange(self.idxFirstFrame, self.idxLastFrame):
                     self.dictThresh['Frame {:d}'.format(index)][self.idxSaved] = True
                 mode = self.modeFrame
 
@@ -3081,7 +3039,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 # If all check boxes are checked,
                 # mark the general check box as checked.
                 # Else partially checked.
-                for index in range(self.idxFirstFrame, self.idxLastFrame):
+                for index in xrange(self.idxFirstFrame, self.idxLastFrame):
                     if not self.dictThresh['Frame {:d}'.format(index)][
                             self.idxCriterion
                             ]:
@@ -3097,7 +3055,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 # If all check boxes are unchecked,
                 # mark the general check box as unchecked.
                 # Else partially checked.
-                for index in range(self.idxFirstFrame, self.idxLastFrame):
+                for index in xrange(self.idxFirstFrame, self.idxLastFrame):
                     if self.dictThresh['Frame {:d}'.format(index)][
                             self.idxCriterion
                             ]:
@@ -3121,7 +3079,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 self.dictThresh[strCurrent][self.idxCriterion] = False
 
                 # If all check boxes are unchecked, disable the button
-                for index in range(
+                for index in xrange(
                         self.idxFirstFrame,
                         self.idxFirstFrame + self.cbAngle.count()
                         ):
@@ -3135,7 +3093,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
             # If its checked, check all frames
             if self.chGeneralCriterion.checkState() == Qt.Checked:
-                for index in range(self.idxFirstFrame, self.idxLastFrame):
+                for index in xrange(self.idxFirstFrame, self.idxLastFrame):
                     self.dictThresh['Frame {:d}'.format(index)][
                         self.idxCriterion
                         ] = True
@@ -3145,7 +3103,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
             # If its unchecked, uncheck all frames
             elif self.chGeneralCriterion.checkState() == Qt.Unchecked:
-                for index in range(self.idxFirstFrame, self.idxLastFrame):
+                for index in xrange(self.idxFirstFrame, self.idxLastFrame):
                     self.dictThresh['Frame {:d}'.format(index)][
                         self.idxCriterion
                         ] = False
@@ -3162,7 +3120,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Uncheck all angle criterions"""
 
         # Set all criterions to False
-        for index in range(self.idxFirstFrame, self.idxLastFrame):
+        for index in xrange(self.idxFirstFrame, self.idxLastFrame):
             if index >= self.intFrames - 1:
                 break
             self.dictThresh['Angle {:d}'.format(index)][
@@ -3192,7 +3150,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Set the file names for faster search and select this files
         setFileNames = set(arrBetweenThres[self.dFile])
-        for index in range(self.lsFiles.count()):
+        for index in xrange(self.lsFiles.count()):
             if str(self.lsFiles.item(index).text()) in setFileNames:
                 self.lsFiles.item(index).setCheckState(Qt.Checked)
             else:
@@ -3339,7 +3297,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 self.varOldStopGeneral = fltStop
 
                 # Set the settings to all frames
-                for index in range(self.idxFirstFrame, self.idxLastFrame - 1):
+                for index in xrange(self.idxFirstFrame, self.idxLastFrame - 1):
                     self.dictThresh['Frame {:d}'.format(index)][
                         self.idxStart
                         ] = fltStart
@@ -3349,7 +3307,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
                 # Enable the save button for general and all frames
                 self.dictButton[mode].setEnabled(True)
-                for index in range(self.idxFirstFrame, self.idxLastFrame):
+                for index in xrange(self.idxFirstFrame, self.idxLastFrame):
                     self.dictThresh['Frame {:d}'.format(index)][self.idxSaved] = False
 
                 # Set the Text to the general widgets and turn it black
@@ -3422,48 +3380,24 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Hide the Plot Widget when its closed"""
 
         # Uncheck the related check box and hide the widget
-        msplot.hide()
         self.dictHide[msplot].setCheckState(Qt.Unchecked)
-        self.dictVisible.update({
-            msplot: [
-                msplot.isVisible(),
-                msplot.rect(),
-                msplot.pos()
-                ]
-            })
+        msplot.hide()
 
     def _show_plot(self, checkbox):
         """Show the Plot Widget"""
-        msplot = self.dictShow[checkbox]
+
         # If the checkbox is checked, show the related widget
         if checkbox.checkState() == Qt.Checked:
-            msplot.setGeometry(self.dictVisible[msplot][self.idxRect])
-            msplot.move(self.dictVisible[msplot][self.idxPos])
-            msplot.activateWindow()
-            msplot.show()
-            self.dictVisible.update({
-                msplot: [
-                    msplot.isVisible(),
-                    msplot.rect(),
-                    msplot.pos()
-                    ]
-                })
+            self.dictShow[checkbox].show()
         # Otherwise hide it
         elif checkbox.checkState() == Qt.Unchecked:
-            msplot.hide()
-            self.dictVisible.update({
-            msplot: [
-                    msplot.isVisible(),
-                    msplot.rect(),
-                    msplot.pos()
-                    ]
-                })
+            self.dictShow[checkbox].hide()
 
     def _select_all(self):
         """Select all entrys"""
 
         # Set all items to checked and save the current selection state
-        for index in range(self.lsFiles.count()):
+        for index in xrange(self.lsFiles.count()):
             self.lsFiles.item(index).setCheckState(Qt.Checked)
 
         # Save new selection in cache
@@ -3473,7 +3407,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Invert Selection"""
 
         # Invert the selection and save the current selection state
-        for index in range(self.lsFiles.count()):
+        for index in xrange(self.lsFiles.count()):
             if self.lsFiles.item(index).checkState() == Qt.Checked:
                 self.lsFiles.item(index).setCheckState(Qt.Unchecked)
             else:
@@ -3548,6 +3482,26 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             varOutput = self.msAllPlotFrameAvg
             pylab.xlim([arrX[0] - arrX[-1] * 0.1, arrX[-1] * 1.1])
 
+        elif mode == self.modePerMic:
+
+            # Sort array by number
+            listDType = []
+            listDType.append(('micDrift', '<f8'))
+            listDType.append(('micNum', '<i8'))
+            arrXY = numpy.empty(len(self.arrMicNumber), dtype=listDType)
+            arrXY['micNum'] = self.arrMicNumber
+            arrXY['micDrift'] = self.arrData[self.dOverall]
+            arrXY = numpy.sort(arrXY, order='micNum')
+
+            # Define plot settings
+            arrX = arrXY['micNum']
+            arrY = arrXY['micDrift']
+            strTitle = r'Drift per Micrograph'
+            strXLabel = r'Micrograph'
+            strYLabel = r'Overall Drift'
+            varOutput = self.msAllPlotPerMic
+            pylab.xlim([arrX[0] - arrX[-1] * 0.01, arrX[-1] * 1.01])
+
         # If the mode is not Average
         else:
 
@@ -3597,11 +3551,12 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 varOutput = self.msPlotAngle
 
         # Plot it!
-        pylab.plot(
-            arrX,
-            arrY,
-            'kx'
-            )
+        if not mode == self.modePerMic:
+            pylab.plot(
+                arrX,
+                arrY,
+                'kx'
+                )
         pylab.plot(
             arrX,
             arrY,
@@ -3620,7 +3575,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Fill the lists with current entrys
         listChecked = []
         listUnchecked = []
-        for index in range(self.lsFiles.count()):
+        for index in xrange(self.lsFiles.count()):
             if self.lsFiles.item(index).checkState() == Qt.Checked:
                 listChecked.append(str(self.lsFiles.item(index).text()))
             else:
@@ -3699,36 +3654,22 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             os.mkdir('unblur_GUI_output')
 
         # Create output directory
-        strOutput = '{:s}/{:s}'.format(
+        strOutput = '{:s}/{:s}/{:s}'.format(
+            os.getcwd(),
             self.outputDir,
             str(self.leOutputName.text())
             )
 
         # Write output
-        with open('{:s}_uncorrected.txt'.format(strOutput), 'w') as f:
+        with open(strOutput, 'w') as f:
             for name in sorted(self.listChecked):
                 arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                strDirectory = arrCurrentEntry[self.dMic][0].replace('Temp', 'Doseuncorrected')
-                f.write(
-                    '{:s}\n'.format(
-                        os.path.relpath(strDirectory)
-                        )
-                    )
-
-        with open('{:s}_corrected.txt'.format(strOutput), 'w') as f:
-            for name in sorted(self.listChecked):
-                arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                strDirectory = arrCurrentEntry[self.dMic][0].replace('Temp', 'Dosecorrected')
-                f.write(
-                    '{:s}\n'.format(
-                        os.path.relpath(strDirectory)
-                        )
-                    )
+                f.write('{:s}\n'.format(arrCurrentEntry[self.dMic][0]))
 
         # Show message with the save path
         messageBox = QtGui.QMessageBox(self)
         messageBox.setText(
-            'File saved!\n{0:s}_corrected.txt and {0:s}_uncorrected.txt'.format(strOutput)
+            'File saved!\n{:s}'.format(strOutput)
             )
         messageBox.exec_()
 
@@ -4007,8 +3948,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             self._refresh_calculations(goon=True)
 
             for row in arrThresh:
-                listElement = []
-                for index in range(2, len(row)):
+                for index in xrange(2, len(row)):
                     listElement.append(row[index])
                 if row[0] != self.modeOverall:
                     self.dictThresh.update({'{0} {1}'.format(row[0], row[1]): listElement})
@@ -4084,55 +4024,15 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.WindowStateChange:
             if self.isMinimized():
-                self.dictVisible.update({
-                    self.msPlotDrift: [
-                        self.msPlotDrift.isVisible(),
-                        self.msPlotDrift.rect(),
-                        self.msPlotDrift.pos()
-                        ]
-                    })
-                self.dictVisible.update({
-                    self.msPlotFrame: [
-                        self.msPlotFrame.isVisible(),
-                        self.msPlotFrame.rect(),
-                        self.msPlotFrame.pos()
-                        ]
-                    })
-                self.dictVisible.update({
-                    self.msPlotAngle: [
-                        self.msPlotAngle.isVisible(),
-                        self.msPlotAngle.rect(),
-                        self.msPlotAngle.pos()
-                        ]
-                    })
-                self.dictVisible.update({
-                    self.msAllPlotFrameAvg: [
-                        self.msAllPlotFrameAvg.isVisible(),
-                        self.msAllPlotFrameAvg.rect(),
-                        self.msAllPlotFrameAvg.pos()
-                        ]
-                    })
-                self.dictVisible.update({
-                    self.msAllPlotDrift: [
-                        self.msAllPlotDrift.isVisible(),
-                        self.msAllPlotDrift.rect(),
-                        self.msAllPlotDrift.pos()
-                        ]
-                    })
-                self.dictVisible.update({
-                    self.msAllPlotFrame: [
-                        self.msAllPlotFrame.isVisible(),
-                        self.msAllPlotFrame.rect(),
-                        self.msAllPlotFrame.pos()
-                        ]
-                    })
-                self.dictVisible.update({
-                    self.msAllPlotAngle: [
-                        self.msAllPlotAngle.isVisible(),
-                        self.msAllPlotAngle.rect(),
-                        self.msAllPlotAngle.pos()
-                        ]
-                    })
+                self.dictVisible = {}
+                self.dictVisible.update({self.msPlotDrift: self.msPlotDrift.isVisible()})
+                self.dictVisible.update({self.msPlotFrame: self.msPlotFrame.isVisible()})
+                self.dictVisible.update({self.msPlotAngle: self.msPlotAngle.isVisible()})
+                self.dictVisible.update({self.msAllPlotFrameAvg: self.msAllPlotFrameAvg.isVisible()})
+                self.dictVisible.update({self.msAllPlotDrift: self.msAllPlotDrift.isVisible()})
+                self.dictVisible.update({self.msAllPlotFrame: self.msAllPlotFrame.isVisible()})
+                self.dictVisible.update({self.msAllPlotAngle: self.msAllPlotAngle.isVisible()})
+                self.dictVisible.update({self.msAllPlotPerMic: self.msAllPlotPerMic.isVisible()})
 
                 for key in self.dictVisible:
                     if self.dictVisible[key]:
@@ -4142,24 +4042,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             elif self.minimized:
                 self.minimized = False
                 for key in self.dictVisible:
-                    if self.dictVisible[key][self.idxVisible]:
-                        key.setGeometry(self.dictVisible[key][self.idxRect])
-                        key.move(self.dictVisible[key][self.idxPos])
-                        key.activateWindow()
+                    if self.dictVisible[key]:
                         key.show()
-
-                if self.isVisible():
-                    self.raise_()
-                    self.activateWindow()
-
-        elif event.type() == QtCore.QEvent.ActivationChange:
-
-            if self.isActiveWindow():
-                for key in self.dictVisible:
-                    if self.dictVisible[key][self.idxVisible]:
-                        key.raise_()
-                self.raise_()
-                self.activateWindow()
+                        key.activateWindow()
 
     def closeEvent(self, event):
         """Change the closeEvent to close the application cleanly"""
