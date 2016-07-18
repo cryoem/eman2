@@ -114,6 +114,21 @@ void Util::ap2ri(float *data, size_t n)
 	}
 }
 
+void Util::ap2ri(double *data, size_t n)
+{
+	Assert(n > 0);
+
+	if (!data) {
+		throw NullPointerException("pixel data array");
+	}
+
+	for (size_t i = 0; i < n; i += 2) {
+		double f = data[i] * sin(data[i + 1]);
+		data[i] = data[i] * cos(data[i + 1]);
+		data[i + 1] = f;
+	}
+}
+
 void Util::flip_complex_phase(float *data, size_t n)
 {
 	Assert(n > 0);

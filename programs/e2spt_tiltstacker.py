@@ -452,7 +452,7 @@ def getangles( options, raworder=False ):
 			if line:
 				angle = float(line)
 				angles.append( angle )
-				print "appending angle", 
+				print "appending angle", angle
 
 		#angles = [a for a in xrange( options.lowesttilt, options.highesttilt, options.tiltstep )]
 	else:	
@@ -462,12 +462,22 @@ def getangles( options, raworder=False ):
 		angles=[ float(x) for x in generate ]
 	
 	print "BEFORE sorting, angles are", angles
-	angles.sort()
-	print "\n(e2spt_tiltstacker.py)(getangles) AFTER sorting, angles are", angles
 	
-	if not options.negativetiltseries and not raworder:
+	print "negativetiltseries is", options.negativetiltseries
+	print "not negativetiltseries", not options.negativetiltseries
+	print "raworder", raworder
+	print "not raworder", not raworder
+	print "not options.negativetiltseries and not raworder", not options.negativetiltseries and not raworder
+
+
+	if options.negativetiltseries:
+		angles.sort()
+		print "\n(e2spt_tiltstacker.py)(getangles) AFTER sorting, angles are", angles
+	
+	elif not raworder:
+		angles.sort()
 		angles.reverse()
-		print "\n(e2spt_tiltstacker.py)(getangles) AFTER REVERSING, angles are", angles
+		print "\n(e2spt_tiltstacker.py)(getangles) AFTER REVERSING (ordered from largest to smallest), angles are", angles
 	
 	
 
@@ -524,10 +534,12 @@ def organizetilts( intilts, options ):
 			charsum = 0
 			for i in range(options.anglesindxinfilename):
 				charsum += len(parsedname[i])
-			charsum += i
+				if len(parsedname[i]) == 0:
+					charsum += 1 
+			charsum += options.anglesindxinfilename
 
 			sign = intilt[charsum+1]
-			print "by position, sign is",sign
+			print "by position %d sign is %s" % (charsum+1,sign)
 			angle = float(parsedname[options.anglesindxinfilename])
 			if sign == '-':
 				angle *= -1
@@ -616,12 +628,14 @@ def organizetilts( intilts, options ):
 			writetlt( angles, options )
 	
 		angles.sort()
-		if not options.negativetiltseries:			#Change angles to go from +tiltrange to -tiltrange if that's the order of the images
+		if not options.negativetiltseries and not raworder:			#Change angles to go from +tiltrange to -tiltrange if that's the order of the images
 			#orderedangles.sort()
 			#orderedangles.reverse()
 			
 			#angles.sort()
+			print "negativetiltseries and raworer are",options.negativetiltseries,raworder
 			angles.reverse()
+			print "therefore, angles are reversed (largest to smallest)"
 			
 			#print "However, after reversal, they are", orderedangles
 			#print "and angles are", angles
@@ -834,6 +848,8 @@ def makeimglist( inputf, options ):
 		ints.append( int( id ) )
 	
 	ints.sort()
+	if not options.negativetiltseries:
+			ints.reverse()
 	
 	print "\nfinalindx sorted are", ints
 	#final = []

@@ -14096,10 +14096,9 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 		data.set_attr("xform.align2d", t)
 		data.write_image(stack_data_ali, im)
 
-def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI = False, xysize=-1, zsize = -1, smearstep = 0.0, trl = False, niter = 10, upweighted = False, compensate = False, chunk_id = -1):
+def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI = False, xysize=-1, zsize = -1, smearstep = 0.0, upweighted = False, compensate = False, chunk_id = -1):
 	if MPI:
-		if trl:   recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, niter, verbose, upweighted, compensate, chunk_id)
-		else  :   recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
+		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
 		##newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
 		return
 
@@ -14124,7 +14123,7 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 	else:
 		drop_image(vol, vol_stack)
 
-def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=2, sym="c1", listfile="", group=-1, verbose=0,xysize=-1, zsize=-1, smearstep = 0.0):
+def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=2, sym="c1", listfile="", group=-1, verbose=0, xysize=-1, zsize=-1, smearstep = 0.0):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all
 	from string         import replace
@@ -14183,72 +14182,48 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 			finfo.write( "Total time: %10.3f\n" % (time()-time_start) )
 			finfo.flush()
 
-def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, niter, verbose, upweighted, compensate, chunk_id):
+def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, verbose = None, niter =10, compensate = False, target_window_size=-1):
+	# unregularized reconstruction  flags reconstruct(Iunreg(), gridding_nr_iter,false, 1., dummy, dummy, dummy, dummy, 1., false, true, nr_threads, -1
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI, recons3d_4nnf_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all, write_text_file, read_text_file, info
 	from string         import replace
 	from time           import time
 	from mpi            import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD, mpi_barrier
-	from EMAN2      import Reconstructors
-	from fundamentals import fftip, fft
-	
+	from EMAN2          import Reconstructors
+	from fundamentals   import fftip, fft
 	myid       = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc      = mpi_comm_size(MPI_COMM_WORLD)
 	mpi_comm   = MPI_COMM_WORLD
 	time_start = time()
-	nnxo = 0
-	
+	nnxo       = 0	
 	if(myid == 0):
 		nnxo = get_im(prj_stack).get_xsize()
 		print "  trilinear interpolation used in reconstruction"
-		if(listfile):
-			from utilities import read_text_file
-			pid_list = read_text_file(listfile, 0)
-			pid_list = map(int, pid_list)
-		elif(group > -1):
-			tmp_list = EMUtil.get_all_attributes(prj_stack, 'group')
-			pid_list = []
-			for i in xrange(len(tmp_list)):
-				if(tmp_list[i] == group):  pid_list.append(i)
-			del tmp_list
 		nima = len(pid_list)
 	else:
 		nima = 0
 	nima = bcast_number_to_all(nima, source_node = 0)
 	nnxo = bcast_number_to_all(nnxo, source_node = 0)
+	if target_window_size ==-1: target_size = 2*nnxo+3
+	else:                       target_size = target_window_size*2+3
 	
-	if(listfile or group > -1):
-		if myid != 0:
-			pid_list = [-1]*nima
-		pid_list = mpi_bcast(pid_list, nima, MPI_INT, 0, MPI_COMM_WORLD)
-		pid_list = map(int, pid_list)
-	else:
-		if(not pid_list):  pid_list = range(nima)
-
-	if verbose==0:
-		finfo = None
+	if verbose==0: finfo = None
 	else:
 		infofile = "progress%04d.txt"%(myid+1)
 		finfo = open( infofile, 'w' )
-
-	pid_list = mpi_bcast(pid_list, nima, MPI_INT, 0, MPI_COMM_WORLD)
-	pid_list = map(int, pid_list)
 	
 	image_start, image_end = MPI_start_end(nima, nproc, myid)
-	prjlist = EMData.read_images(prj_stack, pid_list[image_start:image_end])
-
-	#if myid == 0 :  print "  NEW  "
-	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)	
+	prjlist                = EMData.read_images(prj_stack, pid_list[image_start:image_end])
 	
-	nnnx = ((prjlist[0].get_ysize())*2+3)	
+	#nnnx = ((prjlist[0].get_ysize())*2+3)	
 
 	from utilities      import read_text_file, read_text_row, write_text_file, info, model_blank, get_im
 	from fundamentals   import fft,fshift
 	from reconstruction import insert_slices, insert_slices_pdf
 	from utilities      import reduce_EMData_to_root, model_blank
 	from filter         import filt_table
-	# reconstruction step 
-	refvol = model_blank(nnnx)
+	# reconstruction step
+	refvol = model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
@@ -14257,28 +14232,27 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 	fftvol = EMData()
 	weight = EMData()
 	
-	params = {"size":nnnx, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
-	r = Reconstructors.get( "nn4_ctfw", params )
+	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
+	r      = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
-	m = [1.0]*nnnx
+	m = [1.0]*target_size
 	is_complex = prjlist[0].get_attr("is_complex")
 	from filter		import filt_ctf
 	for image in prjlist:
 		if not is_complex: image = fft(image)
-		image =filt_ctf(image, image.get_attr("ctf"))
+		if CTF: image =filt_ctf(image, image.get_attr("ctf"))
 		image.set_attr("padffted",1)
 		image.set_attr("npad",1)
 		image.set_attr("bckgnoise",m)
-		if not upweighted:  insert_slices_pdf(r, filt_table(image, image.get_attr("bckgnoise")) )
-		else: insert_slices_pdf(r, image)
-
+		r.insert_slice(image, image.get_attr_default("xform.projection", None), 1.0)
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )
 		finfo.flush()
 
 	reduce_EMData_to_root(fftvol, myid, 0, comm=mpi_comm)
 	reduce_EMData_to_root(weight, myid, 0, comm=mpi_comm)
-	reduce_EMData_to_root(refvol, myid, 0, comm=mpi_comm)
+	
+	
 	if not (finfo is None): 
 		finfo.write( "after reduce\n" )
 		finfo.flush()
@@ -14287,44 +14261,18 @@ def recons3d_trl_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, 
 	mpi_barrier(mpi_comm)
 
 	if myid == 0 : # post-insertion operations, done only in main_node
-		fftvol = Util.shrinkfvol(fftvol,2)
-		weight = Util.shrinkfvol(weight,2) # reduce size 
+		fftvol.set_attr("is_complex",1)
+		# no regularization here.
 		if( sym != "c1" ):
 			fftvol    = fftvol.symfvol(sym, -1)
 			weight    = weight.symfvol(sym, -1)  # symmetrize if not asymmetric
-		#fftvol = Util.divn_cbyr(fftvol, weight)
-		nz     = weight.get_zsize()
-		ny     = weight.get_ysize()
-		nx     = weight.get_xsize()
-		from utilities  import tabessel
-		from morphology import notzero
-		it = model_blank(2*ny)
-		it +=1.0
-		Util.reg_weights(weight, refvol, it)
-		beltab = tabessel(ny, nnxo) # iterative process
-		nwe    = notzero(weight)
-		#Util.save_slices_on_disk(weight,"slices.hdf")
-		for i in xrange(niter):
-			cvv = Util.mulreal(nwe, weight)
-			#cvv = Util.read_slice_and_multiply(nwe,"slices.hdf")
-			cvv = fft(cvv)
-			Util.mul_img_tabularized(cvv, nnxo, beltab)
-			cvv = fft(cvv)
-			Util.divabs(nwe, cvv)
-		import os
-		#os.system(" rm slices.hdf")
-		del  beltab
-		from morphology   import cosinemask, threshold_outside
-		from fundamentals import fshift, fpol
-		
-		nwe    = threshold_outside(nwe, 0.0, 1.0e20)
-		nx     = fftvol.get_ysize()
-		fftvol = fshift(fftvol,nx//2,nx//2,nx//2)
-		Util.mulclreal(fftvol, nwe)
-		fftvol = fft(fftvol) 
-		fftvol = Util.window(fftvol, nnxo, nnxo, nnxo)
-		fftvol = fpol(fftvol, nnxo, nnxo, nnxo, True, False)
-		fftvol = cosinemask(fftvol, nnxo//2-1,5,None)
+		maxr2 = ((target_window_size//-1)*2)**2 
+		Util.iterefa(fftvol, weight, maxr2, target_window_size)
+		from morphology   import cosinemask
+		from fundamentals import fshift, fpol, fdecimate
+		fftvol = fft(fshift(fftvol,target_window_size, target_window_size, target_window_size))
+		fftvol = Util.window(fftvol, target_window_size, target_window_size, target_window_size)
+		fftvol = cosinemask(fftvol, target_window_size//2-1,5, None)
 		fftvol.div_sinc(1)
 		fftvol.write_image(vol_stack)
 		
@@ -19318,7 +19266,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						rmin, rmax, fract,  npad, sym, user_func_name, \
 						pixel_size, debug, y_restrict, search_iter, slowIO):
 
-	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1, directaligriddingconstrained
+	from alignment      import Numrinit, proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1, directaligriddingconstrained
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict, read_text_row, sym_vol
@@ -19328,7 +19276,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	from pixel_error    import max_3D_pixel_error, ordersegments
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
-	from mpi            import mpi_recv,  mpi_send
+	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
 	from filter         import filt_ctf
 	from projection     import prep_vol, prgs
@@ -19517,7 +19465,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
 		k = k1
-		
+
 	if slowIO:
 		for iproc in xrange(number_of_proc):
 			if myid ==iproc:
@@ -19525,7 +19473,8 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				print "Read %6d images on process  : %4d"%(len(list_of_particles),myid)
 			mpi_barrier(MPI_COMM_WORLD)
 	else: data = EMData.read_images(stack, list_of_particles)
-		
+
+	
 	nima = len(data)
 	data_nx = data[0].get_xsize()
 	data_ny = data[0].get_ysize()
@@ -19537,7 +19486,12 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	
 	if last_ring < 0:
 		last_ring = (max(seg_ny, 2*int(rmax)))//2 - 2
+		
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 
+	maxrin = numr[len(numr)-1]
+	psistep = 360./maxrin
+	print "psistep", psistep
 	#if fourvar:  original_data = []
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
@@ -19599,8 +19553,9 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				stepx[ii] = 1.0 # this is to prevent division by zero in c++ code
 
 	#  TURN INTO PARAMETER OR COMPUTE FROM OU
-	psistep=0.5
+	#psistep=0.5
 	# do the projection matching
+	startl = time()
 	ooiter = 0
 	for N_step in xrange(lstp):
 		terminate = 0
@@ -19620,7 +19575,6 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 			pixer  = [0.0]*nima
 
 			neworient = [[0.0, 0.0, 0.0, 0.0, 0.0, -2.0e23] for i in xrange(nima)]
-
 			ooiter += 1
 			Iter += 1
 			if Iter%search_iter == 0:  total_iter += 1
@@ -19663,15 +19617,20 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				for im in xrange( seg_start, seg_end ):
 					Torg.append(data[im].get_attr('xform.projection'))
 
-				#  Fit predicted locations as new starting points
-				if (seg_end - seg_start) > 1:
-					setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
+				#Fit predicted locations as new starting points
+#  				if (seg_end - seg_start) > 1:
+#  					setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
 				
 			#  Generate list of reference angles, all nodes have the entire list
 			ref_angles = prepare_helical_refangles(delta[N_step], initial_theta =initial_theta, delta_theta = delta_theta)
 			#  count how many projections did not have a peak.  If too many, something is wrong
 			nopeak = 0
 			#  DO ORIENTATION SEARCHES
+			#print "len_refang", len(ref_angles)
+
+			reftime = 0
+			searchtime = 0
+	
 			for refang in ref_angles:
 				n1 = sin(radians(refang[1]))*cos(radians(refang[0]))
 				n2 = sin(radians(refang[1]))*sin(radians(refang[0]))
@@ -19699,13 +19658,18 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						imn3 = cos(radians(theta))
 						if( (n1*imn1 + n2*imn2 + n3*imn3)>=ant ):
 
-							if(refrings[0] == None):
-								#print  "  reffft1  ",im,refang
-								refrings = prepare_reffft1(volft, kbv, refang, segmask, psi_max, psistep)
+						
 
 							if psi < 180.0 :  direction = "up"
 							else:             direction = "down"
-
+							
+							if(refrings[0] == None):
+			
+								startref = time()
+								refrings = prepare_reffft2(volft, kbv, refang, segmask, psi_max, psistep)
+								endref = time()
+								#print " compute ref timing",  endref-startref,  refang,  idd
+								reftime = reftime + endref-startref
 							#angb, tx, ty, pik = directaligridding1(dataft[im], kb, refrings, \
 							#	psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, direction)
 
@@ -19720,21 +19684,26 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 							#
 							
 							
-							tyrng = max(stepy,min(yrng[N_step],abs(y_restrict[N_step]-ty),abs(-y_restrict[N_step]-ty)))
-							
+							#tyrng = max(stepy,min(yrng[N_step],abs(y_restrict[N_step]-ty),abs(-y_restrict[N_step]-ty)))
+							tyrng = min(yrng[N_step],abs(y_restrict[N_step]))
 							#print  "IMAGE  ",im
-							angb, tx, ty, pik = directaligriddingconstrained(dataft[im], kb, refrings, \
+		
+							startsearch = time()
+							angb, tx, ty, pik, = directaligriddingconstrained(dataft[im], kb, refrings, \
 								psi_max, psistep, xrng[N_step], tyrng, stepx[N_step], stepy, psi, tx, ty, direction)
-							
+							endsearch = time()	
+							#print "image id, searching time is ", im, endsearch-startsearch, iddi
+							searchtime = searchtime +endsearch-startsearch 
 							if(pik > -1.0e23):
 								if(pik > neworient[im][-1]):
 									neworient[im][-1] = pik
 									neworient[im][:4] = [angb, tx, ty, refang]
-
-
+						
+			print "total time of calculating references", reftime
+			print "total time of searching", searchtime
+			
 			for im in xrange(nima):
 				if(neworient[im][-1] > -1.0e23):
-					#print " neworient  ",im,neworient[im]
 					#from utilities import inverse_transform2
 					#t1, t2, t3, tp = inverse_transform2(neworient[im][3][1]+neworient[im][0])
 					tp = Transform({"type":"spider","phi":neworient[im][3][0],"theta":neworient[im][3][1],"psi":neworient[im][3][2]+neworient[im][0]})
@@ -19747,6 +19716,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 
 				else:
 					# peak not found, parameters not modified
+					print "peak not found image id", im
 					nopeak += 1
 					pixer[im]  = 0.0
 					data[im].set_attr("pixerr", pixer[im])
@@ -19768,7 +19738,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 			if (Iter-1) % search_iter == 0 :
 
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
-				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
+				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
 
 				if myid == main_node:
 					print_msg("3D reconstruction time = %d\n"%(time()-start_time))
@@ -19795,7 +19765,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 			mpi_barrier(MPI_COMM_WORLD)
 
 			# write out headers, under MPI writing has to be done sequentially
-			from mpi import mpi_recv, mpi_send, MPI_COMM_WORLD, MPI_FLOAT
+			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
 			par_str = ['xform.projection', 'ID','pixerr']
 			if myid == main_node:
 				if(file_type(stack) == "bdb"):
@@ -19811,8 +19781,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				# write params to text file
 				header(stack, params='xform.projection', fexport=os.path.join(outdir, "parameters%04d.txt"%(ooiter)))
 				header(stack, params='pixerr', fexport=os.path.join(outdir, "pixelerror%04d.txt"%(ooiter)))
-
-
+	print "new method runing time", time()-startl
 def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
 						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
 						rmin, rmax, fract,  npad, sym, user_func_name, \
@@ -21510,6 +21479,38 @@ def prepare_reffft1( volft, kb, ref_angles, segmask, psimax=1.0, psistep=1.0, kb
 
 	return refrings
 
+
+def prepare_reffft2( volft, kb, ref_angles, segmask, psimax=1.0, psistep=1.0, kbx = None, kby = None):
+
+	from projection   import prgs
+	from alignment    import preparerefsgrid, preparerefsgrid1
+	from math         import sin, cos, radians
+
+	#refrings = []     # list of (image objects) reference projections in Fourier representation
+
+	
+	if kbx is None:
+		prjref = prgs(volft, kb, [ref_angles[0], ref_angles[1], ref_angles[2], 0.0, 0.0])
+		Util.mul_img(prjref, segmask )
+		#  EVENTUALLY PASS kb inside
+		refrings = preparerefsgrid1(prjref, psimax, psistep)
+	else:
+		ERROR("do not handle this case","prepare_refffts",1)
+		sys.exit()
+
+	q0  = radians(ref_angles[0])
+	q1  = radians(ref_angles[1])
+	sq1 = sin(q1)
+	n1 = sq1*cos(q0)
+	n2 = sq1*sin(q0)
+	n3 = cos(q1)
+	refrings[0].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
+	refrings[0].set_attr("phi",   ref_angles[0])
+	refrings[0].set_attr("theta", ref_angles[1])
+	refrings[0].set_attr("psi",   ref_angles[2])
+
+	return refrings
+	
 def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi_step,\
 	rmin, rmax, fract, sym, user_func_name, datasym,\
 	pixel_size, debug):

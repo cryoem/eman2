@@ -48,22 +48,23 @@ def main():
 	usage = progname + " prj_stack volume [begin end step] --CTF --npad=ntimes_padding --list=file --group=ID --snr=SNR --sym=symmetry --verbose=(0|1) --xysize --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--CTF",            action="store_true",   default=False, help="apply CTF correction")
-	parser.add_option("--snr",            type="float",	         default=1.0,   help="Signal-to-Noise Ratio" )
-	parser.add_option("--sym",            type="string",	     default="c1",  help="symmetry" )
-	parser.add_option("--list",           type="string",                        help="file with list of images to be used in the first column" )
-	parser.add_option("--group",          type="int",           default=-1,     help="perform reconstruction using images for a given group number (group is attribute in the header)" )
-	parser.add_option("--MPI",            action="store_true",  default=False,  help="use MPI version ")
-	parser.add_option("--npad",           type="int",	        default=2,      help="number of times padding (default 2)" )
-	parser.add_option("--verbose",        type="int",           default=0,      help="verbose level: 0 no verbose, 1 verbose" )
-	parser.add_option("--xysize",         type="int",	        default=-1,     help="user expected size at xy direction" )
-	parser.add_option("--zsize",          type="int",	        default=-1,     help="user expected size at z direction" )
-	parser.add_option("--smearstep",      type   ="float",	    default=0.0,    help="Rotational smear step (default 0.0, no smear)" )
-	parser.add_option("--trl",            action ="store_true",	default=False,  help="trillinear interpolation reconstruction" )
-	parser.add_option("--niter",          type="int",	        default=10,     help="number of iterations for convolution" )
-	parser.add_option("--upweighted",     action="store_true",  default=False,  help="apply background noise")
-	parser.add_option("--compensate",     action="store_true",  default=False,  help="compensate in reconstruction")
-	parser.add_option("--chunk_id",       type="int",           default=-1,     help="reconstruct both odd and even groups of particles")
+	parser.add_option("--CTF",                    action="store_true",   default=False, help="apply CTF correction")
+	parser.add_option("--snr",                    type="float",	         default=1.0,   help="Signal-to-Noise Ratio" )
+	parser.add_option("--sym",                    type="string",	     default="c1",  help="symmetry" )
+	parser.add_option("--list",                   type="string",                        help="file with list of images to be used in the first column" )
+	parser.add_option("--group",                  type="int",           default=-1,     help="perform reconstruction using images for a given group number (group is attribute in the header)" )
+	parser.add_option("--MPI",                    action="store_true",  default=False,  help="use MPI version ")
+	parser.add_option("--npad",                   type="int",	        default=2,      help="number of times padding (default 2)" )
+	parser.add_option("--verbose",                type="int",           default=0,      help="verbose level: 0 no verbose, 1 verbose" )
+	parser.add_option("--xysize",                 type="int",	        default=-1,     help="user expected size at xy direction" )
+	parser.add_option("--zsize",                  type="int",	        default=-1,     help="user expected size at z direction" )
+	parser.add_option("--smearstep",              type="float",	        default=0.0,    help="Rotational smear step (default 0.0, no smear)" )
+	parser.add_option("--interpolation_method",   type ="string",	    default="4nn",  help="4nn, or tril: nearest neighbor, or trillinear interpolation" )
+	parser.add_option("--niter",                  type="int",	        default=10,     help="number of iterations for iterative reconstruction" )
+	parser.add_option("--upweighted",             action="store_true",  default=False,  help="apply background noise")
+	parser.add_option("--compensate",             action="store_true",  default=False,  help="compensate in reconstruction")
+	parser.add_option("--chunk_id",               type="int",           default=-1,     help="reconstruct both odd and even groups of particles")
+	parser.add_option("--target_window_size",               type="int",           default=-1,     help=" size of the targeted reconstruction ")
 	(options,args) = parser.parse_args(arglist[1:])
 
 
@@ -95,11 +96,22 @@ def main():
 		ERROR("options group and list cannot be used together","recon3d_n",1)
 		sys.exit()
 
-	from applications import recons3d_n
+	from applications import recons3d_n, recons3d_trl_MPI
 
 	global_def.BATCH = True
-	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
-		 options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize, options.zsize, options.smearstep, options.trl, options.niter, options.upweighted, options.compensate,options.chunk_id)
+	if options.interpolation_method == "4nn":
+		recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
+		 options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize, options.zsize, options.smearstep, options.upweighted, options.compensate,options.chunk_id)
+	elif options.interpolation_method == "tril":
+		if options.MPI is False:
+			ERROR(" trillinear interpolation reconstruction has MPI version only!")
+			sys.exit()
+		recons3d_trl_MPI(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
+		 options.sym, options.verbose, options.niter, options.compensate, options.target_window_size)
+		
+	else:
+		ERROR(" Wrong interpolation method. The current options are 4nn, and tril. 4nn is the defalut one. ")
+		
 	global_def.BATCH = False
 
 	if options.MPI:

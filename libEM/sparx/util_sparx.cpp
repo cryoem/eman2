@@ -38,6 +38,7 @@
 #endif	//_WIN32
 
 #include <cstring>
+#include <string>
 #include <ctime>
 #include <iostream>
 #include <boost/shared_ptr.hpp>
@@ -60,6 +61,7 @@ using namespace EMAN;
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <cmath>
+#include <fftw3.h>
 //#include <omp.h>
 using namespace std;
 using std::complex;
@@ -7960,7 +7962,7 @@ L640:
     return;
 }
 
-float Util::eval(char * images,EMData * img, vector<int> S,int N, int ,int size)
+float Util::eval(char * images, EMData * img, vector<int> S, int N, int, int size)
 {
 	int j,d;
 	EMData * e = new EMData();
@@ -18569,7 +18571,7 @@ EMData* Util::squaren_img(EMData* img)
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
 	} else {
-		for (size_t i=0;i<size;++i) img_ptr[i] *= img_ptr[i];
+		for (size_t i=0;i<size;++i) img2_ptr[i] = img_ptr[i]*img_ptr[i];
 	}
 	img2->update();
 
@@ -18984,13 +18986,11 @@ void Util::div_filter(EMData* img, EMData* img1)
 }
 
 
-#define data(jx,iy)         data[jx+(iy-1)*nx]
 EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 {
 	ENTERFUNC;
 
-    int nyp2 = ny/2;
-	int nx = nyp2+1;
+	int nx = ny/2 + 1;
 
 	int nb = bckgnoise.size();
 	EMData* power = new EMData();
@@ -18999,6 +18999,17 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 
     float* data = power->get_data();
 
+	//float rmax = nyp2 + 0.5;
+	for ( int iy = 0; iy < ny; iy++) {
+		int jy = (iy<nx) ? iy : iy-ny;
+		float argy = float(jy*jy);
+		for ( int ix = 0; ix < nx; ix++) {
+			float argx = argy + ix*ix;
+			int rf = (int)(sqrt( argx) + 0.5f );
+			if( rf < nx )  data[ix+iy*nx] = bckgnoise[rf];///2.0;  // 2 on account of x^2/(2*s^2)
+		}
+	}
+	/*
     float argy, argx;
 	float rmax = nyp2 + 0.5;
 	for ( int iy = 1; iy <= ny; iy++) {
@@ -19013,8 +19024,9 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 			}
 		}
 	}
+	*/
 	data[0] = 0.0f;
-	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
@@ -19026,37 +19038,31 @@ EMData*  Util::unrollmask( int ny )
 {
 	ENTERFUNC;
 
-	int nyp2 = ny/2;
-	int nx = nyp2+1;
+	int nx = ny/2 + 1;
 
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
-	power->to_one();
+	power->to_zero();
 
 	float* data = power->get_data();
 
-	float argy, argx;
-	float rmax = (float)nyp2 + 0.5f;
-	for ( int iy = 1; iy <= ny; iy++) {
-		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
-		for ( int ix = 1; ix <= nx; ix++) {
-			int jx=ix-1; argx = argy + float(jx*jx);
-			float rf = sqrt( argx );
-			if( rf > rmax )  {
-				int  ir = int(rf);
-				float df = rf - float(ir);
-				data(jx,iy) = 0.0f;
-			}
+	for ( int iy = 0; iy < ny; iy++) {
+		int jy = (iy<nx) ? iy : iy-ny;
+		float argy = float(jy*jy);
+		for ( int ix = 0; ix < nx; ix++) {
+			float argx = argy + ix*ix;
+			int rf = (int)(sqrt( argx) + 0.5f );
+			if( rf < nx )  data[ix+iy*nx] = 1.0f;///2.0;  // 2 on account of x^2/(2*s^2)
 		}
 	}
+
 	data[0] = 0.0f;
-	for ( int iy = nyp2+1; iy <= ny; iy++) data(0,iy) = 0.0f;
+	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
 	return power;
 }
-#undef data
 
 vector<float> Util::rotavg_fourier(EMData* img)
 {
@@ -19204,7 +19210,7 @@ vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* b
 				float  prod2 = qtr*qtr + qti*qti;
 				float  normim = data[jx2 + (iy-1)*2*nx]*data[jx2 + (iy-1)*2*nx] + data[jx2+1 + (iy-1)*2*nx]*data[jx2+1 + (iy-1)*2*nx];  // precalculate
 				float  temp = normim - 2*prod1 + prod2;
-				edis += temp*bckg[jx+(iy-1)*nx]*0.5f;
+				edis += temp*bckg[jx+(iy-1)*nx];
 				wdis += temp;
 				nrm[rf] += prod1*prob;
 				nrm[rf+inc] += prod2*prob;
@@ -19213,7 +19219,7 @@ vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* b
 	}
 	wdis *= prob;
 	vector<float> retvals;
-	retvals.push_back(edis);
+	retvals.push_back(edis*0.5f);
 	retvals.push_back(wdis);
     return retvals;
 	EXITFUNC;
@@ -19244,6 +19250,147 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 
 	freqvol->update();
 	EXITFUNC;
+}
+using namespace std;
+#include <string>
+
+vector<int> Util::pickup_references(const vector<vector<float> >& refang, float delta, float an,
+                const vector<vector<float> >& datang, string symmetry) {
+
+	size_t nrefang = refang.size();
+	size_t ndatang = datang.size();
+	const float qv = static_cast<float>( pi/180.0 );
+
+	int nsym = atoi(symmetry.substr(1,1000).c_str());//std::stoi(symmetry.substr(1,1000));
+
+	float ac = cos(qv*an);
+
+	int npsi = int(360.0f/delta);
+	vector<int> ltable;
+
+	if( symmetry == "c1" ) {
+		vector<float> dang(3*ndatang);
+		for (int kl=0; kl<ndatang; kl++)  getfvec(datang[kl][0], datang[kl][1], dang[3*kl], dang[3*kl+1], dang[3*kl+2]);
+
+		for (int n=0; n<nrefang; n++) {
+			vector<float> refvec(3);
+			getfvec(refang[n][0], refang[n][1], refvec[0], refvec[1], refvec[2]);
+			for (int l=0; l<npsi; l++) {
+				float psi = l*delta;
+				bool start = true;
+				for (int kl=0; kl<ndatang; kl++) {
+					//  first check psi
+					float qt = fmod(datang[kl][2]-psi+1440.0f,360.0f);
+					qt = min(qt, 360.0f - qt);
+					if(qt<an) {
+						//cout<<datang[kl][2]<<"   "<<psi<<"   "<<qt<<"   "<<an<<"   "<<n<<endl;
+						qt = dang[3*kl]*refvec[0] + dang[3*kl+1]*refvec[1] + dang[3*kl+2]*refvec[2];
+						if( qt >= ac ) {
+							if( start ) {
+								ltable.push_back(n);  //  refang
+								ltable.push_back(l);  //  psi
+								start = false;
+							}
+							ltable.push_back(kl);
+						}
+					}
+				}
+				if( !start )  ltable.push_back(-1);
+			}
+		}
+
+
+	} else if( symmetry.substr(0,1) == "c")  {
+		float qt = 360.0f/nsym;
+		vector<float> dang(3*3*ndatang);
+		for (int kl=0; kl<ndatang; kl++)  {
+			for (int n=0; n<3; n++)  getfvec(datang[kl][0]+(n-1)*qt, datang[kl][1], dang[3*n + 9*kl], dang[1 + 3*n + 9*kl], dang[2 + 3*n + 9*kl]);
+		}
+		for (int n=0; n<nrefang; n++) {
+			vector<float> refvec(3);
+			getfvec(refang[n][0], refang[n][1], refvec[0], refvec[1], refvec[2]);
+			for (int l=0; l<npsi; l++) {
+				float psi = l*delta;
+				bool start = true;
+				for (int kl=0; kl<ndatang; kl++) {
+					//  first check psi
+					float qt = fmod(datang[kl][2]-psi+1440.0f,360.0f);
+					qt = min(qt, 360.0f - qt);
+					if(qt<an) {
+						qt = -2.0f;
+						for (int nsm=0; nsm<3; nsm++)  {
+							float vc = dang[3*nsm + 9*kl]*refvec[0] + dang[1 + 3*nsm + 9*kl]*refvec[1] + dang[2+ 3*nsm + 9*kl]*refvec[2];
+							if(vc > qt)  qt = vc;
+						}
+						if( qt >= ac ) {
+							if( start ) {
+								ltable.push_back(n);  //  refang
+								ltable.push_back(l);  //  psi
+								start = false;
+							}
+							ltable.push_back(kl);
+						}
+					}
+				}
+				if( !start )  ltable.push_back(-1);
+			}
+		}
+	} else if( symmetry.substr(0,1) == "d")  {
+		float qt = 360.0f/nsym;
+		vector<float> dvecup(3*3*ndatang);
+		vector<float> dvecdown(3*3*ndatang);
+		for (int kl=0; kl<ndatang; kl++)  {
+			for (int n=0; n<3; n++)  getfvec(datang[kl][0]+(n-1)*qt, datang[kl][1], dvecup[3*n + 9*kl], dvecup[1 + 3*n + 9*kl], dvecup[2 + 3*n + 9*kl]);
+			for (int n=0; n<3; n++)  getfvec(-datang[kl][0]+(n-1)*qt, 180.0f-datang[kl][1], dvecdown[3*n + 9*kl], dvecdown[1 + 3*n + 9*kl], dvecdown[2 + 3*n + 9*kl]);
+		}
+		for (int n=0; n<nrefang; n++) {
+			vector<float> refvec(3);
+			getfvec(refang[n][0], refang[n][1], refvec[0], refvec[1], refvec[2]);
+			for (int l=0; l<npsi; l++) {
+				float psi = l*delta;
+				bool start = true;
+				for (int kl=0; kl<ndatang; kl++) {
+					//  first check psi
+					float qt = fmod(datang[kl][2]-psi+1440.0f,360.0f);
+					qt = min(qt, 360.0f - qt);
+					float qr = fmod(180.0f + datang[kl][2]-psi+1440.0f,360.0f);
+					qr = min(qr, 360.0f - qr);
+					if( (qt <= qr) && (qt<an) ) {
+						qt = -2.0f;
+						for (int nsm=0; nsm<3; nsm++)  {
+							float vc = dvecup[3*nsm + 9*kl]*refvec[0] + dvecup[1 + 3*nsm + 9*kl]*refvec[1] + dvecup[2+ 3*nsm + 9*kl]*refvec[2];
+							if(vc > qt)  qt = vc;
+						}
+						if( qt >= ac ) {
+							if( start ) {
+								ltable.push_back(n);  //  refang
+								ltable.push_back(l);  //  psi
+								start = false;
+							}
+							ltable.push_back(kl);
+						}
+					} else if ( (qt > qr) && (qr<an) ) {
+						qt = -2.0f;
+						for (int nsm=0; nsm<3; nsm++)  {
+							float vc = dvecdown[3*nsm + 9*kl]*refvec[0] + dvecdown[1 + 3*nsm + 9*kl]*refvec[1] + dvecdown[2+ 3*nsm + 9*kl]*refvec[2];
+							if(vc > qt)  qt = vc;
+						}
+						if( qt >= ac ) {
+							if( start ) {
+								ltable.push_back(n);  //  refang
+								ltable.push_back(l);  //  psi
+								start = false;
+							}
+							ltable.push_back(kl);
+						}
+					}
+				}
+				if( !start )  ltable.push_back(-1);
+			}
+		}
+	}
+	ltable.push_back(-1);
+	return ltable;
 }
 
 
@@ -22742,7 +22889,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  06/23/2016  06:03 PM "<<endl;
+ cout <<"  VERSION  07/06/2016  02:35 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
 
@@ -22758,7 +22905,6 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	}
 	qprob = 0.0f;
 	/*
-	cout <<"  VERSION  12/19/2015  5:40 PM"<<endl;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	EMData * img2 = new EMData();
 	img2->set_size(nx,ny,nz);
@@ -26408,3 +26554,283 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	EXITFUNC;
 
 }
+
+
+
+//void Util::make_fft_ifft(EMData* tvol) {
+//	ENTERFUNC;
+//	/* Exception Handle */
+//	if (!tvol) {
+//		throw NullPointerException("NULL input image");
+//	}
+//
+//	float *real_data = tvol->get_data();
+//	int nx = tvol->get_xsize();
+//	int ny = tvol->get_ysize();
+//	int nz = tvol->get_zsize();
+//
+//	int dims[3];
+//	dims[0] = nz;
+//	dims[1] = ny;
+//	dims[2] = nx;
+//
+//	float * complex_data = new float[nx*ny*nz*2];
+//
+//	fftwf_plan plan_real_to_complex = fftwf_plan_dft_r2c(3, dims, real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+//	fftwf_plan plan_complex_to_real = fftwf_plan_dft_c2r(3, dims, (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
+//
+//
+////	size_t niter = 20;
+////	size_t niter = 1;
+//	size_t niter = 4;
+//	for (size_t i=0;i<niter;++i) {
+//		fftwf_execute(plan_real_to_complex);
+//		fftwf_execute(plan_complex_to_real);
+//	}
+//
+//	fftwf_destroy_plan(plan_real_to_complex);
+//	fftwf_destroy_plan(plan_complex_to_real);
+//
+//
+//	delete[] complex_data;
+//
+//	tvol->update();
+//
+//	EXITFUNC;
+//
+//}
+
+void Util::make_fft_ifft(EMData* tvol) {
+
+}
+
+// this one
+//void Util::make_fft_ifft(EMData* tvol) {
+//	ENTERFUNC;
+//	/* Exception Handle */
+//	if (!tvol) {
+//		throw NullPointerException("NULL input image");
+//	}
+//
+//	if ( tvol->is_complex() ) {
+//		LOGERR("real image expected. Input image is complex image.");
+//		throw ImageFormatException("real image expected. Input image is complex image.");
+//	}
+//
+//
+//	float *real_data_float = tvol->get_data();
+//	int nx = tvol->get_xsize();
+//	int ny = tvol->get_ysize();
+//	int nz = tvol->get_zsize();
+//
+//	int dims[3];
+//	dims[0] = nz;
+//	dims[1] = ny;
+//	dims[2] = nx;
+//
+//
+////	int size_complex_data = nx*ny*(nz/2 +1)*2;
+//	int size_complex_data = nx*ny*(nz/2 + 1);
+//	double * complex_data = new double[size_complex_data];
+//	double * real_data = new double[nx*ny*nz];
+//
+//
+//	size_t offset;
+//	int nxreal;
+//	// need to extend the matrix along x
+//	// meaning nx is the un-fftpadded size
+//	nxreal = nx;
+//	offset = 2 - nx%2;
+////	if (1 == offset) set_fftodd(true);
+////	else             set_fftodd(false);
+//	bool fft_odd = (1 == offset);
+//	int nxnew = nx + offset;
+////	set_size(nxnew, ny, nz);
+//	double * real_data_padded = new double[nxnew*ny*nz];
+//	for(int i=0; i<nxnew*ny*nz; ++i) real_data_padded[i] = (double)real_data_float[i];
+//	for (int iz = nz-1; iz >= 0; iz--) {
+//		for (int iy = ny-1; iy >= 0; iy--) {
+//			for (int ix = nxreal-1; ix >= 0; ix--) {
+//				size_t oldxpos = ix + (iy + iz*ny)*(size_t)nxreal;
+//				size_t newxpos = ix + (iy + iz*ny)*(size_t)nxnew;
+//				real_data_padded[newxpos] = real_data_padded[oldxpos];
+//			}
+//		}
+//	}
+//
+//
+//
+////	for(int i=0; i<nx*ny*nz; ++i) real_data[i] = 0.0;
+//
+////	fftwf_plan plan_real_to_complex = fftwf_plan_dft_r2c(3, dims, real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+////	fftwf_plan plan_complex_to_real = fftwf_plan_dft_c2r(3, dims, (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
+//
+////	fftw_plan plan_real_to_complex = fftw_plan_dft_r2c(3, dims, real_data, (fftw_complex *) complex_data, FFTW_ESTIMATE);
+////	fftw_plan plan_complex_to_real = fftw_plan_dft_c2r(3, dims, (fftw_complex *) complex_data, real_data, FFTW_ESTIMATE);
+//	fftw_plan plan_real_to_complex = fftw_plan_dft_r2c(3, dims, real_data_padded, (fftw_complex *) real_data_padded, FFTW_ESTIMATE);
+//	fftw_plan plan_complex_to_real = fftw_plan_dft_c2r(3, dims, (fftw_complex *) real_data_padded, real_data_padded, FFTW_ESTIMATE);
+//
+//
+////	size_t niter = 5;
+//	size_t niter = 1;
+////	size_t niter = 4;
+//	for (size_t i=0;i<niter;++i) {
+//		fftw_plan plan_real_to_complex = fftw_plan_dft_r2c(3, dims, real_data_padded, (fftw_complex *) real_data_padded, FFTW_ESTIMATE);
+//		fftw_execute(plan_real_to_complex);
+//		Util::ap2ri(real_data_padded, (size_t)nxnew * ny * nz);
+//		fftw_plan plan_complex_to_real = fftw_plan_dft_c2r(3, dims, (fftw_complex *) real_data_padded, real_data_padded, FFTW_ESTIMATE);
+//		fftw_execute(plan_complex_to_real);
+//
+//		int offset = fft_odd ? 1 : 2;
+//
+//		int nxo = nx - offset;
+//		float scale = 1.0f / ((size_t)nxo * ny * nz);
+////		double scale = 1.0/nx*ny*nz;
+//		for(int i=0; i<nx*ny*nz; ++i) real_data_padded[i] = real_data_padded[i]*scale;
+//	}
+//
+////	tvol->set_size(nxnew, ny, nz);
+////	for(int i=0; i<nxnew*ny*nz; ++i) real_data_float[i] = (float)real_data[i];
+//	for(int i=0; i<nx*ny*nz; ++i) real_data_float[i] = (float)real_data_padded[i];
+//
+//	fftw_destroy_plan(plan_real_to_complex);
+//	fftw_destroy_plan(plan_complex_to_real);
+//
+//
+//	delete[] complex_data;
+//	delete[] real_data;
+//	delete[] real_data_padded;
+//
+////	tvol->update();
+//
+//	EXITFUNC;
+//
+//}
+
+//void Util::make_fft_ifft(EMData* tvol) {
+//	ENTERFUNC;
+//	/* Exception Handle */
+//	if (!tvol) {
+//		throw NullPointerException("NULL input image");
+//	}
+//
+//	size_t niter = 20;
+////	size_t niter = 4;
+//	for (size_t i=0;i<niter;++i) {
+//		tvol->do_fft_inplace();
+//		tvol->do_ift_inplace();
+//	}
+//
+//
+//	tvol->update();
+//
+//	EXITFUNC;
+//
+//}
+
+
+//void Util::make_fft_ifft(EMData* tvol) {
+//	ENTERFUNC;
+//	/* Exception Handle */
+//	if (!tvol) {
+//		throw NullPointerException("NULL input image");
+//	}
+//
+////	size_t niter = 10;
+//	size_t niter = 1;
+//	for (size_t i = 0; i < niter; ++i) {
+//		tvol->do_fft_inplace();
+//		tvol->do_ift_inplace();
+//	}
+//	tvol->update();
+//
+//	EXITFUNC;
+//}
+
+//void Util::my_real_to_complex_1d(float *real_data, float *complex_data, int n)
+vector<float> Util::my_real_to_complex_1d(vector<float> real_data_v)
+{//cout<<"doing fftw3"<<endl;
+
+	int n = real_data_v.size();
+	float * real_data = &real_data_v[0];
+
+	vector<float> complex_data_v(2*n);
+	float * complex_data = &complex_data_v[0];
+
+//	complex_data[0] = 11;
+//	complex_data[1] = 22;
+
+#ifdef WITH_FFTW_PLAN_CACHING
+		bool ip = ( complex_data == real_data );
+		fftwf_plan plan = plan_cache.get_plan(1,n,1,1,EMAN2_REAL_2_COMPLEX,ip,(fftwf_complex *) complex_data, real_data);
+		// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be reused
+		fftwf_execute_dft_r2c(plan, real_data,(fftwf_complex *) complex_data);
+#else
+//	int mrt = Util::MUTEX_LOCK(&fft_mutex);
+	fftwf_plan plan = fftwf_plan_dft_r2c_1d(n, real_data, (fftwf_complex *) complex_data,
+											FFTW_ESTIMATE);
+//	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+
+	fftwf_execute(plan);
+//	mrt = Util::MUTEX_LOCK(&fft_mutex);
+	fftwf_destroy_plan(plan);
+//	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+#endif // WITH_FFTW_PLAN_CACHING
+
+//	complex_data[2] = 33;
+//	complex_data[3] = 44;
+
+	return complex_data_v;
+
+}
+
+//void Util::my_real_to_complex_3d(float *real_data)
+////int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
+//{
+//	const int rank = get_rank(ny, nz);
+//	int dims[3];
+//	dims[0] = nz;
+//	dims[1] = ny;
+//	dims[2] = nx;
+//
+//	switch(rank) {
+//		case 1:
+//			real_to_complex_1d(real_data, complex_data, nx);
+//			break;
+//
+//		case 2:
+//		case 3:
+//		{
+//#ifdef FFTW_PLAN_CACHING
+//			bool ip = ( complex_data == real_data );
+//			fftwf_plan plan = plan_cache.get_plan(rank,nx,ny,nz,EMAN2_REAL_2_COMPLEX,ip,(fftwf_complex *) complex_data, real_data);
+//			// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be re-used
+//			fftwf_execute_dft_r2c(plan, real_data,(fftwf_complex *) complex_data );
+//#else
+//			int mrt = Util::MUTEX_LOCK(&fft_mutex);
+//			fftwf_plan plan = fftwf_plan_dft_r2c(rank, dims + (3 - rank),
+//					real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+//			mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+//
+//			fftwf_execute(plan);
+//
+//			mrt = Util::MUTEX_LOCK(&fft_mutex);
+//			fftwf_destroy_plan(plan);
+//			mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+//
+//#endif // FFTW_PLAN_CACHING
+//		}
+//			break;
+//
+//		default:
+//			LOGERR("Should NEVER be here!!!");
+//			break;
+//	}
+//
+//	return 0;
+//}
+//
+//
+//
+//
+
