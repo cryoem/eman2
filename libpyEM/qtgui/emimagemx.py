@@ -747,7 +747,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		else :
 			self.data = self.__get_cache(obj, soft_delete)
 
-		if self.data == None : return
+		if self.data == None : 
+			return
 
 		if self.data.is_3d() :
 			self.get_inspector()
@@ -776,7 +777,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				
 		self.max_idx = len(self.data)
 
-		if self.nimg == 0 : return # the list is empty
+		if self.nimg == 0 : 
+			if update_gl : self.updateGL()
+			return # the list is empty
 
 		global HOMEDB
 		HOMEDB = EMAN2db.EMAN2DB.open_db()
@@ -1664,13 +1667,14 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.origin = new_origin
 
 	def __app_mode_mouse_down(self, event):
+		self.downbutton=event.button()
 		if event.button()==Qt.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 			if lc:
-				self.emit(QtCore.SIGNAL("mx_image_selected"),event,lc)
 #				print "select ",lc[0]
 				#print "setting selected"
 				self.set_selected([lc[0]],True)
+				self.emit(QtCore.SIGNAL("mx_image_selected"),event,lc)
 			xians_stuff = False
 			if xians_stuff:
 				if lc[0] != None:
@@ -1694,13 +1698,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 #				print "dselect ",lc[0]
 				self.emit(QtCore.SIGNAL("mx_image_double"),event,lc)
 
-
 	def __app_mode_mouse_move(self, event):
 		if event.buttons()&Qt.LeftButton:
 			self.emit(QtCore.SIGNAL("mx_mousedrag"),event,self.get_scale())
 
 	def __app_mode_mouse_up(self,event):
-		if event.button()==Qt.LeftButton:
+		if self.downbutton==Qt.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 
 			self.emit(QtCore.SIGNAL("mx_mouseup"),event,lc)

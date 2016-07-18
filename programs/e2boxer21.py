@@ -40,7 +40,8 @@ class nothing:
 		return
 
 try: 
-	from PyQt4 import QtCore, QtGui, Qt
+	from PyQt4 import QtCore, QtGui
+	from PyQt4.QtCore import Qt
 	from emimage2d import EMImage2DWidget
 	from emplot2d import EMPlot2DWidget
 	from emimagemx import EMImageMXWidget
@@ -92,6 +93,7 @@ def main():
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=-1, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--no_ctf",action="store_true",default=False,help="Disable CTF determination", guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--allmicrographs",action="store_true",default=False,help="Add all images from micrographs folder", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--autopick",type=str,default=None,help="Perform automatic particle picking. Provide mode and parameter string")
 	parser.add_argument("--write_dbbox",action="store_true",default=False,help="Export EMAN1 .box files",guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
@@ -104,6 +106,9 @@ def main():
 	global invert_on_read
 	if options.invert : invert_on_read = True
 
+	if options.allmicrographs :
+		if len(args)>0 : print "Specified micrograph list replaced with contents of micrographs/"
+		args=["micrographs/{}".format(i) for i in os.listdir("micrographs")]
 
 	#####
 	# Parameter Validation
@@ -112,6 +117,37 @@ def main():
 	if not (options.gui or options.write_ptcls or options.write_dbbox or options.autopick):
 		print "Error: No actions specified. Try --gui for interactive/semi-automated particle picking." 
 
+	# Some of this seems redundant, it is to insure self-consistency
+	if options.boxsize<2:
+		try: 
+			options.boxsize = project_db["global.boxsize"]
+		except:
+			print "No box size specified, and no box size in project info. Please specify."
+			sys.exit(1)
+			
+	if good_size(options.boxsize)!=options.boxsize :
+		print "Bad box size detected. Adjusting size to {}. See http://eman2.org/emanwiki/EMAN2/BoxSize".format(good_size(options.boxsize))
+		options.boxsize=good_size(options.boxsize)
+	project_db["global.boxsize"]=options.boxsize
+	boxsize=options.boxsize
+	boxsize2=boxsize/2
+
+	if options.ptclsize<2:
+		try: options.ptclsize=project_db["global.ptclsize"]
+		except:
+			print "ERROR: No particle size specified. None found in project DB. Please specify approximate maximum particle dimension in pixels."
+			sys.exit(1)
+			
+	if options.ptclsize>boxsize*0.8:
+		print "ERROR: Invalid particle size detected. Box size should normally be 1.5 - 2x particle size, and must be at least 1.2x particle size." 
+		sys.exit(1)
+		
+	if options.ptclsize*1.5>boxsize :
+		print "WARNING: Strongly recommend using a box size 1.5 - 2.0x the maximum dimension of the particle! This may be pushed to ~1.25x in some cases, but results may be suboptimal."
+		
+	project_db["global.ptclsize"]=options.ptclsize
+
+	# CTF related options
 	if not options.no_ctf :
 		if options.voltage>1500 :
 			options.voltage/=1000
@@ -146,6 +182,7 @@ def main():
 		
 	logid=E2init(sys.argv,options.ppid)
 
+
 	if options.autopick!=None :
 		pass
 
@@ -161,11 +198,45 @@ def main():
 		app.exec_()
 
 	if options.write_dbbox:
-		pass
+		try: os.mkdir("boxfiles")
+		except: pass
 	
-	if options.write_ptcls:
-		pass
+		for m in args:
+			out=file("boxfiles/{}.box".format(base_name(m)),"w")
+			db=js_open_dict(info_name(m))
+			boxes=db["boxes"]
+			for b in boxes:
+				out.write("{:d}\t{:d}\t{:d}\t{:d}\n".format(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
 		
+		print ".box files written to boxfiles/"
+
+	if options.write_ptcls:
+		try: os.mkdir("particles")
+		except: pass
+		
+		for m in args:
+			base=base_name(m)
+			ptcl="particles/{}_ptcls.hdf".format(base)
+			
+			# get the list of box locations
+			db=js_open_dict(info_name(m))
+			boxes=db["boxes"]
+			if len(boxes)==0 :
+				if options.verbose :
+					print "No particles in ",m
+				continue
+		
+			# remove any existing file
+			try: os.unlink(ptcl)
+			except: pass
+		
+			if options.verbose : print "{} : {} particles".format(m,len(boxes))
+			micrograph=EMData(m,0)		# read micrograph
+			for i,b in enumerate(boxes):
+				boxim=self.micrograph.get_clip(Region(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
+				boxim["ptcl_source_coord"]=(b[0],b[1])
+				boxim["ptcl_source_image"]=m
+				boxim.write_image(ptcl,i)
 
 	E2end(logid)
 	
@@ -194,7 +265,7 @@ class GUIBoxer(QtGui.QWidget):
 	# picker_execution_function(self,...
 
 	aboxmodes = [ ("by Ref","auto_ref",boxerByRef), ("Gauss","auto_gauss",boxerGauss) ]
-	boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "unknown":[.4,.4,.1], "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4) }
+	boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "unknown":[.4,.4,.1], "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4) }
 	
 	def __init__(self,imagenames,voltage=None,apix=None,cs=None,ac=10.0,box=256,ptcl=200):
 		"""The 'new' e2boxer interface.
@@ -207,7 +278,12 @@ class GUIBoxer(QtGui.QWidget):
 		self.curfilename = None				# current selected file for boxing
 		self.filenames=imagenames			# list of available filenames
 		self.micrograph=None
-		self.boxes=None
+		self.boxes=[]
+		self.particles=[]
+		self.goodrefs=[]					# "good" box references for this project
+		self.goodrefchg=False				# this is used to prevent rewriting the refs many times
+		self.badrefs=[]						# "bad" box references for this project. Used to reduce false-positives
+		self.badrefchg=False
 
 		self.defaultvoltage=voltage
 		self.defaultapix=apix
@@ -221,12 +297,15 @@ class GUIBoxer(QtGui.QWidget):
 
 		self.wparticles=EMImageMXWidget()
 		self.wparticles.setWindowTitle("Particles")
+		self.wparticles.set_mouse_mode("App")
 		
 		self.wrefs=EMImageMXWidget()
 		self.wrefs.setWindowTitle("Box Refs")
+		self.wrefs.set_mouse_mode("App")
 		
 		self.wbadrefs=EMImageMXWidget()
 		self.wbadrefs.setWindowTitle("Bad Box Refs")
+		self.wbadrefs.set_mouse_mode("App")
 
 
 		#self.wfft=EMImage2DWidget()
@@ -238,15 +317,15 @@ class GUIBoxer(QtGui.QWidget):
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
-		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mousedown"),self.ptclmousedown)
-		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mousedrag"),self.ptclmousedrag)
-		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mouseup")  ,self.ptclmouseup)
-		self.wrefs.connect(self.wparticles,QtCore.SIGNAL("mousedown"),self.refmousedown)
-		self.wrefs.connect(self.wparticles,QtCore.SIGNAL("mousedrag"),self.refmousedrag)
-		self.wrefs.connect(self.wparticles,QtCore.SIGNAL("mouseup")  ,self.refmouseup)
-
-		self.wimage.mmode="app"
-		self.wparticles.mmode="app"
+		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.ptclmousedown)
+		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.ptclmousedrag)
+		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mx_mouseup")  ,self.ptclmouseup)
+#		self.wrefs.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.refmousedown)
+#		self.wrefs.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.ptclmousedrag)
+		self.wrefs.connect(self.wrefs,QtCore.SIGNAL("mx_mouseup")  ,self.refmouseup)
+#		self.wbadrefs.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.badrefmousedown)
+#		self.wbadrefs.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.badrefmousedrag)
+		self.wbadrefs.connect(self.wbadrefs,QtCore.SIGNAL("mx_mouseup")  ,self.badrefmouseup)
 
 		# This object is itself a widget we need to set up
 		self.gbl = QtGui.QGridLayout(self)
@@ -301,6 +380,12 @@ class GUIBoxer(QtGui.QWidget):
 		QtCore.QObject.connect(self.bmgref,QtCore.SIGNAL("clicked(bool)"),self.setMouseGoodRef)
 		QtCore.QObject.connect(self.bmbref,QtCore.SIGNAL("clicked(bool)"),self.setMouseBadRef)
 
+		self.bfilter=QtGui.QPushButton("Filter Disp.")
+		self.bfilter.setToolTip("Filter micrograph (display only)")
+		self.bfilter.setCheckable(True)
+		self.gbl.addWidget(self.bfilter,1,4,1,1)
+		QtCore.QObject.connect(self.bfilter,QtCore.SIGNAL("clicked(bool)"),self.filterToggle)
+
 		# Global parameters
 		self.boxparm=QtGui.QGroupBox("Parameters",self)
 		self.boxparm.setFlat(False)
@@ -349,10 +434,22 @@ class GUIBoxer(QtGui.QWidget):
 			cls.setup_gui(gl)
 			self.autotab.addTab(w,name)
 			
-		
 		self.setWindowTitle("e2boxer21 - Control Panel")
 
 		self.wimage.show()
+		self.wparticles.set_data(self.particles)
+		self.wparticles.show()
+		
+		if os.path.exists("info/boxrefs.hdf"):
+			self.goodrefs=EMData.read_images("info/boxrefs.hdf")
+		self.wrefs.set_data(self.goodrefs)
+		if len(self.goodrefs)>0 : self.wrefs.show()
+		
+		if os.path.exists("info/boxrefsbad.hdf"):
+			self.badrefs=EMData.read_images("info/boxrefsbad.hdf")
+		self.wbadrefs.set_data(self.badrefs)
+		if len(self.badrefs)>0 : self.wbadrefs.show()
+		
 #		self.wfft.show()
 #		self.wplot.show()
 		E2loadappwin("e2boxer21","main",self)
@@ -362,110 +459,6 @@ class GUIBoxer(QtGui.QWidget):
 		E2loadappwin("e2boxer21","badrefs",self.wbadrefs.qt_parent)
 
 		self.newSet(0)
-
-
-
-
-	#QWidget *firstPageWidget = new QWidget;
-    #QWidget *secondPageWidget = new QWidget;
-    #QWidget *thirdPageWidget = new QWidget;
-
-    #QStackedWidget *stackedWidget = new QStackedWidget;
-    #stackedWidget->addWidget(firstPageWidget);
-    #stackedWidget->addWidget(secondPageWidget);
-    #stackedWidget->addWidget(thirdPageWidget);
-
-    #QVBoxLayout *layout = new QVBoxLayout;
-    #layout->addWidget(stackedWidget);
-    #setLayout(layout);
-		
-		 #QComboBox *pageComboBox = new QComboBox;
-    #pageComboBox->addItem(tr("Page 1"));
-    #pageComboBox->addItem(tr("Page 2"));
-    #pageComboBox->addItem(tr("Page 3"));
-    #connect(pageComboBox, SIGNAL(activated(int)),stackedWidget, SLOT(setCurrentIndex(int)));
-
-		#self.lboxmode=QtGui.QLabel("Mode:",self)
-		#self.gbl.addWidget(self.lboxmode,10,0)
-
-		#self.sboxmode=QtGui.QComboBox(self)
-		#self.sboxmode.addItem("Manual")
-		#self.sboxmode.addItem("Reference")
-		#self.sboxmode.setCurrentIndex(1)
-		#self.gbl.addWidget(self.sboxmode,10,1)
-
-		#self.lanmode=QtGui.QLabel("Annotate:",self)
-		#self.gbl.addWidget(self.lanmode,12,0)
-
-		#self.sanmode=QtGui.QComboBox(self)
-		#self.sanmode.addItem("Box")
-		#self.sanmode.addItem("Box+dot")
-		#self.sanmode.addItem("Circle")
-		#self.sanmode.addItem("None")
-		#self.gbl.addWidget(self.sanmode,12,1)
-
-		#self.sdefocus=ValSlider(self,(0,5),"Defocus:",0.0,90)
-		#self.gbl.addWidget(self.sdefocus,0,2,1,3)
-
-		#self.squality=ValSlider(self,(0,9),"Quality (0-9):",0,90)
-		#self.squality.setIntonly(True)
-
-		#self.gbl.addWidget(self.squality,6,2,1,3)
-
-		#self.brefit=QtGui.QPushButton("Autobox")
-		#self.gbl.addWidget(self.brefit,7,2)
-
-		#self.bclrauto=QtGui.QPushButton("Clear Auto")
-		#self.gbl.addWidget(self.bclrauto,7,3)
-
-		#self.bclrall=QtGui.QPushButton("Clear All")
-		#self.gbl.addWidget(self.bclrall,7,4)
-
-		#self.sapix=ValBox(self,(0,500),"A/pix:",1.0,90)
-		#if self.defaultapix!=None : self.sapix.setValue(self.defaultapix)
-		#self.gbl.addWidget(self.sapix,10,2)
-
-		#self.svoltage=ValBox(self,(0,500),"Voltage (kV):",200,90)
-		#if self.defaultvoltage!=None : self.svoltage.setValue(self.defaultvoltage)
-		#self.gbl.addWidget(self.svoltage,11,2)
-
-		#self.scs=ValBox(self,(0,5),"Cs (mm):",4.1,90)
-		#if self.defaultcs!=None : self.scs.setValue(self.defaultcs)
-		#self.gbl.addWidget(self.scs,12,2)
-
-		#self.sboxsize=ValBox(self,(0,500),"Box Size:",256,90)
-		#self.sboxsize.intonly=True
-		#self.gbl.addWidget(self.sboxsize,13,2)
-
-		#self.sptclsize=ValBox(self,(0,500),"Ptcl Size:",256,90)
-		#self.sptclsize.intonly=True
-		#self.gbl.addWidget(self.sptclsize,14,2)
-
-		#QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		#QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		#QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		#QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		#QtCore.QObject.connect(self.sboxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
-##		QtCore.QObject.connect(self.soversamp, QtCore.SIGNAL("valueChanged"), self.newBox)
-		#QtCore.QObject.connect(self.squality,QtCore.SIGNAL("valueChanged"),self.newQualityFactor)
-		#QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
-		#QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listkey)
-		#QtCore.QObject.connect(self.sboxmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newBoxMode)
-
-		#self.resize(720,380) # figured these values out by printing the width and height in resize event
-
-		#### This section is responsible for background updates
-		#self.busy=False
-		#self.needupdate=True
-		#self.needredisp=False
-		#self.procthread=None
-		#self.errors=None		# used to communicate errors back from the reprocessing thread
-
-		#self.timer=QTimer()
-		#QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
-		#self.timer.start(100)
-
-#		self.recalc()
 
 	def setMouseManual(self,x):
 		self.mmode="manual"
@@ -478,70 +471,149 @@ class GUIBoxer(QtGui.QWidget):
 	
 	def setMouseBadRef(self,x):
 		self.mmode="refbad"
-		
+	
+	def filterToggle(self,x):
+		self.__show_image()
 
-	def imgmousedown(self,event) :
-		m=self.wimage.scr_to_img((event.x(),event.y()))
+	def imgmousedown(self,event,m) :
+#		m=self.wimage.scr_to_img((event.x(),event.y()))
+		self.curbox=-1
+		self.downbut=event.buttons()
+		if not event.buttons()&Qt.LeftButton : return
+		self.lastloc=m
 		boxsize2=self.vbbsize.getValue()//2
 		ptclsize=self.vbbpsize.getValue()
+		if boxsize2<4 : return
 
-		self.curbox=0
-		# check to see if click was inside an existing box, in which case we move it
-		for i in self.boxes:
-			if abs(m.x-i[0])<boxsize2 and abs(m.y-i[1])<boxsize2 : 
-				self.curbox=i
-				break
-		else :
-			# Create a new box
-			if self.mmode=="del" : return	 # This is for creating a new box, so clearly not desirable in delete mode
-			self.curbox=len(self.boxes)
-			self.boxes.append((m[0],m[1],self.mmode))
-			self.__addBox(self.curbox,self.boxes[-1])
+		if self.mmode=="del" : return 		# del works with drag and up
+		elif self.mmode in ("refgood","refbad") :
+			self.tmpbox=m
+			try: color=self.boxcolors[self.mmode]
+			except: color=self.boxcolors["unknown"]
+			self.wimage.add_shape("tmpbox",EMShape(("rect",color[0],color[1],color[2],self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,self.tmpbox[0]+boxsize2,self.tmpbox[1]+boxsize2,2)))
+			self.wimage.update()
+		elif self.mmode == "manual" :
+			self.curbox=0
+			# check to see if click was inside an existing box, in which case we move it
+			for i,b in enumerate(self.boxes):
+				if abs(m[0]-b[0])<boxsize2 and abs(m[1]-b[1])<boxsize2 : 
+					self.curbox=i
+					break
+			else :
+				# Create a new box
+				self.curbox=len(self.boxes)
+				self.boxes.append((m[0],m[1],self.mmode))
+				self.__addBox(self.curbox,self.boxes[-1])
 			
-			
-				
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
-	def imgmousedrag(self,event) :
-		if self.calcmode==0:
-			m=self.wimage.scr_to_img((event.x(),event.y()))
-			parms=self.parms[self.curset]
-			parms[2]=(m[0]-parms[0]/2,m[1]-parms[0]/2)
-			self.needredisp=True
-			self.recalc()
+	def imgmousedrag(self,event,m) :
+#		m=self.wimage.scr_to_img((event.x(),event.y()))
+		if not event.buttons()&Qt.LeftButton : return
+		boxsize2=self.vbbsize.getValue()//2
+		ptclsize=self.vbbpsize.getValue()
+		if boxsize2<4 : return
+		
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			# filter out all matching boxes, then update all at once
+			n=len(self.boxes)
+			self.boxes=[b for b in self.boxes if abs(b[0]-m[0])>boxsize2 or abs(b[1]-m[1])>boxsize2]
+			if len(self.boxes)<n : self.__updateBoxes()
+		elif self.mmode in ("refgood","refbad"):
+			if m==self.lastloc : return
+			b=self.tmpbox
+			self.tmpbox=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],self.mmode)
+			self.lastloc=m
+			try: color=self.boxcolors[self.mmode]
+			except: color=self.boxcolors["unknown"]
+			self.wimage.add_shape("tmpbox",EMShape(("rect",color[0],color[1],color[2],self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,self.tmpbox[0]+boxsize2,self.tmpbox[1]+boxsize2,2)))
+			self.wimage.update()
+		elif self.mmode=="manual":
+			if m==self.lastloc : return
+			b=self.boxes[self.curbox]
+			self.boxes[self.curbox]=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],b[2])
+			self.__addBox(self.curbox,self.boxes[self.curbox])
+			self.lastloc=m
+
 			
+	def imgmouseup(self,event,m) :
+#		m=self.wimage.scr_to_img((event.x(),event.y()))
+		if not self.downbut&Qt.LeftButton : return
+		boxsize2=self.vbbsize.getValue()//2
+		ptclsize=self.vbbpsize.getValue()
+		if boxsize2<4 : return
+		
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			# filter out all matching boxes, then update all at once
+			n=len(self.boxes)
+			self.boxes=[b for b in self.boxes if abs(b[0]-m[0])>boxsize2 or abs(b[1]-m[1])>boxsize2]
+			if len(self.boxes)<n : self.__updateBoxes()
+		elif self.mmode in ("refgood","refbad"):
+			b=self.tmpbox
+			self.tmpbox=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],self.mmode)
+			self.lastloc=m
+			self.wimage.del_shape("tmpbox")
+			boxim=self.micrograph.get_clip(Region(self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,boxsize2*2,boxsize2*2))
+			boxim["ptcl_source_coord"]=(self.tmpbox[0],self.tmpbox[1])
+			if self.mmode == "refgood" : 
+				self.goodrefs.append(boxim)
+				self.goodrefchg=True
+				self.wrefs.set_data(self.goodrefs)
+				self.wrefs.show()
+			else :
+				self.badrefs.append(boxim)
+				self.badrefchg=True
+				self.wbadrefs.set_data(self.badrefs)
+				self.wbadrefs.show()
+		elif self.mmode=="manual":
+			if m==self.lastloc : return
+			b=self.boxes[self.curbox]
+			self.boxes[self.curbox]=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],b[2])
+			self.__addBox(self.curbox,self.boxes[self.curbox])
 
-		# box deletion when shift held down
-		#if event.modifiers()&Qt.ShiftModifier:
-			#for i,j in enumerate(self.boxes):
 
-	def imgmouseup(self,event) :
-		m=self.wimage.scr_to_img((event.x(),event.y()))
-		if self.calcmode==1:
-			parms=self.parms[self.curset]
-			nx=self.data["nx"]/parms[0]-1
-			grid=int((m[0]-parms[0]/2)/parms[0])+int((m[1]-parms[0]/2)/parms[0])*nx
-			if grid in parms[3] : parms[3].remove(grid)
-			else: parms[3].add(grid)
-			self.needredisp=True
-			self.recalc()
+	def ptclmousedown(self,event,m) :
+		self.downbut=event.buttons()
+		if self.mmode == "manual" :
+			self.curbox=m[0]
+			self.lastloc=m[1:3]
+			self.wimage.scroll_to(self.boxes[m[0]][0],self.boxes[m[0]][1])
+				
+	def ptclmousedrag(self,event,x) :
+		m=self.wparticles.scr_to_img((event.x(),event.y()))
+		if self.mmode=="manual":
+			if m[1:3]==self.lastloc : return
+			b=self.boxes[self.curbox]
+			self.boxes[self.curbox]=(b[0]-m[1]+self.lastloc[0],b[1]-m[2]+self.lastloc[1],b[2])
+			self.__addBox(self.curbox,self.boxes[self.curbox])
+			self.lastloc=m[1:3]
 
-	def ptclmousedown(self,event) :
+	def ptclmouseup(self,event,m) :
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			self.boxes.pop(m[0])
+			self.__updateBoxes()
+		elif self.mmode=="manual":
+			if m[1:3]==self.lastloc : return
+			b=self.boxes[self.curbox]
+			self.boxes[self.curbox]=(b[0]-m[1]+self.lastloc[0],b[1]-m[2]+self.lastloc[1],b[2])
+			self.__addBox(self.curbox,self.boxes[self.curbox])
+			self.lastloc=m[1:3]
 		return
-	
-	def ptclmousedrag(self,event) :
+
+	def refmouseup(self,event,m) :
+		print "refup"
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			self.goodrefs.pop(m[0])
+			self.goodrefchg=True
+			self.wrefs.set_data(self.goodrefs)
 		return
 
-	def ptclmouseup(self,event) :
-		return
-
-	def refmousedown(self,event) :
-		return
-	
-	def refmousedrag(self,event) :
-		return
-
-	def refmouseup(self,event) :
+	def badrefmouseup(self,event,m) :
+		print "badrefup"
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			self.badrefs.pop(m[0])
+			self.badrefchg=True
+			self.wbadrefs.set_data(self.badrefs)
 		return
 
 	def newSet(self,val):
@@ -558,61 +630,81 @@ class GUIBoxer(QtGui.QWidget):
 
 
 		self.micrograph=load_micrograph(newfilename)
-		self.wimage.set_data(self.micrograph)
+		self.__show_image()
 		if first : E2loadappwin("e2boxer21","image",self.wimage.qt_parent)
 		self.curfilename=newfilename
 		self.restore_boxes()
+
+	def __show_image(self):
+		if self.bfilter.isChecked() :
+			nx=self.micrograph["nx"]
+			ny=self.micrograph["ny"]
+			gs=good_size(max(self.micrograph["nx"],self.micrograph["ny"]))
+			fm=self.micrograph.get_clip(Region(0,0,gs,gs)).do_fft()
+			fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.005})
+			fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
+			fm=fm.do_ift()
+			self.wimage.set_data(fm.get_clip(Region(0,0,nx,ny)))
+		else: self.wimage.set_data(self.micrograph)
 
 	def save_boxes(self):
 		js=js_open_dict(info_name(self.curfilename))
 		js["boxes"]=self.boxes
 		
+		if self.goodrefchg :
+			try: os.unlink("info/boxrefs.hdf")
+			except: pass
+			for im in self.goodrefs: im.write_image("info/boxrefs.hdf",-1)
+			self.goodrefchg=False
+			
+		if self.badrefchg :
+			try: os.unlink("info/boxrefsbad.hdf")
+			except: pass
+			for im in self.badrefs: im.write_image("info/boxrefsbad.hdf",-1)
+			self.badrefchg=False
+			
 	def restore_boxes(self):
 		# first we restore the list of box locations
 		js=js_open_dict(info_name(self.curfilename))
 		try: self.boxes=js["boxes"]
 		except: self.boxes=[]
-		boxsize=self.vbbsize.getValue()
-		ptclsize=self.vbbpsize.getValue()
-		micro=self.wimage.get_data()
+		self.__updateBoxes()
+		
+		#boxsize=self.vbbsize.getValue()
+		#ptclsize=self.vbbpsize.getValue()
+		#micro=self.wimage.get_data()
+		
+		#self.wimage.del_shapes()
+		#self.particles=[]
+		#if len(self.boxes)==0 : 
+			#self.wparticles.set_data(self.particles)
+			#return
+		
+		## Then we extract the actual boxed out particles
+		#for i,box in enumerate(self.boxes):
+			#self.__addBox(i,box)
+		
+		## finally redisplay as appropriate
+		#self.wimage.update()
+		#self.wparticles.set_data(self.particles)
+		#if len(self.particles)>0 : self.wparticles.show()
+				
+
+	def __updateBoxes(self):
+		"""Updates the display to match current self.boxes"""
 		
 		self.wimage.del_shapes()
-		if len(self.boxes)==0 : 
-			self.wparticles.set_data([])
-			return
 		
-		# Then we extract the actual boxed out particles
-		goodrefs=[]
-		badrefs=[]
 		self.particles=[]
-		for i,box in enumerate(self.boxes):
-			self.__addBox(i,box)
-
-			# extract the data
-			boxim=self.micrograph.get_clip(Region(box[0]-boxsize//2,box[1]-boxsize//2,boxsize,boxsize))
-			boxim["ptcl_source_coord"]=(box[0],box[1])
-			if box[2]=="refgood":
-				goodrefs.append(boxim)
-			elif box[2]=="refbad":
-				badrefs.append(boxim)
-			else:
-				self.particles.append(boxim)
-		
+		for i,b in enumerate(self.boxes):
+			self.__addBox(i,b,True)
+			
 		# finally redisplay as appropriate
 		self.wimage.update()
 		self.wparticles.set_data(self.particles)
 		if len(self.particles)>0 : self.wparticles.show()
-				
-		if len(goodrefs)+len(badrefs)!=0:
-			self.goodrefs=goodrefs
-			self.badrefs=badrefs
-			self.wrefs.set_data(self.goodrefs)
-			self.wbadrefs.set_data(self.badrefs)
-			
-			if len(self.goodrefs)>0 : self.wrefs.show()
-			if len(self.badrefs)>0 : self.wbadrefs.show()
 
-	def __addBox(self,i,box):
+	def __addBox(self,i,box,quiet=False):
 		"""takes the number of the box in self.boxes and the (x,y,mode) tuple and displays it"""
 		# Display the actual box
 		boxsize=self.vbbsize.getValue()
@@ -622,7 +714,15 @@ class GUIBoxer(QtGui.QWidget):
 		self.wimage.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],box[0]-boxsize//2,box[1]-boxsize//2,box[0]+boxsize//2,box[1]+boxsize//2,2)))
 		self.wimage.add_shape("cir{}".format(i),EMShape(("circle",color[0],color[1],color[2],box[0],box[1],ptclsize/2,1.5)))
 
+		boxim=self.micrograph.get_clip(Region(box[0]-boxsize//2,box[1]-boxsize//2,boxsize,boxsize))
+		boxim["ptcl_source_coord"]=(box[0],box[1])
+		if len(self.particles)<=i : self.particles.append(boxim)
+		else: self.particles[i]=boxim
 		
+		if not quiet:
+			# finally redisplay as appropriate
+			self.wimage.update()
+			self.wparticles.set_data(self.particles)
 
 	def listKey(self,event):
 		pass
@@ -649,6 +749,7 @@ class GUIBoxer(QtGui.QWidget):
 
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
+		self.save_boxes()
 		E2saveappwin("e2boxer21","main",self)
 		E2saveappwin("e2boxer21","image",self.wimage.qt_parent)
 		E2saveappwin("e2boxer21","particles",self.wparticles.qt_parent)
@@ -658,7 +759,7 @@ class GUIBoxer(QtGui.QWidget):
 		#self.writeCurParm()
 		event.accept()
 		QtGui.qApp.exit(0)
-		#app=QtGui.qApp
+		#app=QtGui.qApp			if b[2] not in ("refgood","refbad"):
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
 			#self.wimage = None
@@ -1234,6 +1335,107 @@ class GUIBoxer(QtGui.QWidget):
 	##mask2.process_inplace("mask.decayedge2d",{"width":4})
 	##mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 	##mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+
+	#QWidget *firstPageWidget = new QWidget;
+    #QWidget *secondPageWidget = new QWidget;
+    #QWidget *thirdPageWidget = new QWidget;
+
+    #QStackedWidget *stackedWidget = new QStackedWidget;
+    #stackedWidget->addWidget(firstPageWidget);
+    #stackedWidget->addWidget(secondPageWidget);
+    #stackedWidget->addWidget(thirdPageWidget);
+
+    #QVBoxLayout *layout = new QVBoxLayout;
+    #layout->addWidget(stackedWidget);
+    #setLayout(layout);
+		
+		 #QComboBox *pageComboBox = new QComboBox;
+    #pageComboBox->addItem(tr("Page 1"));
+    #pageComboBox->addItem(tr("Page 2"));
+    #pageComboBox->addItem(tr("Page 3"));
+    #connect(pageComboBox, SIGNAL(activated(int)),stackedWidget, SLOT(setCurrentIndex(int)));
+
+		#self.lboxmode=QtGui.QLabel("Mode:",self)
+		#self.gbl.addWidget(self.lboxmode,10,0)
+
+		#self.sboxmode=QtGui.QComboBox(self)
+		#self.sboxmode.addItem("Manual")
+		#self.sboxmode.addItem("Reference")
+		#self.sboxmode.setCurrentIndex(1)
+		#self.gbl.addWidget(self.sboxmode,10,1)
+
+		#self.lanmode=QtGui.QLabel("Annotate:",self)
+		#self.gbl.addWidget(self.lanmode,12,0)
+
+		#self.sanmode=QtGui.QComboBox(self)
+		#self.sanmode.addItem("Box")
+		#self.sanmode.addItem("Box+dot")
+		#self.sanmode.addItem("Circle")
+		#self.sanmode.addItem("None")
+		#self.gbl.addWidget(self.sanmode,12,1)
+
+		#self.sdefocus=ValSlider(self,(0,5),"Defocus:",0.0,90)
+		#self.gbl.addWidget(self.sdefocus,0,2,1,3)
+
+		#self.squality=ValSlider(self,(0,9),"Quality (0-9):",0,90)
+		#self.squality.setIntonly(True)
+
+		#self.gbl.addWidget(self.squality,6,2,1,3)
+
+		#self.brefit=QtGui.QPushButton("Autobox")
+		#self.gbl.addWidget(self.brefit,7,2)
+
+		#self.bclrauto=QtGui.QPushButton("Clear Auto")
+		#self.gbl.addWidget(self.bclrauto,7,3)
+
+		#self.bclrall=QtGui.QPushButton("Clear All")
+		#self.gbl.addWidget(self.bclrall,7,4)
+
+		#self.sapix=ValBox(self,(0,500),"A/pix:",1.0,90)
+		#if self.defaultapix!=None : self.sapix.setValue(self.defaultapix)
+		#self.gbl.addWidget(self.sapix,10,2)
+
+		#self.svoltage=ValBox(self,(0,500),"Voltage (kV):",200,90)
+		#if self.defaultvoltage!=None : self.svoltage.setValue(self.defaultvoltage)
+		#self.gbl.addWidget(self.svoltage,11,2)
+
+		#self.scs=ValBox(self,(0,5),"Cs (mm):",4.1,90)
+		#if self.defaultcs!=None : self.scs.setValue(self.defaultcs)
+		#self.gbl.addWidget(self.scs,12,2)
+
+		#self.sboxsize=ValBox(self,(0,500),"Box Size:",256,90)
+		#self.sboxsize.intonly=True
+		#self.gbl.addWidget(self.sboxsize,13,2)
+
+		#self.sptclsize=ValBox(self,(0,500),"Ptcl Size:",256,90)
+		#self.sptclsize.intonly=True
+		#self.gbl.addWidget(self.sptclsize,14,2)
+
+		#QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		#QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		#QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		#QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		#QtCore.QObject.connect(self.sboxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
+##		QtCore.QObject.connect(self.soversamp, QtCore.SIGNAL("valueChanged"), self.newBox)
+		#QtCore.QObject.connect(self.squality,QtCore.SIGNAL("valueChanged"),self.newQualityFactor)
+		#QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		#QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listkey)
+		#QtCore.QObject.connect(self.sboxmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newBoxMode)
+
+		#self.resize(720,380) # figured these values out by printing the width and height in resize event
+
+		#### This section is responsible for background updates
+		#self.busy=False
+		#self.needupdate=True
+		#self.needredisp=False
+		#self.procthread=None
+		#self.errors=None		# used to communicate errors back from the reprocessing thread
+
+		#self.timer=QTimer()
+		#QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
+		#self.timer.start(100)
+
+#		self.recalc()
 
 
 if __name__ == "__main__":
