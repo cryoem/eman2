@@ -487,7 +487,8 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 		e['origin_z'] = 0
 		#print "done"
 		if options.coords:
-			print "writing particle %d with size %d,%d,%d to file %s" % (coordindx,e['nx'],e['ny'],e['nz'],'sptboxer_dummy.hdf')
+			if options.verbose:
+				print "writing particle %d with size %d,%d,%d to temporary output file %s" % (coordindx,e['nx'],e['ny'],e['nz'],'sptboxer_dummy.hdf')
 			e.write_image('sptboxer_dummy.hdf',coordindx)
 			print "done"
 		
@@ -822,10 +823,10 @@ class TomoBoxer3DTask(JSTask):
 		coordy = self.classoptions['coordy']
 		coordz = self.classoptions['coordz']
 		tomogramname = self.classoptions['tomogramname']
-		print "inside class TomoBoxer3DTask"
-		print "calling unbinned_extractor"
+		#print "inside class TomoBoxer3DTask"
+		#print "calling unbinned_extractor"
 		unbinned_extractor(options,coordx,coordy,coordz,tomogramname,coordindx)
-		print "returned from unbinned_extractor"
+		#print "returned from unbinned_extractor"
 
 		return
 
