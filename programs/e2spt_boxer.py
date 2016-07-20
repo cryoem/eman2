@@ -311,7 +311,7 @@ It is also called when boxing from the commandline, without GUI usage, as when y
 a coordinates file
 """
 def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
-	print "inside unbinned extractor for particle", coordindx
+	#print "inside unbinned extractor for particle", coordindx
 	boxsize = options.boxsize
 	#print "boxsize",boxsize
 
@@ -325,27 +325,27 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 	#print "center",center
 
 
-	if options.verbose:
-		print "\n\nUnbinned extractor received this center", center
+	#if options.verbose:
+	#	print "\n\nUnbinned extractor received this center", center
 
 	#print "reading tomogram header"
 	tomo_header=EMData(tomogram,0,True)
 	apix = tomo_header['apix_x']
 	#print "done"
 	
-	if options.verbose:
-		print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
+	#if options.verbose:
+	#	print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
 	
 	x=round(x*cshrink)
 	y=round(y*cshrink)
 	z=round(z*cshrink)
 
-	if options.verbose:
-		print "The actual coordinates used for extraction are", x, y, z
+	#if options.verbose:
+	#	print "The actual coordinates used for extraction are", x, y, z
 
-	print "defining region"
+	#print "defining region"
 	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
-	print "r",r
+	#print "r",r
 	e = EMData()
 	e.read_image(tomogram,0,False,r)
 	#print "extracted particle",coordindx
@@ -354,8 +354,8 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 	#Sometimes empty boxes are picked when boxing from the commandline if yshort isn't specified but should have,
 	#or if erroneous binning factors are provided
 
-	print "read particle from tomogram %s using coords x=%d,y=%d,z=%d" %(tomogram,x,y,z)
-	print "has mean, meannonzero, and sigma",e['mean'],e['mean_nonzero'],e['sigma']
+	#print "read particle from tomogram %s using coords x=%d,y=%d,z=%d" %(tomogram,x,y,z)
+	#print "has mean, meannonzero, and sigma",e['mean'],e['mean_nonzero'],e['sigma']
 
 	if float(e['mean']) != 0.0:
 		#print "mean is nonzero",e['mean']
@@ -487,10 +487,11 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 		e['origin_z'] = 0
 		#print "done"
 		if options.coords:
-			if options.verbose:
-				print "writing particle %d with size %d,%d,%d to temporary output file %s" % (coordindx,e['nx'],e['ny'],e['nz'],'sptboxer_dummy.hdf')
+			#if options.verbose:
+			#	print "writing particle %d with size %d,%d,%d to temporary output file %s" % (coordindx,e['nx'],e['ny'],e['nz'],'sptboxer_dummy.hdf')
 			e.write_image('sptboxer_dummy.hdf',coordindx)
-			print "done"
+			
+			print "extracted particle %d to temporary file" %(coordindx)
 		
 		c=os.getcwd()
 		findir=os.listdir(c)
@@ -558,9 +559,9 @@ def commandline_tomoboxer(tomogram,options):
 		print "Format ERROR: Only .hdf fomart supported."
 		sys.exit()
 	
-	avgr=None
-	if options.bruteaverage:
-		avgr=Averagers.get('mean.tomo')
+	#avgr=None
+	#if options.bruteaverage:
+	#	avgr=Averagers.get('mean.tomo')
 
 	jj=0
 	
@@ -662,14 +663,16 @@ def commandline_tomoboxer(tomogram,options):
 
 	tasks=[]
 	results=[]
+	counter=1
 
 	for coordindx in coordsdict:
 		coordx=coordsdict[coordindx][0]
 		coordy=coordsdict[coordindx][1]
 		coordz=coordsdict[coordindx][2]
 			
-		task = TomoBoxer3DTask( options, coordindx, coordx, coordy, coordz, tomogram )
+		task = TomoBoxer3DTask( options, coordindx, coordx, coordy, coordz, tomogram, counter, ncoords )
 		tasks.append(task)
+		counter+=1
 		
 
 	if tasks:
@@ -751,35 +754,38 @@ def commandline_tomoboxer(tomogram,options):
 		else:
 			print "\n(e2spt_boxer.py) WARNING: unbinned_extractor function returned NOTHING for this box",x,y,z
 		'''
-			
-	#if options.bruteaverage and avgr:
-	#	avg = avgr.finish()
-	#	if avg:
-	#		avg['spt_originalstack'] = os.path.basename( name )
-	#		avgout = options.output.replace( '.hdf', '__avg.hdf' )
-	#		if options.path:
-	#			avgout = options.path + '/' + avgout
-	#		avg.process_inplace('normalize')
-	#		avg.write_image( avgout, 0 )
-	#	else:
-	#		print "\nThe particles averaged into nothing; see", type(avg)
+				
+		#if options.bruteaverage and avgr:
+		#	avg = avgr.finish()
+		#	if avg:
+		#		avg['spt_originalstack'] = os.path.basename( name )
+		#		avgout = options.output.replace( '.hdf', '__avg.hdf' )
+		#		if options.path:
+		#			avgout = options.path + '/' + avgout
+		#		avg.process_inplace('normalize')
+		#		avg.write_image( avgout, 0 )
+		#	else:
+		#		print "\nThe particles averaged into nothing; see", type(avg)
 
-	radius = options.boxsize/4.0	#the particle's diameter is boxsize/2
-	
-	#if options.cshrink:
-	#	radius /= options.cshrink
-	
-	cmd = 'e2spt_icethicknessplot.py --plotparticleradii --fit --apix ' + str( apix ) + ' --radius ' + str( int(radius) ) + ' --files ' + options.coords
-	
-	if options.cshrink:
-		cmd += ' --cshrink ' + str( int(options.cshrink) )
-	
-	runcmd( options, cmd )
-	
-	if options.bruteaverage:
+		radius = options.boxsize/4.0	#the particle's diameter is boxsize/2
+		
+		#if options.cshrink:
+		#	radius /= options.cshrink
+		
+		print "\nextraction to output file completed"
 
-		cmdavg = 'e2proc3d.py ' + options.output + ' ' + options.output.replace('.hdf','__bruteavg.hdf') + ' --average'
-		runcmd( options, cmdavg )	
+		cmd = 'e2spt_icethicknessplot.py --plotparticleradii --fit --apix ' + str( apix ) + ' --radius ' + str( int(radius) ) + ' --files ' + options.coords
+		
+		if options.cshrink:
+			cmd += ' --cshrink ' + str( int(options.cshrink) )
+		
+		runcmd( options, cmd )
+		print "\nplotting particle distribution"
+		if options.bruteaverage:
+			print "\ncomputing bruteaverage"
+			cmdavg = 'e2proc3d.py ' + options.output + ' ' + options.output.replace('.hdf','__bruteavg.hdf') + ' --average'
+			runcmd( options, cmdavg )
+
 	return
 
 
@@ -807,13 +813,13 @@ class TomoBoxer3DTask(JSTask):
 	'''This is a task object for the parallelism system.'''
 
 
-	def __init__(self, options, coordindx, coordx, coordy, coordz, tomogramname):
+	def __init__(self, options, coordindx, coordx, coordy, coordz, tomogramname, counter, ncoords):
 	
 		#data={"image":image}
 		
 		#JSTask.__init__(self,"TomoBoxer3d",data,{},"")
 		JSTask.__init__(self,"TomoBoxer3d",{},"")
-		self.classoptions={"options":options,"coordindx":coordindx, "coordx":coordx,"coordy":coordy,"coordz":coordz,"tomogramname":tomogramname}
+		self.classoptions={"options":options,"coordindx":coordindx, "coordx":coordx,"coordy":coordy,"coordz":coordz,"tomogramname":tomogramname,"counter":counter,"ncoords":ncoords}
 	
 	def execute(self,callback=None):
 		
@@ -823,6 +829,8 @@ class TomoBoxer3DTask(JSTask):
 		coordy = self.classoptions['coordy']
 		coordz = self.classoptions['coordz']
 		tomogramname = self.classoptions['tomogramname']
+		counter=self.classoptions['counter']
+		ncoords=self.classoptions['ncoords']
 		#print "inside class TomoBoxer3DTask"
 		#print "calling unbinned_extractor"
 		unbinned_extractor(options,coordx,coordy,coordz,tomogramname,coordindx)
@@ -1589,9 +1597,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#else:
 				#ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center,args[0])
 				options.boxsize = bs
-				ret = unbinned_extractor(options,b[0],b[1],b[2],args[0])
+				ret = unbinned_extractor(options,b[0],b[1],b[2],args[0],i)
 				img = ret[0]
 				prj = ret[1]
+
+				print "extracting particle %d from coordinates x=%d, y=%d, z=%d" % (i, b[0],b[1],b[2])
 
 				#if "." in fsp:
 					#img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
@@ -1612,8 +1622,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 
 		if fsp[-4:].lower()!=".hdf" :
-			QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for .hdf files")
-			return
+			#QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for .hdf files")
+			#return
+			fsp+='.hdf'
 
 		fspprjs=fsp.replace('.hdf','_prjs.hdf')
 		prj=EMData() #Dummy
@@ -1629,6 +1640,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				if self.normalize:
 					e.process_inplace(normalize)
 				#img=img.process('normalize.edgemean')
+				print "extracting particle %d" % (i)
 
 				img.write_image(fsp,i)
 
@@ -1652,13 +1664,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#	prj = ret[1]
 				#else:
 				#ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center,args[0])
-				print "before extraction shrinkf is", shrinkf
-				print "coords are", b[0],b[1],b[2]
+				#print "before extraction shrinkf is", shrinkf
+				print "extracting particle %d from coordinates x=%d, y=%d, z=%d" % (i, b[0],b[1],b[2])
 				options.boxsize=bs
-				ret = unbinned_extractor(options,b[0],b[1],b[2],args[0])
+				ret = unbinned_extractor(options,b[0],b[1],b[2],args[0],i)
 				img = ret[0]
 				prj = ret[1]
-				print "returned image is of size",img['nx']
+				#print "returned image is of size",img['nx']
 
 				#img['origin_x'] = 0
 				#img['origin_y'] = 0
