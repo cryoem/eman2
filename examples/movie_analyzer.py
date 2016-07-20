@@ -6,7 +6,7 @@ import os
 from EMAN2 import *
 import subprocess
 import shutil
-from string import Template
+import pickle
 
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
@@ -29,6 +29,7 @@ def main():
 	parser.add_argument("--hcreg", type=str, help="Center coordinate 'x,y' of high contrast region.", required=True)
 	parser.add_argument("--lcreg", type=str, help="Center coordinate 'x,y' of low contrast region.", required=True)
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
+	parser.add_argument("--align",action="store_true",default=False,help="If you wish to run each alignment program specified by the include/exclude criteria, specify this option.")
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
@@ -40,6 +41,7 @@ def main():
 	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
 	parser.add_argument("--threads", default=8, type=int, help="Number of threads to use with each aligner.")
 	parser.add_argument("--include", type=str, help="Comma separated list of packages to include during comparison.", default="DE,EMAN2,IMOD,UCSF,UNBLUR")
+	parser.add_argument("--exclude", type=str, help="Comma separated list of packages to exclude during comparison.", default="")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -51,16 +53,19 @@ def main():
 		parser.error("You must specify a single DDD movie stack in HDF or MRC format.")
 		sys.exit(1)
 
-	fname = args[0]
+	options.include = [o.upper() for o in options.include.split(",") if o not in options.exclude.split(",")]
 
-	hdr = EMData(fname,0,True)
-	(basen,ext) = os.path.splitext(fname)
-	bdir = basen
+	included = [pkg for pkg in pkgs if pkg in options.include]
+	if len(included) < 1:
+		print("You must specify at least one package to run this program (DE, EMAN2, IMOD, UCSF, UNBLUR)")
+		sys.exit(1)
 
 	bs = options.box
-	if (hdr['nx'] / bs - 1) < 2 or (hdr['ny'] / bs - 1) < 2:
-		print("You will need to use a smaller box size with your data.")
-		sys.exit(1)
+
+	fname = args[0]
+	hdr = EMData(fname,0,True)
+	(basen,ext) = os.path.splitext(fname)
+	bdir = "{}_{}_{}_{}".format(basen,bs,"-".join(options.hcreg.split(",")),"-".join(options.lcreg.split(",")))
 
 	if options.apix: apix = options.apix
 	else:
@@ -73,8 +78,8 @@ def main():
 
 	(hix,hiy)=map(int,options.hcreg.split(","))
 	(lox,loy)=map(int,options.lcreg.split(","))
-	options.hcreg = Region(hix,hiy,options.box,options.box)
-	options.lcreg = Region(lox,loy,options.box,options.box)
+	options.hcreg = Region(hix-options.box/2,hiy-options.box/2,options.box,options.box)
+	options.lcreg = Region(lox-options.box/2,loy-options.box/2,options.box,options.box)
 
 	options.hcname = "{}/hictrst.hdf".format(bdir)
 	options.lcname = "{}/loctrst.hdf".format(bdir)
@@ -133,10 +138,11 @@ def main():
 	localhc = options.hcname.split("/")[-1]
 	locallc = options.lcname.split("/")[-1]
 
-	for pkg in pkgs.keys():
-		if pkg in options.include.split(","):
+	for pkg in sorted(pkgs.keys()):
+		if pkg in options.include:
 			prog = pkgs[pkg].split("/")[-1]
-			print("Running {} on {}".format(prog,fname))
+			if options.align: print("Running {} on {}".format(prog,fname))
+			else: print("Analyzing {} alignment".format(prog,fname))
 
 			pdir = "{}/{}".format(bdir,pkg)
 
@@ -144,13 +150,14 @@ def main():
 			except: pass
 
 			if pkg == "DE":
-				src = "/".join(pkgs[pkg].split("/")[:-1]) + "/DE_process_frames.cfg"
-				dst = cwd+"/DE_process_frames.cfg"
-				try: os.symlink(src,dst)
-				except: pass
+				if options.align:
+					src = "/".join(pkgs[pkg].split("/")[:-1]) + "/DE_process_frames.cfg"
+					dst = cwd+"/DE_process_frames.cfg"
+					try: os.symlink(src,dst)
+					except: pass
 
-				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
-					out,err=run("{} {} {}".format(pkgs[pkg],pdir,fn))
+					for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+						o,e=run("{} {} {}".format(pkgs[pkg],pdir,fn))
 
 				for f in os.listdir(pdir):
 					if "translations_x" in f:
@@ -162,118 +169,177 @@ def main():
 						elif "loctrst" in f: lo_y = os.path.join(pdir,f)
 						else: wmg_y = os.path.join(pdir,f)
 
-				trans_wmg["DE"] = parse_de(wmg_x,wmg_y)
-				trans_hi["DE"] = parse_de(hi_x,hi_y)
-				trans_lo["DE"] = parse_de(lo_x,lo_y)
+				try:
+					trans_wmg[pkg] = parse_de(wmg_x,wmg_y)
+					trans_hi[pkg] = parse_de(hi_x,hi_y)
+					trans_lo[pkg] = parse_de(lo_x,lo_y)
+				except:
+					print("Could not find frame shifts for {} aligner. Perhaps you should use the --align option.".format(pkg))
+					sys.exit(1)
 
 			if pkg == "EMAN2":
 
-				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
-					lfn = fn.split("/")[-1] # local file name
-					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-					os.chdir(pdir)
-					out,err=run("{} {} {}".format(pkgs[pkg],lfn,options.threads))
-					os.chdir(cwd)
+				if options.align:
+					for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+						lfn = fn.split("/")[-1] # local file name
+						if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+						o,e=run("{} {} {}".format(pkgs[pkg],lfn,options.threads),cwd=pdir)
 
 				for f in os.listdir(pdir):
 					if "hictrst_info.txt" in f: hi = os.path.join(pdir,f)
 					elif "loctrst_info.txt" in f: lo = os.path.join(pdir,f)
 					elif "info.txt" in f: wmg = os.path.join(pdir,f)
 
-				trans_wmg["EMAN2"] = parse_eman2(wmg)
-				trans_hi["EMAN2"] = parse_eman2(hi)
-				trans_lo["EMAN2"] = parse_eman2(lo)
+				try:
+					trans_wmg[pkg] = parse_eman2(wmg)
+					trans_hi[pkg] = parse_eman2(hi)
+					trans_lo[pkg] = parse_eman2(lo)
+				except:
+					print("Could not find frame shifts for {} aligner. Perhaps you should use the --align option.".format(pkg))
+					sys.exit(1)
 
 			if pkg == "IMOD":
 
-				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
-					lfn = fn.split("/")[-1] # local file name
-					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-					os.chdir(pdir)
-					out,err=run("{} -n -xfext xf -input {}".format(pkgs[pkg],lfn))
-					os.chdir(cwd)
+				if options.align:
+					for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+						lfn = fn.split("/")[-1] # local file name
+						if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+						o,e=run("{} -n -xfext xf -input {}".format(pkgs[pkg],lfn),cwd=pdir)
 
 				for f in os.listdir(pdir):
 					if "hictrst.xf" in f: hi = os.path.join(pdir,f)
 					elif "loctrst.xf" in f: lo = os.path.join(pdir,f)
 					elif ".xf" in f: wmg = os.path.join(pdir,f)
 
-				trans_wmg["IMOD"] = parse_imod(wmg)
-				trans_hi["IMOD"] = parse_imod(hi)
-				trans_lo["IMOD"] = parse_imod(lo)
+				try:
+					trans_wmg[pkg] = parse_imod(wmg)
+					trans_hi[pkg] = parse_imod(hi)
+					trans_lo[pkg] = parse_imod(lo)
+				except:
+					print("Could not find frame shifts for {} aligner. Perhaps you should use the --align option.".format(pkg))
+					sys.exit(1)
 
 			if pkg == "UCSF":
 
-				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
-					lfn = fn.split("/")[-1] # local file name
-					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-					os.chdir(pdir)
-					out,err=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn))
-					os.chdir(cwd)
+				if options.align:
+					for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+						lfn = fn.split("/")[-1]
+						lext = lfn.split(".")[-1]
+						if lext == "hdf": # HDF format not supported by UCSF
+							shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+							lfn_new = lfn.replace(".hdf",".mrcs")
+							if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
+								o,e=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir)
+								os.remove("{}/{}".format(pdir,lfn))
+							lfn = lfn_new
+							lext = "mrcs"
+						else:
+							if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+
+						o,e=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir)
 
 				for f in os.listdir(pdir):
 					if "hictrst_Log.txt" in f: hi = os.path.join(pdir,f)
 					elif "loctrst_Log.txt" in f: lo = os.path.join(pdir,f)
 					elif "_Log.txt" in f: wmg = os.path.join(pdir,f)
 
-				trans_wmg["UCSF"] = parse_ucsf(wmg)
-				trans_hi["UCSF"] = parse_ucsf(hi)
-				trans_lo["UCSF"] = parse_ucsf(lo)
+				try:
+					trans_wmg[pkg] = parse_ucsf(wmg)
+					trans_hi[pkg] = parse_ucsf(hi)
+					trans_lo[pkg] = parse_ucsf(lo)
+				except:
+					print("Could not find frame shifts for {} aligner. Perhaps you should use the --align option.".format(pkg))
+					sys.exit(1)
 
 			if pkg == "UNBLUR":
 
-				card = Template("""$prog <<EOF
-$file
-45
-$alisum
-$shifts
-4
-NO
-YES
-$ali
-YES
-$frc
-2.0
-200.0
-1500
-1
-1
-0.1
-10
-YES
+				if options.align:
+					template = """{prog} <<EOF
+{fname}
+{nframes}
+{alignsum}
+{shiftfile}
+{apix}
+{dosefilt}
+{saveali}
+{aliname}
+{advopts}
+{frcname}
+{minsrch}
+{maxsrch}
+{bfact}
+{vfmwidth}
+{hfmwidth}
+{thresh}
+{maxiter}
+{verbose}
 EOF
-""")
+"""
 
-				for fn in [fname,options.hcname,options.lcname]:
-					lfn = fn.split("/")[-1]
-					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-					cmd = card.substitute(
-						prog=pkgs[pkg],
-						file=lfn,
-						alisum=lfn.replace(ext,"_ali_sum{}".format(ext)),
-						shifts=lfn.replace(ext,"_shifts".format(ext)),
-						ali=lfn.replace(ext,"_ali{}".format(ext)),
-						frc=lfn.replace(ext,"_frc{}".format(ext)))
-					os.chdir(pdir)
-					out,err=run(cmd,shell=True)
-					os.chdir(cwd)
+					for fn in [fname,options.hcname,options.lcname]:
+						lfn = fn.split("/")[-1]
+						lext = lfn.split(".")[-1]
+
+						# HDF format not supported by unblur
+						if lext == "hdf":
+							shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+							lfn_new = lfn.replace(".hdf",".mrcs")
+							if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
+								o,e=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir)
+								os.remove("{}/{}".format(pdir,lfn))
+							lfn = lfn_new
+							lext = "mrcs"
+						else:
+							if not os.path.isfile("{}/{}".format(pdir,lfn)):
+								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+
+						# MRCS format not supported by unblur
+						if lext == "mrcs":
+							lfn_new = lfn.replace(".mrcs",".mrc")
+							try: shutil.move("{}/{}".format(pdir,lfn),"{}/{}".format(pdir,lfn_new))
+							except: pass # file likely already exists
+							lfn = lfn_new
+							lext = "mrc"
+
+						nfs = len(frames)
+						alis =lfn.replace(".mrc","_ali_sum.mrc")
+						shft =lfn.replace(".mrc","_shifts.txt")
+						ali=lfn.replace(".mrc","_ali.mrc")
+						frc=lfn.replace(".mrc","_frc.txt")
+
+						cmd = template.format(prog=pkgs[pkg],fname=lfn, nframes=nfs, alignsum=alis, shiftfile=shft, apix=apix, dosefilt="NO", saveali="YES", aliname=ali, advopts="YES", frcname=frc, minsrch=2.0, maxsrch=200.0, bfact=1500, vfmwidth=1, hfmwidth=1, thresh=0.1, maxiter=10, verbose="NO")
+						o,e=run(cmd,shell=True,cwd=pdir)
 
 				for f in os.listdir(pdir):
 					if "hictrst_shifts.txt" in f: hi = os.path.join(pdir,f)
 					elif "loctrst_shifts.txt" in f: lo = os.path.join(pdir,f)
 					elif "_shifts.txt" in f: wmg = os.path.join(pdir,f)
 
-				trans_wmg["UNBLUR"] = parse_ucsf(wmg)
-				trans_hi["UNBLUR"] = parse_ucsf(hi)
-				trans_lo["UNBLUR"] = parse_ucsf(lo)
-
-	sys.exit(1)
+				try:
+					trans_wmg[pkg] = parse_unblur(wmg)
+					trans_hi[pkg] = parse_unblur(hi)
+					trans_lo[pkg] = parse_unblur(lo)
+				except:
+					print("Could not find frame shifts for {} aligner. Perhaps you should use the --align option.".format(pkg))
+					sys.exit(1)
 
 	# PART 1: How does calculated motion differ between the most commonly used alignment algorithms?
-	trans_wmg, mags_wmg = plot_trans(trans_wmg,show=options.show)
+	trans_wmg, mags_wmg, fig1 = plot_trans(trans_wmg,bdir)
+	if options.plot: plt.show()
+
+	pkl = "{}/trans_wmg.p".format(bdir)
+	if not os.path.isfile(pkl): pickle.dump(trans_wmg,open(pkl,"wb"))
+	pkl = "{}/mags_wmg.p".format(bdir)
+	if not os.path.isfile(pkl): pickle.dump(mags_wmg,open(pkl,"wb"))
 
 	# PART 2: How different are predicted frame translations with and without high contrast features (real space comparison)
-	ssdfs = plot_differences(trans_hi,trans_lo,show=options.show)
+	trans_hi, trans_lo, ssdfs, fig2 = plot_differences(trans_hi,trans_lo,bdir)
+	if options.plot: plt.show()
+
+	pkl = "{}/trans_hi.p".format(bdir)
+	if not os.path.isfile(pkl): pickle.dump(trans_hi,open(pkl,"wb"))
+	pkl = "{}/trans_lo.p".format(bdir)
+	if not os.path.isfile(pkl): pickle.dump(trans_lo,open(pkl,"wb"))
 
 	# Part 3: Compare agreement in fourier space (coherent/incoherent power spectra)
 	frames_hi = load_frames(options.hcname)
@@ -287,14 +353,22 @@ EOF
 	ftypes["hi_lo"] = shift_by(frames_hi,trans_lo)
 	ftypes["hi_hi"] = shift_by(frames_hi,trans_hi)
 
-	scores = calc_cips_scores(ftypes)
-	plot_scores(scores,show=options.show)
+	pkl = "{}/scores.p".format(bdir)
+	if os.path.isfile(pkl): scores = pickle.load(open(pkl,"rb"))
+	else:
+		scores = calc_cips_scores(ftypes)
+		pickle.dump(scores,open(pkl,"wb"))
 
-	# Done?
+	fig3 = plot_scores(scores,bdir)
+	if options.plot: plt.show()
 
-def run(cmd,shell=False):
-	print(cmd)
-	process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, shell=shell)
+	print("DONE")
+
+def run(cmd,shell=False,cwd=None):
+	if cwd == None: cwd = os.getcwd()
+	print("\t{}".format(cmd.split("\n")[0]))
+	if shell == False: cmd = cmd.split()
+	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd)
 	return process.communicate()
 
 def shift_by(frames,trans):
@@ -308,9 +382,9 @@ def shift_by(frames,trans):
 				d[key].append(f)
 	return d
 
-def calc_cips_scores(ftypes,bs=256):
+def calc_cips_scores(ftypes,bs=512):
 	scores = {}
-	for pkg in pkgs.keys():
+	for pkg in [pkg for pkg in pkgs.keys() if pkg in options.include]:
 		scores[pkg] = []
 		for ftype in sorted(ftypes.keys()):
 			cps = calc_coherent_pws(ftypes[ftype][pkg],bs)
@@ -323,7 +397,7 @@ def calc_cips_scores(ftypes,bs=256):
 		scores[pkg] = np.asarray(scores[pkg])
 	return scores
 
-def plot_scores(scores,show=False): # 1 axis per metric
+def plot_scores(scores,bdir): # 1 axis per metric
 	metrics = np.asarray(["frc","dot","optsub","sqeuclidean"]).reshape(2,2)
 	fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(16,16))
 	for (i,j),metric in np.ndenumerate(metrics):
@@ -343,10 +417,10 @@ def plot_scores(scores,show=False): # 1 axis per metric
 		ax.set_xlabel("Aligned To")
 		ax.set_title(metric)
 	fig.tight_layout()
-	if show: plt.show()
-	plt.savefig("scores.jpg")
+	plt.savefig("{}/scores.jpg".format(bdir))
+	return fig
 
-def plot_trans(trans,nsig=1,show=False):
+def plot_trans(trans,bdir,nsig=1):
 	trans["ALL"] = np.dstack([trans[key] for key in trans.keys()])
 	trans["MEAN"] = np.mean(trans["ALL"],axis=2)
 	trans["VAR"] = np.var(trans["ALL"],axis=2)
@@ -362,7 +436,7 @@ def plot_trans(trans,nsig=1,show=False):
 		if key not in exclude + ["MEAN"]:
 			mags[key] = np.sqrt(trans[key][:,0]**2+trans[key][:,1]**2) - mags["MEAN"]
 
-	fig = plt.figure(figsize=(16,16))
+	fig = plt.figure()
 
 	ax1 = fig.add_subplot(211)
 
@@ -393,15 +467,14 @@ def plot_trans(trans,nsig=1,show=False):
 	ax2.set_xlabel("Frame Number (#)")
 	ax2.set_ylabel("Relative shift magnitude (pixels)")
 	ax2.set_title("Frame shift magnitude (relative to MEAN)")
-	ax2.legend(loc="best")#,bbox_to_anchor=(0.95, 0.95))
+	ax2.legend(loc="best")
 
 	fig.tight_layout()
 
-	if show: plt.show()
-	plt.savefig("trans.jpg")
-	return trans, mags
+	plt.savefig("{}/trans.jpg".format(bdir))
+	return trans, mags, fig
 
-def plot_differences(trans_hi,trans_lo,nsig=1,show=False):
+def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
 	trans_hi["ALL"] = np.dstack([trans_hi[key] for key in trans_hi.keys()])
 	trans_hi["MEAN"] = np.mean(trans_hi["ALL"],axis=2)
 	trans_hi["VAR"] = np.var(trans_hi["ALL"],axis=2)
@@ -470,9 +543,8 @@ def plot_differences(trans_hi,trans_lo,nsig=1,show=False):
 	ax2.legend(loc="best")
 	fig = plt.gcf()
 	fig.tight_layout()
-	plt.savefig("differences.jpg")
-	if show: plt.show()
-	return trans_hi, trans_lo, ssdfs
+	plt.savefig("{}/differences.jpg".format(bdir))
+	return trans_hi, trans_lo, ssdfs, fig
 
 def parse_eman2(fn):
 	with open(fn) as f:
@@ -486,7 +558,7 @@ def parse_de(fnx,fny):
 	with open(fny) as yf:
 		ys = np.asarray(yf.read().replace("\n","").split("\t"))[1:].astype(float)
 	trans = np.vstack([xs,ys]).T
-	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
+	return np.cumsum(trans,axis=1)# - np.mean(trans,axis=0),axis=1)
 
 def parse_imod(fn):
 	with open(fn) as f:
@@ -500,7 +572,6 @@ def parse_ucsf(fn):
 			if "......Shift of Frame #" in txt:
 				trans.append(np.asarray(txt.replace("......Add Frame #","").split(":")[-1].split())[:2])
 	trans = np.asarray(trans).astype(float)
-	print(trans)
 	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
 
 def parse_unblur(fn):
@@ -513,7 +584,7 @@ def parse_unblur(fn):
 	trans /= apix
 	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
 
-def calc_incoherent_pws(frames,bs=256):
+def calc_incoherent_pws(frames,bs=512):
     mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
     my = np.arange(bs+50,frames[1]['ny']-bs+50,bs)
     regions = {}
@@ -535,7 +606,7 @@ def calc_incoherent_pws(frames,bs=256):
     ips.process_inplace('math.rotationalaverage')
     return ips
 
-def calc_coherent_pws(frames,bs=256):
+def calc_coherent_pws(frames,bs=512):
     mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
     my = np.arange(bs+50,frames[1]['ny']-bs+50,bs)
     regions = {}
