@@ -49,6 +49,8 @@ from emdataitem3d import EMDataItem3D, EMIsosurface
 from emshape import EMShape
 from valslider import *
 from sys import argv
+from EMAN2jsondb import JSTask,jsonclasses
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -81,7 +83,7 @@ def main():
 	parser.add_argument("--path",type=str,help="Pathname to save data to",default="")
 	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis", guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--apix",type=float,help="Use THIS A/pix value to display the tomogram (if filtering) and to write to the header of the extracted subvolumes, instead of using the apix value one stored in the tomogram's header.",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="boxing['self.pm().getAPIX()']")
+	parser.add_argument("--apix",type=float,default=0.0,help="Use THIS A/pix value to display the tomogram (if filtering) and to write to the header of the extracted subvolumes, instead of using the apix value one stored in the tomogram's header.", guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="boxing['self.pm().getAPIX()']")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode", guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before extraction. Default is None.
@@ -117,12 +119,27 @@ def main():
 
 	parser.add_argument('--bruteaverage', action="store_true", default=False, help='Will generate an average of all the subvolumes (no alignment done). This is useful to see if, on average, particles are the desired specimen and reasonably centered')
 
-	parser.add_argument('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.\nFor example, the coordinates file migh thave a line like this:\n1243 3412 45\nwhere clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out fromIMOD by default, then the line should have been:\n1243 45 3412\n''')
+	#parser.add_argument('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.\nFor example, the coordinates file migh thave a line like this:\n1243 3412 45\nwhere clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out fromIMOD by default, then the line should have been:\n1243 45 3412\n''')
 	#parser.add_argument('--normalize', action="store_true", default=False, help='Will normalize each subvolume so that the mean is zero and standard deviation one').
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
+	parser.add_argument("--parallel",type=str, default="thread:1", help="""Used only when extracting subtomograms from the commandline (NOT from the GUI interface) if --coords is provided. Default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
+
+
 	global options,args
 	(options, args) = parser.parse_args()
+
+
+	if options.yshort:
+		print "\nERROR: --yshort is not supported. Rotate your tomogram so that Z is the shortest side (e.g., using IMOD from the commandline, type 'clip rotx tomogram.rec tomogram_ZSHORT.rec'"
+		sys.exit()
+	else:
+		tomohdr=EMData(args[0],0,True)
+		nz=tomohdr['nz']
+		ny=tomohdr['ny']
+		if nz>ny:
+			print "\nERROR: nz=%d is larger than ny=%d in the tomgram. Rotate the tomogram so that Z is the shortest side (e.g., using IMOD from the commandline, type 'clip rotx tomogram.rec tomogram_ZSHORT.rec'" %(nz,ny)
+
 
 
 	if options.normproc:
@@ -285,6 +302,7 @@ def main():
 		app.execute()
 	return()
 
+
 """
 This function is called to extract sub-volumes from the RAW tomogram, regardless
 of where their coordinates are being found (the tomogram to find the coordinates might be
@@ -292,19 +310,32 @@ shrunk and/or lowpass filtered).
 It is also called when boxing from the commandline, without GUI usage, as when you already have
 a coordinates file
 """
-def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram):
+def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
+	print "inside unbinned extractor for particle", coordindx
+	boxsize = options.boxsize
+	#print "boxsize",boxsize
+
+	cshrink = options.cshrink
+	#print "cshrink",cshrink
+
+	invert = options.invert
+	#print "invert",invert
+
+	center = options.centerbox
+	#print "center",center
+
 
 	if options.verbose:
 		print "\n\nUnbinned extractor received this center", center
 
+	#print "reading tomogram header"
 	tomo_header=EMData(tomogram,0,True)
-
+	apix = tomo_header['apix_x']
+	#print "done"
+	
 	if options.verbose:
 		print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
-	#print cbin, tomogram
-
-	#boxsize=boxsize*cbin	#THE BOXSIZE SHOULD BE THE FINAL BOXSIZE! No binning compensation applied.
-
+	
 	x=round(x*cshrink)
 	y=round(y*cshrink)
 	z=round(z*cshrink)
@@ -312,22 +343,29 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram):
 	if options.verbose:
 		print "The actual coordinates used for extraction are", x, y, z
 
+	print "defining region"
 	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
+	print "r",r
 	e = EMData()
 	e.read_image(tomogram,0,False,r)
+	#print "extracted particle",coordindx
 
 	#IF the boxed out particle is NOT empty, perform BASIC RAW-PARTICLE EDITING: contrast reversal and normalization
 	#Sometimes empty boxes are picked when boxing from the commandline if yshort isn't specified but should have,
 	#or if erroneous binning factors are provided
 
-	if e['mean'] != 0:
-		'''
-		Attempt to center particles. They must be masked to ensure other particles will not cause shifts in center of mass
-		'''
+	print "read particle from tomogram %s using coords x=%d,y=%d,z=%d" %(tomogram,x,y,z)
+	print "has mean, meannonzero, and sigma",e['mean'],e['mean_nonzero'],e['sigma']
+
+	if float(e['mean']) != 0.0:
+		#print "mean is nonzero",e['mean']
+		
 
 		e['xform.align3d'] = Transform() #Make sure the default alignment parameters are zero
 
-
+		'''
+		Attempt to center particles. They must be masked to ensure other particles will not cause shifts in center of mass
+		'''
 		if options.verbose:
 			print "\n\n\n\nCENTER is",center
 
@@ -379,28 +417,26 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram):
 			e.read_image(tomogram,0,False,r)
 
 		#It IS CONVENIENT to record any processing done on the particles as header parameters
+		#print "writing particle header parameters"
 
 		e['ptcl_source_image'] = os.path.basename(tomogram)
 		e['ptcl_source_coord'] = (x,y,z)
-
-		#The origin WILL most likely be MESSED UP if you don't explicitely set it to ZERO.
-		#This can create ANNOYING visualization problems in Chimera
-
-		e['origin_x'] = 0
-		e['origin_y'] = 0
-		e['origin_z'] = 0
+		e['spt_tomogram'] = tomogram
 		e['spt_originalstack'] = options.output
 
 
 		#Make sure the transform parameter on the header is "clean", so that any later processing transformations are meaningful
 		e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
-
+		#print "done"
 		if options.verbose : 
 			print "The extracted particle has this boxsize", e['nx'],e['ny'],e['nz']
 			print "And the following mean BEFORE normalization", e['mean']
 
 		if options.normproc:
-			if options.verbose : print "WARNING! particle being normalized!"
+			#print "normalizing"
+			if options.verbose: 
+				print "WARNING! particle being normalized!"
+			
 			if options.normproc[0]=="normalize.mask":
 				mask=EMData(e["nx"],e["ny"],e["nz"])
 				mask.to_one()
@@ -411,29 +447,75 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram):
 			e.process_inplace(options.normproc[0],options.normproc[1])
 			e['spt_normalization'] = str(options.normproc[0])+' '+str(options.normproc[1])
 			if options.verbose : print "This is the mean AFTER normalization", e['mean']
-
+			#print "done"
 		if invert:
+			#print "inverting contrast"
 			if options.verbose : print "Particle has the following mean BEFORE contrast inversion", e['mean']
 			if options.verbose : print "Inverting contrast because --invert is", invert
 			e=e*-1
 			if options.verbose : print "Particle has the following mean AFTER contrast inversion", e['mean']
-
+			#print "done"
 		if options.thresh:
 			if options.verbose : print "The thresh to apply is", options.thresh
 			e.process_inplace(options.thresh[0],options.thresh[1])
 
+		#print "projecting"
 		prjT = Transform({'type':'eman','az':0,'alt':0,'phi':0})
-		if options.yshort:
-			prjT = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
+		
+		#if options.yshort:
+		#	prjT = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
 
 		prj = e.project("standard",prjT)
-		prj.set_attr('xform.projection',prjT)
-
+		#print "done"
 		apix = e['apix_x']
+	
+		if options.verbose : 
+			print "\nThere was a particle successfully returned, with the following box size and mean value"
+			print e['nx'],e['ny'],e['nz']
+			print e['mean']
 
-		prj['apix_x']=apix
-		prj['apix_y']=apix
+		
+		e['apix_x'] = apix
+		e['apix_y'] = apix
+		e['apix_z'] = apix
+		
+		#The origin WILL most likely be MESSED UP if you don't explicitely set it to ZERO.
+		#This can create ANNOYING visualization problems in Chimera
+		#print "resetting origin"
+		e['origin_x'] = 0
+		e['origin_y'] = 0
+		e['origin_z'] = 0
+		#print "done"
+		if options.coords:
+			print "writing particle %d with size %d,%d,%d to file %s" % (coordindx,e['nx'],e['ny'],e['nz'],'sptboxer_dummy.hdf')
+			e.write_image('sptboxer_dummy.hdf',coordindx)
+			print "done"
+		
+		c=os.getcwd()
+		findir=os.listdir(c)
+		if prj:
 
+			prj.set_attr('xform.projection',prjT)
+			prj['apix_x']=apix
+			prj['apix_y']=apix
+			
+			if not options.coords:
+				nameprjs = options.output
+				if '.mrc' in options.output:
+					nameprjs = nameprjs.replace('.mrc','.hdf')
+
+				#if not options.yshort:
+				nameprjs = nameprjs.replace('.hdf','__prjsz.hdf')
+				#elif options.yshort:
+				#	nameprjs = nameprjs.replace('.hdf','__prjsy.hdf')
+
+				if options.path not in nameprjs:
+					nameprjs = options.path + '/' + nameprjs
+				prj['spt_originalstack']=nameprjs.split('/')[-1]
+				prj.write_image(nameprjs,-1)
+			
+			elif options.coords:
+				prj.write_image('sptboxer_dummy_prjs.hdf',coordindx)
 		return(e,prj)
 
 	else:
@@ -456,15 +538,15 @@ def commandline_tomoboxer(tomogram,options):
 		sys.exit()
 		
 	clines = open(options.coords,'r').readlines()
-	cset = len(clines)
+	ncoords = len(clines)
 
 	if options.subset:
-		if options.subset > cset:
+		if options.subset > ncoords:
 			print "WARNING: The total amount of lines in the coordinates files is LESS than the subset of particles to box you specified; therefore, ALL particles will be extracted"
 		else:
-			cset=options.subset
+			ncoords=options.subset
 
-	print "The size of the set of sub-volumes to extract is", cset
+	print "The size of the set of sub-volumes to extract is", ncoords
 
 	k=-1
 	name = options.output
@@ -481,7 +563,7 @@ def commandline_tomoboxer(tomogram,options):
 
 	jj=0
 	
-	#coordsdict = {}
+	coordsdict = {}
 	xs = []
 	ys = []
 	zs = []
@@ -490,9 +572,34 @@ def commandline_tomoboxer(tomogram,options):
 	if options.apix:
 		apix = options.apix
 	
-	for i in range(cset):
+	c = os.getcwd()
+	findir = os.listdir( c )
+	
+	try:
+		os.remove( 'sptboxer_dummy.hdf' )
+		os.remove( 'sptboxer_dummy_prjs.hdf' )
+	except:
+		pass
 
-		#Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates
+
+	apix = EMData(tomogram,0,True)['apix_x']
+	if options.apix:
+		apix=options.apix
+
+	dimg = EMData(8,8,8)
+	dimg['apix_x']=apix
+	dimg['apix_y']=apix
+	dimg['apix_z']=apix
+	dimg.to_one()
+
+	dimg2D =EMData(8,8)
+	dimg2D['apix_x']=apix
+	dimg2D['apix_y']=apix
+	dimg2D.to_one()
+
+	for i in range(ncoords):
+
+		#Some people might manually make ABERRANT coordinates files with commas, tabs, or more than one space in between coordinates
 		clines[i] = clines[i].replace(", ",' ')
 		clines[i] = clines[i].replace(",",' ')
 		clines[i] = clines[i].replace("x",'')
@@ -500,7 +607,7 @@ def commandline_tomoboxer(tomogram,options):
 		clines[i] = clines[i].replace("z",'')
 		clines[i] = clines[i].replace("=",'')
 		clines[i] = clines[i].replace("_",' ')
-		clines[i] = clines[i].replace("\n",' ')
+		clines[i] = clines[i].replace("\n",'')
 		clines[i] = clines[i].replace("\t",' ')
 		clines[i] = clines[i].replace("  ",' ')
 		clines[i] = clines[i].split()
@@ -514,19 +621,70 @@ def commandline_tomoboxer(tomogram,options):
 		z = int( float(clines[i][2]) )
 		zs.append( z )
 		
-		#coordsdict.update({i:[x,y,z]})
+		coordsdict.update({i:[x,y,z]})
 		
-		if options.verbose : print "The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
+		if options.verbose: 
+			print "The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
-		if options.swapyz:
-			if options.verbose : print "You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped"
-			aux = y
-			y = z
-			z = aux
-			if options.verbose : print "Therefore, the swapped coordinates are", x, y, z
+		#if options.swapyz:
+		#	if options.verbose : print "You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped"
+		#	aux = y
+		#	y = z
+		#	z = aux
+		#	if options.verbose : print "Therefore, the swapped coordinates are", x, y, z
 
-		if options.verbose : print "\n\nBefore calling unbinned extractor, options.centerbox is", options.centerbox
-		ret = unbinned_extractor(options,options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox,args[0])
+		dimg.write_image( 'sptboxer_dummy.hdf', i )
+		dimg2D.write_image( 'sptboxer_dummy_prjs.hdf', i )
+
+	
+		if options.verbose:
+			print "\n(e2spt_preproc)(main) wrote dummy ptcls to %s" %( 'sptboxer_dummy' )
+	
+	dummylarge = EMData(options.boxsize,options.boxsize,options.boxsize)
+	dummylarge2D = EMData(options.boxsize,options.boxsize)
+
+	dummylarge.to_one()
+	dummylarge.write_image('sptboxer_dummy.hdf',0)
+	
+	dummylarge2D.to_one()
+	dummylarge2D.write_image('sptboxer_dummy_prjs.hdf',0)
+
+
+	print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n"
+	
+	from EMAN2PAR import EMTaskCustomer
+	etc=EMTaskCustomer(options.parallel)
+	pclist=[tomogram]
+
+	etc.precache(tomogram)
+	print "\n(e2spt_preproc)(main) - precaching tomogram"
+
+	tasks=[]
+	results=[]
+
+	for coordindx in coordsdict:
+		coordx=coordsdict[coordindx][0]
+		coordy=coordsdict[coordindx][1]
+		coordz=coordsdict[coordindx][2]
+			
+		task = TomoBoxer3DTask( options, coordindx, coordx, coordy, coordz, tomogram )
+		tasks.append(task)
+		
+
+	if tasks:
+		tids = etc.send_tasks(tasks)
+		if options.verbose: 
+			print "\n(e2spt_preproc)(main) preprocessing %d tasks queued" % (len(tids)) 
+
+	
+		results = get_results( etc, tids, options )
+
+	if results:
+		os.rename('sptboxer_dummy.hdf',options.output)
+		nameprjs = options.output.replace('.hdf','__prjsz.hdf')
+		os.rename('sptboxer_dummy_prjs.hdf',nameprjs)
+		'''
+		ret = unbinned_extractor(options,options.boxsize,coordx,coordy,coordz,options.cshrink,options.invert,options.centerbox,args[0])
 
 		if ret:
 			e=ret[0]
@@ -547,31 +705,31 @@ def commandline_tomoboxer(tomogram,options):
 				e['origin_y'] = 0
 				e['origin_z'] = 0
 
-				if options.output_format != 'single':
-					if '.mrc' in name:
-						print "ERROR: To save the data as a stack, .hdf format must be used."
-						sys.exit()
+				#if options.output_format != 'single':
+				#	if '.mrc' in name:
+				#		print "ERROR: To save the data as a stack, .hdf format must be used."
+				#		sys.exit()
 
 					#e['spt_originalstack']=name
-					e.write_image(name,jj)
+				#	e.write_image(name,jj)
+				#
+				#	if options.verbose:
+				#		if i == 0:
+				#			print "!!!!!!\nSTACK outputfile is", name
+				#
+				#		print "\nWriting image number", i
 
-					if options.verbose:
-						if i == 0:
-							print "!!!!!!\nSTACK outputfile is", name
+				#else:
+				#	nameSingle = name
+				#	if '.hdf' in name:
+				#		nameSingle = name.replace('.hdf', '_' + str(jj).zfill(len(str(cset))) + '.hdf')
+				#	elif '.mrc' in name:
+				#		nameSingle = name.replace('.mrc', '_' + str(jj).zfill(len(str(cset))) + '.mrc')
+				#	#e['spt_originalstack']= nameSingle
+				#	e.write_image(nameSingle,0)
 
-						print "\nWriting image number", i
-
-				else:
-					nameSingle = name
-					if '.hdf' in name:
-						nameSingle = name.replace('.hdf', '_' + str(jj).zfill(len(str(cset))) + '.hdf')
-					elif '.mrc' in name:
-						nameSingle = name.replace('.mrc', '_' + str(jj).zfill(len(str(cset))) + '.mrc')
-					#e['spt_originalstack']= nameSingle
-					e.write_image(nameSingle,0)
-
-				if options.bruteaverage and avgr:
-					avgr.add_image(e)
+				#if options.bruteaverage and avgr:
+				#	avgr.add_image(e)
 
 				jj+=1
 
@@ -580,10 +738,10 @@ def commandline_tomoboxer(tomogram,options):
 				if '.mrc' in options.output:
 					nameprjs = nameprjs.replace('.mrc','.hdf')
 
-				if not options.yshort:
-					nameprjs = nameprjs.replace('.hdf','__prjsz.hdf')
-				elif options.yshort:
-					nameprjs = nameprjs.replace('.hdf','__prjsy.hdf')
+				#if not options.yshort:
+				nameprjs = nameprjs.replace('.hdf','__prjsz.hdf')
+				#elif options.yshort:
+				#	nameprjs = nameprjs.replace('.hdf','__prjsy.hdf')
 
 				if options.path not in nameprjs:
 					nameprjs = options.path + '/' + nameprjs
@@ -591,18 +749,19 @@ def commandline_tomoboxer(tomogram,options):
 				eprj.write_image(nameprjs,-1)
 		else:
 			print "\n(e2spt_boxer.py) WARNING: unbinned_extractor function returned NOTHING for this box",x,y,z
-
-	if options.bruteaverage and avgr:
-		avg = avgr.finish()
-		if avg:
-			avg['spt_originalstack'] = os.path.basename( name )
-			avgout = options.output.replace( '.hdf', '__avg.hdf' )
-			if options.path:
-				avgout = options.path + '/' + avgout
-			avg.process_inplace('normalize')
-			avg.write_image( avgout, 0 )
-		else:
-			print "\nThe particles averaged into nothing; see", type(avg)
+		'''
+			
+	#if options.bruteaverage and avgr:
+	#	avg = avgr.finish()
+	#	if avg:
+	#		avg['spt_originalstack'] = os.path.basename( name )
+	#		avgout = options.output.replace( '.hdf', '__avg.hdf' )
+	#		if options.path:
+	#			avgout = options.path + '/' + avgout
+	#		avg.process_inplace('normalize')
+	#		avg.write_image( avgout, 0 )
+	#	else:
+	#		print "\nThe particles averaged into nothing; see", type(avg)
 
 	radius = options.boxsize/4.0	#the particle's diameter is boxsize/2
 	
@@ -616,7 +775,10 @@ def commandline_tomoboxer(tomogram,options):
 	
 	runcmd( options, cmd )
 	
-	
+	if options.bruteaverage:
+
+		cmdavg = 'e2proc3d.py ' + options.output + ' ' + options.output.replace('.hdf','__bruteavg.hdf') + ' --average'
+		runcmd( options, cmdavg )	
 	return
 
 
@@ -635,6 +797,73 @@ def runcmd(options,cmd):
 	#	print text
 	
 	return 1
+
+
+'''
+CLASS TO PARALLELIZE PARTICLE EXTRACTION FROM COMMANDLINE
+'''
+class TomoBoxer3DTask(JSTask):
+	'''This is a task object for the parallelism system.'''
+
+
+	def __init__(self, options, coordindx, coordx, coordy, coordz, tomogramname):
+	
+		#data={"image":image}
+		
+		#JSTask.__init__(self,"TomoBoxer3d",data,{},"")
+		JSTask.__init__(self,"TomoBoxer3d",{},"")
+		self.classoptions={"options":options,"coordindx":coordindx, "coordx":coordx,"coordy":coordy,"coordz":coordz,"tomogramname":tomogramname}
+	
+	def execute(self,callback=None):
+		
+		options = self.classoptions['options']
+		coordindx = self.classoptions['coordindx']
+		coordx = self.classoptions['coordx']
+		coordy = self.classoptions['coordy']
+		coordz = self.classoptions['coordz']
+		tomogramname = self.classoptions['tomogramname']
+		print "inside class TomoBoxer3DTask"
+		print "calling unbinned_extractor"
+		unbinned_extractor(options,coordx,coordy,coordz,tomogramname,coordindx)
+		print "returned from unbinned_extractor"
+
+		return
+
+
+def get_results(etc,tids,options):
+	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
+	aside from the use of options["ptcl"] this is fairly generalizable code. """
+	
+	# wait for them to finish and get the results
+	# results for each will just be a list of (qual,Transform) pairs
+	results=[0]*len(tids)		# storage for results
+	ncomplete=0
+	tidsleft=tids[:]
+	while 1:
+		time.sleep(5)
+		proglist=etc.check_task(tidsleft)
+		nwait=0
+		for i,prog in enumerate(proglist):
+			if prog==-1 : nwait+=1
+			if prog==100 :
+				r=etc.get_results(tidsleft[i])				#Results for a completed task
+				
+				if r:
+					#print "r is", r
+					#ptcl=r[0].classoptions["ptclnum"]		#Get the particle number from the task rather than trying to work back to it
+					#results[ptcl] = r[1]
+					results[i] = 1					
+				ncomplete+=1
+		
+		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
+		if options.verbose:
+			print ("\n%d tasks, %d complete, %d waiting to start \r" % (len(tids),ncomplete,nwait))
+			sys.stdout.flush()
+	
+		if len(tidsleft)==0: break
+		
+	return results
+
 
 
 
@@ -1310,8 +1539,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	def menu_file_save_boxes(self):
 		fsp=os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (numbers added)")))
-
-		fspprjs=fsp.replace('.','_prjs.hdf')
+		if ".hdf" not in fsp[-4:]:
+			fsp += '.hdf'
+		
+		fspprjs=fsp.replace('.hdf','_prjs.hdf')
 		prj=EMData() #Dummy
 
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
@@ -1330,11 +1561,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#if fsp[:4].lower()=="bdb:":
 				#	img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i)),0)
 
-				if "." in fsp:
-					img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
-				else:
-					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
-					return
+				#if "." in fsp:
+				img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".hdf",1)[0],i,'hdf')))
+				
+				#else:
+				#	QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
+				#	return
 
 				progress.setValue(i+1)
 				if progress.wasCanceled() : break
@@ -1349,22 +1581,25 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				contrast=self.contrast
 				center=self.center
 
-				if self.yshort:
-					ret = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center,args[0])
-					img = ret[0]
-					prj = ret[1]
-				else:
-					ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center,args[0])
-					img = ret[0]
-					prj = ret[1]
+				#if self.yshort:
+				#	ret = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center,args[0])
+				#	img = ret[0]
+				#	prj = ret[1]
+				#else:
+				#ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center,args[0])
+				options.boxsize = bs
+				ret = unbinned_extractor(options,b[0],b[1],b[2],args[0])
+				img = ret[0]
+				prj = ret[1]
 
-				if "." in fsp:
-					img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
-					prj.write_image(fspprjs,-1)
+				#if "." in fsp:
+					#img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
+				img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,'hdf')))
+				prj.write_image(fspprjs,-1)
 
-				else:
-					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
-					return
+				#else:
+				#	QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
+				#	return
 
 				progress.setValue(i+1)
 				if progress.wasCanceled() : break
@@ -1410,14 +1645,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				contrast=self.contrast
 				center=self.center
 
-				if self.yshort:
-					ret = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center,args[0])
-					img = ret[0]
-					prj = ret[1]
-				else:
-					ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center,args[0])
-					img = ret[0]
-					prj = ret[1]
+				#if self.yshort:
+				#	ret = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center,args[0])
+				#	img = ret[0]
+				#	prj = ret[1]
+				#else:
+				#ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center,args[0])
+				print "before extraction shrinkf is", shrinkf
+				print "coords are", b[0],b[1],b[2]
+				options.boxsize=bs
+				ret = unbinned_extractor(options,b[0],b[1],b[2],args[0])
+				img = ret[0]
+				prj = ret[1]
+				print "returned image is of size",img['nx']
 
 				#img['origin_x'] = 0
 				#img['origin_y'] = 0
