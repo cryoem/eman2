@@ -6,6 +6,7 @@ import os
 from EMAN2 import *
 import subprocess
 import shutil
+from string import Template
 
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
@@ -24,9 +25,10 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--box", default=512, type=int, help="Size of box to use for sub-region selection.")
+	parser.add_argument("--box", default=1024, type=int, help="Size of box to use for sub-region selection.")
 	parser.add_argument("--hcreg", type=str, help="Center coordinate 'x,y' of high contrast region.", required=True)
 	parser.add_argument("--lcreg", type=str, help="Center coordinate 'x,y' of low contrast region.", required=True)
+	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
@@ -49,23 +51,25 @@ def main():
 		parser.error("You must specify a single DDD movie stack in HDF or MRC format.")
 		sys.exit(1)
 
-	hdr = EMData(args[0],0,True)
+	fname = args[0]
 
-	if not options.apix: apix = hdr["apix_x"]
-	else: apix = options.apix
+	hdr = EMData(fname,0,True)
+	(basen,ext) = os.path.splitext(fname)
+	bdir = basen
 
 	bs = options.box
 	if (hdr['nx'] / bs - 1) < 2 or (hdr['ny'] / bs - 1) < 2:
 		print("You will need to use a smaller box size with your data.")
 		sys.exit(1)
 
-	fname = args[0]
+	if options.apix: apix = options.apix
+	else:
+		try: apix = hdr["apix_x"]
+		except: apix = 1.0
 
-	(basen,ext) = os.path.splitext(fname)
-	bdir = basen
-
-	try: os.makedirs(bdir)
-	except: pass
+	if options.gain or options.dark or options.gaink2:
+		if options.verbose: print("Correcting frames before processing")
+		fname = FrameCorrector.correct_frames(options,fname)
 
 	(hix,hiy)=map(int,options.hcreg.split(","))
 	(lox,loy)=map(int,options.lcreg.split(","))
@@ -79,9 +83,8 @@ def main():
 
 	if options.verbose: print("Processing {}".format(fname))
 
-	if options.gain or options.dark or options.gaink2:
-		if options.verbose: print("Correcting frames before processing")
-		fname = FrameCorrector.correct_frames(options,fname)
+	try: os.makedirs(bdir)
+	except: pass
 
 	# PART 0: Setup alignment data
 	frames = load_frames(fname)
@@ -146,9 +149,8 @@ def main():
 				try: os.symlink(src,dst)
 				except: pass
 
-				out,err=run("{} {} {}".format(pkgs[pkg],pdir,fname)) # WHOLE MICROGRAPH
-				out,err=run("{} {} {}".format(pkgs[pkg],pdir,options.hcname)) # HIGH CONTRAST REGION
-				out,err=run("{} {} {}".format(pkgs[pkg],pdir,options.lcname)) # LOW CONTRAST REGION
+				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+					out,err=run("{} {} {}".format(pkgs[pkg],pdir,fn))
 
 				for f in os.listdir(pdir):
 					if "translations_x" in f:
@@ -166,22 +168,12 @@ def main():
 
 			if pkg == "EMAN2":
 
-				shutil.copy2(fname,"{}/{}".format(pdir,localfn))
-				shutil.copy2(options.hcname,"{}/{}".format(pdir,localhc))
-				shutil.copy2(options.lcname,"{}/{}".format(pdir,locallc))
-
-				os.chdir(pdir)
-				out,err=run("{} {} {}".format(pkgs[pkg],localfn,options.threads)) # WHOLE MICROGRAPH
-				out,err=run("{} {} {}".format(pkgs[pkg],localhc,options.threads)) # HIGH CONTRAST REGION
-				out,err=run("{} {} {}".format(pkgs[pkg],locallc,options.threads)) # LOW CONTRAST REGION
-				os.remove(localfn)
-				os.remove(localhc)
-				os.remove(locallc)
-				os.chdir(cwd)
-
-				os.symlink(fname,"{}/{}".format(pdir,localfn))
-				os.symlink(options.hcname,"{}/{}".format(pdir,localhc))
-				os.symlink(options.lcname,"{}/{}".format(pdir,locallc))
+				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+					lfn = fn.split("/")[-1] # local file name
+					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+					os.chdir(pdir)
+					out,err=run("{} {} {}".format(pkgs[pkg],lfn,options.threads))
+					os.chdir(cwd)
 
 				for f in os.listdir(pdir):
 					if "hictrst_info.txt" in f: hi = os.path.join(pdir,f)
@@ -194,17 +186,12 @@ def main():
 
 			if pkg == "IMOD":
 
-				shutil.copy2(fname,"{}/{}".format(pdir,localfn))
-				shutil.copy2(options.hcname,"{}/{}".format(pdir,localhc))
-				shutil.copy2(options.lcname,"{}/{}".format(pdir,locallc))
-
-				os.chdir(pdir)
-
-				out,err=run("{} -n -xfext xf -input {}".format(pkgs[pkg],localfn)) # WHOLE MICROGRAPH
-				out,err=run("{} -n -xfext xf -input {}".format(pkgs[pkg],localhc)) # HIGH CONTRAST REGION
-				out,err=run("{} -n -xfext xf -input {}".format(pkgs[pkg],locallc)) # LOW CONTRAST REGION
-
-				os.chdir(cwd)
+				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+					lfn = fn.split("/")[-1] # local file name
+					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+					os.chdir(pdir)
+					out,err=run("{} -n -xfext xf -input {}".format(pkgs[pkg],lfn))
+					os.chdir(cwd)
 
 				for f in os.listdir(pdir):
 					if "hictrst.xf" in f: hi = os.path.join(pdir,f)
@@ -217,17 +204,12 @@ def main():
 
 			if pkg == "UCSF":
 
-				shutil.copy2(fname,"{}/{}".format(pdir,localfn))
-				shutil.copy2(options.hcname,"{}/{}".format(pdir,localhc))
-				shutil.copy2(options.lcname,"{}/{}".format(pdir,locallc))
-
-				os.chdir(pdir)
-
-				out,err=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],localfn)) # WHOLE MICROGRAPH
-				out,err=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],localhc)) # HIGH CONTRAST REGION
-				out,err=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],locallc)) # LOW CONTRAST REGION
-
-				os.chdir(cwd)
+				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+					lfn = fn.split("/")[-1] # local file name
+					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+					os.chdir(pdir)
+					out,err=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn))
+					os.chdir(cwd)
 
 				for f in os.listdir(pdir):
 					if "hictrst_Log.txt" in f: hi = os.path.join(pdir,f)
@@ -240,75 +222,64 @@ def main():
 
 			if pkg == "UNBLUR":
 
+				card = Template("""$prog <<EOF
+$file
+45
+$alisum
+$shifts
+4
+NO
+YES
+$ali
+YES
+$frc
+2.0
+200.0
+1500
+1
+1
+0.1
+10
+YES
+EOF
+""")
 
-#for i in cell_region.mrc feducial_region.mrc platelet-wt-murine-03_012_-0.9.mrc; do
-    #unblur_openmp_7_17_15.exe <<EOF
-#${i}
-#45
-#${i/.mrc/_ali_sum.mrc}
-#${i/.mrc/_shifts.txt}
-#4
-#NO
-#YES
-#${i/.mrc/_ali.mrc}
-#YES
-#${i/.mrc/_frc.txt}
-#2.0
-#200.0
-#1500
-#1
-#1
-#0.1
-#10
-#YES
-#EOF
+				for fn in [fname,options.hcname,options.lcname]:
+					lfn = fn.split("/")[-1]
+					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+					cmd = card.substitute(
+						prog=pkgs[pkg],
+						file=lfn,
+						alisum=lfn.replace(ext,"_ali_sum{}".format(ext)),
+						shifts=lfn.replace(ext,"_shifts".format(ext)),
+						ali=lfn.replace(ext,"_ali{}".format(ext)),
+						frc=lfn.replace(ext,"_frc{}".format(ext)))
+					os.chdir(pdir)
+					out,err=run(cmd,shell=True)
+					os.chdir(cwd)
 
-#done
+				for f in os.listdir(pdir):
+					if "hictrst_shifts.txt" in f: hi = os.path.join(pdir,f)
+					elif "loctrst_shifts.txt" in f: lo = os.path.join(pdir,f)
+					elif "_shifts.txt" in f: wmg = os.path.join(pdir,f)
 
-
-
-
-				pass # generate card
+				trans_wmg["UNBLUR"] = parse_ucsf(wmg)
+				trans_hi["UNBLUR"] = parse_ucsf(hi)
+				trans_lo["UNBLUR"] = parse_ucsf(lo)
 
 	sys.exit(1)
-
-
-
-	imod_fn_wmg = "imod/platelet-wt-murine-03_012_-0.9.xf"
-	trans_wmg["IMOD"] = parse_imod(imod_fn_wmg)
-
-	ucsf_fn_wmg = "ucsf/platelet-wt-murine-03_012_-0.9_Log.txt"
-	trans_wmg["UCSF"] = parse_ucsf(ucsf_fn_wmg)
-
-	unblur_fn_wmg = "unblur/platelet-wt-murine-03_012_-0.9_shifts.txt"
-	trans_wmg["UNBLUR"] = parse_unblur(unblur_fn_wmg)
 
 	# PART 1: How does calculated motion differ between the most commonly used alignment algorithms?
 	trans_wmg, mags_wmg = plot_trans(trans_wmg,show=options.show)
 
-	#imod_fn_lo = "imod/cell_region.xf"
-	trans_lo["IMOD"] = parse_imod(imod_fn_lo)
-	#imod_fn_hi = "imod/feducial_region.xf"
-	trans_hi["IMOD"] = parse_imod(imod_fn_hi)
-
-	#ucsf_fn_lo = "ucsf/cell_region_Log.txt"
-	trans_lo["UCSF"] = parse_ucsf(ucsf_fn_lo)
-	#ucsf_fn_hi = "ucsf/feducial_region_Log.txt"
-	trans_hi["UCSF"] = parse_ucsf(ucsf_fn_hi)
-
-	#unblur_fn_lo = "unblur/cell_region_shifts.txt"
-	trans_lo["UNBLUR"] = parse_unblur(unblur_fn_lo)
-	#unblur_fn_hi = "unblur/feducial_region_shifts.txt"
-	trans_hi["UNBLUR"] = parse_unblur(unblur_fn_hi)
-
 	# PART 2: How different are predicted frame translations with and without high contrast features (real space comparison)
 	ssdfs = plot_differences(trans_hi,trans_lo,show=options.show)
 
+	# Part 3: Compare agreement in fourier space (coherent/incoherent power spectra)
 	frames_hi = load_frames(options.hcname)
 	frames_lo = load_frames(options.lcname)
 
-	ftypes = {}
-	# need to get regions from original micrographs to avoid edge effects.
+	ftypes = {} # need to get regions from original micrographs to avoid edge effects.
 	ftypes["hi_wmg"] = shift_by(frames_hi,trans_wmg)
 	ftypes["lo_wmg"] = shift_by(frames_lo,trans_wmg)
 	ftypes["lo_lo"] = shift_by(frames_lo,trans_lo)
@@ -316,13 +287,14 @@ def main():
 	ftypes["hi_lo"] = shift_by(frames_hi,trans_lo)
 	ftypes["hi_hi"] = shift_by(frames_hi,trans_hi)
 
-	# Part 3: Compare agreement in fourier space (coherent/incoherent power spectra)
 	scores = calc_cips_scores(ftypes)
 	plot_scores(scores,show=options.show)
 
-def run(cmd):
+	# Done?
+
+def run(cmd,shell=False):
 	print(cmd)
-	process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+	process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, shell=shell)
 	return process.communicate()
 
 def shift_by(frames,trans):
