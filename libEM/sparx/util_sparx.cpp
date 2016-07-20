@@ -26497,7 +26497,11 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	float *cvv = cvvi->get_data();
 	*/
 	vector<float> cvvi(2*size);
-	float *cvv = cvvi.data();
+//	float *cvv = cvvi.data(); // requires C++11, our Windows doesn't have it.
+	float *cvv = (float *) malloc((2*size+1)*sizeof(float));
+	if (cvv == NULL) throw NullPointerException("Allocation failure.");
+	for (size_t i = 0; i < 2*size; i++) cvv[i] = cvvi[i];
+
 	int ncx = nyt/2;
 
 	float fnorma = 1.0f/float(nyt*nyt*nzt);
@@ -26540,14 +26544,14 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 		fftwf_execute(plan_real_to_complex);
 
 		for (size_t i=0; i<size; ++i) nwe[i] /= Util::get_max(1.0e-5f, sqrt(cvv[2*i]*cvv[2*i]+cvv[2*i+1]*cvv[2*i+1]));
-
-
 	}
+
 	fftwf_destroy_plan(plan_real_to_complex);
 	fftwf_destroy_plan(plan_complex_to_real);
 
 	beltab.resize(0);
 	cvvi.resize(0);
+   free(cvv);
 	//delete cvvi; cvvi = 0;
 
 	for( size_t i = 0; i<size; i++) {

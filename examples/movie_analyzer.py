@@ -4,75 +4,282 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from EMAN2 import *
+import subprocess
+import shutil
+from string import Template
 
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
+pkgs = {"EMAN2":"/home/jmbell/EMAN2/examples/movie_ccf.py",
+		"UCSF":"/home/jmbell/src/motioncorr_v2.1/bin/dosefgpu_driftcorr",
+		"UNBLUR":"/home/jmbell/src/unblur_1.0.2/bin/unblur_openmp_7_17_15.exe",
+		"DE":"/home/jmbell/src/de_aligner/DE_process_frames-2.8.1.py",
+		"IMOD":"/usr/local/imod_4.8.46/bin/alignframes"}
+
 def main():
-	show = True
+	progname = os.path.basename(sys.argv[0])
+	usage = """prog [options]
+
+	Program to characterize DDD motion correction algorithms.
+	"""
+
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+
+	parser.add_argument("--box", default=1024, type=int, help="Size of box to use for sub-region selection.")
+	parser.add_argument("--hcreg", type=str, help="Center coordinate 'x,y' of high contrast region.", required=True)
+	parser.add_argument("--lcreg", type=str, help="Center coordinate 'x,y' of low contrast region.", required=True)
+	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
+	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
+	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
+	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
+	parser.add_argument("--fixaxes",action="store_true",default=False,help="Tries to identify bad pixels and fill them in with sane values instead")
+	parser.add_argument("--neighbornorm", type=int, help="Set the norm to be used for fixing axes. Default is 2",default=2)
+	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
+	parser.add_argument('--xybadlines', help="Specify the list of bad pixel coordinates for your detector. Will only be used if --fixbadlines is also specified.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
+	parser.add_argument("--show", action="store_true",help="Show average of movie frames before and after alignment.",default=True)
+	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
+	parser.add_argument("--threads", default=8, type=int, help="Number of threads to use with each aligner.")
+	parser.add_argument("--include", type=str, help="Comma separated list of packages to include during comparison.", default="DE,EMAN2,IMOD,UCSF,UNBLUR")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+
+	global options
+	(options, args) = parser.parse_args()
+
+	if len(args) != 1:
+		print usage
+		parser.error("You must specify a single DDD movie stack in HDF or MRC format.")
+		sys.exit(1)
+
+	fname = args[0]
+
+	hdr = EMData(fname,0,True)
+	(basen,ext) = os.path.splitext(fname)
+	bdir = basen
+
+	bs = options.box
+	if (hdr['nx'] / bs - 1) < 2 or (hdr['ny'] / bs - 1) < 2:
+		print("You will need to use a smaller box size with your data.")
+		sys.exit(1)
+
+	if options.apix: apix = options.apix
+	else:
+		try: apix = hdr["apix_x"]
+		except: apix = 1.0
+
+	if options.gain or options.dark or options.gaink2:
+		if options.verbose: print("Correcting frames before processing")
+		fname = FrameCorrector.correct_frames(options,fname)
+
+	(hix,hiy)=map(int,options.hcreg.split(","))
+	(lox,loy)=map(int,options.lcreg.split(","))
+	options.hcreg = Region(hix,hiy,options.box,options.box)
+	options.lcreg = Region(lox,loy,options.box,options.box)
+
+	options.hcname = "{}/hictrst.hdf".format(bdir)
+	options.lcname = "{}/loctrst.hdf".format(bdir)
+
+	logid=E2init(sys.argv,options.ppid)
+
+	if options.verbose: print("Processing {}".format(fname))
+
+	try: os.makedirs(bdir)
+	except: pass
+
+	# PART 0: Setup alignment data
+	frames = load_frames(fname)
+
+	# automatically detect high and low contrast region in averaged frames?
+	#avgfile = "{}/noali_avg.hdf".format(bdir)
+	#avg = average_frames(frames)
+	#avg.write_image(avgfile,0)
+	#avg = avg.get_clip(Region(128,128,hdr["nx"]-256,hdr["ny"]-256))
+	#avg.process_inplace("filter.highpass.gauss",{"cutoff_pixels":20})
+	#avg.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.01})
+	#thresh = avg.calc_n_highest_locations(1)[0].get_value()/2
+	#msk = avg.process("threshold.binary",{"value":thresh})
+	#pks = (avg * msk).process("mask.onlypeaks",{"npeaks":2})
+	#pks.process_inplace("math.squared")
+	#print(avg.calc_n_highest_locations(1))
+	#print(pks.calc_n_highest_locations(1))
+	##msk.write_image(avgfile,1)
+	##pks.write_image(avgfile,2)
+	#display([avg])
+	#display([msk])
+	#display([pks])
+
+	# write regions to disk (add large enough edge to region so we can clip down to desired box size after)
+	hcrs = []
+	lcrs = []
+	for i,f in enumerate(frames):
+		hcf = f.get_clip(options.hcreg)
+		hcf.write_image(options.hcname,i)
+		hcrs.append(hcf)
+		lcf = f.get_clip(options.lcreg)
+		lcf.write_image(options.lcname,i)
+		lcrs.append(lcf)
+	hcrs_avg = average_frames(hcrs)
+	lcrs_avg = average_frames(lcrs)
+	hcrs_avg.write_image("{}/hictrst_noali_avg.hdf".format(bdir),0)
+	lcrs_avg.write_image("{}/loctrst_noali_avg.hdf".format(bdir),0)
+
+	trans_wmg = {} # whole micrograph
+	trans_lo = {} # low contrast region
+	trans_hi = {} # high contrast region
+
+	# process low and high contrast regions
+	cwd = os.getcwd()
+	localfn = fname.split("/")[-1]
+	localhc = options.hcname.split("/")[-1]
+	locallc = options.lcname.split("/")[-1]
+
+	for pkg in pkgs.keys():
+		if pkg in options.include.split(","):
+			prog = pkgs[pkg].split("/")[-1]
+			print("Running {} on {}".format(prog,fname))
+
+			pdir = "{}/{}".format(bdir,pkg)
+
+			try: os.makedirs(pdir)
+			except: pass
+
+			if pkg == "DE":
+				src = "/".join(pkgs[pkg].split("/")[:-1]) + "/DE_process_frames.cfg"
+				dst = cwd+"/DE_process_frames.cfg"
+				try: os.symlink(src,dst)
+				except: pass
+
+				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+					out,err=run("{} {} {}".format(pkgs[pkg],pdir,fn))
+
+				for f in os.listdir(pdir):
+					if "translations_x" in f:
+						if "hictrst" in f: hi_x = os.path.join(pdir,f)
+						elif "loctrst" in f: lo_x = os.path.join(pdir,f)
+						else: wmg_x = os.path.join(pdir,f)
+					elif "translations_y" in f:
+						if "hictrst" in f: hi_y = os.path.join(pdir,f)
+						elif "loctrst" in f: lo_y = os.path.join(pdir,f)
+						else: wmg_y = os.path.join(pdir,f)
+
+				trans_wmg["DE"] = parse_de(wmg_x,wmg_y)
+				trans_hi["DE"] = parse_de(hi_x,hi_y)
+				trans_lo["DE"] = parse_de(lo_x,lo_y)
+
+			if pkg == "EMAN2":
+
+				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+					lfn = fn.split("/")[-1] # local file name
+					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+					os.chdir(pdir)
+					out,err=run("{} {} {}".format(pkgs[pkg],lfn,options.threads))
+					os.chdir(cwd)
+
+				for f in os.listdir(pdir):
+					if "hictrst_info.txt" in f: hi = os.path.join(pdir,f)
+					elif "loctrst_info.txt" in f: lo = os.path.join(pdir,f)
+					elif "info.txt" in f: wmg = os.path.join(pdir,f)
+
+				trans_wmg["EMAN2"] = parse_eman2(wmg)
+				trans_hi["EMAN2"] = parse_eman2(hi)
+				trans_lo["EMAN2"] = parse_eman2(lo)
+
+			if pkg == "IMOD":
+
+				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+					lfn = fn.split("/")[-1] # local file name
+					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+					os.chdir(pdir)
+					out,err=run("{} -n -xfext xf -input {}".format(pkgs[pkg],lfn))
+					os.chdir(cwd)
+
+				for f in os.listdir(pdir):
+					if "hictrst.xf" in f: hi = os.path.join(pdir,f)
+					elif "loctrst.xf" in f: lo = os.path.join(pdir,f)
+					elif ".xf" in f: wmg = os.path.join(pdir,f)
+
+				trans_wmg["IMOD"] = parse_imod(wmg)
+				trans_hi["IMOD"] = parse_imod(hi)
+				trans_lo["IMOD"] = parse_imod(lo)
+
+			if pkg == "UCSF":
+
+				for fn in [fname,options.hcname,options.lcname]: # whole micrograph, high contrast, low contrast
+					lfn = fn.split("/")[-1] # local file name
+					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+					os.chdir(pdir)
+					out,err=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn))
+					os.chdir(cwd)
+
+				for f in os.listdir(pdir):
+					if "hictrst_Log.txt" in f: hi = os.path.join(pdir,f)
+					elif "loctrst_Log.txt" in f: lo = os.path.join(pdir,f)
+					elif "_Log.txt" in f: wmg = os.path.join(pdir,f)
+
+				trans_wmg["UCSF"] = parse_ucsf(wmg)
+				trans_hi["UCSF"] = parse_ucsf(hi)
+				trans_lo["UCSF"] = parse_ucsf(lo)
+
+			if pkg == "UNBLUR":
+
+				card = Template("""$prog <<EOF
+$file
+45
+$alisum
+$shifts
+4
+NO
+YES
+$ali
+YES
+$frc
+2.0
+200.0
+1500
+1
+1
+0.1
+10
+YES
+EOF
+""")
+
+				for fn in [fname,options.hcname,options.lcname]:
+					lfn = fn.split("/")[-1]
+					shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+					cmd = card.substitute(
+						prog=pkgs[pkg],
+						file=lfn,
+						alisum=lfn.replace(ext,"_ali_sum{}".format(ext)),
+						shifts=lfn.replace(ext,"_shifts".format(ext)),
+						ali=lfn.replace(ext,"_ali{}".format(ext)),
+						frc=lfn.replace(ext,"_frc{}".format(ext)))
+					os.chdir(pdir)
+					out,err=run(cmd,shell=True)
+					os.chdir(cwd)
+
+				for f in os.listdir(pdir):
+					if "hictrst_shifts.txt" in f: hi = os.path.join(pdir,f)
+					elif "loctrst_shifts.txt" in f: lo = os.path.join(pdir,f)
+					elif "_shifts.txt" in f: wmg = os.path.join(pdir,f)
+
+				trans_wmg["UNBLUR"] = parse_ucsf(wmg)
+				trans_hi["UNBLUR"] = parse_ucsf(hi)
+				trans_lo["UNBLUR"] = parse_ucsf(lo)
+
+	sys.exit(1)
 
 	# PART 1: How does calculated motion differ between the most commonly used alignment algorithms?
+	trans_wmg, mags_wmg = plot_trans(trans_wmg,show=options.show)
 
-	trans_wmg = {}
+	# PART 2: How different are predicted frame translations with and without high contrast features (real space comparison)
+	ssdfs = plot_differences(trans_hi,trans_lo,show=options.show)
 
-	de_fnx = "de/platelet-wt-murine-03_012_-0.9/platelet-wt-murine-03_012_-0.9.mrcs.translations_x.txt"
-	de_fny = "de/platelet-wt-murine-03_012_-0.9/platelet-wt-murine-03_012_-0.9.mrcs.translations_y.txt"
-	trans_wmg["DE"] = parse_de(de_fnx,de_fny)
+	# Part 3: Compare agreement in fourier space (coherent/incoherent power spectra)
+	frames_hi = load_frames(options.hcname)
+	frames_lo = load_frames(options.lcname)
 
-	e2_fn = "eman2/platelet-wt-murine-03_012_-0.9_info.txt"
-	trans_wmg["EMAN2"] = parse_eman2(e2_fn)
-
-	imod_fn = "imod/platelet-wt-murine-03_012_-0.9.xf"
-	trans_wmg["IMOD"] = parse_imod(imod_fn)
-
-	ucsf_fn = "ucsf/platelet-wt-murine-03_012_-0.9_Log.txt"
-	trans_wmg["UCSF"] = parse_ucsf(ucsf_fn)
-
-	unblur_fn = "unblur/platelet-wt-murine-03_012_-0.9_shifts.txt"
-	trans_wmg["UNBLUR"] = parse_unblur(unblur_fn)
-
-	trans_wmg, mags_wmg = plot_trans(trans_wmg,show=show)
-
-	# PART 2: How different are predicted frame translations with and without high contrast features?
-
-	trans_lo = {} # low contrast
-	trans_hi = {} # high contrast
-
-	de_fnx = "de/cell_region/cell_region.mrcs.translations_x.txt"
-	de_fny = "de/cell_region/cell_region.mrcs.translations_y.txt"
-	trans_lo["DE"] = parse_de(de_fnx,de_fny)
-	de_fnx = "de/feducial_region/feducial_region.mrcs.translations_x.txt"
-	de_fny = "de/feducial_region/feducial_region.mrcs.translations_y.txt"
-	trans_hi["DE"] = parse_de(de_fnx,de_fny)
-
-	e2_fn = "eman2/cell_region_info.txt"
-	trans_lo["EMAN2"] = parse_eman2(e2_fn)
-	e2_fn = "eman2/feducial_region_info.txt"
-	trans_hi["EMAN2"] = parse_eman2(e2_fn)
-
-	imod_fn = "imod/cell_region.xf"
-	trans_lo["IMOD"] = parse_imod(imod_fn)
-	imod_fn = "imod/feducial_region.xf"
-	trans_hi["IMOD"] = parse_imod(imod_fn)
-
-	ucsf_fn = "ucsf/cell_region_Log.txt"
-	trans_lo["UCSF"] = parse_ucsf(ucsf_fn)
-	ucsf_fn = "ucsf/feducial_region_Log.txt"
-	trans_hi["UCSF"] = parse_ucsf(ucsf_fn)
-
-	unblur_fn = "unblur/cell_region_shifts.txt"
-	trans_lo["UNBLUR"] = parse_unblur(unblur_fn)
-	unblur_fn = "unblur/feducial_region_shifts.txt"
-	trans_hi["UNBLUR"] = parse_unblur(unblur_fn)
-
-	ssdfs = plot_differences(trans_hi,trans_lo,show=show)
-
-	# Part 3?
-
-	#frames = load_frames("platelet-wt-murine-03_012_-0.9.mrcs")
-	frames_hi = load_frames("feducial_region.mrcs")
-	frames_lo = load_frames("cell_region.mrcs")
-
-	ftypes = {}
+	ftypes = {} # need to get regions from original micrographs to avoid edge effects.
 	ftypes["hi_wmg"] = shift_by(frames_hi,trans_wmg)
 	ftypes["lo_wmg"] = shift_by(frames_lo,trans_wmg)
 	ftypes["lo_lo"] = shift_by(frames_lo,trans_lo)
@@ -81,7 +288,14 @@ def main():
 	ftypes["hi_hi"] = shift_by(frames_hi,trans_hi)
 
 	scores = calc_cips_scores(ftypes)
-	plot_scores(scores,show=show)
+	plot_scores(scores,show=options.show)
+
+	# Done?
+
+def run(cmd,shell=False):
+	print(cmd)
+	process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, shell=shell)
+	return process.communicate()
 
 def shift_by(frames,trans):
 	d = {}
@@ -103,8 +317,8 @@ def calc_cips_scores(ftypes,bs=256):
 			ips = calc_incoherent_pws(ftypes[ftype][pkg],bs)
 			frc = -1 * EMData.cmp(cps,'frc',ips)
 			dot = -1 * EMData.cmp(cps,'dot',ips)
-			osb = -1 * EMData.cmp(cps,'optsub',ips)
-			sse = -1 * EMData.cmp(cps,'sqeuclidean',ips)
+			osb = EMData.cmp(cps,'optsub',ips)
+			sse = EMData.cmp(cps,'sqeuclidean',ips)
 			scores[pkg].append([frc,dot,osb,sse])
 		scores[pkg] = np.asarray(scores[pkg])
 	return scores
@@ -280,13 +494,13 @@ def parse_imod(fn):
 	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
 
 def parse_ucsf(fn):
-	fn = "ucsf/platelet-wt-murine-03_012_-0.9_Log.txt"
 	trans = []
 	with open(fn) as f:
 		for txt in f.readlines():
 			if "......Shift of Frame #" in txt:
 				trans.append(np.asarray(txt.replace("......Add Frame #","").split(":")[-1].split())[:2])
 	trans = np.asarray(trans).astype(float)
+	print(trans)
 	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
 
 def parse_unblur(fn):
@@ -360,11 +574,105 @@ def average_frames(frames):
 	avgr.add_image_list(frames)
 	return avgr.finish()
 
-pkgs = {"EMAN2":"movie_ccf.py",
-		"UCSF":"dosefgpu_driftcorr",
-		"UNBLUR":"unblur_openmp_7_17_15.exe",
-		"DE":"DE_process_frames-2.8.1.py",
-		"IMOD":"alignframes"}
+
+class FrameCorrector:
+
+	@classmethod
+	def dark_correct(cls,options):
+		hdr = EMData(options.dark,0,True)
+		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
+		else: nd = EMUtil.get_image_count(options.dark)
+		dark=EMData(options.dark,0)
+		if nd>1:
+			sigd=dark.copy()
+			sigd.to_zero()
+			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
+			for i in xrange(0,nd):
+				if options.verbose:
+					print "Summing dark: {}/{}	\r".format(i+1,nd),
+					sys.stdout.flush()
+				t=EMData(options.dark,i)
+				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
+				a.add_image(t)
+			dark=a.finish()
+			sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
+			if options.fixbadlines:
+				# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0})
+				dark.mult(sigd)
+			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
+		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
+		dark2=dark.process("normalize.unitlen")
+		return dark
+
+	@classmethod
+	def gain_correct(cls,options,dark):
+		hdr = EMData(options.gain,0,True)
+		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
+		else: nd = EMUtil.get_image_count(options.gain)
+		gain=EMData(options.gain,0)
+		if nd>1:
+			sigg=gain.copy()
+			sigg.to_zero()
+			a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
+			for i in xrange(0,nd):
+				if options.verbose:
+					print "Summing gain: {}/{}	\r".format(i+1,nd),
+					sys.stdout.flush()
+				t=EMData(options.gain,i)
+				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
+				a.add_image(t)
+			gain=a.finish()
+			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
+			# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+			if options.fixbadlines: sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})
+			if dark!=None:
+				sigd=EMData(options.dark.rsplit(".",1)[0]+"_sig.hdf",0,False)
+				sigg.mult(sigd)
+			gain.mult(sigg)
+			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
+		if dark!=None : gain.sub(dark)	# dark correct the gain-reference
+		# normalize so gain reference on average multiplies by 1.0
+		gain.mult(1.0/gain["mean"])
+		# setting zero values to zero helps identify bad pixels
+		gain.process_inplace("math.reciprocal",{"zero_to":0.0})
+		return gain
+
+	@classmethod
+	def correct_frames(cls,options,fname,outfile=None):
+		options.path = fname
+		if options.dark:
+			if options.verbose > 8: print("Generating dark reference")
+			dark = cls.dark_correct(options)
+		else: dark = None
+		if options.gain:
+			if options.verbose > 8: print("Generating gain reference")
+			gain = cls.gain_correct(options,dark)
+		elif options.gaink2:
+			if options.verbose > 8: print("Generating K2 gain reference")
+			gain = EMData(options.gaink2)
+		else: gain = None
+		hdr = EMData(options.path,0,True)
+		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
+		else: nd = EMUtil.get_image_count(options.path)
+		if not outfile: outfile = options.path[:-4] + "_corrected.hdf"
+		for i in xrange(nd):
+			if options.verbose:
+				print "Correcting frame: {}/{}	\r".format(i+1,nd),
+				sys.stdout.flush()
+			if options.path[-4:].lower() in (".mrc"):
+				r = Region(0,0,i,nx,ny,1)
+				im=EMData(path,0,False,r)
+			else: im=EMData(options.path,i)
+			if dark: im.sub(dark)
+			if gain: im.mult(gain)
+			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
+			# fixes clear outliers as well as values which were exactly zero
+			im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1})
+			im.process_inplace("normalize.edgemean")
+			im.write_image(outfile,i)
+		else: outfile = options.path
+		return outfile
 
 if __name__ == "__main__":
 	main()
