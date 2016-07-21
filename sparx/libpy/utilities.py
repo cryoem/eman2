@@ -2420,7 +2420,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 	"""
 	The assumption in <<bcast_compacted_EMData_all_to_all>> is that each processor
 	calculates part of the list of elements and then each processor sends
-	its results to the other ones. I
+	its results to the other ones.
 
 	Therefore, each processor has access to the header. If we assume that the
 	attributes of interest from the header are the same for all elements then

@@ -26489,17 +26489,29 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	}
 
 	size_t nx_extended = nyt + 1;
+	/*
 	EMData *cvvi    = new EMData();
 	cvvi->set_size(nx_extended, nyt, nzt);
 	cvvi->set_ri(true);
 	cvvi->set_fftodd(true);
 	float *cvv = cvvi->get_data();
+	*/
+	vector<float> cvvi(2*size);
+//	float *cvv = cvvi.data(); // requires C++11, our Windows doesn't have it.
+	float *cvv = (float *) malloc((2*size+1)*sizeof(float));
+	if (cvv == NULL) throw NullPointerException("Allocation failure.");
+	for (size_t i = 0; i < 2*size; i++) cvv[i] = cvvi[i];
+
 	int ncx = nyt/2;
+
+	float fnorma = 1.0f/float(nyt*nyt*nzt);
+	fftwf_plan plan_real_to_complex = fftwf_plan_dft_r2c_3d(nyt, nyt, nzt, cvv, (fftwf_complex *) cvv, FFTW_ESTIMATE);
+	fftwf_plan plan_complex_to_real = fftwf_plan_dft_c2r_3d(nyt, nyt, nzt, (fftwf_complex *) cvv, cvv, FFTW_ESTIMATE);
 	
 	size_t niter = 10;
 	for (size_t i=0;i<niter;++i) {
 
-		cvvi->set_complex(false);
+		//cvvi->set_complex(false);
 		for( size_t i = 0; i<size; i++) {
 			double prd = nwe[i]*tw_ptr[i];
 			if(prd > 1.0e23L) cout<<"  we have a problem A"<<endl;
@@ -26507,8 +26519,12 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 			cvv[2*i+1] = 0.0f;
 		}
 
-		cvvi->set_complex(true);
-		cvvi->do_ift_inplace();
+		//cvvi->set_complex(true);
+		//cvvi->do_ift_inplace();
+
+		fftwf_execute(plan_complex_to_real);
+
+		for (size_t i=0; i<2*size; ++i)  cvv[i] *= fnorma;
 
 		for (size_t k=0;k<nzt;++k)  {
 			float argz = (k<nzc)?(k*k) : (k-nzt)*(k-nzt);
@@ -26524,15 +26540,19 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 			}
 		}
 
-		cvvi->do_fft_inplace();
+		//cvvi->do_fft_inplace();
+		fftwf_execute(plan_real_to_complex);
 
 		for (size_t i=0; i<size; ++i) nwe[i] /= Util::get_max(1.0e-5f, sqrt(cvv[2*i]*cvv[2*i]+cvv[2*i+1]*cvv[2*i+1]));
-
-
 	}
 
+	fftwf_destroy_plan(plan_real_to_complex);
+	fftwf_destroy_plan(plan_complex_to_real);
+
 	beltab.resize(0);
-	delete cvvi; cvvi = 0;
+	cvvi.resize(0);
+   free(cvv);
+	//delete cvvi; cvvi = 0;
 
 	for( size_t i = 0; i<size; i++) {
 		double prr = tvol_ptr[2*i]   * nwe[i];
@@ -26554,283 +26574,4 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	EXITFUNC;
 
 }
-
-
-
-//void Util::make_fft_ifft(EMData* tvol) {
-//	ENTERFUNC;
-//	/* Exception Handle */
-//	if (!tvol) {
-//		throw NullPointerException("NULL input image");
-//	}
-//
-//	float *real_data = tvol->get_data();
-//	int nx = tvol->get_xsize();
-//	int ny = tvol->get_ysize();
-//	int nz = tvol->get_zsize();
-//
-//	int dims[3];
-//	dims[0] = nz;
-//	dims[1] = ny;
-//	dims[2] = nx;
-//
-//	float * complex_data = new float[nx*ny*nz*2];
-//
-//	fftwf_plan plan_real_to_complex = fftwf_plan_dft_r2c(3, dims, real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
-//	fftwf_plan plan_complex_to_real = fftwf_plan_dft_c2r(3, dims, (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
-//
-//
-////	size_t niter = 20;
-////	size_t niter = 1;
-//	size_t niter = 4;
-//	for (size_t i=0;i<niter;++i) {
-//		fftwf_execute(plan_real_to_complex);
-//		fftwf_execute(plan_complex_to_real);
-//	}
-//
-//	fftwf_destroy_plan(plan_real_to_complex);
-//	fftwf_destroy_plan(plan_complex_to_real);
-//
-//
-//	delete[] complex_data;
-//
-//	tvol->update();
-//
-//	EXITFUNC;
-//
-//}
-
-void Util::make_fft_ifft(EMData* tvol) {
-
-}
-
-// this one
-//void Util::make_fft_ifft(EMData* tvol) {
-//	ENTERFUNC;
-//	/* Exception Handle */
-//	if (!tvol) {
-//		throw NullPointerException("NULL input image");
-//	}
-//
-//	if ( tvol->is_complex() ) {
-//		LOGERR("real image expected. Input image is complex image.");
-//		throw ImageFormatException("real image expected. Input image is complex image.");
-//	}
-//
-//
-//	float *real_data_float = tvol->get_data();
-//	int nx = tvol->get_xsize();
-//	int ny = tvol->get_ysize();
-//	int nz = tvol->get_zsize();
-//
-//	int dims[3];
-//	dims[0] = nz;
-//	dims[1] = ny;
-//	dims[2] = nx;
-//
-//
-////	int size_complex_data = nx*ny*(nz/2 +1)*2;
-//	int size_complex_data = nx*ny*(nz/2 + 1);
-//	double * complex_data = new double[size_complex_data];
-//	double * real_data = new double[nx*ny*nz];
-//
-//
-//	size_t offset;
-//	int nxreal;
-//	// need to extend the matrix along x
-//	// meaning nx is the un-fftpadded size
-//	nxreal = nx;
-//	offset = 2 - nx%2;
-////	if (1 == offset) set_fftodd(true);
-////	else             set_fftodd(false);
-//	bool fft_odd = (1 == offset);
-//	int nxnew = nx + offset;
-////	set_size(nxnew, ny, nz);
-//	double * real_data_padded = new double[nxnew*ny*nz];
-//	for(int i=0; i<nxnew*ny*nz; ++i) real_data_padded[i] = (double)real_data_float[i];
-//	for (int iz = nz-1; iz >= 0; iz--) {
-//		for (int iy = ny-1; iy >= 0; iy--) {
-//			for (int ix = nxreal-1; ix >= 0; ix--) {
-//				size_t oldxpos = ix + (iy + iz*ny)*(size_t)nxreal;
-//				size_t newxpos = ix + (iy + iz*ny)*(size_t)nxnew;
-//				real_data_padded[newxpos] = real_data_padded[oldxpos];
-//			}
-//		}
-//	}
-//
-//
-//
-////	for(int i=0; i<nx*ny*nz; ++i) real_data[i] = 0.0;
-//
-////	fftwf_plan plan_real_to_complex = fftwf_plan_dft_r2c(3, dims, real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
-////	fftwf_plan plan_complex_to_real = fftwf_plan_dft_c2r(3, dims, (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
-//
-////	fftw_plan plan_real_to_complex = fftw_plan_dft_r2c(3, dims, real_data, (fftw_complex *) complex_data, FFTW_ESTIMATE);
-////	fftw_plan plan_complex_to_real = fftw_plan_dft_c2r(3, dims, (fftw_complex *) complex_data, real_data, FFTW_ESTIMATE);
-//	fftw_plan plan_real_to_complex = fftw_plan_dft_r2c(3, dims, real_data_padded, (fftw_complex *) real_data_padded, FFTW_ESTIMATE);
-//	fftw_plan plan_complex_to_real = fftw_plan_dft_c2r(3, dims, (fftw_complex *) real_data_padded, real_data_padded, FFTW_ESTIMATE);
-//
-//
-////	size_t niter = 5;
-//	size_t niter = 1;
-////	size_t niter = 4;
-//	for (size_t i=0;i<niter;++i) {
-//		fftw_plan plan_real_to_complex = fftw_plan_dft_r2c(3, dims, real_data_padded, (fftw_complex *) real_data_padded, FFTW_ESTIMATE);
-//		fftw_execute(plan_real_to_complex);
-//		Util::ap2ri(real_data_padded, (size_t)nxnew * ny * nz);
-//		fftw_plan plan_complex_to_real = fftw_plan_dft_c2r(3, dims, (fftw_complex *) real_data_padded, real_data_padded, FFTW_ESTIMATE);
-//		fftw_execute(plan_complex_to_real);
-//
-//		int offset = fft_odd ? 1 : 2;
-//
-//		int nxo = nx - offset;
-//		float scale = 1.0f / ((size_t)nxo * ny * nz);
-////		double scale = 1.0/nx*ny*nz;
-//		for(int i=0; i<nx*ny*nz; ++i) real_data_padded[i] = real_data_padded[i]*scale;
-//	}
-//
-////	tvol->set_size(nxnew, ny, nz);
-////	for(int i=0; i<nxnew*ny*nz; ++i) real_data_float[i] = (float)real_data[i];
-//	for(int i=0; i<nx*ny*nz; ++i) real_data_float[i] = (float)real_data_padded[i];
-//
-//	fftw_destroy_plan(plan_real_to_complex);
-//	fftw_destroy_plan(plan_complex_to_real);
-//
-//
-//	delete[] complex_data;
-//	delete[] real_data;
-//	delete[] real_data_padded;
-//
-////	tvol->update();
-//
-//	EXITFUNC;
-//
-//}
-
-//void Util::make_fft_ifft(EMData* tvol) {
-//	ENTERFUNC;
-//	/* Exception Handle */
-//	if (!tvol) {
-//		throw NullPointerException("NULL input image");
-//	}
-//
-//	size_t niter = 20;
-////	size_t niter = 4;
-//	for (size_t i=0;i<niter;++i) {
-//		tvol->do_fft_inplace();
-//		tvol->do_ift_inplace();
-//	}
-//
-//
-//	tvol->update();
-//
-//	EXITFUNC;
-//
-//}
-
-
-//void Util::make_fft_ifft(EMData* tvol) {
-//	ENTERFUNC;
-//	/* Exception Handle */
-//	if (!tvol) {
-//		throw NullPointerException("NULL input image");
-//	}
-//
-////	size_t niter = 10;
-//	size_t niter = 1;
-//	for (size_t i = 0; i < niter; ++i) {
-//		tvol->do_fft_inplace();
-//		tvol->do_ift_inplace();
-//	}
-//	tvol->update();
-//
-//	EXITFUNC;
-//}
-
-//void Util::my_real_to_complex_1d(float *real_data, float *complex_data, int n)
-vector<float> Util::my_real_to_complex_1d(vector<float> real_data_v)
-{//cout<<"doing fftw3"<<endl;
-
-	int n = real_data_v.size();
-	float * real_data = &real_data_v[0];
-
-	vector<float> complex_data_v(2*n);
-	float * complex_data = &complex_data_v[0];
-
-//	complex_data[0] = 11;
-//	complex_data[1] = 22;
-
-#ifdef WITH_FFTW_PLAN_CACHING
-		bool ip = ( complex_data == real_data );
-		fftwf_plan plan = plan_cache.get_plan(1,n,1,1,EMAN2_REAL_2_COMPLEX,ip,(fftwf_complex *) complex_data, real_data);
-		// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be reused
-		fftwf_execute_dft_r2c(plan, real_data,(fftwf_complex *) complex_data);
-#else
-//	int mrt = Util::MUTEX_LOCK(&fft_mutex);
-	fftwf_plan plan = fftwf_plan_dft_r2c_1d(n, real_data, (fftwf_complex *) complex_data,
-											FFTW_ESTIMATE);
-//	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
-
-	fftwf_execute(plan);
-//	mrt = Util::MUTEX_LOCK(&fft_mutex);
-	fftwf_destroy_plan(plan);
-//	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
-#endif // WITH_FFTW_PLAN_CACHING
-
-//	complex_data[2] = 33;
-//	complex_data[3] = 44;
-
-	return complex_data_v;
-
-}
-
-//void Util::my_real_to_complex_3d(float *real_data)
-////int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
-//{
-//	const int rank = get_rank(ny, nz);
-//	int dims[3];
-//	dims[0] = nz;
-//	dims[1] = ny;
-//	dims[2] = nx;
-//
-//	switch(rank) {
-//		case 1:
-//			real_to_complex_1d(real_data, complex_data, nx);
-//			break;
-//
-//		case 2:
-//		case 3:
-//		{
-//#ifdef FFTW_PLAN_CACHING
-//			bool ip = ( complex_data == real_data );
-//			fftwf_plan plan = plan_cache.get_plan(rank,nx,ny,nz,EMAN2_REAL_2_COMPLEX,ip,(fftwf_complex *) complex_data, real_data);
-//			// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be re-used
-//			fftwf_execute_dft_r2c(plan, real_data,(fftwf_complex *) complex_data );
-//#else
-//			int mrt = Util::MUTEX_LOCK(&fft_mutex);
-//			fftwf_plan plan = fftwf_plan_dft_r2c(rank, dims + (3 - rank),
-//					real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
-//			mrt = Util::MUTEX_UNLOCK(&fft_mutex);
-//
-//			fftwf_execute(plan);
-//
-//			mrt = Util::MUTEX_LOCK(&fft_mutex);
-//			fftwf_destroy_plan(plan);
-//			mrt = Util::MUTEX_UNLOCK(&fft_mutex);
-//
-//#endif // FFTW_PLAN_CACHING
-//		}
-//			break;
-//
-//		default:
-//			LOGERR("Should NEVER be here!!!");
-//			break;
-//	}
-//
-//	return 0;
-//}
-//
-//
-//
-//
 
