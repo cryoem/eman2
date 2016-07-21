@@ -5154,9 +5154,9 @@ def wrap_mpi_split(comm, no_of_groups, shared_memory = False):
 	key = myid % no_of_proc_per_group
 
 	if shared_memory:
-		return mpi_comm_split(comm, color, key)
-	else:
 		return mpi_comm_split_shared(comm, color, key)
+	else:
+		return mpi_comm_split(comm, color, key)
 	
 
 def get_dist(c1, c2):
