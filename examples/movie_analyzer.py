@@ -405,6 +405,7 @@ def run(cmd,shell=False,cwd=None):
 	start = time.time()
 	out, err = process.communicate()
 	runtime = time.time() - start
+	if options.verbose: print("Runtime: {}".format(runtime))
 	return out, err, runtime
 
 def shift_by(frames,trans):
