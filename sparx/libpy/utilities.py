@@ -5137,7 +5137,7 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 
 	return out_array
 
-def wrap_mpi_split(comm, no_of_groups):
+def wrap_mpi_split(comm, no_of_groups, shared_memory = False):
 	"""
 
 	Takes the processes of a communicator (comm) and splits them in groups (no_of_groups).
@@ -5145,7 +5145,7 @@ def wrap_mpi_split(comm, no_of_groups):
 	Consecutive global process ids have consecutive subgroup process ids.
 
 	"""
-	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split
+	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split, mpi_comm_split_shared
 	nproc = mpi_comm_size(comm)
 	myid = mpi_comm_rank(comm)
 
@@ -5153,7 +5153,11 @@ def wrap_mpi_split(comm, no_of_groups):
 	color = myid / no_of_proc_per_group
 	key = myid % no_of_proc_per_group
 
-	return mpi_comm_split(comm, color, key)
+	if shared_memory:
+		return mpi_comm_split(comm, color, key)
+	else:
+		return mpi_comm_split_shared(comm, color, key)
+	
 
 def get_dist(c1, c2):
 	from math import sqrt
