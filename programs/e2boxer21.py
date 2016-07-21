@@ -33,6 +33,7 @@
 
 from EMAN2 import *
 from EMAN2jsondb import *
+import Queue
 import os,sys
 
 class nothing:
@@ -58,6 +59,9 @@ except:
 invert_on_read=False
 
 def load_micrograph(filename):
+	fsp2="micrographs/"+filename
+	if os.path.exists(fsp2) : filename=fsp2
+	
 	n=EMUtil.get_image_count(filename)
 	if n==0 :
 		QtGui.QMessageBox.warning(None,"Error","The file {} contains no images".format(newfilename))
@@ -98,6 +102,7 @@ def main():
 	parser.add_argument("--write_dbbox",action="store_true",default=False,help="Export EMAN1 .box files",guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
 	parser.add_argument("--gui", action="store_true", default=False, help="Interactive GUI mode")
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -108,7 +113,8 @@ def main():
 
 	if options.allmicrographs :
 		if len(args)>0 : print "Specified micrograph list replaced with contents of micrographs/"
-		args=["micrographs/{}".format(i) for i in os.listdir("micrographs")]
+		args=[i for i in os.listdir("micrographs")]
+	else: args=[i.replace("micrographs/","") for i in args]
 
 	#####
 	# Parameter Validation
@@ -141,9 +147,6 @@ def main():
 	if options.ptclsize>boxsize*0.8:
 		print "ERROR: Invalid particle size detected. Box size should normally be 1.5 - 2x particle size, and must be at least 1.2x particle size." 
 		sys.exit(1)
-		
-	if options.ptclsize*1.5>boxsize :
-		print "WARNING: Strongly recommend using a box size 1.5 - 2.0x the maximum dimension of the particle! This may be pushed to ~1.25x in some cases, but results may be suboptimal."
 		
 	project_db["global.ptclsize"]=options.ptclsize
 
@@ -179,6 +182,11 @@ def main():
 		except:
 			print "Error: Value required for A/pixel. If this is a non TEM image, suggest --apix=1 and --no_ctf."
 			sys.exit(1)
+
+	if options.ptclsize*1.5>boxsize :
+		print "WARNING: Strongly recommend using a box size 1.5 - 2.0x the maximum dimension of the particle! This may be pushed to ~1.25x in some cases, but results may be suboptimal."
+		print "Your box size is {:1.2f}x the particle size. Recommend a size of at least {:d}".format(boxsize/float(options.ptclsize),good_size(int(options.ptclsize*1.5)))
+		
 		
 	logid=E2init(sys.argv,options.ppid)
 
@@ -193,69 +201,392 @@ def main():
 			sys.exit(1)
 		from emapplication import EMApp
 		app=EMApp()
-		gui=GUIBoxer(args,options.voltage,options.apix,options.cs,options.ac,options.boxsize,options.ptclsize)
+		gui=GUIBoxer(args,options.voltage,options.apix,options.cs,options.ac,options.boxsize,options.ptclsize,options.threads)
 		gui.show()
 		app.exec_()
 
 	if options.write_dbbox:
-		try: os.mkdir("boxfiles")
-		except: pass
-	
-		for m in args:
-			out=file("boxfiles/{}.box".format(base_name(m)),"w")
-			db=js_open_dict(info_name(m))
-			boxes=db["boxes"]
-			for b in boxes:
-				out.write("{:d}\t{:d}\t{:d}\t{:d}\n".format(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
-		
+		write_boxfiles(args,boxsize)
 		print ".box files written to boxfiles/"
 
 	if options.write_ptcls:
-		try: os.mkdir("particles")
-		except: pass
-		
-		for m in args:
-			base=base_name(m)
-			ptcl="particles/{}_ptcls.hdf".format(base)
-			
-			# get the list of box locations
-			db=js_open_dict(info_name(m))
-			boxes=db["boxes"]
-			if len(boxes)==0 :
-				if options.verbose :
-					print "No particles in ",m
-				continue
-		
-			# remove any existing file
-			try: os.unlink(ptcl)
-			except: pass
-		
-			if options.verbose : print "{} : {} particles".format(m,len(boxes))
-			micrograph=EMData(m,0)		# read micrograph
-			for i,b in enumerate(boxes):
-				boxim=self.micrograph.get_clip(Region(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
-				boxim["ptcl_source_coord"]=(b[0],b[1])
-				boxim["ptcl_source_image"]=m
-				boxim.write_image(ptcl,i)
+		write_particles(args,boxsize)
+		print "Particles written to particles/*_ptcls.hdf"
 
 	E2end(logid)
+
+def write_boxfiles(files,boxsize):
+	"""This function will write a boxfiles/*.box file for each provided micrograph filename based on box locations
+	in the corresponding info/*json file."""
 	
+	try: os.mkdir("boxfiles")
+	except: pass
+	boxsize2=boxsize/2
+
+	for m in files:
+		db=js_open_dict(info_name(m))
+		boxes=db["boxes"]
+		if len(boxes)==0 : continue
+		out=file("boxfiles/{}.box".format(base_name(m)),"w")
+		for b in boxes:
+			out.write("{:d}\t{:d}\t{:d}\t{:d}\n".format(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
+
+def write_particles(files,boxsize):
+	"""This function will write a particles/*_ptcls.hdf file for each provided micrograph, based on
+	box locations in the corresponding info/*json file. To use this with .box files, they must be imported
+	to a JSON file first."""
+	
+	try: os.mkdir("particles")
+	except: pass
+	boxsize2=boxsize/2
+	
+	for m in files:
+		base=base_name(m)
+		ptcl="particles/{}_ptcls.hdf".format(base)
+		
+		# get the list of box locations
+		db=js_open_dict(info_name(m))
+		boxes=db["boxes"]
+		if len(boxes)==0 :
+			if options.verbose :
+				print "No particles in ",m
+			continue
+	
+		# remove any existing file
+		try: os.unlink(ptcl)
+		except: pass
+	
+		if options.verbose : print "{} : {} particles".format(m,len(boxes))
+		micrograph=load_micrograph(m)		# read micrograph
+		for i,b in enumerate(boxes):
+			boxim=micrograph.get_clip(Region(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
+			boxim["ptcl_source_coord"]=(b[0],b[1])
+			boxim["ptcl_source_image"]=m
+			boxim.write_image(ptcl,i)
+	
+##########
+# to add a new autoboxer module, create a class here, then add it to the GUIBoxer.aboxmodes list below
+##########
+
 class boxerByRef(QtCore.QObject):
 	@staticmethod
 	def setup_gui(gridlay):
-		return
+		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",6.0,90)
+		gridlay.addWidget(boxerByRef.threshold,0,0)
 	
 	@staticmethod
-	def do_autobox(gridlay):
-		return
+	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params):
+		# If parameters are provided via params (as if used from command-line) we use those values,
+		# if that fails, we check the GUI widgets, which were presumably created in this case
+		try: threshold=params["threshold"]
+		except:
+			try: threshold=boxerByRef.threshold.getValue()
+			except:
+				print "Error, no threshold (0.1-2) specified"
+				return
+		
+		downsample=10.0/apix			# we downsample to 10 A/pix
+		microdown=micrograph.process("normalize.edgemean").process("math.fft.resample",{"n":downsample})
+		gs=good_size(max(microdown["nx"],microdown["ny"]))
+		microf=microdown.get_clip(Region(0,0,gs,gs)).do_fft()
+		print "downsample by ",downsample,"  Good size:",gs
 	
+		## Here we precompute a normalization image to deal with local standard deviation variation
+		#nx=goodrefs[0]["nx"]/downsample
+		#circle=EMData(gs,gs,1)
+		#circle.to_one()
+		#circle.process_inplace("mask.sharp",{"outer_radius":nx/2})
+##		circle.process_inplace("normalize.unitlen")
+		#circle.process_inplace("xform.phaseorigin.tocorner")
+		#circlef=circle.do_fft()
+		
+		#ccfc=microf.calc_ccf(circlef)
+		#ccfc.mult(1.0/(nx*nx))
+		#ccfc.process_inplace("math.squared")
+		
+		#md2=microdown.process("math.squared")
+		#md2f=md2.get_clip(Region(0,0,gs,gs)).do_fft()
+		#norm=md2f.calc_ccf(circlef)
+		#norm.mult(1.0/(nx*nx))
+	
+		## Norm should now be the variance
+		#norm.sub(ccfc)
+	
+		# Iterate over refs
+		owner=EMData(gs,gs,1)
+		maxav=Averagers.get("minmax",{"max":1,"owner":owner})
+		
+		# Iterate over in-plane rotation for each ref
+		jsd=Queue.Queue(0)
+		thrds=[threading.Thread(target=boxerByRef.ccftask,args=(jsd,ref,downsample,gs,microf,ri)) for ri,ref in enumerate(goodrefs)]
+
+		n=-1
+
+		# here we run the threads and save the results, no actual alignment done here
+		print len(thrds)," threads"
+		thrtolaunch=0
+		while thrtolaunch<len(thrds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) and threading.active_count()!=nthreads:
+#				print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+				thrds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: time.sleep(0.05)
+		
+			while not jsd.empty():
+				# add each ccf image to our maxval image as it comes in
+				ccf=jsd.get()
+				maxav.add_image(ccf)
+				sys.stdout.flush()
+		print ""
+
+		for t in thrds:
+			t.join()
+
+			
+		final=maxav.finish()
+		# smooth out a few spurious peaks. Hopefully doesn't mess up ownership assignment significantly
+		final.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.2})
+		# get rid of nasty edges
+		final.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+		owner.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+		#norm.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+		#norm.process("math.sqrt")
+		#norm.process_inplace("math.reciprocal")
+		# this establishes the scale for our threshold (in terms of sigma)
+		final.add(-final["mean"]) 
+		# Now pull out only local peaks
+		# Zero edges to eliminate boxes within 1/2 box size of edge
+		edge=int(goodrefs[0]["nx"]/(2.0*downsample)+0.5)
+		#final.mult(norm)
+		final.process_inplace("mask.zeroedge2d",{"x0":edge,"y0":edge})
+		final.process_inplace("mask.onlypeaks",{"npeaks":0,"usemean":0})
+		final.process_inplace("normalize.edgemean")
+#		final.process_inplace("threshold.belowtozero",{"minval":threshold})
+
+		final.write_image("final.hdf",0)
+		owner.write_image("final.hdf",1)
+		#norm.write_image("final.hdf",2)
+#		display(final)
+		
+		print "Find peaks"
+		# Identify the peaks we want to keep and turn them into rough box locations
+		boxes=[]
+		locs=final.calc_highest_locations(threshold)
+		for i,p in enumerate(locs):
+			# loop over all higher valued peaks, and make sure we aren't too close to any of them
+			for pc in locs[:i]:
+				if hypot(pc.x-p.x,pc.y-p.y)<=edge : break
+			else:
+				# We only get here if the loop completed
+				boxes.append((p.x*downsample,p.y*downsample,"auto_ref",owner[p.x,p.y]))
+		
+		print "Refine box locations"
+		# Refine the box locations at full sampling
+		cmpim=[]
+		boxes2=[]
+		for box in boxes:
+			ownn=int(floor(box[3]))
+			owna=(box[3]-ownn)*360.0
+			ref=goodrefs[ownn].process("xform",{"transform":Transform({"type":"2d","alpha":owna})})
+			ref.process_inplace("normalize.edgemean")
+			ptcl=micrograph.get_clip(Region(box[0]-ref["nx"]/2,box[1]-ref["ny"]/2,ref["nx"],ref["ny"]))		# of course, nx == ny anyway
+			ali=ref.align("rotate_translate",ptcl)
+			ax,ay=ali["xform.align2d"].get_trans_2d()
+			boxes2.append((box[0]+ax,box[1]+ay,box[2]))
+#			print ownn,owna,ali["xform.align2d"]
+			#cmpim.append(ref)
+			#cmpim.append(ali)
+			#cmpim.append(ptcl)
+		#display(cmpim)
+			
+		print "done"
+		
+		return boxes2
+
+
+	@staticmethod
+	def ccftask(jsd,ref,downsample,gs,microf,ri):
+
+		mref=ref.process("mask.soft",{"outer_radius":ref["nx"]/2-4,"width":3})
+		mref.process_inplace("normalize.unitlen")
+		
+		for ang in xrange(0,360,10):
+			dsref=mref.process("xform",{"transform":Transform({"type":"2d","alpha":ang})})
+			# don't downsample until after rotation
+			dsref.process_inplace("math.fft.resample",{"n":downsample})
+			dsref.process_inplace("normalize")
+			diff=(gs-dsref["nx"])/2
+			dsref=dsref.get_clip(Region(-diff,-diff,gs,gs))
+			dsref.process_inplace("xform.phaseorigin.tocorner")
+			ccf=microf.calc_ccf(dsref)
+			#ccf.process_inplace("normalize")
+			ccf["ortid"]=ri+ang/360.0			# integer portion is projection number, fractional portion is angle, should be enough precision with the ~100 references we're using
+
+			jsd.put(ccf)
+		sys.stdout.write("*")
+		
+class boxerLocal(QtCore.QObject):
+	@staticmethod
+	def setup_gui(gridlay):
+		boxerLocal.threshold=ValSlider(None,(0,8.0),"Threshold",5.0,90)
+		gridlay.addWidget(boxerLocal.threshold,0,0)
+	
+	@staticmethod
+	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params):
+		# If parameters are provided via params (as if used from command-line) we use those values,
+		# if that fails, we check the GUI widgets, which were presumably created in this case
+		try: threshold=params["threshold"]
+		except:
+			try: threshold=boxerLocal.threshold.getValue()
+			except:
+				print "Error, no threshold (0.1-2) specified"
+				return
+		
+		nx=goodrefs[0]["nx"]
+		downsample=8.0/apix			# we downsample to 10 A/pix
+		nxdown=good_size(int(nx/downsample))
+		downsample=float(nx)/float(nxdown)
+		microdown=micrograph.process("normalize.edgemean").process("math.fft.resample",{"n":downsample})
+		print "downsample by ",downsample
+		
+		# Each thread tries one reference
+		owner=EMData(microdown["nx"],microdown["ny"],1)
+		maxav=Averagers.get("minmax",{"max":1,"owner":owner})
+		
+		jsd=Queue.Queue(0)
+		thrds=[threading.Thread(target=boxerLocal.ccftask,args=(jsd,ref,downsample,microdown,ri)) for ri,ref in enumerate(goodrefs)]
+
+		n=-1
+
+		# here we run the threads and save the results, no actual alignment done here
+		print len(thrds)," threads"
+		thrtolaunch=0
+		while thrtolaunch<len(thrds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) and threading.active_count()!=nthreads:
+#				print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+				thrds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: time.sleep(0.05)
+		
+			while not jsd.empty():
+				# add each ccf image to our maxval image as it comes in
+				ccf=jsd.get()
+				maxav.add_image(ccf)
+				sys.stdout.flush()
+		print ""
+
+		for t in thrds:
+			t.join()
+
+			
+		final=maxav.finish()
+		# smooth out a few spurious peaks. Hopefully doesn't mess up ownership assignment significantly
+		final.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.2})
+		# get rid of nasty edges
+#		final.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+#		owner.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+		# this establishes the scale for our threshold (in terms of sigma)
+#		final.add(-final["mean"]) 
+		# Now pull out only local peaks
+		# Zero edges to eliminate boxes within 1/2 box size of edge
+		edge=int(goodrefs[0]["nx"]/(2.0*downsample)+0.5)
+		#final.mult(norm)
+		final.process_inplace("mask.zeroedge2d",{"x0":edge,"y0":edge})
+		final.process_inplace("mask.onlypeaks",{"npeaks":0,"usemean":0})
+		final.mult(1.0/final["sigma_nonzero"])
+#		final.process_inplace("normalize.edgemean")
+#		final.process_inplace("threshold.belowtozero",{"minval":threshold})
+
+		microdown.write_image("final.hdf",0)
+		final.write_image("final.hdf",1)
+		owner.write_image("final.hdf",2)
+		#norm.write_image("final.hdf",2)
+#		display(final)
+		
+		print "Find peaks"
+		# Identify the peaks we want to keep and turn them into rough box locations
+		boxes=[]
+		locs=final.calc_highest_locations(threshold)
+		print locs
+		for i,p in enumerate(locs):
+			# loop over all higher valued peaks, and make sure we aren't too close to any of them
+			for pc in locs[:i]:
+				if hypot(pc.x-p.x,pc.y-p.y)<=edge : break
+			else:
+				# We only get here if the loop completed
+				boxes.append((p.x*downsample,p.y*downsample,"auto_local",owner[p.x,p.y]))
+		
+		print "Refine box locations"
+		# Refine the box locations at full sampling
+		cmpim=[]
+		boxes2=[]
+		for box in boxes:
+			ownn=int(floor(box[3]))
+#			owna=(box[3]-ownn)*360.0
+#			ref=goodrefs[ownn].process("xform",{"transform":Transform({"type":"2d","alpha":owna})})
+			ref=goodrefs[ownn].process("normalize.edgemean")
+			ptcl=micrograph.get_clip(Region(box[0]-ref["nx"]/2,box[1]-ref["ny"]/2,ref["nx"],ref["ny"]))		# of course, nx == ny anyway
+			ali=ref.align("rotate_translate",ptcl)
+			ax,ay=ali["xform.align2d"].get_trans_2d()
+			boxes2.append((box[0]+ax,box[1]+ay,box[2]))
+#			print ownn,owna,ali["xform.align2d"]
+			#cmpim.append(ref)
+			#cmpim.append(ali)
+			#cmpim.append(ptcl)
+		#display(cmpim)
+			
+		print "done"
+		
+		return boxes2
+
+
+	@staticmethod
+	def ccftask(jsd,ref,downsample,microdown,ri):
+
+		mref=ref.process("mask.soft",{"outer_radius":ref["nx"]/2-4,"width":3})
+		mref.process_inplace("math.fft.resample",{"n":downsample})
+		nxdown=mref["nx"]
+		
+		ptclmap=EMData(microdown["nx"],microdown["ny"])
+		ptclmap.to_zero()
+		ptclmap["ortid"]=ri
+		
+		# loop over the image with enough oversampling that we should be able to find all of the particles
+		for x in xrange(0,microdown["nx"]-nxdown,nxdown//2):
+			for y in xrange(0,microdown["ny"]-nxdown,nxdown//2):
+				ptcl=microdown.get_clip(Region(x,y,nxdown,nxdown))
+				# initial alignment
+				ali=mref.align("rotate_translate",ptcl)
+				ax,ay=ali["xform.align2d"].get_trans_2d()
+				
+				# extract centered particle for better frc
+				ptcl=microdown.get_clip(Region(int(x+ax),int(y+ay),nxdown,nxdown))
+				xf=ali["xform.align2d"]
+				xf.set_trans(0,0,0)
+				ali=mref.process("xform",{"transform":xf})
+				frc=-ali.cmp("frc",ptcl,{"minres":200,"maxres":20,"sweight":0})		# we want larger better in this case
+				
+				# Write results in one pixel
+				ax=int(ax+x+nxdown/2)
+				ay=int(ay+y+nxdown/2)
+				if frc>ptclmap[ax,ay] : ptclmap[ax,ay]=frc
+		
+		jsd.put(ptclmap)
+		sys.stdout.write("*")
+		
 class boxerGauss(QtCore.QObject):
 	@staticmethod
 	def setup_gui(gridlay):
 		return
 	
 	@staticmethod
-	def do_autobox(gridlay):
+	def do_autobox(boxer):
 		return
 	
 class GUIBoxer(QtGui.QWidget):
@@ -264,10 +595,10 @@ class GUIBoxer(QtGui.QWidget):
 	# Qt_setup_function(self,empty_grid_layout)
 	# picker_execution_function(self,...
 
-	aboxmodes = [ ("by Ref","auto_ref",boxerByRef), ("Gauss","auto_gauss",boxerGauss) ]
-	boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "unknown":[.4,.4,.1], "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4) }
+	aboxmodes = [ ("Local Search","auto_local",boxerLocal),("by Ref","auto_ref",boxerByRef), ("Gauss","auto_gauss",boxerGauss) ]
+	boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "unknown":[.4,.4,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4) }
 	
-	def __init__(self,imagenames,voltage=None,apix=None,cs=None,ac=10.0,box=256,ptcl=200):
+	def __init__(self,imagenames,voltage=None,apix=None,cs=None,ac=10.0,box=256,ptcl=200,threads=4):
 		"""The 'new' e2boxer interface.
 		"""
 
@@ -284,6 +615,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.goodrefchg=False				# this is used to prevent rewriting the refs many times
 		self.badrefs=[]						# "bad" box references for this project. Used to reduce false-positives
 		self.badrefchg=False
+		self.threads=threads
 
 		self.defaultvoltage=voltage
 		self.defaultapix=apix
@@ -331,6 +663,11 @@ class GUIBoxer(QtGui.QWidget):
 		self.gbl = QtGui.QGridLayout(self)
 		self.gbl.setMargin(8)
 		self.gbl.setSpacing(6)
+		self.gbl.setColumnStretch(0,2)
+		self.gbl.setColumnStretch(1,2)
+		self.gbl.setColumnStretch(2,2)
+		self.gbl.setColumnStretch(3,2)
+		self.gbl.setColumnStretch(4,1)
 
 		# Micrograph list
 		self.setlist=QtGui.QListWidget(self)
@@ -346,7 +683,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.mmode="manual"
 		self.boxmm=QtGui.QGroupBox("Mouse Mode",self)
 		self.boxmm.setFlat(False)
-		self.gbl.addWidget(self.boxmm,0,2,3,2)
+		self.gbl.addWidget(self.boxmm,0,2,2,2)
 		
 		self.hbl0=QtGui.QHBoxLayout(self.boxmm)
 		
@@ -383,13 +720,20 @@ class GUIBoxer(QtGui.QWidget):
 		self.bfilter=QtGui.QPushButton("Filter Disp.")
 		self.bfilter.setToolTip("Filter micrograph (display only)")
 		self.bfilter.setCheckable(True)
-		self.gbl.addWidget(self.bfilter,1,4,1,1)
+		self.gbl.addWidget(self.bfilter,0,4,1,1)
 		QtCore.QObject.connect(self.bfilter,QtCore.SIGNAL("clicked(bool)"),self.filterToggle)
+
+		self.binvert=QtGui.QPushButton("Invert")
+		self.binvert.setToolTip("Invert Micrograph (also output)")
+		self.binvert.setCheckable(True)
+		self.binvert.setChecked(invert_on_read)		# in truly bad form, this is a global
+		self.gbl.addWidget(self.binvert,1,4,1,1)
+		QtCore.QObject.connect(self.binvert,QtCore.SIGNAL("clicked(bool)"),self.invertToggle)
 
 		# Global parameters
 		self.boxparm=QtGui.QGroupBox("Parameters",self)
 		self.boxparm.setFlat(False)
-		self.gbl.addWidget(self.boxparm,3,2,3,3)
+		self.gbl.addWidget(self.boxparm,2,2,3,3)
 		
 		self.gbl1=QtGui.QGridLayout(self.boxparm)
 		self.gbl1.setMargin(8)
@@ -413,17 +757,39 @@ class GUIBoxer(QtGui.QWidget):
 		self.vbcs = ValBox(label="Cs:",value=cs)
 		self.gbl1.addWidget(self.vbcs,1,2)
 
+		self.vbthreads = ValBox(label="Threads:",value=self.threads)
+		self.vbthreads.setIntonly(1)
+		self.gbl1.addWidget(self.vbthreads,1,3)
 
+		# Reference tools
+		self.reftools=QtGui.QGroupBox("Box Refs",self)
+		self.boxparm.setFlat(False)
+		self.gbl.addWidget(self.reftools,5,2,2,2)
+		
+		self.hbl1=QtGui.QHBoxLayout(self.reftools)
+		
+		self.rtload3d=QtGui.QPushButton("From 3D")
+		self.rtload3d.setToolTip("Load box refs from 3-D volume")
+		self.hbl1.addWidget(self.rtload3d)
+		
+		self.rtload2d=QtGui.QPushButton("From 2D")
+		self.rtload2d.setToolTip("Load box refs from 2-D stack")
+		self.hbl1.addWidget(self.rtload2d)
+
+		self.rtclear=QtGui.QPushButton("Clear")
+		self.rtclear.setToolTip("Clear all current good and bad refs")
+		self.hbl1.addWidget(self.rtclear)
+
+		QtCore.QObject.connect(self.rtload3d,QtCore.SIGNAL("clicked(bool)"),self.reftoolLoad3D)
+		QtCore.QObject.connect(self.rtload2d,QtCore.SIGNAL("clicked(bool)"),self.reftoolLoad2D)
+		QtCore.QObject.connect(self.rtclear,QtCore.SIGNAL("clicked(bool)"),self.reftoolClear)
+		
+		
 		# Autoboxing Tabs
 		self.autolbl = QtGui.QLabel("Autoboxing Methods:")
 		self.gbl.addWidget(self.autolbl,7,2)
 		self.autotab = QtGui.QTabWidget()
-		self.gbl.addWidget(self.autotab,8,2,6,3)
-
-		self.bautobox = QtGui.QPushButton("Autobox")
-		self.gbl.addWidget(self.bautobox,7,4)
-		
-		QtCore.QObject.connect(self.bautobox,QtCore.SIGNAL("clicked(bool)"),self.doAutoBox)
+		self.gbl.addWidget(self.autotab,8,2,5,3)
 		
 		# Individual tabs from Dictionary
 		self.abwid=[]
@@ -434,6 +800,19 @@ class GUIBoxer(QtGui.QWidget):
 			cls.setup_gui(gl)
 			self.autotab.addTab(w,name)
 			
+		self.bbclear=QtGui.QPushButton("Clear Boxes")
+		self.bbclear.setToolTip("Clear all boxes in current micrograph")
+		self.gbl.addWidget(self.bbclear,13,2)
+		QtCore.QObject.connect(self.bbclear,QtCore.SIGNAL("clicked(bool)"),self.boxClear)
+
+		self.bautoboxa = QtGui.QPushButton("Autobox All")
+		self.gbl.addWidget(self.bautoboxa,13,3)
+		QtCore.QObject.connect(self.bautoboxa,QtCore.SIGNAL("clicked(bool)"),self.doAutoBoxAll)
+		
+		self.bautobox = QtGui.QPushButton("Autobox")
+		self.gbl.addWidget(self.bautobox,13,4)
+		QtCore.QObject.connect(self.bautobox,QtCore.SIGNAL("clicked(bool)"),self.doAutoBox)
+
 		self.setWindowTitle("e2boxer21 - Control Panel")
 
 		self.wimage.show()
@@ -472,9 +851,119 @@ class GUIBoxer(QtGui.QWidget):
 	def setMouseBadRef(self,x):
 		self.mmode="refbad"
 	
+	def reftoolLoad3D(self,x):
+		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select 3-D Volume"))
+		if fsp==None or len(fsp)<4 : return
+
+		symname=str(QtGui.QInputDialog.getText(None,"Symmetry","Please specify the symmetry of the map, or c1 for none")[0])
+#		print symname
+		try:
+			sym = Symmetries.get(symname)
+		except:
+			print "Error: Unknown symmetry"
+			return
+		orts=sym.gen_orientations("eman",{"delta":15,"inc_mirror":1})
+		prog=QtGui.QProgressDialog("Making Projections","Abort",0,len(orts))
+		prog.setWindowModality(Qt.WindowModal)
+		prog.setValue(0)
+		
+		vol=EMData(fsp,0)
+		vol.process_inplace("normalize.circlemean")
+		apix3=vol["apix_x"]
+		apix1=self.vbbapix.getValue()
+		if apix3<0.1 : 
+			print "WARNING: A/pix on the 3-D volume appears too small. This method only works if the volume has a valid A/pix value in its header. I am adjusting it to 1.0, but this is almost certainly wrong."
+			apix3=1.0
+		
+		xsize3d=vol["nx"]
+		xsize=self.vbbsize.getValue()
+
+		if ( xsize3d != xsize or fabs(fabs(apix1/apix3)-1.0)>.001 ) :
+			print "WARNING: the boxsize and/or sampling (%d @ %1.4f A/pix) do not match (%d @ %1.4f A/pix). I will attempt to adjust the volume appropriately."%(xsize,apix1,xsize3d,apix3)
+			try:
+				scale=apix3/apix1
+				print "Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=xsize3d,box2=xsize,apix3=apix3,apix2=apix1,scale=scale)
+			except:
+				print "A/pix unknown, assuming scale same as relative box size"
+				scale=float(xsize)/xsize3d
+				
+			vol.process_inplace("xform.scale",{"clip":xsize,"scale":scale})
+		
+
+		for i,o in enumerate(orts):
+			prog.setValue(i)
+			if prog.wasCanceled() : break
+			proj=vol.project("standard",o)
+			proj.process_inplace("normalize.edgemean")
+			self.goodrefs.append(proj)
+			
+		prog.setValue(len(orts))
+		
+		self.wrefs.set_data(self.goodrefs)
+		self.wrefs.show()
+		self.goodrefchg=True
+		
+	def reftoolLoad2D(self,x):
+		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select 2-D Stack"))
+		if fsp==None or len(fsp)<4 : return
+		
+		refs=EMData.read_images(fsp)
+
+		apix2=refs[0]["apix_x"]
+		apix1=self.vbbapix.getValue()
+		if apix2<0.1 : 
+			print "WARNING: A/pix on the 2-D images appear too small. This method only works if the images have a valid A/pix value in their header. I am adjusting it to 1.0, but this is almost certainly wrong."
+			apix2=1.0
+		
+		xsize2=refs[0]["nx"]
+		xsize=self.vbbsize.getValue()
+
+		if ( xsize2 != xsize or fabs(fabs(apix1/apix2)-1.0)>.001 ) :
+			print "WARNING: the boxsize and/or sampling (%d @ %1.4f A/pix) do not match (%d @ %1.4f A/pix). I will attempt to adjust the volume appropriately."%(xsize,apix1,xsize2,apix2)
+			try:
+				scale=apix2/apix1
+				print "Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=xsize2,box2=xsize,apix3=apix2,apix2=apix1,scale=scale)
+			except:
+				print "A/pix unknown, assuming scale same as relative box size"
+				scale=float(xsize)/xsize2
+			
+		for r in refs:
+			r.process_inplace("normalize.circlemean")
+			if scale!=1.0 or xsize!=xsize2 : r.process_inplace("xform.scale",{"clip":xsize,"scale":scale})
+
+		self.goodrefs.extend(refs)
+		self.goodrefchg=True
+		self.wrefs.set_data(self.goodrefs)
+		self.wrefs.show()
+	
+		
+	def reftoolClear(self,x):
+		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will remove all good and bad box references. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
+		if r==QtGui.QMessageBox.Cancel : return
+
+		self.goodrefs=[]
+		self.goodrefchg=True
+		self.wrefs.set_data(self.goodrefs)
+		
+		self.badrefs=[]
+		self.badrefchg=True
+		self.wbadrefs.set_data(self.badrefs)
+
+	def boxClear(self,x):
+		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will erase all box locations in the current micrograph. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
+		if r==QtGui.QMessageBox.Cancel : return
+
+		self.boxes=[]
+		self.__updateBoxes()
+		
 	def filterToggle(self,x):
 		self.__show_image()
 
+	def invertToggle(self,x):
+		global invert_on_read
+		invert_on_read=self.binvert.isChecked()
+		self.newSet()
+		
 	def imgmousedown(self,event,m) :
 #		m=self.wimage.scr_to_img((event.x(),event.y()))
 		self.curbox=-1
@@ -616,12 +1105,13 @@ class GUIBoxer(QtGui.QWidget):
 			self.wbadrefs.set_data(self.badrefs)
 		return
 
-	def newSet(self,val):
+	def newSet(self,val=None):
 		"called when a new data set is selected from the list"
 
 		first=True
-		newfilename=str(self.setlist.item(val).text())
-		if newfilename==self.curfilename : return
+		if val==None : newfilename=self.curfilename
+		else : newfilename=str(self.setlist.item(val).text())
+#		if newfilename==self.curfilename : return
 
 		# Write the current image parameters to the database
 		if self.curfilename!=None and self.boxes!=None :
@@ -743,10 +1233,62 @@ class GUIBoxer(QtGui.QWidget):
 	def doAutoBox(self,b):
 		"""Autobox button pressed, find the right algorithm and call it"""
 		
-		name,bname,fn1=self.aboxmodes[self.autotab.currentIndex()]
+		name,bname,cls=self.aboxmodes[self.autotab.currentIndex()]
 		
 		print name," called"
 
+		boxes=cls.do_autobox(self.micrograph,self.goodrefs,self.badrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{})
+		
+		# if we got nothing, we just leave the current results alone
+		if len(boxes)==0 : return
+	
+		bname=boxes[0][2]
+
+		# Filter out all existing boxes for this picking mode
+		self.boxes=[i for i in self.boxes if i[2]!=bname]
+
+		self.boxes.extend(boxes)
+		self.__updateBoxes()
+
+	def doAutoBoxAll(self,b):
+		"""Autobox button pressed, find the right algorithm and call it"""
+		
+		name,bname,cls=self.aboxmodes[self.autotab.currentIndex()]
+		
+		prog=QtGui.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
+		prog.setWindowModality(Qt.WindowModal)
+		prog.setValue(0)
+
+		
+		for i,fsp in enumerate(self.filenames):
+			prog.setValue(i)
+			if prog.wasCanceled() : break
+			micrograph=load_micrograph(fsp)
+
+			newboxes=cls.do_autobox(micrograph,self.goodrefs,self.badrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{})
+			
+			# if we got nothing, we just leave the current results alone
+			if len(newboxes)==0 : continue
+		
+			# read the existing box list and update
+			db=js_open_dict(info_name(fsp))
+			try: 
+				boxes=db["boxes"]
+				# Filter out all existing boxes for this picking mode
+				bname=newboxes[0][2]
+				self.boxes=[b for b in self.boxes if b[2]!=bname]
+			except:
+				boxes=[]
+				
+			boxes.extend(boxes)
+			
+			db["boxes"]=boxes
+			
+		else: prog.setValue(len(self.filename))
+		
+		self.restore_boxes()
+
+		
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
 		self.save_boxes()

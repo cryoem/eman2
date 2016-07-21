@@ -703,7 +703,7 @@ to be missing values. If not provided, these values will be computed automatical
 			d.put("ampweight", EMObject::INT, "If set, the amplitude of 'this' will be used to weight the result (default=0)");
 			d.put("sweight", EMObject::INT, "If set, weight the (1-D) average by the number of pixels in each ring (default=1)");
 			d.put("nweight", EMObject::INT, "Downweight similarity based on number of particles in reference (default=0)");
-			d.put("zeromask", EMObject::INT, "Treat regions in either image that are zero as a mask");
+			d.put("zeromask", EMObject::INT, "Treat regions in either image that are zero as a mask (default=0)");
 			d.put("minres", EMObject::FLOAT, "Lowest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables. Default=500");
 			d.put("maxres", EMObject::FLOAT, "Highest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables.  Default=10");
 			return d;

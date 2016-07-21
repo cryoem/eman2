@@ -331,6 +331,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("max", EMObject::INT, "If set, will find the max value, otherwise finds min");
+			d.put("owner", EMObject::EMDATA, "Contains the number of the input image which 'owns' the max/min value. Value will be insertion sequence number unless 'ortid' is set in each image being averaged.");
 			return d;
 		}
 
