@@ -310,6 +310,10 @@ def main():
 	"""
 	
 	
+	jsAliParamsPath = options.path + '/symxform.json'
+	jsA = js_open_dict( jsAliParamsPath )
+
+
 	for i in range(n):
 	
 		print "\nI'll look for symmetry in particle number",i
@@ -374,7 +378,12 @@ def main():
 		#Averaging here only makes sense if all particles are going to be kept. Otherwise, different code is needed (below)
 		if options.average:
 			avgr.add_image( output )
-
+		
+		symxformslabel = 'subtomo_' + str( i ).zfill( len( str( n ) ) )				
+		jsA.setval( symxformslabel, [ symxform , score ] )
+	
+	jsA.close()
+	
 	#Finalize average of all particles if non were set to be excluded. Otherwise, determine the discrimination threshold and then average the particles that pass it.
 	if options.average: 
 			
