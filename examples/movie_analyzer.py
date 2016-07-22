@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from EMAN2 import *
-import subprocess
+try: import subprocess32 as subprocess
+except: import subprocess
 import shutil
-import pickle
+#import pickle
 import time
 import multiprocessing
 
@@ -30,8 +31,6 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--box", default=2048, type=int, help="Size of box to use for sub-region selection.")
-	#parser.add_argument("--hcreg", type=str, help="Center coordinate 'x,y' of high contrast region.", required=True)
-	#parser.add_argument("--lcreg", type=str, help="Center coordinate 'x,y' of low contrast region.", required=True)
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
 	parser.add_argument("--skipalign",action="store_true",default=False,help="If you wish to skip running alignments, specify this option.")
 	parser.add_argument("--show", action="store_true",help="Show average of movie frames before and after alignment.",default=True)
@@ -327,19 +326,19 @@ EOF
 		trans_wmg, mags_wmg, fig1 = plot_trans(trans_wmg,bdir)
 		if options.plot: plt.show()
 
-		pkl = "{}/trans_wmg.p".format(bdir)
-		pickle.dump(trans_wmg,open(pkl,"wb"))
-		pkl = "{}/mags_wmg.p".format(bdir)
-		pickle.dump(mags_wmg,open(pkl,"wb"))
+		#pkl = "{}/trans_wmg.p".format(bdir)
+		#pickle.dump(trans_wmg,open(pkl,"wb"))
+		#pkl = "{}/mags_wmg.p".format(bdir)
+		#pickle.dump(mags_wmg,open(pkl,"wb"))
 
 		# PART 3: How different are predicted frame translations with and without high contrast features (real space comparison)
 		trans_hi, trans_lo, ssdfs, fig2 = plot_differences(trans_hi,trans_lo,bdir)
 		if options.plot: plt.show()
 
-		pkl = "{}/trans_hi.p".format(bdir)
-		pickle.dump(trans_hi,open(pkl,"wb"))
-		pkl = "{}/trans_lo.p".format(bdir)
-		pickle.dump(trans_lo,open(pkl,"wb"))
+		#pkl = "{}/trans_hi.p".format(bdir)
+		#pickle.dump(trans_hi,open(pkl,"wb"))
+		#pkl = "{}/trans_lo.p".format(bdir)
+		#pickle.dump(trans_lo,open(pkl,"wb"))
 
 		# Part 4: Compare agreement in fourier space (coherent/incoherent power spectra)
 		frames_hi = load_frames(hcname)
@@ -353,9 +352,9 @@ EOF
 		ftypes["hi_lo"] = shift_by(frames_hi,trans_lo)
 		ftypes["hi_hi"] = shift_by(frames_hi,trans_hi)
 
-		pkl = "{}/scores.p".format(bdir)
+		#pkl = "{}/scores.p".format(bdir)
 		scores = calc_cips_scores(ftypes)
-		pickle.dump(scores,open(pkl,"wb"))
+		#pickle.dump(scores,open(pkl,"wb"))
 
 		fig3 = plot_scores(scores,bdir)
 		if options.plot: plt.show()
@@ -397,15 +396,16 @@ def get_hclc_regions(img,n=100,bs=2048,edge=128):
 
 def run(cmd,shell=False,cwd=None):
 	if options.verbose: print(cmd.replace("\n"," "))
-	if cwd == None:
-		cwd = os.getcwd()
-	if shell == False:
-		cmd = cmd.split()
+	if cwd == None: cwd = os.getcwd()
+	if shell == False: cmd = cmd.split()
 	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd)
 	start = time.time()
 	out, err = process.communicate()
 	runtime = time.time() - start
-	if options.verbose: print("Runtime: {}".format(runtime))
+        if options.verbose:
+            print(o)
+            print(e)
+            print("Runtime: {}".format(runtime))
 	return out, err, runtime
 
 def shift_by(frames,trans):
