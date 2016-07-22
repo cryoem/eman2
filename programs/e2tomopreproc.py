@@ -83,7 +83,7 @@ def main():
 	
 	parser.add_argument("--normproc",type=str, default='',help="""Default=None (see 'e2help.py processors -v 10' at the command line). Normalization processor applied to each image.""")
 	
-	parser.add_argument("--normalizeimod",action='store_true',default=False,help="""Default=False. This will apply 'newstack -float 2' to the input stack. requires IMOD.""")
+	parser.add_argument("--normalizeimod",action='store_true',default=False,help="""Default=False. This will apply 'newstack -float 2' to the input stack. Requires IMOD.""")
 	
 	parser.add_argument("--preprocess",type=str,default='',help="""Any processor (see 'e2help.py processors -v 10' at the command line) to be applied to each image.""")
 	
