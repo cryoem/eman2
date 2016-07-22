@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from EMAN2 import *
-try: import subprocess32 as subprocess
-except: import subprocess
+import subprocess
 import shutil
 #import pickle
 import time
@@ -15,11 +14,21 @@ colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
 good_box_sizes = [32, 36, 40, 48, 52, 56, 64, 66, 70, 72, 80, 84, 88, 100, 104, 108, 112, 120, 128, 130, 132, 140, 144, 150, 160, 162, 168, 176, 180, 182, 192, 200, 208, 216, 220, 224, 240, 256, 264, 288, 300, 308, 320, 324, 336, 338, 352, 364, 384, 400, 420, 432, 448, 450, 462, 480, 486, 500, 504, 512, 520, 528, 546, 560, 576, 588, 600, 640, 648, 650, 660, 672, 686, 700, 702, 704, 720, 726, 728, 750, 768, 770, 784, 800, 810, 840, 882, 896, 910, 924, 936, 972, 980, 1008, 1014, 1020, 1024]
 
-pkgs = {"EMAN2":"/home/jmbell/EMAN2/examples/movie_ccf.py",
-		"UCSF":"/home/jmbell/src/motioncorr_v2.1/bin/dosefgpu_driftcorr",
-		"UNBLUR":"/home/jmbell/src/unblur_1.0.2/bin/unblur_openmp_7_17_15.exe",
-		"DE":"/home/jmbell/src/de_aligner/DE_process_frames-2.8.1.py",
-		"IMOD":"/usr/local/imod_4.8.46/bin/alignframes"}
+def which(prog):
+    cmd = "which {}".format(prog)
+    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+    return process.communicate()[0].replace("\n","")
+
+global pkgs
+pkgs = {"EMAN2":"movie_ccf.py",
+        "UCSF":"dosefgpu_driftcorr",
+        "UNBLUR":"unblur_openmp_7_17_15.exe",
+        "DE":"DE_process_frames-2.8.1.py",
+        "IMOD":"alignframes"}
+
+for pkg in pkgs.keys():
+    path=which(pkgs[pkg])
+    pkgs[pkg] = path
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -58,7 +67,7 @@ def main():
 		parser.error("You must specify a single DDD movie stack in HDF or MRC format.")
 		sys.exit(1)
 
-	options.include = [o.upper() for o in options.include.split(",") if o not in options.exclude.split(",")]
+	options.include = [o.upper() for o in options.include.split(",") if o not in options.exclude.split(",") if pkgs[o] != ""]
 
 	included = [pkg for pkg in pkgs if pkg in options.include]
 	if len(included) < 1:
@@ -318,8 +327,9 @@ EOF
 		if not options.skipalign:
 			with open("{}/runtimes.txt".format(bdir),"w") as f:
 				f.write("PKG\tRUNTIME\n")
-				for pkg in pkgs.keys():
+				for pkg in options.include:
 					q,r,s = runtimes[pkg]
+					#print(pkg,runtimes)
 					f.write("{}\t{}\n".format(pkg,q,r,s))
 
 		# PART 2: How does calculated motion differ between the most commonly used alignment algorithms?
@@ -352,8 +362,9 @@ EOF
 		ftypes["hi_lo"] = shift_by(frames_hi,trans_lo)
 		ftypes["hi_hi"] = shift_by(frames_hi,trans_hi)
 
-		#pkl = "{}/scores.p".format(bdir)
 		scores = calc_cips_scores(ftypes)
+
+		#pkl = "{}/scores.p".format(bdir)
 		#pickle.dump(scores,open(pkl,"wb"))
 
 		fig3 = plot_scores(scores,bdir)
@@ -396,16 +407,15 @@ def get_hclc_regions(img,n=100,bs=2048,edge=128):
 
 def run(cmd,shell=False,cwd=None):
 	if options.verbose: print(cmd.replace("\n"," "))
-	if cwd == None: cwd = os.getcwd()
-	if shell == False: cmd = cmd.split()
+	if cwd == None:
+		cwd = os.getcwd()
+	if shell == False:
+		cmd = cmd.split()
 	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd)
 	start = time.time()
 	out, err = process.communicate()
 	runtime = time.time() - start
-        if options.verbose:
-            print(o)
-            print(e)
-            print("Runtime: {}".format(runtime))
+	if options.verbose: print("Runtime: {}".format(runtime))
 	return out, err, runtime
 
 def shift_by(frames,trans):
@@ -454,7 +464,7 @@ def plot_scores(scores,bdir): # 1 axis per metric
 		ax.set_xlabel("Aligned To")
 		ax.set_title(metric)
 	fig.tight_layout()
-	plt.savefig("{}/scores.jpg".format(bdir))
+	plt.savefig("{}/scores.png".format(bdir))
 	return fig
 
 def plot_trans(trans,bdir,nsig=1):
@@ -511,7 +521,7 @@ def plot_trans(trans,bdir,nsig=1):
 
 	fig.tight_layout()
 
-	plt.savefig("{}/trans.jpg".format(bdir))
+	plt.savefig("{}/trans.png".format(bdir))
 	return trans, mags, fig
 
 def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
@@ -590,7 +600,7 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
 	ax2.legend(loc="best")
 	fig = plt.gcf()
 	fig.tight_layout()
-	plt.savefig("{}/differences.jpg".format(bdir))
+	plt.savefig("{}/differences.png".format(bdir))
 	return trans_hi, trans_lo, ssdfs, fig
 
 def parse_eman2(fn):
