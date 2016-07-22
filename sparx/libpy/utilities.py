@@ -5137,6 +5137,40 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 
 	return out_array
 
+def wrap_mpi_split_shared_memory(mpi_comm):
+	import socket
+	import os
+	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split_shared, mpi_comm_split
+	
+	hostname = socket.gethostname()
+
+	my_rank = mpi_comm_rank(mpi_comm)
+	mpi_size = mpi_comm_size(mpi_comm)
+	
+	local_rank = int(os.environ["OMPI_COMM_WORLD_LOCAL_RANK"])
+	local_size = int(os.environ["OMPI_COMM_WORLD_LOCAL_SIZE"])
+	
+	no_of_processes_per_group = local_size
+	no_of_groups = mpi_size/local_size
+	
+	host_names = [hostname]
+	host_names = wrap_mpi_gatherv(host_names, 0, mpi_comm)
+
+	if my_rank == 0:
+		host_names = sorted(set(host_names))
+	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
+	host_dict = {host_names[i]: i for i in range(len(host_names))}
+	
+	color = host_dict[hostname]
+	key = local_rank
+
+	# shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
+	shared_comm = mpi_comm_split(mpi_comm, color, key)
+	
+	return shared_comm, color, key, no_of_processes_per_group, no_of_groups
+	
+
+
 def wrap_mpi_split(comm, no_of_groups):
 	"""
 
@@ -5145,7 +5179,7 @@ def wrap_mpi_split(comm, no_of_groups):
 	Consecutive global process ids have consecutive subgroup process ids.
 
 	"""
-	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split
+	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split, mpi_comm_split_shared
 	nproc = mpi_comm_size(comm)
 	myid = mpi_comm_rank(comm)
 
@@ -5154,6 +5188,7 @@ def wrap_mpi_split(comm, no_of_groups):
 	key = myid % no_of_proc_per_group
 
 	return mpi_comm_split(comm, color, key)
+	
 
 def get_dist(c1, c2):
 	from math import sqrt
