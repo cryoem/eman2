@@ -22889,7 +22889,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  07/06/2016  02:35 PM "<<endl;
+ cout <<"  VERSION  07/20/2016  04:35 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
 
@@ -26496,18 +26496,15 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	cvvi->set_fftodd(true);
 	float *cvv = cvvi->get_data();
 	*/
-	vector<float> cvvi(2*size);
-//	float *cvv = cvvi.data(); // requires C++11, our Windows doesn't have it.
-	float *cvv = (float *) malloc((2*size+1)*sizeof(float));
-	if (cvv == NULL) throw NullPointerException("Allocation failure.");
-	for (size_t i = 0; i < 2*size; i++) cvv[i] = cvvi[i];
+
+	float *cvv = fftwf_alloc_real(2*size);
 
 	int ncx = nyt/2;
 
 	float fnorma = 1.0f/float(nyt*nyt*nzt);
 	fftwf_plan plan_real_to_complex = fftwf_plan_dft_r2c_3d(nyt, nyt, nzt, cvv, (fftwf_complex *) cvv, FFTW_ESTIMATE);
 	fftwf_plan plan_complex_to_real = fftwf_plan_dft_c2r_3d(nyt, nyt, nzt, (fftwf_complex *) cvv, cvv, FFTW_ESTIMATE);
-	
+
 	size_t niter = 10;
 	for (size_t i=0;i<niter;++i) {
 
@@ -26550,9 +26547,7 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	fftwf_destroy_plan(plan_complex_to_real);
 
 	beltab.resize(0);
-	cvvi.resize(0);
-   free(cvv);
-	//delete cvvi; cvvi = 0;
+	free(cvv);
 
 	for( size_t i = 0; i<size; i++) {
 		double prr = tvol_ptr[2*i]   * nwe[i];
