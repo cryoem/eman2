@@ -5137,7 +5137,7 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 
 	return out_array
 
-def wrap_mpi_split(comm, no_of_groups, shared_memory = False):
+def wrap_mpi_split(comm, no_of_groups):
 	"""
 
 	Takes the processes of a communicator (comm) and splits them in groups (no_of_groups).
@@ -5153,10 +5153,7 @@ def wrap_mpi_split(comm, no_of_groups, shared_memory = False):
 	color = myid / no_of_proc_per_group
 	key = myid % no_of_proc_per_group
 
-	if shared_memory:
-		return mpi_comm_split_shared(comm, color, key)
-	else:
-		return mpi_comm_split(comm, color, key)
+	return mpi_comm_split(comm, color, key)
 	
 
 def get_dist(c1, c2):
