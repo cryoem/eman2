@@ -59,6 +59,7 @@ except:
 invert_on_read=False
 
 def load_micrograph(filename):
+	if "\t" in filename: filename=filename.split()[1]
 	fsp2="micrographs/"+filename
 	if os.path.exists(fsp2) : filename=fsp2
 	
@@ -98,6 +99,7 @@ def main():
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--no_ctf",action="store_true",default=False,help="Disable CTF determination", guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--allmicrographs",action="store_true",default=False,help="Add all images from micrographs folder", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--unboxedonly",action="store_true",default=False,help="Only include image files without existing box locations", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--autopick",type=str,default=None,help="Perform automatic particle picking. Provide mode and parameter string")
 	parser.add_argument("--write_dbbox",action="store_true",default=False,help="Export EMAN1 .box files",guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
@@ -115,6 +117,15 @@ def main():
 		if len(args)>0 : print "Specified micrograph list replaced with contents of micrographs/"
 		args=[i for i in os.listdir("micrographs")]
 	else: args=[i.replace("micrographs/","") for i in args]
+
+	oargs=args
+	args=[]
+	for f in oargs:
+		db=js_open_dict(info_name(f))
+		try: boxes=db["boxes"]
+		except: boxes=[]
+		if not options.unboxedonly or len(boxes)>0 : args.append("{}\t{}".format(len(boxes),f))
+		db.close()
 
 	#####
 	# Parameter Validation
@@ -275,7 +286,7 @@ class boxerByRef(QtCore.QObject):
 		gridlay.addWidget(boxerByRef.threshold,0,0)
 	
 	@staticmethod
-	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params):
+	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
 		# If parameters are provided via params (as if used from command-line) we use those values,
 		# if that fails, we check the GUI widgets, which were presumably created in this case
 		try: threshold=params["threshold"]
@@ -333,7 +344,11 @@ class boxerByRef(QtCore.QObject):
 #				print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
 				thrds[thrtolaunch].start()
 				thrtolaunch+=1
-			else: time.sleep(0.05)
+			else: 
+				time.sleep(0.05)
+				if prog!=None : 
+					prog.setValue(prog.value())
+					if prog.wasCanceled() : break
 		
 			while not jsd.empty():
 				# add each ccf image to our maxval image as it comes in
@@ -381,7 +396,7 @@ class boxerByRef(QtCore.QObject):
 				if hypot(pc.x-p.x,pc.y-p.y)<=edge : break
 			else:
 				# We only get here if the loop completed
-				boxes.append((p.x*downsample,p.y*downsample,"auto_ref",owner[p.x,p.y]))
+				boxes.append((int(p.x*downsample),int(p.y*downsample),"auto_ref",owner[p.x,p.y]))
 		
 		print "Refine box locations"
 		# Refine the box locations at full sampling
@@ -435,7 +450,7 @@ class boxerLocal(QtCore.QObject):
 		gridlay.addWidget(boxerLocal.threshold,0,0)
 	
 	@staticmethod
-	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params):
+	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
 		# If parameters are provided via params (as if used from command-line) we use those values,
 		# if that fails, we check the GUI widgets, which were presumably created in this case
 		try: threshold=params["threshold"]
@@ -472,7 +487,11 @@ class boxerLocal(QtCore.QObject):
 #				print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
 				thrds[thrtolaunch].start()
 				thrtolaunch+=1
-			else: time.sleep(0.05)
+			else: 
+				time.sleep(0.05)
+				if prog!=None : 
+					prog.setValue(prog.value())
+					if prog.wasCanceled() : break
 		
 			while not jsd.empty():
 				# add each ccf image to our maxval image as it comes in
@@ -513,14 +532,14 @@ class boxerLocal(QtCore.QObject):
 		# Identify the peaks we want to keep and turn them into rough box locations
 		boxes=[]
 		locs=final.calc_highest_locations(threshold)
-		print locs
+
 		for i,p in enumerate(locs):
 			# loop over all higher valued peaks, and make sure we aren't too close to any of them
 			for pc in locs[:i]:
 				if hypot(pc.x-p.x,pc.y-p.y)<=edge : break
 			else:
 				# We only get here if the loop completed
-				boxes.append((p.x*downsample,p.y*downsample,"auto_local",owner[p.x,p.y]))
+				boxes.append((int(p.x*downsample),int(p.y*downsample),"auto_local",owner[p.x,p.y]))
 		
 		print "Refine box locations"
 		# Refine the box locations at full sampling
@@ -1110,7 +1129,7 @@ class GUIBoxer(QtGui.QWidget):
 
 		first=True
 		if val==None : newfilename=self.curfilename
-		else : newfilename=str(self.setlist.item(val).text())
+		else : newfilename=str(self.setlist.item(val).text()).split()[1]
 #		if newfilename==self.curfilename : return
 
 		# Write the current image parameters to the database
@@ -1193,6 +1212,16 @@ class GUIBoxer(QtGui.QWidget):
 		self.wimage.update()
 		self.wparticles.set_data(self.particles)
 		if len(self.particles)>0 : self.wparticles.show()
+		self.__updateCount()
+
+	def __updateCount(self):
+		row=self.setlist.currentRow()
+		itm=self.setlist.item(row)
+		try: lbl=str(itm.text()).split()
+		except: return
+		if int(lbl[0])!= len(self.boxes):
+			lbl="{}\t{}".format(len(self.boxes),lbl[1])
+			itm.setText(lbl)
 
 	def __addBox(self,i,box,quiet=False):
 		"""takes the number of the box in self.boxes and the (x,y,mode) tuple and displays it"""
@@ -1213,6 +1242,7 @@ class GUIBoxer(QtGui.QWidget):
 			# finally redisplay as appropriate
 			self.wimage.update()
 			self.wparticles.set_data(self.particles)
+			self.__updateCount()
 
 	def listKey(self,event):
 		pass
@@ -1258,14 +1288,21 @@ class GUIBoxer(QtGui.QWidget):
 		prog=QtGui.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
+		prog.show()
 
 		
-		for i,fsp in enumerate(self.filenames):
+		for i,fspl in enumerate(self.filenames):
+			
+			fsp=fspl.split()[1]
 			prog.setValue(i)
-			if prog.wasCanceled() : break
+			if prog.wasCanceled() : 
+				print "Autoboxing Aborted!"
+				break
+			
 			micrograph=load_micrograph(fsp)
 
-			newboxes=cls.do_autobox(micrograph,self.goodrefs,self.badrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{})
+			newboxes=cls.do_autobox(micrograph,self.goodrefs,self.badrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{},prog)
+			print "{}) {} boxes -> {}".format(i,len(newboxes),fsp)
 			
 			# if we got nothing, we just leave the current results alone
 			if len(newboxes)==0 : continue
@@ -1276,13 +1313,16 @@ class GUIBoxer(QtGui.QWidget):
 				boxes=db["boxes"]
 				# Filter out all existing boxes for this picking mode
 				bname=newboxes[0][2]
-				self.boxes=[b for b in self.boxes if b[2]!=bname]
+				boxes=[b for b in boxes if b[2]!=bname]
 			except:
 				boxes=[]
 				
-			boxes.extend(boxes)
+			boxes.extend(newboxes)
 			
 			db["boxes"]=boxes
+			db.close()
+			self.setlist.setCurrentRow(i)
+#			self.__updateBoxes()
 			
 		else: prog.setValue(len(self.filename))
 		

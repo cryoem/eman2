@@ -1760,9 +1760,10 @@ EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {
 	}
 
 	static EMData obj_filt;
+	static int updsize = 0;		// for threadsafety
 	EMData* filt = &obj_filt;
 	filt->set_complex(true);
-
+	int delfilt = 0;
 
 	// The filter object is nothing more than a cached high pass filter
 	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool))
@@ -1770,16 +1771,30 @@ EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {
 	// set to true, which is used for speed reasons.
 	if (filt->get_xsize() != nx+2-(nx%2) || filt->get_ysize() != ny ||
 		   filt->get_zsize() != nz ) {
-		filt->set_size(nx+2-(nx%2), ny, nz);
-		filt->to_one();
+		// In case of a threading conflict, this will ignore the cache for this specific computation
+		if (updsize) {
+			delfilt=1;
+//			printf("FAILSAFE!!!!\n");
+			filt=new EMData(nx+2-(nx%2), ny, nz);
+			filt->to_one();
+			filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
+		}
+		else {
+			updsize=1;
+			filt->set_size(nx+2-(nx%2), ny, nz);
+			filt->to_one();
 
-		filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
+			filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
+			updsize=0;
+		}
 	}
 
 	EMData *ccf = this->calc_mutual_correlation(this, true,filt);
+
 	ccf->sub(ccf->get_edge_mean());
 	EMData *result = ccf->unwrap();
 	delete ccf; ccf = 0;
+	if (delfilt) delete filt;
 
 	EXITFUNC;
 	if ( unwrap == true)
