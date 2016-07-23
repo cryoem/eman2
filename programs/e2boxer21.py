@@ -100,7 +100,7 @@ def main():
 	parser.add_argument("--no_ctf",action="store_true",default=False,help="Disable CTF determination", guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--allmicrographs",action="store_true",default=False,help="Add all images from micrographs folder", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--unboxedonly",action="store_true",default=False,help="Only include image files without existing box locations", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="extraction")
-	parser.add_argument("--autopick",type=str,default=None,help="Perform automatic particle picking. Provide mode and parameter string")
+	parser.add_argument("--autopick",type=str,default=None,help="Perform automatic particle picking. Provide mode and parameter string, eg - auto_local:threshold=5.5")
 	parser.add_argument("--write_dbbox",action="store_true",default=False,help="Export EMAN1 .box files",guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
 	parser.add_argument("--gui", action="store_true", default=False, help="Interactive GUI mode")
@@ -124,7 +124,7 @@ def main():
 		db=js_open_dict(info_name(f))
 		try: boxes=db["boxes"]
 		except: boxes=[]
-		if not options.unboxedonly or len(boxes)>0 : args.append("{}\t{}".format(len(boxes),f))
+		if not options.unboxedonly or len(boxes)==0 : args.append("{}\t{}".format(len(boxes),f))
 		db.close()
 
 	#####
@@ -203,7 +203,42 @@ def main():
 
 
 	if options.autopick!=None :
-		pass
+		apick=parsemodopt(options.autopick)
+		for s,k,pcl in aboxmodes:
+			if k==apick[0] : break
+		
+		if os.path.exists("info/boxrefs.hdf"):
+			goodrefs=EMData.read_images("info/boxrefs.hdf")
+		else: goodrefs=[]
+		
+		if os.path.exists("info/boxrefsbad.hdf"):
+			badrefs=EMData.read_images("info/boxrefsbad.hdf")
+		else: badrefs=[]
+		
+		for i,fspi in enumerate(args):
+			fsp=fspi.split()[1]
+			micrograph=load_micrograph(fsp)
+
+			newboxes=pcl.do_autobox(micrograph,goodrefs,badrefs,options.apix,options.threads,apick[1],None)
+			print "{}) {} boxes -> {}".format(i,len(newboxes),fsp)
+			
+			# if we got nothing, we just leave the current results alone
+			if len(newboxes)==0 : continue
+		
+			# read the existing box list and update
+			db=js_open_dict(info_name(fsp))
+			try: 
+				boxes=db["boxes"]
+				# Filter out all existing boxes for this picking mode
+				bname=newboxes[0][2]
+				boxes=[b for b in boxes if b[2]!=bname]
+			except:
+				boxes=[]
+				
+			boxes.extend(newboxes)
+			
+			db["boxes"]=boxes
+			db.close()
 
 	if options.gui :
 		if isinstance(QtGui,nothing) :
@@ -608,14 +643,15 @@ class boxerGauss(QtCore.QObject):
 	def do_autobox(boxer):
 		return
 	
+aboxmodes = [ ("Local Search","auto_local",boxerLocal),("by Ref","auto_ref",boxerByRef), ("Gauss","auto_gauss",boxerGauss) ]
+boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "unknown":[.4,.4,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4) }
+
 class GUIBoxer(QtGui.QWidget):
 	# Dictionary of autopickers
 	# to add a new one, provide name:(Qt_setup_function,picker_execution_function)
 	# Qt_setup_function(self,empty_grid_layout)
 	# picker_execution_function(self,...
 
-	aboxmodes = [ ("Local Search","auto_local",boxerLocal),("by Ref","auto_ref",boxerByRef), ("Gauss","auto_gauss",boxerGauss) ]
-	boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "unknown":[.4,.4,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4) }
 	
 	def __init__(self,imagenames,voltage=None,apix=None,cs=None,ac=10.0,box=256,ptcl=200,threads=4):
 		"""The 'new' e2boxer interface.
@@ -812,7 +848,7 @@ class GUIBoxer(QtGui.QWidget):
 		
 		# Individual tabs from Dictionary
 		self.abwid=[]
-		for name,bname,cls in GUIBoxer.aboxmodes:
+		for name,bname,cls in aboxmodes:
 			w=QtGui.QWidget()
 			gl=QtGui.QGridLayout(w)
 			self.abwid.append((w,gl))
@@ -1263,7 +1299,7 @@ class GUIBoxer(QtGui.QWidget):
 	def doAutoBox(self,b):
 		"""Autobox button pressed, find the right algorithm and call it"""
 		
-		name,bname,cls=self.aboxmodes[self.autotab.currentIndex()]
+		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
 		
 		print name," called"
 
@@ -1283,7 +1319,7 @@ class GUIBoxer(QtGui.QWidget):
 	def doAutoBoxAll(self,b):
 		"""Autobox button pressed, find the right algorithm and call it"""
 		
-		name,bname,cls=self.aboxmodes[self.autotab.currentIndex()]
+		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
 		
 		prog=QtGui.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
 		prog.setWindowModality(Qt.WindowModal)
