@@ -643,9 +643,12 @@ def main():
 		scoresImg = classmx[0]
 	
 		if options.inputaliparams:
-			inputalidict = js_open_dict( options.inputaliparams )
-			numdigits = len( inputalidict.keys()[0].split('_')[-1] )	#keys are of the form 'subtomo_XXX'; we determine how many XXX the keys have
-		
+			try:
+				inputalidict = js_open_dict( options.inputaliparams )
+				numdigits = len( inputalidict.keys()[0].split('_')[-1] )	#keys are of the form 'subtomo_XXX'; we determine how many XXX the keys have
+			except:
+				print "ERROR: Something is wrong with the json file provided". options.inputaliparams
+				sys.exit(1)
 		
 		
 		for ic in range(ncls):
@@ -4019,62 +4022,18 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	s2fixedimage = fixedimage.copy()
 	
 	if options.falign and 'rotate_translate_3d_tree' not in options.align[0]:
-		try:
-			s2fixedimage = EMData( options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf'), 0 )
-		except:
-			print ("\n(e2spt_classaverage)(alignment) preprocessed fine refernece not found. Using coarse reference")
-			
-		
-	print "\n(e2spt_classaverage)(alignment) s2fixedimage starts with size", s2fixedimage['nx']
-	#sys.exit()
-	
-	
-	
-	
-	
-	
-	
-	"""
-	if options.clip:
-		if sfixedimage['nx'] != options.clip or sfixedimage['ny'] != options.clip or sfixedimage['nz'] != options.clip:
-			
-			sfixedimage = clip3D( sfixedimage, options.clip )
-			print "clipping reference for coarse alignment", options.clip, sfixedimage['nx']
-			#print "\nclipped sfixedimage to", options.clip, sfixedimage['nx']
-		
-		if s2fixedimage['nx'] != options.clip or s2fixedimage['ny'] != options.clip or s2fixedimage['nz'] != options.clip:
-			s2fixedimage = clip3D( s2fixedimage, options.clip )
-			print "clipping reference for fine alignment", options.clip, s2fixedimage['nx']
-			
-			#print "\nclipped s2fixedimage to", options.clip, s2fixedimage['nx']
-		
-		if reffullsize['nx'] != options.clip or reffullsize['ny'] != options.clip or reffullsize['nz'] != options.clip:
-			reffullsize = clip3D( reffullsize, options.clip )
-			print "full-sized reference is", options.clip, reffullsize['nx']
-		
-	"""
-	
-	
-	
-	#if options.matchimgs:
-	#	print "Matching images!"
-	#	#print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
-	#	print "their sizes are for fixed and for img",sfixedimage['nx'], sfixedimage['ny'], sfixedimage['nz'], image['nx'], image['ny'], image['nz']
-	#	
-	#	try:
-	#		sfixedimage.process_inplace( 'filter.matchto',{'to':image})
-	#	except:
-	#		print "\n(e2spt_classaverage)(alignment) trying to apply filter.matchto, fixedimage and image sizes are", sfixedimage['nx'], sfixedimage['ny'], sfixedimage['nz'], image['nx'], image['ny'], image['nz']
-	#	
-	#	
-	#	try:
-	#		s2fixedimage.process_inplace( 'filter.matchto',{'to':image})
-	#	except:
-	#		print "\n(e2spt_classaverage)(alignment) trying to apply filter.matchto, fixedimage and image sizes are", s2fixedimage['nx'], s2fixedimage['ny'], s2fixedimage['nz'], image['nx'], image['ny'], image['nz']
-			
-		
+		if options.ref:
+			try:
+				s2fixedimage = EMData( options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf'), 0 )
+			except:
+				s2fixedimage = reffullsize
+				print ("\n(e2spt_classaverage)(alignment) preprocessed fine reference not found. Using raw reference")
+		else:
+			s2fixedimage = reffullsize
+			print ("\n(e2spt_classaverage)(alignment) preprocessed particle not found. Using raw version")
+
+	print "\n(e2spt_classaverage)(alignment) s2fixedimage starts with size", s2fixedimage['nx']		
 	print "\n(e2spt_classaverage)(alignment) before refpreprocess, refpreprocess, iter", refpreprocess, iter
-	
 	
 	if 'rotate_translate_3d_tree' not in options.align[0]:	
 		
@@ -4172,7 +4131,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		try:
 			s2image = EMData( options.path + '/' + options.input.replace('.hdf','_preprocfine.hdf'), 0 )
 		except:
-			print ("\n(e2spt_classaverage)(alignment) preprocessed fine particles not found. Using coarse particles")
+			print ("\n(e2spt_classaverage)(alignment) preprocessed fine particle not found. Using raw version")
+			s2image = imgfullsize
+
 	
 	"""
 	if options.clip:

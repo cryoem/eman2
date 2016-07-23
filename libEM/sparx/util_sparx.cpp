@@ -26497,7 +26497,11 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	float *cvv = cvvi->get_data();
 	*/
 
+#ifdef _WIN32
+	float *cvv = (float *) malloc(2*size*sizeof(float));
+#else
 	float *cvv = fftwf_alloc_real(2*size);
+#endif	//_WIN32
 
 	int ncx = nyt/2;
 
