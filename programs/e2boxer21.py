@@ -506,6 +506,10 @@ class boxerLocal(QtCore.QObject):
 		owner=EMData(microdown["nx"],microdown["ny"],1)
 		maxav=Averagers.get("minmax",{"max":1,"owner":owner})
 		
+		# This prevents some threading issues
+		r=goodrefs[0].process("math.fft.resample",{"n":downsample})
+		r.align("rotate_translate",r)
+		
 		jsd=Queue.Queue(0)
 		thrds=[threading.Thread(target=boxerLocal.ccftask,args=(jsd,ref,downsample,microdown,ri)) for ri,ref in enumerate(goodrefs)]
 

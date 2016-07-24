@@ -1790,7 +1790,6 @@ EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {
 			filt->to_one();
 
 			filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
-			updsize=0;
 		}
 	}
 
@@ -1799,6 +1798,7 @@ EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {
 	ccf->sub(ccf->get_edge_mean());
 	EMData *result = ccf->unwrap();
 	delete ccf; ccf = 0;
+	updsize=0;
 	if (delfilt) delete filt;
 
 	EXITFUNC;
