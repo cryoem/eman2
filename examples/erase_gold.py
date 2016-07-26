@@ -5,54 +5,54 @@ import numpy as np
 from scipy import ndimage
 
 def main():
-progname = os.path.basename(sys.argv[0])
-usage = """prog [options] stack1.hdf stack2.mrcs ...
+	progname = os.path.basename(sys.argv[0])
+	usage = """prog [options] stack1.hdf stack2.mrcs ...
 
-Program to erase gold from DDD movies. Requires scipy.
-"""
+	Program to erase gold from DDD movies. Requires scipy.
+	"""
 
-parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-parser.add_argument("--writenoise", default=False, action="store_true", help="Save noise image(s).")
-parser.add_argument("--average", default=False, action="store_true", help="Erase gold from average of input stack(s).")
-parser.add_argument("--downsamp", default=1, type=int, help="Downsample the input stack(s). Default is 1, i.e. no downsampling.")
-parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-(options, args) = parser.parse_args()
+	parser.add_argument("--writenoise", default=False, action="store_true", help="Save noise image(s).")
+	parser.add_argument("--average", default=False, action="store_true", help="Erase gold from average of input stack(s).")
+	parser.add_argument("--downsamp", default=1, type=int, help="Downsample the input stack(s). Default is 1, i.e. no downsampling.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	(options, args) = parser.parse_args()
 
-for arg in args:
-	if options.verbose: print(arg)
-	frames = load(arg,ds=options.downsample,inv=True)
-	if options.average:
-		avgr = Averagers.get("mean")
-		avgr.add_image_list(frames)
-		img = avgr.finish()
-		img.process_inplace("normalize")
-		sharp_msk, soft_msk = generate_masks(img)
-		mskd_sharp = sharp_msk*img
-		sub_sharp = img-mskd_sharp
-		noise = local_noise(sub_sharp)
-		if options.writenoise:
-			noise.write_image("{}_noise.hdf")
-		mskd_soft = soft_msk*img
-		sub_soft = img-mskd_soft
-		result = sub_soft + noise * soft_msk
-		result *= -1
-		result.write_image("{}_proc.hdf")
-	else:
-		for i,f in enumerate(frames):
-			f.process_inplace("normalize")
+	for arg in args:
+		if options.verbose: print(arg)
+		frames = load(arg,ds=options.downsample,inv=True)
+		if options.average:
+			avgr = Averagers.get("mean")
+			avgr.add_image_list(frames)
+			img = avgr.finish()
+			img.process_inplace("normalize")
 			sharp_msk, soft_msk = generate_masks(img)
 			mskd_sharp = sharp_msk*img
 			sub_sharp = img-mskd_sharp
 			noise = local_noise(sub_sharp)
 			if options.writenoise:
-				noise.write_image("{}_noise.hdf",i)
+				noise.write_image("{}_noise.hdf")
 			mskd_soft = soft_msk*img
 			sub_soft = img-mskd_soft
 			result = sub_soft + noise * soft_msk
 			result *= -1
-			result.write_image("{}_proc.hdf",i)
+			result.write_image("{}_proc.hdf")
+		else:
+			for i,f in enumerate(frames):
+				f.process_inplace("normalize")
+				sharp_msk, soft_msk = generate_masks(img)
+				mskd_sharp = sharp_msk*img
+				sub_sharp = img-mskd_sharp
+				noise = local_noise(sub_sharp)
+				if options.writenoise:
+					noise.write_image("{}_noise.hdf",i)
+				mskd_soft = soft_msk*img
+				sub_soft = img-mskd_soft
+				result = sub_soft + noise * soft_msk
+				result *= -1
+				result.write_image("{}_proc.hdf",i)
 
 def load(fn,inv=False,ds=1):
 	frames = []
