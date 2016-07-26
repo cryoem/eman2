@@ -1,6 +1,6 @@
 #!/usr/bin/python2.7
 
-# LAST update: Feb/2016
+# LAST update: July/2016
 # Author: Steven Ludtke  2/8/2011 (rewritten)
 # Author: Jesus Galaz-Montoya, all command line functionality + updates/enhancements/fixes.
 # Author: John Flanagan  9/7/2011 (helixboxer)
@@ -51,7 +51,7 @@ from emscene3d import EMScene3D
 from emdataitem3d import EMDataItem3D, EMIsosurface
 from emshape import EMShape
 '''
-from valslider import *
+#from valslider import *
 
 
 from sys import argv
@@ -921,6 +921,7 @@ def sptboxergui(options,args):
 	from emscene3d import EMScene3D
 	from emdataitem3d import EMDataItem3D, EMIsosurface
 	from emshape import EMShape
+	from valslider import ValSlider, ValBox
 
 	class EMAverageViewer(QtGui.QWidget):
 		"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
@@ -2575,7 +2576,7 @@ def sptboxergui(options,args):
 		#print "The shrink factor default is", options.shrink
 
 
-		print "\nDatabfile and type of datafile are", img, type(img)
+		print "\nDatafile and type of datafile are", img, type(img)
 
 
 
@@ -2593,7 +2594,7 @@ def sptboxergui(options,args):
 	app.execute()
 
 	return
-	
+
 
 if __name__ == "__main__":
 	main()
