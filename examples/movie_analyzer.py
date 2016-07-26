@@ -12,8 +12,6 @@ import multiprocessing
 
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
-good_box_sizes = [32, 36, 40, 48, 52, 56, 64, 66, 70, 72, 80, 84, 88, 100, 104, 108, 112, 120, 128, 130, 132, 140, 144, 150, 160, 162, 168, 176, 180, 182, 192, 200, 208, 216, 220, 224, 240, 256, 264, 288, 300, 308, 320, 324, 336, 338, 352, 364, 384, 400, 420, 432, 448, 450, 462, 480, 486, 500, 504, 512, 520, 528, 546, 560, 576, 588, 600, 640, 648, 650, 660, 672, 686, 700, 702, 704, 720, 726, 728, 750, 768, 770, 784, 800, 810, 840, 882, 896, 910, 924, 936, 972, 980, 1008, 1014, 1020, 1024]
-
 def which(prog):
     cmd = "which {}".format(prog)
     process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
@@ -28,6 +26,7 @@ pkgs = {"EMAN2":"movie_ccf.py",
 
 for pkg in pkgs.keys():
     path=which(pkgs[pkg])
+    if path == "": print("Could not find {}.".format(pkgs[pkg]))
     pkgs[pkg] = path
 
 def main():
@@ -42,6 +41,8 @@ def main():
 	parser.add_argument("--box", default=2048, type=int, help="Size of box to use for sub-region selection.")
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
 	parser.add_argument("--skipalign",action="store_true",default=False,help="If you wish to skip running alignments, specify this option.")
+	parser.add_argument("--hcreg", type=str, help="Center coordinates of high contrast region. If not specified, region will be computed automatically. Format should be: x,y", default=None)
+	parser.add_argument("--lcreg", type=str, help="Center coordinates of low contrast region. If not specified, region will be computed automatically. Format should be: x,y", default=None)
 	parser.add_argument("--show", action="store_true",help="Show average of movie frames before and after alignment.",default=True)
 	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
 	parser.add_argument("--include", type=str, help="Comma separated list of packages to include during comparison.", default="DE,EMAN2,IMOD,UCSF,UNBLUR")
@@ -62,7 +63,7 @@ def main():
 	global options
 	(options, args) = parser.parse_args()
 
-	if len(args) != 1:
+	if len(args) < 1:
 		print usage
 		parser.error("You must specify a single DDD movie stack in HDF or MRC format.")
 		sys.exit(1)
@@ -108,9 +109,15 @@ def main():
 		avg = average_frames(frames)
 		avg.write_image("{}/{}_avg.hdf".format(bdir,basen))
 
-		hcreg, lcreg = get_hclc_regions(avg,n=64,bs=bs,edge=10)
-		hcx,hcy,_= hcreg.get_origin()
-		lcx,lcy,_= lcreg.get_origin()
+		if options.hcreg == None or options.lcreg == None:
+			hcreg, lcreg = get_hclc_regions(avg,n=64,bs=bs,edge=10)
+			hcx,hcy,_= hcreg.get_origin()
+			lcx,lcy,_= lcreg.get_origin()
+		else:
+			hcreg = get_region(options.hcreg,bs)
+			lcreg = get_region(options.lcreg,bs)
+			hcx,hcy,_ = hcreg.get_origin()
+			lcx,lxy,_ = lcreg.get_origin()
 
 		with open("{}/params.txt".format(bdir),"w") as p:
 			p.write("# boxsize\thigh contrast coordinates (x,y)\tlow contrast coordinates (x,y)\n")
@@ -376,9 +383,14 @@ def failed(pkg):
 	print("Could not find frame shifts for {} aligner. Perhaps you should use the --align option.".format(pkg))
 	sys.exit(1)
 
+def get_region(c,bs):
+	x,y=map(int,c.split(","))
+	return Region(x-bs/2,y-bs/2,bs,bs)
+
 def get_hclc_regions(img,n=100,bs=2048,edge=128):
     rbs = int(np.sqrt(bs))
-    nbs = good_box_sizes[np.argmin([(gbs-rbs)**2 for gbs in good_box_sizes])]
+    idx = np.argmin([(gbs-rbs)**2 for gbs in good_box_sizes])
+    nbs = good_box_sizes[idx]
     xmin = bs/2 + edge
     xmax = img["nx"] - xmin
     ymin = bs/2 + edge
@@ -566,9 +578,9 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
 				else:
 					ssdfs[key] = np.linalg.norm(np.sum(np.square((trans_hi[key]-trans_lo[key])),axis=0))
 					print("{}\t{}".format(key,ssdfs[key]))
-					sse.write("{}\t{}\n".format(key,ssdfs[key]))
 					ax1.plot(trans_hi[key][:,0],trans_hi[key][:,1],"k--".format(colors[cctr]),linewidth=2,label="{} high".format(key))
 					ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"k.".format(colors[cctr]),linewidth=2,label="{} low".format(key))
+				sse.write("{}\t{}\n".format(key,ssdfs[key]))
 				cctr+=1
 	ax1.set_xlabel("X-shift (pixels)")
 	ax1.set_ylabel("Y-shift (pixels)")
@@ -706,6 +718,42 @@ def average_frames(frames):
 class FrameCorrector:
 
 	@classmethod
+	def correct_frames(cls,options,fname,outfile=None):
+		options.path = fname
+		if options.dark:
+			if options.verbose > 8: print("Generating dark reference")
+			dark = cls.dark_correct(options)
+		else: dark = None
+		if options.gain:
+			if options.verbose > 8: print("Generating gain reference")
+			gain = cls.gain_correct(options,dark)
+		elif options.gaink2:
+			if options.verbose > 8: print("Generating K2 gain reference")
+			gain = EMData(options.gaink2)
+		else: gain = None
+		hdr = EMData(options.path,0,True)
+		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
+		else: nd = EMUtil.get_image_count(options.path)
+		if not outfile: outfile = options.path[:-4] + "_corrected.hdf"
+		for i in xrange(nd):
+			if options.verbose:
+				print "Correcting frame: {}/{}	\r".format(i+1,nd),
+				sys.stdout.flush()
+			if options.path[-4:].lower() in (".mrc"):
+				r = Region(0,0,i,nx,ny,1)
+				im=EMData(path,0,False,r)
+			else: im=EMData(options.path,i)
+			if dark: im.sub(dark)
+			if gain: im.mult(gain)
+			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
+			# fixes clear outliers as well as values which were exactly zero
+			im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1})
+			im.process_inplace("normalize.edgemean")
+			im.write_image(outfile,i)
+		else: outfile = options.path
+		return outfile
+
+	@classmethod
 	def dark_correct(cls,options):
 		hdr = EMData(options.dark,0,True)
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
@@ -766,41 +814,6 @@ class FrameCorrector:
 		gain.process_inplace("math.reciprocal",{"zero_to":0.0})
 		return gain
 
-	@classmethod
-	def correct_frames(cls,options,fname,outfile=None):
-		options.path = fname
-		if options.dark:
-			if options.verbose > 8: print("Generating dark reference")
-			dark = cls.dark_correct(options)
-		else: dark = None
-		if options.gain:
-			if options.verbose > 8: print("Generating gain reference")
-			gain = cls.gain_correct(options,dark)
-		elif options.gaink2:
-			if options.verbose > 8: print("Generating K2 gain reference")
-			gain = EMData(options.gaink2)
-		else: gain = None
-		hdr = EMData(options.path,0,True)
-		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
-		else: nd = EMUtil.get_image_count(options.path)
-		if not outfile: outfile = options.path[:-4] + "_corrected.hdf"
-		for i in xrange(nd):
-			if options.verbose:
-				print "Correcting frame: {}/{}	\r".format(i+1,nd),
-				sys.stdout.flush()
-			if options.path[-4:].lower() in (".mrc"):
-				r = Region(0,0,i,nx,ny,1)
-				im=EMData(path,0,False,r)
-			else: im=EMData(options.path,i)
-			if dark: im.sub(dark)
-			if gain: im.mult(gain)
-			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
-			# fixes clear outliers as well as values which were exactly zero
-			im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1})
-			im.process_inplace("normalize.edgemean")
-			im.write_image(outfile,i)
-		else: outfile = options.path
-		return outfile
 
 if __name__ == "__main__":
 	main()

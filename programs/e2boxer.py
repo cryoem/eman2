@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# Author: David Woolford (woolford@bcm.edu)
-# Copyright (c) 2000- Baylor College of Medicine
+# Author: Steven Ludtke 2014/04/27
+# Copyright (c) 2014- Baylor College of Medicine
 
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -31,3331 +31,2034 @@
 #
 #
 
-from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict,EMArgumentParser
-from EMAN2db import db_check_dict
-from EMAN2jsondb import *
-from pyemtbx.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
-from copy import deepcopy
 from EMAN2 import *
-from emboxerbase import *
-import os
+from EMAN2jsondb import *
+import Queue
+import os,sys
 
-SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
+class nothing:
+	def __init__(self,x=None,y=None,z=None,q=None):
+		return
 
-def e2boxer_check(options,args):
-	error_message = check(options,args)
+try: 
+	from PyQt4 import QtCore, QtGui
+	from PyQt4.QtCore import Qt
+	from emimage2d import EMImage2DWidget
+	from emplot2d import EMPlot2DWidget
+	from emimagemx import EMImageMXWidget
+	from valslider import ValSlider,CheckBox,ValBox
+	from emshape import EMShape
+except:
+	QtGui=nothing()
+	QtCore=nothing()
+	QtCore.QObject=nothing()
+	QtGui.QWidget=nothing()
 
-	if options.autoboxer:
-		if not js_check_dict("e2boxercache/swarm.json"): error_message.append("There is no autoboxing information present in the current directory")
-		else:
-			db = js_open_dict("e2boxercache/swarm.json")
-			if not db.has_key(options.autoboxer):
-				s = "There is no autoboxing information present for %s." %options.autoboxer
-				if len(db.keys()) > 0:
-					s+= ("Choose from")
-					for k in db.keys():
-						try: s+=" "+str(k)+";"
-						except: pass
-				error_message.append(s)
-			else: pass #print "yaya"
-#				print db.keys(),options.autoboxer
-#				for k,v in db.items(): print k,v
-#				print db[options.autoboxer]
-#				print db[str(options.autoboxer)]
 
-	return error_message
+# ok, this is kind of bad style, but really don't want to have to drag this flag around through many objects
+invert_on_read=False
+
+def load_micrograph(filename):
+	if "\t" in filename: filename=filename.split()[1]
+	fsp2="micrographs/"+filename
+	if os.path.exists(fsp2) : filename=fsp2
+	
+	n=EMUtil.get_image_count(filename)
+	if n==0 :
+		QtGui.QMessageBox.warning(None,"Error","The file {} contains no images".format(newfilename))
+		return
+	elif n==1 :
+		img=EMData(filename,0)		# single image
+	else :
+		img=EMData(filename,0)		# movie stack (we assume)
+		for i in xrange(1,n):
+			im=EMData(filename,i)
+			img.add(im)
+		img.mult(1.0/n)
+		
+	if invert_on_read : img.mult(-1.0)
+	return img
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <image> <image2>....
 
-The 'new' version of e2boxer. While it is quite usable, it is still in need of some work.
-
-For example:
-
-e2boxer.py ????.mrc --boxsize=256
+	The even newer version of e2boxer. Complete rewrite. Incomplete.
+	
+	This program 
 """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_pos_argument(name="micrographs",help="List the file to process with e2boxer here.", default="", guitype='filebox', browser="EMBoxesTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
-	parser.add_header(name="boxerheader", help='Options below this label are specific to e2boxer', title="### e2boxer options ###", row=1, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_argument("--invert",action="store_true",help="If specified, inverts input contrast. Particles MUST be white on a darker background.",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
-	parser.add_argument("--write_dbbox",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
-	parser.add_argument("--write_ptcls",action="store_true",help="Write particles to disk",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
-	parser.add_argument("--exclude_edges",action="store_true",help="Don't generate output for any particles extending outside the micrograph",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="extraction[True]")
-	parser.add_argument("--exclude_bad",action="store_true",help="Don't generate output for any particles marked as exclude",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode="extraction[False]")
-	parser.add_argument("--force","-f",action="store_true",help="Force overwrite",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
-	parser.add_argument("--format", help="Format of the output particle images. For EMAN2 refinement must be HDF.", default="hdf", guitype='combobox', choicelist="['hdf','img','spi']", row=6, col=0, rowspan=1, colspan=2, mode="extraction")
-	parser.add_argument("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=5, col=0, rowspan=1, colspan=2, mode="extraction")
-	parser.add_argument("--invert",action="store_true",help="If writing outputt inverts pixel intensities",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode="extraction")
-	parser.add_argument("--suffix",type=str,help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls", guitype='strbox', expert=True, row=4, col=1, rowspan=1, colspan=2, mode="extraction")
-	parser.add_argument("--dbls",type=str,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
-	parser.add_argument("--autoboxer",type=str,help="A key of the swarm_boxers dict in the local directory, used by the workflow.",default=None)
+	parser.add_argument("--ptclsize","-P",type=int,help="Longest axis of particle in pixels (diameter, not radius)",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=-1, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getAPIX()']")
+	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=-1, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="autofit['self.pm().getVoltage()']")
+	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=-1, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getCS()']")
+	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
+	parser.add_argument("--no_ctf",action="store_true",default=False,help="Disable CTF determination", guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--allmicrographs",action="store_true",default=False,help="Add all images from micrographs folder", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--unboxedonly",action="store_true",default=False,help="Only include image files without existing box locations", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--autopick",type=str,default=None,help="Perform automatic particle picking. Provide mode and parameter string, eg - auto_local:threshold=5.5")
+	parser.add_argument("--write_dbbox",action="store_true",default=False,help="Export EMAN1 .box files",guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
+	parser.add_argument("--gui", action="store_true", default=False, help="Interactive GUI mode")
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--gui", action="store_true", default=True, help="Dummy option; used in older version of e2boxer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
- 	parser.add_argument("--gauss_autoboxer",type=str,help="Name of autoboxed file whose autoboxing parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic boxing.",default=None)
-	parser.add_argument("--do_ctf",type=str,help="Name of file whose ctf estimation parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic ctf estimation.",default=None)
-
-	# ctf estimation using cter
-	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using cter")
-	parser.add_argument("--indir",              type=str,				 default= ".",     				 help="Directory containing micrographs to be processed.")
-	parser.add_argument("--nameroot",         	type=str,		 		 default= "",     				 help="Prefix of micrographs to be processed.")
-	parser.add_argument("--micsuffix",          type=str,                default="",                     help="A string denoting micrograph type. For example 'mrc', 'hdf', 'ser' ...")
-	parser.add_argument("--wn",				  	type=int,		 		 default=256, 					 help="Size of window to use (should be slightly larger than particle box size)")
-
-	parser.add_argument("--Cs",               	type=float,	 			 default= 2.0,               	 help="Microscope Cs (spherical aberation)")
-	parser.add_argument("--voltage",		  	type=float,	 		     default=300.0, 			     help="Microscope voltage in KV")
-	parser.add_argument("--ac",				  	type=float,	 		     default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
-	parser.add_argument("--kboot",			  	type=int,			     default=16, 					 help="kboot")
-	parser.add_argument("--MPI",                action="store_true",   	 default=False,              	 help="use MPI version")
-	parser.add_argument("--debug",              action="store_true",   	 default=False,              	 help="debug mode")
-	parser.add_argument("--apix",               type=float,				 default= -1.0,                  help="pixel size in Angstroms")
 
 	(options, args) = parser.parse_args()
+	
+	global invert_on_read
+	if options.invert : invert_on_read = True
 
-	if options.cter:
-		from global_def import SPARXVERSION
-		import global_def
-		if len(args) <2 or len(args) > 3:
-			print "see usage"
-			sys.exit()
+	if options.allmicrographs :
+		if len(args)>0 : print "Specified micrograph list replaced with contents of micrographs/"
+		args=[i for i in os.listdir("micrographs")]
+	else: args=[i.replace("micrographs/","") for i in args]
 
-		stack = None
+	oargs=args
+	args=[]
+	for f in oargs:
+		db=js_open_dict(info_name(f))
+		try: boxes=db["boxes"]
+		except: boxes=[]
+		if not options.unboxedonly or len(boxes)==0 : args.append("{}\t{}".format(len(boxes),f))
+		db.close()
 
-		if len(args) == 3:
-			if options.MPI:
-				print "Please use single processor version if specifying a stack."
-				sys.exit()
-			stack = args[0]
-			out1 = args[1]
-			out2 = args[2]
+	#####
+	# Parameter Validation
+	project_db = js_open_dict("info/project.json")
 
-		if len(args) == 2:
-			out1 = args[0]
-			out2 = args[1]
+	if not (options.gui or options.write_ptcls or options.write_dbbox or options.autopick):
+		print "Error: No actions specified. Try --gui for interactive/semi-automated particle picking." 
 
-		if options.apix < 0:
-			print "Enter pixel size"
-			sys.exit()
+	# Some of this seems redundant, it is to insure self-consistency
+	if options.boxsize<2:
+		try: 
+			options.boxsize = project_db["global.boxsize"]
+		except:
+			print "No box size specified, and no box size in project info. Please specify."
+			sys.exit(1)
+			
+	if good_size(options.boxsize)!=options.boxsize :
+		print "Bad box size detected. Adjusting size to {}. See http://eman2.org/emanwiki/EMAN2/BoxSize".format(good_size(options.boxsize))
+		options.boxsize=good_size(options.boxsize)
+	project_db["global.boxsize"]=options.boxsize
+	boxsize=options.boxsize
+	boxsize2=boxsize/2
 
-		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
-
-		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
-
-		from morphology import cter
-		global_def.BATCH = True
-		cter(stack, out1, out2, options.indir, options.nameroot, options.micsuffix, options.wn, \
-			voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug)
-		global_def.BATCH = False
-
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
-
-		return
-
-	logid=E2init(sys.argv,options.ppid)
-	db = js_open_dict(EMBOXERBASE_DB)
-	cache_box_size = True
-	if options.boxsize == -1:
-		cache_box_size = False
-		options.boxsize = db.setdefault("box_size",128)
-
-	error_message = e2boxer_check(options,args)
-	if len(error_message) > 0:
-		error = "\n"
-		for e in error_message:
-			error += "Error: "+e +"\n"
-		parser.error(error)
-
-	if cache_box_size: db["box_size"] = options.boxsize
-
-	if options.autoboxer:
-		autobox(args,options,logid)
-		return
-
-	if options.gauss_autoboxer or options.do_ctf:
-		err = gauss_cmd_line_autobox(args, options,logid)
-		if len(err) > 0:
-			print err
-			return
-		if options.write_ptcls or options.write_dbbox:
-			write_output(args,options,logid)
-		return
-
-	if options.write_dbbox or options.write_ptcls:
-		write_output(args,options,logid)
-	else:
-		application = EMApp()
-		module = EMBoxerModule(args,options.boxsize)
-
-
-		# this is an example of how to add your own custom tools:
-		module.add_tool(SwarmTool,particle_diameter=options.boxsize)
-
-		#Make the Swarm Tool the default
-		swarm_tool_instance = SwarmTool(object)
-		swarm_tool_name = swarm_tool_instance.unique_name()
-		module.set_inspector_tool_mode(swarm_tool_name) #Set current tool to Swarm mode
-
-
-		module.add_tool(GaussTool,particle_diameter=options.boxsize)
-		gauss_tool_instance = GaussTool(object)
-		gauss_tool_name = gauss_tool_instance.unique_name()
-		(module.tools[gauss_tool_name]).get_alternate(args[0])
-
-		module.show_interfaces()
-
-		application.execute(logid)
-
-def gauss_cmd_line_autobox(args,options,logid):
-	err = ''
-	boxkey = options.gauss_autoboxer
-	ctfkey = options.do_ctf
-	if boxkey == None:
-		boxkey = ctfkey
-	if ctfkey == None:
-		ctfkey = boxkey
-	gdb_name = GaussPanel.GDB_NAME
-	if not js_check_dict(gdb_name):
-		err = "There is no gausse method autoboxing information present in the current directory"
-		return err
-	gbdb = js_open_dict(gdb_name)
-	if (not gbdb.has_key(boxkey)):
-		err = "There is no autoboxing information present for %s." %boxkey
-		return err
-
-	gboxer = GaussBoxer()
-	if options.boxsize == -1:
-		print "box size must be set! Exiting ..."
+	if options.ptclsize<2:
+		try: options.ptclsize=project_db["global.ptclsize"]
+		except:
+			print "ERROR: No particle size specified. None found in project DB. Please specify approximate maximum particle dimension in pixels."
+			sys.exit(1)
+			
+	if options.ptclsize>boxsize*0.8:
+		print "ERROR: Invalid particle size detected. Box size should normally be 1.5 - 2x particle size, and must be at least 1.2x particle size." 
 		sys.exit(1)
-	boxsize=int(options.boxsize)
-	do_autobox=False
+		
+	project_db["global.ptclsize"]=options.ptclsize
 
-	if options.gauss_autoboxer:
-		do_autobox=True
+	# CTF related options
+	if not options.no_ctf :
+		if options.voltage>1500 :
+			options.voltage/=1000
+			print "Voltage specified in kV. Adjusting specified value to ",options.voltage
+		if options.voltage<10 :
+			try: 
+				options.voltage=project_db["global.microscope_voltage"]
+				print "Using project voltage of ",options.voltage,"kV"
+			except:
+				print "Error: No voltage specified, and no project settings available. Disabling CTF mode."
+				options.no_ctf=True
+		if options.cs<0 :
+			try:
+				options.cs=project_db["global.microscope_cs"]
+				print "Using project Cs of ",options.cs,"mm"
+			except:
+				print "Error: No Cs specified, and no project settings available. Disabling CTF mode."
+				options.no_ctf=True
+		if options.ac<0 and not options.no_ctf:
+			print "Error: Invalid %AC value. Disabling CTF mode."
+			options.no_ctf=True
+		if options.ac<1.0 :
+			print "Warning: %AC should be specified as a %. If you intended a %AC>1%, please try again. Will proceed with the specified value"
+	
+	if options.apix<=0 :
 		try:
-			autoboxdict = gbdb[boxkey]
-			gboxer.set_pixel_input(float(autoboxdict['pixel_input']))
-			gboxer.set_pixel_output(float(autoboxdict['pixel_output']))
-			gboxer.set_invert_contrast(autoboxdict['invert_contrast'])
-			gboxer.set_use_variance(autoboxdict['use_variance'])
-			gboxer.set_gauss_width(float(autoboxdict['gauss_width']))
-			gboxer.set_thr_low(float(autoboxdict['thr_low']))
-			gboxer.set_thr_hi(float(autoboxdict['thr_hi']))
+			options.apix=project_db["global.apix"]
+			print "Warning: No A/pix specified. Using ",options.apix," from project. Please insure this is correct for the images being boxed!"
 		except:
-			print 'no autoboxing parameters were found in database...will not autobox'
-			do_autobox=False # maybe user just want to estimate ctf in batch mode...
+			print "Error: Value required for A/pixel. If this is a non TEM image, suggest --apix=1 and --no_ctf."
+			sys.exit(1)
 
-	do_ctfest = False
-	if options.do_ctf:
-		do_ctfest = True
-		ctfdict = gbdb[ctfkey]
-		try:
-			ctf_params={'pixel_input': float(ctfdict['pixel_input']), 'pixel_output': float(ctfdict['pixel_output']),'ctf_fstart':float(ctfdict['ctf_fstart']),'ctf_fstop':float(ctfdict['ctf_fstop']), 'ctf_window':int(ctfdict['ctf_window']),'ctf_edge':int(ctfdict['ctf_edge']),'ctf_overlap':int(ctfdict['ctf_overlap']),'ctf_ampcont':float(ctfdict['ctf_ampcont']),'ctf_volt':float(ctfdict['ctf_volt']),'ctf_cs':float(ctfdict['ctf_cs'])}
-		except:
-			print 'no ctf parameters stored in current directory! Estimate ctf in the GUI in gauss mode first!'
-			do_ctfest = False
+	if options.ptclsize*1.5>boxsize :
+		print "WARNING: Strongly recommend using a box size 1.5 - 2.0x the maximum dimension of the particle! This may be pushed to ~1.25x in some cases, but results may be suboptimal."
+		print "Your box size is {:1.2f}x the particle size. Recommend a size of at least {:d}".format(boxsize/float(options.ptclsize),good_size(int(options.ptclsize*1.5)))
+		
+		
+	logid=E2init(sys.argv,options.ppid)
 
-	for i,arg in enumerate(args):
-		boxer_vitals = EMBoxerModuleVitals(file_names=[arg], box_size=boxsize)
-		boxer_vitals.current_idx=0
-		gboxer.target = boxer_vitals
-		# Estimate ctf first and then autobox so ctf parametes need not be separately set in alternate image (i.e., the filtered and possibly downsampled image)
-		if do_ctfest:
-			gboxer.auto_ctf(arg,ctf_params)
-		if do_autobox:
-			gboxer.auto_box_cmdline(arg,boxsize=boxsize)
-		E2progress(logid,float(i+1)/len(args))
-	return err
 
-def autobox(args,options,logid):
+	if options.autopick!=None :
+		apick=parsemodopt(options.autopick)
+		for s,k,pcl in aboxmodes:
+			if k==apick[0] : break
+		
+		if os.path.exists("info/boxrefs.hdf"):
+			goodrefs=EMData.read_images("info/boxrefs.hdf")
+		else: goodrefs=[]
+		
+		if os.path.exists("info/boxrefsbad.hdf"):
+			badrefs=EMData.read_images("info/boxrefsbad.hdf")
+		else: badrefs=[]
+		
+		for i,fspi in enumerate(args):
+			fsp=fspi.split()[1]
+			micrograph=load_micrograph(fsp)
 
-	boxer = SwarmBoxer()
-	boxer.handle_file_change(options.autoboxer)
-	for i,arg in enumerate(args):
-		boxer_vitals = EMBoxerModuleVitals(file_names=[arg])
-		boxer_vitals.current_idx=0
-		boxer.target = weakref.ref(boxer_vitals)
-		boxer.auto_box(arg, False, True, True)
-		E2progress(logid,float(i+1)/len(args))
+			newboxes=pcl.do_autobox(micrograph,goodrefs,badrefs,options.apix,options.threads,apick[1],None)
+			print "{}) {} boxes -> {}".format(i,len(newboxes),fsp)
+			
+			# if we got nothing, we just leave the current results alone
+			if len(newboxes)==0 : continue
+		
+			# read the existing box list and update
+			db=js_open_dict(info_name(fsp))
+			try: 
+				boxes=db["boxes"]
+				# Filter out all existing boxes for this picking mode
+				bname=newboxes[0][2]
+				boxes=[b for b in boxes if b[2]!=bname]
+			except:
+				boxes=[]
+				
+			boxes.extend(newboxes)
+			
+			db["boxes"]=boxes
+			db.close()
 
-def write_output(args,options,logid, database="e2boxercache"):
-	params = {}
-	params["filenames"] = args
-	params["suffix"] = options.suffix
-	params["format"] = options.format
-	db = js_open_dict(database+"/quality.json")
-	db['suffix'] = options.suffix
-	db['extension'] = os.path.splitext(args[0])[-1]
-
-	total_progress = 0
-	if options.write_ptcls:total_progress += len(args)
-	if options.write_dbbox:total_progress += len(args)
-	progress = 0.0
-	E2progress(logid,0.0)
-
-	if options.write_ptcls:
-		if options.gauss_autoboxer != None:
-			print "\n\n --write_ptcl option has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n"
-		else:
-			names = get_particle_outnames(params)
-			for i,output in enumerate(names):
-				input = args[i]
-				box_list = EMBoxList()
-				box_list.load_boxes_from_database(input)
-	
-				# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
-				# only need to do this if write_ptcls is called on its own
-				if (len(box_list) > 0) and (options.gauss_autoboxer == None):
-					bx = box_list[0]
-					if bx.type == GaussBoxer.AUTO_NAME and options.gauss_autoboxer == None:
-						print 'For automatic boxing using Gauss Boxer, particles should be written at the time of autoboxing either by 1) activating "Write Output" button in GUI mode, or 2) adding --write_ptcls when autoboxing in command line mode'
-						print 'I will continue and write particles, but results may not be as expected.'
-	
-				# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
-				# only need to do this if write_ptcls is called on its own
-				if (len(box_list) > 0) and (options.gauss_autoboxer != None):
-					bx = box_list[0]
-					boxkey = options.gauss_autoboxer
-					if bx.type == GaussBoxer.AUTO_NAME:
-						# these were boxed in gauss mode, so we have to process and possibly decimate image before writing
-	
-						gdb_name = GaussPanel.GDB_NAME
-						if not js_check_dict(gdb_name):
-							print "no gauss mode autoboxing parameters were found in database...this should not happen"
-							print 'exiting...'
-							return
-						gbdb = js_open_dict(gdb_name)
-						if not gbdb.has_key(boxkey):
-							print "no gauss mode autoboxing parameters were found in database for %s...this should not happen"%boxkey
-							print 'exiting...'
-							return
-						autoboxdict = gbdb[boxkey]
-	
-						gboxer = GaussBoxer()
-						boxsize=int(options.boxsize)
-						try:
-							gboxer.set_pixel_input(float(autoboxdict['pixel_input']))
-							gboxer.set_pixel_output(float(autoboxdict['pixel_output']))
-							gboxer.set_invert_contrast(autoboxdict['invert_contrast'])
-							gboxer.set_use_variance(autoboxdict['use_variance'])
-							gboxer.set_gauss_width(float(autoboxdict['gauss_width']))
-							gboxer.set_thr_low(float(autoboxdict['thr_low']))
-							gboxer.set_thr_hi(float(autoboxdict['thr_hi']))
-						except:
-							print 'no gauss mode autoboxing parameters were found in database...this should not happen'
-							print 'exiting...'
-							return
-	
-						gboxer.get_small_image(input,modecmd=True,boxsize=boxsize,ret_dummy=True)
-	
-				box_list.write_particles(input,output,options.boxsize,options.invert,options.norm,options.exclude_edges,options.exclude_bad)
-	
-	
-				progress += 1.0
-				E2progress(logid,progress/total_progress)
+	if options.gui :
+		if isinstance(QtGui,nothing) :
+			print "====================================="
+			print "ERROR: GUI mode unavailable without PyQt4"
+			sys.exit(1)
+		from emapplication import EMApp
+		app=EMApp()
+		gui=GUIBoxer(args,options.voltage,options.apix,options.cs,options.ac,options.boxsize,options.ptclsize,options.threads)
+		gui.show()
+		app.exec_()
 
 	if options.write_dbbox:
-		names = get_coord_outnames(params)
-
-		for i,output in enumerate(names):
-			input = args[i]
-			box_list = EMBoxList()
-			box_list.load_boxes_from_database(input)
-			box_list.write_coordinates(input,output,options.boxsize,options.exclude_edges,options.exclude_bad) # input is redundant but it makes output interfaces generic
-
-			progress += 1.0
-			E2progress(logid,progress/total_progress)
-
-def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
-
-	ptcls = []
-	mediator = SwarmShrunkenImageMediator(box_size/(2*shrink),shrink)
-
-	real_box_size = box_size/shrink
-	averages = []
-	for box in ref_boxes:
-		if box.in_template == False: continue # it's excluded from the template
-
-		xc = box.x/shrink-real_box_size/2
-		yc = box.y/shrink-real_box_size/2
-		r = Region(xc,yc,real_box_size,real_box_size)
-		image = CoarsenedFlattenedImageCache.get_image(box.image_name,mediator)
-		particle = image.get_clip(r)
-
-		particle.process_inplace("normalize.edgemean")
-		ptcls.append(particle)
-
-	if len(ptcls) == 0:
-		raise RuntimeError("No boxes are flagged as contributing to the template")
-
-	# bootstrap the original average
-	ave = ptcls[0].process("xform.centeracf")
-	for i in range(1,len(ptcls)):
-		ave.add(ptcls[i].process("xform.centeracf"))
-#		ta = ptcls[i].align("translational",ave)
-#		ave.add(ta)
-
-	ave.process_inplace("xform.centeracf")
-	ave.process_inplace("math.rotationalaverage")
-	ave.process_inplace("normalize.edgemean")
-	ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
-	averages.append(ave)
-	averages[-1].set_attr("creation_time_stamp", gm_time_string())
-	for n in range(0,iter):
-		t = []
-		for idx,particle in enumerate(ptcls):
-			ta = particle.align("translational",ave)
-			t.append(ta)
-
-		ave = t[0].copy()
-		for i in range(1,len(ptcls)):
-			ave.add(t[i])
-
-		ave.process_inplace("xform.centeracf")
-		ave.process_inplace("math.rotationalaverage")
-		ave.process_inplace("normalize.edgemean")
-
-		# edge normalize here SL before
-		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
-		averages.append(ave)
-		averages[-1].set_attr("creation_time_stamp", gm_time_string())
-
-	return averages
-
-
-class SwarmShrunkenImageMediator:
-	def __init__(self,template_radius,subsample_rate):
-		self.template_radius = template_radius
-		self.subsample_rate = subsample_rate
-
-	def get_template_radius(self): return self.template_radius
-	def get_subsample_rate(self): return self.subsample_rate
-
-class SwarmFLCFImageMediator:
-	def __init__(self,template_radius,subsample_rate,template_image):
-		self.template_radius = template_radius
-		self.subsample_rate = subsample_rate
-		self.template_object = SwarmFLCFImageMediator.TemplateObject(template_image)
-
-	def get_template_radius(self): return self.template_radius
-	def get_subsample_rate(self): return self.subsample_rate
-	def get_template_object(self): return self.template_object
-
-	class TemplateObject:
-		def __init__(self,template_image):
-			self.template_image = template_image
-
-		def get_template_ts(self): return self.template_image["creation_time_stamp"]
-
-		def get_template(self): return self.template_image
-
-		def get_radius(self): return
-
-class SwarmBox:
-	def __init__(self,x,y,image_name,in_template=True,profile=None):
-		self.x = x
-		self.y = y
-		self.in_template = in_template
-		self.image_name = image_name
-		self.profile=profile
-		self.peak_x = None
-		self.peak_y = None
-		self.peak_score = None
-		self.ever_moved = False # used to record if the user ever moved the ref after they first added it
-
-	def type_name(self):
-		if self.in_template: return SwarmBoxer.REF_NAME
-		else: return SwarmBoxer.WEAK_REF_NAME
-
-	def update_picking_data(self,mediator):
-
-		shrink = mediator.get_subsample_rate()
-		x = int(self.x/shrink)
-		y = int(self.y/shrink)
-		search_radius = mediator.get_template_radius()
-		correlation = FLCFImageCache.get_image(self.image_name,mediator)
-
-		peak_location = BoxingTools.find_radial_max(correlation,x,y,search_radius )
-		peak_location2 = BoxingTools.find_radial_max(correlation,peak_location[0],peak_location[1],search_radius )
-		if (peak_location != peak_location2):
-			# there is no local max, this particle will be ignorned
-			self.profile = None
-			self.peak_score = None
-			self.peak_x = None
-			self.peak_y = None
-			return
-
-		# store the peak location
-		self.peak_x = peak_location[0]
-		self.peak_y = peak_location[1]
-
-		# store the correlation value at the correlation max
-		self.peak_score = correlation.get(self.peak_x,self.peak_y)
-
-		if self.peak_score != None:
-			# store the profile
-			self.profile = BoxingTools.get_min_delta_profile(correlation,self.peak_x,self.peak_y, mediator.get_template_radius() )
-
-
-class SwarmPanel:
-	DB_NAME = "e2boxercache/swarm_panel.json"
-
-	def __init__(self,target,particle_diameter=128):
-		self.busy = True
-		self.particle_diameter = particle_diameter
-		self.target = weakref.ref(target)
-		self.widget = None
-		self.busy = False
-
-	def get_widget(self):
-		if self.widget == None:
-			from PyQt4 import QtCore, QtGui, Qt
-			self.widget = QtGui.QWidget()
-			vbl = QtGui.QVBoxLayout(self.widget)
-			vbl.setMargin(0)
-			vbl.setSpacing(6)
-			vbl.setObjectName("vbl")
-
-			db = js_open_dict(SwarmPanel.DB_NAME)
-
-			hbl = QtGui.QHBoxLayout()
-			ptcl_diam_label = QtGui.QLabel("Particle Diameter:")
-			ptcl_diam_label.setToolTip("An estimate of the particle diameter - this used by Swarm for automatically shrinking and for determining automatic picking parameters.\nA value that is slightly larger than the particle is generally good. Err on the side of being too large, not too small.")
-			hbl.addWidget(ptcl_diam_label)
-
-			self.ptcl_diam_edit = QtGui.QLineEdit(str(self.particle_diameter))
-			hbl.addWidget(self.ptcl_diam_edit)
-			self.clear=QtGui.QPushButton("Clear Boxes")
-			self.clear.setToolTip("Clear boxes generated by the Swarm mode.")
-			hbl.addWidget(self.clear)
-
-			vbl.addLayout(hbl)
-
-			self.thrbut = QtGui.QRadioButton(SwarmBoxer.THRESHOLD)
-			self.selbut = QtGui.QRadioButton(SwarmBoxer.SELECTIVE)
-			self.selbut.setChecked(True)
-			self.morselbut = QtGui.QRadioButton(SwarmBoxer.MORESELECTIVE)
-
-			self.method_group = QtGui.QButtonGroup()
-			self.method_group.addButton(self.thrbut)
-			self.method_group.addButton(self.selbut)
-			self.method_group.addButton(self.morselbut)
-
-			self.methodhbox = QtGui.QHBoxLayout()
-			self.methodhbox.addWidget(self.thrbut)
-			self.methodhbox.addWidget(self.selbut)
-			self.methodhbox.addWidget(self.morselbut)
-
-			self.groupbox = QtGui.QGroupBox("Auto Box Method")
-			self.groupbox.setToolTip("Tell Swarm what criteria to use for selecting particles.")
-			self.groupbox.setLayout(self.methodhbox)
-			vbl.addWidget(self.groupbox)
-
-			hbl_ww = QtGui.QHBoxLayout()
-			self.view_template=QtGui.QPushButton( QtGui.QIcon(get_image_directory() + "pp_boxer_icon.png"),"View Template")
-			self.view_template.setEnabled(False)
-			self.view_template.setToolTip("View the template that is being used (if more than one template is shown, it is the last one).")
-			hbl_ww.addWidget(self.view_template)
-
-			self.autobox=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "green_boxes.png"),"Autobox")
-			self.autobox.setEnabled(False)
-			self.autobox.setToolTip("Force Swarm to autobox the current image")
-			hbl_ww.addWidget(self.autobox)
-
-			vbl.addLayout(hbl_ww)
-
-			hbl_aa = QtGui.QHBoxLayout()
-			self.update_template = QtGui.QCheckBox("Refresh Template")
-			self.update_template.setToolTip("Whether or not the act of adding a reference should force an update of the template being used by Swarm.\nOnce you have an adequate template you can turn this off and interactive picking will be faster.")
-			self.update_template.setChecked(True)
-			hbl_aa.addWidget(self.update_template)
-
-
-			self.auto_update = QtGui.QCheckBox("Auto Update")
-			self.auto_update.setToolTip("Whether or not autoboxing should occur every time you change a parameter or select a different image. This is the old dynapix button.")
-			self.auto_update.setChecked(db.setdefault("auto_update",True))
-			hbl_aa.addWidget(self.auto_update)
-			vbl.addLayout(hbl_aa)
-
-
-			self.advanced_hbl2 = QtGui.QHBoxLayout()
-			self.enable_interactive_threshold  = QtGui.QCheckBox("Interactive Threshold")
-			self.enable_interactive_threshold.setToolTip("Tweak the correlation threshold that is used to select particles.")
-			self.enable_interactive_threshold.setChecked(False)
-			from valslider import ValSlider
-			self.thr = ValSlider(None,(0.0,3.0),"")
-			self.thr.setValue(1.0)
-			self.thr.setEnabled(False)
-			self.advanced_hbl2.addWidget(self.enable_interactive_threshold)
-			self.advanced_hbl2.addWidget(self.thr)
-			vbl.addLayout(self.advanced_hbl2)
-
-			self.overlap_hbl = QtGui.QHBoxLayout()
-			self.enable_overlap_removal  = QtGui.QCheckBox("Proximity Threshold")
-			self.enable_overlap_removal.setToolTip("Remove closely positioned particles.")
-			self.enable_overlap_removal.setChecked(False)
-			self.proximity_thr = ValSlider(None,(0,self.particle_diameter*2),"")
-			self.proximity_thr.setValue(0.001)
-			self.proximity_thr.setEnabled(False)
-			self.overlap_hbl.addWidget(self.enable_overlap_removal)
-			self.overlap_hbl.addWidget(self.proximity_thr)
-			vbl.addLayout(self.overlap_hbl)
-
-			hbl_bb = QtGui.QHBoxLayout()
-			self.step_back=QtGui.QPushButton("Step Back")
-			self.step_back.setToolTip("Recall the previous Swarm states")
-			self.step_back.setEnabled(False)
-			hbl_bb.addWidget(self.step_back)
-			self.step_forward=QtGui.QPushButton("Step Forward")
-			self.step_forward.setToolTip("Undo a step back")
-			self.step_forward.setEnabled(False)
-			hbl_bb.addWidget(self.step_forward)
-			vbl.addLayout(hbl_bb)
-
-
-			QtCore.QObject.connect(self.ptcl_diam_edit,QtCore.SIGNAL("editingFinished()"),self.new_ptcl_diam)
-			QtCore.QObject.connect(self.update_template,QtCore.SIGNAL("clicked(bool)"),self.update_template_checked)
-			QtCore.QObject.connect(self.auto_update,QtCore.SIGNAL("clicked(bool)"),self.auto_update_checked)
-			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
-			QtCore.QObject.connect(self.view_template, QtCore.SIGNAL("clicked(bool)"), self.view_template_clicked)
-			QtCore.QObject.connect(self.autobox, QtCore.SIGNAL("clicked(bool)"), self.auto_box_clicked)
-			QtCore.QObject.connect(self.method_group,QtCore.SIGNAL("buttonClicked (QAbstractButton *)"),self.method_group_clicked)
-			QtCore.QObject.connect(self.enable_interactive_threshold, QtCore.SIGNAL("clicked(bool)"), self.interact_thresh_clicked)
-			QtCore.QObject.connect(self.thr,QtCore.SIGNAL("sliderReleased"),self.new_threshold_release)
-			QtCore.QObject.connect(self.thr,QtCore.SIGNAL("textChanged"),self.new_threshold_text_changed)
-			QtCore.QObject.connect(self.step_back, QtCore.SIGNAL("clicked(bool)"), self.step_back_clicked)
-			QtCore.QObject.connect(self.step_forward, QtCore.SIGNAL("clicked(bool)"), self.step_forward_clicked)
-			QtCore.QObject.connect(self.proximity_thr,QtCore.SIGNAL("sliderReleased"),self.proximity_threshold_release)
-			QtCore.QObject.connect(self.proximity_thr,QtCore.SIGNAL("textChanged"),self.proximity_threshold_text_changed)
-			QtCore.QObject.connect(self.enable_overlap_removal, QtCore.SIGNAL("clicked(bool)"), self.enable_overlap_removal_clicked)
-		return self.widget
-
-	def update_states(self,swarm_boxer):
-		self.busy = True
-		self.ptcl_diam_edit.setText(str(swarm_boxer.particle_diameter))
-		mode = swarm_boxer.pick_mode
-		if mode == SwarmBoxer.THRESHOLD: self.thrbut.setChecked(True)
-		elif mode == SwarmBoxer.SELECTIVE: self.selbut.setChecked(True)
-		elif mode == SwarmBoxer.MORESELECTIVE: self.morselbut.setChecked(True)
-		else: raise RuntimeError("This shouldn't happen")
-
-		if swarm_boxer.proximity_threshold != None:
-			self.enable_overlap_removal.setChecked(True)
-			self.proximity_thr.setEnabled(True)
-			self.proximity_thr.setValue(swarm_boxer.proximity_threshold)
-		else:
-			self.enable_overlap_removal.setChecked(False)
-			self.proximity_thr.setEnabled(False)
-
-		#self.auto_update.setChecked(swarm_boxer.auto_update)
-		t = swarm_boxer.peak_score
-		if swarm_boxer.interactive_threshold != None:
-			t = swarm_boxer.interactive_threshold
-			self.enable_interactive_threshold.setChecked(True)
-			self.thr.setEnabled(True)
-		else:
-			self.enable_interactive_threshold.setChecked(False)
-			self.thr.setEnabled(False)
-		self.set_picking_data(t,swarm_boxer.profile,swarm_boxer.profile_trough_point)
-
-		if swarm_boxer.templates != None and len(swarm_boxer.templates) > 0:
-			self.enable_update_template(True)
-			self.update_template.setChecked(swarm_boxer.update_template)
-		else:
-			self.set_update_template(True,False)
-
-		self.enable_view_template(swarm_boxer.templates != None)
-
-		#self.busy = True # BEWARE self.set_picking_data set it False!
-
-		self.busy = False
-
-
-	def enable_overlap_removal_clicked(self,val):
-		if self.busy: return
-		self.proximity_thr.setEnabled(val)
-		self.target().set_proximity_removal_enabled(val)
-
-	def proximity_threshold_text_changed(self):
-		if self.busy: return
-		val = self.proximity_thr.getValue()
-		self.target().set_proximity_threshold(val)
-
-	def proximal_threshold(self):
-		'''
-		Gets the value stored by the proximity threshold slider
-		'''
-		return self.proximity_thr.getValue()
-
-	def proximity_threshold_release(self,val):
-		if self.busy: return
-		val = float(val)
-		self.target().set_proximity_threshold(val)
-
-	def new_threshold_text_changed(self):
-		if self.busy: return
-		val = self.thr.getValue()
-		self.target().set_interactive_threshold(val)
-
-	def new_threshold_release(self,val):
-		if self.busy: return
-		val = float(val)
-		self.target().set_interactive_threshold(val)
-
-	def interact_thresh_clicked(self,val):
-		self.thr.setEnabled(val)
-		if val == False:
-			self.target().disable_interactive_threshold()
-
-	def set_picking_data(self,threshold,profile=[],trough_point=None):
-		self.busy = True
-		if threshold == None: self.thr.setValue(0)
-		else: self.thr.setValue(threshold)
-		help = ""
-		if profile != None and len(profile) > 0:
-			help += "The Swarm profile is ["
-			for i,p in enumerate(profile):
-				if i != 0: help += " "
-				help += "%.3f" %p
-
-			help += "]\n"
-
-		if trough_point:
-			help += "The trough point is " + str(trough_point) + "."
-
-		self.thr.setToolTip(help)
-		self.busy = False
-
-	def new_ptcl_diam(self):
-		if self.busy: return
-		self.target().set_particle_diameter(int(self.ptcl_diam_edit.text()))
-
-	def update_template_checked(self,val):
-		if self.busy: return
-		self.target().set_update_template(val)
-
-	def clear_clicked(self,val):
-		self.target().clear_all()
-
-	def method_group_clicked(self,button):
-		if self.busy: return
-		self.target().set_pick_mode(str(button.text()))
-
-	def view_template_clicked(self,val):
-		self.target().view_template_clicked()
-
-	def auto_box_clicked(self,val):
-		self.target().auto_box_clicked()
-
-	def enable_view_template(self,val):
-		self.view_template.setEnabled(val)
-
-	def auto_update_checked(self,val):
-		if self.busy: return
-		db = js_open_dict(SwarmPanel.DB_NAME)
-		db["auto_update"] = val
-		self.target().set_auto_update(val)
-
-	def set_update_template(self,val,enable=True):
-		self.busy = True
-		self.update_template.setChecked(val)
-		self.update_template.setEnabled(enable)
-		self.busy = False
-
-	def enable_update_template(self,enable=True):
-		self.busy = True
-		self.update_template.setEnabled(enable)
-		self.busy = False
-
-	def enable_auto_box(self,val):
-		self.autobox.setEnabled(val)
-
-	def	step_back_clicked(self,val):
-		self.target().step_back()
-
-	def step_forward_clicked(self,val):
-		self.target().step_forward()
-
-	def enable_step_back(self,val,total=None):
-		self.step_back.setEnabled(val)
-		if total != None: self.step_back.setToolTip("%d backward steps available" %total)
-		else: self.step_back.setToolTip("")
-
-	def enable_step_forward(self,val,total=None):
-		if self.widget == None: self.get_widget()
-		self.step_forward.setEnabled(val)
-		if total != None: self.step_forward.setToolTip("%d forward steps available" %total)
-		else: self.step_forward.setToolTip("")
-
-
-def compare_box_correlation(box1,box2):
-	c1 = box1[3]
-	c2 = box2[3]
-	if c1 > c2: return -1
-	elif c1 == c2: return 0
-	else: return 1
-
-
-class SwarmBoxer:
-	THRESHOLD = "Threshold"
-	SELECTIVE = "Selective"
-	MORESELECTIVE = "More Selective"
-	CACHE_MAX = 10 # Each image has its last CACHE_MAX SwarmBoxer instance stored (or retrievable) automatically
-	PROFILE_MAX = 0.8 # this is a percentage - it stops the profile trough point from going to the end
-	REF_NAME = "swarm_ref"
-	AUTO_NAME = "swarm_auto"
-	WEAK_REF_NAME = "swarm_weak_ref"
-	INIT = True
-	MVT_THRESHOLD = 200 # a squared distance - used by the movement cache to automatically update using previously supplied user movement data
-	SWARM_BOXERS = "swarm_boxers"
-	SWARM_FWD_BOXERS = "swarm_fwd_boxers"
-	SWARM_USER_MVT = "swarm_user_mvt"
-	def __init__(self,particle_diameter=128):
-		if SwarmBoxer.INIT: # this solved a strange problem with databases
-			SwarmBoxer.INIT = False
-			EMBox.set_box_color(SwarmBoxer.REF_NAME,[0,0,0])
-			EMBox.set_box_color(SwarmBoxer.WEAK_REF_NAME,[0.2,0.2,0.4])
-			EMBox.set_box_color(SwarmBoxer.AUTO_NAME,[0.4,.9,.4]) # Classic green, always was this one ;)
-
-		self.panel_object = None # maybe it doesn't exist
-		self.particle_diameter = particle_diameter
-		self.update_template = True # Tied to the SwarmPanel - Whether or not the act of adding a reference should force an update of the template
-		self.pick_mode = SwarmBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
-		self.interactive_threshold = None  # Tied to the SwarmPanel -  this is a float when the user is playing with the threshold, but is None elsewise
-		self.reset() # the first time this is called this establishes attribute variables - seeing as the function is required more than once it makes sense to do this
-		self.auto_update = True # Tied to the SwarmPanel - this is the historical 'dynapix' button. It means that if any picking parameter is altered then autoboxing will be automatically triggered
-		self.signal_template_update = False
-
-		BoxingTools.set_mode(BoxingTools.CmpMode.SWARM_AVERAGE_RATIO) # this probably never needs to change - this mode has the best statistics
-
-		self.template_viewer = None
-
-		self.step_back_cache = [] # this will stored lists that store the parameters necessary to reconstruct a swarm boxer
-		self.step_fwd_cache = [] # this will store the redo lists
-		self.mvt_cache = [] # we have to remember if any of the auto selected boxes were moved, so if the user reboxes then the movements they previously supplied will be applied
-
-		self.gui_mode = False # set this to False to stop any calls to Qt - such as the act of making the cursor busy...
-
-	def __del__(self):
-		'''
-		Closes the template viewer if it exists
-		'''
-		if self.template_viewer != None:
-			self.template_viewer.close()
-			self.template_viewer = None
-
-	def reset(self):
-		'''
-		Sets the self.ref_boxes, self.templates, self.profile, self.peak_score and self.profile_trough_point to safe defaults.
-		Called in a couple of locations internally (notable, in the __init__ function)
-		'''
-		self.ref_boxes = []
-		self.templates = None
-		self.profile = None
-		self.peak_score = None
-		self.profile_trough_point = None
-		self.proximity_threshold = None
-		self.proximal_boxes = [] # this is like a temporary cache that stores boxes removed  by the application of the proximity threshold. If the user shortens the proximity threshold then previously removed boxes can be recalled.
-
-	def to_list(self):
-		'''
-		Stores the vital attributes of this object in a list - returns a deep copy. The list contains these entries:
-		-----------------------------
-		Index   Variable			Description
-		0		self.ref_boxes		List of SwarmBox object - this information could technically be used to regenerate the template and the picking parameters
-		1		self.templates		List of EMData objects which are iteratively honed templates - the last is the one that was used for the correlation image
-		2		self.profile		List of floats - The Swarm profile
-		3		self.peak_score		Float - The correlation threshold being used to select particles
-		4		self.profile_trough_point	Int - The trough point, used in the selective mode of Swarm picking
-		5		self.particle_diameter		Int- User supplied estimate of the particle diameter
-		6		self.update_template		Bool - Flag indicating whether adding a references should cause an update of the template
-		7		self.pick_mode				Int - either SwarmBoxer.THRESHOLD, SwarmBoxer.SELECTIVE, or SwarmBoxer.MORESELECTIVE
-		8		self.interactive_threshol	Float or None - If not None, this is a theshold value that overrides self.peak_score
-		9		unique id					String - that which is return by gm_time_string - this can be used to decide what is the best autoboxer (i.e. is not really related to interactive boxing)
-		10		self.proximity_threshold	Float or None - If not None, this is a threshold used to remove auto-selected particles that are too close to each other
-		-----------------
-		Note that it would be possible to append entries, but that if you disrupt the order which is specified above you will destroy back compatibility
-		'''
-		l = [self.ref_boxes,self.templates,self.profile,self.peak_score,self.profile_trough_point,self.particle_diameter,self.update_template]
-		l.extend([self.pick_mode, self.interactive_threshold, gm_time_string(),self.proximity_threshold])
-		return deepcopy(l)
-
-	def load_from_list(self,l):
-		'''
-		Sets almost every variable attributes to a new value by assuming a specific ordering of the incoming list.
-		The incoming list should almost certainly have been generated, at some point in time, but the call to self.to_list -
-		See the comments in self.to_list for more details.
-		@param l a list that was almost certainly generated, at some point in time, but a call to self.to_list
-		'''
-		self.ref_boxes = l[0]
-		self.templates = l[1]
-		self.profile = l[2]
-		self.peak_score = l[3]
-		self.profile_trough_point = l[4]
-		self.particle_diameter = l[5]
-		self.update_template = l[6]
-		self.pick_mode = l[7]
-		self.interactive_threshold = l[8]
-		# entry 9 is not required, it is the creation stamp used to ascertain if common boxer instances are being used by different images, it has no relevance to interactive boxing
-		try: # this try/except is for back compatibility only
-
-			self.proximity_threshold = l[10]
-		except:
-			self.proximity_threshold = None
-
-	def step_back(self):
-		'''
-		That which is called by the SwarmPanel when "Step Back" is clicked
-		Manages all the various scenarios
-		'''
-
-		if len(self.step_back_cache) == 0: raise RuntimeError("Step backward cache has no entries")
-		l = self.step_back_cache.pop(-1)
-		self.step_fwd_cache.append(l)
-		self.panel_object.enable_step_forward(True,len(self.step_fwd_cache))
-
-		if len(self.step_back_cache) > 0:
-			self.panel_object.enable_step_back(True,len(self.step_back_cache))
-			self.load_from_last_state()
-		else:
-			self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME])
-			self.reset()
-			self.panel_object.enable_step_back(False)
-			self.target().get_2d_window().updateGL()
-
-		self.panel_object.update_states(self)
-		if self.template_viewer != None:
-			self.template_viewer.set_data(self.templates,soft_delete=True)
-			self.template_viewer.updateGL()
-
-		if self.templates != None:
-			self.panel_object.enable_view_template(True)
-
-#		self.debug_back("back")
-#
-#	def debug_back(self,s):
-#		for i,c in enumerate(self.step_back_cache):
-#			for j,b in enumerate(c[0]):
-#				print s,i,j,b.in_template
-#		print "---"
-
-	def load_from_last_state(self):
-		'''
-		A function called in more than one location. Gets the last entry in the self.step_back_cache and harnesses
-		the relevant parameters from it, then clears the EMBoxerModule of relevant boxes, and then an autobox is
-		forced. Making the autoboxing sensitive to the self.auto_update parameter would make it messy and tricky to handle.
-		'''
-		if len(self.step_back_cache) == 0: raise RuntimeError("can't proceed there are no entries in the step_back cache")
-		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME])
-#		self.debug_back("hb a")
-		self.load_from_list(deepcopy(self.step_back_cache[-1]))
-		boxes = [ [box.x, box.y, box.type_name(), box.peak_score] for box in self.ref_boxes if box.image_name == self.current_file ]
-#		self.debug_back("hb b")
-		self.target().add_boxes(boxes)
-		self.target().get_2d_window().updateGL()
-		if self.templates != None:
-			self.auto_box(self.target().current_file(),parameter_update=False,cache=False)
-		else:
-			# it's an empty boxer... that's fine
-			pass
-			#print "handle the case of no templates ?"
-
-	def step_forward(self):
-		'''
-		Manages the case when the user has clicked "Step Forward" in the SwarmPanel
-		In this case the last entry in self.step_fwd_cache is used to set the states of
-		the relevant variable attributes of this object. After this we have to clear the
-		EMBoxerModule and redo autoboxing. Note that I made this function force an autobox,
-		simply because the it would get messy otherwise.
-		Handles any necessary updates of the SwarmPanel
-		'''
-		if len(self.step_fwd_cache) == 0: raise RuntimeError("Step forward cache has no entries")
-		l = self.step_fwd_cache.pop(-1)
-
-		if len(self.step_fwd_cache) == 0: self.panel_object.enable_step_forward(False)
-		else: self.panel_object.enable_step_forward(True,len(self.step_fwd_cache)) # solely for the tooltip
-
-		self.panel_object.enable_step_back(True,len(self.step_back_cache))
-		self.step_back_cache.append(l)
-
-		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME])
-		self.load_from_list(deepcopy(self.step_back_cache[-1]))
-		boxes = [ [box.x, box.y, box.type_name(), box.peak_score] for box in self.ref_boxes if box.image_name == self.current_file]
-		self.target().add_boxes(boxes)
-		self.target().get_2d_window().updateGL()
-		if len(self.ref_boxes) > 0:
-			self.auto_box(self.target().current_file(),cache=False)
-
-		self.panel_object.update_states(self)
-		if self.template_viewer != None:
-			self.template_viewer.set_data(self.templates,soft_delete=True)
-			self.template_viewer.updateGL()
-
-		if self.templates != None:
-			self.panel_object.enable_view_template(True)
-
-	def cache_current_state(self):
-		'''
-		Adds the current state to self.step_back_cache
-		As a result resets self.step_fwd_cache (think in terms of undo and redo)
-		Also updates the SwarmPanel
-		'''
-		self.step_back_cache.append(self.to_list())
-		self.step_fwd_cache = []
-		if self.gui_mode: self.panel_object.enable_step_forward(False)
-		if self.gui_mode: self.panel_object.enable_step_back(True,len(self.step_back_cache))
-		if len(self.step_back_cache) >= SwarmBoxer.CACHE_MAX: self.step_back_cache.pop(0)
-
-	def cache_to_database(self):
-		'''
-		Stores the SwarmBoxer.SWARM_BOXERS and SwarmBoxer.SWARM_FWD_BOXER entries on the local database
-		'''
-		set_idd_image_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,self.step_back_cache)
-		set_idd_image_entry(self.target().current_file(),SwarmBoxer.SWARM_FWD_BOXERS,self.step_fwd_cache)
-
-	def handle_file_change(self,file_name,active_tool=False):
-		'''
-		Handles the situation when the user changes the current image being studied in the main interface
-		in the EMBoxerModule.
-		An autobox will occur if the image being changed to is in an empty state this the current image
-		has Swarm Data that is useful
-		Specifically, the last boxer from the previous image (i.e. self.step_back_cache[-1]) is pushed to the top
-		of the boxer stack for the new image and auto boxing occurs. This is easily undone if the results
-		are unwanted, i.e. by pressing "Step Back" in the SwarmPanel
-
-		A variety of basic things happen too. And cached boxer data are restored from the local database,
-		allowing the user to step back and step forward (as in the buttons in the Swarm Panel), etc.
-
-		'''
-		l = None
-		#if active_tool:
-			#if self.auto_update and len(self.step_back_cache) > 0:
-		if len(self.step_back_cache) > 0:
-			l = deepcopy(self.step_back_cache[-1])
-			if l[1] == None:
-				# there is no template, it's an empty autoboxer
-				l = None
-
-		self.reset()
-		self.mvt_cache = get_database_entry(file_name,SwarmBoxer.SWARM_USER_MVT,dfl=[])
-
-		self.step_fwd_cache = get_idd_image_entry(file_name,SwarmBoxer.SWARM_FWD_BOXERS,dfl=[])
-		if len(self.step_fwd_cache) > 0: self.panel_object.enable_step_forward(True,len(self.step_fwd_cache))
-		else:
-			if self.panel_object: self.panel_object.enable_step_forward(False)
-
-		self.step_back_cache = get_idd_image_entry(file_name,SwarmBoxer.SWARM_BOXERS,dfl=[])
-		if self.step_back_cache == None: self.step_back_cache = []
-		if len(self.step_back_cache) > 0 and l != None:
-#			print self.step_back_cache[-1][9],l[9]
-#			if self.step_back_cache[-1][9] == l[9]: # this is the time stamp - if they match we definitely shouldn't push on to the stacks
-#				print "saved a redundant step"
-#				l = None
-			if self.step_back_cache[-1][1] != None: # this means the handing on of parameters only ever happens if the current state is empty
-				l = None # there is a template, it's an non-trivial autoboxer
-			else:
-				pass
-				# this means we're in the clear in terms of automatically boxing this image
-
-		if l != None:
-			self.step_back_cache.append(l)
-			self.cache_to_database()
-
-		if len(self.step_back_cache) > 0:
-			if self.panel_object: self.panel_object.enable_step_back(True,len(self.step_back_cache))
-		else:
-			if self.panel_object: self.panel_object.enable_step_back(False)
-
-		if l != None:
-			self.load_from_last_state()
-		else:
-			if len(self.step_back_cache) > 0: self.load_from_list(deepcopy(self.step_back_cache[-1]))
-			# else we're probably establishing an empty slate
-
-		if self.panel_object: self.panel_object.update_states(self)
-		if self.template_viewer != None:
-			self.template_viewer.set_data(self.templates,soft_delete=True)
-			self.template_viewer.updateGL()
-
-	def get_proximal_boxes(self,boxes):
-		'''
-		very inefficient, but does the job
-		'''
-		if self.proximity_threshold == None: return [] # you probably should not have called this function if the proximity threshold is None anyway
-		if len(boxes) < 2: return [] # can't remove overlapping in this case
-
-		return_idxs = []
-
-		nearness_sq = self.proximity_threshold**2 # avoid use of sqrt
-
-		if isinstance(boxes,dict): keys = boxes.keys()
-		elif isinstance(boxes,list): keys = [i for i in range(len(boxes))]
-
-		for i,key in enumerate(keys):
-			box1 = boxes[key]
-			collision = False
-			for j in range(i+1,len(keys)):
-				key2 = keys[j]
-				box2 = boxes[key2]
-				if ((box1[0]-box2[0])**2 + (box1[1]-box2[1])**2) < nearness_sq:
-					collision = True
-					if box2[2] == SwarmBoxer.AUTO_NAME and return_idxs.count(key2) == 0: return_idxs.append(key2)
-
-			if collision:
-				# for efficiency
-				if box1[2] == SwarmBoxer.AUTO_NAME and return_idxs.count(key) == 0: return_idxs.append(key)
-
-		return return_idxs
-
-	def set_proximity_removal_enabled(self,val):
-		'''
-		'''
-		if val == False:
-			self.proximity_threshold = None
-			if len(self.proximal_boxes) != 0:
-				self.target().add_boxes(self.proximal_boxes)
-				self.proximal_boxes = []
-		else:
-			if self.proximity_threshold == None:
-				self.proximity_threshold = self.panel_object.proximal_threshold()
-				self.__remove_proximal_particles()
-	def set_proximity_threshold(self,val):
-		'''
-		The SwarmPanel call this function when the user changes the proximity threshold
-		'''
-		if self.proximity_threshold == val: return
-
-
-
-		if self.proximity_threshold == None or self.proximity_threshold < val or len(self.proximal_boxes) == 0:
-			self.proximity_threshold = val
-			self.__remove_proximal_particles()
-		else:
-			from PyQt4 import QtCore
-			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
-			self.proximity_threshold = val
-			if len(self.proximal_boxes) == 0: return
-
-			add_idxs = self.check_proximity_add_boxes(self.proximal_boxes)
-
-			if len(add_idxs) > 0:
-				add_idxs.sort()
-				add_idxs.reverse()
-				# already in reverse order
-				boxes = []
-				for idx in add_idxs:
-					boxes.append(self.proximal_boxes.pop(idx))
-
-				self.target().add_boxes(boxes)
-			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
-
-		cache = get_idd_image_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,dfl=[])
-		if len(cache) > 0:
-			cache[-1][10] = self.proximity_threshold # just store the new proximity threshold
-			get_idd_image_entry(self.target().current_file(),SwarmBoxer.SWARM_BOXERS,cache)
-
-
-
-#	def __remove_proximal_particles(self):
-#		from PyQt4 import QtCore
-#		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
-#		boxes = self.target().get_boxes_filt(SwarmBoxer.AUTO_NAME,as_dict=True)
-#		proximal_boxes_idxs = self.get_proximal_boxes(boxes)
-#		proximal_boxes_idxs.sort()
-#		proximal_boxes_idxs.reverse()
-#		proximal_boxes = [boxes[idx] for idx in proximal_boxes_idxs]
-#
-#		conv = [box.to_list() for box in proximal_boxes]
-#		self.proximal_boxes.extend(conv)
-#		self.target().remove_boxes(proximal_boxes_idxs)
-#		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
-#
-	def __remove_proximal_particles(self):
-		if self.gui_mode:
-			from PyQt4 import QtCore
-			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
-		boxes = self.target().get_boxes()
-		proximal_boxes_idxs = self.get_proximal_boxes(boxes)
-		proximal_boxes_idxs.sort()
-		proximal_boxes_idxs.reverse()
-		proximal_boxes = [boxes[idx] for idx in proximal_boxes_idxs]
-
-		conv = [box.to_list() for box in proximal_boxes]
-		self.proximal_boxes.extend(conv)
-		self.target().remove_boxes(proximal_boxes_idxs)
-		if self.gui_mode:
-			from PyQt4 import QtCore
-			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
-
-	def check_proximity_add_boxes(self,boxes):
-		'''
-		boxes is always a list
-		'''
-
-		keys = [i for i in range(len(boxes))]
-
-		add_idxs = []
-		nearness_sq = self.proximity_threshold**2 # avoid use of sqrt
-		for i,key in enumerate(keys):
-			box1 = boxes[key]
-			nearness = None
-			near_idx = None
-			for j in range(0,len(keys)):
-				if j == i: continue
-
-				key2 = keys[j]
-				box2 = boxes[key2]
-				dist = ((box1[0]-box2[0])**2 + (box1[1]-box2[1])**2)
-				if nearness == None or dist < nearness:
-					nearness = dist
-					near_idx = j
-
-			if nearness > nearness_sq:
-				add_idxs.append(i)
-
-		return add_idxs
-
-	def set_interactive_threshold(self,val):
-		'''
-		The SwarmPanel calls this function when the user changes the interactive threshold
-		@param val the new interactive threshold to set
-		'''
-		if self.interactive_threshold == val: return
-
-		self.interactive_threshold = val
-		if self.auto_update and self.templates != None:
-			self.auto_box(self.target().current_file(), parameter_update=True, force_remove_auto_boxes=True)
-		elif not self.auto_update:
-			self.panel_object.enable_auto_box(True)
-
-	def disable_interactive_threshold(self):
-		'''
-		The SwarmPanel calls this function when the user clicks to disable the interactive threshold
-		'''
-
-		if self.interactive_threshold == None:
-			# The user clicked "Interactive Threshold" and then clicked it again - i.e. nothing was altered
-			return
-
-		self.interactive_threshold = None
-		if self.auto_update and self.templates != None:
-			self.auto_box(self.target().current_file(), parameter_update=True, force_remove_auto_boxes=True)
-		elif not self.auto_update:
-			self.panel_object.enable_auto_box(True)
-
-	def view_template_clicked(self):
-		'''
-		The SwarmPanel calls this function.
-		Loads an EMImageMXWidget for viewing (if it doesn't already exist)
-		Brings the template viewer to the foreground
-		'''
-		if self.template_viewer == None:
-			from emimagemx import EMImageMXWidget
-			self.template_viewer = EMImageMXWidget()
-
-			self.template_viewer.set_data(self.templates,soft_delete=True) # should work if self.templates is None
-			self.template_viewer.setWindowTitle("Templates")
-			from PyQt4 import QtCore
-			QtCore.QObject.connect(self.template_viewer,QtCore.SIGNAL("module_closed"),self.template_viewer_closed)
-
-		get_application().show_specific(self.template_viewer)
-
-	def template_viewer_closed(self):
-		'''
-		A slot for the module_closed signal from self.template_viewer
-		'''
-		self.template_viewer = None
-
-	def set_update_template(self,val):
-		'''
-		Whether or not the act of adding a reference should for an update of the template
-		@param val a boolena
-		'''
-		self.update_template = val
-
-	def set_auto_update(self,val):
-		'''
-		Whether or not picked boxes should be updated when parameters are changed
-		@param val a boolean
-		'''
-		self.auto_update = val
-
-	def set_particle_diameter(self,diameter):
-		'''
-		set the particle diameter, which should be an int
-		@param diameter the approximate diameter of the particle
-		'''
-		if diameter != self.particle_diameter:
-			self.particle_diameter = diameter
-			self.signal_template_update = True
-			if self.auto_update and self.templates != None:
-				self.auto_box(self.target().current_file())
-			elif not self.auto_update: self.panel_object.enable_auto_box(True)
-
-	def set_pick_mode(self,mode):
-		'''
-		Sets self.pick_mode
-		@param mode should be in SwarmBoxer.THRESHOLD, SwarmBoxer.SELECTIVE, SwarmBoxer.MORESELECTIVE
-		'''
-		if mode not in [SwarmBoxer.THRESHOLD, SwarmBoxer.SELECTIVE, SwarmBoxer.MORESELECTIVE ]: raise RuntimeError("%s is an unknown SwarmBoxer mode" %mode)
-		if mode != self.pick_mode:
-			self.pick_mode = mode
-			if self.auto_update and self.templates != None:
-				self.auto_box(self.target().current_file(), parameter_update=False, force_remove_auto_boxes=True)
-			elif not self.auto_update:
-				self.panel_object.enable_auto_box(True)
-
-	def move_auto_box(self,box_number,image_name,dx,dy):
-		'''
-		This is the solution to a conundrum - what if the user moves an auto box (a green one) but then reboxes, subsequently
-		losing this "centering" metadata? The solution implemented here is to store the movement metadata and perform collision
-		detection whenever autoboxing happens again.
-
-		Here we update the "movement cache" to reflect the new metadata
-		@param box_number the index corresponding to the stored box of the EMBoxList in the EMBoxerModule
-		@param image_name the name of the image we're currently operating on - this is important because its used to store data in the local database
-		@param dx the movement in the x direction (float)
-		@param dy the movement in the y direction
-		'''
-		box = self.target().get_box(box_number)
-		for i,[old,new] in enumerate(self.mvt_cache):
-			dist = (new[0]-box.x)**2 + (new[1]-box.y)**2
-			if dist < SwarmBoxer.MVT_THRESHOLD:
-				self.mvt_cache[i][1] = [box.x+dx,box.y+dy]
-				break
-		else:
-			self.mvt_cache.append([[box.x,box.y],[box.x+dx,box.y+dy]])
-
-		set_database_entry(image_name,SwarmBoxer.SWARM_USER_MVT,self.mvt_cache)
-		self.target().move_box(box_number,dx,dy)
-
-
-	def update_auto_box_user_mvt(self,boxes):
-		'''
-		This is the solution to a conundrum - what if the user moves an auto box (a green one) but then reboxes, subsequently
-		losing this "centering" metadata? The solution implemented here is to store the movement metadata and perform collision
-		detection whenever autoboxing happens again.
-		@param boxes a list of lists box data e.g. [[x,y,type,score],[x,y,type,score],....[int,int,str,float])
-		'''
-		for box in boxes:
-			for i,[old,new] in enumerate(self.mvt_cache):
-				dist = (old[0]-box[0])**2 + (old[1]-box[1])**2
-				if dist < SwarmBoxer.MVT_THRESHOLD:
-					box[0] = new[0]
-					box[1] = new[1]
-
-	def move_ref(self,box_number,image_name,dx,dy,set_moved=True,allow_template_update=True):
-		'''
-		Moves the reference stored internally and updates the EMBoxerModule so that it displays and stores the exact same thing.
-		Separating what this object stores from what the EMBoxerModule stores decouple them and disentangles the overall design,
-		but also makes some tasks 'fiddly'.
-
-		This function takes care of telling the EMBoxerModule to correct what it's displaying - so the calling function should not.
-
-		@param box_number the index corresponding to the stored box of the EMBoxList in the EMBoxerModule
-		@param image_name the name of the image we're currently operating on
-		@param dx the movement in the x direction (float)
-		@param dy the movement in the y direction
-		@param set_moved a boolean indicating whether the SwarmBox.ever_moved attribute should be set to True. Search for ever_moved to see where it's used
-		'''
-		box = self.target().get_box(box_number)
-		for i,rbox in enumerate(self.ref_boxes):
-			if rbox.x == box.x and rbox.y == box.y and os.path.basename(rbox.image_name) == os.path.basename(image_name):
-				rbox.x += dx
-				rbox.y += dy
-				if set_moved:rbox.ever_moved = True
-				new_box = EMBox(rbox.x,rbox.y,rbox.type_name(),rbox.peak_score)
-				self.target().set_box(new_box,box_number,update_display=True)
-				if box.type == SwarmBoxer.REF_NAME and allow_template_update:
-					self.signal_template_update = True
-				break
-		else:
-			raise RuntimeError("Attempt to move a reference failed")
-
-	def remove_ref(self,box,image_name):
-		'''
-		Remove the reference, i.e. in response to a mouse delete event
-
-		Does not tell the EMBoxModule to removed the displayed box - the calling function should do that.
-
-		@param box an EMBox, as returned by the call to EMBoxerModule.get_box
-		@param image_name the name of the image we're operating on
-		'''
-		for i,rbox in enumerate(self.ref_boxes):
-			if rbox.x == box.x and rbox.y == box.y and os.path.basename(rbox.image_name) == os.path.basename(image_name):
-				b = self.ref_boxes.pop(i)
-				if self.auto_update:
-					if len(self.ref_boxes) > 0:
-						if box.type == SwarmBoxer.REF_NAME:
-							self.signal_template_update=True
-						self.auto_box(image_name,force_remove_auto_boxes=True)
-					else:
-						self.clear_all()
-				else:
-					self.panel_object.enable_auto_box(True)
-				break
-		else:
-			raise RuntimeError("Attempt to remove a reference failed")
-
-
-	def add_ref(self,x,y,image_name):
-		'''
-		Add a reference at the given coordinate and from the given image
-
-		Does not tell the EMBoxerModule to add the box - the calling function must do this
-
-		@param x the x coordinate of the box
-		@param y the y coordinate of the box
-		@parm image_name the name of the image we're operating on
-		'''
-		new_box = SwarmBox(x,y,image_name,self.update_template)
-		self.ref_boxes.append(new_box)
-		if self.update_template:
-			self.signal_template_update = True
-			box_num = self.target().add_box(x,y,type=SwarmBoxer.REF_NAME)
-		else:
-			box_num = self.target().add_box(x,y,type=SwarmBoxer.WEAK_REF_NAME)
-
-		self.get_2d_window().updateGL()
-
-		return box_num
-
-
-	def ref_released(self,image_name,box_num):
-		'''
-		This function called when a reference box is released, i.e. by the mouse
-		This can cause an autoboxing update if the self.auto_update parameter is true
-		@param image_name the name of the image that is being operated on
-		'''
-		if self.auto_update:
-			self.auto_box(image_name)
-		else:
-			self.try_to_center_ref(box_num)
-			self.panel_object.enable_auto_box(True)
-
-#
-	def try_to_center_ref(self,box_num):
-		if self.templates:
-			shrink = self.get_subsample_rate()
-			scaled_template = self.templates[-1].process("xform.scale",{"scale":shrink,"clip":self.particle_diameter})
-			scaled_template.process_inplace("xform.centeracf")
-			box = self.target().get_box(box_num)
-			dx,dy = self.xform_center_propagate([box.x,box.y],self.target().current_file(),scaled_template,self.particle_diameter)
-			self.move_ref(box_num,self.target().current_file(),dx,dy,set_moved=False)  # set moved = False so that it's also updated the next time through self.auto_box - this is probably unecessary but is not harmful
-#
-
-	def get_subsample_rate(self):
-		'''
-		Get the subsample rate advised by the SwarmBoxer, as based on self.particle_diameter and SWARM_TEMPLATE_MIN
-		'''
-		return int(math.ceil(float(self.particle_diameter)/float(SWARM_TEMPLATE_MIN)))
-
-	def auto_box_clicked(self):
-		'''
-		When the autobox button is clicked then we force an autobox.
-		'''
-		self.auto_box(self.target().current_file(),force_remove_auto_boxes=True)
-
-	def auto_box(self, image_name, parameter_update=True, force_remove_auto_boxes=False, cache=True):
-		'''
-		The main autoboxing function, this has a lot in it but it's not that complicated
-		@param image_name the image that we're boxing
-		@param parameter_update, should generally be True,but may be False if the current parameters are known to be current (see self.load_from_last_state)
-		@param force_remove_auto_boxes if True all of the autoboxed boxes in the EMBoxerModule are removed and the 'entire' image is autoboxed again. This might be False if you know the template has not changed
-		@param cache whether or not the newly establish state, i.e. at the end of this function, should be cached to the database and internally. Generally True but sometimes False (see self.load_from_last_state) .
-		'''
-		self.proximal_boxes = [] # this is always res
-		if self.gui_mode:
-			from PyQt4 import QtCore
-			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
-
-		if self.signal_template_update or force_remove_auto_boxes:
-			self.target().clear_boxes([SwarmBoxer.AUTO_NAME])
-			if self.gui_mode:
-				self.get_2d_window().updateGL()
-
-
-		if self.signal_template_update or not self.templates:
-			if self.gui_mode:
-				self.target().set_status_message("Updating Swarm Template",0)
-
-			self.templates = gen_rot_ave_template(image_name,self.ref_boxes,self.get_subsample_rate(),self.particle_diameter)
-			if self.gui_mode:
-				self.panel_object.enable_update_template(True)
-				self.target().set_status_message("Swarm Template Update Done",1000)
-				self.panel_object.enable_view_template(True)
-			self.signal_template_update = False
-			if self.template_viewer != None:
-				self.template_viewer.set_data(self.templates,soft_delete=True)
-				self.template_viewer.updateGL()
-
-		shrink = self.get_subsample_rate()
-
-		exclusion_image = self.target().get_exclusion_image(mark_boxes=True)
-
-		mediator = SwarmFLCFImageMediator(self.particle_diameter/(shrink*2), shrink, self.templates[-1])
-		if self.gui_mode: self.target().set_status_message("Getting Correlation Image",0)
-		correlation_image = FLCFImageCache.get_image(image_name,mediator)
-		if self.gui_mode: self.target().set_status_message("Correlation Image Done",1000)
-
-		exclusion_shrink = exclusion_image.get_attr("shrink")
-
-		if shrink != exclusion_shrink:
-			# the amount by which the exclusion is shrunken does not match the amount by which the SwarmBoxer shrinks - so we have to scale
-			# to do: test this
-			#print "shrink changed does this work?",shrink,exclusion_shrink,self.particle_diameter, SWARM_TEMPLATE_MIN,TEMPLATE_MIN
-			rescale = float(exclusion_shrink)/shrink
-			oldx = exclusion_image.get_xsize()
-			oldy = exclusion_image.get_ysize()
-			newx = correlation_image.get_xsize()
-			newy = correlation_image.get_ysize()
-			r = Region((oldx-newx)/2,(oldy-newy)/2,newx,newy)
-			t = Transform()
-			t.set_scale(rescale)
-			if rescale > 1.0:
-				exclusion_image.clip_inplace(r)
-				exclusion_image.transform(t)
-			else:
-				exclusion_image.transform(t)
-				exclusion_image.clip_inplace(r)
-
-		for box in self.ref_boxes:
-			box.update_picking_data(mediator)
-
-
-		if parameter_update:
-			if not self.update_opt_picking_data():
-				if self.gui_mode:
-					from PyQt4 import QtCore
-					get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
-				print "funny error"
-				return
-
-		if self.pick_mode == SwarmBoxer.THRESHOLD: mode = 0
-		elif self.pick_mode == SwarmBoxer.SELECTIVE: mode = 1
-		elif self.pick_mode == SwarmBoxer.MORESELECTIVE: mode = 2
-
-		searchradius = self.templates[-1].get_xsize()/2
-		correlation = FLCFImageCache.get_image(image_name,mediator)
-		# print "Correlation img is %s"%correlation
-
-		if self.gui_mode: self.target().set_status_message("Autoboxing ....",0)
-
-		# print "Using %s references"%(len(self.ref_boxes))
-
-		# print "===========\n\nBoxingTools.auto_correlation_pick"
-		# print "correlation: ", correlation
-		# print "peak_score: ", self.peak_score
-		# print "searchradius: ", searchradius
-		# print "profile: ", self.profile
-		# print "exclusion_image: ", exclusion_image
-		# print "profile_trough_point: ", self.profile_trough_point
-		# print "mode: ", mode
-		# print "------"
-
-		soln = BoxingTools.auto_correlation_pick(correlation, self.peak_score, searchradius, self.profile, exclusion_image, self.profile_trough_point, mode)
-
-		# print "soln:", soln
-		# print "==========="
-
-		if self.gui_mode: self.target().set_status_message("Auboxing Done",1000)
-
-		scaled_template = self.templates[-1].process("xform.scale",{"scale":shrink,"clip":self.particle_diameter})
-		scaled_template.process_inplace("xform.centeracf")
-		boxes = []
-		for b in soln:
-			x = b[0]
-			y = b[1]
-			xx = int(x*shrink)
-			yy = int(y*shrink)
-			type = SwarmBoxer.AUTO_NAME
-			peak_score = correlation.get(x,y)
-			box = [xx,yy,type,peak_score]
-			self.center_propagate(box,image_name,scaled_template,self.particle_diameter)
-
-			exc_x = box[0]/exclusion_shrink
-			exc_y = box[1]/exclusion_shrink
-			if exc_x >= exclusion_image.get_xsize() or exc_y > exclusion_image.get_ysize():
-				print "Box position (%i,%i) was outside exclusion image boundaries (%i,%i)... ignoring (email this to woolford@bcm.edu)" %(exc_x,exc_y,exclusion_image.get_xsize(),exclusion_image.get_ysize())
-				continue
-			if exclusion_image.get(exc_x,exc_y) != 0: boxes.append(box)
-			#else the particle was re-centered on an excluded region!
-
-		if self.gui_mode: self.target().set_status_message("Updating Positions",0)
-		self.update_auto_box_user_mvt(boxes)
-		if self.gui_mode: self.target().set_status_message("Done",1000)
-
-		for box in self.ref_boxes:
-			if not box.ever_moved and box.image_name == self.target().current_file():
-				box_num = self.target().detect_box_collision([box.x,box.y])
-				if box_num == -1:
-					raise RuntimeError("could not find reference")
-				else:
-					box = self.target().get_box(box_num)
-					if box.type not in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
-						raise RuntimeError("Did not get a reference when doing collision detection")
-
-					dx,dy = self.xform_center_propagate([box.x,box.y],image_name,scaled_template,self.particle_diameter)
-					self.move_ref(box_num,image_name,dx,dy,allow_template_update=False)
-
-
-	   	boxes.sort(compare_box_correlation) # sorting like this will often put large ice contaminations in a group, thanks Pawel Penczek
-		self.target().add_boxes(boxes, self.proximity_threshold == None)
-
-		if self.proximity_threshold != None:
-			self.__remove_proximal_particles()
-
-		if cache:
-			self.cache_current_state()
-			self.cache_to_database()
-
-		if self.gui_mode:
-			from PyQt4 import QtCore
-			self.panel_object.enable_auto_box(False)
-			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
-			self.target().set_status_message("Autoboxed %d Particles" %len(boxes), 10000)
-		else:
-			print "Autoboxed %d Particles" %len(boxes)
-
-
-		return boxes
-
-
-	def update_opt_picking_data(self):
-		'''
-		This is the function that decides on the picking parameters of the SwarmBoxer, based on the reference
-		boxes stored in self.ref_boxes
-		'''
-		self.profile = None
-		self.peak_score = None
-		self.profile_trough_point = None
-
-		for box in self.ref_boxes:
-			if self.interactive_threshold != None:
-				self.peak_score = self.interactive_threshold
-			else:
-				if box.peak_score == None: continue
-
-				if self.peak_score == None or box.peak_score < self.peak_score:
-					self.peak_score = box.peak_score
-
-			if self.profile == None: self.profile = deepcopy(box.profile)  # or else I'd alter it and muck everything up
-			else:
-				if len(self.profile) != len(box.profile): raise RuntimeError("This should never happen")
-
-				profile = box.profile
-				for j in xrange(0,len(self.profile)):
-					if profile[j] < self.profile[j]: self.profile[j] = profile[j]
-
-		if self.profile == None:
-			return False
-
-		max_radius =  int(len(self.profile)*SwarmBoxer.PROFILE_MAX)
-		tmp = self.profile[0]
-		self.profile_trough_point = 0
-		for i in range(1,max_radius):
-			if self.profile[i] > tmp and tmp > 0:
-				tmp = self.profile[i]
-				self.profile_trough_point = i
-
-		if self.panel_object:
-			self.panel_object.set_picking_data(self.peak_score, self.profile, self.profile_trough_point)
-
-		return True
-
-	def clear_all(self):
-		'''
-		Clears all associated boxes from the EMBoxerModule and internally, establishing a clean, blank state
-		'''
-		empty = (self.templates == None or len(self.templates) == 0)
-		self.target().clear_boxes([SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME],cache=True)
-		self.reset()
-
-		if self.panel_object:
-			self.panel_object.enable_view_template(False)
-			self.panel_object.enable_auto_box(False)
-
-		if self.template_viewer != None:
-			self.template_viewer.set_data(None)
-
-		if not empty:
-			self.cache_current_state()
-			self.cache_to_database()
-		# else:
-		# 	print "avoided a redundant clear"
-
-		self.update_template = True
-
-		if self.panel_object:
-			self.panel_object.set_update_template(True,False)
-
-
-	def center_propagate(self,box,image_name,template,box_size):
-		'''
-		Centers the box argument in place
-		@param box a list like [x,y,type,float] - only x and y are used
-		@param image_name the name of the image we're operating on
-		@param template the template correctly scaled to the have the same angstrom per pixel as the image (named image_name) stored on disk
-		@param box_size the size of the box used to center - see xform_center_propagate
-		'''
-		dx,dy = self.xform_center_propagate(box,image_name,template,box_size)
-		box[0] += dx
-		box[1] += dy
-
-#
-	def xform_center_propagate(self,box,image_name,template,box_size):
-		'''
-		Centers a box that was generated in a shrunken image by getting the 'real particle' out of the large
-		image on disk and doing a ccf with the template - then I just find the peak and use that to center
-		@param box a list like [x,y,type,float] - only x and y are used
-		@param image_name the name of the image we're operating on
-		@param template the template correctly scaled to the have the same angstrom per pixel as the image (named image_name) stored on disk
-		@param box_size the size of the box used to center
-		Returns the dx and dy parameters, i.e. does not actually alter the box
-		'''
-	  	global BigImageCache
-	  	image = BigImageCache.get_image_directly(image_name)
-
-		xc = box[0]-box_size/2
-		yc = box[1]-box_size/2
-		r = Region(xc,yc,box_size,box_size)
-		particle = image.get_clip(r)
-		ccf  = particle.calc_ccf(template)
-		trans = ccf.calc_max_location_wrap(particle.get_xsize()/2,particle.get_ysize()/2,0)
-		dx = trans[0]
-		dy = trans[1]
-		return dx,dy
-
-	def boxes_erased(self,list_of_boxes,image_name):
-		auto_box = False
-		remove_happened = False
-		for box in list_of_boxes:
-			if box.type in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
-				for i,rbox in enumerate(self.ref_boxes):
-					if rbox.x == box.x and rbox.y == box.y and os.path.basename(rbox.image_name) == os.path.basename(image_name):
-						remove_happened = True
-						if self.auto_update: auto_box = True
-						if box.type == SwarmBoxer.REF_NAME: self.signal_template_update=True
-						b = self.ref_boxes.pop(i)
-						break
-		if auto_box:
-			if len(self.ref_boxes) > 0:
-				self.auto_box(image_name,force_remove_auto_boxes=True)
-			else: self.clear_all()
-		elif remove_happened:
-			if len(self.ref_boxes) > 0:
-				self.panel_object.enable_auto_box(True)
-			else: self.clear_all()
-
-class SwarmTool(SwarmBoxer,EMBoxingTool):
-	'''
-	A class that knows how to handle mouse erase events for a GUIBox
-	'''
-
-	def __init__(self,target,particle_diameter=128):
-		SwarmBoxer.__init__(self,particle_diameter)
-		self.target = weakref.ref(target)
-		self.panel_object = SwarmPanel(self,self.particle_diameter)
-		self.current_file = None # the name of the file that is being studied in the main viewer
-		self.moving = None # keeps track of the moving box, will be a list in the format [[int,int],int,str] = [[x,y],box_number,box_type]
-		self.ptcl_moving_data = None # keeps track of movement that's occuring in the particles (mx) viewer
-		self.gui_mode = True
-
-	def unique_name(self): return "Swarm"
-
-	def get_widget(self):
-		if self.panel_object == None:
-			self.panel_object = SwarmPanel(self,self.particle_diameter)
-		return self.panel_object.get_widget()
-
-	def icon(self):
-		from PyQt4 import QtGui
-		return QtGui.QIcon(get_image_directory() + "swarm_icon.png")
-
-
-	def set_current_file(self,file_name,active_tool=False):
-		'''
-		If the behavior of this Handler does not if the file changes, but the function needs to be supplied
-		'''
-		if self.current_file != file_name:
-			self.current_file = file_name
-			self.handle_file_change(file_name,active_tool)
-
-
-	def get_2d_window(self): return self.target().get_2d_window()
-
-	def mouse_move(self,event):
-		pass
-
-	def mouse_wheel(self,event):
-		pass
-
-	def mouse_down(self,event):
-		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
-		box_num = self.target().detect_box_collision(m)
-		from PyQt4.QtCore import Qt
-		if box_num == -1:
-			if event.modifiers()&Qt.ShiftModifier :
-				return # the user tried to delete nothing
-			box_num = self.add_ref(m[0],m[1],self.target().current_file())
-			b = self.target().get_box(box_num)
-			self.moving=[m,box_num,b.type]
-		else:
-			box = self.target().get_box(box_num)
-			if box.type in [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]:
-				from PyQt4.QtCore import Qt
-				if event.modifiers()&Qt.ShiftModifier :
-					self.handle_box_delete(box,box_num)
-				else:
-					# if we make it here than the we're moving a box
-					self.moving=[m,box_num,box.type]
-#					self.target().moving_box_established(box_num)
-			else:
-				raise EMUnknownBoxType,box.type
-
-
-
-	def handle_box_delete(self,box,box_num):
-		if box.type == SwarmBoxer.AUTO_NAME:
-			self.target().remove_box(box_num,exclude_region=True)
-		elif box.type == SwarmBoxer.REF_NAME or box.type == SwarmBoxer.WEAK_REF_NAME:
-			self.target().remove_box(box_num)
-			self.remove_ref(box,self.target().current_file())
-		else:
-			raise EMUnknownBoxType,box.type
-
-	def mouse_drag(self,event) :
-		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
-		from PyQt4.QtCore import Qt
-		if event.modifiers()&Qt.ShiftModifier:
-			box_num = self.target().detect_box_collision(m)
-			box = self.target().get_box(box_num)
-			if ( box_num != -1):
-				if box.type in [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]:
-					self.handle_box_delete(box,box_num)
-		elif self.moving != None:
-			oldm = self.moving[0]
-			dx = m[0]-oldm[0]
-			dy = m[1]-oldm[1]
-
-			if self.moving[2] in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
-				self.move_ref(self.moving[1],self.target().current_file(),dx,dy)
-			else:
-				self.move_auto_box(self.moving[1],self.target().current_file(),dx,dy)
-
-			self.moving[0] = m
-
-	def mouse_up(self,event) :
-		if self.moving != None:
-			self.target().box_released(self.moving[1])
-			if self.moving[2] in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
-				self.ref_released(self.target().current_file(),self.moving[1])
-
-		self.moving= None
-
-	def moving_ptcl_established(self,box_num,x,y):
-		box = self.target().get_box(box_num)
-		if box.type not in [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
-
-		self.ptcl_moving_data = [x,y,box_num]
-
-	def move_ptcl(self,box_num,x,y,ptcls):
-		if self.ptcl_moving_data == None: return
-
-		dx = self.ptcl_moving_data[0] - x
-		dy = y - self.ptcl_moving_data[1]
-		box = self.target().get_box(box_num)
-
-		if box.type in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
-			self.move_ref(box_num,self.target().current_file(),dx,dy)
-		else:
-			self.move_auto_box(box_num,self.target().current_file(),dx,dy)
-
-		self.ptcl_moving_data = [x,y,self.ptcl_moving_data[2]]
-
-	def release_moving_ptcl(self,box_num,x,y):
-		if self.ptcl_moving_data == None: return
-		self.target().box_placement_update_exclusion_image_n(box_num)
-		box = self.target().get_box(box_num)
-		if box.type in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
-			self.ref_released(self.target().current_file(),box_num)
-
-		self.ptcl_moving_data = None
-
-	def delete_ptcl(self,box_num):
-		box = self.target().get_box(box_num)
-		if box.type not in [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
-
-		self.handle_box_delete(self.target().get_box(box_num),box_num)
-
-	def get_unique_box_types(self):
-		return [SwarmBoxer.REF_NAME,SwarmBoxer.AUTO_NAME,SwarmBoxer.WEAK_REF_NAME]
-
-	def boxes_erased(self,list_of_boxes):
-		SwarmBoxer.boxes_erased(self,list_of_boxes,self.target().current_file())
-
-
-
-############################################################################################################################################
-# Add path for boxing using gauss convolution method (in pawelautoboxer used in sxboxer.py)
-
-def histogram1d( data, nbin, presize=0 ) :
-	fmax = max( data )
-	fmin = min( data )
-	binsize = (fmax - fmin)/(nbin-2*presize)
-	start = fmin - binsize*presize
-	region = [None]*nbin
-	hist = [None]*nbin
-	for i in xrange(nbin):
-		region[i] = start + (i+0.5)*binsize
-		hist[i] = 0
-
-	for d in data:
-		id = int( (d-start)/binsize )
-		hist[id]+=1
-
-	return region,hist
-
-class GaussPanel:
-	DB_NAME = "e2boxercache/gauss_panel.json"
-	GDB_NAME = 'e2boxercache/gauss_box_DB.json' # cache for putting params related to gauss method autoboxer
-
-	def __init__(self,target,particle_diameter=128):
-		self.busy = True
-		self.target = weakref.ref(target)
-		self.widget = None
-		self.busy = False
-		self.ccfs = None
-		self.data = None
-		self.PRESIZE = 28
-		self.THRNA='N/A'
-		self.INVCONT=False
-		self.USEVAR=True
-		self.SLVAL=0
-		self.GW = "1.0"
-		self.ctf_inspector = None
-		self.ctf_inspector_gone = True
-		self.setgwbox =False
-
-	def set_data( self, data ):
-		self.ccfs = data
-		#self.nbin = self.width()
-		# hardcode nbin to 256 for now, which is the hardcoded width of the ccf histogram widget in sxboxer...
-		self.nbin = 256
-                self.data = histogram1d( data, self.nbin, self.PRESIZE )
-
-		hmin = self.data[0][0]
-		hmax = self.data[0][-1]
-
-		#self.thr_low_edit.setText(str(hmin))
-		#self.thr_hi_edit.setText(str(hmax))
-		#self.new_thr_low()
-		#self.new_thr_hi()
-
-	def get_widget(self):
-		if self.widget == None:
-
-			gbdb = js_open_dict(GaussPanel.GDB_NAME)
-
-			from PyQt4 import QtCore, QtGui, Qt
-			self.widget = QtGui.QWidget()
-			vbl = QtGui.QVBoxLayout(self.widget)
-			vbl.setMargin(0)
-			vbl.setSpacing(6)
-			vbl.setObjectName("vbl")
-
-			hgc = QtGui.QHBoxLayout()
-			gconvheader = QtGui.QLabel("<b>Parameters of Gauss convolution</b>")
-			hgc.addWidget(gconvheader)
-			vbl.addLayout(hgc)
-
-			hbl = QtGui.QHBoxLayout()
-			pixel_input_label = QtGui.QLabel("Input Pixel Size:")
-			pixel_input_label.setToolTip("Input pixel size")
-			hbl.addWidget(pixel_input_label)
-
-			pixin = gbdb.setdefault('pixel_input',None)
-			if pixin == None:
-				self.pixel_input_edit = QtGui.QLineEdit('1.0')
-			else:
-				self.pixel_input_edit = QtGui.QLineEdit(str(gbdb['pixel_input']))
-			hbl.addWidget(self.pixel_input_edit)
-
-			#vbl.addLayout(hbl)
-
-			pixel_output_label = QtGui.QLabel("Output Pixel Size:")
-			pixel_output_label.setToolTip("Output pixel size")
-			hbl.addWidget(pixel_output_label)
-
-			pixout_cache = gbdb.setdefault('pixel_output',None)
-			if pixout_cache == None:
-				self.pixel_output_edit = QtGui.QLineEdit('1.0')
-			else:
-				self.pixel_output_edit = QtGui.QLineEdit(str(gbdb['pixel_output']))
-			hbl.addWidget(self.pixel_output_edit)
-			self.new_pixel_output()
-			self.new_pixel_input()
-			vbl.addLayout(hbl)
-
-			hbl_invcont = QtGui.QHBoxLayout()
-			self.invert_contrast_chk = QtGui.QCheckBox("Invert Contrast")
-			self.invert_contrast_chk.setToolTip("Invert contrast")
-			invert_cache = gbdb.setdefault('invert_contrast',None)
-			if invert_cache == None:
-				self.invert_contrast_chk.setChecked(self.INVCONT)
-				self.invert_contrast_checked(self.INVCONT)
-			else:
-				self.invert_contrast_chk.setChecked(invert_cache)
-				self.invert_contrast_checked(invert_cache)
-			hbl_invcont.addWidget(self.invert_contrast_chk)
-
-			self.use_variance_chk = QtGui.QCheckBox("Use Variance")
-			self.use_variance_chk.setToolTip("Use the variance image")
-			use_variance_cache = gbdb.setdefault('use_variance',None)
-			if use_variance_cache == None:
-				self.use_variance_chk.setChecked(self.USEVAR)
-				self.use_variance_checked(self.USEVAR)
-			else:
-				self.use_variance_chk.setChecked(use_variance_cache)
-				self.use_variance_checked(use_variance_cache)
-			hbl_invcont.addWidget(self.use_variance_chk)
-
-			vbl.addLayout(hbl_invcont)
-
-			hbl_gwidth = QtGui.QHBoxLayout()
-			self.gauss_width_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-			self.gauss_width_slider.setRange( -100, 100 )
-			self.gauss_width_slider.setValue( self.SLVAL )
-			hbl_gwidth.addWidget( self.gauss_width_slider)
-			hbl_gwidth.addWidget(QtGui.QLabel("Gauss Width Adjust:"))
-			self.gauss_width = QtGui.QLineEdit(self.GW)
-			gauss_width_cache = gbdb.setdefault('gauss_width',None)
-			if not(gauss_width_cache == None):
-				self.gauss_width = QtGui.QLineEdit(str(gauss_width_cache))
-			hbl_gwidth.addWidget( self.gauss_width)
-
-
-			self.gauss_width_changed(self.SLVAL)
-			self.gauss_width_edited()
-			vbl.addLayout(hbl_gwidth)
-
-			hbl_thr = QtGui.QHBoxLayout()
-			thr_low_label = QtGui.QLabel("Threshold Low:")
-			hbl_thr.addWidget(thr_low_label)
-			self.thr_low_edit = QtGui.QLineEdit(self.THRNA)
-			thrlow_cache = gbdb.setdefault('thr_low',None)
-			if not(thrlow_cache == None):
-				self.thr_low_edit = QtGui.QLineEdit(str(thrlow_cache))
-			self.new_thr_low()
-			hbl_thr.addWidget(self.thr_low_edit)
-			thr_hi_label = QtGui.QLabel("Threshold High:")
-			hbl_thr.addWidget(thr_hi_label)
-
-			thrhi_cache = gbdb.setdefault('thr_hi',None)
-			if thrhi_cache == None:
-				self.thr_hi_edit = QtGui.QLineEdit(self.THRNA)
-			else:
-				self.thr_hi_edit = QtGui.QLineEdit(str(thrhi_cache))
-			self.new_thr_hi()
-			hbl_thr.addWidget(self.thr_hi_edit)
-			vbl.addLayout(hbl_thr)
-
-			hbl_ww = QtGui.QHBoxLayout()
-			self.clear=QtGui.QPushButton("Clear Boxes")
-			self.clear.setToolTip("Clear boxes generated by the Gauss mode.")
-			hbl_ww.addWidget(self.clear)
-
-			self.autobox=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "green_boxes.png"),"Run")
-			self.autobox.setEnabled(True)
-			self.autobox.setToolTip("Autobox using Gauss method")
-			hbl_ww.addWidget(self.autobox)
-
-			vbl.addLayout(hbl_ww)
-
-			# add input fields for CTF estimation
-			hgctf = QtGui.QHBoxLayout()
-			ctftitle = QtGui.QLabel("<b>Parameters of CTF estimation</b>")
-			hgctf.addWidget(ctftitle)
-			vbl.addLayout(hgctf)
-
-			hbl_wscs = QtGui.QHBoxLayout()
-
-			window_size_label = QtGui.QLabel("Window size:")
-			hbl_wscs.addWidget(window_size_label)
-			self.ctf_window_size = QtGui.QLineEdit(str(gbdb.setdefault('ctf_window',"512")))
-
-			hbl_wscs.addWidget(self.ctf_window_size)
-
-			cs_label = QtGui.QLabel("Cs:")
-			hbl_wscs.addWidget(cs_label)
-			self.ctf_cs = QtGui.QLineEdit(str(gbdb.setdefault('ctf_cs',"2.0")))
-
-			hbl_wscs.addWidget(self.ctf_cs)
-
-			vbl.addLayout(hbl_wscs)
-
-			hbl_esv = QtGui.QHBoxLayout()
-
-			edge_size_label = QtGui.QLabel("Edge size:")
-			hbl_esv.addWidget(edge_size_label)
-			self.ctf_edge_size = QtGui.QLineEdit(str(gbdb.setdefault('ctf_edge',"0")))
-			hbl_esv.addWidget(self.ctf_edge_size)
-
-			voltage_label = QtGui.QLabel("Voltage:")
-			hbl_esv.addWidget(voltage_label)
-			self.ctf_volt = QtGui.QLineEdit(str(gbdb.setdefault('ctf_volt',"200.0")))
-			hbl_esv.addWidget(self.ctf_volt)
-
-			vbl.addLayout(hbl_esv)
-
-			hbl_oac = QtGui.QHBoxLayout()
-
-			overlap_label = QtGui.QLabel("Overlap:")
-			hbl_oac.addWidget(overlap_label)
-			self.ctf_overlap_size = QtGui.QLineEdit(str(gbdb.setdefault('ctf_overlap',"50")))
-			hbl_oac.addWidget(self.ctf_overlap_size)
-
-			amplitude_contrast_label = QtGui.QLabel("Amplitude Contrast:")
-			hbl_oac.addWidget(amplitude_contrast_label)
-			self.ctf_ampcont = QtGui.QLineEdit(str(gbdb.setdefault('ctf_ampcont',"10.0")))
-			hbl_oac.addWidget(self.ctf_ampcont)
-
-			vbl.addLayout(hbl_oac)
-
-			# cter kboot
-			hbl_kboot = QtGui.QHBoxLayout()
-			kboot_label = QtGui.QLabel("kboot:")
-			hbl_kboot.addWidget(kboot_label)
-
-			self.ctf_kboot = QtGui.QLineEdit(str(gbdb.setdefault('ctf_kboot',"16")))
-			hbl_kboot.addWidget(self.ctf_kboot)
-			vbl.addLayout(hbl_kboot)
-
-			hbl_estdef = QtGui.QHBoxLayout()
-			hbl_fed = QtGui.QHBoxLayout()
-
-			fstart_label = QtGui.QLabel("F_start:")
-			hbl_fed.addWidget(fstart_label)
-			self.ctf_f_start = QtGui.QLineEdit(str(gbdb.setdefault('ctf_fstart',"0.020")))
-			hbl_fed.addWidget(self.ctf_f_start)
-
-			estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
-			hbl_estdef.addWidget(estimated_defocus_label)
-			self.estdef = QtGui.QLineEdit('')
-			hbl_estdef.addWidget(self.estdef)
-			vbl.addLayout(hbl_estdef)
-
-			hbl_estdeferr = QtGui.QHBoxLayout()
-			deferr_label = QtGui.QLabel("Estimated defocus error:")
-			hbl_estdeferr.addWidget(deferr_label)
-			self.deferr = QtGui.QLineEdit('')
-			hbl_estdeferr.addWidget(self.deferr)
-			vbl.addLayout(hbl_estdeferr)
-
-			hbl_astamp = QtGui.QHBoxLayout()
-			astig_amp_label = QtGui.QLabel("Estimated astigmatism \namplitude:")
-			hbl_astamp.addWidget(astig_amp_label)
-			self.astamp = QtGui.QLineEdit('')
-			hbl_astamp.addWidget(self.astamp)
-			vbl.addLayout(hbl_astamp)
-
-			hbl_astamperr = QtGui.QHBoxLayout()
-			astamperr_label = QtGui.QLabel("Estimated astigmatism \namplitude error:")
-			hbl_astamperr.addWidget(astamperr_label)
-			self.astamperr = QtGui.QLineEdit('')
-			hbl_astamperr.addWidget(self.astamperr)
-			vbl.addLayout(hbl_astamperr)
-
-			hbl_astagl = QtGui.QHBoxLayout()
-			astig_angle_label = QtGui.QLabel("Estimated astigmatism \nangle")
-			hbl_astagl.addWidget(astig_angle_label)
-			self.astagl = QtGui.QLineEdit('')
-			hbl_astagl.addWidget(self.astagl)
-			vbl.addLayout(hbl_astagl)
-
-			hbl_astaglerr = QtGui.QHBoxLayout()
-			astaglerr_label = QtGui.QLabel("Estimated astigmatism \nangle error:")
-			hbl_astaglerr.addWidget(astaglerr_label)
-			self.astaglerr = QtGui.QLineEdit('')
-			hbl_astaglerr.addWidget(self.astaglerr)
-			vbl.addLayout(hbl_astaglerr)
-
-			hbl_ctf_cter = QtGui.QHBoxLayout()
-			self.estimate_ctf_cter =QtGui.QPushButton("Estimate CTF using CTER")
-			hbl_ctf_cter.addWidget(self.estimate_ctf_cter)
-			vbl.addLayout(hbl_ctf_cter)
-
-
-
-			#hbl_fed.addWidget(self.estdef)
-
-			#vbl.addLayout(hbl_fed)
-
-			#hbl_fs = QtGui.QHBoxLayout()
-
-			#fstop_label = QtGui.QLabel("F_stop:")
-			#hbl_fs.addWidget(fstop_label)
-			#self.ctf_f_stop = QtGui.QLineEdit(str(gbdb.setdefault('ctf_fstop',"0.500")))
-			#hbl_fs.addWidget(self.ctf_f_stop)
-
-			#vbl.addLayout(hbl_fs)
-			#hbl_ctf = QtGui.QHBoxLayout()
-			#self.estimate_ctf=QtGui.QPushButton("Estimate CTF")
-			#hbl_ctf.addWidget(self.estimate_ctf)
-
-			#self.inspect_button=QtGui.QPushButton("Inspect CTF")
-			#hbl_ctf.addWidget(self.inspect_button)
-
-			#vbl.addLayout(hbl_ctf)
-
-
-			QtCore.QObject.connect(self.pixel_input_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_input)
-			QtCore.QObject.connect(self.pixel_output_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_output)
-			QtCore.QObject.connect(self.autobox, QtCore.SIGNAL("clicked(bool)"), self.auto_box_clicked)
-			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
-			QtCore.QObject.connect(self.invert_contrast_chk,QtCore.SIGNAL("clicked(bool)"),self.invert_contrast_checked)
-			QtCore.QObject.connect(self.use_variance_chk,QtCore.SIGNAL("clicked(bool)"),self.use_variance_checked)
-			QtCore.QObject.connect(self.gauss_width_slider, QtCore.SIGNAL("valueChanged(int)"), self.gauss_width_changed)
-			QtCore.QObject.connect(self.gauss_width, QtCore.SIGNAL("editingFinished()"), self.gauss_width_edited)
-			QtCore.QObject.connect(self.thr_low_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_low)
-			QtCore.QObject.connect(self.thr_hi_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_hi)
-#			QtCore.QObject.connect(self.estimate_ctf,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
-#			QtCore.QObject.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
-			QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
-			QtCore.QObject.connect(self.ctf_cs,QtCore.SIGNAL("editingFinished()"),self.new_ctf_cs)
-			QtCore.QObject.connect(self.ctf_edge_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_edge)
-			QtCore.QObject.connect(self.ctf_volt,QtCore.SIGNAL("editingFinished()"),self.new_ctf_volt)
-			QtCore.QObject.connect(self.ctf_overlap_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_overlap_size)
-			QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
-			QtCore.QObject.connect(self.ctf_kboot,QtCore.SIGNAL("editingFinished()"),self.new_ctf_kboot)
-
-			QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
-
-		return self.widget
-
-	def gauss_width_changed(self, v):
-		from math import pow
-		s = "%.3f" % pow(10.0, v*0.01)
-		if self.setgwbox:
-		        self.gauss_width.setText( s )
-		        self.target().set_gauss_width(float(self.gauss_width.text()))
-
-	def gauss_width_edited(self):
-		from string import atof
-		from math import log10
-		text = self.gauss_width.text()
-		v = int( log10(atof(text)) * 100)
-		self.setgwbox = False
-		self.gauss_width_slider.setValue( v )
-		self.setgwbox = True
-		self.target().set_gauss_width(float(text))
-
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['gauss_width']=float(text)
-
-	def update_states(self,gauss_boxer):
-		self.busy = True
-		self.pixel_input_edit.setText(str(gauss_boxer.pixel_input))
-
-		self.busy = False
-
-	def new_pixel_input(self):
-		if self.busy: return
-		pixin = float(self.pixel_input_edit.text())
-		pixout=float(self.pixel_output_edit.text())
-		if pixout < pixin:
-			print "output pixel size cannot be smaller than input pixel size"
-			self.pixel_input_edit.setText(str(self.target().pixel_input))
-			return
-		self.target().set_pixel_input(pixin)
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['pixel_input']=pixin
-
-	def new_pixel_output(self):
-		if self.busy: return
-		pixout=float(self.pixel_output_edit.text())
-		pixin = float(self.pixel_input_edit.text())
-		if pixout < pixin:
-			self.pixel_output_edit.setText(str(self.target().pixel_output))
-			print "output pixel size cannot be smaller than input pixel size"
-			return
-		self.target().set_pixel_output(pixout)
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['pixel_output']=pixout
-
-	def new_thr_low(self):
-		if self.busy: return
-		thrlow=self.thr_low_edit.text()
-		if thrlow != self.THRNA:
-			thrlow= float(thrlow)
-		else:
-			thrlow = None
-		self.target().set_thr_low(thrlow)
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['thr_low']=thrlow
-
-
-	def new_thr_hi(self):
-		if self.busy: return
-		thrhi=self.thr_hi_edit.text()
-		if thrhi != self.THRNA:
-			thrhi=float(thrhi)
-		else:
-			thrhi=None
-		self.target().set_thr_hi(thrhi)
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['thr_hi']=thrhi
-
-	def auto_box_clicked(self,val):
-		self.target().auto_box_clicked()
-
-	def clear_clicked(self,val):
-		self.target().clear_all()
-
-	def enable_auto_box(self,val):
-		self.autobox.setEnabled(val)
-
-	def invert_contrast_checked(self,val):
-		if self.busy: return
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb["invert_contrast"] = val
-		self.target().set_invert_contrast(val)
-
-	def use_variance_checked(self,val):
-		if self.busy: return
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb["use_variance"] = val
-		self.target().set_use_variance(val)
-
-
-	def new_ctf_window(self):
-		if self.busy: return
-		winsize=self.ctf_window_size.text()
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['ctf_window']=int(winsize)
-
-	def new_ctf_cs(self):
-		if self.busy: return
-		cs=self.ctf_cs.text()
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['ctf_cs']=float(cs)
-
-	def new_ctf_edge(self):
-		if self.busy: return
-		edge=self.ctf_edge_size.text()
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['ctf_edge']=int(edge)
-
-	def new_ctf_volt(self):
-		if self.busy: return
-		volt=self.ctf_volt.text()
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['ctf_volt']=float(volt)
-
-	def new_ctf_kboot(self):
-		if self.busy: return
-		kboot=self.ctf_kboot.text()
-		gbdb = db_open_dict(GaussPanel.GDB_NAME)
-		gbdb['ctf_kboot']=float(kboot)
-
-	def new_ctf_overlap_size(self):
-		if self.busy: return
-		ov=self.ctf_overlap_size.text()
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['ctf_overlap']=int(ov)
-
-	def new_ctf_ampcont(self):
-		if self.busy: return
-		ac=self.ctf_ampcont.text()
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['ctf_ampcont']=float(ac)
-
-	def new_ctf_f_start(self):
-		if self.busy: return
-		fstart=self.ctf_f_start.text()
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['ctf_fstart']=float(fstart)
-
-	def new_ctf_f_stop(self):
-		if self.busy: return
-		fstop=self.ctf_f_stop.text()
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['ctf_fstop']=float(fstop)
-
-	# sxboxer's calc_ctf (from class EMBoxerModulePanel)
-	# ctf is always calculated from original input micrograph
-	def calc_ctf(self):
-		# calculate power spectrum of image with welch method (welch_pw2)
-		# calculate rotational average of power spectrum (rot_avg_table)
-		# calculate ctf values with ctf_get
-		#print "starting CTF estimation"
-		# get the current image
-		from utilities import get_im
-		#image_name = self.target().boxable.get_image_name()
-		#img = BigImageCache.get_image_directly( image_name )
-		image_name = self.target().target().file_names[0]
-		img = get_im(image_name)
-
-		# conversion from text necessary
-		try:
-			ctf_window_size  = int(self.ctf_window_size.text())
-			ctf_edge_size    = int(self.ctf_edge_size.text())
-			ctf_overlap_size = int(self.ctf_overlap_size.text())
-			ctf_f_start      = float(self.ctf_f_start.text())
-			ctf_f_stop       = float(self.ctf_f_stop.text())
-			ctf_volt         = float(self.ctf_volt.text())
-			ctf_cs           = float(self.ctf_cs.text())
-			ctf_ampcont      = float(self.ctf_ampcont.text())
-
-		except ValueError,extras:
-			# conversion of a value failed!
-			print "integer conversion failed."
-			if not(extras.args is None):
-				print extras.args[0]
-			return
-		except:
-			print "error"
-			print self.ctf_window_size.text()
-			print self.ctf_overlap_size.text()
-			print self.ctf_edge_size.text()
-			return
-
-		# print "determine power spectrum"
-		from fundamentals import welch_pw2
-		# XXX: check image dimensions, especially box size for welch_pw2!
-		power_sp = welch_pw2(img, win_size=ctf_window_size, overlp_x=ctf_overlap_size, overlp_y=ctf_overlap_size,
-				     edge_x=ctf_edge_size, edge_y=ctf_edge_size)
-		from fundamentals import rot_avg_table
-		avg_sp = rot_avg_table(power_sp)
-		del power_sp
-
-		# print "determine ctf"
-		from morphology import defocus_gett
-
-
-		input_pixel_size = float(self.pixel_input_edit.text())
-		output_pixel_size = float(self.pixel_output_edit.text())
-		#print "Input pixel size: ", input_pixel_size
-		#print "Output pixel size: ", output_pixel_size
-
-		# this is wrong from sxboxer. wgh should be amplitude contrast
-		#defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_cs,f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
-		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_ampcont,f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
-		self.estdef.setText(str(defocus/10000.0))
-		self.estdef.setEnabled(False)
-
-
-		# update ctf inspector values
-
-		if (self.ctf_inspector is not None):
-			self.ctf_inspector.setData(self.ctf_data)
-			self.ctf_inspector.i_start = self.i_start
-			self.ctf_inspector.i_stop = self.i_stop
-			if not(self.ctf_inspector_gone):
-				self.ctf_inspector.update()
-		else:
-			global i_start_initial
-			global i_stop_initial
-			i_start_initial = self.i_start
-			i_stop_initial = self.i_stop
-
-		# XXX: wgh?? amp_cont static to 0?
-		# set image properties, in order to save ctf values
-		from utilities import set_ctf
-		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont])
-		# and rewrite image
-		img.write_image(image_name)
-		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont]
-		# get alternate, and set its ctf
-		altimg=BigImageCache.get_object(image_name).get_image(use_alternate=True)
-		set_ctf(altimg, [defocus, ctf_cs, ctf_volt, output_pixel_size, 0, ctf_ampcont])
-		BigImageCache.get_object(image_name).register_alternate(altimg)
-		print [defocus, ctf_cs, ctf_volt, output_pixel_size, 0, ctf_ampcont]
- 		print "CTF estimation done."
- 		#print "Estimated defocus value: ", defocus
-
-		##############################################################################
-		#### save ctf estimation parameters to db for command line batch processing
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		ctfdict = {'pixel_input':input_pixel_size,'pixel_output':output_pixel_size,'ctf_fstart':ctf_f_start,'ctf_fstop':ctf_f_stop, 'ctf_window':ctf_window_size,'ctf_edge':ctf_edge_size,'ctf_overlap':ctf_overlap_size,'ctf_ampcont':ctf_ampcont,'ctf_volt':ctf_volt,'ctf_cs':ctf_cs}
-		#print "calc_ctf image_name: ", image_name
-		if gbdb.has_key(image_name):
-			olddict=gbdb[image_name]
-			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
-		else:
-			gbdb[image_name]=ctfdict
-
-		del img
-		del altimg
-
-	def inspect_ctf(self):
-		#display(self.ctf_data)
-
-		if not(self.ctf_inspector):
-			self.ctf_inspector = CTFInspectorWidget(self,self.ctf_data)
-			self.ctf_inspector.show()
-			self.ctf_inspector_gone=False
-		else:
-			if (self.ctf_inspector_gone):
-				self.ctf_inspector.show()
-				self.ctf_inspector_gone=False
-			else:
-				pass
-
-	def calc_ctf_cter(self):
-		# calculate ctf of ORIGINAL micrograph using cter in gui mode
-		# this must mean cter is being calculated on a single micrograph!
-
-		print "Starting CTER"
-		# get the current image
-		from utilities import get_im
-		#image_name = self.target().boxable.get_image_name()
-		#img = BigImageCache.get_image_directly( image_name )
-		image_name = self.target().target().file_names[0]
-		img = get_im(image_name)
-
-		# conversion from text necessary
-		try:
-			ctf_window_size  = int(self.ctf_window_size.text())
-			input_pixel_size = float(self.pixel_input_edit.text())
-			output_pixel_size = float(self.pixel_output_edit.text())
-			ctf_edge_size    = int(self.ctf_edge_size.text())
-			ctf_overlap_size = int(self.ctf_overlap_size.text())
-			ctf_volt         = float(self.ctf_volt.text())
-			ctf_cs           = float(self.ctf_cs.text())
-			ctf_ampcont      = float(self.ctf_ampcont.text())
-			ctf_kboot        = int(self.ctf_kboot.text())
-
-		except ValueError,extras:
-			# conversion of a value failed!
-			print "integer conversion failed."
-			if not(extras.args is None):
-				print extras.args[0]
-			return
-		except:
-			print "error"
-			return
-
-		fname, fext = os.path.splitext(image_name)
-		outpwrot = 'pwrot_%s'%fname
-		outpartres = 'partres_%s'%fname
-
-		if os.path.exists(outpwrot) or os.path.exists(outpartres):
-			print "Please remove or rename %s and or %s"%(outpwrot,outpartres)
-			return
-
-		from morphology import cter
-		defocus, ast_amp, ast_agl, error_defocus, error_astamp, error_astagl = cter(None, outpwrot, outpartres, None, None, ctf_window_size, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs = ctf_cs, wgh=ctf_ampcont, kboot=ctf_kboot, MPI=False, DEBug= False, overlap_x = ctf_overlap_size, overlap_y = ctf_overlap_size, edge_x = ctf_edge_size, edge_y = ctf_edge_size, guimic=image_name)
-
-		self.estdef.setText(str(defocus))
-		self.estdef.setEnabled(True)
-
-		self.astamp.setText(str(ast_amp))
-		self.astamp.setEnabled(True)
-
-		self.astagl.setText(str(ast_agl))
-		self.astagl.setEnabled(True)
-
-		self.deferr.setText(str(error_defocus))
-		self.deferr.setEnabled(True)
-
-		self.astamperr.setText(str(error_astamp))
-		self.astamperr.setEnabled(True)
-
-		self.astaglerr.setText(str(error_astagl))
-		self.astaglerr.setEnabled(True)
-
-		# XXX: wgh?? amp_cont static to 0?
-		# set image properties, in order to save ctf values
-		from utilities import set_ctf
-		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
-		# and rewrite image
-		img.write_image(image_name)
-		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
-		# get alternate, and set its ctf
-		altimg=BigImageCache.get_object(image_name).get_image(use_alternate=True)
-		set_ctf(altimg, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
-		BigImageCache.get_object(image_name).register_alternate(altimg)
-		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
- 		print "CTF estimation using CTER done."
- 		#print "Estimated defocus value: ", defocus
-
-		##############################################################################
-		#### save ctf estimation parameters to db for command line batch processing
-		gbdb = db_open_dict(GaussPanel.GDB_NAME)
-		ctfdict = {'pixel_input':input_pixel_size,'pixel_output':output_pixel_size,'ctf_window':ctf_window_size,'ctf_edge':ctf_edge_size,'ctf_overlap':ctf_overlap_size,'ctf_ampcont':ctf_ampcont,'ctf_volt':ctf_volt,'ctf_cs':ctf_cs, 'ctf_kboot':ctf_kboot}
-		#print "calc_ctf image_name: ", image_name
-		if gbdb.has_key(image_name):
-			olddict=gbdb[image_name]
-			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
-		else:
-			gbdb[image_name]=ctfdict
-
-		del img
-		del altimg
-
-
-
-class GaussBoxer:
-
-	CACHE_MAX = 10 # Each image has its last CACHE_MAX SwarmBoxer instance stored (or retrievable) automatically
-	PROFILE_MAX = 0.8 # this is a percentage - it stops the profile trough point from going to the end
-	REF_NAME = "gauss_ref"
-	AUTO_NAME = "gauss_auto"
-	WEAK_REF_NAME = "gauss_weak_ref"
-	INIT = True
-	MVT_THRESHOLD = 200 # a squared distance - used by the movement cache to automatically update using previously supplied user movement data
-	GAUSS_BOXERS = "gauss_boxers"
-	GAUSS_FWD_BOXERS = "gauss_fwd_boxers"
-	GAUSS_USER_MVT = "gauss_user_mvt"
-	def __init__(self,particle_diameter=128):
-		if GaussBoxer.INIT: # this solved a strange problem with databases
-			GaussBoxer.INIT = False
-			EMBox.set_box_color(GaussBoxer.REF_NAME,[0,0,0])
-			EMBox.set_box_color(GaussBoxer.WEAK_REF_NAME,[0.2,0.2,0.4])
-			EMBox.set_box_color(GaussBoxer.AUTO_NAME,[0.4,.9,.4]) # Classic green, always was this one ;)
-
-		self.panel_object = None # maybe it doesn't exist
-
-                self.pixel_input = 1.0
-                self.pixel_output = 1.0
-                self.frequency_cutoff = 0
-                self.window_size_min = 15
-                self.gauss_width = 1.0
-                self.use_variance = True
-                self.invert = False
-                self.thr_low = None
-                self.thr_hgh = None
-		self.gui_mode = False # set this to False to stop any calls to Qt - such as the act of making the cursor busy...
-
-		self.mvt_cache = [] # we have to remember if any of the auto selected boxes were moved, so if the user reboxes then the movements they previously supplied will be applied
-
-
-	def __del__(self):
-		'''
-		Closes the template viewer if it exists
-		'''
-		#if self.template_viewer != None:
-		#	self.template_viewer.close()
-		#	self.template_viewer = None
-
-	def set_invert_contrast(self,val):
-		'''
-		Whether or not to invert contrast
-		@param val a boolean
-		'''
-		self.invert = val
-
-	def set_use_variance(self,val):
-		'''
-		Whether or not to use variance image
-		@param val a boolean
-		'''
-		self.use_variance = val
-
-	def set_gauss_width(self,gwidth):
-		'''
-		set gauss width, which should be a float
-		@param gwidth the gauss width
-		'''
-		if gwidth != self.gauss_width:
-			self.gauss_width = gwidth
-
-
-	def set_pixel_input(self,inpix):
-		'''
-		set the input pixel size, which should be a float
-		@param inpix the input pixel size
-		'''
-		if inpix != self.pixel_input:
-			self.pixel_input = inpix
-
-	def set_pixel_output(self,outpix):
-		'''
-		set the output pixel size, which should be a float
-		@param inpix the output pixel size
-		'''
-		if outpix != self.pixel_output:
-			self.pixel_output = outpix
-
-	def set_thr_low(self,thrlow):
-		'''
-		set the low threshold, which should be a float
-		@param thrlow the low threshold
-		'''
-		if thrlow != self.thr_low:
-			self.thr_low = thrlow
-
-	def set_thr_hi(self,thrhi):
-		'''
-		set the high threshold, which should be a float
-		@param thrhi the hi threshold
-		'''
-		if thrhi != self.thr_hgh:
-			self.thr_hgh = thrhi
-
-	def auto_box_clicked(self):
-		'''
-		When the autobox button is clicked then we force an autobox.
-		'''
-		print 'file to be processed: ', self.target().current_file()
-		self.auto_box(self.target().current_file(),force_remove_auto_boxes=True)
-
-	def auto_box(self, imgname, parameter_update=True, force_remove_auto_boxes=False, cache=True):
-		'''
-		Autoboxing method using gauss convolution method (also used in sxboxer). Core of the implementation is taken from PawelAutoBoxer and modified to fit in the new framework.
-		@param image_name the image that we're boxing
-		@param parameter_update, should generally be True,but may be False if the current parameters are known to be current (see self.load_from_last_state)
-		@param force_remove_auto_boxes if True all of the autoboxed boxes in the EMBoxerModule are removed and the 'entire' image is autoboxed again. This might be False if you know the template has not changed
-		@param cache whether or not the newly establish state, i.e. at the end of this function, should be cached to the database and internally. Generally True but sometimes False (see self.load_from_last_state) .
-		'''
-		from sparx import filt_gaussl
-		print "Gauss method............start auto boxing"
-		if self.gui_mode:
-			from PyQt4 import QtCore
-			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
-
-		# user pawelautoboxer (gauss method) to compute soln
-		# downsample input image.
-		small_img = self.get_small_image(imgname)
-		#set_idd_image_entry(imgname,'subsampled_image',self.small_img)
-		BigImageCache.get_object(imgname).register_alternate(small_img)
-		#this causes the alternate image to be picked up and update micrograph window using the small image
-		self.target().set_current_file(imgname)
-		[avg,sigma,fmin,fmax] = Util.infomask(small_img, None, True )
-		small_img -= avg
-		small_img /= sigma
-
-		if(self.use_variance):
-			from morphology import power
-			small_img = power(small_img, 2.0)
-			print "using variance"
-
-		boxsize = self.target().get_box_size()
-		ccf = filt_gaussl( small_img, self.gauss_width/boxsize )
-		del small_img
-		peaks = ccf.peak_ccf( boxsize/2-1)
-		del ccf
-		npeak = len(peaks)/3
-		print "npeak: ", npeak
-		boxes = []
-		ccfs = [] # ccfs are used to set threshold_low adn threshold_high after the particles have been picked. see set_data in CcfHistogram in sxboxer and set_params_of_gui in pawelautoboxer in boxertools.py
-		print "thr low: ", self.thr_low
-		print "thr hi: ", self.thr_hgh
-		print "pixel_output: ", self.pixel_output
-		print "pixel input: ", self.pixel_input
-		print "invert: ", self.invert
-		print "gauss width: ", self.gauss_width
-		print "variance: ", self.use_variance
-		for i in xrange(npeak):
-			cx = peaks[3*i+1]
-			cy = peaks[3*i+2]
-
-			corr_score= peaks[3*i]
-			skip = False
-			if not(self.thr_low is None) and corr_score < self.thr_low:
-				skip = True
-
-			if not(self.thr_hgh is None) and corr_score > self.thr_hgh:
-				skip = True
-
-			if not skip:
-				ccfs.append( peaks[3*i] )
-				type = GaussBoxer.AUTO_NAME
-				box = [cx,cy,type,corr_score]
-				boxes.append(box)
-
-		del peaks
-
-		# Need to do: handle npeak when npeak = 1
-		if npeak > 1:
-			self.panel_object.set_data(ccfs)
-
-		del ccfs
-
-		if self.gui_mode: self.target().set_status_message("Auboxing Done",1000)
-
-		if self.gui_mode: self.target().set_status_message("Updating Positions",0)
-		if self.gui_mode: self.target().set_status_message("Done",1000)
-
-		#self.target().set_box_size(boxsize/shrinkby)
-		self.target().add_boxes(boxes, True)
-
-		if self.gui_mode:
-			from PyQt4 import QtCore
-			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
-			self.target().set_status_message("Autoboxed %d Particles" %len(boxes), 10000)
-		else:
-			print "Autoboxed %d Particles" %len(boxes)
-
-		self.panel_object.enable_auto_box(False)
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		gbdb['clear']=False
-		gbdb['boxsize']=boxsize
-		gbdb['filename']=imgname
-		#######################################################
-		# save parameters in case user later want to do cmdline autoboxing
-
-		autoboxdict = {'boxsize':boxsize, 'pixel_input':self.pixel_input, 'pixel_output':self.pixel_output, 'invert_contrast':self.invert, 'use_variance':self.use_variance, 'gauss_width':self.gauss_width,'thr_low':self.thr_low,'thr_hi':self.thr_hgh}
-
-		if gbdb.has_key(imgname):
-			oldautoboxdict = gbdb[imgname]
-			gbdb[imgname] = dict(oldautoboxdict.items() + autoboxdict.items()) # resolve conflicts in favor of new autoboxdict
-		else:
-			gbdb[imgname] = autoboxdict
-		#######################################################
-		return boxes
-
-
-	def clear_all(self):
-		'''
-		Clears all boxes calculated in Gauss mode and start from clean slate by setting the current file (i.e., the micrograph being picked) to the commandline one. Otherwise, the already normalized micrograph will get normalized again.
-		'''
-
-		self.target().clear_boxes([GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME],cache=True)
-
-		self.panel_object.pixel_output_edit.setText(str(self.pixel_output))
-		self.panel_object.new_pixel_output()
-		self.panel_object.pixel_input_edit.setText(str(self.pixel_input))
-		self.panel_object.new_pixel_input()
-		self.panel_object.gauss_width.setText(str(self.gauss_width))
-		self.panel_object.gauss_width_edited()
-		self.panel_object.setgwbox=False
-		self.panel_object.gauss_width_slider.setValue(int( log10(self.gauss_width) * 100) )
-		self.panel_object.setgwbox=True
-		tlowtext = self.panel_object.THRNA
-		if self.thr_low != None:
-		        tlowtext = str(self.thr_low )
-		self.panel_object.thr_low_edit.setText(tlowtext)
-		self.panel_object.new_thr_low()
-		thitext = self.panel_object.THRNA
-		if self.thr_hgh != None:
-		        thitext = str(self.thr_hgh )
-                self.panel_object.thr_hi_edit.setText(thitext)
-                self.panel_object.new_thr_hi()
-
-		self.panel_object.use_variance_chk.setChecked(self.use_variance)
-		self.panel_object.use_variance_checked( self.use_variance)
-		self.panel_object.invert_contrast_chk.setChecked(self.invert)
-		self.panel_object.invert_contrast_checked(self.invert)
-
-		BigImageCache.get_object(self.target().file_names[0]).register_alternate(None)
-		self.target().set_current_file_by_idx(0)
-		self.target().set_current_file(self.target().file_names[0])
-		self.panel_object.enable_auto_box(True)
-
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-		# Don't set gbdb to None but just set it's 'clear' flag to true.
-		# If GUI is invoked next time, alternate image will NOT be generated adn GUI will start from clean slate. However, if gauss mode autoboxing or ctf is invoked via command line, the paramters used for boxing will still be there for autoboxing and ctf est to work.
-		gbdb['clear']=True
-
-	def get_small_image(self,imgname,modecmd=False,boxsize=128,ret_dummy=False):
-
-		from sparx import get_im, filt_gaussl, filt_gaussh
-		subsample_rate = self.get_subsample_rate()
-		frequency_cutoff = self.get_frequency_cutoff()
-		template_min = self.get_window_size_min()
-		gaussh_param = self.get_gaussh_param(modecmd=modecmd,boxsize=boxsize)
-		invert = self.get_invert()
-
-		img = get_im( imgname )
-
-		# first invert image if invert is true. code taken from invert_contrast_mic_toggled in sxboxer.py
-		if invert:
-			[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
-			img -= avg
-			img *= -1
-			img += avg
-
-		img_filt = filt_gaussh( img, gaussh_param )
-
-		if subsample_rate != 1.0:
-			print "Generating downsampled image\n"
-			sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
-			small_img = img_filt.downsample(sb,subsample_rate)
-			del sb
-		else:
-			small_img = img_filt.copy()
-
-		del img_filt
-
-		small_img.set_attr("invert", invert)
-		small_img.set_attr("gaussh_param", gaussh_param)
-		small_img.set_attr("subsample_rate",subsample_rate)
-		small_img.set_attr("frequency_cutoff",frequency_cutoff)
-		small_img.set_attr("template_min",template_min)
-		from utilities import generate_ctf
-		try:
-			ctf_dict = img.get_attr("ctf")
-			ctf_dict.apix = self.pixel_output
-			small_img.set_attr("ctf",ctf_dict)
-		except:
-			pass
-
-		del img
-
-		if ret_dummy:
-			BigImageCache.get_object(imgname).register_alternate(small_img)
-			del small_img
-			return None
-
-		return small_img
-	#############################################################################
-	# parameter access functions from pawelautoboxer class
-	def get_subsample_rate(self):
-		return self.pixel_input/self.pixel_output
-
-	def get_window_size_min(self):
-		return 15
-
-	def get_frequency_cutoff(self):
-		return 0.5*self.get_subsample_rate()
-
-	def get_gaussh_param(self,modecmd=False,boxsize=128):
-		ratio = self.pixel_input/self.pixel_output
-		if modecmd:
-			return ratio/boxsize
-		return ratio/self.target().get_box_size()
-
-	def get_invert(self):
-		return self.invert
-	#############################################################################
-
-	def move_auto_box(self,box_number,image_name,dx,dy):
-		'''
-		This is the solution to a conundrum - what if the user moves an auto box (a green one) but then reboxes, subsequently
-		losing this "centering" metadata? The solution implemented here is to store the movement metadata and perform collision
-		detection whenever autoboxing happens again.
-
-		Here we update the "movement cache" to reflect the new metadata
-		@param box_number the index corresponding to the stored box of the EMBoxList in the EMBoxerModule
-		@param image_name the name of the image we're currently operating on - this is important because its used to store data in the local database
-		@param dx the movement in the x direction (float)
-		@param dy the movement in the y direction
-		'''
-		box = self.target().get_box(box_number)
-		for i,[old,new] in enumerate(self.mvt_cache):
-			dist = (new[0]-box.x)**2 + (new[1]-box.y)**2
-			if dist < GaussBoxer.MVT_THRESHOLD:
-				self.mvt_cache[i][1] = [box.x+dx,box.y+dy]
-				break
-		else:
-			self.mvt_cache.append([[box.x,box.y],[box.x+dx,box.y+dy]])
-
-		set_database_entry(image_name,GaussBoxer.GAUSS_USER_MVT,self.mvt_cache)
-		self.target().move_box(box_number,dx,dy)
-
-	def get_alternate(self,filename):
-		# if there is a subsampled image in cache then user was probably using that the last time
-		# if we use subsampled image from cache then also have to reload all the previous parameters, mosti mportantly box size and in/output pixel size
-
-		#self.small_img = get_idd_image_entry(filename,'subsampled_image')
-
-		# look at parameters stored in cache to determine if users ended previous session not from a blank slate
-		# if that is the case then pre-process/downsample input micrograph and set it to alternate
-
-		gbdb = js_open_dict(GaussPanel.GDB_NAME)
-
-		try:
-			if gbdb['clear'] == False and gbdb['filename']==filename:
-				print "Restoring micrograph and particles window for Gauss mode..."
-				# set parameters from cache so get_small image work from the correct parameters
-				self.pixel_input = gbdb['pixel_input']
-				self.pixel_output = gbdb['pixel_output']
-				self.invert = gbdb['invert_contrast']
-				self.use_variance = gbdb['use_variance']
-				small_img = self.get_small_image(filename)
-				BigImageCache.get_object(filename).register_alternate(small_img)
-				del small_img
-				#this causes the alternate image to be picked up by micrograph window
-				self.target().current_idx=0
-				self.target().set_current_file(filename)
-				self.panel_object.enable_auto_box(False)
+		write_boxfiles(args,boxsize)
+		print ".box files written to boxfiles/"
+
+	if options.write_ptcls:
+		write_particles(args,boxsize)
+		print "Particles written to particles/*_ptcls.hdf"
+
+	E2end(logid)
+
+def write_boxfiles(files,boxsize):
+	"""This function will write a boxfiles/*.box file for each provided micrograph filename based on box locations
+	in the corresponding info/*json file."""
+	
+	try: os.mkdir("boxfiles")
+	except: pass
+	boxsize2=boxsize/2
+
+	for m in files:
+		db=js_open_dict(info_name(m))
+		boxes=db["boxes"]
+		if len(boxes)==0 : continue
+		out=file("boxfiles/{}.box".format(base_name(m)),"w")
+		for b in boxes:
+			out.write("{:d}\t{:d}\t{:d}\t{:d}\n".format(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
+
+def write_particles(files,boxsize):
+	"""This function will write a particles/*_ptcls.hdf file for each provided micrograph, based on
+	box locations in the corresponding info/*json file. To use this with .box files, they must be imported
+	to a JSON file first."""
+	
+	try: os.mkdir("particles")
+	except: pass
+	boxsize2=boxsize/2
+	
+	for m in files:
+		base=base_name(m)
+		ptcl="particles/{}_ptcls.hdf".format(base)
+		
+		# get the list of box locations
+		db=js_open_dict(info_name(m))
+		boxes=db["boxes"]
+		if len(boxes)==0 :
+			if options.verbose :
+				print "No particles in ",m
+			continue
+	
+		# remove any existing file
+		try: os.unlink(ptcl)
 		except: pass
+	
+		if options.verbose : print "{} : {} particles".format(m,len(boxes))
+		micrograph=load_micrograph(m)		# read micrograph
+		for i,b in enumerate(boxes):
+			boxim=micrograph.get_clip(Region(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
+			boxim["ptcl_source_coord"]=(b[0],b[1])
+			boxim["ptcl_source_image"]=m
+			boxim.write_image(ptcl,i)
+	
+##########
+# to add a new autoboxer module, create a class here, then add it to the GUIBoxer.aboxmodes list below
+##########
 
-	# this is for automated particle picking from command line
-	def auto_box_cmdline(self, imgname,boxsize=128,norm="normalize.edgemean"):
+class boxerByRef(QtCore.QObject):
+	@staticmethod
+	def setup_gui(gridlay):
+		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",6.0,90)
+		gridlay.addWidget(boxerByRef.threshold,0,0)
+	
+	@staticmethod
+	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
+		# If parameters are provided via params (as if used from command-line) we use those values,
+		# if that fails, we check the GUI widgets, which were presumably created in this case
+		try: threshold=params["threshold"]
+		except:
+			try: threshold=boxerByRef.threshold.getValue()
+			except:
+				print "Error, no threshold (0.1-2) specified"
+				return
+		
+		downsample=10.0/apix			# we downsample to 10 A/pix
+		microdown=micrograph.process("normalize.edgemean").process("math.fft.resample",{"n":downsample})
+		gs=good_size(max(microdown["nx"],microdown["ny"]))
+		microf=microdown.get_clip(Region(0,0,gs,gs)).do_fft()
+		print "downsample by ",downsample,"  Good size:",gs
+	
+		## Here we precompute a normalization image to deal with local standard deviation variation
+		#nx=goodrefs[0]["nx"]/downsample
+		#circle=EMData(gs,gs,1)
+		#circle.to_one()
+		#circle.process_inplace("mask.sharp",{"outer_radius":nx/2})
+##		circle.process_inplace("normalize.unitlen")
+		#circle.process_inplace("xform.phaseorigin.tocorner")
+		#circlef=circle.do_fft()
+		
+		#ccfc=microf.calc_ccf(circlef)
+		#ccfc.mult(1.0/(nx*nx))
+		#ccfc.process_inplace("math.squared")
+		
+		#md2=microdown.process("math.squared")
+		#md2f=md2.get_clip(Region(0,0,gs,gs)).do_fft()
+		#norm=md2f.calc_ccf(circlef)
+		#norm.mult(1.0/(nx*nx))
+	
+		## Norm should now be the variance
+		#norm.sub(ccfc)
+	
+		# Iterate over refs
+		owner=EMData(gs,gs,1)
+		maxav=Averagers.get("minmax",{"max":1,"owner":owner})
+		
+		# Iterate over in-plane rotation for each ref
+		jsd=Queue.Queue(0)
+		thrds=[threading.Thread(target=boxerByRef.ccftask,args=(jsd,ref,downsample,gs,microf,ri)) for ri,ref in enumerate(goodrefs)]
 
-		from sparx import filt_gaussl
-		print "Gauss method............start command line auto boxing"
-		# user pawelautoboxer (gauss method) to compute soln
-		# downsample input image.
-		small_img = self.get_small_image(imgname,modecmd=True,boxsize=boxsize)
-		BigImageCache.get_object(imgname).register_alternate(small_img)
-		[avg,sigma,fmin,fmax] = Util.infomask( small_img, None, True )
-		small_img -= avg
-		small_img /= sigma
+		n=-1
 
-		if(self.use_variance):
-			from morphology import power
-			small_img = power(small_img, 2.0)
-			print "using variance"
+		# here we run the threads and save the results, no actual alignment done here
+		print len(thrds)," threads"
+		thrtolaunch=0
+		while thrtolaunch<len(thrds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) and threading.active_count()!=nthreads:
+#				print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+				thrds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: 
+				time.sleep(0.05)
+				if prog!=None : 
+					prog.setValue(prog.value())
+					if prog.wasCanceled() : break
+		
+			while not jsd.empty():
+				# add each ccf image to our maxval image as it comes in
+				ccf=jsd.get()
+				maxav.add_image(ccf)
+				sys.stdout.flush()
+		print ""
 
-		ccf = filt_gaussl( small_img, self.gauss_width/boxsize )
-		del small_img
-		peaks = ccf.peak_ccf( boxsize/2-1)
-		del ccf
-		npeak = len(peaks)/3
-		print "npeak: ", npeak
-		boxes = []
-		for i in xrange(npeak):
-			cx = peaks[3*i+1]
-			cy = peaks[3*i+2]
+		for t in thrds:
+			t.join()
 
-			corr_score= peaks[3*i]
-			skip = False
-			if not(self.thr_low is None) and corr_score < self.thr_low:
-				skip = True
+			
+		final=maxav.finish()
+		# smooth out a few spurious peaks. Hopefully doesn't mess up ownership assignment significantly
+		final.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.2})
+		# get rid of nasty edges
+		final.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+		owner.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+		#norm.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+		#norm.process("math.sqrt")
+		#norm.process_inplace("math.reciprocal")
+		# this establishes the scale for our threshold (in terms of sigma)
+		final.add(-final["mean"]) 
+		# Now pull out only local peaks
+		# Zero edges to eliminate boxes within 1/2 box size of edge
+		edge=int(goodrefs[0]["nx"]/(2.0*downsample)+0.5)
+		#final.mult(norm)
+		final.process_inplace("mask.zeroedge2d",{"x0":edge,"y0":edge})
+		final.process_inplace("mask.onlypeaks",{"npeaks":0,"usemean":0})
+		final.process_inplace("normalize.edgemean")
+#		final.process_inplace("threshold.belowtozero",{"minval":threshold})
 
-			if not(self.thr_hgh is None) and corr_score > self.thr_hgh:
-				skip = True
+		final.write_image("final.hdf",0)
+		owner.write_image("final.hdf",1)
+		#norm.write_image("final.hdf",2)
+#		display(final)
+		
+		print "Find peaks"
+		# Identify the peaks we want to keep and turn them into rough box locations
+		boxes=[]
+		locs=final.calc_highest_locations(threshold)
+		for i,p in enumerate(locs):
+			# loop over all higher valued peaks, and make sure we aren't too close to any of them
+			for pc in locs[:i]:
+				if hypot(pc.x-p.x,pc.y-p.y)<=edge : break
+			else:
+				# We only get here if the loop completed
+				boxes.append((int(p.x*downsample),int(p.y*downsample),"auto_ref",owner[p.x,p.y]))
+		
+		print "Refine box locations"
+		# Refine the box locations at full sampling
+		cmpim=[]
+		boxes2=[]
+		for box in boxes:
+			ownn=int(floor(box[3]))
+			owna=(box[3]-ownn)*360.0
+			ref=goodrefs[ownn].process("xform",{"transform":Transform({"type":"2d","alpha":owna})})
+			ref.process_inplace("normalize.edgemean")
+			ptcl=micrograph.get_clip(Region(box[0]-ref["nx"]/2,box[1]-ref["ny"]/2,ref["nx"],ref["ny"]))		# of course, nx == ny anyway
+			ali=ref.align("rotate_translate",ptcl)
+			ax,ay=ali["xform.align2d"].get_trans_2d()
+			boxes2.append((box[0]+ax,box[1]+ay,box[2]))
+#			print ownn,owna,ali["xform.align2d"]
+			#cmpim.append(ref)
+			#cmpim.append(ali)
+			#cmpim.append(ptcl)
+		#display(cmpim)
+			
+		print "done"
+		
+		return boxes2
 
-			if not skip:
-				type = GaussBoxer.AUTO_NAME
-				box = [cx,cy,type,corr_score]
-				boxes.append(box)
-		del peaks
-		# adds boxes and write to database
-		self.target.add_boxes(boxes, True)
-		print "Autoboxed %d Particles" %len(boxes)
 
-	# auto_ctf is meant to be called for batch only...
-	# take care of case where estimated ctf is saved into downsampled micrograph from which particles are picked.
-	def auto_ctf(self,image_name,ctf_params):
+	@staticmethod
+	def ccftask(jsd,ref,downsample,gs,microf,ri):
 
-		from utilities import get_im
-		img = get_im(image_name)
-		ctf_volt = ctf_params['ctf_volt']
-		ctf_window = ctf_params['ctf_window']
-		ctf_overlap = ctf_params['ctf_overlap']
-		ctf_edge = ctf_params['ctf_edge']
-		ctf_Cs = ctf_params['ctf_cs']
-		ctf_ampcont = ctf_params['ctf_ampcont']
-		ctf_fstart = ctf_params['ctf_fstart']
-		ctf_fstop = ctf_params['ctf_fstop']
-		self.pixel_input = ctf_params['pixel_input']
-		self.pixel_output = ctf_params['pixel_output']
+		mref=ref.process("mask.soft",{"outer_radius":ref["nx"]/2-4,"width":3})
+		mref.process_inplace("normalize.unitlen")
+		
+		for ang in xrange(0,360,10):
+			dsref=mref.process("xform",{"transform":Transform({"type":"2d","alpha":ang})})
+			# don't downsample until after rotation
+			dsref.process_inplace("math.fft.resample",{"n":downsample})
+			dsref.process_inplace("normalize")
+			diff=(gs-dsref["nx"])/2
+			dsref=dsref.get_clip(Region(-diff,-diff,gs,gs))
+			dsref.process_inplace("xform.phaseorigin.tocorner")
+			ccf=microf.calc_ccf(dsref)
+			#ccf.process_inplace("normalize")
+			ccf["ortid"]=ri+ang/360.0			# integer portion is projection number, fractional portion is angle, should be enough precision with the ~100 references we're using
 
-		from fundamentals import welch_pw2
-		# XXX: check image dimensions, especially box size for welch_pw2!
-		power_sp = welch_pw2(img,win_size=ctf_window,overlp_x=ctf_overlap,overlp_y=ctf_overlap,edge_x=ctf_edge,edge_y=ctf_edge)
+			jsd.put(ccf)
+		sys.stdout.write("*")
+		
+class boxerLocal(QtCore.QObject):
+	@staticmethod
+	def setup_gui(gridlay):
+		boxerLocal.threshold=ValSlider(None,(0,8.0),"Threshold",5.0,90)
+		gridlay.addWidget(boxerLocal.threshold,0,0)
+	
+	@staticmethod
+	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
+		# If parameters are provided via params (as if used from command-line) we use those values,
+		# if that fails, we check the GUI widgets, which were presumably created in this case
+		try: threshold=params["threshold"]
+		except:
+			try: threshold=boxerLocal.threshold.getValue()
+			except:
+				print "Error, no threshold (0.1-2) specified"
+				return
+		
+		nx=goodrefs[0]["nx"]
+		downsample=8.0/apix			# we downsample to 10 A/pix
+		nxdown=good_size(int(nx/downsample))
+		downsample=float(nx)/float(nxdown)
+		microdown=micrograph.process("normalize.edgemean").process("math.fft.resample",{"n":downsample})
+		print "downsample by ",downsample
+		
+		# Each thread tries one reference
+		owner=EMData(microdown["nx"],microdown["ny"],1)
+		maxav=Averagers.get("minmax",{"max":1,"owner":owner})
+		
+		# This prevents some threading issues
+		r=goodrefs[0].process("math.fft.resample",{"n":downsample})
+		r.align("rotate_translate",r)
+		
+		jsd=Queue.Queue(0)
+		thrds=[threading.Thread(target=boxerLocal.ccftask,args=(jsd,ref,downsample,microdown,ri)) for ri,ref in enumerate(goodrefs)]
 
-		from fundamentals import rot_avg_table
-		avg_sp = rot_avg_table(power_sp)
-		del power_sp
+		n=-1
 
-		from morphology import defocus_gett
-		defocus = defocus_gett(avg_sp,voltage=ctf_volt,Pixel_size=self.pixel_input,Cs=ctf_Cs,wgh=ctf_ampcont, f_start=ctf_fstart,f_stop=ctf_fstop)
+		# here we run the threads and save the results, no actual alignment done here
+		print len(thrds)," threads"
+		thrtolaunch=0
+		while thrtolaunch<len(thrds) or threading.active_count()>1:
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) and threading.active_count()!=nthreads:
+#				print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+				thrds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: 
+				time.sleep(0.05)
+				if prog!=None : 
+					prog.setValue(prog.value())
+					if prog.wasCanceled() : break
+		
+			while not jsd.empty():
+				# add each ccf image to our maxval image as it comes in
+				ccf=jsd.get()
+				maxav.add_image(ccf)
+				sys.stdout.flush()
+		print ""
 
-		# set image properties, in order to save ctf values
-		from utilities import set_ctf, generate_ctf
-		ctf_tuple = [defocus,ctf_Cs,ctf_volt,self.pixel_output,0,ctf_ampcont]
-		set_ctf(img, ctf_tuple)
-		img.write_image(image_name, 0)
-		print "        CTF parameters for original micrograph %s:"%image_name, ctf_tuple
-		del img
+		for t in thrds:
+			t.join()
 
-class GaussTool(GaussBoxer,EMBoxingTool):
-	'''
-	A class that knows how to handle mouse erase events for a GUIBox
-	'''
+			
+		final=maxav.finish()
+		# smooth out a few spurious peaks. Hopefully doesn't mess up ownership assignment significantly
+		final.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.2})
+		# get rid of nasty edges
+#		final.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+#		owner.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+		# this establishes the scale for our threshold (in terms of sigma)
+#		final.add(-final["mean"]) 
+		# Now pull out only local peaks
+		# Zero edges to eliminate boxes within 1/2 box size of edge
+		edge=int(goodrefs[0]["nx"]/(2.0*downsample)+0.5)
+		#final.mult(norm)
+		final.process_inplace("mask.zeroedge2d",{"x0":edge,"y0":edge})
+		final.process_inplace("mask.onlypeaks",{"npeaks":0,"usemean":0})
+		final.mult(1.0/final["sigma_nonzero"])
+#		final.process_inplace("normalize.edgemean")
+#		final.process_inplace("threshold.belowtozero",{"minval":threshold})
 
-	def __init__(self,target,particle_diameter=128):
-		GaussBoxer.__init__(self,particle_diameter)
-		self.target = weakref.ref(target) # module can be accessed through self.target. So self.target.get_main_2D_window can be used to get the micrograph window
-		self.panel_object = GaussPanel(self,self.pixel_input)
-		self.current_file = None # the name of the file that is being studied in the main viewer
-		self.moving = None # keeps track of the moving box, will be a list in the format [[int,int],int,str] = [[x,y],box_number,box_type]
-		self.ptcl_moving_data = None # keeps track of movement that's occuring in the particles (mx) viewer
-		self.gui_mode = True
+		microdown.write_image("final.hdf",0)
+		final.write_image("final.hdf",1)
+		owner.write_image("final.hdf",2)
+		#norm.write_image("final.hdf",2)
+#		display(final)
+		
+		print "Find peaks"
+		# Identify the peaks we want to keep and turn them into rough box locations
+		boxes=[]
+		locs=final.calc_highest_locations(threshold)
 
-	def unique_name(self): return "Gauss"
+		for i,p in enumerate(locs):
+			# loop over all higher valued peaks, and make sure we aren't too close to any of them
+			for pc in locs[:i]:
+				if hypot(pc.x-p.x,pc.y-p.y)<=edge : break
+			else:
+				# We only get here if the loop completed
+				boxes.append((int(p.x*downsample),int(p.y*downsample),"auto_local",owner[p.x,p.y]))
+		
+		print "Refine box locations"
+		# Refine the box locations at full sampling
+		cmpim=[]
+		boxes2=[]
+		for box in boxes:
+			ownn=int(floor(box[3]))
+#			owna=(box[3]-ownn)*360.0
+#			ref=goodrefs[ownn].process("xform",{"transform":Transform({"type":"2d","alpha":owna})})
+			ref=goodrefs[ownn].process("normalize.edgemean")
+			ptcl=micrograph.get_clip(Region(box[0]-ref["nx"]/2,box[1]-ref["ny"]/2,ref["nx"],ref["ny"]))		# of course, nx == ny anyway
+			ali=ref.align("rotate_translate",ptcl)
+			ax,ay=ali["xform.align2d"].get_trans_2d()
+			boxes2.append((box[0]+ax,box[1]+ay,box[2]))
+#			print ownn,owna,ali["xform.align2d"]
+			#cmpim.append(ref)
+			#cmpim.append(ali)
+			#cmpim.append(ptcl)
+		#display(cmpim)
+			
+		print "done"
+		
+		return boxes2
 
-	def get_widget(self):
-		if self.panel_object == None:
-			self.panel_object = GaussPanel(self,self.particle_diameter)
-		return self.panel_object.get_widget()
 
-	def icon(self):
-		from PyQt4 import QtGui
-		return QtGui.QIcon(get_image_directory() + "swarm_icon.png")
+	@staticmethod
+	def ccftask(jsd,ref,downsample,microdown,ri):
 
-	def get_2d_window(self): return self.target().get_2d_window()
+		mref=ref.process("mask.soft",{"outer_radius":ref["nx"]/2-4,"width":3})
+		mref.process_inplace("math.fft.resample",{"n":downsample})
+		nxdown=mref["nx"]
+		
+		ptclmap=EMData(microdown["nx"],microdown["ny"])
+		ptclmap.to_zero()
+		ptclmap["ortid"]=ri
+		
+		# loop over the image with enough oversampling that we should be able to find all of the particles
+		for x in xrange(0,microdown["nx"]-nxdown,nxdown//2):
+			for y in xrange(0,microdown["ny"]-nxdown,nxdown//2):
+				ptcl=microdown.get_clip(Region(x,y,nxdown,nxdown))
+				# initial alignment
+				ali=mref.align("rotate_translate",ptcl)
+				ax,ay=ali["xform.align2d"].get_trans_2d()
+				
+				# extract centered particle for better frc
+				ptcl=microdown.get_clip(Region(int(x+ax),int(y+ay),nxdown,nxdown))
+				xf=ali["xform.align2d"]
+				xf.set_trans(0,0,0)
+				ali=mref.process("xform",{"transform":xf})
+				frc=-ali.cmp("frc",ptcl,{"minres":200,"maxres":20,"sweight":0})		# we want larger better in this case
+				
+				# Write results in one pixel
+				ax=int(ax+x+nxdown/2)
+				ay=int(ay+y+nxdown/2)
+				if frc>ptclmap[ax,ay] : ptclmap[ax,ay]=frc
+		
+		jsd.put(ptclmap)
+		sys.stdout.write("*")
+		
+class boxerGauss(QtCore.QObject):
+	@staticmethod
+	def setup_gui(gridlay):
+		return
+	
+	@staticmethod
+	def do_autobox(boxer):
+		return
+	
+aboxmodes = [ ("Local Search","auto_local",boxerLocal),("by Ref","auto_ref",boxerByRef), ("Gauss","auto_gauss",boxerGauss) ]
+boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "unknown":[.4,.4,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4) }
 
-	def mouse_move(self,event):
-		pass
+class GUIBoxer(QtGui.QWidget):
+	# Dictionary of autopickers
+	# to add a new one, provide name:(Qt_setup_function,picker_execution_function)
+	# Qt_setup_function(self,empty_grid_layout)
+	# picker_execution_function(self,...
 
-	def mouse_wheel(self,event):
-		pass
+	
+	def __init__(self,imagenames,voltage=None,apix=None,cs=None,ac=10.0,box=256,ptcl=200,threads=4):
+		"""The 'new' e2boxer interface.
+		"""
 
-	def mouse_down(self,event):
-		# User clicking on micrograph does nothing (currently) in Gauss mode
+		QtGui.QWidget.__init__(self,None)
+#		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
+
+		self.data=None
+		self.curfilename = None				# current selected file for boxing
+		self.filenames=imagenames			# list of available filenames
+		self.micrograph=None
+		self.boxes=[]
+		self.particles=[]
+		self.goodrefs=[]					# "good" box references for this project
+		self.goodrefchg=False				# this is used to prevent rewriting the refs many times
+		self.badrefs=[]						# "bad" box references for this project. Used to reduce false-positives
+		self.badrefchg=False
+		self.threads=threads
+
+		self.defaultvoltage=voltage
+		self.defaultapix=apix
+		self.defaultcs=cs
+		self.defaultac=ac
+		
+		self.db = None						# open JSON file for current image
+
+		self.wimage=EMImage2DWidget()
+		self.wimage.setWindowTitle("Micrograph")
+
+		self.wparticles=EMImageMXWidget()
+		self.wparticles.setWindowTitle("Particles")
+		self.wparticles.set_mouse_mode("App")
+		
+		self.wrefs=EMImageMXWidget()
+		self.wrefs.setWindowTitle("Box Refs")
+		self.wrefs.set_mouse_mode("App")
+		
+		self.wbadrefs=EMImageMXWidget()
+		self.wbadrefs.setWindowTitle("Bad Box Refs")
+		self.wbadrefs.set_mouse_mode("App")
+
+
+		#self.wfft=EMImage2DWidget()
+		#self.wfft.setWindowTitle("e2evalimage - 2D FFT")
+
+		#self.wplot=EMPlot2DWidget()
+		#self.wplot.setWindowTitle("e2evalimage - Plot")
+
+		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
+		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
+		self.wimage.connect(self.wimage,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
+		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.ptclmousedown)
+		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.ptclmousedrag)
+		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mx_mouseup")  ,self.ptclmouseup)
+#		self.wrefs.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.refmousedown)
+#		self.wrefs.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.ptclmousedrag)
+		self.wrefs.connect(self.wrefs,QtCore.SIGNAL("mx_mouseup")  ,self.refmouseup)
+#		self.wbadrefs.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.badrefmousedown)
+#		self.wbadrefs.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.badrefmousedrag)
+		self.wbadrefs.connect(self.wbadrefs,QtCore.SIGNAL("mx_mouseup")  ,self.badrefmouseup)
+
+		# This object is itself a widget we need to set up
+		self.gbl = QtGui.QGridLayout(self)
+		self.gbl.setMargin(8)
+		self.gbl.setSpacing(6)
+		self.gbl.setColumnStretch(0,2)
+		self.gbl.setColumnStretch(1,2)
+		self.gbl.setColumnStretch(2,2)
+		self.gbl.setColumnStretch(3,2)
+		self.gbl.setColumnStretch(4,1)
+
+		# Micrograph list
+		self.setlist=QtGui.QListWidget(self)
+		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		for i in imagenames:
+			self.setlist.addItem(i)
+		self.gbl.addWidget(self.setlist,0,0,12,2)
+
+		self.setlist.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		self.setlist.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listKey)
+		
+		# Mouse Modes
+		self.mmode="manual"
+		self.boxmm=QtGui.QGroupBox("Mouse Mode",self)
+		self.boxmm.setFlat(False)
+		self.gbl.addWidget(self.boxmm,0,2,2,2)
+		
+		self.hbl0=QtGui.QHBoxLayout(self.boxmm)
+		
+		self.bmmanual=QtGui.QPushButton("Manual")
+		self.bmmanual.setToolTip("Manual selection of particles. No impact on autoselection.")
+		self.bmmanual.setAutoExclusive(True)
+		self.bmmanual.setCheckable(True)
+		self.bmmanual.setChecked(True)
+		self.hbl0.addWidget(self.bmmanual)
+		
+		self.bmdel=QtGui.QPushButton("Delete")
+		self.bmdel.setToolTip("Delete particles from any mode. Can also shift-click in other mouse modes.")
+		self.bmdel.setAutoExclusive(True)
+		self.bmdel.setCheckable(True)
+		self.hbl0.addWidget(self.bmdel)
+		
+		self.bmgref=QtGui.QPushButton("Good Refs")
+		self.bmgref.setToolTip("Identify some good particles. Available to all autoboxers.")
+		self.bmgref.setAutoExclusive(True)
+		self.bmgref.setCheckable(True)
+		self.hbl0.addWidget(self.bmgref)
+
+		self.bmbref=QtGui.QPushButton("Bad Refs")
+		self.bmbref.setToolTip("Identify regions which should not be selected as particles.")
+		self.bmbref.setAutoExclusive(True)
+		self.bmbref.setCheckable(True)
+		self.hbl0.addWidget(self.bmbref)
+
+		QtCore.QObject.connect(self.bmmanual,QtCore.SIGNAL("clicked(bool)"),self.setMouseManual)
+		QtCore.QObject.connect(self.bmdel,QtCore.SIGNAL("clicked(bool)"),self.setMouseDel)
+		QtCore.QObject.connect(self.bmgref,QtCore.SIGNAL("clicked(bool)"),self.setMouseGoodRef)
+		QtCore.QObject.connect(self.bmbref,QtCore.SIGNAL("clicked(bool)"),self.setMouseBadRef)
+
+		self.bfilter=QtGui.QPushButton("Filter Disp.")
+		self.bfilter.setToolTip("Filter micrograph (display only)")
+		self.bfilter.setCheckable(True)
+		self.gbl.addWidget(self.bfilter,0,4,1,1)
+		QtCore.QObject.connect(self.bfilter,QtCore.SIGNAL("clicked(bool)"),self.filterToggle)
+
+		self.binvert=QtGui.QPushButton("Invert")
+		self.binvert.setToolTip("Invert Micrograph (also output)")
+		self.binvert.setCheckable(True)
+		self.binvert.setChecked(invert_on_read)		# in truly bad form, this is a global
+		self.gbl.addWidget(self.binvert,1,4,1,1)
+		QtCore.QObject.connect(self.binvert,QtCore.SIGNAL("clicked(bool)"),self.invertToggle)
+
+		# Global parameters
+		self.boxparm=QtGui.QGroupBox("Parameters",self)
+		self.boxparm.setFlat(False)
+		self.gbl.addWidget(self.boxparm,2,2,3,3)
+		
+		self.gbl1=QtGui.QGridLayout(self.boxparm)
+		self.gbl1.setMargin(8)
+		self.gbl1.setSpacing(6)
+		
+		self.vbbsize = ValBox(label="Box Size:",value=box)
+		self.gbl1.addWidget(self.vbbsize,0,0)
+		
+		self.vbbpsize = ValBox(label="Ptcl Size:",value=ptcl)
+		self.gbl1.addWidget(self.vbbpsize,0,1)
+		
+		self.vbbapix = ValBox(label="A/pix:",value=apix)
+		self.gbl1.addWidget(self.vbbapix,0,2)
+		
+		self.vbvoltage = ValBox(label="Voltage:",value=voltage)
+		self.gbl1.addWidget(self.vbvoltage,1,0)
+
+		self.vbbac = ValBox(label="% AC:",value=ac)
+		self.gbl1.addWidget(self.vbbac,1,1)
+		
+		self.vbcs = ValBox(label="Cs:",value=cs)
+		self.gbl1.addWidget(self.vbcs,1,2)
+
+		self.vbthreads = ValBox(label="Threads:",value=self.threads)
+		self.vbthreads.setIntonly(1)
+		self.gbl1.addWidget(self.vbthreads,1,3)
+
+		# Reference tools
+		self.reftools=QtGui.QGroupBox("Box Refs",self)
+		self.boxparm.setFlat(False)
+		self.gbl.addWidget(self.reftools,5,2,2,2)
+		
+		self.hbl1=QtGui.QHBoxLayout(self.reftools)
+		
+		self.rtload3d=QtGui.QPushButton("From 3D")
+		self.rtload3d.setToolTip("Load box refs from 3-D volume")
+		self.hbl1.addWidget(self.rtload3d)
+		
+		self.rtload2d=QtGui.QPushButton("From 2D")
+		self.rtload2d.setToolTip("Load box refs from 2-D stack")
+		self.hbl1.addWidget(self.rtload2d)
+
+		self.rtclear=QtGui.QPushButton("Clear")
+		self.rtclear.setToolTip("Clear all current good and bad refs")
+		self.hbl1.addWidget(self.rtclear)
+
+		QtCore.QObject.connect(self.rtload3d,QtCore.SIGNAL("clicked(bool)"),self.reftoolLoad3D)
+		QtCore.QObject.connect(self.rtload2d,QtCore.SIGNAL("clicked(bool)"),self.reftoolLoad2D)
+		QtCore.QObject.connect(self.rtclear,QtCore.SIGNAL("clicked(bool)"),self.reftoolClear)
+		
+		
+		# Autoboxing Tabs
+		self.autolbl = QtGui.QLabel("Autoboxing Methods:")
+		self.gbl.addWidget(self.autolbl,7,2)
+		self.autotab = QtGui.QTabWidget()
+		self.gbl.addWidget(self.autotab,8,2,5,3)
+		
+		# Individual tabs from Dictionary
+		self.abwid=[]
+		for name,bname,cls in aboxmodes:
+			w=QtGui.QWidget()
+			gl=QtGui.QGridLayout(w)
+			self.abwid.append((w,gl))
+			cls.setup_gui(gl)
+			self.autotab.addTab(w,name)
+			
+		self.bbclear=QtGui.QPushButton("Clear Boxes")
+		self.bbclear.setToolTip("Clear all boxes in current micrograph")
+		self.gbl.addWidget(self.bbclear,13,2)
+		QtCore.QObject.connect(self.bbclear,QtCore.SIGNAL("clicked(bool)"),self.boxClear)
+
+		self.bautoboxa = QtGui.QPushButton("Autobox All")
+		self.gbl.addWidget(self.bautoboxa,13,3)
+		QtCore.QObject.connect(self.bautoboxa,QtCore.SIGNAL("clicked(bool)"),self.doAutoBoxAll)
+		
+		self.bautobox = QtGui.QPushButton("Autobox")
+		self.gbl.addWidget(self.bautobox,13,4)
+		QtCore.QObject.connect(self.bautobox,QtCore.SIGNAL("clicked(bool)"),self.doAutoBox)
+
+		self.setWindowTitle("e2boxer21 - Control Panel")
+
+		self.wimage.show()
+		self.wparticles.set_data(self.particles)
+		self.wparticles.show()
+		
+		if os.path.exists("info/boxrefs.hdf"):
+			self.goodrefs=EMData.read_images("info/boxrefs.hdf")
+		self.wrefs.set_data(self.goodrefs)
+		if len(self.goodrefs)>0 : self.wrefs.show()
+		
+		if os.path.exists("info/boxrefsbad.hdf"):
+			self.badrefs=EMData.read_images("info/boxrefsbad.hdf")
+		self.wbadrefs.set_data(self.badrefs)
+		if len(self.badrefs)>0 : self.wbadrefs.show()
+		
+#		self.wfft.show()
+#		self.wplot.show()
+		E2loadappwin("e2boxer21","main",self)
+		E2loadappwin("e2boxer21","image",self.wimage.qt_parent)
+		E2loadappwin("e2boxer21","particles",self.wparticles.qt_parent)
+		E2loadappwin("e2boxer21","refs",self.wrefs.qt_parent)
+		E2loadappwin("e2boxer21","badrefs",self.wbadrefs.qt_parent)
+
+		self.newSet(0)
+
+	def setMouseManual(self,x):
+		self.mmode="manual"
+	
+	def setMouseDel(self,x):
+		self.mmode="del"
+	
+	def setMouseGoodRef(self,x):
+		self.mmode="refgood"
+	
+	def setMouseBadRef(self,x):
+		self.mmode="refbad"
+	
+	def reftoolLoad3D(self,x):
+		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select 3-D Volume"))
+		if fsp==None or len(fsp)<4 : return
+
+		symname=str(QtGui.QInputDialog.getText(None,"Symmetry","Please specify the symmetry of the map, or c1 for none")[0])
+#		print symname
+		try:
+			sym = Symmetries.get(symname)
+		except:
+			print "Error: Unknown symmetry"
+			return
+		orts=sym.gen_orientations("eman",{"delta":15,"inc_mirror":1})
+		prog=QtGui.QProgressDialog("Making Projections","Abort",0,len(orts))
+		prog.setWindowModality(Qt.WindowModal)
+		prog.setValue(0)
+		
+		vol=EMData(fsp,0)
+		vol.process_inplace("normalize.circlemean")
+		apix3=vol["apix_x"]
+		apix1=self.vbbapix.getValue()
+		if apix3<0.1 : 
+			print "WARNING: A/pix on the 3-D volume appears too small. This method only works if the volume has a valid A/pix value in its header. I am adjusting it to 1.0, but this is almost certainly wrong."
+			apix3=1.0
+		
+		xsize3d=vol["nx"]
+		xsize=self.vbbsize.getValue()
+
+		if ( xsize3d != xsize or fabs(fabs(apix1/apix3)-1.0)>.001 ) :
+			print "WARNING: the boxsize and/or sampling (%d @ %1.4f A/pix) do not match (%d @ %1.4f A/pix). I will attempt to adjust the volume appropriately."%(xsize,apix1,xsize3d,apix3)
+			try:
+				scale=apix3/apix1
+				print "Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=xsize3d,box2=xsize,apix3=apix3,apix2=apix1,scale=scale)
+			except:
+				print "A/pix unknown, assuming scale same as relative box size"
+				scale=float(xsize)/xsize3d
+				
+			vol.process_inplace("xform.scale",{"clip":xsize,"scale":scale})
+		
+
+		for i,o in enumerate(orts):
+			prog.setValue(i)
+			if prog.wasCanceled() : break
+			proj=vol.project("standard",o)
+			proj.process_inplace("normalize.edgemean")
+			self.goodrefs.append(proj)
+			
+		prog.setValue(len(orts))
+		
+		self.wrefs.set_data(self.goodrefs)
+		self.wrefs.show()
+		self.goodrefchg=True
+		
+	def reftoolLoad2D(self,x):
+		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select 2-D Stack"))
+		if fsp==None or len(fsp)<4 : return
+		
+		refs=EMData.read_images(fsp)
+
+		apix2=refs[0]["apix_x"]
+		apix1=self.vbbapix.getValue()
+		if apix2<0.1 : 
+			print "WARNING: A/pix on the 2-D images appear too small. This method only works if the images have a valid A/pix value in their header. I am adjusting it to 1.0, but this is almost certainly wrong."
+			apix2=1.0
+		
+		xsize2=refs[0]["nx"]
+		xsize=self.vbbsize.getValue()
+
+		if ( xsize2 != xsize or fabs(fabs(apix1/apix2)-1.0)>.001 ) :
+			print "WARNING: the boxsize and/or sampling (%d @ %1.4f A/pix) do not match (%d @ %1.4f A/pix). I will attempt to adjust the volume appropriately."%(xsize,apix1,xsize2,apix2)
+			try:
+				scale=apix2/apix1
+				print "Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=xsize2,box2=xsize,apix3=apix2,apix2=apix1,scale=scale)
+			except:
+				print "A/pix unknown, assuming scale same as relative box size"
+				scale=float(xsize)/xsize2
+			
+		for r in refs:
+			r.process_inplace("normalize.circlemean")
+			if scale!=1.0 or xsize!=xsize2 : r.process_inplace("xform.scale",{"clip":xsize,"scale":scale})
+
+		self.goodrefs.extend(refs)
+		self.goodrefchg=True
+		self.wrefs.set_data(self.goodrefs)
+		self.wrefs.show()
+	
+		
+	def reftoolClear(self,x):
+		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will remove all good and bad box references. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
+		if r==QtGui.QMessageBox.Cancel : return
+
+		self.goodrefs=[]
+		self.goodrefchg=True
+		self.wrefs.set_data(self.goodrefs)
+		
+		self.badrefs=[]
+		self.badrefchg=True
+		self.wbadrefs.set_data(self.badrefs)
+
+	def boxClear(self,x):
+		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will erase all box locations in the current micrograph. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
+		if r==QtGui.QMessageBox.Cancel : return
+
+		self.boxes=[]
+		self.__updateBoxes()
+		
+	def filterToggle(self,x):
+		self.__show_image()
+
+	def invertToggle(self,x):
+		global invert_on_read
+		invert_on_read=self.binvert.isChecked()
+		self.newSet()
+		
+	def imgmousedown(self,event,m) :
+#		m=self.wimage.scr_to_img((event.x(),event.y()))
+		self.curbox=-1
+		self.downbut=event.buttons()
+		if not event.buttons()&Qt.LeftButton : return
+		self.lastloc=m
+		boxsize2=self.vbbsize.getValue()//2
+		ptclsize=self.vbbpsize.getValue()
+		if boxsize2<4 : return
+
+		if self.mmode=="del" : return 		# del works with drag and up
+		elif self.mmode in ("refgood","refbad") :
+			self.tmpbox=m
+			try: color=self.boxcolors[self.mmode]
+			except: color=self.boxcolors["unknown"]
+			self.wimage.add_shape("tmpbox",EMShape(("rect",color[0],color[1],color[2],self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,self.tmpbox[0]+boxsize2,self.tmpbox[1]+boxsize2,2)))
+			self.wimage.update()
+		elif self.mmode == "manual" :
+			self.curbox=0
+			# check to see if click was inside an existing box, in which case we move it
+			for i,b in enumerate(self.boxes):
+				if abs(m[0]-b[0])<boxsize2 and abs(m[1]-b[1])<boxsize2 : 
+					self.curbox=i
+					break
+			else :
+				# Create a new box
+				self.curbox=len(self.boxes)
+				self.boxes.append((m[0],m[1],self.mmode))
+				self.__addBox(self.curbox,self.boxes[-1])
+			
+		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
+
+	def imgmousedrag(self,event,m) :
+#		m=self.wimage.scr_to_img((event.x(),event.y()))
+		if not event.buttons()&Qt.LeftButton : return
+		boxsize2=self.vbbsize.getValue()//2
+		ptclsize=self.vbbpsize.getValue()
+		if boxsize2<4 : return
+		
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			# filter out all matching boxes, then update all at once
+			n=len(self.boxes)
+			self.boxes=[b for b in self.boxes if abs(b[0]-m[0])>boxsize2 or abs(b[1]-m[1])>boxsize2]
+			if len(self.boxes)<n : self.__updateBoxes()
+		elif self.mmode in ("refgood","refbad"):
+			if m==self.lastloc : return
+			b=self.tmpbox
+			self.tmpbox=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],self.mmode)
+			self.lastloc=m
+			try: color=self.boxcolors[self.mmode]
+			except: color=self.boxcolors["unknown"]
+			self.wimage.add_shape("tmpbox",EMShape(("rect",color[0],color[1],color[2],self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,self.tmpbox[0]+boxsize2,self.tmpbox[1]+boxsize2,2)))
+			self.wimage.update()
+		elif self.mmode=="manual":
+			if m==self.lastloc : return
+			b=self.boxes[self.curbox]
+			self.boxes[self.curbox]=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],b[2])
+			self.__addBox(self.curbox,self.boxes[self.curbox])
+			self.lastloc=m
+
+			
+	def imgmouseup(self,event,m) :
+#		m=self.wimage.scr_to_img((event.x(),event.y()))
+		if not self.downbut&Qt.LeftButton : return
+		boxsize2=self.vbbsize.getValue()//2
+		ptclsize=self.vbbpsize.getValue()
+		if boxsize2<4 : return
+		
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			# filter out all matching boxes, then update all at once
+			n=len(self.boxes)
+			self.boxes=[b for b in self.boxes if abs(b[0]-m[0])>boxsize2 or abs(b[1]-m[1])>boxsize2]
+			if len(self.boxes)<n : self.__updateBoxes()
+		elif self.mmode in ("refgood","refbad"):
+			b=self.tmpbox
+			self.tmpbox=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],self.mmode)
+			self.lastloc=m
+			self.wimage.del_shape("tmpbox")
+			boxim=self.micrograph.get_clip(Region(self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,boxsize2*2,boxsize2*2))
+			boxim["ptcl_source_coord"]=(self.tmpbox[0],self.tmpbox[1])
+			if self.mmode == "refgood" : 
+				self.goodrefs.append(boxim)
+				self.goodrefchg=True
+				self.wrefs.set_data(self.goodrefs)
+				self.wrefs.show()
+			else :
+				self.badrefs.append(boxim)
+				self.badrefchg=True
+				self.wbadrefs.set_data(self.badrefs)
+				self.wbadrefs.show()
+		elif self.mmode=="manual":
+			if m==self.lastloc : return
+			b=self.boxes[self.curbox]
+			self.boxes[self.curbox]=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],b[2])
+			self.__addBox(self.curbox,self.boxes[self.curbox])
+
+
+	def ptclmousedown(self,event,m) :
+		self.downbut=event.buttons()
+		if self.mmode == "manual" :
+			self.curbox=m[0]
+			self.lastloc=m[1:3]
+			self.wimage.scroll_to(self.boxes[m[0]][0],self.boxes[m[0]][1])
+				
+	def ptclmousedrag(self,event,x) :
+		m=self.wparticles.scr_to_img((event.x(),event.y()))
+		if self.mmode=="manual":
+			if m[1:3]==self.lastloc : return
+			b=self.boxes[self.curbox]
+			self.boxes[self.curbox]=(b[0]-m[1]+self.lastloc[0],b[1]-m[2]+self.lastloc[1],b[2])
+			self.__addBox(self.curbox,self.boxes[self.curbox])
+			self.lastloc=m[1:3]
+
+	def ptclmouseup(self,event,m) :
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			self.boxes.pop(m[0])
+			self.__updateBoxes()
+		elif self.mmode=="manual":
+			if m[1:3]==self.lastloc : return
+			b=self.boxes[self.curbox]
+			self.boxes[self.curbox]=(b[0]-m[1]+self.lastloc[0],b[1]-m[2]+self.lastloc[1],b[2])
+			self.__addBox(self.curbox,self.boxes[self.curbox])
+			self.lastloc=m[1:3]
 		return
 
-	def handle_box_delete(self,box,box_num):
-		if box.type == GaussBoxer.AUTO_NAME:
-			self.target().remove_box(box_num,exclude_region=True)
-		elif box.type == GaussBoxer.REF_NAME or box.type == GaussBoxer.WEAK_REF_NAME:
-			self.target().remove_box(box_num)
-			self.remove_ref(box,self.target().current_file())
-		else:
-			raise EMUnknownBoxType,box.type
+	def refmouseup(self,event,m) :
+		print "refup"
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			self.goodrefs.pop(m[0])
+			self.goodrefchg=True
+			self.wrefs.set_data(self.goodrefs)
+		return
 
-	def mouse_drag(self,event) :
-		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
-		from PyQt4.QtCore import Qt
-		if event.modifiers()&Qt.ShiftModifier:
-			box_num = self.target().detect_box_collision(m)
-			box = self.target().get_box(box_num)
-			if ( box_num != -1):
-				if box.type in [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]:
-					self.handle_box_delete(box,box_num)
-		elif self.moving != None:
-			oldm = self.moving[0]
-			dx = m[0]-oldm[0]
-			dy = m[1]-oldm[1]
+	def badrefmouseup(self,event,m) :
+		print "badrefup"
+		if self.mmode=="del" or event.modifiers()&Qt.ShiftModifier:
+			self.badrefs.pop(m[0])
+			self.badrefchg=True
+			self.wbadrefs.set_data(self.badrefs)
+		return
 
-			if self.moving[2] in [GaussBoxer.REF_NAME,GaussBoxer.WEAK_REF_NAME]:
-				self.move_ref(self.moving[1],self.target().current_file(),dx,dy)
-			else:
-				self.move_auto_box(self.moving[1],self.target().current_file(),dx,dy)
+	def newSet(self,val=None):
+		"called when a new data set is selected from the list"
 
-			self.moving[0] = m
+		first=True
+		if val==None : newfilename=self.curfilename
+		else : newfilename=str(self.setlist.item(val).text()).split()[1]
+#		if newfilename==self.curfilename : return
 
-	def mouse_up(self,event) :
-		if self.moving != None:
-			self.target().box_released(self.moving[1])
-			if self.moving[2] in [GaussBoxer.REF_NAME,GaussBoxer.WEAK_REF_NAME]:
-				self.ref_released(self.target().current_file(),self.moving[1])
-
-		self.moving= None
-
-	def moving_ptcl_established(self,box_num,x,y):
-		box = self.target().get_box(box_num)
-		if box.type not in [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
-
-		self.ptcl_moving_data = [x,y,box_num]
-
-	def move_ptcl(self,box_num,x,y,ptcls):
-		if self.ptcl_moving_data == None: return
-
-		dx = self.ptcl_moving_data[0] - x
-		dy = y - self.ptcl_moving_data[1]
-		box = self.target().get_box(box_num)
-
-		if box.type in [GaussBoxer.REF_NAME,GaussBoxer.WEAK_REF_NAME]:
-			self.move_ref(box_num,self.target().current_file(),dx,dy)
-		else:
-			self.move_auto_box(box_num,self.target().current_file(),dx,dy)
-
-		self.ptcl_moving_data = [x,y,self.ptcl_moving_data[2]]
-
-	def release_moving_ptcl(self,box_num,x,y):
-		if self.ptcl_moving_data == None: return
-		self.target().box_placement_update_exclusion_image_n(box_num)
-		box = self.target().get_box(box_num)
-		if box.type in [GaussBoxer.REF_NAME,GaussBoxer.WEAK_REF_NAME]:
-			self.ref_released(self.target().current_file(),box_num)
-
-		self.ptcl_moving_data = None
-
-	def delete_ptcl(self,box_num):
-		box = self.target().get_box(box_num)
-		if box.type not in [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]:
-			raise EMUnknownBoxType,box.type
-
-		self.handle_box_delete(self.target().get_box(box_num),box_num)
-
-	def get_unique_box_types(self):
-		return [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]
-
-	def boxes_erased(self,list_of_boxes):
-		GaussBoxer.boxes_erased(self,list_of_boxes,self.target().current_file())
-
-# this is class CTFInspector from sxboxer.py with very slight modifications
-class CTFInspectorWidget(QtGui.QWidget):
-
-	def __init__(self,parent,data=None) :
-		QtGui.QWidget.__init__(self)
-		# we need to keep track of our parent to signal when we are gone again....
-		self.parent = weakref.ref(parent) # this needs to be a weakref ask David Woolford for details, but otherwise just call self.parent() in place of self.parent
-		self.setGeometry(300, 300, 250, 150)
-		self.setWindowTitle("CTF Inspector")
-
-		self.i_start = None
-		self.i_stop = None
-
-		if (data is None):
-			# test data, to ensure something is displayed even if no data is set yet. this is
-			#    for development only and can be removed later.....
-			self.data = [[80,20,10,9,8,7,6,5,4,3,2,1,0,0,0,0,0],]
-		else:
-			# assume we got a triple of lists. assign it for now.
-			self.data=data
+		# Write the current image parameters to the database
+		if self.curfilename!=None and self.boxes!=None :
+			self.save_boxes()
+			first=False
 
 
-	def setData(self,data):
-		# check data type is a list and break, if not
-		if not(type(data) is list):
-			return False
+		self.micrograph=load_micrograph(newfilename)
+		self.__show_image()
+		if first : E2loadappwin("e2boxer21","image",self.wimage.qt_parent)
+		self.curfilename=newfilename
+		self.restore_boxes()
 
-		# free previous and reset our data to the passed list
-		del self.data
-		self.data = data
-		# return success
-		return True
+	def __show_image(self):
+		if self.bfilter.isChecked() :
+			nx=self.micrograph["nx"]
+			ny=self.micrograph["ny"]
+			gs=good_size(max(self.micrograph["nx"],self.micrograph["ny"]))
+			fm=self.micrograph.get_clip(Region(0,0,gs,gs)).do_fft()
+			fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.005})
+			fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
+			fm=fm.do_ift()
+			self.wimage.set_data(fm.get_clip(Region(0,0,nx,ny)))
+		else: self.wimage.set_data(self.micrograph)
 
-	def update(self):
-		QtGui.QWidget.update(self) #self.paintEvent(None)
-		# print "update..."
+	def save_boxes(self):
+		js=js_open_dict(info_name(self.curfilename))
+		js["boxes"]=self.boxes
+		
+		if self.goodrefchg :
+			try: os.unlink("info/boxrefs.hdf")
+			except: pass
+			for im in self.goodrefs: im.write_image("info/boxrefs.hdf",-1)
+			self.goodrefchg=False
+			
+		if self.badrefchg :
+			try: os.unlink("info/boxrefsbad.hdf")
+			except: pass
+			for im in self.badrefs: im.write_image("info/boxrefsbad.hdf",-1)
+			self.badrefchg=False
+			
+	def restore_boxes(self):
+		# first we restore the list of box locations
+		js=js_open_dict(info_name(self.curfilename))
+		try: self.boxes=js["boxes"]
+		except: self.boxes=[]
+		self.__updateBoxes()
+		
+		#boxsize=self.vbbsize.getValue()
+		#ptclsize=self.vbbpsize.getValue()
+		#micro=self.wimage.get_data()
+		
+		#self.wimage.del_shapes()
+		#self.particles=[]
+		#if len(self.boxes)==0 : 
+			#self.wparticles.set_data(self.particles)
+			#return
+		
+		## Then we extract the actual boxed out particles
+		#for i,box in enumerate(self.boxes):
+			#self.__addBox(i,box)
+		
+		## finally redisplay as appropriate
+		#self.wimage.update()
+		#self.wparticles.set_data(self.particles)
+		#if len(self.particles)>0 : self.wparticles.show()
+				
 
-	def paintEvent(self,event):
-		from PyQt4 import QtCore
-		from PyQt4.QtCore import Qt
-		if (self.i_start is None and (i_start_initial > 0)):
-			self.i_start = i_start_initial
-		if (self.i_stop is None and (i_stop_initial > 0)):
-			self.i_stop = i_stop_initial
+	def __updateBoxes(self):
+		"""Updates the display to match current self.boxes"""
+		
+		self.wimage.del_shapes()
+		
+		self.particles=[]
+		for i,b in enumerate(self.boxes):
+			self.__addBox(i,b,True)
+			
+		# finally redisplay as appropriate
+		self.wimage.update()
+		self.wparticles.set_data(self.particles)
+		if len(self.particles)>0 : self.wparticles.show()
+		self.__updateCount()
 
+	def __updateCount(self):
+		row=self.setlist.currentRow()
+		itm=self.setlist.item(row)
+		try: lbl=str(itm.text()).split()
+		except: return
+		if int(lbl[0])!= len(self.boxes):
+			lbl="{}\t{}".format(len(self.boxes),lbl[1])
+			itm.setText(lbl)
 
-		h=self.height()
-		w=self.width()
+	def __addBox(self,i,box,quiet=False):
+		"""takes the number of the box in self.boxes and the (x,y,mode) tuple and displays it"""
+		# Display the actual box
+		boxsize=self.vbbsize.getValue()
+		ptclsize=self.vbbpsize.getValue()
+		try: color=self.boxcolors[box[2]]
+		except: color=self.boxcolors["unknown"]
+		self.wimage.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],box[0]-boxsize//2,box[1]-boxsize//2,box[0]+boxsize//2,box[1]+boxsize//2,2)))
+		self.wimage.add_shape("cir{}".format(i),EMShape(("circle",color[0],color[1],color[2],box[0],box[1],ptclsize/2,1.5)))
 
-		hborder = ( min((h / 15.0),20.0))
-		wborder = ( min((w / 15.0),20.0))
+		boxim=self.micrograph.get_clip(Region(box[0]-boxsize//2,box[1]-boxsize//2,boxsize,boxsize))
+		boxim["ptcl_source_coord"]=(box[0],box[1])
+		if len(self.particles)<=i : self.particles.append(boxim)
+		else: self.particles[i]=boxim
+		
+		if not quiet:
+			# finally redisplay as appropriate
+			self.wimage.update()
+			self.wparticles.set_data(self.particles)
+			self.__updateCount()
 
-		# accessible height and width....
-		ah = int(h-2*hborder)
-		aw = int(w-2*wborder)
+	def listKey(self,event):
+		pass
 
-		p=QtGui.QPainter()
-		p.begin(self)
-		p.setBackground(QtGui.QColor(16,16,16))
-		p.eraseRect(0,0,self.width(),self.height())
-		p.setPen(Qt.white)
+		#if event.key()>=Qt.Key_0 and event.key()<=Qt.Key_9 :
+			#q=int(event.key())-Qt.Key_0
+			#self.squality.setValue(q)
+		#elif event.key() == Qt.Key_Left:
+			#self.sdefocus.setValue(self.sdefocus.getValue()-0.03)
+		#elif event.key() == Qt.Key_Right:
+			#self.sdefocus.setValue(self.sdefocus.getValue()+0.03)
+		#elif event.key()==Qt.Key_I :
+			#self.doImport()
+		#elif event.key()==Qt.Key_U :
+			#self.unImport()
 
-		# labels
-		# spectrum
-		# background
-		# ctf
+		
+	def doAutoBox(self,b):
+		"""Autobox button pressed, find the right algorithm and call it"""
+		
+		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
+		
+		print name," called"
 
-		# draw axes
-		p.drawLine(int(wborder),int(hborder),int(wborder),int(h-hborder))
-		p.drawLine(int(wborder),int(h-hborder),int(w-wborder),int(h-hborder))
+		boxes=cls.do_autobox(self.micrograph,self.goodrefs,self.badrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{})
+		
+		# if we got nothing, we just leave the current results alone
+		if len(boxes)==0 : return
+	
+		bname=boxes[0][2]
 
-		color = [Qt.yellow,Qt.red,Qt.blue]
-		labels= ["Roo","Back","CTF"]
+		# Filter out all existing boxes for this picking mode
+		self.boxes=[i for i in self.boxes if i[2]!=bname]
 
-		if (not(self.data == []) and not(self.data is None)):
+		self.boxes.extend(boxes)
+		self.__updateBoxes()
 
-			# scaling factors in x and y, respectively. margins are left around the plot,
-			#    stepw along x and 10% of height in y... explicit conversion is necessary,
-			#    since we are working with ints....
-			if ((self.i_start is not None) and (self.i_stop is not None)):
-				sizew = self.i_stop - self.i_start + 1
-			else:
-				sizew = max([len(i) for i in self.data])
-				self.i_start = 0
-				self.i_stop = sizew-1
-				sizew=float(sizew)
+	def doAutoBoxAll(self,b):
+		"""Autobox button pressed, find the right algorithm and call it"""
+		
+		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
+		
+		prog=QtGui.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
+		prog.setWindowModality(Qt.WindowModal)
+		prog.setValue(0)
+		prog.show()
 
-			# print "range: ",self.i_start," - ",self.i_stop
+		
+		for i,fspl in enumerate(self.filenames):
+			
+			fsp=fspl.split()[1]
+			prog.setValue(i)
+			if prog.wasCanceled() : 
+				print "Autoboxing Aborted!"
+				break
+			
+			micrograph=load_micrograph(fsp)
 
-			stepw = float(w-2*wborder) / float(sizew)
+			newboxes=cls.do_autobox(micrograph,self.goodrefs,self.badrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{},prog)
+			print "{}) {} boxes -> {}".format(i,len(newboxes),fsp)
+			
+			# if we got nothing, we just leave the current results alone
+			if len(newboxes)==0 : continue
+		
+			# read the existing box list and update
+			db=js_open_dict(info_name(fsp))
+			try: 
+				boxes=db["boxes"]
+				# Filter out all existing boxes for this picking mode
+				bname=newboxes[0][2]
+				boxes=[b for b in boxes if b[2]!=bname]
+			except:
+				boxes=[]
+				
+			boxes.extend(newboxes)
+			
+			db["boxes"]=boxes
+			db.close()
+			self.setlist.setCurrentRow(i)
+#			self.__updateBoxes()
+			
+		else: prog.setValue(len(self.filename))
+		
+		self.restore_boxes()
 
-
-
-			if ((self.i_start is not None) and (self.i_stop is not None)):
-				sizeh = max([max(self.data[i][self.i_start:self.i_stop]) for i in xrange(len(self.data)-1)])
-			else:
-				sizeh = max([max(self.data[i]) for i in xrange(len(self.data)-1)])
-
-
-			sizeh = float(sizeh)
-			steph = float(h-2*hborder) / float(sizeh)
-
-			import math
-			from utilities import read_text_file
-			ctfdata2 = read_text_file("procpw.txt",3)
-
-			if ((self.i_start is not None) and (self.i_stop is not None)):
-				sizehctf = max(ctfdata2[self.i_start:self.i_stop])
-
-			else:
-				sizehctf = max(ctfdata2)
-
-			sizehctf = float(sizehctf)
-
-			tickspacing = min(int(sizew/30)+1, 5)
-
-			for list_index in xrange(len(self.data)):
-
-				p.setPen(color[list_index])
-				metrics = p.fontMetrics()
-				fw = metrics.width(str(labels[list_index]))
-				fh = metrics.height()+4
-				p.drawText(w-wborder-fw/2, hborder+(list_index)*fh, str(labels[list_index]))
-
-
-				for index in xrange(self.i_start,self.i_stop):
-
-
-					p.setPen(color[list_index])
-					# skip first point, since there is no previous point to connect to
-					if (0 == index):
-						continue
-					else:
-						# x is normal, y is flipped (i.e. top left is (0,0))
-						#oldx = int(wborder+ (stepw*(index-1)))
-						oldx=int(wborder + ((w-2*wborder) / sizew * (index-1-self.i_start)))
-						#newx = int(wborder+ (stepw*(index)))
-						newx=int(wborder + ((w-2*wborder) / sizew * (index-self.i_start)))
-
-						#oldy = int(h-hborder-steph*self.data[list_index][index-1])
-						if (list_index == 2):
-							oldy=int(h-hborder-(h-2*hborder)*ctfdata2[index-1]/sizehctf)
-						else:
-							oldy=int(h-hborder-(h-2*hborder)*self.data[list_index][index-1]/sizeh)
-						#newy = int(h-hborder-steph*self.data[list_index][index])
-						if (list_index == 2):
-							newy=int(h-hborder-(h-2*hborder)*ctfdata2[index]/sizehctf)
-						else:
-							newy=int(h-hborder-(h-2*hborder)*self.data[list_index][index]/sizeh)
-
-						p.drawLine(oldx,oldy,newx,newy)
-
-
-					if (len(self.data)-1 == list_index):
-						if index % tickspacing == 0:
-							p.setPen(Qt.white)
-							p.setFont(QtGui.QFont('Times',10))
-							p.drawLine(newx, h-hborder, newx, h-hborder+5)
-							metrics = p.fontMetrics()
-							fw = metrics.width(str(index))
-							p.drawText(newx-fw/2, h-hborder+14, str(index))
-
-		p.end()
-
-	# closing the window is tricky: we need to notify the parent window we are gone, but
-	#    cannot set parent.ctf_inspector directly, since that would destroy ourselves in
-	#    the middle of the event handler, prompting an error. instead, we set a flag in
-	#    the parent object and let it handle destroying, resetting or updating when
-	#    it becomes necessary....
+		
 	def closeEvent(self,event):
-		# set the flag of our parent object
-		self.parent().ctf_inspector_gone=True
-		# and close ourselves by accepting the event....
+#		QtGui.QWidget.closeEvent(self,event)
+		self.save_boxes()
+		E2saveappwin("e2boxer21","main",self)
+		E2saveappwin("e2boxer21","image",self.wimage.qt_parent)
+		E2saveappwin("e2boxer21","particles",self.wparticles.qt_parent)
+		E2saveappwin("e2boxer21","refs",self.wrefs.qt_parent)
+		E2saveappwin("e2boxer21","badrefs",self.wbadrefs.qt_parent)
+
+		#self.writeCurParm()
 		event.accept()
+		QtGui.qApp.exit(0)
+		#app=QtGui.qApp			if b[2] not in ("refgood","refbad"):
+		#if self.wimage != None:
+			#app.close_specific(self.wimage)
+			#self.wimage = None
+		#if self.wfft != None:
+			#app.close_specific(self.wfft)
+		#if self.wplot != None:
+			#app.close_specific(self.wplot)
+		#app.close_specific(self)
+#		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
+
+
+	#def update_plot(self):
+##		if self.wplot == None: return # it's closed/not visible
+
+		#if self.incalc : return		# no plot updates during a recomputation
+
+		#parms=self.parms[self.curset]
+		#apix=self.sapix.getValue()
+		#ds=1.0/(apix*parms[0]*parms[5])
+		#ctf=parms[1]
+		#bg1d=array(ctf.background)
+		#r=len(ctf.background)
+		#s=arange(0,ds*r,ds)
+
+		## This updates the FFT CTF-zero circles
+		#if self.f2danmode==0 :
+			#fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
+			#shp={}
+			#nz=0
+			#for i in range(1,len(fit)):
+				#if fit[i-1]*fit[i]<=0.0:
+					#nz+=1
+					#shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
+
+			#self.wfft.del_shapes()
+			#self.wfft.add_shapes(shp)
+			#self.wfft.updateGL()
+		## Single measurement circle mode
+		#elif self.f2danmode==1 :
+			#self.wfft.del_shapes()
+			#if self.ringrad==0: self.ringrad=1.0
+			#self.wfft.add_shape("ring",EMShape(("circle",0.2,1.0,0.2,r,r,self.ringrad,1.0)))
+			#self.wfft.add_shape("ringlbl",EMShape(("scrlabel",0.2,1.0,0.2,10,10,"r=%d pix -> 1/%1.2f 1/A (%1.4f)"%(self.ringrad,1.0/(self.ringrad*ds),self.ringrad*ds),24.0,2.0)))
+			#self.wfft.updateGL()
+		## 2-D Crystal mode
+		#elif self.f2danmode==2 :
+			#shp={}
+			#for a in range(-5,6):
+				#for b in range(-5,6):
+					#shp["m%d%d"%(a,b)]=EMShape(("circle",1.0,0.0,0.0,a*self.xpos1[0]+b*self.xpos2[0]+self.fft["nx"]/2-1,a*self.xpos1[1]+b*self.xpos2[1]+self.fft["ny"]/2,3,1.0))
+
+			#self.wfft.del_shapes()
+			#self.wfft.add_shapes(shp)
+			#self.wfft.add_shape("xtllbl",EMShape(("scrlabel",1.0,0.3,0.3,10,10,"Unit Cell: %1.2f,%1.2f"%(1.0/(hypot(*self.xpos1)*ds),1.0/(hypot(*self.xpos2)*ds)),60.0,2.0)))
+##			except: pass
+			#self.wfft.updateGL()
+		#else:
+			#self.wfft.del_shapes()
+			#self.wfft.updateGL()
+
+
+		## Now update the plots for the correct plot mode
+		#if self.plotmode==0:
+			#try: bgsub=self.fft1d-bg1d
+			#except:
+				#print "Error computing bgsub on this image"
+				#return
+			#self.wplot.set_data((s,bgsub),"fg-bg",quiet=True,color=0)
+
+			#fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
+			#fit=fit*fit			# squared
+
+			## auto-amplitude for b-factor adjustment
+			#rto,nrto=0,0
+			#for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+				#if bgsub[i]>0 :
+					#rto+=fit[i]
+					#nrto+=fabs(bgsub[i])
+			#if nrto==0 : rto=1.0
+			#else : rto/=nrto
+			#fit=[fit[i]/rto for i in range(len(s))]
+
+##			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
+
+			#self.wplot.set_data((s,fit),"fit",color=1)
+			#self.wplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
+		#elif self.plotmode==1:
+			#self.wplot.set_data((s[1:],self.fft1d[1:]),"fg",quiet=True,color=1)
+			#self.wplot.set_data((s[1:],bg1d[1:]),"bg",color=0)
+			#self.wplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
+		#elif self.plotmode==2:
+			#if self.fft1dang==None: self.recalc_real()
+			#bgsub=self.fft1d-bg1d
+			#bgsuba=[array(self.fft1dang[i])-bg1d for i in xrange(4)]
+					## Write the current image parameters to the database
+
+##			for i in xrange(4): bgsuba[i][0]=0
+			#self.wplot.set_data((s,bgsub),"fg",quiet=True,color=0)
+			#self.wplot.set_data((s[3:],bgsuba[0][3:]),"fg 0-45",quiet=True,color=2)
+			#self.wplot.set_data((s[3:],bgsuba[1][3:]),"fg 45-90",quiet=True,color=3)
+			#self.wplot.set_data((s[3:],bgsuba[2][3:]),"fg 90-135",quiet=True,color=4)
+			#self.wplot.set_data((s[3:],bgsuba[3][3:]),"fg 135-180",quiet=True,color=6)
+
+			#fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
+			#fit=fit*fit			# squared
+
+			## auto-amplitude for b-factor adjustment
+			#rto,nrto=0,0
+			#for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+				#if bgsub[i]>0 :
+					#rto+=fit[i]
+					#nrto+=fabs(bgsub[i])
+			#if nrto==0 : rto=1.0
+			#else : rto/=nrto
+			#fit/=rto
+
+			#self.wplot.set_data((s,fit),"fit",color=1)
+			#self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
+
+		#elif self.plotmode==3:
+			#if self.fft1dang==None: self.recalc_real()
+			##bgsub=self.fft1d-bg1d
+			##bgsuba=[array(self.fft1dang[i])-bg1d for i in xrange(4)]
+			#fg=self.fft1d
+			#fga=[array(self.fft1dang[i]) for i in xrange(4)]
+
+			#for i in xrange(4): fga[i][0]=0
+			#self.wplot.set_data((s,fg),"fg",quiet=True,color=0)
+			#self.wplot.set_data((s,fga[0]),"fg 0-45",quiet=True,color=2)
+			#self.wplot.set_data((s,fga[1]),"fg 45-90",quiet=True,color=3)
+			#self.wplot.set_data((s,fga[2]),"fg 90-135",quiet=True,color=4)
+			#self.wplot.set_data((s,fga[3]),"fg 135-180",quiet=True,color=6)
+
+			##fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
+			##fit=fit*fit			# squared
+
+			### auto-amplitude for b-factor adjustment
+			##rto,nrto=0,0
+			##for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+				##if bgsub[i]>0 :
+					##rto+=fit[i]
+					##nrto+=fabs(bgsub[i])
+			##if nrto==0 : rto=1.0
+			##else : rto/=nrto
+			##fit/=rto
+
+			##self.wplot.set_data((s,fit),"fit",color=1)
+			##self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
+		#if self.plotmode==4:
+			#if min(bg1d)<=0.0 : bg1d+=min(bg1d)+max(bg1d)/10000.0
+			#ssnr=(self.fft1d-bg1d)/bg1d
+			#self.wplot.set_data((s,ssnr),"SSNR",quiet=True,color=0)
+
+			##fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
+			##fit=fit*fit			# squared
+
+			### auto-amplitude for b-factor adjustment
+			##rto,nrto=0,0
+			##for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+				##if bgsub[i]>0 :
+					##rto+=fit[i]
+					##nrto+=fabs(bgsub[i])
+			##if nrto==0 : rto=1.0
+			##else : rto/=nrto
+			##fit=[fit[i]/rto for i in range(len(s))]
+
+###			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
+
+			##self.wplot.set_data((s,fit),"fit",color=1)
+			#self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Est. SSNR")
+
+
+	#def timeOut(self):
+		#if self.busy : return
+
+		## Redisplay before spawning thread for more interactive display
+		#if self.needredisp :
+			#try: self.redisplay()
+			#except: pass
+
+		## Spawn a thread to reprocess the data
+		#if self.needupdate and self.procthread==None:
+			#self.procthread=threading.Thread(target=self.recalc_real)
+			#self.procthread.start()
+
+		#if self.errors:
+			#QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
+			#self.errors=None
+
+	#def doRefit(self):
+		#parms=self.parms[self.curset]
+		#apix=self.sapix.getValue()
+		#ds=1.0/(apix*parms[0]*parms[5])
+		
+		#try:
+			#parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
+		#except:
+			#print "CTF Autofit Failed"
+			#traceback.print_exc()
+			#parms[1].defocus=1.0
+
+		#self.sdefocus.setValue(parms[1].defocus,True)
+		#self.sbfactor.setValue(parms[1].bfactor,True)
+		#self.sampcont.setValue(parms[1].ampcont,True)
+		
+		#self.update_plot()
+
+
+	#def unImport(self,val=None):
+		#print "unimport ",base_name(self.setlist.item(self.curset).text())
+		#item=base_name(self.setlist.item(self.curset).text())
+		#try: os.unlink("micrographs/%s.hdf"%item)
+		#except: print "Couldn't delete micrographs/%s.hdf"%item
+
+	#def doImport(self,val=None):
+		#"""Imports the currently selected image into a project"""
+		#print "import ",base_name(self.setlist.item(self.curset).text())
+
+		## This is just the (presumably) unique portion of the filename
+		#item=base_name(self.setlist.item(self.curset).text())
+
+		## create directory if necessary
+		#if not os.access("micrographs",os.R_OK) :
+			#try : os.mkdir("micrographs")
+			#except:
+				#QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
+				#return
+
+		##db=db_open_dict("bdb:micrographs#%s"%item)
+		#self.data["ctf"]=self.parms[self.curset][1]
+		
+		#if self.cinvert.getValue()!=0 : self.data.mult(-1)
+		#if self.cxray.getValue() : self.data.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":1})
+		#self.data.write_image("micrographs/%s.hdf"%item)
+		#self.writeCurParm()
+
+##		js_open_dict(info_name(item))["ctf"]=[self.parms[val][1],None,None,None,None]
+## 		db_parms=db_open_dict("bdb:e2ctf.parms")
+## 		db_parms[item]=[self.parms[val][1].to_string(),self.fft1d,self.parms[val][1].background,self.parms[val][4]]
+
+	#def writeCurParm(self):
+		#"Called to store the current parameters for this image to the frameparms database"
+		#parms=self.parms[self.curset]
+		#js=js_open_dict(info_name(self.curfilename))
+		#js.setval("ctf_frame",parms,True)
+		#js.setval("quality",parms[4])
+## 		db_fparms=db_open_dict("bdb:e2ctf.frameparms")
+## 		curtag=item_name(str(self.setlist.item(self.curset).text()))
+## 		db_fparms[curtag]=self.parms[self.curset]
+
+
+	#def recalc(self):
+		#self.needupdate=True
+
+	#def recalc_real(self):
+		#"Called to recompute the power spectra, also updates plot"
+
+		#self.needupdate=False
+
+		#if self.data==None :
+			#self.procthread=None
+			#return
+
+		#self.incalc=True	# to avoid incorrect plot updates
+
+		## To simplify expressions
+		#parms=self.parms[self.curset]
+		#apix=self.sapix.getValue()
+		#if len(parms)==5 : parms.append(1)		# for old projects where there was no oversampling specification
+		#else: parms[5]=max(1,int(parms[5]))
+		#ds=1.0/(apix*parms[0]*parms[5])
+
+		## Mode where user drags the box around the parent image
+		#if self.calcmode==0:
+
+			## extract the data and do an fft
+			#clip=self.data.get_clip(Region(parms[2][0],parms[2][1],parms[0],parms[0]))
+			#clip.process_inplace("normalize.edgemean")
+
+			#if parms[5]>1 :
+				#clip=clip.get_clip(Region(0,0,parms[0]*parms[5],parms[0]*parms[5]))		# since we aren't using phases, doesn't matter if we center it or not
+			#self.fft=clip.do_fft()
+##			self.fft.mult(1.0/parms[0]**2)
+			#self.fft.mult(1.0/parms[0])
+
+		## mode where user selects/deselcts tiled image set
+		#elif self.calcmode==1:
+			## update the box display on the image
+			#nx=self.data["nx"]/parms[0]-1
+			#self.fft=None
+			#nbx=0
+			#for x in range(nx):
+				#for y in range(self.data["ny"]/parms[0]-1):
+					## User deselected this one
+					#if int(x+y*nx) in parms[3] : continue
+
+					## read the data and make the FFT
+					#clip=self.data.get_clip(Region(x*parms[0]+parms[0]/2,y*parms[0]+parms[0]/2,parms[0],parms[0]))
+					#clip.process_inplace("normalize.edgemean")
+					#if parms[5]>1 :
+						#clip=clip.get_clip(Region(0,0,parms[0]*parms[5],parms[0]*parms[5]))		# since we aren't using phases, doesn't matter if we center it or not
+					#fft=clip.do_fft()
+##					fft.mult(parms[0])
+					#fft.ri2inten()
+					#if self.fft==None: self.fft=fft
+					#else: self.fft+=fft
+					#nbx+=1
+
+			#self.fft.mult(1.0/(nbx*parms[0]**2))
+			#self.fft.process_inplace("math.sqrt")
+			#self.fft["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
+##			self.fft.mult(1.0/(nbx*parms[0]**2))
+
+		#self.fftbg=self.fft.process("math.nonconvex")
+		#self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
+		#if self.plotmode==2 or self.plotmode==3:
+			#self.fft1dang=array(self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,4,self.sang45.getValue()*.017453292,1))	# This form generates 4 sequential power spectra representing angular ranges
+			#self.fft1dang=self.fft1dang.reshape((4,self.fft.get_ysize()/2))
+		#else:
+			#self.fft1dang=None
+
+		## Compute 1-D curve and background
+		#bg_1d=e2ctf.low_bg_curve(self.fft1d,ds)
+		#parms[1].background=bg_1d
+		#parms[1].dsbg=ds
+
+		#self.fft1d=array(self.fft1d)
+
+		#self.needredisp=True
+		#self.incalc=False
+		#time.sleep(.2)			# help make sure update has a chance
+		#self.procthread=None
+##		dbquality = self.db[os.path.basename(self.curfilename)]
+##		print dbquality
+## 		item=item_name(self.curfilename)
+## 		db=db_open_dict("bdb:e2ctf.parms")
+## 		if db[item]==None or db[item[3]]==None : db[item]=[parms[1].to_string(),self.fft1d,parms[1].background,5]
+## #		print item,db[item][3]
+## 		try: self.squality.setValue(int(db[item[3]]))
+## 		except: self.squality.setValue(5)
+
+	#def redisplay(self):
+
+		#if self.incalc: return
+
+		#self.needredisp=False
+		#self.busy=True
+		#parms=self.parms[self.curset]
+		#apix=self.sapix.getValue()
+		#ds=1.0/(apix*parms[0]*parms[5])
+
+
+		## Fitting not done yet. Need to make 2D background somehow
+		#if parms[1].defocus==0:
+			#self.doRefit()
+
+		#self.wimage.show()
+		#self.wfft.show()
+		#self.wplot.show()
+
+		#self.update_plot()
+
+		## To simplify expressions
+
+		#if self.calcmode==0:
+			## update the box display on the image
+			#self.wimage.del_shapes()
+			#self.wimage.add_shape("box",EMShape(("rect",.3,.9,.3,parms[2][0],parms[2][1],parms[2][0]+parms[0],parms[2][1]+parms[0],1)))
+			#self.wimage.updateGL()
+		#elif self.calcmode==1:
+			## update the box display on the image
+			#nx=self.data["nx"]/parms[0]-1
+			#shp={}
+			#for x in range(nx):
+				#for y in range(self.data["ny"]/parms[0]-1):
+					## User deselected this one
+					#if int(x+y*nx) in parms[3] : continue
+
+					## Make a shape for this box
+					#shp["box%02d%02d"%(x,y)]=EMShape(("rect",.3,.9,.3,(x+.5)*parms[0],(y+.5)*parms[0],(x+1.5)*parms[0],(y+1.5)*parms[0],1))
+
+			#self.wimage.del_shapes()
+			#self.wimage.add_shapes(shp)
+			#self.wimage.updateGL()
+
+		#if self.f2dmode>0 :
+			#if self.f2dmode==1 : self.wfft.set_data(self.fft-self.fftbg)
+			#else : self.wfft.set_data(self.fftbg)
+
+		#else :
+			#self.wfft.set_data(self.fft)
+		#self.busy=False
+
+	#def newCalcMode(self,mode):
+		#self.calcmode=mode
+		#self.recalc()
+
+	#def new2DMode(self,mode):
+		#self.f2dmode=mode
+		#self.recalc()
+
+	#def new2DAnMode(self,mode):
+		#self.f2danmode=mode
+		#self.needredisp=True
+
+	#def newPlotMode(self,mode):
+		#self.plotmode=mode
+		#self.wplot.set_data(None,replace=True,quiet=True)	# clear the data so plots are properly redisplayed, but don't update the display
+		#self.needredisp=True
+
+	#def newBox(self):
+		#parms=self.parms[self.curset]
+		#parms[0]=self.sboxsize.value
+##		parms[5]=self.soversamp.value
+		#parms[5]=1
+		#parms[3]=set()
+		#self.recalc()
+
+	#def newQualityFactor(self):
+		#parms=self.parms[self.curset]
+		#parms[4]=self.squality.value
+
+
+	#def newCTF(self) :
+		#parms=self.parms[self.curset]
+		#parms[1].defocus=self.sdefocus.value
+		#parms[1].bfactor=self.sbfactor.value
+		#parms[1].dfdiff=self.sdfdiff.value
+		#parms[1].dfang=self.sdfang.value
+		#parms[1].apix=self.sapix.value
+		#parms[1].ampcont=self.sampcont.value
+		#parms[1].voltage=self.svoltage.value
+		#parms[1].cs=self.scs.value
+		#self.needredisp=True
+
+
+
+	#def fftmousedown(self,event,m) :
+		##m=self.wfft.scr_to_img((event.x(),event.y()))
+
+		#if self.f2danmode==1:
+			#self.ringrad=hypot(m[0]-self.fft["nx"]/2,m[1]-self.fft["ny"]/2)
+			#self.needredisp=True
+		#elif self.f2danmode==2:
+			#if (event.modifiers()&Qt.ControlModifier): self.xpos2=((m[0]-self.fft["nx"]/2)/3.0,(m[1]-self.fft["ny"]/2)/3.0)
+			#else: self.xpos1=((m[0]-self.fft["nx"]/2)/3.0,(m[1]-self.fft["ny"]/2)/3.0)
+			#self.needredisp=True
+
+
+		##self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
+
+	#def fftmousedrag(self,event,m) :
+		##m=self.wfft.scr_to_img((event.x(),event.y()))
+
+		#if self.f2danmode==1:
+			#self.ringrad=hypot(m[0]-self.fft["nx"]/2,m[1]-self.fft["ny"]/2)
+			#self.needredisp=True
+		#elif self.f2danmode==2:
+			#if (event.modifiers()&Qt.ControlModifier): self.xpos2=((m[0]-self.fft["nx"]/2)/3.0,(m[1]-self.fft["ny"]/2)/3.0)
+			#else: self.xpos1=((m[0]-self.fft["nx"]/2)/3.0,(m[1]-self.fft["ny"]/2)/3.0)
+			#self.needredisp=True
+		## box deletion when shift held down
+		##if event.modifiers()&Qt.ShiftModifier:
+			##for i,j in enumerate(self.boxes):
+
+	#def fftmouseup(self,event,m) :
+		#"up"
+		##m=self.wfft.scr_to_img((event.x(),event.y()))
+
+
+	#def plotmousedown(self,event) :
+		#"mousedown in plot"
+##		m=self.guiim.scr_to_img((event.x(),event.y()))
+
+#def tiled(img,box):
+	#imgc=img.process("math.meanshrink",{"n":2})		# shrink image by 2 for boxing
+	#boxc=good_boxsize(box/2,larger=True)			# box size in reduced image
+	#nxb=4*imgc["nx"]/boxc-2		# number of boxes along x direction
+	#nyb=4*imgc["ny"]/boxc-2
+	#radius=boxc/2.6
+	
+	#mask1=EMData(boxc,boxc,1)
+	#mask1.to_one()
+	#mask1.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":4.0})
+	## Mask 2 is the 'inverse' (1.0-val) of mask1, with the addition of a soft outer edge to reduce periodic boundary condition issues
+	#mask2=mask1.copy()*-1+1
+##		mask1.process_inplace("mask.decayedge2d",{"width":4})
+	#mask2.process_inplace("mask.decayedge2d",{"width":2})
+	##mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+	##mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+	
+	## ratio1,2 give us info about how much of the image the mask covers for normalization purposes
+	#ratio1=mask1.get_attr("square_sum")/(boxc*boxc)	#/1.035
+	#ratio2=mask2.get_attr("square_sum")/(boxc*boxc)
+
+	#cor=EMData(nxb,nyb)
+
+	#vecs=[]
+	#for y in xrange(nyb):
+		#for x in xrange(nxb):
+			#im1=imgc.get_clip(Region(boxc/8+x*boxc/4,boxc/8+y*boxc/4,boxc,boxc))
+			#im1.process_inplace("normalize.edgemean")
+			
+			#im2=im1.copy()
+
+	##		print im2.get_size(), im1.get_size()
+
+			## now we compute power spectra for the 2 regions defined by the masks
+			#im1.mult(mask1)
+			#imf=im1.do_fft()
+			#imf.ri2inten()
+			#imf/=(imf["nx"]*imf["ny"]*ratio1)
+			#cen_1d=imf.calc_radial_dist(imf.get_ysize()/2,0.0,1.0,1)
+			
+			#im2.mult(mask2)
+			#imf=im2.do_fft()
+			#imf.ri2inten()
+			#imf/=(imf["nx"]*imf["ny"]*ratio2)
+			#edg_1d=imf.calc_radial_dist(imf.get_ysize()/2,0.0,1.0,1)
+
+			#vec=EMData(imf["ny"]/4-2,1,1)		# We skip the first 2 points and only go to 1/2 Nyquist
+			#for i in xrange(2,imf["ny"]/4):
+				#vec[i]=(cen_1d[i]-edg_1d[i])/edg_1d[i]		# expressed as a SSRN
+			
+			#vecs.append(vec)
+			
+			#img[(5*boxc/8+x*boxc/4)*2,(5*boxc/8+y*boxc/4)*2]=(vec["mean"]+0.5)*10.0
+			#cor[x,y]=vec["sigma"]
+	
+	#cor.update()
+	#return vecs,cor
+
+#def detect(img,box):
+	#img.process_inplace("normalize.edgemean")
+	
+	#radius=box/2.6
+	#zro=img["ctf"].zero(0)*img["ctf"].apix*box
+	#wvlen=box*2.0/zro	# 1/2 the wavelength of the 1st zero
+##	wvlen=box/zro	# the wavelength of the 1st zero
+
+	#mask1c=EMData(box,box,1)
+	#mask1c.process_inplace("testimage.sinewave.circular",{"wavelength":wvlen,"phase":0.0})
+	#mask1c.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":4.0})
+##	mask1c.process_inplace("normalize.unitlen")
+	#mask1c.process_inplace("normalize")
+	#mask1c/=box*box
+	#print mask1c["mean"],mask1c["sigma"],wvlen,zro
+	#mask1c.clip_inplace(Region(-(img["nx"]-box)/2.0,-(img["ny"]-box)/2.0,img["nx"],img["ny"]))
+	#mask1c.process_inplace("xform.phaseorigin.tocorner")
+
+	#mask1s=EMData(box,box,1)
+	#mask1s.process_inplace("testimage.sinewave.circular",{"wavelength":wvlen,"phase":pi/2.0})
+	#mask1s.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":4.0})
+##	mask1s.process_inplace("normalize.unitlen")
+	#mask1s.process_inplace("normalize")
+	#mask1s/=box*box
+	#print mask1c["mean"],mask1c["sigma"],wvlen,zro
+	#mask1s.clip_inplace(Region(-(img["nx"]-box)/2.0,-(img["ny"]-box)/2.0,img["nx"],img["ny"]))
+	#mask1s.process_inplace("xform.phaseorigin.tocorner")
+
+	#c1=img.calc_ccf(mask1c)
+	#c1.process_inplace("math.squared")
+	#s1=img.calc_ccf(mask1s)
+	#s1.process_inplace("math.squared")
+	#c1.add(s1)
+	#c1.process_inplace("normalize")
+	
+
+	#display((c1,img),True)
+	## Mask 2 is the 'inverse' (1.0-val) of mask1, with the addition of a soft outer edge to reduce periodic boundary condition issues
+	##mask2=mask1.copy()*-1+1
+###		mask1.process_inplace("mask.decayedge2d",{"width":4})
+	##mask2.process_inplace("mask.decayedge2d",{"width":4})
+	##mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+	##mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+
+	#QWidget *firstPageWidget = new QWidget;
+    #QWidget *secondPageWidget = new QWidget;
+    #QWidget *thirdPageWidget = new QWidget;
+
+    #QStackedWidget *stackedWidget = new QStackedWidget;
+    #stackedWidget->addWidget(firstPageWidget);
+    #stackedWidget->addWidget(secondPageWidget);
+    #stackedWidget->addWidget(thirdPageWidget);
+
+    #QVBoxLayout *layout = new QVBoxLayout;
+    #layout->addWidget(stackedWidget);
+    #setLayout(layout);
+		
+		 #QComboBox *pageComboBox = new QComboBox;
+    #pageComboBox->addItem(tr("Page 1"));
+    #pageComboBox->addItem(tr("Page 2"));
+    #pageComboBox->addItem(tr("Page 3"));
+    #connect(pageComboBox, SIGNAL(activated(int)),stackedWidget, SLOT(setCurrentIndex(int)));
+
+		#self.lboxmode=QtGui.QLabel("Mode:",self)
+		#self.gbl.addWidget(self.lboxmode,10,0)
+
+		#self.sboxmode=QtGui.QComboBox(self)
+		#self.sboxmode.addItem("Manual")
+		#self.sboxmode.addItem("Reference")
+		#self.sboxmode.setCurrentIndex(1)
+		#self.gbl.addWidget(self.sboxmode,10,1)
+
+		#self.lanmode=QtGui.QLabel("Annotate:",self)
+		#self.gbl.addWidget(self.lanmode,12,0)
+
+		#self.sanmode=QtGui.QComboBox(self)
+		#self.sanmode.addItem("Box")
+		#self.sanmode.addItem("Box+dot")
+		#self.sanmode.addItem("Circle")
+		#self.sanmode.addItem("None")
+		#self.gbl.addWidget(self.sanmode,12,1)
+
+		#self.sdefocus=ValSlider(self,(0,5),"Defocus:",0.0,90)
+		#self.gbl.addWidget(self.sdefocus,0,2,1,3)
+
+		#self.squality=ValSlider(self,(0,9),"Quality (0-9):",0,90)
+		#self.squality.setIntonly(True)
+
+		#self.gbl.addWidget(self.squality,6,2,1,3)
+
+		#self.brefit=QtGui.QPushButton("Autobox")
+		#self.gbl.addWidget(self.brefit,7,2)
+
+		#self.bclrauto=QtGui.QPushButton("Clear Auto")
+		#self.gbl.addWidget(self.bclrauto,7,3)
+
+		#self.bclrall=QtGui.QPushButton("Clear All")
+		#self.gbl.addWidget(self.bclrall,7,4)
+
+		#self.sapix=ValBox(self,(0,500),"A/pix:",1.0,90)
+		#if self.defaultapix!=None : self.sapix.setValue(self.defaultapix)
+		#self.gbl.addWidget(self.sapix,10,2)
+
+		#self.svoltage=ValBox(self,(0,500),"Voltage (kV):",200,90)
+		#if self.defaultvoltage!=None : self.svoltage.setValue(self.defaultvoltage)
+		#self.gbl.addWidget(self.svoltage,11,2)
+
+		#self.scs=ValBox(self,(0,5),"Cs (mm):",4.1,90)
+		#if self.defaultcs!=None : self.scs.setValue(self.defaultcs)
+		#self.gbl.addWidget(self.scs,12,2)
+
+		#self.sboxsize=ValBox(self,(0,500),"Box Size:",256,90)
+		#self.sboxsize.intonly=True
+		#self.gbl.addWidget(self.sboxsize,13,2)
+
+		#self.sptclsize=ValBox(self,(0,500),"Ptcl Size:",256,90)
+		#self.sptclsize.intonly=True
+		#self.gbl.addWidget(self.sptclsize,14,2)
+
+		#QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		#QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		#QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		#QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		#QtCore.QObject.connect(self.sboxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
+##		QtCore.QObject.connect(self.soversamp, QtCore.SIGNAL("valueChanged"), self.newBox)
+		#QtCore.QObject.connect(self.squality,QtCore.SIGNAL("valueChanged"),self.newQualityFactor)
+		#QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		#QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listkey)
+		#QtCore.QObject.connect(self.sboxmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newBoxMode)
+
+		#self.resize(720,380) # figured these values out by printing the width and height in resize event
+
+		#### This section is responsible for background updates
+		#self.busy=False
+		#self.needupdate=True
+		#self.needredisp=False
+		#self.procthread=None
+		#self.errors=None		# used to communicate errors back from the reprocessing thread
+
+		#self.timer=QTimer()
+		#QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
+		#self.timer.start(100)
+
+#		self.recalc()
+
 
 if __name__ == "__main__":
 	main()

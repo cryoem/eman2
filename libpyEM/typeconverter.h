@@ -81,6 +81,8 @@ namespace EMAN {
 		 * Note: the array size is (nz,ny,nx) corresponding to image (nx,ny,nz).
 		 */
 		static EMData* numpy2em(const python::numeric::array& array);
+		static EMData* assign_numpy_to_emdata(const python::numeric::array& array);
+
     };
 
 

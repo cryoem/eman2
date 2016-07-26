@@ -123,7 +123,7 @@ def main():
 	#parser.add_argument('--normalize', action="store_true", default=False, help='Will normalize each subvolume so that the mean is zero and standard deviation one').
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	parser.add_argument("--parallel",type=str, default="thread:1", help="""Used only when extracting subtomograms from the commandline (NOT from the GUI interface) if --coords is provided. Default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
+	parser.add_argument("--parallel",type=str, default=''"None."'', help="""Used only when extracting subtomograms from the commandline (NOT from the GUI interface) if --coords is provided. Default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
 
 
 	global options,args
@@ -514,6 +514,7 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 				if options.path not in nameprjs:
 					nameprjs = options.path + '/' + nameprjs
 				prj['spt_originalstack']=nameprjs.split('/')[-1]
+				prj.process_inplace('normalize')
 				prj.write_image(nameprjs,-1)
 			
 			elif options.coords:
@@ -654,34 +655,41 @@ def commandline_tomoboxer(tomogram,options):
 
 	print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n"
 	
-	from EMAN2PAR import EMTaskCustomer
-	etc=EMTaskCustomer(options.parallel)
-	pclist=[tomogram]
+	if options.parallel:
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer(options.parallel)
+	#pclist=[tomogram]
 
-	etc.precache(tomogram)
-	print "\n(e2spt_preproc)(main) - precaching tomogram"
+	#etc.precache(tomogram)
+	#print "\n(e2spt_preproc)(main) - precaching tomogram"
 
 	tasks=[]
 	results=[]
 	counter=1
 
+	results=None
 	for coordindx in coordsdict:
+
 		coordx=coordsdict[coordindx][0]
 		coordy=coordsdict[coordindx][1]
 		coordz=coordsdict[coordindx][2]
-			
-		task = TomoBoxer3DTask( options, coordindx, coordx, coordy, coordz, tomogram, counter, ncoords )
-		tasks.append(task)
-		counter+=1
 		
+		if options.parallel:
+			task = TomoBoxer3DTask( options, coordindx, coordx, coordy, coordz, tomogram)
+			tasks.append(task)
+			counter+=1
+		else:
+			results=unbinned_extractor( options, coordindx, coordx, coordy, coordz, tomogram )
 
-	if tasks:
-		tids = etc.send_tasks(tasks)
-		if options.verbose: 
-			print "\n(e2spt_preproc)(main) preprocessing %d tasks queued" % (len(tids)) 
+		
+	if options.parallel:	
+		if tasks:
+			tids = etc.send_tasks(tasks)
+			if options.verbose: 
+				print "\n(e2spt_preproc)(main) preprocessing %d tasks queued" % (len(tids)) 
 
 	
-		results = get_results( etc, tids, options )
+			results = get_results( etc, tids, options )
 
 	if results:
 		os.rename('sptboxer_dummy.hdf',options.output)
@@ -779,12 +787,20 @@ def commandline_tomoboxer(tomogram,options):
 		if options.cshrink:
 			cmd += ' --cshrink ' + str( int(options.cshrink) )
 		
-		runcmd( options, cmd )
 		print "\nplotting particle distribution"
-		if options.bruteaverage:
-			print "\ncomputing bruteaverage"
-			cmdavg = 'e2proc3d.py ' + options.output + ' ' + options.output.replace('.hdf','__bruteavg.hdf') + ' --average'
-			runcmd( options, cmdavg )
+
+		retice=runcmd( options, cmd )
+		if retice:
+			print "done"
+		#if options.bruteaverage:
+		
+		print "\ncomputing bruteaverage"
+		cmdavg = 'e2proc3d.py ' + options.output + ' ' + options.output.replace('.hdf','__bruteavg.hdf') + ' --average'
+		
+		retavg=runcmd( options, cmdavg )
+		if retavg:
+			print "done"
+
 
 	return
 
@@ -813,13 +829,13 @@ class TomoBoxer3DTask(JSTask):
 	'''This is a task object for the parallelism system.'''
 
 
-	def __init__(self, options, coordindx, coordx, coordy, coordz, tomogramname, counter, ncoords):
+	def __init__(self, options, coordindx, coordx, coordy, coordz, tomogramname):
 	
 		#data={"image":image}
 		
 		#JSTask.__init__(self,"TomoBoxer3d",data,{},"")
 		JSTask.__init__(self,"TomoBoxer3d",{},"")
-		self.classoptions={"options":options,"coordindx":coordindx, "coordx":coordx,"coordy":coordy,"coordz":coordz,"tomogramname":tomogramname,"counter":counter,"ncoords":ncoords}
+		self.classoptions={"options":options,"coordindx":coordindx, "coordx":coordx,"coordy":coordy,"coordz":coordz,"tomogramname":tomogramname}
 	
 	def execute(self,callback=None):
 		
@@ -829,8 +845,8 @@ class TomoBoxer3DTask(JSTask):
 		coordy = self.classoptions['coordy']
 		coordz = self.classoptions['coordz']
 		tomogramname = self.classoptions['tomogramname']
-		counter=self.classoptions['counter']
-		ncoords=self.classoptions['ncoords']
+		#counter=self.classoptions['counter']
+		#ncoords=self.classoptions['ncoords']
 		#print "inside class TomoBoxer3DTask"
 		#print "calling unbinned_extractor"
 		unbinned_extractor(options,coordx,coordy,coordz,tomogramname,coordindx)
