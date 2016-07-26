@@ -103,17 +103,4 @@ ENDFOREACH(f)
 
 # MESSAGE("empy list: ${empythonlibs}")
 
-FILE(GLOB headerfiles "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
-
-# INSTALL(FILES ${headerfiles} DESTINATION include)
-
-FOREACH(f ${headerfiles})
-	INSTALL(FILES ${f} DESTINATION include)
-	IF(DBG MATCHES "y")
-		MESSAGE("Copied file ${f} to include.")
-	ENDIF(DBG MATCHES "y")
-ENDFOREACH(f)
-
-# MESSAGE("hdr files: ${headerfiles}")
-
 ADD_SUBDIRECTORY(qtgui)
