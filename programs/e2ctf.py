@@ -343,6 +343,7 @@ def get_gui_arg_img_sets(filenames):
 			if len(img_set)==3: 
 				img_set.append(js_parms["ctf_im2d"])
 				img_set.append(js_parms["ctf_bg2d"])
+				if not isinstance(img_set[4],EMData): print img_set[4]
 		except:
 			print "Warning, you must run auto-fit before running the GUI. No parameters for ",info_name(fsp)
 #			traceback.print_exc()
