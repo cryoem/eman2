@@ -143,6 +143,8 @@ class EMPlot2DWidget(EMGLWidget):
 		self.particle_viewer4 = None
 		self.particle_viewer5 = None
 
+		self.alpha = 0.5
+
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
@@ -553,7 +555,7 @@ class EMPlot2DWidget(EMGLWidget):
 						slimits=self.slimits
 						sz=(self.data[i][self.axes[i][3]]-slimits[0])*30.0/(slimits[1]-slimits[0])
 
-					ax.scatter(x,y,sz,col,mark,linewidths=.5*(self.pparm[i][6]>4))
+					ax.scatter(x,y,sz,col,mark,linewidths=.5*(self.pparm[i][6]>4),alpha=self.alpha)
 
 				# Then we draw the line
 				if self.pparm[i][1]:
@@ -1007,6 +1009,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.axisparms=(None,None,"linear","linear")
 		self.selected=[]
 
+		self.alpha = 0.75
+
 		self.data={}				# List of Lists to plot
 		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
@@ -1385,7 +1389,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 					pointsizes = self.pointsizes
 				else:
 					pointsizes = self.pparm[i][3]
-				ax.scatter(theta, r,s=pointsizes, color=scattercolor, lw=3)
+
+				ax.scatter(theta, r,s=pointsizes, color=scattercolor, lw=3, alpha=self.alpha)
 
 			if len(self.pparm[i]) == 8 and self.pparm[i][7] >= 0:
 				ax.set_rmax(self.pparm[i][7])
@@ -1538,7 +1543,6 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 		self.shapechange=1
 		#self.updateGL()
-
 
 class EMPlot2DStatsInsp(QtGui.QWidget):
 
@@ -2084,7 +2088,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				results[s][c].append(data[c][r])
 			if comments!=None: resultc[s].append(comments[r])
 
-		for s in range(nseg) :
+		for s in range(nseg):
 			if comments!=None: self.target().set_data(results[s],key="{}_{}".format(name,s),comments=resultc[s])
 			else: self.target().set_data(results[s],key="{}_{}".format(name,s))
 
@@ -2400,24 +2404,24 @@ class EMPlot2DInspector(QtGui.QWidget):
 		vbl2b.addWidget(self.symsize)
 
 		# This is for "heatmap"/2D hexbin parms
-		vbl2c = QtGui.QVBoxLayout()
-		vbl2c.setMargin(0)
-		vbl2c.setSpacing(6)
-		hbl2.addLayout(vbl2c)
+		#vbl2c = QtGui.QVBoxLayout()
+		#vbl2c.setMargin(0)
+		#vbl2c.setSpacing(6)
+		#hbl2.addLayout(vbl2c)
 
-		self.hmtog=QtGui.QPushButton(self)
-		self.hmtog.setText("Heatmap")
-		self.hmtog.setCheckable(1)
-		vbl2c.addWidget(self.hmtog)
+		#self.hmtog=QtGui.QPushButton(self)
+		#self.hmtog.setText("Heatmap")
+		#self.hmtog.setCheckable(1)
+		#vbl2c.addWidget(self.hmtog)
 
-		self.hmsel=QtGui.QComboBox(self)
-		self.hmsel.addItem("hex")
-		self.hmsel.addItem("square")
-		vbl2c.addWidget(self.hmsel)
+		#self.hmsel=QtGui.QComboBox(self)
+		#self.hmsel.addItem("hex")
+		#self.hmsel.addItem("square")
+		#vbl2c.addWidget(self.hmsel)
 
-		self.hmbins=QtGui.QSpinBox(self)
-		self.hmbins.setRange(1,50)
-		vbl2c.addWidget(self.hmbins)
+		#self.hmbins=QtGui.QSpinBox(self)
+		#self.hmbins.setRange(1,50)
+		#vbl2c.addWidget(self.hmbins)
 
 		# per plot column selectors
 		gl=QtGui.QGridLayout()
@@ -2454,10 +2458,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.ylogtog.setCheckable(1)
 		hbl2.addWidget(self.ylogtog)
 
-		self.zlogtog=QtGui.QPushButton(self)
-		self.zlogtog.setText("Z Log")
-		self.zlogtog.setCheckable(1)
-		hbl2.addWidget(self.zlogtog)
+		#self.zlogtog=QtGui.QPushButton(self)
+		#self.zlogtog.setText("Z Log")
+		#self.zlogtog.setCheckable(1)
+		#hbl2.addWidget(self.zlogtog)
 
 		vbl.addLayout(hbl2)
 
@@ -2544,6 +2548,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl5.addWidget(self.ylabel)
 		vbl0.addLayout(hbl5)
 
+		hbl6 = QtGui.QHBoxLayout()
+		#hbl6.addWidget(QtGui.QLabel("Transparency:",self))
+		self.alphaslider=ValSlider(self,(0,1),"Transparency:",0.5,50)
+		hbl6.addWidget(self.alphaslider)
+		vbl0.addLayout(hbl6)
 
 #		self.setLayout(vbl0)
 
@@ -2565,17 +2574,17 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
 		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlotColor)
 		QtCore.QObject.connect(self.classb,QtCore.SIGNAL("clicked()"),self.openClassWin)
-		QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
+		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlotHmsel)
-		QtCore.QObject.connect(self.hmbins,QtCore.SIGNAL("clicked()"),self.updPlotHmbins)
+		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlotHmsel)
+		#QtCore.QObject.connect(self.hmbins,QtCore.SIGNAL("clicked()"),self.updPlotHmbins)
 		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlotSymsel)
 		QtCore.QObject.connect(self.symsize,QtCore.SIGNAL("valueChanged(int)"),self.updPlotSymsize)
 		QtCore.QObject.connect(self.xlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.ylogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.zlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		#QtCore.QObject.connect(self.zlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.lintog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.hmtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		#QtCore.QObject.connect(self.hmtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.linsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlotLinsel)
 		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlotLinwid)
 		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
@@ -2594,6 +2603,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.wsmin,QtCore.SIGNAL("valueChanged"),self.newSLimits)
 		QtCore.QObject.connect(self.wsmax,QtCore.SIGNAL("valueChanged"),self.newSLimits)
 		QtCore.QObject.connect(self.wrescale,QtCore.SIGNAL("clicked()"),self.autoScale)
+		QtCore.QObject.connect(self.alphaslider,QtCore.SIGNAL("valueChanged"),self.updAlpha)
 
 		self.newSet(0)
 		self.datachange()
@@ -2609,6 +2619,9 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
+
+	def newAlpha(self,val):
+		self.target().updateGL()
 
 	def selAll(self):
 		for k in self.target().visibility.keys() : self.target().visibility[k]=True
@@ -2794,16 +2807,16 @@ class EMPlot2DInspector(QtGui.QWidget):
 				self.target().setPlotParms(name,self.color.currentIndex(),None,None,None,None,None,None,True)
 			self.target().updateGL()
 
-	def updPlotHmsel(self,s=None):
-		if self.quiet : return
-		names = [str(item.text()) for item in self.setlist.selectedItems()]
-		if len(names)==1:
-			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
-				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
-		else:
-			for name in names:
-				self.target().setPlotParms(name,None,None,None,None,None,self.symsel.currentIndex(),None,True)
-			self.target().updateGL()
+	#def updPlotHmsel(self,s=None):
+		#if self.quiet : return
+		#names = [str(item.text()) for item in self.setlist.selectedItems()]
+		#if len(names)==1:
+			#self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
+				#self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+		#else:
+			#for name in names:
+				#self.target().setPlotParms(name,None,None,None,None,None,self.symsel.currentIndex(),None,True)
+			#self.target().updateGL()
 
 	def updPlotSymsel(self,s=None):
 		if self.quiet : return
@@ -2827,16 +2840,16 @@ class EMPlot2DInspector(QtGui.QWidget):
 				self.target().setPlotParms(name,None,None,None,None,None,None,self.symsize.value(),True)
 			self.target().updateGL()
 
-	def updPlotHmbins(self,s=None):
-		if self.quiet : return
-		names = [str(item.text()) for item in self.setlist.selectedItems()]
-		if len(names)==1:
-			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
-				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
-		else:
-			for name in names:
-				self.target().setPlotParms(name,None,None,None,None,None,self.symsel.currentIndex(),None,True)
-			self.target().updateGL()
+	#def updPlotHmbins(self,s=None):
+		#if self.quiet : return
+		#names = [str(item.text()) for item in self.setlist.selectedItems()]
+		#if len(names)==1:
+			#self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
+				#self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+		#else:
+			#for name in names:
+				#self.target().setPlotParms(name,None,None,None,None,None,self.symsel.currentIndex(),None,True)
+			#self.target().updateGL()
 
 	def updPlotLinsel(self,s=None):
 		if self.quiet : return
@@ -2859,6 +2872,12 @@ class EMPlot2DInspector(QtGui.QWidget):
 			for name in names:
 				self.target().setPlotParms(name,None,None,None,self.linwid.value(),None,None,None,True)
 			self.target().updateGL()
+
+	def updAlpha(self,val):
+		if self.quiet : return
+		self.target().alpha = val
+		self.target().needupd=1
+		self.target().updateGL()
 
 	def newSet(self,row):
 		self.quiet=1
