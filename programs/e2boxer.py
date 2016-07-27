@@ -256,7 +256,7 @@ def main():
 		print ".box files written to boxfiles/"
 
 	if options.write_ptcls:
-		write_particles(args,boxsize)
+		write_particles(args,boxsize,options.verbose)
 		print "Particles written to particles/*_ptcls.hdf"
 
 	E2end(logid)
@@ -277,7 +277,7 @@ def write_boxfiles(files,boxsize):
 		for b in boxes:
 			out.write("{:d}\t{:d}\t{:d}\t{:d}\n".format(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
 
-def write_particles(files,boxsize):
+def write_particles(files,boxsize,verbose):
 	"""This function will write a particles/*_ptcls.hdf file for each provided micrograph, based on
 	box locations in the corresponding info/*json file. To use this with .box files, they must be imported
 	to a JSON file first."""
@@ -286,7 +286,8 @@ def write_particles(files,boxsize):
 	except: pass
 	boxsize2=boxsize/2
 	
-	for m in files:
+	for nm in files:
+		n,m=nm.split()
 		base=base_name(m)
 		ptcl="particles/{}_ptcls.hdf".format(base)
 		
@@ -294,7 +295,7 @@ def write_particles(files,boxsize):
 		db=js_open_dict(info_name(m))
 		boxes=db["boxes"]
 		if len(boxes)==0 :
-			if options.verbose :
+			if verbose :
 				print "No particles in ",m
 			continue
 	
@@ -302,7 +303,7 @@ def write_particles(files,boxsize):
 		try: os.unlink(ptcl)
 		except: pass
 	
-		if options.verbose : print "{} : {} particles".format(m,len(boxes))
+		if verbose : print "{} : {} particles".format(m,len(boxes))
 		micrograph=load_micrograph(m)		# read micrograph
 		for i,b in enumerate(boxes):
 			boxim=micrograph.get_clip(Region(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))

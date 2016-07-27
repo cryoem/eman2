@@ -34,6 +34,7 @@
 import pprint
 from EMAN2 import *
 from EMAN2db import db_open_dict
+import sys
 
 def get_data_type_string(datatype):
 	dtstring = {
@@ -64,6 +65,10 @@ def main():
 	
 	parser.add_argument("-H", "--header", action="store_true",help="Show all header information",default=False)
 	parser.add_argument("-N", "--number", type=int, help="Image number for single image info",default=-1)
+	parser.add_argument("-Q", "--quality", type=int, help="Include only images with a single quality value (integer 0-9)",default=-1)
+	parser.add_argument("--dfmin", type=float, help="Include only images with defocus >= the specified value",default=None)
+	parser.add_argument("--dfmax", type=float, help="Include only images with defocus <= the specified value",default=None)
+	parser.add_argument("--nameonly",action="store_true",help="Only display the matching filenames. No other info.",default=False)
 	parser.add_argument("-s", "--stat", action="store_true",help="Show statistical information about the image(s).",default=False)
 	parser.add_argument("-E", "--euler", action="store_true",help="Show Euler angles from header",default=False)
 	parser.add_argument("-a", "--all", action="store_true",help="Show info for all images in file",default=False)
@@ -83,6 +88,19 @@ def main():
 		
 	nimgs=0
 	for imagefile in args:
+		if options.quality!=-1 or options.dfmin!=None or options.dfmax!=None:
+			try: 
+				db=js_open_dict(info_name(imagefile))
+				if options.quality!=-1 : 
+					q=db["quality"]
+				db.close()
+				if q!=options.quality : continue
+			except:
+				sys.stderr.write("No quality for {}. Including\n".format(imagefile))
+				
+		if options.nameonly :
+			print imagefile
+			continue
 		
 		if imagefile.lower()[:4]!="bdb:" :
 			nimg = EMUtil.get_image_count(imagefile)
