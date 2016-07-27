@@ -53,11 +53,11 @@ def main():
 	parser.add_argument("--debug", default=False, action="store_true", help="Save noise and mask/masked image(s).")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	
+
 	(options, args) = parser.parse_args()
 
 	nfiles = len(args)
-	
+
 	kk=0
 	for arg in args:
 		newarg=''
@@ -76,37 +76,30 @@ def main():
 		outf = "{}_proc.hdf".format(arg)
 
 		if options.verbose: print("processing {} ({} images)".format(arg, EMUtil.get_image_count(arg)))
-				
-		if options.average:
 
-			frames = []
+		if options.average:
+			avgr = Averagers.get("mean")
 			for i in range(EMUtil.get_image_count(fn)):
 				f = EMData(fn,i) * -1
-				if ds > 1.0:
-					f.process_inplace("math.fft.resample",{"n":ds})
-				frames.append(f)
-
-			if options.verbose: print("averaging frames")
-			
-			avgr = Averagers.get("mean")
-			avgr.add_image_list(frames)
+				if ds > 1.0: f.process_inplace("math.fft.resample",{"n":ds})
+				avgr.add_image(f)
 			img = avgr.finish()
 			img.process_inplace("normalize")
-						
+
 			sharp_msk, soft_msk = generate_masks(options,img)
 			mskd_sharp = sharp_msk*img
 			sub_sharp = img-mskd_sharp
 			noise = local_noise(options,sub_sharp)
-			
+
 			if options.debug: noise.write_image("{}_noise.hdf".format(arg))
-			
+
 			mskd_soft = soft_msk*img
 			sub_soft = img-mskd_soft
 			result = sub_soft + noise * soft_msk
 			result *= -1
-			
+
 			print("Writing result to {}".format(outf))
-			
+
 			result.write_image(outf,0)
 			avg.write_image("{}_compare.hdf".format(arg),0)
 			result.write_image("{}_compare.hdf".format(arg),1)
@@ -128,16 +121,16 @@ def main():
 				sub_sharp = f-mskd_sharp
 
 				noise = local_noise(options,sub_sharp)
-				
+
 				outn = "{}_noise.hdf".format(arg)
 
 				if options.debug: noise.write_image(outn,i)
-				
+
 				mskd_soft = soft_msk*f
 				sub_soft = f-mskd_soft
-				
+
 				if options.debug: sub_soft.write_image("{}_masked.hdf".format(arg),i)
-				
+
 				result = sub_soft + noise * soft_msk
 				result *= -1
 				result.write_image(outf,i)
@@ -202,7 +195,7 @@ def local_noise(options,img):
 					print("WARNING: division by zero, from n['sigma_nonzero']={}".format(n["sigma_nonzero"]))
 			n += r["mean_nonzero"]
 			localnoise.insert_clip(n,(x-bs/2,y-bs/2))
-	if options.lowpass: 
+	if options.lowpass:
 		apix = f['apix_x']
 		localnoise['apix_x'] = apix
 		localnoise['apix_y'] = apix
@@ -217,11 +210,11 @@ def local_noise(options,img):
 def runcmd(options,cmd):
 	if options.verbose > 8:
 		print "(erase_gold)(runcmd) running command", cmd
-	
+
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	text=p.communicate()	
+	text=p.communicate()
 	p.stdout.close()
-	
+
 	if options.verbose > 8:
 		print "(erase_gold)(runcmd) done"
 
