@@ -1557,11 +1557,11 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		hl1.setFrameStyle(QtGui.QFrame.HLine)
 		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
 		gbl0.addWidget(hl1,3,0,1,2)
-		
+
 		self.wlnorm=QtGui.QLabel(self)
 		self.wlnorm.setText("Test:")
 		gbl0.addWidget(self.wlnorm,4,0)
-		
+
 		self.wcomb_test=QtGui.QComboBox(self)
 		self.wcomb_test.addItem("Welch's t-test")
 		self.wcomb_test.addItem("Student's t-test")
@@ -1576,29 +1576,29 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		self.wcomb_test.addItem("Covariance")
 		self.wcomb_test.addItem("Pearson Correlation")
 		gbl0.addWidget(self.wcomb_test,4,1)
-		
+
 		self.wsbcols=StringBox(label="Col(s)",value="0,1")
 		gbl0.addWidget(self.wsbcols,6,0)
-		
+
 		self.wnround=ValBox(rng=(0,10),label="Round:",value=2)
 		self.wnround.intonly=1
 		gbl0.addWidget(self.wnround,6,1)
-		
+
 		self.run=QtGui.QPushButton(self)
 		self.run.setText("Compute")
 		gbl0.addWidget(self.run,8,0,1,2)
-		
+
 		hl2 = QtGui.QFrame()
 		hl2.setFrameStyle(QtGui.QFrame.HLine)
 		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
 		gbl0.addWidget(hl2,9,0,1,2)
-		
+
 		self.table = QtGui.QTableWidget() #QtGui.QTextEdit()
 		self.table.setRowCount(1)
 		self.table.setColumnCount(1)
 		self.table.setSortingEnabled(True)
 		gbl0.addWidget(self.table,10,0,2,2)
-		
+
 		QtCore.QObject.connect(self.summary,QtCore.SIGNAL("clicked()"),self.printSummary)
 		QtCore.QObject.connect(self.run,QtCore.SIGNAL("clicked()"),self.runTest)
 
@@ -1610,9 +1610,9 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		name=str(insp.setlist.currentItem().text())		# currently hilighted item
 		data=self.target().data[name]					# data set we will operate on
 		rnd=self.wnround.getValue()
-		
+
 		d = np.asarray(self.target().data[name])
-		
+
 		self.table.clearContents()
 		column_labels = ["Axis","Mean","Median","Std","Var","Max","Min","Range","Q1","Q3","IQR","IQM","MAD","Skewness"]
 		row_labels = [str(i) for i in np.arange(len(d))]
@@ -1620,7 +1620,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		self.table.setColumnCount(len(column_labels))
 		self.replaceRowLabels(row_labels)
 		self.replaceColumnLabels(column_labels)
-		
+
 		for c in range(len(d[0])):
 			col = d[:,c]
 			n = len(col)
@@ -1653,22 +1653,22 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 				if s == 0: item = str(int(stat))
 				else: item = str(round(stat,rnd))
 				self.table.setItem( c, s, QtGui.QTableWidgetItem(item) )
-	
+
 	def runTest(self):
 		stat = str(self.wcomb_test.currentText())
 		cols = [str(i) for i in self.wsbcols.getValue().split(",")]
 		insp = self.target().get_inspector() # inspector
 		name=str(insp.setlist.currentItem().text())
 		rnd = 2
-		
+
 		if len(cols) <= 0:
 			self.textout.setText("Please specify the columns on which you wish to compute this test or statistic")
 			return
-		
+
 		data = np.asarray(self.target().data[name]).copy()
-		
+
 		self.table.clearContents()
-		
+
 		x = np.asarray(data).T[:,cols]
 		if stat == "Covariance":
 			self.replaceTableLabels(cols)
@@ -1676,14 +1676,14 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		elif stat == "Pearson Correlation":
 			self.replaceTableLabels(cols)
 			result = np.corrcoef(x,rowvar=False) #result = ["\t".join([str(round(j,2)) for j in i]) for i in corrcoef]
-		
+
 		else:
 			print("{} not yet implemented!".format(stat))
 			return
-		
+
 		self.table.setRowCount(result.shape[0])
 		self.table.setColumnCount(result.shape[1])
-		
+
 		for i, r in enumerate(result):
 			for j, c in enumerate(r):
 				item = str(c)
@@ -1694,25 +1694,25 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 
 	def replaceColumnLabels(self,cols):
 		self.table.setHorizontalHeaderLabels(QtCore.QStringList(cols))
-	
+
 	def replaceTableLabels(self,cols):
 		self.table.setHorizontalHeaderLabels(QtCore.QStringList(cols))
 		self.table.setVerticalHeaderLabels(QtCore.QStringList(cols))
 
 class EMPlot2DRegrInsp(QtGui.QWidget):
 	"""This class implements the regression pop-up from the EMPlot2DInspector"""
-	
+
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		gbl0=QtGui.QGridLayout(self)
 
 		insp = self.target().get_inspector()
-		
+
 		cx = str(insp.slidex.value())
 		self.wsbnax=StringBox(label="X Cols:",value=cx)
 		gbl0.addWidget(self.wsbnax,2,0)
-		
+
 		cy = str(insp.slidey.value())
 		self.wsbnay=StringBox(label="Y Cols:",value=cy)
 		gbl0.addWidget(self.wsbnay,2,1)
@@ -1720,21 +1720,21 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		self.wnord=ValBox(rng=(1,25),label="Degree:",value=2)
 		self.wnord.intonly=1
 		gbl0.addWidget(self.wnord,4,0)
-		
+
 		self.wnpts=ValBox(rng=(1,10000),label="N Interp:",value=100)
 		self.wnpts.intonly=1
 		gbl0.addWidget(self.wnpts,4,1)
-		
+
 		self.wlnorm=QtGui.QLabel(self)
 		self.wlnorm.setText("Normalization:")
 		gbl0.addWidget(self.wlnorm,6,0)
-		
+
 		self.wcomb_norm=QtGui.QComboBox(self)
 		self.wcomb_norm.addItem("None")
 		self.wcomb_norm.addItem("Standardize")
 		self.wcomb_norm.addItem("Maxmin")
 		gbl0.addWidget(self.wcomb_norm,6,1)
-		
+
 		self.regrb=QtGui.QPushButton(self)
 		self.regrb.setText("Regress")
 		gbl0.addWidget(self.regrb,8,0,1,2)
@@ -1753,7 +1753,7 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		npts = self.wnpts.getValue()
 		insp = self.target().get_inspector() # inspector
 		name=str(insp.setlist.currentItem().text())	# currently hilighted items
-		
+
 		try:
 			xaxes=[int(i) for i in xaxes.split(",")]
 			if max(xaxes)>=ncol : raise Exception
@@ -1762,42 +1762,42 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		except:
 			pass #QtGui.QMessageBox.warning(self, "Axes must be a comma separated list of column numbers")
 			#return
-		
+
 		xs = ",".join([str(i) for i in xaxes])
 		ys = ",".join([str(i) for i in yaxes])
 		result_name = "Regression (Degree {}; X: {}; Y: {})".format(degree,xs,ys)
-		
+
 		data = np.asarray(self.target().data[name])
-		
+
 		x = data[xaxes].T
 		y = data[yaxes].T
-		
+
 		x = self.normalize(x,norm) # normalize features
-		
+
 		if norm != "none":
 			normed = np.c_[x,y].T
 			color = insp.color.currentIndex() + 1
 			self.target().set_data(normed,"{}_{}".format(norm,xs),replace=False,quiet=False,color=color,linewidth=0,linetype=-1,symtype=0,symsize=10,comments=None)
-		
+
 		A = self.vandermonde(x,degree) # polynomial features
-		
+
 		# perform actual regression
 		coefs, _, _, _ = np.linalg.lstsq(A, y) #coefs, residuals, rank, svals
-		
+
 		print("Polynomial Regression (Degree {})".format(degree))
 		print("X: {}\tY: {}".format(xs,ys))
 		print("Coefficients:")
 		for i,c in enumerate(coefs):
 			print("{}:\t{}".format(i,c))
-		
+
 		# construct interpolated polynomial
 		xmin = np.min(x)
 		xmax = np.max(x)
 		xx = np.linspace(xmin,xmax,npts)
 		yy = np.polyval(coefs.flatten(),xx)
-		
+
 		result = np.c_[xx,yy].T
-		
+
 		color = insp.color.currentIndex() + 1
 		self.target().set_data(result,result_name,replace=False,quiet=False,color=color,linewidth=2,linetype=0,symtype=-1,symsize=0,comments=None)
 		self.target().render()
@@ -1810,7 +1810,7 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		I = np.indices((order + 1, ) * n).reshape((n, (order + 1) ** n)).T
 		F = np.product(np.diagonal(X[I], 0, 1, 2), axis=2)
 		return np.fliplr(F.T) # this matrix should have the form [x**n x**n-1 ... x**2 x 1]
-	
+
 	def normalize(self, x,norm="none"):
 		if norm == "Standardize":
 			mu = np.mean(x,axis=0)
@@ -1826,7 +1826,7 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 class EMPlot2DClassInsp(QtGui.QWidget):
 	"""This class implements the classification pop-up from the EMPlot2DInspector"""
 	def __init__(self,target) :
-		
+
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		gbl0=QtGui.QGridLayout(self)
@@ -2062,16 +2062,18 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 			for c,ax in enumerate(axes):
 				imdata[r][c]=data[ax][r]
 				# Make sure this class doesn't already have an assigned class id.
-				# We only want points satisfying ALL threshold values.
 				try: cid = imdata[r]["class_id"]
-				except:
-					if thresh_type == "sigma":
-						if data[ax][r] > axvals[ax][0] and data[ax][r] < axvals[ax][1]:
-							imdata[r]["class_id"] = 0
-						else: imdata[r]["class_id"] = 1 # outlier
+				except: imdata[r]["class_id"] = 1
+				# We only want points satisfying ALL threshold values.
+				if thresh_type == "sigma":
+					if data[ax][r]>axvals[ax][0] and data[ax][r]<axvals[ax][1]:
+						imdata[r]["class_id"] *= 1
+					else: imdata[r]["class_id"] *= 0
+				else:
+					if data[ax][r] < axvals[ax]:
+						imdata[r]["class_id"] *= 0
 					else:
-						if data[ax][r] < axvals[ax]: imdata[r]["class_id"] = 0
-						else: imdata[r]["class_id"] = 1
+						imdata[r]["class_id"] *= 1
 
 		# extract classified results as new sets
 		results=[[[] for i in range(ncol)] for j in range(nseg)]	# nseg lists of data sets. Each data set is a list of ncol lists
@@ -2325,11 +2327,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.regress=QtGui.QPushButton(self)
 		self.regress.setText("Regression")
 		hbl01.addWidget(self.regress)
-		
+
 		self.classb=QtGui.QPushButton(self)
 		self.classb.setText("Classification")
 		hbl01.addWidget(self.classb)
-		
+
 		hbl1 = QtGui.QHBoxLayout()
 		hbl1.setMargin(0)
 		hbl1.setSpacing(6)
@@ -2344,7 +2346,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.color.addItem("magenta")
 		self.color.addItem("grey")
 		hbl1.addWidget(self.color)
-		
+
 		vbl.addLayout(hbl1)
 
 		hbl2 = QtGui.QHBoxLayout()
@@ -2451,7 +2453,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.ylogtog.setText("Y Log")
 		self.ylogtog.setCheckable(1)
 		hbl2.addWidget(self.ylogtog)
-		
+
 		self.zlogtog=QtGui.QPushButton(self)
 		self.zlogtog.setText("Z Log")
 		self.zlogtog.setCheckable(1)
@@ -2778,7 +2780,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 			for name in names:
 				self.target().setPlotParms(name,None,self.lintog.isChecked(),None,None,self.symtog.isChecked(),None,None,True)
 			self.target().updateGL()
-			
+
 	#
 
 	def updPlotColor(self,s=None):
