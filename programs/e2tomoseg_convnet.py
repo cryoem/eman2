@@ -322,6 +322,8 @@ def apply_neuralnet(convnet,options):
 		#### prepare inputs
 		#e.process_inplace("normalize")
 		enp=e.numpy()
+		#print enp.shape
+		#exit()
 		enp[enp>3.0]=3.0
 		enp/=3
 		ar=enp.reshape((convz,shape[0]*shape[1]))
@@ -330,7 +332,7 @@ def apply_neuralnet(convnet,options):
 		data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
 		
 	
-		#### input is one 2D slice
+		#### input is one 2D slice: just test the performance.
 		#### write input when testing...
 		if nframe==1:
 			img=data[0].eval().reshape(shape[0],shape[1]).T
@@ -342,9 +344,7 @@ def apply_neuralnet(convnet,options):
 			e.process_inplace("normalize")
 			e.write_image(options.output,-1)
 		
-		#### 
-		#print np.shape(data.get_value())
-		#print "Applying the convolution net..."
+		#### Applying the convolution net...
 		test_imgs = theano.function(
 			inputs=[],
 			outputs=convnet.clslayer.get_image(),
@@ -357,13 +357,7 @@ def apply_neuralnet(convnet,options):
 		#print np.shape(img)
 		img=img.reshape(convnet.outsize,convnet.outsize).T
 		e = EMNumPy.numpy2em(img.astype("float32"))
-		#print "Post-processing..."
-		#eg=20
-		#e.process_inplace("mask.zeroedge2d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg})
-		#e.process_inplace("normalize")
-		#e.process_inplace("threshold.belowtozero",{"minval":0})
-		#e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
-		#e.div(e["maximum"])
+		
 		if nframe==1:
 			e.process_inplace("normalize")
 		e.write_image(options.output,-1)
@@ -372,12 +366,25 @@ def apply_neuralnet(convnet,options):
 	if nframe>1:
 		ss=options.output
 		fout=ss[:ss.rfind('.')]+"_pp.hdf"
-		e=EMData(ss,0,True)
-		apix=e["apix_x"]
+		#### unbin the output and copy the header
+		
+		try: os.remove(fout)
+		except: pass
 		if is3d:
-			run("e2proc2d.py {} {} --process math.fft.resample:n={} --apix {} --twod2threed".format(ss,fout,float(1./convnet.labelshrink), apix))
+			run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed".format(ss,fout,float(1./convnet.labelshrink)))
+			
+			e=EMData(options.tomograms,0,True)
+			e.write_image(fout)
+			
 		else:
-			run("e2proc2d.py {} {} --process math.fft.resample:n={} --apix {}".format(ss,fout,float(1./convnet.labelshrink), apix))
+			run("e2proc2d.py {} {} --process math.fft.resample:n={}".format(ss,fout,float(1./convnet.labelshrink)))
+			for ni in range(nframe):
+				e=EMData(options.tomograms,ni,True)
+				#e.set_size(shape[0],shape[1],1)
+				a=EMData(fout,ni,True)
+				a.set_attr_dict(e.get_attr_dict())
+				a.write_image(fout,ni)
+			
 		print "Output written to {}.".format(fout)
 	else:
 		print "Output written to {}.".format(options.output)
@@ -471,6 +478,7 @@ class StackedConvNet(object):
 		
 		self.clslayer=self.convlayers[-1]
 		self.outsize=int(input_shape[2])
+		#print 
 		#self.labelshrink=2**(self.n_convlayers-1)
 		
 	def get_pretrain_func(self,data,batch_size):
