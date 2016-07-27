@@ -36,16 +36,18 @@ import json
 from shutil import copyfile
 
 def main():
-	
-	usage="""muticlass_noalign.py --model model1.hdf,model2.hdf --oldpath refine_01
+	progname = os.path.basename(sys.argv[0])
+	usage="""prog --model model1.hdf,model2.hdf --oldpath refine_01
 	Perform a 3d classification like e2refine_multi using the orientation of each particle in an e2refine_easy"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--newpath", type=str,help="Path for the classificaton. Default = multinoali_XX", default=None)
-	parser.add_argument("--oldpath", type=str,help="Path for the original refinement", default="refine_01")
-	parser.add_argument("--model", type=str,help="Model files for classification. With multiple file input, particle set is classified based on the similarity to each model. With only one input model, particle set is split to half.", default=None)
-	parser.add_argument("--simcmp",type=str,help="Default=ccc. The name of a 'cmp' to be used in comparing the aligned images", default="ccc")
-	parser.add_argument("--mask",type=str,help="Name of the mask file. The mask is applied to the input models.", default=None)
-	parser.add_argument("--threads", type=int,help="Number of threads. MPI is not supported yet.", default=12)
+	parser.add_argument("--newpath", type=str,help="Path to the classified results. Default = multinoali_XX", default=None)
+	parser.add_argument("--oldpath", type=str,help="Path to the original refinement", default=None,guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--models","--model", dest="model", type=str,help="Comma separated list of reference maps used for classification. If a single map is provided, data will be split into two groups based on similarity to the single map.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images. eg- frc:minres=80:maxres=20. Default=ccc", default="ccc", guitype='strbox', row=10, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--threads", type=int,help="Number of threads.", default=4, guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
+	parser.add_header(name="optheader", help='Optional parameters:', title="Optional:", row=14, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--mask",type=str,help="Name of an optional mask file. The mask is applied to the input models to focus the classification on a particular region of the map. Consider e2classifyligand.py instead.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', filecheck=False, row=15, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -237,7 +239,7 @@ def main():
 			### make 3d
 			run("e2make3dpar.py --input {clsout} --sym {sym} --output {threed} {preprocess} --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_5 --threads {threads} ".format(
 			clsout=classout[s],threed=threedout[s], sym=db["sym"], recon=db["recon"], preprocess=db["m3dpreprocess"],  m3dkeep=db["m3dkeep"], keepsig=db["m3dkeepsig"],
-			m3dpad=db["pad"],fillangle=db["astep"] ,threads=options.threads, apix=db_apix))
+			m3dpad=db["pad"],threads=options.threads, apix=db_apix))
  
 	### post process
 	print "Post processing..."
@@ -248,7 +250,7 @@ def main():
 		
 	for s in models:
 		final3d="{path}/threed_00_{n}.hdf".format(path=options.newpath,n=s)
-		run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter 0 {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(even3d=output_3d["even"][s], odd3d=output_3d["odd"][s], final3d=final3d, mass=db["mass"], amask3d=db["automask3d"], sym=db["sym"], amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db["automaskexpand"]))
+		run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter 0 {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(even3d=output_3d["even"][s], odd3d=output_3d["odd"][s], final3d=final3d, mass=db["mass"], amask3d=db["automask3d"], sym=db["sym"], amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db.setdefault("automaskexpand","0")))
 		
 		### copy the fsc files..
 		fscs=["fsc_unmasked_00.txt","fsc_masked_00.txt","fsc_maskedtight_00.txt"]

@@ -387,6 +387,7 @@ class ValBox(QtGui.QWidget):
 		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 	
 	def getValue(self):
+		if self.intonly : return int(self.value)
 		return self.value
 	
 	def setIntonly(self,flag):

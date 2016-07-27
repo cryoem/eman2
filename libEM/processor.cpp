@@ -2115,7 +2115,10 @@ void BoxStatProcessor::process_inplace(EMData * image)
 	}
 
 	image->update();
-
+	// We don't process pixels near the edge, so they will be "funny". Better to zero them ... I hope
+	if (nz>1) image->process_inplace("mask.zeroedge3d",Dict("x0",n,"y0",n,"z0",n));
+	else image->process_inplace("mask.zeroedge2d",Dict("x0",n,"y0",n));
+		
 	if( data2 )
 	{
 		delete[]data2;
@@ -3899,10 +3902,10 @@ void ZeroEdgeRowProcessor::process_inplace(EMData * image)
 
 	float *d = image->get_data();
 	int top_nrows = params["y0"];
-	int bottom_nrows = params["y1"];
+	int bottom_nrows = params.set_default("y1",top_nrows);
 
 	int left_ncols = params["x0"];
-	int right_ncols = params["x1"];
+	int right_ncols = params.set_default("x1",left_ncols);
 
 	size_t row_size = nx * sizeof(float);
 
@@ -3935,11 +3938,11 @@ void ZeroEdgePlaneProcessor::process_inplace(EMData * image)
 	float *d = image->get_data();
 
 	int x0=params["x0"];
-	int x1=params["x1"];
+	int x1=params.set_default("x1",x0);
 	int y0=params["y0"];
-	int y1=params["y1"];
+	int y1=params.set_default("y1",y0);
 	int z0=params["z0"];
-	int z1=params["z1"];
+	int z1=params.set_default("z1",z1);
 
 	size_t row_size = nx * sizeof(float);
 	size_t nxy = nx * ny;

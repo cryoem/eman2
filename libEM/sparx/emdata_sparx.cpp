@@ -1582,7 +1582,7 @@ void EMData::symplane0(EMData* wptr) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
 	int n = nxc*2;
-	// let's treat the local data as a matrix
+
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,1,1);
 	for (int iza = 2; iza <= nxc; iza++) {
@@ -1712,9 +1712,10 @@ void EMData::symplane0_ctf(EMData* w) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
 	int n = nxc*2;
-
+	int nr = nxc-1;
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,1,1);
+
 	for (int iza = 2; iza <= nxc; iza++) {
 		for (int iya = 2; iya <= nxc; iya++) {
 			cmplx(0,iya,iza) += conj(cmplx(0,n-iya+2,n-iza+2));
@@ -1757,6 +1758,52 @@ void EMData::symplane0_odd(EMData* w) {
 	set_array_offsets(0,0,0);
 	vector<int> saved_offsets_w = w->get_array_offsets();
 	w->set_array_offsets(0,0,0);
+
+	int iyb,iza,izc,iyc;
+	for (int iz = -nyh; iz <= nyh; iz++) {
+		if( iz < 0 )  {
+			iyb = 0;
+			iza = iz + nz;
+			izc = -iz;
+		} else if( iz > 0 )  {
+			iyb = 1;
+			iza = iz;
+			izc = nz - iz;
+		} else  {
+			iyb = 1;
+			iza = iz;
+			izc = iz;
+		}
+		for (int iy = iyb; iy <= nyh; iy++) {
+			if( iy == 0 ) iyc = iy;
+			else  iyc = ny - iy;
+			cmplx(0,iy,iza) += conj(cmplx(0,iyc,izc));
+			(*w)(0,iy,iza) += (*w)(0,iyc,izc);
+			cmplx(0,iyc,izc) = conj(cmplx(0,iy,iza));
+			(*w)(0,iyc,izc) = (*w)(0,iy,iza);
+		}
+	}
+	set_array_offsets(saved_offsets);
+	w->set_array_offsets(saved_offsets_w);
+	EXITFUNC;
+}
+
+/*
+void EMData::symplane0_odd(EMData* w) {
+	ENTERFUNC;
+	ny=get_ysize();
+	nz=get_zsize();
+	if( ny != nz ) {
+		LOGERR("symplane0_odd requires ny = nz.");
+		throw InvalidValueException(ny, "symplane0_odd requires ny = nz.");
+	}
+	int nyh = ny/2;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	vector<int> saved_offsets_w = w->get_array_offsets();
+	w->set_array_offsets(0,0,0);
+cout <<"  symplane0_odd   "<<ny<<"   "<<nyh<<endl;
+
 	for (int iza = 1; iza <= nyh; iza++) {
 		for (int iya = 1; iya < ny; iya++) {
 			cmplx(0,iya,iza) += conj(cmplx(0,ny-iya,nz-iza));
@@ -1779,7 +1826,7 @@ void EMData::symplane0_odd(EMData* w) {
 	w->set_array_offsets(saved_offsets_w);
 	EXITFUNC;
 }
-
+*/
 
 void EMData::symplane0_rect(EMData* w) {
 	ENTERFUNC;
@@ -5671,7 +5718,8 @@ void EMData::div_sinc(int interpolate_method) {
 	int nz = this->get_zsize();
 	if (nx != ny || ny != nz)
 		throw ImageDimensionException("div_sinc requires ny == nx == nz");
-	float cdf = M_PI/nx/2;
+	int npad = this->get_attr("npad");
+	float cdf = M_PI/(nx);
 /*
 	int IP = nx/2+1;
 
@@ -5696,9 +5744,12 @@ void EMData::div_sinc(int interpolate_method) {
 		}
 	}
 */
-	for (int k = -nz/2; k < nz/2 + nz%2; k++) {
-		for (int j = -ny/2; j < ny/2 + ny%2; j++) {
-			for (int i = -nx/2; i < nx/2 + nx%2; i++) {
+	int nzb = nz/2/npad;
+	int nyb = ny/2/npad;
+	int nxb = nx/2/npad;
+	for (int k = -nzb; k < nzb + nzb%2; k++) {
+		for (int j = -nyb; j < nyb + nyb%2; j++) {
+			for (int i = -nxb; i < nxb + nxb%2; i++) {
 				float  rrr = std::sqrt(k*k+j*j+float(i*i));
 				if(rrr>0.0f)  {
 					if( interpolate_method == 1 ) (*this)(i,j,k) *= pow((rrr*cdf)/sin(rrr*cdf),2);
@@ -5896,6 +5947,215 @@ EMData* EMData::extract_section(const Transform& tf, int interpolate_method) {
 						if (mirror)   res->cmplx(jx,jy) = conj(cmplx(ixt,iyt,izt));
 						else          res->cmplx(jx,jy) = cmplx(ixt,iyt,izt);
 					}
+				}
+			}
+		}
+	}
+	set_array_offsets(saved_offsets);
+	res->set_array_offsets(0,0,0);
+	res->set_shuffled(true);
+	return res;
+}
+
+
+EMData* EMData::extract_section2(const Transform& tf, int interpolate_method) {
+	if (!is_complex())
+		throw ImageFormatException("extract_section requires a complex image");
+	if (nx%2 != 0)
+		throw ImageDimensionException("extract_section requires nx to be even");
+	int nxreal = nx - 2;
+	if (nxreal != ny || nxreal != nz)
+		throw ImageDimensionException("extract_section requires ny == nx == nz");
+	// build complex result image, the assumption is that incoming volume is even and padded 2x
+	int nxo = nxreal/2 +2 ;
+	int nyo = ny/2;
+	EMData* res = new EMData();
+	res->set_size(nxo,nyo,1);
+	res->to_zero();
+	res->set_complex(true);
+	res->set_fftodd(false);
+	res->set_fftpad(false);
+	res->set_ri(true);
+	// Array offsets: (0..nhalf,-nhalf..nhalf-1,-nhalf..nhalf-1)
+	int n = nxreal;
+	int nhalf = ny/2;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,-nhalf,-nhalf);
+	int nhalfo = nyo/2;
+	res->set_array_offsets(0,-nhalfo,0);
+
+//	int ixg =0, iyg=0, izg=0;
+	float rim = nhalfo*float(nhalfo);
+
+	Transform tftrans = tf; // need transpose of tf here for consistency
+	tftrans.invert();      // with spider
+	if( interpolate_method == 0 ) {
+		for (int jy = -nhalf; jy < nhalf; jy++)  {
+			for (int jx = 0; jx <= nhalf; jx++) {
+				Vec3f nucur((float)jx, (float)jy, 0.f);
+				Vec3f nunew = tftrans*nucur;
+				float xnew = nunew[0], ynew = nunew[1], znew = nunew[2];
+				if (xnew*xnew+ynew*ynew+znew*znew <= rim) {
+					int ixn = int(Util::round(xnew));
+					int iyn = int(Util::round(ynew));
+					int izn = int(Util::round(znew));
+					bool flip = false;
+					if (ixn < 0) {
+						flip = true;
+						ixn = -ixn;
+						iyn = -iyn;
+						izn = -izn;
+					}
+					if(   ixn >= 0      && ixn <= nhalf-1
+					   && iyn >= -nhalf && iyn <= nhalf-1
+					   && izn >= -nhalf && izn <= nhalf-1) {
+						//std::cout<<"    2D: "<<jx<<"  "<<jy<<"        3D: "<<ixn<<"  "<<iyn<<"  "<<izn<<"  "<<flip<<"  "<<std::endl;
+						if (flip)  res->cmplx(jx,jy) = conj(cmplx(ixn,iyn,izn));
+						else       res->cmplx(jx,jy) = cmplx(ixn,iyn,izn);
+					} else {
+						// points "sticking out"
+						bool mirror = false;
+						int ixt(ixn), iyt(iyn), izt(izn);
+						if (ixt > nhalf || ixt < -nhalf) {
+							ixt = Util::sgn(ixt)*(n - abs(ixt));
+							iyt = -iyt;
+							izt = -izt;
+							mirror = !mirror;
+						}
+						if (iyt >= nhalf || iyt < -nhalf) {
+							if (ixt != 0) {
+								ixt = -ixt;
+								iyt = Util::sgn(iyt)*(n - abs(iyt));
+								izt = -izt;
+								mirror = !mirror;
+							} else {
+								iyt -= n*Util::sgn(iyt);
+							}
+						}
+						if (izt >= nhalf || izt < -nhalf) {
+							if (ixt != 0) {
+								ixt = -ixt;
+								iyt = -iyt;
+								izt = Util::sgn(izt)*(n - abs(izt));
+								mirror = !mirror;
+							} else {
+								izt -= Util::sgn(izt)*n;
+							}
+						}
+						if (ixt < 0) {
+							ixt = -ixt;
+							iyt = -iyt;
+							izt = -izt;
+							mirror = !mirror;
+						}
+						if (iyt == nhalf) iyt = -nhalf;
+						if (izt == nhalf) izt = -nhalf;
+						if (mirror)   res->cmplx(jx,jy) = conj(cmplx(ixt,iyt,izt));
+						else          res->cmplx(jx,jy) = cmplx(ixt,iyt,izt);
+					}
+				}
+			}
+		}
+	} else {
+		// tri-linear interpolation
+		for (int jy = -nhalfo; jy < nhalfo; jy++)  {
+			for (int jx = 0; jx <= nhalfo; jx++) {
+				if (jx*jx+jy*jy <= rim) {
+					Vec3f nucur((float)(2*jx), (float)(2*jy), 0.f);
+					Vec3f nunew = tftrans*nucur;
+					float xnew = nunew[0], ynew = nunew[1], znew = nunew[2];
+//	std::cout<<"INDX  "<<jy+nhalf<<"  "<<jy<<"  "<<jx<<"  "<<xnew<<"  "<<ynew<<"  "<<znew<<std::endl;
+					bool flip = false;
+					bool xmirror;
+					if (xnew < 0.f) {
+						flip = true;
+						xnew = -xnew;
+						ynew = -ynew;
+						znew = -znew;
+					}
+
+					int ixn = int(xnew + n);
+					int iyn = int(ynew + n);
+					int izn = int(znew + n);
+
+					float dx = xnew + n - ixn;
+					float dy = ynew + n - iyn;
+					float dz = znew + n - izn;
+
+					ixn -= n;
+					iyn -= n;
+					izn -= n;
+
+					if(   ixn >= 0      && ixn <= nhalf-2
+					   && iyn >= -nhalf && iyn <= nhalf-2
+					   && izn >= -nhalf && izn <= nhalf-2) {
+				/*		std::cout<<"    2D: "<<jx<<"  "<<jy<<"        3D: "<<ixn<<"  "<<iyn<<"  "<<izn<<"  "<<flip<<"  "<<std::endl;
+						ixg = ixn;
+						iyg = iyn;
+						izg = izn; */
+						std::complex<float> a1 = cmplx(ixn,iyn,izn);
+						std::complex<float> a2 = cmplx(ixn+1,iyn,izn) - cmplx(ixn,iyn,izn);
+						std::complex<float> a3 = cmplx(ixn,iyn+1,izn) - cmplx(ixn,iyn,izn);
+						std::complex<float> a4 = cmplx(ixn,iyn,izn+1) - cmplx(ixn,iyn,izn);
+						std::complex<float> a5 = cmplx(ixn,iyn,izn) - cmplx(ixn+1,iyn,izn) - cmplx(ixn,iyn+1,izn) + cmplx(ixn+1,iyn+1,izn);
+						std::complex<float> a6 = cmplx(ixn,iyn,izn) - cmplx(ixn+1,iyn,izn) - cmplx(ixn,iyn,izn+1) + cmplx(ixn+1,iyn,izn+1);
+						std::complex<float> a7 = cmplx(ixn,iyn,izn) - cmplx(ixn,iyn+1,izn) - cmplx(ixn,iyn,izn+1) + cmplx(ixn,iyn+1,izn+1);
+						std::complex<float> a8 = cmplx(ixn+1,iyn,izn) + cmplx(ixn,iyn+1,izn)+ cmplx(ixn,iyn,izn+1)
+								- cmplx(ixn,iyn,izn)- cmplx(ixn+1,iyn+1,izn) - cmplx(ixn+1,iyn,izn+1)
+								- cmplx(ixn,iyn+1,izn+1) + cmplx(ixn+1,iyn+1,izn+1);
+						std::complex<float> btq = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+						if (flip)  res->cmplx(jx,jy) = conj(btq);
+						else       res->cmplx(jx,jy) = btq;
+					} else {
+						// points "sticking out" just do using linear
+						bool mirror = false;
+						int ixt(ixn), iyt(iyn), izt(izn);
+						if (ixt > nhalf || ixt < -nhalf) {
+							ixt = Util::sgn(ixt)*(n - abs(ixt));
+							iyt = -iyt;
+							izt = -izt;
+							mirror = !mirror;
+						}
+						if (iyt >= nhalf || iyt < -nhalf) {
+							if (ixt != 0) {
+								ixt = -ixt;
+								iyt = Util::sgn(iyt)*(n - abs(iyt));
+								izt = -izt;
+								mirror = !mirror;
+							} else {
+								iyt -= n*Util::sgn(iyt);
+							}
+						}
+						if (izt >= nhalf || izt < -nhalf) {
+							if (ixt != 0) {
+								ixt = -ixt;
+								iyt = -iyt;
+								izt = Util::sgn(izt)*(n - abs(izt));
+								mirror = !mirror;
+							} else {
+								izt -= Util::sgn(izt)*n;
+							}
+						}
+						if (ixt < 0) {
+							ixt = -ixt;
+							iyt = -iyt;
+							izt = -izt;
+							mirror = !mirror;
+						}
+						if (iyt == nhalf) iyt = -nhalf;
+						if (izt == nhalf) izt = -nhalf;
+						if (mirror)   res->cmplx(jx,jy) = conj(cmplx(ixt,iyt,izt));
+						else          res->cmplx(jx,jy) = cmplx(ixt,iyt,izt);
+						
+						
+					/*	xmirror = mirror;
+						ixg = ixt;
+						iyg = iyt;
+						izg = izt; */
+
+
+					}
+	//std::cout<<"PROJ  "<<jy+nhalfo<<"  "<<jy<<"  "<<jx<<" | "<<xnew<<"  "<<ynew<<"  "<<znew<<" | "<<ixn<<"  "<<iyn<<"  "<<izn<<"  |  "<<std::real(res->cmplx(jx,jy))<<"  " <<std::imag(res->cmplx(jx,jy))<<" | "<<xmirror<<" | "<<std::real(cmplx(ixg,iyg,izg))<<"  "<<std::imag(cmplx(ixg,iyg,izg))<<std::endl;
 				}
 			}
 		}
@@ -7696,15 +7956,19 @@ EMData *EMData::FourInterpol(int nxn, int nyn, int nzn, bool RetReal, bool norma
 
 	int lsd, lsdn, inx, iny, inz;
 	int i, j, k;
-	if (is_complex())
-		throw ImageFormatException("Input image has to be real");
-
-	if(nxn<nx || nyn<ny || nzn<nz)	throw ImageDimensionException("Cannot reduce the image size");
-	lsd = nx + 2 - nx%2;
+	EMData *temp_ft = new EMData();
+	if (is_complex()) {
+		temp_ft = this->copy();
+		lsd = nx;
+		nx = lsd - 2 + this->is_fftodd();
+	} else {
+		//  do out of place ft
+		temp_ft = do_fft();
+		lsd = nx + 2 - nx%2;
+	}
 	lsdn = nxn + 2 - nxn%2;
-//  do out of place ft
-	EMData *temp_ft = do_fft();
-	EMData *ret = this->copy();
+	if(nxn<nx || nyn<ny || nzn<nz)	throw ImageDimensionException("Cannot reduce the image size");
+	EMData *ret = this->copy_head();
 	ret->set_size(lsdn, nyn, nzn);
 	ret->to_zero();
 	float *fout = ret->get_data();

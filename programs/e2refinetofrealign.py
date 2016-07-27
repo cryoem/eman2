@@ -124,8 +124,9 @@ classes_odd = EMData.read_images(dir + "/classes_" + high +"_odd.hdf")
 
 
 total_len = len(az_list)
-even_set_name = class_list[0].get_attr_dict()['class_ptcl_src']
-odd_set_name = class_list[1].get_attr_dict()['class_ptcl_src']
+#even_set_name = class_list[0].get_attr_dict()['class_ptcl_src']
+#odd_set_name = class_list[1].get_attr_dict()['class_ptcl_src']
+even_set_name,odd_set_name=command_dict["input"]
 all_set_name = "sets/"+base_name(even_set_name)+"_ptcls.lst"
 all_set_data = EMData.read_images(all_set_name)
 print all_set_name

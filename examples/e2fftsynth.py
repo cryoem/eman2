@@ -126,6 +126,8 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.cbtargfn.addItem("doubledelta")
 		self.cbtargfn.addItem("sin bad f")
 		self.cbtargfn.addItem("sin bad f2")
+		self.cbtargfn.addItem("square imp dx")
+		self.cbtargfn.addItem("square imp 2")
 		self.hbl1.addWidget(self.cbtargfn)
 		
 		# Widget containing valsliders
@@ -195,7 +197,7 @@ class GUIFourierSynth(QtGui.QWidget):
 				
 			elif index==3 : # square impulse
 				self.targfn.to_zero()
-				for i in xrange(nx/4,nx/2): self.targfn[i]=1.0
+				for i in xrange(nx/4-2,nx/2-2): self.targfn[i]=1.0
 			
 			elif index==4 : # delta
 				self.targfn.to_zero()
@@ -235,6 +237,14 @@ class GUIFourierSynth(QtGui.QWidget):
 			elif index==14 : # sin bad f2
 				for i in xrange(nx): self.targfn[i]=sin(i*pi/19)
 			
+			elif index==15 : # square impulse
+				self.targfn.to_zero()
+				for i in xrange(nx/2+2,nx*3/4+2): self.targfn[i]=1.0
+				
+			elif index==16 : # square impulse
+				self.targfn.to_zero()
+				for i in xrange(nx/4-2,nx/2-2): self.targfn[i]=1.0
+				for i in xrange(nx/2+2,nx*3/4+2): self.targfn[i]=1.0
 
 			self.target2sliders()
 		

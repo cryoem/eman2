@@ -221,6 +221,8 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	of lower level refinement.
 	"""
 	#print " ENTER AMOEBA MULTI LEVEL"
+	from mpi import mpi_comm_rank, MPI_COMM_WORLD
+	
 	nvar = len(var)       # number of variables in the minimization
 	nsimplex = nvar + 1   # number of vertices in the simplex
 
@@ -309,7 +311,10 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 			simplex[ssworst][i] = pnew[i]
 		fvalue[ssworst] = fnew
 		iteration += 1
-		#print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
+
+
+		# if mpi_comm_rank(MPI_COMM_WORLD) == 7:
+		# 	print "Iteration:",iteration,"  ",ssbest,"  ", simplex[ssbest], "  ",fvalue[ssbest]
 
 '''
 def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):
@@ -2415,7 +2420,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 	"""
 	The assumption in <<bcast_compacted_EMData_all_to_all>> is that each processor
 	calculates part of the list of elements and then each processor sends
-	its results to the other ones. I
+	its results to the other ones.
 
 	Therefore, each processor has access to the header. If we assume that the
 	attributes of interest from the header are the same for all elements then
@@ -3978,35 +3983,105 @@ def assign_projangles_f(projangles, refangles, return_asg = False):
 	return assignments
 
 
-def cone_ang( projangles, phi, tht, ant ):
+def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
-	vec = getvec( phi, tht )
 
 	cone = cos(radians(ant))
 	la = []
-	for i in xrange( len(projangles) ):
-		vecs = getvec( projangles[i][0], projangles[i][1] )
-		s = abs(vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2])
-		if s >= cone:
-			la.append(projangles[i])
-
+	if( symmetry == 'c1' ):
+		vec = getfvec( phi, tht )
+		for i in xrange( len(projangles) ):
+			vecs = getvec( projangles[i][0], projangles[i][1] )
+			s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
+			if s >= cone:
+				la.append(projangles[i])
+	elif( symmetry[:1] == "c" ):
+		nsym = int(symmetry[1:])
+		qt = 360.0/nsym
+		dvec = 	[0.0]*nsym
+		for nsm in xrange(nsym):
+			dvec[nsm] = getvec(phi+nsm*qt, tht)
+		for i in xrange( len(projangles) ):
+			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			qt = -2.0
+			for nsm in xrange(nsym):
+				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
+				if(vc > qt):  qt = vc
+			if(qt >= cone):
+				la.append(projangles[i])
+	elif( symmetry[:1] == "d" ):
+		nsym = int(symmetry[1:])
+		qt = 360.0/nsym
+		dvec = 	[0.0]*2*nsym
+		for nsm in xrange(nsym):
+			dvec[2*nsm] = getvec(phi+nsm*qt, tht)
+			dvec[2*nsm+1] = getvec(-(phi+nsm*qt), 180.0-tht)
+		for i in xrange( len(projangles) ):
+			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			qt = -2.0
+			qk = -1
+			for nsm in xrange(2*nsym):
+				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
+				if(vc > qt):
+					qt = vc
+					qk = nsm
+			if(qt >= cone):
+				if(qk<nsym):  la.append(projangles[i])
+				else:         la.append([projangles[i][0],projangles[i][1],(projangles[i][2]+180.0)%360.0])
+	
+	else:  print  "Symmetry not supported ",symmetry
 	return la
 
-def cone_ang_f( projangles, phi, tht, ant ):
+def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
-	# vec = getfvec( phi, tht )
-	vec = getfvec( phi, tht )
 
 	cone = cos(radians(ant))
 	la = []
-	for i in xrange( len(projangles) ):
-		# vecs = getfvec( projangles[i][0], projangles[i][1] )
-		vecs = getfvec( projangles[i][0], projangles[i][1] )
-		s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
-		if s >= cone:
-			la.append(projangles[i])
+	if( symmetry == 'c1' ):
+		vec = getfvec( phi, tht )
+		for i in xrange( len(projangles) ):
+			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
+			if s >= cone:
+				la.append(projangles[i])
+	elif( symmetry[:1] == "c" ):
+		nsym = int(symmetry[1:])
+		qt = 360.0/nsym
+		dvec = 	[0.0]*nsym
+		for nsm in xrange(nsym):
+			dvec[nsm] = getfvec(phi+nsm*qt, tht)
+		for i in xrange( len(projangles) ):
+			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			qt = -2.0
+			for nsm in xrange(nsym):
+				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
+				if(vc > qt):  qt = vc
+			if(qt >= cone):
+				la.append(projangles[i])
+	elif( symmetry[:1] == "d" ):
+		nsym = int(symmetry[1:])
+		qt = 360.0/nsym
+		dvec = 	[0.0]*2*nsym
+		for nsm in xrange(nsym):
+			dvec[2*nsm] = getfvec(phi+nsm*qt, tht)
+			dvec[2*nsm+1] = getfvec(-(phi+nsm*qt), 180.0-tht)
+		for i in xrange( len(projangles) ):
+			vecs = getfvec( projangles[i][0], projangles[i][1] )
+			qt = -2.0
+			qk = -1
+			for nsm in xrange(2*nsym):
+				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
+				if(vc > qt):
+					qt = vc
+					qk = nsm
+			if(qt >= cone):
+				if(qk<nsym):  la.append(projangles[i])
+				else:         la.append([projangles[i][0],projangles[i][1],(projangles[i][2]+180.0)%360.0])
+	
+	else:  print  "Symmetry not supported ",symmetry
+
 	return la
 
 def cone_ang_f_with_index( projangles, phi, tht, ant ):
@@ -4019,7 +4094,6 @@ def cone_ang_f_with_index( projangles, phi, tht, ant ):
 	la = []
 	index = []
 	for i in xrange( len(projangles) ):
-		# vecs = getvec( projangles[i][0], projangles[i][1] )
 		vecs = getfvec( projangles[i][0], projangles[i][1] )
 		s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
 		if s >= cone:
@@ -5063,6 +5137,40 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 
 	return out_array
 
+def wrap_mpi_split_shared_memory(mpi_comm):
+	import socket
+	import os
+	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split_shared, mpi_comm_split
+	
+	hostname = socket.gethostname()
+
+	my_rank = mpi_comm_rank(mpi_comm)
+	mpi_size = mpi_comm_size(mpi_comm)
+	
+	local_rank = int(os.environ["OMPI_COMM_WORLD_LOCAL_RANK"])
+	local_size = int(os.environ["OMPI_COMM_WORLD_LOCAL_SIZE"])
+	
+	no_of_processes_per_group = local_size
+	no_of_groups = mpi_size/local_size
+	
+	host_names = [hostname]
+	host_names = wrap_mpi_gatherv(host_names, 0, mpi_comm)
+
+	if my_rank == 0:
+		host_names = sorted(set(host_names))
+	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
+	host_dict = {host_names[i]: i for i in range(len(host_names))}
+	
+	color = host_dict[hostname]
+	key = local_rank
+
+	# shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
+	shared_comm = mpi_comm_split(mpi_comm, color, key)
+	
+	return shared_comm, color, key, no_of_processes_per_group, no_of_groups
+	
+
+
 def wrap_mpi_split(comm, no_of_groups):
 	"""
 
@@ -5071,7 +5179,7 @@ def wrap_mpi_split(comm, no_of_groups):
 	Consecutive global process ids have consecutive subgroup process ids.
 
 	"""
-	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split
+	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split, mpi_comm_split_shared
 	nproc = mpi_comm_size(comm)
 	myid = mpi_comm_rank(comm)
 
@@ -5080,6 +5188,7 @@ def wrap_mpi_split(comm, no_of_groups):
 	key = myid % no_of_proc_per_group
 
 	return mpi_comm_split(comm, color, key)
+	
 
 def get_dist(c1, c2):
 	from math import sqrt

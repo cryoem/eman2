@@ -274,13 +274,24 @@ def main():
    11. Scale 3D shifts.  The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor
 		sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5
 
-   12. Generate 3D mask from a given 3-D volume automatically or using threshold provided by user.
+   12. Generate soft-edged 3D mask from input 3D volume automatically or using the user-provided threshold.
+        Automatically compute the threshold to intially obtain the largest density cluster.
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --nsigma=3.0  --ndilation=1  --kernel_size=9  --gauss_standard_dev=5
+        
+        Use the user-provided threshold to intially obtain the largest density cluster.
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  -ndilation=0  --kernel_size=9  --gauss_standard_dev=5
 
-   13. Postprocess 3-D or 2-D images:
+   13. Generate binary 3D mask from input 3D volume using the user-provided threshold.
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3
+
+   14. Postprocess 3-D or 2-D images:
    			for 3-D volumes: calculate FSC with provided mask; weight summed volume with FSC; estimate B-factor from FSC weighted summed two volumes; apply negative B-factor to the weighted volume.
    			for 2-D images:  calculate B-factor and apply negative B-factor to 2-D images.
-   14. Window stack file -reduce the size of images without changing the pixel size.
+   			
+   15. Window stack file -reduce the size of images without changing the pixel size.
 
+   16. Create angular distribution .build file
+        sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
 
 """
 
@@ -301,12 +312,12 @@ def main():
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
 	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type="string",
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
-	parser.add_option("--isacgroup", 			type="int", 		help="Retrieve original image numbers in the selected ISAC group. See ISAC documentation for details.", default=-1)
+	parser.add_option("--isacgroup", 			type="int", 		        help="Retrieve original image numbers in the selected ISAC group. See ISAC documentation for details.", default=-1)
 	parser.add_option("--isacselect", 			action="store_true", 		help="Retrieve original image numbers of images listed in ISAC output stack of averages. See ISAC documentation for details.", default=False)
-	parser.add_option("--params",	   			type="string",      default=None,    help="Name of header of parameter, which one depends on specific option")
-	parser.add_option("--adjpw", 				action="store_true",	help="Adjust rotationally averaged power spectrum of an image", default=False)
-	parser.add_option("--rotpw", 				type="string",   	default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
-	parser.add_option("--transformparams",		type="string",   	default=None,    help="Transform 3D projection orientation parameters using six 3D parameters (phi, theta,psi,sx,sy,sz).  Input: --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. Output: file with modified orientation parameters.")
+	parser.add_option("--params",	   			type="string",              default=None,    help="Name of header of parameter, which one depends on specific option")
+	parser.add_option("--adjpw", 				action="store_true",	    help="Adjust rotationally averaged power spectrum of an image", default=False)
+	parser.add_option("--rotpw", 				type="string",   	        default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
+	parser.add_option("--transformparams",		type="string",   	        default=None,    help="Transform 3D projection orientation parameters using six 3D parameters (phi, theta,psi,sx,sy,sz).  Input: --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. Output: file with modified orientation parameters.")
 
 
 	# import ctf estimates done using cter
@@ -318,23 +329,29 @@ def main():
 	# import ctf estimates done using cter
 	parser.add_option("--scale",              	type="float", 		default=-1.0,      		  help="Divide shifts in the input 3D orientation parameters text file by the scale factor.")
 
-	# generate adaptive mask from an given 3-D volume
-	parser.add_option("--adaptive_mask",        action="store_true",                      help="create adavptive 3-D mask from a given volume", default=False)
-	parser.add_option("--nsigma",              	type="float",	default= 1.,     	      help="number of times of sigma of the input volume to obtain the the large density cluster")
-	parser.add_option("--ndilation",            type="int",		default= 3,     		  help="number of times of dilation applied to the largest cluster of density")
-	parser.add_option("--kernel_size",          type="int",		default= 11,     		  help="convolution kernel for smoothing the edge of the mask")
-	parser.add_option("--gauss_standard_dev",   type="int",		default= 9,     		  help="stanadard deviation value to generate Gaussian edge")
-	parser.add_option("--threshold",            type="float",	default= 9999.,           help="threshold provided by user to binarize input volume")
-	parser.add_option("--ne",                   type="int",		default= 0,     		  help="number of times to erode the binarized  input image")
-	parser.add_option("--nd",                   type="int",		default= 0,     		  help="number of times to dilate the binarized input image")
+	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
+	parser.add_option("--adaptive_mask",        action="store_true",                      help="generate soft-edged 3D mask from input 3D volume", default= False)
+	parser.add_option("--nsigma",               type="float",        default= 1.0,        help="number of times of sigma of the input volume to intially obtain the largest density cluster")
+	parser.add_option("--threshold",            type="float",        default= -9999.0,    help="threshold provided by user to intially obtain the largest density cluster")
+	parser.add_option("--ndilation",            type="int",          default= 3,          help="number of times of dilation applied to the largest cluster of density")
+	parser.add_option("--kernel_size",          type="int",          default= 11,         help="convolution kernel for smoothing the edge of the mask")
+	parser.add_option("--gauss_standard_dev",   type="int",          default= 9,          help="stanadard deviation value to generate Gaussian edge")
+	
+	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
+	parser.add_option("--binary_mask",          action="store_true",                      help="generate binary 3D mask from input 3D volume", default=False)
+	parser.add_option("--bin_threshold",        type="float",        default= 0.0,        help="threshold provided by user to binarize input volume")
+	parser.add_option("--ne",                   type="int",          default= 0,          help="number of times to erode binarized volume")
+	parser.add_option("--nd",                   type="int",          default= 0,          help="number of times to dilate binarized volume")
+
+	# Postprocess 3-D or 2-D images
 	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
 	parser.add_option("--mtf",                  type="string",        default= None,      help="mtf file")
 	parser.add_option("--fsc_weighted",         action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes")
 	parser.add_option("--B_enhance",            action="store_true",                      help="apply Bfactor to enhance map or not")
 	parser.add_option("--adhoc_bfactor",        type="float",         default=0.0 ,       help="User provided B-factor for map sharpening")
 	parser.add_option("--low_pass_filter",      action="store_true",  default=False,      help="postprocess unfiltered odd, even 3-D volumes")
-	parser.add_option("--ff",                   type="float", default=0.0,                help="low pass filter stop band frequency in absolute unit. By default, low_pass filter to resolution")
-	parser.add_option("--aa",                   type="float", default=.1,                 help="low pass filter falloff" )
+	parser.add_option("--ff",                   type="float",         default=0.0,        help="low pass filter stop band frequency in absolute unit. By default, low_pass filter to resolution")
+	parser.add_option("--aa",                   type="float",         default=.1,         help="low pass filter falloff" )
 	parser.add_option("--mask",                 type="string",                            help="input mask file",  default= None)
 	parser.add_option("--output",               type="string",                            help="output file name", default = "postprocessed.hdf")
 	parser.add_option("--pixel_size",           type="float",                             help="pixel size of the data", default=1.0)
@@ -342,15 +359,15 @@ def main():
 	parser.add_option("--FSC_cutoff",           type="float",                             help="FSC value that cuts off FSC ", default=0.143)
 	parser.add_option("--2d",                   action="store_true",                      help="postprocess isac 2-D averaged images",default=False)
 	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
-	parser.add_option("--box",           type="int",		default= 0,                   help="the new window size ")
-
+	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
+	
 	# Options for angular distribution
-	parser.add_option('--angular_distribution',    action="store_true",    default=False,        help='create an angular distribution file based on a project3d.txt')
-	parser.add_option('--round_digit',       type='int',          default=5,           help='accuracy of the loaded angle (default 5)')
-	parser.add_option('--box_size',       type='int',          default=500,           help='box size [px] (default 500)')
-	parser.add_option('--particle_radius',       type='int',          default=500,           help='Particle radius [Pixels] (default 500)')
-	parser.add_option('--cylinder_width',       type='int',          default=1,           help='width of the cylinder (default 1)')
-	parser.add_option('--cylinder_length',       type='int',          default=10000,           help='length of the cylinder (default 10000)')
+	parser.add_option('--angular_distribution',    	action="store_true",  	default=False,        	help='create an angular distribution file based on a project3d.txt')
+	parser.add_option('--round_digit',             	type='int',          	default=5,           	help='accuracy of the loaded angle (default 5)')
+	parser.add_option('--box_size',                	type='int',          	default=500,         	help='box size in pixel used for calculating the center of the particle [px] (default 500)')
+	parser.add_option('--particle_radius',     		type='int',          	default=175,         	help='particle radius [Pixels] (default 175)')
+	parser.add_option('--cylinder_width',      		type='int',          	default=1,           	help='width of the cylinder (default 1)')
+	parser.add_option('--cylinder_length',     		type='int',          	default=10000,       	help='length of the cylinder (default 10000)')
 	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
@@ -829,30 +846,52 @@ def main():
 
 	elif options.adaptive_mask:
 		from utilities import get_im
-		from morphology import adaptive_mask1, binarize, erosion, dilation
-		nsigma             = options.nsigma
-		ndilation          = options.ndilation
-		kernel_size        = options.kernel_size
-		gauss_standard_dev = options.gauss_standard_dev
+		from morphology import adaptive_mask1
 		nargs = len(args)
 		if nargs ==0:
-			print " Create 3D mask from a given volume, either automatically or from the user provided threshold."
-		elif nargs > 2:
-			print "Too many inputs are given, try again!"
+			print " Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold."
 			return
-		else:
-			inputvol = get_im(args[0])
-			input_path, input_file_name = os.path.split(args[0])
-			input_file_name_root,ext=os.path.splitext(input_file_name)
-			if nargs == 2:  mask_file_name = args[1]
-			else:           mask_file_name = "adaptive_mask_for_"+input_file_name_root+".hdf" # Only hdf file is output.
-			if options.threshold !=9999.:
-				mask3d = binarize(inputvol, options.threshold)
-				for i in xrange(options.ne): mask3d = erosion(mask3d)
-				for i in xrange(options.nd): mask3d = dilation(mask3d)
-			else:
-				mask3d = adaptive_mask1(inputvol, nsigma, ndilation, kernel_size, gauss_standard_dev)
-			mask3d.write_image(mask_file_name)
+		elif nargs > 2:
+			print "Too many arguments are given, try again!"
+			return
+		
+		print "Started sxprocess.py  --adaptive_mask"
+		inputvol = get_im(args[0]) # args[0]: input 3D volume file path
+		input_path, input_file_name = os.path.split(args[0])
+		input_file_name_root,ext=os.path.splitext(input_file_name)
+		if nargs == 2:  mask_file_name = args[1] # args[1]: output 3D mask file path
+		else:           mask_file_name = "adaptive_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
+		mask3d, density_stats = adaptive_mask1(inputvol, options.nsigma, options.threshold, options.ndilation, options.kernel_size, options.gauss_standard_dev)
+		mask3d.write_image(mask_file_name)
+		print "  Applied threshold for binarize: %f" % density_stats[0]
+		print "  Background density average    : %f" % density_stats[1]
+		print "  Background density sigma      : %f" % density_stats[2]
+		print "  Sigma factor (nsigma)         : %f" % density_stats[3]
+		print "Finished sxprocess.py  --adaptive_mask"
+	
+	elif options.binary_mask:
+		from utilities import get_im
+		from morphology import binarize, erosion, dilation
+		nargs = len(args)
+		if nargs == 0:
+			print " Generate binary 3D mask from input 3D volume using the user-provided threshold."
+			return
+		elif nargs > 2:
+			print "Too many arguments are given, try again!"
+			return
+		
+		print "Started sxprocess.py  --binary_mask"
+		inputvol = get_im(args[0])
+		input_path, input_file_name = os.path.split(args[0])
+		input_file_name_root,ext=os.path.splitext(input_file_name)
+		if nargs == 2:  mask_file_name = args[1]
+		else:           mask_file_name = "binary_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
+		mask3d = binarize(inputvol, options.bin_threshold)
+		for i in xrange(options.ne): mask3d = erosion(mask3d)
+		for i in xrange(options.nd): mask3d = dilation(mask3d)
+		mask3d.write_image(mask_file_name)
+		print "Applied threshold value for binarization is %f" % options.bin_threshold
+		print "Finished sxprocess.py  --binary_mask"
 
 	elif options.postprocess:
 		from logger import Logger,BaseLogger_Files
@@ -876,43 +915,50 @@ def main():
 			print_msg = "2-D postprocess for ISAC averaged images"
 			log_main.add(print_msg)
 			nimage = EMUtil.get_image_count(args[0])
-			if options.mask !=None: m = get_im(options.mask)
-			else: m = None
+			if options.mask !=None:
+				m = get_im(options.mask)
+				print_msg ="user provided mask is %s"%options.mask
+				log_main.add(print_msg)
+			else:
+				m = None
+				log_main.add("mask is not used")
+			log_main.add("total number of average images is %d"%nimage)
 			for i in xrange(nimage):
 				e1 = get_im(args[0],i)
 				if m: e1 *=m
 				guinerline = rot_avg_table(power(periodogram(e1),.5))
 				freq_max   =  1/(2.*options.pixel_size)
 				freq_min   =  1./options.B_start
-				print " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size)
+				log_main.add(" B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size))
 				b,junk =compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
 				global_b = b*4
-				print "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2)
-				print "the estimated B-factor is  %f Angstrom^2  "%(round((-global_b),2))
+				log_main.add( "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
+				log_main.add( "the estimated B-factor is  %f Angstrom^2  "%(round((-global_b),2)))
 				sigma_of_inverse=sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.low_pass_filter:
+					log_main.add(" low-pass filter ff %   aa  %f"%(options.ff, options.aa))
 					from filter import filt_tanl
 					e1 =filt_tanl(e1,options.ff, options.aa)
 				e1.write_image(options.output)
 		else:   # 3D case
 			print_msg = "postprocess for 3-D refinement"
 			log_main.add(print_msg)
-			nargs = len(args)
+			nargs     = len(args)
 			print_msg = "the first input volume is %s"%args[0]
-			log_main.add(print_msg) 
+			log_main.add(print_msg)
 			e1    = get_im(args[0])
 			if nargs >1:
-				print_msg="the second input volume is %s"%args[1]
-				log_main.add(print_msg)  
-				e2 = get_im(args[1])
+				print_msg ="the second input volume is %s"%args[1]
+				log_main.add(print_msg)
+				e2  = get_im(args[1])
 			if options.mask != None:
 				print_msg ="user provided mask is %s"%options.mask
-				log_main.add(print_msg) 
+				log_main.add(print_msg)
 				m = get_im(options.mask)
-			else: 
+			else:
 				m = None
-				print_msg= " do not use mask in postprocess"
+				print_msg= " mask is not used in postprocess"
 				log_main.add(print_msg)
 			from math import sqrt
 			resolution = 0.5
@@ -924,26 +970,28 @@ def main():
 					e2 *=m
 				print_msg = "calculate FSC "
 				log_main.add(print_msg)
-				print_msg=" the FSC_cutoff is %f  "%options.FSC_cutoff
+				print_msg =" the FSC_cutoff is %f  "%options.FSC_cutoff
 				log_main.add(print_msg)
-				frc = fsc(e1,e2,1, "fsc.txt")
+				frc       = fsc(e1,e2,1, "fsc.txt")
 				print_msg = "FSC is saved in fsc.txt"
 				log_main.add(print_msg)
 				for ifreq in xrange(len(frc[1])):
-					if frc[1][ifreq] <options.FSC_cutoff:
-						resolution = frc[0][ifreq-1]
+					if frc[1][ifreq] < options.FSC_cutoff:
+						resolution   = frc[0][ifreq-1]
 						break
 				print_msg = " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
 				log_main.add(print_msg)
 				## FSC is done on masked two images
-			if nargs>1: e1 +=e2
-			guinerlinein   = rot_avg_table(power(periodogram(e1),.5))
+			if nargs>1: e1 += e2
+			guinerlinein    = rot_avg_table(power(periodogram(e1),.5))
 			from utilities import write_text_file
-			write_text_file(guinerlinein, "guinerlinein.txt")	
+			log_main.add(" the guinerline of merged two volume is saved in guinerline.txt")
+			write_text_file(guinerlinein, "guinerlinein.txt")
+
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
 				print_msg = "MTF correction: Fourier factors will be divided by detector MTF"
-				log_main.add(print_msg) 
+				log_main.add(print_msg)
 				from utilities import read_text_file
 				print_msg = "MTF file is %s"%options.mtf
 				log_main.add(print_msg)
@@ -953,7 +1001,9 @@ def main():
 				e1 = fft(Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0]))
 				guinerlinemtf   = rot_avg_table(power(periodogram(e1),.5))
 				from utilities import write_text_file
-				write_text_file(guinerlinemtf, "guinerlinemtf.txt")	
+				log_main.add("MTF corrected guinerline is saved in guinerlinemtf.txt")
+				write_text_file(guinerlinemtf, "guinerlinemtf.txt")
+
 			if options.fsc_weighted:
 				print_msg = " apply sqrt((2*FSC)/(1+FSC)) weighting "
 				log_main.add(print_msg)
@@ -969,10 +1019,13 @@ def main():
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 				e1=filt_table(e1,fil)
 				guinerlineweighted   = rot_avg_table(power(periodogram(e1),.5))
+				log_main.add("FSC weighted guinerline is saved in guinerlineweighted.txt")
 				write_text_file(guinerlineweighted, "guinerlineweighted.txt")
+
 			if options.B_enhance:
 				print_msg = "use negative B-factor to enhance image"
 				log_main.add(print_msg)
+
 				if options.adhoc_bfactor == 0.0: # auto mode
 					print_msg = "B-factor estimation auto mode"
 					log_main.add(print_msg)
@@ -985,17 +1038,18 @@ def main():
 						exit()
 					from utilities import write_text_file
 					write_text_file(guinerline, "guinerlineBcalc.txt")
-					print_msg =  " guinerline is saved in guinerlineBcalc.txt file"
+					print_msg =  " guinerline used for B-factor estimated is saved in guinerlineBcalc.txt file"
 					log_main.add(print_msg)
 					print_msg = " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
 					log_main.add(print_msg)
 					b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
-					global_b     =  4.*b 
+					global_b     =  4.*b
 					print_msg =  "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(-b,2)
 					log_main.add(print_msg)
 					print_msg =  "the estimated B-factor is  %f Angstrom^2  "%(round((-global_b),2))
 					log_main.add(print_msg)
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
+
 				else: # User provided value
 					print_msg = " apply user provided B-factor to enhance map!"
 					log_main.add(print_msg)
@@ -1003,29 +1057,30 @@ def main():
 					log_main.add(print_msg)
 					sigma_of_inverse = sqrt(2./((abs(options.adhoc_bfactor))/options.pixel_size**2))
 				e1  = filt_gaussinv(e1,sigma_of_inverse)
-			if options.low_pass_filter: # User provided low-pass filter
+
+			if options.low_pass_filter or options.ff: # User provided low-pass filter
 				from filter       import filt_tanl
-				print_msg =  " apply low-pass filter"
-				log_main.add(print_msg) 
+				print_msg  = " apply low-pass filter"
+				log_main.add(print_msg)
 				if options.ff>1.:
 					print_msg =  "low_pass filter to %f    Angstrom "%round(options.ff,2)
-					log_main.add(print_msg) 
+					log_main.add(print_msg)
 					e1 =filt_tanl(e1,options.pixel_size/options.ff, min(options.aa,.1))
 				elif options.ff>0.0 and options.ff<1.:
 					print_msg =  "low_pass filtered to %f    Angstrom "%round(options.pixel_size/options.ff,2)
-					log_main.add(print_msg)   
+					log_main.add(print_msg)
 					e1 =filt_tanl(e1,options.ff, min(options.aa,.1))
 				else: # low-pass filter to resolution
 					print_msg = "low-pass filter to the current resolution %f"%round(options.pixel_size/resolution,2)
 					log_main.add(print_msg)
-					print_msg =  "  absolution frequency is  %f  "%round(resolution,2)	
-					log_main.add(print_msg)			
+					print_msg =  "  absolution frequency is  %f  "%round(resolution,2)
+					log_main.add(print_msg)
 					e1 = filt_tanl(e1,resolution, options.aa)
 			e1.write_image(options.output)
 			print_msg =  " final volume is "+options.output
-			log_main.add(print_msg)	
-			log_main.add("Sphire postprocess is done")	
-			
+			log_main.add(print_msg)
+			log_main.add("Sphire postprocess is done")
+
 	elif options.window_stack:
 		nargs = len(args)
 		if nargs ==0:

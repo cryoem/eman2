@@ -91,6 +91,7 @@ def construct_keyword_dict():
 	keyword_dict["--use_latest_master_directory"] = SXkeyword_map(0, "")               # --use_latest_master_directory (contains keyworkd 'directory' but this should be bool type)
 	keyword_dict["--stack_mode"]                  = SXkeyword_map(0, "")               # stack_mode (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--adaptive_mask"]               = SXkeyword_map(0, "")               # --adaptive_mask (contains keyworkd 'mask' but this should be bool type)
+	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "")               # --binary_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	keyword_dict["input_micrograph_list_file"]    = SXkeyword_map(0, "txt")            # input_micrograph_list_file (contains keyworkd 'input_micrograph_list' but this should be parameters type)
 	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be string type)
@@ -903,14 +904,25 @@ def create_sxcmd_subconfig_adaptive_mask3d():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "Output mask"; token_edit.help = "Output 3D mask"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("threshold"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ndilation"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("kernel_size"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("gauss_standard_dev"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("threshold"); token_edit_list.append(token_edit)
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_binary_mask3d():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("binary_mask"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "Output mask"; token_edit.help = "Output 3D mask"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_threshold"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ne"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nd"); token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Binary 3D Mask", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1103,6 +1115,7 @@ def main():
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_binary_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 
 	# --------------------------------------------------------------------------------
@@ -1124,6 +1137,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pdb2em.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_binary_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 

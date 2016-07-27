@@ -579,6 +579,8 @@ MinMaxAverager::MinMaxAverager()
 	/*move max out of initializer list, since this max(0) is considered as a macro
 	 * in Visual Studio, which we defined somewhere else*/
 	max = 0;
+
+	
 }
 
 void MinMaxAverager::add_image(EMData * image)
@@ -592,7 +594,9 @@ void MinMaxAverager::add_image(EMData * image)
 			   get_name().c_str());
 		return;
 	}
+	EMData *owner = params.set_default("owner", (EMData*)0);
 
+	float thisown = image->get_attr_default("ortid",(float)nimg);
 	nimg++;
 
 	int nx = image->get_xsize();
@@ -605,12 +609,27 @@ void MinMaxAverager::add_image(EMData * image)
 		return;
 	}
 
-	for (int z=0; z<nz; z++) {
-		for (int y=0; y<ny; y++) {
-			for (int x=0; x<nx; x++) {
-				if (result->get_value_at(x,y,z)>image->get_value_at(x,y,z))
-					{ if (!max) result->set_value_at(x,y,z,image->get_value_at(x,y,z)); }
-				else { if (max) result->set_value_at(x,y,z,image->get_value_at(x,y,z)); }
+	if (max) {
+		for (int z=0; z<nz; z++) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					if (result->get_value_at(x,y,z)<=image->get_value_at(x,y,z)) {
+						result->set_value_at(x,y,z,image->get_value_at(x,y,z));
+						if (owner) owner->set_value_at(x,y,z,thisown);
+					}
+				}
+			}
+		}
+	}
+	else {
+		for (int z=0; z<nz; z++) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					if (result->get_value_at(x,y,z)>image->get_value_at(x,y,z)) {
+						result->set_value_at(x,y,z,image->get_value_at(x,y,z)); 
+						if (owner) owner->set_value_at(x,y,z,thisown);
+					}
+				}
 			}
 		}
 	}

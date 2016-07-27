@@ -117,6 +117,7 @@ def main():
 	relion_dict['_rlnAngleTilt']            = [-1, '#     Tilt            := %2d (%s)']
 	relion_dict['_rlnAnglePsi']             = [-1, '#     Psi             := %2d (%s)']
 	relion_dict['_rlnRandomSubset']         = [-1, '#     Random Subset   := %2d (%s)']
+	relion_dict['_rlnMaxValueProbDistribution'] = [-1, '#     Max Probability   := %2d (%s)']
 	
 	idx_relion_process = 0
 	idx_is_category_found = 1
@@ -125,7 +126,7 @@ def main():
 	relion_category_dict = {}
 	relion_category_dict['window']  = ['Particle Extarction',  True, ['_rlnMicrographName','_rlnCoordinateX', '_rlnCoordinateY', '_rlnImageName']]
 	relion_category_dict['ctf']     = ['CTF Estimation',       True, ['_rlnVoltage', '_rlnDefocusU', '_rlnDefocusV', '_rlnDefocusAngle', '_rlnSphericalAberration', '_rlnDetectorPixelSize', '_rlnMagnification', '_rlnAmplitudeContrast']]
-	relion_category_dict['proj3d']  = ['Alingment Parameters', True, ['_rlnOriginX', '_rlnOriginY', '_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi']]
+	relion_category_dict['proj3d']  = ['Alingment Parameters', True, ['_rlnOriginX', '_rlnOriginY', '_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi', '_rlnMaxValueProbDistribution']]
 	relion_category_dict['chunk']   = ['Random Subset',        True, ['_rlnRandomSubset']]
 	
 	# SPARX params file related
@@ -266,7 +267,7 @@ def main():
 					for category_key in relion_category_dict.keys():
 						if relion_category_dict[category_key][idx_is_category_found] == False:
 							print '# '
-							print '# WARNING!!! %s can not be extarcted!!!' % (relion_category_dict[category_key][idx_relion_process])
+							print '# WARNING!!! %s can not be extracted!!!' % (relion_category_dict[category_key][idx_relion_process])
 					print '# '
 				
 				if i_relion_particle % 1000 == 0:
@@ -342,10 +343,10 @@ def main():
 					relion_rot = float(tokens_line[relion_dict['_rlnAngleRot'][idx_col] - 1])
 					relion_tilt = float(tokens_line[relion_dict['_rlnAngleTilt'][idx_col] - 1])
 					relion_psi = float(tokens_line[relion_dict['_rlnAnglePsi'][idx_col] - 1])
-				
+
 					relion_trans3d = Transform({'phi':relion_rot, 'theta':relion_tilt, 'omega':relion_psi, 'tx':relion_tx, 'ty':relion_ty, 'type':'mrc', 'tz':0})
 					sparx_proj3d = relion_trans3d.get_params('spider')
-					file_sparx_stack_proj3d.write('%12.6f %12.6f %12.6f %12.6f %12.6f \n' % (sparx_proj3d['phi'], sparx_proj3d['theta'], sparx_proj3d['psi'], sparx_proj3d['tx'], sparx_proj3d['ty']))
+					file_sparx_stack_proj3d.write('%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n' % (sparx_proj3d['phi'], sparx_proj3d['theta'], sparx_proj3d['psi'], sparx_proj3d['tx'], sparx_proj3d['ty'], float(tokens_line[relion_dict['_rlnMaxValueProbDistribution'][idx_col] - 1])))
 				
 				if relion_category_dict['chunk'][idx_is_category_found]:
 					##### Store the entry id (particle id) in the corresponding subset #####

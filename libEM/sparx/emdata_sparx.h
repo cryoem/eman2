@@ -614,6 +614,7 @@ void divkbsinh_rect(const Util::KaiserBessel& kbx, const Util::KaiserBessel& kby
 
 void div_sinc(int interpolate_method);
 EMData* extract_section(const Transform& tf, int interpolate_method);
+EMData* extract_section2(const Transform& tf, int interpolate_method);
 /** masked_stats -- Compute image statistics under a mask
  *
  *  Specifically, compute the average and standard deviation

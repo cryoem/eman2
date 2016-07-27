@@ -302,9 +302,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 	# if an != "-1":
 	# 	ERROR("Option an not used","VIPER1",1,myid)
-	if sym[0] == "d" and int(sym[1:]) !=3 :
-		log.add("WARNING:  d-odd symmetries other than 3 were not tested!")
-
+	if myid == main_node:
+		if sym[0] == "d" and int(sym[1:]) !=3 :
+			log.add("WARNING:  d-odd symmetries other than 3 were not tested!")
 
 	# mpi_subcomm = mpi_comm_split(mpi_comm, myid % number_of_runs, myid / number_of_runs)
 	# mpi_subrank = mpi_comm_rank(mpi_subcomm)

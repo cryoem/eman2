@@ -1622,22 +1622,27 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 	}
 	if (is_complex_x() || with->is_complex_x() ) throw; // Woops don't support this anymore!
 
-	static int nx_fft = 0;
-	static int ny_fft = 0;
-	static EMData f1;
-	static EMData f2;
-	static EMData rslt;
+// 	static int nx_fft = 0;
+// 	static int ny_fft = 0;
+// 	static EMData f1;
+// 	static EMData f2;
+// 	static EMData rslt;
 
 	int height = y1-y0;
 	int width = (nx+2-(nx%2));
 	int wpad = ((width+3)/4)*4;			// This is for 128 bit alignment of rows to prevent SSE crashes
-	if (wpad != nx_fft || height != ny_fft ) {	// Seems meaningless, but due to static definitions above. f1,f2 are cached to prevent multiple reallocations
-		f1.set_size(wpad,height);
-		f2.set_size(wpad,height);
-		rslt.set_size(nx,height);
-		nx_fft = wpad;
-		ny_fft = height;
-	}
+	
+	EMData f1(wpad,height);
+	EMData f2(wpad,height);
+	EMData rslt(nx,height);
+	
+// 	if (wpad != nx_fft || height != ny_fft ) {	// Seems meaningless, but due to static definitions above. f1,f2 are cached to prevent multiple reallocations
+// 		f1.set_size(wpad,height);
+// 		f2.set_size(wpad,height);
+// 		rslt.set_size(nx,height);
+// 		nx_fft = wpad;
+// 		ny_fft = height;
+// 	}
 
 #ifdef EMAN2_USING_CUDA
 	// FIXME : Not tested with new wpad change
@@ -1760,9 +1765,10 @@ EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {
 	}
 
 	static EMData obj_filt;
+	static int updsize = 0;		// for threadsafety
 	EMData* filt = &obj_filt;
 	filt->set_complex(true);
-
+	int delfilt = 0;
 
 	// The filter object is nothing more than a cached high pass filter
 	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool))
@@ -1770,16 +1776,30 @@ EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {
 	// set to true, which is used for speed reasons.
 	if (filt->get_xsize() != nx+2-(nx%2) || filt->get_ysize() != ny ||
 		   filt->get_zsize() != nz ) {
-		filt->set_size(nx+2-(nx%2), ny, nz);
-		filt->to_one();
+		// In case of a threading conflict, this will ignore the cache for this specific computation
+		if (updsize) {
+			delfilt=1;
+			printf("FAILSAFE!!!!\n");
+			filt=new EMData(nx+2-(nx%2), ny, nz);
+			filt->to_one();
+			filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
+		}
+		else {
+			updsize=1;
+			filt->set_size(nx+2-(nx%2), ny, nz);
+			filt->to_one();
 
-		filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
+			filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
+		}
 	}
 
 	EMData *ccf = this->calc_mutual_correlation(this, true,filt);
+
 	ccf->sub(ccf->get_edge_mean());
 	EMData *result = ccf->unwrap();
 	delete ccf; ccf = 0;
+	updsize=0;
+	if (delfilt) delete filt;
 
 	EXITFUNC;
 	if ( unwrap == true)
@@ -2488,7 +2508,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 					}
 
 					a = (a - a0) / da;
-					int i = static_cast < int >(floor(a));
+					int i = (int)(floor(a));
 					a -= i;
 
 					if (i == 0) {
@@ -2552,9 +2572,9 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 	}
 
 #ifdef	_WIN32
-	int rr = ny / 2 - 2 - (int) Util::fast_floor(static_cast<float>(_hypot(dx, dy)));
+	int rr = ny / 2 - 2 - (int) Util::fast_floor((float)(_hypot(dx, dy)));
 #else
-	int rr = ny / 2 - 2 - (int) Util::fast_floor(static_cast<float>(hypot(dx, dy)));
+	int rr = ny / 2 - 2 - (int) Util::fast_floor((float)(hypot(dx, dy)));
 #endif	//_WIN32
 	rr-=rr%2;
 	if (r2 <= r1 || r2 > rr) {
@@ -2618,7 +2638,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 
 	if (!is_complex()) throw ImageFormatException("apply_radial_func requires a complex image");
 
-	int n = static_cast < int >(array.size());
+	int n = (int)(array.size());
 
 	if (n*step>2.0) printf("Warning, apply_radial_func takes x0 and step with respect to Nyquist (0.5)\n");
 
@@ -2767,9 +2787,9 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 					switch (inten) {
 						case 0:
 #ifdef	_WIN32
-							if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+							if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-							if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+							if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
 							else v=data[i];							// amp/phase, just get amp
 							break;
@@ -2780,18 +2800,18 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 							break;
 						case 2:
 #ifdef	_WIN32
-							if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+							if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-							if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+							if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
 							else v=data[i];
 							if (v<ret[f]) ret[f]=v;
 							break;
 						case 3:
 #ifdef	_WIN32
-							if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+							if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-							if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+							if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
 							else v=data[i];
 							if (v>ret[f]) ret[f]=v;
@@ -2863,9 +2883,9 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 						switch(inten) {
 							case 0:
 #ifdef	_WIN32
-								if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+								if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-								if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+								if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif	//_WIN32
 								else v=data[i];							// amp/phase, just get amp
 								break;
@@ -2876,18 +2896,18 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 								break;
 							case 2:
 #ifdef	_WIN32
-								if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+								if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-								if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+								if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
 								else v=data[i];							// amp/phase, just get amp
 								if (v<ret[f]) ret[f]=v;
 								break;
 							case 3:
 #ifdef	_WIN32
-								if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+								if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-								if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+								if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
 								else v=data[i];							// amp/phase, just get amp
 								if (v>ret[f]) ret[f]=v;
@@ -2982,7 +3002,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, fl
 	int x,y,i;
 	int isri = is_ri();	// this has become expensive!
 	int step=is_complex()?2:1;
-	float astep=static_cast<float>(M_PI*2.0/nwedge);
+	float astep=(float)(M_PI*2.0/nwedge);
 	if (is_complex()) astep/=2;							// Since we only have the right 1/2 of Fourier space
 	float* data = get_data();
 	for (i=0; i<n*nwedge; i++) ret[i]=norm[i]=0.0;
@@ -2994,16 +3014,16 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, fl
 			int bin;
 			if (is_complex()) {
 #ifdef	_WIN32
-				r=static_cast<float>(_hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
+				r=(float)(_hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 #else
-				r=static_cast<float>(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
+				r=(float)(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 #endif
 				a=atan2(float(y<ny/2?y:y-ny),x/2.0f);
 				if (!inten) {
 #ifdef	_WIN32
-					if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+					if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-					if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+					if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif	//_WIN32
 					else v=data[i];							// amp/phase, just get amp
 				} else {
@@ -3015,9 +3035,9 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, fl
 			}
 			else {
 #ifdef	_WIN32
-				r=static_cast<float>(_hypot(x-nx/2,y-ny/2));
+				r=(float)(_hypot(x-nx/2,y-ny/2));
 #else
-				r=static_cast<float>(hypot(x-nx/2,y-ny/2));
+				r=(float)(hypot(x-nx/2,y-ny/2));
 #endif	//_WIN32
 				a=atan2(float(y-ny/2),float(x-nx/2));
 				if (inten) v=data[i]*data[i];
@@ -3281,7 +3301,7 @@ void EMData::calc_rcf(EMData * with, vector < float >&sum_array)
 		lim = fabs(translation[0]);
 	}
 
-	nx2 -= static_cast < int >(floor(lim));
+	nx2 -= (int)(floor(lim));
 
 	for (int i = 0; i < array_size; i++) {
 		sum_array[i] = 0;

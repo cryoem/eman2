@@ -2977,7 +2977,7 @@ void circumfnn_rect( EMData* win , int npad)
 EMData* nn4_rectReconstructor::finish(bool)
 {
 	
-        if( m_ndim==3 ) {
+	if( m_ndim==3 ) {
 		m_volume->symplane0_rect(m_wptr);
 	} else {
 		for( int i=1; i <= m_vnyp; ++i ) {

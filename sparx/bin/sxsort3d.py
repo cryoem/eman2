@@ -33,37 +33,37 @@ def main():
 	usage = progname + " stack  outdir  <mask> --focus=3Dmask --radius=outer_radius --delta=angular_step" +\
 	"--an=angular_neighborhood --maxit=max_iter  --CTF --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_frequency=.25  --seed=random_seed"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--focus",                         type="string",        default ='',                   help="bineary 3D mask for focused clustering ")
-	parser.add_option("--ir",                            type= "int",          default =1, 	                  help="inner radius for rotational correlation > 0 (set to 1)")
-	parser.add_option("--radius",                        type= "int",          default =-1,	                  help="particle radius in pixel for rotational correlation <nx-1 (set to the radius of the particle)")
-	parser.add_option("--maxit",	                     type= "int",          default =25, 	              help="maximum number of iteration")
-	parser.add_option("--rs",                            type= "int",          default =1,	                  help="step between rings in rotational correlation >0 (set to 1)" ) 
-	parser.add_option("--xr",                            type="string",        default ='1',                  help="range for translation search in x direction, search is +/-xr ")
-	parser.add_option("--yr",                            type="string",        default ='-1',	              help="range for translation search in y direction, search is +/-yr (default = same as xr)")
-	parser.add_option("--ts",                            type="string",        default ='0.25',               help="step size of the translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
-	parser.add_option("--delta",                         type="string",        default ='2',                  help="angular step of reference projections")
-	parser.add_option("--an",                            type="string",        default ='-1',	              help="angular neighborhood for local searches")
-	parser.add_option("--center",                        type="int",           default =0,	                  help="0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=0)")
-	parser.add_option("--nassign",                       type="int",           default =1, 	                  help="number of reassignment iterations performed for each angular step (set to 3) ")
-	parser.add_option("--nrefine",                       type="int",           default =0, 	                  help="number of alignment iterations performed for each angular step (set to 0)")
-	parser.add_option("--CTF",                           action ="store_true", default=False,                 help="do CTF correction during clustring")
-	parser.add_option("--stoprnct",                      type="float",         default=3.0,                   help="Minimum percentage of assignment change to stop the program")
-	parser.add_option("--sym",                           type="string",        default='c1',                  help="symmetry of the structure ")
-	parser.add_option("--function",                      type="string",        default='do_volume_mrk05',     help="name of the reference preparation function")
-	parser.add_option("--independent",                   type="int",           default= 3,                    help="number of independent run")
-	parser.add_option("--number_of_images_per_group",    type="int",           default=1000,                  help="number of groups")
-	parser.add_option("--low_pass_filter",               type="float",         default=-1.0,                  help="absolute frequency of low-pass filter for 3d sorting on the original image size" )
-	parser.add_option("--nxinit",                        type="int",           default=64,                    help="initial image size for sorting" )
-	parser.add_option("--unaccounted",                   action="store_true",  default=False,                 help="reconstruct the unaccounted images")
-	parser.add_option("--seed",                          type="int",           default=-1,                    help="random seed for create initial random assignment for EQ Kmeans")
-	parser.add_option("--smallest_group",                type="int",           default=500,                   help="minimum members for identified group")
-	parser.add_option("--sausage",                       action="store_true",  default=False,                 help="way of filter volume")
-	parser.add_option("--chunkdir",                      type="string",        default='',                    help="chunkdir for computing margin of error")
-	parser.add_option("--PWadjustment",                  type="string",        default='',                    help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
-	parser.add_option("--protein_shape",                 type="string",        default='g',                   help="protein shape. It defines protein preferred orientation angles. Currently it has g and f two types ")
-	parser.add_option("--upscale",                       type="float",         default=0.5,                   help=" scaling parameter to adjust the power spectrum of EM volumes")
-	parser.add_option("--wn",                            type="int",           default=0,                     help="optimal window size for data processing")
-	parser.add_option("--interpolation",                 type="string",        default="4nn",                 help="3-d reconstruction interpolation method, two options trl and 4nn")
+	parser.add_option("--focus",                         type   ="string",        default ='',                    help="bineary 3D mask for focused clustering ")
+	parser.add_option("--ir",                            type   = "int",          default =1, 	                  help="inner radius for rotational correlation > 0 (set to 1)")
+	parser.add_option("--radius",                        type   = "int",          default =-1,	                  help="particle radius in pixel for rotational correlation <nx-1 (set to the radius of the particle)")
+	parser.add_option("--maxit",	                     type   = "int",          default =25, 	                  help="maximum number of iteration")
+	parser.add_option("--rs",                            type   = "int",          default =1,	                  help="step between rings in rotational correlation >0 (set to 1)" ) 
+	parser.add_option("--xr",                            type   ="string",        default ='1',                   help="range for translation search in x direction, search is +/-xr ")
+	parser.add_option("--yr",                            type   ="string",        default ='-1',	              help="range for translation search in y direction, search is +/-yr (default = same as xr)")
+	parser.add_option("--ts",                            type   ="string",        default ='0.25',                help="step size of the translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
+	parser.add_option("--delta",                         type   ="string",        default ='2',                   help="angular step of reference projections")
+	parser.add_option("--an",                            type   ="string",        default ='-1',	              help="angular neighborhood for local searches")
+	parser.add_option("--center",                        type   ="int",           default =0,	                  help="0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=0)")
+	parser.add_option("--nassign",                       type   ="int",           default =1, 	                  help="number of reassignment iterations performed for each angular step (set to 3) ")
+	parser.add_option("--nrefine",                       type   ="int",           default =0, 	                  help="number of alignment iterations performed for each angular step (set to 0)")
+	parser.add_option("--CTF",                           action ="store_true",    default =False,                 help="do CTF correction during clustring")
+	parser.add_option("--stoprnct",                      type   ="float",         default =3.0,                   help="Minimum percentage of assignment change to stop the program")
+	parser.add_option("--sym",                           type   ="string",        default ='c1',                  help="symmetry of the structure ")
+	parser.add_option("--function",                      type   ="string",        default ='do_volume_mrk05',     help="name of the reference preparation function")
+	parser.add_option("--independent",                   type   ="int",           default = 3,                    help="number of independent run")
+	parser.add_option("--number_of_images_per_group",    type   ="int",           default =1000,                  help="number of groups")
+	parser.add_option("--low_pass_filter",               type   ="float",         default =-1.0,                  help="absolute frequency of low-pass filter for 3d sorting on the original image size" )
+	parser.add_option("--nxinit",                        type   ="int",           default =64,                    help="initial image size for sorting" )
+	parser.add_option("--unaccounted",                   action ="store_true",    default =False,                 help="reconstruct the unaccounted images")
+	parser.add_option("--seed",                          type   ="int",           default =-1,                    help="random seed for create initial random assignment for EQ Kmeans")
+	parser.add_option("--smallest_group",                type   ="int",           default =500,                   help="minimum members for identified group")
+	parser.add_option("--sausage",                       action ="store_true",    default =False,                 help="way of filter volume")
+	parser.add_option("--chunkdir",                      type   ="string",        default ='',                    help="chunkdir for computing margin of error")
+	parser.add_option("--PWadjustment",                  type   ="string",        default ='',                    help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
+	parser.add_option("--protein_shape",                 type   ="string",        default ='g',                   help="protein shape. It defines protein preferred orientation angles. Currently it has g and f two types ")
+	parser.add_option("--upscale",                       type   ="float",         default =0.5,                   help=" scaling parameter to adjust the power spectrum of EM volumes")
+	parser.add_option("--wn",                            type   ="int",           default =0,                     help="optimal window size for data processing")
+	parser.add_option("--interpolation",                 type   ="string",        default ="4nn",                 help="3-d reconstruction interpolation method, two options trl and 4nn")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1  or len(args) > 4:
     		print "usage: " + usage
@@ -223,14 +223,14 @@ def main():
 		pixel_size = bcast_number_to_all(pixel_size, source_node = main_node)
 		fq         = bcast_number_to_all(fq, source_node = main_node)
 		if Tracker["constants"]["wn"]==0:
-			Tracker["constants"]["nnxo"]         = nnxo
+			Tracker["constants"]["nnxo"]          = nnxo
 		else:
 			Tracker["constants"]["nnxo"]          = Tracker["constants"]["wn"]
-			nnxo     =  Tracker["constants"]["nnxo"]
-		Tracker["constants"]["pixel_size"]      = pixel_size
-		Tracker["fuse_freq"]    = fq
+			nnxo                                  = Tracker["constants"]["nnxo"]
+		Tracker["constants"]["pixel_size"]        = pixel_size
+		Tracker["fuse_freq"]                      = fq
 		del fq, nnxo, pixel_size
-		if(Tracker["constants"]["radius"]  < 1):
+		if(Tracker["constants"]["radius"] < 1):
 			Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
 		elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
 			ERROR("Particle radius set too large!","sxsort3d.py",1,myid)

@@ -302,7 +302,8 @@ def crit2d(args, data):
 	return v
 
 
-def eqproj_cascaded_ccc(args, data):
+
+def eqproj_cascaded_ccc_fitness_function(args, data):
 	from utilities     import peak_search, amoeba
 	from fundamentals  import fft, ccf, fpol
 	from alignment     import twoD_fine_search
@@ -351,6 +352,394 @@ def eqproj_cascaded_ccc(args, data):
 	size_of_ccf = 2*int(ts+1.5)+1
 	pk = peak_search(Util.window(product, size_of_ccf, size_of_ccf,1,0,0,0))
 	# adjust pk to correspond to large ccf
+	# print  " pk ",pk
+	pk[0][1] = sx + pk[0][4]
+	pk[0][2] = sy + pk[0][5]
+	#print  " pk ",pk
+	# step in amoeba should be vicinity of the peak, within one pixel or even less.
+	ps = amoeba([pk[0][1], pk[0][2]], [1.1, 1.1], twoD_fine_search, 1.e-4, 1.e-4, 1, data2)
+	#print  " ps ",ps,[sx,sy], data2, shift
+	#print  " if ",abs(sx-ps[0][0]),abs(sy-ps[0][1]),ts2
+	if(  abs(sx-ps[0][0]) >= ts2 or abs(sy-ps[0][1]) >= ts2 ):
+		return  twoD_fine_search([sx,sy], data2), shift
+	else:
+		s2x = (sx-ps[0][0])/2 + shift[0]
+		s2y = (sy-ps[0][1])/2 + shift[1]
+		#print  " B ",ps[1], [s2x, s2y]
+		return ps[1], [s2x, s2y]
+
+def format_list(l):
+	return "["+", ".join(["%10.6f" % x for x in l])+"]"
+
+
+def objective_function_just_ccc_has_maximum(args, data):
+	from utilities     import peak_search, amoeba
+	from fundamentals  import fft, ccf, fpol
+	from alignment     import twoD_fine_search
+	from statistics    import ccc
+	from EMAN2 import Processor
+	from projection import prgl
+	from math import sqrt
+
+	# return 1
+	import numpy as np
+	
+	# if type(args).__module__ == np.__name__:
+	# 	args = args.tolist()
+
+	data[5] = args[3:5]
+
+	volft   = data[0]
+	kb	    = data[1]
+	prj	    = data[2]
+	mask2D  = data[3]
+	refi    = data[4]
+	shift   = data[5]
+	ts      = data[6]
+	
+	# 2016-02-08--15-25-45-589 
+	# #print  "Input shift ",shift
+	# R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	# refprj = volft.extract_plane(R, kb)
+	# refprj.fft_shuffle()
+	# refprj.center_origin_fft()
+	# 
+	# if(shift[0]!=0. or shift[1]!=0.):
+	# 	filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+	# 			  "x_shift" : shift[0], "y_shift" : shift[1], "z_shift" : 0.0}
+	# 	refprj = Processor.EMFourierFilter(refprj, filt_params)
+	# 
+	# refprj.do_ift_inplace()
+	# refprj.set_attr_dict({'npad':2})
+	# refprj.depad()
+
+	reference_projection = prgl(volft, args[0:5], interpolation_method = 1, return_real = True)
+	reference_projection.set_attr("is_complex",0)
+
+	# peak = Util.innerproduct(temp, emimage[im])
+	# peak /= nrmref
+
+	# norm_of_reference_projection = sqrt(reference_projection.cmp("dot", reference_projection, dict(negative = 0)))
+	# rrr = -reference_projection.cmp("dot", prj, dict(negative = 0, mask = mask2D))/ norm_of_reference_projection
+
+
+	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection, None))
+	rrr =  Util.innerproduct(prj, reference_projection, None) / norm_of_reference_projection
+
+	# print "ccc:", format_list(args[0:5]), rrr
+	# with open("test.txt", "a") as myfile:
+	# 	myfile.write("%f\n"%rrr)
+
+	return rrr
+
+def objective_function_just_ccc_has_minimum(args, data):
+	from utilities     import peak_search, amoeba
+	from fundamentals  import fft, ccf, fpol
+	from alignment     import twoD_fine_search
+	from statistics    import ccc
+	from EMAN2 import Processor
+	from projection import prgl
+	from math import sqrt
+
+
+	# volft   = data[0]
+	# prj	    = data[2]
+	
+
+	reference_projection = prgl(data[0], args[0:5], interpolation_method = 1, return_real = False)
+	reference_projection.set_attr("is_complex",0)
+
+	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection, None))
+	return  -Util.innerproduct(data[2], reference_projection, None) / norm_of_reference_projection
+	# rrr =  -Util.innerproduct(prj, reference_projection) / norm_of_reference_projection
+
+	# print "ccc:", format_list(args[0:5]), rrr
+	# with open("test.txt", "a") as myfile:
+	# 	myfile.write("%f\n"%rrr)
+	
+	# return rrr
+
+
+
+def objective_function_just_ccc_has_minimum_reduced(args, data):
+	# in this version, args contains only the angles
+	from projection import prgl
+	from math import sqrt
+
+	import numpy as np
+	
+	# volft   = data[0]
+	# prj	    = data[2]
+
+	args1 = np.append(args, data[5])
+	reference_projection = prgl(data[0], args1 , interpolation_method = 1, return_real = False)
+	reference_projection.set_attr("is_complex",0)
+
+	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection, None))
+	return  -Util.innerproduct(data[2], reference_projection, None) / norm_of_reference_projection
+	# rrr =  -Util.innerproduct(prj, reference_projection) / norm_of_reference_projection
+
+	# print "ccc:", format_list(args[0:5]), rrr
+	# with open("test.txt", "a") as myfile:
+	# 	myfile.write("%f\n"%rrr)
+	
+	# return rrr
+
+def objective_function_just_ccc_has_minimum_reduced_only_shifts(args, data):
+	from utilities     import peak_search, amoeba
+	from fundamentals  import fft, ccf, fpol
+	from alignment     import twoD_fine_search
+	from statistics    import ccc
+	from EMAN2 import Processor
+	from projection import prgl
+	from math import sqrt
+
+	# return 1
+	import numpy as np
+	
+	# if type(args).__module__ == np.__name__:
+	# 	args = args.tolist()
+
+	# data[5] = args[3:5]
+
+	volft   = data[0]
+	kb	    = data[1]
+	prj	    = data[2]
+	mask2D  = data[3]
+	refi    = data[4]
+	shift   = data[5]
+	ts      = data[6]
+	
+	# 2016-02-08--15-25-45-589 
+	# #print  "Input shift ",shift
+	# R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	# refprj = volft.extract_plane(R, kb)
+	# refprj.fft_shuffle()
+	# refprj.center_origin_fft()
+	# 
+	# if(shift[0]!=0. or shift[1]!=0.):
+	# 	filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+	# 			  "x_shift" : shift[0], "y_shift" : shift[1], "z_shift" : 0.0}
+	# 	refprj = Processor.EMFourierFilter(refprj, filt_params)
+	# 
+	# refprj.do_ift_inplace()
+	# refprj.set_attr_dict({'npad':2})
+	# refprj.depad()
+
+	# args1 = np.append(args, data[5])
+	args1 = np.append(data[5], args)
+	
+	
+	reference_projection = prgl(volft, args1 , interpolation_method = 1, return_real = True)
+	reference_projection.set_attr("is_complex",0)
+
+	# peak = Util.innerproduct(temp, emimage[im])
+	# peak /= nrmref
+
+	norm_of_reference_projection = sqrt(reference_projection.cmp("dot", reference_projection, dict(negative = 0)))
+	rrr =  -reference_projection.cmp("dot", prj, dict(negative = 0, mask = mask2D))/ norm_of_reference_projection
+
+
+	# norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection))
+	# rrr =  -Util.innerproduct(prj, reference_projection) / norm_of_reference_projection
+
+	# print "ccc:", format_list(args[0:5]), rrr
+	# with open("test.txt", "a") as myfile:
+	# 	myfile.write("%f\n"%rrr)
+	
+	return rrr
+
+def objective_function_just_ccc_has_minimum2(args, data):
+	from utilities     import peak_search, amoeba
+	from fundamentals  import fft, ccf, fpol
+	from alignment     import twoD_fine_search
+	from statistics    import ccc
+	from EMAN2 import Processor
+	from projection import prgl
+	from math import sqrt
+
+	# return 1
+	import numpy as np
+	
+	# if type(args).__module__ == np.__name__:
+	# 	args = args.tolist()
+
+	# data[5] = args[3:5]
+
+	volft   = data[0]
+	kb	    = data[1]
+	prj	    = data[2]
+	mask2D  = data[3]
+	refi    = data[4]
+	shift   = data[5]
+	ts      = data[6]
+	
+	# 2016-02-08--15-25-45-589 
+	# #print  "Input shift ",shift
+	# R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	# refprj = volft.extract_plane(R, kb)
+	# refprj.fft_shuffle()
+	# refprj.center_origin_fft()
+	# 
+	# if(shift[0]!=0. or shift[1]!=0.):
+	# 	filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+	# 			  "x_shift" : shift[0], "y_shift" : shift[1], "z_shift" : 0.0}
+	# 	refprj = Processor.EMFourierFilter(refprj, filt_params)
+	# 
+	# refprj.do_ift_inplace()
+	# refprj.set_attr_dict({'npad':2})
+	# refprj.depad()
+
+	reference_projection = prgl(volft, args[0:5], interpolation_method = 1, return_real = True)
+	reference_projection.set_attr("is_complex",0)
+
+	# peak = Util.innerproduct(temp, emimage[im])
+	# peak /= nrmref
+
+	norm_of_reference_projection = sqrt(reference_projection.cmp("dot", reference_projection, dict(negative = 0)))
+	return -reference_projection.cmp("dot", prj, dict(negative = 0, mask = mask2D))/ norm_of_reference_projection
+
+	# norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection))
+	# return -Util.innerproduct(prj, reference_projection) / norm_of_reference_projection
+
+
+	
+	
+# def prgl(volft, params, interpolation_method = 0, return_real = True):
+# 	"""
+# 		Name
+# 			prgl - calculate 2-D projection of a 3-D volume
+# 		Input
+# 			vol: input volume, the volume has to be cubic
+# 			params: input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by sx,sy
+# 		Output
+# 			proj: generated 2-D projection
+
+	# 2016-02-08--15-25-45-589 
+	# return -ccc(prj, refprj, mask2D)
+
+def objective_function_just_ccc_has_maximum___old(args, data):
+	from utilities     import peak_search, amoeba
+	from fundamentals  import fft, ccf, fpol
+	from alignment     import twoD_fine_search
+	from statistics    import ccc
+	from EMAN2 import Processor
+
+	# return 1
+	import numpy as np
+	
+	# if type(args).__module__ == np.__name__:
+	# 	args = args.tolist()
+
+	data[5] = args[3:5]
+
+	volft   = data[0]
+	kb	    = data[1]
+	prj	    = data[2]
+	mask2D  = data[3]
+	refi    = data[4]
+	shift   = data[5]
+	ts      = data[6]
+	#print  "Input shift ",shift
+	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	refprj = volft.extract_plane(R, kb)
+	refprj.fft_shuffle()
+	refprj.center_origin_fft()
+
+	if(shift[0]!=0. or shift[1]!=0.):
+		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+				  "x_shift" : shift[0], "y_shift" : shift[1], "z_shift" : 0.0}
+		refprj = Processor.EMFourierFilter(refprj, filt_params)
+
+	refprj.do_ift_inplace()
+	refprj.set_attr_dict({'npad':2})
+	refprj.depad()
+
+	return ccc(prj, refprj, mask2D)
+	
+
+
+def objective_function_just_ccc_rewrite(params, volft, kb, data_im, mask2D):
+	from utilities     import peak_search, amoeba
+	from fundamentals  import fft, ccf, fpol
+	from alignment     import twoD_fine_search
+	from statistics    import ccc
+	from EMAN2 import Processor
+	# import numpy as np
+	
+	# if type(args).__module__ == np.__name__:
+	# 	args = args.tolist()
+	
+	#print  "Input shift ",shift
+	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	refprj = volft.extract_plane(R, kb)
+	refprj.fft_shuffle()
+	refprj.center_origin_fft()
+
+	if(params[3]!=0. or params[4]!=0.):
+		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+				  "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
+		refprj = Processor.EMFourierFilter(refprj, filt_params)
+
+	refprj.do_ift_inplace()
+	refprj.set_attr_dict({'npad':2})
+	refprj.depad()
+
+	return -ccc(data_im, refprj, mask2D)
+
+
+def eqproj_cascaded_ccc(args, data):
+	from utilities     import peak_search, amoeba
+	from fundamentals  import fft, ccf, fpol
+	from alignment     import twoD_fine_search
+	from statistics    import ccc
+	from EMAN2 import Processor
+
+	volft   = data[0]
+	kb	    = data[1]
+	prj	    = data[2]
+	mask2D  = data[3]
+	refi    = data[4]
+	shift   = data[5]
+	ts      = data[6]
+	#print  "Input shift ",shift
+	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	refprj = volft.extract_plane(R, kb)
+	refprj.fft_shuffle()
+	refprj.center_origin_fft()
+
+	if(shift[0]!=0. or shift[1]!=0.):
+		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+				  "x_shift" : shift[0], "y_shift" : shift[1], "z_shift" : 0.0}
+		refprj = Processor.EMFourierFilter(refprj, filt_params)
+
+	refprj.do_ift_inplace()
+	MM = refprj.get_ysize()
+	refprj.set_attr_dict({'npad':2})
+	refprj.depad()
+
+	if ts==0.0:
+		return ccc(prj, refprj, mask2D), shift
+
+	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
+	Util.mul_img(refprj, mask2D)
+
+	product = ccf(fpol(refprj, MM, MM, 1, False), data[4])
+	nx = product.get_ysize()
+	sx = nx//2
+	sy = sx
+	# This is for debug purpose
+	# if ts == -1.0:
+	# 	return twoD_fine_search([sx, sy], [product, kb, -ts, sx]), shift
+	
+	
+
+	ts2 = 2*ts
+	data2 = [product, kb, 1.1*ts2, sx]
+	size_of_ccf = 2*int(ts+1.5)+1
+	pk = peak_search(Util.window(product, size_of_ccf, size_of_ccf,1,0,0,0))
+	# adjust pk to correspond to large ccf
+	# print  " pk ",pk
 	pk[0][1] = sx + pk[0][4]
 	pk[0][2] = sy + pk[0][5]
 	#print  " pk ",pk
@@ -3775,6 +4164,47 @@ def preparerefsgrid(refs, psimax=1.0, psistep=1.0):
 
 	return  ref
 
+
+def preparerefsgrid1(refs, psimax=1.0, psistep=1.0):
+	from fundamentals import prepi, fft
+	from EMAN2 import Processor
+
+	M = refs.get_xsize()
+	alpha = 1.75
+	K = 6
+	N = M*2  # npad*image size
+	r = M/2
+	v = K/2.0/N
+	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+
+	nr = int(2*psimax/psistep)+1
+	nc = nr//2
+# 	if updown == "up" :  reduced_psiref = psiref -  90.0
+# 	else:                reduced_psiref = psiref - 270.0
+
+
+	
+	ref = [None]*nr
+	ima,kb = prepi(refs)
+	from math import radians
+	psisteprad = radians(psistep)
+# if psimax > 0:
+# 		bnr = int(round(reduced_psiref/psistep)) - nc
+# 		enr = nr + bnr
+	for i in xrange(0,nr):
+		# gridding rotation
+		ref[i] = fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
+
+# 	if psimax == 0:
+# 		ref[0] = fft(ima.rot_scale_conv_new_background_twice(radians(reduced_psiref), 0.,0., kb, 1.))
+
+		
+		
+	return  ref
+	
+	
 def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, stepx = 1.0, stepy = 1.0, updown = "both"):
 	"""
 	Direct 2D alignment within a predefined angular range.  If the range is large the method will be very slow.
@@ -4180,6 +4610,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
 	from alignment    import parabl
 	from EMAN2 import Processor
+	#from time  import time
 	#print  "  directaligridding1  ",psimax, psistep, xrng, yrng, stepx, stepy, updown
 	#print  "IN         %6.2f %6.2f  %6.2f"%(psiref, txref, tyref)
 
@@ -4200,22 +4631,17 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	nc = nr//2
 	if updown == "up" :  reduced_psiref = psiref -  90.0
 	else:                reduced_psiref = psiref - 270.0
-
-	#  Limit psi search to within psimax range
-	#  It makes no sense, as it still searches within the entire range of psi_max
-	# bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
-	# enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
-	# psi_offset = abs(int(round(2*abs(reduced_psiref)/psistep)))
-	psi_offset = int(round(reduced_psiref / psistep)) + nc
-	lower_segment_length = psi_offset
-	upper_segment_length = nr - 1 - psi_offset
-	if lower_segment_length >= 0 and upper_segment_length >= 0:
-		psi_half_range = min(lower_segment_length, upper_segment_length)
-		bnr = psi_offset - psi_half_range 
-		enr = psi_offset + psi_half_range + 1
-	else:
-		bnr = enr = 0
 	
+
+#  Limit psi search to within psimax range
+#  It makes no sense, as it still searches within the entire range of psi_max
+# 	bnr = int(round(reduced_psiref/psistep)) - nc
+# 	enr = nr + bnr
+	
+	bnr = min(max(int(round(reduced_psiref/psistep)) - nc, -nc), nr-nc-1)
+	enr = max(min(int(round(reduced_psiref/psistep))+nr-nc,nr-nc),-nc)
+
+	if enr <= bnr: return 0.0, 0.0, 0.0, peak
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
 	#   We quietly assume the search range for translations is always much less than the ccf size,
@@ -4228,21 +4654,23 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	w = model_blank( wnx, wny)
 	stepxx = 2*stepx
 	stepyy = 2*stepy
-	nicx = N//2 - 2*txref #  here one would have to add or subtract the old value.
-	nicy = N//2 - 2*tyref
+	
+	nicx = N//2 + 2*txref #  here one would have to add or subtract the old value.
+	nicy = N//2 + 2*tyref
 	wxc = wnx//2
 	wyc = wny//2
 
 	if updown == "up" :
-		# print "up: reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)", reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)
 		ima = inima
+		nicx = N//2 - 2*txref #  here one would have to add or subtract the old value.
+		nicy = N//2 - 2*tyref
 		#ima = inima.FourInterpol(N, N, 1,0)
 		#ima = Processor.EMFourierFilter(ima,params)
 
 	if updown == "down" :
-		# print "down: reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)", reduced_psiref, psi_offset, psi_half_range, bnr, enr, len(ref)
 		#  This yields rotation by 180 degrees.  There is no extra shift as the image was padded 2x, so it is even-sized, but two rows are incorrect
 		imm = inima.conjg()
+
 		#imm = rot_shift2D(inima,180.0, interpolation_method = 'linear')
 		#imm = imm.FourInterpol(N, N, 1,0)
 		#imm = Processor.EMFourierFilter(imm,params)
@@ -4261,19 +4689,22 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	from sys import exit
 	exit()
 	"""
-	if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23     ## do nothing for rny=0 @ming
-	for i in xrange(bnr, enr, 1):
+	#if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23     ## do nothing for rny=0 @ming
+	
+	for i in xrange(bnr, enr):
 		if updown == "up" :
-			# print "up i, bnr, enr, len(ref)", i, bnr, enr, len(ref)
-			c = ccf(ima,ref[i])
+			c = ccf(ima,ref[nc+i])
+			#print "compute ccf time", time() - startc
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
 			#for q in p: print q
 			for iy in xrange(-rny, rny + 1):
 				for ix in xrange(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
-
+	
 			pp = peak_search(w)[0]
+			
+			#print "find peak time", time()-startpp
 			#print '  peak   ',i,pp
 			#from sys import exit
 			#exit()
@@ -4309,10 +4740,12 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 				"""
 				if(PEAKV>ma2):
 					ma2  = PEAKV
-					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+					#if psimax > 0:
+					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,i*psistep]
+					# if psimax == 0: 
+# 						oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,reduced_psiref]
 		if updown == "down" :
-			# print "down i, bnr, enr, len(ref)", i, bnr, enr, len(ref)
-			c = ccf(imm,ref[i])
+			c = ccf(imm,ref[nc+i])
 			for iy in xrange(-rny, rny + 1):
 				for ix in xrange(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
@@ -4345,7 +4778,10 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 				"""
 				if(PEAKV>ma4):
 					ma4 = PEAKV
-					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+					#if psimax > 0:
+					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,i*psistep]
+				# 	if psimax == 0:
+# 						oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,reduced_psiref]
 
 	if( oma2[-2] > oma4[-2] ):
 		peak = oma2[-2]
@@ -4361,6 +4797,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 		nalpha = oma2[-1]
 		ntx    = oma2[-4]*stepx - txref
 		nty    = oma2[-3]*stepy - tyref
+		#print "oma2[-4]*stepx - txref",oma2[-4]*stepx,  txref
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	else:
 		peak = oma4[-2]
@@ -4369,7 +4806,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 		#print oma3
 		#print oma4
 
-		nalpha, ntx, nty, junk = compose_transform2(-oma4[-1], oma4[-4]*stepx - txref,oma4[-3]*stepy - tyref,1.0,180.,0,0,1)
+		nalpha, ntx, nty, junk = compose_transform2(-oma4[-1], oma4[-4]*stepx + txref,oma4[-3]*stepy + tyref,1.0,180.,0,0,1)
 		#nalpha = oma4[-1] + 180.0
 		#ntx    = oma4[-4]*stepx
 		#nty    = oma4[-3]*stepy
@@ -4378,7 +4815,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	#print  "OUT        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	return  nalpha, ntx, nty, peak
-
+	
 def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, \
 			stepx = 1.0, stepy = 1.0, psiref = 0., txref = 0., tyref = 0., updown = "up"):
 	"""
@@ -5611,7 +6048,7 @@ def generate_indices_and_refrings(nima, projangles, volft, kb, nx, delta, an, ra
 			# assignments = assign_projangles_f(projangles, coneangles)
 
 			mapped_projangles = [[0.0, 0.0, 0.0] for i in xrange(len(projangles))]
-			
+
 			for i in xrange(len(projangles)):
 				mapped_projangles[i][1] = projangles[i][1]
 				if projangles[i][1] < 90:

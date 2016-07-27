@@ -521,6 +521,9 @@ bool PointArray::read_from_pdb(const char *file)
 		case 'W':
 			e = 18.0;
 			break;				// ficticious water 'atom'
+		case 'K':
+			e = 19.0;
+			break;
 		default:
 			fprintf(stderr, "Unknown atom %c%c\n", ctt, ctt2);
 			e = 0;

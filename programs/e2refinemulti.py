@@ -279,9 +279,17 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 		# or copy the specified starting models
 		options.models=options.models.split(",")
 		options.nmodels=len(options.models)
-		for i,m in enumerate(options.models):
-			model=EMData(m,0)
-			model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1))
+		if options.nmodels>1:
+			for i,m in enumerate(options.models):
+				model=EMData(m,0)
+				model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1))
+		else:
+			options.models=options.models[0]
+			options.nmodels=EMUtil.get_image_count(options.models)
+			for i in xrange(options.nmodels):
+				model=EMData(options.models,i)
+				model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1))
+				
 
 	# can't finish the mass processing before we know nmodels
 	if len(options.mass)==1 : options.mass=options.mass*options.nmodels
