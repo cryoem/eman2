@@ -544,7 +544,7 @@ namespace EMAN
 		 * @param n number of points.
 		 * @param x0 starting point x coordinate.
 		 * @param dx step of x.
-		 * @param inten 0 -> amp, 1-> inten (amp^2), 2->min, 3-> max
+		 * @param inten 0 -> amp, 1-> inten (amp^2), 2->min, 3-> max, 4-> sigma or rmsd intensity from zero if complex
 		 * @return The radial distribution in an array.
 		 */
 		vector < float >calc_radial_dist(int n, float x0, float dx,int inten);

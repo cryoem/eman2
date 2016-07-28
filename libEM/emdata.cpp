@@ -2974,7 +2974,9 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 		for (i=0; i<n; i++) {
 			ret[i]/=count[i];	// becomes mean
 			norm[i]/=count[i];	// avg amp^2
-			ret[i]=std::sqrt(norm[i]-ret[i]*ret[i]);	// sigma
+			ret[i]*=ret[i];
+			if (norm[i]<=ret[i]) ret[i]=0.0;
+			else ret[i]=std::sqrt(norm[i]-ret[i]);	// sigma
 		}
 	}
 		
