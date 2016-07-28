@@ -8,10 +8,11 @@ import threading
 import Queue
 from sys import argv,exit
 
-def rotfn(jsd,fsp,i,a,verbose):
+def rotfn(avg,fsp,i,a,verbose):
 	b=EMData(fsp,i)
 	b.process_inplace("xform",{"transform":a})
-	jsd.put((fsp,i,b))
+	avg.add_image(b)
+	#jsd.put((fsp,i,b))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -52,17 +53,20 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	logid=E2init(sys.argv, options.ppid)
 
 	angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
-	jsd=Queue.Queue(0)
+#	jsd=Queue.Queue(0)
 
-	# rotation can be slow, so we actually do it in threads
-	if options.replace != None:
-		thrds=[threading.Thread(target=rotfn,args=(jsd,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for k in angs.keys() if angs[k]["score"]<=options.simthr]
-	else:
-		thrds=[threading.Thread(target=rotfn,args=(jsd,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for k in angs.keys() if angs[k]["score"]<=options.simthr]
 
 	avg=[0,0]
-	avg[0]=Averagers.get("mean.tomo") #,{"save_norm":1})
+	avg[0]=Averagers.get("mean.tomo",{"save_norm":1}) #,{"save_norm":1})
 	avg[1]=Averagers.get("mean.tomo")
+
+	# Rotation and insertion are slow, so we do it with threads. 
+	# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
+	if options.replace != None:
+		thrds=[threading.Thread(target=rotfn,args=(avg[i%2],options.replace,eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr]
+	else:
+		thrds=[threading.Thread(target=rotfn,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr]
+
 
 	print len(thrds)," threads"
 	thrtolaunch=0
@@ -77,9 +81,9 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			thrtolaunch+=1
 		else: time.sleep(1)
 	
-		while not jsd.empty():
-			fsp,n,ptcl=jsd.get()
-			avg[n%2].add_image(ptcl)
+		#while not jsd.empty():
+			#fsp,n,ptcl=jsd.get()
+			#avg[n%2].add_image(ptcl)
 
 
 	for t in thrds:

@@ -6246,6 +6246,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
+				d.put("symavg", EMObject::INT, "Cn symmetry only. If set, the mask for a single subunit will follow a linear falloff to the neighboring subunit. After applying, symmetrizing the map should produce a smooth symmetrized average of the masked subunit (and partially its two neighbors).");
 				d.put("au", EMObject::INT, "The asymmetric unit to mask out. If this is -1 will mask all asymmetric units, giving each a unique number.");
 				d.put("sym", EMObject::STRING, "The symmetry, for example, d7");
 				return d;
