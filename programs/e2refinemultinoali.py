@@ -45,6 +45,7 @@ def main():
 	parser.add_argument("--models","--model", dest="model", type=str,help="Comma separated list of reference maps used for classification. If a single map is provided, data will be split into two groups based on similarity to the single map.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images. eg- frc:minres=80:maxres=20. Default=ccc", default="ccc", guitype='strbox', row=10, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--threads", type=int,help="Number of threads.", default=4, guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--iter", type=int,help="Number of iterations.", default=1, guitype='intbox', row=12, col=1, rowspan=1, colspan=1)
 	parser.add_header(name="optheader", help='Optional parameters:', title="Optional:", row=14, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--mask",type=str,help="Name of an optional mask file. The mask is applied to the input models to focus the classification on a particular region of the map. Consider e2classifyligand.py instead.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', filecheck=False, row=15, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -58,12 +59,21 @@ def main():
 		
 	inputmodel=options.model.split(',')
 	
+	modelstack=0
 	if len(inputmodel)==1:
-		multimodel=False
-		print "One input model. Split the data by half accroding to the similarity to the input model..."
+		num=EMUtil.get_image_count(inputmodel[0])
+		if num>1:
+			modelstack=num
+			print "3D stack input. Perform multi-model refinement using existing alignment..."
+			multimodel=True
+			inputmodel=inputmodel*num
+		else:
+		
+			multimodel=False
+			print "One input model. Split the data by half accroding to the similarity to the input model..."
 	else:
 		multimodel=True
-		print "Two input models. Perform multi-model refinement using existing alignment..."
+		print "Multiple input models. Perform multi-model refinement using existing alignment..."
 	
 	### make new folder
 	if options.newpath == None:
@@ -97,11 +107,20 @@ def main():
 		db_apix=e["apix_x"]
 	
 	if multimodel:
-		models=range(len(inputmodel))
-		for m in models:
-			outfile="{path}/model_input_{k}.hdf".format(path=options.newpath, k=m)
-			run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask))
-			inputmodel[m]=outfile
+		
+		if modelstack>1:
+			models=range(modelstack)
+			for m in range(modelstack):
+				outfile="{path}/model_input_{k}.hdf".format(path=options.newpath, k=m)
+				run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask} --first {mi} --last {mi}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask, mi=m))
+				inputmodel[m]=outfile
+		else:
+		
+			models=range(len(inputmodel))
+			for m in models:
+				outfile="{path}/model_input_{k}.hdf".format(path=options.newpath, k=m)
+				run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask))
+				inputmodel[m]=outfile
 		
 	
 	else:
@@ -109,171 +128,185 @@ def main():
 		outfile="{path}/model_input.hdf".format(path=options.newpath)
 		run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[0],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask))
 		inputmodel[0]=outfile
-		
-		
-	### make projections first, and use this for both even and odd	
-	print "Making projections..."
-	if multimodel:
-		projfile=[]
-		for m in models:
-			projfile.append("{path}/projections_00_{k}.hdf".format(path=options.newpath, k=m))
-			run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[-1],orient=db["orientgen"],sym=db["sym"],threads=options.threads))
-	else:
-		projfile=["{path}/projections_00.hdf".format(path=options.newpath)]
-		run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[0],proj=projfile[0],orient=db["orientgen"],sym=db["sym"],threads=options.threads))
 	
-	output_3d={}
-	output_cls={}
+	output_3d=[]
+	output_cls=[]
 	input_eo_order={0:"even",1:"odd"}
-	### even/odd loop
-	for eoid,eo in input_eo_order.items():
+	for it in range(options.iter):
+		print "Starting iteration {} ...".format(it)
+		print "Making projections..."
 		
-		oldmapfile=str(db["last_{}".format(eo)])
-		ptclfile=str(db["input"][eoid])
+		if it==0:
+		#### first iteration. do one projection for even/odd
+			if multimodel:
+				projfile=[]
+				for m in models:
+					projfile.append("{path}/projections_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
+					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[-1],orient=db["orientgen"],sym=db["sym"],threads=options.threads))
+			else:
+				projfile=["{path}/projections_{it:02d}.hdf".format(path=options.newpath, it=it)]
+				run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[0],proj=projfile[0],orient=db["orientgen"],sym=db["sym"],threads=options.threads))
 		
-		clsmx=oldmapfile.replace("threed","classmx")
-		
-		### old projection file is used for classaverage alignment
-		oldprojfile=oldmapfile.replace("threed","projections") 
-		
-		ncls=EMUtil.get_image_count(projfile[0])
-		npt=EMUtil.get_image_count(ptclfile)
-		newclsmx=["{path}/classmx_00_{n}_{eo}.hdf".format(path=options.newpath,n=i,eo=eo) for i in models]
-		classout=["{path}/classes_00_{n}_{eo}.hdf".format(path=options.newpath,n=i,eo=eo) for i in models]
-		threedout=["{path}/threed_00_{n}_{eo}.hdf".format(path=options.newpath,n=i,eo=eo) for i in models]
-		output_3d[eo]=threedout
-		output_cls[eo]=classout
+		output_3d.append({})
+		output_cls.append({})
+		### even/odd loop
+		for eoid,eo in input_eo_order.items():
+			
+			if it>0:
+				inputmodel=[output_3d[-2][eo][m] for m in models]
+				print inputmodel
+				multimodel=True
+			#### make projections for even/odd
+				projfile=["{path}/projections_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo) for m in models]
+				for m in models:
+					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[m],orient=db["orientgen"],sym=db["sym"],threads=options.threads))
+			
+			oldmapfile=str(db["last_{}".format(eo)])
+			ptclfile=str(db["input"][eoid])
+			
+			clsmx=oldmapfile.replace("threed","classmx")
+			
+			### old projection file is used for classaverage alignment
+			oldprojfile=oldmapfile.replace("threed","projections") 
+			
+			ncls=EMUtil.get_image_count(projfile[0])
+			npt=EMUtil.get_image_count(ptclfile)
+			newclsmx=["{path}/classmx_{it:02d}_{n}_{eo}.hdf".format(path=options.newpath,n=i,eo=eo,it=it) for i in models]
+			classout=["{path}/classes_{it:02d}_{n}_{eo}.hdf".format(path=options.newpath,n=i,eo=eo,it=it) for i in models]
+			threedout=["{path}/threed_{it:02d}_{n}_{eo}.hdf".format(path=options.newpath,n=i,eo=eo,it=it) for i in models]
+			output_3d[-1][eo]=threedout
+			output_cls[-1][eo]=classout
 
-		### get alignment from classmx file and calculate similarity
-		print "Calculating similarity matrix..."
-		cmxcls=EMData(clsmx,0)
-		cmxtx=EMData(clsmx,2)
-		cmxty=EMData(clsmx,3)
-		cmxalpha=EMData(clsmx,4)
-		cmxmirror=EMData(clsmx,5)
-		
-		projs=[]
-		for pj in projfile:
-			projs.append(EMData.read_images(pj))
-		xforms=[]
-		for i in range(npt):
-			c=int(cmxcls[0,i])
-			tr=Transform({"type":"2d","alpha":cmxalpha[0,i],"mirror":int(cmxmirror[0,i]),"tx":cmxtx[0,i],"ty":cmxty[0,i]})
-			pjs=[projs[k][c] for k in range(len(projfile))]
-			xforms.append({"ptclfile":ptclfile,"proj":pjs,"idx":i,"xform":tr,"cmp":options.simcmp})
-		
-		pool = Pool()
-		corr=pool.map_async(do_compare, xforms)
-		pool.close()
-		while (True):
-			if (corr.ready()): break
-			remaining = corr._number_left
-			print "Waiting for", remaining, "tasks to complete..."
-			time.sleep(2)
-		corr=corr.get()
-		np.savetxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo),corr)
-		#corr=np.loadtxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo))
-		
-		### classification 
-		print "Classifying particles..."
-		cmxtmp=cmxcls.copy()
-		cmxtmp.to_zero()
-		cmxtmp.sub(1)
-		cmxout=[cmxtmp.copy() for s in models]
-		
-		
-		
-		if multimodel:
-			### simply classify
-			cls=np.argmin(corr,1)
-			print eo,[float(sum(cls==k))/float(npt) for k in models]
+			### get alignment from classmx file and calculate similarity
+			print "Calculating similarity matrix..."
+			cmxcls=EMData(clsmx,0)
+			cmxtx=EMData(clsmx,2)
+			cmxty=EMData(clsmx,3)
+			cmxalpha=EMData(clsmx,4)
+			cmxmirror=EMData(clsmx,5)
+			
+			projs=[]
+			for pj in projfile:
+				projs.append(EMData.read_images(pj))
+			xforms=[]
 			for i in range(npt):
-				v=cmxcls[0,i]
-				for s in models:
-					if s==cls[i]:
-						cmxout[s][0,i]=v
-					else:
-						cmxout[s][0,i]=-1
-		else:
-			### one model input, split the data to two halves
-			for c in range(ncls):
-				ss=[]
-				ns=0
+				c=int(cmxcls[0,i])
+				tr=Transform({"type":"2d","alpha":cmxalpha[0,i],"mirror":int(cmxmirror[0,i]),"tx":cmxtx[0,i],"ty":cmxty[0,i]})
+				pjs=[projs[k][c] for k in range(len(projfile))]
+				xforms.append({"ptclfile":ptclfile,"proj":pjs,"idx":i,"xform":tr,"cmp":options.simcmp})
+			
+			pool = Pool()
+			corr=pool.map_async(do_compare, xforms)
+			pool.close()
+			while (True):
+				if (corr.ready()): break
+				remaining = corr._number_left
+				print "Waiting for", remaining, "tasks to complete..."
+				time.sleep(2)
+			corr=corr.get()
+			np.savetxt("{path}/simmx_{it:02d}_{eo}.txt".format(path=options.newpath,eo=eo, it=it),corr)
+			#corr=np.loadtxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo))
+			
+			### classification 
+			print "Classifying particles..."
+			cmxtmp=cmxcls.copy()
+			cmxtmp.to_zero()
+			cmxtmp.sub(1)
+			cmxout=[cmxtmp.copy() for s in models]
+			
+			
+			
+			if multimodel:
+				### simply classify
+				cls=np.argmin(corr,1)
+				print eo,[float(sum(cls==k))/float(npt) for k in models]
 				for i in range(npt):
 					v=cmxcls[0,i]
-					if v==c:
-						ss.append(corr[i])
-						ns+=1
-					else:
-						ss.append([10]*len(corr[i]))
+					for s in models:
+						if s==cls[i]:
+							cmxout[s][0,i]=v
+						else:
+							cmxout[s][0,i]=-1
+			else:
+				### one model input, split the data to two halves
+				for c in range(ncls):
+					ss=[]
+					ns=0
+					for i in range(npt):
+						v=cmxcls[0,i]
+						if v==c:
+							ss.append(corr[i])
+							ns+=1
+						else:
+							ss.append([10]*len(corr[i]))
+					
+					### split the data by halv
+					spt=int(ns*.5)
+					for s in models:
+						if s==0:
+							toavg=np.argsort(ss)[:spt]
+						else:
+							toavg=np.argsort(ss)[spt:ns]
+					
+						for i in toavg:
+							cmxout[s][0,i]=c
 				
-				### split the data by halv
-				spt=int(ns*.5)
-				for s in models:
-					if s==0:
-						toavg=np.argsort(ss)[:spt]
-					else:
-						toavg=np.argsort(ss)[spt:ns]
-				
-					for i in toavg:
-						cmxout[s][0,i]=c
 			
-		
-		### write classmx	
+			### write classmx	
+			for s in models:
+				cmxout[s].write_image(newclsmx[s])
+				ns=EMUtil.get_image_count(clsmx)
+				for i in range(1,ns):
+					e=EMData(clsmx,i)
+					e.write_image(newclsmx[s],i)
+			
+			
+			print "Making class average and 3d map..."
+			for s in models:	
+				### class average
+				run("e2classaverage.py --input {inputfile} --classmx {clsmx} --decayedge --storebad --output {clsout} --ref {proj} --iter {classiter} -f --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} --parallel thread:{thrd}".format(
+					inputfile=ptclfile, clsmx=newclsmx[s], clsout=classout[s], proj=projfile[s], classiter=db["classiter"], normproc=db["classnormproc"], averager=db["classaverager"], classrefsf=db["classrefsf"],
+					classautomask=db["classautomask"],classkeep=db["classkeep"], classkeepsig=db["classkeepsig"], classcmp=db["classcmp"], classalign=db["classalign"], classaligncmp=db["classaligncmp"],
+					classralign=db["classralign"], prefilt=db["prefilt"], thrd=options.threads))
+				
+				### make 3d
+				run("e2make3dpar.py --input {clsout} --sym {sym} --output {threed} {preprocess} --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_5 --threads {threads} ".format(
+				clsout=classout[s],threed=threedout[s], sym=db["sym"], recon=db["recon"], preprocess=db["m3dpreprocess"],  m3dkeep=db["m3dkeep"], keepsig=db["m3dkeepsig"],
+				m3dpad=db["pad"],threads=options.threads, apix=db_apix))
+	
+		### post process
+		print "Post processing..."
+		if os.path.exists("strucfac.txt") :
+			m3dsetsf="--setsf strucfac.txt"
+		else:
+			m3dsetsf=""
+			
 		for s in models:
-			cmxout[s].write_image(newclsmx[s])
-			ns=EMUtil.get_image_count(clsmx)
-			for i in range(1,ns):
-				e=EMData(clsmx,i)
-				e.write_image(newclsmx[s],i)
-		
-		
-		print "Making class average and 3d map..."
-		for s in models:	
-			### class average
-			run("e2classaverage.py --input {inputfile} --classmx {clsmx} --decayedge --storebad --output {clsout} --ref {proj} --iter {classiter} -f --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} --parallel thread:{thrd}".format(
-				inputfile=ptclfile, clsmx=newclsmx[s], clsout=classout[s], proj=oldprojfile, classiter=db["classiter"], normproc=db["classnormproc"], averager=db["classaverager"], classrefsf=db["classrefsf"],
-				classautomask=db["classautomask"],classkeep=db["classkeep"], classkeepsig=db["classkeepsig"], classcmp=db["classcmp"], classalign=db["classalign"], classaligncmp=db["classaligncmp"],
-				classralign=db["classralign"], prefilt=db["prefilt"], thrd=options.threads))
+			final3d="{path}/threed_{it:02d}_{n}.hdf".format(path=options.newpath,n=s, it=it)
+			run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter 0 {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(even3d=output_3d[-1]["even"][s], odd3d=output_3d[-1]["odd"][s], final3d=final3d, mass=db["mass"], amask3d=db["automask3d"], sym=db["sym"], amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db.setdefault("automaskexpand","0")))
 			
-			### make 3d
-			run("e2make3dpar.py --input {clsout} --sym {sym} --output {threed} {preprocess} --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_5 --threads {threads} ".format(
-			clsout=classout[s],threed=threedout[s], sym=db["sym"], recon=db["recon"], preprocess=db["m3dpreprocess"],  m3dkeep=db["m3dkeep"], keepsig=db["m3dkeepsig"],
-			m3dpad=db["pad"],threads=options.threads, apix=db_apix))
- 
-	### post process
-	print "Post processing..."
-	if os.path.exists("strucfac.txt") :
-		m3dsetsf="--setsf strucfac.txt"
-	else:
-		m3dsetsf=""
-		
-	for s in models:
-		final3d="{path}/threed_00_{n}.hdf".format(path=options.newpath,n=s)
-		run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter 0 {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(even3d=output_3d["even"][s], odd3d=output_3d["odd"][s], final3d=final3d, mass=db["mass"], amask3d=db["automask3d"], sym=db["sym"], amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db.setdefault("automaskexpand","0")))
-		
-		### copy the fsc files..
-		fscs=["fsc_unmasked_00.txt","fsc_masked_00.txt","fsc_maskedtight_00.txt"]
-		for fsc in fscs:
-			fm=os.path.join(options.newpath,fsc)
-			fmnew=os.path.join(options.newpath,fsc[:-4]+"_model_{:02d}.txt".format(s))
-			try:
-				copyfile(fm,fmnew)
-				os.remove(fm)
-			except: pass
-		
-		### make lists
-		tmpcls=["tmpcls_even.lst","tmpcls_odd.lst"]
-		tmpcls_m=[l.replace('.','_m1.') for l in tmpcls]
-		run("e2classextract.py {clsfile} --refinemulti --setname {tmpcls}".format(clsfile=output_cls["even"][s],tmpcls=tmpcls[0]))
-		run("e2classextract.py {clsfile} --refinemulti --setname {tmpcls}".format(clsfile=output_cls["odd"][s],tmpcls=tmpcls[1]))
-		lstout="sets/{}_{}.lst".format(options.newpath,s)
-		run("e2proclst.py {lst1} {lst2} --mergesort {lstout}".format(lst1=tmpcls_m[0], lst2=tmpcls_m[1], lstout=lstout))
-		for l in tmpcls_m:
-			try: os.remove(l)
-			except: pass
+			### copy the fsc files..
+			fscs=["fsc_unmasked_{:02d}.txt".format(it),"fsc_masked_{:02d}.txt".format(it),"fsc_maskedtight_{:02d}.txt".format(it)]
+			for fsc in fscs:
+				fm=os.path.join(options.newpath,fsc)
+				fmnew=os.path.join(options.newpath,fsc[:-4]+"_model_{:02d}.txt".format(s))
+				try:
+					copyfile(fm,fmnew)
+					os.remove(fm)
+				except: pass
+			
+			### make lists
+			tmpcls=["tmpcls_even.lst","tmpcls_odd.lst"]
+			tmpcls_m=[l.replace('.','_m1.') for l in tmpcls]
+			run("e2classextract.py {clsfile} --refinemulti --setname {tmpcls}".format(clsfile=output_cls[-1]["even"][s],tmpcls=tmpcls[0]))
+			run("e2classextract.py {clsfile} --refinemulti --setname {tmpcls}".format(clsfile=output_cls[-1]["odd"][s],tmpcls=tmpcls[1]))
+			lstout="sets/{}_{}.lst".format(options.newpath,s)
+			run("e2proclst.py {lst1} {lst2} --mergesort {lstout}".format(lst1=tmpcls_m[0], lst2=tmpcls_m[1], lstout=lstout))
+			for l in tmpcls_m:
+				try: os.remove(l)
+				except: pass
 	
-	
+		
 	E2end(logid)
 
 def parse_json(db):

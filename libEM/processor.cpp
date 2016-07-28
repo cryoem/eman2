@@ -12932,6 +12932,7 @@ void PruneSkeletonProcessor::process_inplace(EMData * image){
 	float threshold=params.set_default("thresh",0);
 	int verbose=params.set_default("verbose",0);
 	int maxdist=params.set_default("maxdist",3);
+	bool returnlength=params.set_default("returnlength",false);
 /*
 	if (nz > 1) {
 		ImageDimensionException("Only 2-D images supported");
@@ -13023,7 +13024,8 @@ void PruneSkeletonProcessor::process_inplace(EMData * image){
 			}
 		}
 		// now, data->distance to the nearest branch point
-
+		
+		if (returnlength==false){
 		// mark endpoints for deletion
 		int nend=0;
 		for (int j=1; j < ny-1; j++) {
@@ -13073,9 +13075,11 @@ void PruneSkeletonProcessor::process_inplace(EMData * image){
 		}
 		if (verbose>0)
 			printf("\t %d branches removed\n",nend);
-
+		}
 	}
-	memcpy(data, data2, total_size * sizeof(float));
+	if (returnlength==false){
+		memcpy(data, data2, total_size * sizeof(float));
+	}
 
 
 	image->update();

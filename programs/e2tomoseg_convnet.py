@@ -36,6 +36,7 @@ def main():
 	parser.add_argument("--training", action="store_true", default=False ,help="Doing training", guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='train[True]')
 	parser.add_argument("--tomograms", type=str,help="Tomograms input.", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True)", row=1, col=0, rowspan=1, colspan=3, mode="test")
 	parser.add_argument("--applying", action="store_true", default=False ,help="Applying the neural network on tomograms", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='test[True]')
+	parser.add_argument("--dream", action="store_true", default=False ,help="Iterativly applying the neural network on noise", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='test')
 	parser.add_argument("--output", type=str,help="Segmentation out file name", default="tomosegresult.mrcs", guitype='strbox', row=3, col=0, rowspan=1, colspan=1, mode="test")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -52,7 +53,10 @@ def main():
 		print "Testing on big images, Theano optimizer disabled"
 		import_theano()
 		convnet=load_model(options.from_trained)
-		apply_neuralnet(convnet,options)
+		if options.dream:
+			dream(convnet,options)
+		else:
+			apply_neuralnet(convnet,options)
 		print "Done"
 		E2end(E2n)
 		exit()
@@ -70,24 +74,15 @@ def main():
 	
 	
 	rng = np.random.RandomState(123)
-	if options.from_trained!=None:
-		convnet=load_model(options.from_trained)
-	else:
-		print "setting up model"
-		convnet = StackedConvNet(
-			rng,
-			nkernel=options.nkernel,
-			ksize=options.ksize,
-			poolsz=options.poolsz
-		)
-	
+
+	labelshrink=np.prod(options.poolsz)
 	print "loading particles..."
 	if options.trainset.endswith(".pkl"):
 		f = file(options.trainset, 'rb')
 		particles=cPickle.load(f)
 		f.close()
 	else:
-		particles=load_particles(options.trainset,convnet.labelshrink,options.ncopy)
+		particles=load_particles(options.trainset,labelshrink,options.ncopy)
 		f = file("data_training.pkl", 'wb')
 		cPickle.dump(particles, f, protocol=cPickle.HIGHEST_PROTOCOL)
 		f.close()
@@ -96,12 +91,26 @@ def main():
 	labels=particles[1]
 	shape=particles[2]
 	print "Number of particles: {}".format(train_set_x.shape.eval()[0])
-
+	
 	# allocate symbolic variables for the data
 	index = T.lscalar()	# index to a [mini]batch
 	x = T.matrix('x')  # the data is presented as rasterized images
-	image_shape=(batch_size, 1, shape[0],shape[1])
-	convnet.update_shape(image_shape)
+	image_shape=(batch_size, shape[2], shape[0],shape[1])
+	print image_shape,shape
+	
+	if options.from_trained!=None:
+		convnet=load_model(options.from_trained)
+		convnet.update_shape(image_shape)
+	else:
+		print "setting up model"
+		convnet = StackedConvNet(
+			rng,
+			nkernel=options.nkernel,
+			ksize=options.ksize,
+			poolsz=options.poolsz,
+			imageshape=image_shape
+		)
+	
 	
 	
 	#print shape
@@ -165,7 +174,7 @@ def main():
 			mid_cent=mid
 			mid_mean=np.mean(mid_cent)
 			mid_std=np.std(mid_cent)
-			print "mean:",mid_mean,"std:",mid_std
+			#print "mean:",mid_mean,"std:",mid_std
 			#print np.shape(test_imgs(0))
 
 			ipt= train_set_x[idi * batch_size: (idi + 1) * batch_size]
@@ -175,22 +184,28 @@ def main():
 			
 			for t in range(len(rt)):
 				#img=ipt[t].reshape(lth,lth)
-				
-				img=ipt[t].reshape(shape[0],shape[1])
-				e = EMNumPy.numpy2em(img.astype("float32"))
+				#print ipt[t].shape,shape
+				if shape[2]==1:
+					img=ipt[t].reshape(shape[0],shape[1])
+				else:
+					img=ipt[t].reshape(shape[2],shape[0],shape[1])
+					img=img[shape[2]/2]
+				e = from_numpy(img.astype("float32"))
+				#e.mult(-1)
 				e.process_inplace("normalize")
 				e.write_image(fname,-1)
 				
 				img=lb[t].reshape(convnet.outsize,convnet.outsize)
-				e = EMNumPy.numpy2em(img.astype("float32"))
-				e.process_inplace("normalize")
+				e = from_numpy(img.astype("float32"))
+				#e.process_inplace("normalize")
+				e.mult(2)
 				e=e.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
 				e.scale(float(shape[0])/float(convnet.outsize))
 				e.write_image(fname,-1)
 				
 				img=mid[t].reshape(convnet.outsize,convnet.outsize)
 				df=(np.mean(img)-mid_mean)/mid_std
-				e = EMNumPy.numpy2em(img.astype("float32"))
+				e = from_numpy(img.astype("float32"))
 				#e.process_inplace("normalize")
 				e.div(float(mid_std))
 				
@@ -202,14 +217,79 @@ def main():
 	print "Done"
 	E2end(E2n)
 
+def run(cmd):
+	print cmd
+	launch_childprocess(cmd)
+	
 def load_model(fname):
 	print "loading model from {}...".format(fname)
 	f = file(fname, 'rb')
 	convnet = cPickle.load(f)
 	f.close()
 	return convnet
+
+def dream(convnet,options):
+	convz=convnet.image_shape[1]
+	
+	print "Dreaming....."
+	try: 
+		os.remove(options.output)
+		print "Overwriting the output.."
+	except: pass
+	
+	sz=500
+	shape=[sz,sz,convz]
+	img=np.random.randn(shape[2],shape[0],shape[1])
+	convnet.update_shape((1, shape[2], shape[0],shape[1]))
+	e=from_numpy(img)
+	e.write_image(options.output,-1)
+	
+	for it in range(50):
+		
+		
+		print "Iteration {}...".format(it)
+		
+		
+		#### prepare inputs
+		img[np.abs(img)>1.0]=1.0
+		#print img.shape
+		#print convz,sz
+		ar=img.reshape((convz,sz*sz))
+		
+		data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
+
+		#### write input when testing...
+		#### 
+		#print np.shape(data.get_value())
+		#print "Applying the convolution net..."
+		test_imgs = theano.function(
+			inputs=[],
+			outputs=convnet.clslayer.get_image(),
+			givens={
+				convnet.x: data
+			}
+		)
+			
+		img=test_imgs()
+		#print np.shape(img)
+		img=img.reshape(convnet.outsize,convnet.outsize).T
+		
+		e = from_numpy(img)
+		e.process_inplace("math.fft.resample",{"n":float(1./convnet.labelshrink)})
+		e.process_inplace("normalize")
+		e.write_image(options.output,-1)
+		if convz>1:
+			img=np.random.randn(shape[2],shape[0],shape[1])
+			img[convz/2]=e.numpy().copy()
+		else:
+			img=e.numpy().copy()
+	
+	print "Output written to {}.".format(options.output)
 	
 def apply_neuralnet(convnet,options):
+	
+	
+	convz=convnet.image_shape[1]
 	
 	try: 
 		os.remove(options.output)
@@ -220,73 +300,94 @@ def apply_neuralnet(convnet,options):
 	nframe=EMUtil.get_image_count(options.tomograms)
 	is3d=False
 	### deal with 3D volume or image stack
+	e=EMData(options.tomograms, 0, True)
 	if nframe==1:
-		e=EMData(options.tomograms, 0, True)
 		nframe=e["nz"]
 		if nframe>1:
+			#### input data is 3D volume
 			esz=e["nx"]
 			is3d=True
-	
+			
+			
+	shape=[e["nx"],e["ny"],convz]		
+	convnet.update_shape((1, shape[2], shape[0],shape[1]))
 	for nf in range(nframe):
 		if is3d:
-			e=EMData(options.tomograms,0,False,Region(0,0,nf,esz,esz,1))
+			e=EMData(options.tomograms,0,False,Region(0,0,nf,esz,esz,convz))
 		else:
 			e=EMData(options.tomograms,nf)
 		
-		print "Preprocessing image No {}...".format(nf)
+		print "Applying the convolution net on image No {}...".format(nf)
 
-
-
-		e.process_inplace("normalize")
-		enp=EMNumPy.em2numpy(e)
-		enp[enp>3.0]=3.0
-		enp/=np.max(enp)
-		ar=[enp]
-		shape=[e["nx"],e["ny"],e["nz"]]
-		convnet.update_shape((1, 1, shape[0],shape[1]))
-		data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
-		img=data[0].eval().reshape(shape[0],shape[1]).T
-		e = EMNumPy.numpy2em(img.astype("float32"))
+		#### prepare inputs
 		#e.process_inplace("normalize")
-		newshp=convnet.outsize
-		e.scale(float(newshp)/float(shape[0]))
-		e=e.get_clip(Region((shape[0]-newshp)/2,(shape[0]-newshp)/2,newshp,newshp))
+		enp=e.numpy()
+		#print enp.shape
+		#exit()
+		enp[enp>3.0]=3.0
+		enp/=3
+		ar=enp.reshape((convz,shape[0]*shape[1]))
+		
+		
+		data=theano.shared(np.asarray(ar,dtype=theano.config.floatX),borrow=True)
+		
+	
+		#### input is one 2D slice: just test the performance.
+		#### write input when testing...
 		if nframe==1:
+			img=data[0].eval().reshape(shape[0],shape[1]).T
+			e = EMNumPy.numpy2em(img.astype("float32"))
+			#e.process_inplace("normalize")
+			newshp=convnet.outsize
+			e.scale(float(newshp)/float(shape[0]))
+			e=e.get_clip(Region((shape[0]-newshp)/2,(shape[0]-newshp)/2,newshp,newshp))
 			e.process_inplace("normalize")
 			e.write_image(options.output,-1)
-		#print np.shape(data.get_value())
-		print "Applying the convolution net..."
+		
+		#### Applying the convolution net...
 		test_imgs = theano.function(
 			inputs=[],
-			outputs=convnet.clslayer.hidden,
+			outputs=convnet.clslayer.get_image(),
 			givens={
-				convnet.x: data[0]
+				convnet.x: data
 			}
 		)
 			
 		img=test_imgs()
-		print np.shape(img)
+		#print np.shape(img)
 		img=img.reshape(convnet.outsize,convnet.outsize).T
 		e = EMNumPy.numpy2em(img.astype("float32"))
-		#print "Post-processing..."
-		#eg=20
-		#e.process_inplace("mask.zeroedge2d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg})
-		#e.process_inplace("normalize")
-		#e.process_inplace("threshold.belowtozero",{"minval":0})
-		#e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
-		#e.div(e["maximum"])
+		
 		if nframe==1:
 			e.process_inplace("normalize")
 		e.write_image(options.output,-1)
-		print "Output written to {}.".format(options.output)
-	
+		
+		#exit()
 	if nframe>1:
 		ss=options.output
 		fout=ss[:ss.rfind('.')]+"_pp.hdf"
-		e=EMData(ss,0,True)
-		apix=e["apix_x"]
-		launch_childprocess("e2proc2d.py {} {} --process math.fft.resample:n=.5 --apix {} --twod2threed".format(ss,fout, apix))
+		#### unbin the output and copy the header
 		
+		try: os.remove(fout)
+		except: pass
+		if is3d:
+			run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed".format(ss,fout,float(1./convnet.labelshrink)))
+			
+			e=EMData(options.tomograms,0,True)
+			e.write_image(fout)
+			
+		else:
+			run("e2proc2d.py {} {} --process math.fft.resample:n={}".format(ss,fout,float(1./convnet.labelshrink)))
+			for ni in range(nframe):
+				e=EMData(options.tomograms,ni,True)
+				#e.set_size(shape[0],shape[1],1)
+				a=EMData(fout,ni,True)
+				a.set_attr_dict(e.get_attr_dict())
+				a.write_image(fout,ni)
+			
+		print "Output written to {}.".format(fout)
+	else:
+		print "Output written to {}.".format(options.output)
 
 def load_particles(ptcls,labelshrink,ncopy=5):
 	num=EMUtil.get_image_count(ptcls)/2
@@ -295,24 +396,26 @@ def load_particles(ptcls,labelshrink,ncopy=5):
 	label=[]
 	for nc in range(ncopy):
 		for i in range(num):
-			tr=Transform()
-			tr.set_rotation({"type":"2d","alpha":random.random()*360.0})
 			ptl=EMData(ptcls,i*2)
 			#ptl.process_inplace("threshold.belowtozero")
-			ptl.process_inplace("xform",{"transform":tr})
+			if ncopy>1:
+				tr=Transform()
+				tr.set_rotation({"type":"2d","alpha":random.random()*360.0})
+				ptl.process_inplace("xform",{"transform":tr})
 			
 			
 			ar=EMNumPy.em2numpy(ptl)
-			shp=np.shape(ar)
+			#shp=np.shape(ar)
 			data.append(ar.flatten())
 			
 			ptl=EMData(ptcls,i*2+1)
 			#ptl.process_inplace("threshold.belowtozero")
-			ptl.process_inplace("xform",{"transform":tr})
+			if ncopy>1:
+				ptl.process_inplace("xform",{"transform":tr})
 			if labelshrink>1:
 				ptl.process_inplace("math.meanshrink",{'n':labelshrink})
 			ar=EMNumPy.em2numpy(ptl)
-			shp=np.shape(ar)
+			#shp=np.shape(ar)
 			label.append(ar.flatten())
 	
 	## randomize
@@ -335,14 +438,15 @@ def load_particles(ptcls,labelshrink,ncopy=5):
 
 class StackedConvNet(object):
 	
-	def __init__(self,rng,nkernel,ksize,poolsz):
+	def __init__(self,rng,nkernel,ksize,poolsz,imageshape):
 		
 		self.n_kernel=nkernel
 		self.ksize=ksize
 		self.n_convlayers=len(self.ksize)
 		self.x = T.matrix(name='input')
-		self.image_shape=[1,1,64,64]
+		self.image_shape=imageshape
 		input_shape=self.image_shape
+		print input_shape
 		self.convlayers=[]
 		self.params=[]
 		if poolsz:
@@ -374,6 +478,7 @@ class StackedConvNet(object):
 		
 		self.clslayer=self.convlayers[-1]
 		self.outsize=int(input_shape[2])
+		#print 
 		#self.labelshrink=2**(self.n_convlayers-1)
 		
 	def get_pretrain_func(self,data,batch_size):
@@ -547,6 +652,7 @@ class LeNetConvPoolLayer(object):
 
 	def get_image(self):
 		#return T.tanh(self.hidden)*2-1
+		#return T.maximum(0,(self.pooled_out + self.b.dimshuffle('x', 0, 'x', 'x')))
 		return T.minimum(1,(self.pooled_out + self.b.dimshuffle('x', 0, 'x', 'x')))
 	
 	def get_cost_hidden(self,  label):

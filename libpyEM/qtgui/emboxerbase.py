@@ -344,6 +344,7 @@ class EMBox:
 				self.image.process_inplace(norm)
 
 			self.image.set_attr("ptcl_source_coord",[self.x,self.y])
+			self.image.set_attr("ptcl_source_coord_z",[self.z_idx])
 			self.image.set_attr("ptcl_source_image",image_name)
 
 		return self.image

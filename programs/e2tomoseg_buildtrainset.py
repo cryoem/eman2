@@ -34,6 +34,7 @@ def main():
 	parser.add_argument("--boxes_negative", type=str,help="Input boxes of negative samples", default=None,guitype='filebox',browser="EMParticlesTable(withmodal=True)", row=3, col=0, rowspan=1, colspan=3, mode="set")
 	parser.add_argument("--ncopy",type=int,help="Number of copies for NEGATIVE samples. (number of copies of particles is calculated accordingly) ",default=20, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="set")
 	parser.add_argument("--trainset_output", type=str,help="output file name of the training set.Default is the input particle file name plus _trainset.hdf", default=None,guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="set")
+	parser.add_argument("--zthick",type=int,help="Thickness in z ",default=0, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="set")
 
 	##################
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -100,7 +101,9 @@ def main():
 		if tomo_in and seg_in:
 			n_ptcl=EMUtil.get_image_count(tomo_in)
 			for i in range(n_ptcl):
-				t=EMData(tomo_in,i)
+				#t=EMData(tomo_in,i)
+				t=get_box(tomo_in,i,options.zthick)
+				if t==None: continue
 				s=EMData(seg_in,i)
 				for c in range(p_copy):
 					tr=Transform()
@@ -116,7 +119,8 @@ def main():
 			s.to_zero()
 			n_neg=EMUtil.get_image_count(neg_in)
 			for i in range(n_neg):
-				t=EMData(neg_in,i)
+				t=get_box(neg_in,i,options.zthick)
+				if t==None: continue
 				for c in range(options.ncopy):
 					tr=Transform()
 					rd=random.random()*360
@@ -148,6 +152,41 @@ def main():
 def run(cmd):
 	print cmd
 	launch_childprocess(cmd)
+	
+def get_box(fname, idx, nz):
+	if nz==0:
+		return EMData(fname,idx)
+	else:
+		#print nz
+		sep=2
+		e=EMData(fname,idx,True)
+		src=e["ptcl_source_image"]
+		box=e["ptcl_source_coord"]
+		boxz=e["ptcl_source_coord_z"]
+		sz=e["nx"]
+		out=EMData(sz,sz,nz*2+1)
+		outnp=out.numpy()
+		
+		hdr=EMData(src,0,True)
+		zmax=hdr["nz"]
+		if boxz<nz*sep or boxz>zmax-nz*sep:
+			print "skipping box ",idx
+			return None
+		
+		c=EMData(src,0,False,Region(box[0]-sz/2,box[1]-sz/2,boxz,sz,sz,1))
+		outnp[nz]=c.numpy().copy()
+		
+		for i in range(nz):
+			c=EMData(src,0,False,Region(box[0]-sz/2,box[1]-sz/2,boxz+(i+1)*sep,sz,sz,1))
+			outnp[nz+i+1]=c.numpy().copy()
+			c=EMData(src,0,False,Region(box[0]-sz/2,box[1]-sz/2,boxz-(i+1)*sep,sz,sz,1))
+			outnp[nz-i-1]=c.numpy().copy()
+			
+		return out
+	
+	
+	
+	
 	
 	
 if __name__ == '__main__':

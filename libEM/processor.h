@@ -8857,6 +8857,7 @@ correction is not possible, this will allow you to approximate the correction to
 			TypeDict d;
 			d.put("thresh", EMObject::FLOAT, "The threshold to binarize the map.");
 			d.put("verbose", EMObject::INT, "Verbose");
+			d.put("returnlength", EMObject::BOOL, "Return the distance of each white pixel to its nearest branch. Does not do the prunning.");
 			d.put("maxdist", EMObject::INT, "Maximum distance from the endpoint to branchpoint");
 			return d;
 		}
