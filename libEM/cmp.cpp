@@ -766,14 +766,14 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	if (params.has_key("sigmaimg")) sigmaimg=params["sigmaimg"];
 	else {
 		sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
-		for (int i=0; i<nx/2; i++) sigmaimg[i]*=.1;
+		for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*.1;	// The value here is amplitude, we square to make comparison less expensive
 	}
 	
 	vector<float> sigmawith;
 	if (params.has_key("sigmawith")) sigmawith = params["sigmawith"];
 	else {
 		sigmawith=image->calc_radial_dist(nx/2,0,1,4);
-		for (int i=0; i<nx/2; i++) sigmawith[i]*=.1;
+		for (int i=0; i<nx/2; i++) sigmawith[i]*=sigmawith[i]*.1; // The value here is amplitude, we square to make comparison less expensive
 	}
 
 	int negative = params.set_default("negative",1);
