@@ -47,89 +47,92 @@ import matplotlib.pyplot as plt
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = """Aligns a 3d volume to another by executing e2spt_classaverage.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
-	criterion(on the screen) and a plot as an image in .png format."""
+	usage = """Calculates, plots and optionally averages the FSC between multiple images and a reference."""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--input", type=str, help="""Volume or stack of volumes to be aligned to --ref; that is, 
-													volumes in --input will be 'moved' (rotated and translated) to find the best fit with --ref. 
-													The format MUST be '.hdf' or '.mrc' """, default=None)
+	parser.add_argument("--input", type=str, help="""Volume or stack of volumes to be compared to --ref""", default=None)
 	parser.add_argument("--path", type=str, help="Results directory. If not specified, defaults to e2sptfscs/", default='e2sptfscs')
 
 	parser.add_argument("--ref", type=str, help="Volume that will be 'static' (the 'reference' to which volumes in --input will be aligned to). The format MUST be '.hdf' or '.mrc' ", default=None)
-	parser.add_argument("--output", type=str, help="""Name for the .txt file that will contain the FSC data. If not specified, a default name will be used.""", default=None)
+	#parser.add_argument("--output", type=str, help="""Name for the .txt file that will contain the FSC data. If not specified, a default name will be used.""", default=None)
 
 
-	parser.add_argument("--symali", type=str, default='c1', help = """Will pass the value to --sym for alignment with e2spt_classaverage.py""")
+	#parser.add_argument("--symali", type=str, default='c1', help = """Will pass the value to --sym for alignment with e2spt_classaverage.py""")
 
 	parser.add_argument("--nocolor",action='store_true',default=False,help="""Turns the ouput png(s) into grey scale figures. Instead of using different colors to distinguish between various curves on the same plot, this option will have the program automatically use different markers in black and white for each curve.""")
 	
-	parser.add_argument("--symmap", type=str, default='c1', help = """Will symmetrize --ref AND pass --sym to e2spt_classaverage.py""")
+	parser.add_argument("--sym", type=str, default='c1', help = """Will symmetrize --ref and --input prior to FSC computation.""")
 	
-	parser.add_argument("--maskali",type=str,help="""Mask processor applied to particles 
-		before alignment. Default is mask.sharp:outer_radius=-2""", default="mask.sharp:outer_radius=-2")
-	parser.add_argument("--maskfsc",type=str,help="""Mask processor applied to particles 
+	#parser.add_argument("--maskali",type=str,help="""Mask processor applied to particles 
+	#	before alignment. Default is mask.sharp:outer_radius=-2""", default="mask.sharp:outer_radius=-2")
+	
+	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles 
 		before fsc computation. Default is mask.sharp:outer_radius=-2""", default=None)
 	
 	
-	parser.add_argument("--search", type=int,default=8,help=""""During COARSE alignment
-		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
-		Otherwise, search parameters are provided with the aligner, through --align.""")
+	#parser.add_argument("--search", type=int,default=8,help=""""During COARSE alignment
+	#	translational search in X, Y and Z, in pixels. Only works when --radius is provided.
+	#	Otherwise, search parameters are provided with the aligner, through --align.""")
 	
-	parser.add_argument("--searchfine", type=int,default=2,help=""""During FINE alignment
-		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
-		Otherwise, search parameters are provided with the aligner, through --falign.""")
+	#parser.add_argument("--searchfine", type=int,default=2,help=""""During FINE alignment
+	#	translational search in X, Y and Z, in pixels. Only works when --radius is provided.
+	#	Otherwise, search parameters are provided with the aligner, through --falign.""")
 			
-	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. 
-													Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. 
-													If you want to turn this option off specify \'None\'""", default="normalize.mask")
+	#parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. 
+	#												Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. 
+	#												If you want to turn this option off specify \'None\'""", default="normalize.mask")
 
-	parser.add_argument("--saveallalign",action="store_true", help="If set, will save the alignment parameters after each iteration",default=True)
+	#parser.add_argument("--saveallalign",action="store_true", help="If set, will save the alignment parameters after each iteration",default=True)
 
-	parser.add_argument("--mirror",action="store_true", help="""If set, it will generate a mirrored version of --ref and align --input against it.=; then FSCs will be computed. 
-															This will be done IN ADDITION to aligment and FSC computation of the alignment of --input against the original, unmirrored --ref.""",default=False)
+	parser.add_argument("--mirror",action="store_true", help="""If set, it will generate a mirrored version of --ref and recompute FSCs against it.
+															This will be IN ADDITION to FSC computation of --input against the original, unmirrored --ref.""",default=False)
 
 
-	parser.add_argument("--preprocess",type=str,default='',help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
-	parser.add_argument("--preprocessfine",type=str,default='',help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
+	parser.add_argument("--preproc",type=str,default='',help="Any processor (as in e2proc3d.py) to be applied to each volumes prior to FSC computation. Typically this would be an automask.")
 	
-	parser.add_argument("--lowpass",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
-	parser.add_argument("--lowpassfine",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
+	parser.add_argument("--savepreproc",action='store_true',default=False,help="""Default=False. Otherwise, save preprocessed/masked volumes for inspection.""")
 
-	parser.add_argument("--highpass",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
-	parser.add_argument("--highpassfine",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
+	parser.add_argument("--averagefscs",action='store_true',default=False,help="""Default=False. Averages FSC curves if --input contains multiple images.""")
 
-	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
-	parser.add_argument("--shrinkfine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
-
-	parser.add_argument("--threshold",type=str,default='',help="""A threshold applied to 
-		the subvolumes after normalization. 
-		For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels 
-		equal 0, so that they do not contribute to the correlation score.""")
-
-	parser.add_argument("--nocenterofmass", default=False, action="store_true", help="""Disable Centering 
-		of mass of the subtomogram every iteration.""")
-
-	parser.add_argument("--npeakstorefine", type=int, help="The number of best 'coarse peaks' from 'coarse alignment' to refine in search for the best final alignment. Default=4.", default=4)
+	#parser.add_argument("--preprocessfine",type=str,default='',help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
 	
-	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average.", default="rotate_translate_3d:search=6:delta=12:dphi=12")
-	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
+	#parser.add_argument("--lowpass",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
+	#parser.add_argument("--lowpassfine",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
+
+	#parser.add_argument("--highpass",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
+	#parser.add_argument("--highpassfine",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
+
+	#parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
+	#parser.add_argument("--shrinkfine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
+
+	#parser.add_argument("--threshold",type=str,default='',help="""A threshold applied to 
+	#	the subvolumes after normalization. 
+	#	For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels 
+	#	equal 0, so that they do not contribute to the correlation score.""")
+
+	#parser.add_argument("--nocenterofmass", default=False, action="store_true", help="""Disable Centering 
+	#	of mass of the subtomogram every iteration.""")
+
+	#parser.add_argument("--npeakstorefine", type=int, help="The number of best 'coarse peaks' from 'coarse alignment' to refine in search for the best final alignment. Default=4.", default=4)
 	
-	parser.add_argument("--radius", type=float, help="""Hydrodynamic radius of the particle in Angstroms. 
-													This will be used to automatically calculate the angular steps to use in search of the best alignment.
-													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
-													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
+	#parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average.", default="rotate_translate_3d:search=6:delta=12:dphi=12")
+	#parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
 	
-	parser.add_argument("--falign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d:search=2:delta=3:range=12", default="refine_3d:search=2:delta=3:range=9")
-	parser.add_argument("--faligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo")
+	#parser.add_argument("--radius", type=float, help="""Hydrodynamic radius of the particle in Angstroms. 
+	#												This will be used to automatically calculate the angular steps to use in search of the best alignment.
+	#												Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
+	#												Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
 	
-	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
+	#parser.add_argument("--falign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d:search=2:delta=3:range=12", default="refine_3d:search=2:delta=3:range=9")
+	#parser.add_argument("--faligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo")
+	
+	#parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
 		
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:2")
 	
 	parser.add_argument("--apix", type=float, help="Provide --apix for automatic FSC calculation if you supply --plotonly and no volumes for --input and --ref, or if the apix of these is wrong.", default=1.0)
-	parser.add_argument("--boxsize", type=float, help="(Probably not needed for anything)", default=0)
+	#parser.add_argument("--boxsize", type=float, help="(Probably not needed for anything)", default=0)
 
 	parser.add_argument("--maxres", type=float, help="How far in resolution to extend the FSC curve on the x axis; for example, to see up to 20anstroms, provide --maxres=1.0. Default=15", default=1.0)
 	parser.add_argument("--cutoff", type=str, help="Comma separated values of cutoff thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default='0.5')
@@ -149,11 +152,11 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	#parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned and fsc files will be provided through --curves; thus skips alignment and fsc curve generation", default=False)
 	
-	parser.add_argument("--fsconly",action="store_true", help="""Assumes --input and --ref 
-		are already aligned with respect to each other and thus skips alignment""", default=False)
+	#parser.add_argument("--fsconly",action="store_true", help="""Assumes --input and --ref 
+	#	are already aligned with respect to each other and thus skips alignment""", default=False)
 		
 	parser.add_argument("--plotonly",type=str, help="""FSC curves to plot in separate plots. 
-		Skips alignment and fsc curve generation. Provide .txt. files separated by commas 
+		Skips fsc curve generation. Provide .txt. files separated by commas 
 		--plotonly=file1.txt,file2.txt,file3.txt etc...""", default=None)
 	parser.add_argument("--singleplot",action="store_true",help="It --plotonly provided, all FSC curves will be on the same plot/figure", default=False)
 		
@@ -161,8 +164,12 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 
-	if options.maskfsc: 
-		options.maskfsc=parsemodopt(options.maskfsc)
+	if options.mask: 
+		options.mask=parsemodopt(options.mask)
+
+	if options.preproc:
+		options.preproc=parsemodopt(options.preproc)
+
 
 	if options.cutoff and options.cutoff != 'None' and options.cutoff != 'none':
 		options.cutoff = options.cutoff.split(',')
@@ -170,12 +177,12 @@ def main():
 	else:
 		options.cutoff = None
 
-	if not options.output and not options.plotonly:
-		print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
-	elif options.output and not options.plotonly:
-		if '.txt' not in options.output:
-			print "ERROR: Output must be in .txt format"
-			sys.exit()
+	#if not options.output and not options.plotonly:
+	#	print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
+	#elif options.output and not options.plotonly:
+	#	if '.txt' not in options.output:
+	#		print "ERROR: Output must be in .txt format"
+	#		sys.exit()
 		
 	findir=os.listdir(os.getcwd())
 
@@ -215,12 +222,13 @@ def main():
 		print "Done plotting"
 		sys.exit()
 		
-	elif options.fsconly:
+	else:
 		getfscs(options,apix)
 	
 		print "Done calculating FSCs and plotting them."
-		sys.exit()
+		#sys.exit()
 	
+	'''
 	elif options.align:
 		print '\n\nI will align'
 		if options.symmap and options.symmap is not 'c1' and options.symmap is not 'C1':		
@@ -254,30 +262,35 @@ def main():
 		
 			options.input = ptclalimirror
 			getfscs(options,apix)
-		
+	'''
+
 	E2end(logger)
 	return
 
 
 def getfscs(options,apix):
 	
+	sym = None
+	if options.sym and options.sym is not 'c1' and options.sym is not 'C1':
+		sym = options.sym
+	
 	options.input
 	print "\n inside getfscs options.input is", options.input
 	print 'and the current directory is', os.getcwd()
 	
 	fyle = options.input.split('/')[-1]
-	if not options.fsconly:
-		fyle = 'alignment/' + options.input.split('/')[-1]
-	
-	
-		if options.path not in fyle:
-			fyle = options.path + '/' + fyle
-	
-	
-			current = os.getcwd()
-	
-			if current not in fyle:
-				fyle = current + '/' + fyle
+	#if not options.fsconly:
+	#	fyle = 'alignment/' + options.input.split('/')[-1]
+	#
+	#
+	#	if options.path not in fyle:
+	#		fyle = options.path + '/' + fyle
+	#
+	#
+	#		current = os.getcwd()
+	#
+	#		if current not in fyle:
+	#			fyle = current + '/' + fyle
 	
 	
 	print "\n\n\n\n\nThe fyle to get image count from is", fyle
@@ -287,60 +300,201 @@ def getfscs(options,apix):
 	
 	path = options.path
 	fscs = []
+	fscssym = []
 	fscsm = []
+	fscsmsym = []
 	
-	if not options.output:
-		options.output = fyle.split('.')[0] + '_FSC.txt'
+	format=fyle[-4:]
+	#if not options.output:
 	
+	output = fyle.split(format)[0] + '_FSC.txt'
+	
+	'''
+	Prepare the reference
+	'''
+	ref = EMData(options.ref,0)
+	refsym=ref.copy()
+	refsymm=ref.copy()
+
+	if sym:
+		refsym = symmetrize(ref,options)
+
+	if options.mask:
+		'''
+		Make the mask first 
+		'''
+		mask=EMData( int(ptcl["nx"]), int(ptcl["ny"]), int(ptcl["nz"]) )
+		mask.to_one()
+		mask.process_inplace(options.mask[0],options.mask[1])
+
+		ref.mult(mask)
+		if sym:
+			refsym.mult(mask)
+
+	if options.preproc:
+		ref.process_inplace(options.preproc[0],options.preproc[1])
+		if sym:
+			refsym.process_inplace(options.preproc[0],options.preproc[1])		
+
+	if options.savepreproc:
+		ref.write_image(options.ref.replace(options.ref[-4:],'_preproc'+options.ref[-4:]))
+		if sym:
+			refsym.write_image(options.ref.replace(options.ref[-4:],'_sym_preproc'+options.ref[-4:]))
+	
+	if options.mirror:
+		t = Transform({'type':'eman','mirror':True})
+	
+		refm = ref.copy()
+		refm.transform(t)
+	
+		refsymm = refsym.copy()
+		refsymm.transform(t)
+
+		print "The mirror fsc file is", fscfilename
+
+	'''
+	Interate trough the particles
+	'''
 	for i in range(n):
+		'''
+		Prepare particle
+		'''
 		ptcl = EMData( fyle ,i)
-		ref = EMData(options.ref,0)
-		fscfilename = path + '/' + options.output.replace('.txt','_' + str(i).zfill(len(str(n))) + '.txt')
-		if options.symmap and options.symmap is not 'c1' and options.symmap is not 'C1':
-			ptcl = symmetrize(ptcl,options) 
-			ref = symmetrize(ref,options)
+		fscfilename = options.path + '/' + output.replace('.txt','_' + str(i).zfill(len(str(n))) + '.txt')
+		
+		if sym:
+			ptclsym = symmetrize(ptcl,options) 
+			
 			#fscfilename = options.output.replace('.txt','_' + str(i).zfill(len(str(n))) + '_' + options.sym + '.txt')
-			fscfilename = fscfilename.replace('.txt', '_' + options.symmap + '.txt')
+			fscfilenamesym = fscfilename.replace('.txt', '_' + sym + '.txt')
 		
-		if options.maskfsc:
-		
-			'''
-			Make the mask first 
-			'''
-			mask=EMData( int(ptcl["nx"]), int(ptcl["ny"]), int(ptcl["nz"]) )
-			mask.to_one()
-			mask.process_inplace(options.maskfsc[0],options.maskfsc[1])
-			
 			ptcl.mult(mask)
-			ref.mult(mask)
-			
+
+			if sym:
+				ptclsym.mult(mask)
+
+		if options.preproc:
+			ptcl.process_inplace(options.preproc[0],options.preproc[1])
+			if sym:
+				ptclsym.process_inplace(options.preproc[0],options.preproc[1])
+
+		if options.savepreproc:
+			ptcl.write_image(options.input.replace(options.input[-4:],'_preproc'+options.input[-4:]))
+			if sym:
+				ptclsym.write_image(options.input.replace(options.input[-4:],'_sym_preproc'+options.input[-4:]))
+
+
+		'''
+		Calculate FSCs
+		'''
 		calcfsc(ptcl,ref,fscfilename,options)
-		
+
+		if sym:
+			calcfsc(ptclsym,refsym,fscfilenamesym,options)
+
+		'''
+		Plot computed FSCs
+		'''
 		if not options.singleplot:
 			fscplotter([fscfilename],options,apix)
+			if sym:
+				fscplotter([fscfilenamesym],options,apix)
+
 		else:
 			fscs.append(fscfilename)
+			if sym:
+				fscssym.append(fscfilename)
+
 	
 		if options.mirror:
-			t = Transform({'type':'eman','mirror':True})
-			refm = ref.copy()
-			refm.transform(t)
-			fscmfilename = fscfilename.replace('.txt','_VSmirror.txt')
-			print "The mirror fsc file is", fscfilename
+			fscfilenamemirror = fscfilename.replace('.txt','_mirror.txt')
+			print "\nThe mirror fsc file is", fscfilenamemirror
 			
-			calcfsc(ptcl,refm,fscmfilename,options)
+			calcfsc(ptcl,refm,fscmfilenamemirror,options)
 			
 			if not options.singleplot:
-				fscplotter([fscmfilename],options,apix)
+				fscplotter([fscmfilenamemirror],options,apix)
 			else:
-				fscsm.append(fscmfilename)
-	
-	if options.singleplot:
+				fscsm.append(fscmfilenamemirror)
+
+			if sym:
+				fscsfilenamemirrorsym = fscfilenamemirror.replace('.txt','_mirror_sym.txt')
+				print "\nThe mirror fsc file is", fscfilename
+			
+				calcfsc(ptcl,refsymm,fscsfilenamemirrorsym,options)
+			
+				if not options.singleplot:
+					fscplotter([fscsfilenamemirrorsym],options,apix)
+				else:
+					fscsmsym.append(fscsfilenamemirrorsym)
+
+	if options.singleplot and fscs:
 		fscplotter(fscs,options,apix)
-		fscplotter(fscsm,options,apix)
+		if sym and fscssym:
+			fscplotter(fscssym,options,apix)
+
+		if options.mirror and fscsm:
+			fscplotter(fscsm,options,apix)
+			if sym and fscsmsym:
+				fscplotter(fscsmsym,options,apix)
+	
+
+	if options.averagefscs:
+		
+		if fscs:
+			fscaverager(fscs,'fscs_avg.txt')
+			fscplotter(['fscs_avg.txt'],options,apix)
+
+			if sym and fscssym:
+				fscavgsym=fscaverager(fscssym,'fscs_sym_avg.txt')
+				fscplotter(['fscs_sym_avg.txt'],options,apix)
+
+		if options.mirror and fscsm:
+			fscavgmirror=fscaverager(fscsm,'fscs_mirror_avg.txt')
+			fscplotter(['fscs_mirror_avg.txt'],options,apix)
+			
+			if sym and fscsmsym:
+				fscavgmirrorsym=fscaverager(fscsmsym,'fscs_sym_mirror_avg.txt')
+				fscplotter(['fscs_sym_mirror_avg.txt'],options,apix)
 	return
 
 
+def fscaverager(curves,outname):
+	freqs=[]
+	arrays=[]
+	for c in curves:
+		f=open(c,'r')
+		lines=f.readlines()
+		f.close()
+		vals=[]
+		for line in lines:
+			val=float(line.split()[-1].replace('\n',''))
+			freq=float(line.split()[0])
+			vals.append(val)
+			freqs.append(freq)
+		valsarray=numpy.array(vals)
+
+	finalsum=[0]*len(arrays[0])
+	for a in arrays:
+		finalsum+=a
+	finalavg=finalsum/len(arrays)
+
+	#outavgtxt=open('fscs_avg_' + tag + '.txt','w')
+	outavgtxt=open(outname,'w')
+	outlines=[]
+
+	for i in range(len(finalavg)):
+		outline=str(freqs[i])+'\t'+str(finalavg[i])+'\n'
+		outlines.append(outline)
+	
+	outavgtxt.writelines(outlines)
+	outavgtxt.close()
+	
+	return
+
+
+
+'''
 def alignment(options):
 	aligner=options.align
 	aligner=aligner.split(':')
@@ -401,7 +555,7 @@ def alignment(options):
 	print "Returning this from ALIGNMENT", alivolfile
 	
 	return os.getcwd() + '/' + options.path + '/alignment/' + alivolfile
-
+'''
 
 def calcfsc(v1,v2,fscfilename,options):
 	fsc = v1.calc_fourier_shell_correlation(v2)
@@ -587,8 +741,8 @@ def fscplotter(fscs,options,apix=0.0):
 		f= open(fscoutputname,'r')
 		lines = f.readlines()
 
-		if not options.boxsize:
-			options.boxsize = len(lines)
+		#if not options.boxsize:
+		boxsize = len(lines)
 
 
 		values = []
@@ -675,10 +829,10 @@ def fscplotter(fscs,options,apix=0.0):
 		plot_name = fscoutputname.replace('.txt','_PLOT.png')
 		#if options.plotonly:
 		if options.singleplot:
-			if options.output:
-				plot_name = options.path + '/' + os.path.basename(options.output)
-				plot_name = plot_name.replace('.txt','.png')
-			else:
+			#if options.output:
+			#	plot_name = options.path + '/' + os.path.basename(options.output)
+			#	plot_name = plot_name.replace('.txt','.png')
+			#else:
 				plot_name = options.path  + '/fsc_curves.png'
 		else:
 			plot_name = options.path + '/' + os.path.basename(fscoutputname).replace('.txt','_' + str(kont).zfill(len(fscs)) + '.png')
@@ -760,15 +914,15 @@ def fscplotter(fscs,options,apix=0.0):
 			fsc0p143resolution1 = ''
 			fsc0p143resolution1label=''
 
-			if fsc0p5pixel and apix and options.boxsize:		
-				fsc0p5resolution1 = (float(apix) * float(options.boxsize)) / float(fsc0p5pixel)
+			if fsc0p5pixel and apix and boxsize:		
+				fsc0p5resolution1 = (float(apix) * float(boxsize)) / float(fsc0p5pixel)
 				fsc0p5resolution1label = "%.1f" % ( fsc0p5resolution1 )
 			else:
 				print "Method 1 for resolution calculation failed (there was a division by zero somewhere, or you forgot to provide --boxsize or --apix)"
 
 
-			if fsc0p143pixel and apix and options.boxsize:		
-				fsc0p143resolution1 = (float(apix) * float(options.boxsize)) / float(fsc0p143pixel)
+			if fsc0p143pixel and apix and boxsize:		
+				fsc0p143resolution1 = (float(apix) * float(boxsize)) / float(fsc0p143pixel)
 				fsc0p143resolution1label = "%.1f" % ( fsc0p143resolution1 )
 
 			elif not fsc0p5pixel:
