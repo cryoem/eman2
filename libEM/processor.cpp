@@ -5972,7 +5972,23 @@ void AutoMaskAsymUnit::process_inplace(EMData* image) {
 
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
 	int au = params.set_default("au",0);
+	int symavg = params.set_default("symavg",0);
 
+	if ((toupper(((string)params["sym"])[0])!='C' || au<0)&& symavg) throw InvalidParameterException("ERROR: symavg only works with Cn symmetry, and one au must be specified.");
+	
+	if (symavg) {
+		for(int k = 0; k < nz; ++k ) {
+			for(int j = 0; j < ny; ++j ) {
+				for (int i = 0; i< nx; ++i) {
+					float az=atan2(float(j-ny/2),float(i-nx/2));
+					
+				}
+			}
+		}
+
+		delete sym;
+	}
+	
 	float *d = image->get_data();
 	for(int k = 0; k < nz; ++k ) {
 		for(int j = 0; j < ny; ++j ) {

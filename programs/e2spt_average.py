@@ -61,7 +61,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 		thrds=[threading.Thread(target=rotfn,args=(jsd,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for k in angs.keys() if angs[k]["score"]<=options.simthr]
 
 	avg=[0,0]
-	avg[0]=Averagers.get("mean.tomo") #,{"save_norm":1})
+	avg[0]=Averagers.get("mean.tomo",{"save_norm":1}) #,{"save_norm":1})
 	avg[1]=Averagers.get("mean.tomo")
 
 	print len(thrds)," threads"
