@@ -442,37 +442,45 @@ def getfscs(options,apix):
 	if options.averagefscs:
 		
 		if fscs:
-			fscaverager(fscs,'fscs_avg.txt')
+			fscaverager(options,fscs,'fscs_avg.txt')
 			fscplotter(['fscs_avg.txt'],options,apix)
 
 			if sym and fscssym:
-				fscavgsym=fscaverager(fscssym,'fscs_sym_avg.txt')
+				fscavgsym=fscaverager(options,fscssym,'fscs_sym_avg.txt')
 				fscplotter(['fscs_sym_avg.txt'],options,apix)
 
 		if options.mirror and fscsm:
-			fscavgmirror=fscaverager(fscsm,'fscs_mirror_avg.txt')
+			fscavgmirror=fscaverager(options,fscsm,'fscs_mirror_avg.txt')
 			fscplotter(['fscs_mirror_avg.txt'],options,apix)
 			
 			if sym and fscsmsym:
-				fscavgmirrorsym=fscaverager(fscsmsym,'fscs_sym_mirror_avg.txt')
+				fscavgmirrorsym=fscaverager(options,fscsmsym,'fscs_sym_mirror_avg.txt')
 				fscplotter(['fscs_sym_mirror_avg.txt'],options,apix)
 	return
 
 
-def fscaverager(curves,outname):
+def fscaverager(options,curves,outname):
 	freqs=[]
 	arrays=[]
+	i=0
 	for c in curves:
+		print "opening fsc file",c
 		f=open(c,'r')
 		lines=f.readlines()
 		f.close()
 		vals=[]
+
+		print "has these many lines",len(lines)
 		for line in lines:
 			val=float(line.split()[-1].replace('\n',''))
 			freq=float(line.split()[0])
 			vals.append(val)
-			freqs.append(freq)
+			if i==0:
+				freqs.append(freq)
+		print "these many vals and freqs",len(vals),len(freqs)
 		valsarray=numpy.array(vals)
+		arrays.append(valsarray)
+		i+=1
 
 	finalsum=[0]*len(arrays[0])
 	for a in arrays:
@@ -480,11 +488,11 @@ def fscaverager(curves,outname):
 	finalavg=finalsum/len(arrays)
 
 	#outavgtxt=open('fscs_avg_' + tag + '.txt','w')
-	outavgtxt=open(outname,'w')
-	outlines=[]
+	outavgtxt=open( options.path + '/' + outname,'w')
+	outlines=['0.0\t1.0\n']
 
 	for i in range(len(finalavg)):
-		outline=str(freqs[i])+'\t'+str(finalavg[i])+'\n'
+		outline="%.10f\t%10f\n"%( freqs[i],finalavg[i])
 		outlines.append(outline)
 	
 	outavgtxt.writelines(outlines)
@@ -558,6 +566,7 @@ def alignment(options):
 '''
 
 def calcfsc(v1,v2,fscfilename,options):
+	
 	fsc = v1.calc_fourier_shell_correlation(v2)
 	third = len(fsc)/3
 	xaxis = fsc[0:third]
@@ -567,8 +576,17 @@ def calcfsc(v1,v2,fscfilename,options):
 		apix=options.apix
 	saxis = [x/apix for x in xaxis]
 	Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:], fscfilename)
+	
+	f=open(fscfilename,'r')
+	lines=['0.0\t1.0\n']+f.readlines()
+	f.close()
+
+	g=open(fscfilename,'w')
+	g.writelines(lines)
+	g.close()
+
 	return fsc	
-		
+	
 
 def symmetrize(vol,options):
 	sym = options.symmap
@@ -768,7 +786,7 @@ def fscplotter(fscs,options,apix=0.0):
 					newlines.append(line)
 		
 		if not firstline:
-			newlines = ['0 1.0']+newlines
+			newlines = ['0.0 1.0']+newlines
 		else:
 			pass
 		x=[]
