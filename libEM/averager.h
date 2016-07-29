@@ -297,6 +297,8 @@ namespace EMAN
 	private:
 		EMData *norm_image;
 		float thresh_sigma;
+		float overlap;
+		int nimg;
 	};
 
 	
