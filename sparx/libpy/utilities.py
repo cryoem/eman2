@@ -5239,8 +5239,8 @@ def cmdexecute(cmd, printing_on_success = True):
 	import subprocess
 	outcome = subprocess.call(cmd, shell=True)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(outcome == 1):
-		print  line,"ERROR!!   Command failed:  ", cmd
+	if(outcome != 0):
+		print  line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome
 		from sys import exit
 		exit()
 	elif printing_on_success:
