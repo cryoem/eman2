@@ -309,7 +309,8 @@ def main():
 #		except: pass
 
 #		fout=open("ptclsnr.txt".format(i),"w")
-		fout=open("ptclfsc_{}.txt".format(args[0][-2:]),"w")
+		ptclfsc = "ptclfsc_{}.txt".format(args[0][-2:])
+		fout=open(ptclfsc,"w")
 		# generate a projection for each particle so we can compare
 
 		pj = 0
@@ -378,18 +379,90 @@ def main():
 					#Util.save_data(xaxis[1],xaxis[1]-xaxis[0],fsc[1:-1],"ptclfsc/f{:04d}_{:1d}_{:06d}.txt".format(i,eo,j))
 
 					pj+=1
+		
+		# this is not the best way to do this, but it seemed easier to just read the output file rather than integrate this code into the above calculations.
+		fout.close()
 
-		print """Evaluation complete. Each column in the resulting text file includes information at a different resolution range. 
-Columns 0 and 1 are almost always useful, and column 2 is useful for high resolution data. Column 3 is only useful for near-atomic
-resolution, and even then, not always. 
+		bname = base_name(ptclfsc)
 
-e2display.py --plot ptclfsc_{}.txt
+		print("Generating new sets.")
 
-will allow you to visualize the data, and apply various segmentation methods through the control-panel. You can also mouse-over 
-specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.
-""".format(args[0][-2:])
+		nseg = 2
+		axes = [0,1,2,3]
 
-		print "Results in ptclfsc_{}.txt".format(args[0][-2:])
+		fscs = []
+		cmts = []
+		with open(ptclfsc,'r') as ptclfsc_handle:
+			for line in ptclfsc_handle:
+				if line != "":
+					fsc,cmt = line.strip().split("#")
+					fscs.append(fsc.split()[:4])
+					cmts.append(cmt.strip())
+
+		d = np.asarray(fscs).astype(float)
+		d /= np.std(d,axis=0)
+		(nrow,ncol) = d.shape
+
+		imdata = []
+		for r in range(nrow):
+			imdata.append(EMData(ncol,1,1))
+			for ax in axes:
+				imdata[r][ax]=d[r][ax]
+
+		an=Analyzers.get("kmeans")
+		an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":0,"slowseed":0,"mininclass":5})
+		an.insert_images_list(imdata)
+		centers=an.analyze()
+
+		results=[[[] for i in range(ncol)] for j in range(nseg)]
+		resultc=[[] for j in range(nseg)]
+
+		d1 = []
+		d2 = []
+		for r in range(nrow):
+			s=imdata[r]["class_id"]
+			if s == 0: d1.append(d[r])
+			else: d2.append(d[r])
+			for c in xrange(ncol):
+				results[s][c].append(imdata[c][r])
+			resultc[s].append(cmts[r])
+		d1 = np.asarray(d1)
+		d2 = np.asarray(d2)
+
+		# need to *consistently* label the "best" and "worst" cluster
+		d1s = np.sum(np.sum(d1,axis=0))
+		d2s = np.sum(np.sum(d2,axis=0))
+		lstfs = {}
+		if d1s > d2s:
+			lstfs[0] = "{}_good.lst".format(bname)
+			lstfs[1] = "{}_bad.lst".format(bname)
+		else:
+			lstfs[0] = "{}_bad.lst".format(bname)
+			lstfs[1] = "{}_good.lst".format(bname)
+
+		lsx={}
+		for s in [0,1]:#range(len(results)):
+			outf = "sets/{}".format(lstfs[s])
+			try: os.unlink(outf) # try to remove file if it already exists
+			except: pass
+			out=LSXFile(outf)
+			for cmt in resultc[s]:
+				imn,imf=cmt.split(";")[:2]
+				imn=int(imn)
+				if not lsx.has_key(imf):
+					lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
+				val=lsx[imf][imn]
+				out[r]=val
+
+		# OLD MANUAL INFO
+		#print("Evaluation complete. Each column in the resulting text file includes information at a different resolution range. Columns 0 and 1 are almost always useful, 
+		# and column 2 is useful for high resolution data. Column 3 is only useful for near-atomic resolution, and even then, not always.
+		#\n\ne2display.py --plot ptclfsc_{}.txt\n\nwill allow you to visualize the data, and apply various segmentation methods through the control-panel. You can also 
+		#mouse-over specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.".format(args[0][-2:]))
+		
+		# NEW AUTOMATED INFO
+		print("Evaluation coplete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname)
+
 		E2end(logid)
 		sys.exit(0)
 
@@ -688,4 +761,4 @@ specific data points to see the particle each represents. See one of the single 
 
 
 if __name__ == "__main__":
-    main()
+	main()
