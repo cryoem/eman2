@@ -76,6 +76,7 @@ Important: This program must be run from the project directory, not from within 
 
 	parser.add_header(name="modeheader", help='Additional Options', title="Additional Options", row=20, col=0, rowspan=1, colspan=3, mode="auto")
 	parser.add_argument("--fromscratch",action="store_true",help="Force refitting of CTF from scratch, ignoring any previous fits.",default=False, guitype='boolbox', row=22, col=0, rowspan=1, colspan=1, mode='auto[False]')
+#	parser.add_argument("--forceframe",action="store_true",help="Uses defocus/astigmatism from frames. Does not significantly modify based on particles",default=False, guitype='boolbox', row=24, col=2, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting (use e2rawdata first)",default=False, guitype='boolbox', row=22, col=1, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding",default=False, guitype='boolbox', row=22, col=2, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--highdensity",action="store_true",help="If particles are very close together, this will interfere with SSNR estimation. If set uses an alternative strategy, but may over-estimate SSNR.",default=False, guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, mode='auto[False]')
@@ -126,10 +127,10 @@ Important: This program must be run from the project directory, not from within 
 			if fc.dfdiff!=0: frame_stig=True
 			
 		if options.voltage==0 : options.voltage=fc.voltage
-		if options.cs==0 : options.cs=fc.cs
+		if options.cs==0 : options.cs=max(fc.cs,0.01)			# CTF model doesn't work well with Cs exactly 0
 		if options.apix==0 : options.apix=fc.apix
 		
-		if options.voltage!=fc.voltage or options.cs!=fc.cs or options.apix!=fc.apix or options.ac!=fc.ampcont :
+		if options.voltage!=fc.voltage or fabs(options.cs-fc.cs)>0.02 or fabs(options.apix-fc.apix)>0.1 or options.ac!=fc.ampcont :
 			print """Warning: Disagreement in specified voltage, Cs, A/pix or %AC between frames and options. This requires refitting without frame-based parameters.
 Strongly suggest refitting CTF from frames with e2rawdata.py with revised parameters before running this program"""
 			frame_ctf=False
@@ -183,7 +184,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 			if frame_stig : 
 				if options.astigmatism : 
 					print "Astigmatism present in in frame parameters. Will use defocus/astig unchanged from frames"
-					fit_options="--curdefocusfix --astigmatism"
+					fit_options="--curdefocusfix --astigmatism --useframedf"
 				else :
 					print """Astigmatism present in frame parameters, but not specified here. 
 	No astigmatism will be used, and defocuses will be refined from particles.
@@ -195,10 +196,10 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 					print """Astigmatism fitting from particles requested.""" 
 					if options.hires : print """This may be fine for strong astigmatism through midres 
 resolution, but for high resolution work, fitting defocus/astig from frames is recommended"""
-					fit_options="--curdefocushint --astigmatism"
+					fit_options="--curdefocushint --astigmatism --useframedf"
 				else :
 					print "Frame parameters present without astigmatism. Slightly refining frame defocus values from particles."
-					fit_options="--curdefocusfix"		# "slightly refining" refers to refinebysnr
+					fit_options="--curdefocusfix --useframedf"	# "slightly refining" refers to refinebysnr
 		else: 
 			print "No frame-based CTF parameters found. Fitting from particles."
 			if options.astigmatism :
