@@ -70,9 +70,6 @@ will be extracted from the STAR file and will be automatically processed through
 
 	(options, args) = parser.parse_args()
 
-	if options.apix<=0 :
-		print "A/pix must be specified"
-		sys.exit(1)
 
 	logid=E2init(sys.argv,options.ppid)
 
@@ -84,6 +81,24 @@ will be extracted from the STAR file and will be automatically processed through
 
 	if options.verbose>0 : print "Parsing STAR file"
 	star=StarFile("../"+args[0])
+
+	if options.apix<=0 :
+		try:
+			options.apix=star["rlnDetectorPixelSize"][0]/star["rlnMagnification"][0]*10000.0
+			print "Using {} A/pix from Relion file".format(options.apix)
+		except:
+			print "A/pix not specified and not found in STAR file"
+			sys.exit(1)
+
+	prj=js_open_dict("info/project.json")
+	try:
+		prj["global.apix"]=options.apix
+		prj["global.microscope_cs"]=star["rlnSphericalAberration"][0]
+		if prj["global.microscope_cs"]<=0.0 : prj["global.microscope_cs"]=0.001
+		prj["global.microscope_voltage"]=star["rlnVoltage"][0]
+		print "V={} Cs={}".format(prj["global.microscope_voltage"],prj["global.microscope_cs"])
+	except:
+		print "Did not find Voltage and Cs in Relion file"
 		
 	oldname=""
 	olddf=-1.0
@@ -112,7 +127,7 @@ will be extracted from the STAR file and will be automatically processed through
 			dfv=star["rlnDefocusV"][i]
 			dfang=star["rlnDefocusAngle"][i]
 			ctf=EMAN2Ctf()
-			ctf.from_dict({"defocus":(dfu+dfv)/20000.0,"dfang":dfang,"dfdiff":(dfu-dfv)/10000.0,"voltage":star["rlnVoltage"][i],"cs":star["rlnSphericalAberration"][i],"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
+			ctf.from_dict({"defocus":(dfu+dfv)/20000.0,"dfang":dfang,"dfdiff":(dfu-dfv)/10000.0,"voltage":star["rlnVoltage"][i],"cs":max(star["rlnSphericalAberration"][i],0.0001),"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
 			jdb["ctf_frame"]=[512,ctf,(256,256),tuple(),5,1]
 		
 		# copy the image

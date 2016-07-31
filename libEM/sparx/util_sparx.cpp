@@ -19225,6 +19225,35 @@ vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* b
 	EXITFUNC;
 }
 
+vector<float> Util::sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise)
+{
+	ENTERFUNC;
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+    float* data = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfs = ctfs->get_data();
+	float *pbckgnoise = bckgnoise->get_data();
+
+	float edis = 0.0f, wdis = 0.0f;
+
+	for (size_t i=0;i<size/2;++i) {
+		if( pbckgnoise[i] > 0.0f ) {
+			int lol = i*2;
+			float p1 = data[lol]   - dctfs[i]*dproj[lol];
+			float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
+			float temp = p1*p1 + p2*p2;
+			edis += temp*pbckgnoise[i];
+			wdis += temp;
+		}
+	}
+	vector<float> retvals;
+	retvals.push_back(edis*0.5f);
+	retvals.push_back(wdis);
+    return retvals;
+	EXITFUNC;
+}
+
 
 void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq)
 {

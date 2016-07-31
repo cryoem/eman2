@@ -79,6 +79,11 @@ void Averager::mult(const float& s)
 	else throw NullPointerException("Error, attempted to multiply the result image, which is NULL");
 }
 
+// pure virtual causing boost issues here, so this is just a dummy method
+void Averager::add_image(EMData* image)
+{
+return;
+}
 
 void Averager::add_image_list(const vector<EMData*> & image_list)
 {
@@ -88,7 +93,7 @@ void Averager::add_image_list(const vector<EMData*> & image_list)
 }
 
 TomoAverager::TomoAverager()
-	: norm_image(0)
+	: norm_image(0),nimg(0),overlap(0)
 {
 
 }
@@ -123,7 +128,9 @@ void TomoAverager::add_image(EMData * image)
 		norm_image = image->copy_head();
 		norm_image->to_zero();
 		
-		thresh_sigma = (float)params.set_default("thresh_sigma", 0.05);
+		thresh_sigma = (float)params.set_default("thresh_sigma", 0.5);
+		overlap=0.0f;
+		nimg=0;
 	}
 
 	float *result_data = result->get_data();
@@ -132,21 +139,24 @@ void TomoAverager::add_image(EMData * image)
 	
 	vector<float> threshv;
 	threshv=image->calc_radial_dist(nx/2,0,1,4);
-	for (int i=0; i<nx/2; i++) threshv[i]*=thresh_sigma;
+	for (int i=0; i<nx/2; i++) threshv[i]*=threshv[i]*thresh_sigma;  // The value here is amplitude, we square to make comparison less expensive
 	
 	size_t j=0;
 	// Add any values above threshold to the result image, and add 1 to the corresponding pixels in the norm image
+	int k=0;
 	for (int z=0; z<nz; z++) {
 		for (int y=0; y<ny; y++) {
 			for (int x=0; x<nx; x+=2, j+=2) {
 				float rf=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
 				int r=int(rf);
+				if (r>ny/2) continue;
 				float f=data[j];	// real
 				float g=data[j+1];	// imag
 				float inten=f*f+g*g;
 				
 				if (inten<threshv[r]) continue;
 				
+				k+=1;
 				result_data[j]  +=f;
 				result_data[j+1]+=g;
 				
@@ -155,13 +165,16 @@ void TomoAverager::add_image(EMData * image)
 			}
 		}
 	}
+//	printf("%d %d\n",k,nx*ny*nz);
+	overlap+=(float)k/(nx*ny*nz);
+	nimg++;
 	
 	if (image->has_attr("free_me")) delete image;
 }
 
 EMData * TomoAverager::finish()
 {
-	if (norm_image==0 || result==0) return NULL;
+	if (norm_image==0 || result==0 || nimg==0) return NULL;
 	
 	int nx = result->get_xsize();
 	int ny = result->get_ysize();
@@ -183,6 +196,7 @@ EMData * TomoAverager::finish()
 	
 	EMData *ret = result->do_ift();
 	ret->set_attr("ptcl_repr",norm_image->get_attr("maximum"));
+	ret->set_attr("mean_coverage",(float)(overlap/nimg));
 	if ((int)params.set_default("save_norm", 0)) 
 		norm_image->write_image("norm.hdf");
 	

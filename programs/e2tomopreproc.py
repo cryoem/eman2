@@ -72,6 +72,8 @@ def main():
 	parser.add_argument("--shrink", type=float,default=0.0,help="""Default=0.0 (no shrinking). Can use decimal numbers, larger than 1.0. Optionally shrink the images by this factor. Uses processor math.fft.resample.""")
 		
 	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold processor applied to each image.""")
+
+	parser.add_argument("--erasegold",action='store_true',default='',help="""Default=False. Runs erase_gold.py on the stack.""")
 	
 	parser.add_argument("--mask",type=str,default='', help="""Default=None. Masking processor applied to each image.""")
 	
@@ -497,7 +499,7 @@ class TomoPreproc2DTask(JSTask):
 		cmd = 'e2proc2d.py ' + image + ' ' + outimage
 
 		if '.mrcs' in outimage:
-				cmd += ' --threed2twod'
+			cmd += ' --threed2twod'
 		#if nz > 1:
 		#		cmd += ' --threed2threed'
 		#print "cmd is", cmd
@@ -548,7 +550,6 @@ class TomoPreproc2DTask(JSTask):
 			else:
 				cmd += ',' + clipx
 				
-			
 			
 		if options.shrink:
 			print "adding shrink"
