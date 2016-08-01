@@ -379,8 +379,9 @@ def main():
 					#Util.save_data(xaxis[1],xaxis[1]-xaxis[0],fsc[1:-1],"ptclfsc/f{:04d}_{:1d}_{:06d}.txt".format(i,eo,j))
 
 					pj+=1
-		
-		# this is not the best way to do this, but it seemed easier to just read the output file rather than integrate this code into the above calculations.
+
+		# This is likely not the best way to do this, but it seemed easier to just read
+		# the output file rather than integrate this code into the above calculations.
 		fout.close()
 
 		bname = base_name(ptclfsc)
@@ -454,14 +455,14 @@ def main():
 				val=lsx[imf][imn]
 				out[r]=val
 
-		# OLD MANUAL INFO
-		#print("Evaluation complete. Each column in the resulting text file includes information at a different resolution range. Columns 0 and 1 are almost always useful, 
+		# OLD 'MANUAL' INFO
+		#print("Evaluation complete. Each column in the resulting text file includes information at a different resolution range. Columns 0 and 1 are almost always useful,
 		# and column 2 is useful for high resolution data. Column 3 is only useful for near-atomic resolution, and even then, not always.
-		#\n\ne2display.py --plot ptclfsc_{}.txt\n\nwill allow you to visualize the data, and apply various segmentation methods through the control-panel. You can also 
+		#\n\ne2display.py --plot ptclfsc_{}.txt\n\nwill allow you to visualize the data, and apply various segmentation methods through the control-panel. You can also
 		#mouse-over specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.".format(args[0][-2:]))
-		
+
 		# NEW AUTOMATED INFO
-		print("Evaluation coplete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname)
+		print("Evaluation coplete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname))
 
 		E2end(logid)
 		sys.exit(0)
@@ -639,7 +640,7 @@ def main():
 		#if len(cmx) != len(proj):
 			#print("ERROR: The specified refinement directory must contain one projections file for each classmx file")
 			#sys.exit(1)
-	
+
 		#cls = [] # read all classification matrix data into a list of lists
 		#for i in range(0,len(cmx),2):
 			#eps = EMData.read_images(cmx[i])
@@ -647,12 +648,12 @@ def main():
 			#eops = [ptcl for pair in map(None,eps,ops) for ptcl in pair if ptcl is not None]
 			#cls.append(eops)
 		#nptcl = cls[0][0]['ny'] # particles are along the y axis
-	
+
 		## Create a list of lists of Transforms representing the orientations of the reference projections
 		## for each classmx file and try to get projection orientation information for each class
 
 		#if options.verbose: print("Parsing assigned projection orientations")
-		
+
 		#clsort=[]
 		#for x,p,c in zip(cmx,proj,classes):
 			#ncls=EMUtil.get_image_count(p)
@@ -666,17 +667,17 @@ def main():
 
 		## Get a list of Transform objects to move to each other asymmetric unit in the symmetry group
 		#syms=parsesym( str(options.sym) ).get_syms()
-		
+
 		#if options.verbose: print("Tracing particles...")
-		
+
 		#with open(options.output,"w") as outf:
 
-			#for p in xrange(nptcl): 
+			#for p in xrange(nptcl):
 				#if options.verbose: sys.stdout.write('\r{0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
 				#isodd = p%2
-				
+
 				#dat = []
-				
+
 				#for i in xrange(1,len(cls)):
 					#ort1=clsort[i-1][int(cls[i-1][0][0,p])] # orientation of particle in first classmx
 					#ort2=clsort[i][int(cls[i][0][0,p])]		# orientation of particle in second classmx
@@ -685,29 +686,29 @@ def main():
 					#for t in syms:
 						#ort2p=ort2*t
 						#diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
-					
+
 					#diff=min(diffs) # The angular error for the best-agreeing orientation
-					
+
 					#cls1 = int(cls[i-1][0][0,p])
 					#e1 = ort1.get_rotation("eman")
 					#az1 = e1["az"]
 					#alt1 = e1["alt"]
 					#phi1 = e1["phi"]
-					
+
 					#cls2 = int(cls[i][0][0,p])
 					#e2 = ort2.get_rotation("eman")
 					#az2 = e2["az"]
 					#alt2 = e2["alt"]
 					#phi2 = e2["phi"]
-					
+
 					#clsdiff = abs(cls2-cls1)
 					#azdiff = abs(az2-az1)
 					#altdiff = abs(alt2-alt1)
 					#phidiff = abs(phi2-phi1)
-					
+
 					#d = [az1,alt1,phi1,cls1,az2,alt2,phi2,cls2,diff,clsdiff,azdiff,altdiff,phidiff]
 					#dat.append("\t".join([str(i) for i in d]))
-			
+
 					#if i == 0:
 						#try:
 							#if isodd: classes1 = cmx[1].replace("classmx","classes")
@@ -717,9 +718,9 @@ def main():
 							#proj1 = hdr1["projection_image"]
 						#except:
 							#pass
-		
+
 				#data = "\t".join(dat)
-		
+
 				#try:
 					#if isodd: classes2 = cmx[-1].replace("classmx","classes")
 					#else: classes2 = cmx[-2].replace("classmx","classes")
@@ -731,7 +732,7 @@ def main():
 				#except:
 					#cmt = "no particles in class corresponding to this projection"
 
-				#line = data + "\t# " + cmt + "\n"			
+				#line = data + "\t# " + cmt + "\n"
 				#outf.write(line)
 
 		#if ".txt" in options.output: kf = options.output.replace(".txt",".key")
