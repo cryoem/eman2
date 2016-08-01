@@ -295,16 +295,17 @@ def main():
 					os.remove(fm)
 				except: pass
 			
-			### make lists
-			tmpcls=["tmpcls_even.lst","tmpcls_odd.lst"]
-			tmpcls_m=[l.replace('.','_m1.') for l in tmpcls]
-			run("e2classextract.py {clsfile} --refinemulti --setname {tmpcls}".format(clsfile=output_cls[-1]["even"][s],tmpcls=tmpcls[0]))
-			run("e2classextract.py {clsfile} --refinemulti --setname {tmpcls}".format(clsfile=output_cls[-1]["odd"][s],tmpcls=tmpcls[1]))
-			lstout="sets/{}_{}.lst".format(options.newpath,s)
-			run("e2proclst.py {lst1} {lst2} --mergesort {lstout}".format(lst1=tmpcls_m[0], lst2=tmpcls_m[1], lstout=lstout))
-			for l in tmpcls_m:
-				try: os.remove(l)
-				except: pass
+			if it=options.iter-1:
+				### make lists
+				tmpcls=["tmpcls_even.lst","tmpcls_odd.lst"]
+				tmpcls_m=[l.replace('.','_m1.') for l in tmpcls]
+				run("e2classextract.py {clsfile} --refinemulti --setname {tmpcls}".format(clsfile=output_cls[-1]["even"][s],tmpcls=tmpcls[0]))
+				run("e2classextract.py {clsfile} --refinemulti --setname {tmpcls}".format(clsfile=output_cls[-1]["odd"][s],tmpcls=tmpcls[1]))
+				lstout="sets/{}_{}.lst".format(options.newpath,s)
+				run("e2proclst.py {lst1} {lst2} --mergesort {lstout}".format(lst1=tmpcls_m[0], lst2=tmpcls_m[1], lstout=lstout))
+				for l in tmpcls_m:
+					try: os.remove(l)
+					except: pass
 	
 		
 	E2end(logid)
