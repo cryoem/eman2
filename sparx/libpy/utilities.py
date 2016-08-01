@@ -5153,8 +5153,9 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	
 	host_names = [hostname]
 	host_names = wrap_mpi_gatherv(host_names, 0, mpi_comm)
+	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
 	
-	local_size = host_names.count(host_names[0])
+	local_size = host_names.count(hostname)
 	local_rank = my_rank % local_size 
 	
 	no_of_processes_per_group = local_size
@@ -5238,8 +5239,8 @@ def cmdexecute(cmd, printing_on_success = True):
 	import subprocess
 	outcome = subprocess.call(cmd, shell=True)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(outcome == 1):
-		print  line,"ERROR!!   Command failed:  ", cmd
+	if(outcome != 0):
+		print  line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome
 		from sys import exit
 		exit()
 	elif printing_on_success:

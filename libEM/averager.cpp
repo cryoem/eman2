@@ -93,7 +93,7 @@ void Averager::add_image_list(const vector<EMData*> & image_list)
 }
 
 TomoAverager::TomoAverager()
-	: norm_image(0)
+	: norm_image(0),nimg(0),overlap(0)
 {
 
 }
@@ -128,7 +128,9 @@ void TomoAverager::add_image(EMData * image)
 		norm_image = image->copy_head();
 		norm_image->to_zero();
 		
-		thresh_sigma = (float)params.set_default("thresh_sigma", 0.1);
+		thresh_sigma = (float)params.set_default("thresh_sigma", 0.5);
+		overlap=0.0f;
+		nimg=0;
 	}
 
 	float *result_data = result->get_data();
@@ -141,7 +143,7 @@ void TomoAverager::add_image(EMData * image)
 	
 	size_t j=0;
 	// Add any values above threshold to the result image, and add 1 to the corresponding pixels in the norm image
-//	int k=0;
+	int k=0;
 	for (int z=0; z<nz; z++) {
 		for (int y=0; y<ny; y++) {
 			for (int x=0; x<nx; x+=2, j+=2) {
@@ -154,7 +156,7 @@ void TomoAverager::add_image(EMData * image)
 				
 				if (inten<threshv[r]) continue;
 				
-//				k+=1;
+				k+=1;
 				result_data[j]  +=f;
 				result_data[j+1]+=g;
 				
@@ -164,13 +166,15 @@ void TomoAverager::add_image(EMData * image)
 		}
 	}
 //	printf("%d %d\n",k,nx*ny*nz);
+	overlap+=(float)k/(nx*ny*nz);
+	nimg++;
 	
 	if (image->has_attr("free_me")) delete image;
 }
 
 EMData * TomoAverager::finish()
 {
-	if (norm_image==0 || result==0) return NULL;
+	if (norm_image==0 || result==0 || nimg==0) return NULL;
 	
 	int nx = result->get_xsize();
 	int ny = result->get_ysize();
@@ -192,6 +196,7 @@ EMData * TomoAverager::finish()
 	
 	EMData *ret = result->do_ift();
 	ret->set_attr("ptcl_repr",norm_image->get_attr("maximum"));
+	ret->set_attr("mean_coverage",(float)(overlap/nimg));
 	if ((int)params.set_default("save_norm", 0)) 
 		norm_image->write_image("norm.hdf");
 	

@@ -57,7 +57,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 
 
 	avg=[0,0]
-	avg[0]=Averagers.get("mean.tomo",{"save_norm":1}) #,{"save_norm":1})
+	avg[0]=Averagers.get("mean.tomo") #,{"save_norm":1})
 	avg[1]=Averagers.get("mean.tomo")
 
 	# Rotation and insertion are slow, so we do it with threads. 

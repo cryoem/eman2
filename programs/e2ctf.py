@@ -100,6 +100,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--curdefocusfix",action="store_true",help="Fixes the defocus at the current determined value (if any) (+-.001 um), but recomputes SSNR, etc.",default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='autofit[False]')
+	parser.add_argument("--useframedf",action="store_true",default=False,help="Use defocus/astig from whole frame even if particle-based value is present")
 	parser.add_argument("--bgmask",type=int,help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_argument("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
 	parser.add_argument("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images", default=False, nosharedb=True, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode="gensf[True]")
@@ -564,6 +565,7 @@ def pspec_and_ctf_fit(options,debug=False):
 			if debug : print "Fit CTF"
 			if options.curdefocushint or options.curdefocusfix:
 				try:
+					if options.useframedf : raise Exception		# a bit of a hack...
 					ctf=js_parms["ctf"][0]
 					curdf=ctf.defocus
 					curdfdiff=ctf.dfdiff
@@ -584,7 +586,7 @@ def pspec_and_ctf_fit(options,debug=False):
 						dfhint=None
 						print "No existing defocus to start with"
 			else: dfhint=(options.defocusmin,options.defocusmax)
-			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,highdensity=options.highdensity,verbose=options.verbose)
+			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,max(options.cs,0.01),options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,highdensity=options.highdensity,verbose=options.verbose)
 			if options.astigmatism and not options.curdefocusfix : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
 			elif options.astigmatism:
 				ctf.dfdiff=curdfdiff
