@@ -309,7 +309,8 @@ def main():
 #		except: pass
 
 #		fout=open("ptclsnr.txt".format(i),"w")
-		fout=open("ptclfsc_{}.txt".format(args[0][-2:]),"w")
+		ptclfsc = "ptclfsc_{}.txt".format(args[0][-2:])
+		fout=open(ptclfsc,"w")
 		# generate a projection for each particle so we can compare
 
 		pj = 0
@@ -379,17 +380,90 @@ def main():
 
 					pj+=1
 
-		print """Evaluation complete. Each column in the resulting text file includes information at a different resolution range. 
-Columns 0 and 1 are almost always useful, and column 2 is useful for high resolution data. Column 3 is only useful for near-atomic
-resolution, and even then, not always. 
+		# This is likely not the best way to do this, but it seemed easier to just read
+		# the output file rather than integrate this code into the above calculations.
+		fout.close()
 
-e2display.py --plot ptclfsc_{}.txt
+		bname = base_name(ptclfsc)
 
-will allow you to visualize the data, and apply various segmentation methods through the control-panel. You can also mouse-over 
-specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.
-""".format(args[0][-2:])
+		print("Generating new sets.")
 
-		print "Results in ptclfsc_{}.txt".format(args[0][-2:])
+		nseg = 2
+		axes = [0,1,2,3]
+
+		fscs = []
+		cmts = []
+		with open(ptclfsc,'r') as ptclfsc_handle:
+			for line in ptclfsc_handle:
+				if line != "":
+					fsc,cmt = line.strip().split("#")
+					fscs.append(fsc.split()[:4])
+					cmts.append(cmt.strip())
+
+		d = np.asarray(fscs).astype(float)
+		d /= np.std(d,axis=0)
+		(nrow,ncol) = d.shape
+
+		imdata = []
+		for r in range(nrow):
+			imdata.append(EMData(ncol,1,1))
+			for ax in axes:
+				imdata[r][ax]=d[r][ax]
+
+		an=Analyzers.get("kmeans")
+		an.set_params({"ncls":nseg,"minchange":nrow//100,"verbose":0,"slowseed":0,"mininclass":5})
+		an.insert_images_list(imdata)
+		centers=an.analyze()
+
+		results=[[[] for i in range(ncol)] for j in range(nseg)]
+		resultc=[[] for j in range(nseg)]
+
+		d1 = []
+		d2 = []
+		for r in range(nrow):
+			s=imdata[r]["class_id"]
+			if s == 0: d1.append(d[r])
+			else: d2.append(d[r])
+			for c in xrange(ncol):
+				results[s][c].append(imdata[c][r])
+			resultc[s].append(cmts[r])
+		d1 = np.asarray(d1)
+		d2 = np.asarray(d2)
+
+		# need to *consistently* label the "best" and "worst" cluster
+		d1s = np.sum(np.sum(d1,axis=0))
+		d2s = np.sum(np.sum(d2,axis=0))
+		lstfs = {}
+		if d1s > d2s:
+			lstfs[0] = "{}_good.lst".format(bname)
+			lstfs[1] = "{}_bad.lst".format(bname)
+		else:
+			lstfs[0] = "{}_bad.lst".format(bname)
+			lstfs[1] = "{}_good.lst".format(bname)
+
+		lsx={}
+		for s in [0,1]:#range(len(results)):
+			outf = "sets/{}".format(lstfs[s])
+			try: os.unlink(outf) # try to remove file if it already exists
+			except: pass
+			out=LSXFile(outf)
+			for cmt in resultc[s]:
+				imn,imf=cmt.split(";")[:2]
+				imn=int(imn)
+				if not lsx.has_key(imf):
+					lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
+				val=lsx[imf][imn]
+				out[r]=val
+
+		# OLD 'MANUAL' INFO
+		#print("Evaluation complete. Each column in the resulting text file includes information at a different resolution range. Columns 0 and 1 are almost always useful,
+		# and column 2 is useful for high resolution data. Column 3 is only useful for near-atomic resolution, and even then, not always.
+		#\n\ne2display.py --plot ptclfsc_{}.txt\n\nwill allow you to visualize the data, and apply various segmentation methods through the control-panel. You can also
+		#mouse-over specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.".format(args[0][-2:]))
+
+		# NEW AUTOMATED INFO
+		print("Evaluation coplete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname))
+
 		E2end(logid)
 		sys.exit(0)
 
@@ -566,7 +640,7 @@ specific data points to see the particle each represents. See one of the single 
 		#if len(cmx) != len(proj):
 			#print("ERROR: The specified refinement directory must contain one projections file for each classmx file")
 			#sys.exit(1)
-	
+
 		#cls = [] # read all classification matrix data into a list of lists
 		#for i in range(0,len(cmx),2):
 			#eps = EMData.read_images(cmx[i])
@@ -574,12 +648,12 @@ specific data points to see the particle each represents. See one of the single 
 			#eops = [ptcl for pair in map(None,eps,ops) for ptcl in pair if ptcl is not None]
 			#cls.append(eops)
 		#nptcl = cls[0][0]['ny'] # particles are along the y axis
-	
+
 		## Create a list of lists of Transforms representing the orientations of the reference projections
 		## for each classmx file and try to get projection orientation information for each class
 
 		#if options.verbose: print("Parsing assigned projection orientations")
-		
+
 		#clsort=[]
 		#for x,p,c in zip(cmx,proj,classes):
 			#ncls=EMUtil.get_image_count(p)
@@ -593,17 +667,17 @@ specific data points to see the particle each represents. See one of the single 
 
 		## Get a list of Transform objects to move to each other asymmetric unit in the symmetry group
 		#syms=parsesym( str(options.sym) ).get_syms()
-		
+
 		#if options.verbose: print("Tracing particles...")
-		
+
 		#with open(options.output,"w") as outf:
 
-			#for p in xrange(nptcl): 
+			#for p in xrange(nptcl):
 				#if options.verbose: sys.stdout.write('\r{0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
 				#isodd = p%2
-				
+
 				#dat = []
-				
+
 				#for i in xrange(1,len(cls)):
 					#ort1=clsort[i-1][int(cls[i-1][0][0,p])] # orientation of particle in first classmx
 					#ort2=clsort[i][int(cls[i][0][0,p])]		# orientation of particle in second classmx
@@ -612,29 +686,29 @@ specific data points to see the particle each represents. See one of the single 
 					#for t in syms:
 						#ort2p=ort2*t
 						#diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
-					
+
 					#diff=min(diffs) # The angular error for the best-agreeing orientation
-					
+
 					#cls1 = int(cls[i-1][0][0,p])
 					#e1 = ort1.get_rotation("eman")
 					#az1 = e1["az"]
 					#alt1 = e1["alt"]
 					#phi1 = e1["phi"]
-					
+
 					#cls2 = int(cls[i][0][0,p])
 					#e2 = ort2.get_rotation("eman")
 					#az2 = e2["az"]
 					#alt2 = e2["alt"]
 					#phi2 = e2["phi"]
-					
+
 					#clsdiff = abs(cls2-cls1)
 					#azdiff = abs(az2-az1)
 					#altdiff = abs(alt2-alt1)
 					#phidiff = abs(phi2-phi1)
-					
+
 					#d = [az1,alt1,phi1,cls1,az2,alt2,phi2,cls2,diff,clsdiff,azdiff,altdiff,phidiff]
 					#dat.append("\t".join([str(i) for i in d]))
-			
+
 					#if i == 0:
 						#try:
 							#if isodd: classes1 = cmx[1].replace("classmx","classes")
@@ -644,9 +718,9 @@ specific data points to see the particle each represents. See one of the single 
 							#proj1 = hdr1["projection_image"]
 						#except:
 							#pass
-		
+
 				#data = "\t".join(dat)
-		
+
 				#try:
 					#if isodd: classes2 = cmx[-1].replace("classmx","classes")
 					#else: classes2 = cmx[-2].replace("classmx","classes")
@@ -658,7 +732,7 @@ specific data points to see the particle each represents. See one of the single 
 				#except:
 					#cmt = "no particles in class corresponding to this projection"
 
-				#line = data + "\t# " + cmt + "\n"			
+				#line = data + "\t# " + cmt + "\n"
 				#outf.write(line)
 
 		#if ".txt" in options.output: kf = options.output.replace(".txt",".key")
@@ -688,4 +762,4 @@ specific data points to see the particle each represents. See one of the single 
 
 
 if __name__ == "__main__":
-    main()
+	main()

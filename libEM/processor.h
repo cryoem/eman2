@@ -5915,7 +5915,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		virtual string get_desc() const
 		{
-			return "add noise to an image, image multiply by noise then add a random value";
+			return "add gaussian (white) noise to an image with mean='noise' and sigma='noise/2'";
 		}
 
 		static const string NAME;
