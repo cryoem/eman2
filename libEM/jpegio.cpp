@@ -68,7 +68,7 @@ void JpegIO::init()
 	initialized = true;
 
 	bool is_new_file = false;
-	jpeg_file = sfopen(filename, rw_mode, &is_new_file, true);
+	jpeg_file = sfopen(filename, rw_mode, &is_new_file, TRUE);
 
 	if (! is_new_file) {
 		throw ImageReadException(filename, "JPEG reading not supported");
@@ -152,7 +152,7 @@ int JpegIO::write_header(const Dict & dict, int image_index,
 	cinfo.in_color_space = JCS_GRAYSCALE; /* colorspace of input image */
 
 	jpeg_set_defaults(&cinfo);
-	jpeg_set_quality(&cinfo, jpegqual, true);
+	jpeg_set_quality(&cinfo, jpegqual, TRUE);
 
 	EXITFUNC;
 
