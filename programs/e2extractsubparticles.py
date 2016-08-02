@@ -160,8 +160,8 @@ will be examined automatically to extract the corresponding particles and projec
 
 			if options.outermask:
 				omaskx=outermask.process("xform",{"transform":xf})
-				projmask.append(omaskx.project("standard",{"transform":eulers[i]}))
-#				projmask.append(omaskx.project("standard",{"transform":eulers[i]}).process("threshold.binary",{"value":0.01}))
+#				projmask.append(omaskx.project("standard",{"transform":eulers[i]}))
+				projmask.append(omaskx.project("standard",{"transform":eulers[i]}).process("threshold.binary",{"value":0.01}))
 			else:
 				omaskx=subunitmask.process("xform",{"transform":xf})
 				projmask.append(omaskx.project("standard",{"transform":eulers[i]}).process("threshold.binary",{"value":0.01}))

@@ -165,7 +165,9 @@ def main():
 					if len(fields)<4 : continue		# skip lines that don't work
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'manual'])
 
-				js_open_dict(info_name(filename,nodir=True))["boxes"]=boxlist
+				js=js_open_dict(info_name(filename,nodir=True))
+				js["boxes"]=boxlist
+				js.close()
 				if not "{}.hdf".format(base_name(filename,nodir=True)) in micros:
 					print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,True))
 
