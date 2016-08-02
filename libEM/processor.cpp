@@ -96,6 +96,7 @@ const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
 const string DistanceSegmentProcessor::NAME = "segment.distance";
 const string WatershedProcessor::NAME = "segment.watershed";
+const string SegmentSubunitProcessor::NAME = "segment.subunit";
 const string RecipCarefullyProcessor::NAME = "math.reciprocal";
 const string SubtractOptProcessor::NAME = "math.sub.optimal";
 const string ValuePowProcessor::NAME = "math.pow";
@@ -329,6 +330,7 @@ template <> Factory < Processor >::Factory()
 	force_add<FloorValueProcessor>();
 	force_add<BooleanProcessor>();
 	force_add<KmeansSegmentProcessor>();
+	force_add<SegmentSubunitProcessor>();
 	force_add<DistanceSegmentProcessor>();
 	force_add<ValuePowProcessor>();
 	force_add<ValueSquaredProcessor>();
@@ -6295,7 +6297,7 @@ void IterMultiMaskProcessor::process_inplace(EMData * image)
 	int nz = image->get_zsize();
 
 	if (ny == 1) {
-		LOGERR("Tried to add mask shell to 1d image");
+		LOGERR("Error: mask.addshells.multilevel works only in 2/3-D");
 		return;
 	}
 
@@ -6424,6 +6426,99 @@ void AddMaskShellProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
+
+void SegmentSubunitProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	float thr = params["thr"];
+	string symname=(string)params["sym"];
+	Symmetry3D* sym = Factory<Symmetry3D>::get(symname);
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	if (ny == 1 || nz==1) {
+		LOGERR("Error: segment.subunit works only in 3-D");
+		return;
+	}
+
+	// there are other strategies which might allow us to avoid the extra copy, but this will have to do for now
+	EMData *image1=new EMData(nx,ny,nz);
+	image1->to_zero();
+	EMData *image2=image->copy();
+	
+	// We're using image2 here temporarily to seed image1. We will reinitialize it when done
+	image2->process_inplace("mask.sharp",Dict("inner_radius",(int)nz/5));		// we don't want to seed too close to the middle
+	IntPoint ml=image2->calc_max_location();		// highest pixel value, now we symmetrize
+
+	// Seed the multi-level mask
+	int i=0;
+	vector<Transform> transforms = sym->get_syms();
+	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
+		Transform t = *trans_it;
+		i++;
+		Vec3f xf = t.transform(ml[0]-nx/2,ml[1]-ny/2,ml[2]-nz/2);
+		image1->set_value_at((int)(xf[0]+nx/2),(int)(xf[1]+ny/2),(int)(xf[2]+nz/2),(float)i);
+	}
+	memcpy(image2->get_data(),image1->get_data(),image1->get_size()*sizeof(float)); // copy the seed from image 1 to image 2
+	
+	
+		
+	// We progressively lower the threshold, sort of like a very coarse watershed
+	float max=(float)image->get_attr("maximum");
+	float gap=max-thr;
+	if (gap<=0) throw InvalidParameterException("SegmentSubunitProcessor: threshold must be < max value");
+		
+	for (int ti=0; ti<12; ti++) {
+		float thr2=max-(ti+1)*gap/12.0;
+		printf("threshold %1.4f\n",thr2);
+		int change=1;
+		while (change) {
+			change=0;
+			for (int z = 1; z < nz - 1; z++) {
+				for (int y = 1; y < ny - 1; y++) {
+					for (int x = 1; x < nx - 1; x++) {
+						// Skip the voxel if already part of a mask or if below threshold
+						if (image1->get_value_at(x,y,z)>0 || image->get_value_at(x,y,z)<thr2) continue;
+
+						// Note that this produces a directional bias in the case of ambiguous pixels
+						// While this could be improved upon slightly, there can be truly ambiguous cases
+						// and at least this method is deterministic
+						if		(image1->get_value_at(x-1,y,z)>0) { image2->set_value_at_fast(x,y,z,image1->get_value_at(x-1,y,z)); change=1; }
+						else if (image1->get_value_at(x+1,y,z)>0) { image2->set_value_at_fast(x,y,z,image1->get_value_at(x+1,y,z)); change=1; }
+						else if (image1->get_value_at(x,y-1,z)>0) { image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y-1,z)); change=1; }
+						else if (image1->get_value_at(x,y+1,z)>0) { image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y+1,z)); change=1; }
+						else if (image1->get_value_at(x,y,z-1)>0) { image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y,z-1)); change=1; }
+						else if (image1->get_value_at(x,y,z+1)>0) { image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y,z+1)); change=1; }
+
+					}
+				}
+			}
+			memcpy(image1->get_data(),image2->get_data(),image1->get_size()*sizeof(float));
+		}
+// 		char fs[20];
+// 		sprintf(fs,"lvl%d.hdf",ti);
+// 		image1->write_image(fs);
+	}
+	
+// 	image1->write_image("multilev.hdf");
+// 	image1->process_inplace("threshold.abovetozero",Dict("maxval",(float)1.01f));
+// 	image->mult(*image1);
+
+	// our final return value is the multilevel mask
+	memcpy(image->get_data(),image1->get_data(),image1->get_size()*sizeof(float));
+	
+	delete image1;
+	delete image2;
+	delete sym;
+	image->update();
+}
+
 
 void ToCenterProcessor::process_inplace(EMData * image)
 {

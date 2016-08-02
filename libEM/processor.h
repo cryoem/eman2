@@ -6417,7 +6417,6 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 		static const string NAME;
 	};
 
-
 	/**Add additional shells/rings to an existing 1/0 mask image
 	 * @param nshells   number of shells to add
 	*/
@@ -7125,6 +7124,43 @@ correction is not possible, this will allow you to approximate the correction to
 
 	};
 
+	/** This tries to extract a single subunit from a symmetric structure. The borders between subunits may well be structurally ambiguous.
+	 * @param sym   Symmetry of map
+	 * @param thr	Density threshold
+	*/
+	class SegmentSubunitProcessor:public Processor
+	{
+	  public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "This will attempt to mask out a single subunit from a symmetric structure. There may be some ambiguity at the intersection, so the result may not be unambiguous.";
+		}
+
+		static Processor *NEW()
+		{
+			return new SegmentSubunitProcessor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thr", EMObject::FLOAT, "Minimum density to consider for extraction");
+			d.put("sym", EMObject::FLOAT, "Symmetry");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+
+	
 	/** Operates on two images, returning an image containing the maximum/minimum/multiplied pixel (etc, you choose) at each location
 	 * The actual operation depends on what template argument you use. Currently the MaxPixelOperator and MinPixelOperator
 	 * are the only ones utilized - see processor.cpp where the Processor Factory constructor is defined to get an idea of how to add another one

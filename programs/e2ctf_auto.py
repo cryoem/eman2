@@ -304,8 +304,18 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	maskrad3=int(boxsize/2-maskwid2*1.2)
 
 	# for high resolution data, we still go ahead and do some masking
-	maskwid3=6.0/options.apix
-	maskrad3=int(boxsize/2-maskwid3*1.2)
+	maskwid4=6.0/options.apix
+	maskrad4=int(boxsize/2-maskwid3*1.2)
+
+	# for "5" data, we target ~1.8 A/pix
+	resample5=1.8/options.apix
+	newbox=good_size(boxsize/resample2)
+	resample5=boxsize/(newbox+0.1)
+	if resample5<1.0:
+		if not options.lores : print "Warning: original sampling is too large for ideal 5A resolution results. Suggest <=1.8 A/pix"
+		resample2=1.0
+	maskwid5=6.0/options.apix
+	maskrad5=int(boxsize/2-maskwid2*1.2)
 
 	if options.invert: invert="--invert"
 	else: invert=""
@@ -354,13 +364,13 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		E2progress(logid,0.8)
 
 		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag lp5 --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.2 --phaseflipproc3 normalize.circlemean:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad}".format(
-			maskrad=maskrad2,maskwid=maskwid2,resamp=resample2,invert=invert,minqual=options.minqual,extrapad=extrapad)
+			maskrad=maskrad5,maskwid=maskwid5,resamp=resample5,invert=invert,minqual=options.minqual,extrapad=extrapad)
 		if options.verbose: print com
 		launch_childprocess(com)
 		E2progress(logid,0.9)
 
 		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag fullres --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 normalize.circlemean:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} {extrapad}".format(
-			maskrad=maskrad3,maskwid=maskwid3,invert=invert,minqual=options.minqual,extrapad=extrapad)
+			maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad)
 		if options.verbose: print com
 		launch_childprocess(com)
 		print "Phase-flipped output files:\n__ctf_flip_lp14 - masked, downsampled, filtered to 14 A resolution\n__ctf_flip_lp5 - masked, downsampled, filtered to 5 A resolution\n__ctf_flip_fullres - masked, full sampling"
