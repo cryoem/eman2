@@ -313,13 +313,20 @@ def main():
 	cmd="e2proc3d.py {path}tmp_even.hdf {path}fsc_masked_{itr:02d}.txt --calcfsc {path}tmp_odd.hdf".format(path=path,itr=options.iter)
 	run(cmd)
 
+	try:
+		noisecutoff=calc_noise_cutoff("{path}fsc_masked_{itr:02d}.txt".format(path=path,itr=options.iter),options.ncmult)
+	except:
+		print "WARNING: no resolution determined from FSC at 0.143, using 1/restarget for tophat cutoff"
+		noisecutoff=1.0/options.restarget
+
 	# readjust 'flatten' for new fsc
 	if options.ampcorrect == "flatten":
 		try:
-			noisecutoff=calc_noise_cutoff("{path}fsc_masked_{itr:02d}.txt".format(path=path,itr=options.iter),options.ncmult)
 			ampcorrect="--process=filter.lowpass.autob:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
 			print "new noise cutoff: {:1.2f}".format(1.0/noisecutoff)
 		except: pass
+
+
 
 	if options.tophat:
 		# _unmasked volumes are filtered
