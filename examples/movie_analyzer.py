@@ -22,7 +22,8 @@ pkgs = {"EMAN2":"movie_ccf.py",
         "UCSF":"dosefgpu_driftcorr",
         "UNBLUR":"unblur_openmp_7_17_15.exe",
         "DE":"DE_process_frames-2.8.1.py",
-        "IMOD":"alignframes"}
+        "IMOD":"alignframes",
+        "LMBGFS":"alignframes_lmbfgs.exe"}
 
 for pkg in pkgs.keys():
     path=which(pkgs[pkg])
@@ -330,6 +331,71 @@ EOF
 						trans_lo[pkg] = parse_unblur(lo)
 					except: failed(pkg)
 
+				if pkg == "LMBFGS":
+
+					if not options.skipalign:
+						template = """{prog} << EOF
+{movielist}
+{boxsize},{psize},{nsigma},{rmax1},{rmax2},{smooth}
+{bfactor}
+{framefirst},{framelast},{zeroframe}
+{factr}
+{inpath}
+{outpath}
+shf
+vec
+EOF
+"""
+
+						for fn in [fname,hcname,lcname]:
+							lfn = fn.split("/")[-1]
+							lext = lfn.split(".")[-1]
+
+							mlfn = "{}/movielist.txt".format(pdir)
+							with open(mlfn,"w") as movielist:
+								movielist.write("{}".format(lfn))
+
+							if lext == "hdf": # HDF format not supported by unblur
+								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+								lfn_new = lfn.replace(".hdf",".mrcs")
+								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
+									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir)
+									os.remove("{}/{}".format(pdir,lfn))
+								lfn = lfn_new
+								lext = "mrcs"
+							else:
+								if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+
+							#bs = 3600 # defined earlier
+							ps = 1.45
+							nsig = 5
+							rm1 = 500
+							rm2 =100
+							smooth = "0d0"
+							bfact = 2000
+							ffirst = 1
+							flast = 0
+							fmiddle = int(len(frames)/2)
+							factr = "1d1"
+							inpath = pdir
+							outpath = pdir
+
+							cmd = template.format(movielist=mlfn, boxsize=bs, psize=ps, nsigma=nsig, rmax1=rm1, rmax2=rm2, smooth=smooth, bfactor=bfact, framefirst=ffirst, framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath)
+
+							o,e,rt=run(cmd,shell=True,cwd=pdir,exe="/bin/csh")
+							runtimes[pkg].append(rt)
+
+					for f in os.listdir(pdir):
+						if "hictrst.shf" in f: hi = os.path.join(pdir,f)
+						elif "loctrst.shf" in f: lo = os.path.join(pdir,f)
+						elif ".shf" in f: wmg = os.path.join(pdir,f)
+
+					try:
+						trans_wmg[pkg] = parse_unblur(wmg)
+						trans_hi[pkg] = parse_unblur(hi)
+						trans_lo[pkg] = parse_unblur(lo)
+					except: failed(pkg)
+
 		# PART 1: How quickly do these alorithms run
 		if not options.skipalign:
 			with open("{}/runtimes.txt".format(bdir),"w") as f:
@@ -368,7 +434,6 @@ EOF
 		ftypes["lo_hi"] = shift_by(frames_lo,trans_hi)
 		ftypes["hi_lo"] = shift_by(frames_hi,trans_lo)
 		ftypes["hi_hi"] = shift_by(frames_hi,trans_hi)
-
 		scores = calc_cips_scores(ftypes)
 
 		#pkl = "{}/scores.p".format(bdir)
@@ -417,13 +482,13 @@ def get_hclc_regions(img,n=100,bs=2048,edge=128):
     lcr = Region(lc[0]-bs/2,lc[1]-bs/2,bs,bs)
     return hcr,lcr
 
-def run(cmd,shell=False,cwd=None):
+def run(cmd,shell=False,cwd=None,exe="/bin/sh"):
 	if options.verbose: print(cmd.replace("\n"," "))
 	if cwd == None:
 		cwd = os.getcwd()
 	if shell == False:
 		cmd = cmd.split()
-	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd)
+	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd, executable=exe)
 	start = time.time()
 	out, err = process.communicate()
 	runtime = time.time() - start
