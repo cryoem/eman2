@@ -123,173 +123,40 @@ so in most cases it is not dealt with.'
 			(500 * NTT / 2, SIZE, SIZE, ti, 500 * NTT / (2.0 * ti), SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti))
 
 		t1 = time.clock()
-		for j in xrange(500):
+		for fj in xrange(100):
 			for i in xrange(NTT/2):
-				d = {}
-				d["keepzero"] = 1
-				data[i].cmp("sqeuclidean", data[i + NTT / 2], d)
+				tmp=data[i].do_fft()
 		t2 = time.clock()
 		ti = t2-t1
-		print 'Baseline 2: %d, %d x %d lcmp()s in %1.1f sec	  %1.1f/sec' % \
-			(500 * NTT / 2, SIZE, SIZE, ti, 500 * NTT / (2.0 * ti))
-
+		print 'Baseline 2: %d, %d x %d FFTs in %1.1f s %1.1f/s' % \
+			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti))
+		
 		t1 = time.clock()
-		for j in xrange(100):
+		for fj in xrange(100):
 			for i in xrange(NTT/2):
-				data[i].cmp("phase", data[i + NTT / 2], {})
+				tmp=data[i].process("math.squared")
 		t2 = time.clock()
 		ti = t2-t1
-		print 'Baseline 3: %d, %d x %d pcmp()s in %1.1f sec	 %1.1f/sec' % \
+		print 'Baseline 3: %d, %d x %d math.squared in %1.1f s %1.1f/s' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti))
 
 		t1 = time.clock()
-		for j in xrange(100):
+		for fj in xrange(100):
 			for i in xrange(NTT/2):
-				data[i].cmp("frc", data[i + NTT / 2], {})
+				tmp=data[i].process("math.sqrt")
 		t2 = time.clock()
 		ti = t2-t1
-		print 'Baseline 4: %d, %d x %d fscmp()s in %1.1f sec  %1.1f/sec' % \
+		print 'Baseline 4: %d, %d x %d math.sqrt in %1.1f s %1.1f/s' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti))
-
+	
 		t1 = time.clock()
-		for j in xrange(500):
+		for fj in xrange(100):
 			for i in xrange(NTT/2):
-				data[i].process_inplace("math.absvalue")
+				tmp=data[i].translate(-32,-32,0)
 		t2 = time.clock()
 		ti = t2-t1
-		print 'Baseline 5a: %d, %d x %d fabs in %1.1f sec -> ~%1.2f mfabs/sec' %  \
-			(500 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti))
-
-		t1 = time.clock()
-		for j in xrange(100):
-			for i in xrange(NTT/2):
-				data[i].process_inplace("math.sqrt")
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 5b: %d, %d x %d sqrts in %1.1f sec -> ~%1.2f msqrt/sec' % \
-			(100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti))
-
-		t1 = time.clock()
-		dat = data[0].get_2dview()
-		for j in xrange(100):
-			for i in xrange(NTT/2):
-				for m in xrange(SIZE):
-					for n in xrange(SIZE):
-						math.sqrt(dat[m][n])
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 5c: %d, %d x %d sqrts in %1.1f sec -> ~%1.2f msqrt/sec (cached)' % \
-			(100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti))
-		data[0].update()
-
-		d = data[0].get_2dview()
-		t1 = time.clock()
-		for j in xrange(100):
-			for i in xrange(NTT/2):
-				for m in xrange(SIZE):
-					for n in xrange(SIZE):
-						math.cos(d[m][n])
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 5d: %d, %d x %d cos in %1.1f sec -> ~%1.2f mcos/sec (cached)' % \
-			(100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti))
-		data[0].update()
-
-		d = data[0].get_2dview()
-		t1 = time.clock()
-		for j in xrange(100):
-			for i in xrange(NTT/2):
-				for m in xrange(SIZE-1):
-					for n in xrange(SIZE-1):
-						math.hypot(d[m][n], d[m+1][n+1])
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 5e: %d, %d x %d hypot in %1.1f sec -> ~%1.2f mhypot/sec (cached)' % \
-			   (100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti))
-		data[0].update()
-
-		d = data[0].get_2dview()
-		t1 = time.clock()
-		for j in xrange(1000):
-			for i in xrange(NTT/2):
-				for m in xrange(SIZE-1):
-					for n in xrange(SIZE-1):
-						f = d[m][n] + d[m+1][n+1]
-						f = f + f
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 5f: %d, %d x %d mult in %1.1f sec -> ~%1.2f mmult/sec (cached)' % \
-			   (100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 1000.0 * NTT / (1000000.0 * ti))
-		data[0].update()
-
-		d = data[0].get_2dview()
-		t1 = time.clock()
-		for j in xrange(500):
-			for i in xrange(NTT/2):
-				for m in xrange(SIZE-1):
-					for n in xrange(SIZE-1):
-						a = d[m][n] / d[m+1][n+1]
-						a = a + a
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 5g: %d, %d x %d div in %1.1f sec -> ~%1.2f mdiv/sec (cached)' % \
-			   (100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti))
-		data[0].update()
-
-		d = data[0].get_2dview()
-		t1 = time.clock()
-		for j in xrange(500):
-			for i in xrange(NTT/2):
-				for m in xrange(SIZE):
-					for n in xrange(SIZE):
-						f = math.fabs(d[m][n])
-						f = f + f
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 5h: %d, %d x %d fabs in %1.1f sec -> ~%1.2f fabs/sec (cached)' % \
-			   (100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti))
-		data[0].update()
-
-		d = data[0].get_2dview()
-		t1 = time.clock()
-		for j in xrange(500):
-			for i in xrange(NTT/2):
-				for m in xrange(SIZE-1):
-					for n in xrange(SIZE-1):
-						math.atan2(d[m][n], d[m+1][n+1])
-						math.hypot(d[m][n], d[m+1][n+1])
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 5i: %d, %d x %d ri2ap in %1.1f sec -> ~%1.2f ri2ap/sec (cached)' % \
-			   (100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti))
-		data[0].update()
-
-		t1 = time.clock()
-		for i in xrange(NTT*100):
-			cp = data[i%NTT].copy()
-			d = {}
-			d['n'] = 2
-			cp.process_inplace('math.meanshrink',d)
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 6:	%1.1f sec %f meanshrink x 2/sec' % (ti, NTT * 100.0 / ti)
-
-		dla = data[0].copy()
-		t1 = time.clock()
-		for i in xrange(NTT*1000):
-			dla.do_fft_inplace()
-			dla.update()
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 7:	%1.1f sec %f ffts/sec' % (ti, NTT * 1000 / ti)
-
-		dla = data[0].copy()
-		t1 = time.clock()
-		for i in xrange(NTT*1000):
-			dla.translate(-1,-3,0)
-		t2 = time.clock()
-		ti = t2-t1
-		print 'Baseline 8:	%1.1f sec	%f translates/sec' % (ti, NTT * 1000 / ti)
+		print 'Baseline 5: %d, %d x %d 32 pix translate in %1.1f s %1.1f/s' % \
+			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti))
 
 		return
 
