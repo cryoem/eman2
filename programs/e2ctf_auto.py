@@ -357,7 +357,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		print "Phase-flipped output files:\n__ctf_flip_lp20 - masked, downsampled, filtered to 20 A resolution\n__ctf_flip_lp7 - masked, downsampled, filtered to 7 A resolution\n__ctf_flip_fullres - masked, full sampling"
 		
 	else :
-		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag lp14 --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.7 --phaseflipproc3 normalize.circlemean:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad}".format(
+		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag lp14 --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.07 --phaseflipproc3 normalize.circlemean:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad}".format(
 			maskrad=maskrad1,maskwid=maskwid1,resamp=resample1,invert=invert,minqual=options.minqual,extrapad=extrapad)
 		if options.verbose: print com
 		launch_childprocess(com)
