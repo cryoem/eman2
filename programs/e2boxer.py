@@ -665,6 +665,7 @@ class GUIBoxer(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 #		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
+		self.boxcolors=boxcolors
 		self.data=None
 		self.curfilename = None				# current selected file for boxing
 		self.filenames=imagenames			# list of available filenames
