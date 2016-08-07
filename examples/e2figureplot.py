@@ -348,7 +348,7 @@ def plotter(xaxis,yaxis,options,mode,colorless=0,legend=''):
 		#if not yminnonconvex:
 		#	
 		#	print "in colorless plot, linest is", linest
-		if mode not 'scatter':
+		if mode != 'scatter':
 			linest='-'
 			plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
 		else:
@@ -507,5 +507,4 @@ def smooth(yaxis):
 	return yaxisnonconvex
 	
 
-if '__main__' == __name__:
-	main()
+if '__main__' == __name__:	main()

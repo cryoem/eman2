@@ -326,31 +326,31 @@ for ky in range(1,(N+1)/2):#  (N/2-1) values
 
 
 
-In [413]: for ky in range(1,(N+1)/2):#  (N/2-1) values
-   .....:     Value =complex(random(),ky);
-   .....:     tiBFFT.set_complex_at(kx,ky,Value);
-   .....:     print Value, tiBFFT.get_complex_at(kx,ky),tiBFFT.get_complex_at(kx,-ky);# this is the cc of above line
-   .....:     print 'Last two values should be complex conjugates, but not necarilly real';
-   .....: 
-(0.828044718605+1j) (0.828044712543+1j) (0.828044712543-1j)
-Last two values should be complex conjugates, but not necarilly real
-(0.0519759440057+2j) (0.0519759431481+0j) (0.0519759431481-0j)
-Last two values should be complex conjugates, but not necarilly real
-
-In [414]: 
-
-In [415]: kx=2
-
-In [416]: for ky in range(1,(N+1)/2):#  (N/2-1) values
-   .....:     Value =complex(random(),ky);
-   .....:     tiBFFT.set_complex_at(kx,ky,Value);
-   .....:     print Value, tiBFFT.get_complex_at(kx,ky),tiBFFT.get_complex_at(kx,-ky);# this is the cc of above line
-   .....:     print 'Last two values should not necessarily be complex conjugates or made to real';
-   .....: 
-(0.964396785849+1j) (0.964396774769+1j) (0.964396774769-1j)
-Last two values should not necessarily be complex conjugates or made to real
-(0.751030036492+2j) (0.751030027866+0j) (-0.646951198578-0.946417808533j)
-Last two values should not necessarily be complex conjugates or made to real
-
-In [417]: 
+#In [413]: for ky in range(1,(N+1)/2):#  (N/2-1) values
+#   .....:     Value =complex(random(),ky);
+#   .....:     tiBFFT.set_complex_at(kx,ky,Value);
+#   .....:     print Value, tiBFFT.get_complex_at(kx,ky),tiBFFT.get_complex_at(kx,-ky);# this is the cc of above line
+#   .....:     print 'Last two values should be complex conjugates, but not necarilly real';
+#   .....:
+#(0.828044718605+1j) (0.828044712543+1j) (0.828044712543-1j)
+#Last two values should be complex conjugates, but not necarilly real
+#(0.0519759440057+2j) (0.0519759431481+0j) (0.0519759431481-0j)
+#Last two values should be complex conjugates, but not necarilly real
+#
+#In [414]:
+#
+#In [415]: kx=2
+#
+#In [416]: for ky in range(1,(N+1)/2):#  (N/2-1) values
+#   .....:     Value =complex(random(),ky);
+#   .....:     tiBFFT.set_complex_at(kx,ky,Value);
+#   .....:     print Value, tiBFFT.get_complex_at(kx,ky),tiBFFT.get_complex_at(kx,-ky);# this is the cc of above line
+#   .....:     print 'Last two values should not necessarily be complex conjugates or made to real';
+#   .....:
+#(0.964396785849+1j) (0.964396774769+1j) (0.964396774769-1j)
+#Last two values should not necessarily be complex conjugates or made to real
+#(0.751030036492+2j) (0.751030027866+0j) (-0.646951198578-0.946417808533j)
+#Last two values should not necessarily be complex conjugates or made to real
+#
+#In [417]:
 
