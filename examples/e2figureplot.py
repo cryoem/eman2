@@ -373,7 +373,7 @@ def plotter(xaxis,yaxis,options,mode,colorless=0,legend=''):
 		#	print "I did NOT receive yminnonxonvex"
 		#
 
-		if mode not scatter:
+		if mode != 'scatter':
 			plt.plot(xaxis, yaxis, linewidth=LW,alpha=1,zorder=0,label=idee)
 		else:
 			plt.scatter(xaxis,yaxis,marker='x',alpha=1,zorder=1,s=40,linewidth=2)
