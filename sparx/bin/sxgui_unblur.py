@@ -3502,7 +3502,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             arrY = arrXY['micDrift']
             strTitle = r'Drift per Micrograph'
             strXLabel = r'Micrograph'
-            strYLabel = r'Overall Drift'
+            strYLabel = r'Overall Drift / Angstrom'
             varOutput = self.msAllPlotPerMic
             pylab.xlim([arrX[0] - arrX[-1] * 0.01, arrX[-1] * 1.01])
 
