@@ -965,9 +965,6 @@ def main():
 			if nargs >1 :
 				print_msg="Sphire always calculates FSC between two volumes!"
 				log_main.add(print_msg)
-				if m != None:
-					e1 *=m
-					e2 *=m
 				print_msg = "calculate FSC "
 				log_main.add(print_msg)
 				print_msg =" the FSC_cutoff is %f  "%options.FSC_cutoff
@@ -981,8 +978,10 @@ def main():
 						break
 				print_msg = " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
 				log_main.add(print_msg)
-				## FSC is done on masked two images
-			if nargs>1: e1 += e2
+				## FSC is done on unmasked two images
+			if nargs>1: 
+				e1 +=e2
+				e1 *=m
 			guinerlinein    = rot_avg_table(power(periodogram(e1),.5))
 			from utilities import write_text_file
 			log_main.add(" the guinerline of merged two volume is saved in guinerline.txt")
@@ -1030,7 +1029,7 @@ def main():
 					print_msg = "B-factor estimation auto mode"
 					log_main.add(print_msg)
 					guinerline   = rot_avg_table(power(periodogram(e1),.5))
-					freq_max     = min(1/(2.*options.pixel_size), resolution/options.pixel_size)
+					freq_max     = 1/(2.*options.pixel_size)
 					freq_min     = 1./options.B_start # given frequency in Angstrom
 					if freq_min>=freq_max:
 						print_msg =  "your B_start is too high! Decrease it and rerun the program!"
