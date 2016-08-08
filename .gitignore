@@ -22,6 +22,7 @@ install_manifest.txt
 # EMAN2 libs
 lib/
 libpy*.dylib
+libpy*.so
 
 # horatio's .gitignore options
 .idea/
