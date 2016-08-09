@@ -13,25 +13,22 @@ IF(CMAKE_SYSTEM MATCHES "IRIX.*")
 ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 
 MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
-	IF(WIN32)
-		ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})		
-		TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY} ${PYTHON_LIBRARY} ${FREETYPE_LIBRARY})
-		INSTALL(FILES ${LIBRARY_OUTPUT_PATH}/release/${libname}.dll
-				DESTINATION	lib
-				RENAME lib${libname}.pyd)
-	ELSE(WIN32)
-		IF(APPLE)
-			ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
-			TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY} ${PYTHON_LIBRARY})
-			INSTALL(FILES ${LIBRARY_OUTPUT_PATH}/lib${libname}.dylib
-				DESTINATION	lib
-				RENAME lib${libname}.so)	
-		ELSE(APPLE)
-			ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
-			TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY})
-			INSTALL(TARGETS ${libname} DESTINATION lib)
-		ENDIF(APPLE)
-	ENDIF(WIN32)
+	ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})
+	
+	if(WIN32)
+		set(suffix .pyd)
+	else()
+		set(suffix .so)
+	endif()
+
+	set_target_properties(${libname}
+			PROPERTIES
+			PREFIX lib
+			SUFFIX ${suffix}
+			)
+	
+	TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY} ${PYTHON_LIBRARY})
+	INSTALL(TARGETS ${libname} DESTINATION lib)
 ENDMACRO(ADD_PYSTE_LIB_WITH_SRC)
 
 MACRO(ADD_PYSTE_LIB libname)
