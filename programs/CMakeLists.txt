@@ -3,7 +3,7 @@ FILE(GLOB exclusion_list "e2plotFSC.py" "e2refine_evenodd.py" "e2refine_evenodd.
 LIST(REMOVE_ITEM e2programs ${exclusion_list})
 #######MESSAGE(SEND_ERROR "${e2programs}")    #for debug purpose ######
 INSTALL(PROGRAMS ${e2programs}
-  DESTINATION    bin
+  	DESTINATION    bin
 )
 
 #INSTALL(PROGRAMS    e2boxer.py 
