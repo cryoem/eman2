@@ -353,7 +353,7 @@ def main():
 	parser.add_option("--ff",                   type="float",         default=0.0,        help="low pass filter stop band frequency in absolute unit. By default, low_pass filter to resolution")
 	parser.add_option("--aa",                   type="float",         default=.1,         help="low pass filter falloff" )
 	parser.add_option("--mask",                 type="string",                            help="input mask file",  default= None)
-	parser.add_option("--output",               type="string",                            help="output file name", default = "postprocessed.hdf")
+	parser.add_option("--output",               type="string",                            help="output file name", default = "vol_postrefine.hdf")
 	parser.add_option("--pixel_size",           type="float",                             help="pixel size of the data", default=1.0)
 	parser.add_option("--B_start",              type="float",                             help="starting frequency in Angstrom for B-factor estimation", default=10.)
 	parser.add_option("--FSC_cutoff",           type="float",                             help="FSC value that cuts off FSC ", default=0.143)
@@ -895,6 +895,7 @@ def main():
 
 	elif options.postprocess:
 		from logger import Logger,BaseLogger_Files
+		if os.path.exists("log.txt"): os.system(" rm log.txt")
 		log_main=Logger(BaseLogger_Files())
 		log_main.prefix="./"
 		print_msg ="--------------------------------------------"
@@ -927,7 +928,7 @@ def main():
 				e1 = get_im(args[0],i)
 				if m: e1 *=m
 				guinerline = rot_avg_table(power(periodogram(e1),.5))
-				freq_max   =  1/(2.*options.pixel_size)
+				freq_max   =  1./(2.*options.pixel_size)
 				freq_min   =  1./options.B_start
 				log_main.add(" B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size))
 				b,junk =compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
@@ -956,6 +957,8 @@ def main():
 				print_msg ="user provided mask is %s"%options.mask
 				log_main.add(print_msg)
 				m = get_im(options.mask)
+				e1 *=m
+				e2 *=m
 			else:
 				m = None
 				print_msg= " mask is not used in postprocess"
@@ -963,50 +966,39 @@ def main():
 			from math import sqrt
 			resolution = 0.5
 			if nargs >1 :
-				print_msg="Sphire always calculates FSC between two volumes!"
-				log_main.add(print_msg)
-				print_msg = "calculate FSC "
-				log_main.add(print_msg)
 				print_msg =" the FSC_cutoff is %f  "%options.FSC_cutoff
 				log_main.add(print_msg)
-				frc       = fsc(e1,e2,1, "fsc.txt")
-				print_msg = "FSC is saved in fsc.txt"
-				log_main.add(print_msg)
+				frc       = fsc(e1, e2, 1, "fsc.txt")
+				#print_msg = "FSC is saved in fsc.txt"
+				#log_main.add(print_msg)
 				for ifreq in xrange(len(frc[1])):
 					if frc[1][ifreq] < options.FSC_cutoff:
 						resolution   = frc[0][ifreq-1]
 						break
-				print_msg = " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),2)
+				print_msg = " resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),3)
 				log_main.add(print_msg)
-				## FSC is done on unmasked two images
-			if nargs>1: 
-				e1 +=e2
-				e1 *=m
+				## FSC is done on masked two images
 			guinerlinein    = rot_avg_table(power(periodogram(e1),.5))
 			from utilities import write_text_file
-			log_main.add(" the guinerline of merged two volume is saved in guinerline.txt")
-			write_text_file(guinerlinein, "guinerlinein.txt")
+			#log_main.add(" the guinerline of merged two volume is saved in guinerline.txt")
+			#write_text_file(guinerlinein, "guinerlinein.txt")
 
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
-				print_msg = "MTF correction: Fourier factors will be divided by detector MTF"
+				print_msg = "MTF correction is applied"
 				log_main.add(print_msg)
 				from utilities import read_text_file
 				print_msg = "MTF file is %s"%options.mtf
 				log_main.add(print_msg)
 				mtf_core  = read_text_file(options.mtf, -1)
-				print_msg="The first column is frequency, and the second one is MTF"
-				log_main.add(print_msg)
 				e1 = fft(Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0]))
 				guinerlinemtf   = rot_avg_table(power(periodogram(e1),.5))
 				from utilities import write_text_file
-				log_main.add("MTF corrected guinerline is saved in guinerlinemtf.txt")
-				write_text_file(guinerlinemtf, "guinerlinemtf.txt")
+				#log_main.add("MTF corrected guinerline is saved in guinerlinemtf.txt")
+				#write_text_file(guinerlinemtf, "guinerlinemtf.txt")
 
 			if options.fsc_weighted:
 				print_msg = " apply sqrt((2*FSC)/(1+FSC)) weighting "
-				log_main.add(print_msg)
-				print_msg = "current cutoff is %f"%options.FSC_cutoff
 				log_main.add(print_msg)
 				print_msg = " pixel_size is %f Angstrom"%options.pixel_size
 				log_main.add(print_msg)
@@ -1018,8 +1010,8 @@ def main():
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 				e1=filt_table(e1,fil)
 				guinerlineweighted   = rot_avg_table(power(periodogram(e1),.5))
-				log_main.add("FSC weighted guinerline is saved in guinerlineweighted.txt")
-				write_text_file(guinerlineweighted, "guinerlineweighted.txt")
+				#log_main.add("FSC weighted guinerline is saved in guinerlineweighted.txt")
+				#write_text_file(guinerlineweighted, "guinerlineweighted.txt")
 
 			if options.B_enhance:
 				print_msg = "use negative B-factor to enhance image"
@@ -1029,16 +1021,16 @@ def main():
 					print_msg = "B-factor estimation auto mode"
 					log_main.add(print_msg)
 					guinerline   = rot_avg_table(power(periodogram(e1),.5))
-					freq_max     = 1/(2.*options.pixel_size)
+					freq_max     =1./(max(1./(2.*options.pixel_size), options.pixel_size/resolution))
 					freq_min     = 1./options.B_start # given frequency in Angstrom
 					if freq_min>=freq_max:
 						print_msg =  "your B_start is too high! Decrease it and rerun the program!"
 						log_main.add(print_msg)
 						exit()
 					from utilities import write_text_file
-					write_text_file(guinerline, "guinerlineBcalc.txt")
-					print_msg =  " guinerline used for B-factor estimated is saved in guinerlineBcalc.txt file"
-					log_main.add(print_msg)
+					#write_text_file(guinerline, "guinerlineBcalc.txt")
+					#print_msg =  " guinerline used for B-factor estimated is saved in guinerlineBcalc.txt file"
+					#log_main.add(print_msg)
 					print_msg = " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
 					log_main.add(print_msg)
 					b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
@@ -1061,11 +1053,11 @@ def main():
 				from filter       import filt_tanl
 				print_msg  = " apply low-pass filter"
 				log_main.add(print_msg)
-				if options.ff>1.:
+				if options.ff>1.: # Input is in Angstrom 
 					print_msg =  "low_pass filter to %f    Angstrom "%round(options.ff,2)
 					log_main.add(print_msg)
 					e1 =filt_tanl(e1,options.pixel_size/options.ff, min(options.aa,.1))
-				elif options.ff>0.0 and options.ff<1.:
+				elif options.ff>0.0 and options.ff<1.:  # input is absolution frequency
 					print_msg =  "low_pass filtered to %f    Angstrom "%round(options.pixel_size/options.ff,2)
 					log_main.add(print_msg)
 					e1 =filt_tanl(e1,options.ff, min(options.aa,.1))
@@ -1078,7 +1070,6 @@ def main():
 			e1.write_image(options.output)
 			print_msg =  " final volume is "+options.output
 			log_main.add(print_msg)
-			log_main.add("Sphire postprocess is done")
 
 	elif options.window_stack:
 		nargs = len(args)
