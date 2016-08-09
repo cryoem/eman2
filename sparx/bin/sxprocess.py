@@ -986,7 +986,7 @@ def main():
 				e1=filt_table(e1,fil)
 	
 			if options.B_enhance:
-				log_main.add("Use negative B-factor to enhance image")
+				#log_main.add("Use negative B-factor to enhance image")
 
 				if options.adhoc_bfactor == 0.0: # auto mode
 					#print_msg = "B-factor estimation auto mode"
@@ -1001,8 +1001,8 @@ def main():
 					#write_text_file(guinerline, "guinerlineBcalc.txt")
 					#print_msg =  " guinerline used for B-factor estimated is saved in guinerlineBcalc.txt file"
 					#log_main.add(print_msg)
-					#print_msg = " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
-					#log_main.add(print_msg)
+					print_msg = " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
+					log_main.add(print_msg)
 					b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
 					global_b     =  4.*b
 					#print_msg =  "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(-b,2)
@@ -1012,7 +1012,7 @@ def main():
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 
 				else: # User provided value
-					log_main.add( " apply user provided B-factor to enhance map!")
+					#log_main.add( " apply user provided B-factor to enhance map!")
 					log_main.add(" User provided B-factor is %f Angstrom^2   "%options.adhoc_bfactor)
 					sigma_of_inverse = sqrt(2./((abs(options.adhoc_bfactor))/options.pixel_size**2))
 				e1  = filt_gaussinv(e1,sigma_of_inverse)
@@ -1032,12 +1032,10 @@ def main():
 			log_main.add(" ------ Summary -------")
 			log_main.add(" Resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),3))
 			log_main.add( " B-factor is  %f Angstrom^2  "%(round((-global_b),2)))
+			log_main.add( " FSC curve is saved in fsc.txt  ")
 			log_main.add( " Final processed volume is "+options.output)
-			if options.low_pass_filter or options.ff:
-				log_main.add("Low-pass filter to the resolution %f"%round(cutoff,2))
+			if options.low_pass_filter or options.ff: log_main.add("Low-pass filter to the resolution %f"%round(cutoff,2))
 				
-			
-
 	elif options.window_stack:
 		nargs = len(args)
 		if nargs ==0:
