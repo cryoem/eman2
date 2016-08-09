@@ -59,6 +59,9 @@ Util.set_randnum_seed(rand_seed)
 # However, the user may change it to True (either here or in other programs) so that the output is only written to the log file.
 BATCH = False
 
+MPI = False
+
+
 # variable for disabling bdb cache use, For running sparx on clusters, set it to True to disable cache,
 CACHE_DISABLE = False
 
@@ -100,10 +103,15 @@ def ERROR(message, where, action = 1, myid = 0):
 		print ""
 	if action == 1 and BATCH:
 		from sys import exit
-		exit()
+		if  MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
+			exit()
+		else:
+			exit()
 
 
 
-from inspect import currentframe, getframeinfo
+#from inspect import currentframe, getframeinfo
 # frameinfo = getframeinfo(currentframe())
 # print frameinfo.filename, frameinfo.lineno
