@@ -285,26 +285,27 @@ def main():
         sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3
 
    14. Postprocess 3-D or 2-D images:
-   			for 3-D volumes: 
-   				a. calculate FSC with provided mask; 
-   				b. sum two volume; 
-   				c. apply mask
-   				d. adjust power spectrum by FSC; 
-   				e. apply MTF correction; 
-   				f. estimate B-factor from 10 Angstrom to resolution; 
-   				g. apply negative B-factor to enhance the volume;
-   				h. low_pass filter the volume
-   			
-		    sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj
-			sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --mtf=aa.txt  --fsc_adj
-			sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj
-			
-				--low_pass_filter: =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2  
-				--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
-				--mtf:             =aa.txt, for high resolution map, mtf corrections would enhance structure features.
-				--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
-			 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.	
-   			
+   
+	for 3-D volumes: 
+		a. calculate FSC with provided mask; 
+		b. sum two volume; 
+		c. apply mask
+		d. adjust power spectrum by FSC; 
+		e. apply MTF correction; 
+		f. estimate B-factor from 10 Angstrom to resolution; 
+		g. apply negative B-factor to enhance the volume;
+		h. low_pass filter the volume	
+		--low_pass_filter: =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2  
+		--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
+		--mtf:             =aa.txt, for high resolution map, mtf corrections would enhance structure features.
+		--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
+										
+		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj
+		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --mtf=aa.txt  --fsc_adj
+		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj
+		
+	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
+		
    15. Window stack file -reduce the size of images without changing the pixel size.
 
    16. Create angular distribution .build file
