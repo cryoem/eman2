@@ -952,8 +952,8 @@ def main():
 			if options.mask != None:
 				log_main.add("user provided mask is %s"%options.mask)
 				m = get_im(options.mask)
-				e1 *=m
-				e2 *=m
+				#e1 *=m
+				#e2 *=m
 			else:
 				m = None
 				log_main.add(" mask is not used in postprocess")
@@ -961,7 +961,7 @@ def main():
 			resolution = 0.5
 			if nargs >1 :
 				log_main.add(" the FSC_cutoff is %f  "%options.FSC_cutoff)
-				frc       = fsc(e1, e2, 1, "fsc.txt")
+				frc       = fsc(e1*m, e2*m, 1, "fsc.txt")
 				#print_msg = "FSC is saved in fsc.txt"
 				#log_main.add(print_msg)
 				for ifreq in xrange(len(frc[1])):
@@ -969,6 +969,8 @@ def main():
 						resolution   = frc[0][ifreq-1]
 						break
 				## FSC is done on masked two images
+			e1 +=e2
+			e1 *=m
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
 				log_main.add("MTF correction is applied")
@@ -987,7 +989,6 @@ def main():
 					else: tmp = 0.0
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 				e1=filt_table(e1,fil)
-	
 			if options.B_enhance:
 				#log_main.add("Use negative B-factor to enhance image")
 
