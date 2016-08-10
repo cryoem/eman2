@@ -53,9 +53,9 @@
         "MODE": "extraction",
         "EXPERT": 1,
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
-        "PROGRAM": "e2boxer.py",
+        "PROGRAM": "e2boxer_old.py",
         "WIZARD":"/lib/pmconfig/boxergo.json",
-        "NAME": "Generate Output (e2boxer)",
+        "NAME": "Generate Output (e2boxer_old.py)",
         "CHILDREN": []
       },
       {
