@@ -287,11 +287,14 @@ def main():
    14. Postprocess 3-D or 2-D images:
    			for 3-D volumes: calculate FSC with provided mask; weight summed volume with FSC; estimate B-factor from FSC weighted summed two volumes; apply negative B-factor to the weighted volume.
    			for 2-D images:  calculate B-factor and apply negative B-factor to 2-D images.
+   			sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2 --B_enhance    --low_pass_filter  --mtf=aa.txt  --fsc_weighted
+   			sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2 --B_enhance    --ff=4.7  --mtf=aa.txt --fsc_weighted
    			
    15. Window stack file -reduce the size of images without changing the pixel size.
 
    16. Create angular distribution .build file
         sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
+        
 
 """
 
