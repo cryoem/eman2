@@ -290,14 +290,15 @@ def main():
 		a. calculate FSC with provided mask; 
 		b. sum two volume; 
 		c. apply mask
-		d. adjust power spectrum by FSC; 
-		e. apply MTF correction; 
+		d. apply MTF correction;
+		e. adjust power spectrum by 2*FSC/(1+FSC);  
 		f. estimate B-factor from 10 Angstrom to resolution; 
 		g. apply negative B-factor to enhance the volume;
-		h. low_pass filter the volume	
+		h. low_pass filter the volume
+		options are independent of each others. However, if there is only one input map, do not use --fsc_adj option. 	
 		--low_pass_filter: =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2  
 		--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
-		--mtf:             =aa.txt, for high resolution map, mtf corrections would enhance structure features.
+		--mtf:             =aa.txt, for those high resolution maps, mtf corrections would significantly enhance structural features.
 		--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
 		--output           output volume 
 										
@@ -365,7 +366,7 @@ def main():
 
 	# Postprocess 3-D or 2-D images
 	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
-	parser.add_option("--mtf",                  type="string",        default= None,      help="mtf file")
+	parser.add_option("--mtf",                  type="string",        default= None,      help="mtf text file of camera")
 	parser.add_option("--fsc_adj",              action="store_true",                      help="adjust the power spectrum of summed volume by their FSC")
 	parser.add_option("--B_enhance",            type="float",         default=0.0,        help="apply Bfactor to enhance map or not")
 	parser.add_option("--low_pass_filter",      type="float",         default=0.0,        help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter ")
