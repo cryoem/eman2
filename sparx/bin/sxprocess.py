@@ -285,10 +285,25 @@ def main():
         sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3
 
    14. Postprocess 3-D or 2-D images:
-   			for 3-D volumes: calculate FSC with provided mask; weight summed volume with FSC; estimate B-factor from FSC weighted summed two volumes; apply negative B-factor to the weighted volume.
-   			for 2-D images:  calculate B-factor and apply negative B-factor to 2-D images.
-   			sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2 --B_enhance    --low_pass_filter  --mtf=aa.txt  --fsc_weighted
-   			sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2 --B_enhance    --ff=4.7  --mtf=aa.txt --fsc_weighted
+   			for 3-D volumes: 
+   				a. calculate FSC with provided mask; 
+   				b. sum two volume; 
+   				c. apply mask
+   				d. adjust power spectrum by FSC; 
+   				e. apply MTF correction; 
+   				f. estimate B-factor from 10 Angstrom to resolution; 
+   				g. apply negative B-factor to enhance the volume;
+   				h. low_pass filter the volume
+   			
+		    sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj
+			sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --mtf=aa.txt  --fsc_adj
+			sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj
+			
+				--low_pass_filter: =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2  
+				--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
+				--mtf:             =aa.txt, for high resolution map, mtf corrections would enhance structure features.
+				--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
+			 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.	
    			
    15. Window stack file -reduce the size of images without changing the pixel size.
 
@@ -349,18 +364,17 @@ def main():
 	# Postprocess 3-D or 2-D images
 	parser.add_option("--postprocess",          action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes",default=False)
 	parser.add_option("--mtf",                  type="string",        default= None,      help="mtf file")
-	parser.add_option("--fsc_weighted",         action="store_true",                      help="postprocess unfiltered odd, even 3-D volumes")
-	parser.add_option("--B_enhance",            action="store_true",                      help="apply Bfactor to enhance map or not")
-	parser.add_option("--adhoc_bfactor",        type="float",         default=0.0 ,       help="User provided B-factor for map sharpening")
-	parser.add_option("--low_pass_filter",      action="store_true",  default=False,      help="postprocess unfiltered odd, even 3-D volumes")
-	parser.add_option("--ff",                   type="float",         default=0.0,        help="low pass filter stop band frequency in absolute unit. By default, low_pass filter to resolution")
+	parser.add_option("--fsc_adj",              action="store_true",                      help="adjust the power spectrum of summed volume by their FSC")
+	parser.add_option("--B_enhance",            type="float",         default=0.0,        help="apply Bfactor to enhance map or not")
+	parser.add_option("--low_pass_filter",      type="float",         default=0.0,        help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter ")
 	parser.add_option("--aa",                   type="float",         default=.1,         help="low pass filter falloff" )
-	parser.add_option("--mask",                 type="string",                            help="input mask file",  default= None)
-	parser.add_option("--output",               type="string",                            help="output file name", default = "vol_postrefine.hdf")
-	parser.add_option("--pixel_size",           type="float",                             help="pixel size of the data", default=1.0)
-	parser.add_option("--B_start",              type="float",                             help="starting frequency in Angstrom for B-factor estimation", default=10.)
-	parser.add_option("--FSC_cutoff",           type="float",                             help="FSC value that cuts off FSC ", default=0.143)
-	parser.add_option("--2d",                   action="store_true",                      help="postprocess isac 2-D averaged images",default=False)
+	parser.add_option("--mask",                 type="string",             help="input mask file",  default= None)
+	parser.add_option("--output",               type="string",             help="output file name", default = "vol_postrefine.hdf")
+	parser.add_option("--pixel_size",           type="float",              help="pixel size of the data", default=1.0)
+	parser.add_option("--B_start",              type="float",              help="starting frequency in Angstrom for B-factor estimation", default=10.)
+	parser.add_option("--FSC_cutoff",           type="float",              help="FSC value that cuts off FSC ", default=0.143)
+	parser.add_option("--2d",                   action="store_true",       help="postprocess isac 2-D averaged images",default=False)
+	# 
 	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
 	
@@ -911,7 +925,11 @@ def main():
 		from statistics   import fsc
 		from filter       import filt_table, filt_gaussinv
 		from EMAN2 import periodogram
-		e1   = get_im(args[0],0)
+		try:
+			e1   = get_im(args[0],0)
+		except:
+			ERROR(args[0]+" does not exist", " --postprocess option")
+			exit()
 		if options.pixel_size == 1.0:
 			log_main.add("Be sure the pixel_size is correctly set !")
 		if e1.get_zsize() == 1:  # 2D case
@@ -944,16 +962,28 @@ def main():
 		else:   # 3D case
 			log_main.add( "3-D refinement postprocess ")
 			nargs     = len(args)
+			if nargs >2:
+				ERROR(" Too  many inputs!", "--postprocess option for 3-D")
 			log_main.add("the first input volume is %s"%args[0])
-			e1    = get_im(args[0])
+			try: 
+				e1    = get_im(args[0])
+			except:
+				ERROR(" fail to read the first volume "+args[0], "--postprocess option for 3-D")
+				exit()
 			if nargs >1:
 				log_main.add("the second input volume is %s"%args[1])
-				e2  = get_im(args[1])
+				try:
+					e2  = get_im(args[1])
+				except:
+					ERROR(" fail to read the second volume "+args[1], "--postprocess option for 3-D")
+					exit()
 			if options.mask != None:
 				log_main.add("user provided mask is %s"%options.mask)
-				m = get_im(options.mask)
-				#e1 *=m
-				#e2 *=m
+				try:
+					m = get_im(options.mask)
+				except:
+					ERROR(" fail to read mask file "+options.mask, "--postprocess option for 3-D")
+					exit()
 			else:
 				m = None
 				log_main.add(" mask is not used in postprocess")
@@ -961,7 +991,8 @@ def main():
 			resolution = 0.5
 			if nargs >1 :
 				log_main.add(" the FSC_cutoff is %f  "%options.FSC_cutoff)
-				frc       = fsc(e1*m, e2*m, 1, "fsc.txt")
+				frc       = fsc(e1*m, e2*m, 1)
+				
 				#print_msg = "FSC is saved in fsc.txt"
 				#log_main.add(print_msg)
 				for ifreq in xrange(len(frc[1])):
@@ -969,6 +1000,15 @@ def main():
 						resolution   = frc[0][ifreq-1]
 						break
 				## FSC is done on masked two images
+				## output FSC
+				outfrc = [frc[0],[], frc[1]]
+				for ifreq in xrange(len(frc[0])):
+					if ifreq==0:
+						outfrc[1].append(frc[0][ifreq])
+					else:	
+						outfrc[1].append(options.pixel_size/frc[0][ifreq])
+				from utilities import write_text_file
+				write_text_file(outfrc, "fsc.txt")
 			e1 +=e2
 			e1 *=m
 			if options.mtf: # divided by the mtf
@@ -976,11 +1016,15 @@ def main():
 				log_main.add("MTF correction is applied")
 				from utilities import read_text_file
 				log_main.add("MTF file is %s"%options.mtf)
-				mtf_core  = read_text_file(options.mtf, -1)
+				try:
+					mtf_core  = read_text_file(options.mtf, -1)
+				except:
+					ERROR(" fail to read MTF file "+options.mtf, "--postprocess option for 3-D")
+					exit()
 				e1 = fft(Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0]))
 
-			if options.fsc_weighted:
-				log_main.add(" apply sqrt((2*FSC)/(1+FSC)) weighting ")
+			if options.fsc_adj:
+				log_main.add(" apply (2*FSC)/(1+FSC) to adjust power spectrum ")
 				log_main.add(" pixel_size is %f Angstrom"%options.pixel_size)
 				#### FSC weighting sqrt((2.*fsc)/(1+fsc));
 				fil = len(frc[1])*[None]
@@ -989,10 +1033,8 @@ def main():
 					else: tmp = 0.0
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
 				e1=filt_table(e1,fil)
-			if options.B_enhance:
-				#log_main.add("Use negative B-factor to enhance image")
-
-				if options.adhoc_bfactor == 0.0: # auto mode
+			if options.B_enhance !=-1:
+				if options.B_enhance == 0.0: # auto mode
 					#print_msg = "B-factor estimation auto mode"
 					#log_main.add(print_msg)
 					guinerline   = rot_avg_table(power(periodogram(e1),.5))
@@ -1000,6 +1042,7 @@ def main():
 					freq_min     = 1./options.B_start # given frequency in Angstrom
 					if freq_min>=freq_max:
 						log_main.add("your B_start is too high! Decrease it and rerun the program!")
+						ERROR("your B_start is too high! Decrease it and rerun the program!", "--postprocess option")
 						exit()
 					from utilities import write_text_file
 					#write_text_file(guinerline, "guinerlineBcalc.txt")
@@ -1017,28 +1060,30 @@ def main():
 
 				else: # User provided value
 					#log_main.add( " apply user provided B-factor to enhance map!")
-					log_main.add(" User provided B-factor is %f Angstrom^2   "%options.adhoc_bfactor)
-					sigma_of_inverse = sqrt(2./((abs(options.adhoc_bfactor))/options.pixel_size**2))
+					log_main.add(" User provided B-factor is %f Angstrom^2   "%options.B_enhance)
+					sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
+					global_b = options.B_enhance
 				e1  = filt_gaussinv(e1,sigma_of_inverse)
 
-			if options.low_pass_filter or options.ff: # User provided low-pass filter
+			if options.low_pass_filter !=-1.: # User provided low-pass filter
 				from filter       import filt_tanl
-				if options.ff>1.: # Input is in Angstrom 
-					e1 =filt_tanl(e1,options.pixel_size/options.ff, min(options.aa,.1))
-					cutoff = options.ff
-				elif options.ff>0.0 and options.ff<1.:  # input is absolution frequency
-					e1 =filt_tanl(e1,options.ff, min(options.aa,.1))
-					cutoff = options.pixel_size/options.ff
+				if options.low_pass_filter>0.5: # Input is in Angstrom 
+					e1 =filt_tanl(e1,options.pixel_size/low_pass_filter, min(options.aa,.1))
+					cutoff = options.ffx
+				elif options.low_pass_filter>0.0 and options.low_pass_filter<0.5:  # input is absolution frequency
+					e1 =filt_tanl(e1,options.low_pass_filter, min(options.aa,.1))
+					cutoff = options.pixel_size/options.low_pass_filter
 				else: # low-pass filter to resolution
 					e1 = filt_tanl(e1,resolution, options.aa)
 					cutoff = options.pixel_size/resolution
 			e1.write_image(options.output)
 			log_main.add(" ------ Summary -------")
 			log_main.add(" Resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),3))
-			log_main.add( " B-factor is  %f Angstrom^2  "%(round((-global_b),2)))
+			if options.B_enhance !=-1:  log_main.add( " B-factor is  %f Angstrom^2  "%(round((-global_b),2)))
+			else:                       log_main.add( " B-factor is not applied  ")
 			log_main.add( " FSC curve is saved in fsc.txt  ")
 			log_main.add( " Final processed volume is "+options.output)
-			if options.low_pass_filter or options.ff: log_main.add("Low-pass filter to the resolution %f"%round(cutoff,2))
+			if options.low_pass_filter !=-1: log_main.add("Low-pass filter to the resolution %f"%round(cutoff,2))
 				
 	elif options.window_stack:
 		nargs = len(args)
