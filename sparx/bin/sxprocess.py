@@ -1010,7 +1010,8 @@ def main():
 			resolution = 0.5 # for single volume, this is the default resolution
 			if nargs >1 :
 				log_main.add(" the FSC_cutoff is %f  "%options.FSC_cutoff)
-				frc       = fsc(e1*m, e2*m, 1)
+				if m: frc       = fsc(e1*m, e2*m, 1)
+				else: frc       = fsc(e1, e2, 1)
 				
 				#print_msg = "FSC is saved in fsc.txt"
 				#log_main.add(print_msg)
@@ -1029,7 +1030,7 @@ def main():
 				from utilities import write_text_file
 				write_text_file(outfrc, "fsc.txt")
 				e1 +=e2
-			e1 *=m
+			if m: e1 *=m
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
 				log_main.add("MTF correction is applied")
