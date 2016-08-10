@@ -1021,7 +1021,7 @@ def main():
 						outfrc[1].append(options.pixel_size/frc[0][ifreq])
 				from utilities import write_text_file
 				write_text_file(outfrc, "fsc.txt")
-			if nargs>1: e1 +=e2
+				e1 +=e2
 			e1 *=m
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
