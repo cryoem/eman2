@@ -372,7 +372,7 @@ def main():
 	parser.add_option("--aa",                   type="float",         default=.1,         help="low pass filter falloff" )
 	parser.add_option("--mask",                 type="string",             help="input mask file",  default= None)
 	parser.add_option("--output",               type="string",             help="output file name", default = "vol_postrefine.hdf")
-	parser.add_option("--pixel_size",           type="float",              help="pixel size of the data", default=1.0)
+	parser.add_option("--pixel_size",           type="float",              help="pixel size of the data", default=0.0)
 	parser.add_option("--B_start",              type="float",              help="starting frequency in Angstrom for B-factor estimation", default=10.)
 	parser.add_option("--FSC_cutoff",           type="float",              help="FSC value that cuts off FSC ", default=0.143)
 	parser.add_option("--2d",                   action="store_true",       help="postprocess isac 2-D averaged images",default=False)
@@ -927,6 +927,12 @@ def main():
 		from statistics   import fsc
 		from filter       import filt_table, filt_gaussinv
 		from EMAN2 import periodogram
+		if len(args)<1 or len(args)>2:
+			ERROR(" number of inputs is incorrection", " --postprocess option")
+			exit()
+		if options.pixel_size ==0:
+			ERROR(" Set pixel_size value ! There no default value for pixel_size", " --postprocess option")
+			exit()
 		try:
 			e1   = get_im(args[0],0)
 		except:
