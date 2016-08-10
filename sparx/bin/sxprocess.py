@@ -299,9 +299,10 @@ def main():
 		--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
 		--mtf:             =aa.txt, for high resolution map, mtf corrections would enhance structure features.
 		--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
+		--output           output volume 
 										
-		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj
-		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --mtf=aa.txt  --fsc_adj
+		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
+		sxprocess.py vol_0_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --mtf=aa.txt        --output=vol_0_post.hdf
 		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj
 		
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
@@ -870,7 +871,7 @@ def main():
 			print " Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold."
 			return
 		elif nargs > 2:
-			print "Too many arguments are given, try again!"
+			ERROR( "Too many arguments are given, try again!", "options.adaptive_mask")
 			return
 		
 		print "Started sxprocess.py  --adaptive_mask"
@@ -937,8 +938,12 @@ def main():
 			log_main.add("2-D postprocess for ISAC averaged images")
 			nimage = EMUtil.get_image_count(args[0])
 			if options.mask !=None:
-				m = get_im(options.mask)
-				log_main.add("user provided mask is %s"%options.mask)
+				try:
+					m = get_im(options.mask)
+					log_main.add("user provided mask is %s"%options.mask)
+				except:
+					ERROR(" mask image %s does not exists"%options.mask, " --postprocess for 2-D")
+					exit()
 			else:
 				m = None
 				log_main.add("mask is not used")
@@ -946,24 +951,30 @@ def main():
 			for i in xrange(nimage):
 				e1 = get_im(args[0],i)
 				if m: e1 *=m
-				guinerline = rot_avg_table(power(periodogram(e1),.5))
-				freq_max   =  1./(2.*options.pixel_size)
-				freq_min   =  1./options.B_start
-				log_main.add(" B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size))
-				b,junk =compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
-				global_b = b*4
-				log_main.add( "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
+				if options.B_enhance ==0.0 or options.B_enhance == -1.:
+					guinerline = rot_avg_table(power(periodogram(e1),.5))
+					freq_max   =  1./(2.*options.pixel_size)
+					freq_min   =  1./options.B_start
+					log_main.add(" B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size))
+					b,junk =compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
+					global_b = b*4
+					log_main.add( "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
+				else:
+					global_b = option.B_enhance
+					log_main.add( "User provided B_factor is %f"%global_b)
 				sigma_of_inverse=sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
-				if options.low_pass_filter:
-					log_main.add(" low-pass filter ff %   aa  %f"%(options.ff, options.aa))
+				if options.low_pass_filter>0.0 and options.low_pass_filte<0.5:
+					log_main.add(" low-pass filter ff %   aa  %f"%(options.low_pass_filter, options.aa))
 					from filter import filt_tanl
-					e1 =filt_tanl(e1,options.ff, options.aa)
+					e1 =filt_tanl(e1,options.low_pass_filter, options.aa)
+				elif options.low_pass_filte>0.5:
+					e1 =filt_tanl(e1,options.low_pass_filter/option.pixel_size, options.aa)
 				e1.write_image(options.output)
 		else:   # 3D case
 			log_main.add( "3-D refinement postprocess ")
 			nargs     = len(args)
-			if nargs >2:
+			if nargs >=3:
 				ERROR(" Too  many inputs!", "--postprocess option for 3-D")
 			log_main.add("the first input volume is %s"%args[0])
 			try: 
@@ -989,7 +1000,7 @@ def main():
 				m = None
 				log_main.add(" mask is not used in postprocess")
 			from math import sqrt
-			resolution = 0.5
+			resolution = 0.5 # for single volume, this is the default resolution
 			if nargs >1 :
 				log_main.add(" the FSC_cutoff is %f  "%options.FSC_cutoff)
 				frc       = fsc(e1*m, e2*m, 1)
@@ -1010,7 +1021,7 @@ def main():
 						outfrc[1].append(options.pixel_size/frc[0][ifreq])
 				from utilities import write_text_file
 				write_text_file(outfrc, "fsc.txt")
-			e1 +=e2
+			if nargs>1: e1 +=e2
 			e1 *=m
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
@@ -1027,13 +1038,16 @@ def main():
 			if options.fsc_adj:
 				log_main.add(" apply (2*FSC)/(1+FSC) to adjust power spectrum ")
 				log_main.add(" pixel_size is %f Angstrom"%options.pixel_size)
-				#### FSC weighting sqrt((2.*fsc)/(1+fsc));
-				fil = len(frc[1])*[None]
-				for i in xrange(len(fil)):
-					if frc[1][i]>=options.FSC_cutoff: tmp = frc[1][i]
-					else: tmp = 0.0
-					fil[i] = sqrt(2.*tmp/(1.+tmp))
-				e1=filt_table(e1,fil)
+				if nargs==1:
+					print("WARNING! there is only one input map,  and FSC adjustment cannot be done! Skip and continue...", "--postprocess  for 3-D")					
+				else:
+					#### FSC weighting sqrt((2.*fsc)/(1+fsc));
+					fil = len(frc[1])*[None]
+					for i in xrange(len(fil)):
+						if frc[1][i]>=options.FSC_cutoff: tmp = frc[1][i]
+						else: tmp = 0.0
+						fil[i] = sqrt(2.*tmp/(1.+tmp))
+					e1=filt_table(e1,fil)
 			if options.B_enhance !=-1:
 				if options.B_enhance == 0.0: # auto mode
 					#print_msg = "B-factor estimation auto mode"
@@ -1069,8 +1083,8 @@ def main():
 			if options.low_pass_filter !=-1.: # User provided low-pass filter
 				from filter       import filt_tanl
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
-					e1 =filt_tanl(e1,options.pixel_size/low_pass_filter, min(options.aa,.1))
-					cutoff = options.ffx
+					e1 =filt_tanl(e1,options.pixel_size/options.low_pass_filter, min(options.aa,.1))
+					cutoff = options.low_pass_filter
 				elif options.low_pass_filter>0.0 and options.low_pass_filter<0.5:  # input is absolution frequency
 					e1 =filt_tanl(e1,options.low_pass_filter, min(options.aa,.1))
 					cutoff = options.pixel_size/options.low_pass_filter
