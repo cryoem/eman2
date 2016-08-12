@@ -155,7 +155,8 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement[False]")
-	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.",guitype='boolbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--tophat", action="store_true", default=False,help = "Instead of imposing a final Wiener filter, use a tophat filter (similar to Relion). Sharper features, but may exaggerate.", guitype='boolbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement[False]")
+	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.")
 	parser.add_argument("--m3dold", action="store_true", default=False,help = "Use the traditional e2make3d program instead of the new e2make3dpar program",guitype='boolbox', row=11, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
@@ -399,6 +400,22 @@ output maps will be low-pass filtered based on resolution, but note that there w
 maps.")
 		postprocess=""
 		m3dsetsf=""
+
+	if options.tophat:
+		append_html("<p>You are using the --tophat option, which modifies the final filter applied to 3-D maps. The default behavior is to apply a final Wiener filter \
+based on the FSC curve used to compute the resolution. This Wiener filter gives a map which in theory reduces noise and filters the map to get as close as possible to \
+what you should be able to see at the specified resolution. However, this means that some features, such as sidechains and the pitch of alpha-helices may be somewhat \
+smoothed out. The alternative is a 'tophat' or 'sharp' filter imposed at the cutoff (0.143) FSC value, and is what Relion imposes on its final maps. This produces \
+maps which look prettier, with more apparent side-chains, but runs the risk that some of these features may be artifacts of the sharp filter.")
+		tophat="--tophat"
+	else:
+		append_html("<p>You are not using the --tophat option, meaning a final Wiener filter \
+based on the FSC curve used to compute the resolution is applied to the reconstruction. This Wiener filter gives a map which in theory reduces noise and filters the map to get as close as possible to \
+what you should be able to see at the specified resolution. However, this means that some features, such as sidechains and the pitch of alpha-helices may be somewhat \
+smoothed out. The alternative is a 'tophat' or 'sharp' filter imposed at the cutoff (0.143) FSC value, and is what Relion imposes on its final maps. This produces \
+maps which look prettier, with more apparent side-chains at high resolution, but runs the risk that some of these features may be artifacts of the sharp filter.")
+
+		tophat=""
 
 	if options.sym.lower()=="c1" and options.targetres>15 :
 		append_html("<p>Since you are not imposing symmetry, and your target resolution is low, there is a risk that the even and odd maps produced during refinement \
@@ -853,8 +870,9 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
 		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
 		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --automaskexpand {amaskxp} \
---align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter --ampcorrect={ampcorrect}".format(\
-path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3d2=amask3d2, m3dpostproc=m3dpostproc, setsf=m3dsetsf, restarget=options.targetres, amaskxp=options.automaskexpand, ampcorrect=ampcorrect))
+--align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} {tophat} --sym={sym} --restarget={restarget} --underfilter --ampcorrect={ampcorrect}".format(\
+path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3d2=amask3d2, m3dpostproc=m3dpostproc, setsf=m3dsetsf, restarget=options.targetres, amaskxp=options.automaskexpand,\
+ampcorrect=ampcorrect,tophat=tophat))
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
 

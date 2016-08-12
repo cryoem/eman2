@@ -32,7 +32,7 @@
     "CHILDREN": [
       {
         "ICON": "green_boxes",
-        "MODE": "boxing",
+        "MODE": "extraction",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
         "PROGRAM": "e2boxer.py",
         "WIZARD":"/lib/pmconfig/boxer.json",
@@ -43,9 +43,9 @@
         "ICON": "green_boxes",
         "MODE": "boxing",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
-        "PROGRAM": "e2boxer.py",
+        "PROGRAM": "e2boxer_old.py",
         "WIZARD":"/lib/pmconfig/boxer.json",
-        "NAME": "New Particle Picker (e2boxer21.py)",
+        "NAME": "Old Particle Picker (e2boxer_old.py)",
         "CHILDREN": []
       },
       {
@@ -53,9 +53,9 @@
         "MODE": "extraction",
         "EXPERT": 1,
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
-        "PROGRAM": "e2boxer.py",
+        "PROGRAM": "e2boxer_old.py",
         "WIZARD":"/lib/pmconfig/boxergo.json",
-        "NAME": "Generate Output (e2boxer)",
+        "NAME": "Generate Output (e2boxer_old.py)",
         "CHILDREN": []
       },
       {

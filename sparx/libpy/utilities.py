@@ -2103,73 +2103,35 @@ def recmat(mat):
 	#return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
 
 def reduce2asymmetric_D(angles_list, symmetry="d2"):
-	sym_number =int(symmetry[1:])
-	sym_angle  =360./sym_number
-	badb      = 360.0/int(symmetry[1:])/4
-	bade      = 2*badb
-	bbdb      = badb + 360.0/int(symmetry[1:])/2
-	bbde      = bbdb + 360.0/int(symmetry[1:])/4
-	print badb, bade
-	print bbdb, bbde
-	alist =[]
+	sym_angle  = 360.0/int(symmetry[1:])  # we keep all projections with theta <= 90.
+	alist      = [None]*len(angles_list)
 	for index in xrange(len(angles_list)):
-		if len(angles_list[index]) == 3 :
-			[phi,theta,psi]= angles_list[index]
+		if len(angles_list[index]) == 3:  [phi, theta, psi] = angles_list[index]
+		else:                             [phi, theta, psi, sx, sy] = angles_list[index]
+		if( theta > 90.0 ):
+			theta = 180.0 - theta
+			phi   = (-phi)%sym_angle
 		else:
-			[phi,theta,psi,sx,sy] = angles_list[index]
-		if (phi > badb and phi < bade) or phi> bbdb: # only mirror those fall in non-permitted zones
-			phi   = (phi+540.0)%360.0
-			theta = 180.0-theta
-			psi   = (540.0-psi)%360.0
-		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-		ts = t2.get_sym_proj(symmetry)
-		dlist ={}
-		for item in xrange(len(ts)):
-			a         = ts[item]
-			u         = a.get_params("spider")
-			phi       = u["phi"]
-			theta     = u["theta"]
-			psi       = u["psi"]
-			#print qt, badb, bade, bbdb, bbde
-			if theta <=90:
-				if phi<=badb or (phi>=bade and phi<=bbdb):
-					#print phi
-					phi = phi%sym_angle
-					phi = round(phi,3)
-					dlist[phi] = [theta,psi]
-		tlist = dlist.keys()
-		if len(tlist) == 1 :
-			alist.append([index,tlist[0], dlist[tlist[0]][0], dlist[tlist[0]][1]])
+			phi = phi%sym_angle
+		alist[index] = [phi,theta,psi]
 	return alist
 
-def reduce2asymmetric_C(angles_list,symmetry="c1"):
+def reduce2asymmetric_C(angles_list, symmetry="c1"):
 	sym_angle  = 360.0/int(symmetry[1:])
-	alist      = []
+	alist      = [None]*len(angles_list)
 	for index in xrange(len(angles_list)):
-		if len(angles_list[index]) == 3:
-			[phi,theta,psi] = angles_list[index]
-		else:
-			[phi,theta,psi,sx,sy] = angles_list[index]
+		if len(angles_list[index]) == 3:  [phi, theta, psi] = angles_list[index]
+		else:                             [phi, theta, psi, sx, sy] = angles_list[index]
 		phi = phi%sym_angle
-		alist.append([phi,theta,psi])
+		alist[index] = [phi,theta,psi]
 	return alist
 
-def reduce_to_asymmetric_unit(angles_list,symmetry):
-	from string import atoi
+def reduce_to_asymmetric_unit(angles_list, symmetry):
 	sym_type   = symmetry[0:1].lower()
-	if sym_type=="c":
-		flist = reduce2asymmetric_C(angles_list, symmetry=symmetry)
-		return flist
-	elif sym_type=="d":
-		new_angleslist1 = reduce2asymmetric_D(angles_list, symmetry=symmetry)
-		tlist = {}
-		for a in new_angleslist1:
-			tlist[a[0]] = [a[1],a[2],a[3]]
-		flist =[]
-		for i in xrange(len(tlist)):
-			flist.append(tlist[i])
-		return flist
-
+	if sym_type == "c" :
+		return  reduce2asymmetric_C(angles_list, symmetry=symmetry)
+	elif sym_type == "d" :
+		return  reduce2asymmetric_D(angles_list, symmetry=symmetry)
 
 def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.):
 	"""
@@ -5239,8 +5201,8 @@ def cmdexecute(cmd, printing_on_success = True):
 	import subprocess
 	outcome = subprocess.call(cmd, shell=True)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(outcome == 1):
-		print  line,"ERROR!!   Command failed:  ", cmd
+	if(outcome != 0):
+		print  line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome
 		from sys import exit
 		exit()
 	elif printing_on_success:

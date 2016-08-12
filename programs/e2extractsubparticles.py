@@ -46,7 +46,7 @@ from numpy import arange
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <refine_xx folder> <iteration number> <3D excluded region mask>
+	usage = """prog [options] <refine_xx folder> <iteration number>
 
 This program modifies raw particle data to subtract-away undesired portions of the density on a per-particle basis.
 For example, one could take GroEL particles with D7 symmetry and extract the top and bottom heptamers as separate
@@ -60,7 +60,10 @@ will be examined automatically to extract the corresponding particles and projec
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--output",type=str,default="sets/subparticles.hdf",help="Specify output filename, which will contain nptcl*sym particles. Default=sets/subparticles.hdf")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--subunitmask",type=str,default=None,help = "Specify a 3-D mask containing the region to extract from each particle. Required.")
+	parser.add_argument("--outermask",type=str,default=None,help = "A 3-D mask larger than subunitmask, containing the zone to be included in each subtracted particle")
 	parser.add_argument("--masked",action="store_true",default=False,help="If specified, each particle will be masked based on the projection mask.")
+	parser.add_argument("--newbox", type=int, help="New box size for extracted regions",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--debug",action="store_true",default=False,help="Enable debugging mode with verbose output and image display. Not suitable for real runs.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -69,7 +72,14 @@ will be examined automatically to extract the corresponding particles and projec
 
 	(options, args) = parser.parse_args()
 	args[1]=int(args[1])
-#	if len(args)<4 : parser.error("Please specify <raw particle file> <class mx> <projections> <mask> <output file> ")
+	
+	if len(args)!=2 : 
+		print "The usage of this program has changed from previous versions. You now need to specify a 3-D mask indication the portion of the map you wish to KEEP (previously the mask idenfied a region to exclude). You may also optionally specify a 3-D mask indicating a slightly larger mask indicating the data to include in the final subtracted projection."
+		sys.exit(1)
+
+	if options.subunitmask==None : 
+		print "The --subunitmask option is now required. Please see --help."
+		sys.exit(1)
 
 	# each of these classmx variables becomes a 2 element list with even and odd particles respectively
 	try:
@@ -107,11 +117,14 @@ will be examined automatically to extract the corresponding particles and projec
 	# The 3D reference volume we are using for subtraction
 	threed=EMData("{}/threed_{:02d}.hdf".format(args[0],args[1]),0)
 
-	# The mask in "neutral" orientation
-	mask=EMData(args[2],0)
+	# The exclusion mask in "neutral" orientation
+	subunitmask=EMData(options.subunitmask)
+	mask=subunitmask.process("math.linear",{"scale":-1.0,"shift":1.0})
 
-	# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching
+	# The mask from the reference volume
 	ptclmask=EMData(args[0]+"/mask.hdf",0)
+	mask.mult(ptclmask)
+	# mask now excludes the subunit and volume outside the masked 3-D particle 
 
 	logid=E2init(sys.argv, options.ppid)
 
@@ -126,6 +139,9 @@ will be examined automatically to extract the corresponding particles and projec
 	try: os.unlink(options.output)
 	except: pass
 
+	if options.outermask!=None:
+		outermask=EMData(options.outermask)
+
 	# now we loop over the classes, and subtract away a projection of the reference with the exclusion mask in
 	# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
@@ -135,13 +151,23 @@ will be examined automatically to extract the corresponding particles and projec
 		# The first projection is unmasked, used for scaling
 		# We regenerate the masked volumes for each class to avoid using too much RAM
 		projs=[threed.project("standard",{"transform":eulers[i]})]
+		projmask=[]
 		for xf in symxfs:
 			maskx=mask.process("xform",{"transform":xf})
 			masked=threed.copy()
 			masked.mult(maskx)
 			projs.append(masked.project("standard",{"transform":eulers[i]}))
 
-		projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
+			if options.outermask:
+				omaskx=outermask.process("xform",{"transform":xf})
+#				projmask.append(omaskx.project("standard",{"transform":eulers[i]}))
+				projmask.append(omaskx.project("standard",{"transform":eulers[i]}).process("threshold.binary",{"value":0.01}))
+			else:
+				omaskx=subunitmask.process("xform",{"transform":xf})
+				projmask.append(omaskx.project("standard",{"transform":eulers[i]}).process("threshold.binary",{"value":0.01}))
+			
+			
+#		projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
 #		proj.process_inplace("normalize.circlemean")
 #		proj.mult(softmask)
 
@@ -153,16 +179,21 @@ will be examined automatically to extract the corresponding particles and projec
 				if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
 
 				ptcl=EMData(cptcl[eo],j)
+#				ptcl.write_image(options.output,-1)
 				lowth=ptcl["mean"]-ptcl["sigma"]*3.0
 				highth=ptcl["mean"]+ptcl["sigma"]*3.0
 
 				# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 				ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
 				projc=[im.process("xform",{"transform":ptclxf}) for im in projs]		# we transform the projections, not the particle (as in the original classification)
+				projm=[im.process("xform",{"transform":ptclxf}) for im in projmask]
+				maskctr=[j.calc_center_of_mass(0.5) for j in projm]
 				if options.masked : 
-					projmaskc=projmask.process("xform",{"transform":ptclxf})
-					ptcl.mult(projmaskc)
-					for pr in projc: pr.mult(projmaskc)
+					zmsk=projc[0].process("threshold.binary",{"value":0.01})
+					
+					#projmaskc=projmask.process("xform",{"transform":ptclxf})
+					#ptcl.mult(projmaskc)
+					#for pr in projc: pr.mult(projmaskc)
 #				projmaskc.process_inplace("threshold.notzero")
 
 				#ptcl.write_image("tst.hdf",0)
@@ -170,13 +201,18 @@ will be examined automatically to extract the corresponding particles and projec
 
 				# now subtract the masked versions processed using the scaling/normalization
 				# we got from the whole/unmasked particle
-				for pr in projc[1:]:
+				for k,pr in enumerate(projc[1:]):
+					if options.masked : ptcl.mult(zmsk)
 					ptcl3=ptcl.process("math.sub.optimal",{"ref":projc[0],"actual":pr})
-					if options.masked : 
-						ptcl3.mult(projmaskc)
-						if options.debug : display((ptcl,ptcl3,pr,projc[0],projmaskc))
-					elif options.debug: display((ptcl,ptcl3,pr,projc[0]))
-					ptcl3.write_image(options.output,-1)
+					if options.outermask!=None :
+						ptcl3.mult(projm[k])
+#					projm[k].write_image(options.output,-1)
+#					ptcl3.write_image(options.output,-1)
+					ptcl3.translate(-maskctr[k][0]+ptcl3["nx"]/2,-maskctr[k][1]+ptcl3["ny"]/2,-maskctr[k][2]+ptcl3["nz"]/2)
+					if options.newbox>3 : 
+						ptcl4=ptcl3.get_clip(Region((ptcl3["nx"]-options.newbox)/2,(ptcl3["ny"]-options.newbox)/2,options.newbox,options.newbox))
+						ptcl4.write_image(options.output,-1)
+					else: ptcl3.write_image(options.output,-1)
 #					print ptcl.cmp("optsub",projc[0])
 
 	E2end(logid)

@@ -76,6 +76,7 @@ Important: This program must be run from the project directory, not from within 
 
 	parser.add_header(name="modeheader", help='Additional Options', title="Additional Options", row=20, col=0, rowspan=1, colspan=3, mode="auto")
 	parser.add_argument("--fromscratch",action="store_true",help="Force refitting of CTF from scratch, ignoring any previous fits.",default=False, guitype='boolbox', row=22, col=0, rowspan=1, colspan=1, mode='auto[False]')
+#	parser.add_argument("--forceframe",action="store_true",help="Uses defocus/astigmatism from frames. Does not significantly modify based on particles",default=False, guitype='boolbox', row=24, col=2, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting (use e2rawdata first)",default=False, guitype='boolbox', row=22, col=1, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding",default=False, guitype='boolbox', row=22, col=2, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--highdensity",action="store_true",help="If particles are very close together, this will interfere with SSNR estimation. If set uses an alternative strategy, but may over-estimate SSNR.",default=False, guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, mode='auto[False]')
@@ -126,10 +127,10 @@ Important: This program must be run from the project directory, not from within 
 			if fc.dfdiff!=0: frame_stig=True
 			
 		if options.voltage==0 : options.voltage=fc.voltage
-		if options.cs==0 : options.cs=fc.cs
+		if options.cs==0 : options.cs=max(fc.cs,0.01)			# CTF model doesn't work well with Cs exactly 0
 		if options.apix==0 : options.apix=fc.apix
 		
-		if options.voltage!=fc.voltage or options.cs!=fc.cs or options.apix!=fc.apix or options.ac!=fc.ampcont :
+		if options.voltage!=fc.voltage or fabs(options.cs-fc.cs)>0.02 or fabs(options.apix-fc.apix)>0.1 or options.ac!=fc.ampcont :
 			print """Warning: Disagreement in specified voltage, Cs, A/pix or %AC between frames and options. This requires refitting without frame-based parameters.
 Strongly suggest refitting CTF from frames with e2rawdata.py with revised parameters before running this program"""
 			frame_ctf=False
@@ -183,7 +184,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 			if frame_stig : 
 				if options.astigmatism : 
 					print "Astigmatism present in in frame parameters. Will use defocus/astig unchanged from frames"
-					fit_options="--curdefocusfix --astigmatism"
+					fit_options="--curdefocusfix --astigmatism --useframedf"
 				else :
 					print """Astigmatism present in frame parameters, but not specified here. 
 	No astigmatism will be used, and defocuses will be refined from particles.
@@ -195,10 +196,10 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 					print """Astigmatism fitting from particles requested.""" 
 					if options.hires : print """This may be fine for strong astigmatism through midres 
 resolution, but for high resolution work, fitting defocus/astig from frames is recommended"""
-					fit_options="--curdefocushint --astigmatism"
+					fit_options="--curdefocushint --astigmatism --useframedf"
 				else :
 					print "Frame parameters present without astigmatism. Slightly refining frame defocus values from particles."
-					fit_options="--curdefocusfix"		# "slightly refining" refers to refinebysnr
+					fit_options="--curdefocusfix --useframedf"	# "slightly refining" refers to refinebysnr
 		else: 
 			print "No frame-based CTF parameters found. Fitting from particles."
 			if options.astigmatism :
@@ -303,8 +304,18 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	maskrad3=int(boxsize/2-maskwid2*1.2)
 
 	# for high resolution data, we still go ahead and do some masking
-	maskwid3=6.0/options.apix
-	maskrad3=int(boxsize/2-maskwid3*1.2)
+	maskwid4=6.0/options.apix
+	maskrad4=int(boxsize/2-maskwid3*1.2)
+
+	# for "5" data, we target ~1.8 A/pix
+	resample5=1.8/options.apix
+	newbox=good_size(boxsize/resample2)
+	resample5=boxsize/(newbox+0.1)
+	if resample5<1.0:
+		if not options.lores : print "Warning: original sampling is too large for ideal 5A resolution results. Suggest <=1.8 A/pix"
+		resample2=1.0
+	maskwid5=6.0/options.apix
+	maskrad5=int(boxsize/2-maskwid2*1.2)
 
 	if options.invert: invert="--invert"
 	else: invert=""
@@ -346,20 +357,20 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		print "Phase-flipped output files:\n__ctf_flip_lp20 - masked, downsampled, filtered to 20 A resolution\n__ctf_flip_lp7 - masked, downsampled, filtered to 7 A resolution\n__ctf_flip_fullres - masked, full sampling"
 		
 	else :
-		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag lp14 --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.7 --phaseflipproc3 normalize.circlemean:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad}".format(
+		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag lp14 --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.07 --phaseflipproc3 normalize.circlemean:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad}".format(
 			maskrad=maskrad1,maskwid=maskwid1,resamp=resample1,invert=invert,minqual=options.minqual,extrapad=extrapad)
 		if options.verbose: print com
 		launch_childprocess(com)
 		E2progress(logid,0.8)
 
 		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag lp5 --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.2 --phaseflipproc3 normalize.circlemean:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad}".format(
-			maskrad=maskrad2,maskwid=maskwid2,resamp=resample2,invert=invert,minqual=options.minqual,extrapad=extrapad)
+			maskrad=maskrad5,maskwid=maskwid5,resamp=resample5,invert=invert,minqual=options.minqual,extrapad=extrapad)
 		if options.verbose: print com
 		launch_childprocess(com)
 		E2progress(logid,0.9)
 
 		com="e2ctf.py --allparticles {invert} --minqual={minqual} --proctag fullres --phaseflipproc filter.highpass.gauss:cutoff_pixels=3 --phaseflipproc2 normalize.circlemean:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} {extrapad}".format(
-			maskrad=maskrad3,maskwid=maskwid3,invert=invert,minqual=options.minqual,extrapad=extrapad)
+			maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad)
 		if options.verbose: print com
 		launch_childprocess(com)
 		print "Phase-flipped output files:\n__ctf_flip_lp14 - masked, downsampled, filtered to 14 A resolution\n__ctf_flip_lp5 - masked, downsampled, filtered to 5 A resolution\n__ctf_flip_fullres - masked, full sampling"

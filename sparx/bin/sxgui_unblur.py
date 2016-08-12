@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-# sxgui_drift for analyzing drift parameters made by Unblur
 # Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -2378,7 +2377,12 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                         angleCos = 1
                     else:
                         angleCos = fltPointProduct / fltAbsProduct
+                    if angleCos > 1:
+                        angleCos = 1
+                    elif angleCos < -1:
+                        angleCos = -1
                     angleRad = numpy.arccos(angleCos)
+
                     angleDeg = angleRad * 180 / numpy.pi
 
                     # Save calculations of angles
@@ -3654,22 +3658,36 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             os.mkdir('unblur_GUI_output')
 
         # Create output directory
-        strOutput = '{:s}/{:s}/{:s}'.format(
-            os.getcwd(),
+        strOutput = '{:s}/{:s}'.format(
             self.outputDir,
-            str(self.leOutputName.text())
+            str(self.leOutputName.text()).replace('.txt', '')
             )
 
         # Write output
-        with open(strOutput, 'w') as f:
+        with open('{:s}_uncorrected.txt'.format(strOutput), 'w') as f:
             for name in sorted(self.listChecked):
                 arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                f.write('{:s}\n'.format(arrCurrentEntry[self.dMic][0]))
+                strDirectory = arrCurrentEntry[self.dMic][0].replace('Temp', 'Doseuncorrected')
+                f.write(
+                    '{:s}\n'.format(
+                        os.path.relpath(strDirectory)
+                        )
+                    )
+
+        with open('{:s}_corrected.txt'.format(strOutput), 'w') as f:
+            for name in sorted(self.listChecked):
+                arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
+                strDirectory = arrCurrentEntry[self.dMic][0].replace('Temp', 'Dosecorrected')
+                f.write(
+                    '{:s}\n'.format(
+                        os.path.relpath(strDirectory)
+                        )
+                    )
 
         # Show message with the save path
         messageBox = QtGui.QMessageBox(self)
         messageBox.setText(
-            'File saved!\n{:s}'.format(strOutput)
+            'File saved!\n{0:s}_corrected.txt and {0:s}_uncorrected.txt'.format(strOutput)
             )
         messageBox.exec_()
 

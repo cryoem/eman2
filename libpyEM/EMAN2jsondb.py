@@ -860,8 +860,10 @@ performance than many individual changes."""
 		# for EMData objects we need to figure out what file they will get stored in
 		if isinstance(val,EMData) :
 			# Changing an image triggers an actual read of the old image
-			if isinstance(self.data[key],tmpimg):
-				self.data[key]=self.data[key].image()
+			try:
+				if isinstance(self.data[key],tmpimg):
+					self.data[key]=self.data[key].image()
+			except: pass
 			try: 
 				val["json_path"]=self.changes[key]["json_path"]
 				val["json_n"]=self.changes[key]["json_n"]
