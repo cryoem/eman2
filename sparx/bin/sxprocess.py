@@ -1032,8 +1032,13 @@ def main():
 				from utilities import write_text_file
 				write_text_file(outfrc, "fsc.txt")
 				e1 +=e2
-			outtext = []
-			outtext.append(rot_avg_table(power(periodogram(e1),.5)))
+			outtext = [["Squaredfreqencies"],[ "LogOrignal"]]
+			guinerline = rot_avg_table(power(periodogram(e1),.5))
+			from math import log
+			for ig in xrange(len(guinerline)):
+				x = ig*.5/float(len(guinerline))/options.pixel_size
+				outtext[0].append(x*x)
+				outtext[1].append(log(guinerline[ig]))
 			if m: e1 *=m
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
@@ -1046,6 +1051,10 @@ def main():
 					ERROR(" Sphire postprocess fails to read MTF file "+options.mtf, "--postprocess option for 3-D")
 					exit()
 				e1 = fft(Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0]))
+				outtext.append(["LogMTFdiv"])
+				guinerline   = rot_avg_table(power(periodogram(e1),.5))
+				for ig in xrange(len(guinerline)):
+					outtext[-1].append(log(guinerline[ig]))
 			if options.fsc_adj:
 				log_main.add("  (2*FSC)/(1+FSC) is applied to Fourier factor to adjust power spectrum ")
 				log_main.add(" The pixel_size of map for postprocess is %f Angstrom"%options.pixel_size)
@@ -1055,12 +1064,14 @@ def main():
 					#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 					fil = len(frc[1])*[None]
 					for i in xrange(len(fil)):
-						if frc[1][i]>=options.FSC_cutoff: tmp = frc[1][i]
+						if frc[1][i]>=0.143: tmp = frc[1][i]
 						else: tmp = 0.0
 						fil[i] = sqrt(2.*tmp/(1.+tmp))
 					e1=filt_table(e1,fil)
 					guinerline   = rot_avg_table(power(periodogram(e1),.5))
-					outtext.append(guinerline)
+					outtext.append(["LogFSCadjusted"])
+					for ig in xrange(len(guinerline)):
+						outtext[-1].append(log(guinerline[ig]))
 			if options.B_enhance !=-1:
 				if options.B_enhance == 0.0: # auto mode
 					if frc is not None: 
@@ -1073,23 +1084,25 @@ def main():
 					else: 
 						freq_max     =resolution_FSC143/(options.pixel_size)
 					guinerline   = rot_avg_table(power(periodogram(e1),.5))
+					logguinerline = []
+					for ig in xrange(len(guinerline)):
+						logguinerline.append(log(guinerline[ig]))
 					freq_min     = 1./options.B_start # given frequencies with unit of Angstrom, say 10 Angstrom, 15  Angstrom
-					outtext.append(guinerline)
+					
 					if freq_min>=freq_max:
 						log_main.add("Your B_start is too high! Decrease it and rerun the program!")
 						ERROR("your B_start is too high! Decrease it and re-run the program!", "--postprocess option")
 						exit()
 					from utilities import write_text_file
-					from math import log
-					logguinerline = []
-					for ig in xrange(len(guinerline)): logguinerline.append(log(guinerline[ig]))
-					outtext.append(logguinerline)
-					write_text_file(logguinerline, "guinerlineBcalc.txt")
 					log_main.add(" B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2)))
 					b,junk , ifreqmin, ifreqmax  =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
 					log_main.add(" The used pixels are from %d to %d"%(ifreqmin, ifreqmax))
 					global_b     =  4.*b
-					log_main.add("The estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(-b,2))
+					from statistics import pearson
+					cc =pearson(junk[1],logguinerline)
+					log_main.add("Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"% \
+					                                                  (ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinerline[ifreqmin:ifreqmax])))
+					log_main.add("The slope of rotationally averaged Fourier factors is %f "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 
 				else: # User provided value
@@ -1098,7 +1111,9 @@ def main():
 					sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 					global_b = options.B_enhance
 				e1  = filt_gaussinv(e1,sigma_of_inverse)
-
+				guinerline   = rot_avg_table(power(periodogram(e1),.5))
+				outtext.append([" LogBfactorsharpened"])
+				for ig in xrange(len(guinerline)): outtext[-1].append(log(guinerline[ig]))			
 			if options.low_pass_filter !=-1.: # User provided low-pass filter
 				from filter       import filt_tanl
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
@@ -1119,10 +1134,12 @@ def main():
 			else:                       log_main.add( " B-factor is not applied  ")
 			log_main.add( " FSC curve is saved in fsc.txt  ")
 			log_main.add( " Final processed volume is "+options.output)
+			log_main.add(" guinerlines in logscale are saved in guinerlines.txt")
 			if options.low_pass_filter !=-1: 
 				log_main.add(" Low-pass filter to the resolution %f"%round(cutoff,2))
 			else:
 				log_main.add(" The final volume is not low_pass filtered. ")
+			write_text_file(outtext, "guinerlines.txt")
 				
 	elif options.window_stack:
 		nargs = len(args)
