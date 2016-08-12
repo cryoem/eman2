@@ -375,8 +375,6 @@ def main():
 	parser.add_option("--output",               type="string",             help="output file name", default = "vol_postrefine.hdf")
 	parser.add_option("--pixel_size",           type="float",              help="pixel size of the data", default=0.0)
 	parser.add_option("--B_start",              type="float",              help="starting frequency in Angstrom for B-factor estimation", default=10.)
-	parser.add_option("--FSC_cutoff",           type="float",              help="FSC value that cuts off FSC ", default=0.143)
-	parser.add_option("--2d",                   action="store_true",       help="postprocess isac 2-D averaged images",default=False)
 	# 
 	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
@@ -939,6 +937,11 @@ def main():
 		except:
 			ERROR(args[0]+" does not exist", " --postprocess option")
 			exit()
+		log_main.add(" The sphire postprocess commond: ")
+		line=" "
+		for a in sys.argv:
+			line +=" "+a
+		log_main.add(line)
 		if options.pixel_size == 1.0:
 			log_main.add("Be sure the pixel_size is correctly set !")
 		if e1.get_zsize() == 1:  # 2D case
@@ -963,7 +966,7 @@ def main():
 					freq_max   =  1./(2.*options.pixel_size)
 					freq_min   =  1./options.B_start
 					log_main.add(" B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size))
-					b,junk =compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
+					b,junk,ifreqmin, ifreqmax =compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
 					global_b = b*4
 					log_main.add( "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
 				else:
@@ -983,44 +986,43 @@ def main():
 			nargs     = len(args)
 			if nargs >=3:
 				ERROR(" Too  many inputs!", "--postprocess option for 3-D")
-			log_main.add("the first input volume is %s"%args[0])
+			log_main.add("The first input volume: %s"%args[0])
 			try: 
 				e1    = get_im(args[0])
 			except:
-				ERROR(" fail to read the first volume "+args[0], "--postprocess option for 3-D")
+				ERROR(" Sphire postprocess fails to read the first volume "+args[0], "--postprocess option for 3-D")
 				exit()
 			if nargs >1:
-				log_main.add("the second input volume is %s"%args[1])
+				log_main.add("The second input volume: %s"%args[1])
 				try:
 					e2  = get_im(args[1])
 				except:
 					ERROR(" fail to read the second volume "+args[1], "--postprocess option for 3-D")
 					exit()
 			if options.mask != None:
-				log_main.add("user provided mask is %s"%options.mask)
+				log_main.add("User provided mask: %s"%options.mask)
 				try:
 					m = get_im(options.mask)
 				except:
-					ERROR(" fail to read mask file "+options.mask, "--postprocess option for 3-D")
+					ERROR(" Sphire postprocess fails to read mask file "+options.mask, "--postprocess option for 3-D")
 					exit()
 			else:
 				m = None
-				log_main.add(" mask is not used in postprocess")
+				log_main.add(" No mask is not used in the postprocess")
 			from math import sqrt
-			resolution = 0.5 # for single volume, this is the default resolution
+			resolution_FSC143   = 0.5 # for single volume, this is the default resolution
+			resolution_FSChalf  = 0.5
 			if nargs >1 :
-				log_main.add(" the FSC_cutoff is %f  "%options.FSC_cutoff)
 				if m: frc       = fsc(e1*m, e2*m, 1)
 				else: frc       = fsc(e1, e2, 1)
-				
-				#print_msg = "FSC is saved in fsc.txt"
-				#log_main.add(print_msg)
 				for ifreq in xrange(len(frc[1])):
-					if frc[1][ifreq] < options.FSC_cutoff:
-						resolution   = frc[0][ifreq-1]
+					if frc[1][ifreq] < 0.143:
+						resolution_FSC143   = frc[0][ifreq-1]
 						break
-				## FSC is done on masked two images
-				## output FSC
+				for ifreq in xrange(len(frc[1])):
+					if frc[1][ifreq] < 0.5:
+						resolution_FSChalf  = frc[0][ifreq-1]
+						break
 				outfrc = [frc[0],[], frc[1]]
 				for ifreq in xrange(len(frc[0])):
 					if ifreq==0:
@@ -1030,6 +1032,8 @@ def main():
 				from utilities import write_text_file
 				write_text_file(outfrc, "fsc.txt")
 				e1 +=e2
+			outtext = []
+			outtext.append(rot_avg_table(power(periodogram(e1),.5)))
 			if m: e1 *=m
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
@@ -1039,46 +1043,53 @@ def main():
 				try:
 					mtf_core  = read_text_file(options.mtf, -1)
 				except:
-					ERROR(" fail to read MTF file "+options.mtf, "--postprocess option for 3-D")
+					ERROR(" Sphire postprocess fails to read MTF file "+options.mtf, "--postprocess option for 3-D")
 					exit()
 				e1 = fft(Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0]))
-
 			if options.fsc_adj:
-				log_main.add(" apply (2*FSC)/(1+FSC) to adjust power spectrum ")
-				log_main.add(" pixel_size is %f Angstrom"%options.pixel_size)
+				log_main.add("  (2*FSC)/(1+FSC) is applied to Fourier factor to adjust power spectrum ")
+				log_main.add(" The pixel_size of map for postprocess is %f Angstrom"%options.pixel_size)
 				if nargs==1:
 					print("WARNING! there is only one input map,  and FSC adjustment cannot be done! Skip and continue...", "--postprocess  for 3-D")					
 				else:
-					#### FSC weighting sqrt((2.*fsc)/(1+fsc));
+					#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 					fil = len(frc[1])*[None]
 					for i in xrange(len(fil)):
 						if frc[1][i]>=options.FSC_cutoff: tmp = frc[1][i]
 						else: tmp = 0.0
 						fil[i] = sqrt(2.*tmp/(1.+tmp))
 					e1=filt_table(e1,fil)
+					guinerline   = rot_avg_table(power(periodogram(e1),.5))
+					outtext.append(guinerline)
 			if options.B_enhance !=-1:
 				if options.B_enhance == 0.0: # auto mode
-					#print_msg = "B-factor estimation auto mode"
-					#log_main.add(print_msg)
+					if frc is not None: 
+						cutoff_by_fsc = 0
+						for ifreq in xrange(len(frc[1])):
+							if frc[1][ifreq]<1e-10:
+								break
+						cutoff_by_fsc = float(ifreq)
+						freq_max     =cutoff_by_fsc/(2.*len(frc[0]))/options.pixel_size
+					else: 
+						freq_max     =resolution_FSC143/(options.pixel_size)
 					guinerline   = rot_avg_table(power(periodogram(e1),.5))
-					freq_max     =1./(max(1./(2.*options.pixel_size), options.pixel_size/resolution))
-					freq_min     = 1./options.B_start # given frequency in Angstrom
+					freq_min     = 1./options.B_start # given frequencies with unit of Angstrom, say 10 Angstrom, 15  Angstrom
+					outtext.append(guinerline)
 					if freq_min>=freq_max:
-						log_main.add("your B_start is too high! Decrease it and rerun the program!")
-						ERROR("your B_start is too high! Decrease it and rerun the program!", "--postprocess option")
+						log_main.add("Your B_start is too high! Decrease it and rerun the program!")
+						ERROR("your B_start is too high! Decrease it and re-run the program!", "--postprocess option")
 						exit()
 					from utilities import write_text_file
-					#write_text_file(guinerline, "guinerlineBcalc.txt")
-					#print_msg =  " guinerline used for B-factor estimated is saved in guinerlineBcalc.txt file"
-					#log_main.add(print_msg)
-					print_msg = " B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2))
-					log_main.add(print_msg)
-					b,junk       =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
+					from math import log
+					logguinerline = []
+					for ig in xrange(len(guinerline)): logguinerline.append(log(guinerline[ig]))
+					outtext.append(logguinerline)
+					write_text_file(logguinerline, "guinerlineBcalc.txt")
+					log_main.add(" B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2)))
+					b,junk , ifreqmin, ifreqmax  =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
+					log_main.add(" The used pixels are from %d to %d"%(ifreqmin, ifreqmax))
 					global_b     =  4.*b
-					#print_msg =  "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(-b,2)
-					#log_main.add(print_msg)
-					#print_msg =  "the estimated B-factor is  %f Angstrom^2  "%(round((-global_b),2))
-					#log_main.add(print_msg)
+					log_main.add("The estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f  Angstrom^2"%round(-b,2))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 
 				else: # User provided value
@@ -1093,20 +1104,25 @@ def main():
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
 					e1 =filt_tanl(e1,options.pixel_size/options.low_pass_filter, min(options.aa,.1))
 					cutoff = options.low_pass_filter
-				elif options.low_pass_filter>0.0 and options.low_pass_filter<0.5:  # input is absolution frequency
+				elif options.low_pass_filter>0.0 and options.low_pass_filter<0.5:  # input is in absolution frequency
 					e1 =filt_tanl(e1,options.low_pass_filter, min(options.aa,.1))
 					cutoff = options.pixel_size/options.low_pass_filter
-				else: # low-pass filter to resolution
-					e1 = filt_tanl(e1,resolution, options.aa)
-					cutoff = options.pixel_size/resolution
+				else: # low-pass filter to resolution determined by FSC0.143
+					e1 = filt_tanl(e1,resolution_FSC143, options.aa)
+					cutoff = options.pixel_size/resolution_FSC143
+				log_main.add(" The final volume is low_pass filtered to  %f  "%cutoff)	
 			e1.write_image(options.output)
 			log_main.add(" ------ Summary -------")
-			log_main.add(" Resolution at the given cutoff is %f Angstrom"%round((options.pixel_size/resolution),3))
+			log_main.add(" Resolution at criteria 0.143 is %f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
+			log_main.add(" Resolution at criteria 0.5   is %f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
 			if options.B_enhance !=-1:  log_main.add( " B-factor is  %f Angstrom^2  "%(round((-global_b),2)))
 			else:                       log_main.add( " B-factor is not applied  ")
 			log_main.add( " FSC curve is saved in fsc.txt  ")
 			log_main.add( " Final processed volume is "+options.output)
-			if options.low_pass_filter !=-1: log_main.add("Low-pass filter to the resolution %f"%round(cutoff,2))
+			if options.low_pass_filter !=-1: 
+				log_main.add(" Low-pass filter to the resolution %f"%round(cutoff,2))
+			else:
+				log_main.add(" The final volume is not low_pass filtered. ")
 				
 	elif options.window_stack:
 		nargs = len(args)
