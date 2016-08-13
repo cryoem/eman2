@@ -930,7 +930,7 @@ def main():
 			ERROR(" number of inputs is incorrection", " --postprocess option")
 			exit()
 		if options.pixel_size ==0:
-			ERROR(" Set pixel_size value ! There no default value for pixel_size", " --postprocess option")
+			ERROR(" Set pixel_size value ! There is no default value for pixel_size", " --postprocess option")
 			exit()
 		try:
 			e1   = get_im(args[0],0)
@@ -952,8 +952,6 @@ def main():
 		log_main.add("mtf   "+str(options.mtf))
 		log_main.add("output "+str(options.output))
 		log_main.add("-----------")
-		if options.pixel_size == 0.0:
-			log_main.add("Be sure the pixel_size is correctly set !")
 		if e1.get_zsize() == 1:  # 2D case
 			log_main.add("2-D postprocess for ISAC averaged images")
 			nimage = EMUtil.get_image_count(args[0])
