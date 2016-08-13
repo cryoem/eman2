@@ -1064,7 +1064,7 @@ def main():
 					#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 					fil = len(frc[1])*[None]
 					for i in xrange(len(fil)):
-						if frc[1][i]>=0.143: tmp = frc[1][i]
+						if frc[1][i]>=0.0: tmp = frc[1][i]
 						else: tmp = 0.0
 						fil[i] = sqrt(2.*tmp/(1.+tmp))
 					e1=filt_table(e1,fil)
@@ -1113,7 +1113,13 @@ def main():
 				e1  = filt_gaussinv(e1,sigma_of_inverse)
 				guinerline   = rot_avg_table(power(periodogram(e1),.5))
 				outtext.append([" LogBfactorsharpened"])
-				for ig in xrange(len(guinerline)): outtext[-1].append(log(guinerline[ig]))			
+				last_non_zero = -999.0
+				for ig in xrange(len(guinerline)):
+					if guinerline[ig]>0: 
+						outtext[-1].append(log(guinerline[ig]))
+						last_non_zero = log(guinerline[ig])
+					else:
+						outtext[-1].append(last_non_zero)			
 			if options.low_pass_filter !=-1.: # User provided low-pass filter
 				from filter       import filt_tanl
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
