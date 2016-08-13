@@ -937,12 +937,22 @@ def main():
 		except:
 			ERROR(args[0]+" does not exist", " --postprocess option")
 			exit()
-		log_main.add(" The sphire postprocess commond: ")
+		log_main.add(" The sphire postprocess command: ")
 		line=" "
 		for a in sys.argv:
 			line +=" "+a
 		log_main.add(line)
-		if options.pixel_size == 1.0:
+		log_main.add(" ----------options")
+		log_main.add("pixle_size  "+str(options.pixel_size))
+		log_main.add("mask       "+str(options.mask))
+		log_main.add("fsc_adj   "+str(options.fsc_adj))
+		log_main.add("B_enhance  "+str(options.B_enhance))
+		log_main.add("low_pass_filter  "+str(options.low_pass_filter))
+		log_main.add("B_start "+str(options.B_start))
+		log_main.add("mtf   "+str(options.mtf))
+		log_main.add("output "+str(options.output))
+		log_main.add("-----------")
+		if options.pixel_size == 0.0:
 			log_main.add("Be sure the pixel_size is correctly set !")
 		if e1.get_zsize() == 1:  # 2D case
 			log_main.add("2-D postprocess for ISAC averaged images")
