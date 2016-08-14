@@ -7,3 +7,6 @@ INSTALL(FILES ${pngfiles} ${icofiles}
 )
 
 INSTALL(FILES Close.txt DESTINATION images)
+
+# FIXING libpng warning: iCCP: known incorrect sRGB profile
+# http://tex.stackexchange.com/questions/125612/warning-pdflatex-libpng-warning-iccp-known-incorrect-srgb-profile
