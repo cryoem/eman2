@@ -842,6 +842,7 @@ costlist, int* curbranch);
 	static EMData* read_slice_and_multiply( EMData* vol, const string stacked_slices_in);
 	/* img /=vol[index]* stacked_slice[index] */
 	static EMData* divide_mtf(EMData* img, vector<float>mtf, vector<float>res);
+	static EMData* randomizephasesafter(EMData* img, float res);
 	static void div_cbyr(EMData* img, EMData* img1);
 	static void save_slices_on_disk(EMData* vol, const string stacked_slices_out);
 
@@ -1147,6 +1148,7 @@ public:
 	static EMData* ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s);
+	static EMData* surface_mask(EMData* img, float surface_dilation_ini, float cosine_width);
 
 	static inline int mono(int k1, int k2) {
 #ifdef _WIN32
