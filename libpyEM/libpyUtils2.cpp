@@ -541,7 +541,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("ctf2_rimg", &EMAN::Util::ctf2_rimg, return_value_policy< manage_new_object >(), args("nx", "ny", "nz", "dz", "ps", "voltage", "cs", "wgh", "b_factor", "dza", "azz", "sign"), "")
 		.def("ctf_rimg", &EMAN::Util::ctf_rimg, return_value_policy< manage_new_object >(), args("nx", "ny", "nz", "dz", "ps", "voltage", "cs", "wgh", "b_factor", "dza", "azz", "sign"), "")
 		.def("cosinemask", &EMAN::Util::cosinemask, return_value_policy< manage_new_object >(), args("img", "radius", "cosine_width", "bckg", "s"), "out=img+bckg")
-		.def("surface_mask", &EMAN::Util::surface_mask, return_value_policy< manage_new_object >(), args("img", "surface_dilation_ini", "cosine_width"), "out=surfaced mask img")
+		.def("surface_mask", &EMAN::Util::surface_mask, return_value_policy< manage_new_object >(), args("img", "threshold", "surface_dilation_ini", "cosine_width"), "out=surfaced mask img")
 		.def("pack_complex_to_real", &EMAN::Util::pack_complex_to_real, return_value_policy< manage_new_object >(), args("img"), "pack absolute values of complex image into  real image with addition of Friedel part ")
 		.def("fuse_low_freq", &EMAN::Util::fuse_low_freq, args("img1", "img2", "w1", "w2", "limitres"), "fuse 1 with 2")
 		.def("histogram", &EMAN::Util::histogram, EMAN_Util_histogram_overloads_2_5(args("image", "mask", "nbins", "hmin", "hmax"), "image - \nmask - \nnbins - (default = 128)\nhmin - (default = 0.0)\nhmax - (default = 0.0)"))

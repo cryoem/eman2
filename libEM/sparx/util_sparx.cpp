@@ -23489,7 +23489,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 #undef quadpi
 
 #define		quadpi	 	 	3.141592653589793238462643383279502884197
-EMData* Util::surface_mask(EMData* img, float surface_dilation_ini, float cosine_width)
+EMData* Util::surface_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width)
 {  
 	ENTERFUNC;
 
@@ -23504,6 +23504,16 @@ EMData* Util::surface_mask(EMData* img, float surface_dilation_ini, float cosine
 	int img_dim = img->get_ndim();
 	if (img_dim<3)
 	throw ImageDimensionException(" surface_mask is only applied to 3-D volume");
+	for (int iz=0; iz<nz; iz++) {
+				for (int iy=0; iy<ny; iy++) {
+					for (int ix=0; ix<nx; ix++) {
+						if ((*img)(ix,iy,iz) > threshold)
+							(*img)(ix,iy,iz)= 1.0;
+						else
+							(*img)(ix,iy,iz)= 0.0;
+						}
+					}					
+				}	
 	if (surface_dilation_ini > 0. || surface_dilation_ini < 0.)
 	{
 		int surface_dilation          = abs(ceil(surface_dilation_ini));
