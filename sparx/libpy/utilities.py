@@ -3084,7 +3084,7 @@ def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
 	"""
 	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
 	import types
-	if comm == -1:  comm = MPI_COMM_WORLD
+	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
 	if    type(number_to_send) is types.IntType:
 		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, mpi_comm)
 		return int(TMP[0])
