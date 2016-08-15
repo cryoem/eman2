@@ -3078,24 +3078,26 @@ def send_string_to_all(str_to_send, source_node = 0):
 	return "".join(str_to_send)
 
 
-def bcast_number_to_all(number_to_send, source_node = 0):
+def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
 	"""
 		number_to_send has to be pre-defined in each node
 	"""
-	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
+	from mpi import mpi_bcast, MPI_INT, mpi_comm, MPI_FLOAT
 	import types
+	if comm == -1:  comm = MPI_COMM_WORLD
 	if    type(number_to_send) is types.IntType:
-		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, MPI_COMM_WORLD)
+		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, mpi_comm)
 		return int(TMP[0])
 	elif  type(number_to_send) is types.FloatType:
-		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, MPI_COMM_WORLD)
+		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, mpi_comm)
 		return float(TMP[0])
 	else:
 		print  " ERROR in bcast_number_to_all"
 
-def bcast_list_to_all(list_to_send, myid, source_node = 0):
+def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
 	from mpi import mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
 	import   types
+	if comm == -1:  comm = MPI_COMM_WORLD
 	if(myid == source_node):
 		n = len(list_to_send)
 		# we will also assume all elements on the list are of the same type
@@ -3105,16 +3107,16 @@ def bcast_list_to_all(list_to_send, myid, source_node = 0):
 	else:
 		n = 0
 		tp = 0
-	n = bcast_number_to_all(n, source_node = source_node)
-	tp = bcast_number_to_all(tp, source_node = source_node)
+	n = bcast_number_to_all(n, source_node = source_node, mpi_comm = mpi_comm)
+	tp = bcast_number_to_all(tp, source_node = source_node, mpi_comm = mpi_comm)
 	if( tp == 2 ): 	ERROR("Only list of the same type numbers can be brodcasted","bcast_list_to_all",1, myid)
 	if(myid != source_node): list_to_send = [0]*n
 
 	if( tp == 0 ):
-		list_to_send = mpi_bcast(list_to_send, n, MPI_INT, source_node, MPI_COMM_WORLD)
+		list_to_send = mpi_bcast(list_to_send, n, MPI_INT, source_node, mpi_comm)
 		return [int(n) for n in list_to_send]
 	else:
-		list_to_send = mpi_bcast(list_to_send, n, MPI_FLOAT, source_node, MPI_COMM_WORLD)
+		list_to_send = mpi_bcast(list_to_send, n, MPI_FLOAT, source_node, mpi_comm)
 		return [float(n) for n in list_to_send]
 
 

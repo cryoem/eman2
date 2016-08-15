@@ -22918,7 +22918,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  07/20/2016  04:35 PM "<<endl;
+ cout <<"  VERSION  08/15/2016  09:35 AM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
 
@@ -25892,6 +25892,7 @@ void Util::bessjy(DOUBLE x, DOUBLE xnu, DOUBLE *rj, DOUBLE *ry, DOUBLE *rjp, DOU
 #undef XMIN
 #undef XMIPP_MAX
 #undef NRSIGN
+
 #define ABS(x) (((x) >= 0) ? (x) : (-(x)))
 DOUBLE Util::kfv(DOUBLE w, DOUBLE a, DOUBLE alpha, int m)
 {
@@ -25921,7 +25922,7 @@ DOUBLE Util::kfv(DOUBLE w, DOUBLE a, DOUBLE alpha, int m)
     	throw ImageFormatException("m out of range in kaiser_Fourier_value()");
 }
 #undef ABS
-#undef DOUBLE
+
 
 double Util::bessi1_5(double x)
 {
@@ -25938,7 +25939,6 @@ double Util::bessj1_5(double x)
 #define NUSE2 5
 #undef PI
 
-#define DOUBLE double
 void Util::beschb(DOUBLE x, DOUBLE *gam1, DOUBLE *gam2, DOUBLE *gampl, DOUBLE *gammi)
 {
     DOUBLE xx;
