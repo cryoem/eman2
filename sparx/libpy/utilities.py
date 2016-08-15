@@ -3082,7 +3082,7 @@ def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
 	"""
 		number_to_send has to be pre-defined in each node
 	"""
-	from mpi import mpi_bcast, MPI_INT, MPI_FLOAT
+	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
 	import types
 	if comm == -1:  comm = MPI_COMM_WORLD
 	if    type(number_to_send) is types.IntType:
