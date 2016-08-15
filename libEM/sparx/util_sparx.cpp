@@ -22918,7 +22918,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  07/20/2016  04:35 PM "<<endl;
+ cout <<"  VERSION  08/14/2016  02:00 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
 
@@ -26666,7 +26666,7 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}	
-	if( not img->is_complex()) {
+	if (! img->is_complex()) {
 		 throw ImageFormatException("Only Fourier image allowed");
 	}
 	int nx = img->get_xsize(),ny = img->get_ysize(),nz = img->get_zsize();

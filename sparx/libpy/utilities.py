@@ -5190,7 +5190,8 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
 	host_dict = {host_names[i]: i for i in range(len(host_names))}
 	
-	color = host_dict[hostname]
+	# color = host_dict[hostname]
+	color = my_rank / no_of_processes_per_group
 	key = local_rank
 
 	# shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
