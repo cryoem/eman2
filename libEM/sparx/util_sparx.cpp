@@ -23487,6 +23487,187 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 	return cmasked;
 }
 #undef quadpi
+
+#define		quadpi	 	 	3.141592653589793238462643383279502884197
+EMData* Util::surface_mask(EMData* img, double threshold, double surface_dilation_ini, double cosine_width)
+{  
+	ENTERFUNC;
+
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	int img_dim = img->get_ndim();
+	if (img_dim<3)
+	throw ImageDimensionException(" surface_mask is only applied to 3-D volume");
+   	int nx = img->get_xsize();
+	int ny = img->get_ysize();
+	int nz = img->get_zsize();
+	EMData* smask = new EMData();
+	smask->set_size(nx,ny,nz);
+	EMData* tmpimg = new EMData();
+	tmpimg ->set_size(nx,ny,nz);
+	smask  ->to_zero();
+	tmpimg ->to_zero();
+	double nx2 =nx/2.;
+	double ny2=ny/2.0;
+	double nz2=nz/2.0;
+	double rad2;
+	//rad2 = (nx2-1.)*(nx2-1.);
+	for (int iz=0; iz<nz; iz++) {
+				for (int iy=0; iy<ny; iy++) {
+					for (int ix=0; ix<nx; ix++) {
+						if ((*img)(ix,iy,iz) > threshold)
+						{	
+							(*smask)(ix,iy,iz)=  1.0;
+							(*tmpimg)(ix,iy,iz)= 1.0;
+						}
+						else
+							{
+								(*smask)(ix,iy,iz)=  0.0;
+								(*tmpimg)(ix,iy,iz)= 0.0;
+							}
+						}
+					}					
+				}
+		
+	if (surface_dilation_ini > 0. || surface_dilation_ini < 0.)
+	{
+		int surface_dilation          = abs(ceil(surface_dilation_ini));
+		std:cout<<" surface_dilation starts"<<surface_dilation<<std::endl;
+		double  surface_dilation_ini2 = surface_dilation_ini*surface_dilation_ini;
+		if (surface_dilation_ini > 0.)
+		{
+			for (int iz=0; iz<nz; iz++) {
+				for (int iy=0; iy<ny; iy++) {
+					for (int ix=0; ix<nx; ix++) {
+						if ((*tmpimg)(ix,iy,iz) < 0.001)
+							   {
+									bool already_done = false;
+									for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++)
+									{
+										for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++)
+										{
+											for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++)
+												if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx))
+													   {
+													  								   
+															if ((*tmpimg)(jp,ip,kp) > 0.999)
+															{
+																double r2 = (double)( (kp-iz)*(kp-iz)+(ip-iy)*(ip-iy)+(jp-ix)*(jp-ix));
+																if (r2<surface_dilation_ini2)
+																	{
+																		(*smask)(ix, iy, iz) = 1.;
+																		already_done = true;
+																	}
+															  }
+														}
+												   if (already_done) break;  
+											  }
+											   if (already_done) break;		
+										}
+										 if (already_done) break;
+									}
+								
+								 } // ix	
+						    }  //iy
+					}//iz							   
+				}
+		else
+		{
+			for (int iz=0; iz<nz; iz++) {
+				for (int iy=0; iy<ny; iy++) {
+					for (int ix=0; ix<nx; ix++) {
+						if ((*tmpimg)(ix,iy,iz) < 0.001)
+							{
+								bool already_done = false;
+								for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++)
+								{
+									for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++)
+									{
+										for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++)
+										{
+											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx))
+										  	{										   
+												if ((*tmpimg)(jp,ip,kp) > 0.999)
+												{
+													double r2 = (double)( (kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix) );
+													if (r2<surface_dilation_ini2)
+														{
+															(*smask)(ix,iy,iz) = 0.0;
+															already_done = true;
+														}
+											  	}
+											}	
+											if (already_done) break;  
+									}
+									if (already_done) break;		
+							}
+							if (already_done) break;
+							}			
+						}	
+					}
+				}							   
+			}
+		}
+	}
+			if (cosine_width > 0.0)
+			{
+		
+				for (int iz=0; iz<nz; iz++) {
+					for (int iy=0; iy<ny; iy++) {
+						for (int ix=0; ix<nx; ix++) {
+							{	
+								(*tmpimg)(ix,iy,iz)= (*smask)(ix,iy,iz);
+								}
+							}
+						}					
+					}
+			
+				int icosine_width         = abs(ceil(cosine_width));
+				double  cosine_width2 = cosine_width*cosine_width;
+				std::cout<<" make softmask  "<<icosine_width<<std::endl;
+				int nc =0;	
+				for (int iz=0; iz<nz; iz++) {
+					for (int iy=0; iy<ny; iy++) {
+						for (int ix=0; ix<nx; ix++) {
+							nc +=1;
+							if ((*tmpimg)(ix,iy,iz) < 0.001)
+							{
+								double min_r2 = 9999.;
+								for (int kp = iz - icosine_width ; kp <= iz + icosine_width ; kp++)
+								{
+									for (int ip = iy - icosine_width ; ip <= iy + icosine_width ; ip++)
+									{
+										for (int jp = ix - icosine_width ; jp <= ix + icosine_width ; jp++)
+										{
+											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx))
+											{										   
+												if ((*tmpimg)(jp,ip,kp) > 0.999)
+												{
+													double r2 = (double)((kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix));
+													if (r2<min_r2)
+															min_r2 = r2;
+												}
+											}
+										}
+									}
+								}
+									if (min_r2 < cosine_width2)
+									{
+										(*smask)(ix, iy, iz) = 0.5 + 0.5 * cos(quadpi * sqrt(min_r2)/cosine_width);
+									}
+								}
+							}
+						}
+					}					
+				}
+
+ 	delete tmpimg;
+	smask->update();
+	EXITFUNC;
+	return smask;
+}
+#undef quadpi
 /*
 #define  cent(i)     out[i+N]
 #define  assign(i)   out[i]
@@ -26477,7 +26658,56 @@ EMData* Util::divide_mtf( EMData* img, vector<float> mtf, vector<float> res) {
 	EXITFUNC;
 	return img1;
 }
-
+#define		quadpi	 	 	3.141592653589793238462643383279502884197
+EMData* Util::randomizephasesafter( EMData* img, float res) 
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}	
+	if (! img->is_complex()) {
+		 throw ImageFormatException("Only Fourier image allowed");
+	}
+	int nx = img->get_xsize(),ny = img->get_ysize(),nz = img->get_zsize();
+	EMData *rimg    = new EMData();
+	rimg->set_size(nx, ny, nz);
+	rimg->set_complex(true);
+	rimg->to_zero();
+	float res2 =res*res;
+	int ix, iy, iz, i, j, k;
+	int ny2 = ny/2 ;
+	int nz2 = nz/2 ;
+	int nx2 = nx/2;
+	for ( k=0; k<nz;k++) {
+		iz = k;  if(k>nz2) iz=k-nz;
+		for ( j=0; j<ny;j++) {
+			iy = j;  if(j>ny2) iy=j - ny;
+			for ( i=0; i<nx2; i++) {
+				ix=i;
+				if(float(ix*ix+iy*iy+iz*iz)>res2) 
+				{
+					float amp           = (*rimg)(2*i, j, k)*(*rimg)(2*i, j, k)+(*rimg)(2*i+1, j, k)*(*rimg)(2*i+1, j, k);
+					amp                 = sqrt(amp);
+    				float phase         = Util::get_frand(0., 2.*quadpi);
+					(*rimg) (i*2,j,k)   = amp * cos(phase);
+					(*rimg) (i*2+1,j,k) = amp * sin(phase);	
+					}
+			  else
+			  		{
+						(*rimg) (i*2,j,k) =(*img) (i*2,j,k);
+						(*rimg) (i*2+1,j,k) =(*img) (i*2+1,j,k);
+			  	 	}
+			  	}
+			}
+	}
+	rimg->set_ri(true);
+	if(ny%2==0) rimg->set_fftodd(false); else rimg->set_fftodd(true);
+	rimg->update();
+	EXITFUNC;
+	return rimg;
+}
+#undef	quadpi
 void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	ENTERFUNC;
 	/* Exception Handle */
