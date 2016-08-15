@@ -26646,7 +26646,7 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}	
-	if( not img->is_complex()) {
+	if (! img->is_complex()) {
 		 throw ImageFormatException("Only Fourier image allowed");
 	}
 	int nx = img->get_xsize(),ny = img->get_ysize(),nz = img->get_zsize();
