@@ -3097,7 +3097,7 @@ def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
 def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
 	from mpi import mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
 	import   types
-	if comm == -1:  comm = MPI_COMM_WORLD
+	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
 	if(myid == source_node):
 		n = len(list_to_send)
 		# we will also assume all elements on the list are of the same type
