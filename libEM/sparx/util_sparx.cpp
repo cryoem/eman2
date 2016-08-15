@@ -23489,7 +23489,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 #undef quadpi
 
 #define		quadpi	 	 	3.141592653589793238462643383279502884197
-EMData* Util::surface_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width)
+EMData* Util::surface_mask(EMData* img, double threshold, double surface_dilation_ini, double cosine_width)
 {  
 	ENTERFUNC;
 
@@ -23508,6 +23508,11 @@ EMData* Util::surface_mask(EMData* img, float threshold, float surface_dilation_
 	tmpimg ->set_size(nx,ny,nz);
 	smask  ->to_zero();
 	tmpimg ->to_zero();
+	double nx2 =nx/2.;
+	double ny2=ny/2.0;
+	double nz2=nz/2.0;
+	double rad2;
+	//rad2 = (nx2-1.)*(nx2-1.);
 	for (int iz=0; iz<nz; iz++) {
 				for (int iy=0; iy<ny; iy++) {
 					for (int ix=0; ix<nx; ix++) {
@@ -23528,7 +23533,8 @@ EMData* Util::surface_mask(EMData* img, float threshold, float surface_dilation_
 	if (surface_dilation_ini > 0. || surface_dilation_ini < 0.)
 	{
 		int surface_dilation          = abs(ceil(surface_dilation_ini));
-		float  surface_dilation_ini2 = surface_dilation_ini*surface_dilation_ini;
+		std:cout<<" surface_dilation starts"<<surface_dilation<<std::endl;
+		double  surface_dilation_ini2 = surface_dilation_ini*surface_dilation_ini;
 		if (surface_dilation_ini > 0.)
 		{
 			for (int iz=0; iz<nz; iz++) {
@@ -23547,7 +23553,7 @@ EMData* Util::surface_mask(EMData* img, float threshold, float surface_dilation_
 													  								   
 															if ((*tmpimg)(jp,ip,kp) > 0.999)
 															{
-																float r2 = (float)( (kp-iz)*(kp-iz)+(ip-iy)*(ip-iy)+(jp-ix)*(jp-ix));
+																double r2 = (double)( (kp-iz)*(kp-iz)+(ip-iy)*(ip-iy)+(jp-ix)*(jp-ix));
 																if (r2<surface_dilation_ini2)
 																	{
 																		(*smask)(ix, iy, iz) = 1.;
@@ -23584,7 +23590,7 @@ EMData* Util::surface_mask(EMData* img, float threshold, float surface_dilation_
 										  	{										   
 												if ((*tmpimg)(jp,ip,kp) > 0.999)
 												{
-													float r2 = (float)( (kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix) );
+													double r2 = (double)( (kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix) );
 													if (r2<surface_dilation_ini2)
 														{
 															(*smask)(ix,iy,iz) = 0.0;
@@ -23597,51 +23603,65 @@ EMData* Util::surface_mask(EMData* img, float threshold, float surface_dilation_
 									if (already_done) break;		
 							}
 							if (already_done) break;
-						}			
-					}	
-				}
-			}							   
+							}			
+						}	
+					}
+				}							   
+			}
 		}
 	}
-	if (cosine_width > 0.0)
-	{
-		int surface_dilation         = abs(ceil(surface_dilation_ini));
-		float  surface_dilation_ini2 = surface_dilation_ini*surface_dilation_ini;
-		for (int iz=0; iz<nz; iz++) {
-			for (int iy=0; iy<ny; iy++) {
-				for (int ix=0; ix<nx; ix++) {
-					if ((*tmpimg)(ix,iy,iz) < 0.001)
-					{
-						float min_r2 = 9999.;
-						for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++)
-						{
-							for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++)
+			if (cosine_width > 0.0)
+			{
+		
+				for (int iz=0; iz<nz; iz++) {
+					for (int iy=0; iy<ny; iy++) {
+						for (int ix=0; ix<nx; ix++) {
+							{	
+								(*tmpimg)(ix,iy,iz)= (*smask)(ix,iy,iz);
+								}
+							}
+						}					
+					}
+			
+				int icosine_width         = abs(ceil(cosine_width));
+				double  cosine_width2 = cosine_width*cosine_width;
+				std::cout<<" make softmask  "<<icosine_width<<std::endl;
+				int nc =0;	
+				for (int iz=0; iz<nz; iz++) {
+					for (int iy=0; iy<ny; iy++) {
+						for (int ix=0; ix<nx; ix++) {
+							nc +=1;
+							if ((*tmpimg)(ix,iy,iz) < 0.001)
 							{
-								for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++)
+								double min_r2 = 9999.;
+								for (int kp = iz - icosine_width ; kp <= iz + icosine_width ; kp++)
 								{
-									if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx))
-									{										   
-										if ((*tmpimg)(jp,ip,kp) > 0.999)
+									for (int ip = iy - icosine_width ; ip <= iy + icosine_width ; ip++)
+									{
+										for (int jp = ix - icosine_width ; jp <= ix + icosine_width ; jp++)
 										{
-											float r2 = (float)((kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix));
-											if (r2<surface_dilation_ini2)
-													min_r2 = r2;
+											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx))
+											{										   
+												if ((*tmpimg)(jp,ip,kp) > 0.999)
+												{
+													double r2 = (double)((kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix));
+													if (r2<min_r2)
+															min_r2 = r2;
+												}
+											}
 										}
+									}
+								}
+									if (min_r2 < cosine_width2)
+									{
+										(*smask)(ix, iy, iz) = 0.5 + 0.5 * cos(quadpi * sqrt(min_r2)/cosine_width);
 									}
 								}
 							}
 						}
-							if (min_r2 < cosine_width)
-							{
-								(*smask)(ix, iy, iz) = 0.5 + 0.5 * cos(quadpi * sqrt(min_r2)/cosine_width);
-							}
-						}
-					}
+					}					
 				}
-			}
-							
-		}
- }
+
  	delete tmpimg;
 	smask->update();
 	EXITFUNC;
