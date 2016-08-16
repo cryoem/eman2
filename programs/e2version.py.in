@@ -38,7 +38,7 @@ from subprocess import *
 
 
 EMANVERSION="EMAN 2.2"
-DATESTAMP="BUILD_DATE"
+DATESTAMP="@EMAN_TIMESTAMP@"
 
 def main():
 	print(EMANVERSION + ' (GITHUB: ' + DATESTAMP +')')
