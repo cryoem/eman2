@@ -91,6 +91,8 @@ def main():
 		except: ptcls=olddb["input"]
 		
 		sym=olddb["sym"]
+		if olddb["breaksym"]:
+			sym="c1"
 		if options.verbose : print "Found iteration {} in {}, using {}".format(last_iter,options.path," & ".join(ptcls))
 	except:
 		traceback.print_exc()
