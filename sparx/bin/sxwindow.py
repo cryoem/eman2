@@ -600,9 +600,7 @@ If micrograph list file name is not provided, all files matched with the microgr
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if main_node == myid:
-	
-		import time
-		time.sleep(1)
+		"""
 		print("\n Creating bdb:%s/data\n"%original_out_dir)
 		for proc_i in range(number_of_processes):
 			mic_start, mic_end = MPI_start_end(len(restricted_serial_id_list_not_sliced), number_of_processes, proc_i)
@@ -615,8 +613,11 @@ If micrograph list file name is not provided, all files matched with the microgr
 					e2bdb_command += "bdb:" + os.path.join(original_out_dir, mic_baseroot + "_ptcls ") 
 				
 				e2bdb_command += " --appendvstack=bdb:%s/data  1>/dev/null"%original_out_dir
-				cmdexecute(e2bdb_command, printing_on_success = False)
-				
+		"""
+		e2bdb_command = "e2bdb.py  "+original_out_dir+"/*   "+"--makevstack=bdb:"+original_out_dir+"/data"
+		if RUNNING_UNDER_MPI:  print("Please execute from the command line :  ",e2bdb_command)
+		else:   cmdexecute(e2bdb_command, printing_on_success = False)
+	
 		print("Done!\n")
 				
 	if RUNNING_UNDER_MPI:
