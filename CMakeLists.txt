@@ -203,6 +203,17 @@ ENDIF(ENABLE_IOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
+if($ENV{CONDA_BUILD_STATE} STREQUAL "BUILD")
+	find_package(Boost COMPONENTS python REQUIRED)
+	find_package(OpenGL REQUIRED)
+	find_package(HDF5 REQUIRED)
+	find_package(PNG REQUIRED)
+	find_package(JPEG REQUIRED)
+	find_package(ZLIB REQUIRED)
+	find_package(GSL REQUIRED)
+	find_package(Freetype REQUIRED)
+endif()
+
 SET(INCLUDE_DIRS
 	${EMAN_SOURCE_DIR}/libEM
 	$ENV{HOME}/anaconda2/include
@@ -280,6 +291,10 @@ MACRO(CHECK_LIB_ONLY upper lower)
 ENDMACRO(CHECK_LIB_ONLY)
 
 MACRO(CHECK_PYTHON)
+	if($ENV{CONDA_BUILD_STATE} STREQUAL "BUILD")
+		find_package(PythonInterp)
+		find_package(PythonLibs)
+	else()
         SET(PYTHON_FOUND FALSE)
 
         FOREACH(PYVER ${ARGV})
@@ -317,6 +332,7 @@ MACRO(CHECK_PYTHON)
 
                 ENDIF(NOT PYTHON_FOUND)
     ENDFOREACH(PYVER)
+	endif()
 ENDMACRO(CHECK_PYTHON)
 
 IF(ENABLE_FFTW2)
