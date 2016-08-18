@@ -376,8 +376,9 @@ def main():
 	parser.add_option("--pixel_size",           type="float",         help="pixel size of the data", default=0.0)
 	parser.add_option("--B_start",              type="float",         help="starting frequency in Angstrom for B-factor estimation", default=10.)
 	parser.add_option("--B_stop",               type="float",         help="cutoff frequency in Angstrom for B-factor estimation, cutoff is set to the frequency where fsc < 0.0", default=0)
-	parser.add_option("--do_adaptive_mask",      type="float", 	      help="generate adaptive mask with the given threshold ", default= 0.02)
-	parser.add_option("--cosine_dege", 			type="float",		  help="the width for cosine transition area ", default= 6.0)
+	parser.add_option("--do_adaptive_mask",     action="store_true",  help="generate adaptive mask with the given threshold ", default= False)
+	parser.add_option("--mask_threshold",       type="float",         help=" the threshold for adaptive_mask", default= 0.02)
+	parser.add_option("--consine_edge", 	    type="float",		  help="the width for cosine transition area ", default= 6.0)
 	parser.add_option("--dilation", 			type="float",		  help="the pixels for dilate or erosion of binary mask ", default= 3.0)
 	parser.add_option("--rndphaseafter", 	    type="float",		  help=" set Fourier pixels random phases after FSC value ", default= 0.8)	
 	# 
@@ -962,7 +963,7 @@ def main():
 		log_main.add("mtf     "+str(options.mtf))
 		log_main.add("output  "+str(options.output))
 		log_main.add("do_adaptive_mask  "+str(options.adaptive_mask))
-		log_main.add("cosine_dege    "+str(options.cosine_dege))
+		log_main.add("cosine_edge    "+str(options.consine_edge))
 		log_main.add("dilation    "+str(options.dilation))
 		log_main.add("rndphaseafter    "+str(options.rndphaseafter))
 		log_main.add("-----------")
@@ -1023,6 +1024,8 @@ def main():
 					exit()
 			if (e2.get_xsize() != e1.get_xsize()) or (e2.get_ysize() != e1.get_ysize()) or (e2.get_zsize() != e1.get_zsize()):
 				ERROR(" two volumes have different size", "--postprocess option for 3-D")
+			if nargs >1 :
+				e1 +=e2
 			if options.mask != None:
 				log_main.add("User provided mask: %s"%options.mask)
 				try:
@@ -1032,6 +1035,11 @@ def main():
 					exit()
 				if (m.get_xsize() != e1.get_xsize()) or (m.get_ysize() != e1.get_ysize()) or (m.get_zsize() != e1.get_zsize()):
 					ERROR(" mask file  "+options.mask+" has different size with input image     ", "--postprocess option for 3-D")
+			elif options.do_adaptive_mask:
+				e1 /=2.
+				print("threshold ", options.mask_threshold)
+				m = Util.surface_mask(e1, options.mask_threshold, options.dilation, options.consine_edge)
+				m.write_image("vol_adaptive_mask.hdf") 
 			else:
 				m = None
 				log_main.add(" No mask is not used in the postprocess")
@@ -1040,7 +1048,9 @@ def main():
 			resolution_FSChalf  = 0.5
 			frc_without_mask    = None
 			frc_with_mask       = None
-			if nargs >1 :
+			e1 = get_im(args[0])
+			if nargs >1: 
+				e2 =get_im(args[1])
 				frc_without_mask 		= fsc(e1, e2, 1)
 				if m: 
 					frc_with_mask     = fsc(e1*m, e2*m, 1)
@@ -1052,15 +1062,18 @@ def main():
 						if frc_with_mask[1][ifreq] < 0.5:
 							resolution_FSChalf  = frc_with_mask[0][ifreq-1]
 							break	
-					outfrc = [frc_with_mask[0],[], frc_with_mask[1]]
+					outfrc = [ frc_with_mask[1]]
+					"""
 					for ifreq in xrange(len(frc_with_mask[0])):
 						if ifreq==0:
 							outfrc[1].append(frc_with_mask[0][ifreq])
 						else:	
 							outfrc[1].append(options.pixel_size/frc_with_mask[0][ifreq])
+					"""
 					from utilities import write_text_file
 					write_text_file(outfrc, "fsc_with_mask.txt")
 				e1 +=e2
+				e1 /=2
 			outtext = [["Squaredfreqencies"],[ "LogOrignal"]]
 			guinerline = rot_avg_table(power(periodogram(e1),.5))
 			from math import log
@@ -1068,7 +1081,6 @@ def main():
 				x = ig*.5/float(len(guinerline))/options.pixel_size
 				outtext[0].append(x*x)
 				outtext[1].append(log(guinerline[ig]))
-			if m: e1 *=m
 			if options.mtf: # divided by the mtf
 				from fundamentals import fft
 				log_main.add("MTF correction is applied")
@@ -1168,7 +1180,9 @@ def main():
 				else: # low-pass filter to resolution determined by FSC0.143
 					e1 = filt_tanl(e1,resolution_FSC143, options.aa)
 					cutoff = options.pixel_size/resolution_FSC143
-				log_main.add(" The final volume is low_pass filtered to  %f  "%cutoff)	
+				log_main.add(" The final volume is low_pass filtered to  %f  "%cutoff)
+			e1.write_image("vol_post_nomask.hdf")
+			if m: e1 *=m	
 			e1.write_image(options.output)
 			log_main.add(" ------ Summary -------")
 			log_main.add(" Resolution at criteria 0.143 is %f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
