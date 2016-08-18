@@ -380,7 +380,7 @@ def main():
 	parser.add_option("--mask_threshold",       type="float",         help=" the threshold for adaptive_mask", default= 0.02)
 	parser.add_option("--consine_edge", 	    type="float",		  help="the width for cosine transition area ", default= 6.0)
 	parser.add_option("--dilation", 			type="float",		  help="the pixels for dilate or erosion of binary mask ", default= 3.0)
-	parser.add_option("--rndphaseafter", 	    type="float",		  help=" set Fourier pixels random phases after FSC value ", default= 0.8)	
+	parser.add_option("--randomphasesafter", 	type="float",		  help=" set Fourier pixels random phases after FSC value ", default= 0.8)	
 	# 
 	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
@@ -965,7 +965,7 @@ def main():
 		log_main.add("do_adaptive_mask  "+str(options.adaptive_mask))
 		log_main.add("cosine_edge    "+str(options.consine_edge))
 		log_main.add("dilation    "+str(options.dilation))
-		log_main.add("rndphaseafter    "+str(options.rndphaseafter))
+		log_main.add("randomphaseafter    "+str(options.randomphaseafter))
 		log_main.add("-----------")
 		if e1.get_zsize() == 1:  # 2D case
 			log_main.add("2-D postprocess for ISAC averaged images")
@@ -1008,24 +1008,25 @@ def main():
 			log_main.add( "3-D refinement postprocess ")
 			nargs     = len(args)
 			if nargs >=3:
-				ERROR(" Too  many inputs!", "--postprocess option for 3-D")
+				ERROR(" Too many inputs!", "--postprocess option for 3-D")
 			log_main.add("The first input volume: %s"%args[0])
 			try: 
-				e1    = get_im(args[0])
+				map1    = get_im(args[0])
 			except:
-				ERROR(" Sphire postprocess fails to read the first volume "+args[0], "--postprocess option for 3-D")
+				ERROR(" Sphire postprocess fails to read the first map "+args[0], "--postprocess option for 3-D")
 				exit()
 			if nargs >1:
 				log_main.add("The second input volume: %s"%args[1])
 				try:
-					e2  = get_im(args[1])
+					map2  = get_im(args[1])
 				except:
-					ERROR(" fail to read the second volume "+args[1], "--postprocess option for 3-D")
+					ERROR(" fail to read the second map "+args[1], "--postprocess option for 3-D")
 					exit()
-			if (e2.get_xsize() != e1.get_xsize()) or (e2.get_ysize() != e1.get_ysize()) or (e2.get_zsize() != e1.get_zsize()):
-				ERROR(" two volumes have different size", "--postprocess option for 3-D")
-			if nargs >1 :
-				e1 +=e2
+			if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
+				ERROR(" Two maps have different size", "--postprocess option for 3-D")
+			## prepare mask 
+			if options.mask != None and options.do_adaptive_mask:
+				ERROR("Wrong options, use either adaptive_mask or user provided mask")
 			if options.mask != None:
 				log_main.add("User provided mask: %s"%options.mask)
 				try:
@@ -1034,26 +1035,29 @@ def main():
 					ERROR(" Sphire postprocess fails to read mask file "+options.mask, "--postprocess option for 3-D")
 					exit()
 				if (m.get_xsize() != e1.get_xsize()) or (m.get_ysize() != e1.get_ysize()) or (m.get_zsize() != e1.get_zsize()):
-					ERROR(" mask file  "+options.mask+" has different size with input image     ", "--postprocess option for 3-D")
+					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--postprocess option for 3-D")
 			elif options.do_adaptive_mask:
-				e1 /=2.
+				if nargs >1 :
+					map1 +=map2.
+					map1 /=2.
 				print("threshold ", options.mask_threshold)
 				m = Util.surface_mask(e1, options.mask_threshold, options.dilation, options.consine_edge)
-				m.write_image("vol_adaptive_mask.hdf") 
+				m.write_image("vol_adaptive_mask.hdf")
+				map1 = get_im(args[0]) # re-read map1
 			else:
 				m = None
-				log_main.add(" No mask is not used in the postprocess")
+				log_main.add(" No mask is applied ")
+			## prepare FSC
 			from math import sqrt
-			resolution_FSC143   = 0.5 # for single volume, this is the default resolution
-			resolution_FSChalf  = 0.5
-			frc_without_mask    = None
-			frc_with_mask       = None
-			e1 = get_im(args[0])
+			resolution_FSC143   	= 0.5 # for single volume, this is the default resolution
+			resolution_FSChalf  	= 0.5
+			frc_without_mask    	= None
+			frc_with_mask       	= None
+			frc_with_random_phases 	= None 
 			if nargs >1: 
-				e2 =get_im(args[1])
-				frc_without_mask 		= fsc(e1, e2, 1)
+				frc_without_mask 		= fsc(map1, map2, 1)
 				if m: 
-					frc_with_mask     = fsc(e1*m, e2*m, 1)
+					frc_with_mask     = fsc(map1*m, map2*m, 1)
 					for ifreq in xrange(len(frc_with_mask[1])):
 						if frc_with_mask[1][ifreq] < 0.143:
 							resolution_FSC143   = frc_with_mask[0][ifreq-1]
@@ -1061,8 +1065,11 @@ def main():
 					for ifreq in xrange(len(frc_with_mask[1])):
 						if frc_with_mask[1][ifreq] < 0.5:
 							resolution_FSChalf  = frc_with_mask[0][ifreq-1]
-							break	
-					outfrc = [ frc_with_mask[1]]
+							break
+					# determine random_phase_cutoff_pixel
+					random_phase_cutoff_pixel =-1
+						
+					#outfrc = [ frc_with_mask[1]]
 					"""
 					for ifreq in xrange(len(frc_with_mask[0])):
 						if ifreq==0:
@@ -1072,8 +1079,8 @@ def main():
 					"""
 					from utilities import write_text_file
 					write_text_file(outfrc, "fsc_with_mask.txt")
-				e1 +=e2
-				e1 /=2
+				map1 +=map2
+				map1 /=2.
 			outtext = [["Squaredfreqencies"],[ "LogOrignal"]]
 			guinerline = rot_avg_table(power(periodogram(e1),.5))
 			from math import log
@@ -1081,7 +1088,8 @@ def main():
 				x = ig*.5/float(len(guinerline))/options.pixel_size
 				outtext[0].append(x*x)
 				outtext[1].append(log(guinerline[ig]))
-			if options.mtf: # divided by the mtf
+			# starts adjustment of powerspectrum
+			if options.mtf: # divided by the mtf   #1
 				from fundamentals import fft
 				log_main.add("MTF correction is applied")
 				from utilities import read_text_file
@@ -1091,12 +1099,11 @@ def main():
 				except:
 					ERROR(" Sphire postprocess fails to read MTF file "+options.mtf, "--postprocess option for 3-D")
 					exit()
-				e1 = fft(Util.divide_mtf(fft(e1), mtf_core[1], mtf_core[0]))
+				map1 = fft(Util.divide_mtf(fft(map1), mtf_core[1], mtf_core[0]))
 				outtext.append(["LogMTFdiv"])
 				guinerline   = rot_avg_table(power(periodogram(e1),.5))
-				for ig in xrange(len(guinerline)):
-					outtext[-1].append(log(guinerline[ig]))
-			if options.fsc_adj:
+				for ig in xrange(len(guinerline)): outtext[-1].append(log(guinerline[ig]))
+			if options.fsc_adj:    #2
 				log_main.add("  (2*FSC)/(1+FSC) is applied to Fourier factor to adjust power spectrum ")
 				log_main.add(" The pixel_size of map for postprocess is %f Angstrom"%options.pixel_size)
 				if nargs==1:
@@ -1121,7 +1128,7 @@ def main():
 					outtext.append(["LogFSCadjusted"])
 					for ig in xrange(len(guinerline)):
 						outtext[-1].append(log(guinerline[ig]))
-			if options.B_enhance !=-1:
+			if options.B_enhance !=-1:  #3
 				if options.B_enhance == 0.0: # auto mode
 					if frc_with_mask is not None: 
 						cutoff_by_fsc = 0
@@ -1169,7 +1176,7 @@ def main():
 						last_non_zero = log(guinerline[ig])
 					else:
 						outtext[-1].append(last_non_zero)			
-			if options.low_pass_filter !=-1.: # User provided low-pass filter
+			if options.low_pass_filter !=-1.: # User provided low-pass filter #4.
 				from filter       import filt_tanl
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
 					e1 =filt_tanl(e1,options.pixel_size/options.low_pass_filter, min(options.aa,.1))
@@ -1181,9 +1188,9 @@ def main():
 					e1 = filt_tanl(e1,resolution_FSC143, options.aa)
 					cutoff = options.pixel_size/resolution_FSC143
 				log_main.add(" The final volume is low_pass filtered to  %f  "%cutoff)
-			e1.write_image("vol_post_nomask.hdf")
-			if m: e1 *=m	
-			e1.write_image(options.output)
+			map1.write_image("vol_postprocess_nomask.hdf")
+			if m: map1 *=m	
+			map1.write_image(options.output)
 			log_main.add(" ------ Summary -------")
 			log_main.add(" Resolution at criteria 0.143 is %f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
 			log_main.add(" Resolution at criteria 0.5   is %f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
@@ -1192,10 +1199,8 @@ def main():
 			log_main.add( " FSC curve is saved in fsc.txt  ")
 			log_main.add( " Final processed volume is "+options.output)
 			log_main.add(" guinerlines in logscale are saved in guinerlines.txt")
-			if options.low_pass_filter !=-1: 
-				log_main.add(" Low-pass filter to the resolution %f"%round(cutoff,2))
-			else:
-				log_main.add(" The final volume is not low_pass filtered. ")
+			if options.low_pass_filter !=-1:  	log_main.add(" Low-pass filter to the resolution %f"%round(cutoff,2))
+			else: 								log_main.add(" The final volume is not low_pass filtered. ")
 			write_text_file(outtext, "guinerlines.txt")
 				
 	elif options.window_stack:
