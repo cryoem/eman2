@@ -63,9 +63,9 @@ def main():
 	parser.add_pos_argument(name="refinexx",help="Name of a completed refine_xx folder.", default="", guitype='filebox', browser="EMRefine2dTable(withmodal=True,multiselect=False)",  filecheck=False, row=0, col=0,rowspan=1, colspan=2, mode='evalptcl')
 	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement using the refine_xx folder name. This may be used to identify bad particles.",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='evalptcl[True]')
 	parser.add_argument("--includeprojs", default=False, action="store_true", help="If specified with --evalptclqual, projections will be written to disk for easy comparison.",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='evalptcl[True]')
-	#parser.add_argument("--ptcltrace", default=False, action="store_true", help="This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison.")
 	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
 	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
+	parser.add_argument("--mask",type=str,help="Mask to be used to focus --evalptclqual. May be useful for separating heterogeneous data.", default=None)
 	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
 	parser.add_argument("--timing", default=False, action="store_true", help="report on how long each step of the refinement process took during the first iteration of each run")
 	parser.add_argument("--resolution", default=False, action="store_true", help="generates a resolution and convergence plot for a single refinement run.")
@@ -138,7 +138,8 @@ def main():
 		threed=EMData("{}/threed_{:02d}.hdf".format(args[0],options.iter),0)
 
 		# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching
-		ptclmask=EMData(args[0]+"/mask.hdf",0)
+		if options.mask: ptclmask=EMData(options.mask,0)
+		else: ptclmask=EMData(args[0]+"/mask.hdf",0)
 		nx=ptclmask["nx"]
 		apix=threed["apix_x"]
 
@@ -298,7 +299,7 @@ def main():
 		apix=threed["apix_x"]
 
 		rings=[int(2*nx*apix/res) for res in (100,30,15,8,4)]
-		print rings
+		print("Frequency Bands: {lowest},{low},{mid},{high},{highest}".format(lowest=rings[0],low=rings[1],mid=rings[2],high=rings[3],highest=rings[4]))
 
 		# We expand the mask a bit, since we want to consider problems with "touching" particles
 		ptclmask.process_inplace("threshold.binary",{"value":0.2})
@@ -316,9 +317,16 @@ def main():
 		pj = 0
 		pf = "ptclfsc_{}_projections.hdf".format("_".join(args[0].split("_")[1:]))
 
+		tfs = []
+
 		tlast=time()
+
 		for i in xrange(nref):
-			if options.verbose>1 : print "--- Class %d/%d"%(i,nref-1)
+			if options.verbose < 6:
+				sys.stdout.write("\rClass %d/%d"%(i,nref-1))
+				sys.stdout.flush()
+			else: print("--- Class %d/%d"%(i,nref-1))
+
 			# update progress every 10s
 			if time()-tlast>10 :
 				E2progress(logid,i/float(nref))
@@ -337,7 +345,7 @@ def main():
 					if classmx[eo][0,j]!=i :
 #						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
 						continue		# only proceed if the particle is in this class
-					if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
+					if options.verbose >= 6: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
 
 					# the particle itself
 					try: ptcl=EMData(cptcl[eo],j)
@@ -349,6 +357,9 @@ def main():
 
 					# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
+
+					tfs.append("{}".format(str(ptclxf.get_params("eman"))))
+
 					projc=proj.process("xform",{"transform":ptclxf})	# we transform the projection, not the particle (as in the original classification)
 
 					if options.includeprojs: projc.write_image(pf,pj)
@@ -380,8 +391,6 @@ def main():
 
 					pj+=1
 
-		# This is likely not the best way to do this, but it seemed easier to just read
-		# the output file rather than integrate this code into the above calculations.
 		fout.close()
 
 		bname = base_name(ptclfsc)
@@ -417,9 +426,14 @@ def main():
 
 		results=[[[] for i in range(ncol)] for j in range(nseg)]
 		resultc=[[] for j in range(nseg)]
+		resultt=[[] for t in range(nseg)]
 
 		d1 = []
 		d2 = []
+
+		try: os.unlink(tfn)
+		except: pass
+
 		for r in range(nrow):
 			s=imdata[r]["class_id"]
 			if s == 0: d1.append(d[r])
@@ -427,6 +441,8 @@ def main():
 			for c in xrange(ncol):
 				results[s][c].append(imdata[c][r])
 			resultc[s].append(cmts[r])
+			resultt[s].append(tfs[r])
+
 		d1 = np.asarray(d1)
 		d2 = np.asarray(d2)
 
@@ -447,13 +463,14 @@ def main():
 			try: os.unlink(outf) # try to remove file if it already exists
 			except: pass
 			out=LSXFile(outf)
-			for cmt in resultc[s]:
+			for r,cmt in enumerate(resultc[s]):
 				imn,imf=cmt.split(";")[:2]
 				imn=int(imn)
 				if not lsx.has_key(imf):
 					lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
 				val=lsx[imf][imn]
-				out[r]=val
+				#val[2] = str(resultt[s][r]) # comment is a string dictionary, required to make3d_rawptcls.
+				out[r]=[val[0],val[1],str(resultt[s][r])]
 
 		# OLD 'MANUAL' INFO
 		#print("Evaluation complete. Each column in the resulting text file includes information at a different resolution range. Columns 0 and 1 are almost always useful,
