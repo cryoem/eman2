@@ -68,12 +68,11 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	if options.maps:
-		
+	#if options.maps:
 
 	if args[0][:6]=="multi_":
 		jsparm=js_open_dict(args[0]+"/0_refine_parms.json")
-		
+
 		if options.iter==None:
 			try:
 				options.iter=int(jsparm["last_map"][0].split("_")[-2][:2])
@@ -81,7 +80,7 @@ def main():
 			except:
 				print "Could not find a completed iteration in ",args[0]
 				sys.exit(1)
-	
+
 	try:
 		pathmx="{}/classmx_{:02d}.hdf".format(args[0],options.iter)
 		classmx=EMData(pathmx,0)
@@ -94,12 +93,12 @@ def main():
 		traceback.print_exc()
 		print "====\nError reading classification matrix. Must be full classification matrix with alignments"
 		sys.exit(1)
-	
+
 	if options.verbose: print "{} particles in classmx".format(nptcl)
 
 	# path to the even/odd particles used for the refinement
 	cptcl=str(jsparm["input"])
-	
+
 	# this reads all of the EMData headers from the projections, should be same for even and odd
 	pathprj="{}/projections_{:02d}.hdf".format(args[0],options.iter)
 	nref=EMUtil.get_image_count(pathprj)
@@ -110,18 +109,18 @@ def main():
 	for lm in jsparm["last_map"]:
 		d = EMData("{}/{}".format(args[0],lm)) #options.iter,len(jsparm["last_map"]),i)
 		maps.append(d)
-	
+
 	nx = maps[0]["nx"]
 	apix = maps[0]["apix_x"]
 	restarget = 2*apix+0.25 # maybe incorrect? could get approx target from fsc_mutual_avg_02.txt
 	automaskexpand = int(nx/20)
-		
+
 	# The masks applied to the reference volumes, used for 2-D masking of particles for better power spectrum matching
 	masks=[]
 	for threed in maps:
 		# New version of automasking based on a more intelligent interrogation of the volume
 		vol=threed.copy()
-		
+
 		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.1,1.0/restarget)})		# Mask at no higher than 10 A resolution
 		md=vol.calc_radial_dist(nx/2,0,1,3)	# radial max value per shell in real space
 		rmax=int(nx/2.2)		# we demand at least 10% padding
@@ -139,20 +138,20 @@ def main():
 				break
 		rmaxval=mv[1]
 		vmax=mv[0]
-		
+
 		# excludes any spurious high values at large radius
 		vol.process_inplace("mask.sharp",{"outer_radius":rmax})
-		
+
 		# automask
 		mask=vol.process("mask.auto3d",{"threshold":vmax*.2,"radius":0,"nshells":int(nx*0.05+.5+automaskexpand),"nshellsgauss":int(restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
-		
+
 		# We expand the mask a bit, since we want to consider problems with "touching" particles
 		mask.process_inplace("threshold.binary",{"value":0.2})
 		mask.process_inplace("mask.addshells",{"nshells":nx//15})
 		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
-		
+
 		masks.append(mask)
-	
+
 	rings=[int(2*nx*apix/res) for res in (100,30,15,8,4)]
 	print rings
 	nbands = len(rings)-1
@@ -163,7 +162,7 @@ def main():
 	pj = 0
 	for i in xrange(nref):
 		if options.verbose>1 : print "--- Class %d/%d"%(i,nref-1)
-		
+
 		phi=eulers[i].get_rotation("eman")["phi"]
 		alt=eulers[i].get_rotation("eman")["alt"]
 		az=eulers[i].get_rotation("eman")["az"]
@@ -182,33 +181,33 @@ def main():
 				sys.exit(1)
 			try: defocus=ptcl["ctf"].defocus
 			except: defocus=-1.0
-			
+
 			data = []
 			for threed,ptclmask in zip(maps,masks):
-				
+
 				# The first projection is unmasked, used for scaling
 				proj=threed.project("standard",{"transform":eulers[i]})
 				projmask=ptclmask.project("standard",eulers[i])	# projection of the 3-D mask for the reference volume to apply to particles
-				
+
 				# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 				ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]}).inverse()
 				projc=proj.process("xform",{"transform":ptclxf})	# we transform the projection, not the particle (as in the original classification)
-			
+
 				projmaskc=projmask.process("xform",{"transform":ptclxf})
 				ptcl.mult(projmaskc)
-	
+
 				# Particle vs projection FSC
 				fsc = ptcl.calc_fourier_shell_correlation(projc)
-	
+
 				third = len(fsc)/3
 				fsc=array(fsc[third:third*2])
 				for k in xrange(nbands): # sum the fsc into 5 range values
 					s = sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k])
 					data.append(str(s))
-			
+
 			# to which model does this particle belong according to similarity at each resolution range
 			best = [np.argmax(data[k::nbands]) for k in xrange(nbands)]
-			
+
 			# which model "wins" majority of times?
 			counts = [0,0,0,0]
 			for b in best:
@@ -217,14 +216,14 @@ def main():
 				elif b == 2: counts[2]+=1
 				elif b == 3: counts[3]+=1
 			winner = np.argmax(counts)
-			
+
 			for d in [best[0],best[1],best[2],best[3],winner,phi,alt,az,i,defocus]:
 				data.append(str(d))
-			
+
 			dat = "\t".join(data)
 			cmt = "\t# {};{}\n".format(j,cptcl)
 			fout.write(dat+cmt)
-			
+
 			pj+=1
 
 	print "Results in ptclfsc_multi_{}.txt".format(args[0][-2:])
