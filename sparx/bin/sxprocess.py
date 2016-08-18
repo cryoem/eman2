@@ -1038,7 +1038,7 @@ def main():
 					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--postprocess option for 3-D")
 			elif options.do_adaptive_mask:
 				if nargs >1 :
-					map1 +=map2.
+					map1 +=map2
 					map1 /=2.
 				print("threshold ", options.mask_threshold)
 				m = Util.surface_mask(e1, options.mask_threshold, options.dilation, options.consine_edge)
