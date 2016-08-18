@@ -36,19 +36,21 @@ def main():
 		clsmx_ty=EMData(clsmxfile,3)
 		clsmx_mr=EMData(clsmxfile,5)
 		clsimgs=EMData.read_images(clsfile,[],True)
-		
+		#print clsmxfile
+		#print clsmx_0["nx"],clsmx_0["ny"]
+		#exit()
 		num=clsmx_0["ny"]
 		for i in range(num):
-			clsid=int(clsmx_0[i])
-			clsang=clsmx_ang[i]
-			clstx=clsmx_tx[i]
-			clsty=clsmx_ty[i]
-			
+			clsid=int(clsmx_0[0,i])
+			clsang=clsmx_ang[0,i]
+			clstx=clsmx_tx[0,i]
+			clsty=clsmx_ty[0,i]
+			#print clsid,clsang,clstx
 			cls=clsimgs[clsid]
 			tr=Transform()
 			tr.set_rotation({"type":"2d", "alpha":clsang})
 			tr.translate(clstx,clsty)
-			tr.set_mirror(clsmx_mr[i]>0)
+			tr.set_mirror(clsmx_mr[0,i]>0)
 
 			rot=cls["xform.projection"]
 			rr=rot.get_params("eman")

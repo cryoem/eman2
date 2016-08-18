@@ -5154,52 +5154,155 @@ def rearrange_ranks_of_processors(mode):
 	
 	return original_mpi_comm_world
 
+def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters_from_groups_vs_everything_else_comm):
+	"""
+	It is assumed that this code or equivalent is ran before calling this function
 
-def wrap_mpi_split_shared_memory(mpi_comm):
-	import socket
-	import os
-	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split_shared, mpi_comm_split
+	mpi_init(0, [])
 	
-	hostname = socket.gethostname()
-
+	mpi_comm = MPI_COMM_WORLD
+	main_node = 0
+	
 	my_rank = mpi_comm_rank(mpi_comm)
 	mpi_size = mpi_comm_size(mpi_comm)
 	
-	# local_rank = int(os.environ["OMPI_COMM_WORLD_LOCAL_RANK"])
-	# local_size = int(os.environ["OMPI_COMM_WORLD_LOCAL_SIZE"])
+	shared_comm = mpi_comm_split_type(mpi_comm, MPI_COMM_TYPE_SHARED,  0, MPI_INFO_NULL)
 	
+	sh_my_rank = mpi_comm_rank(shared_comm)
+	key = sh_my_rank
+	sh_mpi_size = mpi_comm_size(shared_comm)
 	
-	host_names = [hostname]
-	host_names = wrap_mpi_gatherv(host_names, 0, mpi_comm)
-	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
-	
-	hostname_with_rank = hostname + "  %04d"%my_rank
-	host_names_with_rank = [hostname_with_rank]
-	host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, mpi_comm)
-	host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, mpi_comm)
+	masters_from_groups_vs_everything_else_comm = mpi_comm_split(mpi_comm, sh_my_rank == main_node, my_rank)
+	"""
 
-	procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
-	local_rank = procs_belonging_to_one_node.index(my_rank)
+	from mpi import mpi_barrier
 
-	local_size = host_names.count(hostname)
-	# local_rank = my_rank % local_size 
-	
-	no_of_processes_per_group = local_size
-	no_of_groups = mpi_size/local_size
+	sh_my_ranks = [my_rank]
+	sh_my_ranks = wrap_mpi_gatherv(sh_my_ranks, main_node, shared_comm)
 
-	if my_rank == 0:
-		host_names = sorted(set(host_names))
-	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
-	host_dict = {host_names[i]: i for i in range(len(host_names))}
-	
-	# color = host_dict[hostname]
-	color = my_rank / no_of_processes_per_group
-	key = local_rank
+	group_infos = None
+	if sh_my_rank == main_node:
+		# executed only by masters from groups
+		group_infos = [my_rank, sh_my_ranks]
+		group_infos = wrap_mpi_gatherv(group_infos, main_node, masters_from_groups_vs_everything_else_comm)
 
-	# shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
-	shared_comm = mpi_comm_split(mpi_comm, color, key)
-	
-	return shared_comm, color, key, no_of_processes_per_group, no_of_groups
+	mpi_barrier(mpi_comm)
+
+	group_infos = wrap_mpi_bcast(group_infos, main_node, mpi_comm)
+
+	number_of_groups = len(group_infos)/2
+
+	for i in range(number_of_groups):
+		if my_rank in group_infos[2*i+1]:
+			color = group_infos[2*i]
+			break
+
+	return color, number_of_groups
+
+def wrap_mpi_split_shared_memory(mpi_comm, no_of_groups):
+	# from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split_shared, mpi_get_processor_name
+	# 
+	# hostname = mpi_get_processor_name()
+	# 
+	# my_rank = mpi_comm_rank(mpi_comm)
+	# mpi_size = mpi_comm_size(mpi_comm)
+	# 
+	# # local_rank = int(os.environ["OMPI_COMM_WORLD_LOCAL_RANK"])
+	# # local_size = int(os.environ["OMPI_COMM_WORLD_LOCAL_SIZE"])
+	# 
+	# 
+	# host_names = [hostname]
+	# host_names = wrap_mpi_gatherv(host_names, 0, mpi_comm)
+	# host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
+	# 
+	# hostname_with_rank = hostname + "  %04d"%my_rank
+	# host_names_with_rank = [hostname_with_rank]
+	# host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, mpi_comm)
+	# host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, mpi_comm)
+	# 
+	# procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
+	# local_rank = procs_belonging_to_one_node.index(my_rank)
+	# 
+	# local_size = host_names.count(hostname)
+	# # local_rank = my_rank % local_size 
+	# 
+	# no_of_processes_per_group = local_size
+	# no_of_groups = mpi_size/local_size
+	# 
+	# if my_rank == 0:
+	# 	host_names = sorted(set(host_names))
+	# host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
+	# host_dict = {host_names[i]: i for i in range(len(host_names))}
+	# 
+	# # color = host_dict[hostname]
+	# color = my_rank / no_of_processes_per_group
+	# key = local_rank
+	# 
+	# # shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
+	# shared_comm = mpi_comm_split(mpi_comm, color, key)
+	# 
+	# return shared_comm, color, key, no_of_processes_per_group, no_of_groups
+
+
+	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split, mpi_comm_split_shared
+	nproc = mpi_comm_size(mpi_comm)
+	myid = mpi_comm_rank(mpi_comm)
+
+	no_of_proc_per_group = nproc / no_of_groups
+	color = myid / no_of_proc_per_group
+	key = myid % no_of_proc_per_group
+
+	# return mpi_comm_split(mpi_comm, color, key)
+	shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
+	return shared_comm, color, key, no_of_proc_per_group, no_of_groups
+
+
+
+# def wrap_mpi_split_shared_memory(mpi_comm):
+# 	import socket
+# 	import os
+# 	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split_shared, mpi_comm_split
+# 	
+# 	hostname = socket.gethostname()
+# 
+# 	my_rank = mpi_comm_rank(mpi_comm)
+# 	mpi_size = mpi_comm_size(mpi_comm)
+# 	
+# 	# local_rank = int(os.environ["OMPI_COMM_WORLD_LOCAL_RANK"])
+# 	# local_size = int(os.environ["OMPI_COMM_WORLD_LOCAL_SIZE"])
+# 	
+# 	
+# 	host_names = [hostname]
+# 	host_names = wrap_mpi_gatherv(host_names, 0, mpi_comm)
+# 	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
+# 	
+# 	hostname_with_rank = hostname + "  %04d"%my_rank
+# 	host_names_with_rank = [hostname_with_rank]
+# 	host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, mpi_comm)
+# 	host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, mpi_comm)
+# 
+# 	procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
+# 	local_rank = procs_belonging_to_one_node.index(my_rank)
+# 
+# 	local_size = host_names.count(hostname)
+# 	# local_rank = my_rank % local_size 
+# 	
+# 	no_of_processes_per_group = local_size
+# 	no_of_groups = mpi_size/local_size
+# 
+# 	if my_rank == 0:
+# 		host_names = sorted(set(host_names))
+# 	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
+# 	host_dict = {host_names[i]: i for i in range(len(host_names))}
+# 	
+# 	# color = host_dict[hostname]
+# 	color = my_rank / no_of_processes_per_group
+# 	key = local_rank
+# 
+# 	# shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
+# 	shared_comm = mpi_comm_split(mpi_comm, color, key)
+# 	
+# 	return shared_comm, color, key, no_of_processes_per_group, no_of_groups
 	
 
 
@@ -5316,7 +5419,8 @@ def if_error_then_all_processes_exit_program(error_status):
 	import sys, os
 	from utilities import print_msg
 
-	if "OMPI_COMM_WORLD_SIZE" not in os.environ:
+	# if "OMPI_COMM_WORLD_SIZE" not in os.environ:
+	if len({"OMPI_COMM_WORLD_SIZE", "PMI_RANK", "PMI_ID", "SLURM_PROCID", "LAMRANK", "MPI_RANKID", "MP_CHILD", "MP_CHILD", "MP_CHILD"}.intersection(set(os.environ))) == 0:
 		def mpi_comm_rank(n): return 0
 		def mpi_bcast(*largs):
 			return [largs[0]]
