@@ -23533,7 +23533,7 @@ EMData* Util::surface_mask(EMData* img, double threshold, double surface_dilatio
 	if (surface_dilation_ini > 0. || surface_dilation_ini < 0.)
 	{
 		int surface_dilation          = abs(ceil(surface_dilation_ini));
-		std:cout<<" surface_dilation starts"<<surface_dilation<<std::endl;
+		//std:cout<<" surface_dilation starts"<<surface_dilation<<std::endl;
 		double  surface_dilation_ini2 = surface_dilation_ini*surface_dilation_ini;
 		if (surface_dilation_ini > 0.)
 		{
@@ -23625,7 +23625,7 @@ EMData* Util::surface_mask(EMData* img, double threshold, double surface_dilatio
 			
 				int icosine_width         = abs(ceil(cosine_width));
 				double  cosine_width2 = cosine_width*cosine_width;
-				std::cout<<" make softmask  "<<icosine_width<<std::endl;
+				//std::cout<<" make softmask  "<<icosine_width<<std::endl;
 				int nc =0;	
 				for (int iz=0; iz<nz; iz++) {
 					for (int iy=0; iy<ny; iy++) {

@@ -300,11 +300,13 @@ def main():
 		--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
 		--mtf:             =aa.txt, for those high resolution maps, mtf corrections would significantly enhance structural features.
 		--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
+		--do_adaptive_mask =True when it is restored, the program adaptively creates mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
 		--output           output volume 
 										
 		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
 		sxprocess.py vol_0_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --mtf=aa.txt        --output=vol_0_post.hdf
 		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj
+		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.2   --mtf=aa.txt --fsc_adj
 		
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
 		
@@ -372,7 +374,7 @@ def main():
 	parser.add_option("--low_pass_filter",      type="float",         default=0.0,        help="=0.0, low_pass filter to resolution limit; =some value, low_pass filter to some valume; =-1, not low_pass filter ")
 	parser.add_option("--aa",                   type="float",         default=.1,         help="low pass filter falloff" )
 	parser.add_option("--mask",                 type="string",        help="input mask file",  default= None)
-	parser.add_option("--output",               type="string",        help="output file name", default = "vol_postrefine.hdf")
+	parser.add_option("--output",               type="string",        help="output file name", default = "vol_postrefine_masked.hdf")
 	parser.add_option("--pixel_size",           type="float",         help="pixel size of the data", default=0.0)
 	parser.add_option("--B_start",              type="float",         help="starting frequency in Angstrom for B-factor estimation", default=10.)
 	parser.add_option("--B_stop",               type="float",         help="cutoff frequency in Angstrom for B-factor estimation, cutoff is set to the frequency where fsc < 0.0", default=0.0)
@@ -380,7 +382,7 @@ def main():
 	parser.add_option("--mask_threshold",       type="float",         help=" the threshold for adaptive_mask", default= 0.02)
 	parser.add_option("--consine_edge", 	    type="float",		  help="the width for cosine transition area ", default= 6.0)
 	parser.add_option("--dilation", 			type="float",		  help="the pixels for dilate or erosion of binary mask ", default= 3.0)
-	parser.add_option("--randomphasesafter", 	type="float",		  help=" set Fourier pixels random phases after FSC value ", default= 0.8)	
+	#parser.add_option("--randomphasesafter", 	type="float",		  help=" set Fourier pixels random phases after FSC value ", default= 0.8)	
 	# 
 	parser.add_option("--window_stack",         action="store_true",                      help="window stack images using a smaller window size", default=False)
 	parser.add_option("--box",                  type="int",		      default= 0,         help="the new window size ")
@@ -965,7 +967,7 @@ def main():
 		log_main.add("do_adaptive_mask  "+str(options.adaptive_mask))
 		log_main.add("cosine_edge    "+str(options.consine_edge))
 		log_main.add("dilation    "+str(options.dilation))
-		log_main.add("randomphasesafter    "+str(options.randomphasesafter))
+		#log_main.add("randomphasesafter    "+str(options.randomphasesafter))
 		log_main.add("-----------")
 		if e1.get_zsize() == 1:  # 2D case
 			log_main.add("2-D postprocess for ISAC averaged images")
@@ -1026,10 +1028,10 @@ def main():
 					ERROR(" fail to read the second map "+args[1], "--postprocess option for 3-D")
 					exit()
 			if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
-				ERROR(" Two maps have different size", "--postprocess option for 3-D")
+				ERROR(" Two input maps have different image size", "--postprocess option for 3-D")
 			## prepare mask 
 			if options.mask != None and options.do_adaptive_mask:
-				ERROR("Wrong options, use either adaptive_mask or user provided mask")
+				ERROR("Wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ")
 			if options.mask != None:
 				log_main.add("User provided mask: %s"%options.mask)
 				try:
@@ -1038,12 +1040,11 @@ def main():
 					ERROR(" Sphire postprocess fails to read mask file "+options.mask, "--postprocess option for 3-D")
 					exit()
 				if (m.get_xsize() != map1.get_xsize()) or (m.get_ysize() != map1.get_ysize()) or (m.get_zsize() != map1.get_zsize()):
-					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--postprocess option for 3-D")
+					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--postprocess for mask "+options.mask)
 			elif options.do_adaptive_mask:
 				if nargs >1 :
 					map1 +=map2
 					map1 /=2.
-				print("threshold ", options.mask_threshold)
 				m = Util.surface_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
 				m.write_image("vol_adaptive_mask.hdf")
 				map1 = get_im(args[0]) # re-read map1
@@ -1061,13 +1062,13 @@ def main():
 				frc_without_mask 		= fsc(map1, map2,1)
 				if m: 
 					frc_with_mask     = fsc(map1*m, map2*m,1)
+					"""
 					# determine random_phase_cutoff_pixel
 					random_phase_cutoff_pixel =-1
 					for ifreq in xrange(1,len(frc_without_mask[1])):
 						if frc_without_mask[1][ifreq] < options.randomphasesafter: 
 							random_phase_cutoff_pixel = ifreq
 							break
-					"""
 					print("random phase %f  %d"%(options.randomphasesafter,random_phase_cutoff_pixel))
 					from fundamentals import fft
 					if random_phase_cutoff_pixel >0:
@@ -1185,9 +1186,9 @@ def main():
 					global_b     =  4.*b
 					from statistics import pearson
 					cc =pearson(junk[1],logguinerline)
-					log_main.add("Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"% \
+					log_main.add(" Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"% \
 					                                                  (ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinerline[ifreqmin:ifreqmax])))
-					log_main.add("The slope of rotationally averaged Fourier factors is %f "%(round(-b,2)))
+					log_main.add(" The slope of rotationally averaged Fourier factors is %f "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 
 				else: # User provided value
