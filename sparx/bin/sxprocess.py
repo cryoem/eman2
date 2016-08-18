@@ -300,7 +300,7 @@ def main():
 		--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
 		--mtf:             =aa.txt, for those high resolution maps, mtf corrections would significantly enhance structural features.
 		--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
-		--do_adaptive_mask =True when it is restored, the program adaptively creates mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
+		--do_adaptive_mask =True when it is restored, the program adaptively creates surface mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
 		--output           output volume 
 										
 		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
@@ -993,7 +993,7 @@ def main():
 					else:
 						freq_max =1./options.B_stop
 					freq_min   =  1./options.B_start
-					log_main.add(" B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size))
+					log_main.add("B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size))
 					b,junk,ifreqmin, ifreqmax =compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
 					global_b = b*4
 					log_main.add( "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
@@ -1003,7 +1003,7 @@ def main():
 				sigma_of_inverse=sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.low_pass_filter>0.0 and options.low_pass_filte<0.5:
-					log_main.add(" low-pass filter ff %   aa  %f"%(options.low_pass_filter, options.aa))
+					log_main.add("low-pass filter ff %   aa  %f"%(options.low_pass_filter, options.aa))
 					from filter import filt_tanl
 					e1 =filt_tanl(e1,options.low_pass_filter, options.aa)
 				elif options.low_pass_filte>0.5:
@@ -1037,7 +1037,7 @@ def main():
 				try:
 					m = get_im(options.mask)
 				except:
-					ERROR(" Sphire postprocess fails to read mask file "+options.mask, "--postprocess option for 3-D")
+					ERROR("Sphire postprocess fails to read mask file "+options.mask, "--postprocess option for 3-D")
 					exit()
 				if (m.get_xsize() != map1.get_xsize()) or (m.get_ysize() != map1.get_ysize()) or (m.get_zsize() != map1.get_zsize()):
 					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--postprocess for mask "+options.mask)
@@ -1142,8 +1142,8 @@ def main():
 				guinerline   = rot_avg_table(power(periodogram(map1),.5))
 				for ig in xrange(len(guinerline)): outtext[-1].append(log(guinerline[ig]))
 			if options.fsc_adj:    #2
-				log_main.add("  (2*FSC)/(1+FSC) is applied to Fourier factor to adjust power spectrum ")
-				log_main.add(" The pixel_size of map for postprocess is %f Angstrom"%options.pixel_size)
+				log_main.add("(2*FSC)/(1+FSC) is applied to Fourier factor to adjust power spectrum ")
+				log_main.add("The pixel_size of map for postprocess is %f Angstrom"%options.pixel_size)
 				if nargs==1:
 					print("WARNING! there is only one input map,  and FSC adjustment cannot be done! Skip and continue...", "--postprocess  for 3-D")					
 				else:
@@ -1186,14 +1186,14 @@ def main():
 					global_b     =  4.*b
 					from statistics import pearson
 					cc =pearson(junk[1],logguinerline)
-					log_main.add(" Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"% \
+					log_main.add("Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"% \
 					                                                  (ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinerline[ifreqmin:ifreqmax])))
-					log_main.add(" The slope of rotationally averaged Fourier factors is %f "%(round(-b,2)))
+					log_main.add("The slope of rotationally averaged Fourier factors is %f "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 
 				else: # User provided value
 					#log_main.add( " apply user provided B-factor to enhance map!")
-					log_main.add(" User provided B-factor is %f Angstrom^2   "%options.B_enhance)
+					log_main.add("User provided B-factor is %f Angstrom^2   "%options.B_enhance)
 					sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 					global_b = options.B_enhance
 				map1  = filt_gaussinv(map1,sigma_of_inverse)
@@ -1217,18 +1217,18 @@ def main():
 				else: # low-pass filter to resolution determined by FSC0.143
 					map1 = filt_tanl(map1,resolution_FSC143, options.aa)
 					cutoff = options.pixel_size/resolution_FSC143
-				log_main.add(" The final volume is low_pass filtered to  %f  "%cutoff)
+				log_main.add("The final volume is low_pass filtered to  %f  "%cutoff)
 			map1.write_image("vol_postprocess_nomask.hdf")
 			if m: map1 *=m	
 			map1.write_image(options.output)
-			log_main.add(" ------ Summary -------")
-			log_main.add(" Resolution at criteria 0.143 is %f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
-			log_main.add(" Resolution at criteria 0.5   is %f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
+			log_main.add("------ Summary -------")
+			log_main.add("Resolution at criteria 0.143 is %f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
+			log_main.add("Resolution at criteria 0.5   is %f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
 			if options.B_enhance !=-1:  log_main.add( " B-factor is  %f Angstrom^2  "%(round((-global_b),2)))
 			else:                       log_main.add( " B-factor is not applied  ")
-			log_main.add( " FSC curve is saved in fsc.txt  ")
-			log_main.add( " Final processed volume is "+options.output)
-			log_main.add(" guinerlines in logscale are saved in guinerlines.txt")
+			log_main.add( "FSC curve is saved in fsc.txt  ")
+			log_main.add( "Final processed volume is "+options.output)
+			log_main.add("guinerlines in logscale are saved in guinerlines.txt")
 			if options.low_pass_filter !=-1:  	log_main.add(" Low-pass filter to the resolution %f"%round(cutoff,2))
 			else: 								log_main.add(" The final volume is not low_pass filtered. ")
 			write_text_file(outtext, "guinerlines.txt")
