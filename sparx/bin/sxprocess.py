@@ -964,7 +964,7 @@ def main():
 		log_main.add("B_stop   "+str(options.B_stop))
 		log_main.add("mtf     "+str(options.mtf))
 		log_main.add("output  "+str(options.output))
-		log_main.add("do_adaptive_mask  "+str(options.adaptive_mask))
+		log_main.add("do_adaptive_mask  "+str(options.do_adaptive_mask))
 		log_main.add("cosine_edge    "+str(options.consine_edge))
 		log_main.add("dilation    "+str(options.dilation))
 		#log_main.add("randomphasesafter    "+str(options.randomphasesafter))
@@ -1148,13 +1148,12 @@ def main():
 					print("WARNING! there is only one input map,  and FSC adjustment cannot be done! Skip and continue...", "--postprocess  for 3-D")					
 				else:
 					#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
-					if frc_with_mask or frc_without_mask:
-						fil = len(frc_RH[1])*[None]
-						for i in xrange(len(fil)):
-							if frc_RH[1][i]>=0.0: tmp = frc_RH[1][i]
-							else: tmp = 0.0
-							fil[i] = sqrt(2.*tmp/(1.+tmp))
-						map1=filt_table(map1,fil)
+					fil = len(frc_RH[1])*[None]
+					for i in xrange(len(fil)):
+						if frc_RH[1][i]>=0.0: 	tmp = frc_RH[1][i]
+						else: 					tmp = 0.0
+						fil[i] = sqrt(2.*tmp/(1.+tmp))
+					map1=filt_table(map1,fil)
 					guinerline   = rot_avg_table(power(periodogram(map1),.5))
 					outtext.append(["LogFSCadjusted"])
 					for ig in xrange(len(guinerline)):
@@ -1180,9 +1179,9 @@ def main():
 						ERROR("your B_start is too high! Decrease it and re-run the program!", "--postprocess option")
 						exit()
 					from utilities import write_text_file
-					log_main.add(" B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2)))
+					log_main.add("B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2)))
 					b,junk , ifreqmin, ifreqmax  =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
-					log_main.add(" The used pixels are from %d to %d"%(ifreqmin, ifreqmax))
+					log_main.add("The used pixels are from %d to %d"%(ifreqmin, ifreqmax))
 					global_b     =  4.*b
 					from statistics import pearson
 					cc =pearson(junk[1],logguinerline)
