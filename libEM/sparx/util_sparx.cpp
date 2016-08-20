@@ -23511,7 +23511,6 @@ EMData* Util::surface_mask(EMData* img, double threshold, double surface_dilatio
 	double nx2 =nx/2.;
 	double ny2=ny/2.0;
 	double nz2=nz/2.0;
-	double rad2;
 	//rad2 = (nx2-1.)*(nx2-1.);
 	for (int iz=0; iz<nz; iz++) {
 				for (int iy=0; iy<ny; iy++) {
