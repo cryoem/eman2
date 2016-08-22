@@ -1103,7 +1103,10 @@ def main():
 				else:
 					frc_RH = fsc_without_mask
 				from utilities import write_text_file
-				write_text_file(frc_RH[1], "fsc.txt")
+				newfsc =[]
+				for ifreq in xrange(len(frc_RH[1])):
+					newfsc.append("%10.6f"%frc_RH[1][ifreq])
+				write_text_file(newfsc, "fsc.txt")
 				for ifreq in xrange(len(frc_RH[1])):
 					if frc_RH[1][ifreq] < 0.143:
 						resolution_FSC143   = frc_RH[0][ifreq-1]
@@ -1124,8 +1127,8 @@ def main():
 			from math import log
 			for ig in xrange(len(guinerline)):
 				x = ig*.5/float(len(guinerline))/options.pixel_size
-				outtext[0].append(x*x)
-				outtext[1].append(log(guinerline[ig]))
+				outtext[0].append("%10.6f"%(x*x))
+				outtext[1].append("%10.6f"%log(guinerline[ig]))
 			# starts adjustment of powerspectrum
 			if options.mtf: # divided by the mtf   #1
 				from fundamentals import fft
@@ -1140,9 +1143,9 @@ def main():
 				map1 = fft(Util.divide_mtf(fft(map1), mtf_core[1], mtf_core[0]))
 				outtext.append(["LogMTFdiv"])
 				guinerline   = rot_avg_table(power(periodogram(map1),.5))
-				for ig in xrange(len(guinerline)): outtext[-1].append(log(guinerline[ig]))
+				for ig in xrange(len(guinerline)): outtext[-1].append("%10.6f"%log(guinerline[ig]))
 			if options.fsc_adj:    #2
-				log_main.add("(2*FSC)/(1+FSC) is applied to adjust power spectrum ")
+				log_main.add("(2*FSC)/(1+FSC) is applied to adjust power spectrum of the summed volumes")
 				if nargs==1:
 					print("WARNING! there is only one input map,  and FSC adjustment cannot be done! Skip and continue...", "--postprocess  for 3-D")					
 				else:
@@ -1156,7 +1159,7 @@ def main():
 					guinerline   = rot_avg_table(power(periodogram(map1),.5))
 					outtext.append(["LogFSCadjusted"])
 					for ig in xrange(len(guinerline)):
-						outtext[-1].append(log(guinerline[ig]))
+						outtext[-1].append("%10.6f"%log(guinerline[ig]))
 			
 			if options.B_enhance !=-1:  #3
 				if options.B_enhance == 0.0: # auto mode 
@@ -1200,10 +1203,10 @@ def main():
 				last_non_zero = -999.0
 				for ig in xrange(len(guinerline)):
 					if guinerline[ig]>0: 
-						outtext[-1].append(log(guinerline[ig]))
+						outtext[-1].append("%10.6f"%log(guinerline[ig]))
 						last_non_zero = log(guinerline[ig])
 					else:
-						outtext[-1].append(last_non_zero)			
+						outtext[-1].append("%10.6f"%last_non_zero)			
 			if options.low_pass_filter !=-1.: # User provided low-pass filter #4.
 				from filter       import filt_tanl
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
@@ -1221,13 +1224,13 @@ def main():
 			log_main.add("------ Summary -------")
 			log_main.add("Resolution at criteria 0.143 is %f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
 			log_main.add("Resolution at criteria 0.5   is %f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
-			if options.B_enhance !=-1:  log_main.add( " B-factor is  %f Angstrom^2  "%(round((-global_b),2)))
-			else:                       log_main.add( " B-factor is not applied  ")
+			if options.B_enhance !=-1:  log_main.add( "B-factor is  %f Angstrom^2  "%(round((-global_b),2)))
+			else:                       log_main.add( "B-factor is not applied  ")
 			log_main.add( "FSC curve is saved in fsc.txt  ")
 			log_main.add( "Final processed volume is "+options.output)
 			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
-			if options.low_pass_filter !=-1:  	log_main.add(" Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%f Angstrom" %round(cutoff,2))
-			else: 								log_main.add(" The final volume is not low_pass filtered. ")
+			if options.low_pass_filter !=-1:  	log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%f Angstrom" %round(cutoff,2))
+			else: 								log_main.add("The final volume is not low_pass filtered. ")
 			write_text_file(outtext, "guinierlines.txt")
 				
 	elif options.window_stack:
