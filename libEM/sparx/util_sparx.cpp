@@ -22918,7 +22918,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  08/17/2016  11:29 AM "<<endl;
+ cout <<"  VERSION  08/21/2016  10:29 AM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<endl;
 }
 
@@ -23511,7 +23511,6 @@ EMData* Util::surface_mask(EMData* img, double threshold, double surface_dilatio
 	double nx2 =nx/2.;
 	double ny2=ny/2.0;
 	double nz2=nz/2.0;
-	double rad2;
 	//rad2 = (nx2-1.)*(nx2-1.);
 	for (int iz=0; iz<nz; iz++) {
 				for (int iy=0; iy<ny; iy++) {

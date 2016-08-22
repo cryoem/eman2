@@ -121,7 +121,11 @@ ELSEIF (ENABLE_OPTIMIZE_X86_64)
 ELSEIF (ENABLE_OPTIMIZE_WINDOWS_VC)
 	SET (OPT_FLAGS "/Ox /DHAVE_INLINE")
 ELSE()
-    SET (OPT_FLAGS "-O3 -ansi -ffast-math")		# This is the default
+    IF(WIN32)
+       SET(OPT_FLAGS "")
+    ELSE(WIN32)
+       SET (OPT_FLAGS "-O3 -ansi -ffast-math")		# This is the default
+    ENDIF(WIN32)
 ENDIF()
 #MESSAGE("OPT_FLAGS = " ${OPT_FLAGS})
 
