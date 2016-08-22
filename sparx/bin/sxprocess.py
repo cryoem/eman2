@@ -1027,8 +1027,8 @@ def main():
 				except:
 					ERROR(" fail to read the second map "+args[1], "--postprocess option for 3-D")
 					exit()
-			if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
-				ERROR(" Two input maps have different image size", "--postprocess option for 3-D")
+				if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
+					ERROR(" Two input maps have different image size", "--postprocess option for 3-D")
 			## prepare mask 
 			if options.mask != None and options.do_adaptive_mask:
 				ERROR("Wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ")
@@ -1103,20 +1103,20 @@ def main():
 				else:
 					frc_RH = fsc_without_mask
 				from utilities import write_text_file
-				newfsc =[]
-				for ifreq in xrange(len(frc_RH[1])):
-					newfsc.append("%10.6f"%frc_RH[1][ifreq])
-				write_text_file(newfsc, "fsc.txt")
-				for ifreq in xrange(len(frc_RH[1])):
-					if frc_RH[1][ifreq] < 0.143:
-						resolution_FSC143   = frc_RH[0][ifreq-1]
-						break
-				for ifreq in xrange(len(frc_RH[1])):
-					if frc_RH[1][ifreq] < 0.5:
-						resolution_FSChalf  = frc_RH[0][ifreq-1]
-						break															
-				from utilities import write_text_file
-				#write_text_file(outfrc, "fsc_with_mask.txt")
+				if nargs >1:
+					newfsc =[]
+					for ifreq in xrange(len(frc_RH[1])):
+						newfsc.append("%10.6f"%frc_RH[1][ifreq])
+					write_text_file(newfsc, "fsc.txt")
+					for ifreq in xrange(len(frc_RH[1])):
+						if frc_RH[1][ifreq] < 0.143:
+							resolution_FSC143   = frc_RH[0][ifreq-1]
+							break
+					for ifreq in xrange(len(frc_RH[1])):
+						if frc_RH[1][ifreq] < 0.5:
+							resolution_FSChalf  = frc_RH[0][ifreq-1]
+							break															
+					from utilities import write_text_file
 			map1 = get_im(args[0])
 			if nargs >1: 
 				map2 = get_im(args[1])
@@ -1147,7 +1147,7 @@ def main():
 			if options.fsc_adj:    #2
 				log_main.add("(2*FSC)/(1+FSC) is applied to adjust power spectrum of the summed volumes")
 				if nargs==1:
-					print("WARNING! there is only one input map,  and FSC adjustment cannot be done! Skip and continue...", "--postprocess  for 3-D")					
+					ERROR("There is only one input map,  and FSC adjustment cannot be done!", "--postprocess  for 3-D", 1)					
 				else:
 					#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 					fil = len(frc_RH[1])*[None]
@@ -1162,18 +1162,21 @@ def main():
 						outtext[-1].append("%10.6f"%log(guinerline[ig]))
 			
 			if options.B_enhance !=-1:  #3
-				if options.B_enhance == 0.0: # auto mode 
-					cutoff_by_fsc = 0
-					for ifreq in xrange(len(frc_RH[1])):
-						if frc_RH[1][ifreq]<0.143:
-							break
-					cutoff_by_fsc = float(ifreq)
-					#print(" cutoff_by_fsc ", cutoff_by_fsc)
-					freq_max     =cutoff_by_fsc/(2.*len(frc_RH[0]))/options.pixel_size
+				if options.B_enhance == 0.0: # auto mode
+					if nargs>1: 
+						cutoff_by_fsc = 0
+						for ifreq in xrange(len(frc_RH[1])):
+							if frc_RH[1][ifreq]<0.143:
+								break
+						cutoff_by_fsc = float(ifreq)
+						#print(" cutoff_by_fsc ", cutoff_by_fsc)
+						freq_max     = cutoff_by_fsc/(2.*len(frc_RH[0]))/options.pixel_size
+					else:
+						freq_max     = 2.*options.pixel_size
 					guinerline   = rot_avg_table(power(periodogram(map1),.5))
-					logguinerline = []
+					logguinierline = []
 					for ig in xrange(len(guinerline)):
-						logguinerline.append(log(guinerline[ig]))
+						logguinierline.append(log(guinerline[ig]))
 					freq_min     = 1./options.B_start # given frequencies with unit of Angstrom, say 10 Angstrom, 15  Angstrom
 					if options.B_stop!=0.0: freq_max     = 1./options.B_stop 
 					if freq_min>=freq_max:
@@ -1186,9 +1189,9 @@ def main():
 					#log_main.add("The used pixels are from %d to %d"%(ifreqmin, ifreqmax))
 					global_b     =  4.*b
 					from statistics import pearson
-					cc =pearson(junk[1],logguinerline)
+					cc =pearson(junk[1],logguinierline)
 					log_main.add("Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"% \
-					                                                  (ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinerline[ifreqmin:ifreqmax])))
+					                                                  (ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
 					log_main.add("The slope is %f Angstrom^2 "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 
