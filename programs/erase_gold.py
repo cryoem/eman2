@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #====================
-#Author: Michael Bell July, 2016 (minor edits, Jesus Galaz-Montoya). Last update: July, 2016
+#Author: Michael Bell July, 2016 (edits, Jesus Galaz-Montoya). Last update: August, 2016
 #====================
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -58,10 +58,20 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel",type=str, default=None, help="""Default=None (not used). Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
+	parser.add_argument("--subset", default=0, type=int, help="Default=0 (not used). Apply algorithm to only a subset of images in each stack file.")
+	parser.add_argument("--nsigmas", default=3.0,type=float, help="Default=3.0. Number of standard deviations above the mean to determine pixels to mask out (erase).")
+
+
 
 	(options, args) = parser.parse_args()
 
 	nfiles = len(args)
+
+	logger = E2init(sys.argv, options.ppid)
+	print "\n(e2tomopreproc)(main) started log"	
+
+	if options.parallel == 'None' or options.parallel == 'none':
+		options.parallel == None
 
 	if options.parallel:
 		from EMAN2PAR import EMTaskCustomer
@@ -86,9 +96,11 @@ def main():
 
 			#turn .ali or .mrc 3D images into a stack of 2D images that can be processed by this program. 
 			cmd = 'e2proc2d.py ' + arg + ' dummy_stack.hdf --threed2twod'
+			if options.subset:
+					cmd += ' --first 0 --last ' + str(options.subset-1)
 			runcmd(options,cmd)
 
-			#make the new stack of 2D images (dummy_stack.hdf) the new input (the name of the input file but with .hdf format); this intermediate file will be deleted in the end.
+			#make the new stack of 2D images (dumy_stack.hdf) the new input (the name of the input file but with .hdf format); this intermediate file will be deleted in the end.
 			newarg = arg.replace(arg[-4:],'.hdf')
 			os.rename('dummy_stack.hdf',newarg)
 			arg = newarg
@@ -168,15 +180,30 @@ def main():
 		dummy_correct_size['apix_y']=apix
 		dummy.write_image(outf,0)
 
+		print "outf",outf
+
+		if options.parallel:
+			cmdunstacking = 'e2proc2d.py ' + arg + ' erasegold_tmp.hdf --unstacking'
+			runcmd(options,cmdunstacking)
+
+		if options.subset:
+			nfs=options.subset
+
 		for i in range(nfs):
+			
+				#if i > options.subset -1:
+				#	break
+
 			if options.verbose: print "processing image {}/{}".format(i,nfs)
 			
 			if options.parallel:
 				print "parallelism started"
-				task = EraseGold2DTask( options, arg, i, outf)
+				thisimg = 'erasegold_tmp-' + str(i+1).zfill(len(str(nfs))) + '.hdf'			#c: when e2proc2d.py unstacks images, it starts from 1, not from 0
+				thisoutf = 'erasegold_tmp-' + str(i+1).zfill(len(str(nfs))) + '_proc.hdf'
+				task = EraseGold2DTask( options, thisimg, 0, thisoutf,nfs)
 				tasks.append(task)
 			else:
-				results=fiximage( options, arg, i, outf)
+				results=fiximage( options, arg, i, outf,nfs)
 
 		if options.parallel:	
 			if tasks:
@@ -189,59 +216,132 @@ def main():
 		if results:
 			#pass
 
+			if options.parallel:
+				#outfstem = outf.replace('.hdf','')
+				cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_proc.hdf --stackname ' + outf
+				runcmd(options,cmdbuildstack)
+
+				if options.debug:
+					outfmasked = outf.replace('.hdf','_masked.hdf')
+					cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_masked.hdf --stackname ' + outfmasked
+					runcmd(options,cmdbuildstack)
+
+					outfnoise= outf.replace('.hdf','_noise.hdf')
+					cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_noise.hdf --stackname ' + outfnoise
+					runcmd(options,cmdbuildstack)
+
+
+
 			if '.ali' == originalarg[-4:] or '.mrc' == originalarg[-4:]:
 				#intermediate = arg.replace('.hdf','.mrcs')
-				finaloutput = arg.replace('.hdf',originalarg[-4:])
-				cmd = 'e2proc2d.py ' + arg + ' ' + finaloutput + ' --twod2threed --outmode int16'
+				finaloutput = outf.replace('.hdf',originalarg[-4:])
+				cmd = 'e2proc2d.py ' + outf + ' ' + finaloutput + ' --twod2threed --outmode int16'
+				
+				#print "\ncomand to generate finaloutput",cmd
 				runcmd(options,cmd)
 				os.remove(arg)
 
-			if newarg: os.remove(newarg)
+			if newarg: 
+				try:
+					os.remove(newarg)
+				except:
+					try:
+						#print "would have removed",newarg.replace('.hdf','_proc.hdf')
+						os.remove(newarg.replace('.hdf','_proc.hdf'))
+					except:
+						pass
+		try:
+			filelist = [ tmpf for tmpf in os.listdir(".") if 'erasegold_tmp' in tmpf ]
+			for tf in filelist:
+			    os.remove(tf)
+		except:
+			print "WARNING: cleanup failed."
+
+	
+	E2end(logger)
+
+	return
 
 
-def fiximage(options,imgfile,imgindx,outf):
+def fiximage(options,imgfile,imgindx,outf,nfs):
 	#sys.stdout.write("\r{}/{}".format(i+1,nfs))
 	#sys.stdout.flush()
-
+	#print "fiximage function received imgfile, outf, imgindx",imgfile, outf, imgindx
+	
 	f = EMData(imgfile,imgindx) * -1
+	#print "loaded image"
+	
 	if options.downsample > 1.0:
 		f.process_inplace("math.fft.resample",{"n":options.downsample})
 	f.process_inplace("normalize")
+
+	#print "downsampled and normalized"
 
 	sharp_msk, soft_msk = generate_masks(options,f)
 	mskd_sharp = sharp_msk*f
 	sub_sharp = f-mskd_sharp
 
+	#print "generated masks"
+
 	noise = local_noise(options,sub_sharp)
 
-	outn = "{}_noise.hdf".format(imgfile)
+	outnoise = "{}_noise.hdf".format( os.path.splitext(imgfile)[0] )
 
-	if options.debug: noise.write_image(outn,imgindx)
+	#print "generated noise"
+
+	if options.debug: noise.write_image(outnoise,imgindx)
 
 	mskd_soft = soft_msk*f
 	sub_soft = f-mskd_soft
 
-	if options.debug: 
-		sub_soft.write_image("{}_masked.hdf".format( os.path.splitext(imgfile), imgindx))
+	if options.debug:
+		outmasked = "{}_masked.hdf".format( os.path.splitext(imgfile)[0] )
+		sub_soft.write_image(outmasked, imgindx)
 
+	#print "wrote out noise and mask"
 	result=sub_soft + noise * soft_msk
 	result *= -1
+	#print "generated result"
+
+	#if options.parallel:
+		#outfindividual=outf.replace('.hdf', str(imgindx).zfill(len(str(nfs))) + '_tmp.hdf')
+		#print "writing out result to", outfindividual
+		#result.write_image(outfindividual,0)
+		#print "wrote out image", outfindividual
+	#else:
 	result.write_image(outf,imgindx)
 
+	#print "wrote out result"
 	f *= -1
 	#f.write_image("{}_compare.hdf".format( os.path.splitext(imgfile) ,imgindx)
 	#result.write_image("{}_compare.hdf".format( os.path.splitext(imgfile) ,imgindx+1)
 	#ctr+=2
 
-	return
+	return 1
 
 
 def generate_masks(options,img):
 	img.process_inplace("normalize")
 	# create sharp mask
-	msk = img.process("filter.highpass.gauss",{"cutoff_pixels":25})
-	msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
-	msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+3*msk["sigma"],"tozero":True})
+	
+	#msk = img.process("filter.highpass.gauss",{"cutoff_pixels":25})
+	fourierpixels = img['nx']/2
+	pixels = fourierpixels - options.goldsize/2
+	
+	msk = img.process("filter.highpass.gauss",{"cutoff_pixels":pixels})
+	apix = img['apix_x']
+	
+	goldinAngs=apix*options.goldsize
+	freq=1.0/goldinAngs
+
+	#msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+	msk.process_inplace("filter.lowpass.tanh",{"cutoff_freq":freq})	#c:lowpass shouldn't be arbitrary; rather, use gold size to derive it.
+
+	#msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+3*msk["sigma"],"tozero":True})
+	#msk.process_inplace("threshold.clampminmax",{"maxval":msk["mean"]+3*msk["sigma"],"minval":msk["mean"]-3*msk["sigma"],"tomean":True})
+	
+	msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+options.nsigmas*msk["sigma"],"tomean":True})
+
 	msk.process_inplace("threshold.binary",{"value":msk["mean"]})
 	# remove dust
 	if options.keepdust: sharp_msk = msk.copy()
@@ -253,14 +353,20 @@ def generate_masks(options,img):
 		nproc = ndimage.binary_opening(nproc,structure=se2).astype(int)
 		sharp_msk = from_numpy(nproc)
 	# grow slightly and create soft mask
-	sharp_msk = sharp_msk.process("mask.addshells.gauss",{"val1":8,"val2":0})
-	soft_msk = sharp_msk.process("mask.addshells.gauss",{"val1":0,"val2":8})
+	sharp_msk = sharp_msk.process("mask.addshells.gauss",{"val1":1,"val2":0})
+	soft_msk = sharp_msk.process("mask.addshells.gauss",{"val1":0,"val2":4})
 	return sharp_msk,soft_msk
 
 
 def local_noise(options,img):
 	localnoise = EMData(img["nx"],img["ny"])
+	apix = img['apix_x']
+	
+	localnoise['apix_x']=apix
+	localnoise['apix_y']=apix
+	
 	localnoise.to_zero()
+	
 	bs = options.boxsize
 	nbxs = len(np.arange(-bs,img['nx']+bs,bs))*options.oversample
 	nbys = len(np.arange(-bs,img['ny']+bs,bs))*options.oversample
@@ -271,14 +377,24 @@ def local_noise(options,img):
 			r = img.get_clip(Region(x-bs/2,y-bs/2,bs,bs))
 			n = EMData(bs,bs)
 			n.to_zero()
-			n.process_inplace("math.addnoise",{"noise":r["sigma_nonzero"]})
-			n.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
+
+			rth=r.process("threshold.clampminmax",{"maxval":r["mean"]+3*r['sigma'],"minval":r["mean"]-3*r["sigma"],"tozero":True})
+
+			n.process_inplace("math.addnoise",{"noise":rth["sigma_nonzero"]})
+			#n.process_inplace("normalize.toimage",{"to":rth})
+
+			#n.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
+			fourierpixels = n['nx']/2
+			pixels = fourierpixels - options.goldsize/2
+			n.process_inplace("filter.highpass.gauss",{"cutoff_pixels":pixels})
+
 			try: n *= r["sigma_nonzero"]/n["sigma_nonzero"]
 			except:
-				if options.verbose > 8:
+				if options.verbose > 9:
 					print("WARNING: division by zero, from n['sigma_nonzero']={}".format(n["sigma_nonzero"]))
 			n += r["mean_nonzero"]
 			localnoise.insert_clip(n,(x-bs/2,y-bs/2))
+	
 	if options.lowpass:
 		apix = img['apix_x']
 		localnoise['apix_x'] = apix
@@ -288,19 +404,22 @@ def local_noise(options,img):
 		filtfreq=1.0/filtres
 		#if options.verbose: print("Apix {}\tResolution {}\tFrequency {}".format(apix,filtres,filtfreq))
 		localnoise.process_inplace('filter.lowpass.tanh', {'cutoff_freq':filtfreq,'apix':apix})
+	
+	localnoise.process_inplace("normalize.toimage",{"to":img})
+
 	return localnoise
 
 
 def runcmd(options,cmd):
 	if options.verbose > 8:
-		print "(erase_gold)(runcmd) running command", cmd
+		print "\n(erase_gold)(runcmd) running command", cmd
 
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()
 	p.stdout.close()
 
 	if options.verbose > 8:
-		print "(erase_gold)(runcmd) done"
+		print "\n(erase_gold)(runcmd) done"
 
 
 '''
@@ -309,10 +428,10 @@ CLASS TO PARALLELIZE GOLD ERASING
 class EraseGold2DTask(JSTask):
 	'''This is a task object for the parallelism system.'''
 
-	def __init__(self, options, imgfile, imgindx, outf):
+	def __init__(self, options, imgfile, imgindx, outf,nfs):
 	
 		JSTask.__init__(self,"TomoBoxer3d",{},"")
-		self.classoptions={"options":options,"imgfile":imgfile,"imgindx":imgindx,"outf":outf}
+		self.classoptions={"options":options,"imgfile":imgfile,"imgindx":imgindx,"outf":outf,"nfs":nfs}
 	
 	def execute(self,callback=None):
 		
@@ -322,9 +441,12 @@ class EraseGold2DTask(JSTask):
 		imgfile = self.classoptions['imgfile']
 		imgindx = self.classoptions['imgindx']
 		outf = self.classoptions['outf']
+		nfs = self.classoptions['nfs']
+		#print "BEFORE fiximage in class EraseGold2DTask, input, output, imgindx", imgfile,outf,imgindx
 
 		#print "(EraseGold2DTask) imgindx",imgindx
-		fiximage( options, imgfile, imgindx, outf)
+		ret=fiximage( options, imgfile, imgindx, outf,nfs)
+		#print "AFTER fiximage in class EraseGold2DTask, ret=",ret
 		
 		return
 
