@@ -1142,8 +1142,7 @@ def main():
 				guinerline   = rot_avg_table(power(periodogram(map1),.5))
 				for ig in xrange(len(guinerline)): outtext[-1].append(log(guinerline[ig]))
 			if options.fsc_adj:    #2
-				log_main.add("(2*FSC)/(1+FSC) is applied to Fourier factor to adjust power spectrum ")
-				log_main.add("The pixel_size of map for postprocess is %f Angstrom"%options.pixel_size)
+				log_main.add("(2*FSC)/(1+FSC) is applied to adjust power spectrum ")
 				if nargs==1:
 					print("WARNING! there is only one input map,  and FSC adjustment cannot be done! Skip and continue...", "--postprocess  for 3-D")					
 				else:
@@ -1179,15 +1178,15 @@ def main():
 						ERROR("your B_start is too high! Decrease it and re-run the program!", "--postprocess option")
 						exit()
 					from utilities import write_text_file
-					log_main.add("B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2)))
+					#log_main.add("B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2)))
 					b,junk , ifreqmin, ifreqmax  =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
-					log_main.add("The used pixels are from %d to %d"%(ifreqmin, ifreqmax))
+					#log_main.add("The used pixels are from %d to %d"%(ifreqmin, ifreqmax))
 					global_b     =  4.*b
 					from statistics import pearson
 					cc =pearson(junk[1],logguinerline)
 					log_main.add("Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"% \
 					                                                  (ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinerline[ifreqmin:ifreqmax])))
-					log_main.add("The slope of rotationally averaged Fourier factors is %f "%(round(-b,2)))
+					log_main.add("The slope is %f Angstrom^2 "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 
 				else: # User provided value
@@ -1216,9 +1215,8 @@ def main():
 				else: # low-pass filter to resolution determined by FSC0.143
 					map1 = filt_tanl(map1,resolution_FSC143, options.aa)
 					cutoff = options.pixel_size/resolution_FSC143
-				log_main.add("The final volume is low_pass filtered to  %f  "%cutoff)
 			map1.write_image("vol_postprocess_nomask.hdf")
-			if m: map1 *=m	
+			if m: map1 *=m
 			map1.write_image(options.output)
 			log_main.add("------ Summary -------")
 			log_main.add("Resolution at criteria 0.143 is %f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
@@ -1227,10 +1225,10 @@ def main():
 			else:                       log_main.add( " B-factor is not applied  ")
 			log_main.add( "FSC curve is saved in fsc.txt  ")
 			log_main.add( "Final processed volume is "+options.output)
-			log_main.add("guinerlines in logscale are saved in guinerlines.txt")
-			if options.low_pass_filter !=-1:  	log_main.add(" Low-pass filter to the resolution %f"%round(cutoff,2))
+			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
+			if options.low_pass_filter !=-1:  	log_main.add(" Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%f Angstrom" %round(cutoff,2))
 			else: 								log_main.add(" The final volume is not low_pass filtered. ")
-			write_text_file(outtext, "guinerlines.txt")
+			write_text_file(outtext, "guinierlines.txt")
 				
 	elif options.window_stack:
 		nargs = len(args)
