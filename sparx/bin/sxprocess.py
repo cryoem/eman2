@@ -987,14 +987,14 @@ def main():
 				e1 = get_im(args[0],i)
 				if m: e1 *=m
 				if options.B_enhance ==0.0 or options.B_enhance == -1.:
-					guinerline = rot_avg_table(power(periodogram(e1),.5))
+					guinierline = rot_avg_table(power(periodogram(e1),.5))
 					if options.B_stop:
 						freq_max   =  1./(2.*options.pixel_size)
 					else:
 						freq_max =1./options.B_stop
 					freq_min   =  1./options.B_start
 					log_main.add("B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size))
-					b,junk,ifreqmin, ifreqmax =compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
+					b,junk,ifreqmin, ifreqmax =compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = b*4
 					log_main.add( "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
 				else:
@@ -1123,12 +1123,12 @@ def main():
 				map1 +=map2
 				map1 /=2.0
 			outtext = [["Squaredfreqencies"],[ "LogOrignal"]]
-			guinerline = rot_avg_table(power(periodogram(map1),.5))
+			guinierline = rot_avg_table(power(periodogram(map1),.5))
 			from math import log
-			for ig in xrange(len(guinerline)):
-				x = ig*.5/float(len(guinerline))/options.pixel_size
+			for ig in xrange(len(guinierline)):
+				x = ig*.5/float(len(guinierline))/options.pixel_size
 				outtext[0].append("%10.6f"%(x*x))
-				outtext[1].append("%10.6f"%log(guinerline[ig]))
+				outtext[1].append("%10.6f"%log(guinierline[ig]))
 			# starts adjustment of powerspectrum
 			if options.mtf: # divided by the mtf   #1
 				from fundamentals import fft
@@ -1142,8 +1142,8 @@ def main():
 					exit()
 				map1 = fft(Util.divide_mtf(fft(map1), mtf_core[1], mtf_core[0]))
 				outtext.append(["LogMTFdiv"])
-				guinerline   = rot_avg_table(power(periodogram(map1),.5))
-				for ig in xrange(len(guinerline)): outtext[-1].append("%10.6f"%log(guinerline[ig]))
+				guinierline   = rot_avg_table(power(periodogram(map1),.5))
+				for ig in xrange(len(guinierline)): outtext[-1].append("%10.6f"%log(guinierline[ig]))
 			if options.fsc_adj:    #2
 				log_main.add("(2*FSC)/(1+FSC) is applied to adjust power spectrum of the summed volumes")
 				if nargs==1:
@@ -1156,10 +1156,10 @@ def main():
 						else: 					tmp = 0.0
 						fil[i] = sqrt(2.*tmp/(1.+tmp))
 					map1=filt_table(map1,fil)
-					guinerline   = rot_avg_table(power(periodogram(map1),.5))
+					guinierline   = rot_avg_table(power(periodogram(map1),.5))
 					outtext.append(["LogFSCadjusted"])
-					for ig in xrange(len(guinerline)):
-						outtext[-1].append("%10.6f"%log(guinerline[ig]))
+					for ig in xrange(len(guinierline)):
+						outtext[-1].append("%10.6f"%log(guinierline[ig]))
 			
 			if options.B_enhance !=-1:  #3
 				if options.B_enhance == 0.0: # auto mode
@@ -1173,10 +1173,10 @@ def main():
 						freq_max     = cutoff_by_fsc/(2.*len(frc_RH[0]))/options.pixel_size
 					else:
 						freq_max     = 2.*options.pixel_size
-					guinerline   = rot_avg_table(power(periodogram(map1),.5))
+					guinierline   = rot_avg_table(power(periodogram(map1),.5))
 					logguinierline = []
-					for ig in xrange(len(guinerline)):
-						logguinierline.append(log(guinerline[ig]))
+					for ig in xrange(len(guinierline)):
+						logguinierline.append(log(guinierline[ig]))
 					freq_min     = 1./options.B_start # given frequencies with unit of Angstrom, say 10 Angstrom, 15  Angstrom
 					if options.B_stop!=0.0: freq_max     = 1./options.B_stop 
 					if freq_min>=freq_max:
@@ -1185,7 +1185,7 @@ def main():
 						exit()
 					from utilities import write_text_file
 					#log_main.add("B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2)))
-					b,junk , ifreqmin, ifreqmax  =  compute_bfactor(guinerline, freq_min, freq_max, options.pixel_size)
+					b,junk , ifreqmin, ifreqmax  =  compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					#log_main.add("The used pixels are from %d to %d"%(ifreqmin, ifreqmax))
 					global_b     =  4.*b
 					from statistics import pearson
@@ -1201,13 +1201,13 @@ def main():
 					sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 					global_b = options.B_enhance
 				map1  = filt_gaussinv(map1,sigma_of_inverse)
-				guinerline   = rot_avg_table(power(periodogram(map1),.5))
+				guinierline   = rot_avg_table(power(periodogram(map1),.5))
 				outtext.append([" LogBfactorsharpened"])
 				last_non_zero = -999.0
-				for ig in xrange(len(guinerline)):
-					if guinerline[ig]>0: 
-						outtext[-1].append("%10.6f"%log(guinerline[ig]))
-						last_non_zero = log(guinerline[ig])
+				for ig in xrange(len(guinierline)):
+					if guinierline[ig]>0: 
+						outtext[-1].append("%10.6f"%log(guinierline[ig]))
+						last_non_zero = log(guinierline[ig])
 					else:
 						outtext[-1].append("%10.6f"%last_non_zero)			
 			if options.low_pass_filter !=-1.: # User provided low-pass filter #4.
