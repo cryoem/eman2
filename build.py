@@ -146,8 +146,8 @@ class Target(object):
         # Add a bunch of attributes to the args Namespace
         args.python = self.python
         args.distname = '%s.%s'%(args.cvsmodule, args.release)
-	args.distname_source ='%s.%s'%(args.cvsmodule, args.target)
-	args.installtxt = self.installtxt
+        args.distname_source ='%s.%s'%(args.cvsmodule, args.target)
+        args.installtxt = self.installtxt
         args.bashrc = self.bashrc
         args.cshrc = self.cshrc
         args.target_desc = self.target_desc
@@ -158,17 +158,17 @@ class Target(object):
         # I just want to avoid excessive duplicate os.join()
         # calls in the main code, because each one is a chance for an error.        
         args.cwd_co           = os.path.join(args.root, 'co')
-        args.cwd_co_distname  = os.path.join(args.root, 'co',	args.distname)
-	args.cwd_extlib       = os.path.join(args.root, 'extlib',  args.distname)
+        args.cwd_co_distname  = os.path.join(args.root, 'co',      args.distname)
+        args.cwd_extlib       = os.path.join(args.root, 'extlib',  args.distname)
         args.cwd_build        = os.path.join(args.root, 'build',   args.distname)
         args.cwd_images       = os.path.join(args.root, 'images',  args.distname)
-	args.cwd_images_source = os.path.join(args.root, 'images',  args.distname_source)
+        args.cwd_images_source = os.path.join(args.root, 'images', args.distname_source)
         args.cwd_stage        = os.path.join(args.root, 'stage',   args.distname)
-	args.cwd_stage_source = os.path.join(args.root, 'stage',   args.distname_source)
-	args.cwd_stage_source_build = os.path.join(args.root, 'stage',	args.distname_source,'EMAN2/src/build')
-	args.cwd_stage_source_path = os.path.join(args.root, 'stage',   args.distname_source,'EMAN2/src/eman2')
+        args.cwd_stage_source = os.path.join(args.root, 'stage',   args.distname_source)
+        args.cwd_stage_source_build = os.path.join(args.root, 'stage',  args.distname_source,'EMAN2/src/build')
+        args.cwd_stage_source_path = os.path.join(args.root, 'stage',   args.distname_source,'EMAN2/src/eman2')
         args.cwd_rpath        = os.path.join(args.root, 'stage',   args.distname, args.cvsmodule.upper())
-	args.cwd_rpath_source = os.path.join(args.root, 'stage',   args.distname_source, args.cvsmodule.upper(),'src/eman2')
+        args.cwd_rpath_source = os.path.join(args.root, 'stage',   args.distname_source, args.cvsmodule.upper(),'src/eman2')
         args.cwd_rpath_extlib = os.path.join(args.cwd_rpath, 'extlib')
         args.cwd_rpath_lib    = os.path.join(args.cwd_rpath, 'lib')           
 
@@ -220,6 +220,9 @@ class MacTarget(Target):
 
     Installing EMAN2 is simple. 
 
+    If clarification of any step is needed, we have created a visual guide with screenshots in the EMAN2 wiki:
+        http://blake.grid.bcm.edu/emanwiki/EMAN2/Install/BinaryInstall_OSXVisualGuide
+
     1. Copy the "EMAN2" folder to /Applications.
 
     2. If you use the bash shell, add the following line to your ".profile" file:
@@ -231,7 +234,7 @@ class MacTarget(Target):
     3. Restart your terminal program for a fresh shell. EMAN2 should now be installed and function properly.
 
     Please visit the EMAN2 homepage at http://blake.bcm.tmc.edu/emanwiki/EMAN2 for usage documentation.
-    """    
+    """
     
     eman2install = None
     
@@ -249,30 +252,30 @@ else
 setenv PYTHONPATH
 endif
 setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages:${EMAN2DIR}/extlib/site-packages/ipython-1.2.1-py2.7.egg:${PYTHONPATH}
-"""   
+"""
 
-    python='/usr/bin/python2.7'
-    target_desc='mac' 
-    
+    python = '/usr/bin/python2.7'
+    target_desc = 'mac'
+
     def build(self):
         self._run([CMakeBuild])
-    
+
     def install(self):
         self._run([FixLinks, FixInterpreter, CopyShrc, CopyExtlib, FixInstallNames])
-        
+
     def package(self):
         self._run([MacPackage])
-    
+
     def upload(self):
         self._run([MacUpload])
 
-#class SnowLeopardTarget(MacTarget):
-#    python = "/usr/bin/python2.6"
-#    target_desc = 'snowleopard'
-        
-#class LionTarget(MacTarget):
-#    python = "/usr/bin/python2.7"
-#    target_desc = 'lion'
+# class SnowLeopardTarget(MacTarget):
+#     python = "/usr/bin/python2.6"
+#     target_desc = 'snowleopard'
+
+# class LionTarget(MacTarget):
+#     python = "/usr/bin/python2.7"
+#     target_desc = 'lion'
 
 class LinuxTarget(Target):
     target_desc = 'linux'
@@ -293,7 +296,7 @@ TARGETS = {
     'i686-redhat-linux': LinuxTarget,
     'x86_64-redhat-linux': Linux64Target
 }
-#'i686-apple-darwin10': SnowLeopardTarget, # no longer supported
+# 'i686-apple-darwin10': SnowLeopardTarget, # no longer supported
 
 ##### Builder Modules #####
 
@@ -316,22 +319,33 @@ class Checkout(Builder):
     def run(self):
         log("Checking out: %s -r %s"%(self.args.cvsmodule, self.args.cvstag))
 
-        print("Removing previous checkout: %s"%self.args.cwd_co_distname)
-        retree(self.args.cwd_co_distname)
-	
-        src="/Volumes/VMware Shared Folders/VMShare/src_git/eman2/"
-	dest="/build/co/eman2.daily"
-	
-        #try: os.symlink(src,dest)
+        # print("Removing previous checkout: %s"%self.args.cwd_co_distname)
+        # retree(self.args.cwd_co_distname)
+
+        linux_shared_dir = "/mnt/hgfs/eman/VMShare"
+        mac_shared_dir   = "/Volumes/VMware Shared Folders/VMShare"
+
+        if os.path.exists(mac_shared_dir) :
+           shared_dir = mac_shared_dir
+        else :
+           shared_dir = linux_shared_dir
+
+        src = shared_dir + "/src_git/eman2/"
+        dest = "/build/co/eman2.daily"
+
+        #try: os.symlink(src, "/build/build/eman2.daily")
         #except: pass
-	
+
+        #try: os.symlink(src, dest)
+        #except: pass
+
         #cvs = ['cvs', '-d', self.args.cvsroot, 'co', '-d', self.args.distname]
         #if self.args.cvstag != 'daily':
         #    cvs.extend(['-r', self.args.cvstag])
 
-	print("Copying EMAN2 source from {} to {}".format(src,dest))
-	cmd(['rsync','-ra',src,dest])
-	
+        print("Copying EMAN2 source from {} to {}".format(src,dest))
+        cmd(['rsync','-ra',src,dest])
+
         #cvs.append(self.args.cvsmodule)
         #cmd(cvs, cwd=self.args.cwd_co)
 
@@ -340,25 +354,25 @@ class CMakeBuild(Builder):
     """Run cmake, build, and install."""
     def run(self):
         log("Building")
-        
+
         print("Removing previous install: %s"%self.args.cwd_stage)
         retree(self.args.cwd_stage)
 
         print("Running cmake")
-	print self.args.cwd_co_distname
-	print self.args.cwd_build
+        print self.args.cwd_co_distname
+        print self.args.cwd_build
         cmd(['cmake', self.args.cwd_co_distname], cwd=self.args.cwd_build)
-        
+
         if self.args.clean:
             print("Running make clean")
             cmd(['make', 'clean'], cwd=self.args.cwd_build)
-        
+
         print("Running make")
         cmd(['make'], cwd=self.args.cwd_build)
-        
+
         print("Running make install")
         cmd(['make', 'install'], cwd=self.args.cwd_build)
-        
+
 # Build sub-command.
 class CopyExtlib(Builder):
     def run(self):
@@ -607,7 +621,7 @@ class SourceInstall(Builder):
         log("...copying source: %s"%self.args.cwd_stage_source_path)
         shutil.copytree(self.args.cwd_co_distname, self.args.cwd_rpath_source, symlinks=True)        
 
-	mkdirs(self.args.cwd_stage_source_build)
+        mkdirs(self.args.cwd_stage_source_build)
 
 class SourcePackage(Builder):
     def run(self):
@@ -642,7 +656,7 @@ TARGETS = {
     'x86_64-redhat-linux': Linux64Target,
     'source': SourceTarget
 }
-# 'i686-apple-darwin10': SnowLeopardTarget,
+# 'i686-apple-darwin10': SnowLeopardTarget, # no longer supported
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

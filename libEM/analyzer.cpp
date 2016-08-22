@@ -486,7 +486,7 @@ vector<EMData*> PCAlarge::analyze()
         string scratchfile = (string) params["tmpfile"];
         char command[100];
 
-	printf("start analyzing..., ncov = %d\n", ncov);
+// 	printf("start analyzing..., ncov = %d\n", ncov);
 
         float resnrm = 0.0;
 

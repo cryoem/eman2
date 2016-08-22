@@ -63,9 +63,9 @@ def main():
 	parser.add_pos_argument(name="refinexx",help="Name of a completed refine_xx folder.", default="", guitype='filebox', browser="EMRefine2dTable(withmodal=True,multiselect=False)",  filecheck=False, row=0, col=0,rowspan=1, colspan=2, mode='evalptcl')
 	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement using the refine_xx folder name. This may be used to identify bad particles.",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='evalptcl[True]')
 	parser.add_argument("--includeprojs", default=False, action="store_true", help="If specified with --evalptclqual, projections will be written to disk for easy comparison.",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='evalptcl[True]')
-	#parser.add_argument("--ptcltrace", default=False, action="store_true", help="This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison.")
 	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
 	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
+	parser.add_argument("--mask",type=str,help="Mask to be used to focus --evalptclqual. May be useful for separating heterogeneous data.", default=None)
 	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
 	parser.add_argument("--timing", default=False, action="store_true", help="report on how long each step of the refinement process took during the first iteration of each run")
 	parser.add_argument("--resolution", default=False, action="store_true", help="generates a resolution and convergence plot for a single refinement run.")
@@ -138,7 +138,8 @@ def main():
 		threed=EMData("{}/threed_{:02d}.hdf".format(args[0],options.iter),0)
 
 		# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching
-		ptclmask=EMData(args[0]+"/mask.hdf",0)
+		if options.mask: ptclmask=EMData(options.mask,0)
+		else: ptclmask=EMData(args[0]+"/mask.hdf",0)
 		nx=ptclmask["nx"]
 		apix=threed["apix_x"]
 
@@ -298,7 +299,7 @@ def main():
 		apix=threed["apix_x"]
 
 		rings=[int(2*nx*apix/res) for res in (100,30,15,8,4)]
-		print rings
+		print("Frequency Bands: {lowest},{low},{mid},{high},{highest}".format(lowest=rings[0],low=rings[1],mid=rings[2],high=rings[3],highest=rings[4]))
 
 		# We expand the mask a bit, since we want to consider problems with "touching" particles
 		ptclmask.process_inplace("threshold.binary",{"value":0.2})
@@ -309,16 +310,23 @@ def main():
 #		except: pass
 
 #		fout=open("ptclsnr.txt".format(i),"w")
-		ptclfsc = "ptclfsc_{}.txt".format(args[0][-2:])
+		ptclfsc = "ptclfsc_{}.txt".format("_".join(args[0].split("_")[1:]))
 		fout=open(ptclfsc,"w")
 		# generate a projection for each particle so we can compare
 
 		pj = 0
-		pf = "ptclfsc_{}_projections.hdf".format(args[0][-2:])
+		pf = "ptclfsc_{}_projections.hdf".format("_".join(args[0].split("_")[1:]))
+
+		tfs = []
 
 		tlast=time()
+
 		for i in xrange(nref):
-			if options.verbose>1 : print "--- Class %d/%d"%(i,nref-1)
+			if options.verbose < 6:
+				sys.stdout.write("\rClass %d/%d"%(i,nref-1))
+				sys.stdout.flush()
+			else: print("--- Class %d/%d"%(i,nref-1))
+
 			# update progress every 10s
 			if time()-tlast>10 :
 				E2progress(logid,i/float(nref))
@@ -337,7 +345,7 @@ def main():
 					if classmx[eo][0,j]!=i :
 #						if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
 						continue		# only proceed if the particle is in this class
-					if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
+					if options.verbose >= 6: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
 
 					# the particle itself
 					try: ptcl=EMData(cptcl[eo],j)
@@ -349,6 +357,9 @@ def main():
 
 					# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
+
+					tfs.append("{}".format(str(ptclxf.get_params("eman"))))
+
 					projc=proj.process("xform",{"transform":ptclxf})	# we transform the projection, not the particle (as in the original classification)
 
 					if options.includeprojs: projc.write_image(pf,pj)
@@ -380,8 +391,6 @@ def main():
 
 					pj+=1
 
-		# This is likely not the best way to do this, but it seemed easier to just read
-		# the output file rather than integrate this code into the above calculations.
 		fout.close()
 
 		bname = base_name(ptclfsc)
@@ -417,9 +426,14 @@ def main():
 
 		results=[[[] for i in range(ncol)] for j in range(nseg)]
 		resultc=[[] for j in range(nseg)]
+		resultt=[[] for t in range(nseg)]
 
 		d1 = []
 		d2 = []
+
+		try: os.unlink(tfn)
+		except: pass
+
 		for r in range(nrow):
 			s=imdata[r]["class_id"]
 			if s == 0: d1.append(d[r])
@@ -427,6 +441,8 @@ def main():
 			for c in xrange(ncol):
 				results[s][c].append(imdata[c][r])
 			resultc[s].append(cmts[r])
+			resultt[s].append(tfs[r])
+
 		d1 = np.asarray(d1)
 		d2 = np.asarray(d2)
 
@@ -447,13 +463,14 @@ def main():
 			try: os.unlink(outf) # try to remove file if it already exists
 			except: pass
 			out=LSXFile(outf)
-			for cmt in resultc[s]:
+			for r,cmt in enumerate(resultc[s]):
 				imn,imf=cmt.split(";")[:2]
 				imn=int(imn)
 				if not lsx.has_key(imf):
 					lsx[imf]=LSXFile(imf,True)	# open the LSX file for reading
 				val=lsx[imf][imn]
-				out[r]=val
+				#val[2] = str(resultt[s][r]) # comment is a string dictionary, required to make3d_rawptcls.
+				out[r]=[val[0],val[1],str(resultt[s][r])]
 
 		# OLD 'MANUAL' INFO
 		#print("Evaluation complete. Each column in the resulting text file includes information at a different resolution range. Columns 0 and 1 are almost always useful,
@@ -622,143 +639,6 @@ def main():
 				print "\t%s\t%1.2f hours\t%s"%(difftime(ttime),ttime/3600.0,hist[n][0])
 
 			n+=1
-
-	#if options.ptcltrace:
-		#print "Particle trace mode"
-
-		#dirs = sorted(os.listdir(options.refine))
-		#for f in dirs:
-			#path = options.refine+"/"+f
-			#if "classmx" in f: cmx.append(path)
-			#elif "projections" in f: proj.append(path)
-			#elif "classes" in f: classes.append(path)
-
-		#if len(cmx) < 2:
-			#print("ERROR: The specified refinement directory must contain at least two classmx files.")
-			#sys.exit(1)
-
-		#if len(cmx) != len(proj):
-			#print("ERROR: The specified refinement directory must contain one projections file for each classmx file")
-			#sys.exit(1)
-
-		#cls = [] # read all classification matrix data into a list of lists
-		#for i in range(0,len(cmx),2):
-			#eps = EMData.read_images(cmx[i])
-			#ops = EMData.read_images(cmx[i+1])
-			#eops = [ptcl for pair in map(None,eps,ops) for ptcl in pair if ptcl is not None]
-			#cls.append(eops)
-		#nptcl = cls[0][0]['ny'] # particles are along the y axis
-
-		## Create a list of lists of Transforms representing the orientations of the reference projections
-		## for each classmx file and try to get projection orientation information for each class
-
-		#if options.verbose: print("Parsing assigned projection orientations")
-
-		#clsort=[]
-		#for x,p,c in zip(cmx,proj,classes):
-			#ncls=EMUtil.get_image_count(p)
-			#orts = []
-			#for i in xrange(ncls):
-				#if options.verbose:
-					#sys.stdout.write('\r{}\t{}\t{}/{}\t'.format(x,p,i+1,ncls))
-				#orts.append( EMData(p,i,True)["xform.projection"] )
-			#clsort.append(orts)
-			#if options.verbose: print("")
-
-		## Get a list of Transform objects to move to each other asymmetric unit in the symmetry group
-		#syms=parsesym( str(options.sym) ).get_syms()
-
-		#if options.verbose: print("Tracing particles...")
-
-		#with open(options.output,"w") as outf:
-
-			#for p in xrange(nptcl):
-				#if options.verbose: sys.stdout.write('\r{0:.0f} / {1:.0f}\t'.format(p+1,nptcl))
-				#isodd = p%2
-
-				#dat = []
-
-				#for i in xrange(1,len(cls)):
-					#ort1=clsort[i-1][int(cls[i-1][0][0,p])] # orientation of particle in first classmx
-					#ort2=clsort[i][int(cls[i][0][0,p])]		# orientation of particle in second classmx
-
-					#diffs=[] # make a list of the rotation angle to each other symmetry-related point
-					#for t in syms:
-						#ort2p=ort2*t
-						#diffs.append((ort1*ort2p.inverse()).get_rotation("spin")["omega"])
-
-					#diff=min(diffs) # The angular error for the best-agreeing orientation
-
-					#cls1 = int(cls[i-1][0][0,p])
-					#e1 = ort1.get_rotation("eman")
-					#az1 = e1["az"]
-					#alt1 = e1["alt"]
-					#phi1 = e1["phi"]
-
-					#cls2 = int(cls[i][0][0,p])
-					#e2 = ort2.get_rotation("eman")
-					#az2 = e2["az"]
-					#alt2 = e2["alt"]
-					#phi2 = e2["phi"]
-
-					#clsdiff = abs(cls2-cls1)
-					#azdiff = abs(az2-az1)
-					#altdiff = abs(alt2-alt1)
-					#phidiff = abs(phi2-phi1)
-
-					#d = [az1,alt1,phi1,cls1,az2,alt2,phi2,cls2,diff,clsdiff,azdiff,altdiff,phidiff]
-					#dat.append("\t".join([str(i) for i in d]))
-
-					#if i == 0:
-						#try:
-							#if isodd: classes1 = cmx[1].replace("classmx","classes")
-							#else: classes1 = cmx[0].replace("classmx","classes")
-							#hdr1 = EMData(classes1,cls1,True)
-							#idx1 = hdr1["projection_image_idx"]
-							#proj1 = hdr1["projection_image"]
-						#except:
-							#pass
-
-				#data = "\t".join(dat)
-
-				#try:
-					#if isodd: classes2 = cmx[-1].replace("classmx","classes")
-					#else: classes2 = cmx[-2].replace("classmx","classes")
-					#hdr2 = EMData(classes2,cls2,True)
-					#idx2 = hdr2["projection_image_idx"]
-					#proj2 = hdr2["projection_image"]
-					#c = [cls1,classes1,cls2,classes2,idx1,proj1,idx2,proj2,p,hdr2["class_ptcl_src"]]
-					#cmt = ";".join([str(i) for i in c])
-				#except:
-					#cmt = "no particles in class corresponding to this projection"
-
-				#line = data + "\t# " + cmt + "\n"
-				#outf.write(line)
-
-		#if ".txt" in options.output: kf = options.output.replace(".txt",".key")
-		#else: kf = options.output + ".key"
-
-		#with open(kf,"w") as keyfile:
-			#ctr = 0
-			#for i in range(1,len(cls)+1):
-				#k = []
-				#k.append("{}:\taz (iter {})".format(ctr,i-1))
-				#k.append("{}:\talt (iter {})".format(ctr+1,i-1))
-				#k.append("{}:\tphi (iter {})".format(ctr+2,i-1))
-				#k.append("{}:\tclass num (iter {})".format(ctr+3,i-1))
-				#k.append("{}\taz (iter {})".format(ctr+4,i))
-				#k.append("{}:\talt (iter {})".format(ctr+5,i))
-				#k.append("{}:\tphi (iter {})".format(ctr+6,i))
-				#k.append("{}:\tclass num (iter {})".format(ctr+7,i))
-				#k.append("{}:\tangular error (iters {} and {})".format(ctr+8,i-1,i))
-				#k.append("{}:\tclass num diff (iters {} and {})".format(ctr+9,i-1,i))
-				#k.append("{}:\taz diff (iters {} and {})".format(ctr+10,i-1,i))
-				#k.append("{}:\talt diff (iters {} and {})".format(ctr+11,i-1,i))
-				#k.append("{}:\tphi diff (iters {} and {})".format(ctr+12,i-1,i))
-				#keyfile.write("\n".join([x for x in k])+"\n")
-				#ctr+=len(k)
-
-		#print("Particle trace results stored in {}.\nThe file {} describes the contents of each column.".format(options.output,kf))
 
 
 if __name__ == "__main__":
