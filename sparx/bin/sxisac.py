@@ -696,10 +696,15 @@ def main(args):
 		if(myid == main_node):
 			accounted_images = read_text_file(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation),"generation_%d_accounted.txt"%(isac_generation)))
 			number_of_accounted_images = len(accounted_images)
+			un_accounted_images = read_text_file(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation),"generation_%d_unaccounted.txt"%(isac_generation)))
+			number_of_un_accounted_images = len(un_accounted_images)
 		else:
 			number_of_accounted_images = 0
+			number_of_un_accounted_images = 0
 
 		number_of_accounted_images = int(mpi_bcast(number_of_accounted_images, 1, MPI_INT, 0, MPI_COMM_WORLD)[0])
+		number_of_un_accounted_images = int(mpi_bcast(number_of_un_accounted_images, 1, MPI_INT, 0, MPI_COMM_WORLD)[0])
+		
 		if number_of_accounted_images == 0:
 			if(myid == main_node):
 				print "This generation (%d) there are no accounted images! Finishing."%isac_generation
@@ -720,6 +725,12 @@ def main(args):
 			cpy(["generation_%04d/class_averages_generation_%d.hdf"%(i,i) for i in xrange(1, isac_generation + 1)], "class_averages.hdf")
 			
 			break
+
+		if number_of_un_accounted_images == 0:
+			if(myid == main_node):
+				print "This generation (%d) there are no un accounted images! Finishing."%isac_generation
+			break
+
 
 	program_state_stack(locals(), getframeinfo(currentframe()), last_call="__LastCall")
 
