@@ -5157,9 +5157,6 @@ def rearrange_ranks_of_processors(mode):
 def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters_from_groups_vs_everything_else_comm):
 	"""
 	It is assumed that this code or equivalent is ran before calling this function
-def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters_from_groups_vs_everything_else_comm):
-	"""
-	It is assumed that this code or equivalent is ran before calling this function
 
 	mpi_init(0, [])
 	
