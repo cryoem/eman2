@@ -5146,12 +5146,6 @@ def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_
 
 	return color, number_of_groups
 
-
-	mpi_init(0, [])
-	
-	mpi_comm = MPI_COMM_WORLD
-	main_node = 0
-	
 def wrap_mpi_split_shared_memory(mpi_comm):
 	import socket
 	import os
