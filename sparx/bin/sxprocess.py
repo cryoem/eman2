@@ -1104,9 +1104,12 @@ def main():
 					frc_RH = fsc_without_mask
 				from utilities import write_text_file
 				if nargs >1:
-					newfsc =[]
+					newfsc =[[],[],[]]
 					for ifreq in xrange(len(frc_RH[1])):
-						newfsc.append("%10.6f"%frc_RH[1][ifreq])
+						newfsc[0].append("%5d"%ifreq)
+						if ifreq !=0: newfsc[1].append("%10.6f"%(options.pixel_size/frc_RH[0][ifreq]))
+						else:   newfsc[1].append("%10.6f"%(1000.0))
+						newfsc[2].append("%10.6f"%frc_RH[1][ifreq])
 					write_text_file(newfsc, "fsc.txt")
 					for ifreq in xrange(len(frc_RH[1])):
 						if frc_RH[1][ifreq] < 0.143:
