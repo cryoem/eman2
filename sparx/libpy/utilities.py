@@ -5307,9 +5307,8 @@ def combinations_of_n_taken_by_k(n, k):
 
 def cmdexecute(cmd, printing_on_success = True):
 	from   time import localtime, strftime
-	import os #subprocess
-	outcome = os.system(cmd)
-	#outcome = subprocess.call(cmd, shell=True)
+	import subprocess
+	outcome = subprocess.call(cmd, shell=True)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(outcome != 0):
 		print  line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome
