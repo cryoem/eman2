@@ -152,7 +152,7 @@ directory		output directory name: into which the results will be written (if it 
 	options.CTF = False
 	options.snr = 1.0
 	options.an  = -1.0
-
+	from multi_shc import multi_shc
 	out_params, out_vol, out_peaks = multi_shc(all_projs, subset, runs_count, options, mpi_comm=MPI_COMM_WORLD, log=log, ref_vol=ref_vol)
 
 	mpi_finalize()
