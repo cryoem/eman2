@@ -5194,7 +5194,7 @@ def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_
 
 	for i in range(number_of_groups):
 		if my_rank in group_infos[2*i+1]:
-			color = group_infos[2*i]
+			color = i#group_infos[2*i]
 			break
 
 	return color, number_of_groups
