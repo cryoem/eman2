@@ -5194,7 +5194,7 @@ def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_
 
 	for i in range(number_of_groups):
 		if my_rank in group_infos[2*i+1]:
-			color = group_infos[2*i]
+			color = i#group_infos[2*i]
 			break
 
 	return color, number_of_groups
@@ -5307,9 +5307,8 @@ def combinations_of_n_taken_by_k(n, k):
 
 def cmdexecute(cmd, printing_on_success = True):
 	from   time import localtime, strftime
-	import os #subprocess
-	outcome = os.system(cmd)
-	#outcome = subprocess.call(cmd, shell=True)
+	import subprocess
+	outcome = subprocess.call(cmd, shell=True)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(outcome != 0):
 		print  line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome

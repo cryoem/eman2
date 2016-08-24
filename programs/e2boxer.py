@@ -327,6 +327,9 @@ class boxerByRef(QtCore.QObject):
 	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
 		# If parameters are provided via params (as if used from command-line) we use those values,
 		# if that fails, we check the GUI widgets, which were presumably created in this case
+		if len(goodrefs)<1 :
+			print 'Box reference images ("Good Refs") required for autopicking')"
+			return []
 		try: threshold=params["threshold"]
 		except:
 			try: threshold=boxerByRef.threshold.getValue()
@@ -491,6 +494,9 @@ class boxerLocal(QtCore.QObject):
 	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
 		# If parameters are provided via params (as if used from command-line) we use those values,
 		# if that fails, we check the GUI widgets, which were presumably created in this case
+		if len(goodrefs)<1 :
+			print 'Box reference images ("Good Refs") required for autopicking')"
+			return []
 		try: threshold=params["threshold"]
 		except:
 			try: threshold=boxerLocal.threshold.getValue()
