@@ -97,7 +97,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
 14. Postprocess 3-D or 2-D images: For 3-D volumes, (1) calculate FSC with provided mask, (2) MTF correction, (3) weight summed volume with FSC, (4) estimate B-factor from given resolution ranges of summed two volumes, then (5) apply negative B-factor to the weighted volume. For 2-D images, calculate B-factor and apply negative B-factor to 2-D images.
 
-''' sxprocess.py  --postprocess  run1_half1_class001_unfil.mrc  run1_half2_class001_unfil.mrc  --fsc_weighted  --pixel_size=1.12 '''
+''' sxprocess.py  --postprocess  run1_half1_class001_unfil.mrc  run1_half2_class001_unfil.mrc  --fsc_adj --do_adaptive_mask --pixel_size=1.12 '''
 
 15. Window stack file -reduce size of images without changing the pixel size.
 
@@ -148,18 +148,21 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
     postprocess:: Adjust power spectrum based on B-factor: B-factor is estimated from unfiltered odd-even 3-D volumes, one volume, or ISAC 2-D averages. (default False)
     mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
-    fsc_weighted:: FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (not applicable to 2D image). (default False)
-    B_enhance:: B-factor adjustment: Applies B-factor adjustment to the input volume (default False)
-    adhoc_bfactor:: User provided B-factor: Use user provided B-factor for map sharpening instead of estimating the value. (default 0.0)
-    low_pass_filter:: Secondary low-pass filter: Applies a low-pass filter to merged volume after B-factor adjustment. (default False)
-    ff:: Low-pass filter frequency [A or 1/Pixel]: (default 0.0)
+    fsc_adj:: FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (not applicable to 2D image). (default False)
+    B_enhance:: =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC143; =128., program use the given value 128. to enhance map: (default 0.0)
+    low_pass_filter:: low_pass filter frequency: =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2: (default 0.0)
     aa:: Low-pass filter fall-off: (default 0.1)
-    mask:: Input mask: (default none)
-    output:: Output file: (default postprocessed.hdf)
-    pixel_size:: Pixel size [A]: Pixel size in A. (default 1.0)
+    mask:: User provided mask: (default none)
+    do_adaptive_mask:: Program creates mask adaptively with given threshold: (default False)
+    mask_threshold:: Threshold for creating adaptive surface mask: (default 0.02)
+    cosine_edge:: the width of cosine transition area:: (default 6.)
+    dilation :: pixels of surface dilation or erosion:: (default 3.) 
+    output:: Output file: (default vol_postrefine_masked.hdf)
+    pixel_size:: Pixel size [A]: Pixel size in A. (default 0.0)
     B_start:: Lower limit for B-factor estimation [A]: (default 10.0)
-    FSC_cutoff:: FSC cut-off value: (default 0.143)
-
+    B_stop::  Hight limit for B-factor estimation [A]: (default  0.0)
+   	
+   	
     window_stack:: Window stack images using a smaller window size: (default False)
     box:: new window size: (default 0)
 

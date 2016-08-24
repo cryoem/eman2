@@ -3078,24 +3078,26 @@ def send_string_to_all(str_to_send, source_node = 0):
 	return "".join(str_to_send)
 
 
-def bcast_number_to_all(number_to_send, source_node = 0):
+def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
 	"""
 		number_to_send has to be pre-defined in each node
 	"""
 	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
 	import types
+	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
 	if    type(number_to_send) is types.IntType:
-		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, MPI_COMM_WORLD)
+		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, mpi_comm)
 		return int(TMP[0])
 	elif  type(number_to_send) is types.FloatType:
-		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, MPI_COMM_WORLD)
+		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, mpi_comm)
 		return float(TMP[0])
 	else:
 		print  " ERROR in bcast_number_to_all"
 
-def bcast_list_to_all(list_to_send, myid, source_node = 0):
+def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
 	from mpi import mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
 	import   types
+	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
 	if(myid == source_node):
 		n = len(list_to_send)
 		# we will also assume all elements on the list are of the same type
@@ -3105,16 +3107,16 @@ def bcast_list_to_all(list_to_send, myid, source_node = 0):
 	else:
 		n = 0
 		tp = 0
-	n = bcast_number_to_all(n, source_node = source_node)
-	tp = bcast_number_to_all(tp, source_node = source_node)
+	n = bcast_number_to_all(n, source_node = source_node, mpi_comm = mpi_comm)
+	tp = bcast_number_to_all(tp, source_node = source_node, mpi_comm = mpi_comm)
 	if( tp == 2 ): 	ERROR("Only list of the same type numbers can be brodcasted","bcast_list_to_all",1, myid)
 	if(myid != source_node): list_to_send = [0]*n
 
 	if( tp == 0 ):
-		list_to_send = mpi_bcast(list_to_send, n, MPI_INT, source_node, MPI_COMM_WORLD)
+		list_to_send = mpi_bcast(list_to_send, n, MPI_INT, source_node, mpi_comm)
 		return [int(n) for n in list_to_send]
 	else:
-		list_to_send = mpi_bcast(list_to_send, n, MPI_FLOAT, source_node, MPI_COMM_WORLD)
+		list_to_send = mpi_bcast(list_to_send, n, MPI_FLOAT, source_node, mpi_comm)
 		return [float(n) for n in list_to_send]
 
 
@@ -5099,43 +5101,150 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 
 	return out_array
 
+# def rearrange_ranks_of_processors_to_fit_round_robin_assignment():
+def rearrange_ranks_of_processors(mode):
+	
+	import socket
+	import mpi
+	
+	mpi.mpi_init(0, [])
+	
+	original_mpi_comm_world = mpi.MPI_COMM_WORLD
+	
+	hostname = socket.gethostname()
+	my_rank = mpi.mpi_comm_rank(original_mpi_comm_world)
+	mpi_size = mpi.mpi_comm_size(original_mpi_comm_world)
+	
+
+	host_names = [hostname]
+	host_names = wrap_mpi_gatherv(host_names, 0, original_mpi_comm_world)
+	host_names = wrap_mpi_bcast(host_names, 0, original_mpi_comm_world)
+	
+	hostname_with_rank = hostname + "  %04d"%my_rank
+	host_names_with_rank = [hostname_with_rank]
+	host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, original_mpi_comm_world)
+	host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, original_mpi_comm_world)
+
+	procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
+	local_rank = procs_belonging_to_one_node.index(my_rank)
+	
+	local_size = host_names.count(hostname)
+	
+	no_of_processes_per_group = local_size
+	no_of_groups = mpi_size/local_size
+	
+	if my_rank == 0:
+		host_names = sorted(set(host_names))
+	host_names = wrap_mpi_bcast(host_names, 0, original_mpi_comm_world)
+	host_dict = {host_names[i]: i for i in range(len(host_names))}
+	
+	color = host_dict[hostname]
+	
+	error_status = None
+	if mode == "to fit round-robin assignment":
+		new_rank = local_rank * no_of_groups + color
+	elif mode == "to fit by-node assignment":
+		new_rank = local_rank + no_of_groups * color
+	else:
+		error_status = ("Invalid mode for function 'rearrange_ranks_of_processors': %s"%mode, getframeinfo(currentframe()))
+	if_error_then_all_processes_exit_program(error_status)
+	
+	# mpi.MPI_COMM_WORLD = mpi.mpi_comm_split(original_mpi_comm_world, color=0, key = new_rank)
+	mpi.MPI_COMM_WORLD = mpi.mpi_comm_split(original_mpi_comm_world, 0, new_rank)
+	
+	return original_mpi_comm_world
+
+def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters_from_groups_vs_everything_else_comm):
+	"""
+	It is assumed that this code or equivalent is ran before calling this function
+
+	mpi_init(0, [])
+	
+	mpi_comm = MPI_COMM_WORLD
+	main_node = 0
+	
+	my_rank = mpi_comm_rank(mpi_comm)
+	mpi_size = mpi_comm_size(mpi_comm)
+	
+	shared_comm = mpi_comm_split_type(mpi_comm, MPI_COMM_TYPE_SHARED,  0, MPI_INFO_NULL)
+	
+	sh_my_rank = mpi_comm_rank(shared_comm)
+	key = sh_my_rank
+	sh_mpi_size = mpi_comm_size(shared_comm)
+	
+	masters_from_groups_vs_everything_else_comm = mpi_comm_split(mpi_comm, sh_my_rank == main_node, my_rank)
+	"""
+
+	from mpi import mpi_barrier
+
+	sh_my_ranks = [my_rank]
+	sh_my_ranks = wrap_mpi_gatherv(sh_my_ranks, main_node, shared_comm)
+
+	group_infos = None
+	if sh_my_rank == main_node:
+		# executed only by masters from groups
+		group_infos = [my_rank, sh_my_ranks]
+		group_infos = wrap_mpi_gatherv(group_infos, main_node, masters_from_groups_vs_everything_else_comm)
+
+	mpi_barrier(mpi_comm)
+
+	group_infos = wrap_mpi_bcast(group_infos, main_node, mpi_comm)
+
+	number_of_groups = len(group_infos)/2
+
+	for i in range(number_of_groups):
+		if my_rank in group_infos[2*i+1]:
+			color = group_infos[2*i]
+			break
+
+	return color, number_of_groups
+
+
 def wrap_mpi_split_shared_memory(mpi_comm):
 	import socket
 	import os
 	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split_shared, mpi_comm_split
-	
+
 	hostname = socket.gethostname()
 
 	my_rank = mpi_comm_rank(mpi_comm)
 	mpi_size = mpi_comm_size(mpi_comm)
-	
+
 	# local_rank = int(os.environ["OMPI_COMM_WORLD_LOCAL_RANK"])
 	# local_size = int(os.environ["OMPI_COMM_WORLD_LOCAL_SIZE"])
-	
-	
+
+
 	host_names = [hostname]
 	host_names = wrap_mpi_gatherv(host_names, 0, mpi_comm)
 	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
-	
+
+	hostname_with_rank = hostname + "  %04d"%my_rank
+	host_names_with_rank = [hostname_with_rank]
+	host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, mpi_comm)
+	host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, mpi_comm)
+
+	procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
+	local_rank = procs_belonging_to_one_node.index(my_rank)
+
 	local_size = host_names.count(hostname)
-	local_rank = my_rank % local_size 
-	
+	# local_rank = my_rank % local_size 
+
 	no_of_processes_per_group = local_size
 	no_of_groups = mpi_size/local_size
 
 	if my_rank == 0:
-		host_names = sorted(set(host_names))
+			host_names = sorted(set(host_names))
 	host_names = wrap_mpi_bcast(host_names, 0, mpi_comm)
 	host_dict = {host_names[i]: i for i in range(len(host_names))}
-	
-	color = host_dict[hostname]
+
+	# color = host_dict[hostname]
+	color = my_rank / no_of_processes_per_group
 	key = local_rank
 
 	# shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
 	shared_comm = mpi_comm_split(mpi_comm, color, key)
-	
-	return shared_comm, color, key, no_of_processes_per_group, no_of_groups
-	
+
+	return shared_comm, color, key, no_of_processes_per_group, no_of_groups	
 
 
 def wrap_mpi_split(comm, no_of_groups):
@@ -5251,7 +5360,8 @@ def if_error_then_all_processes_exit_program(error_status):
 	import sys, os
 	from utilities import print_msg
 
-	if "OMPI_COMM_WORLD_SIZE" not in os.environ:
+	# if "OMPI_COMM_WORLD_SIZE" not in os.environ:
+	if len({"OMPI_COMM_WORLD_SIZE", "PMI_RANK", "PMI_ID", "SLURM_PROCID", "LAMRANK", "MPI_RANKID", "MP_CHILD", "MP_CHILD", "MP_CHILD"}.intersection(set(os.environ))) == 0:
 		def mpi_comm_rank(n): return 0
 		def mpi_bcast(*largs):
 			return [largs[0]]

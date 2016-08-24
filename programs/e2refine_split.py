@@ -58,6 +58,7 @@ def main():
 	parser.add_argument("--path", default=None, type=str,help="The name of an existing refine_xx folder, where e2refine_easy ran to completion",guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--usebasis", default=0,type=int,help="Select which Eigenimage to use for separation. With novarimax, n=0 is highest energy.", guitype='intbox', row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--nbasis", default=-1,type=int,help="Number of basis vectors to compute. Must be at least usebasis+1. Default 6 or usebasis+1.", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--minptcl", default=20,type=int,help="Minimum number of particles in a class. Classes with fewer particles will be excluded.", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--novarimax", action="store_true",default=False, help="Disable varimax rotation among computed basis vectors.",guitype='boolbox', row=7, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--mask", default=None, help="Optional 3D mask to focus the classification", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=6, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel", default="thread:2", help="Standard parallelism option. Default=thread:2", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
@@ -91,6 +92,8 @@ def main():
 		except: ptcls=olddb["input"]
 		
 		sym=olddb["sym"]
+		if olddb["breaksym"]:
+			sym="c1"
 		if options.verbose : print "Found iteration {} in {}, using {}".format(last_iter,options.path," & ".join(ptcls))
 	except:
 		traceback.print_exc()
@@ -144,7 +147,7 @@ def main():
 	gc=0
 	ns=[classmx[eo][0]["ny"] for eo in (0,1)]
 	for c,cl in enumerate(classlists):
-		if len(cl)<20 : 							# we require at least 20 particles in a class to make the attempt
+		if len(cl)<options.minptcl : 							# we require at least 20 particles in a class to make the attempt
 #			zero.write_image(classout[0],c)
 #			zero.write_image(classout[1],c)
 			continue
@@ -159,7 +162,7 @@ def main():
 	# execute task list
 	taskids=etc.send_tasks(tasks)
 	alltaskids=taskids[:]
-
+	print "Doing split on {} classes...".format(len(taskids))
 	classes=[]
 	while len(taskids)>0 :
 		curstat=etc.check_task(taskids)
@@ -252,7 +255,7 @@ def main():
 #		n1b=b3["reconstruct_norm"]			# normalization for same
 		
 		if options.verbose>1 : print i,q0a,q1a,q0b,q1b,q0a+q1b,q1a+q0b
-		if options.verbose>2 : print "\t\t",n0a,n1a,n0b,n1b
+		#if options.verbose>2 : print "\t\t",n0a,n1a,n0b,n1b
 			
 		if q0a+q1b>q1a+q0b :		# if true, a -> recon0 and b -> recon1 
 			c.append(0)				# we put a 0 at the end of the classes element if we use a->0,b->1 ordering, 1 if swapped
