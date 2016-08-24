@@ -22915,6 +22915,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 	return ccc;
 }
 
+
 void Util::version()
 {
  cout <<"  VERSION  08/21/2016  10:29 AM "<<endl;
