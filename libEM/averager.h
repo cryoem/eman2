@@ -106,7 +106,7 @@ namespace EMAN
 		 * averaged in this function.
 		 * @param image The image to be averaged.
 		 */
-		virtual void add_image(EMData * image) ;
+		virtual void add_image(EMData * image);
 
 		/** To add multiple images to the Averager. All the
 		 * newly-added images are averaged in this function.

@@ -70,6 +70,7 @@ def main():
 	parser.add_argument("--res", "-R", type=float, help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
 	parser.add_argument("--box", "-B", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
 	parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	parser.add_argument("--center", action="store_true", help="Move the atomic center to the center of the box", default=False)
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'")
 	parser.add_argument("--quiet",action="store_true",default=False,help="Verbose is the default")
 	parser.add_argument("--model", type=int,default=None, help="Extract only a single numbered model from a multi-model PDB")
@@ -190,6 +191,8 @@ def main():
 		 
 		pa=PointArray()
 		pa.read_from_pdb(args[0])
+		if options.center:
+			pa.center_to_zero()
 		out=pa.pdb2mrc_by_summation(boxsize,options.apix,options.res,addpdbbfactor)
 		out.write_image(args[1])
 		
@@ -197,13 +200,13 @@ def main():
 
 	else:
 		if options.addpdbbfactor : print "WARNING: B-factors not supported in quick mode"
-		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.model,options.quiet)
+		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.model,options.center,options.quiet)
 		outmap.write_image(args[1])
 
 	E2end(logger)
 						
 # this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)
-def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=None,quiet=False):
+def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=None,center=False,quiet=False):
 	'''
 	file_name is the name of a pdb file
 	apix is the angstrom per pixel
@@ -344,7 +347,8 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 			elec=atomdefs[a[0].translate(None,"0123456789").upper()][0]
 # This was producing different results than the "quick" mode, and did not match the statement printed above!!!
 #			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
-			outmap.insert_scaled_sum(gaus,(a[1]/apix+outbox[0]/2,a[2]/apix+outbox[1]/2,a[3]/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
+			if center: outmap.insert_scaled_sum(gaus,((a[1]-aavg[0])/apix+outbox[0]/2,(a[2]-aavg[1])/apix+outbox[1]/2,(a[3]-aavg[2])/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
+			else: outmap.insert_scaled_sum(gaus,(a[1]/apix+outbox[0]/2,a[2]/apix+outbox[1]/2,a[3]/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
 		except: print "Skipping %d '%s'"%(i,a[0])		
 	if not quiet: print '\r   %d\nConversion complete'%len(atoms)		
 	outmap.set_attr("apix_x",apix)
