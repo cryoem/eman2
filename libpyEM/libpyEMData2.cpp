@@ -405,7 +405,7 @@ EMData *EMData_project_wrapper(EMData &ths,const std::string& name, const EMAN::
 
 void EMData_process_inplace_wrapper1(EMData &ths,const string & processorname) {
 	PyThreadState *_save = PyEval_SaveThread();
-
+	
 	try {
 		ths.process_inplace(processorname);
 	}

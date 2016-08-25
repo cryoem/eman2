@@ -40,6 +40,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			print "Error, cannot find any spt_XX folders"
 			sys.exit(2)
 		options.path = "spt_{:02d}".format(max(fls))
+		if options.verbose : print "Working in : ",options.path
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
@@ -47,6 +48,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			print "Cannot find a {}/particle_parms* file".format(options.path)
 			sys.exit(2)
 		options.iter=max(fls)
+		if options.verbose : print "Using iteration ",options.iter
 
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 
