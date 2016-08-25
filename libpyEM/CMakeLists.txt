@@ -34,7 +34,6 @@ MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 	ENDIF(WIN32)
 ENDMACRO(ADD_PYSTE_LIB_WITH_SRC)
 
-
 MACRO(ADD_PYSTE_LIB libname)
 	ADD_PYSTE_LIB_WITH_SRC(${libname} "")
 ENDMACRO(ADD_PYSTE_LIB)
@@ -58,7 +57,16 @@ ADD_PYSTE_LIB_WITH_SRC(pyTypeConverter2 typeconverter.cpp)
 ADD_PYSTE_LIB(pyPolarData2)
 ADD_PYSTE_LIB(pyAnalyzer2)
 ADD_PYSTE_LIB(pyPDBReader2)
-ADD_PYSTE_LIB(pyTomoSeg2)
+
+IF(WIN32)
+	SET(ADDTOMO FALSE)
+ELSE(WIN32)
+	SET(ADDTOMO TRUE)
+ENDIF(WIN32)
+
+IF(ADDTOMO)
+	ADD_PYSTE_LIB(pyTomoSeg2)
+ENDIF(ADDTOMO)
 
 IF(ENABLE_OPENGL)
     ADD_PYSTE_LIB(pyGLUtils2) 
@@ -80,10 +88,32 @@ IF(ENABLE_OPENGL)
 	ENDIF(ENABLE_FTGL)
 ENDIF(ENABLE_OPENGL)
 
+SET(DBG $ENV{DEBUG})
+
 FILE(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
-INSTALL(FILES ${empythonlibs} DESTINATION lib)
+
+# INSTALL(FILES ${empythonlibs} DESTINATION lib)
+
+FOREACH(f ${empythonlibs})
+	INSTALL(FILES ${f} DESTINATION lib)
+	IF(DBG MATCHES "y")
+		MESSAGE("Copied file ${f} to lib.")
+	ENDIF(DBG MATCHES "y")
+ENDFOREACH(f)
+
+# MESSAGE("empy list: ${empythonlibs}")
 
 FILE(GLOB headerfiles "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
-INSTALL(FILES ${headerfiles} DESTINATION include)
+
+# INSTALL(FILES ${headerfiles} DESTINATION include)
+
+FOREACH(f ${headerfiles})
+	INSTALL(FILES ${f} DESTINATION include)
+	IF(DBG MATCHES "y")
+		MESSAGE("Copied file ${f} to include.")
+	ENDIF(DBG MATCHES "y")
+ENDFOREACH(f)
+
+# MESSAGE("hdr files: ${headerfiles}")
 
 ADD_SUBDIRECTORY(qtgui)

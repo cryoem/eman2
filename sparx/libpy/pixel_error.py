@@ -861,7 +861,7 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=1.0e23, r=1.0):
 	# apply rotation [phi12,theta12,psi12] to asg1
 	t12 = Transform({'type':'spider','phi':phi12,'theta':theta12,'psi':psi12})
 	agls12=[]
-	
+
 	# if agls1 is a list of list
 	if type(agls1[0]) == types.ListType:
 		for i in xrange(N):

@@ -5747,9 +5747,12 @@ void EMData::div_sinc(int interpolate_method) {
 	int nzb = nz/2/npad;
 	int nyb = ny/2/npad;
 	int nxb = nx/2/npad;
-	for (int k = -nzb; k < nzb + nzb%2; k++) {
-		for (int j = -nyb; j < nyb + nyb%2; j++) {
-			for (int i = -nxb; i < nxb + nxb%2; i++) {
+	int nze = nzb + (nz/npad)%2;
+	int nye = nyb + (ny/npad)%2;
+	int nxe = nxb + (nx/npad)%2;
+	for (int k = -nzb; k < nze; k++) {
+		for (int j = -nyb; j < nye; j++) {
+			for (int i = -nxb; i < nxe; i++) {
 				float  rrr = std::sqrt(k*k+j*j+float(i*i));
 				if(rrr>0.0f)  {
 					if( interpolate_method == 1 ) (*this)(i,j,k) *= pow((rrr*cdf)/sin(rrr*cdf),2);
