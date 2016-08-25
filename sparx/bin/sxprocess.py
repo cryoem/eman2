@@ -1046,6 +1046,7 @@ def main():
 				if nargs >1 :
 					map1 +=map2
 					map1 /=2.
+				log_main.add("starts creating surface mask, and wait...")
 				m = Util.surface_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
 				m.write_image("vol_adaptive_mask.hdf")
 				map1 = get_im(args[0]) # re-read map1
