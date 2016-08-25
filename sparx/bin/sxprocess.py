@@ -949,7 +949,7 @@ def main():
 		nx = e1.get_xsize()
 		ny = e1.get_ysize()
 		nz = e1.get_zsize()
-		log_main.add(" The sphire postprocess command:  ")
+		log_main.add("----------->>> shell line command <<<-----------------")
 		line=" "
 		for a in sys.argv:
 			line +=" "+a
