@@ -5197,7 +5197,13 @@ def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_
 			color = i#group_infos[2*i]
 			break
 
-	return color, number_of_groups
+	number_of_processes_in_each_group = []
+	for i in range(number_of_groups):
+		number_of_processes_in_each_group.append(len(group_infos[2*i+1]))
+
+	balanced_processor_load_on_nodes = len(set(number_of_processes_in_each_group)) == 1 
+
+	return color, number_of_groups, balanced_processor_load_on_nodes 
 
 
 def wrap_mpi_split_shared_memory(mpi_comm):
