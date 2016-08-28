@@ -1820,11 +1820,13 @@ def write_text_row(data, file_name):
 			for j in xrange(len(data[i])):
 				tpt = data[i][j]
 				qtp = type(tpt)
-				if qtp == types.IntType:			outf.write("  %12d"%tpt)
+				if qtp == types.IntType:		outf.write("  %12d"%tpt)
 				elif qtp == types.FloatType:
-					if( float(int(tpt)) == tpt ):	outf.write("  %12.5e"%tpt)
-					else:							outf.write("  %12.5g"%tpt)
-				else:                   			outf.write("  %s"%tpt)
+					s = "%f"%tpt
+					ls = s.index(".")
+					if( ls<6 ):					outf.write("  %12.5f"%tpt)
+					else:						outf.write("  %12.5e"%tpt)
+				else:                   		outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
@@ -1833,9 +1835,10 @@ def write_text_row(data, file_name):
 			qtp = type(tpt)
 			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
 			elif qtp == types.FloatType:
-				if( float(int(tpt)) == tpt ):	outf.write("  %12.5e\n"%tpt)
-				else:							outf.write("  %12.5g\n"%tpt)
-			elif qtp == types.IntType :  		outf.write("  %12.5g\n"%tpt)
+				s = "%f"%tpt
+				ls = s.index(".")
+				if( ls<6 ):						outf.write("  %12.5f\n"%tpt)
+				else:							outf.write("  %12.5e\n"%tpt)
 			else:								outf.write("  %s\n"%tpt)
 	outf.flush()
 	outf.close()
@@ -1898,11 +1901,13 @@ def write_text_file(data, file_name):
 			for j in xrange(len(data)):
 				tpt = data[j][i]
 				qtp = type(tpt)
-				if qtp == types.IntType:		outf.write("  %12d"%tpt)
+				if qtp == types.IntType:			outf.write("  %12d"%tpt)
 				elif qtp == types.FloatType:
-					if( float(int(tpt)) == tpt ):	outf.write("  %12.5e"%tpt)
-					else:							outf.write("  %12.5g"%tpt)
-				else:                   		outf.write("  %s"%tpt)
+					s = "%f"%tpt
+					ls = s.index(".")
+					if( ls<6 ):						outf.write("  %12.5f"%tpt)
+					else:							outf.write("  %12.5e"%tpt)
+				else:                   			outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
@@ -1911,9 +1916,10 @@ def write_text_file(data, file_name):
 			qtp = type(tpt)
 			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
 			elif qtp == types.FloatType:
-				if( float(int(tpt)) == tpt ):	outf.write("  %12.5e\n"%tpt)
-				else:							outf.write("  %12.5g\n"%tpt)
-			elif qtp == types.IntType :			outf.write("  %12.5g\n"%tpt)
+				s = "%f"%tpt
+				ls = s.index(".")
+				if( ls<6 ):						outf.write("  %12.5f\n"%tpt)
+				else:							outf.write("  %12.5e\n"%tpt)
 			else:                   			outf.write("  %s\n"%tpt)
 	outf.close()
 
