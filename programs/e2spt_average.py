@@ -8,14 +8,22 @@ import threading
 import Queue
 from sys import argv,exit
 
-def rotfn(avg,fsp,i,a,verbose):
+def rotfn(avg,fsp,i,a,maxtilt,verbose):
 	b=EMData(fsp,i)
+	if maxtilt<90.0 :
+		bf=b.do_fft()
+		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
+		b=bf.do_ift()
 	b.process_inplace("xform",{"transform":a})
 	avg.add_image(b)
 	#jsd.put((fsp,i,b))
 
-def rotfnsym(avg,fsp,i,a,sym,masked,verbose):
+def rotfnsym(avg,fsp,i,a,sym,masked,maxtilt,verbose):
 	b=EMData(fsp,i)
+	if maxtilt<90.0 :
+		bf=b.do_fft()
+		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
+		b=bf.do_ift()
 	b.process_inplace("xform",{"transform":a})
 	xf = Transform()
 	xf.to_identity()
@@ -25,6 +33,8 @@ def rotfnsym(avg,fsp,i,a,sym,masked,verbose):
 		d=c.align("translational",masked)
 		avg.add_image(d)
 	#jsd.put((fsp,i,b))
+
+def inrange(a,b,c): return a<=b and b<=c
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -40,8 +50,10 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 	parser.add_argument("--simthr", default=-0.1,type=float,help="Similarity is smaller for better 'quality' particles. Specify the highest value to include from e2spt_hist.py. Default -0.1")
 	parser.add_argument("--replace",type=str,default=None,help="Replace the input subtomograms used for alignment with the specified file (used when the aligned particles were masked or filtered)")
+	parser.add_argument("--wedgesigma",type=float,help="Threshold for identifying missing data in Fourier space in terms of standard deviation of each Fourier shell. Default 3.0",default=3.0)
 	parser.add_argument("--minalt",type=float,help="Minimum alignment altitude to include. Default=0",default=0)
 	parser.add_argument("--maxalt",type=float,help="Maximum alignment altitude to include. Deafult=180",default=180)
+	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0)
 	parser.add_argument("--symalimasked",type=str,default=None,help="This will translationally realign each asymmetric unit to the specified (usually masked) reference ")
 	parser.add_argument("--sym",type=str,default=None,help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
@@ -65,18 +77,28 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			sys.exit(2)
 		options.iter=max(fls)
 		if options.verbose : print "Using iteration ",options.iter
+		angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
+	else:
+		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
+		if len(fls)==0 : 
+			print "Cannot find a {}/particle_parms* file".format(options.path)
+			sys.exit(2)
+		mit=max(fls)
+		if options.iter>mit : 
+			angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,mit))
+			print "WARNING: no particle_parms found for iter {}, using parms from {}".format(options.iter,mit)
+		else : angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 
 	logid=E2init(sys.argv, options.ppid)
 
-	angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 #	jsd=Queue.Queue(0)
 
 
 	avg=[0,0]
-	avg[0]=Averagers.get("mean.tomo") #,{"save_norm":1})
-	avg[1]=Averagers.get("mean.tomo")
+	avg[0]=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma}) #,{"save_norm":1})
+	avg[1]=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma})
 
 	# Rotation and insertion are slow, so we do it with threads. 
 	if options.symalimasked!=None:
@@ -84,14 +106,14 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			print "Error: --replace cannot be used with --symalimasked"
 			sys.exit(1)
 		alimask=EMData(options.symalimasked)
-		thrds=[threading.Thread(target=rotfnsym,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,alimask,options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
+		thrds=[threading.Thread(target=rotfnsym,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,alimask,options.maxtilt,options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
 	else:
 		# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
 		if options.replace != None:
-			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],options.replace,eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
+			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],options.replace,eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
 
 		else:
-			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt) ]
+			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt) ]
 
 
 	print len(thrds)," threads"
