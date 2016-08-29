@@ -616,7 +616,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				locs=simp.minimize(maxiters=int(100/scale),epsilon=.01)[0]
 				locs=[int(floor(i*10+.5))/10.0 for i in locs]
 				print locs
-				if VERBOSE:
+				if options.verbose:
 					out=file("path_{:02d}.txt".format(int(1.0/scale)),"w")
 					for i in xrange(0,len(locs),2): out.write("%f\t%f\n"%(locs[i],locs[i+1]))
 
@@ -637,7 +637,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			#write out the unaligned average movie
 			out=qsum(data)
-			out.write_image(argv[1].rsplit(".",1)[0]+"_noali.hdf",0)
+			out.write_image(outname[:-4]+"_noali.hdf",0)
 
 			print "Shift images ({})".format(time()-t0)
 			t0=time()
@@ -645,8 +645,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for i,im in enumerate(data):
 				im.translate(int(floor(locs[i*2]+.5)),int(floor(locs[i*2+1]+.5)),0)
 			#	im.write_image("a_all_ali.hdf",i)
+
 			out=qsum(data)
-			out.write_image(argv[1].rsplit(".",1)[0]+"_allali.hdf",0)
+			out.write_image(outname[:-4]+"_allali.hdf",0)
 
 			#out=sum(data[5:15])	# FSC with the earlier frames instead of whole average
 			# compute fsc between each aligned frame and the average
@@ -682,17 +683,17 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			best=[im for i,im in enumerate(data) if quals[i]>thr]
 			out=qsum(best)
 			print "Keeping {}/{} frames".format(len(best),len(data))
-			out.write_image(argv[1].rsplit(".",1)[0]+"_goodali.hdf",0)
+			out.write_image(outname[:-4]+"_goodali.hdf",0)
 
 			thr=max(quals)*0.75	# max correlation cutoff for inclusion
 			best=[im for i,im in enumerate(data) if quals[i]>thr]
 			out=qsum(best)
 			print "Keeping {}/{} frames".format(len(best),len(data))
-			out.write_image(argv[1].rsplit(".",1)[0]+"_bestali.hdf",0)
+			out.write_image(outname[:-4]+"_bestali.hdf",0)
 
 			# skip the first 4 frames then keep 10
 			out=qsum(data[4:14])
-			out.write_image(argv[1].rsplit(".",1)[0]+"_4-14.hdf",0)
+			out.write_image(outname[:-4]+"_4-14.hdf",0)
 
 			# Write out the translated correlation maps for debugging
 			#cen=csum2[(0,1)]["nx"]/2
