@@ -14,6 +14,18 @@ def rotfn(avg,fsp,i,a,verbose):
 	avg.add_image(b)
 	#jsd.put((fsp,i,b))
 
+def rotfnsym(avg,fsp,i,a,sym,masked,verbose):
+	b=EMData(fsp,i)
+	b.process_inplace("xform",{"transform":a})
+	xf = Transform()
+	xf.to_identity()
+	nsym=xf.get_nsym(sym)
+	for i in xrange(nsym):
+		c=b.process("xform",{"transform":xf.get_sym(sym,i)})
+		d=c.align("translational",masked)
+		avg.add_image(d)
+	#jsd.put((fsp,i,b))
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage: e2spt_average.py [options] 
@@ -28,6 +40,10 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 	parser.add_argument("--simthr", default=-0.1,type=float,help="Similarity is smaller for better 'quality' particles. Specify the highest value to include from e2spt_hist.py. Default -0.1")
 	parser.add_argument("--replace",type=str,default=None,help="Replace the input subtomograms used for alignment with the specified file (used when the aligned particles were masked or filtered)")
+	parser.add_argument("--minalt",type=float,help="Minimum alignment altitude to include. Default=0",default=0)
+	parser.add_argument("--maxalt",type=float,help="Maximum alignment altitude to include. Deafult=180",default=180)
+	parser.add_argument("--symalimasked",type=str,default=None,help="This will translationally realign each asymmetric unit to the specified (usually masked) reference ")
+	parser.add_argument("--sym",type=str,default=None,help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -63,11 +79,19 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	avg[1]=Averagers.get("mean.tomo")
 
 	# Rotation and insertion are slow, so we do it with threads. 
-	# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
-	if options.replace != None:
-		thrds=[threading.Thread(target=rotfn,args=(avg[i%2],options.replace,eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr]
+	if options.symalimasked!=None:
+		if options.replace!=None :
+			print "Error: --replace cannot be used with --symalimasked"
+			sys.exit(1)
+		alimask=EMData(options.symalimasked)
+		thrds=[threading.Thread(target=rotfnsym,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,alimask,options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
 	else:
-		thrds=[threading.Thread(target=rotfn,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr]
+		# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
+		if options.replace != None:
+			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],options.replace,eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
+
+		else:
+			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt) ]
 
 
 	print len(thrds)," threads"
@@ -93,6 +117,10 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 
 	ave=avg[0].finish()		#.process("xform.phaseorigin.tocenter").do_ift()
 	avo=avg[1].finish()		#.process("xform.phaseorigin.tocenter").do_ift()
+	# impose symmetry on even and odd halves if appropriate
+	if options.sym!=None and options.sym.lower()!="c1" and options.symalimasked==None:
+		ave.process_inplace("xform.applysym",{"averager":"mean.tomo","sym":options.sym})
+		avo.process_inplace("xform.applysym",{"averager":"mean.tomo","sym":options.sym})
 	av=ave+avo
 	av.mult(0.5)
 
