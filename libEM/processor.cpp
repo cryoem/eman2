@@ -782,33 +782,51 @@ void WedgeFillProcessor::process_inplace(EMData * image)
 	if (!image) throw InvalidParameterException("WedgeFillProcessor: no image provided");
 	if (!image->is_complex()) throw ImageFormatException("WedgeFillProcessor: target image must be complex");
 
-	EMData *source=params["fillsource"];
-	if (!source) throw InvalidParameterException("WedgeFillProcessor: fillsource required");
+	EMData *source=(EMData *)params.set_default("fillsource",(EMData *)NULL);
+//	if (!source) throw InvalidParameterException("WedgeFillProcessor: fillsource required");
 
-	if (!source->is_complex()) throw ImageFormatException("WedgeFillProcessor: fillsource must be complex");
+	if (source && !source->is_complex()) throw ImageFormatException("WedgeFillProcessor: fillsource must be complex");
 
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
+	float thresh_sigma = (float)params.set_default("thresh_sigma", 0.5);
+	bool dosigma = 1 ? thresh_sigma>0.0 : 0;
+	
+	float maxtilt = (float)params.set_default("maxtilt", 90.0);
+	bool dotilt = 1 ? maxtilt <90.0 : 0;
+	maxtilt*=M_PI/180.0;
 
 	vector<float> sigmaimg;
-	sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
-	for (int i=0; i<nx/2; i++) sigmaimg[i]*=.1;			// anything less than 1/10 sigma is considered to be missing
-
+	if (dosigma) {
+		sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
+		for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*thresh_sigma;			// anything less than 1/10 sigma is considered to be missing
+	}
+		
 	for (int z=0; z<nz; z++) {
 		for (int y=0; y<ny; y++) {
 			for (int x=0; x<nx; x+=2) {
-				float r2=Util::hypot3sq(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
-				int r=int(sqrtf(r2));
+				float r2=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+				int r=int(r2);
 				if (r<3) continue;		// too few points at r<3 to consider any "missing"
+				
+				float tilt = 0.0;
+				if (dotilt) tilt=atan2((float)(z<nz/2?z:nz-z),(float)(x/2));
 
 				float v1r=image->get_value_at(x,y,z);
 				float v1i=image->get_value_at(x+1,y,z);
 				float v1=Util::square_sum(v1r,v1i);
-				if (v1<sigmaimg[r]) continue;
+//				if (r<10) printf("%d %d %d %d\t%1.3g %1.3g\n",x,y,z,r,v1,sigmaimg[r]);
+				if ((!dosigma || v1>sigmaimg[r]) && r<nx/2 && (!dotilt || fabs(tilt)<maxtilt)) continue;
 
-				image->set_value_at_fast(x,y,z,source->get_value_at(x,y,z));
-				image->set_value_at_fast(x+1,y,z,source->get_value_at(x+1,y,z));
+				if (!source) {
+					image->set_value_at_fast(x,y,z,0);
+					image->set_value_at_fast(x+1,y,z,0);
+				}
+				else {
+					image->set_value_at_fast(x,y,z,source->get_value_at(x,y,z));
+					image->set_value_at_fast(x+1,y,z,source->get_value_at(x+1,y,z));
+				}
 			}
 		}
 	}
