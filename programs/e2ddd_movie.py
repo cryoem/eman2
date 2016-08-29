@@ -30,28 +30,27 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
-import pprint
+
 from EMAN2 import *
 from EMAN2.Simplex import Simplex
+from numpy import *
+import pprint
 import sys
 from sys import argv
-from numpy import *
-import numpy.linalg as LA
 from time import sleep,time
 import threading
 import Queue
 
 
 def main():
-	print """Will align a movie stack using all-vs-all CCFs with a global optimization strategy. Several outputs including different frame subsets are produced, as well as a text file with the translation vector map."""
-
 
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <ddd_movie_stack>
 
-	This (still experimental) program will do various processing operations on "movies" recorded on direct detection cameras.
-	It is primarily used to do whole-frame alignment of movies. This program uses a binary tree approach, first computing the
-	alignment of the 1st half vs the second half, then gradually reducing the set size.
+	This program will do various processing operations on "movies" recorded on direct detection cameras. It 
+	is primarily used to do whole-frame alignment of movies using all-vs-all CCFs with a global optimization 
+	strategy. Several outputs including different frame subsets are produced, as well as a text file with the 
+	translation vector map.
 
 	See e2ddd_particles for per-particle alignment.
 	"""
@@ -488,16 +487,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 		if options.align_frames :
 
-			# if len(argv)<3 :
-			# 	print """Usage:
-			# 	movie_ccf <movie stack> <num threads> [gain norm img]
-
-			# Will align a movie stack using all-vs-all CCFs with a global optimization strategy. Several outputs
-			# including different frame subsets are produced, as well as a text file with the translation vector map.
-			# """
-
 			data = outim
-			#data=EMData.read_images(argv[1])
 
 			n=len(data)
 			nx=data[0]["nx"]
@@ -616,8 +606,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				locs=simp.minimize(maxiters=int(100/scale),epsilon=.01)[0]
 				locs=[int(floor(i*10+.5))/10.0 for i in locs]
 				print locs
-				if VERBOSE:
-					out=file("path_{:02d}.txt".format(int(1.0/scale)),"w")
+				if options.verbose > 7:
+					out=file("{}_path_{:02d}.txt".format(outname[:-4],int(1.0/scale)),"w")
 					for i in xrange(0,len(locs),2): out.write("%f\t%f\n"%(locs[i],locs[i+1]))
 
 			# compute the quality of each frame
@@ -637,7 +627,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			#write out the unaligned average movie
 			out=qsum(data)
-			out.write_image(argv[1].rsplit(".",1)[0]+"_noali.hdf",0)
+			out.write_image("{}_noali.hdf".format(outname[:-4]),0)
 
 			print "Shift images ({})".format(time()-t0)
 			t0=time()
@@ -645,8 +635,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for i,im in enumerate(data):
 				im.translate(int(floor(locs[i*2]+.5)),int(floor(locs[i*2+1]+.5)),0)
 			#	im.write_image("a_all_ali.hdf",i)
+
 			out=qsum(data)
-			out.write_image(argv[1].rsplit(".",1)[0]+"_allali.hdf",0)
+			out.write_image("{}_allali.hdf".format(outname[:-4]),0)
 
 			#out=sum(data[5:15])	# FSC with the earlier frames instead of whole average
 			# compute fsc between each aligned frame and the average
@@ -668,12 +659,12 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					fs=list(fs)
 					fscq.append(qsum(fs[2:24]))
 
-					Util.save_data(s[1],s[1]-s[0],fs[1:-1],argv[1].rsplit(".",1)[0]+"_fsc_{:02d}.txt".format(i))
+					Util.save_data(s[1],s[1]-s[0],fs[1:-1],"{}_fsc_{:02d}.txt".format(outname[:-4],i))
 
 			print "{:1.1f}\nSubsets".format(time()-t0)
 			t0=time()
 			# write translations and qualities
-			out=open(argv[1].rsplit(".",1)[0]+"_info.txt","w")
+			out=open("{}_info.txt".format(outname[:-4]),"w")
 			out.write("#i,dx,dy,dr,rel dr,qual,(opt)fscqual\n")
 			for i in range(n):
 				out.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(i,locs[i*2],locs[i*2+1],hypot(locs[i*2],locs[i*2+1]),hypot(locs[i*2]-locs[i*2-2],locs[i*2+1]-locs[i*2-1]),quals[i],fscq[i]))
@@ -682,17 +673,17 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			best=[im for i,im in enumerate(data) if quals[i]>thr]
 			out=qsum(best)
 			print "Keeping {}/{} frames".format(len(best),len(data))
-			out.write_image(argv[1].rsplit(".",1)[0]+"_goodali.hdf",0)
+			out.write_image("{}_goodali.hdf".format(outname[:-4]),0)
 
 			thr=max(quals)*0.75	# max correlation cutoff for inclusion
 			best=[im for i,im in enumerate(data) if quals[i]>thr]
 			out=qsum(best)
 			print "Keeping {}/{} frames".format(len(best),len(data))
-			out.write_image(argv[1].rsplit(".",1)[0]+"_bestali.hdf",0)
+			out.write_image("{}_bestali.hdf".format(outname[:-4]),0)
 
 			# skip the first 4 frames then keep 10
 			out=qsum(data[4:14])
-			out.write_image(argv[1].rsplit(".",1)[0]+"_4-14.hdf",0)
+			out.write_image("{}_4-14.hdf".format(outname[:-4]),0)
 
 			# Write out the translated correlation maps for debugging
 			#cen=csum2[(0,1)]["nx"]/2
