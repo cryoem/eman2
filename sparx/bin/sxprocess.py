@@ -954,22 +954,16 @@ def main():
 		for a in sys.argv:
 			line +=" "+a
 		log_main.add(line)
-		log_main.add("-------->>>Settings given by all options<<<-------")
-		log_main.add("pixle_size  		:"+str(options.pixel_size))
-		log_main.add("mask        		:"+str(options.mask))
-		log_main.add("fsc_adj     		:"+str(options.fsc_adj))
-		log_main.add("B_enhance   		:"+str(options.B_enhance))
-		log_main.add("low_pass_filter  	:"+str(options.low_pass_filter))
-		log_main.add("B_start  		:"+str(options.B_start))
-		log_main.add("B_stop   		:"+str(options.B_stop))
-		log_main.add("mtf     			:"+str(options.mtf))
-		log_main.add("output  			:"+str(options.output))
-		log_main.add("do_adaptive_mask  	:"+str(options.do_adaptive_mask))
-		log_main.add("cosine_edge    		:"+str(options.consine_edge))
-		log_main.add("dilation    		:"+str(options.dilation))
-		#log_main.add("randomphasesafter    "+str(options.randomphasesafter))
-		log_main.add("------------>>>processing<<<-----------------------")
-		if e1.get_zsize() == 1:  # 2D case
+		if e1.get_zsize() == 1:  # 2D case	
+			log_main.add("-------->>>Settings given by all options<<<-------")
+			log_main.add("pixle_size  		:"+str(options.pixel_size))
+			log_main.add("mask        		:"+str(options.mask))
+			log_main.add("B_enhance   		:"+str(options.B_enhance))
+			log_main.add("low_pass_filter  	:"+str(options.low_pass_filter))
+			log_main.add("B_start  		:"+str(options.B_start))
+			log_main.add("B_stop   		:"+str(options.B_stop))
+			#log_main.add("randomphasesafter    "+str(options.randomphasesafter))
+			log_main.add("------------>>>processing<<<-----------------------")		
 			log_main.add("2-D postprocess for ISAC averaged images")
 			nimage = EMUtil.get_image_count(args[0])
 			if options.mask !=None:
@@ -977,7 +971,7 @@ def main():
 					m = get_im(options.mask)
 					log_main.add("user provided mask is %s"%options.mask)
 				except:
-					ERROR(" mask image %s does not exists"%options.mask, " --postprocess for 2-D")
+					ERROR("mask image %s does not exists"%options.mask, " --postprocess for 2-D")
 					exit()
 			else:
 				m = None
@@ -1010,6 +1004,21 @@ def main():
 					e1 =filt_tanl(e1,options.low_pass_filter/option.pixel_size, options.aa)
 				e1.write_image(options.output)
 		else:   # 3D case
+			log_main.add("-------->>>Settings given by all options<<<-------")
+			log_main.add("pixle_size  		:"+str(options.pixel_size))
+			log_main.add("mask        		:"+str(options.mask))
+			log_main.add("fsc_adj     		:"+str(options.fsc_adj))
+			log_main.add("B_enhance   		:"+str(options.B_enhance))
+			log_main.add("low_pass_filter  	:"+str(options.low_pass_filter))
+			log_main.add("B_start  		:"+str(options.B_start))
+			log_main.add("B_stop   		:"+str(options.B_stop))
+			log_main.add("mtf     			:"+str(options.mtf))
+			log_main.add("output  			:"+str(options.output))
+			log_main.add("do_adaptive_mask  	:"+str(options.do_adaptive_mask))
+			log_main.add("cosine_edge    		:"+str(options.consine_edge))
+			log_main.add("dilation    		:"+str(options.dilation))
+			#log_main.add("randomphasesafter    "+str(options.randomphasesafter))
+			log_main.add("------------>>>processing<<<-----------------------")		
 			from utilities import write_text_file
 			log_main.add( "3-D refinement postprocess ")
 			nargs     = len(args)
@@ -1046,12 +1055,13 @@ def main():
 				if nargs >1 :
 					map1 +=map2
 					map1 /=2.
+				log_main.add("starts creating surface mask, and wait...")
 				m = Util.surface_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
 				m.write_image("vol_adaptive_mask.hdf")
 				map1 = get_im(args[0]) # re-read map1
 			else:
 				m = None
-				log_main.add(" No mask is applied ")
+				log_main.add("No mask is applied")
 			## prepare FSC
 			from math import sqrt
 			resolution_FSC143   	= 0.5 # for single volume, this is the default resolution
@@ -1124,7 +1134,7 @@ def main():
 				map2 = get_im(args[1])
 				map1 +=map2
 				map1 /=2.0
-			outtext = [["Squaredfreqencies"],[ "LogOrignal"]]
+			outtext = [["Squaredfreq"],[ "LogOrig"]]
 			guinierline = rot_avg_table(power(periodogram(map1),.5))
 			from math import log
 			for ig in xrange(len(guinierline)):
@@ -1160,7 +1170,7 @@ def main():
 						fil[i] = sqrt(2.*tmp/(1.+tmp))
 					map1=filt_table(map1,fil)
 					guinierline   = rot_avg_table(power(periodogram(map1),.5))
-					outtext.append(["LogFSCadjusted"])
+					outtext.append(["LogFSCadj"])
 					for ig in xrange(len(guinierline)):
 						outtext[-1].append("%10.6f"%log(guinierline[ig]))
 			
@@ -1205,7 +1215,7 @@ def main():
 					global_b = options.B_enhance
 				map1  = filt_gaussinv(map1,sigma_of_inverse)
 				guinierline   = rot_avg_table(power(periodogram(map1),.5))
-				outtext.append([" LogBfactorsharpened"])
+				outtext.append([" LogBfacapplied"])
 				last_non_zero = -999.0
 				for ig in xrange(len(guinierline)):
 					if guinierline[ig]>0: 
