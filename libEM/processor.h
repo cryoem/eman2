@@ -7153,6 +7153,7 @@ correction is not possible, this will allow you to approximate the correction to
 			TypeDict d;
 			d.put("thr", EMObject::FLOAT, "Minimum density to consider for extraction");
 			d.put("sym", EMObject::FLOAT, "Symmetry");
+			d.put("seed", EMObject::EMDATA, "An (optional) single level mask volume to use as a seed after symmetrizing");
 			return d;
 		}
 
