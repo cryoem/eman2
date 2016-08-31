@@ -107,11 +107,11 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	# filter the list of particles to include 
 	keys=angs.keys()
 	if options.listfile!=None :
-		keys=[i for i in keys if int(i.split(",")[1]) in plist]
-		if options.verbose : print "{}/{} particles based on list file".format(len(keys),len(ang.keys()))
+		keys=[i for i in keys if eval(i)[1] in plist]
+		if options.verbose : print "{}/{} particles based on list file".format(len(keys),len(angs.keys()))
 	
 	keys=[k for k in keys if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
-	if options.verbose : print "{}/{} particles after filters".format(len(keys),len(ang.keys()))
+	if options.verbose : print "{}/{} particles after filters".format(len(keys),len(angs.keys()))
 																		 
 
 	# Rotation and insertion are slow, so we do it with threads. 
