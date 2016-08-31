@@ -54,6 +54,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--minalt",type=float,help="Minimum alignment altitude to include. Default=0",default=0)
 	parser.add_argument("--maxalt",type=float,help="Maximum alignment altitude to include. Deafult=180",default=180)
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0)
+	parser.add_argument("--listfile",type=str,help="Specify a filename containing a list of integer particle numbers to include in the average, one per line, first is 0. Additional exclusions may apply.",default=None)
 	parser.add_argument("--symalimasked",type=str,default=None,help="This will translationally realign each asymmetric unit to the specified (usually masked) reference ")
 	parser.add_argument("--sym",type=str,default=None,help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
@@ -89,6 +90,9 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			print "WARNING: no particle_parms found for iter {}, using parms from {}".format(options.iter,mit)
 		else : angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
+	if options.listfile!=None :
+		plist=set([int(i) for i in file(options.listfile,"r")])
+
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 
 	logid=E2init(sys.argv, options.ppid)
@@ -100,20 +104,30 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	avg[0]=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma}) #,{"save_norm":1})
 	avg[1]=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma})
 
+	# filter the list of particles to include 
+	keys=angs.keys()
+	if options.listfile!=None :
+		keys=[i for i in keys if int(i.split(",")[1]) in plist]
+		if options.verbose : print "{}/{} particles based on list file".format(len(keys),len(ang.keys()))
+	
+	keys=[k for k in keys if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
+	if options.verbose : print "{}/{} particles after filters".format(len(keys),len(ang.keys()))
+																		 
+
 	# Rotation and insertion are slow, so we do it with threads. 
 	if options.symalimasked!=None:
 		if options.replace!=None :
 			print "Error: --replace cannot be used with --symalimasked"
 			sys.exit(1)
 		alimask=EMData(options.symalimasked)
-		thrds=[threading.Thread(target=rotfnsym,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,alimask,options.maxtilt,options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
+		thrds=[threading.Thread(target=rotfnsym,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,alimask,options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
 	else:
 		# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
 		if options.replace != None:
-			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],options.replace,eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
+			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],options.replace,eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
 
 		else:
-			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(angs.keys()) if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt) ]
+			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
 
 
 	print len(thrds)," threads"

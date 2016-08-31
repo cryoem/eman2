@@ -47,6 +47,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--range",type=str,help="Range of particles to use. Works only with create option. Input of 0,10,2 means range(0,10, step=2).",default=None)
 	parser.add_argument("--create",type=str,help="Input files should be image files. Specify an .lst file to create here with references to all of the images in the inputs.")
 	parser.add_argument("--mergesort",type=str,help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output",default=None)
+	parser.add_argument("--numaslist",type=str,help="Extract the particle numbers only in a list file (one number per line)",default=None)
 	parser.add_argument("--retype",type=str,help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)",default=None)
 	parser.add_argument("--minlosnr",type=float,help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=0)
 	parser.add_argument("--minhisnr",type=float,help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=1)
@@ -62,6 +63,13 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	logid=E2init(sys.argv,options.ppid)
 
+	if options.numaslist != None:
+		out=file(options.numaslist,"w")
+		
+		for f in args:
+			lst=LSXFile(f,True)
+			for i in xrange(len(lst)):
+				out.write("{}\n".format(lst[i][0]))
 
 	if options.create != None:
 		lst=LSXFile(options.create,False)

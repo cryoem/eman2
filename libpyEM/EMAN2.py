@@ -1927,7 +1927,44 @@ if the lst file does not exist."""
 
 		self.ptr.seek(0)
 		l=self.ptr.readline()
-		if l==0 or l!="#LSX\n" : raise Exception,"ERROR: The file {} is not in #LSX format".format(self.path)
+		if l==0 or l!="#LSX\n" :
+			if l=="#LST\n" :
+				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
+				self.seekbase=self.ptr.tell()
+				tmpfile=file(self.path+".tmp","w")
+				tmpfile.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n")
+
+				# we read the entire file, checking the length of each line
+				maxlen=0
+				while 1:
+					ln=self.ptr.readline().strip()
+					if len(ln)==0 : break
+					maxlen=max(maxlen,len(ln))
+
+				self.linelen=maxlen+1+4						# we make the lines 4 characters longer than necessary to reduce rewrite calls as "n" gets bigger
+				tmpfile.write("# {}\n".format(self.linelen))	# the new line length
+				newseekbase=tmpfile.tell()
+
+				fmtstr="{{:<{}}}\n".format(self.linelen-1)	# string for formatting
+
+				self.ptr.seek(self.seekbase)
+				while 1:
+					ln=self.ptr.readline().strip()
+					if len(ln)==0 : break
+					tmpfile.write(fmtstr.format(ln))
+
+				# close both files
+				tmpfile=None
+				self.ptr=None
+				self.seekbase=newseekbase
+
+				# rename the temporary file over the original
+				os.unlink(self.path)
+				os.rename(self.path+".tmp",self.path)
+				self.ptr=file(self.path,"r+")
+				self.ptr.readline()
+
+			else: raise Exception,"ERROR: The file {} is not in #LSX format".format(self.path)
 		self.filecomment=self.ptr.readline()
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
