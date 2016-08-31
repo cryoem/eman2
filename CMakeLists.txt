@@ -209,6 +209,7 @@ SET(INCLUDE_DIRS
 	/sw/include
 	/usr/include/freetype2
 	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework/Headers
+	/usr/include/hdf5/serial
 	)
 
 SET(LIB_DIRS 
@@ -451,6 +452,7 @@ IF(ENABLE_HDF5)
 		ADD_DEFINITIONS(-D_HDF5USEDLL_)
     ELSE (WIN32)
 		CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
+		CHECK_OPTIONAL_LIB(HDF5 hdf5_serial hdf5.h)
 		CHECK_LIB_ONLY(ZLIB z)
     ENDIF (WIN32)
 ENDIF(ENABLE_HDF5)
