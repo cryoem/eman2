@@ -26831,4 +26831,122 @@ void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	EXITFUNC;
 
 }
+#define MAX( a, b ) ( ( a > b) ? a : b )
+void Util::iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!tvol) {
+		throw NullPointerException("NULL input image");
+	}
+	if(!tvol->is_complex())  throw ImageFormatException("Only Fourier volume allowed");
+
+	size_t nxt = tweight->get_xsize(), nyt = tweight->get_ysize(), nzt = tweight->get_zsize();
+	int nzc = nzt/2;
+	int nyc = nyt/2;
+	float *tvol_ptr = tvol->get_data();
+	float *tw_ptr   = tweight->get_data();
+	size_t size = (size_t)nxt*nyt*nzt;
+	vector<double> nwe(size);
+
+	for (size_t k=0;k<nzt;++k) {
+		int kk = (k>nzc)?(k-nzt):k;
+		for (size_t j=0;j<nyt;++j) {
+			int jj = (j>nyc)?(j-nyt):j;
+			for (size_t i=0;i<nxt;++i) {
+				if( (kk*kk+jj*jj+i*i) >= maxr2) {
+					tw_ptr[i + nxt*(j + k*nyt)] = 0.0f;
+					nwe[i + nxt*(j + k*nyt)] = 0.0L;
+				}  else nwe[i + nxt*(j + k*nyt)] = 1.0L;
+			}
+		}
+	}
+	int nbel = 5000;
+	vector<double> beltab(nbel);
+	double radius = 1.9*2;
+	double alpha = 15.0;
+	int order = 0;
+	double normk = kfv(0.0L, radius, alpha, order);
+	for (size_t i=0;i<nbel;++i) {
+		double rr = i/double(nbel-1)/2.0L;
+		beltab[i] = kfv(rr, radius, alpha, order)/normk;
+	}
+
+	size_t nx_extended = nyt + 1;
+	/*
+	EMData *cvvi    = new EMData();
+	cvvi->set_size(nx_extended, nyt, nzt);
+	cvvi->set_ri(true);
+	cvvi->set_fftodd(true);
+	float *cvv = cvvi->get_data();
+	*/
+
+#ifdef _WIN32
+	double *cvv = (float *) double(2*size*sizeof(float));
+#else
+	double *cvv = fftw_alloc_real(2*size);
+#endif	//_WIN32
+
+	int ncx = nyt/2;
+
+	float fnorma = 1.0f/float(nyt*nyt*nzt);
+	fftw_plan plan_real_to_complex = fftw_plan_dft_r2c_3d(nyt, nyt, nzt, cvv, (fftw_complex *) cvv, FFTW_ESTIMATE);
+	fftw_plan plan_complex_to_real = fftw_plan_dft_c2r_3d(nyt, nyt, nzt, (fftw_complex *) cvv, cvv, FFTW_ESTIMATE);
+
+	size_t niter = 10;
+	for (size_t i=0;i<niter;++i) {
+
+		//cvvi->set_complex(false);
+		for( size_t i = 0; i<size; i++) {
+			double prd = nwe[i]*tw_ptr[i];
+			//if(prd > 1.0e23L) cout<<"  we have a problem A"<<endl;
+			cvv[2*i]   = prd;
+			cvv[2*i+1] = 0.0f;
+		}
+
+		//cvvi->set_complex(true);
+		//cvvi->do_ift_inplace();
+
+		fftw_execute(plan_complex_to_real);
+
+		for (size_t i=0; i<2*size; ++i)  cvv[i] *= fnorma;
+
+		for (size_t k=0;k<nzt;++k)  {
+			float argz = (k<nzc)?(k*k) : (k-nzt)*(k-nzt);
+			for (size_t j=0;j<nyt;++j)  {
+				float argy = (j<nyc)?(j*j) : (j-nyt)*(j-nyt);
+				for (size_t i=0;i<nyt;++i) {
+					float argx = (i<ncx)?(i*i) : (i-nyt)*(i-nyt);
+					float rr = sqrt(argx + argy + argz)/(nnxo*2.0f);
+					int iab = (int)((nbel-1)*rr*2.0f + 0.5f);
+					if(iab < nbel) cvv[i + nx_extended*(j + k*nyt)] *= beltab[iab];
+					else  cvv[i + nx_extended*(j + k*nyt)] = 0.0f;
+				}
+			}
+		}
+
+		//cvvi->do_fft_inplace();
+		fftw_execute(plan_real_to_complex);
+
+		for (size_t i=0; i<size; ++i) nwe[i] /= MAX(1.0e-5f, sqrt(cvv[2*i]*cvv[2*i]+cvv[2*i+1]*cvv[2*i+1]));
+	}
+
+	fftw_destroy_plan(plan_real_to_complex);
+	fftw_destroy_plan(plan_complex_to_real);
+
+	beltab.resize(0);
+	free(cvv);
+
+	for( size_t i = 0; i<size; i++) {
+		tvol_ptr[2*i]   *= nwe[i];
+		tvol_ptr[2*i+1] *= nwe[i];
+	}
+
+	nwe.resize(0);
+
+	tvol->update();
+
+	EXITFUNC;
+
+}
+#undef MAX
 
