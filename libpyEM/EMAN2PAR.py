@@ -66,7 +66,7 @@ from e2tomopreproc import TomoPreproc2DTask
 from e2symsearch3d import SymAlignTask
 from e2spt_boxer import TomoBoxer3DTask
 
-#from erase_gold import EraseGold2DTask
+from e2erasefiducials import EraseGold2DTask
 
 from e2tvrecon import TVReconTask
 from e2classifytree import TreeClassifyTask
@@ -792,7 +792,7 @@ class EMMpiClient():
 					if com=="EXIT":
 						if verbose>1 : print "rank %d: I was just told to exit"%self.rank
 						break
-					
+
 					if com=="EXEC":
 						if self.logfile!=None : self.logfile.write( "EXEC\n")
 						task=loads(data)		# just for clarity
