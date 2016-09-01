@@ -929,12 +929,12 @@ def main():
 		log_main.add(print_msg)
 		print_msg="------->>>Sphire postprocess<<<-------"
 		log_main.add(print_msg)
-		from utilities    import get_im
-		from fundamentals import rot_avg_table
-		from morphology   import compute_bfactor,power
-		from statistics   import fsc
-		from filter       import filt_table, filt_gaussinv
-		from EMAN2 import periodogram
+		from utilities    	import get_im, write_text_file, read_text_file
+		from fundamentals 	import rot_avg_table, fft
+		from morphology   	import compute_bfactor,power
+		from statistics   	import fsc, pearson
+		from filter       	import filt_table, filt_gaussinv, filt_tanl
+		from EMAN2 			import periodogram
 		if len(args)<1 or len(args)>2:
 			ERROR("number of inputs is incorrection", " --postprocess option")
 			exit()
@@ -998,7 +998,6 @@ def main():
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.low_pass_filter>0.0 and options.low_pass_filte<0.5:
 					log_main.add("low-pass filter ff %   aa  %f"%(options.low_pass_filter, options.aa))
-					from filter import filt_tanl
 					e1 =filt_tanl(e1,options.low_pass_filter, options.aa)
 				elif options.low_pass_filte>0.5:
 					e1 =filt_tanl(e1,options.low_pass_filter/option.pixel_size, options.aa)
@@ -1019,7 +1018,6 @@ def main():
 			log_main.add("dilation    		:"+str(options.dilation))
 			#log_main.add("randomphasesafter    "+str(options.randomphasesafter))
 			log_main.add("------------->>>processing<<<-----------------------")		
-			from utilities import write_text_file
 			log_main.add( "3-D refinement postprocess ")
 			nargs     = len(args)
 			if nargs >=3:
@@ -1068,48 +1066,10 @@ def main():
 			resolution_FSChalf  	= 0.5
 			frc_without_mask    	= None
 			frc_with_mask       	= None
-			frc_with_random_phases 	= None 
 			if nargs >1: 
 				frc_without_mask 		= fsc(map1, map2,1)
 				if m: 
 					frc_with_mask     = fsc(map1*m, map2*m,1)
-					"""
-					# determine random_phase_cutoff_pixel
-					random_phase_cutoff_pixel =-1
-					for ifreq in xrange(1,len(frc_without_mask[1])):
-						if frc_without_mask[1][ifreq] < options.randomphasesafter: 
-							random_phase_cutoff_pixel = ifreq
-							break
-					print("random phase %f  %d"%(options.randomphasesafter,random_phase_cutoff_pixel))
-					from fundamentals import fft
-					if random_phase_cutoff_pixel >0:
-						map1 = Util.randomizedphasesafter(fft(map1),60)
-						map2 = Util.randomizedphasesafter(fft(map2),60)
-						map1 = fft(map1)*m
-						map2 = fft(map2)*m
-						frc_random_phase_masked = fsc(map1, map2,1)
-						from utilities import write_text_file
-						write_text_file(frc_random_phase_masked, "fsc_random_phase.txt")
-						write_text_file(frc_with_mask, "fsc_with_mask.txt")
-						write_text_file(frc_without_mask, "fsc_without_mask.txt")
-					else:
-						ERROR(" negative random phase cutoff pixel ", "random phase ", 1)
-						#outfrc = [ frc_with_mask[1]]
-						for ifreq in xrange(len(frc_with_mask[0])):
-							if ifreq==0:
-								outfrc[1].append(frc_with_mask[0][ifreq])
-							else:	
-								outfrc[1].append(options.pixel_size/frc_with_mask[0][ifreq])
-					# FSC_RH see Richard Handson's paper
-					frc_RH =[frc_with_mask[0],len(frc_with_mask[0])*[None]]
-					frc_RH =[frc_with_mask[0],frc_with_mask[1]]
-					#print(" frc_RH  %f"%frc_RH[1][5])
-					for ifreq in xrange(len(frc_with_mask[1])):
-						if ifreq <= random_phase_cutoff_pixel+2: frc_RH[1][ifreq] = frc_with_mask[1][ifreq]
-						else:   
-							if frc_random_phase_masked[1][ifreq] > frc_with_mask[1][ifreq]: frc_RH[1][ifreq] =0.0
-							else:     frc_RH[1][ifreq] = (frc_with_mask[1][ifreq]-frc_random_phase_masked[1][ifreq])/(1.-frc_random_phase_masked[1][ifreq])
-					"""
 					frc_RH =[frc_with_mask[0],frc_with_mask[1]]
 				else:
 					frc_RH = fsc_without_mask
@@ -1143,9 +1103,7 @@ def main():
 				outtext[1].append("%10.6f"%log(guinierline[ig]))
 			# starts adjustment of powerspectrum
 			if options.mtf: # divided by the mtf #1
-				from fundamentals import fft
 				log_main.add("MTF correction is applied")
-				from utilities import read_text_file
 				log_main.add("MTF file is %s"%options.mtf)
 				try:
 					mtf_core  = read_text_file(options.mtf, -1)
@@ -1189,24 +1147,20 @@ def main():
 					logguinierline = []
 					for ig in xrange(len(guinierline)):
 						logguinierline.append(log(guinierline[ig]))
-					freq_min     = 1./options.B_start 		# given frequencies with unit of Angstrom, say 10 Angstrom, 15  Angstrom
+					freq_min     = 1./options.B_start 		# given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
 					if options.B_stop!=0.0: freq_max     = 1./options.B_stop 
 					if freq_min>=freq_max:
 						log_main.add("Your B_start is too high! Decrease it and rerun the program!")
 						ERROR("your B_start is too high! Decrease it and re-run the program!", "--postprocess option")
-						exit()
-					from utilities import write_text_file
+						exit()					
 					#log_main.add("B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2)))
 					b,junk , ifreqmin, ifreqmax  =  compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					#log_main.add("The used pixels are from %d to %d"%(ifreqmin, ifreqmax))
 					global_b     =  4.*b
-					from statistics import pearson
 					cc 	=	pearson(junk[1],logguinierline)
-					log_main.add("Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"% \
-					                                                  (ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
+					log_main.add("Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"%(ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
 					log_main.add("The slope is %f Angstrom^2 "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
-
 				else: # User provided value
 					#log_main.add( " apply user provided B-factor to enhance map!")
 					log_main.add("User provided B-factor is %f Angstrom^2   "%options.B_enhance)
@@ -1223,7 +1177,6 @@ def main():
 					else:
 						outtext[-1].append("%10.6f"%last_non_zero)			
 			if options.low_pass_filter !=-1.: # User provided low-pass filter #4.
-				from filter       import filt_tanl
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
 					map1 =filt_tanl(map1,options.pixel_size/options.low_pass_filter, min(options.aa,.1))
 					cutoff = options.low_pass_filter
