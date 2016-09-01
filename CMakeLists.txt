@@ -64,6 +64,7 @@ OPTION(ENABLE_DEBUG "enable debug support" OFF)
 OPTION(ENABLE_PROFILE "enable symbol generation without debug support" OFF)
 OPTION(ENABLE_OPTIMIZE_X86_64 "GCC optimizations for generic X86_64" OFF)
 OPTION(ENABLE_OPTIMIZE_MACHINE "Optimize code for this specific computer (typ 5-10% speedup). Binaries may incompatible with some other computers." OFF)
+OPTION(ENABLE_OPTIMIZE_PHI "Optimize code for the Intel compiler on the PHI" OFF)
 OPTION(ENABLE_OPTIMIZE_WINDOWS_VC "Windows visual c++ specific optimization" OFF)
 
 IF(CMAKE_SYSTEM MATCHES "Darwin-12*")
@@ -120,12 +121,11 @@ ELSEIF (ENABLE_OPTIMIZE_X86_64)
 #    SET (OPT_FLAGS "-O5 -ansi -mfpmath=both -march=core-avx-i -m64 -ffast-math -pipe")
 ELSEIF (ENABLE_OPTIMIZE_WINDOWS_VC)
 	SET (OPT_FLAGS "/Ox /DHAVE_INLINE")
+ELSEIF (ENABLE_OPTIMIZE_PHI)
+	SET (OPT_FLAGS "-fast")
+#	SET (OPT_FLAGS "-O3 -xHost")
 ELSE()
-    IF(WIN32)
-       SET(OPT_FLAGS "")
-    ELSE(WIN32)
-       SET (OPT_FLAGS "-O3 -ansi -ffast-math")		# This is the default
-    ENDIF(WIN32)
+    SET (OPT_FLAGS "-O3 -ansi -ffast-math")		# This is the default
 ENDIF()
 #MESSAGE("OPT_FLAGS = " ${OPT_FLAGS})
 
@@ -209,7 +209,6 @@ SET(INCLUDE_DIRS
 	/sw/include
 	/usr/include/freetype2
 	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework/Headers
-	/usr/include/hdf5/serial
 	)
 
 SET(LIB_DIRS 
@@ -343,9 +342,8 @@ IF(ENABLE_FFTW3)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
     
     CHECK_REQUIRED_LIB(FFTW3 fftw3f fftw3.h)
-    CHECK_REQUIRED_LIB(FFTW3d fftw3 fftw3.h)
     ADD_DEFINITIONS(-DFFTW3)
-    SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
+    SET(FFTW_LIBRARIES ${FFTW3_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
     
     IF(ENABLE_NFFT2)
@@ -452,7 +450,6 @@ IF(ENABLE_HDF5)
 		ADD_DEFINITIONS(-D_HDF5USEDLL_)
     ELSE (WIN32)
 		CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
-		CHECK_OPTIONAL_LIB(HDF5 hdf5_serial hdf5.h)
 		CHECK_LIB_ONLY(ZLIB z)
     ENDIF (WIN32)
 ENDIF(ENABLE_HDF5)
