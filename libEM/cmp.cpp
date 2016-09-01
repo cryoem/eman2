@@ -758,6 +758,9 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
+
+	float sigmaimgval = params.set_default("sigmaimgval",0.5f);
+	float sigmawithval = params.set_default("sigmawithval",0.5f);
 	
 	// User can pass in a sigma vector if they like, otherwise we call it 1/10 of the standard deviation in each shell
 	// This has proven to be a good cutoff for identifying the missing wedge voxels, without throwing away too many
@@ -766,14 +769,14 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	if (params.has_key("sigmaimg")) sigmaimg=params["sigmaimg"];
 	else {
 		sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
-		for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*.2;	// The value here is amplitude, we square to make comparison less expensive
+		for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*sigmaimgval;	// The value here is amplitude, we square to make comparison less expensive
 	}
 	
 	vector<float> sigmawith;
 	if (params.has_key("sigmawith")) sigmawith = params["sigmawith"];
 	else {
 		sigmawith=image->calc_radial_dist(nx/2,0,1,4);
-		for (int i=0; i<nx/2; i++) sigmawith[i]*=sigmawith[i]*.2; // The value here is amplitude, we square to make comparison less expensive
+		for (int i=0; i<nx/2; i++) sigmawith[i]*=sigmawith[i]*sigmawithval; // The value here is amplitude, we square to make comparison less expensive
 	}
 
 	int negative = params.set_default("negative",1);
