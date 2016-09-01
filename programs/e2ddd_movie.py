@@ -328,155 +328,6 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			av=avgr.finish()
 			av.write_image(outname[:-4]+"_c.hdf",0)
 
-		# we iterate the alignment process several times
-
-		#if options.align_frames:
-			#outim2=[]
-##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
-##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4})
-			#av=sum(outim[-5:])
-##			av=outim[-1].copy()
-##			av.mult(1.0/len(outim))
-			#fav=[]
-			#for it in xrange(2):
-
-				#for im in outim:
-					#dx,dy,z=align(im,av,verbose=options.verbose)
-					#im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
-					#if options.verbose==1 : print "{}, {}".format(dx,dy)
-					#outim2.append(im2)
-
-				#print "-----"
-
-				#av=sum(outim2)
-				#av.mult(1.0/len(outim))
-				#fav.append(av)
-				#if it!=2 : outim2=[]
-
-			#av.write_image(outname[:-4]+"_aliavg.hdf",0)
-			#if options.save_aligned:
-				#for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
-			#if options.verbose>1 : display(fav,True)
-
-		# we iterate the alignment process several times
-
-# 		if options.align_frames :
-
-# 			outim2 = []
-
-# 			print len(outim)
-
-# 			aliavg = sum(outim)				# we start with a simple average of all frames
-
-# 			for it in xrange(3) :
-# 				step = len(outim)		# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
-# 				xali = XYData()		# this will contain the alignments which are hierarchically estimated and improved
-# 				yali = XYData()		# x is time in both cases, y is x or y
-
-# 				while step > 1 :
-# 					step /= 2
-# 					i0 = 0
-
-# 					while i0 < len(outim) :
-# 						i1 = min(i0+step, len(outim))
-# 						av0 = sum(outim[i0:i1])
-
-# 						tloc=(i0+i1-1)/2.0		# the "time" of the current average
-# 						lrange=hypot(xali.get_yatx_smooth(i1,1)-xali.get_yatx_smooth(i0,1),yali.get_yatx_smooth(i1,1)-yali.get_yatx_smooth(i0,1))*1.5
-# 						if lrange<8 : lrange=8
-
-# 						guess=(xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1))
-# 						if xali.get_size()>1 and guess[0]<2 and guess[1]<2 :
-# 							i0+=step
-# 							continue				# if the predicted shift is too small, then we won't get it right anyway, so we just interpolate
-
-# ##						print step,i0,xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1),lrange,
-# 	#					dx,dy,Z=align_subpixel(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
-
-# 						if step==len(outim)/2 :
-# 							dx,dy,Z=align(aliavg,av0,guess=(0,0),localrange=192,verbose=options.verbose-1)
-# 						else:
-# 							dx,dy,Z=align(aliavg,av0,guess=guess,localrange=lrange,verbose=options.verbose-1)
-# ##						print dx,dy,Z
-
-# 						xali.insort(tloc,dx)
-# 						yali.insort(tloc,dy)
-
-# 						i0+=step
-
-# 					# possible sometimes to have multiple values for the same x (img #), average in these cases
-
-# 					xali.dedupx()
-# 					yali.dedupx()
-
-# 					# Smoothing
-# 					# we should have all possible x-values at this point, so we just do a very simplistic smoothing
-
-# 					for i in xrange(xali.get_size()-2):
-# 						xali.set_y(i+1,(xali.get_y(i)+xali.get_y(i+1)*2.0+xali.get_y(i+2))/4.0)
-# 						yali.set_y(i+1,(yali.get_y(i)+yali.get_y(i+1)*2.0+yali.get_y(i+2))/4.0)
-
-# ##					print ["%6.1f"%i for i in xali.get_xlist()]
-# ##					print ["%6.2f"%i for i in xali.get_ylist()]
-# ##					print ["%6.2f"%i for i in yali.get_ylist()]
-
-# 				outim2=[outim[i].get_clip(Region(-xali.get_yatx_smooth(i,1),-yali.get_yatx_smooth(i,1),outim[i]["nx"],outim[i]["ny"])) for i in xrange(len(outim))]
-
-# 				aliavg=sum(outim2)
-# 				aliavg.mult(1.0/len(outim2))
-
-# 				if options.verbose>2 :
-# 					out=file("align%d.txt"%it,"w")
-# 					for i in xrange(xali.get_size()):
-# 						out.write("%1.2f\t%1.2f\n"%(xali.get_y(i),yali.get_y(i)));
-# 					out=file("alignsm%d.txt"%it,"w")
-# 					for i in xrange(len(outim)):
-# 						out.write("%1.2f\t%1.2f\n"%(xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1)));
-# 					xali.write_file("alignx%d.txt"%it)
-# 					yali.write_file("aligny%d.txt"%it)
-
-# 			aliavg.write_image(outname[:-4]+"_aliavg.hdf",0)
-
-# 			if options.save_aligned:
-# 				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i,IMAGE_HDF, False, None, EM_USHORT)
-
-# 			if options.verbose>2 :
-# 				t=sum(outim)
-# 				t.mult(1.0/len(outim2))
-# 				t=t.get_clip(Region(500,500,3072,3072))
-# 				aliavg=aliavg.get_clip(Region(500,500,3072,3072))
-# 				display([t,aliavg],True)
-
-		# we iterate the alignment process several times
-
-		#if options.align_frames_countmode:
-			#outim2=[]
-##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
-			#av=sum(outim)
-##			av.mult(1.0/len(outim))
-			#fav=[]
-			#for it in xrange(2):		# K2 data seems to converge pretty much immediately in my tests
-
-				#for im in outim:
-					#if it==0 : av.sub(im)
-					#dx,dy,z=align(im,av,verbose=options.verbose)
-					#im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
-					#if options.verbose==1 : print "{}, {}".format(dx,dy)
-					#if it==0: av.add(im2)
-					#outim2.append(im2)
-
-				#print "-----"
-
-				#av=sum(outim2)
-				#av.mult(1.0/len(outim))
-				#fav.append(av)
-				#if it!=2 : outim2=[]
-
-			#av.write_image(outname[:-4]+"_aliavg.hdf",0)
-			#if options.save_aligned:
-				#for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
-			#if options.verbose>2 : display(fav,True)
-
 		if options.align_frames :
 
 			data = outim
@@ -905,3 +756,155 @@ def align_subpixel(s1,s2,guess=(0,0),localrange=192,verbose=0):
 
 if __name__ == "__main__":
 	main()
+
+###### OLD ALIGN FRAMES ROUTINE
+
+
+		# we iterate the alignment process several times
+
+		#if options.align_frames:
+			#outim2=[]
+##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
+##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4})
+			#av=sum(outim[-5:])
+##			av=outim[-1].copy()
+##			av.mult(1.0/len(outim))
+			#fav=[]
+			#for it in xrange(2):
+
+				#for im in outim:
+					#dx,dy,z=align(im,av,verbose=options.verbose)
+					#im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
+					#if options.verbose==1 : print "{}, {}".format(dx,dy)
+					#outim2.append(im2)
+
+				#print "-----"
+
+				#av=sum(outim2)
+				#av.mult(1.0/len(outim))
+				#fav.append(av)
+				#if it!=2 : outim2=[]
+
+			#av.write_image(outname[:-4]+"_aliavg.hdf",0)
+			#if options.save_aligned:
+				#for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
+			#if options.verbose>1 : display(fav,True)
+
+		# we iterate the alignment process several times
+
+# 		if options.align_frames :
+
+# 			outim2 = []
+
+# 			print len(outim)
+
+# 			aliavg = sum(outim)				# we start with a simple average of all frames
+
+# 			for it in xrange(3) :
+# 				step = len(outim)		# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
+# 				xali = XYData()		# this will contain the alignments which are hierarchically estimated and improved
+# 				yali = XYData()		# x is time in both cases, y is x or y
+
+# 				while step > 1 :
+# 					step /= 2
+# 					i0 = 0
+
+# 					while i0 < len(outim) :
+# 						i1 = min(i0+step, len(outim))
+# 						av0 = sum(outim[i0:i1])
+
+# 						tloc=(i0+i1-1)/2.0		# the "time" of the current average
+# 						lrange=hypot(xali.get_yatx_smooth(i1,1)-xali.get_yatx_smooth(i0,1),yali.get_yatx_smooth(i1,1)-yali.get_yatx_smooth(i0,1))*1.5
+# 						if lrange<8 : lrange=8
+
+# 						guess=(xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1))
+# 						if xali.get_size()>1 and guess[0]<2 and guess[1]<2 :
+# 							i0+=step
+# 							continue				# if the predicted shift is too small, then we won't get it right anyway, so we just interpolate
+
+# ##						print step,i0,xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1),lrange,
+# 	#					dx,dy,Z=align_subpixel(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
+
+# 						if step==len(outim)/2 :
+# 							dx,dy,Z=align(aliavg,av0,guess=(0,0),localrange=192,verbose=options.verbose-1)
+# 						else:
+# 							dx,dy,Z=align(aliavg,av0,guess=guess,localrange=lrange,verbose=options.verbose-1)
+# ##						print dx,dy,Z
+
+# 						xali.insort(tloc,dx)
+# 						yali.insort(tloc,dy)
+
+# 						i0+=step
+
+# 					# possible sometimes to have multiple values for the same x (img #), average in these cases
+
+# 					xali.dedupx()
+# 					yali.dedupx()
+
+# 					# Smoothing
+# 					# we should have all possible x-values at this point, so we just do a very simplistic smoothing
+
+# 					for i in xrange(xali.get_size()-2):
+# 						xali.set_y(i+1,(xali.get_y(i)+xali.get_y(i+1)*2.0+xali.get_y(i+2))/4.0)
+# 						yali.set_y(i+1,(yali.get_y(i)+yali.get_y(i+1)*2.0+yali.get_y(i+2))/4.0)
+
+# ##					print ["%6.1f"%i for i in xali.get_xlist()]
+# ##					print ["%6.2f"%i for i in xali.get_ylist()]
+# ##					print ["%6.2f"%i for i in yali.get_ylist()]
+
+# 				outim2=[outim[i].get_clip(Region(-xali.get_yatx_smooth(i,1),-yali.get_yatx_smooth(i,1),outim[i]["nx"],outim[i]["ny"])) for i in xrange(len(outim))]
+
+# 				aliavg=sum(outim2)
+# 				aliavg.mult(1.0/len(outim2))
+
+# 				if options.verbose>2 :
+# 					out=file("align%d.txt"%it,"w")
+# 					for i in xrange(xali.get_size()):
+# 						out.write("%1.2f\t%1.2f\n"%(xali.get_y(i),yali.get_y(i)));
+# 					out=file("alignsm%d.txt"%it,"w")
+# 					for i in xrange(len(outim)):
+# 						out.write("%1.2f\t%1.2f\n"%(xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1)));
+# 					xali.write_file("alignx%d.txt"%it)
+# 					yali.write_file("aligny%d.txt"%it)
+
+# 			aliavg.write_image(outname[:-4]+"_aliavg.hdf",0)
+
+# 			if options.save_aligned:
+# 				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i,IMAGE_HDF, False, None, EM_USHORT)
+
+# 			if options.verbose>2 :
+# 				t=sum(outim)
+# 				t.mult(1.0/len(outim2))
+# 				t=t.get_clip(Region(500,500,3072,3072))
+# 				aliavg=aliavg.get_clip(Region(500,500,3072,3072))
+# 				display([t,aliavg],True)
+
+		# we iterate the alignment process several times
+
+		#if options.align_frames_countmode:
+			#outim2=[]
+##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
+			#av=sum(outim)
+##			av.mult(1.0/len(outim))
+			#fav=[]
+			#for it in xrange(2):		# K2 data seems to converge pretty much immediately in my tests
+
+				#for im in outim:
+					#if it==0 : av.sub(im)
+					#dx,dy,z=align(im,av,verbose=options.verbose)
+					#im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
+					#if options.verbose==1 : print "{}, {}".format(dx,dy)
+					#if it==0: av.add(im2)
+					#outim2.append(im2)
+
+				#print "-----"
+
+				#av=sum(outim2)
+				#av.mult(1.0/len(outim))
+				#fav.append(av)
+				#if it!=2 : outim2=[]
+
+			#av.write_image(outname[:-4]+"_aliavg.hdf",0)
+			#if options.save_aligned:
+				#for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
+			#if options.verbose>2 : display(fav,True)
