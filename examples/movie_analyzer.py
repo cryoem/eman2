@@ -23,7 +23,7 @@ pkgs = {"EMAN2":"e2ddd_movie.py",
 		"UNBLUR":"unblur_openmp_7_17_15.exe",
 		"DE":"DE_process_frames-2.8.1.py",
 		"IMOD":"alignframes",
-		"LMBGFS":"alignframes_lmbfgs.exe"}
+		"LMBFGS":"alignframes_lmbfgs.exe"}
 
 found = []
 for pkg in pkgs.keys():
@@ -45,7 +45,7 @@ def main():
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
 	parser.add_argument("--skipalign",action="store_true",default=False,help="If you wish to skip running alignments, specify this option.")
 	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
-	parser.add_argument("--include", type=str, help="Comma separated list of packages to include during comparison.", default="DE,EMAN2,IMOD,UCSF,UNBLUR,LMBGFS")
+	parser.add_argument("--include", type=str, help="Comma separated list of packages to include during comparison.", default="DE,EMAN2,IMOD,UCSF,UNBLUR,LMBFGS")
 	parser.add_argument("--exclude", type=str, help="Comma separated list of packages to exclude during comparison.", default="")
 	# DDD frame correction
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
