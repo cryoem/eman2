@@ -42,6 +42,8 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--goldsize", default=27, type=float, help="Gold diameter in pixels. Default is 27.")
+	parser.add_argument("--boxsize", default=128, type=float, help="Box size to use when tiling image to compute noise. Default is 128.")
+	parser.add_argument("--oversample", default=4, type=float, help="Oversample by this much when tiling image to compute noise. Default is 4.")
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
 	parser.add_argument("--skipalign",action="store_true",default=False,help="If you wish to skip running alignments, specify this option.")
 	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
@@ -56,7 +58,7 @@ def main():
 	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
 	parser.add_argument('--xybadlines', help="Specify the list of bad pixel coordinates for your detector. Will only be used if --fixbadlines is also specified.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
 	# program options
-	parser.add_argument("--threads", default=multiprocessing.cpu_count()-2, type=int, help="Number of threads to use with each aligner. By default will use all but 2 cpus.")
+	parser.add_argument("--threads", default=1, type=int, help="Number of threads to use with each aligner. Default is 1.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -107,17 +109,25 @@ def main():
 		lcname = "{}/loctrst.hdf".format(bdir)
 
 		frames_hictrst = load_frames(fname)
-		frames_loctrst = []
-		for i,fhc in enumerate(frames_hictrst):
-			t0 = time.time()
-			if options.verbose: print("Processing frame {}".format(i))
-			fhc.write_image(hcname,i)
-			flc = fixframe(fhc) # remove gold from frame
-			flc.write_image(lcname,i)
-			frames_loctrst.append(flc)
-			if options.verbose: print("{}".format(time.time()-t0))
+		write_frames(frames_hictrst,hcname)
+
 		hictrst_avg = average_frames(frames_hictrst)
 		hictrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
+
+		if options.verbose: print("Erasing gold and other very high contrast features")
+
+		cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={}"
+		cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose)
+		o,e,rt=run(cmd,cwd=bdir,shell=True)
+
+		tmp = "{}/hictrst_proc.hdf".format(bdir)
+		try: shutil.move(tmp,lcname)
+		except: 
+			print("Could not move hictrst_proc.hdf to loctrst.hdf. Move or remove hictrst_proc.hdf before trying again.")
+			sys.exit(1)
+
+		frames_loctrst = load_frames(lcname)
+		
 		loctrst_avg = average_frames(frames_loctrst)
 		loctrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
 
@@ -658,6 +668,10 @@ def calc_coherent_pws(frames,bs=512):
 def load_frames(fn): 
 	return [EMData(fn,i) for i in range(EMUtil.get_image_count(fn))]
 
+def write_frames(frames,fn):
+	for i,f in enumerate(frames):
+		f.write_image(fn,i)
+
 def average_frames(frames):
 	avgr = Averagers.get("mean")
 	avgr.add_image_list(frames)
@@ -860,3 +874,14 @@ class FrameCorrector:
 
 if __name__ == "__main__":
 	main()
+
+
+		# frames_loctrst = []
+		# for i,fhc in enumerate(frames_hictrst):
+		# 	t0 = time.time()
+		# 	if options.verbose: print("Processing frame {}".format(i))
+		# 	fhc.write_image(hcname,i)
+		# 	flc = fixframe(fhc) # remove gold from frame
+		# 	flc.write_image(lcname,i)
+		# 	frames_loctrst.append(flc)
+		# 	if options.verbose: print("{}".format(time.time()-t0))
