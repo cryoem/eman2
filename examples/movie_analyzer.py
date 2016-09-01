@@ -83,7 +83,7 @@ def main():
 		try: apix = hdr["apix_x"]
 		except: apix = 1.0
 
-	print("Performing alignments with {}.".format(", ".join(options.include)))
+	print("Performing alignments with the following packages: {}.\n".format(", ".join(options.include)))
 
 	logid=E2init(sys.argv,options.ppid)
 
@@ -110,24 +110,24 @@ def main():
 
 		frames_hictrst = load_frames(fname)
 		write_frames(frames_hictrst,hcname)
-
 		hictrst_avg = average_frames(frames_hictrst)
 		hictrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
 
-		if options.verbose: print("Erasing gold and other very high contrast features")
-
-		cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={}"
-		cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose)
-		o,e,rt=run(cmd,cwd=bdir,shell=True)
-
+		if not os.path.isfile(lcname):
+			if options.verbose: print("Erasing gold and other very high contrast features")
+			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={}" 
+			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose)
+			o,e,rt=run(cmd,cwd=bdir,shell=True)
 		tmp = "{}/hictrst_proc.hdf".format(bdir)
-		try: shutil.move(tmp,lcname)
-		except: 
-			print("Could not move hictrst_proc.hdf to loctrst.hdf. Move or remove hictrst_proc.hdf before trying again.")
-			sys.exit(1)
+		if os.path.isfile(tmp):
+			ln = lcname.split("/")[-1]
+			run("e2proc2d.py {} {}".format(tmp,ln),cwd=bdir)
+			try: os.unlink(tmp)
+			except: pass
+		
+		else: print("Found gold subtracted frames from previous analysis.")
 
 		frames_loctrst = load_frames(lcname)
-		
 		loctrst_avg = average_frames(frames_loctrst)
 		loctrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
 
@@ -298,7 +298,9 @@ EOF
 							ali=lfn.replace(".mrc","_ali.mrc")
 							frc=lfn.replace(".mrc","_frc.txt")
 
-							cmd = template.format(prog=pkgs[pkg],fname=lfn, nframes=nfs, alignsum=alis, shiftfile=shft, apix=apix, dosefilt="NO", saveali="YES", aliname=ali, advopts="NO", frcname=frc, minsrch=2.0, maxsrch=200.0, bfact=1500, vfmwidth=1, hfmwidth=1, thresh=0.1, maxiter=10, verbose="NO")
+							cmd = template.format(prog=pkgs[pkg],fname=lfn, nframes=nfs, alignsum=alis, shiftfile=shft, 
+								apix=apix, dosefilt="NO", saveali="YES", aliname=ali, advopts="NO", frcname=frc, minsrch=2.0, 
+								maxsrch=200.0, bfact=1500, vfmwidth=1, hfmwidth=1, thresh=0.1, maxiter=10, verbose="NO")
 
 							o,e,rt=run(cmd,shell=True,cwd=pdir)
 							runtimes[pkg].append(rt)
@@ -315,7 +317,7 @@ EOF
 				if pkg == "LMBFGS":
 
 					if not options.skipalign:
-						template = """{prog} << EOF
+						template = """{prog} << eot
 {movielist}
 {boxsize},{psize},{nsigma},{rmax1},{rmax2},{smooth}
 {bfactor}
@@ -324,8 +326,7 @@ EOF
 {inpath}
 {outpath}
 {shfext}
-{vecext}
-EOF
+eot
 """
 
 						for fn in [hcname,lcname]:
@@ -347,6 +348,8 @@ EOF
 							else:
 								if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
+							outf = frc=lfn.replace(".mrcs","_proc.mrcs")
+
 							bs = int(max(3600,min(frames_hictrst[0]["nx"]*0.75,frames_hictrst[0]["ny"]*0.75)))
 							ps = 1.45
 							nsig = 5
@@ -358,12 +361,27 @@ EOF
 							flast = 0
 							fmiddle = int(len(frames_hictrst)/2)
 							factr = "1d1"
-							inpath = pdir
-							outpath = pdir
+							inpath = "./" #lfn #"{}/{}".format(pdir,lfn)
+							outpath = "./" #outf #"{}/{}".format(pdir,outf)
 
-							cmd = template.format(movielist=mlfn, boxsize=bs, psize=ps, nsigma=nsig, rmax1=rm1, rmax2=rm2, smooth=smooth, bfactor=bfact, framefirst=ffirst, framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath, shfext="shf", vecext="vec")
+							print("\n{}/{}\n".format(pdir,lfn))
 
-							o,e,rt=run(cmd,shell=True,cwd=pdir,exe="/bin/csh")
+							try: os.symlink(fn,"{}/{}".format(pdir,lfn)) # shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+							except: pass
+
+							cmd = template.format(prog=pkgs[pkg],movielist="movielist.txt", boxsize=bs, psize=ps, 
+								nsigma=nsig, rmax1=rm1, rmax2=rm2, smooth=smooth, bfactor=bfact, framefirst=ffirst, 
+								framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath, 
+								shfext="shf")#, vecext="vec")
+
+							o,e,rt=run(cmd,shell=True,exe="/bin/csh",cwd=pdir)
+
+							print(cmd)
+							print(o)
+							print(e)
+
+							os.unlink("{}/{}".format(pdir,lfn))
+							
 							runtimes[pkg].append(rt)
 
 					for f in os.listdir(pdir):
@@ -678,7 +696,7 @@ def average_frames(frames):
 	return avgr.finish()
 
 def failed(pkg):
-	print("Could not find frame shifts for {} aligner. Perhaps you should use the --align option.".format(pkg))
+	print("ERROR: Could not find frame shifts for {} aligner.".format(pkg))
 	sys.exit(1)
 
 def run(cmd,shell=False,cwd=None,exe="/bin/sh"):
