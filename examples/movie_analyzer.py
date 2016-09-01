@@ -292,7 +292,7 @@ EOF
 								lfn = lfn_new
 								lext = "mrc"
 
-							nfs = len(frames)
+							nfs = len(frames_hictrst)
 							alis =lfn.replace(".mrc","_ali_sum.mrc")
 							shft =lfn.replace(".mrc","_shifts.txt")
 							ali=lfn.replace(".mrc","_ali.mrc")
@@ -347,7 +347,7 @@ EOF
 							else:
 								if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
-							bs = int(max(3600,min(frames[0]["nx"]*0.75,frames[0]["ny"]*0.75)))
+							bs = int(max(3600,min(frames_hictrst[0]["nx"]*0.75,frames_hictrst[0]["ny"]*0.75)))
 							ps = 1.45
 							nsig = 5
 							rm1 = 500
@@ -356,7 +356,7 @@ EOF
 							bfact = 2000
 							ffirst = 1
 							flast = 0
-							fmiddle = int(len(frames)/2)
+							fmiddle = int(len(frames_hictrst)/2)
 							factr = "1d1"
 							inpath = pdir
 							outpath = pdir
