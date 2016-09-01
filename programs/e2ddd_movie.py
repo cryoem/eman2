@@ -143,7 +143,6 @@ def main():
 		#else: gain.mult(1.0/99.0)
 #		gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 
-
 		if dark!=None : gain.sub(dark)												# dark correct the gain-reference
 		gain.mult(1.0/gain["mean"])									# normalize so gain reference on average multiplies by 1.0
 		gain.process_inplace("math.reciprocal",{"zero_to":0.0})		# setting zero values to zero helps identify bad pixels
