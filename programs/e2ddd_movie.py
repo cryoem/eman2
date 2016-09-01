@@ -32,7 +32,7 @@
 
 
 from EMAN2 import *
-from EMAN2.Simplex import Simplex
+from Simplex import Simplex
 from numpy import *
 import pprint
 import sys
