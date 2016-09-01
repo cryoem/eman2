@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 
+from EMAN2 import *
+from scipy import ndimage
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from EMAN2 import *
-import subprocess
 import shutil
-#import pickle
-from scipy import ndimage
 import time
 import multiprocessing
+import subprocess
 
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
@@ -19,7 +18,7 @@ def which(prog):
 	return process.communicate()[0].replace("\n","")
 
 global pkgs
-pkgs = {"EMAN2":"movie_ccf.py",
+pkgs = {"EMAN2":"e2ddd_movie.py",
 		"UCSF":"dosefgpu_driftcorr",
 		"UNBLUR":"unblur_openmp_7_17_15.exe",
 		"DE":"DE_process_frames-2.8.1.py",
@@ -42,13 +41,9 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	#parser.add_argument("--box", default=2048, type=int, help="Size of box to use for sub-region selection.")
 	parser.add_argument("--goldsize", default=27, type=float, help="Gold diameter in pixels. Default is 27.")
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
 	parser.add_argument("--skipalign",action="store_true",default=False,help="If you wish to skip running alignments, specify this option.")
-	#parser.add_argument("--hcreg", type=str, help="Center coordinates of high contrast region. If not specified, region will be computed automatically. Format should be: x,y", default=None)
-	#parser.add_argument("--lcreg", type=str, help="Center coordinates of low contrast region. If not specified, region will be computed automatically. Format should be: x,y", default=None)
-	#parser.add_argument("--show", action="store_true",help="Show average of movie frames before and after alignment.",default=True)
 	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
 	parser.add_argument("--include", type=str, help="Comma separated list of packages to include during comparison.", default="DE,EMAN2,IMOD,UCSF,UNBLUR,LMBGFS")
 	parser.add_argument("--exclude", type=str, help="Comma separated list of packages to exclude during comparison.", default="")
@@ -114,24 +109,26 @@ def main():
 		frames_hictrst = load_frames(fname)
 		frames_loctrst = []
 		for i,fhc in enumerate(frames_hictrst):
-			print(i)
+			if options.verbose: print("Processing frame {}".format(i))
 			fhc.write_image(hcname,i)
-			flc = fixframe(fhc) # remove gold from frame
-			frames_loctrst.append(flc)
+			f = fixframe(fhc) # remove gold from frame
 			flc.write_image(lcname,i)
+			frames_loctrst.append(flc)
 
 		hictrst_avg = average_frames(frames_hictrst)
 		hictrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
-
 		loctrst_avg = average_frames(frames_loctrst)
 		loctrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
 
 		cwd = os.getcwd()
+		
 		trans_lo = {}
 		trans_hi = {}
+
 		localhc = hcname.split("/")[-1]
 		locallc = lcname.split("/")[-1]
-		runtimes = {key:[] for key in pkgs.keys()}
+
+		runtimes = {key:[] for key in pkgs.keys()} # for each package, store its runtime.
 
 		for pkg in sorted(pkgs.keys()):
 			if pkg in options.include:
@@ -367,27 +364,27 @@ EOF
 						trans_lo[pkg] = parse_lmbfgs(lo)
 					except: failed(pkg)
 
-		# PART 1: How quickly do these frame alignment alorithms run
+		# Question 1: How quickly do these frame alignment alorithms run
 		if not options.skipalign:
 			with open("{}/runtimes.txt".format(bdir),"w") as f:
 				f.write("PKG\tRUNTIME\n")
 				if options.verbose: print("PKG\tRUNTIME")
 				for pkg in options.include:
-					q,r,s = runtimes[pkg]
-					if options.verbose: print("{}\t{}".format(pkg,runtimes))
-					f.write("{}\t{}\n".format(pkg,q,r,s))
+					h,l = runtimes[pkg]
+					if options.verbose: print("{}\t{}\t{}".format(pkg,h,l))
+					f.write("{}\t{}\n".format(pkg,h,l))
 
-		#PART 2: How does calculated motion differ between the most commonly used alignment algorithms?
+		# Question 2: How does calculated motion differ between the most commonly used alignment algorithms?
 		trans_orig, mags_orig = plot_trans(trans_hi,bdir)
 
-		# PART 3: How different are predicted frame translations with and without high contrast features?
+		# Question 3: How different are predicted frame translations with and without high contrast features?
 		trans_hi, trans_lo, ssdfs = plot_differences(trans_hi,trans_lo,bdir)
 
-		# Part 4: Compare coherence in fourier space
+		# Question 4: How do alignment algorithms improve power spectral coherence?
 		coherence_hi = calc_coherence(frames_hictrst,trans_hi)
 		coherence_lo = calc_coherence(frames_loctrst,trans_lo)
 
-		# Part 5: Compare contrast in real space
+		# Question 5: How do alignment algorithms influence real-space contrast?
 		contrast_hi = calc_contrast(frames_hictrst)
 		contrast_lo = calc_contrast(frames_loctrst)
 
@@ -395,67 +392,6 @@ EOF
 
 	print("DONE")
 
-def failed(pkg):
-	print("Could not find frame shifts for {} aligner. Perhaps you should use the --align option.".format(pkg))
-	sys.exit(1)
-
-def get_region(c,bs):
-	x,y=map(int,c.split(","))
-	return Region(x-bs/2,y-bs/2,bs,bs)
-
-def get_hclc_regions(img,n=100,bs=2048,edge=128):
-	rbs = int(np.sqrt(bs))
-	idx = np.argmin([(gbs-rbs)**2 for gbs in good_box_sizes])
-	nbs = good_box_sizes[idx]
-	xmin = bs/2 + edge
-	xmax = img["nx"] - xmin
-	ymin = bs/2 + edge
-	ymax = img["ny"] - ymin
-	coords = np.random.randint(low=max(xmin,ymin),high=min(xmax,ymax),size=(n,2))
-	crds = []
-	regs = []
-	energy = []
-	for i,(x,y) in enumerate(coords):
-		r = Region(x-bs/2,y-bs/2,bs,bs)
-		reg = img.get_clip(r)
-		reg.process_inplace("math.fft.resample",{"n":(bs/nbs)})
-		reg.process_inplace("filter.highpass.gauss",{"cutoff_pixels":5})
-		reg.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
-		reg.process_inplace("mask.gaussian",{"inner_radius":nbs/6,"outer_radius":nbs/3})
-		regs.append(reg)
-		energy.append(reg["sigma"]*(reg["maximum"]-reg["minimum"])**2)
-		crds.append("{},{}".format(x,y))
-	regs.sort(key=dict(zip(regs, energy)).get)
-	crds.sort(key=dict(zip(crds, energy)).get)
-	hc = map(int,crds[-1].split(","))
-	lc = map(int,crds[0].split(","))
-	hcr = Region(hc[0]-bs/2,lc[1]-bs/2,bs,bs)
-	lcr = Region(lc[0]-bs/2,lc[1]-bs/2,bs,bs)
-	return hcr,lcr
-
-def run(cmd,shell=False,cwd=None,exe="/bin/sh"):
-	if options.verbose: print(cmd.replace("\n"," "))
-	if cwd == None:
-		cwd = os.getcwd()
-	if shell == False:
-		cmd = cmd.split()
-	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd, executable=exe)
-	start = time.time()
-	out, err = process.communicate()
-	runtime = time.time() - start
-	if options.verbose: print("Runtime: {}".format(runtime))
-	return out, err, runtime
-
-def shift_by(frames,trans):
-	d = {}
-	for key in trans.keys():
-		if key != "ALL":
-			d[key] = []
-			for i, frame in enumerate(frames):
-				f = frame.copy()
-				f.translate(trans[key][i][0],trans[key][i][1],0)
-				d[key].append(f)
-	return d
 
 def calc_cips_scores(ftypes,bs=512):
 	scores = {}
@@ -498,7 +434,6 @@ def plot_scores(scores,bdir): # 1 axis per metric
 def plot_trans(trans,bdir,nsig=1):
 	ats = np.hstack([trans[k] for k in sorted(trans.keys())])
 	np.savetxt("{}/all_trans.txt".format(bdir),ats)
-
 	trans["ALL"] = np.dstack([trans[key] for key in trans.keys()])
 	trans["MEAN"] = np.mean(trans["ALL"],axis=2)
 	trans["VAR"] = np.var(trans["ALL"],axis=2)
@@ -508,16 +443,12 @@ def plot_trans(trans,bdir,nsig=1):
 	else: siglabel = "{}x STD".format(nsig)
 	exclude = ["STD","VAR","ALL"]
 	xx = np.arange(1,len(trans["MEAN"][:,0])+1,1)
-
 	mags = {"MEAN":np.sqrt(trans["MEAN"][:,0]**2+trans["MEAN"][:,1]**2)}
 	for key in trans.keys():
 		if key not in exclude + ["MEAN"]:
 			mags[key] = np.sqrt(trans[key][:,0]**2+trans[key][:,1]**2) - mags["MEAN"]
-
 	fig = plt.figure()
-
 	ax1 = fig.add_subplot(211)
-
 	cctr = 0
 	for key in trans.keys():
 		if key not in exclude:
@@ -531,9 +462,7 @@ def plot_trans(trans,bdir,nsig=1):
 	ax1.set_title("Measured Drift")
 	ax1.set_xlabel("X Frame Translation (pixels)")
 	ax1.set_ylabel("Y Frame Translations (pixels)")
-
 	ax2 = fig.add_subplot(212)
-
 	cctr = 0
 	for key in mags.keys():
 		if key != "MEAN":
@@ -546,9 +475,7 @@ def plot_trans(trans,bdir,nsig=1):
 	ax2.set_ylabel("Relative shift magnitude (pixels)")
 	ax2.set_title("Frame shift magnitude (relative to MEAN)")
 	ax2.legend(loc="best")
-
 	fig.tight_layout()
-
 	plt.savefig("{}/trans.png".format(bdir))
 	return trans, mags, fig
 
@@ -631,6 +558,10 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
 	plt.savefig("{}/differences.png".format(bdir))
 	return trans_hi, trans_lo, ssdfs, fig
 
+#############################
+# Parse Output Translations #
+#############################
+
 def parse_eman2(fn):
 	with open(fn) as f:
 		trans = [txt.split("\t")[1:3] for txt in f.readlines()[1:]]
@@ -668,6 +599,10 @@ def parse_unblur(fn):
 	trans = np.asarray([[x,y] for (x,y) in zip(lines[0],lines[1])]).astype(float)
 	trans /= apix
 	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
+
+#########################
+# Compute Power Spectra #
+#########################
 
 def calc_incoherent_pws(frames,bs=512):
 	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
@@ -715,21 +650,113 @@ def calc_coherent_pws(frames,bs=512):
 	cps.process_inplace('normalize.edgemean')
 	return cps
 
-def load_frames(fn): return [EMData(fn,i) for i in range(EMUtil.get_image_count(fn))]
+#####################
+# Utility functions #
+#####################
 
-def shift_frames(frames,trans):
-	shifted = []
-	for frame,(x,y) in zip(frames,trans):
-		f = frame.copy()
-		f.translate(x,y,0)
-		shifted.append(f)
-	return shifted
+def load_frames(fn): 
+	return [EMData(fn,i) for i in range(EMUtil.get_image_count(fn))]
 
 def average_frames(frames):
 	avgr = Averagers.get("mean")
 	avgr.add_image_list(frames)
 	return avgr.finish()
 
+def failed(pkg):
+	print("Could not find frame shifts for {} aligner. Perhaps you should use the --align option.".format(pkg))
+	sys.exit(1)
+
+def run(cmd,shell=False,cwd=None,exe="/bin/sh"):
+	if options.verbose: print(cmd.replace("\n"," "))
+	if cwd == None:
+		cwd = os.getcwd()
+	if shell == False:
+		cmd = cmd.split()
+	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd, executable=exe)
+	start = time.time()
+	out, err = process.communicate()
+	runtime = time.time() - start
+	if options.verbose: print("Runtime: {}".format(runtime))
+	return out, err, runtime
+
+# def shift_frames(frames,trans):
+# 	shifted = []
+# 	for frame,(x,y) in zip(frames,trans):
+# 		f = frame.copy()
+# 		f.translate(x,y,0)
+# 		shifted.append(f)
+# 	return shifted
+
+####################
+# Gold subtraction #
+####################
+
+def fixframe(f):
+	f *= -1
+	f.process_inplace("normalize")
+	sharp_msk, soft_msk = generate_masks(f)
+	mskd_sharp = sharp_msk * f
+	sub_sharp = f - mskd_sharp
+	noise = local_noise(sub_sharp)
+	mskd_soft = soft_msk * f
+	sub_soft = f - mskd_soft
+	return (sub_soft + noise * soft_msk)*-1
+
+def generate_masks(img,keepdust=False,goldsize=27):
+	img.process_inplace("normalize")
+	# create sharp mask
+	msk = img.process("filter.highpass.gauss",{"cutoff_pixels":25})
+	msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+	msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+3*msk["sigma"],"tozero":True})
+	msk.process_inplace("threshold.binary",{"value":msk["mean"]})
+	# remove dust
+	if keepdust: 
+		sharp_msk = msk.copy()
+	else:
+		nproc = msk.numpy().copy()
+		s = np.sqrt(goldsize*2).astype(int)
+		se2=np.ones((s,s))
+		nproc = ndimage.binary_closing(nproc,structure=se2).astype(int)
+		nproc = ndimage.binary_opening(nproc,structure=se2).astype(int)
+		sharp_msk = from_numpy(nproc)
+	# grow slightly and create soft mask
+	sharp_msk = sharp_msk.process("mask.addshells.gauss",{"val1":8,"val2":0})
+	soft_msk = sharp_msk.process("mask.addshells.gauss",{"val1":0,"val2":8})
+	return sharp_msk,soft_msk
+
+def local_noise(img,bs=128,oversample=4,verbose=False):
+	localnoise = EMData(img["nx"],img["ny"])
+	localnoise.to_zero()
+	nbxs = len(np.arange(-bs,img['nx']+bs,bs))*oversample
+	nbys = len(np.arange(-bs,img['ny']+bs,bs))*oversample
+	mx = np.linspace(0,img["nx"],nbxs).astype(int)
+	my = np.linspace(0,img["ny"],nbys).astype(int)
+	for x in mx:
+		for y in my:
+			r = img.get_clip(Region(x-bs/2,y-bs/2,bs,bs))
+			n = EMData(bs,bs)
+			n.to_zero()
+			n.process_inplace("math.addnoise",{"noise":r["sigma_nonzero"]})
+			n.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
+			try: n *= r["sigma_nonzero"]/n["sigma_nonzero"]
+			except:
+				if verbose:
+					print("WARNING: division by zero, from n['sigma_nonzero']={}".format(n["sigma_nonzero"]))
+			n += r["mean_nonzero"]
+			localnoise.insert_clip(n,(x-bs/2,y-bs/2))
+	apix = img['apix_x']
+	localnoise['apix_x'] = apix
+	localnoise['apix_y'] = apix
+	nyquistres=apix*2.0
+	filtres=nyquistres*10.0/9.0
+	filtfreq=1.0/filtres
+	if verbose: print("Apix {}\tResolution {}\tFrequency {}".format(apix,filtres,filtfreq))
+	localnoise.process_inplace('filter.lowpass.tanh', {'cutoff_freq':filtfreq,'apix':apix})
+	return localnoise
+
+###############################
+# DDD movie utility functions #
+###############################
 
 class FrameCorrector:
 
@@ -829,62 +856,6 @@ class FrameCorrector:
 		# setting zero values to zero helps identify bad pixels
 		gain.process_inplace("math.reciprocal",{"zero_to":0.0})
 		return gain
-
-def fixframe(f):
-	f *= -1
-	f.process_inplace("normalize")
-	sharp_msk, soft_msk = generate_masks(f)
-	mskd_sharp = sharp_msk*f
-	sub_sharp = f-mskd_sharp
-	noise = local_noise(sub_sharp)
-	mskd_soft = soft_msk*f
-	sub_soft = f-mskd_soft
-	return -1*(sub_soft+noise*soft_msk)
-
-
-def generate_masks(img):
-	img.process_inplace("normalize")
-	# create sharp mask
-	msk = img.process("filter.highpass.gauss",{"cutoff_pixels":25})
-	msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
-	msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+3*msk["sigma"],"tozero":True})
-	msk.process_inplace("threshold.binary",{"value":msk["mean"]})
-	# remove dust
-	#if options.keepdust: sharp_msk = msk.copy()
-	#else:
-	nproc = msk.numpy().copy()
-	s = np.sqrt(options.goldsize*2).astype(int)
-	se2=np.ones((s,s))
-	nproc = ndimage.binary_closing(nproc,structure=se2).astype(int)
-	nproc = ndimage.binary_opening(nproc,structure=se2).astype(int)
-	sharp_msk = from_numpy(nproc)
-	# grow slightly and create soft mask
-	sharp_msk = sharp_msk.process("mask.addshells.gauss",{"val1":8,"val2":0})
-	soft_msk = sharp_msk.process("mask.addshells.gauss",{"val1":0,"val2":8})
-	return sharp_msk,soft_msk
-
-
-def local_noise(img,bs=128,ovs=3):
-	localnoise = EMData(img["nx"],img["ny"])
-	localnoise.to_zero()
-	nbxs = len(np.arange(-bs,img['nx']+bs,bs))*ovs
-	nbys = len(np.arange(-bs,img['ny']+bs,bs))*ovs
-	mx = np.linspace(0,img["nx"],nbxs).astype(int)
-	my = np.linspace(0,img["ny"],nbys).astype(int)
-	for x in mx:
-		for y in my:
-			r = img.get_clip(Region(x-bs/2,y-bs/2,bs,bs))
-			n = EMData(bs,bs)
-			n.to_zero()
-			n.process_inplace("math.addnoise",{"noise":r["sigma_nonzero"]})
-			n.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
-			try: n *= r["sigma_nonzero"]/n["sigma_nonzero"]
-			except:
-				if options.verbose > 8:
-					print("WARNING: division by zero, from n['sigma_nonzero']={}".format(n["sigma_nonzero"]))
-			n += r["mean_nonzero"]
-			localnoise.insert_clip(n,(x-bs/2,y-bs/2))
-	return localnoise
 
 if __name__ == "__main__":
 	main()
