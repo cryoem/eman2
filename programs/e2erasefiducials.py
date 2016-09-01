@@ -34,7 +34,7 @@ import numpy as np
 from scipy import ndimage
 import subprocess
 import os
-
+import time
 from EMAN2jsondb import JSTask,jsonclasses
 
 def main():
@@ -66,7 +66,10 @@ def main():
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
 
-	for arg in args:
+	for argnum,arg in enumerate(args):
+
+		t0 = time.time()
+
 		newarg=''
 		originalarg = arg
 
@@ -92,51 +95,10 @@ def main():
 			os.rename('dummy_stack.hdf',newarg)
 			arg = newarg
 
-		#if options.verbose: print("processing {} ({} images)".format(arg, EMUtil.get_image_count(arg)))
-		
-		#Averaging can be outsorced to e2proc2d via the command line, and the average can be read in as the new input
-		#if options.average:
-			
-		#	newarg = arg.replace('.hdf','_avg.hdf')
-		#	cmdavg = 'e2proc2d.py ' + arg + ' ' + newarg + ' --average'
-		#	if ds > 1.0:
-		#		cmdavg += ' --process math.fft.resample:n=' + str(ds)
-		#	cmdavg += ' --process normalize'
-		#	runcmd(options,cmdavg)
-		#	arg = newarg
-
-		#The code to operate on frame averages seems to be the same as that to operate on single images; no need for redundancy.
-		'''
-			avgr = Averagers.get("mean")
-			for i in range(EMUtil.get_image_count(fn)):
-				f = EMData(fn,i) * -1
-				if ds > 1.0: f.process_inplace("math.fft.resample",{"n":ds})
-				avgr.add_image(f)
-			img = avgr.finish()
-			img.process_inplace("normalize")
-
-			sharp_msk, soft_msk = generate_masks(options,img)
-			mskd_sharp = sharp_msk*img
-			sub_sharp = img-mskd_sharp
-			noise = local_noise(options,sub_sharp)
-
-			if options.debug: noise.write_image("{}_noise.hdf".format(arg))
-
-			mskd_soft = soft_msk*img
-			sub_soft = img-mskd_soft
-			result = sub_soft + noise * soft_msk
-			result *= -1
-
-			print("Writing result to {}".format(outf))
-
-			result.write_image(outf,0)
-			avg.write_image("{}_compare.hdf".format(arg),0)
-			result.write_image("{}_compare.hdf".format(arg),1)
-		'''
-		#else:
-		#ctr = 0
-
 		outf = "{}_proc.hdf".format( os.path.splitext(arg)[0] )
+		if os.path.isfile(outf):
+			print("Results are already stored in {}. Please erase or move and try again.".format(outf))
+			sys.exit(1)
 
 		nfs = EMUtil.get_image_count(arg)
 
@@ -163,7 +125,9 @@ def main():
 		dummy.write_image(outf,0)
 
 		for i in range(nfs):
-			if options.verbose: print "processing image {}/{}".format(i,nfs)
+			if options.verbose:
+				sys.stdout.write("\rstaging images ({}/{})".format(i+1,nfs))
+				sys.stdout.flush()
 			
 			if options.parallel:
 				#print "parallelism started"
@@ -175,8 +139,8 @@ def main():
 		if options.parallel:	
 			if tasks:
 				tids = etc.send_tasks(tasks)
-				if options.verbose: 
-					print "\n(erase_gold)(main) preprocessing %d tasks queued" % (len(tids)) 
+				if options.verbose:
+					print "\n(erase_gold) %d tasks queued" % (len(tids))
 
 				results = get_results( etc, tids, options )
 
@@ -191,6 +155,11 @@ def main():
 				os.remove(arg)
 
 			if newarg: os.remove(newarg)
+
+		dt = time.time() - t0
+		if options.verbose:
+			print("\n")
+			sys.stdout.write("Erased fiducials from {} ({} minutes)\n".format(arg,round(dt/60.,2)))
 
 
 def fiximage(options,imgfile,imgindx,outf):
@@ -317,7 +286,7 @@ def get_results(etc,tids,options):
 		
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
 		if options.verbose:
-			print ("\n%d tasks, %d complete, %d waiting to start \r" % (len(tids),ncomplete,nwait))
+			sys.stdout.write("\r{} tasks\t{} complete\t{} in queue".format(len(tids),ncomplete,nwait))
 			sys.stdout.flush()
 	
 		if len(tidsleft)==0: break
@@ -351,3 +320,51 @@ class EraseGold2DTask(JSTask):
 
 if __name__ == "__main__":
 	main()
+
+
+
+ # Redundant code. Staged for removal.
+
+ 		#if options.verbose: print("processing {} ({} images)".format(arg, EMUtil.get_image_count(arg)))
+		
+		#Averaging can be outsorced to e2proc2d via the command line, and the average can be read in as the new input
+		#if options.average:
+			
+		#	newarg = arg.replace('.hdf','_avg.hdf')
+		#	cmdavg = 'e2proc2d.py ' + arg + ' ' + newarg + ' --average'
+		#	if ds > 1.0:
+		#		cmdavg += ' --process math.fft.resample:n=' + str(ds)
+		#	cmdavg += ' --process normalize'
+		#	runcmd(options,cmdavg)
+		#	arg = newarg
+
+		#The code to operate on frame averages seems to be the same as that to operate on single images; no need for redundancy.
+		# '''
+		# 	avgr = Averagers.get("mean")
+		# 	for i in range(EMUtil.get_image_count(fn)):
+		# 		f = EMData(fn,i) * -1
+		# 		if ds > 1.0: f.process_inplace("math.fft.resample",{"n":ds})
+		# 		avgr.add_image(f)
+		# 	img = avgr.finish()
+		# 	img.process_inplace("normalize")
+
+		# 	sharp_msk, soft_msk = generate_masks(options,img)
+		# 	mskd_sharp = sharp_msk*img
+		# 	sub_sharp = img-mskd_sharp
+		# 	noise = local_noise(options,sub_sharp)
+
+		# 	if options.debug: noise.write_image("{}_noise.hdf".format(arg))
+
+		# 	mskd_soft = soft_msk*img
+		# 	sub_soft = img-mskd_soft
+		# 	result = sub_soft + noise * soft_msk
+		# 	result *= -1
+
+		# 	print("Writing result to {}".format(outf))
+
+		# 	result.write_image(outf,0)
+		# 	avg.write_image("{}_compare.hdf".format(arg),0)
+		# 	result.write_image("{}_compare.hdf".format(arg),1)
+		# '''
+		#else:
+		#ctr = 0
