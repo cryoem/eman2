@@ -19568,6 +19568,26 @@ void Util::fuse_low_freq(EMData* img1, EMData* img2, EMData* w1, EMData* w2, int
 
 
 
+float Util::polar_norm2( EMData* ring, const vector<int>& numr )
+{
+    float* data = ring->get_data();
+    float norm2 = 0.0f;
+    int nring = numr.size()/3;
+    float maxrin = float(numr[numr.size()-1]);
+    for( int i=0; i < nring; ++i ) {
+        int numr3i = numr[3*i+2];
+        int numr2i = numr[3*i+1]-1;
+        float w = numr[3*i]*2*M_PI/float(numr3i)*maxrin/float(numr3i);
+        float en = 0.0f;
+        for( int j=2; j < numr3i; ++j ) {
+             en += data[numr2i+j] * data[numr2i+j] * w;
+        }
+        norm2 += 2.0*en+data[numr2i+1]*data[numr2i+1]*w;
+    }
+    return norm2;
+}
+
+
 void Util::Normalize_ring( EMData* ring, const vector<int>& numr )
 {
     float* data = ring->get_data();
