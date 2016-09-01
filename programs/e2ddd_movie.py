@@ -74,8 +74,8 @@ def main():
 	parser.add_argument("--optfsc", default=False, help="Specify whether to compute FSC during alignment optimization. Default is False.",action="store_true")
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
-	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement[4]")
+	#parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -85,18 +85,10 @@ def main():
 		print usage
 		parser.error("Specify input DDD stack")
 
-	if options.parallel!=None :
-		if options.parallel[:7]!="thread:":
-			print "ERROR: only thread:<n> parallelism supported by this program. It is i/o limited."
-			sys.exit(1)
-		threads=int(options.parallel[7:])
-	else: threads=1
-
-	if options.threads>1 :
-		threads=max(threads,options.threads)
-
-	#if threads>1 : print "Running with {} threads".format(threads)
-	if threads>1 : print "Sorry, limited to one thread at the moment."
+	# threads=int(options.threads)
+	# if options.threads>1:
+	# 	threads=max(threads,options.threads)
+	#if threads>1 : print "Sorry, limited to one thread at the moment."
 
 	pid=E2init(sys.argv)
 
