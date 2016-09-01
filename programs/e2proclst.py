@@ -38,7 +38,7 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage:\nproclst.py [options] <lst 1> <lst 2> ... \nSimple manipulations of LST files. If your goal is to produce an actual image file rather than the
-sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py instead. Those programs will treat LST files as normal image files for input.\n."""
+sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py instead. Those other programs will treat LST files as normal image files for input.\n."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################

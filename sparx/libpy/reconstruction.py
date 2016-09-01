@@ -1343,7 +1343,7 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 	if myid == main_node: return fftvol, weight, refvol
 	else: return None, None, None
 
-def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, delta, upweighted = True, finfo=None, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = False, target_size=-1, avgnorm = 1.0):
+def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, delta, upweighted = True, finfo=None, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = False, target_size=-1, avgnorm = 1.0, norm_per_particle = None):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -1431,7 +1431,9 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
-
+	
+	if norm_per_particle == None:
+		norm_per_paritcle = len(prjlist)*[1.0]
 	for im in xrange(len(prjlist)):
 		#  parse projection structure, generate three lists:
 		#  [ipsi+iang], [ishift], [probability]
@@ -1458,7 +1460,7 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 			recdata.set_attr("bckgnoise", bckgn )
 			ipsi = tdir[ii]%100000
 			iang = tdir[ii]/100000
-			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/paramstructure[im][1][0])
+			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
 	#  clean stuff
 	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
 	if not (finfo is None):

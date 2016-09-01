@@ -68,7 +68,7 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 		for i in k:
 			itm=angs[i]
 			ort=itm["xform.align3d"].get_params("eman")
-			out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(int(eval(i)[1]),itm["score"],itm["coverage"],ort["az"],ort["alt"],ort["phi"]))
+			out.write("{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(int(eval(i)[1]),itm["score"],itm["coverage"],ort["az"],ort["alt"],ort["phi"],eval(i)[1],eval(i)[0]))
 
 	col=array(data)
 

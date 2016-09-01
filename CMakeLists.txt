@@ -209,6 +209,7 @@ SET(INCLUDE_DIRS
 	/sw/include
 	/usr/include/freetype2
 	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework/Headers
+	/usr/include/hdf5/serial
 	)
 
 SET(LIB_DIRS 
@@ -342,8 +343,9 @@ IF(ENABLE_FFTW3)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
     
     CHECK_REQUIRED_LIB(FFTW3 fftw3f fftw3.h)
+    CHECK_REQUIRED_LIB(FFTW3d fftw3 fftw3.h)
     ADD_DEFINITIONS(-DFFTW3)
-    SET(FFTW_LIBRARIES ${FFTW3_LIBRARY})
+    SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
     
     IF(ENABLE_NFFT2)
@@ -450,6 +452,7 @@ IF(ENABLE_HDF5)
 		ADD_DEFINITIONS(-D_HDF5USEDLL_)
     ELSE (WIN32)
 		CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
+		CHECK_OPTIONAL_LIB(HDF5 hdf5_serial hdf5.h)
 		CHECK_LIB_ONLY(ZLIB z)
     ENDIF (WIN32)
 ENDIF(ENABLE_HDF5)

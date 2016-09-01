@@ -769,7 +769,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("bessj1_5")
 		.staticmethod("kfv")
 		.staticmethod("iterefa")
-		.staticmethod("iterefaDP")
+		.staticmethod("iterefadp")
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")
