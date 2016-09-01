@@ -166,7 +166,7 @@ def main():
 			if options.verbose: print "processing image {}/{}".format(i,nfs)
 			
 			if options.parallel:
-				print "parallelism started"
+				#print "parallelism started"
 				task = EraseGold2DTask( options, arg, i, outf)
 				tasks.append(task)
 			else:

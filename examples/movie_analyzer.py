@@ -68,7 +68,7 @@ def main():
 		parser.error("You must specify a single DDD movie stack in HDF or MRC format.")
 		sys.exit(1)
 
-	options.include = [o.upper() for o in options.include.split(",") if o not in options.exclude.split(",") if pkgs[o] != ""]
+	options.include = [o.upper() for o in options.include.split(",") if o.upper() not in options.exclude.split(",") if pkgs[o] != ""]
 
 	included = [pkg for pkg in pkgs if pkg in options.include]
 	if len(included) < 1:
@@ -109,12 +109,13 @@ def main():
 		frames_hictrst = load_frames(fname)
 		frames_loctrst = []
 		for i,fhc in enumerate(frames_hictrst):
+			t0 = time.time()
 			if options.verbose: print("Processing frame {}".format(i))
 			fhc.write_image(hcname,i)
-			f = fixframe(fhc) # remove gold from frame
+			flc = fixframe(fhc) # remove gold from frame
 			flc.write_image(lcname,i)
 			frames_loctrst.append(flc)
-
+			if options.verbose: print("{}".format(time.time()-t0))
 		hictrst_avg = average_frames(frames_hictrst)
 		hictrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
 		loctrst_avg = average_frames(frames_loctrst)
