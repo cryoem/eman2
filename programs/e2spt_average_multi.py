@@ -8,32 +8,16 @@ import threading
 import Queue
 from sys import argv,exit
 
-def rotfn(avg,fsp,i,a,maxtilt,verbose):
+def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,maxtilt,wedgesigma,verbose):
 	"""Averaging thread. 
-	avg is existing Averager, 
-	fsp,i is the particle being averaged
-	a is the Transform to put the particle in the correct orientation
-	maxtilt can optionally better enforce missing wedge exclusion
-	"""
-	b=EMData(fsp,i)
-	if maxtilt<90.0 :
-		bf=b.do_fft()
-		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
-		b=bf.do_ift()
-	b.process_inplace("xform",{"transform":a})
-	avg.add_image(b)
-	#jsd.put((fsp,i,b))
-
-def rotfnsym(avg,fsp,i,a,sym,masked,maxtilt,verbose):
-	"""Averaging thread. 
-	avg is existing Averager, 
+	avgs are n existing Averagers, 
 	fsp,i is the particle being averaged
 	a is the Transform to put the particle in the correct orientation
 	sym is the symmetry for replication of the particle
-	masked is a reference volume (generally masked) for translational alignment of each symmetric copy
+	refs are the n alignment references for competitive averaging
 	maxtilt can optionally better enforce missing wedge exclusion
 	"""
-	b=EMData(fsp,i)
+	b=EMData(fsp,fspn)
 	if maxtilt<90.0 :
 		bf=b.do_fft()
 		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
@@ -42,21 +26,30 @@ def rotfnsym(avg,fsp,i,a,sym,masked,maxtilt,verbose):
 	xf = Transform()
 	xf.to_identity()
 	nsym=xf.get_nsym(sym)
-	for i in xrange(nsym):
-		c=b.process("xform",{"transform":xf.get_sym(sym,i)})
-		d=c.align("translational",masked)
-		avg.add_image(d)
-	#jsd.put((fsp,i,b))
+	best=(1.0e50,None,None)
+	for r,ref in enumerate(refs):
+		for i in xrange(nsym):
+			c=b.process("xform",{"transform":xf.get_sym(sym,i)})
+			d=c.align("translational",ref)
+			score=d.cmp("fsc.tomo.auto",ref,{"sigmaimgval":wedgesigma,"sigmawithval":0.5})
+			if score<best[0] : best=(score,r,d,i)
+			
+	avgs[best[1]].add_image(best[2])
+	print "{} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0])
+	jsd.put((fspn,best[0],best[1],best[3]))
 
 
 def inrange(a,b,c): return a<=b and b<=c
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: e2spt_average.py [options] 
+	usage = """Usage: e2spt_average.py <ref1> <ref2> ... [options] 
 Note that this program is not part of the original e2spt hierarchy, but is part of an experimental refactoring.
 
 Will read metadata from the specified spt_XX directory, as produced by e2spt_align.py, and average a selected subset of subtomograms in the predetermined orientation.
+This version of the program competes each particle against N reference volumes, and only averages it with the best match. Alignment parameters from a previous
+e2spt_align run are used to define the coarse orientation, so the references must be similar and in the same orientation. Alignments are translationally adjusted only.
+If --sym is specified, each possible symmetric orientation is tested starting with the exisiting alignment parameters, and only the best is kept.
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -70,8 +63,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--maxalt",type=float,help="Maximum alignment altitude to include. Deafult=180",default=180)
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0)
 	parser.add_argument("--listfile",type=str,help="Specify a filename containing a list of integer particle numbers to include in the average, one per line, first is 0. Additional exclusions may apply.",default=None)
-	parser.add_argument("--symalimasked",type=str,default=None,help="This will translationally realign each asymmetric unit to the specified (usually masked) reference ")
-	parser.add_argument("--sym",type=str,default=None,help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
+	parser.add_argument("--sym",type=str,help="Symmetry of the input. Must be aligned in standard orientation to work properly.",default="c1")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -105,6 +97,9 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			print "WARNING: no particle_parms found for iter {}, using parms from {}".format(options.iter,mit)
 		else : angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
+	n=len(args)
+	refs=[EMData(i) for i in args]
+
 	if options.listfile!=None :
 		plist=set([int(i) for i in file(options.listfile,"r")])
 
@@ -112,12 +107,9 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 
 	logid=E2init(sys.argv, options.ppid)
 
-#	jsd=Queue.Queue(0)
+	jsd=Queue.Queue(0)
 
-
-	avg=[0,0]
-	avg[0]=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma}) #,{"save_norm":1})
-	avg[1]=Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma})
+	avgs=[Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma}) for i in xrange(n)]
 
 	# filter the list of particles to include 
 	keys=angs.keys()
@@ -130,23 +122,17 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 																		 
 
 	# Rotation and insertion are slow, so we do it with threads. 
-	if options.symalimasked!=None:
-		if options.replace!=None :
-			print "Error: --replace cannot be used with --symalimasked"
-			sys.exit(1)
-		alimask=EMData(options.symalimasked)
-		thrds=[threading.Thread(target=rotfnsym,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,alimask,options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
-	else:
-		# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
-		if options.replace != None:
-			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],options.replace,eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
+	# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
+	if options.replace != None:
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,options.maxtilt,options.wedgesigma,options.verbose)) for i,k in enumerate(keys)]
 
-		else:
-			thrds=[threading.Thread(target=rotfn,args=(avg[i%2],eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.maxtilt,options.verbose)) for i,k in enumerate(keys)]
+	else:
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,options.maxtilt,options.wedgesigma,options.verbose)) for i,k in enumerate(keys)]
 
 
 	print len(thrds)," threads"
 	thrtolaunch=0
+	out=file("{}/avg_multi_{:02d}.txt".format(options.path,options.iter),"w")
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 		# note that it's ok that we wait here forever, since there can't be new results if an existing
@@ -158,34 +144,19 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			thrtolaunch+=1
 		else: time.sleep(1)
 	
-		#while not jsd.empty():
-			#fsp,n,ptcl=jsd.get()
+		while not jsd.empty():
+			fspn,score,ref,sym=jsd.get()
+			out.write("{}\t{}\t{}\t{}\n".format(fspn,score,ref,sym))		# Output columns are img #, best score, # of best ref, # of best sym
 			#avg[n%2].add_image(ptcl)
-
+		out.flush()
 
 	for t in thrds:
 		t.join()
 
-	ave=avg[0].finish()		#.process("xform.phaseorigin.tocenter").do_ift()
-	avo=avg[1].finish()		#.process("xform.phaseorigin.tocenter").do_ift()
-	# impose symmetry on even and odd halves if appropriate
-	if options.sym!=None and options.sym.lower()!="c1" and options.symalimasked==None:
-		ave.process_inplace("xform.applysym",{"averager":"mean.tomo","sym":options.sym})
-		avo.process_inplace("xform.applysym",{"averager":"mean.tomo","sym":options.sym})
-	av=ave+avo
-	av.mult(0.5)
-
-	evenfile="{}/threed_{:02d}_even.hdf".format(options.path,options.iter)
-	oddfile="{}/threed_{:02d}_odd.hdf".format(options.path,options.iter)
-	combfile="{}/threed_{:02d}.hdf".format(options.path,options.iter)
-	ave.write_image(evenfile,0)
-	avo.write_image(oddfile,0)
-	av.write_image(combfile,0)
-
-	cmd="e2proc3d.py {evenfile} {path}/fsc_unmasked_{itr:02d}.txt --calcfsc={oddfile}".format(path=options.path,itr=options.iter,evenfile=evenfile,oddfile=oddfile)
-	launch_childprocess(cmd)
-
-	launch_childprocess("e2proc3d.py {combfile} {combfile} --process=filter.wiener.byfsc:fscfile={path}/fsc_unmasked_{itr:02d}.txt:snrmult=2".format(path=options.path,itr=options.iter,combfile=combfile))
+	avs=[i.finish for i in avgs]
+	
+	for i,v in enumerate(avs):
+		v.write_image("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0)
 
 
 	E2end(logid)

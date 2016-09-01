@@ -3056,8 +3056,8 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		vector<float>sigmathisv=small_this->calc_radial_dist(ss/2,0,1,4);
 		vector<float>sigmatov=small_to->calc_radial_dist(ss/2,0,1,4);
 		for (int i=0; i<ss/2; i++) {
-			sigmathisv[i]*=sigmathis;
-			sigmatov[i]*=sigmato;
+			sigmathisv[i]*=sigmathisv[i]*sigmathis;
+			sigmatov[i]*=sigmatov[i]*sigmato;
 		}
 		
 		// debug out
