@@ -333,6 +333,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			data = outim
 
 			n=len(data)
+			print(n)
 			nx=data[0]["nx"]
 			ny=data[0]["ny"]
 			print "{} frames read {} x {}".format(n,nx,ny)
@@ -552,6 +553,8 @@ def calc_ccf(N,box,step,dataa,datab,out):
 # preprocess regions by normalizing and doing FFT
 def split_fft(img,i,box,step,out):
 	lst=[]
+	nx = img["nx"]
+	ny = img["ny"]
 	for dx in range(box/2,nx-box,step):
 		for dy in range(box/2,ny-box,step):
 			lst.append(img.get_clip(Region(dx,dy,box,box)).process("normalize.edgemean").do_fft())
