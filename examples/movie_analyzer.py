@@ -107,6 +107,9 @@ def main():
 
 		hcname = "{}/hictrst.hdf".format(bdir)
 		lcname = "{}/loctrst.hdf".format(bdir)
+		
+		localhc = hcname.split("/")[-1]
+		locallc = lcname.split("/")[-1]
 
 		frames_hictrst = load_frames(fname)
 		write_frames(frames_hictrst,hcname)
@@ -114,17 +117,15 @@ def main():
 		hictrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
 
 		if not os.path.isfile(lcname):
+			# try: os.unlink(tmp)
+			# except: pass
 			if options.verbose: print("Erasing gold and other very high contrast features")
 			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={}" 
 			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose)
 			o,e,rt=run(cmd,cwd=bdir,shell=True)
-		tmp = "{}/hictrst_proc.hdf".format(bdir)
-		if os.path.isfile(tmp):
-			ln = lcname.split("/")[-1]
-			run("e2proc2d.py {} {}".format(tmp,ln),cwd=bdir)
-			try: os.unlink(tmp)
-			except: pass
-		
+			tmp = "hictrst_proc.hdf"#.format(bdir)
+			o,e,rt = run("e2proc2d.py {} {}".format(tmp,locallc),shell=True,cwd=bdir)
+
 		else: print("Found gold subtracted frames from previous analysis.")
 
 		frames_loctrst = load_frames(lcname)
@@ -135,10 +136,7 @@ def main():
 		
 		trans_lo = {}
 		trans_hi = {}
-
-		localhc = hcname.split("/")[-1]
-		locallc = lcname.split("/")[-1]
-
+		
 		runtimes = {key:[] for key in pkgs.keys()} # for each package, store its runtime.
 
 		for pkg in sorted(pkgs.keys()):
@@ -161,9 +159,12 @@ def main():
 						try: os.symlink(src,dst)
 						except: pass
 
-						for fn in [hcname,lcname]: # whole micrograph, high contrast, low contrast
-							o,e,rt=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fn,options.threads))
+						for fname in [hcname,lcname]:
+							o,e,rt=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True)
 							runtimes[pkg].append(rt)
+						
+						try: os.unlink(dst)
+						except: pass
 
 					for f in os.listdir(pdir):
 						if "translations_x" in f:
@@ -181,16 +182,17 @@ def main():
 				if pkg == "EMAN2":
 
 					if not options.skipalign:
-						for fn in [hcname,lcname]: # whole micrograph, high contrast, low contrast
+						for fn in [hcname,lcname]: # high contrast, low contrast
 							lfn = fn.split("/")[-1] # local file name
-							if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+							if not os.path.isfile("{}/{}".format(pdir,lfn)): 
+								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
-							o,e,rt=run("{} {} {}".format(pkgs[pkg],lfn,options.threads),cwd=pdir)
+							o,e,rt=run("{} {} --align_frames --threads={}".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True)
 							runtimes[pkg].append(rt)
 
 					for f in os.listdir(pdir):
-						if "hictrst_info.txt" in f: hi = os.path.join(pdir,f)
-						elif "loctrst_info.txt" in f: lo = os.path.join(pdir,f)
+						if "hictrst_proc_info.txt" in f: hi = os.path.join(pdir,f)
+						elif "loctrst_proc_info.txt" in f: lo = os.path.join(pdir,f)
 					
 					try:
 						trans_hi[pkg] = parse_eman2(hi)
@@ -200,12 +202,20 @@ def main():
 				if pkg == "IMOD":
 
 					if not options.skipalign:
-						for fn in [hcname,lcname]: # whole micrograph, high contrast, low contrast
+						
+						for fn in [hcname,lcname]: # high contrast, low contrast
 							lfn = fn.split("/")[-1] # local file name
-							if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+							
+							if not os.path.isfile("{}/{}".format(pdir,lfn)):
+								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+							
+							alif = lfn.split(".")[0]+"_ali.mrc"
 
-							o,e,rt=run("{} -gpu 0 -n -xfext xf -input {}".format(pkgs[pkg],lfn),cwd=pdir)
+							o,e,rt=run("{} -gpu 0 -xfext xf -input {} -output {}".format(pkgs[pkg],lfn,alif),cwd=pdir,shell=True)
 							runtimes[pkg].append(rt)
+							
+							print(o)
+							print(e)
 
 					for f in os.listdir(pdir):
 						if "hictrst.xf" in f: hi = os.path.join(pdir,f)
@@ -219,21 +229,22 @@ def main():
 				if pkg == "UCSF":
 
 					if not options.skipalign:
-						for fn in [hcname,lcname]: # whole micrograph, high contrast, low contrast
+						for fn in [hcname,lcname]: # high contrast, low contrast
 							lfn = fn.split("/")[-1]
 							lext = lfn.split(".")[-1]
 							if lext == "hdf": # HDF format not supported by UCSF
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
 								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
-									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir)
+									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
 									os.remove("{}/{}".format(pdir,lfn))
 								lfn = lfn_new
 								lext = "mrcs"
 							else:
-								if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+								if not os.path.isfile("{}/{}".format(pdir,lfn)):
+									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
-							o,e,rt=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir)
+							o,e,rt=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir,shell=True)
 							runtimes[pkg].append(rt)
 
 					for f in os.listdir(pdir):
@@ -278,16 +289,18 @@ EOF
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
 								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
-									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir)
+									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
 									os.remove("{}/{}".format(pdir,lfn))
 								lfn = lfn_new
 								lext = "mrcs"
 							else:
-								if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+								if not os.path.isfile("{}/{}".format(pdir,lfn)):
+									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
 							if lext == "mrcs": # MRCS format not supported by unblur
 								lfn_new = lfn.replace(".mrcs",".mrc")
-								try: shutil.move("{}/{}".format(pdir,lfn),"{}/{}".format(pdir,lfn_new))
+								try: 
+									shutil.move("{}/{}".format(pdir,lfn),"{}/{}".format(pdir,lfn_new))
 								except: pass # file likely already exists
 								lfn = lfn_new
 								lext = "mrc"
@@ -317,7 +330,7 @@ EOF
 				if pkg == "LMBFGS":
 
 					if not options.skipalign:
-						template = """{prog} << eot
+						template = """time {prog} << eot
 {movielist}
 {boxsize},{psize},{nsigma},{rmax1},{rmax2},{smooth}
 {bfactor}
@@ -326,6 +339,7 @@ EOF
 {inpath}
 {outpath}
 {shfext}
+{vecext}
 eot
 """
 
@@ -341,12 +355,13 @@ eot
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
 								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
-									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir)
+									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
 									os.remove("{}/{}".format(pdir,lfn))
 								lfn = lfn_new
 								lext = "mrcs"
 							else:
-								if not os.path.isfile("{}/{}".format(pdir,lfn)): shutil.copy2(fn,"{}/{}".format(pdir,lfn))
+								if not os.path.isfile("{}/{}".format(pdir,lfn)): 
+									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
 							outf = frc=lfn.replace(".mrcs","_proc.mrcs")
 
@@ -372,7 +387,7 @@ eot
 							cmd = template.format(prog=pkgs[pkg],movielist="movielist.txt", boxsize=bs, psize=ps, 
 								nsigma=nsig, rmax1=rm1, rmax2=rm2, smooth=smooth, bfactor=bfact, framefirst=ffirst, 
 								framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath, 
-								shfext="shf")#, vecext="vec")
+								shfext="shf", vecext="vec")
 
 							o,e,rt=run(cmd,shell=True,exe="/bin/csh",cwd=pdir)
 
