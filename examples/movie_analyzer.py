@@ -123,7 +123,7 @@ def main():
 			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={}" 
 			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose)
 			o,e,rt=run(cmd,cwd=bdir,shell=True)
-			tmp = "hictrst_proc.hdf"#.format(bdir)
+			tmp = "hictrst_proc.hdf"
 			o,e,rt = run("e2proc2d.py {} {}".format(tmp,locallc),shell=True,cwd=bdir)
 
 		else: print("Found gold subtracted frames from previous analysis.")
@@ -347,23 +347,22 @@ eot
 							lfn = fn.split("/")[-1]
 							lext = lfn.split(".")[-1]
 
-							mlfn = "{}/movielist.txt".format(pdir)
-							with open(mlfn,"w") as movielist:
-								movielist.write("{}".format(lfn))
-
-							if lext == "hdf": # HDF format not supported by unblur
+							if lext == "hdf": # HDF format not supported by alignframes_lmbfgs
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
 								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
 									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
-									os.remove("{}/{}".format(pdir,lfn))
+									try: os.unlink("{}/{}".format(pdir,lfn))
+									except: pass
 								lfn = lfn_new
 								lext = "mrcs"
 							else:
 								if not os.path.isfile("{}/{}".format(pdir,lfn)): 
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
-							outf = frc=lfn.replace(".mrcs","_proc.mrcs")
+							mlfn = "{}/movielist.txt".format(pdir)
+							with open(mlfn,"w") as movielist:
+								movielist.write("{}".format(lfn))
 
 							bs = int(max(3600,min(frames_hictrst[0]["nx"]*0.75,frames_hictrst[0]["ny"]*0.75)))
 							ps = 1.45
@@ -376,13 +375,8 @@ eot
 							flast = 0
 							fmiddle = int(len(frames_hictrst)/2)
 							factr = "1d1"
-							inpath = "./" #lfn #"{}/{}".format(pdir,lfn)
-							outpath = "./" #outf #"{}/{}".format(pdir,outf)
-
-							print("\n{}/{}\n".format(pdir,lfn))
-
-							try: os.symlink(fn,"{}/{}".format(pdir,lfn)) # shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-							except: pass
+							inpath = "./"
+							outpath = "./"
 
 							cmd = template.format(prog=pkgs[pkg],movielist="movielist.txt", boxsize=bs, psize=ps, 
 								nsigma=nsig, rmax1=rm1, rmax2=rm2, smooth=smooth, bfactor=bfact, framefirst=ffirst, 
@@ -390,19 +384,13 @@ eot
 								shfext="shf", vecext="vec")
 
 							o,e,rt=run(cmd,shell=True,exe="/bin/csh",cwd=pdir)
-
-							print(cmd)
-							print(o)
-							print(e)
-
-							os.unlink("{}/{}".format(pdir,lfn))
-							
 							runtimes[pkg].append(rt)
 
 					for f in os.listdir(pdir):
-						if "hictrst.shf" in f: hi = os.path.join(pdir,f)
-						elif "loctrst.shf" in f: lo = os.path.join(pdir,f)
-
+						if f == "hictrst.shf":
+							hi = os.path.join(pdir,f)
+						elif f == "loctrst.shf": 
+							lo = os.path.join(pdir,f)
 					try:
 						trans_hi[pkg] = parse_lmbfgs(hi)
 						trans_lo[pkg] = parse_lmbfgs(lo)
@@ -642,6 +630,14 @@ def parse_unblur(fn):
 			elif "Pixel size (A):" in txt: apix = float(txt.split()[-1])
 	trans = np.asarray([[x,y] for (x,y) in zip(lines[0],lines[1])]).astype(float)
 	trans /= apix
+	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
+
+def parse_lmbfgs(fn):
+	lines = [] #[fnum,xs,ys]
+	with open(fn) as f:
+		for i,l in enumerate(f):
+			if i != 0: lines.append(l.strip().split()) # skip header on line 0
+	trans = np.asarray(lines)[:,1:].astype(float) # skip frame numbers
 	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
 
 #########################
