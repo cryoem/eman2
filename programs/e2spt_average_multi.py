@@ -8,7 +8,7 @@ import threading
 import Queue
 from sys import argv,exit
 
-def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,maxtilt,wedgesigma,verbose):
+def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shrink,verbose):
 	"""Averaging thread. 
 	avgs are n existing Averagers, 
 	fsp,i is the particle being averaged
@@ -17,24 +17,33 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,maxtilt,wedgesigma,verbose):
 	refs are the n alignment references for competitive averaging
 	maxtilt can optionally better enforce missing wedge exclusion
 	"""
+	if shrink<2: shrink=0
 	b=EMData(fsp,fspn)
 	if maxtilt<90.0 :
 		bf=b.do_fft()
 		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
 		b=bf.do_ift()
 	b.process_inplace("xform",{"transform":a})
+	if shrink : bs=b.process("math.meanshrink",{"n":shrink})
+	else: bs=b
 	xf = Transform()
 	xf.to_identity()
 	nsym=xf.get_nsym(sym)
 	best=(1.0e50,None,None)
-	for r,ref in enumerate(refs):
+	for r,ref in enumerate(shrinkrefs):
 		for i in xrange(nsym):
-			c=b.process("xform",{"transform":xf.get_sym(sym,i)})
+			c=bs.process("xform",{"transform":xf.get_sym(sym,i)})
 			d=c.align("translational",ref)
 			score=d.cmp("fsc.tomo.auto",ref,{"sigmaimgval":wedgesigma,"sigmawithval":0.5})
 			if score<best[0] : best=(score,r,d,i)
-			
-	avgs[best[1]].add_image(best[2])
+	
+	if shrink:
+		c=b.process("xform",{"transform":xf.get_sym(sym,best[3])})
+		d=c.align("translational",refs[best[1]])
+	else :
+		d=best[2]
+	
+	avgs[best[1]].add_image(d)
 	print "{} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0])
 	jsd.put((fspn,best[0],best[1],best[3]))
 
@@ -63,6 +72,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	parser.add_argument("--maxalt",type=float,help="Maximum alignment altitude to include. Deafult=180",default=180)
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0)
 	parser.add_argument("--listfile",type=str,help="Specify a filename containing a list of integer particle numbers to include in the average, one per line, first is 0. Additional exclusions may apply.",default=None)
+	parser.add_argument("--shrinkcompare",type=int,help="Shrink factor for classification only (for speed)",default=0)
 	parser.add_argument("--sym",type=str,help="Symmetry of the input. Must be aligned in standard orientation to work properly.",default="c1")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -121,13 +131,18 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	if options.verbose : print "{}/{} particles after filters".format(len(keys),len(angs.keys()))
 																		 
 
+	if options.shrinkcompare>1 :
+		shrinkrefs=[r.process("math.meanshrink",{"n":options.shrinkcompare}) for r in refs]
+	else:
+		shrinkrefs=refs
+
 	# Rotation and insertion are slow, so we do it with threads. 
 	# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
 	if options.replace != None:
-		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,options.maxtilt,options.wedgesigma,options.verbose)) for i,k in enumerate(keys)]
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.verbose)) for i,k in enumerate(keys)]
 
 	else:
-		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,options.maxtilt,options.wedgesigma,options.verbose)) for i,k in enumerate(keys)]
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.verbose)) for i,k in enumerate(keys)]
 
 
 	print len(thrds)," threads"
@@ -153,7 +168,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	for t in thrds:
 		t.join()
 
-	avs=[i.finish for i in avgs]
+	avs=[i.finish() for i in avgs]
 	
 	for i,v in enumerate(avs):
 		v.write_image("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0)
