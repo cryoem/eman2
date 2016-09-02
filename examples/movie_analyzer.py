@@ -397,25 +397,25 @@ eot
 		if not options.skipalign:
 			with open("{}/runtimes.txt".format(bdir),"w") as f:
 				f.write("PKG\tRUNTIME (HIGH)\tRUNTIME (LOW)\n")
-				if options.verbose: print("PKG\tRUNTIME")
+				if options.verbose: print("PKG\tRUNTIME (HIGH)\tRUNTIME (LOW)")
 				for pkg in options.include:
 					h,l = runtimes[pkg]
 					if options.verbose: print("{}\t{}\t{}".format(pkg,h,l))
 					f.write("{}\t{}\n".format(pkg,h,l))
 
 		# Question 2: How does calculated motion differ between the most commonly used alignment algorithms?
-		trans_orig, mags_orig = plot_trans(trans_hi,bdir)
+		trans_orig, mags_orig, fig1 = plot_trans(trans_hi,bdir)
 
 		# Question 3: How different are predicted frame translations with and without high contrast features?
-		trans_hi, trans_lo, ssdfs = plot_differences(trans_hi,trans_lo,bdir)
+		trans_hi, trans_lo, ssdfs, fig2 = plot_differences(trans_hi,trans_lo,bdir)
 
 		# Question 4: How do alignment algorithms improve power spectral coherence?
-		coherence_hi = calc_coherence(frames_hictrst,trans_hi)
-		coherence_lo = calc_coherence(frames_loctrst,trans_lo)
+		#coherence_hi = calc_coherence(frames_hictrst,trans_hi)
+		#coherence_lo = calc_coherence(frames_loctrst,trans_lo)
 
 		# Question 5: How do alignment algorithms influence real-space contrast?
-		contrast_hi = calc_contrast(frames_hictrst)
-		contrast_lo = calc_contrast(frames_loctrst)
+		#contrast_hi = calc_contrast(frames_hictrst)
+		#contrast_lo = calc_contrast(frames_loctrst)
 
 		if options.plot: plt.show()
 
@@ -512,9 +512,19 @@ def plot_trans(trans,bdir,nsig=1):
 	return trans, mags, fig
 
 def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
-	hts = np.hstack([trans_hi[k] for k in sorted(trans_hi.keys())])
-	lts = np.hstack([trans_lo[k] for k in sorted(trans_lo.keys())])
+
+	hts = []
+	for k in sorted(trans_hi.keys()):
+		if k not in ["ALL","MEAN","STD","VAR"]: 
+			hts.append(trans_hi[k])
+	hts = np.hstack(hts)
 	np.savetxt("{}/hi_trans.txt".format(bdir),hts)
+
+	lts = []
+	for k in sorted(trans_lo.keys()):
+		if k not in ["ALL","MEAN","STD","VAR"]:
+			lts.append(trans_lo[k])
+	lts = np.hstack(lts)
 	np.savetxt("{}/lo_trans.txt".format(bdir),lts)
 
 	trans_hi["ALL"] = np.dstack([trans_hi[key] for key in trans_hi.keys()])
@@ -553,8 +563,8 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
 				else:
 					ssdfs[key] = np.linalg.norm(np.sum(np.square((trans_hi[key]-trans_lo[key])),axis=0))
 					print("{}\t{}".format(key,ssdfs[key]))
-					ax1.plot(trans_hi[key][:,0],trans_hi[key][:,1],"k--".format(colors[cctr]),linewidth=2,label="{} high".format(key))
-					ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"k.".format(colors[cctr]),linewidth=2,label="{} low".format(key))
+					ax1.plot(trans_hi[key][:,0],trans_hi[key][:,1],"k--",linewidth=2,label="{} high".format(key))
+					ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"k.",linewidth=2,label="{} low".format(key))
 				sse.write("{}\t{}\n".format(key,ssdfs[key]))
 				cctr+=1
 	ax1.set_xlabel("X-shift (pixels)")
@@ -718,7 +728,7 @@ def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 		cmd = cmd.split()
 	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd, executable=exe)
 	if clear:
-		try: 
+		try:
 			cc = subprocess.Popen("/home/jmbell/src/utils/clearcache") # "sync; echo 3 > /proc/sys/vm/drop_caches"
 			cc.communicate()
 		except:
