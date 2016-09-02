@@ -83,7 +83,7 @@ def main():
 		try: apix = hdr["apix_x"]
 		except: apix = 1.0
 
-	print("Performing alignments with the following packages: {}.\n".format(", ".join(options.include)))
+	print("Performing alignments with the following packages: {}".format(", ".join(options.include)))
 
 	logid=E2init(sys.argv,options.ppid)
 
