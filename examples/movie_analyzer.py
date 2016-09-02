@@ -57,7 +57,7 @@ def main():
 	parser.add_argument("--neighbornorm", type=int, help="Set the norm to be used for fixing axes. Default is 2",default=2)
 	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
 	parser.add_argument('--xybadlines', help="Specify the list of bad pixel coordinates for your detector. Will only be used if --fixbadlines is also specified.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
-	# program options
+	# Program options
 	parser.add_argument("--threads", default=1, type=int, help="Number of threads to use with each aligner. Default is 1.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -144,7 +144,7 @@ def main():
 				prog = pkgs[pkg].split("/")[-1]
 				
 				if not options.skipalign: print("Running {} on {}".format(prog,fname))
-				else: print("Analyzing {} alignment".format(prog,fname))
+				else: print("Parsing {} alignment".format(prog,fname))
 
 				pdir = "{}/{}".format(bdir,pkg)
 				try: os.makedirs(pdir)
@@ -160,7 +160,7 @@ def main():
 						except: pass
 
 						for fname in [hcname,lcname]:
-							o,e,rt=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True)
+							o,e,rt=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True,clear=True)
 							runtimes[pkg].append(rt)
 						
 						try: os.unlink(dst)
@@ -187,7 +187,7 @@ def main():
 							if not os.path.isfile("{}/{}".format(pdir,lfn)): 
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
-							o,e,rt=run("{} {} --align_frames --threads={}".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True)
+							o,e,rt=run("{} {} --align_frames --threads={}".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
 							runtimes[pkg].append(rt)
 
 					for f in os.listdir(pdir):
@@ -211,11 +211,8 @@ def main():
 							
 							alif = lfn.split(".")[0]+"_ali.mrc"
 
-							o,e,rt=run("{} -gpu 0 -xfext xf -input {} -output {}".format(pkgs[pkg],lfn,alif),cwd=pdir,shell=True)
+							o,e,rt=run("{} -gpu 0 -xfext xf -input {} -output {}".format(pkgs[pkg],lfn,alif),cwd=pdir,shell=True,clear=True)
 							runtimes[pkg].append(rt)
-							
-							print(o)
-							print(e)
 
 					for f in os.listdir(pdir):
 						if "hictrst.xf" in f: hi = os.path.join(pdir,f)
@@ -244,7 +241,7 @@ def main():
 								if not os.path.isfile("{}/{}".format(pdir,lfn)):
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
-							o,e,rt=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir,shell=True)
+							o,e,rt=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir,shell=True,clear=True)
 							runtimes[pkg].append(rt)
 
 					for f in os.listdir(pdir):
@@ -315,7 +312,7 @@ EOF
 								apix=apix, dosefilt="NO", saveali="YES", aliname=ali, advopts="NO", frcname=frc, minsrch=2.0, 
 								maxsrch=200.0, bfact=1500, vfmwidth=1, hfmwidth=1, thresh=0.1, maxiter=10, verbose="NO")
 
-							o,e,rt=run(cmd,shell=True,cwd=pdir)
+							o,e,rt=run(cmd,shell=True,cwd=pdir,clear=True)
 							runtimes[pkg].append(rt)
 
 					for f in os.listdir(pdir):
@@ -383,7 +380,7 @@ eot
 								framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath, 
 								shfext="shf", vecext="vec")
 
-							o,e,rt=run(cmd,shell=True,exe="/bin/csh",cwd=pdir)
+							o,e,rt=run(cmd,shell=True,exe="/bin/csh",cwd=pdir,clear=True)
 							runtimes[pkg].append(rt)
 
 					for f in os.listdir(pdir):
@@ -399,7 +396,7 @@ eot
 		# Question 1: How quickly do these frame alignment alorithms run
 		if not options.skipalign:
 			with open("{}/runtimes.txt".format(bdir),"w") as f:
-				f.write("PKG\tRUNTIME\n")
+				f.write("PKG\tRUNTIME (HIGH)\tRUNTIME (LOW)\n")
 				if options.verbose: print("PKG\tRUNTIME")
 				for pkg in options.include:
 					h,l = runtimes[pkg]
@@ -424,6 +421,9 @@ eot
 
 	print("DONE")
 
+#######################
+# Compare and display #
+#######################
 
 def calc_cips_scores(ftypes,bs=512):
 	scores = {}
@@ -710,26 +710,32 @@ def failed(pkg):
 	print("ERROR: Could not find frame shifts for {} aligner.".format(pkg))
 	sys.exit(1)
 
-def run(cmd,shell=False,cwd=None,exe="/bin/sh"):
+def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 	if options.verbose: print(cmd.replace("\n"," "))
 	if cwd == None:
 		cwd = os.getcwd()
 	if shell == False:
 		cmd = cmd.split()
 	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd, executable=exe)
+	if clear:
+		try: 
+			cc = subprocess.Popen("/home/jmbell/src/utils/clearcache") # "sync; echo 3 > /proc/sys/vm/drop_caches"
+			cc.communicate()
+		except:
+			print("Memory cache not cleared. Do not trust runtime results.")
 	start = time.time()
 	out, err = process.communicate()
 	runtime = time.time() - start
 	if options.verbose: print("Runtime: {}".format(runtime))
 	return out, err, runtime
 
-# def shift_frames(frames,trans):
-# 	shifted = []
-# 	for frame,(x,y) in zip(frames,trans):
-# 		f = frame.copy()
-# 		f.translate(x,y,0)
-# 		shifted.append(f)
-# 	return shifted
+def shift_frames(frames,trans):
+	shifted = []
+	for frame,(x,y) in zip(frames,trans):
+		f = frame.copy()
+		f.translate(x,y,0)
+		shifted.append(f)
+	return shifted
 
 ####################
 # Gold subtraction #
@@ -904,13 +910,12 @@ class FrameCorrector:
 if __name__ == "__main__":
 	main()
 
-
-		# frames_loctrst = []
-		# for i,fhc in enumerate(frames_hictrst):
-		# 	t0 = time.time()
-		# 	if options.verbose: print("Processing frame {}".format(i))
-		# 	fhc.write_image(hcname,i)
-		# 	flc = fixframe(fhc) # remove gold from frame
-		# 	flc.write_image(lcname,i)
-		# 	frames_loctrst.append(flc)
-		# 	if options.verbose: print("{}".format(time.time()-t0))
+# frames_loctrst = []
+# for i,fhc in enumerate(frames_hictrst):
+# 	t0 = time.time()
+# 	if options.verbose: print("Processing frame {}".format(i))
+# 	fhc.write_image(hcname,i)
+# 	flc = fixframe(fhc) # remove gold from frame
+# 	flc.write_image(lcname,i)
+# 	frames_loctrst.append(flc)
+# 	if options.verbose: print("{}".format(time.time()-t0))
