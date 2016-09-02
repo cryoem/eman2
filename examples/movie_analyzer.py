@@ -41,7 +41,7 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--goldsize", default=27, type=float, help="Gold diameter in pixels. Default is 27.")
+	parser.add_argument("--goldsize", default=65, type=float, help="Gold diameter in pixels. Default is 65.")
 	parser.add_argument("--boxsize", default=128, type=float, help="Box size to use when tiling image to compute noise. Default is 128.")
 	parser.add_argument("--oversample", default=4, type=float, help="Oversample by this much when tiling image to compute noise. Default is 4.")
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
