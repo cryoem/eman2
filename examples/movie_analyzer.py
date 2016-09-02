@@ -144,7 +144,7 @@ def main():
 				prog = pkgs[pkg].split("/")[-1]
 				
 				if not options.skipalign: print("Running {} on {}".format(prog,fname))
-				else: print("Parsing {} alignment".format(prog,fname))
+				else: print("Parsing previous {} alignment results".format(prog,fname))
 
 				pdir = "{}/{}".format(bdir,pkg)
 				try: os.makedirs(pdir)
