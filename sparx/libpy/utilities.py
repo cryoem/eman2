@@ -5160,7 +5160,7 @@ def rearrange_ranks_of_processors(mode):
 	
 	return original_mpi_comm_world
 
-def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters_from_groups_vs_everything_else_comm):
+def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters_from_groups_vs_everything_else_comm):
 	"""
 	It is assumed that this code or equivalent is ran before calling this function
 
@@ -5320,7 +5320,9 @@ def combinations_of_n_taken_by_k(n, k):
 def cmdexecute(cmd, printing_on_success = True):
 	from   time import localtime, strftime
 	import subprocess
-	outcome = subprocess.call(cmd, shell=True)
+	import os
+	#outcome = subprocess.call(cmd, shell=True)
+	outcome = os.system(cmd)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(outcome != 0):
 		print  line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome

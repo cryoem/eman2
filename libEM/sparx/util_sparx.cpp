@@ -19582,7 +19582,7 @@ float Util::polar_norm2( EMData* ring, const vector<int>& numr )
         for( int j=2; j < numr3i; ++j ) {
              en += data[numr2i+j] * data[numr2i+j] * w;
         }
-        norm2 += 2.0*en+data[numr2i+1]*data[numr2i+1]*w;
+        norm2 += 2.0*en+(data[numr2i]*data[numr2i]+data[numr2i+1]*data[numr2i+1])*w;
     }
     return norm2;
 }
@@ -22938,7 +22938,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  08/21/2016  10:29 AM "<<endl;
+ cout <<"  VERSION  09/02/2016  12:41 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ << " Modification time: 9/01/2016 -- 11:46:40 AM " <<  endl; // l9oQJdJNrfgEBup91
 }
 
