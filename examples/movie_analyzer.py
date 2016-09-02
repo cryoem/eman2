@@ -9,6 +9,7 @@ import shutil
 import time
 import multiprocessing
 import subprocess
+import gc
 
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
@@ -733,10 +734,12 @@ def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 			cc.communicate()
 		except:
 			print("Memory cache not cleared. Do not trust runtime results.")
+	gc.collect() # just in case
 	start = time.time()
 	out, err = process.communicate()
 	runtime = time.time() - start
 	if options.verbose: print("Runtime: {}".format(runtime))
+
 	return out, err, runtime
 
 def shift_frames(frames,trans):
