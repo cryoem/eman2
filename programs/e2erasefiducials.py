@@ -31,7 +31,8 @@
 
 from EMAN2 import *
 import numpy as np
-from scipy import ndimage
+try: from scipy import ndimage
+except: ndimage=None
 import subprocess
 import os
 import time
