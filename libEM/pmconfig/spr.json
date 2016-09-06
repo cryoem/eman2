@@ -7,6 +7,13 @@
     "TABLE": "EMRawDataTable(withmodal=False,multiselect=True)",
     "NAME": "Raw Data",
     "CHILDREN": [
+     {
+        "ICON": "single_image",
+        "MODE": "align",
+        "PROGRAM": "e2ddd_movie.py",
+        "NAME": "Movie alignment",
+        "CHILDREN": []
+      },
       {
         "ICON": "single_image",
         "MODE": "eval",
@@ -32,7 +39,7 @@
     "CHILDREN": [
       {
         "ICON": "green_boxes",
-        "MODE": "extraction",
+        "MODE": "boxing",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
         "PROGRAM": "e2boxer.py",
         "WIZARD":"/lib/pmconfig/boxer.json",
@@ -53,9 +60,9 @@
         "MODE": "extraction",
         "EXPERT": 1,
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
-        "PROGRAM": "e2boxer_old.py",
+        "PROGRAM": "e2boxer.py",
         "WIZARD":"/lib/pmconfig/boxergo.json",
-        "NAME": "Generate Output (e2boxer_old.py)",
+        "NAME": "Generate Output (e2boxer.py)",
         "CHILDREN": []
       },
       {
