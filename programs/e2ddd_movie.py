@@ -30,7 +30,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
-
 from EMAN2 import *
 from Simplex import Simplex
 from numpy import *
@@ -486,7 +485,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 
 				#write out the unaligned average movie
-				out=qsum(data)
+				out=qsum(outim)
 				out.write_image("{}__noali.hdf".format(outname[:-4]),0)
 
 			print("Shift images ({})".format(time()-t0))
@@ -497,7 +496,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			#	im.write_image("a_all_ali.hdf",i)
 
 			if options.allali:
-				out=qsum(data)
+				out=qsum(outim)
 				out.write_image("{}__allali.hdf".format(alioutname),0)
 
 			#out=sum(outim[5:15])	# FSC with the earlier frames instead of whole average
@@ -537,21 +536,21 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			if options.goodali:
 				thr=max(quals)*0.6	# max correlation cutoff for inclusion
-				best=[im for i,im in enumerate(data) if quals[i]>thr]
+				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
-				print "Keeping {}/{} frames".format(len(best),len(data))
+				print "Keeping {}/{} frames".format(len(best),len(outim))
 				out.write_image("{}__goodali.hdf".format(alioutname),0)
 
 			if options.bestali:
 				thr=max(quals)*0.75	# max correlation cutoff for inclusion
 				best=[im for i,im in enumerate(outim) if quals[i]>thr]
 				out=qsum(best)
-				print "Keeping {}/{} frames".format(len(best),len(data))
+				print "Keeping {}/{} frames".format(len(best),len(outim))
 				out.write_image("{}__bestali.hdf".format(alioutname),0)
 
 			if options.ali4to14:
 				# skip the first 4 frames then keep 10
-				out=qsum(data[4:14])
+				out=qsum(outim[4:14])
 				out.write_image("{}__4-14.hdf".format(alioutname),0)
 
 			# Write out the translated correlation maps for debugging
