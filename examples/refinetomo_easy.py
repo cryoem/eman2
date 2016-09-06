@@ -5,12 +5,16 @@ import numpy as np
 
 def main():
 	
-	usage=" "
+	usage="""
+	Iterative protocol for single particle tomogram refinement. Runs refinement in fully gold-standard way using projections of sub-tomograms.
+	prog --path [name of refinement path] --model [initial model] --ptcls [2d particle stack from refinetomo_buildptcls.py]
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default=None)
+	parser.add_argument("--path", type=str,help="path of refinement", default="refine3d2d_00")
 	parser.add_argument("--model", type=str,help="initial model", default=None)
-	parser.add_argument("--ptcl", type=str,help="particle file", default=None)
+	parser.add_argument("--ptcl", type=str,help="particle file generated from refinetomo_buildptcls.py", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
+	parser.add_argument("--niter", type=int,help="number of iterations", default=3)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -51,7 +55,7 @@ def main():
 		
 		run("make3dpar_rawptcls.py --input {path}/aliptcl_01_{eo}.lst --sym {sym} --output {path}/threed_01_{eo}.hdf --keep 0.7 --apix {apix} --pad {pad} --mode gauss_5 --threads 12".format(eo=eo, path=options.path, sym=options.sym,apix=apix, pad=int(sz*1.5)))
 	
-	for it in range(1,10):
+	for it in range(1,options.niter):
 		for eo in ["even", "odd"]:
 			ptclname=options.ptcl[:-4]+"_{}.lst".format(eo)
 			cmd="refine_tomo.py --ptcl {ptcl} --mapfile {path}/threed_{it0:02d}_{eo}.hdf --lstout {path}/aliptcl_{it1:02d}_{eo}.lst --lstin {path}/aliptcl_{it0:02d}_{eo}.lst".format(eo=eo, path=options.path, it0=it, it1=it+1, ptcl=ptclname)

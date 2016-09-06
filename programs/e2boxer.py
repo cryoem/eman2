@@ -91,8 +91,8 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_pos_argument(name="micrographs",help="List the file to process with e2boxer here.", default="", guitype='filebox', browser="EMBoxesTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
-	parser.add_argument("--allmicrographs",action="store_true",default=False,help="Add all images from micrographs folder", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="extraction")
-	parser.add_argument("--unboxedonly",action="store_true",default=False,help="Only include image files without existing box locations", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--allmicrographs",action="store_true",default=False,help="Add all images from micrographs folder", guitype='boolbox', row=10, col=0, rowspan=1, colspan=1, mode="boxing,extraction")
+	parser.add_argument("--unboxedonly",action="store_true",default=False,help="Only include image files without existing box locations", guitype='boolbox', row=10, col=1, rowspan=1, colspan=1, mode="boxing,extraction")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="boxing,extraction")
 	parser.add_argument("--ptclsize","-P",type=int,help="Longest axis of particle in pixels (diameter, not radius)",default=-1, guitype='intbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing,extraction")
 	parser.add_argument("--write_dbbox",action="store_true",default=False,help="Export EMAN1 .box files",guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
@@ -100,13 +100,13 @@ def main():
 	parser.add_argument("--invert",action="store_true",help="If specified, inverts input contrast. Particles MUST be white on a darker background.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--no_ctf",action="store_true",default=False,help="Disable CTF determination", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="extraction, boxing")
 	
-	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=-1, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getAPIX()']")
+	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=-1, guitype='floatbox', row=14, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getAPIX()'],boxing,extraction")
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=-1, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="autofit['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=-1, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--autopick",type=str,default=None,help="Perform automatic particle picking. Provide mode and parameter string, eg - auto_local:threshold=5.5")
 	parser.add_argument("--gui", action="store_true", default=False, help="Interactive GUI mode", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing[True]")
-	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=1, rowspan=1, colspan=1,mode="boxing")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -117,12 +117,19 @@ def main():
 
 	if options.allmicrographs :
 		if len(args)>0 : print "Specified micrograph list replaced with contents of micrographs/"
-		args=[i for i in os.listdir("micrographs") if not i.startswith('.')]
-	else: args=[i.replace("micrographs/","") for i in args]
+		args=sorted(["micrographs/"+i for i in os.listdir("micrographs") if not i.startswith('.')])
+	#else: args=[i.replace("micrographs/","") for i in args]
 
 	oargs=args
 	args=[]
+	basenames=[]
 	for f in oargs:
+		bname=base_name(f)
+		if bname in basenames:
+			#### so we do not box multiple times on different versions of the same micrograph
+			if options.verbose: "skipping {}".format(f)
+			continue
+		basenames.append(bname)
 		db=js_open_dict(info_name(f))
 		try: boxes=db["boxes"]
 		except: boxes=[]
@@ -275,7 +282,7 @@ def write_boxfiles(files,boxsize):
 
 	for m in files:
 		db=js_open_dict(info_name(m))
-		boxes=db["boxes"]
+		boxes=db.setdefault("boxes",[])
 		if len(boxes)==0 : continue
 		out=file("boxfiles/{}.box".format(base_name(m)),"w")
 		for b in boxes:
@@ -293,11 +300,11 @@ def write_particles(files,boxsize,verbose):
 	for nm in files:
 		n,m=nm.split()
 		base=base_name(m)
-		ptcl="particles/{}_ptcls.hdf".format(base)
+		ptcl="particles/{}.hdf".format(base)
 		
 		# get the list of box locations
 		db=js_open_dict(info_name(m))
-		boxes=db["boxes"]
+		boxes=db.setdefault("boxes",[])
 		if len(boxes)==0 :
 			if verbose :
 				print "No particles in ",m
@@ -307,7 +314,7 @@ def write_particles(files,boxsize,verbose):
 		try: os.unlink(ptcl)
 		except: pass
 	
-		if verbose : print "{} : {} particles".format(m,len(boxes))
+		if verbose : print "{} : {} particles written to {}".format(m,len(boxes),ptcl)
 		micrograph=load_micrograph(m)		# read micrograph
 		for i,b in enumerate(boxes):
 			boxim=micrograph.get_clip(Region(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))

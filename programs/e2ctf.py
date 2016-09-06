@@ -156,7 +156,7 @@ NOTE: This program should be run from the project directory, not from within the
 	else: nthreads=1
 
 	if options.allparticles:
-		args=["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
+		args=["particles/"+i for i in os.listdir("particles") if "__ctf" not in i and i[0]!="." and ".hed" not in i ]
 		args.sort()
 		if options.verbose : print "%d particle stacks identified"%len(args)
 
