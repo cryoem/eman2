@@ -96,16 +96,16 @@ def main():
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="boxing,extraction")
 	parser.add_argument("--ptclsize","-P",type=int,help="Longest axis of particle in pixels (diameter, not radius)",default=-1, guitype='intbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing,extraction")
 	parser.add_argument("--write_dbbox",action="store_true",default=False,help="Export EMAN1 .box files",guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
-	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
 	parser.add_argument("--invert",action="store_true",help="If specified, inverts input contrast. Particles MUST be white on a darker background.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
-	parser.add_argument("--no_ctf",action="store_true",default=False,help="Disable CTF determination", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--no_ctf",action="store_true",default=False,help="Disable CTF determination", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="extraction, boxing")
 	
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=-1, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getAPIX()']")
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=-1, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="autofit['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=-1, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--autopick",type=str,default=None,help="Perform automatic particle picking. Provide mode and parameter string, eg - auto_local:threshold=5.5")
-	parser.add_argument("--gui", action="store_true", default=False, help="Interactive GUI mode", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode="extraction[True]")
+	parser.add_argument("--gui", action="store_true", default=False, help="Interactive GUI mode", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing[True]")
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -141,8 +141,9 @@ def main():
 		try: 
 			options.boxsize = project_db["global.boxsize"]
 		except:
-			print "No box size specified, and no box size in project info. Please specify."
-			sys.exit(1)
+			print "Warning: No box size specified, and no box size in project info. Please specify."
+			options.boxsize=project_db.setdefault("global.boxsize",128)
+			#sys.exit(1)
 			
 	if good_size(options.boxsize)!=options.boxsize :
 		print "Bad box size detected. Adjusting size to {}. See http://eman2.org/emanwiki/EMAN2/BoxSize".format(good_size(options.boxsize))
@@ -154,12 +155,13 @@ def main():
 	if options.ptclsize<2:
 		try: options.ptclsize=project_db["global.ptclsize"]
 		except:
-			print "ERROR: No particle size specified. None found in project DB. Please specify approximate maximum particle dimension in pixels."
-			sys.exit(1)
+			print "Warning: No particle size specified. None found in project DB. Please specify approximate maximum particle dimension in pixels."
+			options.ptclsize=project_db.setdefault("global.ptclsize",64)
+			#sys.exit(1)
 			
 	if options.ptclsize>boxsize*0.8:
-		print "ERROR: Invalid particle size detected. Box size should normally be 1.5 - 2x particle size, and must be at least 1.2x particle size." 
-		sys.exit(1)
+		print "Warning: Invalid particle size detected. Box size should normally be 1.5 - 2x particle size, and must be at least 1.2x particle size." 
+		#sys.exit(1)
 		
 	project_db["global.ptclsize"]=options.ptclsize
 
@@ -170,14 +172,14 @@ def main():
 			print "Voltage specified in kV. Adjusting specified value to ",options.voltage
 		if options.voltage<10 :
 			try: 
-				options.voltage=project_db["global.microscope_voltage"]
+				options.voltage=float(project_db["global.microscope_voltage"])
 				print "Using project voltage of ",options.voltage,"kV"
 			except:
 				print "Error: No voltage specified, and no project settings available. Disabling CTF mode."
 				options.no_ctf=True
 		if options.cs<0 :
 			try:
-				options.cs=project_db["global.microscope_cs"]
+				options.cs=float(project_db["global.microscope_cs"])
 				print "Using project Cs of ",options.cs,"mm"
 			except:
 				print "Error: No Cs specified, and no project settings available. Disabling CTF mode."
@@ -187,7 +189,7 @@ def main():
 			options.no_ctf=True
 		if options.ac<1.0 :
 			print "Warning: %AC should be specified as a %. If you intended a %AC>1%, please try again. Will proceed with the specified value"
-	
+
 	if options.apix<=0 :
 		try:
 			options.apix=float(project_db["global.apix"])
@@ -328,7 +330,7 @@ class boxerByRef(QtCore.QObject):
 		# If parameters are provided via params (as if used from command-line) we use those values,
 		# if that fails, we check the GUI widgets, which were presumably created in this case
 		if len(goodrefs)<1 :
-			print 'Box reference images ("Good Refs") required for autopicking')"
+			print 'Box reference images ("Good Refs") required for autopicking'
 			return []
 		try: threshold=params["threshold"]
 		except:
@@ -495,7 +497,7 @@ class boxerLocal(QtCore.QObject):
 		# If parameters are provided via params (as if used from command-line) we use those values,
 		# if that fails, we check the GUI widgets, which were presumably created in this case
 		if len(goodrefs)<1 :
-			print 'Box reference images ("Good Refs") required for autopicking')"
+			print 'Box reference images ("Good Refs") required for autopicking'
 			return []
 		try: threshold=params["threshold"]
 		except:

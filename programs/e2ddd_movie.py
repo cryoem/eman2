@@ -56,26 +56,39 @@ def main():
 	"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-
-	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False)
+	
+	parser.add_pos_argument(name="movies",help="List the movies to align.", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=3, mode="align")
 #	parser.add_argument("--align_frames_tree", action="store_true",help="Perform whole-frame alignment of the stack hierarchically",default=False)
 #	parser.add_argument("--align_frames_countmode", action="store_true",help="Perform whole-frame alignment of frames collected in counting mode",default=False)
-	parser.add_argument("--save_aligned", action="store_true",help="Save dark/gain corrected and optionally aligned stack",default=False)
-	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
-	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
-	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
-	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
-	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
-	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
-	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain")
+	parser.add_header(name="orblock1", help='Just a visual separation', title="- CHOOSE FROM -", row=1, col=0, rowspan=1, colspan=3, mode="align")
+	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=2, col=0, rowspan=1, colspan=3, mode="align")
+	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=3, col=0, rowspan=1, colspan=3, mode="align")
+	parser.add_header(name="orblock2", help='Just a visual separation', title="- OR -", row=4, col=0, rowspan=1, colspan=3, mode="align")
+	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.",guitype='filebox',browser="EMMovieDataTable(withmodal=True,multiselect=False)", row=5, col=0, rowspan=1, colspan=3, mode="align")
+	
+	parser.add_header(name="orblock3", help='Just a visual separation', title="Output: ", row=6, col=0, rowspan=1, colspan=3, mode="align")
+	parser.add_argument("--goodali", default=True, help="Average of good aligned frames.",action="store_true", guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='align[True]')
+	parser.add_argument("--bestali", default=False, help="Average of best aligned frames.",action="store_true", guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--allali", default=False, help="Average of all aligned frames.",action="store_true", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--noali", default=False, help="Average of non-aligned frames.",action="store_true", guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--ali4to14", default=False, help="Average of frames from 4 to 14.",action="store_true", guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=9, col=0, rowspan=1, colspan=2, mode="align")
+
+	parser.add_header(name="orblock3", help='Just a visual separation', title="Optional: ", row=10, col=0, rowspan=1, colspan=3, mode="align")
+	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256, guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 256.",default=256,  guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)",guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
-	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 256.",default=256)
-	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 256.",default=256)
+	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--optfsc", default=False, help="Specify whether to compute FSC during alignment optimization. Default is False.",action="store_true")
+	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames", guitype='boolbox', row=13, col=1, rowspan=1, colspan=1, mode='align')
+	parser.add_argument("--save_aligned", action="store_true",help="Save dark/gain corrected and optionally aligned stack",default=False, guitype='boolbox', row=14, col=0, rowspan=1, colspan=1, mode='align[True]')
+	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=14, col=1, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	#parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
+	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=16, col=0, rowspan=1, colspan=1, mode='align[True]')
+	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -89,7 +102,9 @@ def main():
 	# if options.threads>1:
 	# 	threads=max(threads,options.threads)
 	#if threads>1 : print "Sorry, limited to one thread at the moment."
-
+	
+	try: os.mkdir("micrographs")
+	except: pass
 	pid=E2init(sys.argv)
 
 	if options.dark :
@@ -195,6 +210,7 @@ def main():
 
 def process_movie(fsp,dark,gain,first,flast,step,options):
 		outname=fsp.rsplit(".",1)[0]+"_proc.hdf"		# always output to an HDF file. Output contents vary with options
+		alioutname="micrographs/"+base_name(fsp)
 
 		#if fsp[-4:].lower() in (".mrc","mrcs") :
 		if fsp[-4:].lower() in (".mrc") :
@@ -464,13 +480,16 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			# round for integer only shifting
 			#locs=[int(floor(i+.5)) for i in locs]
+			
+			if options.noali:
 
-			print "{:1.1f}Write unaligned".format(time()-t0)
-			t0=time()
+				print "{:1.1f}Write unaligned".format(time()-t0)
+				t0=time()
+				
 
-			#write out the unaligned average movie
-			out=qsum(data)
-			out.write_image("{}_noali.hdf".format(outname[:-4]),0)
+				#write out the unaligned average movie
+				out=qsum(data)
+				out.write_image("{}_noali.hdf".format(outname[:-4]),0)
 
 			print "Shift images ({})".format(time()-t0)
 			t0=time()
@@ -478,9 +497,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for i,im in enumerate(data):
 				im.translate(int(floor(locs[i*2]+.5)),int(floor(locs[i*2+1]+.5)),0)
 			#	im.write_image("a_all_ali.hdf",i)
+			
+			if options.allali:
 
-			out=qsum(data)
-			out.write_image("{}_allali.hdf".format(outname[:-4]),0)
+				out=qsum(data)
+				out.write_image("{}_allali.hdf".format(alioutname),0)
 
 			#out=sum(data[5:15])	# FSC with the earlier frames instead of whole average
 			# compute fsc between each aligned frame and the average
@@ -507,6 +528,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			print "{:1.1f}\nSubsets".format(time()-t0)
 			t0=time()
 			# write translations and qualities
+			db=js_open_dict(info_name(fsp))
+			db["movieali_trans"]=locs
+			db["movieali_qual"]=quals
+			db.close()
+			
 			out=open("{}_info.txt".format(outname[:-4]),"w")
 			out.write("#i,dx,dy,dr,rel dr,qual,(opt)fscqual\n")
 			for i in range(n):
@@ -514,19 +540,24 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			thr=max(quals)*0.6	# max correlation cutoff for inclusion
 			best=[im for i,im in enumerate(data) if quals[i]>thr]
-			out=qsum(best)
-			print "Keeping {}/{} frames".format(len(best),len(data))
-			out.write_image("{}_goodali.hdf".format(outname[:-4]),0)
+			
+			if options.goodali:
+				out=qsum(best)
+				print "Keeping {}/{} frames".format(len(best),len(data))
+				out.write_image("{}_goodali.hdf".format(alioutname),0)
 
 			thr=max(quals)*0.75	# max correlation cutoff for inclusion
 			best=[im for i,im in enumerate(data) if quals[i]>thr]
 			out=qsum(best)
-			print "Keeping {}/{} frames".format(len(best),len(data))
-			out.write_image("{}_bestali.hdf".format(outname[:-4]),0)
+			
+			if options.bestali:
+				print "Keeping {}/{} frames".format(len(best),len(data))
+				out.write_image("{}_bestali.hdf".format(alioutname),0)
 
-			# skip the first 4 frames then keep 10
-			out=qsum(data[4:14])
-			out.write_image("{}_4-14.hdf".format(outname[:-4]),0)
+			if options.ali4to14:
+				# skip the first 4 frames then keep 10
+				out=qsum(data[4:14])
+				out.write_image("{}_4-14.hdf".format(alioutname),0)
 
 			# Write out the translated correlation maps for debugging
 			#cen=csum2[(0,1)]["nx"]/2
