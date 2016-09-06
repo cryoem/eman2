@@ -47,9 +47,9 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <ddd_movie_stack>
 
-	This program will do various processing operations on "movies" recorded on direct detection cameras. It 
-	is primarily used to do whole-frame alignment of movies using all-vs-all CCFs with a global optimization 
-	strategy. Several outputs including different frame subsets are produced, as well as a text file with the 
+	This program will do various processing operations on "movies" recorded on direct detection cameras. It
+	is primarily used to do whole-frame alignment of movies using all-vs-all CCFs with a global optimization
+	strategy. Several outputs including different frame subsets are produced, as well as a text file with the
 	translation vector map.
 
 	See e2ddd_particles for per-particle alignment.
@@ -76,6 +76,8 @@ def main():
 	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	#parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
+	parser.add_argument("--first", metavar="n", type=int, default=0, help="the first image in the input to process [0 - n-1])")
+	parser.add_argument("--last", metavar="n", type=int, default=-1, help="the last image in the input to process")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -328,22 +330,22 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			av.write_image(outname[:-4]+"_c.hdf",0)
 
 		if options.align_frames :
-
-			data = outim
-
-			n=len(data)
+			n=len(outim)
 			print(n)
-			nx=data[0]["nx"]
-			ny=data[0]["ny"]
-			print "{} frames read {} x {}".format(n,nx,ny)
+			nx=outim[0]["nx"]
+			ny=outim[0]["ny"]
+			print("{} frames read {} x {}".format(n,nx,ny))
 
 			ccfs=Queue.Queue(0)
 
-			# prepare image data by clipping and FFT'ing all tiles
+			# prepare image data (outim) by clipping and FFT'ing all tiles
 			# this is threaded as well
 			immx=[0]*n
-			thds=[threading.Thread(target=split_fft,args=(data[i],i,options.optbox,options.optstep,ccfs)) for i in range(n)]
-			print "Precompute FFTs: {} threads".format(len(thds))
+			thds = []
+			for i in range(n):
+				thd = threading.Thread(target=split_fft,args=(outim[i],i,options.optbox,options.optstep,ccfs))
+				thds.append(thd)
+			print("Precompute FFTs: {} threads".format(len(thds)))
 			t0=time()
 
 			thrtolaunch=0
@@ -436,7 +438,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			#print csum2.keys()
 
-			print "{:1.1f} s\nAlignment optimization".format(time()-t0)
+			print("{:1.1f} s\nAlignment optimization".format(time()-t0))
 			t0=time()
 
 			# we start with a heavy filter, optimize, then repeat for successively less filtration
@@ -465,24 +467,24 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			# round for integer only shifting
 			#locs=[int(floor(i+.5)) for i in locs]
 
-			print "{:1.1f}Write unaligned".format(time()-t0)
+			print("{:1.1f}Write unaligned".format(time()-t0))
 			t0=time()
 
 			#write out the unaligned average movie
-			out=qsum(data)
+			out=qsum(outim)
 			out.write_image("{}_noali.hdf".format(outname[:-4]),0)
 
-			print "Shift images ({})".format(time()-t0)
+			print("Shift images ({})".format(time()-t0))
 			t0=time()
 			#write individual aligned frames
-			for i,im in enumerate(data):
+			for i,im in enumerate(outim):
 				im.translate(int(floor(locs[i*2]+.5)),int(floor(locs[i*2+1]+.5)),0)
 			#	im.write_image("a_all_ali.hdf",i)
 
-			out=qsum(data)
+			out=qsum(outim)
 			out.write_image("{}_allali.hdf".format(outname[:-4]),0)
 
-			#out=sum(data[5:15])	# FSC with the earlier frames instead of whole average
+			#out=sum(outim[5:15])	# FSC with the earlier frames instead of whole average
 			# compute fsc between each aligned frame and the average
 			# we tile this for better curves, since we don't need the detail
 			fscq=[0]*n
@@ -493,7 +495,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 						for y in range(64,out["ny"]-192,64):
 							rgnc+=1.0
 							cmpto=out.get_clip(Region(x,y,64,64))
-							cscen=data[i].get_clip(Region(x,y,64,64))
+							cscen=outim[i].get_clip(Region(x,y,64,64))
 							s,f=calcfsc(cmpto,cscen)
 							f=array(f)
 							try: fs+=f
@@ -504,7 +506,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 					Util.save_data(s[1],s[1]-s[0],fs[1:-1],"{}_fsc_{:02d}.txt".format(outname[:-4],i))
 
-			print "{:1.1f}\nSubsets".format(time()-t0)
+			print("{:1.1f}\nSubsets".format(time()-t0))
 			t0=time()
 			# write translations and qualities
 			out=open("{}_info.txt".format(outname[:-4]),"w")
@@ -513,19 +515,19 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				out.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(i,locs[i*2],locs[i*2+1],hypot(locs[i*2],locs[i*2+1]),hypot(locs[i*2]-locs[i*2-2],locs[i*2+1]-locs[i*2-1]),quals[i],fscq[i]))
 
 			thr=max(quals)*0.6	# max correlation cutoff for inclusion
-			best=[im for i,im in enumerate(data) if quals[i]>thr]
+			best=[im for i,im in enumerate(outim) if quals[i]>thr]
 			out=qsum(best)
-			print "Keeping {}/{} frames".format(len(best),len(data))
+			print "Keeping {}/{} frames".format(len(best),len(outim))
 			out.write_image("{}_goodali.hdf".format(outname[:-4]),0)
 
 			thr=max(quals)*0.75	# max correlation cutoff for inclusion
-			best=[im for i,im in enumerate(data) if quals[i]>thr]
+			best=[im for i,im in enumerate(outim) if quals[i]>thr]
 			out=qsum(best)
-			print "Keeping {}/{} frames".format(len(best),len(data))
+			print "Keeping {}/{} frames".format(len(best),len(outim))
 			out.write_image("{}_bestali.hdf".format(outname[:-4]),0)
 
 			# skip the first 4 frames then keep 10
-			out=qsum(data[4:14])
+			out=qsum(outim[4:14])
 			out.write_image("{}_4-14.hdf".format(outname[:-4]),0)
 
 			# Write out the translated correlation maps for debugging
