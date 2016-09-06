@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
 from EMAN2 import *
 from scipy import ndimage
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import shutil
@@ -84,23 +87,32 @@ def main():
 		try: apix = hdr["apix_x"]
 		except: apix = 1.0
 
-	print("Performing alignments with the following packages: {}".format(", ".join(options.include)))
+	if not options.skipalign: print("Performing alignments with the following packages: {}".format(", ".join(options.include)))
 
 	logid=E2init(sys.argv,options.ppid)
+
+	if options.gain or options.dark or options.gaink2:
+		if options.verbose: print("Generating reference images for dark/gain correction(s)")
+		fc = FrameCorrector(options)
 
 	for arg in args:
 
 		fname = arg
 		hdr = EMData(fname,0,True)
 
-		if options.gain or options.dark or options.gaink2:
-			if options.verbose: print("Correcting frames before processing")
-			fname = FrameCorrector.correct_frames(options,fname)
-
 		if options.verbose: print("Processing {}".format(fname))
 
-		# PART 0: Setup alignment data
+		# PART 0: Correct frames
+		if options.gain or options.dark or options.gaink2:
+			if options.verbose: print("Performing dark/gain correction(s)")
+			fname = fc.correct_frames(fname)
+
+		# PART 1: Setup alignment data
 		(basen,ext) = os.path.splitext(fname)
+
+		if options.skipalign and "corrected" not in fname:
+			fname = "{}_corrected{}".format(basen,ext)
+
 		bdir = "{}".format(basen)
 
 		try: os.makedirs(bdir)
@@ -108,7 +120,7 @@ def main():
 
 		hcname = "{}/hictrst.hdf".format(bdir)
 		lcname = "{}/loctrst.hdf".format(bdir)
-		
+
 		localhc = hcname.split("/")[-1]
 		locallc = lcname.split("/")[-1]
 
@@ -118,10 +130,8 @@ def main():
 		hictrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
 
 		if not os.path.isfile(lcname):
-			# try: os.unlink(tmp)
-			# except: pass
 			if options.verbose: print("Erasing gold and other very high contrast features")
-			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={}" 
+			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={}"
 			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose)
 			o,e,rt=run(cmd,cwd=bdir,shell=True)
 			tmp = "hictrst_proc.hdf"
@@ -134,16 +144,18 @@ def main():
 		loctrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
 
 		cwd = os.getcwd()
-		
+
 		trans_lo = {}
 		trans_hi = {}
-		
+
 		runtimes = {key:[] for key in pkgs.keys()} # for each package, store its runtime.
+
+		# PART 2: Run alignment programs
 
 		for pkg in sorted(pkgs.keys()):
 			if pkg in options.include:
 				prog = pkgs[pkg].split("/")[-1]
-				
+
 				if not options.skipalign: print("Running {} on {}".format(prog,fname))
 				else: print("Parsing previous {} alignment results".format(prog,fname))
 
@@ -156,14 +168,14 @@ def main():
 					if not options.skipalign:
 						src = "/".join(pkgs[pkg].split("/")[:-1]) + "/DE_process_frames.cfg"
 						dst = cwd+"/DE_process_frames.cfg"
-						
+
 						try: os.symlink(src,dst)
 						except: pass
 
 						for fname in [hcname,lcname]:
 							o,e,rt=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True,clear=True)
 							runtimes[pkg].append(rt)
-						
+
 						try: os.unlink(dst)
 						except: pass
 
@@ -185,7 +197,7 @@ def main():
 					if not options.skipalign:
 						for fn in [hcname,lcname]: # high contrast, low contrast
 							lfn = fn.split("/")[-1] # local file name
-							if not os.path.isfile("{}/{}".format(pdir,lfn)): 
+							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
 							o,e,rt=run("{} {} --align_frames --threads={}".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
@@ -194,7 +206,7 @@ def main():
 					for f in os.listdir(pdir):
 						if "hictrst_proc_info.txt" in f: hi = os.path.join(pdir,f)
 						elif "loctrst_proc_info.txt" in f: lo = os.path.join(pdir,f)
-					
+
 					try:
 						trans_hi[pkg] = parse_eman2(hi)
 						trans_lo[pkg] = parse_eman2(lo)
@@ -203,13 +215,13 @@ def main():
 				if pkg == "IMOD":
 
 					if not options.skipalign:
-						
+
 						for fn in [hcname,lcname]: # high contrast, low contrast
 							lfn = fn.split("/")[-1] # local file name
-							
+
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-							
+
 							alif = lfn.split(".")[0]+"_ali.mrc"
 
 							o,e,rt=run("{} -gpu 0 -xfext xf -input {} -output {}".format(pkgs[pkg],lfn,alif),cwd=pdir,shell=True,clear=True)
@@ -297,7 +309,7 @@ EOF
 
 							if lext == "mrcs": # MRCS format not supported by unblur
 								lfn_new = lfn.replace(".mrcs",".mrc")
-								try: 
+								try:
 									shutil.move("{}/{}".format(pdir,lfn),"{}/{}".format(pdir,lfn_new))
 								except: pass # file likely already exists
 								lfn = lfn_new
@@ -309,9 +321,7 @@ EOF
 							ali=lfn.replace(".mrc","_ali.mrc")
 							frc=lfn.replace(".mrc","_frc.txt")
 
-							cmd = template.format(prog=pkgs[pkg],fname=lfn, nframes=nfs, alignsum=alis, shiftfile=shft, 
-								apix=apix, dosefilt="NO", saveali="YES", aliname=ali, advopts="NO", frcname=frc, minsrch=2.0, 
-								maxsrch=200.0, bfact=1500, vfmwidth=1, hfmwidth=1, thresh=0.1, maxiter=10, verbose="NO")
+							cmd = template.format(prog=pkgs[pkg],fname=lfn, nframes=nfs, alignsum=alis, shiftfile=shft, apix=apix, dosefilt="NO", saveali="YES", aliname=ali, advopts="NO", frcname=frc, minsrch=2.0, maxsrch=200.0, bfact=1500, vfmwidth=1, hfmwidth=1, thresh=0.1, maxiter=10, verbose="NO")
 
 							o,e,rt=run(cmd,shell=True,cwd=pdir,clear=True)
 							runtimes[pkg].append(rt)
@@ -355,7 +365,7 @@ eot
 								lfn = lfn_new
 								lext = "mrcs"
 							else:
-								if not os.path.isfile("{}/{}".format(pdir,lfn)): 
+								if not os.path.isfile("{}/{}".format(pdir,lfn)):
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
 							mlfn = "{}/movielist.txt".format(pdir)
@@ -376,9 +386,9 @@ eot
 							inpath = "./"
 							outpath = "./"
 
-							cmd = template.format(prog=pkgs[pkg],movielist="movielist.txt", boxsize=bs, psize=ps, 
-								nsigma=nsig, rmax1=rm1, rmax2=rm2, smooth=smooth, bfactor=bfact, framefirst=ffirst, 
-								framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath, 
+							cmd = template.format(prog=pkgs[pkg],movielist="movielist.txt", boxsize=bs, psize=ps,
+								nsigma=nsig, rmax1=rm1, rmax2=rm2, smooth=smooth, bfactor=bfact, framefirst=ffirst,
+								framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath,
 								shfext="shf", vecext="vec")
 
 							o,e,rt=run(cmd,shell=True,exe="/bin/csh",cwd=pdir,clear=True)
@@ -387,12 +397,14 @@ eot
 					for f in os.listdir(pdir):
 						if f == "hictrst.shf":
 							hi = os.path.join(pdir,f)
-						elif f == "loctrst.shf": 
+						elif f == "loctrst.shf":
 							lo = os.path.join(pdir,f)
 					try:
 						trans_hi[pkg] = parse_lmbfgs(hi)
 						trans_lo[pkg] = parse_lmbfgs(lo)
 					except: failed(pkg)
+
+		# STEP 3: Analyze results
 
 		# Question 1: How quickly do these frame alignment alorithms run
 		if not options.skipalign:
@@ -422,47 +434,9 @@ eot
 
 	print("DONE")
 
-#######################
-# Compare and display #
-#######################
-
-def calc_cips_scores(ftypes,bs=512):
-	scores = {}
-	for pkg in [pkg for pkg in pkgs.keys() if pkg in options.include]:
-		scores[pkg] = []
-		for ftype in sorted(ftypes.keys()):
-			cps = calc_coherent_pws(ftypes[ftype][pkg],bs)
-			ips = calc_incoherent_pws(ftypes[ftype][pkg],bs)
-			frc = -1 * EMData.cmp(cps,'frc',ips)
-			dot = -1 * EMData.cmp(cps,'dot',ips)
-			osb = EMData.cmp(cps,'optsub',ips)
-			sse = EMData.cmp(cps,'sqeuclidean',ips)
-			scores[pkg].append([frc,dot,osb,sse])
-		scores[pkg] = np.asarray(scores[pkg])
-	return scores
-
-def plot_scores(scores,bdir): # 1 axis per metric
-	metrics = np.asarray(["frc","dot","optsub","sqeuclidean"]).reshape(2,2)
-	fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(16,16))
-	for (i,j),metric in np.ndenumerate(metrics):
-		ax = axs[i][j]
-		for key in scores.keys():
-			if metric == "frc":
-				ax.plot(scores[key][:,0],label=key)
-			elif metric == "dot":
-				ax.plot(scores[key][:,1],label=key)
-			elif metric == "optsub":
-				ax.plot(scores[key][:,2],label=key)
-			elif metric == "sqeuclidean":
-				ax.plot(scores[key][:,3],label=key)
-		ax.legend(loc="best")
-		ax.set_xticks([0,1,2,3,4,5])
-		ax.set_xticklabels(["hi_hi", "hi_lo", "hi_wmg", "lo_hi","lo_lo","lo_wmg"])
-		ax.set_xlabel("Aligned To")
-		ax.set_title(metric)
-	fig.tight_layout()
-	plt.savefig("{}/scores.png".format(bdir))
-	return fig
+####################
+# Compare and plot #
+####################
 
 def plot_trans(trans,bdir,nsig=1):
 	ats = np.hstack([trans[k] for k in sorted(trans.keys())])
@@ -516,7 +490,7 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
 
 	hts = []
 	for k in sorted(trans_hi.keys()):
-		if k not in ["ALL","MEAN","STD","VAR"]: 
+		if k not in ["ALL","MEAN","STD","VAR"]:
 			hts.append(trans_hi[k])
 	hts = np.hstack(hts)
 	np.savetxt("{}/hi_trans.txt".format(bdir),hts)
@@ -701,11 +675,50 @@ def calc_coherent_pws(frames,bs=512):
 	cps.process_inplace('normalize.edgemean')
 	return cps
 
+def calc_cips_scores(ftypes,bs=512): #cips = coherent & incoherent power spectra
+	# for comparison of coherent and incoherent power spectra...not such a good metric.
+	scores = {}
+	for pkg in [pkg for pkg in pkgs.keys() if pkg in options.include]:
+		scores[pkg] = []
+		for ftype in sorted(ftypes.keys()):
+			cps = calc_coherent_pws(ftypes[ftype][pkg],bs)
+			ips = calc_incoherent_pws(ftypes[ftype][pkg],bs)
+			frc = -1 * EMData.cmp(cps,'frc',ips)
+			dot = -1 * EMData.cmp(cps,'dot',ips)
+			osb = EMData.cmp(cps,'optsub',ips)
+			sse = EMData.cmp(cps,'sqeuclidean',ips)
+			scores[pkg].append([frc,dot,osb,sse])
+		scores[pkg] = np.asarray(scores[pkg])
+	return scores
+
+def plot_scores(scores,bdir): # 1 axis per metric
+	metrics = np.asarray(["frc","dot","optsub","sqeuclidean"]).reshape(2,2)
+	fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(16,16))
+	for (i,j),metric in np.ndenumerate(metrics):
+		ax = axs[i][j]
+		for key in scores.keys():
+			if metric == "frc":
+				ax.plot(scores[key][:,0],label=key)
+			elif metric == "dot":
+				ax.plot(scores[key][:,1],label=key)
+			elif metric == "optsub":
+				ax.plot(scores[key][:,2],label=key)
+			elif metric == "sqeuclidean":
+				ax.plot(scores[key][:,3],label=key)
+		ax.legend(loc="best")
+		ax.set_xticks([0,1,2,3,4,5])
+		ax.set_xticklabels(["hi_hi", "hi_lo", "hi_wmg", "lo_hi","lo_lo","lo_wmg"])
+		ax.set_xlabel("Aligned To")
+		ax.set_title(metric)
+	fig.tight_layout()
+	plt.savefig("{}/scores.png".format(bdir))
+	return fig
+
 #####################
 # Utility functions #
 #####################
 
-def load_frames(fn): 
+def load_frames(fn):
 	return [EMData(fn,i) for i in range(EMUtil.get_image_count(fn))]
 
 def write_frames(frames,fn):
@@ -732,6 +745,7 @@ def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 		try:
 			cc = subprocess.Popen("/home/jmbell/src/utils/clearcache") # "sync; echo 3 > /proc/sys/vm/drop_caches"
 			cc.communicate()
+			print("Memory cache cleared. Runtime results should be trustworthy.")
 		except:
 			print("Memory cache not cleared. Do not trust runtime results.")
 	gc.collect() # just in case
@@ -750,119 +764,58 @@ def shift_frames(frames,trans):
 		shifted.append(f)
 	return shifted
 
-####################
-# Gold subtraction #
-####################
-
-def fixframe(f):
-	f *= -1
-	f.process_inplace("normalize")
-	sharp_msk, soft_msk = generate_masks(f)
-	mskd_sharp = sharp_msk * f
-	sub_sharp = f - mskd_sharp
-	noise = local_noise(sub_sharp)
-	mskd_soft = soft_msk * f
-	sub_soft = f - mskd_soft
-	return (sub_soft + noise * soft_msk)*-1
-
-def generate_masks(img,keepdust=False,goldsize=27):
-	img.process_inplace("normalize")
-	# create sharp mask
-	msk = img.process("filter.highpass.gauss",{"cutoff_pixels":25})
-	msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
-	msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+3*msk["sigma"],"tozero":True})
-	msk.process_inplace("threshold.binary",{"value":msk["mean"]})
-	# remove dust
-	if keepdust: 
-		sharp_msk = msk.copy()
-	else:
-		nproc = msk.numpy().copy()
-		s = np.sqrt(goldsize*2).astype(int)
-		se2=np.ones((s,s))
-		nproc = ndimage.binary_closing(nproc,structure=se2).astype(int)
-		nproc = ndimage.binary_opening(nproc,structure=se2).astype(int)
-		sharp_msk = from_numpy(nproc)
-	# grow slightly and create soft mask
-	sharp_msk = sharp_msk.process("mask.addshells.gauss",{"val1":8,"val2":0})
-	soft_msk = sharp_msk.process("mask.addshells.gauss",{"val1":0,"val2":8})
-	return sharp_msk,soft_msk
-
-def local_noise(img,bs=128,oversample=4,verbose=False):
-	localnoise = EMData(img["nx"],img["ny"])
-	localnoise.to_zero()
-	nbxs = len(np.arange(-bs,img['nx']+bs,bs))*oversample
-	nbys = len(np.arange(-bs,img['ny']+bs,bs))*oversample
-	mx = np.linspace(0,img["nx"],nbxs).astype(int)
-	my = np.linspace(0,img["ny"],nbys).astype(int)
-	for x in mx:
-		for y in my:
-			r = img.get_clip(Region(x-bs/2,y-bs/2,bs,bs))
-			n = EMData(bs,bs)
-			n.to_zero()
-			n.process_inplace("math.addnoise",{"noise":r["sigma_nonzero"]})
-			n.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
-			try: n *= r["sigma_nonzero"]/n["sigma_nonzero"]
-			except:
-				if verbose:
-					print("WARNING: division by zero, from n['sigma_nonzero']={}".format(n["sigma_nonzero"]))
-			n += r["mean_nonzero"]
-			localnoise.insert_clip(n,(x-bs/2,y-bs/2))
-	apix = img['apix_x']
-	localnoise['apix_x'] = apix
-	localnoise['apix_y'] = apix
-	nyquistres=apix*2.0
-	filtres=nyquistres*10.0/9.0
-	filtfreq=1.0/filtres
-	if verbose: print("Apix {}\tResolution {}\tFrequency {}".format(apix,filtres,filtfreq))
-	localnoise.process_inplace('filter.lowpass.tanh', {'cutoff_freq':filtfreq,'apix':apix})
-	return localnoise
-
 ###############################
 # DDD movie utility functions #
 ###############################
 
 class FrameCorrector:
 
-	@classmethod
-	def correct_frames(cls,options,fname,outfile=None):
-		options.path = fname
+	dark = None
+	gain = None
+
+	def __init__(self,options):
 		if options.dark:
 			if options.verbose > 8: print("Generating dark reference")
-			dark = cls.dark_correct(options)
-		else: dark = None
-		if options.gain:
+			self.dark = self._dark_correct(options)
+		else:
+			self.dark = None
+		if options.gain or options.gaink2:
 			if options.verbose > 8: print("Generating gain reference")
-			gain = cls.gain_correct(options,dark)
-		elif options.gaink2:
-			if options.verbose > 8: print("Generating K2 gain reference")
-			gain = EMData(options.gaink2)
-		else: gain = None
-		hdr = EMData(options.path,0,True)
-		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
-		else: nd = EMUtil.get_image_count(options.path)
-		if not outfile: outfile = options.path[:-4] + "_corrected.hdf"
+			if options.gaink2:
+				self.gain = EMData(options.gaink2)
+			else:
+				self.gain = self._gain_correct(options,self.dark)
+		else: self.gain = None
+
+	def correct_frames(self,fname,outfile=None):
+		hdr = EMData(fname,0,True)
+		if fname[-4:].lower() in (".mrc"):
+			nd = hdr['nz']
+		else:
+			nd = EMUtil.get_image_count(fname)
+		if outfile == None:
+			outfile = fname[:-4] + "_corrected.hdf"
 		for i in xrange(nd):
 			if options.verbose:
 				print "Correcting frame: {}/{}	\r".format(i+1,nd),
 				sys.stdout.flush()
-			if options.path[-4:].lower() in (".mrc"):
+			if fname[-4:].lower() in (".mrc"):
 				r = Region(0,0,i,nx,ny,1)
-				im=EMData(path,0,False,r)
-			else: im=EMData(options.path,i)
-			if dark: im.sub(dark)
-			if gain: im.mult(gain)
+				im=EMData(fname,0,False,r)
+			else: im=EMData(fname,i)
+			if self.dark != None: im.sub(self.dark)
+			if self.gain != None: im.mult(self.gain)
 			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
 			# fixes clear outliers as well as values which were exactly zero
 			im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1})
 			im.process_inplace("normalize.edgemean")
 			im.write_image(outfile,i)
-		else: outfile = options.path
 		return outfile
 
-	@classmethod
-	def dark_correct(cls,options):
+	@staticmethod
+	def _dark_correct(options):
 		hdr = EMData(options.dark,0,True)
-		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
+		if options.dark[-4:].lower() in (".mrc"): nd = hdr['nz']
 		else: nd = EMUtil.get_image_count(options.dark)
 		dark=EMData(options.dark,0)
 		if nd>1:
@@ -887,10 +840,10 @@ class FrameCorrector:
 		dark2=dark.process("normalize.unitlen")
 		return dark
 
-	@classmethod
-	def gain_correct(cls,options,dark):
+	@staticmethod
+	def _gain_correct(options,dark):
 		hdr = EMData(options.gain,0,True)
-		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
+		if options.gain[-4:].lower() in (".mrc"): nd = hdr['nz']
 		else: nd = EMUtil.get_image_count(options.gain)
 		gain=EMData(options.gain,0)
 		if nd>1:
@@ -923,12 +876,3 @@ class FrameCorrector:
 if __name__ == "__main__":
 	main()
 
-# frames_loctrst = []
-# for i,fhc in enumerate(frames_hictrst):
-# 	t0 = time.time()
-# 	if options.verbose: print("Processing frame {}".format(i))
-# 	fhc.write_image(hcname,i)
-# 	flc = fixframe(fhc) # remove gold from frame
-# 	flc.write_image(lcname,i)
-# 	frames_loctrst.append(flc)
-# 	if options.verbose: print("{}".format(time.time()-t0))
