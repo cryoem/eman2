@@ -527,6 +527,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			db=js_open_dict(info_name(fsp))
 			db["movieali_trans"]=locs
 			db["movieali_qual"]=quals
+			db["movie_name"]=fsp
 			db.close()
 
 			out=open("{}_info.txt".format(outname[:-4]),"w")
