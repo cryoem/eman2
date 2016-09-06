@@ -1270,7 +1270,11 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
 //	int nxy=nx*ny;
-
+// 	image->process_inplace("threshold.belowtozero");
+	if (thr==-1.0e30f){
+		thr=float(image->get_attr("mean_nonzero"))+ 1.0 *float(image->get_attr("sigma_nonzero"));
+		printf("Estimated map threshold: %4f\n", thr);
+	}
 	// seed
 	vector<float> centers(nseg*3);
 	vector<float> count(nseg);
@@ -1280,62 +1284,56 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 		sep/=ax;
 		if (verbose) printf("Seeding .....\n");
 		int sx=int(nx/sep)+1,sy=int(ny/sep)+1,sz=int(nz/sep)+1;
-		for(int setthr=0; setthr<10; setthr++){
-			EMData m(sx,sy,sz);
-			EMData mcount(sx,sy,sz);
-			for (int i=0; i<nx; i++){
-				for (int j=0; j<ny; j++){
-					for (int k=0; k<nz; k++){
-						int ni=(i/sep),nj=(j/sep),nk=(k/sep);
-						float v=image->get_value_at(i,j,k);
-						if (v>thr){
-							m.set_value_at(ni,nj,nk,(m.get_value_at(ni,nj,nk)+v));
-							mcount.set_value_at(ni,nj,nk,(mcount.get_value_at(ni,nj,nk)+1));
-						}
+		EMData m(sx,sy,sz);
+		EMData mcount(sx,sy,sz);
+		for (int i=0; i<nx; i++){
+			for (int j=0; j<ny; j++){
+				for (int k=0; k<nz; k++){
+					int ni=(i/sep),nj=(j/sep),nk=(k/sep);
+					float v=image->get_value_at(i,j,k);
+					if (v>thr){
+						m.set_value_at(ni,nj,nk,(m.get_value_at(ni,nj,nk)+v));
+						mcount.set_value_at(ni,nj,nk,(mcount.get_value_at(ni,nj,nk)+1));
 					}
 				}
 			}
-			m.div((nx/sx)*(ny/sy)*(nz/sz));
-			int nsum=0;
-			float l=image->get_attr("minimum"),r=image->get_attr("maximum"),th=0;
-			while (abs(nsum-nseg)>0){
-				th=(l+r)/2;
-				nsum=0;
-				for (int i=0; i<sx; i++){
-					for (int j=0; j<sy; j++){
-						for (int k=0; k<sz; k++){
-							if (m.get_value_at(i,j,k)>th)  nsum+=1;
-						}
-					}
-				}
-				if (verbose) printf("%3f\t %3f\t %3f,\t %4d\t %4d\n", l,th,r,nsum,nseg);
-				if (nsum>nseg) l=th;
-				if (nsum<nseg) r=th;
-				if ((r-l)<.01) break;
-			}
-	//		nseg=nsum;
-			int q=0;
+		}
+		m.div((nx/sx)*(ny/sy)*(nz/sz));
+		int nsum=0;
+		float l=image->get_attr("minimum"),r=image->get_attr("maximum"),th=0;
+		while (abs(nsum-nseg)>0){
+			th=(l+r)/2;
+			nsum=0;
 			for (int i=0; i<sx; i++){
 				for (int j=0; j<sy; j++){
 					for (int k=0; k<sz; k++){
-						if (m.get_value_at(i,j,k)>th){
-							if(q<nseg*3){
-								centers[q]=	 float(i+.5)*sep;
-								centers[q+1]=float(j+.5)*sep;
-								centers[q+2]=float(k+.5)*sep;
-								q+=3;
-							}
+						if (m.get_value_at(i,j,k)>th)  nsum+=1;
+					}
+				}
+			}
+// 			if (verbose) printf("%3f\t %3f\t %3f,\t %4d\t %4d\n", l,th,r,nsum,nseg);
+			if (nsum>nseg) l=th;
+			if (nsum<nseg) r=th;
+			if ((r-l)<.0001)break;
+		}
+//		nseg=nsum;
+		if (verbose) printf("%3d pseudoatoms seeded at threshold value %3f\n", nsum, th);
+		int q=0;
+		for (int i=0; i<sx; i++){
+			for (int j=0; j<sy; j++){
+				for (int k=0; k<sz; k++){
+					if (m.get_value_at(i,j,k)>th){
+						if(q<nseg*3){
+							centers[q]=	 float(i+.5)*sep;
+							centers[q+1]=float(j+.5)*sep;
+							centers[q+2]=float(k+.5)*sep;
+							q+=3;
 						}
 					}
 				}
 			}
-			if (thr==-1.0e30f){
-				printf("Estimated map threshold: %4f\n", th);
-				thr=th;
-			}
-			else
-				break;
 		}
+		
 	}
 	// Default: random seeding.
 	else{
