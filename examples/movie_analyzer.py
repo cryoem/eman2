@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
-import matplotlib as mpl
-mpl.use('Agg')
+import os
+
+if os.getenv("DISPLAY") == None:
+	import matplotlib as mpl
+	mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 
 from EMAN2 import *
@@ -13,6 +17,7 @@ import time
 import multiprocessing
 import subprocess
 import gc
+import psutil
 
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
@@ -45,24 +50,22 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--goldsize", default=65, type=float, help="Gold diameter in pixels. Default is 65.")
-	parser.add_argument("--boxsize", default=128, type=float, help="Box size to use when tiling image to compute noise. Default is 128.")
+	# Program arguments
+	parser.add_argument("--goldsize", default=70, type=float, help="Gold diameter in pixels. Default is 70.")
+	parser.add_argument("--boxsize", default=256, type=float, help="Box size to use when tiling image to compute noise. Default is 128.")
 	parser.add_argument("--oversample", default=4, type=float, help="Oversample by this much when tiling image to compute noise. Default is 4.")
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
 	parser.add_argument("--skipalign",action="store_true",default=False,help="If you wish to skip running alignments, specify this option.")
 	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
 	parser.add_argument("--include", type=str, help="Comma separated list of packages to include during comparison.", default="DE,EMAN2,IMOD,UCSF,UNBLUR,LMBFGS")
 	parser.add_argument("--exclude", type=str, help="Comma separated list of packages to exclude during comparison.", default="")
+	parser.add_argument("--threads", default=1, type=int, help="Number of threads to use with each aligner. Default is 1.")
 	# DDD frame correction
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
-	parser.add_argument("--fixaxes",action="store_true",default=False,help="Tries to identify bad pixels and fill them in with sane values instead")
-	parser.add_argument("--neighbornorm", type=int, help="Set the norm to be used for fixing axes. Default is 2",default=2)
-	parser.add_argument("--fixbadlines",action="store_true",default=False,help="If you wish to remove detector-specific bad lines, you must specify this flag and --xybadlines.")
-	parser.add_argument('--xybadlines', help="Specify the list of bad pixel coordinates for your detector. Will only be used if --fixbadlines is also specified.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
-	# Program options
-	parser.add_argument("--threads", default=1, type=int, help="Number of threads to use with each aligner. Default is 1.")
+	parser.add_argument("--step",type=str,default="1,1,31",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even frames. Same step used for all input files. [last] is exclusive. Default= 1,1,31.")
+	# Other options
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -110,48 +113,59 @@ def main():
 		try: os.makedirs(bdir)
 		except: pass
 
-		if options.gain or options.dark or options.gaink2:
-			if options.verbose: print("Generating reference images for dark/gain correction(s)")
-			if options.dark: dark = "--dark {}".format(options.dark)
-			else: dark = ""
-			if options.gain: gain = "--gain {}".format(options.gain)
-			else: gain = ""
-			if options.gaink2: gaink2 = "--gaink2 {}".format(options.gaink2)
-			else: gaink2 = ""
-			cmd = "e2ddd_movie.py {} {} {} {} --frames --fixbadpixels".format(fname,dark,gain,gaink2)
-			run(cmd,shell=True)
-			if options.dark:
-				dfn = options.dark.split(".")[0]
-				os.unlink("{}_sig.hdf".format(dfn))
-				os.unlink("{}_sum.hdf".format(dfn))
-			if options.gain:
-				gfn = options.gain.split(".")[0]
-				os.unlink("{}_sig.hdf".format(gfn))
-				os.unlink("{}_sum.hdf".format(gfn))
-			shutil.move("{}_proc_corr.hdf".format(basen),bdir)
-			fname = "{}/{}_proc_corr.hdf".format(bdir,basen,ext)
-
 		hcname = "{}/hictrst.hdf".format(bdir)
 		lcname = "{}/loctrst.hdf".format(bdir)
 
 		localhc = hcname.split("/")[-1]
 		locallc = lcname.split("/")[-1]
 
-		frames_hictrst = load_frames(fname)
+		if options.gain or options.dark or options.gaink2:
+			if os.path.isfile("{}/{}_proc_corr.hdf".format(bdir,basen)):
+				print("Dark/gain corrections were already performed")
+			else:
+				if options.verbose: print("Generating reference images for dark/gain correction(s)")
+				if options.dark: dark = "--dark {}".format(options.dark)
+				else: dark = ""
+				if options.gain: gain = "--gain {}".format(options.gain)
+				else: gain = ""
+				if options.gaink2: gaink2 = "--gaink2 {}".format(options.gaink2)
+				else: gaink2 = ""
+				if options.step: step = "--step {}".format(options.step)
+				else: step = ""
+				cmd = "e2ddd_movie.py {} {} {} {} {} --fixbadpixels --frames --nomgsdir -v9".format(fname,dark,gain,gaink2,step)
+				wt,ct = run(cmd,shell=True)
+				if options.dark:
+					dfn = options.dark.split(".")[0]
+					os.unlink("{}_sig.hdf".format(dfn))
+					os.unlink("{}_sum.hdf".format(dfn))
+				if options.gain:
+					gfn = options.gain.split(".")[0]
+					os.unlink("{}_sig.hdf".format(gfn))
+					os.unlink("{}_sum.hdf".format(gfn))
+				shutil.move("{}_proc_corr.hdf".format(basen),bdir)
+			fname = "{}/{}_proc_corr.hdf".format(bdir,basen)
+
+		try: first,step,last = [int(i) for i in options.step.split(",")]
+		except:
+			print("Could not parse options.step. Please revise.")
+			sys.exit(1)
+		frames_hictrst = load_frames(fname,first,last,step)
 		write_frames(frames_hictrst,hcname)
 
 		hictrst_avg = average_frames(frames_hictrst)
 		hictrst_avg.write_image("{}/hictrst_avg_noali.hdf".format(bdir))
 
-		if not os.path.isfile(lcname):
+		if os.path.isfile(lcname):
+			print("Found gold subtracted frames from previous analysis.")
+		else:
+			try: os.unlink("{}/hictrst_proc.hdf".format(bdir))
+			except: pass
 			if options.verbose: print("Erasing gold and other very high contrast features")
 			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={}"
 			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose)
-			o,e,rt=run(cmd,cwd=bdir,shell=True)
-			tmp = "hictrst_proc.hdf"
-			o,e,rt = run("e2proc2d.py {} {}".format(tmp,locallc),shell=True,cwd=bdir)
-		else:
-			print("Found gold subtracted frames from previous analysis.")
+			wt,ct = run(cmd,cwd=bdir,shell=True)
+			print(locallc)
+			wt,ct = run("e2proc2d.py hictrst_proc.hdf {}".format(locallc),shell=True,cwd=bdir)
 
 		frames_loctrst = load_frames(lcname)
 		loctrst_avg = average_frames(frames_loctrst)
@@ -187,8 +201,8 @@ def main():
 						except: pass
 
 						for fname in [hcname,lcname]:
-							o,e,rt=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True,clear=True)
-							runtimes[pkg].append(rt)
+							wt,ct=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True,clear=True)
+							runtimes[pkg].append(("CPU",wt,ct))
 
 						try: os.unlink(dst)
 						except: pass
@@ -214,8 +228,8 @@ def main():
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
-							o,e,rt=run("{} {} --align_frames --threads={} --allali".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
-							runtimes[pkg].append(rt)
+							wt,ct=run("{} {} --align_frames --threads={} --allali --normalize --nomgsdir".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
+							runtimes[pkg].append(("CPU",wt,ct))
 
 					for f in os.listdir(pdir):
 						if "hictrst_proc_info.txt" in f: hi = os.path.join(pdir,f)
@@ -238,8 +252,8 @@ def main():
 
 							alif = lfn.split(".")[0]+"_ali.mrc"
 
-							o,e,rt=run("{} -gpu 0 -xfext xf -input {} -output {}".format(pkgs[pkg],lfn,alif),cwd=pdir,shell=True,clear=True)
-							runtimes[pkg].append(rt)
+							wt,ct=run("{} -gpu 0 -xfext xf -input {} -output {}".format(pkgs[pkg],lfn,alif),cwd=pdir,shell=True,clear=True)
+							runtimes[pkg].append(("GPU",wt,ct))
 
 					for f in os.listdir(pdir):
 						if "hictrst.xf" in f: hi = os.path.join(pdir,f)
@@ -260,7 +274,7 @@ def main():
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
 								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
-									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
+									wt,ct=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
 									os.remove("{}/{}".format(pdir,lfn))
 								lfn = lfn_new
 								lext = "mrcs"
@@ -268,8 +282,8 @@ def main():
 								if not os.path.isfile("{}/{}".format(pdir,lfn)):
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
-							o,e,rt=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir,shell=True,clear=True)
-							runtimes[pkg].append(rt)
+							wt,ct=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir,shell=True,clear=True)
+							runtimes[pkg].append(("GPU",wt,ct))
 
 					for f in os.listdir(pdir):
 						if "hictrst_Log.txt" in f: hi = os.path.join(pdir,f)
@@ -313,7 +327,7 @@ EOF
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
 								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
-									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
+									wt,ct=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
 									os.remove("{}/{}".format(pdir,lfn))
 								lfn = lfn_new
 								lext = "mrcs"
@@ -337,8 +351,8 @@ EOF
 
 							cmd = template.format(prog=pkgs[pkg],fname=lfn, nframes=nfs, alignsum=alis, shiftfile=shft, apix=apix, dosefilt="NO", saveali="YES", aliname=ali, advopts="NO", frcname=frc, minsrch=2.0, maxsrch=200.0, bfact=1500, vfmwidth=1, hfmwidth=1, thresh=0.1, maxiter=10, verbose="NO")
 
-							o,e,rt=run(cmd,shell=True,cwd=pdir,clear=True)
-							runtimes[pkg].append(rt)
+							wt,ct=run(cmd,shell=True,cwd=pdir,clear=True)
+							runtimes[pkg].append(("CPU",wt,ct))
 
 					for f in os.listdir(pdir):
 						if "hictrst_shifts.txt" in f: hi = os.path.join(pdir,f)
@@ -373,7 +387,7 @@ eot
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
 								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
-									o,e,rt=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
+									wt,ct=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
 									try: os.unlink("{}/{}".format(pdir,lfn))
 									except: pass
 								lfn = lfn_new
@@ -405,8 +419,8 @@ eot
 								framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath,
 								shfext="shf", vecext="vec")
 
-							o,e,rt=run(cmd,shell=True,exe="/bin/csh",cwd=pdir,clear=True)
-							runtimes[pkg].append(rt)
+							wt,ct=run(cmd,shell=True,exe="/bin/csh",cwd=pdir,clear=True)
+							runtimes[pkg].append(("CPU",wt,ct))
 
 					for f in os.listdir(pdir):
 						if f == "hictrst.shf":
@@ -422,19 +436,31 @@ eot
 
 		# Question 1: How quickly do these frame alignment alorithms run
 		if not options.skipalign:
+			runtimeheader = "PKG\tDEV\tWALL\tCPU"
 			with open("{}/runtimes.txt".format(bdir),"w") as f:
-				f.write("PKG\tRUNTIME (HIGH)\tRUNTIME (LOW)\n")
-				if options.verbose: print("PKG\tRUNTIME (HIGH)\tRUNTIME (LOW)")
+				f.write(runtimeheader+"\n")
+				if options.verbose: print(runtimeheader)
 				for pkg in options.include:
-					h,l = runtimes[pkg]
-					if options.verbose: print("{}\t{}\t{}".format(pkg,h,l))
-					f.write("{}\t{}\n".format(pkg,h,l))
+					d,h,l = runtimes[pkg]
+					avgwt = (h[0]+l[0])/2
+					avgct = (h[1]+l[1])/2
+					if options.verbose: print("{}\t{}\t{}\t{}".format(pkg,d,avgwt,avgct))
+					f.write("{}\t{}\t{}\t{}".format(pkg,d,avgwt,avgct))
+		else:
+			print("")
+			with open("{}/runtimes.txt".format(bdir),"r") as f:
+				for l in f:
+					print(l.strip())
+
+		if options.verbose: print("")
 
 		# Question 2: How does calculated motion differ between the most commonly used alignment algorithms?
-		trans_orig, mags_orig, fig1 = plot_trans(trans_hi,bdir)
+		trans_orig, mags_orig = plot_trans(trans_hi,bdir,plot=options.plot)
+
+		if options.verbose: print("")
 
 		# Question 3: How different are predicted frame translations with and without high contrast features?
-		trans_hi, trans_lo, ssdfs, fig2 = plot_differences(trans_hi,trans_lo,bdir)
+		trans_hi, trans_lo, ssdfs = plot_differences(trans_hi,trans_lo,bdir,plot=options.plot)
 
 		# Question 4: How do alignment algorithms influence power spectral coherence?
 		#coherence_hi = calc_coherence(frames_hictrst,trans_hi)
@@ -444,15 +470,13 @@ eot
 		#contrast_hi = calc_contrast(frames_hictrst)
 		#contrast_lo = calc_contrast(frames_loctrst)
 
-		if options.plot: plt.show()
 
-	print("DONE")
 
 ####################
 # Compare and plot #
 ####################
 
-def plot_trans(trans,bdir,nsig=1):
+def plot_trans(trans,bdir,nsig=1,plot=False):
 	ats = np.hstack([trans[k] for k in sorted(trans.keys())])
 	np.savetxt("{}/all_trans.txt".format(bdir),ats)
 	trans["ALL"] = np.dstack([trans[key] for key in trans.keys()])
@@ -485,6 +509,7 @@ def plot_trans(trans,bdir,nsig=1):
 	ax1.set_ylabel("Y Frame Translations (pixels)")
 	ax2 = fig.add_subplot(212)
 	cctr = 0
+	print("PKG\tABS(DIST)")
 	for key in mags.keys():
 		if key != "MEAN":
 			ax2.plot(xx,mags[key],colors[cctr],label=key,alpha=1)
@@ -492,15 +517,17 @@ def plot_trans(trans,bdir,nsig=1):
 			ax2.plot(xx,np.zeros_like(xx),"k--",label=key,alpha=1)
 			ax2.errorbar(xx,np.zeros_like(xx),xerr=err[:,0],yerr=err[:,1],color='k',alpha=0.6,label=siglabel)
 		cctr+=1
+		print("{}\t{}".format(key,np.sum(np.abs(mags[key]))))
 	ax2.set_xlabel("Frame Number (#)")
 	ax2.set_ylabel("Relative shift magnitude (pixels)")
 	ax2.set_title("Frame shift magnitude (relative to MEAN)")
 	ax2.legend(loc="best")
 	fig.tight_layout()
 	plt.savefig("{}/trans.png".format(bdir))
-	return trans, mags, fig
+	if plot: plt.show()
+	return trans, mags
 
-def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
+def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 
 	hts = []
 	for k in sorted(trans_hi.keys()):
@@ -541,6 +568,7 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
 	grid_size = (4,2)
 	ax1 = plt.subplot2grid(grid_size,(0,0),rowspan=2,colspan=2)
 	cctr = 0
+	print("PKG\tRMSD(HI,LO)")
 	with open("{}/sse.txt".format(bdir),"w") as sse:
 		for key in trans_hi.keys():
 			if key not in exclude:
@@ -587,7 +615,8 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1):
 	fig = plt.gcf()
 	fig.tight_layout()
 	plt.savefig("{}/differences.png".format(bdir))
-	return trans_hi, trans_lo, ssdfs, fig
+	if plot: plt.show()
+	return trans_hi, trans_lo, ssdfs
 
 #############################
 # Parse Output Translations #
@@ -597,7 +626,7 @@ def parse_eman2(fn):
 	with open(fn) as f:
 		trans = [txt.split("\t")[1:3] for txt in f.readlines()[1:]]
 	trans = np.asarray(trans).astype(float)
-	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
+	return trans #np.cumsum(trans - np.mean(trans,axis=0),axis=1)
 
 def parse_de(fnx,fny):
 	with open(fnx) as xf:
@@ -732,8 +761,23 @@ def plot_scores(scores,bdir): # 1 axis per metric
 # Utility functions #
 #####################
 
-def load_frames(fn):
-	return [EMData(fn,i) for i in range(EMUtil.get_image_count(fn))]
+def load_frames(fn,first=0,last=-1,step=1):
+	nimgs = EMUtil.get_image_count(fn)
+
+	if first < 0: first = 0
+	elif first > nimgs: first = 0
+
+	if last == -1: last = nimgs
+	elif last > nimgs: last = nimgs
+	elif last < 0: last = nimgs
+
+	if step < 1: step = 1
+	elif step > nimgs: step = nimgs
+
+	frames = []
+	for i in range(first,last,step):
+		frames.append(EMData(fn,i))
+	return frames
 
 def write_frames(frames,fn):
 	for i,f in enumerate(frames):
@@ -748,28 +792,6 @@ def failed(pkg):
 	print("ERROR: Could not find frame shifts for {} aligner.".format(pkg))
 	sys.exit(1)
 
-def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
-	if options.verbose: print(cmd.replace("\n"," "))
-	if cwd == None:
-		cwd = os.getcwd()
-	if shell == False:
-		cmd = cmd.split()
-	process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd, executable=exe)
-	if clear:
-		try:
-			cc = subprocess.Popen("/home/jmbell/src/utils/clearcache") # "sync; echo 3 > /proc/sys/vm/drop_caches"
-			cc.communicate()
-			print("Memory cache cleared.")
-		except:
-			print("Memory cache not cleared. Do not trust runtime results.")
-	gc.collect() # just in case
-	start = time.time()
-	out, err = process.communicate()
-	runtime = time.time() - start
-	if options.verbose: print("Runtime: {}".format(runtime))
-
-	return out, err, runtime
-
 def shift_frames(frames,trans):
 	shifted = []
 	for frame,(x,y) in zip(frames,trans):
@@ -777,6 +799,31 @@ def shift_frames(frames,trans):
 		f.translate(x,y,0)
 		shifted.append(f)
 	return shifted
+
+def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
+	if options.verbose: print(cmd.replace("\n"," "))
+	if cwd == None:
+		cwd = os.getcwd()
+	if shell == False:
+		cmd = cmd.split()
+	if clear:
+		try:
+			cc = subprocess.Popen("/home/jmbell/src/utils/clearcache") # "sync; echo 3 > /proc/sys/vm/drop_caches"
+			cc.communicate()
+			print("Memory cache cleared.")
+		except:
+			print("Memory cache not cleared. Do not trust runtime results.")
+	p = psutil.Popen("/usr/bin/time -p "+cmd, shell=shell, cwd=cwd, executable=exe,stderr=subprocess.PIPE) # ,stdout=subprocess.PIPE, stdin=subprocess.PIPE,
+
+	_,err=p.communicate() # write stdout to terminal. only keep timing info.
+
+	walltime,usr_time,sys_time = err.strip().split("\n")[-3:] # anything before this is exit status 1 or another error.
+
+	walltime = float(walltime.split(" ")[-1])
+	cputime = float(usr_time.split(" ")[-1]) + float(sys_time.split(" ")[-1])
+
+	if options.verbose: print("Wall Time: {}\tCPU Time: {}".format(walltime,cputime))
+	return walltime,cputime
 
 if __name__ == "__main__":
 	main()
