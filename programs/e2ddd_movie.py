@@ -489,7 +489,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 				#write out the unaligned average movie
 				out=qsum(data)
-				out.write_image("{}_noali.hdf".format(outname[:-4]),0)
+				out.write_image("{}__noali.hdf".format(outname[:-4]),0)
 
 			print "Shift images ({})".format(time()-t0)
 			t0=time()
@@ -501,7 +501,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if options.allali:
 
 				out=qsum(data)
-				out.write_image("{}_allali.hdf".format(alioutname),0)
+				out.write_image("{}__allali.hdf".format(alioutname),0)
 
 			#out=sum(data[5:15])	# FSC with the earlier frames instead of whole average
 			# compute fsc between each aligned frame and the average
@@ -544,7 +544,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if options.goodali:
 				out=qsum(best)
 				print "Keeping {}/{} frames".format(len(best),len(data))
-				out.write_image("{}_goodali.hdf".format(alioutname),0)
+				out.write_image("{}__goodali.hdf".format(alioutname),0)
 
 			thr=max(quals)*0.75	# max correlation cutoff for inclusion
 			best=[im for i,im in enumerate(data) if quals[i]>thr]
@@ -552,12 +552,12 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			
 			if options.bestali:
 				print "Keeping {}/{} frames".format(len(best),len(data))
-				out.write_image("{}_bestali.hdf".format(alioutname),0)
+				out.write_image("{}__bestali.hdf".format(alioutname),0)
 
 			if options.ali4to14:
 				# skip the first 4 frames then keep 10
 				out=qsum(data[4:14])
-				out.write_image("{}_4-14.hdf".format(alioutname),0)
+				out.write_image("{}__4-14.hdf".format(alioutname),0)
 
 			# Write out the translated correlation maps for debugging
 			#cen=csum2[(0,1)]["nx"]/2
