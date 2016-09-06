@@ -91,10 +91,6 @@ def main():
 
 	logid=E2init(sys.argv,options.ppid)
 
-	if options.gain or options.dark or options.gaink2:
-		if options.verbose: print("Generating reference images for dark/gain correction(s)")
-		fc = FrameCorrector(options)
-
 	for arg in args:
 
 		fname = arg
@@ -103,20 +99,37 @@ def main():
 		if options.verbose: print("Processing {}".format(fname))
 
 		# PART 0: Correct frames
-		if options.gain or options.dark or options.gaink2:
-			if options.verbose: print("Performing dark/gain correction(s)")
-			fname = fc.correct_frames(fname)
+		#if options.gain or options.dark or options.gaink2:
+			#if options.verbose: print("Performing dark/gain correction(s)")
+			#fname = fc.correct_frames(fname)
 
 		# PART 1: Setup alignment data
 		(basen,ext) = os.path.splitext(fname)
-
-		if options.skipalign and "corrected" not in fname:
-			fname = "{}_corrected{}".format(basen,ext)
-
 		bdir = "{}".format(basen)
 
 		try: os.makedirs(bdir)
 		except: pass
+
+		if options.gain or options.dark or options.gaink2:
+			if options.verbose: print("Generating reference images for dark/gain correction(s)")
+			if options.dark: dark = "--dark {}".format(options.dark)
+			else: dark = ""
+			if options.gain: gain = "--gain {}".format(options.gain)
+			else: gain = ""
+			if options.gaink2: gaink2 = "--gaink2 {}".format(options.gaink2)
+			else: gaink2 = ""
+			cmd = "e2ddd_movie.py {} {} {} {} --frames --fixbadpixels".format(fname,dark,gain,gaink2)
+			run(cmd,shell=True)
+			if options.dark:
+				dfn = options.dark.split(".")[0]
+				os.unlink("{}_sig.hdf".format(dfn))
+				os.unlink("{}_sum.hdf".format(dfn))
+			if options.gain:
+				gfn = options.gain.split(".")[0]
+				os.unlink("{}_sig.hdf".format(gfn))
+				os.unlink("{}_sum.hdf".format(gfn))
+			shutil.move("{}_proc_corr.hdf".format(basen),bdir)
+			fname = "{}/{}_proc_corr.hdf".format(bdir,basen,ext)
 
 		hcname = "{}/hictrst.hdf".format(bdir)
 		lcname = "{}/loctrst.hdf".format(bdir)
@@ -126,8 +139,9 @@ def main():
 
 		frames_hictrst = load_frames(fname)
 		write_frames(frames_hictrst,hcname)
+
 		hictrst_avg = average_frames(frames_hictrst)
-		hictrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
+		hictrst_avg.write_image("{}/hictrst_avg_noali.hdf".format(bdir))
 
 		if not os.path.isfile(lcname):
 			if options.verbose: print("Erasing gold and other very high contrast features")
@@ -136,12 +150,12 @@ def main():
 			o,e,rt=run(cmd,cwd=bdir,shell=True)
 			tmp = "hictrst_proc.hdf"
 			o,e,rt = run("e2proc2d.py {} {}".format(tmp,locallc),shell=True,cwd=bdir)
-
-		else: print("Found gold subtracted frames from previous analysis.")
+		else:
+			print("Found gold subtracted frames from previous analysis.")
 
 		frames_loctrst = load_frames(lcname)
 		loctrst_avg = average_frames(frames_loctrst)
-		loctrst_avg.write_image("{}/{}_avg_noali.hdf".format(bdir,basen))
+		loctrst_avg.write_image("{}/loctrst_avg_noali.hdf".format(bdir))
 
 		cwd = os.getcwd()
 
@@ -200,7 +214,7 @@ def main():
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 
-							o,e,rt=run("{} {} --align_frames --threads={}".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
+							o,e,rt=run("{} {} --align_frames --threads={} --allali".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
 							runtimes[pkg].append(rt)
 
 					for f in os.listdir(pdir):
@@ -422,7 +436,7 @@ eot
 		# Question 3: How different are predicted frame translations with and without high contrast features?
 		trans_hi, trans_lo, ssdfs, fig2 = plot_differences(trans_hi,trans_lo,bdir)
 
-		# Question 4: How do alignment algorithms improve power spectral coherence?
+		# Question 4: How do alignment algorithms influence power spectral coherence?
 		#coherence_hi = calc_coherence(frames_hictrst,trans_hi)
 		#coherence_lo = calc_coherence(frames_loctrst,trans_lo)
 
@@ -591,7 +605,7 @@ def parse_de(fnx,fny):
 	with open(fny) as yf:
 		ys = np.asarray(yf.read().replace("\n","").split("\t"))[1:].astype(float)
 	trans = np.vstack([xs,ys]).T
-	return np.cumsum(trans,axis=1)# - np.mean(trans,axis=0),axis=1)
+	return np.cumsum(trans,axis=1)
 
 def parse_imod(fn):
 	with open(fn) as f:
@@ -745,7 +759,7 @@ def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 		try:
 			cc = subprocess.Popen("/home/jmbell/src/utils/clearcache") # "sync; echo 3 > /proc/sys/vm/drop_caches"
 			cc.communicate()
-			print("Memory cache cleared. Runtime results should be trustworthy.")
+			print("Memory cache cleared.")
 		except:
 			print("Memory cache not cleared. Do not trust runtime results.")
 	gc.collect() # just in case
@@ -763,115 +777,6 @@ def shift_frames(frames,trans):
 		f.translate(x,y,0)
 		shifted.append(f)
 	return shifted
-
-###############################
-# DDD movie utility functions #
-###############################
-
-class FrameCorrector:
-
-	dark = None
-	gain = None
-
-	def __init__(self,options):
-		if options.dark:
-			if options.verbose > 8: print("Generating dark reference")
-			self.dark = self._dark_correct(options)
-		else:
-			self.dark = None
-		if options.gain or options.gaink2:
-			if options.verbose > 8: print("Generating gain reference")
-			if options.gaink2:
-				self.gain = EMData(options.gaink2)
-			else:
-				self.gain = self._gain_correct(options,self.dark)
-		else: self.gain = None
-
-	def correct_frames(self,fname,outfile=None):
-		hdr = EMData(fname,0,True)
-		if fname[-4:].lower() in (".mrc"):
-			nd = hdr['nz']
-		else:
-			nd = EMUtil.get_image_count(fname)
-		if outfile == None:
-			outfile = fname[:-4] + "_corrected.hdf"
-		for i in xrange(nd):
-			if options.verbose:
-				print "Correcting frame: {}/{}	\r".format(i+1,nd),
-				sys.stdout.flush()
-			if fname[-4:].lower() in (".mrc"):
-				r = Region(0,0,i,nx,ny,1)
-				im=EMData(fname,0,False,r)
-			else: im=EMData(fname,i)
-			if self.dark != None: im.sub(self.dark)
-			if self.gain != None: im.mult(self.gain)
-			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
-			# fixes clear outliers as well as values which were exactly zero
-			im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1})
-			im.process_inplace("normalize.edgemean")
-			im.write_image(outfile,i)
-		return outfile
-
-	@staticmethod
-	def _dark_correct(options):
-		hdr = EMData(options.dark,0,True)
-		if options.dark[-4:].lower() in (".mrc"): nd = hdr['nz']
-		else: nd = EMUtil.get_image_count(options.dark)
-		dark=EMData(options.dark,0)
-		if nd>1:
-			sigd=dark.copy()
-			sigd.to_zero()
-			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
-			for i in xrange(0,nd):
-				if options.verbose:
-					print "Summing dark: {}/{}	\r".format(i+1,nd),
-					sys.stdout.flush()
-				t=EMData(options.dark,i)
-				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
-				a.add_image(t)
-			dark=a.finish()
-			sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
-			if options.fixbadlines:
-				# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0})
-				dark.mult(sigd)
-			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
-		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
-		dark2=dark.process("normalize.unitlen")
-		return dark
-
-	@staticmethod
-	def _gain_correct(options,dark):
-		hdr = EMData(options.gain,0,True)
-		if options.gain[-4:].lower() in (".mrc"): nd = hdr['nz']
-		else: nd = EMUtil.get_image_count(options.gain)
-		gain=EMData(options.gain,0)
-		if nd>1:
-			sigg=gain.copy()
-			sigg.to_zero()
-			a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
-			for i in xrange(0,nd):
-				if options.verbose:
-					print "Summing gain: {}/{}	\r".format(i+1,nd),
-					sys.stdout.flush()
-				t=EMData(options.gain,i)
-				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
-				a.add_image(t)
-			gain=a.finish()
-			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
-			# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-			if options.fixbadlines: sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})
-			if dark!=None:
-				sigd=EMData(options.dark.rsplit(".",1)[0]+"_sig.hdf",0,False)
-				sigg.mult(sigd)
-			gain.mult(sigg)
-			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
-		if dark!=None : gain.sub(dark)	# dark correct the gain-reference
-		# normalize so gain reference on average multiplies by 1.0
-		gain.mult(1.0/gain["mean"])
-		# setting zero values to zero helps identify bad pixels
-		gain.process_inplace("math.reciprocal",{"zero_to":0.0})
-		return gain
 
 if __name__ == "__main__":
 	main()
