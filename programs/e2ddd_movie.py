@@ -81,13 +81,13 @@ def main():
 	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--optfsc", default=False, help="Specify whether to compute FSC during alignment optimization. Default is False.",action="store_true")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames", guitype='boolbox', row=13, col=1, rowspan=1, colspan=1, mode='align')
-	parser.add_argument("--save_aligned", action="store_true",help="Save dark/gain corrected and optionally aligned stack",default=False, guitype='boolbox', row=14, col=0, rowspan=1, colspan=1, mode='align[True]')
+	#parser.add_argument("--save_aligned", action="store_true",help="Save dark/gain corrected and optionally aligned stack",default=False, guitype='boolbox', row=14, col=0, rowspan=1, colspan=1, mode='align[True]')
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead", guitype='boolbox', row=14, col=1, rowspan=1, colspan=1, mode='align')
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=16, col=0, rowspan=1, colspan=1, mode='align[True]')
 	parser.add_argument("--nomgsdir",action="store_true",default=False,help="Do not make micrographs directory. For testing/debugging purposes only.")
-	
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -96,11 +96,6 @@ def main():
 	if len(args)<1:
 		print usage
 		parser.error("Specify input DDD stack")
-
-	# threads=int(options.threads)
-	# if options.threads>1:
-	# 	threads=max(threads,options.threads)
-	#if threads>1 : print "Sorry, limited to one thread at the moment."
 
 	try: os.mkdir("micrographs")
 	except: pass
