@@ -6,7 +6,10 @@ import scipy.ndimage.filters as filters
 
 def main():
 	
-	usage=" "
+	usage=""" make 2d projections from sub-tomograms for refinetomo_easy.py. 
+	[prog] --ptclin [3d subvolume stack input] --ptclout [2d projection stack output]
+	
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptclin", type=str,help="3d volume of particles", default=None)
 	parser.add_argument("--ptclout", type=str,help="output 2D projections of the input 3D particles", default=None)

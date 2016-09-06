@@ -9,7 +9,7 @@ import gc
 
 def main():
 	
-	usage=" "
+	usage="align sub-tomogram by projections. called by refinetomo_easy.py "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--pjfile", type=str,help="projection file", default=None)
 	parser.add_argument("--ptcl", type=str,help="particle file", default=None)

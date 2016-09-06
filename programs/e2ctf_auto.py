@@ -98,7 +98,7 @@ Important: This program must be run from the project directory, not from within 
 		print "ERROR: Please specify one of --hires --lores --midres"
 		sys.exit(1)
 
-	ptcls=["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
+	ptcls=["particles/"+i for i in os.listdir("particles") if "__ctf" not in i and i[0]!="." and ".hed" not in i ]
 	if options.verbose : print "%d particle stacks identified"%len(args)
 
 	if options.highdensity : highdensity="--highdensity"
