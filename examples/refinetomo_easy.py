@@ -22,22 +22,22 @@ def main():
 	try: os.mkdir(options.path)
 	except: pass
 	
-	##### split the data
-	#lstfile=options.ptcl
-	#num=EMUtil.get_image_count(lstfile)
-	#lsteo=[lstfile[:-4]+"_even.lst", lstfile[:-4]+"_odd.lst"]
-	#for l in lsteo:
-		#try:
-			#os.remove(l)
-		#except: 
-			#pass
-	#lsteo=[LSXFile(l,False) for l in lsteo]
-	#mid=0
-	#for i in range(num):
-		#e=EMData(lstfile, i, True)
-		#lsteo[e["model_id"]%2].write(-1,  e["data_n"],e["data_source"])
+	#### split the data
+	lstfile=options.ptcl
+	num=EMUtil.get_image_count(lstfile)
+	lsteo=[lstfile[:-4]+"_even.lst", lstfile[:-4]+"_odd.lst"]
+	for l in lsteo:
+		try:
+			os.remove(l)
+		except: 
+			pass
+	lsteo=[LSXFile(l,False) for l in lsteo]
+	mid=0
+	for i in range(num):
+		e=EMData(lstfile, i, True)
+		lsteo[e["model_id"]%2].write(-1,  e["data_n"],e["data_source"])
 
-	#lsteo=None
+	lsteo=None
 	
 	for eo in ["even","odd"]:
 		ptclname=options.ptcl[:-4]+"_{}.lst".format(eo)
