@@ -97,8 +97,10 @@ def main():
 		print usage
 		parser.error("Specify input DDD stack")
 
-	try: os.mkdir("micrographs")
-	except: pass
+	if not options.nomgsdir:
+		try: os.mkdir("micrographs")
+		except: pass
+
 	pid=E2init(sys.argv)
 
 	if options.dark :

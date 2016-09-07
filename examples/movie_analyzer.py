@@ -51,21 +51,22 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	# Program arguments
-	parser.add_argument("--goldsize", default=70, type=float, help="Gold diameter in pixels. Default is 70.")
-	parser.add_argument("--boxsize", default=256, type=float, help="Box size to use when tiling image to compute noise. Default is 128.")
-	parser.add_argument("--oversample", default=4, type=float, help="Oversample by this much when tiling image to compute noise. Default is 4.")
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
 	parser.add_argument("--skipalign",action="store_true",default=False,help="If you wish to skip running alignments, specify this option.")
 	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
 	parser.add_argument("--include", type=str, help="Comma separated list of packages to include during comparison.", default="DE,EMAN2,IMOD,UCSF,UNBLUR,LMBFGS")
 	parser.add_argument("--exclude", type=str, help="Comma separated list of packages to exclude during comparison.", default="")
-	parser.add_argument("--threads", default=1, type=int, help="Number of threads to use with each aligner. Default is 1.")
 	# DDD frame correction
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--step",type=str,default="1,1,31",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even frames. Same step used for all input files. [last] is exclusive. Default= 1,1,31.")
+	# Gold subtraction
+	parser.add_argument("--goldsize", default=70, type=float, help="Gold diameter in pixels. Default is 70.")
+	parser.add_argument("--boxsize", default=128, type=float, help="Box size to use when tiling image to compute noise. Default is 128.")
+	parser.add_argument("--oversample", default=4, type=float, help="Oversample by this much when tiling image to compute noise. Default is 4.")
 	# Other options
+	parser.add_argument("--threads", default=1, type=int, help="Number of threads to use with each aligner. Default is 1.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -130,9 +131,7 @@ def main():
 				else: gain = ""
 				if options.gaink2: gaink2 = "--gaink2 {}".format(options.gaink2)
 				else: gaink2 = ""
-				if options.step: step = "--step {}".format(options.step)
-				else: step = ""
-				cmd = "e2ddd_movie.py {} {} {} {} {} --fixbadpixels --frames --nomgsdir -v9".format(fname,dark,gain,gaink2,step)
+				cmd = "e2ddd_movie.py {} {} {} {} --fixbadpixels --frames --nomgsdir -v9".format(fname,dark,gain,gaink2)
 				wt,ct = run(cmd,shell=True)
 				if options.dark:
 					dfn = options.dark.split(".")[0]
@@ -161,8 +160,8 @@ def main():
 			try: os.unlink("{}/hictrst_proc.hdf".format(bdir))
 			except: pass
 			if options.verbose: print("Erasing gold and other very high contrast features")
-			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={}"
-			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose)
+			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={} --verbose={} --apix={}"
+			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose,apix)
 			wt,ct = run(cmd,cwd=bdir,shell=True)
 			print(locallc)
 			wt,ct = run("e2proc2d.py hictrst_proc.hdf {}".format(locallc),shell=True,cwd=bdir)
@@ -176,9 +175,11 @@ def main():
 		trans_lo = {}
 		trans_hi = {}
 
-		runtimes = {key:[] for key in pkgs.keys()} # for each package, store its runtime.
+		#runtimes = {key:[] for key in pkgs.keys()} # for each package, store its runtime.
 
 		# PART 2: Run alignment programs
+		if os.path.isfile("{}/runtimes.txt".format(bdir)):
+			os.unlink("{}/runtimes.txt".format(bdir))
 
 		for pkg in sorted(pkgs.keys()):
 			if pkg in options.include:
@@ -192,21 +193,20 @@ def main():
 				except: pass
 
 				if pkg == "DE":
-
+					dev = "CPU"
 					if not options.skipalign:
 						src = "/".join(pkgs[pkg].split("/")[:-1]) + "/DE_process_frames.cfg"
 						dst = cwd+"/DE_process_frames.cfg"
-
 						try: os.symlink(src,dst)
 						except: pass
-
 						for fname in [hcname,lcname]:
 							wt,ct=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True,clear=True)
-							runtimes[pkg].append(("CPU",wt,ct))
+							#runtimes[pkg].append((dev,wt,ct))
+							write_runtime(bdir,pkg,dev,wt,ct)
+
 
 						try: os.unlink(dst)
 						except: pass
-
 					for f in os.listdir(pdir):
 						if "translations_x" in f:
 							if "hictrst" in f: hi_x = os.path.join(pdir,f)
@@ -214,58 +214,50 @@ def main():
 						elif "translations_y" in f:
 							if "hictrst" in f: hi_y = os.path.join(pdir,f)
 							elif "loctrst" in f: lo_y = os.path.join(pdir,f)
-
 					try:
 						trans_hi[pkg] = parse_de(hi_x,hi_y)
 						trans_lo[pkg] = parse_de(lo_x,lo_y)
 					except: failed(pkg)
 
 				if pkg == "EMAN2":
-
+					dev = "CPU"
 					if not options.skipalign:
 						for fn in [hcname,lcname]: # high contrast, low contrast
 							lfn = fn.split("/")[-1] # local file name
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-
 							wt,ct=run("{} {} --align_frames --threads={} --allali --normalize --nomgsdir".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
-							runtimes[pkg].append(("CPU",wt,ct))
-
+							#runtimes[pkg].append(("CPU",wt,ct))
+							write_runtime(bdir,pkg,dev,wt,ct)
 					for f in os.listdir(pdir):
 						if "hictrst_proc_info.txt" in f: hi = os.path.join(pdir,f)
 						elif "loctrst_proc_info.txt" in f: lo = os.path.join(pdir,f)
-
 					try:
 						trans_hi[pkg] = parse_eman2(hi)
 						trans_lo[pkg] = parse_eman2(lo)
 					except: failed(pkg)
 
 				if pkg == "IMOD":
-
+					dev = "GPU"
 					if not options.skipalign:
-
 						for fn in [hcname,lcname]: # high contrast, low contrast
 							lfn = fn.split("/")[-1] # local file name
-
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-
 							alif = lfn.split(".")[0]+"_ali.mrc"
-
 							wt,ct=run("{} -gpu 0 -xfext xf -input {} -output {}".format(pkgs[pkg],lfn,alif),cwd=pdir,shell=True,clear=True)
-							runtimes[pkg].append(("GPU",wt,ct))
-
+							#runtimes[pkg].append(("GPU",wt,ct))
+							write_runtime(bdir,pkg,dev,wt,ct)
 					for f in os.listdir(pdir):
 						if "hictrst.xf" in f: hi = os.path.join(pdir,f)
 						elif "loctrst.xf" in f: lo = os.path.join(pdir,f)
-
 					try:
 						trans_hi[pkg] = parse_imod(hi)
 						trans_lo[pkg] = parse_imod(lo)
 					except: failed(pkg)
 
 				if pkg == "UCSF":
-
+					dev = "GPU"
 					if not options.skipalign:
 						for fn in [hcname,lcname]: # high contrast, low contrast
 							lfn = fn.split("/")[-1]
@@ -281,21 +273,19 @@ def main():
 							else:
 								if not os.path.isfile("{}/{}".format(pdir,lfn)):
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-
 							wt,ct=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir,shell=True,clear=True)
-							runtimes[pkg].append(("GPU",wt,ct))
-
+							#runtimes[pkg].append(("GPU",wt,ct))
+							write_runtime(bdir,pkg,dev,wt,ct)
 					for f in os.listdir(pdir):
 						if "hictrst_Log.txt" in f: hi = os.path.join(pdir,f)
 						elif "loctrst_Log.txt" in f: lo = os.path.join(pdir,f)
-
 					try:
 						trans_hi[pkg] = parse_ucsf(hi)
 						trans_lo[pkg] = parse_ucsf(lo)
 					except: failed(pkg)
 
 				if pkg == "UNBLUR":
-
+					dev = "CPU"
 					if not options.skipalign:
 						template = """{prog} <<EOF
 {fname}
@@ -322,7 +312,6 @@ EOF
 						for fn in [hcname,lcname]:
 							lfn = fn.split("/")[-1]
 							lext = lfn.split(".")[-1]
-
 							if lext == "hdf": # HDF format not supported by unblur
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
@@ -334,7 +323,6 @@ EOF
 							else:
 								if not os.path.isfile("{}/{}".format(pdir,lfn)):
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-
 							if lext == "mrcs": # MRCS format not supported by unblur
 								lfn_new = lfn.replace(".mrcs",".mrc")
 								try:
@@ -342,29 +330,25 @@ EOF
 								except: pass # file likely already exists
 								lfn = lfn_new
 								lext = "mrc"
-
 							nfs = len(frames_hictrst)
 							alis =lfn.replace(".mrc","_ali_sum.mrc")
 							shft =lfn.replace(".mrc","_shifts.txt")
 							ali=lfn.replace(".mrc","_ali.mrc")
 							frc=lfn.replace(".mrc","_frc.txt")
-
 							cmd = template.format(prog=pkgs[pkg],fname=lfn, nframes=nfs, alignsum=alis, shiftfile=shft, apix=apix, dosefilt="NO", saveali="YES", aliname=ali, advopts="NO", frcname=frc, minsrch=2.0, maxsrch=200.0, bfact=1500, vfmwidth=1, hfmwidth=1, thresh=0.1, maxiter=10, verbose="NO")
-
 							wt,ct=run(cmd,shell=True,cwd=pdir,clear=True)
-							runtimes[pkg].append(("CPU",wt,ct))
-
+							#runtimes[pkg].append(("CPU",wt,ct))
+							write_runtime(bdir,pkg,dev,wt,ct)
 					for f in os.listdir(pdir):
 						if "hictrst_shifts.txt" in f: hi = os.path.join(pdir,f)
 						elif "loctrst_shifts.txt" in f: lo = os.path.join(pdir,f)
-
 					try:
 						trans_hi[pkg] = parse_unblur(hi)
 						trans_lo[pkg] = parse_unblur(lo)
 					except: failed(pkg)
 
 				if pkg == "LMBFGS":
-
+					dev = "CPU"
 					if not options.skipalign:
 						template = """time {prog} << eot
 {movielist}
@@ -382,7 +366,6 @@ eot
 						for fn in [hcname,lcname]:
 							lfn = fn.split("/")[-1]
 							lext = lfn.split(".")[-1]
-
 							if lext == "hdf": # HDF format not supported by alignframes_lmbfgs
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
@@ -395,13 +378,11 @@ eot
 							else:
 								if not os.path.isfile("{}/{}".format(pdir,lfn)):
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-
 							mlfn = "{}/movielist.txt".format(pdir)
 							with open(mlfn,"w") as movielist:
 								movielist.write("{}".format(lfn))
-
 							bs = int(max(3600,min(frames_hictrst[0]["nx"]*0.75,frames_hictrst[0]["ny"]*0.75)))
-							ps = 1.45
+							ps = apix
 							nsig = 5
 							rm1 = 500
 							rm2 =100
@@ -413,15 +394,13 @@ eot
 							factr = "1d1"
 							inpath = "./"
 							outpath = "./"
-
 							cmd = template.format(prog=pkgs[pkg],movielist="movielist.txt", boxsize=bs, psize=ps,
 								nsigma=nsig, rmax1=rm1, rmax2=rm2, smooth=smooth, bfactor=bfact, framefirst=ffirst,
 								framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath,
 								shfext="shf", vecext="vec")
-
 							wt,ct=run(cmd,shell=True,exe="/bin/csh",cwd=pdir,clear=True)
-							runtimes[pkg].append(("CPU",wt,ct))
-
+							#runtimes[pkg].append(("CPU",wt,ct))
+							write_runtime(bdir,pkg,dev,wt,ct)
 					for f in os.listdir(pdir):
 						if f == "hictrst.shf":
 							hi = os.path.join(pdir,f)
@@ -432,32 +411,20 @@ eot
 						trans_lo[pkg] = parse_lmbfgs(lo)
 					except: failed(pkg)
 
+		print("")
+
 		# STEP 3: Analyze results
 
 		# Question 1: How quickly do these frame alignment alorithms run
-		if not options.skipalign:
-			runtimeheader = "PKG\tDEV\tWALL\tCPU"
-			with open("{}/runtimes.txt".format(bdir),"w") as f:
-				f.write(runtimeheader+"\n")
-				if options.verbose: print(runtimeheader)
-				for pkg in options.include:
-					d,h,l = runtimes[pkg]
-					avgwt = (h[0]+l[0])/2
-					avgct = (h[1]+l[1])/2
-					if options.verbose: print("{}\t{}\t{}\t{}".format(pkg,d,avgwt,avgct))
-					f.write("{}\t{}\t{}\t{}".format(pkg,d,avgwt,avgct))
-		else:
-			print("")
-			with open("{}/runtimes.txt".format(bdir),"r") as f:
-				for l in f:
-					print(l.strip())
+		with open("{}/runtimes.txt".format(bdir),"r") as f:
+			for l in f: print(l.strip())
 
-		if options.verbose: print("")
+		print("")
 
 		# Question 2: How does calculated motion differ between the most commonly used alignment algorithms?
 		trans_orig, mags_orig = plot_trans(trans_hi,bdir,plot=options.plot)
 
-		if options.verbose: print("")
+		print("")
 
 		# Question 3: How different are predicted frame translations with and without high contrast features?
 		trans_hi, trans_lo, ssdfs = plot_differences(trans_hi,trans_lo,bdir,plot=options.plot)
@@ -469,8 +436,6 @@ eot
 		# Question 5: How do alignment algorithms influence real-space contrast?
 		#contrast_hi = calc_contrast(frames_hictrst)
 		#contrast_lo = calc_contrast(frames_loctrst)
-
-
 
 ####################
 # Compare and plot #
@@ -626,7 +591,7 @@ def parse_eman2(fn):
 	with open(fn) as f:
 		trans = [txt.split("\t")[1:3] for txt in f.readlines()[1:]]
 	trans = np.asarray(trans).astype(float)
-	return trans #np.cumsum(trans - np.mean(trans,axis=0),axis=1)
+	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
 
 def parse_de(fnx,fny):
 	with open(fnx) as xf:
@@ -799,6 +764,10 @@ def shift_frames(frames,trans):
 		f.translate(x,y,0)
 		shifted.append(f)
 	return shifted
+
+def write_runtime(bdir,pkg,dev,wt,ct):
+	with open("{}/runtimes.txt".format(bdir),"a") as rt:
+		rt.write("{}\t{}\t{}\t{}\n".format(pkg,dev,wt,ct))
 
 def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 	if options.verbose: print(cmd.replace("\n"," "))
