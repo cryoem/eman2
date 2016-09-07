@@ -1072,7 +1072,7 @@ def main():
 					frc_with_mask     = fsc(map1*m, map2*m,1)
 					frc_RH =[frc_with_mask[0],frc_with_mask[1]]
 				else:
-					frc_RH = fsc_without_mask
+					frc_RH = frc_without_mask
 				if nargs >1:
 					newfsc =[[],[],[]]
 					for ifreq in xrange(len(frc_RH[1])):
