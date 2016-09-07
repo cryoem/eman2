@@ -139,7 +139,10 @@ def main():
 	# Prepare mask if specified
 	if options.mask!=None:
 		mask=EMData(options.mask)
-		
+		nx=EMData(projin,i,True)["nx"]
+		if mask["nx"]!=nx :
+			print "ERROR: mask dimensions do not match refinement volume"
+			sys.exit(1)
 	else : mask=None
 	
 	# prepare tasks

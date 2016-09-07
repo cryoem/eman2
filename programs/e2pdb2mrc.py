@@ -113,9 +113,9 @@ def main():
 			print("The specified --apix must be <= the specified --res. Generally, res should be >= 2*apix.")
 			sys.exit(1)
 
-		if options.solvate and (options.apix > 1.0 or options.res > 2.5):
-			print("For solvation to work properly, --apix must be <=1.0 and --res must be <=2.5.")
-			sys.exit(1)
+		#if options.solvate and (options.apix > 1.0 or options.res > 2.5):
+			#print("For solvation to work properly, --apix must be <=1.0 and --res must be <=2.5.")
+			#sys.exit(1)
 
 		aavg=[0,0,0]	# calculate atomic center
 		amin=[1.0e20,1.0e20,1.0e20]		# coords of lower left front corner of bounding box
