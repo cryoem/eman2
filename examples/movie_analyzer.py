@@ -64,7 +64,7 @@ def main():
 	# Gold subtraction
 	parser.add_argument("--goldsize", default=70, type=float, help="Gold diameter in pixels. Default is 70.")
 	parser.add_argument("--boxsize", default=128, type=float, help="Box size to use when tiling image to compute noise. Default is 128.")
-	parser.add_argument("--oversample", default=4, type=float, help="Oversample by this much when tiling image to compute noise. Default is 4.")
+	parser.add_argument("--oversample", default=6, type=float, help="Oversample by this much when tiling image to compute noise. Higher values increase smoothness of transition between noise from one region to its neighbor, but require significantly more time to process. Default is 6.")
 	# Other options
 	parser.add_argument("--threads", default=1, type=int, help="Number of threads to use with each aligner. Default is 1.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -102,11 +102,6 @@ def main():
 
 		if options.verbose: print("Processing {}".format(fname))
 
-		# PART 0: Correct frames
-		#if options.gain or options.dark or options.gaink2:
-			#if options.verbose: print("Performing dark/gain correction(s)")
-			#fname = fc.correct_frames(fname)
-
 		# PART 1: Setup alignment data
 		(basen,ext) = os.path.splitext(fname)
 		bdir = "{}".format(basen)
@@ -119,6 +114,8 @@ def main():
 
 		localhc = hcname.split("/")[-1]
 		locallc = lcname.split("/")[-1]
+
+		# Correct Frames
 
 		if options.gain or options.dark or options.gaink2:
 			if os.path.isfile("{}/{}_proc_corr.hdf".format(bdir,basen)):
@@ -150,9 +147,12 @@ def main():
 			sys.exit(1)
 		frames_hictrst = load_frames(fname,first,last,step)
 		write_frames(frames_hictrst,hcname)
+		middle = int(len(frames_hictrst)/2)
 
 		hictrst_avg = average_frames(frames_hictrst)
 		hictrst_avg.write_image("{}/hictrst_avg_noali.hdf".format(bdir))
+
+		# Subtract gold
 
 		if os.path.isfile(lcname):
 			print("Found gold subtracted frames from previous analysis.")
@@ -175,11 +175,9 @@ def main():
 		trans_lo = {}
 		trans_hi = {}
 
-		#runtimes = {key:[] for key in pkgs.keys()} # for each package, store its runtime.
-
 		# PART 2: Run alignment programs
-		if os.path.isfile("{}/runtimes.txt".format(bdir)):
-			os.unlink("{}/runtimes.txt".format(bdir))
+		#if os.path.isfile("{}/runtimes.txt".format(bdir)):
+		#	os.unlink("{}/runtimes.txt".format(bdir))
 
 		for pkg in sorted(pkgs.keys()):
 			if pkg in options.include:
@@ -201,7 +199,6 @@ def main():
 						except: pass
 						for fname in [hcname,lcname]:
 							wt,ct=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True,clear=True)
-							#runtimes[pkg].append((dev,wt,ct))
 							write_runtime(bdir,pkg,dev,wt,ct)
 
 
@@ -226,15 +223,19 @@ def main():
 							lfn = fn.split("/")[-1] # local file name
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-							wt,ct=run("{} {} --align_frames --threads={} --allali --normalize --nomgsdir".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
-							#runtimes[pkg].append(("CPU",wt,ct))
+							wt,ct=run("{} {} --align_frames --threads={} --allali --normalize".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
 							write_runtime(bdir,pkg,dev,wt,ct)
 					for f in os.listdir(pdir):
 						if "hictrst_proc_info.txt" in f: hi = os.path.join(pdir,f)
 						elif "loctrst_proc_info.txt" in f: lo = os.path.join(pdir,f)
 					try:
-						trans_hi[pkg] = parse_eman2(hi)
-						trans_lo[pkg] = parse_eman2(lo)
+						print("HERE")
+						print(hi)
+						print(lo)
+						trans_hi[pkg] = parse_eman2(hi,middle)
+						print(trans_hi[pkg])
+						trans_lo[pkg] = parse_eman2(lo,middle)
+						print(trans_lo[pkg])
 					except: failed(pkg)
 
 				if pkg == "IMOD":
@@ -246,7 +247,6 @@ def main():
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 							alif = lfn.split(".")[0]+"_ali.mrc"
 							wt,ct=run("{} -gpu 0 -xfext xf -input {} -output {}".format(pkgs[pkg],lfn,alif),cwd=pdir,shell=True,clear=True)
-							#runtimes[pkg].append(("GPU",wt,ct))
 							write_runtime(bdir,pkg,dev,wt,ct)
 					for f in os.listdir(pdir):
 						if "hictrst.xf" in f: hi = os.path.join(pdir,f)
@@ -274,14 +274,13 @@ def main():
 								if not os.path.isfile("{}/{}".format(pdir,lfn)):
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 							wt,ct=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir,shell=True,clear=True)
-							#runtimes[pkg].append(("GPU",wt,ct))
 							write_runtime(bdir,pkg,dev,wt,ct)
 					for f in os.listdir(pdir):
 						if "hictrst_Log.txt" in f: hi = os.path.join(pdir,f)
 						elif "loctrst_Log.txt" in f: lo = os.path.join(pdir,f)
 					try:
-						trans_hi[pkg] = parse_ucsf(hi)
-						trans_lo[pkg] = parse_ucsf(lo)
+						trans_hi[pkg] = parse_ucsf(hi,middle,apix)
+						trans_lo[pkg] = parse_ucsf(lo,middle,apix)
 					except: failed(pkg)
 
 				if pkg == "UNBLUR":
@@ -337,14 +336,13 @@ EOF
 							frc=lfn.replace(".mrc","_frc.txt")
 							cmd = template.format(prog=pkgs[pkg],fname=lfn, nframes=nfs, alignsum=alis, shiftfile=shft, apix=apix, dosefilt="NO", saveali="YES", aliname=ali, advopts="NO", frcname=frc, minsrch=2.0, maxsrch=200.0, bfact=1500, vfmwidth=1, hfmwidth=1, thresh=0.1, maxiter=10, verbose="NO")
 							wt,ct=run(cmd,shell=True,cwd=pdir,clear=True)
-							#runtimes[pkg].append(("CPU",wt,ct))
 							write_runtime(bdir,pkg,dev,wt,ct)
 					for f in os.listdir(pdir):
 						if "hictrst_shifts.txt" in f: hi = os.path.join(pdir,f)
 						elif "loctrst_shifts.txt" in f: lo = os.path.join(pdir,f)
 					try:
-						trans_hi[pkg] = parse_unblur(hi)
-						trans_lo[pkg] = parse_unblur(lo)
+						trans_hi[pkg] = parse_unblur(hi,middle)
+						trans_lo[pkg] = parse_unblur(lo,middle)
 					except: failed(pkg)
 
 				if pkg == "LMBFGS":
@@ -390,7 +388,7 @@ eot
 							bfact = 2000
 							ffirst = 1
 							flast = 0
-							fmiddle = int(len(frames_hictrst)/2)
+							fmiddle = middle
 							factr = "1d1"
 							inpath = "./"
 							outpath = "./"
@@ -399,7 +397,6 @@ eot
 								framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath,
 								shfext="shf", vecext="vec")
 							wt,ct=run(cmd,shell=True,exe="/bin/csh",cwd=pdir,clear=True)
-							#runtimes[pkg].append(("CPU",wt,ct))
 							write_runtime(bdir,pkg,dev,wt,ct)
 					for f in os.listdir(pdir):
 						if f == "hictrst.shf":
@@ -407,8 +404,8 @@ eot
 						elif f == "loctrst.shf":
 							lo = os.path.join(pdir,f)
 					try:
-						trans_hi[pkg] = parse_lmbfgs(hi)
-						trans_lo[pkg] = parse_lmbfgs(lo)
+						trans_hi[pkg] = parse_lmbfgs(hi,middle)
+						trans_lo[pkg] = parse_lmbfgs(lo,middle)
 					except: failed(pkg)
 
 		print("")
@@ -422,7 +419,7 @@ eot
 		print("")
 
 		# Question 2: How does calculated motion differ between the most commonly used alignment algorithms?
-		trans_orig, mags_orig = plot_trans(trans_hi,bdir,plot=options.plot)
+		trans_orig, mags_orig = plot_traj(trans_hi,bdir,plot=options.plot)
 
 		print("")
 
@@ -437,11 +434,71 @@ eot
 		#contrast_hi = calc_contrast(frames_hictrst)
 		#contrast_lo = calc_contrast(frames_loctrst)
 
+#############################
+# Parse Output Translations #
+#############################
+
+def parse_imod(fn):
+    with open(fn) as f:
+        trans = [np.asarray(txt.split()[4:6]) for txt in f.readlines()]
+    xf = np.asarray(trans).astype(float)
+    tf = np.copy(xf)
+    for i in range(len(xf)):
+        tf[i] -= np.sum(xf[:i],axis=0)
+    return tf
+
+def parse_de(fnx,fny):
+    with open(fnx) as xf:
+        xs = np.asarray(xf.read().replace("\n","").split("\t"))[1:].astype(float)
+    with open(fny) as yf:
+        ys = np.asarray(yf.read().replace("\n","").split("\t"))[1:].astype(float)
+    xf = np.vstack([xs,ys]).T
+    tf = np.copy(xf)
+    for i in range(len(xf)):
+        tf[i] -= np.sum(xf[:i+1],axis=0)
+    return tf
+
+def parse_ucsf(fn,middle,scale):
+    trans = []
+    with open(fn) as f:
+        for txt in f.readlines():
+            if "......Shift of Frame #" in txt:
+                trans.append(np.asarray(txt.replace("......Add Frame #","").split(":")[-1].split())[:2])
+    xf = np.asarray(trans).astype(float)
+    return (-xf+xf[middle])/scale
+
+def parse_unblur(fn,middle):
+    lines = []
+    with open(fn) as f:
+        for txt in f.readlines():
+            if "#" not in txt:
+                lines.append(txt.split())
+            elif "Pixel size (A):" in txt:
+                apix = float(txt.split()[-1])
+    trans = np.asarray([[x,y] for (x,y) in zip(lines[0],lines[1])]).astype(float)
+    xf = trans / apix
+    return -xf+xf[middle]
+
+def parse_lmbfgs(fn,middle):
+	lines = []
+	with open(fn) as f:
+		for i,l in enumerate(f):
+			if i != 0: lines.append(l.strip().split()) # skip header on line 0
+	xf = np.asarray(lines)[:,1:].astype(float) # skip frame numbers
+	xf /= 3.5 #-= np.mean(xf,axis=0)
+	return xf - xf[middle]
+
+def parse_eman2(fn,middle):
+    with open(fn) as f:
+        trans = [txt.split("\t")[1:3] for txt in f.readlines()[1:]]
+    xf = np.asarray(trans).astype(float)
+    return xf + xf[middle]
+
 ####################
 # Compare and plot #
 ####################
 
-def plot_trans(trans,bdir,nsig=1,plot=False):
+def plot_traj(trans,bdir,nsig=1,plot=False):
 	ats = np.hstack([trans[k] for k in sorted(trans.keys())])
 	np.savetxt("{}/all_trans.txt".format(bdir),ats)
 	trans["ALL"] = np.dstack([trans[key] for key in trans.keys()])
@@ -464,12 +521,14 @@ def plot_trans(trans,bdir,nsig=1,plot=False):
 		if key not in exclude:
 			if key != "MEAN":
 				ax1.plot(trans[key][:,0],trans[key][:,1],colors[cctr],label=key,alpha=0.8)
+				ax1.scatter(trans[key][:,0],trans[key][:,1],color=colors[cctr],alpha=0.8)
 			else:
 				ax1.plot(trans[key][:,0],trans[key][:,1],'k-',linewidth=1.5,label=key,alpha=1)
-				ax1.errorbar(trans[key][:,0],trans[key][:,1],xerr=err[:,0],yerr=err[:,1],color='k',alpha=0.6,label=siglabel)
+				ax1.scatter(trans[key][:,0],trans[key][:,1],color='k',alpha=1)
+				ax1.errorbar(trans[key][:,0],trans[key][:,1],xerr=err[:,0],yerr=err[:,1],color='k',alpha=0.25,label=siglabel)
 			cctr += 1
 	ax1.legend(loc="best")#,bbox_to_anchor=(0.95, 0.45))
-	ax1.set_title("Measured Drift")
+	ax1.set_title("Frame Trajectory")
 	ax1.set_xlabel("X Frame Translation (pixels)")
 	ax1.set_ylabel("Y Frame Translations (pixels)")
 	ax2 = fig.add_subplot(212)
@@ -551,7 +610,7 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 				cctr+=1
 	ax1.set_xlabel("X-shift (pixels)")
 	ax1.set_ylabel("Y-shift (pixels)")
-	ax1.set_title("Movie trajectory")
+	ax1.set_title("Frame trajectory")
 	ax1.legend(loc="best")
 	ax2 = plt.subplot2grid(grid_size,(2,0),rowspan=2,colspan=2)
 	cctr = 0
@@ -560,7 +619,7 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 			ax2.plot(xx,mags_hi[key],label="{} high".format(key),alpha=1)
 		else:
 			#ax2.plot(xx,np.zeros_like(xx),"k--",label=key,alpha=1)
-			ax2.errorbar(xx,np.zeros_like(xx),xerr=err_hi[:,0],yerr=err_hi[:,1],color='k',alpha=0.6,label="{} high".format(siglabel),linewidth=2)
+			ax2.errorbar(xx,np.zeros_like(xx),yerr=err_hi[:,1],color='k',alpha=0.6,label="{} high".format(siglabel),linewidth=2)
 	ax2.set_xlabel("Frame Number (#)")
 	ax2.set_ylabel("Relative shift magnitude (pixels)")
 	ax2.set_title("Frame shift magnitude (relative to MEAN)")
@@ -582,56 +641,6 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 	plt.savefig("{}/differences.png".format(bdir))
 	if plot: plt.show()
 	return trans_hi, trans_lo, ssdfs
-
-#############################
-# Parse Output Translations #
-#############################
-
-def parse_eman2(fn):
-	with open(fn) as f:
-		trans = [txt.split("\t")[1:3] for txt in f.readlines()[1:]]
-	trans = np.asarray(trans).astype(float)
-	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
-
-def parse_de(fnx,fny):
-	with open(fnx) as xf:
-		xs = np.asarray(xf.read().replace("\n","").split("\t"))[1:].astype(float)
-	with open(fny) as yf:
-		ys = np.asarray(yf.read().replace("\n","").split("\t"))[1:].astype(float)
-	trans = np.vstack([xs,ys]).T
-	return np.cumsum(trans,axis=1)
-
-def parse_imod(fn):
-	with open(fn) as f:
-		trans = np.asarray([np.asarray(txt.split()[4:6]).astype(float) for txt in f.readlines()])
-	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
-
-def parse_ucsf(fn):
-	trans = []
-	with open(fn) as f:
-		for txt in f.readlines():
-			if "......Shift of Frame #" in txt:
-				trans.append(np.asarray(txt.replace("......Add Frame #","").split(":")[-1].split())[:2])
-	trans = np.asarray(trans).astype(float)
-	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
-
-def parse_unblur(fn):
-	lines = [] #[xs,ys]
-	with open(fn) as f:
-		for txt in f.readlines():
-			if "#" not in txt: lines.append(txt.split())
-			elif "Pixel size (A):" in txt: apix = float(txt.split()[-1])
-	trans = np.asarray([[x,y] for (x,y) in zip(lines[0],lines[1])]).astype(float)
-	trans /= apix
-	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
-
-def parse_lmbfgs(fn):
-	lines = [] #[fnum,xs,ys]
-	with open(fn) as f:
-		for i,l in enumerate(f):
-			if i != 0: lines.append(l.strip().split()) # skip header on line 0
-	trans = np.asarray(lines)[:,1:].astype(float) # skip frame numbers
-	return np.cumsum(trans - np.mean(trans,axis=0),axis=1)
 
 #########################
 # Compute Power Spectra #
