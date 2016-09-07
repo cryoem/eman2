@@ -5215,7 +5215,7 @@ def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank
 def wrap_mpi_split_shared_memory(mpi_comm):
 	import socket
 	import os
-	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split_shared, mpi_comm_split
+	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split
 
 	hostname = socket.gethostname()
 
@@ -5267,7 +5267,7 @@ def wrap_mpi_split(comm, no_of_groups):
 	Consecutive global process ids have consecutive subgroup process ids.
 
 	"""
-	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split, mpi_comm_split_shared
+	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split
 	nproc = mpi_comm_size(comm)
 	myid = mpi_comm_rank(comm)
 
