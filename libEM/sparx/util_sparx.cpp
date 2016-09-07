@@ -22958,7 +22958,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  09/02/2016  12:41 PM "<<endl;
+ cout <<"  VERSION  09/07/2016  5:24 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ << " Modification time: 9/01/2016 -- 11:46:40 AM " <<  endl; // l9oQJdJNrfgEBup91
 }
 
