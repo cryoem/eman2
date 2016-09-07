@@ -285,7 +285,7 @@ def main():
 
 		for s in models:
 			final3d="{path}/threed_{it:02d}_{n}.hdf".format(path=options.newpath,n=s, it=it)
-			run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter 0 {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(even3d=output_3d[-1]["even"][s], odd3d=output_3d[-1]["odd"][s], final3d=final3d, mass=db["mass"], amask3d=db["automask3d"], sym=sym, amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db.setdefault("automaskexpand","0")))
+			run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(it=it,even3d=output_3d[-1]["even"][s], odd3d=output_3d[-1]["odd"][s], final3d=final3d, mass=db["mass"], amask3d=db["automask3d"], sym=sym, amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db.setdefault("automaskexpand","0")))
 
 			### copy the fsc files..
 			fscs=["fsc_unmasked_{:02d}.txt".format(it),"fsc_masked_{:02d}.txt".format(it),"fsc_maskedtight_{:02d}.txt".format(it)]

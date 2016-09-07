@@ -136,7 +136,7 @@ ENDIF (ENABLE_OPENGL)
 
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
-	SET(PLATFORMLIB "/usr/lib32" CACHE INTERNAL "IRIX lib32")  
+	SET(PLATFORMLIB "/usr/lib32" CACHE INTERNAL "IRIX lib32")
     #SET(EMAN_CXX_FLAGS "-n32 -LANG:std -w2 -fullwarn -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
     SET(EMAN_CXX_FLAGS "-n32 -woffall -LANG:std -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
 ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
@@ -198,30 +198,30 @@ ENDIF(ENABLE_IOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
-SET(INCLUDE_DIRS 
-	${EMAN_SOURCE_DIR}/libEM 
-	$ENV{HOME}/include 
-	$ENV{FFTWDIR}/include 
-	$ENV{GSLDIR}/include 
-	/usr/local/include 
+SET(INCLUDE_DIRS
+	${EMAN_SOURCE_DIR}/libEM
+	$ENV{HOME}/include
+	$ENV{FFTWDIR}/include
+	$ENV{GSLDIR}/include
+	/usr/local/include
 	/usr/local/cuda/include
-	/usr/include 
+	/usr/include
 	/sw/include
 	/usr/include/freetype2
 	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework/Headers
 	)
 
-SET(LIB_DIRS 
+SET(LIB_DIRS
 	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
-	$ENV{EMANDIR}/lib 
-	$ENV{HOME}/lib 
-	${PLATFORMLIB} 
-	$ENV{FFTWDIR}/lib 
-	$ENV{GSLDIR}/lib 
+	$ENV{EMANDIR}/lib
+	$ENV{HOME}/lib
+	${PLATFORMLIB}
+	$ENV{FFTWDIR}/lib
+	$ENV{GSLDIR}/lib
 	/usr/local/lib
 	/usr/local/cuda/lib
-	/usr/lib64 
-	/usr/lib 
+	/usr/lib64
+	/usr/lib
 	/sw/lib
 	)
 
@@ -232,9 +232,9 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
     ELSE (${upper}_INCLUDE_PATH)
 		FIND_PATH(${upper}_INCLUDE_PATH ${header2} $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
     ENDIF(${upper}_INCLUDE_PATH)
-    
+
     IF(${upper}_INCLUDE_PATH)
-		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})		
+		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
 		IF(${upper}_LIBRARY)
 		ELSE(${upper}_LIBRARY)
 			MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
@@ -249,19 +249,19 @@ MACRO(CHECK_REQUIRED_LIB upper lower header)
 ENDMACRO(CHECK_REQUIRED_LIB)
 
 MACRO(CHECK_OPTIONAL_LIB upper lower header)
-    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS}) 
-    
+    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
+
     IF(${upper}_INCLUDE_PATH)
         FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
-		
+
         IF(${upper}_LIBRARY)
 			ADD_DEFINITIONS(-DEM_${upper})
 			INCLUDE_DIRECTORIES(${${upper}_INCLUDE_PATH})
-        ELSE(${upper}_LIBRARY)    
+        ELSE(${upper}_LIBRARY)
 			#MESSAGE("WARNING: ${upper} not found, ENABLE_${upper} is set back to OFF")
 			OPTION(ENABLE_${upper} "if enable ${upper} support" OFF)
         ENDIF(${upper}_LIBRARY)
-		
+
     ELSE(${upper}_INCLUDE_PATH)
 		#MESSAGE("WARNING: ${upper} not found, ENABLE_${upper} is set back to OFF")
         OPTION(ENABLE_${upper} "if enable ${upper} support" OFF)
@@ -274,22 +274,22 @@ ENDMACRO(CHECK_LIB_ONLY)
 
 MACRO(CHECK_PYTHON)
 	SET(PYTHON_FOUND FALSE)
-	
+
 	FOREACH(PYVER ${ARGV})
 		IF(NOT PYTHON_FOUND)
-			IF (WIN32) 
+			IF (WIN32)
 				FIND_PATH(PYTHON_INCLUDE_PATH Python.h
 					$ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include)
 
-				FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS 
+				FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
 					$ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
-				
+
 			ELSE (WIN32)
 				FIND_PATH(PYTHON_INCLUDE_PATH Python.h
 					$ENV{PYTHON_ROOT}/include/python${PYVER}
 					/usr/local/include/python${PYVER}
 					/usr/include/python${PYVER})
-				
+
 				FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
 					$ENV{PYTHON_ROOT}/lib/python${PYVER}/config
 					/usr/local/lib/python${PYVER}/config
@@ -298,20 +298,20 @@ MACRO(CHECK_PYTHON)
 					$ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib)
 
 			ENDIF (WIN32)
-			
+
 			IF(PYTHON_INCLUDE_PATH)
 				IF(PYTHON_LIBRARY)
 					SET(PYTHON_FOUND TRUE)
 				ENDIF(PYTHON_LIBRARY)
 			ENDIF(PYTHON_INCLUDE_PATH)
-			
+
 		ENDIF(NOT PYTHON_FOUND)
     ENDFOREACH(PYVER)
 ENDMACRO(CHECK_PYTHON)
 
 IF(ENABLE_FFTW2)
     OPTION(ENABLE_NFFT "enable nfft support" OFF)
-    OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF) 
+    OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
     OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 
@@ -326,32 +326,32 @@ IF(ENABLE_FFTW2)
 	ADD_DEFINITIONS(-DFFTW2)
     SET(FFTW_LIBRARIES ${RFFTW2_LIBRARY} ${FFTW2_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW2_INCLUDE_PATH})
-    
+
     IF(ENABLE_NFFT)
     	CHECK_REQUIRED_LIB(FFTW2D fftw fftw.h)
     	CHECK_REQUIRED_LIB(NFFT nfft nfft.h)
     	ADD_DEFINITIONS(-DNFFT)
-		INCLUDE_DIRECTORIES(${NFFT_INCLUDE_PATH}) 
+		INCLUDE_DIRECTORIES(${NFFT_INCLUDE_PATH})
     ENDIF(ENABLE_NFFT)
 ENDIF(ENABLE_FFTW2)
 
 IF(ENABLE_FFTW3)
     OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
-    OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF) 
+    OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF)
     OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
-    
+
     CHECK_REQUIRED_LIB(FFTW3 fftw3f fftw3.h)
     CHECK_REQUIRED_LIB(FFTW3d fftw3 fftw3.h)
     ADD_DEFINITIONS(-DFFTW3)
     SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
-    
+
     IF(ENABLE_NFFT2)
     	CHECK_REQUIRED_LIB(FFTW3D fftw3 fftw3.h)
     	CHECK_REQUIRED_LIB(NFFT2 nfft nfft.h)
     	ADD_DEFINITIONS(-DNFFT2)
-		INCLUDE_DIRECTORIES(${NFFT2_INCLUDE_PATH}) 
+		INCLUDE_DIRECTORIES(${NFFT2_INCLUDE_PATH})
     ENDIF(ENABLE_NFFT2)
 ENDIF(ENABLE_FFTW3)
 
@@ -360,10 +360,10 @@ IF(ENABLE_FFTW_PLAN_CACHING)
 ENDIF(ENABLE_FFTW_PLAN_CACHING)
 
 IF(ENABLE_ACML_FFT)
-	OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF) 
+	OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF)
 	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
 	OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
-	
+
 	CHECK_REQUIRED_LIB(ACML acml acml.h)
 	FIND_LIBRARY(G2C_LIBRARY NAMES g2c PATHS
 		/usr/lib64
@@ -406,7 +406,7 @@ IF(ENABLE_OPTPP)
     FIND_LIBRARY(NEWMAT_LIBRARY NAMES newmat-linux PATHS /usr/lib /usr/local/lib)
 
     ADD_DEFINITIONS(-DOPTPP)
-    INCLUDE_DIRECTORIES(${OPTPP_INCLUDE_PATH} ${NEWMAT_INCLUDE_PATH}) 
+    INCLUDE_DIRECTORIES(${OPTPP_INCLUDE_PATH} ${NEWMAT_INCLUDE_PATH})
 ENDIF(ENABLE_OPTPP)
 
 CHECK_REQUIRED_LIB(GSL gsl gsl/gsl_linalg.h)
@@ -461,7 +461,7 @@ IF(ENABLE_PNG)
         CHECK_LIB_ONLY(ZLIB zlib1d)
     ELSE (WIN32)
         CHECK_OPTIONAL_LIB(PNG png png.h)
-    ENDIF (WIN32)    
+    ENDIF (WIN32)
 ENDIF(ENABLE_PNG)
 
 FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
@@ -483,7 +483,7 @@ FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
     /System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include
     /System/Library/Frameworks/Python.framework/Versions/2.6/Extras/lib/python/numpy/core/include
     /usr/include)
-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH}) 
+INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
 IF(WIN32)
 	CHECK_PYTHON($ENV{PYTHON_VERSION} 27 26 25 24 23 22)
@@ -512,8 +512,8 @@ ENDIF(PYTHON_INCLUDE_PATH)
 
 MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
 
-INCLUDE_DIRECTORIES(. 
-	    ${EMAN_SOURCE_DIR} 
+INCLUDE_DIRECTORIES(.
+	    ${EMAN_SOURCE_DIR}
 	    ${EMAN_SOURCE_DIR}/libEM
 	    ${GL_INCLUDE_PATH}
 	    ${GSL_INCLUDE_PATH}
@@ -523,7 +523,7 @@ INCLUDE_DIRECTORIES(.
 	    ${ACML_INCLUDE_PATH}
 	    ${BOOST_INCLUDE_PATH}
 	    ${PYTHON_INCLUDE_PATH}
-	    ${FREETYPE_INCLUDE_PATH}		
+	    ${FREETYPE_INCLUDE_PATH}
             )
 #            /usr/include/freetype2
 #            /usr/local/include/freetype2
@@ -570,18 +570,18 @@ ADD_CUSTOM_TARGET( unittest
 ADD_CUSTOM_COMMAND(
 	TARGET unittest
 	POST_BUILD
-	COMMAND python 
+	COMMAND python
 	ARGS ${EMAN_INSTALL_PREFIX}/test/rt/rt.py
 )
 
 #set the list of unit test to run
 #
-SET (TESTS 
-	test_vec 
-	test_utils 
-	test_typeconverter 
-	test_transform 
-	test_misc 
+SET (TESTS
+	test_vec
+	test_utils
+	test_typeconverter
+	test_transform
+	test_misc
 	test_imageio
 	test_emdata
 	test_processor
@@ -598,7 +598,7 @@ FOREACH (TEST ${TESTS})
         OUTPUT ${TEST}.PRINT_SPACE
         COMMAND ${CMAKE_COMMAND} ARGS -E echo ""
 	)
-	
+
 	#this is the trick to make the target run every time, DoUnitTest suppose is a file never been built
 	#
 	ADD_CUSTOM_COMMAND(
@@ -606,7 +606,7 @@ FOREACH (TEST ${TESTS})
 		COMMAND ${CMAKE_COMMAND} ARGS -E time ${EMAN_INSTALL_PREFIX}/test/rt/${TEST}.py
 		DEPENDS	${TEST}.PRINT_SPACE
 	)
-	
+
 	#build a list of all the results
 	SET( TEST_RESULTS ${TEST_RESULTS}
 		${TEST}.DoUnitTest

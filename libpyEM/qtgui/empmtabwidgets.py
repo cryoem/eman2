@@ -944,6 +944,15 @@ class EMRawDataTable(EMBrowserWidget):
 
 	def setPath(self,path,silent=False):
 		super(EMRawDataTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
+		
+
+class EMMovieDataTable(EMBrowserWidget):
+	""" Widget to display Raw Data """
+	def __init__(self, withmodal=False, multiselect=False, startpath="./movies"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
+
+	def setPath(self,path,silent=False):
+		super(EMMovieDataTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
 
 
 class EMRawDataModel(EMFileItemModel):
