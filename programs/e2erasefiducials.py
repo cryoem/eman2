@@ -48,6 +48,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	#parser.add_argument("--average", default=False, action="store_true", help="Erase gold from average of input stack(s).")
+	parser.add_argument("--apix", default=None, type=float, help="Override Apix in image header.")
 	parser.add_argument("--lowpass", default=False, action="store_true", help="Also lowpass filter noise based on local properties. Useful for processing tomographic tilt series.")
 	parser.add_argument("--keepdust", default=False, action="store_true", help="Do not remove 'dust' from mask (include objects smaller than gold fiducials).")
 	parser.add_argument("--goldsize", default=30, type=float, help="Diameter (in pixels) of gold fiducials to erase.")
@@ -75,7 +76,8 @@ def main():
 		originalarg = arg
 
 		hdr = EMData(arg,0,True) #load header only to get parameters used below
-		apix = hdr['apix_x']
+		if options.apix: apix = options.apix
+		else: apix = hdr['apix_x']
 		nx=hdr['nx']
 		ny=hdr['ny']
 
