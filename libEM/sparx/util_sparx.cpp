@@ -19066,12 +19066,28 @@ EMData*  Util::unrollmask( int ny )
 
 vector<float> Util::rotavg_fourier(EMData* img)
 {
-	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int nyp2 = ny/2;
-	int lsd = (nx + 2 - nx%2)/2;
-	EMData *fimg = img->do_fft();
-	fimg->set_attr("is_complex", false);
-	float *fint = fimg->get_data();
+	int nx, ny, nz, nyp2, lsd;
+	bool iodd;
+	int cmpx = img->is_complex();
+	EMData *fimg;
+	float *fint;
+	if(cmpx) {
+		iodd = img->get_attr("is_fftodd");
+		lsd=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
+		nx = lsd - 2;
+		if (iodd)  nx += 1;
+		lsd = (nx + 2 - nx%2)/2;
+		nyp2 = ny/2;
+		img->set_attr("is_complex", false);
+		fint = img->get_data();
+	} else {
+		nx=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
+		nyp2 = ny/2;
+		lsd = (nx + 2 - nx%2)/2;
+		fimg = img->do_fft();
+		fimg->set_attr("is_complex", false);
+		fint = fimg->get_data();
+	}
 	vector<float> rotav(2*lsd);
 	for (int i=0; i<2*lsd; i++)  rotav[i] = 0.0f; 
 	vector<float> count(lsd);
@@ -19111,8 +19127,12 @@ vector<float> Util::rotavg_fourier(EMData* img)
 	for (int ir=1; ir<lsd-1; ir++) rotav[2*lsd-ir-1] += rotav[2*lsd-ir];
 	for (int ir=0; ir<lsd-1; ir++) rotav[ir+lsd] = rotav[ir+1+lsd];
 	rotav[2*lsd-1] = 0.0;
-	delete fimg;
-	fimg = 0;
+	if(cmpx) {
+		img->set_attr("is_complex", true);
+	} else {
+		delete fimg;
+		fimg = 0;
+	}
 	return rotav;
 }
 
