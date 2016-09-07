@@ -163,6 +163,21 @@ def main():
 
 	#try: display((dark,gain,sigd,sigg))
 	#except: display((dark,gain))
+	try: os.mkdir("movies")
+	except: pass
+	if gain:
+		gainname="movies/e2ddd_gainref.hdf"
+		gain.write_image(gainname,-1)
+		gainid=EMUtil.get_image_count(gainname)-1
+		gain["filename"]=gainname
+		gain["fileid"]=gainid
+		
+	if dark:
+		darkname="movies/e2ddd_darkref.hdf"
+		dark.write_image(darkname,-1)
+		darkid=EMUtil.get_image_count(darkname)-1
+		dark["filename"]=darkname
+		dark["fileid"]=darkid
 
 	step = options.step.split(",")
 
@@ -526,6 +541,12 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			db["movieali_trans"]=locs
 			db["movieali_qual"]=quals
 			db["movie_name"]=fsp
+			if gain: 
+				db["gain_name"]=gain["filename"]
+				db["gain_id"]=gain["fileid"]
+			if dark: 
+				db["dark_name"]=dark["filename"]
+				db["dark_id"]=dark["fileid"]
 			db.close()
 
 			out=open("{}_info.txt".format(outname[:-4]),"w")

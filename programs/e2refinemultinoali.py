@@ -48,6 +48,8 @@ def main():
 	parser.add_argument("--iter", type=int,help="Number of iterations.", default=1, guitype='intbox', row=12, col=1, rowspan=1, colspan=1)
 	parser.add_header(name="optheader", help='Optional parameters:', title="Optional:", row=14, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--mask",type=str,help="Name of an optional mask file. The mask is applied to the input models to focus the classification on a particular region of the map. Consider e2classifyligand.py instead.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', filecheck=False, row=15, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--breaksym", action="store_true", default=False ,help="breaksym", guitype='boolbox', row=16, col=0, rowspan=1, colspan=1)
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -93,7 +95,7 @@ def main():
 	db=parse_json(db.copy())
 	options.simcmp=parsemodopt(options.simcmp)
 
-	sym=db["sym"]
+	sym=str(db["sym"])
 	if db["breaksym"]:
 		sym="c1"
 	### copy the model to the new folder
@@ -121,7 +123,7 @@ def main():
 			models=range(len(inputmodel))
 			for m in models:
 				outfile="{path}/model_input_{k}.hdf".format(path=options.newpath, k=m)
-				run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask))
+				#run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask))
 				inputmodel[m]=outfile
 
 
@@ -134,6 +136,48 @@ def main():
 	output_3d=[]
 	output_cls=[]
 	input_eo_order={0:"even",1:"odd"}
+	
+	#### deal with breaksym
+	if options.breaksym:
+		if sym=="c1":
+			print "Error: Breaksym option should be used based on a refinement with (non-c1) symmetry without breaksym. Exit."
+			exit()
+		if not multimodel:
+			print "Breaksym does not support single model input yet...Exit."
+			exit()
+		print "Breaking symmetry..."
+		origen=str(db["orientgen"]+":breaksym=1")
+		sym_object = parsesym(sym)
+		[og_name,og_args] = parsemodopt(origen)
+		oris = sym_object.gen_orientations(og_name, og_args)
+		nsym=Transform.get_nsym(sym)
+		n=len(oris)
+		symdone=[-1]*n
+		eulerlst=[]
+		for i in range(n):
+			if symdone[i]>=0:
+				continue
+			o=oris[i]
+			elst=[i]
+			symdone[i]=len(eulerlst)
+			for s in range(1,nsym):
+				ss=o.get_sym(sym, s)
+				for j in range(n):
+					if symdone[j]>=0:
+						continue
+					if oris[j]==ss:
+						elst.append(j)
+						symdone[j]=len(eulerlst)
+						break
+			eulerlst.append(elst)
+		print "Making {} projections in {} groups...".format(n, len(eulerlst))
+		print eulerlst
+		sym="c1"
+	else:
+		origen=db["orientgen"]
+			
+	
+	#### start iterations...
 	for it in range(options.iter):
 		print "Starting iteration {} ...".format(it)
 		print "Making projections..."
@@ -144,10 +188,10 @@ def main():
 				projfile=[]
 				for m in models:
 					projfile.append("{path}/projections_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[-1],orient=db["orientgen"],sym=db["sym"],threads=options.threads))
+					#run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
 			else:
 				projfile=["{path}/projections_{it:02d}.hdf".format(path=options.newpath, it=it)]
-				run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[0],proj=projfile[0],orient=db["orientgen"],sym=db["sym"],threads=options.threads))
+				run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[0],proj=projfile[0],orient=origen,sym=db["sym"],threads=options.threads))
 
 		output_3d.append({})
 		output_cls.append({})
@@ -161,7 +205,7 @@ def main():
 			#### make projections for even/odd
 				projfile=["{path}/projections_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo) for m in models]
 				for m in models:
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[m],orient=db["orientgen"],sym=db["sym"],threads=options.threads))
+					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[m],orient=origen,sym=db["sym"],threads=options.threads))
 
 			oldmapfile=str(db["last_{}".format(eo)])
 			ptclfile=str(db["input"][eoid])
@@ -194,20 +238,26 @@ def main():
 			for i in range(npt):
 				c=int(cmxcls[0,i])
 				tr=Transform({"type":"2d","alpha":cmxalpha[0,i],"mirror":int(cmxmirror[0,i]),"tx":cmxtx[0,i],"ty":cmxty[0,i]})
-				pjs=[projs[k][c] for k in range(len(projfile))]
+				if options.breaksym:
+					elst=eulerlst[symdone[c]]
+					pjs=[]
+					for k in range(len(projfile)):
+						pjs.extend([projs[k][ec] for ec in elst])
+				else:
+					pjs=[projs[k][c] for k in range(len(projfile))]
 				xforms.append({"ptclfile":ptclfile,"proj":pjs,"idx":i,"xform":tr,"cmp":options.simcmp})
 
-			pool = Pool()
-			corr=pool.map_async(do_compare, xforms)
-			pool.close()
-			while (True):
-				if (corr.ready()): break
-				remaining = corr._number_left
-				print "Waiting for", remaining, "tasks to complete..."
-				time.sleep(2)
-			corr=corr.get()
-			np.savetxt("{path}/simmx_{it:02d}_{eo}.txt".format(path=options.newpath,eo=eo, it=it),corr)
-			#corr=np.loadtxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo))
+			#pool = Pool()
+			#corr=pool.map_async(do_compare, xforms)
+			#pool.close()
+			#while (True):
+				#if (corr.ready()): break
+				#remaining = corr._number_left
+				#print "Waiting for", remaining, "tasks to complete..."
+				#time.sleep(2)
+			#corr=corr.get()
+			#np.savetxt("{path}/simmx_{it:02d}_{eo}.txt".format(path=options.newpath,eo=eo, it=it),corr)
+			corr=np.loadtxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo))
 
 			### classification
 			print "Classifying particles..."
@@ -220,10 +270,16 @@ def main():
 
 			if multimodel:
 				### simply classify
-				cls=np.argmin(corr,1)
+				clso=np.argmin(corr,1)
+				cls=clso%len(models)
+				clsm=clso%len(models)
 				print eo,[float(sum(cls==k))/float(npt) for k in models]
 				for i in range(npt):
 					v=cmxcls[0,i]
+					if options.breaksym:
+						print v,cls[i],clsm[i],symdone[int(v)]
+						v=eulerlst[symdone[int(v)]][clsm[i]]
+						
 					for s in models:
 						if s==cls[i]:
 							cmxout[s][0,i]=v
@@ -236,13 +292,17 @@ def main():
 					ns=0
 					for i in range(npt):
 						v=cmxcls[0,i]
+						cc=corr[i]
+						if options.breaksym:
+							v=eulerlst[symdone[int(v)]][np.argmin(cc)]
+							cc=[np.min(cc)]
 						if v==c:
-							ss.append(corr[i])
+							ss.append(cc)
 							ns+=1
 						else:
-							ss.append([10]*len(corr[i]))
+							ss.append([10]*len(cc))
 
-					### split the data by halv
+					### split the data by half
 					spt=int(ns*.5)
 					for s in models:
 						if s==0:
@@ -256,13 +316,14 @@ def main():
 
 			### write classmx
 			for s in models:
+				print cmxout[s]["maximum"]
 				cmxout[s].write_image(newclsmx[s])
 				ns=EMUtil.get_image_count(clsmx)
 				for i in range(1,ns):
 					e=EMData(clsmx,i)
 					e.write_image(newclsmx[s],i)
 
-
+			exit()
 			print "Making class average and 3d map..."
 			for s in models:
 				### class average
