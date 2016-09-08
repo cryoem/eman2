@@ -361,6 +361,25 @@ def get_gui_arg_img_sets(filenames):
 
 	return img_sets
 
+def get_ptcl_name(filename, tag=""):
+	name=base_name(filename)
+	e=EMData(filename,0,True)
+	tt=""
+	try:
+		ptsrc=e["ptcl_source_image"]
+		if "__" in ptsrc:
+			#### add the micrograph tag to filename
+			tt='_'+ptsrc.split("__")[-1][:-4]
+	except:
+		pass
+	
+	if len(tag)>0:
+		tag='_'+tag
+	
+	fname="particles/{}__ctf{}{}.hdf".format(name,tag,tt)
+	
+	return fname
+
 def write_e2ctf_output(options):
 	"write wiener filtered and/or phase flipped particle data to the local database"
 	global logid
@@ -369,29 +388,28 @@ def write_e2ctf_output(options):
 		for i,filename in enumerate(options.filenames):
 			name=base_name(filename)
 			if debug: print "Processing ",filename
-
 			try: im=EMData(filename,0,True)
 			except:
 				print "Error processing {}. Does not appear to be an image stack. Skipping.".format(filename)
 				continue
 
-			if options.phaseflip: phaseout="particles/{}__ctf_flip.hdf".format(name)
+			if options.phaseflip: phaseout=get_ptcl_name(filename, "flip")
 			else: phaseout=None
 
-			if options.phasefliphp: phasehpout="particles/{}__ctf_flip_hp.hdf".format(name)
+			if options.phasefliphp: phasehpout=get_ptcl_name(filename, "flip_hp")
 			else: phasehpout=None
 
-			if options.phaseflipsmall: phasesmout="particles/{}__ctf_small.hdf".format(name)
+			if options.phaseflipsmall: phasesmout=get_ptcl_name(filename, "flip_small")
 			else: phasesmout=None
 
 			if options.wiener:
-				if options.autohp: wienerout="particles/{}__ctf_wiener_hp.hdf".format(name)
-				else: wienerout="particles/{}__ctf_wiener.hdf".format(name)
+				if options.autohp: wienerout=get_ptcl_name(filename, "wiener_hp")
+				else: wienerout=get_ptcl_name(filename, "wiener")
 			else : wienerout=None
 
 			phaseprocout=None
 			if options.phaseflipproc!=None:
-				phaseprocout=["particles/{}__ctf_flip_{tag}.hdf".format(name,tag=options.proctag),parsemodopt(options.phaseflipproc)]
+				phaseprocout=[get_ptcl_name(filename, "flip_{}".format(options.proctag)),parsemodopt(options.phaseflipproc)]
 
 				if options.phaseflipproc2!=None:
 					phaseprocout.append(parsemodopt(options.phaseflipproc2))
