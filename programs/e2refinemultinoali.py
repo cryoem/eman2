@@ -153,7 +153,7 @@ def main():
 		oris0 = sym_object.gen_orientations(og_name, og_args)
 		
 		#### orientations with breaksym
-		origen=origen+":breaksym=1"
+		origen=origen+":breaksym=1:breaksym_real=1"
 		sym_object = parsesym(sym)
 		[og_name,og_args] = parsemodopt(origen)
 		oris = sym_object.gen_orientations(og_name, og_args)
