@@ -66,11 +66,11 @@ from e2tomopreproc import TomoPreproc2DTask
 from e2symsearch3d import SymAlignTask
 from e2spt_boxer import TomoBoxer3DTask
 
-<<<<<<< HEAD
-from erase_gold import EraseGold2DTask
-=======
+#<<<<<<< HEAD
+#from erase_gold import EraseGold2DTask
+#=======
 from e2erasefiducials import EraseGold2DTask
->>>>>>> e946770a40f8d18f20c6fe82ecf5f6bdfa268e2a
+#>>>>>>> e946770a40f8d18f20c6fe82ecf5f6bdfa268e2a
 
 from e2tvrecon import TVReconTask
 from e2classifytree import TreeClassifyTask
