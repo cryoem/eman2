@@ -123,7 +123,7 @@ def main():
 			models=range(len(inputmodel))
 			for m in models:
 				outfile="{path}/model_input_{k}.hdf".format(path=options.newpath, k=m)
-				#run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask))
+				run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} {mask}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix,mask=options.mask))
 				inputmodel[m]=outfile
 
 
@@ -188,7 +188,7 @@ def main():
 				projfile=[]
 				for m in models:
 					projfile.append("{path}/projections_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
-					#run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
+					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
 			else:
 				projfile=["{path}/projections_{it:02d}.hdf".format(path=options.newpath, it=it)]
 				run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[0],proj=projfile[0],orient=origen,sym=db["sym"],threads=options.threads))
@@ -247,17 +247,17 @@ def main():
 					pjs=[projs[k][c] for k in range(len(projfile))]
 				xforms.append({"ptclfile":ptclfile,"proj":pjs,"idx":i,"xform":tr,"cmp":options.simcmp})
 
-			#pool = Pool()
-			#corr=pool.map_async(do_compare, xforms)
-			#pool.close()
-			#while (True):
-				#if (corr.ready()): break
-				#remaining = corr._number_left
-				#print "Waiting for", remaining, "tasks to complete..."
-				#time.sleep(2)
-			#corr=corr.get()
-			#np.savetxt("{path}/simmx_{it:02d}_{eo}.txt".format(path=options.newpath,eo=eo, it=it),corr)
-			corr=np.loadtxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo))
+			pool = Pool()
+			corr=pool.map_async(do_compare, xforms)
+			pool.close()
+			while (True):
+				if (corr.ready()): break
+				remaining = corr._number_left
+				print "Waiting for", remaining, "tasks to complete..."
+				time.sleep(2)
+			corr=corr.get()
+			np.savetxt("{path}/simmx_{it:02d}_{eo}.txt".format(path=options.newpath,eo=eo, it=it),corr)
+			#corr=np.loadtxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo))
 
 			### classification
 			print "Classifying particles..."
