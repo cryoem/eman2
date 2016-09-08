@@ -99,6 +99,8 @@ def main():
 	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
 	parser.add_argument("--invert",action="store_true",help="If specified, inverts input contrast. Particles MUST be white on a darker background.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--no_ctf",action="store_true",default=False,help="Disable CTF determination", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="extraction, boxing")
+	parser.add_argument("--suffix",type=str,help="Suffix of the micrographs used for particle picking (i.e. suffix=goodali will use micrographs end with __goodali.hdf). It is only useful when [allmicrographs] is True.",default="", guitype='strbox', row=16, col=0, rowspan=1, colspan=2, mode="boxing,extraction")
+
 	
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=-1, guitype='floatbox', row=14, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getAPIX()'],boxing,extraction")
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=-1, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="autofit['self.pm().getVoltage()']")
@@ -118,8 +120,9 @@ def main():
 	if options.allmicrographs :
 		if len(args)>0 : print "Specified micrograph list replaced with contents of micrographs/"
 		args=sorted(["micrographs/"+i for i in os.listdir("micrographs") if not i.startswith('.')])
+		if len(options.suffix)>0:
+			args=[a for a in args if "__"+options.suffix in a]
 	#else: args=[i.replace("micrographs/","") for i in args]
-
 	oargs=args
 	args=[]
 	basenames=[]
@@ -127,8 +130,9 @@ def main():
 		bname=base_name(f)
 		if bname in basenames:
 			#### so we do not box multiple times on different versions of the same micrograph
-			if options.verbose: "skipping {}".format(f)
-			continue
+			print "Error: Multiple versions of micrograph {} exist. Please specify a suffix. Exit."
+			exit()
+			
 		basenames.append(bname)
 		db=js_open_dict(info_name(f))
 		try: boxes=db["boxes"]

@@ -146,20 +146,27 @@ def main():
 			print "Breaksym does not support single model input yet...Exit."
 			exit()
 		print "Breaking symmetry..."
-		origen=str(db["orientgen"]+":breaksym=1")
+		#### original orientations
+		origen=str(db["orientgen"])
+		sym_object = parsesym(sym)
+		[og_name,og_args] = parsemodopt(origen)
+		oris0 = sym_object.gen_orientations(og_name, og_args)
+		
+		#### orientations with breaksym
+		origen=origen+":breaksym=1"
 		sym_object = parsesym(sym)
 		[og_name,og_args] = parsemodopt(origen)
 		oris = sym_object.gen_orientations(og_name, og_args)
+		
 		nsym=Transform.get_nsym(sym)
 		n=len(oris)
+		n0=len(oris0)
 		symdone=[-1]*n
 		eulerlst=[]
-		for i in range(n):
-			if symdone[i]>=0:
-				continue
-			o=oris[i]
+		for i in range(n0):
+			o=oris0[i]
 			elst=[i]
-			symdone[i]=len(eulerlst)
+			symdone[i]=i
 			for s in range(1,nsym):
 				ss=o.get_sym(sym, s)
 				for j in range(n):
@@ -167,12 +174,16 @@ def main():
 						continue
 					if oris[j]==ss:
 						elst.append(j)
-						symdone[j]=len(eulerlst)
+						symdone[j]=i
 						break
 			eulerlst.append(elst)
 		print "Making {} projections in {} groups...".format(n, len(eulerlst))
-		#print eulerlst
 		sym="c1"
+
+		#for i in range(len(eulerlst)):
+			#print i, eulerlst[i]
+		#print symdone
+		#exit()
 	else:
 		origen=db["orientgen"]
 			
