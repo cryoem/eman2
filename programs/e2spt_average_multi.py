@@ -8,7 +8,7 @@ import threading
 import Queue
 from sys import argv,exit
 
-def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shrink,verbose):
+def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shrink,maxres,verbose):
 	"""Averaging thread. 
 	avgs are n existing Averagers, 
 	fsp,i is the particle being averaged
@@ -71,6 +71,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	parser.add_argument("--minalt",type=float,help="Minimum alignment altitude to include. Default=0",default=0)
 	parser.add_argument("--maxalt",type=float,help="Maximum alignment altitude to include. Deafult=180",default=180)
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0)
+	parser.add_argument("--maxres",type=float,help="Highest resolution in A to be used for classification among possible orientations and references. Default=30",default=30.0)
 	parser.add_argument("--listfile",type=str,help="Specify a filename containing a list of integer particle numbers to include in the average, one per line, first is 0. Additional exclusions may apply.",default=None)
 	parser.add_argument("--shrinkcompare",type=int,help="Shrink factor for classification only (for speed)",default=0)
 	parser.add_argument("--sym",type=str,help="Symmetry of the input. Must be aligned in standard orientation to work properly.",default="c1")
@@ -139,10 +140,10 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	# Rotation and insertion are slow, so we do it with threads. 
 	# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
 	if options.replace != None:
-		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.verbose)) for i,k in enumerate(keys)]
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.verbose)) for i,k in enumerate(keys)]
 
 	else:
-		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.verbose)) for i,k in enumerate(keys)]
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.verbose)) for i,k in enumerate(keys)]
 
 
 	print len(thrds)," threads"
