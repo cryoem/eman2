@@ -171,7 +171,7 @@ def main():
 						break
 			eulerlst.append(elst)
 		print "Making {} projections in {} groups...".format(n, len(eulerlst))
-		print eulerlst
+		#print eulerlst
 		sym="c1"
 	else:
 		origen=db["orientgen"]
@@ -277,7 +277,7 @@ def main():
 				for i in range(npt):
 					v=cmxcls[0,i]
 					if options.breaksym:
-						print v,cls[i],clsm[i],symdone[int(v)]
+						#print v,cls[i],clsm[i],symdone[int(v)]
 						v=eulerlst[symdone[int(v)]][clsm[i]]
 						
 					for s in models:
@@ -323,7 +323,7 @@ def main():
 					e=EMData(clsmx,i)
 					e.write_image(newclsmx[s],i)
 
-			exit()
+			#exit()
 			print "Making class average and 3d map..."
 			for s in models:
 				### class average
