@@ -350,7 +350,7 @@ def getfscs(options,apix):
 		refsymm = refsym.copy()
 		refsymm.transform(t)
 
-		print "The mirror fsc file is", fscfilename
+		#print "The mirror fsc file is", fscfilename
 
 	'''
 	Interate trough the particles
@@ -362,16 +362,19 @@ def getfscs(options,apix):
 		ptcl = EMData( fyle ,i)
 		fscfilename = options.path + '/' + output.replace('.txt','_' + str(i).zfill(len(str(n))) + '.txt')
 		
+		if options.mask:
+			ptcl.mult(mask)
+
 		if sym:
-			ptclsym = symmetrize(ptcl,options) 
+			#ptclsym = symmetrize(ptcl,options) 
+			ptclsym = ptcl.process('xform.applysym',{'sym':sym})
 			
 			#fscfilename = options.output.replace('.txt','_' + str(i).zfill(len(str(n))) + '_' + options.sym + '.txt')
 			fscfilenamesym = fscfilename.replace('.txt', '_' + sym + '.txt')
-		
-			ptcl.mult(mask)
+			
+			#if options.mask:
+			#	ptclsym.mult(mask)
 
-			if sym:
-				ptclsym.mult(mask)
 
 		if options.preproc:
 			ptcl.process_inplace(options.preproc[0],options.preproc[1])
@@ -410,15 +413,15 @@ def getfscs(options,apix):
 			fscfilenamemirror = fscfilename.replace('.txt','_mirror.txt')
 			print "\nThe mirror fsc file is", fscfilenamemirror
 			
-			calcfsc(ptcl,refm,fscmfilenamemirror,options)
+			calcfsc(ptcl,refm,fscfilenamemirror,options)
 			
 			if not options.singleplot:
-				fscplotter([fscmfilenamemirror],options,apix)
+				fscplotter([fscfilenamemirror],options,apix)
 			else:
-				fscsm.append(fscmfilenamemirror)
+				fscsm.append(fscfilenamemirror)
 
 			if sym:
-				fscsfilenamemirrorsym = fscfilenamemirror.replace('.txt','_mirror_sym.txt')
+				fscsfilenamemirrorsym = fscfilenamemirror.replace('.txt','_'+sym+'.txt')
 				print "\nThe mirror fsc file is", fscfilename
 			
 				calcfsc(ptcl,refsymm,fscsfilenamemirrorsym,options)
@@ -429,33 +432,34 @@ def getfscs(options,apix):
 					fscsmsym.append(fscsfilenamemirrorsym)
 
 	if options.singleplot and fscs:
-		fscplotter(fscs,options,apix)
-		if sym and fscssym:
-			fscplotter(fscssym,options,apix)
-
-		if options.mirror and fscsm:
-			fscplotter(fscsm,options,apix)
-			if sym and fscsmsym:
-				fscplotter(fscsmsym,options,apix)
+		fscplotter(fscs,options,apix,'apo',True)
 	
+	if sym and fscssym:
+		fscplotter(fscssym,options,apix,sym,True)
 
+	if options.mirror and fscsm:
+		fscplotter(fscsm,options,apix,'mirror',True)
+		if sym and fscsmsym:
+			fscplotter(fscsmsym,options,apix,'mirror_'+sym,True)
+	
+	#print "fscs are",fscs
 	if options.averagefscs:
 		
 		if fscs:
 			fscaverager(options,fscs,'fscs_avg.txt')
-			fscplotter(['fscs_avg.txt'],options,apix)
+			fscplotter([options.path+'/fscs_avg.txt'],options,apix,'apo_avg',True)
 
 			if sym and fscssym:
-				fscavgsym=fscaverager(options,fscssym,'fscs_sym_avg.txt')
-				fscplotter(['fscs_sym_avg.txt'],options,apix)
+				fscavgsym=fscaverager(options,fscssym,'fscs_avg_' + sym +'.txt')
+				fscplotter([options.path+'/fscs_avg_'+sym+'.txt'],options,apix,'avg_' + sym,True)
 
 		if options.mirror and fscsm:
-			fscavgmirror=fscaverager(options,fscsm,'fscs_mirror_avg.txt')
-			fscplotter(['fscs_mirror_avg.txt'],options,apix)
+			fscavgmirror=fscaverager(options,fscsm,'fscs_avg_mirror.txt')
+			fscplotter([options.path+'/fscs_avg_mirror.txt'],options,apix,'avg_mirror',True)
 			
 			if sym and fscsmsym:
-				fscavgmirrorsym=fscaverager(options,fscsmsym,'fscs_sym_mirror_avg.txt')
-				fscplotter(['fscs_sym_mirror_avg.txt'],options,apix)
+				fscavgmirrorsym=fscaverager(options,fscsmsym,'fscs_avg_mirror_'+sym+'.txt')
+				fscplotter([options.path+'/fscs_avg_mirror_'+sym+'.txt'],options,apix,'avg_mirror_'+sym,True)
 	return
 
 
@@ -589,7 +593,7 @@ def calcfsc(v1,v2,fscfilename,options):
 	
 
 def symmetrize(vol,options):
-	sym = options.symmap
+	sym = options.sym
 	xf = Transform()
 	xf.to_identity()
 	nsym=xf.get_nsym(sym)
@@ -734,8 +738,12 @@ def maxima(xaxis,yaxis,smooththresh):
 	
 	
 		
-def fscplotter(fscs,options,apix=0.0):
+def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
+	
 	fig = figure()
+
+	if clearplot:
+		plt.clf()
 
 	#from itertools import product
 	markers=["*","o","x","z","M"]
@@ -851,7 +859,9 @@ def fscplotter(fscs,options,apix=0.0):
 			#	plot_name = options.path + '/' + os.path.basename(options.output)
 			#	plot_name = plot_name.replace('.txt','.png')
 			#else:
-				plot_name = options.path  + '/fsc_curves.png'
+			plot_name = options.path  + '/fscs.png'
+			if tag:
+				plot_name = options.path  + '/fsc_' + tag + '.png'
 		else:
 			plot_name = options.path + '/' + os.path.basename(fscoutputname).replace('.txt','_' + str(kont).zfill(len(fscs)) + '.png')
 			#plot_name = plot_name.replace('.txt','_' + str(kont).zfill(len(fscs)) + '.png')
@@ -1092,7 +1102,7 @@ def fscplotter(fscs,options,apix=0.0):
 	plt.savefig(plot_name)
 	
 
-	return()
+	return
 	
 if __name__ == "__main__":
 	main()

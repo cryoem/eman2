@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Author: Jesus Galaz  19/1/2012
+# Author: Jesus Galaz  19/1/2012; last modified, July/2016
 # Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -55,12 +55,17 @@ def main():
 	n = EMUtil.get_image_count(data)
 	for i in range(n):
 		a = EMData(data,i)
+		nx=a['nx']
+		ny=a['ny']
+		nz=a['nz']
+		a.process_inplace('math.fft.resample',{'n':0.5})
 		b = a.do_fft()
 		b.ri2ap()
 		c = b.amplitude()
 		c.process_inplace('xform.phaseorigin.tocenter')
 		#d = c.process('xform.mirror',{'axis':'x'})
-		c.rotate(0,-90,0)
+		#c.rotate(0,-90,0)
+		c.process_inplace('math.fft.resample',{'n':2.0})
 		d = c.copy()
 		d.rotate(0,0,180)
 		

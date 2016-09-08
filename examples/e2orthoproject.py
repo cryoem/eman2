@@ -39,6 +39,7 @@ import heapq
 import operator
 import random
 import numpy
+from sys import argv
 
 
 def main():
@@ -86,26 +87,20 @@ def main():
 	
 	
 	if not options.input:
-		print "ERROR: Supply volume(s) through --input=."
-		sys.exit()
+		#print "ERROR: Supply volume(s) through --input=."
 		
+		try:
+			options.input = sys.argv[1]
+			EMData(options.input,0,True)
+		except:
+			print "ERROR: input file %s seems to have an invalid format" %( options.input )
+			sys.exit()
+	
 	if options.transformsfile:
 		n=EMUtil.get_image_count(options.input)
 		if n>1:
 			print "ERROR: You cannot supply --transformsfile for particle stacks; it only works for individual volumes."
 			sys.exit()
-			
-	logger = E2init(sys.argv, options.ppid)
-
-	if options.mask: 
-		options.mask=parsemodopt(options.mask)
-		
-	if options.lowpass: 
-		options.lowpass=parsemodopt(options.lowpass)
-		
-	if options.normproc: 
-		options.normproc=parsemodopt(options.normproc)
-
 	
 	'''
 	Check for sanity of some supplied parameters
@@ -127,13 +122,6 @@ def main():
 			sys.exit()
 
 
-	'''
-	Make a directory where to store the results
-	'''
-	
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'orthoprjs')
-	
 	if options.onlyz and options.onlyx:
 		print "ERROR: Cannot supply --onlyz and --onlyx at the same time"
 		sys.exit()
@@ -196,9 +184,30 @@ def main():
 		#projectiondirections.update({ tag:t })
 		
 	
+
+	logger = E2init(sys.argv, options.ppid)
+
+	if options.mask: 
+		options.mask=parsemodopt(options.mask)
+		
+	if options.lowpass: 
+		options.lowpass=parsemodopt(options.lowpass)
+		
+	if options.normproc: 
+		options.normproc=parsemodopt(options.normproc)
+	'''
+	Make a directory where to store the results
+	'''
+	
+	from e2spt_classaverage import sptmakepath
+	options = sptmakepath(options,'orthoprjs')
+	
+
 	'''
 	Read input
 	'''
+
+	print "options.input",options.input
 	models=options.input.split(',')
 	
 	rootpath = os.getcwd()
