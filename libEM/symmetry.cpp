@@ -391,6 +391,7 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 	float delta = params.set_default("delta", 0.0f);
 	int n = params.set_default("n", 0);
 	bool breaksym = params.set_default("breaksym",false);
+	bool breaksymreal = params.set_default("breaksym_real",false);
 
 	if ( delta <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero delta or n");
 	if ( delta > 0 && n > 0 ) throw InvalidParameterException("Error, the delta and the n arguments are mutually exclusive");
@@ -402,6 +403,10 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 	bool inc_mirror = params.set_default("inc_mirror",false);
 	bool inc_mirror_real = inc_mirror;
 	if (breaksym) inc_mirror=true;		// we need to enable mirror generation, then strip them out at the end, or things don't work right...
+	if (breaksymreal){
+		inc_mirror=false;
+		breaksym=true;
+	}
 	Dict delimiters = sym->get_delimiters(inc_mirror);
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
