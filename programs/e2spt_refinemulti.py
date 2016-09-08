@@ -237,6 +237,7 @@ def main():
 	
 	options.goldstandardoff = 'goldstandardoff'
 	
+	options.raw = options.input
 	#try:
 	#	hdr = EMData(options.input,0,True) #This is done just to test whether the input file exists where it should
 	#	boxsize = hdr['nx']
@@ -343,6 +344,11 @@ def main():
 				print "\n(e2spt_refinemulti)(main) preprocessing --input for fine alignment failed"
 	
 	
+
+	#print "ABCDEFG 1 test!"
+	#sys.exit()
+
+
 	if preprocdone:
 		'''
 		Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
@@ -467,12 +473,12 @@ def main():
 					--ref, until enough references are seeded to match --nref."""
 					ncls = options.nref
 
-					for j in range( options.nref ):
-						reffiles *= math.ceil( float(options.nref) / float(len(reffiles) ) )
-						reffiles = reffiles[:options.nrefs]
+					#for j in range( options.nref ):
+					reffiles *= int( math.ceil( float(options.nref) / float(len(reffiles) ) ) )
+					reffiles = reffiles[:options.nrefs]
 				
 		
-			print "there are %d references to prepare" % ( len(reffiles) )
+			print "\nthere are %d references to prepare" % ( len(reffiles) )
 			print "from these files", reffiles
 		
 		
@@ -480,6 +486,7 @@ def main():
 			ptclnx = ptclhdr['nx']
 			ptclny = ptclhdr['ny']
 			ptclnz = ptclhdr['nz']
+			
 			rr=0
 			for rf in reffiles:			
 				
@@ -510,7 +517,7 @@ def main():
 						if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
 							origlowpass = options.lowpass
 							orighighpass = options.highpass
-							origpreproc = options.preproc
+							origpreproc = options.preprocess
 							origshrink = options.shrink
 						
 							options.lowpass = options.lowpassfine
@@ -527,14 +534,38 @@ def main():
 							options.shrink = origshrink
 				else:
 					#ref2use = options.path + '/' + options.ref.replace('.hdf','_preproc.hdf')
+	
 					if options.clip or (options.shrink > 1):
+						origlowpass = options.lowpass
+						orighighpass = options.highpass
+						origpreproc = options.preprocess
+						origthresh = options.threshold
+						
+						options.lowpass = ''
+						options.highpass = ''
+						options.preprocess = ''
+						options.threshold = ''
+
 						ref2use = reffile.replace('.hdf','_preproc.hdf')
 						refimg = preprocfunc( refimg, options, 0, ref2use, False, True ) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
-				
+						
+						options.lowpass = origlowpass
+						options.highpass = orighighpass
+						options.preprocess = origpreproc
+						options.threshold = origthresh
+
 					if options.falign and 'tree' not in options.align[0]:
 						#ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
 						if options.clip or (options.shrinkfine > 1):
-						
+							
+							origlowpass = options.lowpassfine
+							orighighpass = options.highpassfine
+							origpreproc = options.preprocessfine
+							
+							options.lowpassfine = '' 
+							options.highpassfine = ''
+							options.preprocessfine = ''
+
 							origshrink = options.shrink
 							options.shrink = options.shrinkfine
 
@@ -542,7 +573,11 @@ def main():
 							refimgfine = preprocfunc( refimg, options, 0, ref2usefine, False, True) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
 						
 							options.shrink = origshrink
-			
+
+							options.lowpassfine = origlowpass
+							options.highpassfine = orighighpass
+							options.preprocessfine = origpreproc
+				
 				checksaneimagesize( options, options.input, ref2use )
 			
 				#reffilesrefine.update( {rr: reffile} )
@@ -595,6 +630,8 @@ def main():
 		
 			#options.path = originalpath
 		
+			
+
 			for i in ret:
 		
 				reffile = rootpath + '/' + options.path + '/ref' + str( i ).zfill( len( str( ncls ))) + '.hdf'
@@ -608,7 +645,82 @@ def main():
 	
 				ref2use = reffile
 				ref2usefine = reffile
-			
+				
+				if options.refpreprocess:
+					
+					if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:	
+					
+						ref2use = reffile.replace('.hdf','_preproc.hdf')
+						refimg = preprocfunc( refimg, options, 0, ref2use )
+				
+					if options.falign and 'tree' not in options.align[0]:
+						#ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
+					
+						if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
+							origlowpass = options.lowpass
+							orighighpass = options.highpass
+							origpreproc = options.preprocess
+							origshrink = options.shrink
+						
+							options.lowpass = options.lowpassfine
+							options.highpass = options.highpassfine
+							options.preprocess = options.preprocessfine
+							options.shrink = options.shrinkfine
+						
+							ref2usefine = reffile.replace('.hdf','_preprocfine.hdf')
+							refimgfine = preprocfunc( refimg, options, 0, ref2usefine)
+						
+							options.lowpass = origlowpass
+							options.highpass = orighighpass
+							options.preprocess = origpreproc
+							options.shrink = origshrink
+				else:
+					#ref2use = options.path + '/' + options.ref.replace('.hdf','_preproc.hdf')
+				
+					if options.clip or (options.shrink > 1):
+						origlowpass = options.lowpass
+						orighighpass = options.highpass
+						origpreproc = options.preprocess
+						origthresh = options.threshold
+						
+						options.lowpass = ''
+						options.highpass = ''
+						options.preprocess = ''
+						options.threshold = ''
+
+						ref2use = reffile.replace('.hdf','_preproc.hdf')
+						refimg = preprocfunc( refimg, options, 0, ref2use, False, True ) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
+						
+						options.lowpass = origlowpass
+						options.highpass = orighighpass
+						options.preprocess = origpreproc
+						options.threshold = origthresh
+
+					if options.falign and 'tree' not in options.align[0]:
+						#ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
+						if options.clip or (options.shrinkfine > 1):
+							
+							origlowpass = options.lowpassfine
+							orighighpass = options.highpassfine
+							origpreproc = options.preprocessfine
+							
+							options.lowpassfine = '' 
+							options.highpassfine = ''
+							options.preprocessfine = ''
+
+							origshrink = options.shrink
+							options.shrink = options.shrinkfine
+
+							ref2usefine = reffile.replace('.hdf','_preprocfine.hdf')						
+							refimgfine = preprocfunc( refimg, options, 0, ref2usefine, False, True) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
+						
+							options.shrink = origshrink
+
+							options.lowpassfine = origlowpass
+							options.highpassfine = orighighpass
+							options.preprocessfine = origpreproc
+
+				"""
 				if options.refpreprocess:
 					
 					if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:	
@@ -655,6 +767,7 @@ def main():
 							refimgfine = preprocfunc( refimg, options, 0, ref2usefine, False, True) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
 						
 							options.shrink = origshrink
+				"""
 							
 				checksaneimagesize( options, options.input, ref2use )
 				#reffilesrefine.update( {i:reffile} )
@@ -765,6 +878,9 @@ def main():
 		#import operator
 		from operator import itemgetter	
 	
+		#print "ABCDEFG 2 test!"
+		#sys.exit()
+
 		for it in range( options.iter+1 ):
 			print "\n\nrefining all references in iteration", it
 			print "\n\n"
@@ -873,11 +989,12 @@ def main():
 					#ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
 					reffile = reffilesrefine[refindx]
 			
-					
-					
-					
 					ref2use = reffile
 					ref2usefine = reffile
+					
+
+					#print "before calling preproc it is %d and ref2use is %s" %(it,ref2use)
+					#sys.exit()
 					
 					if it > 0:
 					
@@ -885,6 +1002,7 @@ def main():
 					
 							ref2use = reffile.replace('.hdf','_preproc.hdf')
 							refimg = preprocfunc( refimg, options, 0, ref2use )
+
 			
 						if options.falign and 'tree' not in options.align[0]:
 							#ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
@@ -907,6 +1025,9 @@ def main():
 								options.highpass = orighighpass
 								options.preprocess = origpreproc
 								options.shrink = origshrink
+					
+
+					"""
 					else:
 						#ref2use = options.path + '/' + options.ref.replace('.hdf','_preproc.hdf')
 						if options.clip or (options.shrink > 1):
@@ -924,23 +1045,7 @@ def main():
 								refimgfine = preprocfunc( refimg, options, 0, ref2usefine, False, True) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
 						
 								options.shrink = origshrink
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					
+					"""
 					
 					#print "\nusing this reffile", reffile
 					print "\nusing this ref2use", ref2use
@@ -1263,6 +1368,10 @@ def main():
 			for avg in avgs:
 				if avgs[ avg ] and avgs[ avg ] != None:
 					nonNulls +=1
+
+				print "\n(e2spt_refinemulti)(main) generated this average %s in iter %d" %(avg,it)
+				print "computed average of size", avgs[avg]['nx'],avgs[avg]['ny'],avgs[avg]['nz']
+			sys.exit()
 		
 			if nonNulls < 2:
 				print "e2spt_refinemulti.py has allocated all particles to one average and therefore has failed/converged. EXITING."
@@ -1310,6 +1419,9 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
 	path = options.path
 	weights = {}
+	
+	ptcl_file = options.raw
+
 	'''	
 	writeali = 0
 	aliptcls = path + '/aliptcls' + klassid + '.hdf'
@@ -1392,7 +1504,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 			#print "\nThe index of the particle to add is",k[0]
 			#print "\nAnd this its transform", k[1][0]
 			ptclindx = k[0]
-			ptcl = EMData(options.input,ptclindx)
+			ptcl = EMData(ptcl_file,ptclindx)
 		
 			#print "\n\n\n(e2spt_refinemuti.py) in makeAverage, ptcl and its type are",ptcl,type(ptcl)
 		
@@ -1493,7 +1605,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 		#	avg=avg.process('xform.applysym',{'sym':options.symmetry})
 	
 		avg["class_ptcl_idxs"] = included
-		avg["class_ptcl_src"] = options.input
+		avg["class_ptcl_src"] = ptcl_file
 		avg["spt_multiplicity"] = len(included)
 		avg['spt_ptcl_indxs']=included
 	
@@ -1526,13 +1638,19 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 		avg['origin_y']=0
 		avg['origin_z']=0
 	
-	
+		#print "\n(e2spt_refinemulti)(makeAverag) used this ptcl_file, options.raw", ptcl_file, options.raw
+		#print "computed average of size", avg['nx'],avg['ny'],avg['nz']
+		#sys.exit()
+		
 		if ptclsAdded > 0:
 			#avg.write_image(avgsName,klassIndx)
 		
 			return [avg,weights]
 		else:
 			return None,None
+		
+
+
 	else:
 		return None,None
 

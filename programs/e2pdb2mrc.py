@@ -70,12 +70,14 @@ def main():
 	parser.add_argument("--res", "-R", type=float, help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
 	parser.add_argument("--box", "-B", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
 	parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	parser.add_argument("--center", action="store_true", help="Move the atomic center to the center of the box", default=False)
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'")
+	parser.add_argument("--info", action="store_true", help="If this is specified, information on the PDB file is displayed, no conversion is performed.",default=False)
+	#parser.add_argument("--full", action="store_true", help="Apply non-crystallographic symmetry (MTRIXs or BIOMTs) to get full structure.",default=False)
 	parser.add_argument("--quiet",action="store_true",default=False,help="Verbose is the default")
 	parser.add_argument("--model", type=int,default=None, help="Extract only a single numbered model from a multi-model PDB")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	
 	parser.add_argument("--quick", action="store_true", help="Use a slight approximation to the Gaussian during insertion. Does not support B-factors.",default=False)
 	parser.add_argument("--addpdbbfactor", action="store_true", help="Use the bfactor/temperature factor as the atom blurring radius, equivalent to Gaussian lowpass with 1/e width at 1/bfactor",default=False)
 	
@@ -107,8 +109,13 @@ def main():
 		try : infile=open(args[0],"r")
 		except : raise IOError("%s is an invalid file name" %file_name)
 	
-	
-		#if res<=apix : print "Warning: res<=apix. Generally res should be 2x apix or more"
+		if options.apix > options.res:
+			print("The specified --apix must be <= the specified --res. Generally, res should be >= 2*apix.")
+			sys.exit(1)
+
+		#if options.solvate and (options.apix > 1.0 or options.res > 2.5):
+			#print("For solvation to work properly, --apix must be <=1.0 and --res must be <=2.5.")
+			#sys.exit(1)
 
 		aavg=[0,0,0]	# calculate atomic center
 		amin=[1.0e20,1.0e20,1.0e20]		# coords of lower left front corner of bounding box
@@ -120,6 +127,15 @@ def main():
 
 	# parse the pdb file and pull out relevant atoms
 		stm=False
+		
+		ihelix = 0
+		isheet = 0
+		ires = 0
+		lastres = ""
+
+		#if options.full:
+		#	tfs = []
+
 		for line in infile:
 			if options.model!=None:
 				if line[:5]=="MODEL":
@@ -127,9 +143,28 @@ def main():
 				if stm and line[:6]=="ENDMDL" : break
 				if not stm: continue
 
-			if (line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het)) :
+		#	if options.full:
+		#		if line[:5] == "MTRIX" or line[:18] == "REMARK 350   BIOMT":
+		#			_,_,_,rx,ry,rz,trans = line.strip().split()
+		#			tf = Transform()
+		#			tf.set_matrix([rx,0,0,0,0,ry,0,0,0,0,rz,0])
+		#			tf.set_trans(trans)
+		#			tfs.append(tf)
+
+			if line[:5] =="HELIX":
+				ihelix += int(line[72:77])
+				
+			elif line[:5]=="SHEET":
+				isheet += abs(int(line[22:26])-int(line[33:37]))+1
+
+			elif (line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het)) :
+				
+				if lastres != line[17:21]:
+					ires += 1
+					lres = line[17:21]
+
 				if chains and not (line[21] in chains) : continue
-			
+
 				try:
 					aseq=int(line[6:11].strip())
 				except:
@@ -172,24 +207,35 @@ def main():
 					#mass+=atomdefs[a.upper()][1]
 				except:
 					print("Unknown atom %s ignored at %d"%(a,aseq))
-							
+		
 		infile.close()
 		
 		print "%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,mass/1000)
-		print "atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm)
+		print "Atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm)
 		print "Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0])
 		print "              y: %7.2f - %7.2f"%(amin[1],amax[1])
 		print "              z: %7.2f - %7.2f"%(amin[2],amax[2])
+		print("Helix (%): {}".format(100*(ihelix/ires)))
+		print("Sheet (%): {}".format(100*(isheet/ires)))
 	
+		if options.info: sys.exit(1)
+
 		#print "boxsize=", boxsize
 		try:
 			boxsize=boxsizeinput
 		except:
 			boxsize=max([(amax[0]-amin[0]),(amax[1]-amin[1]),(amax[2]-amin[2])])
 			boxsize=int(1.9*boxsize+(2.0*options.res/options.apix))
-		 
+
 		pa=PointArray()
 		pa.read_from_pdb(args[0])
+		if options.center:
+			pa.center_to_zero()
+		#if options.full:
+		#	for tf in tfs:
+		#		new_pa = pa.rotate(tf) + PointArray(tf.get_trans())
+		#		out = pa.pdb2mrc_by_summation(boxsize,options.apix,options.res,addpdbbfactor)
+		#else:
 		out=pa.pdb2mrc_by_summation(boxsize,options.apix,options.res,addpdbbfactor)
 		out.write_image(args[1])
 		
@@ -197,13 +243,14 @@ def main():
 
 	else:
 		if options.addpdbbfactor : print "WARNING: B-factors not supported in quick mode"
-		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.model,options.quiet)
+		#if options.full : print "WARNING: --full not supported in quick mode"
+		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.model,options.center,options.quiet)
 		outmap.write_image(args[1])
 
 	E2end(logger)
 						
 # this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)
-def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=None,quiet=False):
+def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=None,center=False,quiet=False):
 	'''
 	file_name is the name of a pdb file
 	apix is the angstrom per pixel
@@ -344,7 +391,8 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 			elec=atomdefs[a[0].translate(None,"0123456789").upper()][0]
 # This was producing different results than the "quick" mode, and did not match the statement printed above!!!
 #			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
-			outmap.insert_scaled_sum(gaus,(a[1]/apix+outbox[0]/2,a[2]/apix+outbox[1]/2,a[3]/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
+			if center: outmap.insert_scaled_sum(gaus,((a[1]-aavg[0])/apix+outbox[0]/2,(a[2]-aavg[1])/apix+outbox[1]/2,(a[3]-aavg[2])/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
+			else: outmap.insert_scaled_sum(gaus,(a[1]/apix+outbox[0]/2,a[2]/apix+outbox[1]/2,a[3]/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
 		except: print "Skipping %d '%s'"%(i,a[0])		
 	if not quiet: print '\r   %d\nConversion complete'%len(atoms)		
 	outmap.set_attr("apix_x",apix)

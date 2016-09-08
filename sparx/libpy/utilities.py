@@ -1820,11 +1820,13 @@ def write_text_row(data, file_name):
 			for j in xrange(len(data[i])):
 				tpt = data[i][j]
 				qtp = type(tpt)
-				if qtp == types.IntType:			outf.write("  %12d"%tpt)
+				if qtp == types.IntType:		outf.write("  %12d"%tpt)
 				elif qtp == types.FloatType:
-					if( float(int(tpt)) == tpt ):	outf.write("  %12.5e"%tpt)
-					else:							outf.write("  %12.5g"%tpt)
-				else:                   			outf.write("  %s"%tpt)
+					s = "%f"%tpt
+					ls = s.index(".")
+					if( ls<6 ):					outf.write("  %12.5f"%tpt)
+					else:						outf.write("  %12.5e"%tpt)
+				else:                   		outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
@@ -1833,9 +1835,10 @@ def write_text_row(data, file_name):
 			qtp = type(tpt)
 			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
 			elif qtp == types.FloatType:
-				if( float(int(tpt)) == tpt ):	outf.write("  %12.5e\n"%tpt)
-				else:							outf.write("  %12.5g\n"%tpt)
-			elif qtp == types.IntType :  		outf.write("  %12.5g\n"%tpt)
+				s = "%f"%tpt
+				ls = s.index(".")
+				if( ls<6 ):						outf.write("  %12.5f\n"%tpt)
+				else:							outf.write("  %12.5e\n"%tpt)
 			else:								outf.write("  %s\n"%tpt)
 	outf.flush()
 	outf.close()
@@ -1898,11 +1901,13 @@ def write_text_file(data, file_name):
 			for j in xrange(len(data)):
 				tpt = data[j][i]
 				qtp = type(tpt)
-				if qtp == types.IntType:		outf.write("  %12d"%tpt)
+				if qtp == types.IntType:			outf.write("  %12d"%tpt)
 				elif qtp == types.FloatType:
-					if( float(int(tpt)) == tpt ):	outf.write("  %12.5e"%tpt)
-					else:							outf.write("  %12.5g"%tpt)
-				else:                   		outf.write("  %s"%tpt)
+					s = "%f"%tpt
+					ls = s.index(".")
+					if( ls<6 ):						outf.write("  %12.5f"%tpt)
+					else:							outf.write("  %12.5e"%tpt)
+				else:                   			outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
@@ -1911,9 +1916,10 @@ def write_text_file(data, file_name):
 			qtp = type(tpt)
 			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
 			elif qtp == types.FloatType:
-				if( float(int(tpt)) == tpt ):	outf.write("  %12.5e\n"%tpt)
-				else:							outf.write("  %12.5g\n"%tpt)
-			elif qtp == types.IntType :			outf.write("  %12.5g\n"%tpt)
+				s = "%f"%tpt
+				ls = s.index(".")
+				if( ls<6 ):						outf.write("  %12.5f\n"%tpt)
+				else:							outf.write("  %12.5e\n"%tpt)
 			else:                   			outf.write("  %s\n"%tpt)
 	outf.close()
 
@@ -5154,7 +5160,7 @@ def rearrange_ranks_of_processors(mode):
 	
 	return original_mpi_comm_world
 
-def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters_from_groups_vs_everything_else_comm):
+def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters_from_groups_vs_everything_else_comm):
 	"""
 	It is assumed that this code or equivalent is ran before calling this function
 
@@ -5194,16 +5200,22 @@ def calculate_color_and_number_of_groups_for_shared_memory_split(main_node, mpi_
 
 	for i in range(number_of_groups):
 		if my_rank in group_infos[2*i+1]:
-			color = group_infos[2*i]
+			color = i#group_infos[2*i]
 			break
 
-	return color, number_of_groups
+	number_of_processes_in_each_group = []
+	for i in range(number_of_groups):
+		number_of_processes_in_each_group.append(len(group_infos[2*i+1]))
+
+	balanced_processor_load_on_nodes = len(set(number_of_processes_in_each_group)) == 1 
+
+	return color, number_of_groups, balanced_processor_load_on_nodes 
 
 
 def wrap_mpi_split_shared_memory(mpi_comm):
 	import socket
 	import os
-	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split_shared, mpi_comm_split
+	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split
 
 	hostname = socket.gethostname()
 
@@ -5255,7 +5267,7 @@ def wrap_mpi_split(comm, no_of_groups):
 	Consecutive global process ids have consecutive subgroup process ids.
 
 	"""
-	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split, mpi_comm_split_shared
+	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split
 	nproc = mpi_comm_size(comm)
 	myid = mpi_comm_rank(comm)
 
@@ -5307,9 +5319,10 @@ def combinations_of_n_taken_by_k(n, k):
 
 def cmdexecute(cmd, printing_on_success = True):
 	from   time import localtime, strftime
-	import os #subprocess
-	outcome = os.system(cmd)
+	import subprocess
+	import os
 	#outcome = subprocess.call(cmd, shell=True)
+	outcome = os.system(cmd)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(outcome != 0):
 		print  line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome

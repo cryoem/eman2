@@ -71,7 +71,6 @@ struct EMAN_Averager_Wrapper: EMAN::Averager
     }
     
     void default_add_image(EMAN::EMData* p0) {
-		GILRelease rel;					// This method is not strictly threadsafe, but collisions should be rare
         EMAN::Averager::add_image(p0);
     }
 
@@ -114,6 +113,12 @@ struct EMAN_Averager_Wrapper: EMAN::Averager
     PyObject* py_self;
 };
 
+void averager_add_image_wrapper(EMAN::Averager &ths, EMAN::EMData *img) {
+	GILRelease rel;
+	
+	ths.add_image(img);
+}
+
 
 }// namespace
 
@@ -123,7 +128,8 @@ BOOST_PYTHON_MODULE(libpyAverager2)
 {
     class_< EMAN::Averager, boost::noncopyable, EMAN_Averager_Wrapper >("__Averager", init<  >())
 //        .def("add_image", pure_virtual(&EMAN::Averager::add_image))
-        .def("add_image",&EMAN::Averager::add_image, &EMAN_Averager_Wrapper::default_add_image)
+        .def("add_image",&averager_add_image_wrapper)
+//        .def("add_image",&EMAN::Averager::add_image, &EMAN_Averager_Wrapper::default_add_image)
         .def("add_image_list", &EMAN::Averager::add_image_list, &EMAN_Averager_Wrapper::default_add_image_list)
 		.def("mult", &EMAN::Averager::mult)
         .def("finish", pure_virtual(&EMAN::Averager::finish), return_value_policy< manage_new_object >())

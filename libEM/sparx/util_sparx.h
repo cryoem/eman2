@@ -536,6 +536,8 @@ class FakeKaiserBessel : public KaiserBessel {
 
 	/** This function conducts the Single Precision Fourier Transform for a set of rings */
 	static void  Frngs(EMData* circ, vector<int> numr);
+
+	static float polar_norm2(EMData* ring, const vector<int>& numr);
 	static void  Normalize_ring(EMData* ring, const vector<int>& numr);
 
 	/** This function conducts the Single Precision Inverse Fourier Transform for a set of rings */
@@ -1238,6 +1240,7 @@ static inline double bessi0(double x);
 static double  kfv(double w, double a, double alpha, int m);
 static void euler_direction2angles(vector<float>v, float &alpha, float &beta);
 static void  iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
+static void  iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
 
 
 #endif	//util__sparx_h__

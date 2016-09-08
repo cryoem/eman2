@@ -782,33 +782,51 @@ void WedgeFillProcessor::process_inplace(EMData * image)
 	if (!image) throw InvalidParameterException("WedgeFillProcessor: no image provided");
 	if (!image->is_complex()) throw ImageFormatException("WedgeFillProcessor: target image must be complex");
 
-	EMData *source=params["fillsource"];
-	if (!source) throw InvalidParameterException("WedgeFillProcessor: fillsource required");
+	EMData *source=(EMData *)params.set_default("fillsource",(EMData *)NULL);
+//	if (!source) throw InvalidParameterException("WedgeFillProcessor: fillsource required");
 
-	if (!source->is_complex()) throw ImageFormatException("WedgeFillProcessor: fillsource must be complex");
+	if (source && !source->is_complex()) throw ImageFormatException("WedgeFillProcessor: fillsource must be complex");
 
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
+	float thresh_sigma = (float)params.set_default("thresh_sigma", 0.5);
+	bool dosigma = 1 ? thresh_sigma>0.0 : 0;
+	
+	float maxtilt = (float)params.set_default("maxtilt", 90.0);
+	bool dotilt = 1 ? maxtilt <90.0 : 0;
+	maxtilt*=M_PI/180.0;
 
 	vector<float> sigmaimg;
-	sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
-	for (int i=0; i<nx/2; i++) sigmaimg[i]*=.1;			// anything less than 1/10 sigma is considered to be missing
-
+	if (dosigma) {
+		sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
+		for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*thresh_sigma;			// anything less than 1/10 sigma is considered to be missing
+	}
+		
 	for (int z=0; z<nz; z++) {
 		for (int y=0; y<ny; y++) {
 			for (int x=0; x<nx; x+=2) {
-				float r2=Util::hypot3sq(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
-				int r=int(sqrtf(r2));
+				float r2=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+				int r=int(r2);
 				if (r<3) continue;		// too few points at r<3 to consider any "missing"
+				
+				float tilt = 0.0;
+				if (dotilt) tilt=atan2((float)(z<nz/2?z:nz-z),(float)(x/2));
 
 				float v1r=image->get_value_at(x,y,z);
 				float v1i=image->get_value_at(x+1,y,z);
 				float v1=Util::square_sum(v1r,v1i);
-				if (v1<sigmaimg[r]) continue;
+//				if (r<10) printf("%d %d %d %d\t%1.3g %1.3g\n",x,y,z,r,v1,sigmaimg[r]);
+				if ((!dosigma || v1>sigmaimg[r]) && r<nx/2 && (!dotilt || fabs(tilt)<maxtilt)) continue;
 
-				image->set_value_at_fast(x,y,z,source->get_value_at(x,y,z));
-				image->set_value_at_fast(x+1,y,z,source->get_value_at(x+1,y,z));
+				if (!source) {
+					image->set_value_at_fast(x,y,z,0);
+					image->set_value_at_fast(x+1,y,z,0);
+				}
+				else {
+					image->set_value_at_fast(x,y,z,source->get_value_at(x,y,z));
+					image->set_value_at_fast(x+1,y,z,source->get_value_at(x+1,y,z));
+				}
 			}
 		}
 	}
@@ -1252,7 +1270,11 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
 //	int nxy=nx*ny;
-
+// 	image->process_inplace("threshold.belowtozero");
+	if (thr==-1.0e30f){
+		thr=float(image->get_attr("mean_nonzero"))+ 1.0 *float(image->get_attr("sigma_nonzero"));
+		printf("Estimated map threshold: %4f\n", thr);
+	}
 	// seed
 	vector<float> centers(nseg*3);
 	vector<float> count(nseg);
@@ -1262,62 +1284,56 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 		sep/=ax;
 		if (verbose) printf("Seeding .....\n");
 		int sx=int(nx/sep)+1,sy=int(ny/sep)+1,sz=int(nz/sep)+1;
-		for(int setthr=0; setthr<10; setthr++){
-			EMData m(sx,sy,sz);
-			EMData mcount(sx,sy,sz);
-			for (int i=0; i<nx; i++){
-				for (int j=0; j<ny; j++){
-					for (int k=0; k<nz; k++){
-						int ni=(i/sep),nj=(j/sep),nk=(k/sep);
-						float v=image->get_value_at(i,j,k);
-						if (v>thr){
-							m.set_value_at(ni,nj,nk,(m.get_value_at(ni,nj,nk)+v));
-							mcount.set_value_at(ni,nj,nk,(mcount.get_value_at(ni,nj,nk)+1));
-						}
+		EMData m(sx,sy,sz);
+		EMData mcount(sx,sy,sz);
+		for (int i=0; i<nx; i++){
+			for (int j=0; j<ny; j++){
+				for (int k=0; k<nz; k++){
+					int ni=(i/sep),nj=(j/sep),nk=(k/sep);
+					float v=image->get_value_at(i,j,k);
+					if (v>thr){
+						m.set_value_at(ni,nj,nk,(m.get_value_at(ni,nj,nk)+v));
+						mcount.set_value_at(ni,nj,nk,(mcount.get_value_at(ni,nj,nk)+1));
 					}
 				}
 			}
-			m.div((nx/sx)*(ny/sy)*(nz/sz));
-			int nsum=0;
-			float l=image->get_attr("minimum"),r=image->get_attr("maximum"),th=0;
-			while (abs(nsum-nseg)>0){
-				th=(l+r)/2;
-				nsum=0;
-				for (int i=0; i<sx; i++){
-					for (int j=0; j<sy; j++){
-						for (int k=0; k<sz; k++){
-							if (m.get_value_at(i,j,k)>th)  nsum+=1;
-						}
-					}
-				}
-				if (verbose) printf("%3f\t %3f\t %3f,\t %4d\t %4d\n", l,th,r,nsum,nseg);
-				if (nsum>nseg) l=th;
-				if (nsum<nseg) r=th;
-				if ((r-l)<.01) break;
-			}
-	//		nseg=nsum;
-			int q=0;
+		}
+		m.div((nx/sx)*(ny/sy)*(nz/sz));
+		int nsum=0;
+		float l=image->get_attr("minimum"),r=image->get_attr("maximum"),th=0;
+		while (abs(nsum-nseg)>0){
+			th=(l+r)/2;
+			nsum=0;
 			for (int i=0; i<sx; i++){
 				for (int j=0; j<sy; j++){
 					for (int k=0; k<sz; k++){
-						if (m.get_value_at(i,j,k)>th){
-							if(q<nseg*3){
-								centers[q]=	 float(i+.5)*sep;
-								centers[q+1]=float(j+.5)*sep;
-								centers[q+2]=float(k+.5)*sep;
-								q+=3;
-							}
+						if (m.get_value_at(i,j,k)>th)  nsum+=1;
+					}
+				}
+			}
+// 			if (verbose) printf("%3f\t %3f\t %3f,\t %4d\t %4d\n", l,th,r,nsum,nseg);
+			if (nsum>nseg) l=th;
+			if (nsum<nseg) r=th;
+			if ((r-l)<.0001)break;
+		}
+//		nseg=nsum;
+		if (verbose) printf("%3d pseudoatoms seeded at threshold value %3f\n", nsum, th);
+		int q=0;
+		for (int i=0; i<sx; i++){
+			for (int j=0; j<sy; j++){
+				for (int k=0; k<sz; k++){
+					if (m.get_value_at(i,j,k)>th){
+						if(q<nseg*3){
+							centers[q]=	 float(i+.5)*sep;
+							centers[q+1]=float(j+.5)*sep;
+							centers[q+2]=float(k+.5)*sep;
+							q+=3;
 						}
 					}
 				}
 			}
-			if (thr==-1.0e30f){
-				printf("Estimated map threshold: %4f\n", th);
-				thr=th;
-			}
-			else
-				break;
 		}
+		
 	}
 	// Default: random seeding.
 	else{

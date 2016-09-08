@@ -38,7 +38,7 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage:\nproclst.py [options] <lst 1> <lst 2> ... \nSimple manipulations of LST files. If your goal is to produce an actual image file rather than the
-sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py instead. Those programs will treat LST files as normal image files for input.\n."""
+sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py instead. Those other programs will treat LST files as normal image files for input.\n."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
@@ -47,6 +47,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--range",type=str,help="Range of particles to use. Works only with create option. Input of 0,10,2 means range(0,10, step=2).",default=None)
 	parser.add_argument("--create",type=str,help="Input files should be image files. Specify an .lst file to create here with references to all of the images in the inputs.")
 	parser.add_argument("--mergesort",type=str,help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output",default=None)
+	parser.add_argument("--numaslist",type=str,help="Extract the particle numbers only in a list file (one number per line)",default=None)
+	parser.add_argument("--dereforig",type=str,help="Extract the source_orig_path and _n parameters from each image in the file and create a new .lst file referencing the original image(s)",default=None)
 	parser.add_argument("--retype",type=str,help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)",default=None)
 	parser.add_argument("--minlosnr",type=float,help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=0)
 	parser.add_argument("--minhisnr",type=float,help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=1)
@@ -62,6 +64,22 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	logid=E2init(sys.argv,options.ppid)
 
+	if options.numaslist != None:
+		out=file(options.numaslist,"w")
+		
+		for f in args:
+			lst=LSXFile(f,True)
+			for i in xrange(len(lst)):
+				out.write("{}\n".format(lst[i][0]))
+
+	if options.dereforig :
+		newlst=LSXFile(options.dereforig)
+
+		for f in args:
+			n=EMUtil.get_image_count(f)
+			for i in xrange(n):
+				im=EMData(f,i,True)
+				newlst.write(-1,im["source_orig_n"],im["source_orig_path"])
 
 	if options.create != None:
 		lst=LSXFile(options.create,False)

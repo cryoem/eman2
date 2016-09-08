@@ -107,7 +107,7 @@ def main():
 	
 	parser.add_argument("--cmp",type=str,help="""The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized""", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2)
 	
-	parser.add_argument("--parallel","-P",type=str,help="""Run in parallel, specify type:<option>=<value>:<option>:<value>""",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--parallel","-P",type=str,default='thread:1',help="""Default=thread:1. Run in parallel, specify type:<option>=<value>:<option>:<value>""", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
 	
 	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, used for cross platform PPID.""",default=-1)
 
@@ -345,8 +345,6 @@ def main():
 		
 		if options.parallel :
 			etc=EMTaskCustomer(options.parallel)
-		else:
-			etc=EMTaskCustomer("thread:1")
 		
 		symalgorithm = SymALignStrategy( preprocvol, options.sym, options.steps, options.cmp, etc)
 		ret = symalgorithm.execute()

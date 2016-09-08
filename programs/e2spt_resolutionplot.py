@@ -362,17 +362,19 @@ def getfscs(options,apix):
 		ptcl = EMData( fyle ,i)
 		fscfilename = options.path + '/' + output.replace('.txt','_' + str(i).zfill(len(str(n))) + '.txt')
 		
+		if options.mask:
+			ptcl.mult(mask)
+
 		if sym:
-			ptclsym = symmetrize(ptcl,options) 
+			#ptclsym = symmetrize(ptcl,options) 
+			ptclsym = ptcl.process('xform.applysym',{'sym':sym})
 			
 			#fscfilename = options.output.replace('.txt','_' + str(i).zfill(len(str(n))) + '_' + options.sym + '.txt')
 			fscfilenamesym = fscfilename.replace('.txt', '_' + sym + '.txt')
 			
-			if options.mask:
-				ptcl.mult(mask)
+			#if options.mask:
+			#	ptclsym.mult(mask)
 
-				if sym:
-					ptclsym.mult(mask)
 
 		if options.preproc:
 			ptcl.process_inplace(options.preproc[0],options.preproc[1])

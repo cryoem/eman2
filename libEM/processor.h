@@ -4948,7 +4948,9 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("fillsource", EMObject::EMDATA, "The image from which to draw the missing values");
+			d.put("fillsource", EMObject::EMDATA, "The image from which to draw the missing values. If omitted, will fill wedge with zero.");
+			d.put("thresh_sigma", EMObject::FLOAT, "Multiplied by the standard deviation in each Fourier shell as a threshold for identifying 'missing' data.");
+			d.put("maxtilt", EMObject::FLOAT, "Assumes Y is exact tilt axis, with 0 tilt in X-Y. Symmetrically fills region beyond +-maxtilt in degrees. Default=disabled");
 			return d;
 		}
 
@@ -7153,6 +7155,7 @@ correction is not possible, this will allow you to approximate the correction to
 			TypeDict d;
 			d.put("thr", EMObject::FLOAT, "Minimum density to consider for extraction");
 			d.put("sym", EMObject::FLOAT, "Symmetry");
+			d.put("seed", EMObject::EMDATA, "An (optional) single level mask volume to use as a seed after symmetrizing");
 			return d;
 		}
 

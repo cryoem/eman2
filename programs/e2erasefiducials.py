@@ -31,10 +31,11 @@
 
 from EMAN2 import *
 import numpy as np
-from scipy import ndimage
+try: from scipy import ndimage
+except: ndimage=None
 import subprocess
 import os
-
+import time
 from EMAN2jsondb import JSTask,jsonclasses
 
 def main():
@@ -47,6 +48,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	#parser.add_argument("--average", default=False, action="store_true", help="Erase gold from average of input stack(s).")
+	parser.add_argument("--apix", default=None, type=float, help="Override Apix in image header.")
 	parser.add_argument("--lowpass", default=False, action="store_true", help="Also lowpass filter noise based on local properties. Useful for processing tomographic tilt series.")
 	parser.add_argument("--keepdust", default=False, action="store_true", help="Do not remove 'dust' from mask (include objects smaller than gold fiducials).")
 	parser.add_argument("--goldsize", default=30, type=float, help="Diameter (in pixels) of gold fiducials to erase.")
@@ -66,24 +68,28 @@ def main():
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
 
-	for arg in args:
+	for argnum,arg in enumerate(args):
+
+		t0 = time.time()
+
 		newarg=''
 		originalarg = arg
 
 		hdr = EMData(arg,0,True) #load header only to get parameters used below
-		apix = hdr['apix_x']
+		if options.apix: apix = options.apix
+		else: apix = hdr['apix_x']
 		nx=hdr['nx']
 		ny=hdr['ny']
 
 		if '.ali' == arg[-4:] or '.mrc' == arg[-4:]:
-			
-			#Unfortunately, e2proc2d.py appends to existing files instead of overwriting them. If you run this program two consecutive times and the first one failed for whatever reason, 
+
+			#Unfortunately, e2proc2d.py appends to existing files instead of overwriting them. If you run this program two consecutive times and the first one failed for whatever reason,
 			#you'll find your stack growing.
 			#To prevent this, we create a 'dummy' file, but first remove any dummy files from previous failed runs. (If the program runs successfully to the end, the dummy file gets renamed).
 			try: os.remove('dummy_stack.hdf')
 			except: pass
 
-			#turn .ali or .mrc 3D images into a stack of 2D images that can be processed by this program. 
+			#turn .ali or .mrc 3D images into a stack of 2D images that can be processed by this program.
 			cmd = 'e2proc2d.py ' + arg + ' dummy_stack.hdf --threed2twod'
 			runcmd(options,cmd)
 
@@ -92,51 +98,10 @@ def main():
 			os.rename('dummy_stack.hdf',newarg)
 			arg = newarg
 
-		#if options.verbose: print("processing {} ({} images)".format(arg, EMUtil.get_image_count(arg)))
-		
-		#Averaging can be outsorced to e2proc2d via the command line, and the average can be read in as the new input
-		#if options.average:
-			
-		#	newarg = arg.replace('.hdf','_avg.hdf')
-		#	cmdavg = 'e2proc2d.py ' + arg + ' ' + newarg + ' --average'
-		#	if ds > 1.0:
-		#		cmdavg += ' --process math.fft.resample:n=' + str(ds)
-		#	cmdavg += ' --process normalize'
-		#	runcmd(options,cmdavg)
-		#	arg = newarg
-
-		#The code to operate on frame averages seems to be the same as that to operate on single images; no need for redundancy.
-		'''
-			avgr = Averagers.get("mean")
-			for i in range(EMUtil.get_image_count(fn)):
-				f = EMData(fn,i) * -1
-				if ds > 1.0: f.process_inplace("math.fft.resample",{"n":ds})
-				avgr.add_image(f)
-			img = avgr.finish()
-			img.process_inplace("normalize")
-
-			sharp_msk, soft_msk = generate_masks(options,img)
-			mskd_sharp = sharp_msk*img
-			sub_sharp = img-mskd_sharp
-			noise = local_noise(options,sub_sharp)
-
-			if options.debug: noise.write_image("{}_noise.hdf".format(arg))
-
-			mskd_soft = soft_msk*img
-			sub_soft = img-mskd_soft
-			result = sub_soft + noise * soft_msk
-			result *= -1
-
-			print("Writing result to {}".format(outf))
-
-			result.write_image(outf,0)
-			avg.write_image("{}_compare.hdf".format(arg),0)
-			result.write_image("{}_compare.hdf".format(arg),1)
-		'''
-		#else:
-		#ctr = 0
-
 		outf = "{}_proc.hdf".format( os.path.splitext(arg)[0] )
+		if os.path.isfile(outf):
+			print("Results are already stored in {}. Please erase or move and try again.".format(outf))
+			sys.exit(1)
 
 		nfs = EMUtil.get_image_count(arg)
 
@@ -144,7 +109,7 @@ def main():
 		results=[]
 		results=None
 
-		#parallelized tasks don't run "in order"; therefore, a dummy stack needs to be pre-created with as many images as the final stack will have 
+		#parallelized tasks don't run "in order"; therefore, a dummy stack needs to be pre-created with as many images as the final stack will have
 		#(otherwise, writing output images to stack indexes randomly makes the program crash or produces garbage output)
 		dummy=EMData(8,8)
 		dummy.to_one()
@@ -163,20 +128,22 @@ def main():
 		dummy.write_image(outf,0)
 
 		for i in range(nfs):
-			if options.verbose: print "processing image {}/{}".format(i,nfs)
-			
+			if options.verbose:
+				sys.stdout.write("\rstaging images ({}/{})".format(i+1,nfs))
+				sys.stdout.flush()
+
 			if options.parallel:
-				print "parallelism started"
+				#print "parallelism started"
 				task = EraseGold2DTask( options, arg, i, outf)
 				tasks.append(task)
 			else:
 				results=fiximage( options, arg, i, outf)
 
-		if options.parallel:	
+		if options.parallel:
 			if tasks:
 				tids = etc.send_tasks(tasks)
-				if options.verbose: 
-					print "\n(erase_gold)(main) preprocessing %d tasks queued" % (len(tids)) 
+				if options.verbose:
+					print "\n(erase_gold) %d tasks queued" % (len(tids))
 
 				results = get_results( etc, tids, options )
 
@@ -191,6 +158,11 @@ def main():
 				os.remove(arg)
 
 			if newarg: os.remove(newarg)
+
+		dt = time.time() - t0
+		if options.verbose:
+			print("\n")
+			sys.stdout.write("Erased fiducials from {} ({} minutes)\n".format(arg,round(dt/60.,2)))
 
 
 def fiximage(options,imgfile,imgindx,outf):
@@ -212,7 +184,7 @@ def fiximage(options,imgfile,imgindx,outf):
 	mskd_soft = soft_msk*f
 	sub_soft = f-mskd_soft
 
-	if options.debug: 
+	if options.debug:
 		sub_soft.write_image("{}_masked.hdf".format( os.path.splitext(imgfile), imgindx))
 
 	result=sub_soft + noise * soft_msk
@@ -293,7 +265,7 @@ def runcmd(options,cmd):
 def get_results(etc,tids,options):
 	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
 	aside from the use of options["ptcl"] this is fairly generalizable code. """
-	
+
 	# wait for them to finish and get the results
 	# results for each will just be a list of (qual,Transform) pairs
 	results=[0]*len(tids)		# storage for results
@@ -307,21 +279,21 @@ def get_results(etc,tids,options):
 			if prog==-1 : nwait+=1
 			if prog==100 :
 				r=etc.get_results(tidsleft[i])				#Results for a completed task
-				
+
 				if r:
 					#print "r is", r
 					#ptcl=r[0].classoptions["ptclnum"]		#Get the particle number from the task rather than trying to work back to it
 					#results[ptcl] = r[1]
-					results[i] = 1					
+					results[i] = 1
 				ncomplete+=1
-		
+
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
 		if options.verbose:
-			print ("\n%d tasks, %d complete, %d waiting to start \r" % (len(tids),ncomplete,nwait))
+			sys.stdout.write("\r{} tasks\t{} complete\t{} in queue".format(len(tids),ncomplete,nwait))
 			sys.stdout.flush()
-	
+
 		if len(tidsleft)==0: break
-		
+
 	return results
 
 
@@ -329,12 +301,12 @@ class EraseGold2DTask(JSTask):
 	"""This is a task object for the parallelism system."""
 
 	def __init__(self, options, imgfile, imgindx, outf):
-	
+
 		JSTask.__init__(self,"TomoBoxer3d",{},"")
 		self.classoptions={"options":options,"imgfile":imgfile,"imgindx":imgindx,"outf":outf}
-	
+
 	def execute(self,callback=None):
-		
+
 		#print "insdie class EraseGold2DTask"
 		options = self.classoptions['options']
 		#print "options",options
@@ -344,10 +316,58 @@ class EraseGold2DTask(JSTask):
 
 		#print "(EraseGold2DTask) imgindx",imgindx
 		fiximage( options, imgfile, imgindx, outf)
-		
+
 		return
 
 
 
 if __name__ == "__main__":
 	main()
+
+
+
+ # Redundant code. Staged for removal.
+
+ 		#if options.verbose: print("processing {} ({} images)".format(arg, EMUtil.get_image_count(arg)))
+
+		#Averaging can be outsorced to e2proc2d via the command line, and the average can be read in as the new input
+		#if options.average:
+
+		#	newarg = arg.replace('.hdf','_avg.hdf')
+		#	cmdavg = 'e2proc2d.py ' + arg + ' ' + newarg + ' --average'
+		#	if ds > 1.0:
+		#		cmdavg += ' --process math.fft.resample:n=' + str(ds)
+		#	cmdavg += ' --process normalize'
+		#	runcmd(options,cmdavg)
+		#	arg = newarg
+
+		#The code to operate on frame averages seems to be the same as that to operate on single images; no need for redundancy.
+		# '''
+		# 	avgr = Averagers.get("mean")
+		# 	for i in range(EMUtil.get_image_count(fn)):
+		# 		f = EMData(fn,i) * -1
+		# 		if ds > 1.0: f.process_inplace("math.fft.resample",{"n":ds})
+		# 		avgr.add_image(f)
+		# 	img = avgr.finish()
+		# 	img.process_inplace("normalize")
+
+		# 	sharp_msk, soft_msk = generate_masks(options,img)
+		# 	mskd_sharp = sharp_msk*img
+		# 	sub_sharp = img-mskd_sharp
+		# 	noise = local_noise(options,sub_sharp)
+
+		# 	if options.debug: noise.write_image("{}_noise.hdf".format(arg))
+
+		# 	mskd_soft = soft_msk*img
+		# 	sub_soft = img-mskd_soft
+		# 	result = sub_soft + noise * soft_msk
+		# 	result *= -1
+
+		# 	print("Writing result to {}".format(outf))
+
+		# 	result.write_image(outf,0)
+		# 	avg.write_image("{}_compare.hdf".format(arg),0)
+		# 	result.write_image("{}_compare.hdf".format(arg),1)
+		# '''
+		#else:
+		#ctr = 0

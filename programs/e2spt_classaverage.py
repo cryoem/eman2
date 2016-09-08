@@ -454,6 +454,7 @@ def main():
 		
 		print "\ntruth statement", options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess
 		
+		print "\n\n\nPPPPPPP options.input is", options.input
 		ret = cmdpreproc( options.input, options, False )
 		if ret: 
 			preprocdone += 1
@@ -577,13 +578,14 @@ def main():
 			etc=EMTaskCustomer(options.parallel)
 			pclist=[options.input]
 	
-			if options.ref: 
-				pclist.append(options.ref)
+			#if options.ref: 
+			#	pclist.append(options.ref)
 			etc.precache(pclist)
 	else:
 		etc=''
 
 
+	print "\n\n\nCCCC chached this input", options.input
 
 	
 	
@@ -1013,7 +1015,8 @@ def main():
 					
 					ref2use = tmpref.replace('.hdf','_preproc.hdf')
 					ref = preprocfunc( ref, options, 0, ref2use )
-			
+					#ref = preprocfunc( tmpref, options, 0, ref2use )
+
 				if options.falign and 'tree' not in options.align[0]:
 					#ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
 					
@@ -1030,6 +1033,7 @@ def main():
 						
 						ref2usefine = tmpref.replace('.hdf','_preprocfine.hdf')
 						reffine = preprocfunc( ref, options, 0, ref2usefine)
+						#reffine = preprocfunc( tmpref, options, 0, ref2usefine )
 						
 						options.lowpass = origlowpass
 						options.highpass = orighighpass
@@ -1040,6 +1044,7 @@ def main():
 				if options.clip or (options.shrink > 1):
 					ref2use = tmpref.replace('.hdf','_preproc.hdf')
 					ref = preprocfunc( ref, options, 0, ref2use, False, True ) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
+					#ref = preprocfunc( tmpref, options, 0, ref2use, False, True )
 				
 				if options.falign and 'tree' not in options.align[0]:
 					#ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
@@ -1050,6 +1055,7 @@ def main():
 
 						ref2usefine = tmpref.replace('.hdf','_preprocfine.hdf')						
 						reffine = preprocfunc( ref, options, 0, ref2usefine, False, True) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
+						#reffine = preprocfunc( tmpref, options, 0, ref2usefine, False, True )
 						
 						options.shrink = origshrink
 				
@@ -1693,8 +1699,8 @@ def cmdpreproc( fyle, options, finetag=False ):
 	
 	cmdpreproc = 'e2spt_preproc.py --input ' + fyle + ' --nopath'
 	
-	if options.parallel:
-		cmdpreproc += ' --parallel ' + options.parallel
+	#if options.parallel:
+	#	cmdpreproc += ' --parallel ' + options.parallel
 	
 	#if "_preproc.hdf" not in fyle:
 	preprocstack = os.path.basename( fyle ).replace('.hdf','_preproc.hdf')
@@ -1788,10 +1794,16 @@ def cmdpreproc( fyle, options, finetag=False ):
 		input_preproc = options.path + '/' + preprocstack
 		
 		print "\npreprocstack %s will be %s" %(preprocstack, input_preproc)
+
+		import time
+		time.sleep(5)
+
+		print "renaming preprocstack %s to input_preproc %s" %(preprocstack, input_preproc )
+
 		os.rename( preprocstack, input_preproc )
 		options.input = input_preproc
 	else:
-		print ("\n(e2spt_classaverage)(cmdpreproc) preprocessing %s for coarase alignment crashed" %( fyle ) )
+		print "\n(e2spt_classaverage)(cmdpreproc) preprocessing %s crashed" %( fyle ) 
 		sys.exit(1)
 		
 			

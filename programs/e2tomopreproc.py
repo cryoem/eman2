@@ -132,6 +132,9 @@ def main():
 			else:
 				print "\n(e2tomopreproc)(main) ERROR: must provide input files as arguments or via the --input or --tiltseries parameters."
 
+	elif options.input:
+		infiles.append( options.input)
+
 
 	if infiles:
 		print "\n(e2tomopreproc)(main) identified --input", options.input

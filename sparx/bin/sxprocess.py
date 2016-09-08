@@ -927,19 +927,19 @@ def main():
 		print_msg ="--------------------------------------------"
 		#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		log_main.add(print_msg)
-		print_msg=" Sphire postprocess"
+		print_msg="------->>>Sphire postprocess<<<-------"
 		log_main.add(print_msg)
-		from utilities    import get_im
-		from fundamentals import rot_avg_table
-		from morphology   import compute_bfactor,power
-		from statistics   import fsc
-		from filter       import filt_table, filt_gaussinv
-		from EMAN2 import periodogram
+		from utilities    	import get_im, write_text_file, read_text_file
+		from fundamentals 	import rot_avg_table, fft
+		from morphology   	import compute_bfactor,power
+		from statistics   	import fsc, pearson
+		from filter       	import filt_table, filt_gaussinv, filt_tanl
+		from EMAN2 			import periodogram
 		if len(args)<1 or len(args)>2:
-			ERROR(" number of inputs is incorrection", " --postprocess option")
+			ERROR("number of inputs is incorrection", " --postprocess option")
 			exit()
 		if options.pixel_size ==0:
-			ERROR(" Set pixel_size value first! There is no default value for pixel_size", " --postprocess option")
+			ERROR("Set pixel_size value first! There is no default value for pixel_size", " --postprocess option")
 			exit()
 		try:
 			e1   = get_im(args[0],0)
@@ -949,27 +949,21 @@ def main():
 		nx = e1.get_xsize()
 		ny = e1.get_ysize()
 		nz = e1.get_zsize()
-		log_main.add(" The sphire postprocess command:  ")
+		log_main.add("----------->>> shell line command <<<-----------------")
 		line=" "
 		for a in sys.argv:
 			line +=" "+a
 		log_main.add(line)
-		log_main.add(" ---------- Settings given by all options")
-		log_main.add("pixle_size  "+str(options.pixel_size))
-		log_main.add("mask        "+str(options.mask))
-		log_main.add("fsc_adj     "+str(options.fsc_adj))
-		log_main.add("B_enhance   "+str(options.B_enhance))
-		log_main.add("low_pass_filter  "+str(options.low_pass_filter))
-		log_main.add("B_start  "+str(options.B_start))
-		log_main.add("B_stop   "+str(options.B_stop))
-		log_main.add("mtf     "+str(options.mtf))
-		log_main.add("output  "+str(options.output))
-		log_main.add("do_adaptive_mask  "+str(options.do_adaptive_mask))
-		log_main.add("cosine_edge    "+str(options.consine_edge))
-		log_main.add("dilation    "+str(options.dilation))
-		#log_main.add("randomphasesafter    "+str(options.randomphasesafter))
-		log_main.add("-----------")
-		if e1.get_zsize() == 1:  # 2D case
+		if e1.get_zsize() == 1:  # 2D case	
+			log_main.add("-------->>>Settings given by all options<<<-------")
+			log_main.add("pixle_size  		:"+str(options.pixel_size))
+			log_main.add("mask        		:"+str(options.mask))
+			log_main.add("B_enhance   		:"+str(options.B_enhance))
+			log_main.add("low_pass_filter  	:"+str(options.low_pass_filter))
+			log_main.add("B_start  		:"+str(options.B_start))
+			log_main.add("B_stop   		:"+str(options.B_stop))
+			#log_main.add("randomphasesafter    "+str(options.randomphasesafter))
+			log_main.add("------------>>>processing<<<-----------------------")		
 			log_main.add("2-D postprocess for ISAC averaged images")
 			nimage = EMUtil.get_image_count(args[0])
 			if options.mask !=None:
@@ -977,7 +971,7 @@ def main():
 					m = get_im(options.mask)
 					log_main.add("user provided mask is %s"%options.mask)
 				except:
-					ERROR(" mask image %s does not exists"%options.mask, " --postprocess for 2-D")
+					ERROR("mask image %s does not exists"%options.mask, " --postprocess for 2-D")
 					exit()
 			else:
 				m = None
@@ -996,7 +990,7 @@ def main():
 					log_main.add("B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(options.B_start, 2*options.pixel_size))
 					b,junk,ifreqmin, ifreqmax =compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = b*4
-					log_main.add( "the estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
+					log_main.add( "The estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
 				else:
 					global_b = option.B_enhance
 					log_main.add( "User provided B_factor is %f"%global_b)
@@ -1004,28 +998,42 @@ def main():
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.low_pass_filter>0.0 and options.low_pass_filte<0.5:
 					log_main.add("low-pass filter ff %   aa  %f"%(options.low_pass_filter, options.aa))
-					from filter import filt_tanl
 					e1 =filt_tanl(e1,options.low_pass_filter, options.aa)
 				elif options.low_pass_filte>0.5:
 					e1 =filt_tanl(e1,options.low_pass_filter/option.pixel_size, options.aa)
 				e1.write_image(options.output)
 		else:   # 3D case
+			log_main.add("-------->>>Settings given by all options<<<-------")
+			log_main.add("pixle_size  		:"+str(options.pixel_size))
+			log_main.add("mask        		:"+str(options.mask))
+			log_main.add("fsc_adj     		:"+str(options.fsc_adj))
+			log_main.add("B_enhance   		:"+str(options.B_enhance))
+			log_main.add("low_pass_filter  	:"+str(options.low_pass_filter))
+			log_main.add("B_start  		:"+str(options.B_start))
+			log_main.add("B_stop   		:"+str(options.B_stop))
+			log_main.add("mtf     			:"+str(options.mtf))
+			log_main.add("output  			:"+str(options.output))
+			log_main.add("do_adaptive_mask  	:"+str(options.do_adaptive_mask))
+			log_main.add("cosine_edge    		:"+str(options.consine_edge))
+			log_main.add("dilation    		:"+str(options.dilation))
+			#log_main.add("randomphasesafter    "+str(options.randomphasesafter))
+			log_main.add("------------->>>processing<<<-----------------------")		
 			log_main.add( "3-D refinement postprocess ")
 			nargs     = len(args)
 			if nargs >=3:
-				ERROR(" Too many inputs!", "--postprocess option for 3-D")
+				ERROR("Too many inputs!", "--postprocess option for 3-D")
 			log_main.add("The first input volume: %s"%args[0])
 			try: 
 				map1    = get_im(args[0])
 			except:
-				ERROR(" Sphire postprocess fails to read the first map "+args[0], "--postprocess option for 3-D")
+				ERROR("Sphire postprocess fails to read the first map "+args[0], "--postprocess option for 3-D")
 				exit()
 			if nargs >1:
 				log_main.add("The second input volume: %s"%args[1])
 				try:
 					map2  = get_im(args[1])
 				except:
-					ERROR(" fail to read the second map "+args[1], "--postprocess option for 3-D")
+					ERROR("Sphire postprocess fails to read the second map "+args[1], "--postprocess option for 3-D")
 					exit()
 				if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
 					ERROR(" Two input maps have different image size", "--postprocess option for 3-D")
@@ -1045,68 +1053,33 @@ def main():
 				if nargs >1 :
 					map1 +=map2
 					map1 /=2.
+				log_main.add("starts creating surface mask, and wait...")
 				m = Util.surface_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
 				m.write_image("vol_adaptive_mask.hdf")
 				map1 = get_im(args[0]) # re-read map1
 			else:
 				m = None
-				log_main.add(" No mask is applied ")
+				log_main.add("No mask is applied")
 			## prepare FSC
 			from math import sqrt
 			resolution_FSC143   	= 0.5 # for single volume, this is the default resolution
 			resolution_FSChalf  	= 0.5
 			frc_without_mask    	= None
 			frc_with_mask       	= None
-			frc_with_random_phases 	= None 
 			if nargs >1: 
 				frc_without_mask 		= fsc(map1, map2,1)
 				if m: 
 					frc_with_mask     = fsc(map1*m, map2*m,1)
-					"""
-					# determine random_phase_cutoff_pixel
-					random_phase_cutoff_pixel =-1
-					for ifreq in xrange(1,len(frc_without_mask[1])):
-						if frc_without_mask[1][ifreq] < options.randomphasesafter: 
-							random_phase_cutoff_pixel = ifreq
-							break
-					print("random phase %f  %d"%(options.randomphasesafter,random_phase_cutoff_pixel))
-					from fundamentals import fft
-					if random_phase_cutoff_pixel >0:
-						map1 = Util.randomizedphasesafter(fft(map1),60)
-						map2 = Util.randomizedphasesafter(fft(map2),60)
-						map1 = fft(map1)*m
-						map2 = fft(map2)*m
-						frc_random_phase_masked = fsc(map1, map2,1)
-						from utilities import write_text_file
-						write_text_file(frc_random_phase_masked, "fsc_random_phase.txt")
-						write_text_file(frc_with_mask, "fsc_with_mask.txt")
-						write_text_file(frc_without_mask, "fsc_without_mask.txt")
-					else:
-						ERROR(" negative random phase cutoff pixel ", "random phase ", 1)
-						#outfrc = [ frc_with_mask[1]]
-						for ifreq in xrange(len(frc_with_mask[0])):
-							if ifreq==0:
-								outfrc[1].append(frc_with_mask[0][ifreq])
-							else:	
-								outfrc[1].append(options.pixel_size/frc_with_mask[0][ifreq])
-					# FSC_RH see Richard Handson's paper
-					frc_RH =[frc_with_mask[0],len(frc_with_mask[0])*[None]]
-					frc_RH =[frc_with_mask[0],frc_with_mask[1]]
-					#print(" frc_RH  %f"%frc_RH[1][5])
-					for ifreq in xrange(len(frc_with_mask[1])):
-						if ifreq <= random_phase_cutoff_pixel+2: frc_RH[1][ifreq] = frc_with_mask[1][ifreq]
-						else:   
-							if frc_random_phase_masked[1][ifreq] > frc_with_mask[1][ifreq]: frc_RH[1][ifreq] =0.0
-							else:     frc_RH[1][ifreq] = (frc_with_mask[1][ifreq]-frc_random_phase_masked[1][ifreq])/(1.-frc_random_phase_masked[1][ifreq])
-					"""
 					frc_RH =[frc_with_mask[0],frc_with_mask[1]]
 				else:
-					frc_RH = fsc_without_mask
-				from utilities import write_text_file
+					frc_RH = frc_without_mask
 				if nargs >1:
-					newfsc =[]
+					newfsc =[[],[],[]]
 					for ifreq in xrange(len(frc_RH[1])):
-						newfsc.append("%10.6f"%frc_RH[1][ifreq])
+						newfsc[0].append("%5d"%ifreq)
+						if ifreq !=0: newfsc[1].append("%10.6f"%(options.pixel_size/frc_RH[0][ifreq]))
+						else:   newfsc[1].append("%10.6f"%(1000.0))
+						newfsc[2].append("%10.6f"%frc_RH[1][ifreq])
 					write_text_file(newfsc, "fsc.txt")
 					for ifreq in xrange(len(frc_RH[1])):
 						if frc_RH[1][ifreq] < 0.143:
@@ -1116,13 +1089,12 @@ def main():
 						if frc_RH[1][ifreq] < 0.5:
 							resolution_FSChalf  = frc_RH[0][ifreq-1]
 							break															
-					from utilities import write_text_file
 			map1 = get_im(args[0])
 			if nargs >1: 
 				map2 = get_im(args[1])
 				map1 +=map2
 				map1 /=2.0
-			outtext = [["Squaredfreqencies"],[ "LogOrignal"]]
+			outtext = [["Squaredfreq"],[ "LogOrig"]]
 			guinierline = rot_avg_table(power(periodogram(map1),.5))
 			from math import log
 			for ig in xrange(len(guinierline)):
@@ -1130,22 +1102,21 @@ def main():
 				outtext[0].append("%10.6f"%(x*x))
 				outtext[1].append("%10.6f"%log(guinierline[ig]))
 			# starts adjustment of powerspectrum
-			if options.mtf: # divided by the mtf   #1
-				from fundamentals import fft
+			if options.mtf: # divided by the mtf #1
 				log_main.add("MTF correction is applied")
-				from utilities import read_text_file
 				log_main.add("MTF file is %s"%options.mtf)
 				try:
 					mtf_core  = read_text_file(options.mtf, -1)
 				except:
-					ERROR(" Sphire postprocess fails to read MTF file "+options.mtf, "--postprocess option for 3-D")
+					ERROR("Sphire postprocess fails to read MTF file "+options.mtf, "--postprocess option for 3-D")
 					exit()
 				map1 = fft(Util.divide_mtf(fft(map1), mtf_core[1], mtf_core[0]))
 				outtext.append(["LogMTFdiv"])
 				guinierline   = rot_avg_table(power(periodogram(map1),.5))
 				for ig in xrange(len(guinierline)): outtext[-1].append("%10.6f"%log(guinierline[ig]))
-			if options.fsc_adj:    #2
+			if options.fsc_adj: #2
 				log_main.add("(2*FSC)/(1+FSC) is applied to adjust power spectrum of the summed volumes")
+				log_main.add("This option will increase B-factor to 2-3 times!")
 				if nargs==1:
 					ERROR("There is only one input map,  and FSC adjustment cannot be done!", "--postprocess  for 3-D", 1)					
 				else:
@@ -1157,52 +1128,47 @@ def main():
 						fil[i] = sqrt(2.*tmp/(1.+tmp))
 					map1=filt_table(map1,fil)
 					guinierline   = rot_avg_table(power(periodogram(map1),.5))
-					outtext.append(["LogFSCadjusted"])
+					outtext.append(["LogFSCadj"])
 					for ig in xrange(len(guinierline)):
 						outtext[-1].append("%10.6f"%log(guinierline[ig]))
 			
-			if options.B_enhance !=-1:  #3
+			if options.B_enhance !=-1:#3
 				if options.B_enhance == 0.0: # auto mode
 					if nargs>1: 
 						cutoff_by_fsc = 0
 						for ifreq in xrange(len(frc_RH[1])):
 							if frc_RH[1][ifreq]<0.143:
 								break
-						cutoff_by_fsc = float(ifreq)
-						#print(" cutoff_by_fsc ", cutoff_by_fsc)
-						freq_max     = cutoff_by_fsc/(2.*len(frc_RH[0]))/options.pixel_size
-					else:
-						freq_max     = 2.*options.pixel_size
+						cutoff_by_fsc 	= float(ifreq)
+						freq_max     	= cutoff_by_fsc/(2.*len(frc_RH[0]))/options.pixel_size
+					else:				
+						freq_max     	= 2.*options.pixel_size
 					guinierline   = rot_avg_table(power(periodogram(map1),.5))
 					logguinierline = []
 					for ig in xrange(len(guinierline)):
 						logguinierline.append(log(guinierline[ig]))
-					freq_min     = 1./options.B_start # given frequencies with unit of Angstrom, say 10 Angstrom, 15  Angstrom
+					freq_min     = 1./options.B_start 		# given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
 					if options.B_stop!=0.0: freq_max     = 1./options.B_stop 
 					if freq_min>=freq_max:
 						log_main.add("Your B_start is too high! Decrease it and rerun the program!")
 						ERROR("your B_start is too high! Decrease it and re-run the program!", "--postprocess option")
-						exit()
-					from utilities import write_text_file
+						exit()					
 					#log_main.add("B-factor exp(-B*s^2) is estimated from %f Angstrom to %f Angstrom"%(round(1./freq_min,2), round(1./freq_max,2)))
 					b,junk , ifreqmin, ifreqmax  =  compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					#log_main.add("The used pixels are from %d to %d"%(ifreqmin, ifreqmax))
 					global_b     =  4.*b
-					from statistics import pearson
-					cc =pearson(junk[1],logguinierline)
-					log_main.add("Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"% \
-					                                                  (ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
+					cc 	=	pearson(junk[1],logguinierline)
+					log_main.add("Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"%(ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
 					log_main.add("The slope is %f Angstrom^2 "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
-
 				else: # User provided value
 					#log_main.add( " apply user provided B-factor to enhance map!")
 					log_main.add("User provided B-factor is %f Angstrom^2   "%options.B_enhance)
 					sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 					global_b = options.B_enhance
-				map1  = filt_gaussinv(map1,sigma_of_inverse)
-				guinierline   = rot_avg_table(power(periodogram(map1),.5))
-				outtext.append([" LogBfactorsharpened"])
+				map1  			= filt_gaussinv(map1,sigma_of_inverse)
+				guinierline 	= rot_avg_table(power(periodogram(map1),.5))
+				outtext.append([" LogBfacapplied"])
 				last_non_zero = -999.0
 				for ig in xrange(len(guinierline)):
 					if guinierline[ig]>0: 
@@ -1211,7 +1177,6 @@ def main():
 					else:
 						outtext[-1].append("%10.6f"%last_non_zero)			
 			if options.low_pass_filter !=-1.: # User provided low-pass filter #4.
-				from filter       import filt_tanl
 				if options.low_pass_filter>0.5: # Input is in Angstrom 
 					map1 =filt_tanl(map1,options.pixel_size/options.low_pass_filter, min(options.aa,.1))
 					cutoff = options.low_pass_filter
@@ -1224,7 +1189,7 @@ def main():
 			map1.write_image("vol_postprocess_nomask.hdf")
 			if m: map1 *=m
 			map1.write_image(options.output)
-			log_main.add("------ Summary -------")
+			log_main.add("---------- >>>Summary<<<------------")
 			log_main.add("Resolution at criteria 0.143 is %f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
 			log_main.add("Resolution at criteria 0.5   is %f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
 			if options.B_enhance !=-1:  log_main.add( "B-factor is  %f Angstrom^2  "%(round((-global_b),2)))
@@ -1235,6 +1200,7 @@ def main():
 			if options.low_pass_filter !=-1:  	log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%f Angstrom" %round(cutoff,2))
 			else: 								log_main.add("The final volume is not low_pass filtered. ")
 			write_text_file(outtext, "guinierlines.txt")
+			log_main.add("-----------------------------------")
 				
 	elif options.window_stack:
 		nargs = len(args)
