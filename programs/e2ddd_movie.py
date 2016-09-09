@@ -86,7 +86,6 @@ def main():
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the input stacks",default=False, guitype='boolbox', row=16, col=0, rowspan=1, colspan=1, mode='align[True]')
-	parser.add_argument("--nomgsdir",action="store_true",default=False,help="Do not make micrographs directory. For testing/debugging purposes only.")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -97,9 +96,8 @@ def main():
 		print usage
 		parser.error("Specify input DDD stack")
 
-	if not options.nomgsdir:
-		try: os.mkdir("micrographs")
-		except: pass
+	try: os.mkdir("micrographs")
+	except: pass
 
 	pid=E2init(sys.argv)
 
@@ -171,7 +169,7 @@ def main():
 		gainid=EMUtil.get_image_count(gainname)-1
 		gain["filename"]=gainname
 		gain["fileid"]=gainid
-		
+
 	if dark:
 		darkname="movies/e2ddd_darkref.hdf"
 		dark.write_image(darkname,-1)
@@ -541,10 +539,10 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			db["movieali_trans"]=locs
 			db["movieali_qual"]=quals
 			db["movie_name"]=fsp
-			if gain: 
+			if gain:
 				db["gain_name"]=gain["filename"]
 				db["gain_id"]=gain["fileid"]
-			if dark: 
+			if dark:
 				db["dark_name"]=dark["filename"]
 				db["dark_id"]=dark["fileid"]
 			db.close()
