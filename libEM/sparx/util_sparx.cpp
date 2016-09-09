@@ -19091,7 +19091,7 @@ vector<float> Util::rotavg_fourier(EMData* img)
 	vector<float> rotav(2*lsd);
 	for (int i=0; i<2*lsd; i++)  rotav[i] = 0.0f; 
 	vector<float> count(lsd);
-	for (int i=0; i<lsd; i++)  count[i] = 0.0f; 
+	for (int i=0; i<lsd; i++)  count[i] = 0.0f;
 
 	float tsum = 0.0;
 	float argy, argx;
