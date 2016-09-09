@@ -86,7 +86,7 @@ def main():
 		Default is --autocentermask=None""")
 
 
-	parser.add_argument("--path",type=str,help="Pathname to save data to",default="")
+	parser.add_argument("--path",default='',type=str,help="Pathname to save data to")
 	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis", guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--apix",type=float,default=0.0,help="Use THIS A/pix value to display the tomogram (if filtering) and to write to the header of the extracted subvolumes, instead of using the apix value one stored in the tomogram's header.", guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="boxing['self.pm().getAPIX()']")
@@ -173,7 +173,7 @@ def main():
 	from e2spt_classaverage import sptmakepath
 
 	if options.path:
-		options = sptmakepath( options, 'sptboxer')
+		options = sptmakepath( options, 'spt_boxer')
 
 	if len(args) != 1:
 		parser.error("You must specify a single volume data file on the command-line.")
@@ -186,6 +186,16 @@ def main():
 		logger = E2init(sys.argv, options.ppid)
 
 		commandline_tomoboxer(args[0],options)
+
+		cleanstack(options)
+
+		print "\ncomputing bruteaverage"
+		cmdavg = 'e2proc3d.py ' + options.output + ' ' + options.output.replace('.hdf','__bruteavg.hdf') + ' --average'
+		
+		retavg=runcmd( options, cmdavg )
+		if retavg:
+			print "done"
+
 
 		E2end(logger)
 
@@ -323,6 +333,61 @@ def main():
 
 
 """
+Function to check whether all boxes in the extracted stack seem "healthy" and if not eliminate the bad ones
+"""
+def cleanstack(options):
+	n=EMUtil.get_image_count(options.output)
+	badptcls = []
+	print "\n(e2spt_boxer)(cleanstack) checking for sanity of output stack %s" %(options.output)
+	for i in range(n):
+		try:
+			ptcl=EMData(options.output,i)
+			if float(ptcl['sigma']) == 0.0:
+				badptcls.append(i)
+				print "WARNING: bad particle %d will be removed from output stack %s" %(i,options.output)
+
+		except:
+			print "WARNING: bad particle %d will be removed from output stack %s" %(i,options.output)
+			badptcls.append(i)
+
+	if badptcls:
+		print "\n%d bad particles identified"%(len(badptcls))
+
+		tmpoutput = options.output.replace('.hdf','_tmp.hdf')
+		badptcls.sort()
+		first=0
+		#kl=0
+		nbad=len(badptcls)
+
+		for kl in range(len(badptcls)):
+			print "pruning bad ptcl", badptcls[kl]
+
+			if kl > 0:
+				first=badptcls[kl-1]+1
+			
+			last=badptcls[kl]-1
+			
+			cmd ='e2proc3d.py ' + options.output + ' ' + tmpoutput + ' --first ' + str(first) + ' --last ' + str(last)
+			
+			if kl == nbad-1:
+				
+				if last != n-1 and last < n-1:
+					cmd+= ' && e2proc3d.py ' + options.output + ' ' + tmpoutput + ' --first ' + str(last+2) + ' --last ' + str(n-1) + ' --append'
+	
+			if kl>0 and 'append' not in cmd:
+				cmd += ' --append'
+
+			print "cmd is", cmd
+			runcmd(options,cmd)
+
+			kl+=1
+
+		os.rename(tmpoutput,options.output)
+
+	return 
+
+
+"""
 This function is called to extract sub-volumes from the RAW tomogram, regardless
 of where their coordinates are being found (the tomogram to find the coordinates might be
 shrunk and/or lowpass filtered).
@@ -376,7 +441,7 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 	#print "read particle from tomogram %s using coords x=%d,y=%d,z=%d" %(tomogram,x,y,z)
 	#print "has mean, meannonzero, and sigma",e['mean'],e['mean_nonzero'],e['sigma']
 
-	if float(e['mean']) != 0.0:
+	if float(e['sigma']) != 0.0:
 		#print "mean is nonzero",e['mean']
 		
 
@@ -508,7 +573,13 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 		if options.coords:
 			#if options.verbose:
 			#	print "writing particle %d with size %d,%d,%d to temporary output file %s" % (coordindx,e['nx'],e['ny'],e['nz'],'sptboxer_dummy.hdf')
-			e.write_image('sptboxer_dummy.hdf',coordindx)
+			
+			if options.parallel:
+				e.write_image('sptboxer_dummy.hdf',coordindx)
+			else:
+				e.write_image(options.output,-1)
+
+
 			
 			print "extracted particle %d to temporary file" %(coordindx)
 		
@@ -537,15 +608,20 @@ def unbinned_extractor(options,x,y,z,tomogram,coordindx=None):
 				prj.write_image(nameprjs,-1)
 			
 			elif options.coords:
-				prj.write_image('sptboxer_dummy_prjs.hdf',coordindx)
+				if options.parallel:
+					prj.write_image('sptboxer_dummy_prjs.hdf',coordindx)
+				else:
+					prj.write_image(options.output.replace('.hdf','__prjsz.hdf'),-1)
+
 		return(e,prj)
 
 	else:
-		print """\nWARNING! The particle was skipped (and not boxed) because it's mean was ZERO (which often indicates a box is empty).
-			Your coordinates file and/or the shrinking factors specified might be MESSED UP, or you might need to swap Y and Z, or
-			the particles are being normalized before they should
-			"""
-		return
+		if not coordindx:
+			coordindx==-1
+		print """\nWARNING! particle %d at coordinates x=%d, y=%d, z=%d. was skipped (and not boxed) because it's SIGMA was ZERO (suggesting the box was empty).
+			Your coordinates file and/or the shrinking factors specified might be MESSED UP, or you might need to swap Y and Z
+			""" %(coordindx,x,y,z)
+		return None
 
 
 """
@@ -571,11 +647,11 @@ def commandline_tomoboxer(tomogram,options):
 	print "The size of the set of sub-volumes to extract is", ncoords
 
 	k=-1
-	name = options.output
-	if options.path and options.path not in name:
-		name = options.path + '/' + name
+	#name = options.output
+	if options.path and options.path not in options.output:
+		options.output = options.path + '/' + options.output
 
-	if ".hdf" not in name:
+	if ".hdf" not in options.output:
 		print "Format ERROR: Only .hdf fomart supported."
 		sys.exit()
 	
@@ -608,16 +684,17 @@ def commandline_tomoboxer(tomogram,options):
 	if options.apix:
 		apix=options.apix
 
-	dimg = EMData(8,8,8)
-	dimg['apix_x']=apix
-	dimg['apix_y']=apix
-	dimg['apix_z']=apix
-	dimg.to_one()
+	if options.parallel:
+		dimg = EMData(8,8,8)
+		dimg['apix_x']=apix
+		dimg['apix_y']=apix
+		dimg['apix_z']=apix
+		dimg.to_one()
 
-	dimg2D =EMData(8,8)
-	dimg2D['apix_x']=apix
-	dimg2D['apix_y']=apix
-	dimg2D.to_one()
+		dimg2D =EMData(8,8)
+		dimg2D['apix_x']=apix
+		dimg2D['apix_y']=apix
+		dimg2D.to_one()
 
 	for i in range(ncoords):
 
@@ -655,26 +732,28 @@ def commandline_tomoboxer(tomogram,options):
 		#	z = aux
 		#	if options.verbose : print "Therefore, the swapped coordinates are", x, y, z
 
-		dimg.write_image( 'sptboxer_dummy.hdf', i )
-		dimg2D.write_image( 'sptboxer_dummy_prjs.hdf', i )
+		if options.parallel:
+			dimg.write_image( 'sptboxer_dummy.hdf', i )
+			dimg2D.write_image( 'sptboxer_dummy_prjs.hdf', i )
 
 	
 		if options.verbose:
 			print "\n(e2spt_preproc)(main) wrote dummy ptcls to %s" %( 'sptboxer_dummy' )
 	
-	dummylarge = EMData(options.boxsize,options.boxsize,options.boxsize)
-	dummylarge2D = EMData(options.boxsize,options.boxsize)
-
-	dummylarge.to_one()
-	dummylarge.write_image('sptboxer_dummy.hdf',0)
-	
-	dummylarge2D.to_one()
-	dummylarge2D.write_image('sptboxer_dummy_prjs.hdf',0)
-
-
-	print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n"
-	
 	if options.parallel:
+		dummylarge = EMData(options.boxsize,options.boxsize,options.boxsize)
+		dummylarge2D = EMData(options.boxsize,options.boxsize)
+
+		dummylarge.to_one()
+		dummylarge.write_image('sptboxer_dummy.hdf',0)
+		
+		dummylarge2D.to_one()
+		dummylarge2D.write_image('sptboxer_dummy_prjs.hdf',0)
+
+
+		print "\n(e2spt_preproc)(main) - INITIALIZING PARALLELISM!\n"
+	
+	
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
 	#pclist=[tomogram]
@@ -712,88 +791,11 @@ def commandline_tomoboxer(tomogram,options):
 			results = get_results( etc, tids, options )
 
 	if results:
-		os.rename('sptboxer_dummy.hdf',options.output)
-		nameprjs = options.output.replace('.hdf','__prjsz.hdf')
-		os.rename('sptboxer_dummy_prjs.hdf',nameprjs)
-		'''
-		ret = unbinned_extractor(options,options.boxsize,coordx,coordy,coordz,options.cshrink,options.invert,options.centerbox,args[0])
 
-		if ret:
-			e=ret[0]
-			eprj=ret[1]
-
-			if e:
-				if options.verbose : 
-					print "There was a particle successfully returned, with the following box size and mean value"
-					print e['nx'],e['ny'],e['nz']
-					print e['mean']
-
-				if options.apix:
-					e['apix_x'] = options.apix
-					e['apix_y'] = options.apix
-					e['apix_z'] = options.apix
-
-				e['origin_x'] = 0
-				e['origin_y'] = 0
-				e['origin_z'] = 0
-
-				#if options.output_format != 'single':
-				#	if '.mrc' in name:
-				#		print "ERROR: To save the data as a stack, .hdf format must be used."
-				#		sys.exit()
-
-					#e['spt_originalstack']=name
-				#	e.write_image(name,jj)
-				#
-				#	if options.verbose:
-				#		if i == 0:
-				#			print "!!!!!!\nSTACK outputfile is", name
-				#
-				#		print "\nWriting image number", i
-
-				#else:
-				#	nameSingle = name
-				#	if '.hdf' in name:
-				#		nameSingle = name.replace('.hdf', '_' + str(jj).zfill(len(str(cset))) + '.hdf')
-				#	elif '.mrc' in name:
-				#		nameSingle = name.replace('.mrc', '_' + str(jj).zfill(len(str(cset))) + '.mrc')
-				#	#e['spt_originalstack']= nameSingle
-				#	e.write_image(nameSingle,0)
-
-				#if options.bruteaverage and avgr:
-				#	avgr.add_image(e)
-
-				jj+=1
-
-			if eprj:
-				nameprjs = options.output
-				if '.mrc' in options.output:
-					nameprjs = nameprjs.replace('.mrc','.hdf')
-
-				#if not options.yshort:
-				nameprjs = nameprjs.replace('.hdf','__prjsz.hdf')
-				#elif options.yshort:
-				#	nameprjs = nameprjs.replace('.hdf','__prjsy.hdf')
-
-				if options.path not in nameprjs:
-					nameprjs = options.path + '/' + nameprjs
-				eprj['spt_originalstack']=nameprjs.split('/')[-1]
-				eprj.write_image(nameprjs,-1)
-		else:
-			print "\n(e2spt_boxer.py) WARNING: unbinned_extractor function returned NOTHING for this box",x,y,z
-		'''
-				
-		#if options.bruteaverage and avgr:
-		#	avg = avgr.finish()
-		#	if avg:
-		#		avg['spt_originalstack'] = os.path.basename( name )
-		#		avgout = options.output.replace( '.hdf', '__avg.hdf' )
-		#		if options.path:
-		#			avgout = options.path + '/' + avgout
-		#		avg.process_inplace('normalize')
-		#		avg.write_image( avgout, 0 )
-		#	else:
-		#		print "\nThe particles averaged into nothing; see", type(avg)
+		if options.parallel:
+			os.rename('sptboxer_dummy.hdf',options.output)
+			nameprjs = options.output.replace('.hdf','__prjsz.hdf')
+			os.rename('sptboxer_dummy_prjs.hdf',nameprjs)
 
 		radius = options.boxsize/4.0	#the particle's diameter is boxsize/2
 		
@@ -814,13 +816,16 @@ def commandline_tomoboxer(tomogram,options):
 			print "done"
 		#if options.bruteaverage:
 		
-		print "\ncomputing bruteaverage"
-		cmdavg = 'e2proc3d.py ' + options.output + ' ' + options.output.replace('.hdf','__bruteavg.hdf') + ' --average'
-		
-		retavg=runcmd( options, cmdavg )
-		if retavg:
-			print "done"
+		if options.path:
+			c=os.getcwd()
+			findir=os.listdir(c)
+			stemcoords=os.path.splitext(options.coords)[0]
 
+			for fi in findir:
+				if stemcoords in fi and '.png' in fi:
+					os.rename(fi,options.path+'/'+fi)
+
+		
 
 	return
 

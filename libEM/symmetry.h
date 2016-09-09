@@ -1118,6 +1118,7 @@ class EmanOrientationGenerator : public OrientationGenerator
 			d.put("alt_min", EMObject::FLOAT, "Minimum altitude value to include (alt=0 is Z axis). Default=0");
 			d.put("alt_max", EMObject::FLOAT, "Maximum altitude value to include (alt=90 is X-Y plane). Default=no limit");
 			d.put("breaksym", EMObject::BOOL, "If specified, still generates orientations filling the unit (hemi)sphere, but does it by filling one asymmetric unit, then generating all symmetric equivalents.");
+			d.put("breaksym_real", EMObject::BOOL, "Same as breaksym, but do not use inc_mirror.");
 			return d;
 		}
 
