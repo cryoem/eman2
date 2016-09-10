@@ -196,10 +196,14 @@ def main():
 			
 	if options.mask:
 		mask3d="{path}/simmask.hdf".format(path=options.newpath)
-		maskfile="{path}/mask_projection.hdf".format(path=options.newpath)
+		#maskfile="{path}/mask_projection.hdf".format(path=options.newpath)
 		run("e2proc3d.py {msk0} {msk1} --apix {apix}".format(msk0=options.mask, msk1=mask3d, apix=db_apix))
-		run("e2project3d.py {model} --outfile  {mskfile} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(model=mask3d,mskfile=maskfile,orient=origen,sym=db["sym"],threads=options.threads))
-		simmask=EMData.read_images(maskfile)
+		mskmodel=[]
+		for m in inputmodel:
+			mskmodel.append(m[:-4]+"_msk.hdf")
+			run("e2proc3d.py {model} {mskmodel} --multfile {msk}".format(model=m, mskmodel=mskmodel[-1], msk=mask3d))
+		#run("e2project3d.py {model} --outfile  {mskfile} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(model=mask3d,mskfile=maskfile,orient=origen,sym=db["sym"],threads=options.threads))
+		#simmask=EMData.read_images(maskfile)
 	
 	#### start iterations...
 	for it in range(options.iter):
@@ -210,12 +214,25 @@ def main():
 		#### first iteration. do one projection for even/odd
 			if multimodel:
 				projfile=[]
+				
 				for m in models:
 					projfile.append("{path}/projections_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
 					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
+				#### make another set of projections for masked model
+				if options.mask:
+					projmskfile=[]
+					for m in models:
+						projmskfile.append("{path}/projections_msk_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
+						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
+						
 			else:
 				projfile=["{path}/projections_{it:02d}.hdf".format(path=options.newpath, it=it)]
 				run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[0],proj=projfile[0],orient=origen,sym=db["sym"],threads=options.threads))
+				
+				#### make another set of projections for masked model
+				if options.mask:
+					projmskfile=["{path}/projections_msk_{it:02d}.hdf".format(path=options.newpath, it=it)]
+					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=mskmodel[0],proj=projmskfile[0],orient=origen,sym=db["sym"],threads=options.threads))
 
 		output_3d.append({})
 		output_cls.append({})
@@ -230,6 +247,14 @@ def main():
 				projfile=["{path}/projections_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo) for m in models]
 				for m in models:
 					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[m],orient=origen,sym=db["sym"],threads=options.threads))
+				if options.mask:
+					mskmodel=[]
+					projmskfile=[]
+					for m in models:
+						mskmodel.append(inputmodel[m][:-4]+"_msk.hdf")
+						projmskfile.append("{path}/projections_msk_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo))
+						run("e2proc3d.py {model} {mskmodel} --multfile {msk}".format(model=inputmodel[m], mskmodel=mskmodel[-1], msk=mask3d))
+						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
 
 			oldmapfile=str(db["last_{}".format(eo)])
 			ptclfile=str(db["input"][eoid])
@@ -256,11 +281,15 @@ def main():
 			cmxmirror=EMData(clsmx,5)
 
 			projs=[]
-			for pj in projfile:
-				projs.append(EMData.read_images(pj))
-				if options.mask:
-					for si in range(len(simmask)):
-						projs[-1][si].mult(simmask[si])
+			if options.mask:
+				projs=[EMData.read_images(pj) for pj in projmskfile]
+			else:
+				projs=[EMData.read_images(pj) for pj in projfile]
+			#for pj in projfile:
+			#	projs.append(EMData.read_images(pj))
+			#	if options.mask:
+			#		for si in range(len(simmask)):
+			#			projs[-1][si].mult(simmask[si])
 			
 			xforms=[]
 			for i in range(npt):
