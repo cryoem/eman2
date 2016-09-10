@@ -501,7 +501,7 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 				ret.push_back(ret[i]*t);		// add the symmetry modified transform to the end of the vector
 			}
 		}
-		
+		if (breaksymreal) return ret;
 		// Now we get rid of anything in the bottom half of the unit sphere if requested
 		if (!inc_mirror_real) {
 			vector<Transform> ret2;

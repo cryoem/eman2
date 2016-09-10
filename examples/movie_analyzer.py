@@ -128,7 +128,7 @@ def main():
 				else: gain = ""
 				if options.gaink2: gaink2 = "--gaink2 {}".format(options.gaink2)
 				else: gaink2 = ""
-				cmd = "e2ddd_movie.py {} {} {} {} --fixbadpixels --frames --nomgsdir -v9".format(fname,dark,gain,gaink2)
+				cmd = "e2ddd_movie.py {} {} {} {} --fixbadpixels --frames -v9".format(fname,dark,gain,gaink2)
 				wt,ct = run(cmd,shell=True)
 				if options.dark:
 					dfn = options.dark.split(".")[0]

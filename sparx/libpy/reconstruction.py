@@ -1343,7 +1343,7 @@ def recons3d_4nnfs_MPI(myid, main_node, prjlist, upweighted = True, finfo=None, 
 	if myid == main_node: return fftvol, weight, refvol
 	else: return None, None, None
 
-def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, delta, upweighted = True, finfo=None, mpi_comm=None, smearstep = 0.0, CTF = True, compensate = False, target_size=-1, avgnorm = 1.0, norm_per_particle = None):
+def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, delta, upweighted = True, mpi_comm=None, CTF = True, target_size=-1, avgnorm = 1.0, norm_per_particle = None):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -1359,59 +1359,9 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 	import datetime
 	from reconstruction import insert_slices_pdf
 	
-	if mpi_comm == None:
-		mpi_comm = MPI_COMM_WORLD
-	imgsize = prjlist[0][0].get_ysize()  # It can be Fourier, so take y-size
-	'''
-	if( smearstep > 0.0 ):
-		#if myid == 0:  print "  Setting smear in prepare_recons_ctf"
-		ns = 1
-		smear = []
-		for j in xrange(-ns,ns+1):
-			if( j != 0):
-				for i in xrange(-ns,ns+1):
-					for k in xrange(-ns,ns+1):
-						smear += [i*smearstep,j*smearstep,k*smearstep,1.0]
-		# Deal with theta = 0.0 cases
-		prj = []
-		for i in xrange(-ns,ns+1):
-			for k in xrange(-ns,ns+1):
-				prj.append(i+k)
-		for i in xrange(-2*ns,2*ns+1,1):
-			smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
-		#if myid == 0:  print "  Smear  ",smear
-	'''
-	#from utilities import model_blank, get_im, read_text_file
-	#bckgdata = [get_im("tsd.hdf"),read_text_file("data_stamp.txt")]
+	if mpi_comm == None: mpi_comm = MPI_COMM_WORLD
 
-	
-	"""
-	nnx = bckgdata[0].get_xsize()
-	nny = bckgdata[0].get_ysize()
-	"""
-	'''
-	bckgnoise = []
-	for i in xrange(1):
-		prj = model_blank(600,1,1,1)
-		#for k in xrange(nnx):  prj[k] = bckgdata[i].get_value_at(k,i)
-		bckgnoise.append(prj)
-	'''
-	#datastamp = bckgdata[1]
-	"""
-	#  Do the FSC shtick.
-	if cfsc:
-		bnx     = len(cfsc)*npad*2
-		refvol  = model_blank(bnx)
-		if(npad > 1):
-			from utilities import reshape_1d
-			bfsc = reshape_1d(cfsc, len(cfsc), bnx)
-			for i in xrange(bnx):  refvol[i] = bfsc[i]
-			del bfsc
-		else:  refvol[i] = cfsc[i]
-	else:
-		#  Set refvol to longer array so in finish it can be used to return regularization part
-		refvol = model_blank(target_size)  # fill fsc with zeroes so the first reconstruction is done using simple Wiener filter.
-	"""
+	imgsize = prjlist[0][0].get_ysize()  # It can be Fourier, so take y-size
 
 	refvol = model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
@@ -1420,20 +1370,16 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
 
-	if not (finfo is None): nimg = 0
-
 	fftvol = EMData()
 	weight = EMData()
-	#if( smearstep > 0.0 ):  fftvol.set_attr("smear", smear)
-
 
 	from utilities import info
 	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	
-	if norm_per_particle == None:
-		norm_per_paritcle = len(prjlist)*[1.0]
+	if norm_per_particle == None: norm_per_paritcle = len(prjlist)*[1.0]
+
 	for im in xrange(len(prjlist)):
 		#  parse projection structure, generate three lists:
 		#  [ipsi+iang], [ishift], [probability]
@@ -1463,20 +1409,13 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
 	#  clean stuff
 	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
-	if not (finfo is None):
-		finfo.write( "begin reduce\n" )
-		finfo.flush()
+
 
 	reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
 	reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 
-	if not (finfo is None): 
-		finfo.write( "after reduce\n" )
-		finfo.flush()
-
-
 	if myid == main_node:
-		dummy = r.finish(compensate)
+		dummy = r.finish(True)
 	mpi_barrier(mpi_comm)
 
 	if myid == main_node: return fftvol, weight, refvol
