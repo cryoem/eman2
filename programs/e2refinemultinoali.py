@@ -390,7 +390,7 @@ def main():
 						#### index of the class of each asym-unit
 						el=np.asarray(eulerlst[symdone[int(v)]]) 
 						for u in range(len(cls)):
-							cmxout[cls[u]][u,i]=el[u]
+							cmxout[int(cls[u])][u,i]=int(el[u])
 						#exit()
 					
 				else:
@@ -407,7 +407,7 @@ def main():
 							
 						for s in models:
 							if s==cls[i]:
-								cmxout[s][0,i]=v
+								cmxout[s][0,i]=int(v)
 							else:
 								cmxout[s][0,i]=-1
 			else:
