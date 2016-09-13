@@ -2123,6 +2123,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	from   alignment    import Numrinit, ringwe
 	from   statistics   import table_stat
 	from   pixel_error  import angle_ave
+	from   inspect      import currentframe, getframeinfo
 	from   global_def   import ERROR
 	import global_def
 

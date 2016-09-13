@@ -779,6 +779,17 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 		for (int i=0; i<nx/2; i++) sigmawith[i]*=sigmawith[i]*sigmawithval; // The value here is amplitude, we square to make comparison less expensive
 	}
 
+	float apix = params.set_default("apix",image->get_attr_default("apix_x", 1.0f));
+	//get min and max res
+	float minres = params.set_default("minres",0.0f);
+	float maxres = params.set_default("maxres", 0.0f);
+
+	int pmin,pmax;
+	if (minres>0) pmin=(int)floor((apix*ny)/minres);		//cutoff in pixels, assume square
+	else pmin=3;
+	if (maxres>0) pmax=(int)ceil((apix*ny)/maxres);
+	else pmax=ny/2;
+
 	int negative = params.set_default("negative",1);
 	
 	double sum=0;
@@ -786,13 +797,17 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	double sumsq2=0;
 	double norm=0;
 	for (int z=0; z<nz; z++) {
+		int za=z<nz/2?z:nz-z;
+		if (za>pmax) continue;
 		for (int y=0; y<ny; y++) {
+			int ya=y<ny/2?y:ny-y;
+			if (ya>pmax) continue;
 			for (int x=0; x<nx; x+=2) {
-				float r2=Util::hypot3sq(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+				float r2=Util::hypot3sq(x/2,ya,za);	// origin at 0,0; periodic
 				int r=int(sqrtf(r2));
 //				float rf=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
 //				int r=int(rf);
-				if (r<3) continue;
+				if (r<pmin || r>pmax) continue;
 				
 				float v1r=image->get_value_at(x,y,z);
 				float v1i=image->get_value_at(x+1,y,z);
@@ -846,7 +861,12 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 		with_meanwedgeamp = with->get_attr("spt_wedge_mean");
 		with_sigmawedgeamp = with->get_attr("spt_wedge_sigma");
 	}
-	
+
+	float apix = params.set_default("apix",image->get_attr_default("apix_x", 1.0f));
+	//get min and max res
+	float minres = params.set_default("minres",std::numeric_limits<float>::max());
+	float maxres = params.set_default("maxres", 0.0f);
+
 	// Find threshold
 	float sigmas = params.set_default("sigmas",5.0f);
 	float img_amp_thres = pow(image_meanwedgeamp + sigmas*image_sigmawedgeamp, 2.0f);
@@ -856,10 +876,6 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	float negative = (float)params.set_default("negative", 1.0f);
 	if (negative) negative=-1.0; else negative=1.0;
 	//get apix, use param apix, if not specified use apix_x, if this is not specified then apix=1.0
-	float apix = params.set_default("apix",image->get_attr_default("apix_x", 1.0f));
-	//get min and max res
-	float minres = params.set_default("minres",std::numeric_limits<float>::max());
-	float maxres = params.set_default("maxres", 0.0f);
 	
 	//Check to ensure that images are complex
 	EMData* image_fft = image;

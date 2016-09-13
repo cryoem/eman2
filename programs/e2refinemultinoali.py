@@ -49,6 +49,8 @@ def main():
 	parser.add_header(name="optheader", help='Optional parameters:', title="Optional:", row=14, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--mask",type=str,help="Name of an optional mask file. The mask is applied to the input models to focus the classification on a particular region of the map. Consider e2classifyligand.py instead.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', filecheck=False, row=15, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--breaksym", action="store_true", default=False ,help="breaksym", guitype='boolbox', row=16, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--symcopy", action="store_true", default=False ,help="symcopy", guitype='boolbox', row=17, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--nomask", action="store_true", default=False ,help="no mask", guitype='boolbox', row=16, col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -94,7 +96,8 @@ def main():
 		db = json.load(json_file)
 	db=parse_json(db.copy())
 	options.simcmp=parsemodopt(options.simcmp)
-
+	if options.symcopy:
+		options.breaksym=True
 	sym=str(db["sym"])
 	if db["breaksym"]:
 		sym="c1"
@@ -109,7 +112,11 @@ def main():
 	if db_apix==0:
 		e=EMData(inputmodel[0],0,True)
 		db_apix=e["apix_x"]
-
+	
+	if options.nomask:
+		automask="mask.soft:outer_radius=-1"
+	else:
+		automask=db["automask3d"]
 	if multimodel:
 
 		if modelstack>1:
@@ -189,10 +196,14 @@ def main():
 			
 	if options.mask:
 		mask3d="{path}/simmask.hdf".format(path=options.newpath)
-		maskfile="{path}/mask_projection.hdf".format(path=options.newpath)
+		#maskfile="{path}/mask_projection.hdf".format(path=options.newpath)
 		run("e2proc3d.py {msk0} {msk1} --apix {apix}".format(msk0=options.mask, msk1=mask3d, apix=db_apix))
-		run("e2project3d.py {model} --outfile  {mskfile} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(model=mask3d,mskfile=maskfile,orient=origen,sym=db["sym"],threads=options.threads))
-		simmask=EMData.read_images(maskfile)
+		mskmodel=[]
+		for m in inputmodel:
+			mskmodel.append(m[:-4]+"_msk.hdf")
+			run("e2proc3d.py {model} {mskmodel} --multfile {msk}".format(model=m, mskmodel=mskmodel[-1], msk=mask3d))
+		#run("e2project3d.py {model} --outfile  {mskfile} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(model=mask3d,mskfile=maskfile,orient=origen,sym=db["sym"],threads=options.threads))
+		#simmask=EMData.read_images(maskfile)
 	
 	#### start iterations...
 	for it in range(options.iter):
@@ -203,12 +214,25 @@ def main():
 		#### first iteration. do one projection for even/odd
 			if multimodel:
 				projfile=[]
+				
 				for m in models:
 					projfile.append("{path}/projections_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
 					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
+				#### make another set of projections for masked model
+				if options.mask:
+					projmskfile=[]
+					for m in models:
+						projmskfile.append("{path}/projections_msk_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
+						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
+						
 			else:
 				projfile=["{path}/projections_{it:02d}.hdf".format(path=options.newpath, it=it)]
 				run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[0],proj=projfile[0],orient=origen,sym=db["sym"],threads=options.threads))
+				
+				#### make another set of projections for masked model
+				if options.mask:
+					projmskfile=["{path}/projections_msk_{it:02d}.hdf".format(path=options.newpath, it=it)]
+					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=mskmodel[0],proj=projmskfile[0],orient=origen,sym=db["sym"],threads=options.threads))
 
 		output_3d.append({})
 		output_cls.append({})
@@ -223,6 +247,14 @@ def main():
 				projfile=["{path}/projections_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo) for m in models]
 				for m in models:
 					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[m],orient=origen,sym=db["sym"],threads=options.threads))
+				if options.mask:
+					mskmodel=[]
+					projmskfile=[]
+					for m in models:
+						mskmodel.append(inputmodel[m][:-4]+"_msk.hdf")
+						projmskfile.append("{path}/projections_msk_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo))
+						run("e2proc3d.py {model} {mskmodel} --multfile {msk}".format(model=inputmodel[m], mskmodel=mskmodel[-1], msk=mask3d))
+						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
 
 			oldmapfile=str(db["last_{}".format(eo)])
 			ptclfile=str(db["input"][eoid])
@@ -249,11 +281,15 @@ def main():
 			cmxmirror=EMData(clsmx,5)
 
 			projs=[]
-			for pj in projfile:
-				projs.append(EMData.read_images(pj))
-				if options.mask:
-					for si in range(len(simmask)):
-						projs[-1][si].mult(simmask[si])
+			if options.mask:
+				projs=[EMData.read_images(pj) for pj in projmskfile]
+			else:
+				projs=[EMData.read_images(pj) for pj in projfile]
+			#for pj in projfile:
+			#	projs.append(EMData.read_images(pj))
+			#	if options.mask:
+			#		for si in range(len(simmask)):
+			#			projs[-1][si].mult(simmask[si])
 			
 			xforms=[]
 			for i in range(npt):
@@ -283,7 +319,11 @@ def main():
 
 			### classification
 			print "Classifying particles..."
-			cmxtmp=cmxcls.copy()
+			if options.symcopy:
+				cmxy=cmxcls["ny"]
+				cmxtmp=EMData(nsym, cmxy)
+			else:
+				cmxtmp=cmxcls.copy()
 			cmxtmp.to_zero()
 			cmxtmp.sub(1)
 			cmxout=[cmxtmp.copy() for s in models]
@@ -291,22 +331,35 @@ def main():
 
 
 			if multimodel:
-				### simply classify
-				clso=np.argmin(corr,1)
-				cls=clso%len(models)
-				clsm=clso//len(models)
-				print eo,[float(sum(cls==k))/float(npt) for k in models]
-				for i in range(npt):
-					v=cmxcls[0,i]
-					if options.breaksym:
-						#print v,cls[i],clsm[i],symdone[int(v)]
-						v=eulerlst[symdone[int(v)]][clsm[i]]
-						
-					for s in models:
-						if s==cls[i]:
-							cmxout[s][0,i]=v
-						else:
-							cmxout[s][0,i]=-1
+				if options.symcopy:
+					for i in range(npt):
+						c=np.asarray(corr[i])
+						cls=np.argmin(c.reshape(len(corr[i])/len(models),len(models)),1)
+						#### the class it belongs to
+						v=cmxcls[0,i] 
+						#### index of the class of each asym-unit
+						el=np.asarray(eulerlst[symdone[int(v)]]) 
+						for u in range(len(cls)):
+							cmxout[cls[u]][u,i]=el[u]
+						#exit()
+					
+				else:
+					### simply classify
+					clso=np.argmin(corr,1)
+					cls=clso%len(models)
+					clsm=clso//len(models)
+					print eo,[float(sum(cls==k))/float(npt) for k in models]
+					for i in range(npt):
+						v=cmxcls[0,i]
+						if options.breaksym:
+							#print v,cls[i],clsm[i],symdone[int(v)]
+							v=eulerlst[symdone[int(v)]][clsm[i]]
+							
+						for s in models:
+							if s==cls[i]:
+								cmxout[s][0,i]=v
+							else:
+								cmxout[s][0,i]=-1
 			else:
 				### one model input, split the data to two halves
 				for c in range(ncls):
@@ -335,7 +388,7 @@ def main():
 						for i in toavg:
 							cmxout[s][0,i]=c
 
-
+			
 			### write classmx
 			for s in models:
 				#print cmxout[s]["maximum"]
@@ -343,9 +396,14 @@ def main():
 				ns=EMUtil.get_image_count(clsmx)
 				for i in range(1,ns):
 					e=EMData(clsmx,i)
-					e.write_image(newclsmx[s],i)
+					if options.symcopy:
+						enp=e.numpy()[:,0]
+						anp=np.tile(enp,[nsym,1]).T.copy()
+						a=from_numpy(anp)
+						a.write_image(newclsmx[s],i)
+					else:	
+						e.write_image(newclsmx[s],i)
 
-			#exit()
 			print "Making class average and 3d map..."
 			for s in models:
 				### class average
@@ -358,7 +416,7 @@ def main():
 				run("e2make3dpar.py --input {clsout} --sym {sym} --output {threed} {preprocess} --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_5 --threads {threads} ".format(
 				clsout=classout[s],threed=threedout[s], sym=sym, recon=db["recon"], preprocess=db["m3dpreprocess"],  m3dkeep=db["m3dkeep"], keepsig=db["m3dkeepsig"],
 				m3dpad=db["pad"],threads=options.threads, apix=db_apix))
-
+		#exit()
 		### post process
 		print "Post processing..."
 		if os.path.exists("strucfac.txt") :
@@ -368,7 +426,8 @@ def main():
 
 		for s in models:
 			final3d="{path}/threed_{it:02d}_{n}.hdf".format(path=options.newpath,n=s, it=it)
-			run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(it=it,even3d=output_3d[-1]["even"][s], odd3d=output_3d[-1]["odd"][s], final3d=final3d, mass=db["mass"], amask3d=db["automask3d"], sym=sym, amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db.setdefault("automaskexpand","0")))
+			
+			run("e2refine_postprocess.py --even {even3d} --odd {odd3d} --output {final3d} --automaskexpand {amaskxp} --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(it=it,even3d=output_3d[-1]["even"][s], odd3d=output_3d[-1]["odd"][s], final3d=final3d, mass=db["mass"], amask3d=automask, sym=sym, amask3d2=db["automask3d2"], m3dpostproc=db["m3dpostprocess"], setsf=m3dsetsf,restarget=db["targetres"], amaskxp=db.setdefault("automaskexpand","0")))
 
 			### copy the fsc files..
 			fscs=["fsc_unmasked_{:02d}.txt".format(it),"fsc_masked_{:02d}.txt".format(it),"fsc_maskedtight_{:02d}.txt".format(it)]
