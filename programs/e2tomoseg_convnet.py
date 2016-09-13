@@ -7,11 +7,11 @@ from EMAN2 import *
 import cPickle
 
 def import_theano():
-	global theano,T,conv,downsample
+	global theano,T,conv,pool
 	import theano
 	import theano.tensor as T
 	from theano.tensor.nnet import conv
-	from theano.tensor.signal import downsample
+	from theano.tensor.signal import pool
 
 
 def main():
@@ -490,8 +490,8 @@ class StackedConvNet(object):
 		train_model = theano.function(
 					inputs=[
 						index,
-						theano.Param(learning_rate, default=0.1),
-						theano.Param(weight_decay, default=1e-5)
+						theano.In(learning_rate, value=0.1),
+						theano.In(weight_decay, value=1e-5)
 					],
 					outputs=cost,
 					updates=updates,
@@ -527,8 +527,8 @@ class StackedConvNet(object):
 		train_classify = theano.function(
 					inputs=[
 						index,
-						theano.Param(learning_rate, default=0.1),
-						theano.Param(weight_decay, default=1e-5)
+						theano.In(learning_rate, value=0.1),
+						theano.In(weight_decay, value=1e-5)
 					],
 					outputs=cost,
 					updates=updates,
@@ -609,7 +609,7 @@ class LeNetConvPoolLayer(object):
 		conv_out=conv_out[:,:,bp:-bp,bp:-bp]
 		
 		# downsample each feature map individually, using maxpooling
-		self.pooled_out = downsample.max_pool_2d(
+		self.pooled_out = pool.pool_2d(
 			input=conv_out,
 			ds=poolsize,
 			ignore_border=True

@@ -30,7 +30,10 @@
 #
 from EMAN2 import *
 import numpy as np
-from multiprocessing import Pool
+#from multiprocessing import Pool
+import threading
+from Queue import Queue
+#from EMAN2jsondb import JSTask
 import time
 import json
 from shutil import copyfile
@@ -45,6 +48,7 @@ def main():
 	parser.add_argument("--models","--model", dest="model", type=str,help="Comma separated list of reference maps used for classification. If a single map is provided, data will be split into two groups based on similarity to the single map.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images. eg- frc:minres=80:maxres=20. Default=ccc", default="ccc", guitype='strbox', row=10, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--threads", type=int,help="Number of threads.", default=4, guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--parallel", type=str,help="Parallel option.", default="thread:4", guitype='strbox', row=13, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--iter", type=int,help="Number of iterations.", default=1, guitype='intbox', row=12, col=1, rowspan=1, colspan=1)
 	parser.add_header(name="optheader", help='Optional parameters:', title="Optional:", row=14, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--mask",type=str,help="Name of an optional mask file. The mask is applied to the input models to focus the classification on a particular region of the map. Consider e2classifyligand.py instead.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', filecheck=False, row=15, col=0, rowspan=1, colspan=3)
@@ -53,7 +57,8 @@ def main():
 	parser.add_argument("--nomask", action="store_true", default=False ,help="no mask", guitype='boolbox', row=16, col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-
+	
+	from EMAN2PAR import EMTaskCustomer
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
@@ -202,7 +207,7 @@ def main():
 		for m in inputmodel:
 			mskmodel.append(m[:-4]+"_msk.hdf")
 			run("e2proc3d.py {model} {mskmodel} --multfile {msk}".format(model=m, mskmodel=mskmodel[-1], msk=mask3d))
-		#run("e2project3d.py {model} --outfile  {mskfile} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(model=mask3d,mskfile=maskfile,orient=origen,sym=db["sym"],threads=options.threads))
+		#run("e2project3d.py {model} --outfile  {mskfile} -f --orientgen {orient} --sym {sym} --parallel {para}".format(model=mask3d,mskfile=maskfile,orient=origen,sym=db["sym"],para=options.parallel))
 		#simmask=EMData.read_images(maskfile)
 	
 	#### start iterations...
@@ -217,22 +222,22 @@ def main():
 				
 				for m in models:
 					projfile.append("{path}/projections_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
+					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
 				#### make another set of projections for masked model
 				if options.mask:
 					projmskfile=[]
 					for m in models:
 						projmskfile.append("{path}/projections_msk_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
-						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
+						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
 						
 			else:
 				projfile=["{path}/projections_{it:02d}.hdf".format(path=options.newpath, it=it)]
-				run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[0],proj=projfile[0],orient=origen,sym=db["sym"],threads=options.threads))
+				run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[0],proj=projfile[0],orient=origen,sym=db["sym"],para=options.parallel))
 				
 				#### make another set of projections for masked model
 				if options.mask:
 					projmskfile=["{path}/projections_msk_{it:02d}.hdf".format(path=options.newpath, it=it)]
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=mskmodel[0],proj=projmskfile[0],orient=origen,sym=db["sym"],threads=options.threads))
+					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[0],proj=projmskfile[0],orient=origen,sym=db["sym"],para=options.parallel))
 
 		output_3d.append({})
 		output_cls.append({})
@@ -246,7 +251,7 @@ def main():
 			#### make projections for even/odd
 				projfile=["{path}/projections_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo) for m in models]
 				for m in models:
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=inputmodel[m],proj=projfile[m],orient=origen,sym=db["sym"],threads=options.threads))
+					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[m],proj=projfile[m],orient=origen,sym=db["sym"],para=options.parallel))
 				if options.mask:
 					mskmodel=[]
 					projmskfile=[]
@@ -254,7 +259,7 @@ def main():
 						mskmodel.append(inputmodel[m][:-4]+"_msk.hdf")
 						projmskfile.append("{path}/projections_msk_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo))
 						run("e2proc3d.py {model} {mskmodel} --multfile {msk}".format(model=inputmodel[m], mskmodel=mskmodel[-1], msk=mask3d))
-						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel thread:{threads}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],threads=options.threads))
+						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
 
 			oldmapfile=str(db["last_{}".format(eo)])
 			ptclfile=str(db["input"][eoid])
@@ -292,6 +297,7 @@ def main():
 			#			projs[-1][si].mult(simmask[si])
 			
 			xforms=[]
+			tasks=[]
 			for i in range(npt):
 				c=int(cmxcls[0,i])
 				tr=Transform({"type":"2d","alpha":cmxalpha[0,i],"mirror":int(cmxmirror[0,i]),"tx":cmxtx[0,i],"ty":cmxty[0,i]})
@@ -304,16 +310,60 @@ def main():
 					pjs=[projs[k][c] for k in range(len(projfile))]
 				
 				xforms.append({"ptclfile":ptclfile,"proj":pjs,"idx":i,"xform":tr,"cmp":options.simcmp})
-
-			pool = Pool()
-			corr=pool.map_async(do_compare, xforms)
-			pool.close()
-			while (True):
-				if (corr.ready()): break
-				remaining = corr._number_left
-				print "Waiting for", remaining, "tasks to complete..."
-				time.sleep(2)
-			corr=corr.get()
+				#tasks.append(MultiNoaliTask(xforms[-1]))
+			t00=time.time()
+			t01=t00
+			
+			#### parallel in EMAN way.
+			#pool=EMTaskCustomer(options.parallel)
+			#taskids=pool.send_tasks(tasks)
+			
+			#while (True) :
+				#time.sleep(3)
+				#rslt=np.asarray(pool.check_task(taskids))
+				#nleft=np.sum(rslt<=0)
+				#if nleft==0:
+					#break
+				#print "Waiting for", nleft, "tasks to complete..."
+			#corr=[pool.get_results(k)[1] for k in range(npt)]
+			#print corr
+			#print corr[0]
+			
+			#### the threading part is copied from e2spt_align
+			jsd=Queue(0)
+			NTHREADS=max(options.threads+1,2)
+			thrds=[threading.Thread(target=do_compare,args=(jsd,xforms[i])) for i in xrange(npt)]
+			thrtolaunch=0
+			corr=[[] for i in range(npt)]
+			while thrtolaunch<len(thrds) or threading.active_count()>1:
+				# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+				# note that it's ok that we wait here forever, since there can't be new results if an existing
+				# thread hasn't finished.
+				if thrtolaunch<len(thrds) :
+					while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+					if time.time()-t01>3:
+						print "Starting thread {}/{}".format(thrtolaunch,len(thrds))
+						t01=time.time()
+					thrds[thrtolaunch].start()
+					thrtolaunch+=1
+				else: time.sleep(1)
+			
+				while not jsd.empty():
+					idx,ccc=jsd.get()
+					#print idx,ccc
+					corr[idx]=ccc
+			
+			#### multiprocess - pool
+			#pool = Pool()
+			#corr=pool.map_async(do_compare, xforms)
+			#pool.close()
+			#while (True):
+				#if (corr.ready()): break
+				#remaining = corr._number_left
+				#print "Waiting for", remaining, "tasks to complete..."
+				#time.sleep(2)
+			#corr=corr.get()
+			print time.time()-t00
 			np.savetxt("{path}/simmx_{it:02d}_{eo}.txt".format(path=options.newpath,eo=eo, it=it),corr)
 			#corr=np.loadtxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo))
 
@@ -403,14 +453,14 @@ def main():
 						a.write_image(newclsmx[s],i)
 					else:	
 						e.write_image(newclsmx[s],i)
-
+			#exit()
 			print "Making class average and 3d map..."
 			for s in models:
 				### class average
-				run("e2classaverage.py --input {inputfile} --classmx {clsmx} --decayedge --storebad --output {clsout} --ref {proj} --iter {classiter} -f --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} --parallel thread:{thrd}".format(
+				run("e2classaverage.py --input {inputfile} --classmx {clsmx} --decayedge --storebad --output {clsout} --ref {proj} --iter {classiter} -f --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} --parallel {para}".format(
 					inputfile=ptclfile, clsmx=newclsmx[s], clsout=classout[s], proj=projfile[s], classiter=db["classiter"], normproc=db["classnormproc"], averager=db["classaverager"], classrefsf=db["classrefsf"],
 					classautomask=db["classautomask"],classkeep=db["classkeep"], classkeepsig=db["classkeepsig"], classcmp=db["classcmp"], classalign=db["classalign"], classaligncmp=db["classaligncmp"],
-					classralign=db["classralign"], prefilt=db["prefilt"], thrd=options.threads))
+					classralign=db["classralign"], prefilt=db["prefilt"], para=options.parallel))
 
 				### make 3d
 				run("e2make3dpar.py --input {clsout} --sym {sym} --output {threed} {preprocess} --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_5 --threads {threads} ".format(
@@ -480,19 +530,41 @@ def parse_json(db):
 
 	return db
 
-def do_compare(data):
+def do_compare(jsd,data):
 
 	e=EMData(data["ptclfile"],data["idx"])
 	e.transform(data["xform"])
 	ret=[]
 	for pj in data["proj"]:
 		ret.append(e.cmp(data["cmp"][0],pj,data["cmp"][1]))
-	return ret
-
+	
+	jsd.put((data["idx"],ret))
+	return 
 
 def run(cmd):
 	print cmd
 	launch_childprocess(cmd)
+
+
+#class MultiNoaliTask(JSTask):
+	
+	#def __init__(self,data):
+
+		#JSTask.__init__(self,"MultiNoaliTask",data,{},"")
+	
+	
+	#def execute(self,callback=None):
+		
+		#data=self.data
+		#e=EMData(data["ptclfile"],data["idx"])
+		#e.transform(data["xform"])
+		#ret=[]
+		#for pj in data["proj"]:
+			#ret.append(e.cmp(data["cmp"][0],pj,data["cmp"][1]))
+		#return ret
+		
+		
+
 
 if __name__ == '__main__':
 	main()
