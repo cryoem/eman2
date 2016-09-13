@@ -39,6 +39,7 @@ from EMAN2db import *
 from EMAN2jsondb import *
 from sparx import *
 from applications import MPI_start_end
+from inspect import currentframe, getframeinfo
 
 def check_options(options, progname):
 

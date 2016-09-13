@@ -5112,6 +5112,7 @@ def rearrange_ranks_of_processors(mode):
 	
 	import socket
 	import mpi
+	from inspect import currentframe, getframeinfo
 	
 	mpi.mpi_init(0, [])
 	

@@ -38,6 +38,7 @@ import sys
 import global_def
 from   global_def import *
 from optparse import OptionParser, SUPPRESS_HELP
+from inspect import currentframe, getframeinfo
 
 from EMAN2 import *
 from sparx import *
