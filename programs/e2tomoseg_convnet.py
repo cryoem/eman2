@@ -305,17 +305,19 @@ def apply_neuralnet(convnet,options):
 		nframe=e["nz"]
 		if nframe>1:
 			#### input data is 3D volume
-			esz=e["nx"]
+			#esz=max(e["nx"],e["ny"])
 			is3d=True
 			
-			
-	shape=[e["nx"],e["ny"],convz]		
+	esz=max(e["nx"],e["ny"])
+	enx=e["nx"]
+	eny=e["ny"]
+	shape=[esz,esz,convz]
 	convnet.update_shape((1, shape[2], shape[0],shape[1]))
 	for nf in range(nframe):
 		if is3d:
 			e=EMData(options.tomograms,0,False,Region(0,0,nf,esz,esz,convz))
 		else:
-			e=EMData(options.tomograms,nf)
+			e=EMData(options.tomograms,nf, False, Region(0,0,esz,esz))
 		
 		print "Applying the convolution net on image No {}...".format(nf)
 
@@ -340,7 +342,8 @@ def apply_neuralnet(convnet,options):
 			#e.process_inplace("normalize")
 			newshp=convnet.outsize
 			e.scale(float(newshp)/float(shape[0]))
-			e=e.get_clip(Region((shape[0]-newshp)/2,(shape[0]-newshp)/2,newshp,newshp))
+			e.clip_inplace(Region(0,0,enx,eny))
+			#e=e.get_clip(Region((shape[0]-newshp)/2,(shape[0]-newshp)/2,newshp,newshp))
 			e.process_inplace("normalize")
 			e.write_image(options.output,-1)
 		
@@ -357,7 +360,7 @@ def apply_neuralnet(convnet,options):
 		#print np.shape(img)
 		img=img.reshape(convnet.outsize,convnet.outsize).T
 		e = EMNumPy.numpy2em(img.astype("float32"))
-		
+		e.clip_inplace(Region(0,0,enx,eny))
 		if nframe==1:
 			e.process_inplace("normalize")
 		e.write_image(options.output,-1)
