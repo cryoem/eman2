@@ -2125,7 +2125,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	from   pixel_error  import angle_ave
 	from   global_def   import ERROR
 	import global_def
-	
+
 	# Local Constants
 	myname = "cter_mrk"
 	
@@ -3023,7 +3023,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 
 	nroo = len(roo)
 
-	#print "f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1
+	if DEBug:  print "f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1
 	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 
@@ -3062,9 +3062,9 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	def1 = defound[0][1]
 	if adjust_fstop:
 		from morphology import ctflimit
-		newstop,fnewstop = ctflimit(nx, def1, Cs, voltage, Pixel_size)
-		if DEBug:  print  "newstop  ",int(newstop*0.7),fnewstop*0.7,i_stop,newstop
-		if( newstop != i_stop):
+		newstop, fnewstop = ctflimit(nx, def1, Cs, voltage, Pixel_size)
+		if DEBug:  print  "newstop  ", int(newstop*0.7), fnewstop*0.7, i_stop, newstop
+		if( newstop != i_stop and (newstop-i_start)>min(10,(i_stop-i_start))):
 			i_stop = newstop
 			data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 			"""
