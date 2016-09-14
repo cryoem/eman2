@@ -1422,7 +1422,7 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 	else: return None, None, None
 
 
-def recons3d_4nnstruct_MPI_test(myid, main_node, prjlist, paramstructure, refang, params, delta, upweighted = True, mpi_comm=None, CTF = True, target_size=-1, avgnorm = 1.0, norm_per_particle = None):
+def recons3d_4nnstruct_MPI_test(myid, main_node, prjlist, paramstructure, refang, parameters, delta, upweighted = True, mpi_comm=None, CTF = True, target_size=-1, avgnorm = 1.0, norm_per_particle = None):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -1464,10 +1464,12 @@ def recons3d_4nnstruct_MPI_test(myid, main_node, prjlist, paramstructure, refang
 		#  [ipsi+iang], [ishift], [probability]
 		#  Number of orientations for a given image
 		bckgn = prjlist[im][0].get_attr("bckgnoise")
-		recdata = Util.mult_scalar(prjlist[im][0], params[im][5])
+		recdata = Util.mult_scalar(prjlist[im][0], parameters[im][5])
 		recdata.set_attr_dict({"padffted":1, "is_complex":1})
+		from fundamentals import fshift
+		recdata = fshift(recdata, parameters[im][3], parameters[im][4])
 		if not upweighted:  recdata = filt_table(recdata, bckgn )
-		r.insert_slice( recdata, Transform({"type":"spider","phi":params[im][0],"theta":params[im][1],"psi":params[im][2]}), 1.0)
+		r.insert_slice( recdata, Transform({"type":"spider","phi":parameters[im][0],"theta":parameters[im][1],"psi":parameters[im][2]}), 1.0)
 		'''
 		numbor = len(paramstructure[im][2])
 		ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in xrange(numbor) ]
