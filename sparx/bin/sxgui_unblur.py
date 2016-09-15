@@ -1519,6 +1519,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.intNrFrames = None
         self.idxFirstFrame = None
         self.idxLastFrame = None
+        self.varAnalyzeOne = None
 
         # Indices Threshold and Widget
         self.idxStart = 0
@@ -2087,12 +2088,19 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 self.arrMicNumber = numpy.array(listMicNumber)
 
         # If no files were found
+        print(len(self.listFile))
         if not self.listFile:
             messageBox2 = QtGui.QMessageBox()
             messageBox2.setText('No drift files found ({:s})'.format(strSuffix))
             messageBox2.exec_()
             messageBox.hide()
             return None
+        elif len(self.listFile) <= 5:
+            self.varAnalyzeOne = True
+            print(
+                '\n!!!! Only one shift file selected, ' +
+                'so plots of all micrographs could not work as expected. !!!!\n'
+                )
 
         # Fill list widget
         for file in self.listFile:
@@ -2738,7 +2746,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     self.idxName
                     ]
                 figFrames = pylab.figure(figsize=(3, 2), dpi=100)
-                intBins = self.lsFiles.count() / 3
+                if self.varAnalyzeOne:
+                    intBins = 3
+                else:
+                    intBins = self.lsFiles.count() / 3
                 arrBins = numpy.linspace(
                     numpy.min(self.arrData[strName]),
                     numpy.max(self.arrData[strName]) + 0.0001,
@@ -2792,7 +2803,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Figure and bin size for all plots
         figThresh = pylab.figure(figsize=(5, 4), dpi=100)
-        intBins = self.lsFiles.count() / 3
+        if self.varAnalyzeOne:
+            intBins = 3
+        else:
+            intBins = self.lsFiles.count() / 3
 
         # Special case, if there is no angle available
         if self.idxFirstFrame == self.idxLastFrame - 1 and \
@@ -3667,7 +3681,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         with open('{:s}_uncorrected.txt'.format(strOutput), 'w') as f:
             for name in sorted(self.listChecked):
                 arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                strDirectory = arrCurrentEntry[self.dMic][0].replace('Temp', 'Doseuncorrected')
+                strDirectory = arrCurrentEntry[self.dMic][0].replace('/Temp/', '/Doseuncorrected/').replace('_temp.mrc', '_sum.mrc')
                 f.write(
                     '{:s}\n'.format(
                         os.path.relpath(strDirectory)
@@ -3677,7 +3691,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         with open('{:s}_corrected.txt'.format(strOutput), 'w') as f:
             for name in sorted(self.listChecked):
                 arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                strDirectory = arrCurrentEntry[self.dMic][0].replace('Temp', 'Dosecorrected')
+                strDirectory = arrCurrentEntry[self.dMic][0].replace('/Temp/', '/Dosecorrected/').replace('_temp.mrc', '_sum.mrc')
                 f.write(
                     '{:s}\n'.format(
                         os.path.relpath(strDirectory)
