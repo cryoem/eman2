@@ -1496,7 +1496,7 @@ def recons3d_4nnstruct_MPI_test(myid, main_node, prjlist, paramstructure, refang
 			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
 		'''
 	#  clean stuff
-	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
+	del bckgn, recdata
 
 
 	reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)

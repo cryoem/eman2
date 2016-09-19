@@ -1759,6 +1759,15 @@ def read_spider_doc(fnam):
 			line = inf.readline()
 	return data
 
+def chooseformat(t):
+    ee = "%12.5f"%t
+    if(len(ee)>12):  return "e"
+    df1 = float(ee)
+    df2 = float("%12.4e"%t)
+    if(abs(t-df1) <= abs(t-df2)):  ouo = "f"
+    else: ouo = "e"
+    return ouo
+
 def read_text_row(fnam, format="", skip=";"):
 	"""
 	 	Read a column-listed txt file.
@@ -1822,9 +1831,8 @@ def write_text_row(data, file_name):
 				qtp = type(tpt)
 				if qtp == types.IntType:		outf.write("  %12d"%tpt)
 				elif qtp == types.FloatType:
-					s = "%f"%tpt
-					ls = s.index(".")
-					if( ls<6 ):					outf.write("  %12.5f"%tpt)
+					frmt = chooseformat(tpt)
+					if( frmt == "f" ):			outf.write("  %12.5f"%tpt)
 					else:						outf.write("  %12.5e"%tpt)
 				else:                   		outf.write("  %s"%tpt)
 			outf.write("\n")
@@ -1835,9 +1843,8 @@ def write_text_row(data, file_name):
 			qtp = type(tpt)
 			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
 			elif qtp == types.FloatType:
-				s = "%f"%tpt
-				ls = s.index(".")
-				if( ls<6 ):						outf.write("  %12.5f\n"%tpt)
+				frmt = chooseformat(tpt)
+				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
 				else:							outf.write("  %12.5e\n"%tpt)
 			else:								outf.write("  %s\n"%tpt)
 	outf.flush()
@@ -1903,9 +1910,8 @@ def write_text_file(data, file_name):
 				qtp = type(tpt)
 				if qtp == types.IntType:			outf.write("  %12d"%tpt)
 				elif qtp == types.FloatType:
-					s = "%f"%tpt
-					ls = s.index(".")
-					if( ls<6 ):						outf.write("  %12.5f"%tpt)
+					frmt = chooseformat(tpt)
+					if( frmt == "f" ):				outf.write("  %12.5f"%tpt)
 					else:							outf.write("  %12.5e"%tpt)
 				else:                   			outf.write("  %s"%tpt)
 			outf.write("\n")
@@ -1916,9 +1922,8 @@ def write_text_file(data, file_name):
 			qtp = type(tpt)
 			if qtp == types.IntType :			outf.write("  %12d\n"%tpt)
 			elif qtp == types.FloatType:
-				s = "%f"%tpt
-				ls = s.index(".")
-				if( ls<6 ):						outf.write("  %12.5f\n"%tpt)
+				frmt = chooseformat(tpt)
+				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
 				else:							outf.write("  %12.5e\n"%tpt)
 			else:                   			outf.write("  %s\n"%tpt)
 	outf.close()
