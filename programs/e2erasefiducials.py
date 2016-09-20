@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #====================
-#Author: Michael Bell July, 2016 (minor edits, Jesus Galaz-Montoya). Last update: July, 2016
+#Author: Michael Bell July, 2016 (edits, Jesus Galaz-Montoya). Last update: September, 2016
 #====================
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -60,6 +60,10 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel",type=str, default=None, help="""Default=None (not used). Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
 
+	parser.add_argument("--subset", default=0, type=int, help="Default=0 (not used). Apply algorithm to only a subset of images in each stack file.")
+	parser.add_argument("--nsigmas", default=3.0,type=float, help="Default=3.0. Number of standard deviations above the mean to determine pixels to mask out (erase).")
+
+
 	(options, args) = parser.parse_args()
 
 	nfiles = len(args)
@@ -91,6 +95,9 @@ def main():
 
 			#turn .ali or .mrc 3D images into a stack of 2D images that can be processed by this program.
 			cmd = 'e2proc2d.py ' + arg + ' dummy_stack.hdf --threed2twod'
+			if options.subset:
+				cmd += ' --first 0 --last ' + str(options.subset-1)
+
 			runcmd(options,cmd)
 
 			#make the new stack of 2D images (dummy_stack.hdf) the new input (the name of the input file but with .hdf format); this intermediate file will be deleted in the end.
@@ -147,22 +154,66 @@ def main():
 
 				results = get_results( etc, tids, options )
 
+		#if results:
+		#	#pass
+		#
+		#	if '.ali' == originalarg[-4:] or '.mrc' == originalarg[-4:]:
+		#		#intermediate = arg.replace('.hdf','.mrcs')
+		#		finaloutput = arg.replace('.hdf',originalarg[-4:])
+		#		cmd = 'e2proc2d.py ' + arg + ' ' + finaloutput + ' --twod2threed --outmode int16'
+		#		runcmd(options,cmd)
+		#		os.remove(arg)
+		#
+		#	if newarg: os.remove(newarg)
+
 		if results:
 			#pass
 
+			if options.parallel:
+				#outfstem = outf.replace('.hdf','')
+				cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_proc.hdf --stackname ' + outf
+				runcmd(options,cmdbuildstack)
+
+				if options.debug:
+					outfmasked = outf.replace('.hdf','_masked.hdf')
+					cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_masked.hdf --stackname ' + outfmasked
+					runcmd(options,cmdbuildstack)
+
+					outfnoise= outf.replace('.hdf','_noise.hdf')
+					cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_noise.hdf --stackname ' + outfnoise
+					runcmd(options,cmdbuildstack)
+
 			if '.ali' == originalarg[-4:] or '.mrc' == originalarg[-4:]:
 				#intermediate = arg.replace('.hdf','.mrcs')
-				finaloutput = arg.replace('.hdf',originalarg[-4:])
-				cmd = 'e2proc2d.py ' + arg + ' ' + finaloutput + ' --twod2threed --outmode int16'
+				finaloutput = outf.replace('.hdf',originalarg[-4:])
+				cmd = 'e2proc2d.py ' + outf + ' ' + finaloutput + ' --twod2threed --outmode int16'
+				
+				#print "\ncomand to generate finaloutput",cmd
 				runcmd(options,cmd)
 				os.remove(arg)
 
-			if newarg: os.remove(newarg)
+			if newarg: 
+				try:
+					os.remove(newarg)
+				except:
+					try:
+						#print "would have removed",newarg.replace('.hdf','_proc.hdf')
+						os.remove(newarg.replace('.hdf','_proc.hdf'))
+					except:
+						pass
+		try:
+			filelist = [ tmpf for tmpf in os.listdir(".") if 'erasegold_tmp' in tmpf ]
+			for tf in filelist:
+			    os.remove(tf)
+		except:
+			print "WARNING: cleanup failed."
+
 
 		dt = time.time() - t0
 		if options.verbose:
 			print("\n")
 			sys.stdout.write("Erased fiducials from {} ({} minutes)\n".format(arg,round(dt/60.,2)))
+	return
 
 
 def fiximage(options,imgfile,imgindx,outf):
@@ -202,10 +253,29 @@ def fiximage(options,imgfile,imgindx,outf):
 def generate_masks(options,img):
 	img.process_inplace("normalize")
 	# create sharp mask
-	msk = img.process("filter.highpass.gauss",{"cutoff_pixels":25})
-	msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
-	msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+3*msk["sigma"],"tozero":True})
-	msk.process_inplace("threshold.binary",{"value":msk["mean"]})
+	
+	'''
+	random cutoff values or int multiplication factors for thresholding ('3' below) work only on few datasets
+	it's best to estimate these things based on the size of the feature to mask, and decide on a per-dataset basis
+	how harshly to threshold
+	'''
+	#msk = img.process("filter.highpass.gauss",{"cutoff_pixels":25})
+	#msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+	#msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+3*msk["sigma"],"tozero":True})
+	#msk.process_inplace("threshold.binary",{"value":msk["mean"]})]
+
+	fourierpixels = img['nx']/2
+	cutoffpixels = fourierpixels - options.goldsize/2
+	
+	msk = img.process("filter.highpass.gauss",{"cutoff_pixels":cutoffpixels})
+	
+	apix = img['apix_x']
+	goldsizeinangstroms = apix*options.goldsize
+	freq = 1.0/goldsizeinangstroms
+
+	msk.process_inplace("filter.lowpass.tanh",{"cutoff_freq":freq})	#c:lowpass shouldn't be arbitrary; rather, use gold size to derive it.
+	msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+options.nsigmas*msk["sigma"],"tomean":True})
+
 	# remove dust
 	if options.keepdust: sharp_msk = msk.copy()
 	else:
@@ -235,13 +305,21 @@ def local_noise(options,img):
 			n = EMData(bs,bs)
 			n.to_zero()
 			n.process_inplace("math.addnoise",{"noise":r["sigma_nonzero"]})
-			n.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
-			try: n *= r["sigma_nonzero"]/n["sigma_nonzero"]
+			
+			#n.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
+			
+			fourierpixels = n['nx']/2
+			cutoffpixels = fourierpixels - options.goldsize/2
+			n.process_inplace("filter.highpass.gauss",{"cutoff_pixels":cutoffpixels})
+
+			try: 
+				n *= r["sigma_nonzero"]/n["sigma_nonzero"]
 			except:
 				if options.verbose > 8:
 					print("WARNING: division by zero, from n['sigma_nonzero']={}".format(n["sigma_nonzero"]))
 			n += r["mean_nonzero"]
 			localnoise.insert_clip(n,(x-bs/2,y-bs/2))
+	
 	if options.lowpass:
 		apix = img['apix_x']
 		localnoise['apix_x'] = apix
