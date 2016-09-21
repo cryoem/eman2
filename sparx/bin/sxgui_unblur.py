@@ -1521,6 +1521,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.idxLastFrame = None
         self.varAnalyzeOne = None
 
+        # Indices show and hide
+        self.idxVisible = 0
+        self.idxRect = 1
+        self.idxPos = 2
+
         # Indices Threshold and Widget
         self.idxStart = 0
         self.idxStop = 1
@@ -1642,6 +1647,48 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.dictColor = {
             'modified': "color: rgb(0, 150, 255);",
             'done': "color: rgb(0, 0, 0);"
+            }
+        self.dictVisible = {
+            self.msPlotDrift: [
+                self.msPlotDrift.isVisible(),
+                self.msPlotDrift.rect(),
+                self.msPlotDrift.pos()
+                ],
+            self.msPlotFrame: [
+                self.msPlotFrame.isVisible(),
+                self.msPlotFrame.rect(),
+                self.msPlotFrame.pos()
+                ],
+            self.msPlotAngle: [
+                self.msPlotAngle.isVisible(),
+                self.msPlotAngle.rect(),
+                self.msPlotAngle.pos()
+                ],
+            self.msAllPlotFrameAvg: [
+                self.msAllPlotFrameAvg.isVisible(),
+                self.msAllPlotFrameAvg.rect(),
+                self.msAllPlotFrameAvg.pos()
+                ],
+            self.msAllPlotDrift: [
+                self.msAllPlotDrift.isVisible(),
+                self.msAllPlotDrift.rect(),
+                self.msAllPlotDrift.pos()
+                ],
+            self.msAllPlotFrame: [
+                self.msAllPlotFrame.isVisible(),
+                self.msAllPlotFrame.rect(),
+                self.msAllPlotFrame.pos()
+                ],
+            self.msAllPlotAngle: [
+                self.msAllPlotAngle.isVisible(),
+                self.msAllPlotAngle.rect(),
+                self.msAllPlotAngle.pos()
+                ],
+            self.msAllPlotPerMic: [
+                self.msAllPlotPerMic.isVisible(),
+                self.msAllPlotPerMic.rect(),
+                self.msAllPlotPerMic.pos()
+                ]
             }
 
         # Lists
@@ -2087,8 +2134,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             if not varBreak:
                 self.arrMicNumber = numpy.array(listMicNumber)
 
-        # If no files were found
-        print(len(self.listFile))
+        # If no or few files were found
         if not self.listFile:
             messageBox2 = QtGui.QMessageBox()
             messageBox2.setText('No drift files found ({:s})'.format(strSuffix))
@@ -2098,7 +2144,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         elif len(self.listFile) <= 5:
             self.varAnalyzeOne = True
             print(
-                '\n!!!! Only one shift file selected, ' +
+                '\n!!!! Only few shift files selected, ' +
                 'so plots of all micrographs could not work as expected. !!!!\n'
                 )
 
@@ -3398,18 +3444,42 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Hide the Plot Widget when its closed"""
 
         # Uncheck the related check box and hide the widget
-        self.dictHide[msplot].setCheckState(Qt.Unchecked)
         msplot.hide()
+        self.dictHide[msplot].setCheckState(Qt.Unchecked)
+        self.dictVisible.update({
+            msplot: [
+                msplot.isVisible(),
+                msplot.rect(),
+                msplot.pos()
+                ]
+            })
 
     def _show_plot(self, checkbox):
         """Show the Plot Widget"""
-
+        msplot = self.dictShow[checkbox]
         # If the checkbox is checked, show the related widget
         if checkbox.checkState() == Qt.Checked:
-            self.dictShow[checkbox].show()
+            msplot.setGeometry(self.dictVisible[msplot][self.idxRect])
+            msplot.move(self.dictVisible[msplot][self.idxPos])
+            msplot.activateWindow()
+            msplot.show()
+            self.dictVisible.update({
+                msplot: [
+                    msplot.isVisible(),
+                    msplot.rect(),
+                    msplot.pos()
+                    ]
+                })
         # Otherwise hide it
         elif checkbox.checkState() == Qt.Unchecked:
-            self.dictShow[checkbox].hide()
+            msplot.hide()
+            self.dictVisible.update({
+            msplot: [
+                    msplot.isVisible(),
+                    msplot.rect(),
+                    msplot.pos()
+                    ]
+                })
 
     def _select_all(self):
         """Select all entrys"""
@@ -3980,6 +4050,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             self._refresh_calculations(goon=True)
 
             for row in arrThresh:
+                listElement = []
                 for index in xrange(2, len(row)):
                     listElement.append(row[index])
                 if row[0] != self.modeOverall:
@@ -4056,15 +4127,62 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.WindowStateChange:
             if self.isMinimized():
-                self.dictVisible = {}
-                self.dictVisible.update({self.msPlotDrift: self.msPlotDrift.isVisible()})
-                self.dictVisible.update({self.msPlotFrame: self.msPlotFrame.isVisible()})
-                self.dictVisible.update({self.msPlotAngle: self.msPlotAngle.isVisible()})
-                self.dictVisible.update({self.msAllPlotFrameAvg: self.msAllPlotFrameAvg.isVisible()})
-                self.dictVisible.update({self.msAllPlotDrift: self.msAllPlotDrift.isVisible()})
-                self.dictVisible.update({self.msAllPlotFrame: self.msAllPlotFrame.isVisible()})
-                self.dictVisible.update({self.msAllPlotAngle: self.msAllPlotAngle.isVisible()})
-                self.dictVisible.update({self.msAllPlotPerMic: self.msAllPlotPerMic.isVisible()})
+                self.dictVisible.update({
+                    self.msPlotDrift: [
+                        self.msPlotDrift.isVisible(),
+                        self.msPlotDrift.rect(),
+                        self.msPlotDrift.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msPlotFrame: [
+                        self.msPlotFrame.isVisible(),
+                        self.msPlotFrame.rect(),
+                        self.msPlotFrame.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msPlotAngle: [
+                        self.msPlotAngle.isVisible(),
+                        self.msPlotAngle.rect(),
+                        self.msPlotAngle.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msAllPlotFrameAvg: [
+                        self.msAllPlotFrameAvg.isVisible(),
+                        self.msAllPlotFrameAvg.rect(),
+                        self.msAllPlotFrameAvg.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msAllPlotDrift: [
+                        self.msAllPlotDrift.isVisible(),
+                        self.msAllPlotDrift.rect(),
+                        self.msAllPlotDrift.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msAllPlotFrame: [
+                        self.msAllPlotFrame.isVisible(),
+                        self.msAllPlotFrame.rect(),
+                        self.msAllPlotFrame.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msAllPlotAngle: [
+                        self.msAllPlotAngle.isVisible(),
+                        self.msAllPlotAngle.rect(),
+                        self.msAllPlotAngle.pos()
+                        ]
+                    })
+                self.dictVisible.update({
+                    self.msAllPlotPerMic: [
+                        self.msAllPlotPerMic.isVisible(),
+                        self.msAllPlotPerMic.rect(),
+                        self.msAllPlotPerMic.pos()
+                        ]
+                    })
 
                 for key in self.dictVisible:
                     if self.dictVisible[key]:
@@ -4074,9 +4192,24 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             elif self.minimized:
                 self.minimized = False
                 for key in self.dictVisible:
-                    if self.dictVisible[key]:
-                        key.show()
+                    if self.dictVisible[key][self.idxVisible]:
+                        key.setGeometry(self.dictVisible[key][self.idxRect])
+                        key.move(self.dictVisible[key][self.idxPos])
                         key.activateWindow()
+                        key.show()
+
+                if self.isVisible():
+                    self.raise_()
+                    self.activateWindow()
+
+        elif event.type() == QtCore.QEvent.ActivationChange:
+
+            if self.isActiveWindow():
+                for key in self.dictVisible:
+                    if self.dictVisible[key][self.idxVisible]:
+                        key.raise_()
+                self.raise_()
+                self.activateWindow()
 
     def closeEvent(self, event):
         """Change the closeEvent to close the application cleanly"""
