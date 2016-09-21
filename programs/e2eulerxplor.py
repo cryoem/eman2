@@ -312,9 +312,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 
 		dirs.sort()
 		for i in range(len(dirs)-1,-1,-1):
-			if len(dirs[i]) != 9:
-				dirs.pop(i)
-			elif dirs[i][:7] != "refine_":
+			if dirs[i][:7] != "refine_" and dirs[i][:6]!="multi_" and dirs[i][:11]!="multinoali_":
 				dirs.pop(i)
 			else:
 				try: int(dirs[i][7:])
@@ -336,6 +334,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		register_js_name = "{}/0_refine_parms.json".format(dir)
 
 		files=os.listdir(dir)
+		
 		try:
 			nums=[int(i[7:9]) for i in files if "threed" in i and "even" not in i and "odd" not in i]
 			maxnum=max(nums)

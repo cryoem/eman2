@@ -8,7 +8,7 @@ import threading
 import Queue
 from sys import argv,exit
 
-def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shrink,maxres,verbose):
+def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shrink,maxres,simthr2,verbose):
 	"""Averaging thread. 
 	avgs are n existing Averagers, 
 	fsp,i is the particle being averaged
@@ -43,8 +43,10 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shri
 	else :
 		d=best[2]
 	
-	avgs[best[1]].add_image(d)
-	print "{} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0])
+	if best[0]<simthr2 : 
+		avgs[best[1]].add_image(d)
+		print "{} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0])
+	else: print "** {} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0])
 	jsd.put((fspn,best[0],best[1],best[3]))
 
 
@@ -66,6 +68,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.")
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 	parser.add_argument("--simthr", default=-0.1,type=float,help="Similarity is smaller for better 'quality' particles. Specify the highest value to include from e2spt_hist.py. Default -0.1")
+	parser.add_argument("--simthr2", default=0,type=float,help="Simlarity score for the best matching final alignment. Scaling may be different due to resolution limit. Default 0")
 	parser.add_argument("--replace",type=str,default=None,help="Replace the input subtomograms used for alignment with the specified file (used when the aligned particles were masked or filtered)")
 	parser.add_argument("--wedgesigma",type=float,help="Threshold for identifying missing data in Fourier space in terms of standard deviation of each Fourier shell. Default 3.0",default=3.0)
 	parser.add_argument("--minalt",type=float,help="Minimum alignment altitude to include. Default=0",default=0)
@@ -140,10 +143,10 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	# Rotation and insertion are slow, so we do it with threads. 
 	# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
 	if options.replace != None:
-		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.verbose)) for i,k in enumerate(keys)]
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.simthr2,options.verbose)) for i,k in enumerate(keys)]
 
 	else:
-		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.verbose)) for i,k in enumerate(keys)]
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.simthr2,options.verbose)) for i,k in enumerate(keys)]
 
 
 	print len(thrds)," threads"
