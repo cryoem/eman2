@@ -58,7 +58,8 @@ def main():
 	parser.add_option("--seed",                          type   ="int",           default =-1,                    help="random seed for create initial random assignment for EQ Kmeans")
 	parser.add_option("--smallest_group",                type   ="int",           default =500,                   help="minimum members for identified group")
 	parser.add_option("--sausage",                       action ="store_true",    default =False,                 help="way of filter volume")
-	parser.add_option("--chunkdir",                      type   ="string",        default ='',                    help="chunkdir for computing margin of error")
+	parser.add_option("--chunk0",                        type   ="string",        default ='',                    help="chunk0 for computing margin of error")
+	parser.add_option("--chunk1",                        type   ="string",        default ='',                    help="chunk1 for computing margin of error")
 	parser.add_option("--PWadjustment",                  type   ="string",        default ='',                    help="1-D power spectrum of PDB file used for EM volume power spectrum correction")
 	parser.add_option("--protein_shape",                 type   ="string",        default ='g',                   help="protein shape. It defines protein preferred orientation angles. Currently it has g and f two types ")
 	parser.add_option("--upscale",                       type   ="float",         default =0.5,                   help=" scaling parameter to adjust the power spectrum of EM volumes")
@@ -135,7 +136,8 @@ def main():
 		Constants["seed"]                		 = options.seed
 		Constants["smallest_group"]      		 = options.smallest_group
 		Constants["sausage"]             		 = options.sausage
-		Constants["chunkdir"]            		 = options.chunkdir
+		Constants["chunk0"]                      = options.chunk0
+		Constants["chunk1"]                      = options.chunk1
 		Constants["PWadjustment"]        		 = options.PWadjustment
 		Constants["upscale"]             		 = options.upscale
 		Constants["wn"]                  		 = options.wn
@@ -283,8 +285,8 @@ def main():
 		chunk_dict = {}
 		chunk_list = []
 		if myid == main_node:
-			chunk_one = read_text_file(os.path.join(Tracker["constants"]["chunkdir"],"chunk0.txt"))
-			chunk_two = read_text_file(os.path.join(Tracker["constants"]["chunkdir"],"chunk1.txt"))
+			chunk_one = read_text_file(Tracker["constants"]["chunk0"])
+			chunk_two = read_text_file(Tracker["constants"]["chunk1"])
 		else:
 			chunk_one = 0
 			chunk_two = 0
