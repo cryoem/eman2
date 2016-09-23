@@ -529,7 +529,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("div_filter", &EMAN::Util::div_filter, args("img", "img1"), "img /= Re(img1) with zero check")
 		.def("sqed", &EMAN::Util::sqed, args("img", "proj", "ctfs", "bckgnoise"), "")
 		.def("sqedac", &EMAN::Util::sqedac, args("img", "proj", "ctfsbckgnoise"), "")
-		.def("sqedfull", &EMAN::Util::sqedfull, args("img", "proj", "ctfs", "bckgnoise", "normas", "prob"), "")
+		.def("sqedfull", &EMAN::Util::sqedfull, args("img", "proj", "ctfs", "mask", "bckgnoise", "prob"), "")
 		.def("sqednorm", &EMAN::Util::sqednorm, args("img", "proj", "ctfs", "bckgnoise"), "")
 		.def("rotavg_fourier", &EMAN::Util::rotavg_fourier)
 		.def("unroll1dpw", &EMAN::Util::unroll1dpw, return_value_policy< manage_new_object >(), args("ny", "bckgnoise"), "out = power")
