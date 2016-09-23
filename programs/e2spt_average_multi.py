@@ -19,6 +19,7 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shri
 	"""
 	if shrink<2: shrink=0
 	b=EMData(fsp,fspn)
+	if maxres>0: b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/maxres})
 	if maxtilt<90.0 :
 		bf=b.do_fft()
 		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
@@ -74,7 +75,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	parser.add_argument("--minalt",type=float,help="Minimum alignment altitude to include. Default=0",default=0)
 	parser.add_argument("--maxalt",type=float,help="Maximum alignment altitude to include. Deafult=180",default=180)
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0)
-	parser.add_argument("--maxres",type=float,help="Highest resolution in A to be used for classification among possible orientations and references. Default=30",default=30.0)
+	parser.add_argument("--maxres",type=float,help="Lowpass filter applied to particles prior to alignment/averaging, resolution in A. Default disabled",default=-1)
 	parser.add_argument("--listfile",type=str,help="Specify a filename containing a list of integer particle numbers to include in the average, one per line, first is 0. Additional exclusions may apply.",default=None)
 	parser.add_argument("--shrinkcompare",type=int,help="Shrink factor for classification only (for speed)",default=0)
 	parser.add_argument("--sym",type=str,help="Symmetry of the input. Must be aligned in standard orientation to work properly.",default="c1")
@@ -113,7 +114,9 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	n=len(args)
 	refs=[EMData(i) for i in args]
-
+	if options.maxres>0:
+		for r in refs: r.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
+	
 	if options.listfile!=None :
 		plist=set([int(i) for i in file(options.listfile,"r")])
 
