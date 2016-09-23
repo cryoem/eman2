@@ -179,7 +179,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 			fit_options="--astigmatism"
 		else:
 			fit_options=""
-	elif curdefocusfix:
+	elif options.curdefocusfix:
 		print "Using existing particle based parameters, by user request"
 		if options.astigmatism :
 			print """Astigmatism requested""" 
