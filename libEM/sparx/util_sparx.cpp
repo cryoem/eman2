@@ -19193,7 +19193,19 @@ float Util::sqedac( EMData* img, EMData* proj, EMData* ctfsbckgnoise )
 void Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMData* bckgnoise, float prob)
 {
 	ENTERFUNC;
+/*
+        int nx=bckgnoise->get_xsize(), ny=bckgnoise->get_ysize();
+        cout<<"  "<< nx <<"  "<<ny<<endl;
+        nx=mask->get_xsize(), ny=mask->get_ysize();
+        cout<<"  "<< nx <<"  "<<ny<<endl;
+        nx=ctfs->get_xsize(), ny=ctfs->get_ysize();
+        cout<<"  "<< nx <<"  "<<ny<<endl;
+        nx=proj->get_xsize(), ny=proj->get_ysize();
+        cout<<"  "<< nx <<"  "<<ny<<endl;
+
+*/
 	int nx=img->get_xsize(), ny=img->get_ysize();
+	//cout<<"  "<< nx <<"  "<<ny<<endl;
 	nx /= 2;
 	if (nx != ctfs->get_xsize()) {
 		throw NullPointerException("incorrect image size");
@@ -19223,10 +19235,15 @@ void Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMDa
 					float frac = rf - float(ir);
 					float qres = 1.0f - frac;
 					int ioff = 2*roff;
+//if(roff>66*130-1)  {
+//cout<<"  "<< ix <<"  "<<iy<<"  "<<jy<<"  "<<roff<<"  "<<ioff<<endl;
+//cout<<"   roff  error  "<<endl;
+//}
 					float temp = (data[ioff] - dctfs[roff]*dproj[ioff]);
 					temp *= temp;
 					float iemp = (data[ioff+1] - dctfs[roff]*dproj[ioff+1]);
 					temp += iemp*iemp;
+//cout<<" UUU   "<< ir <<"  "<<data[ioff]*data[ioff]+data[ioff+1]*data[ioff+1]<<"  "<<dctfs[roff]*dproj[ioff]*dctfs[roff]*dproj[ioff]+dctfs[roff]*dproj[ioff+1]*dctfs[roff]*dproj[ioff+1]<<endl;
 					rotav[ir]   += temp*qres;
 					rotav[ir+1] += temp*frac;
 					count[ir]   += qres;
@@ -19237,7 +19254,7 @@ void Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMDa
 	}
 
 	for (int ir=0; ir<nx; ir++) {
-		bckgnoise[ir] /= Util::get_max(count[ir]/prob,1.0f);
+		if( count[ir] > 0.0 )   bckg[ir] += rotav[ir]/(count[ir]/prob);
 	}
 
 	EXITFUNC;
