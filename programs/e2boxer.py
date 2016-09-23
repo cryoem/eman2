@@ -284,13 +284,16 @@ def write_boxfiles(files,boxsize):
 	except: pass
 	boxsize2=boxsize/2
 
-	for m in files:
+	print len(files)," files to consider writing .box files for"
+	for m in [i.split()[1] for i in files]:
 		db=js_open_dict(info_name(m))
-		boxes=db.setdefault("boxes",[])
-		if len(boxes)==0 : continue
+		boxes=db.getdefault("boxes",[])
+		if len(boxes)==0 : 
+			print "no boxes in ",info_name(m)
+			continue
 		out=file("boxfiles/{}.box".format(base_name(m)),"w")
 		for b in boxes:
-			out.write("{:d}\t{:d}\t{:d}\t{:d}\n".format(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
+			out.write("{:0.0f}\t{:0.0f}\t{:0.0f}\t{:0.0f}\n".format(int(b[0]-boxsize2),int(b[1]-boxsize2),int(boxsize),int(boxsize)))
 
 def write_particles(files,boxsize,verbose):
 	"""This function will write a particles/*_ptcls.hdf file for each provided micrograph, based on

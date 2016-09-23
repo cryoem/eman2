@@ -360,7 +360,7 @@ def apply_neuralnet(convnet,options):
 		#print np.shape(img)
 		img=img.reshape(convnet.outsize,convnet.outsize).T
 		e = EMNumPy.numpy2em(img.astype("float32"))
-		e.clip_inplace(Region(0,0,enx,eny))
+		#e.clip_inplace(Region(0,0,enx,eny))
 		if nframe==1:
 			e.process_inplace("normalize")
 		e.write_image(options.output,-1)

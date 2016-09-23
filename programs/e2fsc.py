@@ -118,9 +118,16 @@ and this program should be regarded as experimental.
 	cenmask.write_image("cenmask.hdf")
 	#display(cenmask)
 	
+	
 	overlap=options.overlap		# This is the fraction of the window size to use as a step size in sampling
 	if overlap<1 or overlap>lnx :
 		print "Invalid overlap specified, using default"
+	
+	# Create a Gaussian with the correct size to produce a flat average in 3-D
+	avgmask=EMData(lnx,lnx,lnx)
+	avgmask.to_one()
+	d=float(lnx//overlap)
+	avgmask.process_inplace("mask.gaussian",{"outer_radius":2.0*d/log(8.0) })	# this mask is adjusted to the precise width necessary so a sum of tiled overlapping Gaussians will be flat
 	
 	xr=xrange(0,nx-lnx,lnx/overlap)
 	yr=xrange(0,ny-lnx,lnx/overlap)
@@ -131,6 +138,12 @@ and this program should be regarded as experimental.
 	resvol["apix_z"]=apix*lnx/overlap
 	resvol143=resvol.copy()
 	
+	# volfilt will contain the locally filtered version of the map
+	volfilt=v1.copy()
+	volfilt.to_zero()
+	
+	# now do all of the tiled calculations
+	# TODO - parallelize this
 	fys=[]
 	funny=[]		# list of funny curves
 	t=time.time()
@@ -184,9 +197,9 @@ and this program should be regarded as experimental.
 				if isnan(fy[0]): print "NAN"
 
 				# 0.143 resolution
-				for i,xx in enumerate(fx[:-1]):
-					if fy[i]>0.143 and fy[i+1]<0.143 : break
-				res143=(0.143-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])+fx[i]
+				for si,xx in enumerate(fx[:-1]):
+					if fy[si]>0.143 and fy[si+1]<0.143 : break
+				res143=(0.143-fy[si])*(fx[si+1]-fx[si])/(fy[si+1]-fy[si])+fx[si]
 				if res143<0 : res143=0.0
 				if res143>fx[-1]: 
 					res143=fx[-1]		# This makes the resolution at Nyquist, which is not a good thing
@@ -195,9 +208,18 @@ and this program should be regarded as experimental.
 				
 				fys.append(fy)
 
+				# now we build the locally filtered volume
+				v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
+				v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
+				v1m.add(v2m)
+				v1m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si})	# sharp low-pass at 0.143 cutoff
+				v1m.mult(avgmask)
+
+				volfilt.insert_scaled_sum(v1m,(x+lnx/2,y+lnx/2,z+lnx/2))
 
 	resvol.write_image("resvol.hdf")
 	resvol143.write_image("resvol143.hdf")
+	volfilt.write_image("res143_filtered.hdf")
 	
 	out=file("fsc.curves.txt","w")
 	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
