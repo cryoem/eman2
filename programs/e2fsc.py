@@ -212,8 +212,8 @@ and this program should be regarded as experimental.
 				v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
 				v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
 				v1m.add(v2m)
-				v1m.mult(avgmask)
 				v1m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si})	# sharp low-pass at 0.143 cutoff
+				v1m.mult(avgmask)
 
 				volfilt.insert_scaled_sum(v1m,(x+lnx/2,y+lnx/2,z+lnx/2))
 
