@@ -48,6 +48,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--create",type=str,help="Input files should be image files. Specify an .lst file to create here with references to all of the images in the inputs.")
 	parser.add_argument("--mergesort",type=str,help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output",default=None)
 	parser.add_argument("--numaslist",type=str,help="Extract the particle numbers only in a list file (one number per line)",default=None)
+	parser.add_argument("--mergeeo",action="store_true", default=False, help="Merge even odd lst.")
 	parser.add_argument("--dereforig",type=str,help="Extract the source_orig_path and _n parameters from each image in the file and create a new .lst file referencing the original image(s)",default=None)
 	parser.add_argument("--retype",type=str,help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)",default=None)
 	parser.add_argument("--minlosnr",type=float,help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=0)
@@ -83,6 +84,32 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	if options.create != None:
 		lst=LSXFile(options.create,False)
+		if options.mergeeo:
+			print "Merging two image stacks..."
+			if len(args)!=2:
+				print "Error: Need two inputs..."
+				exit()
+			n=EMUtil.get_image_count(args[0])
+			
+			if args[0].endswith(".lst"):
+				lste=LSXFile(args[0],True)
+				lsto=LSXFile(args[1],True)
+				fromlst=True
+			else:
+				fromlst=False
+			
+			for i in range(n):
+				if fromlst:
+					ln=lste.read(i)
+					lst.write(-1,ln[0],ln[1],ln[2])
+					ln=lsto.read(i)
+					lst.write(-1,ln[0],ln[1],ln[2])
+				else:
+					lst.write(-1,i,args[0])
+					lst.write(-1,i,args[1])
+			
+			exit()
+		
 		if options.range:
 			rg=eval("range({})".format(options.range))
 			
