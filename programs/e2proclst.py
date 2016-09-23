@@ -89,7 +89,9 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			if len(args)!=2:
 				print "Error: Need two inputs..."
 				exit()
-			n=EMUtil.get_image_count(args[0])
+			n0=EMUtil.get_image_count(args[0])
+			n1=EMUtil.get_image_count(args[1])
+			n=max(n0,n1)
 			
 			if args[0].endswith(".lst"):
 				lste=LSXFile(args[0],True)
@@ -100,14 +102,18 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			
 			for i in range(n):
 				if fromlst:
-					ln=lste.read(i)
-					lst.write(-1,ln[0],ln[1],ln[2])
-					ln=lsto.read(i)
-					lst.write(-1,ln[0],ln[1],ln[2])
+					if i<n0:
+						ln=lste.read(i)
+						lst.write(-1,ln[0],ln[1],ln[2])
+					if i<n1:
+						ln=lsto.read(i)
+						lst.write(-1,ln[0],ln[1],ln[2])
 				else:
-					lst.write(-1,i,args[0])
-					lst.write(-1,i,args[1])
-			
+					if i<n0:
+						lst.write(-1,i,args[0])
+					if i<n1:
+						lst.write(-1,i,args[1])
+			lst=None
 			exit()
 		
 		if options.range:
