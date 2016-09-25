@@ -991,7 +991,7 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 		params["cutoff_abs"] = val;
 	}
 	else if( params.has_key("cutoff_pixels") ) {
-		float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]);
+		float val = ((float)params["cutoff_pixels"] / (float)dict["nx"]);
 		params["cutoff_abs"] = val;
 	}
 

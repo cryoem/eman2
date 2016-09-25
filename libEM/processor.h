@@ -375,7 +375,7 @@ The basic design of EMAN Processors: <br>\
                                 params["sigma"] = val;
                         }
                         else if( params.has_key("cutoff_pixels") ) {
-                                float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]);
+                                float val = ((float)params["cutoff_pixels"] / (float)dict["nx"]);
                                 params["cutoff_abs"] = val;
                                 params["sigma"] = val;
                         }
@@ -1748,7 +1748,7 @@ The basic design of EMAN Processors: <br>\
 				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0f);
 			}
 			else if( params.has_key("cutoff_pixels") ) {
-				float val = 0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"];
+				float val = (float)params["cutoff_pixels"] / (float)dict["nx"];
 				params["cutoff_abs"] = val;
 				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0f);
 			}
