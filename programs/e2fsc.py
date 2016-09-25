@@ -115,7 +115,7 @@ and this program should be regarded as experimental.
 	cenmask.to_one()
 	cenmask.process_inplace("mask.gaussian",{"inner_radius":lnx/6,"outer_radius":lnx/6})
 	print "Approx feature size for assessment = %1.1f A"%(apix*lnx/2.0)
-	cenmask.write_image("cenmask.hdf")
+#	cenmask.write_image("cenmask.hdf")
 	#display(cenmask)
 	
 	
@@ -217,9 +217,9 @@ and this program should be regarded as experimental.
 				v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
 				v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
 				v1m.add(v2m)
-				if res143>.23 : v1m.write_image("zones.hdf",-1)
+#				if res143>.23 : v1m.write_image("zones.hdf",-1)
 				v1m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
-				if res143>.23 : v1m.write_image("zones.hdf",-1)
+#				if res143>.23 : v1m.write_image("zones.hdf",-1)
 				v1m.mult(avgmask)
 
 #				if res143>.2 : print x,y,z,si,lnx,fx[si],res143
