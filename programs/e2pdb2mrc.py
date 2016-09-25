@@ -244,7 +244,7 @@ def main():
 		print "Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0])
 		print "              y: %7.2f - %7.2f"%(amin[1],amax[1])
 		print "              z: %7.2f - %7.2f"%(amin[2],amax[2])
-		print("Helix (%): {:.1f}".format(100*float(ihelix)/ires))
+		print("Helix (%): {:.1f}".format(100*float(ihelix)/ires)) # is this accurate?
 		print("Sheet (%): {:.1f}".format(100*float(isheet)/ires))
 
 		if options.info: sys.exit(1)
@@ -263,14 +263,15 @@ def main():
 			p = np.asmatrix(pa.get_points()).T
 			p = p.reshape(p.shape[0]/3,3)
 			points = []
-			for tfid in range(len(tfs.keys())):
+
+			for tfid in tfs.keys():
 				m = np.asmatrix(tfs[tfid]) # transformation matrix
 				tfd = np.dot(p,m[:,:3].T)+m[:,3].T
 				bfs = np.asmatrix(np.ones(tfd.shape[0])).T # should probably fill with real bfactors
 				points.append(np.hstack([tfd,bfs]))
 			pa = PointArray()
 			pts = np.concatenate(points).flatten()
-			pa.set_from(pts.tolist()[0])
+			pa.set_from(pts.tolist())
 
 		# apply additional, user specified symmetry
 		if options.addsym != "c1":
