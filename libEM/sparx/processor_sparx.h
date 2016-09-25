@@ -127,7 +127,7 @@ namespace EMAN
 				params["sigma"] = val;
 			}
 			else if( params.has_key("cutoff_pixels") ) {
-				float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]);
+				float val = ((float)params["cutoff_pixels"] / (float)dict["nx"]);
 				params["cutoff_abs"] = val;
 				params["sigma"] = val;
 			}
@@ -159,7 +159,7 @@ namespace EMAN
 			}
 			else if( params.has_key("cutoff_pixels") ) {
 			        // Here I have added a patch 1/sqrt(2) to compensate for the different Gaussian used in EMAN1 vs EMAN2 (John Flanagan)
-				float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]) / sqrt(2.0f);
+				float val = ((float)params["cutoff_pixels"] / (float)dict["nx"]) / sqrt(2.0f);
 				params["cutoff_abs"] = val;
 				params["sigma"] = val;
 			}
@@ -187,7 +187,7 @@ namespace EMAN
 			
 			else if(params.has_key("cutoff_pixels") && !params.has_key("low_cutoff_frequency"))
 			{
-			        params["low_cutoff_frequency"] = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]);
+			        params["low_cutoff_frequency"] = ((float)params["cutoff_pixels"] / (float)dict["nx"]);
 				
 			        float val = (float)params["low_cutoff_frequency"];
 			        params["high_cutoff_frequency"] = highlowratio*log10(1.0f/val) + val;  
