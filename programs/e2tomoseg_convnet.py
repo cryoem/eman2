@@ -168,6 +168,7 @@ def main():
 		fname="result_conv_{}.hdf".format(options.netout)
 		try:os.remove(fname)
 		except: pass
+		print convnet.outsize,shape
 		for idi in range(2):
 			rt=test_imgs(idi)
 			mid=test_cls(idi)
@@ -341,12 +342,14 @@ def apply_neuralnet(convnet,options):
 			e = EMNumPy.numpy2em(img.astype("float32"))
 			#e.process_inplace("normalize")
 			newshp=convnet.outsize
-			e.scale(float(newshp)/float(shape[0]))
-			e.clip_inplace(Region(0,0,enx,eny))
+			scl=float(convnet.outsize)/float(esz)
+			e.scale(scl)
+			e.clip_inplace(Region((esz-newshp)/2,(esz-newshp)/2,enx*scl,eny*scl))
 			#e=e.get_clip(Region((shape[0]-newshp)/2,(shape[0]-newshp)/2,newshp,newshp))
 			e.process_inplace("normalize")
 			e.write_image(options.output,-1)
-		
+			#print (esz-newshp)/2,enx,eny, float(convnet.outsize)/float(esz), img.shape
+		#exit()
 		#### Applying the convolution net...
 		test_imgs = theano.function(
 			inputs=[],
@@ -355,12 +358,14 @@ def apply_neuralnet(convnet,options):
 				convnet.x: data
 			}
 		)
-			
+		
 		img=test_imgs()
 		#print np.shape(img)
 		img=img.reshape(convnet.outsize,convnet.outsize).T
 		e = EMNumPy.numpy2em(img.astype("float32"))
-		#e.clip_inplace(Region(0,0,enx,eny))
+		scl=float(convnet.outsize)/float(esz)
+		e.clip_inplace(Region(0,0,enx*scl,eny*scl))
+		#print e["nx"], e["ny"], img.shape
 		if nframe==1:
 			e.process_inplace("normalize")
 		e.write_image(options.output,-1)
@@ -457,22 +462,26 @@ class StackedConvNet(object):
 		else:
 			self.poolsz=[2]*self.n_convlayers
 			
-		self.poolsz[-1]=1
+		#self.poolsz[-1]=1
 		poolsz=self.poolsz
 		convin=self.x
 		self.labelshrink=1
 		for i in range(self.n_convlayers):
+			pz=poolsz[i]
+			if pz<0:
+				pz=1.0/abs(pz)
 			convlayer = LeNetConvPoolLayer(
 				rng,
 				image_shape=input_shape,
 				filter_shape=(self.n_kernel[i], input_shape[1], self.ksize[i], self.ksize[i]),
-				poolsize=(poolsz[i], poolsz[i]),
+				poolsize=poolsz[i],
 				xin=convin
 			)
 			self.convlayers.append(convlayer)
 			#self.weights.append(convlayer.W)
-			self.labelshrink*=poolsz[i]
-			input_shape=(input_shape[0],self.n_kernel[i],input_shape[2]/poolsz[i],input_shape[3]/poolsz[i])
+			
+			self.labelshrink=int(self.labelshrink*pz)#poolsz[i]
+			input_shape=(input_shape[0],self.n_kernel[i],input_shape[2]/pz,input_shape[3]/pz)
 			convin=convlayer.hidden
 			
 			self.params.extend(convlayer.params)
@@ -509,13 +518,6 @@ class StackedConvNet(object):
 		weight_decay = T.scalar('wd')  # learning rate to use
 		index = T.lscalar()	# index to a [mini]batch
 		
-		#negnum=int(batch_size*.3) # number of negative samples
-		#theano_rng=RandomStreams(1)
-		#tdata=data[index * batch_size: ((index+1) * batch_size)-negnum]
-		#noise=theano_rng.normal(size=tdata[:negnum].shape,dtype=theano.config.floatX)
-		#tdata=T.concatenate([tdata,noise])
-		#cls=T.concatenate([cls[:-negnum], T.zeros_like(cls[:negnum])-1])
-		#print cls.shape.eval()
 		label=T.matrix(name='label')
 		
 		cost = self.clslayer.get_cost_hidden(label)
@@ -549,20 +551,24 @@ class StackedConvNet(object):
 		else:
 			poolsz=[2]*(self.n_convlayers-1)+[1]
 		for i in range(self.n_convlayers):
+			pz=poolsz[i]
+			if pz<0:
+				pz=1.0/abs(pz)
+			
 			self.convlayers[i].image_shape.set_value(input_shape, borrow=True)		
-			input_shape=(input_shape[0],self.n_kernel[i],input_shape[2]/poolsz[i],input_shape[3]/poolsz[i])
+			input_shape=(input_shape[0],self.n_kernel[i],input_shape[2]/pz,input_shape[3]/pz)
 			
 		self.outsize=int(input_shape[2])
 		
 		
 class LeNetConvPoolLayer(object):
 
-	def __init__(self, rng, filter_shape, image_shape, poolsize=(2, 2), xin=None):
+	def __init__(self, rng, filter_shape, image_shape, poolsize=2, xin=None):
 		
 		assert image_shape[1] == filter_shape[1]
 		self.image_shape=theano.shared(
 			value=np.asarray(image_shape,dtype='int16'),borrow=True)
-		self.poolsize=poolsize
+		self.poolsize=(poolsize,poolsize)
 		#self.input = input
 		if xin:
 			self.x=xin
@@ -578,7 +584,7 @@ class LeNetConvPoolLayer(object):
 		# "num output feature maps * filter height * filter width" /
 		#   pooling size
 		fan_out = (filter_shape[0] * np.prod(filter_shape[2:]) /
-			np.prod(poolsize))
+			np.prod(self.poolsize))
 		# initialize weights with random weights
 		W_bound = np.sqrt(6. / (fan_in + fan_out))
 		self.W = theano.shared(
@@ -598,6 +604,9 @@ class LeNetConvPoolLayer(object):
 		bp_values = np.zeros((filter_shape[1],), dtype=theano.config.floatX)
 		self.b = theano.shared(value=b_values, borrow=True)
 		self.b_prime = theano.shared(value=bp_values, borrow=True)
+		
+		if poolsize<-1:
+			self.x1=self.x1.repeat(int(-poolsize), axis=2).repeat(int(-poolsize), axis=3)
 
 		# convolve input feature maps with filters
 		conv_out = conv.conv2d(
@@ -612,20 +621,15 @@ class LeNetConvPoolLayer(object):
 		conv_out=conv_out[:,:,bp:-bp,bp:-bp]
 		
 		# downsample each feature map individually, using maxpooling
-		self.pooled_out = pool.pool_2d(
-			input=conv_out,
-			ds=poolsize,
-			ignore_border=True
-		)
-		#shp=conv_out.shape
-		#y = T.nnet.neighbours.images2neibs(conv_out, poolsize,mode='ignore_borders')
-		#pooled_out=y.mean(axis=-1).reshape((shp[0],shp[1],shp[2]/poolsize[0],shp[3]/poolsize[1]))
-
-		# add the bias term. Since the bias is a vector (1D array), we first
-		# reshape it to a tensor of shape (1, n_filters, 1, 1). Each bias will
-		# thus be broadcasted across mini-batches and feature map
-		# width & height
-		#self.hidden = T.tanh(self.pooled_out + self.b.dimshuffle('x', 0, 'x', 'x'))
+		if poolsize>1:
+			self.pooled_out = pool.pool_2d(
+				input=conv_out,
+				ds=self.poolsize,
+				ignore_border=True
+			)
+		else:
+			self.pooled_out=conv_out
+		
 		self.hidden = T.maximum(0,(self.pooled_out + self.b.dimshuffle('x', 0, 'x', 'x')))
 
 		# store parameters of this layer
