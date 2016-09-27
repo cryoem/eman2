@@ -22,7 +22,7 @@ def main():
 	parser.add_header(name="tmpheader", help='temp label', title="### This program is NOT avaliable yet... ###", row=0, col=0, rowspan=1, colspan=2, mode="train,test")
 	parser.add_argument("--trainset",help="Training set.", default=None, guitype='filebox', browser="EMParticlesTable(withmodal=True)",  row=1, col=0,rowspan=1, colspan=3, mode="train")
 	parser.add_argument("--from_trained", type=str,help="Start from pre-trained neural network", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True)", row=2, col=0, rowspan=1, colspan=3, mode="train,test")
-	parser.add_argument("--netout", type=str,help="Output neural net file name", default="conv.save",guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode="train")
+	parser.add_argument("--netout", type=str,help="Output neural net file name", default="nnet_save.hdf",guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode="train")
 	
 	parser.add_argument("--learnrate", type=float,help="Learning rate ", default=.01, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="train")
 	parser.add_argument("--niter", type=int,help="Training iterations", default=10, guitype='intbox', row=4, col=1, rowspan=1, colspan=1, mode="train")
@@ -116,7 +116,6 @@ def main():
 	#print shape
 	
 	
-	
 	if (options.niter>0):	
 		print "training the convolutional network..."
 		
@@ -140,10 +139,8 @@ def main():
 			print 'Training epoch %d, cost ' % ( epoch),
 			print np.mean(c),", learning rate",learning_rate
 
-		print "Saving the trained net to {}...".format(options.netout)
-		f = file(options.netout, 'wb')
-		cPickle.dump(convnet, f, protocol=cPickle.HIGHEST_PROTOCOL)
-		f.close()
+		
+		save_model(convnet, options.netout)
 		
 	#######################################
 	#print convnet.clslayer.W.get_value()
@@ -165,7 +162,10 @@ def main():
 				convnet.x: train_set_x[index * batch_size: (index+1) * batch_size]
 			}
 		)
-		fname="result_conv_{}.hdf".format(options.netout)
+		if options.netout.endswith(".hdf"):
+			fname="trainout_{}".format(options.netout)
+		else:
+			fname="trainout_{}.hdf".format(options.netout)
 		try:os.remove(fname)
 		except: pass
 		print convnet.outsize,shape
@@ -221,13 +221,80 @@ def main():
 def run(cmd):
 	print cmd
 	launch_childprocess(cmd)
+
+def save_model(convnet, fname):
+	print "Saving the trained net to {}...".format(fname)
+	#fname="nnet_save.hdf"
+	sz=int(convnet.convlayers[0].W.shape[-1].eval())
+
+	hdr=EMData(sz,sz)
+	hdr["nkernel"]=convnet.n_kernel
+	hdr["ksize"]=convnet.ksize
+	hdr["poolsz"]=convnet.poolsz
+	hdr["imageshape"]=convnet.image_shape
+	hdr.write_image(fname,0)
+
+	k=1
+	for i in range(convnet.n_convlayers):
+		w=convnet.convlayers[i].W.get_value()        
+		b=convnet.convlayers[i].b.get_value()
+		s=w.shape
+		
+		e=from_numpy(b)
+		e["w_shape"]=s
+		e.write_image(fname,k)
+		k+=1
+		w=w.reshape(s[0]*s[1], s[2], s[3])
+		for wi in w:
+			e=from_numpy(wi)
+			e.write_image(fname,k)
+			k+=1
+
+
 	
 def load_model(fname):
 	print "loading model from {}...".format(fname)
-	f = file(fname, 'rb')
-	convnet = cPickle.load(f)
-	f.close()
-	return convnet
+	try:
+		f = file(fname, 'rb')
+		convnet = cPickle.load(f)
+		f.close()
+		return convnet
+	except:
+		print "Reading weight matrix from hdf file..."
+		
+	hdr=EMData(fname,0)
+	
+	nkernel=hdr["nkernel"]
+	ksize=hdr["ksize"]
+	poolsz=hdr["poolsz"]
+	imageshape=hdr["imageshape"]
+	rng = np.random.RandomState(123)
+	
+	savenet= StackedConvNet(
+		rng,
+		nkernel=nkernel,
+		ksize=ksize,
+		poolsz=poolsz,
+		imageshape=imageshape
+	)
+	k=1
+	for i in range(savenet.n_convlayers):
+		e=EMData(fname,k)
+		s=e["w_shape"]
+		b=e.numpy().copy().astype(theano.config.floatX)
+		k+=1
+		savenet.convlayers[i].b.set_value(b)
+		allw=np.zeros((s[0]*s[1], s[2],s[3]))
+		for wi in range(s[0]*s[1]):
+			e=EMData(fname,k)
+			k+=1
+			w=e.numpy()
+			allw[wi]=w.copy()
+		allw=allw.reshape(s).astype(theano.config.floatX)
+		savenet.convlayers[i].W.set_value(allw)
+		#print w.shape, b.shape
+	
+	return savenet
 
 def dream(convnet,options):
 	convz=convnet.image_shape[1]
@@ -639,6 +706,7 @@ class LeNetConvPoolLayer(object):
 	
 	def get_reconstructed_input(self):
 		""" Computes the reconstructed input given the values of the hidden layer """
+
 		repeated_conv = conv.conv2d(input = self.hidden,
 			      filters = self.W_prime,
 			      border_mode='full')

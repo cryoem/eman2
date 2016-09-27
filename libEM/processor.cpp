@@ -2885,8 +2885,8 @@ void BooleanShrinkProcessor::process_inplace(EMData * image, Dict& params)
 	// Clamping the shrink values to the dimension lengths
 	// ensures that the return image has non zero dimensions
 	if ( shrinkx > nx ) shrinkx = nx;
-	if ( shrinky > ny ) shrinkx = ny;
-	if ( shrinkz > nz ) shrinkx = nz;
+	if ( shrinky > ny ) shrinky = ny;
+	if ( shrinkz > nz ) shrinkz = nz;
 
 	if (nx == 1 && ny == 1 && nz == 1 ) return;
 

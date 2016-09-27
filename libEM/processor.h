@@ -8617,7 +8617,7 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			TypeDict d;
 			d.put("kernel", EMObject::FLOATARRAY, "the convolution kernel");
-			//d.put("selem", EMObject::EMDATA, "the structuring element");
+			d.put("selem", EMObject::EMDATA, "the structuring element");
 			return d;
 		}
 		static const string NAME;
