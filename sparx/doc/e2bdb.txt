@@ -1,0 +1,67 @@
+= Name =
+'''e2bdb''' - Examine and interact with a EMAN2DB directory
+
+= Usage =
+''Usage in command lines'':
+
+e2bdb.py --cleanup --force --delete --all --long --short --filt --filtexclude --match --exclude --dump --check --nocache --makevstack="bdb:/Home/user/project#output" --appendvstack="bdb:output" --verbose --list="abc.txt"  --restore="bdb:vstack"
+    
+== Options ==
+ cleanup:: Clean up the database cache so files can safely be moved or accessed on another computer via NFS, e.g. <<BR>>
+   e2bdb.py --clean 
+ Database cache will be removed, and it is safe to access databases from another machine or delete existing databases.
+ nocache:: Do not use the database cache for this operation - '''Cache was permanently disabled as of August 2013'''.
+ force:: Force an action that would normally fail due to failed checks.
+ delete:: Delete (or at least empty) the named database(s) e.g.<<BR>>
+   e2bdb.py bdb:filename --delete
+ all:: List per-particle info
+ long:: Give details for each database
+ short::  Return each database name in 'bdb:database' format for use
+ filt:: Only include dictionary names containing the specified string e.g.<<BR>>
+   e2bdb.py  . --makevstack=bdb:vstack --filt=abc
+ A virtual stack will be generated, which contains all bdb files that have "abc" in the file name. 
+ filtexclude:: Exclude dictionary names containing the specified string e.g.<<BR>>
+   e2bdb.py   .   --makevstack=bdb:vstack --filtexclude=abc 
+ A virtual stack will be generated, which contains all bdb files that don't have "abc" in the file name.
+ match:: Only include dictionaries matching the provided Python regular expression e.g.<<BR>>
+   e2bdb.py   .    --makevstack=bdb:vstack --match=abc 
+ A virtual stack will be generated, which the bdb file that is named "abc" .
+ exclude:: The name of a database containing a list of exclusion keys
+ dump:: List contents of an entire database, e.g.<<BR>>
+   e2bdb.py -D refine_01#register
+ check:: Check for self-consistency and errors in the structure of specified databases
+ verbose:: Verbose level [0-9], higner number means higher level of verboseness
+ makevstack:: Make a 'virtual' image stack from one or more other stacks, e.g: <<BR>>
+   e2bdb.py bdb:db1 bdb:db2 --makevstack=bdb:db3 
+ will combine images in db1 and db2 into db3. Please note that any change in metadata of db1 or db2, there won't be changes in db3. However, if there are changes in the image data, it will appear at db3.  In order to include all stack with a common root in the name (for example, db1, db2, db3) into one virtual stack called data, use: <<BR>><<BR>>
+   e2bdb.py     .   --makevstack=bdb:data  --filt=db
+ appendvstack:: Appends to/creates a 'virtual' BDB stack with its own metadata e.g.<<BR>> 
+   e2bdb.py bdb:db1 bdb:db2 --appendvstack=bdb:db3 
+ db1 and db2 virtual stack will be appended to db3, if it exists. If not, a new db3 will be created.
+ list:: Inputs an ASCII file with selected image to creates a new virtual BDB stack from an existed virtual stack, e.g.<<BR>>
+   e2bdb.py bdb:#db1 bdb:#db2 --makevstack=bdb:.#db3  --list=abc.txt
+ here abc.txt is a file which contains the selected images' ID in each bdb file, a virtual stack db3 will be generated which contains the selected image of db1 and db2. If change makevstack to appendvstack virtual, virtual stack of db1 and db2 will be appended to db3. This option allows you to select some specific  images which you would like to manipulate to generate a virtual stack. 
+ restore:: Write changes in the derived virtual stack back to the original stack, e.g. <<BR>>
+   e2bdb.py --restore=bdb:vstack
+ vstack is a derived image stack, --restore will allow it to write the change back to the parent image stack.  This option is very useful when an operation (such as alignment) is performed on a subset of data (extracted as a virtual fact) and then the results are to be merged with the parent stack.
+
+= Description =
+
+IN EMAN2, the usage of Berkeley DB file format has been increased since it is very convenient to manipulate the metadata separately from the image data, and it is faster that other formats, such as HDF. As it has this special structure, its files are stored in a folder named EMAN2DB, which cannot manually copy or remove files in it.
+
+Note: It is important to emphasize that one cannot manually rename or edit the files in the EMAN2DB directory. Doing so can corrupt the entire database such that programs will no longer be able to access it properly. You can safely move the directory as a whole to a different location, but otherwise it should not be modified. The e2bdb program is using to interact with the EMAN2DB directory.
+
+Virtual stack is a stack of metadata associated with the image data. When generate a virtual stack, unlike doing this same task with e2proc2d.py bdb:.#db1 bdb:.#db3; e2proc2d.py bdb:.#db2 bdb:.#db3, it will only generate the metadata stack. When generate a virtual stack, in the metadata, image location will be recored as data_path, original image ID will be recored as data_n, and the original stack will be recored as data_source.
+
+By using the --list option, we are able to generate a virtual stack which contains metadata information of selected images. The virtual stack can be manipulate just as the original bdb files. Changes in virtual stack won't appear on the original stack. One can use the --restore option to write the change back to the original stack. It is very convenient to do so, and this functionality is expected to be very useful if one would like to use virtual stack for iteration.
+
+= Author / Maintainer =
+Steve Ludtke, Ran Lin
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+e2bdb.py
+
+Please also refer to Eman2DataStorage. (http://blake.grid.bcm.edu/emanwiki/Eman2DataStorage?highlight=%28select%5C.selectname%29)
