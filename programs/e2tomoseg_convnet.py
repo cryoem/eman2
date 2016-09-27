@@ -22,7 +22,7 @@ def main():
 	parser.add_header(name="tmpheader", help='temp label', title="### This program is NOT avaliable yet... ###", row=0, col=0, rowspan=1, colspan=2, mode="train,test")
 	parser.add_argument("--trainset",help="Training set.", default=None, guitype='filebox', browser="EMParticlesTable(withmodal=True)",  row=1, col=0,rowspan=1, colspan=3, mode="train")
 	parser.add_argument("--from_trained", type=str,help="Start from pre-trained neural network", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True)", row=2, col=0, rowspan=1, colspan=3, mode="train,test")
-	parser.add_argument("--netout", type=str,help="Output neural net file name", default="conv.save",guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode="train")
+	parser.add_argument("--netout", type=str,help="Output neural net file name", default="nnet_save.hdf",guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode="train")
 	
 	parser.add_argument("--learnrate", type=float,help="Learning rate ", default=.01, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="train")
 	parser.add_argument("--niter", type=int,help="Training iterations", default=10, guitype='intbox', row=4, col=1, rowspan=1, colspan=1, mode="train")
@@ -116,7 +116,6 @@ def main():
 	#print shape
 	
 	
-	
 	if (options.niter>0):	
 		print "training the convolutional network..."
 		
@@ -140,10 +139,8 @@ def main():
 			print 'Training epoch %d, cost ' % ( epoch),
 			print np.mean(c),", learning rate",learning_rate
 
-		print "Saving the trained net to {}...".format(options.netout)
-		f = file(options.netout, 'wb')
-		cPickle.dump(convnet, f, protocol=cPickle.HIGHEST_PROTOCOL)
-		f.close()
+		
+		save_model(convnet, options.netout)
 		
 	#######################################
 	#print convnet.clslayer.W.get_value()
@@ -165,9 +162,13 @@ def main():
 				convnet.x: train_set_x[index * batch_size: (index+1) * batch_size]
 			}
 		)
-		fname="result_conv_{}.hdf".format(options.netout)
+		if options.netout.endswith(".hdf"):
+			fname="trainout_{}".format(options.netout)
+		else:
+			fname="trainout_{}.hdf".format(options.netout)
 		try:os.remove(fname)
 		except: pass
+		print convnet.outsize,shape
 		for idi in range(2):
 			rt=test_imgs(idi)
 			mid=test_cls(idi)
@@ -220,13 +221,80 @@ def main():
 def run(cmd):
 	print cmd
 	launch_childprocess(cmd)
+
+def save_model(convnet, fname):
+	print "Saving the trained net to {}...".format(fname)
+	#fname="nnet_save.hdf"
+	sz=int(convnet.convlayers[0].W.shape[-1].eval())
+
+	hdr=EMData(sz,sz)
+	hdr["nkernel"]=convnet.n_kernel
+	hdr["ksize"]=convnet.ksize
+	hdr["poolsz"]=convnet.poolsz
+	hdr["imageshape"]=convnet.image_shape
+	hdr.write_image(fname,0)
+
+	k=1
+	for i in range(convnet.n_convlayers):
+		w=convnet.convlayers[i].W.get_value()        
+		b=convnet.convlayers[i].b.get_value()
+		s=w.shape
+		
+		e=from_numpy(b)
+		e["w_shape"]=s
+		e.write_image(fname,k)
+		k+=1
+		w=w.reshape(s[0]*s[1], s[2], s[3])
+		for wi in w:
+			e=from_numpy(wi)
+			e.write_image(fname,k)
+			k+=1
+
+
 	
 def load_model(fname):
 	print "loading model from {}...".format(fname)
-	f = file(fname, 'rb')
-	convnet = cPickle.load(f)
-	f.close()
-	return convnet
+	try:
+		f = file(fname, 'rb')
+		convnet = cPickle.load(f)
+		f.close()
+		return convnet
+	except:
+		print "Reading weight matrix from hdf file..."
+		
+	hdr=EMData(fname,0)
+	
+	nkernel=hdr["nkernel"]
+	ksize=hdr["ksize"]
+	poolsz=hdr["poolsz"]
+	imageshape=hdr["imageshape"]
+	rng = np.random.RandomState(123)
+	
+	savenet= StackedConvNet(
+		rng,
+		nkernel=nkernel,
+		ksize=ksize,
+		poolsz=poolsz,
+		imageshape=imageshape
+	)
+	k=1
+	for i in range(savenet.n_convlayers):
+		e=EMData(fname,k)
+		s=e["w_shape"]
+		b=e.numpy().copy().astype(theano.config.floatX)
+		k+=1
+		savenet.convlayers[i].b.set_value(b)
+		allw=np.zeros((s[0]*s[1], s[2],s[3]))
+		for wi in range(s[0]*s[1]):
+			e=EMData(fname,k)
+			k+=1
+			w=e.numpy()
+			allw[wi]=w.copy()
+		allw=allw.reshape(s).astype(theano.config.floatX)
+		savenet.convlayers[i].W.set_value(allw)
+		#print w.shape, b.shape
+	
+	return savenet
 
 def dream(convnet,options):
 	convz=convnet.image_shape[1]
@@ -341,12 +409,14 @@ def apply_neuralnet(convnet,options):
 			e = EMNumPy.numpy2em(img.astype("float32"))
 			#e.process_inplace("normalize")
 			newshp=convnet.outsize
-			e.scale(float(newshp)/float(shape[0]))
-			e.clip_inplace(Region(0,0,enx,eny))
+			scl=float(convnet.outsize)/float(esz)
+			e.scale(scl)
+			e.clip_inplace(Region((esz-newshp)/2,(esz-newshp)/2,enx*scl,eny*scl))
 			#e=e.get_clip(Region((shape[0]-newshp)/2,(shape[0]-newshp)/2,newshp,newshp))
 			e.process_inplace("normalize")
 			e.write_image(options.output,-1)
-		
+			#print (esz-newshp)/2,enx,eny, float(convnet.outsize)/float(esz), img.shape
+		#exit()
 		#### Applying the convolution net...
 		test_imgs = theano.function(
 			inputs=[],
@@ -355,12 +425,14 @@ def apply_neuralnet(convnet,options):
 				convnet.x: data
 			}
 		)
-			
+		
 		img=test_imgs()
 		#print np.shape(img)
 		img=img.reshape(convnet.outsize,convnet.outsize).T
 		e = EMNumPy.numpy2em(img.astype("float32"))
-		#e.clip_inplace(Region(0,0,enx,eny))
+		scl=float(convnet.outsize)/float(esz)
+		e.clip_inplace(Region(0,0,enx*scl,eny*scl))
+		#print e["nx"], e["ny"], img.shape
 		if nframe==1:
 			e.process_inplace("normalize")
 		e.write_image(options.output,-1)
@@ -457,22 +529,26 @@ class StackedConvNet(object):
 		else:
 			self.poolsz=[2]*self.n_convlayers
 			
-		self.poolsz[-1]=1
+		#self.poolsz[-1]=1
 		poolsz=self.poolsz
 		convin=self.x
 		self.labelshrink=1
 		for i in range(self.n_convlayers):
+			pz=poolsz[i]
+			if pz<0:
+				pz=1.0/abs(pz)
 			convlayer = LeNetConvPoolLayer(
 				rng,
 				image_shape=input_shape,
 				filter_shape=(self.n_kernel[i], input_shape[1], self.ksize[i], self.ksize[i]),
-				poolsize=(poolsz[i], poolsz[i]),
+				poolsize=poolsz[i],
 				xin=convin
 			)
 			self.convlayers.append(convlayer)
 			#self.weights.append(convlayer.W)
-			self.labelshrink*=poolsz[i]
-			input_shape=(input_shape[0],self.n_kernel[i],input_shape[2]/poolsz[i],input_shape[3]/poolsz[i])
+			
+			self.labelshrink=int(self.labelshrink*pz)#poolsz[i]
+			input_shape=(input_shape[0],self.n_kernel[i],input_shape[2]/pz,input_shape[3]/pz)
 			convin=convlayer.hidden
 			
 			self.params.extend(convlayer.params)
@@ -509,13 +585,6 @@ class StackedConvNet(object):
 		weight_decay = T.scalar('wd')  # learning rate to use
 		index = T.lscalar()	# index to a [mini]batch
 		
-		#negnum=int(batch_size*.3) # number of negative samples
-		#theano_rng=RandomStreams(1)
-		#tdata=data[index * batch_size: ((index+1) * batch_size)-negnum]
-		#noise=theano_rng.normal(size=tdata[:negnum].shape,dtype=theano.config.floatX)
-		#tdata=T.concatenate([tdata,noise])
-		#cls=T.concatenate([cls[:-negnum], T.zeros_like(cls[:negnum])-1])
-		#print cls.shape.eval()
 		label=T.matrix(name='label')
 		
 		cost = self.clslayer.get_cost_hidden(label)
@@ -549,20 +618,24 @@ class StackedConvNet(object):
 		else:
 			poolsz=[2]*(self.n_convlayers-1)+[1]
 		for i in range(self.n_convlayers):
+			pz=poolsz[i]
+			if pz<0:
+				pz=1.0/abs(pz)
+			
 			self.convlayers[i].image_shape.set_value(input_shape, borrow=True)		
-			input_shape=(input_shape[0],self.n_kernel[i],input_shape[2]/poolsz[i],input_shape[3]/poolsz[i])
+			input_shape=(input_shape[0],self.n_kernel[i],input_shape[2]/pz,input_shape[3]/pz)
 			
 		self.outsize=int(input_shape[2])
 		
 		
 class LeNetConvPoolLayer(object):
 
-	def __init__(self, rng, filter_shape, image_shape, poolsize=(2, 2), xin=None):
+	def __init__(self, rng, filter_shape, image_shape, poolsize=2, xin=None):
 		
 		assert image_shape[1] == filter_shape[1]
 		self.image_shape=theano.shared(
 			value=np.asarray(image_shape,dtype='int16'),borrow=True)
-		self.poolsize=poolsize
+		self.poolsize=(poolsize,poolsize)
 		#self.input = input
 		if xin:
 			self.x=xin
@@ -578,7 +651,7 @@ class LeNetConvPoolLayer(object):
 		# "num output feature maps * filter height * filter width" /
 		#   pooling size
 		fan_out = (filter_shape[0] * np.prod(filter_shape[2:]) /
-			np.prod(poolsize))
+			np.prod(self.poolsize))
 		# initialize weights with random weights
 		W_bound = np.sqrt(6. / (fan_in + fan_out))
 		self.W = theano.shared(
@@ -598,6 +671,9 @@ class LeNetConvPoolLayer(object):
 		bp_values = np.zeros((filter_shape[1],), dtype=theano.config.floatX)
 		self.b = theano.shared(value=b_values, borrow=True)
 		self.b_prime = theano.shared(value=bp_values, borrow=True)
+		
+		if poolsize<-1:
+			self.x1=self.x1.repeat(int(-poolsize), axis=2).repeat(int(-poolsize), axis=3)
 
 		# convolve input feature maps with filters
 		conv_out = conv.conv2d(
@@ -612,20 +688,15 @@ class LeNetConvPoolLayer(object):
 		conv_out=conv_out[:,:,bp:-bp,bp:-bp]
 		
 		# downsample each feature map individually, using maxpooling
-		self.pooled_out = pool.pool_2d(
-			input=conv_out,
-			ds=poolsize,
-			ignore_border=True
-		)
-		#shp=conv_out.shape
-		#y = T.nnet.neighbours.images2neibs(conv_out, poolsize,mode='ignore_borders')
-		#pooled_out=y.mean(axis=-1).reshape((shp[0],shp[1],shp[2]/poolsize[0],shp[3]/poolsize[1]))
-
-		# add the bias term. Since the bias is a vector (1D array), we first
-		# reshape it to a tensor of shape (1, n_filters, 1, 1). Each bias will
-		# thus be broadcasted across mini-batches and feature map
-		# width & height
-		#self.hidden = T.tanh(self.pooled_out + self.b.dimshuffle('x', 0, 'x', 'x'))
+		if poolsize>1:
+			self.pooled_out = pool.pool_2d(
+				input=conv_out,
+				ds=self.poolsize,
+				ignore_border=True
+			)
+		else:
+			self.pooled_out=conv_out
+		
 		self.hidden = T.maximum(0,(self.pooled_out + self.b.dimshuffle('x', 0, 'x', 'x')))
 
 		# store parameters of this layer
@@ -635,6 +706,7 @@ class LeNetConvPoolLayer(object):
 	
 	def get_reconstructed_input(self):
 		""" Computes the reconstructed input given the values of the hidden layer """
+
 		repeated_conv = conv.conv2d(input = self.hidden,
 			      filters = self.W_prime,
 			      border_mode='full')
