@@ -96,7 +96,7 @@ vstack is a derived image stack. --restore will allow it to write the change bac
 
     * The remaining parameters are optional. Normally you will not touch this.
     nocache:: Do not use database cache: Do not use the database cache for this operation. Cache was permanently disabled as of August 2013. (default False)
-    verbose:: Verbose level: Verbose level [0-9]. Higner number means higher level of verboseness. (default 0)
+    verbose:: Verbose level [0-9]: Higner number means higher level of verboseness. (default 0)
 
 
 == Output ==
