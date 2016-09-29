@@ -63,6 +63,7 @@ def main():
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
+	parser.add_argument("--subset",type=int,default=0,help="""default=0 (not used). Subset of particles to process.""")
 	(options, args) = parser.parse_args()	#c:this parses the options or "arguments" listed 
 											#c:above so that they're accesible in the form of option.argument; 
 											#c:for example, the input for --template would be accesible as options.template
@@ -78,6 +79,18 @@ def main():
 	options = sptmakepath(options,'spttranslate')
 
 	n = EMUtil.get_image_count( options.input )
+	
+	print "\nnumber of particles in stack %s is %d" %(options.input,n)
+	
+	if options.subset:
+		n = options.subset
+
+	if options.alistack:
+		n2 = EMUtil.get_image_count( options.alistack )
+		if n > n2:
+			print """\nERROR: there are fewer particles in --alistack, %d, than in --input, %d. 
+				Use --subset and set it to a number equal to or smaller than the number or particles in --alistack""" %(n2,n)
+			sys.exit(1)
 
 	if options.alifile:
 		preOrientationsDict = js_open_dict(options.alifile)
@@ -87,7 +100,7 @@ def main():
 	txs=[]
 	tys=[]
 	tzs=[]
-	rs=[]
+	trs=[]
 
 	for i in range(n):	
 		print "\nreading particle %d" %(i)	
@@ -112,20 +125,25 @@ def main():
 		if t:
 			trans = t.get_trans()
 			tx = trans[0]
-			ty = trans[1]
-			tz = trans[2]
+			txs.append(tx)
 
-			r=math.sqrt(x*x+y*y+z*z)
-			rs.append(r)
+			ty = trans[1]
+			tys.append(ty)
+
+			tz = trans[2]
+			tzs.append(tz)
+
+			tr=math.sqrt(tx*tx+ty*ty+tz*tz)
+			trs.append(tr)
 
 			newt = Transform({'type':'eman','tx':tx,'ty':ty,'tz':tz})
 
 			ptcl.transform(newt)
 			ptcl['xform.align3d'] = newt
 			outstack = os.path.basename(options.input).replace('.hdf','_trans.hdf')
-			if options.saveali:
-				print "\nsaving aligned particle",i
-				ptcl.write_image(options.path + '/' + outstack, i )
+			#if options.saveali:
+			print "\nsaving translated particle",i
+			ptcl.write_image(options.path + '/' + outstack, i )
 		
 		avgr.add_image(ptcl)
 			
@@ -141,24 +159,24 @@ def main():
 	
 	from e2spt_classaverage import textwriter
 
-	if xs:
-		xs.sort()
-		textwriter(xs,options,'x_trans.txt')
+	if txs:
+		txs.sort()
+		textwriter(txs,options,'x_trans.txt')
 
-	if ys:
-		ys.sort()
-		textwriter(ys,options,'y_trans.txt')
+	if tys:
+		tys.sort()
+		textwriter(tys,options,'y_trans.txt')
 
-	if zs:
-		zs.sort()
-		textwriter(zs,options,'z_trans.txt')
+	if tzs:
+		tzs.sort()
+		textwriter(tzs,options,'z_trans.txt')
 	
-	if rs:
-		rs.sort()
-		textwriter(rs,options,'r_trans.txt')
+	if trs:
+		trs.sort()
+		textwriter(trs,options,'r_trans.txt')
 
 
-	E2end(logid)
+	E2end(logger)
 	
 	return 
 
