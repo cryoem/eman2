@@ -13,7 +13,7 @@ from PyQt4.QtCore import QTimer
 
 def main():
 	
-	usage=" "
+	usage="[prog] <2D image file> "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
