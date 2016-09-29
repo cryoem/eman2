@@ -256,7 +256,10 @@ def main():
 			
 		outname = options.path + '/' + stack.replace('.hdf','_AVG.hdf')
 		avg.write_image(outname,0)	
-				
+
+
+	E2end(logid)
+
 	return
 
 
