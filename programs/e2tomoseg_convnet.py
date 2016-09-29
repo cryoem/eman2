@@ -5,6 +5,10 @@ import random
 import numpy as np
 from EMAN2 import *
 import cPickle
+import time
+import threading
+from Queue import Queue
+from multiprocessing import Array
 
 def import_theano():
 	global theano,T,conv,pool
@@ -38,6 +42,7 @@ def main():
 	parser.add_argument("--applying", action="store_true", default=False ,help="Applying the neural network on tomograms", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='test[True]')
 	parser.add_argument("--dream", action="store_true", default=False ,help="Iterativly applying the neural network on noise", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='test')
 	parser.add_argument("--output", type=str,help="Segmentation out file name", default="tomosegresult.mrcs", guitype='strbox', row=3, col=0, rowspan=1, colspan=1, mode="test")
+	parser.add_argument("--threads", type=int,help="Number of thread to use when applying neural net on test images. Not used during trainning", default=12, guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="test")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -48,22 +53,25 @@ def main():
 	if options.poolsz:
 		options.poolsz=[int(i) for i in options.poolsz.split(',')]
 	
-	if options.applying:
+	if options.dream:
 		os.environ["THEANO_FLAGS"]="optimizer=None"
 		print "Testing on big images, Theano optimizer disabled"
 		import_theano()
 		convnet=load_model(options.from_trained)
-		if options.dream:
-			dream(convnet,options)
-		else:
-			apply_neuralnet(convnet,options)
-		print "Done"
+		dream(convnet,options)
 		E2end(E2n)
 		exit()
-	else:
-		os.environ["THEANO_FLAGS"]="optimizer=fast_run"
-		import_theano()
+		
 	
+	if options.applying:
+		apply_neuralnet(options)
+		E2end(E2n)
+		exit()
+	
+	
+	os.environ["THEANO_FLAGS"]="optimizer=fast_run"
+	import_theano()
+
 	
 	batch_size=options.batch
 	#### Train da with particles first.
@@ -354,8 +362,184 @@ def dream(convnet,options):
 	
 	print "Output written to {}.".format(options.output)
 	
-def apply_neuralnet(convnet,options):
 	
+def apply_neuralnet(options):
+	
+	tt0=time.time()
+	
+	nframe=EMUtil.get_image_count(options.tomograms)
+	is3d=False
+	### deal with 3D volume or image stack
+	e=EMData(options.tomograms, 0, True)
+	if nframe==1:
+		nframe=e["nz"]
+		if nframe>1:
+			#### input data is 3D volume
+			#esz=max(e["nx"],e["ny"])
+			is3d=True
+			
+	enx=e["nx"]
+	eny=e["ny"]
+	shape=[enx,eny]
+	
+	#####################
+	print "Loading the Neural Net..."
+	
+	fname=options.from_trained
+	hdr=EMData(fname,0)
+		
+	ksize=hdr["ksize"]
+	poolsz=hdr["poolsz"]
+
+	k=1
+	#global layers
+	layers=[]
+	for i in range(len(ksize)):
+		layer={}
+		b=EMData(fname,k)
+		s=b["w_shape"]
+		k+=1
+		allw=[]
+		layer["b"]=b
+		layer["shp"]=s
+		layer["pool"]=poolsz[i]
+		for wi in range(s[0]*s[1]):
+			w=EMData(fname,k)
+			allw.append(w)
+			k+=1
+			
+		allw=np.asarray(allw).reshape((s[0],s[1]))
+		for wi in range(s[0]):
+			
+			for mi in range(s[1]):
+				sw=allw[wi][mi]["nx"]
+				allw[wi][mi]=allw[wi][mi].get_clip(Region((sw-enx)/2,(sw-eny)/2,enx,eny))
+				
+				allw[wi][mi].process_inplace("xform.phaseorigin.tocenter")
+				#allw[wi][mi].do_fft_inplace()
+				
+		enx/=poolsz[i]
+		eny/=poolsz[i]
+		layer["allw"]=allw
+		layers.append(layer)
+	
+	
+	################
+	enx=e["nx"]
+	eny=e["ny"]
+	
+	print "Loading tomogram..."
+	#global tomo_in
+	tomo_in=[]
+	for nf in range(nframe):
+		if is3d:
+			e0=EMData(options.tomograms, 0, False, Region(0,0,nf,enx,eny,1))
+		else:
+			e0=EMData(options.tomograms, nf, False, Region(0,0,enx,eny))
+		tomo_in.append(e0)
+	
+	#####################
+	print "Doing covolution..."
+	
+	try: os.remove(options.output)
+	except: pass
+	
+	#lyarr=Array("layers", layers)
+	#jobs=range(nframe)
+	jobs=[]
+	for nf in range(nframe):
+		#jobs.append((1,1,1,1,1))
+		jobs.append((tomo_in, nf, layers))
+		
+	#pool = Pool(options.threads)
+	#pool.map(do_convolve, jobs)
+	#pool.close()
+	#while (True):
+		#if (cout.ready()): break
+		#remaining = cout._number_left
+		#print "Waiting for", remaining, "tasks to complete..."
+		#time.sleep(2)
+	#cout=cout.get()
+	#for c in cout:
+		#c[1].write_image("options.output", c[0])
+	######### threading copied from e2spt_align.py
+	jsd=Queue(0)
+	NTHREADS=max(options.threads+1,2)
+	thrds=[threading.Thread(target=do_convolve,args=(jsd,job)) for job in jobs]
+	thrtolaunch=0
+	while thrtolaunch<len(thrds) or threading.active_count()>1:
+		#print thrtolaunch, len(thrds)
+		if thrtolaunch<len(thrds) :
+			 
+			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+			thrds[thrtolaunch].start()
+			thrtolaunch+=1
+		else: time.sleep(1)
+	
+		while not jsd.empty():
+			idx,cout=jsd.get()
+			cout.write_image(options.output,idx)
+			
+			
+	print "Done."
+	print "Total time: ", time.time()-tt0
+	
+def do_convolve(jsd, job):
+	tomo_in, idx, layers= job
+	#idx=job
+	
+	e0=tomo_in[idx]
+	imgs=[e0]
+	print "starting: ", idx#, e0["nx"]
+	
+	#if len(rg)>4:
+		#e0=EMData(tomo, 0, False, Region(rg[0],rg[1],rg[2],rg[3],rg[4],rg[5]))
+	#else:
+		#e0=EMData(tomo, idx, False, Region(rg[0],rg[1],rg[2],rg[3]))
+	
+		
+	for layer in layers:
+		
+		s0=imgs[0]["nx"]
+		s1=imgs[0]["ny"]
+		
+		imgout=[]
+		allw=layer["allw"]
+		s=layer["shp"]
+		poolsz=layer["pool"]
+		b=layer["b"]
+		#print s,poolsz,s0,s1
+		for wi in range(s[0]):
+			
+			cv=EMData(imgs[0])
+			cv.to_zero()
+			for mi in range(s[1]):
+				ww=allw[wi][mi]
+				#print ww.numpy().shape
+				cv.add(imgs[mi].process("math.convolution",{"with":ww}))
+			
+			if poolsz>1:
+				cv=cv.process("math.maxshrink",{"n":poolsz})
+			cv.add(b[wi])
+			cv.process_inplace("threshold.belowtozero")
+			imgout.append(cv)
+		
+		imgs=imgout
+	#imgs[0].process_inplace("xform.phaseorigin.tocenter")
+
+	jsd.put((idx,imgs[0]))
+	#imgs[0].write_image(outname, idx)
+	return# (idx,imgs[0])
+	
+#def do_saveimg(job):
+	#job[1].write_image(
+
+def apply_neuralnet_theano(options):
+	
+	tt0=time.time()
+	import_theano()
+	
+	convnet=load_model(options.from_trained)
 	
 	convz=convnet.image_shape[1]
 	
@@ -463,7 +647,9 @@ def apply_neuralnet(convnet,options):
 		print "Output written to {}.".format(fout)
 	else:
 		print "Output written to {}.".format(options.output)
-
+	
+	print "Total time:", time.time()-tt0
+	
 def load_particles(ptcls,labelshrink,ncopy=5):
 	num=EMUtil.get_image_count(ptcls)/2
 	

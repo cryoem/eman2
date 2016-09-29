@@ -12350,7 +12350,7 @@ EMData* ConvolutionKernelProcessor::process(const EMData* const image)
 		kernel = params["kernel"];
 	}
 	ks = int(sqrt(float(kernel.size())));
-	if (fmod(sqrt((float) ks), 1.0f) != 0) throw InvalidParameterException("Convolution kernel must be square!!");
+	if (ks*ks != kernel.size()) throw InvalidParameterException("Convolution kernel must be square!!");
 
 	float* data = image->get_data();
 	float* cdata = conv->get_data();	// Yes I could use set_value_at_fast, but is still slower than this....
