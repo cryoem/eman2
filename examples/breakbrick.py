@@ -54,13 +54,13 @@ class EMBreakBrick(EMImage2DWidget):
 		self.sy=img["ny"]
 		self.set_scale(.3)
 		
-		self.bar_len=self.sx*.1
+		minxy=min(self.sx, self.sy)
+		self.bar_len=minxy*.1
 		self.bar_ypos=-self.sy*.2
 		self.bar_thick=20
 		self.bar_xpos=self.sx/2
 		self.bar=EMShape()
-		self.barspeed=.02
-		
+		self.barspeed=0.02*minxy
 		
 		self.score=0
 		self.score_label=EMShape()
@@ -69,7 +69,7 @@ class EMBreakBrick(EMImage2DWidget):
 		self.ball=EMShape()
 		self.ball_rad=20
 		self.ball_pos=np.array([self.bar_xpos, self.bar_ypos+self.bar_thick+self.ball_rad])
-		self.ball_speed=self.sx*.02		
+		self.ball_speed=minxy*.01		
 		self.set_shapes({0:self.bar, 1:self.ball,2:self.score_label})
 		
 		self.game_started=False
@@ -78,7 +78,9 @@ class EMBreakBrick(EMImage2DWidget):
 		self.data.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 		self.data.process_inplace("normalize")
 		self.data.process_inplace("threshold.belowtozero",{"minval":1})
-		
+		self.data.div(self.data["mean"]*self.sx*self.sy)
+		self.data.mult(1000)
+		self.auto_contrast()
 		self.data_grad=self.data.process("math.gradient.direction")
 		self.del_msk=self.data.copy()
 		self.del_msk.to_one()
@@ -117,7 +119,7 @@ class EMBreakBrick(EMImage2DWidget):
 		
 		self.game_timer=QTimer()
 		self.game_timer.timeout.connect(self.time_update)
-		self.game_timer.start(50)
+		self.game_timer.start(30)
 		self.game_started=True
 		
 	def time_update(self):
@@ -138,22 +140,32 @@ class EMBreakBrick(EMImage2DWidget):
 		
 		else:
 			p=newpos.astype(int)
-			val=self.data.get_value_at(p[0],p[1])
+			if p[1]<0 or p[0]<0 or p[0]>self.sx or p[1]>self.sy:
+				val=0
+			else:
+				val=self.data.get_value_at(p[0],p[1])
 			if val>0:
 				grad=self.data_grad.get_value_at(p[0],p[1])
 				#print val, grad
-				self.ball_ori=grad*2-self.ball_ori
+				newori=(grad*2-self.ball_ori)% (np.pi*2)
+				oridiff=abs(newori-self.ball_ori)*180./np.pi
+				if oridiff>180: oridiff=oridiff-180
+				#print self.ball_ori*180./np.pi,newori*180./np.pi,oridiff
+				if oridiff<30:
+					#print "???"
+					newori+=.5*np.pi*np.sign(newori-self.ball_ori)
+				self.ball_ori=newori
 				self.ball_vec=np.array([self.ball_speed*np.cos(self.ball_ori),self.ball_speed*np.sin(self.ball_ori)])
 				
 				self.del_msk.to_one()
 				self.del_msk.process_inplace("mask.soft", {"dx":p[0]-self.sx/2, "dy": p[1]-self.sy/2, "outer_radius":30})
 				delimg=self.data*self.del_msk
 				delval=delimg["mean"]*self.sx*self.sy
-				self.score+=delval*0.01
+				self.score+=delval
 				self.update_score()
 				
 				self.data.sub(delimg)
-				
+				#self.data_grad=self.data.process("math.gradient.direction")
 				self.force_display_update()
 				
 			
@@ -166,11 +178,13 @@ class EMBreakBrick(EMImage2DWidget):
 	def keyPressEvent(self,event):
 
 		if event.key() == Qt.Key_Right:
-			self.bar_xpos+=self.sx*self.barspeed
-			self.update_bar()
+			if self.bar_xpos+self.bar_len<self.sx:
+				self.bar_xpos+=self.barspeed
+				self.update_bar()
 		elif event.key() == Qt.Key_Left:
-			self.bar_xpos-=self.sx*self.barspeed
-			self.update_bar()
+			if self.bar_xpos-self.bar_len>0:
+				self.bar_xpos-=self.barspeed
+				self.update_bar()
 		elif event.key() ==Qt.Key_Space:
 			if not self.game_started:
 				self.start_game()
