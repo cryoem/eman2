@@ -1865,14 +1865,14 @@ def textwriter(ydata,options,name,invert=0):
 		if invert:
 			y*=-1
 			
-		line2write = str(i) + ' ' + str(y) + '\n'
+		line2write = str(i) + '\t' + str(y) + '\n'
 		#print "THe line to write is"
 		lines.append(line2write)
 	
 	f.writelines(lines)
 	f.close()
 
-	return()
+	return
 
 
 
