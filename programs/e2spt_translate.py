@@ -79,7 +79,7 @@ def main():
 	options = sptmakepath(options,'spttranslate')
 
 	n = EMUtil.get_image_count( options.input )
-	
+	orign = n
 	print "\nnumber of particles in stack %s is %d" %(options.input,n)
 	
 	if options.subset:
@@ -94,13 +94,13 @@ def main():
 
 	if options.alifile:
 		preOrientationsDict = js_open_dict(options.alifile)
-			
-	avgr=Averagers.get('mean.tomo')
 
 	txs=[]
 	tys=[]
 	tzs=[]
 	trs=[]
+
+	outstack = options.path + '/' + os.path.basename(options.input).replace('.hdf','_trans.hdf')
 
 	for i in range(n):	
 		print "\nreading particle %d" %(i)	
@@ -110,12 +110,11 @@ def main():
 		
 		t=None
 		if options.alifile:
-			ID ='subtomo_' + str(i).zfill(len(str(n)))
+			ID ='subtomo_' + str(i).zfill(len(str( orign )))
 			t = preOrientationsDict[ID][0]
 		elif options.alistack:
-			t = a['xform.align3d']
-
-		print "transform is", t
+			b=EMData(options.alistack,i,True)
+			t = b['xform.align3d']
 		
 		ptcl['origin_x'] = 0
 		ptcl['origin_y'] = 0
@@ -123,37 +122,47 @@ def main():
 		ptcl['xform.align3d'] = Transform()
 		
 		if t:
+			print "transform is t",t
 			trans = t.get_trans()
-			tx = trans[0]
-			txs.append(tx)
+			rot = t.get_rotation()
+			
+			az = rot['az']
+			alt = rot['alt']
+			phi = rot['phi']
 
-			ty = trans[1]
-			tys.append(ty)
+			trot = Transform({'type':'eman','az':az,'alt':alt,'phi':phi})
+			troti = trot.inverse()
 
-			tz = trans[2]
-			tzs.append(tz)
+			transi =troti*trans 	#translations are in the frame of the rotated particle.
+									#to apply translations only, you need to convert them to the unrotated frame
+
+			tx = transi[0]
+			txs.append(math.fabs(tx))
+
+			ty = transi[1]
+			tys.append(math.fabs(ty))
+
+			tz = transi[2]
+			tzs.append(math.fabs(tz))
 
 			tr=math.sqrt(tx*tx+ty*ty+tz*tz)
 			trs.append(tr)
 
 			newt = Transform({'type':'eman','tx':tx,'ty':ty,'tz':tz})
+			print "new transform is", newt
 
 			ptcl.transform(newt)
 			ptcl['xform.align3d'] = newt
-			outstack = os.path.basename(options.input).replace('.hdf','_trans.hdf')
 			#if options.saveali:
 			print "\nsaving translated particle",i
-			ptcl.write_image(options.path + '/' + outstack, i )
+			ptcl.write_image( outstack, i )
 		
-		avgr.add_image(ptcl)
-			
-	avg=avgr.finish()
+	
+	outavg = options.path + '/' + os.path.basename(options.input).replace('.hdf','_trans_avg.hdf')
+	cmd = 'e2proc3d.py ' + outstack + ' ' + outavg + ' --average'
+	cmd += ' && e2proc3d.py ' + outavg + ' ' + outavg + ' --process normalize.edgemean'	
+	os.system( cmd )
 
-	avg.process_inplace('normalize.edgemean')
-	
-	outavg = os.path.basename(options.input).replace('.hdf','_trans_avg.hdf')
-	avg.write_image( options.path + '/' + outavg, 0 )
-	
 	if options.alifile:
 		preOrientationsDict.close()			
 	
