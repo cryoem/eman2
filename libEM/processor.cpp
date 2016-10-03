@@ -159,6 +159,7 @@ const string VerticalStripeProcessor::NAME = "math.verticalstripefix";
 const string RealToFFTProcessor::NAME = "math.realtofft";
 const string SigmaZeroEdgeProcessor::NAME = "mask.zeroedgefill";
 const string WedgeFillProcessor::NAME = "mask.wedgefill";
+const string FFTPeakProcessor::NAME = "mask.fft.peak";
 const string BeamstopProcessor::NAME = "mask.beamstop";
 const string MeanZeroEdgeProcessor::NAME = "mask.dampedzeroedgefill";
 const string AverageXProcessor::NAME = "math.averageovery";
@@ -409,6 +410,7 @@ template <> Factory < Processor >::Factory()
 	force_add<RealToFFTProcessor>();
 	force_add<SigmaZeroEdgeProcessor>();
 	force_add<WedgeFillProcessor>();
+	force_add<FFTPeakProcessor>();
 	force_add<RampProcessor>();
 
 	force_add<BeamstopProcessor>();
@@ -776,6 +778,75 @@ void AzSharpProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
+
+void FFTPeakProcessor::process_inplace(EMData * image)
+{
+	EMData *fft;
+
+	if (!image) throw InvalidParameterException("FFTPeakProcessor: no image provided");
+	if (!image->is_complex()) fft = image->do_fft();
+	else fft = image;
+
+
+	int nx=fft->get_xsize();
+	int ny=fft->get_ysize();
+	int nz=fft->get_zsize();
+	float thresh_sigma = (float)params.set_default("thresh_sigma", 1.0);
+	bool removepeaks = (bool)params.set_default("removepeaks",0);
+	
+	vector<float> sigmaimg;
+	sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
+	for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*thresh_sigma;			// anything less than 1/10 sigma is considered to be missing
+
+	if (nz>1) {
+		for (int z=0; z<nz; z++) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x+=2) {
+					float r2=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+					int r=int(r2);
+					
+					float v1r=fft->get_value_at(x,y,z);
+					float v1i=fft->get_value_at(x+1,y,z);
+					float v1=Util::square_sum(v1r,v1i);
+
+					if ((v1>sigmaimg[r]&&!removepeaks&&r>=4) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
+					
+					fft->set_value_at_fast(x,y,z,0);
+					fft->set_value_at_fast(x+1,y,z,0);
+				}
+			}
+		}
+	}
+	else {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x+=2) {
+				float r2=Util::hypot2(x/2,y<ny/2?y:ny-y);	// origin at 0,0; periodic
+				int r=int(r2);
+				
+				float v1r=fft->get_value_at(x,y);
+				float v1i=fft->get_value_at(x+1,y);
+				float v1=Util::square_sum(v1r,v1i);
+
+				if ((v1>sigmaimg[r]&&!removepeaks&&r>=4) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
+				
+				fft->set_value_at_fast(x,y,0);
+				fft->set_value_at_fast(x+1,y,0);
+			}
+		}
+	}
+	
+	
+	if (fft!=image) {
+		EMData *ift=fft->do_ift();
+		memcpy(image->get_data(),ift->get_data(),(nx-2)*ny*nz*sizeof(float));
+		delete fft;
+		delete ift;
+	}
+	image->update();
+
+//	image->update();
+}
+
 
 void WedgeFillProcessor::process_inplace(EMData * image)
 {

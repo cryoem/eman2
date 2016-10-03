@@ -51,6 +51,10 @@ ploticon = [
     'ccccccccccccccc'
 ]
 
+def safe_float(x):
+	try: return float(x)
+	except: return 0.0
+
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtOpenGL import QGLWidget
@@ -379,7 +383,7 @@ class EMPlot2DWidget(EMGLWidget):
 					except: comments=None
 				else: comments=None
 				rdata=[i.split("#")[0] for i in rdata if i[0]!='#']
-				if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
+				if ',' in rdata[0]: rdata=[[safe_float(j) for j in i.split(',')] for i in rdata]
 				else : rdata=[[float(j) for j in i.split()] for i in rdata]
 				nx=len(rdata[0])
 				ny=len(rdata)
