@@ -827,7 +827,7 @@ void FFTPeakProcessor::process_inplace(EMData * image)
 				float v1i=fft->get_value_at(x+1,y);
 				float v1=Util::square_sum(v1r,v1i);
 
-				if (r>60 && r<80) printf("%d %d %d\t%1.3g  %1.3g\n",x,y,r,v1,sigmaimg[r]);
+//				if (r>60 && r<80) printf("%d %d %d\t%1.3g  %1.3g\n",x,y,r,v1,sigmaimg[r]);
 				if ((v1>sigmaimg[r]&&!removepeaks&&r>=4&&r<ny/2) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
 				
 				fft->set_value_at_fast(x,y,0);
