@@ -795,8 +795,8 @@ void FFTPeakProcessor::process_inplace(EMData * image)
 	bool removepeaks = (bool)params.set_default("removepeaks",0);
 	
 	vector<float> sigmaimg;
-	sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
-	for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*thresh_sigma;			// anything less than 1/10 sigma is considered to be missing
+	sigmaimg=fft->calc_radial_dist(nx/2,0,1,4);
+	for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*thresh_sigma;			// anything less than thresh_sigma * sigma is considered to be missing
 
 	if (nz>1) {
 		for (int z=0; z<nz; z++) {
@@ -809,7 +809,7 @@ void FFTPeakProcessor::process_inplace(EMData * image)
 					float v1i=fft->get_value_at(x+1,y,z);
 					float v1=Util::square_sum(v1r,v1i);
 
-					if ((v1>sigmaimg[r]&&!removepeaks&&r>=4) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
+					if ((v1>sigmaimg[r]&&!removepeaks&&r>=4&&r<ny/2) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
 					
 					fft->set_value_at_fast(x,y,z,0);
 					fft->set_value_at_fast(x+1,y,z,0);
@@ -827,7 +827,8 @@ void FFTPeakProcessor::process_inplace(EMData * image)
 				float v1i=fft->get_value_at(x+1,y);
 				float v1=Util::square_sum(v1r,v1i);
 
-				if ((v1>sigmaimg[r]&&!removepeaks&&r>=4) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
+				if (r>60 && r<80) printf("%d %d %d\t%1.3g  %1.3g\n",x,y,r,v1,sigmaimg[r]);
+				if ((v1>sigmaimg[r]&&!removepeaks&&r>=4&&r<ny/2) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
 				
 				fft->set_value_at_fast(x,y,0);
 				fft->set_value_at_fast(x+1,y,0);

@@ -128,7 +128,8 @@ and this program should be regarded as experimental.
 	avgmask=EMData(lnx,lnx,lnx)
 	avgmask.to_one()
 	d=float(lnx//overlap)
-	avgmask.process_inplace("mask.gaussian",{"outer_radius":2.0*d/log(8.0) })	# this mask is adjusted to the precise width necessary so a sum of tiled overlapping Gaussians will be flat
+#	avgmask.process_inplace("mask.gaussian",{"outer_radius":2.0*d/log(8.0) })	# this mask is adjusted to the precise width necessary so a sum of tiled overlapping Gaussians will be flat
+	avgmask.process_inplace("mask.gaussian",{"outer_radius":3.0*d/log(8.0) })	# make it a bit wider since we are weighting anyway, this should produce smoother surfaces
 	
 	xr=xrange(0,nx-lnx,lnx//overlap)
 	yr=xrange(0,ny-lnx,lnx//overlap)
