@@ -1394,6 +1394,47 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			image.save(filename, format)
 		print "Saved %s to disk"%os.path.basename(str(filename))
 	
+	def saveMovie(self, filename):
+
+		tmpnames=[]
+		fmt= str(filename).split(':')
+		fmtstr=""
+		oscillate=False
+		if len(fmt)>1:
+			filename=fmt[0]
+			for f in fmt[1:]:
+				if f=="oscillate":
+					oscillate=True
+				else:
+					f=f.replace('=',' ')
+					fmtstr+=" -{}".format(f)
+		
+		nimgs=len(self.getChildren())
+		for mdl in range(nimgs):
+		
+			for i,child in enumerate(self.getChildren()):
+				if i==mdl: child.setVisibleItem(True)
+				else: child.setVisibleItem(False)
+			
+			#self.main_3d_inspector.updateTreeSelVis()
+			self.updateSG()
+			self.paintGL()
+			image = self.grabFrameBuffer()
+			tmpname = "tmp.{:03d}.png".format(mdl)
+			image.save(tmpname, "png")
+			tmpnames.append(tmpname)
+			if oscillate:
+				tmpname = "tmp.{:03d}.png".format(2*nimgs-mdl-1)
+				image.save(tmpname, "png")
+				tmpnames.append(tmpname)
+		
+		cmd="convert tmp.???.png {} {}".format(fmtstr, filename)
+
+		ret= os.system(cmd)
+		for t in tmpnames:
+			os.unlink(t)
+		#print "Saved %s to disk"%os.path.basename(str(filename))
+		
 	def insertNewNode(self, name, node, parentnode=None, parentidx=None):
 		"""
 		Insert a new node in the SG, also takes care of inspector
@@ -2601,14 +2642,17 @@ class EMInspector3D(QtGui.QWidget):
 		self.opensession_button = QtGui.QPushButton("Open Session")
 		self.savesession_button = QtGui.QPushButton("Save Session")
 		self.savebutton = QtGui.QPushButton("Save Image Snapshot")
+		self.moviebutton = QtGui.QPushButton("Save GIF Movie")
 		uvbox.addWidget(self.opensession_button)
 		uvbox.addWidget(self.savesession_button)
 		uvbox.addWidget(self.savebutton)
+		uvbox.addWidget(self.moviebutton)
 		uwidget.setLayout(uvbox)
 		
 		QtCore.QObject.connect(self.backgroundcolor,QtCore.SIGNAL("newcolor(QColor)"),self._on_bg_color)
 		QtCore.QObject.connect(self.hideselectionbutton, QtCore.SIGNAL("clicked()"),self._on_hide)
 		QtCore.QObject.connect(self.savebutton, QtCore.SIGNAL("clicked()"),self._on_save)
+		QtCore.QObject.connect(self.moviebutton, QtCore.SIGNAL("clicked()"),self._on_save_movie)
 		QtCore.QObject.connect(self.savesession_button, QtCore.SIGNAL("clicked()"),self._on_save_session)
 		QtCore.QObject.connect(self.opensession_button, QtCore.SIGNAL("clicked()"),self._on_open_session)
 		
@@ -2646,6 +2690,14 @@ class EMInspector3D(QtGui.QWidget):
 		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")
 		if filename: # if we cancel
 			self.scenegraph().saveSnapShot(filename)
+	
+	def _on_save_movie(self):
+		"""
+		Save a movie of the scene
+		"""
+		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")
+		if filename: # if we cancel
+			self.scenegraph().saveMovie(filename)
 	
 	def _on_bg_color(self, color):
 		rgb = color.getRgb()
