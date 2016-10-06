@@ -610,8 +610,8 @@ def parsemodopt(optstr):
 			return(None,None)
 
 #		v=v.replace("bdb%","bdb:")
-		if v=="true" : v=1
-		elif v=="false" : v=0
+		if v.lower()=="true" : v=1
+		elif v.lower()=="false" : v=0
 		else:
 			try: v=int(v)
 			except:

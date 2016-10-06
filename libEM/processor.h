@@ -4924,6 +4924,39 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
+	/** Mask out (or in) peaks in Fourier space based on the average amplitude at each spatial frequency
+	 */
+	class FFTPeakProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new FFTPeakProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Identifies pixels corresponding to peaks in Fourier space based on the standard deviation of the corresponding Fourier ring. These pixels are masked out or in depending on options.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh_sigma", EMObject::FLOAT, "Multiplied by the standard deviation in each Fourier shell as a threshold for identifying peaks. Default 1.0");
+			d.put("removepeaks", EMObject::BOOL, "Instead of keeping peaks and removing everything else, this will remove peaks and keep everything else.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+	
+	
 	/** Fill missing wedge with information from another image
 	 */
 	class WedgeFillProcessor:public Processor
@@ -4957,6 +4990,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
+	
 	/**Fill zeroes at edges with nearest horizontal/vertical value.
 	 */
 	class SigmaZeroEdgeProcessor:public Processor
