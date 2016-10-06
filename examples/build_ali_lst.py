@@ -10,12 +10,32 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default="refine_01")
 	parser.add_argument("--replace", type=str,help="replace particle set", default=None)
-	parser.add_argument("--szmult", type=float,help="size mult", default=1.)
+	parser.add_argument("--szmult", type=float,help="size mult", default=None)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
 	with open('/'.join([options.path,"0_refine_parms.json"])) as json_file:
 		js = json.load(json_file)
+	
+	if not options.szmult:
+		if not options.replace:
+			options.szmult=1.
+		else:
+			inp=str(js["input"][0])
+			e=EMData(inp, 0, True)
+			srcname= e["data_source"]
+			e=EMData(srcname, 0, True)
+			apix0=e["apix_x"]
+			if options.replace:
+				tail=srcname.find("__")
+				if tail<0:
+					print "cannot find particles to replace"
+					exit()
+				repname= srcname[:tail+2]+options.replace+srcname[-4:]
+			e1=EMData(repname, 0, True)
+			apix1=e1["apix_x"]
+			options.szmult=apix0/apix1
+			
 	
 	eo=["even","odd"]
 	for eoid in range(2):
