@@ -26993,7 +26993,7 @@ void Util::iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	*/
 
 #ifdef _WIN32
-	double *cvv = (float *) double(2*size*sizeof(float));
+   double *cvv = (double *) malloc(2*size*sizeof(float));
 #else
 	double *cvv = fftw_alloc_real(2*size);
 #endif	//_WIN32
