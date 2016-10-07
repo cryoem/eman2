@@ -90,18 +90,18 @@ def main():
 	logid=E2init(sys.argv,options.ppid)
 
 	em_app = EMApp()
-	window = EMEulerWidget(file_name = options.eulerdata)
+	window = EMEulerWidget(file_name = options.eulerdata, read_from=args)
 	em_app.show_specific(window)
 	em_app.execute()
 
 	E2end(logid)
 
 class EMEulerWidget(EMSymViewerWidget):
-	def __init__(self, auto=True,sparse_mode=False, file_name = ""):
+	def __init__(self, auto=True,sparse_mode=False, file_name = "", read_from=None):
 		EMSymViewerWidget.__init__(self, filename=file_name)
 
 		#Replacing the EM3DSymModel that was created in the base class
-		euler_explorer = EMEulerExplorer(self, auto, sparse_mode, file_name = file_name)
+		euler_explorer = EMEulerExplorer(self, auto, sparse_mode, file_name = file_name, read_from=read_from)
 		self.model = euler_explorer
 		euler_explorer.regen_dl()
 
@@ -202,17 +202,28 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		else:
 			EM3DSymModel.keyPressEvent(self,event)
 
-	def __init__(self, gl_widget=None, auto=True,sparse_mode=False, file_name = ""):
+	def __init__(self, gl_widget=None, auto=True,sparse_mode=False, file_name = "", read_from=None):
 		self.current_hit = None
 		self.events_mode_list = ["navigate", "inspect"]
 		self.events_mode = self.events_mode_list[1]
 
-
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study
+		if len(read_from)==0:
+			read_from=None
+		self.readfrom=read_from
+		if self.readfrom:
+			
+			file_name=""
+			auto=False
+			datalst=[]
+			for rr in self.readfrom:
+				datalst.append([rr,None, None, None,rr])
+			self.au_data={"data":datalst}
+
 		if auto: # this a flag that tells the eulerxplorer to search for refinement data and automatically add elements to the inspector, if so
 			self.gen_refinement_data()
-
+		
 		EM3DSymModel.__init__(self, gl_widget, eulerfilename=file_name)
 		Animator.__init__(self)
 		self.height_scale = 8.0 # This is a value used in EM3DSymModel which scales the height of the displayed cylinders - I made it 8 because it seemed fine. The user can change it anyhow
@@ -376,14 +387,15 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			self.events_handlers["inspect"].reset()
 			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
-
-		try :
-			self.particle_file=js_open_dict(refine_dir+"/0_refine_parms.json")["input"]
-		except:
-			error("No data in "+refine_dir )
-			self.events_handlers["inspect"].reset()
-			get_application().setOverrideCursor(Qt.ArrowCursor)
-			return
+		
+		if not self.readfrom:
+			try :
+				self.particle_file=js_open_dict(refine_dir+"/0_refine_parms.json")["input"]
+			except:
+				error("No data in "+refine_dir )
+				self.events_handlers["inspect"].reset()
+				get_application().setOverrideCursor(Qt.ArrowCursor)
+				return
 
 		self.average_file = cls
 		self.projection_file = data[4]
@@ -430,6 +442,8 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		return headers
 
 	def au_point_selected(self,i,event=None):
+		if self.readfrom:
+			return
 		if i == None:
 			if event != None and event.modifiers()&Qt.ShiftModifier:
 				if self.special_euler != None:
