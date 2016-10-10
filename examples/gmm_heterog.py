@@ -25,6 +25,7 @@ def main():
 	parser.add_argument("--regress", action="store_true", default=False ,help="regress particles on the motion vector")
 	parser.add_argument("--make3d", action="store_true", default=False ,help="make 3D from particles of different conformation")
 	parser.add_argument("--nframe", type=int,help="number of frames for the 3D movie", default=6)
+	parser.add_argument("--gausswidth", type=float,help="width of the gaussians", default=15.)
 	parser.add_argument("--threads", type=int,help="number of threads for make3d", default=12)
 	parser.add_argument("--listid", type=str, default=None ,help="list of gaussian indices to use while calculating motion. File containing int list separated by linebreak, or chimera list output.")
 
@@ -54,12 +55,7 @@ def main():
 		cents=np.loadtxt(options.initpos)
 		cents=cents[:,1:]-options.sz/2
 		wts=np.zeros(len(cents))
-		model={"center":cents, "weight":wts, "boxsz":options.sz, "sym":options.sym}
-		js=js_open_dict(options.savefile)
-		js["center"]=cents.tolist()
-		js["weight"]=wts.tolist()
-		js["boxsz"]=options.sz
-		js["sym"]=options.sym
+		model={"center":cents, "weight":wts, "boxsz":options.sz, "sym":options.sym,"width":options.gausswidth}
 		ballrec=BallsReconstruction(model)
 	
 	else:
@@ -311,6 +307,7 @@ def save_model(ballrec,options):
 	js["weight"]=wts.tolist()
 	js["boxsz"]=options.sz
 	js["sym"]=options.sym
+	js["width"]=options.gausswidth
 	js=None
 	
 
@@ -482,7 +479,7 @@ class BallsReconstruction(object):
 		ind=theano.shared(value=ind_np,borrow=True)
 		def make_3d(p,w,den,ind):
 			d=(ind-p)**2
-			v=w*T.exp(-T.sum(d,axis=3)/(15))
+			v=w*T.exp(-T.sum(d,axis=3)/(model["width"]))
 			den+=v
 			return den
 		
