@@ -78,7 +78,7 @@ class EMBreakBrick(EMImage2DWidget):
 		self.data.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 		self.data.process_inplace("normalize")
 		self.data.process_inplace("threshold.belowtozero",{"minval":1})
-		self.data.div(self.data["mean"]*self.sx*self.sy)
+		self.data.div(self.data["mean_nonzero"]*self.sx*self.sy)
 		self.data.mult(1000)
 		self.auto_contrast()
 		self.data_grad=self.data.process("math.gradient.direction")

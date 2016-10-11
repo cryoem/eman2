@@ -286,8 +286,14 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 
 	// Deal with RGB image reading...
 	int color_type = png_get_color_type(png_ptr, info_ptr);
-	if (color_type==PNG_COLOR_TYPE_RGB){
-		printf("Reading RGB image as gray scale image...\n", x0,xlen);
+	//printf("color type: %d, %d\n", color_type, depth_type);
+	int clrmlt=1;
+	if (color_type!=PNG_COLOR_TYPE_GRAY){
+		printf("Reading RGB image as gray scale image...\n");
+		if (color_type==PNG_COLOR_TYPE_RGB) clrmlt=3;
+		else if (color_type==PNG_COLOR_TYPE_RGB_ALPHA) clrmlt=4;
+		else printf("Unrecognized PNG color type %d\n",color_type);
+		
 	}
 	
 	png_uint_32 rowbytes = png_get_rowbytes(png_ptr, info_ptr);
@@ -301,8 +307,8 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 		}
 
 		if (depth_type == PNG_CHAR_DEPTH) {
-			if (color_type==PNG_COLOR_TYPE_RGB){
-				for (int x = x0*3; x < x0*3 + xlen*3; x+=3) {
+			if (clrmlt>1){
+				for (int x = x0*clrmlt; x < x0*clrmlt + xlen*clrmlt; x+=clrmlt) {
 					float d=0;
 					for (int ri=0; ri<3; ri++) d+=static_cast < float >(cdata[x+ri]);
 					data[k] = d/3.;
@@ -318,8 +324,8 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 		}
 		else if (depth_type == PNG_SHORT_DEPTH) {
 			
-			if (color_type==PNG_COLOR_TYPE_RGB){
-				for (int x = x0*3; x < x0*3 + xlen*3; x+=3) {
+			if (clrmlt>1){
+				for (int x = x0*clrmlt; x < x0*clrmlt + xlen*clrmlt; x+=clrmlt) {
 					float d=0;
 					for (int ri=0; ri<3; ri++) d+=static_cast < float >(sdata[x+ri]);
 					data[k] = d/3.;
