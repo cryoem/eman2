@@ -8232,6 +8232,43 @@ correction is not possible, this will allow you to approximate the correction to
 		static const string NAME;
 	};
 
+	/** Replace source image with a disc (generalized cylinder)
+	 *@param a major axis length for face of disc
+	 *@param b minor axis length for face of disc
+	 *@param height height for the cylinder, by default it's the nz
+	 * */
+	class TestImageDisc : public TestImageProcessor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Replace source image with a disc";
+		}
+
+		static Processor * NEW()
+		{
+			return new TestImageDisc();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("major", EMObject::FLOAT, "major axis length for face of disc");
+			d.put("minor", EMObject::FLOAT, "major axis length for face of disc");
+			d.put("height", EMObject::FLOAT, "height of disc, by default it's nz");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
 	/** Try to normalize the 4 quadrants of a CCD image
 	 * @author Deepy Mann <dsmann@bcm.tmc.edu>
 	 * @date 9-2005
