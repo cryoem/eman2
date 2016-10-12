@@ -269,7 +269,9 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index, data);
-
+	
+	
+	
 	int nx1 = static_cast < int >(nx);
 	int ny1 = static_cast < int >(ny);
 
@@ -282,6 +284,18 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 	EMUtil::get_region_dims(area, nx1, &xlen, ny1, &ylen);
 	EMUtil::get_region_origins(area, &x0, &y0);
 
+	// Deal with RGB image reading...
+	int color_type = png_get_color_type(png_ptr, info_ptr);
+	//printf("color type: %d, %d\n", color_type, depth_type);
+	int clrmlt=1;
+	if (color_type!=PNG_COLOR_TYPE_GRAY){
+		printf("Reading RGB image as gray scale image...\n");
+		if (color_type==PNG_COLOR_TYPE_RGB) clrmlt=3;
+		else if (color_type==PNG_COLOR_TYPE_RGB_ALPHA) clrmlt=4;
+		else printf("Unrecognized PNG color type %d\n",color_type);
+		
+	}
+	
 	png_uint_32 rowbytes = png_get_rowbytes(png_ptr, info_ptr);
 	unsigned char *cdata = new unsigned char[rowbytes];
 	unsigned short *sdata = (unsigned short *) cdata;
@@ -293,15 +307,36 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 		}
 
 		if (depth_type == PNG_CHAR_DEPTH) {
-			for (int x = x0; x < x0 + xlen; x++) {
-				data[k] = static_cast < float >(cdata[x]);
-				k++;
+			if (clrmlt>1){
+				for (int x = x0*clrmlt; x < x0*clrmlt + xlen*clrmlt; x+=clrmlt) {
+					float d=0;
+					for (int ri=0; ri<3; ri++) d+=static_cast < float >(cdata[x+ri]);
+					data[k] = d/3.;
+					k++;
+				}
+			}
+			else{
+				for (int x = x0; x < x0 + xlen; x++) {
+					data[k] = static_cast < float >(cdata[x]);
+					k++;
+				}
 			}
 		}
 		else if (depth_type == PNG_SHORT_DEPTH) {
-			for (int x = x0; x < x0 + xlen; x++) {
-				data[k] = static_cast < float >(sdata[x]);
-				k++;
+			
+			if (clrmlt>1){
+				for (int x = x0*clrmlt; x < x0*clrmlt + xlen*clrmlt; x+=clrmlt) {
+					float d=0;
+					for (int ri=0; ri<3; ri++) d+=static_cast < float >(sdata[x+ri]);
+					data[k] = d/3.;
+					k++;
+				}
+			}
+			else{
+				for (int x = x0; x < x0 + xlen; x++) {
+					data[k] = static_cast < float >(sdata[x]);
+					k++;
+				}
 			}
 		}
 	}
