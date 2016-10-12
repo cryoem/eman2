@@ -241,6 +241,7 @@ const string TestImageCirclesphere::NAME = "testimage.circlesphere";
 const string TestImageNoiseUniformRand::NAME = "testimage.noise.uniform.rand";
 const string TestImageNoiseGauss::NAME = "testimage.noise.gauss";
 const string TestImageCylinder::NAME = "testimage.cylinder";
+const string TestImageDisc::NAME = "testimage.disc";
 const string CCDNormProcessor::NAME = "filter.ccdnorm";
 const string WaveletProcessor::NAME = "basis.wavelet";
 const string TomoTiltEdgeMaskProcessor::NAME = "tomo.tiltedgemask";
@@ -511,6 +512,7 @@ template <> Factory < Processor >::Factory()
 	force_add<TestImageNoiseGauss>();
 	force_add<TestImageScurve>();
 	force_add<TestImageCylinder>();
+	force_add<TestImageDisc>();
 	force_add<TestImageGradient>();
 	force_add<TestTomoImage>();
 	force_add<TestImageLineWave>();
@@ -9338,6 +9340,63 @@ void TestImageCylinder::process_inplace(EMData * image)
 				r = (x2*x2)/(radius*radius) + (y2*y2)/(radius*radius);
 
 				if(r<=1 && k>=(nz-height)/2 && k<=(nz+height)/2) {
+					*dat = 1;
+				}
+				else {
+					*dat = 0;
+				}
+			}
+		}
+	}
+
+	image->update();
+}
+
+void TestImageDisc::process_inplace(EMData * image)
+{
+	preprocess(image);
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	if(nz == 1) {
+		throw ImageDimensionException("This processor only works on 3D images");
+	}
+
+	float a = params["major"];
+
+	if(a > Util::get_min(nx, ny)/2.0) {
+		throw InvalidValueException(a, "major must be <= min(nx, ny)/2");
+	}
+
+	float b = params["minor"];
+
+	if(b > Util::get_min(nx, ny)/2.0) {
+		throw InvalidValueException(b, "minor must be <= min(nx, ny)/2");
+	}
+
+	float h;
+	if(params.has_key("height")) {
+		h = params["height"];
+		if(h > nz) {
+			throw InvalidValueException(h, "height must be <= nz");
+		}
+	}
+	else {
+		h = static_cast<float>(nz);
+	}
+
+	float *dat = image->get_data();
+	float x2, y2; //this is coordinates of this pixel from center axle
+	float r = 0.0f;
+	for (int k = 0; k < nz; ++k) {
+		for (int j = 0; j < ny; ++j) {
+			for (int i = 0; i < nx; ++i, ++dat) {
+				x2 = fabs((float)i - nx/2);
+				y2 = fabs((float)j - ny/2);
+				r = (x2*x2)/(a*a) + (y2*y2)/(b*b);
+				if(r<=1 && k>=(nz-h)/2 && k<=(nz+h)/2) {
 					*dat = 1;
 				}
 				else {
