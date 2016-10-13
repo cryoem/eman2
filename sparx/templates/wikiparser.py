@@ -122,6 +122,7 @@ def construct_keyword_dict():
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
 	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment
 	keyword_dict["--mtf"]                         = SXkeyword_map(2, "parameters")     # --mtf=MTF_FILE_NAME
+	keyword_dict["--chunk"]                       = SXkeyword_map(2, "parameters")     # --chunk0=CHUNK0_FILE_NAME, --chunk1=CHUNK1_FILE_NAME
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
 	keyword_dict["unblur"]                        = SXkeyword_map(2, "exe")            # unblur
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
@@ -129,7 +130,6 @@ def construct_keyword_dict():
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "txt")            # cter_ctf_file
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
-	keyword_dict["--chunkdir"]                    = SXkeyword_map(2, "directory")      # --chunkdir=chunkdir
 	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=run1_directory, --previous_run2=run2_directory
 
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")           # --apix=pixel_size, --apix
