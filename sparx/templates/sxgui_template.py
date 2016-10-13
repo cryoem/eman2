@@ -814,16 +814,16 @@ class SXCmdWidget(QWidget):
 					target_operator = "<"
 					item_tail = label_in.find(target_operator)
 					if item_tail != 0:
-						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should start from \"%s\" for key base name in line (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should start from \"%s\" for key base name in line (%s) of file (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in, file_path_in))
 					label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
 					target_operator = ">"
 					item_tail = label_in.find(target_operator)
 					if item_tail == -1:
-						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) of file (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in, file_path_in))
 					key_base = label_in[0:item_tail]
 					# Get corresponding cmd_token
 					if key_base not in self.sxcmd.token_dict.keys():
-						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s). This parameter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s) of file (%s). This parameter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in, file_path_in))
 					cmd_token = self.sxcmd.token_dict[key_base]
 					# First, handle very special cases
 					if cmd_token.type == "function":
