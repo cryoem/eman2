@@ -900,6 +900,17 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	return
 
 # ========================================================================================
+def create_sxcmd_subconfig_isacselect():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("isacselect"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("class_file_name"); token_edit.key_prefix = ""; token_edit.label = "ISAC class file name"; token_edit.help = "File name of the class averages. It is located in the ISAC output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_list"); token_edit.key_prefix = ""; token_edit.label = "Output ISAC particle ID list"; token_edit.help = "Output text file containing retrieved member particle IDs of all ISAC classes."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
+	
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("Get ISAC Particles", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
 def create_sxcmd_subconfig_adaptive_mask3d():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("adaptive_mask"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
@@ -1074,6 +1085,7 @@ def main():
 
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
