@@ -594,7 +594,11 @@ class SXCmdWidget(QWidget):
 				# Extract command line from qsub script template
 				for line in file_template:
 					if line.find("XXX_SXCMD_LINE_XXX") != -1:
-						if np > 1:
+						# DESIGN_NOTE: 2016/10/14 Toshio Moriya
+						# Ideally, the following exceptional cases of sx3dvariability should not handled in here
+						# because it will remove the generality from the software design
+						#
+						if np > 1 or self.sxcmd.name == "sx3dvariability":
 							cmd_line = line
 						else:
 							cmd_line = "XXX_SXCMD_LINE_XXX"
@@ -604,14 +608,22 @@ class SXCmdWidget(QWidget):
 						if cmd_line.find("XXX_SXMPI_JOB_NAME_XXX") != -1:
 							cmd_line = cmd_line.replace("XXX_SXMPI_JOB_NAME_XXX", str(self.sxcmd_tab_main.qsub_job_name_edit.text()))
 				file_template.close()
-			elif self.sxcmd.mpi_support:
+			# DESIGN_NOTE: 2016/10/14 Toshio Moriya
+			# Ideally, the following exceptional cases of sx3dvariability should not handled in here
+			# because it will remove the generality from the software design
+			#
+			elif self.sxcmd.mpi_support or self.sxcmd.name == "sx3dvariability":
 				# Case 2: queue submission is disabled, but MPI is supported
 				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Add MPI execution to command line
 				cmd_line = str(self.sxcmd_tab_main.mpi_cmd_line_edit.text())
 				# If empty string is entered, use a default template
 				if cmd_line == "":
-					if np > 1:
+					# DESIGN_NOTE: 2016/10/14 Toshio Moriya
+					# Ideally, the following exceptional cases of sx3dvariability should not handled in here
+					# because it will remove the generality from the software design
+					#
+					if np > 1 or self.sxcmd.name == "sx3dvariability":
 						cmd_line = "mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX"
 					else:
 						cmd_line = "XXX_SXCMD_LINE_XXX"
