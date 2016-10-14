@@ -183,7 +183,7 @@ def main():
 				if int(line[20:25]) > lhelix or line[19] != lch:
 					ihelix+=abs(int(line[20:25])-int(line[32:37]))-1
 				else:
-					print("Overlapping helices are invalid.")
+					#print("Overlapping helices are invalid.")
 					ihelix=-1
 				lch=line[19]
 				lhelix=int(line[32:37])
@@ -244,8 +244,8 @@ def main():
 		print "Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0])
 		print "              y: %7.2f - %7.2f"%(amin[1],amax[1])
 		print "              z: %7.2f - %7.2f"%(amin[2],amax[2])
-		print("Helix (%): {:.1f}".format(100*float(ihelix)/ires)) # is this accurate?
-		print("Sheet (%): {:.1f}".format(100*float(isheet)/ires))
+		#print("Helix (%): {:.1f}".format(100*float(ihelix)/ires)) # is this accurate?
+		#print("Sheet (%): {:.1f}".format(100*float(isheet)/ires))
 
 		if options.info: sys.exit(1)
 
@@ -271,7 +271,7 @@ def main():
 				points.append(np.hstack([tfd,bfs]))
 			pa = PointArray()
 			pts = np.concatenate(points).flatten()
-			pa.set_from(pts.tolist())
+			pa.set_from(pts.tolist()[0])
 
 		# apply additional, user specified symmetry
 		if options.addsym != "c1":
