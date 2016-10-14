@@ -6,7 +6,7 @@ sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image se
 
 ''usage in command line''
 
-sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_weighted  --B_enhance=B_ENHANCE  --adhoc_bfactor  --low_pass_filter  --ff=FF  --aa=AA  --mask=MASK  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --FSC_cutoff=FSC_CUTOFF  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --low_pass_filter  --aa=AA  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --B_stop=B_STOP  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
 
 
 === Typical usage ===
@@ -108,10 +108,10 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     inputfile:: input file: required for some options. (default none)
 
     changesize:: Resample 2D or 3D images: resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size. (default False)
-    ratio:: ratio of new to old image size: if < 1, the pixel size will increase and image size decrease. if > 1, the other way round. (default 1.0)
+    ratio:: Ratio of new to old image size: if < 1, the pixel size will increase and image size decrease. if > 1, the other way round. (default 1.0)
 
     pw:: Compute average power spectrum of a 2D image stack: with optional padding (option wn) with zeroes. (default False)
-    wn:: size of window to use: it should be larger/equal than particle box size, default padding to max(nx,ny). (default -1)
+    wn:: Size of window to use: it should be larger/equal than particle box size, default padding to max(nx,ny). (default -1)
 
     phase_flip:: Phase flip the input stack: (default False)
 
@@ -119,7 +119,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
     isacgroup:: Retrieve original image numbers in selected ISAC group: see ISAC documentation for details. (default -1)
 
-    isacselect:: Retrieve original image numbers listed in ISAC output average stack: see ISAC documentation for details. (default False)
+    isacselect:: Create ISAC particle ID list: Retrieve original image numbers listed in ISAC output average stack. see ISAC documentation for details. (default False)
 
     params:: name of parameter in image file header: which one depends on specific option. (default none)
 
@@ -146,23 +146,22 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
     nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
 
-    postprocess:: Adjust power spectrum based on B-factor: B-factor is estimated from unfiltered odd-even 3-D volumes, one volume, or ISAC 2-D averages. (default False)
+    postprocess:: Adjust power spectrum based on B-factor: B-factor is estimated from unfiltered odd/even 3D volumes, one volume, or ISAC 2D averages. (default False)
     mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
-    fsc_adj:: FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. (not applicable to 2D image). (default False)
-    B_enhance:: =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC143; =128., program use the given value 128. to enhance map: (default 0.0)
-    low_pass_filter:: low_pass filter frequency: =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2: (default 0.0)
-    aa:: Low-pass filter fall-off: (default 0.1)
-    mask:: User provided mask: (default none)
-    do_adaptive_mask:: Program creates mask adaptively with given threshold: (default False)
-    mask_threshold:: Threshold for creating adaptive surface mask: (default 0.02)
-    cosine_edge:: the width of cosine transition area:: (default 6.)
-    dilation :: pixels of surface dilation or erosion:: (default 3.) 
+    fsc_adj:: Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. This is not applicable to 2D image. (default False)
+    B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
+    low_pass_filter:: Low-pass filter frequency: 0.0: low_pass filter to resolution; -1.0: no low_pass filter; 5.8: low_pass filter to 5.8 [A]; 0.2: low_pass filter to 0.2 (absolute frequency). (default 0.0)
+    aa:: Low-pass filter fall-off: Low-pass filter fall-off. (default 0.1)
+    mask:: User-provided mask: User-provided mask. (default none)
+    do_adaptive_mask:: Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False)
+    mask_threshold:: Adaptive mask threshold: Density threshold for creating adaptive surface mask. (default 0.02)
+    consine_edge:: Cosine edge width [Pixels]: Width of cosine transition area for soft-edge masking. (default 6.0)
+    dilation:: surface dilation size [Pixels]: Size of surface dilation or erosion. (default 3.0) 
     output:: Output file: (default vol_postrefine_masked.hdf)
-    pixel_size:: Pixel size [A]: Pixel size in A. (default 0.0)
-    B_start:: Lower limit for B-factor estimation [A]: (default 10.0)
-    B_stop::  Hight limit for B-factor estimation [A]: (default  0.0)
-   	
-   	
+    pixel_size:: Pixel size [A]: Pixel size of input data. (default 0.0)
+    B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
+    B_stop:: B-factor higher limit [A]: Higher limit for B-factor estimation. (default  0.0)
+
     window_stack:: Window stack images using a smaller window size: (default False)
     box:: new window size: (default 0)
 

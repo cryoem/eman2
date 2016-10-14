@@ -140,19 +140,33 @@ def main():
 	#  This is code for handling symmetries by the above program.  To be incorporated. PAP 01/27/2015
 
 	from EMAN2db import db_open_dict
+
+	# Set up global variables related to bdb cache 
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
+	
+	# Set up global variables related to ERROR function
+	global_def.BATCH = True
+	
+	# detect if program is running under MPI
+	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
+	if RUNNING_UNDER_MPI:
+		global_def.MPI = True
 	
 	if options.symmetrize :
-		try:
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
-			try:	
-				number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-				if( number_of_proc > 1 ):
-					ERROR("Cannot use more than one CPU for symmetry prepration","sx3dvariability",1)
+		if RUNNING_UNDER_MPI:
+			try:
+				sys.argv = mpi_init(len(sys.argv), sys.argv)
+				try:	
+					number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+					if( number_of_proc > 1 ):
+						ERROR("Cannot use more than one CPU for symmetry prepration","sx3dvariability",1)
+				except:
+					pass
 			except:
 				pass
-		except:
-			pass
-
+		
 		#  Input
 		#instack = "Clean_NORM_CTF_start_wparams.hdf"
 		#instack = "bdb:data"
@@ -238,10 +252,10 @@ def main():
 		import string
 		options.sym = options.sym.lower()
 		 
-		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
-		global_def.BATCH = True
+		# if global_def.CACHE_DISABLE:
+		# 	from utilities import disable_bdb_cache
+		# 	disable_bdb_cache()
+		# global_def.BATCH = True
 
 		if myid == main_node:
 			print_begin_msg("sx3dvariability")
@@ -712,10 +726,13 @@ def main():
 					print "Total time for these computations: %.2f [min]"%((time()-t0)/60)
 				print_end_msg("sx3dvariability")
 
-		global_def.BATCH = False
-
 		from mpi import mpi_finalize
 		mpi_finalize()
+		
+		if RUNNING_UNDER_MPI:
+			global_def.MPI = False
+
+		global_def.BATCH = False
 
 if __name__=="__main__":
 	main()

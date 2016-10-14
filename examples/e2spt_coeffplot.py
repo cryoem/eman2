@@ -64,6 +64,8 @@ def main():
 	
 	parser.add_argument("--groups", type=int, help="Number of groups you want the data to be divided into based on correlation.", default=None)
 	
+	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average. Default=mean.tomo.""")
+
 	parser.add_argument("--topn", type=int, help="Number of particles from best to worst that you want to be written as a substack, averaged, and generate a coordinates .txt file with their coordinates.", default=None)
 
 	parser.add_argument("--sigmaprune", type=float, default=0.0, help = """Number of standard deviations below the mean to cut off particles; 
@@ -98,6 +100,24 @@ def main():
 	options = sptmakepath( options, 'sptcoeff')
 	
 	print "\nI have read the parameters"
+	
+
+	if options.lowpass:
+		if options.lowpass == "default":
+			hdr = EMData( options.alistack, 0, True )
+			apix=hdr['apix_x']
+			nyquist = 2.0*apix
+			nyquistfreq = 1.0/nyquist
+			options.lowpass = 'filter.lowpass.tanh:cutoff_freq='+str(nyquistfreq)+':apix='+str(apix)
+			if apix =='1.0':
+				print "\nWARNING: apix is 1.0, most likely wrong (default empty value). You can fix/change it with e2fixheaderparam.py"
+		elif 'None' in options.lowpass or 'none' in options.lowpass:
+			options.lowpass=None
+
+	if options.averager:
+		options.align=parsemodopt(options.averager)
+	if options.lowpass: 
+		options.lowpass=parsemodopt(options.lowpass)
 	
 	scores=[]
 	dataset={}
@@ -364,19 +384,7 @@ def main():
 		
 	newN=len(dataset)
 	
-	if options.lowpass:
-		if options.lowpass == "default":
-			hdr = EMData( options.alistack, 0, True )
-			apix=hdr['apix_x']
-			nyquist = 1.0/2.0*apix
-			options.lowpass = 'filter.lowpass.tanh:cutoff_freq='+str(nyquist)+':apix='+str(apix)
-			if apix =='1.0':
-				print "\nWARNING: apix is 1.0, most likely wrong (default empty value). You can fix/change it with e2fixheaderparam.py"
-		
-		if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
-			options.lowpass=parsemodopt(options.lowpass)
-		elif 'None' in options.lowpass or 'none' in options.lowpass:
-			options.lowpass=None
+	
 		
 	if options.groups:
 		
@@ -411,8 +419,10 @@ def main():
 			groupname = options.path + '/' + os.path.basename(options.alistack).replace('.', '_'+ str(kk).zfill(len(str(options.groups))) + '.')
 			particleLIST = []			
 			lines = []
-			
+			print "options.averager is", options.averager
+			#avgr = Averagers.get(options.averager[0], options.averager[1])
 			avgr = Averagers.get('mean.tomo')
+
 			for element in subdataset:
 				#particle = element['particle']
 				
@@ -433,11 +443,17 @@ def main():
 			average['origin_z'] = 0
 			
 			average.process_inplace('normalize.edgemean')
+
 			if options.lowpass:
 				print "(e2spt_coeffplot)(main) --lowpass provided:", options.lowpass
 				average.process_inplace(options.lowpass[0],options.lowpass[1])
 			
 			average.write_image(averageNAME,0)
+
+			cmd = 'cd ' + options.path + ' && e2orthoproject.py --input ' + os.path.basename(averageNAME)
+			cmd += ' && e2slicer.py --input ' + os.path.basename(averageNAME)
+
+			runcmd( options, cmd )
 			#print "\nThe group average has been written to", averageNAME
 			kk+=1	
 			
@@ -544,7 +560,24 @@ def main():
 	
 	E2end(logger)
 
-	return()
+	return
+
+def runcmd(options,cmd):
+	if options.verbose > 9:
+		print "\n(e2spt_coeffplot)(runcmd) running command", cmd
+	
+	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	text=p.communicate()	
+	p.stdout.close()
+	
+	if options.verbose > 8:
+		print "\n(e2spt_coeffplot)(runcmd) done"
+	
+	#if options.verbose > 9:
+	#	print text
+	
+	return 1
+
 
 if __name__ == '__main__':
 	main()

@@ -106,8 +106,11 @@ def ERROR(message, where, action = 1, myid = 0):
 		if  MPI:
 			from mpi import mpi_finalize
 			mpi_finalize()
+			MPI = False
+			BATCH = False
 			exit()
 		else:
+			BATCH = False
 			exit()
 
 

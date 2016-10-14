@@ -6,7 +6,7 @@ sxsort3d - 3D Clustering Protocol I: Sort 3D heterogeneity based on the reproduc
 
 ''usage in command line''
 
-sxsort3d.py  stack  outdir  mask  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --function=user_function  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --seed=random_seed  --smallest_group=smallest_group  --sausage  --chunkdir=chunkdir  --PWadjustment=PWadjustment  --protein_shape=protein_shape  --upscale=upscale  --wn=wn --interpolation=method
+sxsort3d.py  stack  outdir  mask  --focus=3Dmask  --ir=inner_radius  --radius=outer_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --delta=angular_step  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --CTF  --stoprnct=stop_percent  --sym=c1  --function=user_function  --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=low_pass_filter  --nxinit=nxinit  --unaccounted  --seed=random_seed  --smallest_group=smallest_group  --sausage  --chunk0=CHUNK0_FILE_NAME  --chunk1=CHUNK1_FILE_NAME  --PWadjustment=PWadjustment  --protein_shape=protein_shape  --upscale=upscale  --wn=wn --interpolation=method
 
 
 === Typical usage ===
@@ -28,7 +28,8 @@ sxsort3d exists only in MPI version.
     number_of_images_per_group:: Images per group: Critical number of images per group, defined by user. (default 1000) 
     nxinit:: Initial image size for sorting: (default 64)
     smallest_group:: Smallest group size: Minimum members for identified group. (default 500) 
-    chunkdir:: Chunkdir: Used for computing margin of error. (default none) 
+    chunk0:: Chunk file name for 1st subset: Name of chunk file containing particle IDs of 1st subset (chunk0) for computing margin of error. (default none) 
+    chunk1:: Chunk file name for 2nd subset: Name of chunk file containing particle IDs of 2nd subset (chunk0) for computing margin of error. (default none) 
 
     * The remaining parameters are optional.
     ir:: Inner radius for rotational correlation [Pixels]: Must be bigger than 1. (default 1)
