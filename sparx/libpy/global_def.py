@@ -96,6 +96,9 @@ def ERROR(message, where, action = 1, myid = 0):
 		message: error message
 		action: 1 - fatal error, exit; 0 - non-fatal, print a warning; otherwise - fatal error, but make caller to exit
 	"""
+	global BATCH
+	global MPI
+	
 	if myid == 0:
 		if action: print  "\n  *****  ERROR in: %s"%(where)
 		else:      print  "\n  *****  WARNING in: %s"%(where)
