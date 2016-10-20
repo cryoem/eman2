@@ -5,7 +5,7 @@ sxwindow - Particle Extraction: Create a particle stack from a list of micrograp
 
 ''usage in command line''
 
-sxwindow.py  input_micrograph_list_file  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --invert  --import_ctf=ctf_file  --limit_ctf  --resample_ratio=resample_ratio  --defocus_error=defocus_error  --astigmatism_error=astigmatism_error
+sxwindow.py  input_micrograph_list_file  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --skip_invert  --import_ctf=ctf_file  --limit_ctf  --resample_ratio=resample_ratio  --defocus_error=defocus_error  --astigmatism_error=astigmatism_error
 
 
 === Typical usage ===
@@ -15,11 +15,11 @@ sxwindow exists in for both MPI and non-MPI versions (Running MPI version does n
 Please specify an input micrograph list file, and name patterns of the micrographs and their corresponding coordinates using wild card (e.g. *). Running from the command line requires enclosing the name patterns by single quotes (') or double quotes ("). sxgui.py will automatically adds single quotes to the string (').  BDB stacks can not be
  used as input.
 
-''' mpirun  -np  32  sxwindow.py  mic_list.txt  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt '''
+''' mpirun  -np  32  sxwindow.py  mic_list.txt  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --import_ctf=outdir_cter/partres/partres.txt '''
 
 If micrograph list file is not provided, all files matched with the micrograph name pattern will be processed.
 
-''' mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt '''
+''' mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --import_ctf=outdir_cter/partres/partres.txt '''
 
 
 NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.
@@ -35,7 +35,7 @@ NOTE: Passing a list of micrograph names as arguments is not supported since 201
     
     coordinates_format:: Coordinate file format: Allowed values are 'sparx', 'eman1', 'eman2', or 'spider'. sparx, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default eman1)
     box_size:: Particle box size [Pixels]: The pixel size is automatically recalculated when resample_ratio < 1.0 is used. (default 256)
-    invert:: Invert contrast: Recommended for cryo-EM data (default False)
+    skip_invert:: Skip invert image contrast: Use this option for negative staining data. By default, the image contrast is inverted for cryo data. (default False)
     import_ctf:: CTF parameter file: This file is produced by sxcter and normally called partres.txt (default none)
 
     * The remaining parameters are optional.
