@@ -5,7 +5,7 @@ sxwindow - Particle Extraction: Create a particle stack from a list of micrograp
 
 ''usage in command line''
 
-sxwindow.py  input_micrograph_list_file  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --skip_invert  --import_ctf=ctf_file  --limit_ctf  --resample_ratio=resample_ratio  --defocus_error=defocus_error  --astigmatism_error=astigmatism_error
+sxwindow.py  input_micrograph_list_file  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --skip_invert  --import_ctf=ctf_file  --limit_ctf  --astigmatism_error=astigmatism_error  --resample_ratio=resample_ratio
 
 
 === Typical usage ===
@@ -40,9 +40,8 @@ NOTE: Passing a list of micrograph names as arguments is not supported since 201
 
     * The remaining parameters are optional.
     limit_ctf:: Use CTF limit filter: Frequencies whose oscillation cannot be properly modeled at the current pixel size are discarded in the images with the appropriate low-pass filter. This option requires --import_ctf. (default False)
-    resample_ratio:: Ratio between the new and original box size: Use values between 0. and 1. (default 1.0)
-    defocus_error:: Defocus error limit: Exclude micrographs where the defocus error computed by sxcter exceeds the desired value. The error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)
     astigmatism_error:: Astigmatism error limit: Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. (default 360.0)
+    resample_ratio:: Ratio between the new and original box size: Use values between 0. and 1. (default 1.0)
 
 
 == Output ==
