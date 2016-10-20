@@ -1123,7 +1123,7 @@ def main():
 	sxcmd_category = "sxc_particle_stack"
 
 	sxcmd_role = "sxr_pipe"
-	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer_old.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"

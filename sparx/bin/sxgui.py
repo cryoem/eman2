@@ -2258,7 +2258,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2boxer"; sxcmd.mode = ""; sxcmd.label = "Particle Picking"; sxcmd.short_info = "Manual and automatic particle picking."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "e2boxer_old"; sxcmd.mode = ""; sxcmd.label = "Particle Picking"; sxcmd.short_info = "Manual and automatic particle picking."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_micrograph_list"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if the number is very large. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "boxsize"; token.key_prefix = "--"; token.label = "Box size [Pixels]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "-1"; token.restore = "-1"; token.type = "box"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "exclude_edges"; token.key_prefix = "--"; token.label = "Exclude edge images"; token.help = "Exclude particles extending outside the micrograph: "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
