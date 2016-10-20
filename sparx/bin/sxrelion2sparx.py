@@ -127,7 +127,7 @@ def main():
 	relion_category_dict = {}
 	relion_category_dict['window']  = ['Particle Extarction',  True, ['_rlnMicrographName','_rlnCoordinateX', '_rlnCoordinateY', '_rlnImageName']]
 	relion_category_dict['ctf']     = ['CTF Estimation',       True, ['_rlnVoltage', '_rlnDefocusU', '_rlnDefocusV', '_rlnDefocusAngle', '_rlnSphericalAberration', '_rlnDetectorPixelSize', '_rlnMagnification', '_rlnAmplitudeContrast']]
-	relion_category_dict['proj3d']  = ['Alingment Parameters', True, ['_rlnOriginX', '_rlnOriginY', '_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi', '_rlnMaxValueProbDistribution', '_rlnNormCorrection']]
+	relion_category_dict['proj3d']  = ['Alignment Parameters', True, ['_rlnOriginX', '_rlnOriginY', '_rlnAngleRot', '_rlnAngleTilt', '_rlnAnglePsi', '_rlnMaxValueProbDistribution', '_rlnNormCorrection']]
 	relion_category_dict['chunk']   = ['Random Subset',        True, ['_rlnRandomSubset']]
 	
 	# SPARX params file related
