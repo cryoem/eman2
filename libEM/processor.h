@@ -375,7 +375,7 @@ The basic design of EMAN Processors: <br>\
                                 params["sigma"] = val;
                         }
                         else if( params.has_key("cutoff_pixels") ) {
-                                float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]);
+                                float val = ((float)params["cutoff_pixels"] / (float)dict["nx"]);
                                 params["cutoff_abs"] = val;
                                 params["sigma"] = val;
                         }
@@ -1748,7 +1748,7 @@ The basic design of EMAN Processors: <br>\
 				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0f);
 			}
 			else if( params.has_key("cutoff_pixels") ) {
-				float val = 0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"];
+				float val = (float)params["cutoff_pixels"] / (float)dict["nx"];
 				params["cutoff_abs"] = val;
 				params["bfactor"] = pow(apix/(float)params["cutoff_abs"],2.0f);
 			}
@@ -4924,6 +4924,39 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
+	/** Mask out (or in) peaks in Fourier space based on the average amplitude at each spatial frequency
+	 */
+	class FFTPeakProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new FFTPeakProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Identifies pixels corresponding to peaks in Fourier space based on the standard deviation of the corresponding Fourier ring. These pixels are masked out or in depending on options.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh_sigma", EMObject::FLOAT, "Multiplied by the standard deviation in each Fourier shell as a threshold for identifying peaks. Default 1.0");
+			d.put("removepeaks", EMObject::BOOL, "Instead of keeping peaks and removing everything else, this will remove peaks and keep everything else.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+	
+	
 	/** Fill missing wedge with information from another image
 	 */
 	class WedgeFillProcessor:public Processor
@@ -4957,6 +4990,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
+	
 	/**Fill zeroes at edges with nearest horizontal/vertical value.
 	 */
 	class SigmaZeroEdgeProcessor:public Processor
@@ -7154,8 +7188,8 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			TypeDict d;
 			d.put("thr", EMObject::FLOAT, "Minimum density to consider for extraction");
-			d.put("sym", EMObject::FLOAT, "Symmetry");
-			d.put("seed", EMObject::EMDATA, "An (optional) single level mask volume to use as a seed after symmetrizing");
+			d.put("sym", EMObject::STRING, "Symmetry");
+//			d.put("seed", EMObject::EMDATA, "An (optional) single level mask volume to use as a seed after symmetrizing");
 			return d;
 		}
 
@@ -8198,6 +8232,43 @@ correction is not possible, this will allow you to approximate the correction to
 		static const string NAME;
 	};
 
+	/** Replace source image with a disc (generalized cylinder)
+	 *@param a major axis length for face of disc
+	 *@param b minor axis length for face of disc
+	 *@param height height for the cylinder, by default it's the nz
+	 * */
+	class TestImageDisc : public TestImageProcessor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Replace source image with a disc";
+		}
+
+		static Processor * NEW()
+		{
+			return new TestImageDisc();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("major", EMObject::FLOAT, "major axis length for face of disc");
+			d.put("minor", EMObject::FLOAT, "major axis length for face of disc");
+			d.put("height", EMObject::FLOAT, "height of disc, by default it's nz");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
 	/** Try to normalize the 4 quadrants of a CCD image
 	 * @author Deepy Mann <dsmann@bcm.tmc.edu>
 	 * @date 9-2005
@@ -8617,7 +8688,7 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			TypeDict d;
 			d.put("kernel", EMObject::FLOATARRAY, "the convolution kernel");
-			//d.put("selem", EMObject::EMDATA, "the structuring element");
+			d.put("selem", EMObject::EMDATA, "the structuring element");
 			return d;
 		}
 		static const string NAME;

@@ -48,7 +48,7 @@ def main():
 		pts+=cnt
 		rotpts.append(pts)
 	rotpts=np.array(rotpts)
-	
+	rotpts=np.clip(rotpts, 0, sz-1)
 	for ptid in range(num):
 		e=EMData(ptclfile,ptid)
 		img=e.numpy().copy()

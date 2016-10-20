@@ -3565,7 +3565,7 @@ EMData *EMData::calc_flcf(EMData * with)
 EMData *EMData::convolute(EMData * with)
 {
 	ENTERFUNC;
-
+	
 	EMData *f1 = do_fft();
 	if (!f1) {
 		LOGERR("FFT returns NULL image");
@@ -3576,7 +3576,10 @@ EMData *EMData::convolute(EMData * with)
 
 	EMData *cf = 0;
 	if (with) {
-		cf = with->do_fft();
+		if (with-> is_real())
+			cf = with->do_fft();
+		else
+			cf = with->copy();
 		if (!cf) {
 			LOGERR("FFT returns NULL image");
 			throw NullPointerException("FFT returns NULL image");

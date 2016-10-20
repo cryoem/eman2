@@ -24,7 +24,8 @@ def main():
 	usage = """Usage: e2spt_average.py [options] 
 Note that this program is not part of the original e2spt hierarchy, but is part of an experimental refactoring.
 
-Will read metadata from the specified spt_XX directory, as produced by e2spt_align.py, and average a selected subset of subtomograms in the predetermined orientation.
+Will read metadata from the specified spt_XX directory, as produced by e2spt_align.py, and generate projections of the selected subset of particles after
+alignment to the reference, projected along the Z axis.
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

@@ -814,16 +814,16 @@ class SXCmdWidget(QWidget):
 					target_operator = "<"
 					item_tail = label_in.find(target_operator)
 					if item_tail != 0:
-						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should start from \"%s\" for key base name in line (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should start from \"%s\" for key base name in line (%s) of file (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in, file_path_in))
 					label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
 					target_operator = ">"
 					item_tail = label_in.find(target_operator)
 					if item_tail == -1:
-						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) of file (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in, file_path_in))
 					key_base = label_in[0:item_tail]
 					# Get corresponding cmd_token
 					if key_base not in self.sxcmd.token_dict.keys():
-						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s). This parameter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s) of file (%s). This parameter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in, file_path_in))
 					cmd_token = self.sxcmd.token_dict[key_base]
 					# First, handle very special cases
 					if cmd_token.type == "function":
@@ -864,7 +864,7 @@ class SXCmdWidget(QWidget):
 			file_path = str(QFileDialog.getOpenFileName(self, "Select BDB File", SXLookFeelConst.file_dialog_dir, "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
-				file_path = "bdb:./" + SXLookFeelConst.format_path(file_path).replace("EMAN2DB/", "#").replace(".bdb", "")
+				file_path = "bdb:" + SXLookFeelConst.format_path(file_path).replace("EMAN2DB/", "#").replace(".bdb", "")
 				file_path = file_path.replace("/#", "#")
 				# If the input directory is the current directory, use the simplified DBD file path format
 				if file_path.find(".#") != -1:
@@ -1087,13 +1087,13 @@ class SXCmdTab(QWidget):
 					assert(cmd_token.is_required == False)
 					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index])
 					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
-					cmd_token_restore_widget[widget_index].setToolTip(default_cmd_token_restore_tooltip)
+					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 					# cmd_token_widget[widget_index] = QLineEdit(self)
 					cmd_token_widget[widget_index] = QLineEdit()
 					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index])
-					cmd_token_widget[widget_index].setToolTip(cmd_token.help[widget_index])
+					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 					self.connect(cmd_token_restore_widget[widget_index], SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token, widget_index))
@@ -1108,19 +1108,19 @@ class SXCmdTab(QWidget):
 					assert(cmd_token.is_required == False)
 					cmd_token_restore_widget[widget_index] = QPushButton("%s" % cmd_token.restore[widget_index])
 					cmd_token_restore_widget[widget_index].setStyleSheet(custom_style)
-					cmd_token_restore_widget[widget_index].setToolTip(default_cmd_token_restore_tooltip)
+					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 					cmd_token_widget[widget_index] = QLineEdit()
 					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index]) # Because default user functions is internal
-					cmd_token_widget[widget_index].setToolTip(cmd_token.help[widget_index])
+					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 					self.connect(cmd_token_restore_widget[widget_index], SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token, widget_index))
 
 					file_format = "py"
 					temp_btn = QPushButton("Select Script")
-					temp_btn.setToolTip("Display open file dailog to select .%s python script file" % file_format)
+					temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s python script file</FONT>" % file_format)
 					grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 					self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget[widget_index], file_format))
 
@@ -1199,61 +1199,61 @@ class SXCmdTab(QWidget):
 							file_format = "hdf"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "bdb"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 						elif cmd_token.type == "any_image":
 							temp_btn = QPushButton("Select Image")
-							temp_btn.setToolTip("Display open file dailog to select standard format image file (e.g. .hdf, .mrc)")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image file (e.g. .hdf, .mrc)</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "any_micrograph":
 							temp_btn = QPushButton("Select Image")
-							temp_btn.setToolTip("Display open file dailog to select standard format image file (e.g. .hdf, .mrc)")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image file (e.g. .hdf, .mrc)</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 							file_format = "txt"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select .%s parameter file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s parameter file</FONT>" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 						elif cmd_token.type == "any_file_list":
 							temp_btn = QPushButton("Select Files")
-							temp_btn.setToolTip("Display open file dailog to select files (e.g. *.*)")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select files (e.g. *.*)</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
 							file_format = "bdb"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 						elif cmd_token.type == "any_image_list":
 							temp_btn = QPushButton("Select Images")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select standard format image files (e.g. .hdf, .mrc)")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image files (e.g. .hdf, .mrc)</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1262,12 +1262,12 @@ class SXCmdTab(QWidget):
 							file_format = "bdb"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1276,12 +1276,12 @@ class SXCmdTab(QWidget):
 							file_format = "pdb"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1290,12 +1290,12 @@ class SXCmdTab(QWidget):
 							file_format = "hdf"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1304,12 +1304,12 @@ class SXCmdTab(QWidget):
 							file_format = "mrc"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1317,12 +1317,12 @@ class SXCmdTab(QWidget):
 						elif cmd_token.type == "parameters":
 							temp_btn = QPushButton("Select Parameter")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select parameter file (e.g. .txt)")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select parameter file (e.g. .txt)</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1331,12 +1331,12 @@ class SXCmdTab(QWidget):
 							file_format = "txt"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select .%s parameter file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s parameter file</FONT>" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1345,12 +1345,12 @@ class SXCmdTab(QWidget):
 							file_format = "exe"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select .%s parameter file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s parameter file</FONT>" % file_format)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1358,12 +1358,12 @@ class SXCmdTab(QWidget):
 						elif cmd_token.type == "any_file":
 							temp_btn = QPushButton("Select File")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display open file dailog to select file (e.g. *.*)")
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select file (e.g. *.*)</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1371,12 +1371,12 @@ class SXCmdTab(QWidget):
 						elif cmd_token.type == "directory":
 							temp_btn = QPushButton("Select directory")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip("Display select directory dailog")
+							temp_btn.setToolTip('<FONT>'+"Display select directory dailog"+'</FONT>')
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_dir, cmd_token_widget))
 							file_format = "invisible"
 							temp_btn = QPushButton("Select .%s" % file_format)
-							temp_btn.setToolTip("Display open file dailog to select .%s format image file" % file_format)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
 							temp_btn.setEnabled(False)
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1385,8 +1385,8 @@ class SXCmdTab(QWidget):
 						# else:
 						# 	if cmd_token.type not in ["int", "float", "string", "apix", "wn", "box", "radius", "sym"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
 
-					cmd_token_widget.setToolTip(cmd_token.help)
-					cmd_token_restore_widget.setToolTip(cmd_token_restore_tooltip)
+					cmd_token_widget.setToolTip('<FONT>'+cmd_token.help+'</FONT>')
+					cmd_token_restore_widget.setToolTip('<FONT>'+cmd_token_restore_tooltip+'</FONT>')
 
 					grid_row += 1
 
@@ -1406,13 +1406,13 @@ class SXCmdTab(QWidget):
 			# self.mpi_nproc_edit = QLineEdit(self)
 			self.mpi_nproc_edit = QLineEdit()
 			self.mpi_nproc_edit.setText("1")
-			self.mpi_nproc_edit.setToolTip("Number of processors to use. default is single processor mode")
+			self.mpi_nproc_edit.setToolTip('<FONT>'+"Number of processors to use. default is single processor mode"+'</FONT>')
 			submit_layout.addWidget(self.mpi_nproc_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 			# Add save paramaters button
 			self.save_params_btn = QPushButton("Save parameters")
 			self.save_params_btn.setMinimumWidth(btn_min_width)
-			self.save_params_btn.setToolTip("Save gui parameter settings")
+			self.save_params_btn.setToolTip('<FONT>'+"Save gui parameter settings"+'</FONT>')
 			self.connect(self.save_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.save_params)
 			submit_layout.addWidget(self.save_params_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
 
@@ -1424,13 +1424,13 @@ class SXCmdTab(QWidget):
 
 			self.mpi_cmd_line_edit = QLineEdit()
 			self.mpi_cmd_line_edit.setText("")
-			self.mpi_cmd_line_edit.setToolTip("Template of MPI command line (e.g. \"mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX\"). if empty, use \"mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX\"")
+			self.mpi_cmd_line_edit.setToolTip('<FONT>'+"Template of MPI command line (e.g. \"mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX\"). if empty, use \"mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX\"</FONT>")
 			submit_layout.addWidget(self.mpi_cmd_line_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 			# Add load paramaters button
 			self.load_params_btn = QPushButton("Load parameters")
 			self.load_params_btn.setMinimumWidth(btn_min_width)
-			self.load_params_btn.setToolTip("Load gui parameter settings to retrieve a previously-saved one")
+			self.load_params_btn.setToolTip('<FONT>'+"Load gui parameter settings to retrieve a previously-saved one"+'</FONT>')
 			self.connect(self.load_params_btn, SIGNAL("clicked()"), self.sxcmdwidget.load_params)
 			submit_layout.addWidget(self.load_params_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
 
@@ -1451,7 +1451,7 @@ class SXCmdTab(QWidget):
 				self.qsub_enable_checkbox.setCheckState(Qt.Checked)
 			else: # assert(is_qsub_enabled == False)
 				self.qsub_enable_checkbox.setCheckState(Qt.Unchecked)
-			self.qsub_enable_checkbox.setToolTip("Submit job to queue")
+			self.qsub_enable_checkbox.setToolTip('<FONT>'+"Submit job to queue"+'</FONT>')
 			self.qsub_enable_checkbox.stateChanged.connect(self.set_qsub_enable_state) # To control enable state of the following qsub related widgets
 			self.qsub_enable_checkbox.setEnabled(self.sxcmdwidget.sxcmd.is_submittable)
 			submit_layout.addWidget(self.qsub_enable_checkbox, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
@@ -1468,7 +1468,7 @@ class SXCmdTab(QWidget):
 			else: # assert(self.sxcmdwidget.sxcmd.is_submittable == False)
 				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
 				self.qsub_job_name_edit.setText("N/A")
-			self.qsub_job_name_edit.setToolTip("Name of this job")
+			self.qsub_job_name_edit.setToolTip('<FONT>'+"Name of this job"+'</FONT>')
 			submit_layout.addWidget(self.qsub_job_name_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 			grid_row += 1
@@ -1483,12 +1483,12 @@ class SXCmdTab(QWidget):
 			else: # assert(self.sxcmdwidget.sxcmd.is_submittable == False)
 				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
 				self.qsub_cmd_edit.setText("N/A")
-			self.qsub_cmd_edit.setToolTip("Name of submission command to queue job")
+			self.qsub_cmd_edit.setToolTip('<FONT>'+"Name of submission command to queue job"+'</FONT>')
 			submit_layout.addWidget(self.qsub_cmd_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 			self.cmd_line_btn = QPushButton("Generate command line")
 			self.cmd_line_btn.setMinimumWidth(btn_min_width)
-			self.cmd_line_btn.setToolTip("Generate command line from gui parameter settings and automatically save settings")
+			self.cmd_line_btn.setToolTip('<FONT>'+"Generate command line from gui parameter settings and automatically save settings"+'</FONT>')
 			self.connect(self.cmd_line_btn, SIGNAL("clicked()"), self.sxcmdwidget.print_cmd_line)
 			submit_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
 
@@ -1504,12 +1504,12 @@ class SXCmdTab(QWidget):
 			else: # assert(self.sxcmdwidget.sxcmd.is_submittable == False)
 				assert(self.sxcmdwidget.sxcmd.mpi_support == False)
 				self.qsub_script_edit.setText("N/A")
-			self.qsub_script_edit.setToolTip("File name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh)")
+			self.qsub_script_edit.setToolTip('<FONT>'+"File name of submission script template (e.g. $EMAN2DIR/bin/msgui_qsub.sh)"+'</FONT>')
 			submit_layout.addWidget(self.qsub_script_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 			self.qsub_script_open_btn = QPushButton("Select Template")
 			self.qsub_script_open_btn.setMinimumWidth(func_btn_min_width)
-			self.qsub_script_open_btn.setToolTip("Display open file dailog to select job submission script template file")
+			self.qsub_script_open_btn.setToolTip('<FONT>'+"Display open file dailog to select job submission script template file"+'</FONT>')
 			self.connect(self.qsub_script_open_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, self.qsub_script_edit))
 			submit_layout.addWidget(self.qsub_script_open_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -1519,7 +1519,7 @@ class SXCmdTab(QWidget):
 			custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0)} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084)} QPushButton:focus {font: bold; color: #000;border: 2px solid #8D0;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0)}"
 			self.execute_btn.setStyleSheet(custom_style)
 			self.execute_btn.setMinimumWidth(btn_min_width)
-			self.execute_btn.setToolTip("Run %s and automatically save gui parameter settings" % self.sxcmdwidget.sxcmd.get_mode_name_for("human"))
+			self.execute_btn.setToolTip('<FONT>'+"Run %s and automatically save gui parameter settings</FONT>" % self.sxcmdwidget.sxcmd.get_mode_name_for("human"))
 			self.connect(self.execute_btn, SIGNAL("clicked()"), self.sxcmdwidget.execute_cmd_line)
 			submit_layout.addWidget(self.execute_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
 
@@ -1684,7 +1684,7 @@ class SXCmdCategoryWidget(QWidget):
 			# Add buttons for this sx*.py processe
 			sxcmd.btn = QPushButton(sxcmd.label)
 			# sxcmd.btn.setCheckable(True) # NOTE: 2016/02/18 Toshio Moriya: With this setting, we can not move the focus to the unchecked butttons... PyQt bug?
-			sxcmd.btn.setToolTip(sxcmd.short_info)
+			sxcmd.btn.setToolTip('<FONT>'+sxcmd.short_info+'</FONT>')
 			self.sxcmd_btn_group.addButton(sxcmd.btn)
 			self.grid_layout.addWidget(sxcmd.btn, self.grid_row, self.grid_col_origin, self.sxcmd_btn_row_span, self.sxcmd_btn_col_span)
 
@@ -1827,13 +1827,13 @@ class SXConstSetWidget(QWidget):
 			custom_style = "QPushButton {color:green; }"
 			sxconst_register_widget.setStyleSheet(custom_style)
 			const_set_layout.addWidget(sxconst_register_widget, const_set_grid_row, const_set_row_origin + const_label_col_span, const_register_widget_row_span, const_register_widget_col_span)
-			sxconst_register_widget.setToolTip("Retrieve this registered value to edit box")
+			sxconst_register_widget.setToolTip('<FONT>'+"Retrieve this registered value to edit box"+'</FONT>')
 			self.connect(sxconst_register_widget, SIGNAL("clicked()"), partial(self.handle_regster_widget_event, sxconst))
 
 			sxconst_widget = QLineEdit()
 			sxconst_widget.setMinimumWidth(const_widget_min_width)
 			sxconst_widget.setText(sxconst.register)
-			sxconst_widget.setToolTip(sxconst.help)
+			sxconst_widget.setToolTip('<FONT>'+sxconst.help+'</FONT>')
 			const_set_layout.addWidget(sxconst_widget, const_set_grid_row, const_set_row_origin + const_label_col_span + const_register_widget_col_span, const_widget_row_span, const_widget_col_span)
 
 			const_set_grid_row += 1
@@ -1855,7 +1855,7 @@ class SXConstSetWidget(QWidget):
 		custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 		self.execute_btn.setStyleSheet(custom_style)
 		self.execute_btn.setMinimumWidth(func_btn_min_width * register_btn_col_span)
-		self.execute_btn.setToolTip("Register project constant parameter settings to automatically set values to command arguments and options")
+		self.execute_btn.setToolTip('<FONT>'+"Register project constant parameter settings to automatically set values to command arguments and options"+'</FONT>')
 		self.connect(self.execute_btn, SIGNAL("clicked()"), self.register_const_set)
 		btn_layout.addWidget(self.execute_btn, btn_grid_row, btn_col_origin, register_btn_row_span, register_btn_col_span)
 
@@ -1864,14 +1864,14 @@ class SXConstSetWidget(QWidget):
 		# Add save project constant parameter settings button
 		self.save_consts_btn = QPushButton("Save settings")
 		self.save_consts_btn.setMinimumWidth(func_btn_min_width)
-		self.save_consts_btn.setToolTip("Save project constant parameter settings")
+		self.save_consts_btn.setToolTip('<FONT>'+"Save project constant parameter settings"+'</FONT>')
 		self.connect(self.save_consts_btn, SIGNAL("clicked()"), self.save_consts)
 		btn_layout.addWidget(self.save_consts_btn, btn_grid_row, btn_col_origin, func_btn_row_span, func_btn_col_span)
 
 		# Add load project constant parameter settings button
 		self.load_consts_btn = QPushButton("Load settings")
 		self.load_consts_btn.setMinimumWidth(func_btn_min_width)
-		self.load_consts_btn.setToolTip("Load project constant parameter settings to retrieve the previously-saved one")
+		self.load_consts_btn.setToolTip('<FONT>'+"Load project constant parameter settings to retrieve the previously-saved one"+'</FONT>')
 		self.connect(self.load_consts_btn, SIGNAL("clicked()"), self.load_consts)
 		btn_layout.addWidget(self.load_consts_btn, btn_grid_row, btn_col_origin + func_btn_col_span, func_btn_row_span, func_btn_col_span)
 

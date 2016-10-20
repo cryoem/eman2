@@ -8,7 +8,7 @@ import threading
 import Queue
 from sys import argv,exit
 
-def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shrink,maxres,verbose):
+def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shrink,maxres,simthr2,verbose):
 	"""Averaging thread. 
 	avgs are n existing Averagers, 
 	fsp,i is the particle being averaged
@@ -19,6 +19,7 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shri
 	"""
 	if shrink<2: shrink=0
 	b=EMData(fsp,fspn)
+	if maxres>0: b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/maxres})
 	if maxtilt<90.0 :
 		bf=b.do_fft()
 		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
@@ -43,8 +44,10 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shri
 	else :
 		d=best[2]
 	
-	avgs[best[1]].add_image(d)
-	print "{} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0])
+	if best[0]<simthr2 : 
+		avgs[best[1]].add_image(d)
+		print "{} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0])
+	else: print "** {} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0])
 	jsd.put((fspn,best[0],best[1],best[3]))
 
 
@@ -66,12 +69,13 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.")
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 	parser.add_argument("--simthr", default=-0.1,type=float,help="Similarity is smaller for better 'quality' particles. Specify the highest value to include from e2spt_hist.py. Default -0.1")
+	parser.add_argument("--simthr2", default=0,type=float,help="Simlarity score for the best matching final alignment. Scaling may be different due to resolution limit. Default 0")
 	parser.add_argument("--replace",type=str,default=None,help="Replace the input subtomograms used for alignment with the specified file (used when the aligned particles were masked or filtered)")
 	parser.add_argument("--wedgesigma",type=float,help="Threshold for identifying missing data in Fourier space in terms of standard deviation of each Fourier shell. Default 3.0",default=3.0)
 	parser.add_argument("--minalt",type=float,help="Minimum alignment altitude to include. Default=0",default=0)
 	parser.add_argument("--maxalt",type=float,help="Maximum alignment altitude to include. Deafult=180",default=180)
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0)
-	parser.add_argument("--maxres",type=float,help="Highest resolution in A to be used for classification among possible orientations and references. Default=30",default=30.0)
+	parser.add_argument("--maxres",type=float,help="Lowpass filter applied to particles prior to alignment/averaging, resolution in A. Default disabled",default=-1)
 	parser.add_argument("--listfile",type=str,help="Specify a filename containing a list of integer particle numbers to include in the average, one per line, first is 0. Additional exclusions may apply.",default=None)
 	parser.add_argument("--shrinkcompare",type=int,help="Shrink factor for classification only (for speed)",default=0)
 	parser.add_argument("--sym",type=str,help="Symmetry of the input. Must be aligned in standard orientation to work properly.",default="c1")
@@ -110,7 +114,9 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	n=len(args)
 	refs=[EMData(i) for i in args]
-
+	if options.maxres>0:
+		for r in refs: r.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
+	
 	if options.listfile!=None :
 		plist=set([int(i) for i in file(options.listfile,"r")])
 
@@ -140,10 +146,10 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	# Rotation and insertion are slow, so we do it with threads. 
 	# Averager isn't strictly threadsafe, so possibility of slight numerical errors with a lot of threads
 	if options.replace != None:
-		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.verbose)) for i,k in enumerate(keys)]
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,options.replace,eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.simthr2,options.verbose)) for i,k in enumerate(keys)]
 
 	else:
-		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.verbose)) for i,k in enumerate(keys)]
+		thrds=[threading.Thread(target=rotfncompete,args=(jsd,avgs,eval(k)[0],eval(k)[1],angs[k]["xform.align3d"],options.sym,refs,shrinkrefs,options.maxtilt,options.wedgesigma,options.shrinkcompare,options.maxres,options.simthr2,options.verbose)) for i,k in enumerate(keys)]
 
 
 	print len(thrds)," threads"

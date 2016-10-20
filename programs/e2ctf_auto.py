@@ -76,6 +76,7 @@ Important: This program must be run from the project directory, not from within 
 
 	parser.add_header(name="modeheader", help='Additional Options', title="Additional Options", row=20, col=0, rowspan=1, colspan=3, mode="auto")
 	parser.add_argument("--fromscratch",action="store_true",help="Force refitting of CTF from scratch, ignoring any previous fits.",default=False, guitype='boolbox', row=22, col=0, rowspan=1, colspan=1, mode='auto[False]')
+	parser.add_argument("--curdefocusfix",action="store_true",help="Recomputes everything, but maintains the current particle-based defocus/astigmatism, including any manual adjustments",default=False, guitype='boolbox', row=24, col=2, rowspan=1, colspan=1, mode='autofit[False]')
 #	parser.add_argument("--forceframe",action="store_true",help="Uses defocus/astigmatism from frames. Does not significantly modify based on particles",default=False, guitype='boolbox', row=24, col=2, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting (use e2rawdata first)",default=False, guitype='boolbox', row=22, col=1, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding",default=False, guitype='boolbox', row=22, col=2, rowspan=1, colspan=1, mode='auto[False]')
@@ -178,6 +179,13 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 			fit_options="--astigmatism"
 		else:
 			fit_options=""
+	elif options.curdefocusfix:
+		print "Using existing particle based parameters, by user request"
+		if options.astigmatism :
+			print """Astigmatism requested""" 
+			fit_options="--curdefocusfix --astigmatism"
+		else:
+			fit_options="--curdefocusfix"
 	else:
 		if frame_ctf : 
 			print "Frame based CTF parameters found"

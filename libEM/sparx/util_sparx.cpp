@@ -19066,6 +19066,7 @@ EMData*  Util::unrollmask( int ny )
 
 vector<float> Util::rotavg_fourier(EMData* img)
 {
+	//  Computes both rotational power spectrum and cumulative rotational power spectrum
 	int nx, ny, nz, nyp2, lsd;
 	bool iodd;
 	int cmpx = img->is_complex();
@@ -19089,11 +19090,10 @@ vector<float> Util::rotavg_fourier(EMData* img)
 		fint = fimg->get_data();
 	}
 	vector<float> rotav(2*lsd);
-	for (int i=0; i<2*lsd; i++)  rotav[i] = 0.0f; 
+	for (int i=0; i<2*lsd; i++)  rotav[i] = 0.0f;
 	vector<float> count(lsd);
 	for (int i=0; i<lsd; i++)  count[i] = 0.0f;
 
-	float tsum = 0.0;
 	float argy, argx;
 	for ( int iy = 1; iy <= ny; iy++) {
 		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
@@ -19108,7 +19108,6 @@ vector<float> Util::rotavg_fourier(EMData* img)
 					float qres = 1.0f - frac;
 					int ioff = 2*(jx+(iy-1)*lsd);
 					float temp = fint[ioff]*fint[ioff] + fint[ioff+1]*fint[ioff+1];
-					tsum += temp;
 					//cout<<"  jx  "<<jx<<"  jy  "<<jy<<"  ir  "<<ir<<"  "<<ioff<<"  temp  "<<temp<<endl;
 					rotav[ir]   += temp*qres;
 					rotav[ir+1] += temp*frac;
@@ -19191,6 +19190,78 @@ float Util::sqedac( EMData* img, EMData* proj, EMData* ctfsbckgnoise )
 	EXITFUNC;
 }
 
+void Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMData* bckgnoise, float prob)
+{
+	ENTERFUNC;
+/*
+        int nx=bckgnoise->get_xsize(), ny=bckgnoise->get_ysize();
+        cout<<"  "<< nx <<"  "<<ny<<endl;
+        nx=mask->get_xsize(), ny=mask->get_ysize();
+        cout<<"  "<< nx <<"  "<<ny<<endl;
+        nx=ctfs->get_xsize(), ny=ctfs->get_ysize();
+        cout<<"  "<< nx <<"  "<<ny<<endl;
+        nx=proj->get_xsize(), ny=proj->get_ysize();
+        cout<<"  "<< nx <<"  "<<ny<<endl;
+
+*/
+	int nx=img->get_xsize(), ny=img->get_ysize();
+	//cout<<"  "<< nx <<"  "<<ny<<endl;
+	nx /= 2;
+	if (nx != ctfs->get_xsize()) {
+		throw NullPointerException("incorrect image size");
+	}
+    float* data  = img->get_data();
+    float* dproj = proj->get_data();
+    float* dctfs = ctfs->get_data();
+    float* dmask = mask->get_data();
+    float* bckg  = bckgnoise->get_data();
+    int nyp2 = ny/2;
+
+	vector<float> rotav(nx);
+	for (int i=0; i<nx; i++)  rotav[i] = 0.0f; 
+	vector<float> count(nx);
+	for (int i=0; i<nx; i++)  count[i] = 0.0f;
+
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny;
+		float argy = float(jy*jy);
+		for ( int ix = 1; ix <= nx; ix++) {
+			int jx=ix-1;
+			int roff = (jx+(iy-1)*nx);
+			if(dmask[roff] > 0.0 ) {
+				float rf = sqrt( argy + float(jx*jx) );
+				int  ir = int(rf);
+				if( ir < nx-1) {
+					float frac = rf - float(ir);
+					float qres = 1.0f - frac;
+					int ioff = 2*roff;
+//if(roff>66*130-1)  {
+//cout<<"  "<< ix <<"  "<<iy<<"  "<<jy<<"  "<<roff<<"  "<<ioff<<endl;
+//cout<<"   roff  error  "<<endl;
+//}
+					float temp = (data[ioff] - dctfs[roff]*dproj[ioff]);
+					temp *= temp;
+					float iemp = (data[ioff+1] - dctfs[roff]*dproj[ioff+1]);
+					temp += iemp*iemp;
+//cout<<" UUU   "<< ir <<"  "<<data[ioff]*data[ioff]+data[ioff+1]*data[ioff+1]<<"  "<<dctfs[roff]*dproj[ioff]*dctfs[roff]*dproj[ioff]+dctfs[roff]*dproj[ioff+1]*dctfs[roff]*dproj[ioff+1]<<endl;
+					rotav[ir]   += temp*qres;
+					rotav[ir+1] += temp*frac;
+					count[ir]   += qres;
+					count[ir+1] += frac;
+				}
+			}
+		}
+	}
+
+	for (int ir=0; ir<nx; ir++) {
+		if( count[ir] > 0.0 )   bckg[ir] += rotav[ir]/(count[ir]/prob);
+	}
+
+	EXITFUNC;
+}
+
+
+/*
 
 vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
 {
@@ -19244,6 +19315,7 @@ vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* b
     return retvals;
 	EXITFUNC;
 }
+*/
 
 vector<float> Util::sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise)
 {
@@ -26921,7 +26993,7 @@ void Util::iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	*/
 
 #ifdef _WIN32
-	double *cvv = (float *) double(2*size*sizeof(float));
+   double *cvv = (double *) malloc(2*size*sizeof(float));
 #else
 	double *cvv = fftw_alloc_real(2*size);
 #endif	//_WIN32

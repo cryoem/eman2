@@ -1934,7 +1934,6 @@ def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 	"""
 	from statistics import fsc
 	from utilities import model_circle
-	from morphology import binarize, erosion
 	nx = img1.get_xsize()
 	ny = img1.get_ysize()
 	nz = img1.get_zsize()

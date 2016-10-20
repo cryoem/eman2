@@ -80,6 +80,7 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 	m=col.mean()
 	s=col.std()
 	col=col[abs(col-m)<s*4.0]
+	savetxt("{}/hist_score.txt".format(options.path),col)
 
 	if options.verbose:
 		lz=len(col[col<0])

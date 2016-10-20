@@ -329,9 +329,9 @@ def main():
 
 
 	if options.tophat:
-		# _unmasked volumes are filtered
-		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff}".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,noisecutoff=noisecutoff))
-		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff}".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,noisecutoff=noisecutoff))
+		# _unmasked volumes are NOT tophat filtered
+		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect}".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,noisecutoff=noisecutoff))
+		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect}".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,noisecutoff=noisecutoff))
 
 		# Technically snrmult should be 1 here, but we use 2 to help speed convergence
 		cmd="e2proc3d.py {path}tmp_even.hdf {evenfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(

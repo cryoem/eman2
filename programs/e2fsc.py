@@ -57,7 +57,7 @@ and this program should be regarded as experimental.
 #	parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
 	parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
 	parser.add_argument("--localsize", type=int, help="Size in pixels of the local region to compute the resolution in",default=-1)
-	parser.add_argument("--overlap", type=int, help="Amount of oversampling to use in local resolution windows. Larger value -> larger output map",default=12)
+	parser.add_argument("--overlap", type=int, help="Amount of oversampling to use in local resolution windows. Larger value -> larger output map",default=6)
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
@@ -115,22 +115,41 @@ and this program should be regarded as experimental.
 	cenmask.to_one()
 	cenmask.process_inplace("mask.gaussian",{"inner_radius":lnx/6,"outer_radius":lnx/6})
 	print "Approx feature size for assessment = %1.1f A"%(apix*lnx/2.0)
-	cenmask.write_image("cenmask.hdf")
+#	cenmask.write_image("cenmask.hdf")
 	#display(cenmask)
+	
 	
 	overlap=options.overlap		# This is the fraction of the window size to use as a step size in sampling
 	if overlap<1 or overlap>lnx :
 		print "Invalid overlap specified, using default"
+		overlap=4
 	
-	xr=xrange(0,nx-lnx,lnx/overlap)
-	yr=xrange(0,ny-lnx,lnx/overlap)
-	zr=xrange(0,nz-lnx,lnx/overlap)
+	# Create a Gaussian with the correct size to produce a flat average in 3-D
+	avgmask=EMData(lnx,lnx,lnx)
+	avgmask.to_one()
+	d=float(lnx//overlap)
+#	avgmask.process_inplace("mask.gaussian",{"outer_radius":2.0*d/log(8.0) })	# this mask is adjusted to the precise width necessary so a sum of tiled overlapping Gaussians will be flat
+	avgmask.process_inplace("mask.gaussian",{"outer_radius":3.0*d/log(8.0) })	# make it a bit wider since we are weighting anyway, this should produce smoother surfaces
+	
+	xr=xrange(0,nx-lnx,lnx//overlap)
+	yr=xrange(0,ny-lnx,lnx//overlap)
+	zr=xrange(0,nz-lnx,lnx//overlap)
 	resvol=EMData(len(xr),len(yr),len(zr))
-	resvol["apix_x"]=apix*lnx/overlap
-	resvol["apix_y"]=apix*lnx/overlap
-	resvol["apix_z"]=apix*lnx/overlap
+	resvol["apix_x"]=apix*lnx//overlap
+	resvol["apix_y"]=apix*lnx//overlap
+	resvol["apix_z"]=apix*lnx//overlap
 	resvol143=resvol.copy()
 	
+	print "Local region: ",lnx," with step ",lnx//overlap
+	
+	# volfilt will contain the locally filtered version of the map
+	volfilt=v1.copy()
+	volfilt.to_zero()
+	volnorm=v1.copy()
+	volnorm.to_zero()
+	
+	# now do all of the tiled calculations
+	# TODO - parallelize this
 	fys=[]
 	funny=[]		# list of funny curves
 	t=time.time()
@@ -184,9 +203,9 @@ and this program should be regarded as experimental.
 				if isnan(fy[0]): print "NAN"
 
 				# 0.143 resolution
-				for i,xx in enumerate(fx[:-1]):
-					if fy[i]>0.143 and fy[i+1]<0.143 : break
-				res143=(0.143-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])+fx[i]
+				for si,xx in enumerate(fx[:-1]):
+					if fy[si]>0.143 and fy[si+1]<0.143 : break
+				res143=(0.143-fy[si])*(fx[si+1]-fx[si])/(fy[si+1]-fy[si])+fx[si]
 				if res143<0 : res143=0.0
 				if res143>fx[-1]: 
 					res143=fx[-1]		# This makes the resolution at Nyquist, which is not a good thing
@@ -195,9 +214,28 @@ and this program should be regarded as experimental.
 				
 				fys.append(fy)
 
+				# now we build the locally filtered volume
+				v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
+				v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
+				v1m.add(v2m)
+#				if res143>.23 : v1m.write_image("zones.hdf",-1)
+				v1m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
+#				if res143>.23 : v1m.write_image("zones.hdf",-1)
+				v1m.mult(avgmask)
 
+#				if res143>.2 : print x,y,z,si,lnx,fx[si],res143
+
+				volfilt.insert_scaled_sum(v1m,(x+lnx/2,y+lnx/2,z+lnx/2))
+				volnorm.insert_scaled_sum(avgmask,(x+lnx/2,y+lnx/2,z+lnx/2))
+
+	# while the size of avgmask was selected to produce a nearly normalized image without further work
+	# there were minor artifacts. The normalization deals with this.
+	volnorm.process_inplace("math.reciprocal")
+	volfilt.mult(volnorm)
+	
 	resvol.write_image("resvol.hdf")
 	resvol143.write_image("resvol143.hdf")
+	volfilt.write_image("res143_filtered.hdf")
 	
 	out=file("fsc.curves.txt","w")
 	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
