@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - 2011, Last update: June/2014
+Author: Jesus Galaz - 2011, Last update: Oct/2016
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -48,124 +48,55 @@ def main():
 	"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
-	
-	parser.add_argument("--path",type=str,default='',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.""")
-	
-	parser.add_argument("--randstack",type=str,default='',help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
-
-	parser.add_argument("--writetomogram",type=str,default='',help="This will generate a simulated tilt series and tomogram containing the entire set of subtomograms.")
-
-	parser.add_argument("--tiltaxis",type=str,default='y',help="""Axis to produce projections about. Default is 'y'; the only other valid option is 'x'.""")
-
-	parser.add_argument('--tiltangles',type=str,default='',help="""File in .tlt or .txt format containing the tilt angle of each tilt image in the tiltseries.""")
-
-	parser.add_argument("--input", type=str, default='', help="""The name of the input volume from which simulated subtomograms will be generated. The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. If the input file is PDB or MRC, a version of the supplied model will be written out in HDF format. If the input file is a stack, simulatd subvolumes will be generated from each model in the stack and written to different output stacks. For example, if the input file contains models A and B, two output stacks with simulated subvolumes will be generated.""")
-				
-	parser.add_argument("--lowpass",type=str, default='', help="""A filter (as in a processor from e2proc3d.py) to apply to the model before generating simulated particles from it. Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""")
-	
-	parser.add_argument("--highpass",type=str, default='', help="""A filter (as in a processor from e2proc3d.py) to apply to the model before generating simulated particles from it. Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""")
-	
-	parser.add_argument("--preprocess",type=str, default='', help="""A processor (from e2proc3d.py) to apply to the model before generating simulated particles from it. Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""")
-	
-	parser.add_argument("--threshold",type=str, default='', help="""A filter (as in a processor from e2proc3d.py) to apply to the model before generating simulated particles from it. Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""")
-	
-	parser.add_argument("--normproc",type=str, default='',help="""Default=None. Normalization processor applied to particles before alignment. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
-	
-	parser.add_argument("--mask",type=str, default='', help="""A filter (as in a processor from e2proc3d.py) to apply to the model before generating simulated particles from it. Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""")
-	
-	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
-	
-	parser.add_argument("--savepreprocessed",action="store_true",  default=False, help="""Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
-	
-	parser.add_argument("--evenorientations",action="store_true",  default=False, help="""Orientations to generate simulated particles will be evenly distributed in angular space (or a subregion if --sym is specified and not equal to c1).""")
-	
-	parser.add_argument("--nptcls", type=int,default=10,help="""Number of simulated subtomograms to generate per reference model supplied.""")
-		
-	parser.add_argument("--txrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in X. The random translation will be picked between -txrange and +txrange. Default value is set by --trange, but --txrange will overwrite it if specified.""")
-
-	parser.add_argument("--txerror", type=int,default=0,help="""Range of random translation error in pixels to perturb individual 2-D images in each subtiltseries by along x. The random translation perturbation will be picked between -txerror and +txerror. Default value is set by --terror, but --txerror will overwrite it if specified.""")
-
-	parser.add_argument("--tyrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in Y. The random translation will be picked between -tyrange and +tyrange. Default value is set by --trange, but --txrange will overwrite it if specified.""")
-
-	parser.add_argument("--tyerror", type=int,default=0,help="""Range of random translation error in pixels to perturb individual 2-D images in each subtiltseries by along y. The random translation perturbation will be picked between -tyerror and +tyerror. Default value is set by --terror, but --tyerror will overwrite it if specified.""")
-
-	parser.add_argument("--tzrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in Z. The random translation will be picked between -tzrange and +tzrange. Default value is set by --trange, but --txrange will overwrite it if specified.""")
-
-	#parser.add_argument("--tzerror", type=int,default=0,help="""Range of random translation error in pixels to perturb individual 2-D images in each subtiltseries by along z. The random translation perturbation will be picked between -tzerror and +tzerror. Default value is set by --terror, but --tzerror will overwrite it if specified.""")
-
-	parser.add_argument("--trange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in all X, Y and Z. The random translation will be picked between -transrage and +trange; --txrange, --tyrange and --tzrange overwrite --trange for each specified direction.""")
-	
-	parser.add_argument("--terror", type=int,default=0,help="""Range of random translation error in pixels to perturb individual 2-D images in each subtiltseries by along x, y and z. The random translation perturbation will be picked between -terror and +terror. If set, this will overwrite --txerror, --tyerror and --tzerror.""")
-	
-	parser.add_argument("--set2tiltaxis",action='store_true',default=False,help="""Default=False. Simulate particles along the tilt axis only.""")
-	
-	parser.add_argument("--tiltrange", type=float,default=60,help="""Maximum angular value at which the highest tilt picture will be simulated. Projections will be simulated from -tiltrange to +titlrange. For example, if simulating a tilt series collected from -60 to 60 degrees, enter a --tiltrange value of 60. Note that this parameter will determine the size of the missing wedge.""")
-
-	parser.add_argument("--applyctf", action="store_true",default=False,help="If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
-	
-	parser.add_argument("--savenoise", action="store_true",default=False,help="""If on, it saves the noise stack for each particle. This can be useful for testing alignment under varying SNR, so that the same noise (just at a different ratio/level) is tested.""")
-	
-	parser.add_argument("--saveorthostack", action="store_true",default=False,help="If on, --nptcls is ignored and you get 3 subtomograms (simulated from the model supplied) which are orthogonal to each other.")
-
-	parser.add_argument("--defocus", type=float,default=3.0,help="""Target defocus at the tilt axis (in microns) for the simulated tilt series. Default is 3.0. Notice that DEFOCUS (underfocus) values are POSITIVE, by convention.""")
-
-	parser.add_argument("--voltage", type=int,default=200,help="""Voltage of the microscope, used to simulate the ctf added to the subtomograms. Default is 200 KV.""")
-
-	parser.add_argument("--cs", type=float,default=2.1,help="""Cs of the microscope, used to simulate the ctf added to the subtomograms. Default is 2.1.""")
-
-	parser.add_argument("--apix",type=float,default=0.0,help="""Provide accurate apix in case the header has the wrong apix info.""")	
-
-	parser.add_argument("--bfactor",type=int,default=400,help="""Bfactor to use for CTF correction phase flipping. Default is 400.""")
-
-	parser.add_argument("--ampcont",type=float,default=0.05,help="""Amplitude contrast to use for CTF correction phase flipping. Default is 0.05.""")
-
-	parser.add_argument("--gridholesize", type=float,default=1.0,help="""Default=1.0. Size of the carbon hole in micrometers for the simulated grid (this will determine the shifts in defocus for each particle at each tilt angle, depending on the position of the particle respect to the tilt axis; the tilt axis by convention goes parallel to Y through the middle of the tomogram.""")
-	
-	parser.add_argument("--icethickness", type=float,default=0.4,help="""Thickness of the specimen to simulate, in microns. Default=0.4. If --writetomogram is supplied, --icethickness will be used to calculate the size of the tomogram in Z in PIXELS for the simulated tomogram. This parameter will also be used to assign a random coordinate in Z to each subtomogram.""")
-
-	parser.add_argument("--saverandstack", action="store_true",default=True,help="""DEPREPCATED. [This option is on by default and there's no way to turn it off. The stack of randomly oriented particles before simulating the missing wedge WILL be saved]. Save the stack of randomly oriented particles, before subtomogram simulation (before the missing wedge and noise are added).""")
-
-	parser.add_argument("--nosim", action="store_true",default=False,help="""If on, the program will generate stacks of "perfect particles" in different random orientations, but with no missing wedge, no noise, no ctf parameters, etc. The output randstack.hdf will be identical to simptcls.hdf""")
-	
-	parser.add_argument("--saveprjs", action="store_true",default=False,help="""Save the projections (the 'tilt series') for each simulated subtomogram.""")
-	
-	parser.add_argument("--savetlt",action="store_true",default=False,help="""Save a text file with .tlt extension (as in IMOD) containing the tilt angles for the simulated tomogram and/or subtomograms.""")
-
-	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line to see all options and parameters available. To specify the interpolation scheme for the fourier reconstruction, specify 'mode'. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 'gauss_5_slow', 'gypergeom_5', 'experimental'. For example --reconstructor=fourier:mode=gauss_5 """)									
-											
-	parser.add_argument("--pad3d", type=float,default=0.0,help="""Factor to calculate the boxsize to use for 3D reconstruction. For example, if the model in --input has an original boxsize with its largest dimension of 64 and you enter --pad3d=1.5x, then the volume used for 3D reconstruction will be 1.5*64, that is, 96. If you provide --shrink, for example, --shrink=2, then the reconstruction box will be 64/2 * 1.5 = 48. Make sure to supply --clip to clip the simulated subtomograms to the final desired box size; otherwise they will be clipped to the current largest dimension of the supplied model/volume.""")								
-
-	parser.add_argument("--pad2d", type=float,default=0.0,help="""Factor to pad projections in the tilt series by before reconstruction.""")								
-
-	#parser.add_argument("--preclip", type=str,default='',help="""Factor to clip the model to before simulating subtomograms. You might want to supply this if the model is in a tight box where it fits exactly.""")								
-
 	parser.add_argument("--clip", type=int,default=0,help="""The final box size to clip the output subtomograms to.""")								
-
-	parser.add_argument("--snr",type=float,default=0,help="Weighing noise factor for noise added to the image.")
-	
-	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, it is only necessary to randomize orientations within the asymmetric unit only.")
-
-	parser.add_argument("--notrandomize",action="store_true",default=False,help="This will prevent the simulated particles from being rotated and translated into random orientations.")
-
-	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
-	
+	parser.add_argument("--gridholesize", type=float,default=1.0,help="""Default=1.0. Size of the carbon hole in micrometers for the simulated grid (this will determine the shifts in defocus for each particle at each tilt angle, depending on the position of the particle respect to the tilt axis; the tilt axis by convention goes parallel to Y through the middle of the tomogram.""")
+	parser.add_argument("--icethickness", type=float,default=0.4,help="""Thickness of the specimen to simulate, in microns. Default=0.4. If --writetomogram is supplied, --icethickness will be used to calculate the size of the tomogram in Z in PIXELS for the simulated tomogram. This parameter will also be used to assign a random coordinate in Z to each subtomogram.""")
+	parser.add_argument("--input", type=str, default='', help="""The name of the input volume from which simulated subtomograms will be generated. The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. If the input file is PDB or MRC, a version of the supplied model will be written out in HDF format. If the input file is a stack, simulatd subvolumes will be generated from each model in the stack and written to different output stacks. For example, if the input file contains models A and B, two output stacks with simulated subvolumes will be generated.""")
 	parser.add_argument("--invert",action="store_true",default=False,help=""""This will multiply the pixel values by -1. This is intended to make the simulated particles be like real EM data before contrast reversal (black, negative contrast), assuming that they're being generated from a model/image where the protein has positive values. It not supplied, 'white protein' (positive density values) will be used by default (or whatever the original contrast is of the image supplied as a model).""")
-		
+	parser.add_argument("--nosim", action="store_true",default=False,help="""If on, the program will generate stacks of "perfect particles" in different random orientations, but with no missing wedge, no noise, no ctf parameters, etc. The output randstack.hdf will be identical to simptcls.hdf""")	
+	parser.add_argument("--notrandomize",action="store_true",default=False,help="This will prevent the simulated particles from being rotated and translated into random orientations.")
+	parser.add_argument("--nptcls", type=int,default=10,help="""Number of simulated subtomograms to generate per reference model supplied.""")	
 	parser.add_argument("--nslices", type=int,default=61,help="""This will determine the tilt step between slices, depending on tiltrange. For example, to simulate a 2 deg tilt step supply --nslices=61 --tiltrange=60. Recall that --tiltrange goes from - to + the supplied value, and that there is a central slice or projection at 0 deg, for symmetrical tilt series.""")	
+	parser.add_argument("--path",type=str,default='sptsim',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.""")
+	parser.add_argument("--pad3d", type=float,default=0.0,help="""Factor to calculate the boxsize to use for 3D reconstruction. For example, if the model in --input has an original boxsize with its largest dimension of 64 and you enter --pad3d=1.5x, then the volume used for 3D reconstruction will be 1.5*64, that is, 96. If you provide --shrink, for example, --shrink=2, then the reconstruction box will be 64/2 * 1.5 = 48. Make sure to supply --clip to clip the simulated subtomograms to the final desired box size; otherwise they will be clipped to the current largest dimension of the supplied model/volume.""")								
+	parser.add_argument("--pad2d", type=float,default=0.0,help="""Factor to pad projections in the tilt series by before reconstruction.""")								
+	parser.add_argument("--parallel",type=str,default='thread:1',help="""Default=thread:1. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
+	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
+	parser.add_argument("--randstack",type=str,default='',help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
+	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line to see all options and parameters available. To specify the interpolation scheme for the fourier reconstruction, specify 'mode'. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 'gauss_5_slow', 'gypergeom_5', 'experimental'. For example --reconstructor=fourier:mode=gauss_5 """)																				
+	parser.add_argument("--savenoise", action="store_true",default=False,help="""If on, it saves the noise stack for each particle. This can be useful for testing alignment under varying SNR, so that the same noise (just at a different ratio/level) is tested.""")
+	parser.add_argument("--saveorthostack", action="store_true",default=False,help="If on, --nptcls is ignored and you get 3 subtomograms (simulated from the model supplied) which are orthogonal to each other.")
+	parser.add_argument("--saverandstack", action="store_true",default=True,help="""DEPREPCATED. [This option is on by default and there's no way to turn it off. The stack of randomly oriented particles before simulating the missing wedge WILL be saved]. Save the stack of randomly oriented particles, before subtomogram simulation (before the missing wedge and noise are added).""")
+	parser.add_argument("--saveprjs", action="store_true",default=False,help="""Save the projections (the 'tilt series') for each simulated subtomogram.""")	
+	parser.add_argument("--savetlt",action="store_true",default=False,help="""Save a text file with .tlt extension (as in IMOD) containing the tilt angles for the simulated tomogram and/or subtomograms.""")
+	parser.add_argument("--snr",type=float,default=0,help="Weighing noise factor for noise added to the image.")
+	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, it is only necessary to randomize orientations within the asymmetric unit only.")
+	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
+	parser.add_argument("--set2tiltaxis",action='store_true',default=False,help="""Default=False. Simulate particles along the tilt axis only.""")
+	parser.add_argument("--tiltaxis",type=str,default='y',help="""Axis to produce projections about. Default is 'y'; the only other valid option is 'x'.""")
+	parser.add_argument('--tiltangles',type=str,default='',help="""File in .tlt or .txt format containing the tilt angle of each tilt image in the tiltseries.""")
 	
+	parser.add_argument("--txrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in X. The random translation will be picked between -txrange and +txrange. Default value is set by --trange, but --txrange will overwrite it if specified.""")
+	parser.add_argument("--txerror", type=int,default=0,help="""Range of random translation error in pixels to perturb individual 2-D images in each subtiltseries by along x. The random translation perturbation will be picked between -txerror and +txerror. Default value is set by --terror, but --txerror will overwrite it if specified.""")
+	parser.add_argument("--tyrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in Y. The random translation will be picked between -tyrange and +tyrange. Default value is set by --trange, but --txrange will overwrite it if specified.""")
+	parser.add_argument("--tyerror", type=int,default=0,help="""Range of random translation error in pixels to perturb individual 2-D images in each subtiltseries by along y. The random translation perturbation will be picked between -tyerror and +tyerror. Default value is set by --terror, but --tyerror will overwrite it if specified.""")
+	parser.add_argument("--tzrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in Z. The random translation will be picked between -tzrange and +tzrange. Default value is set by --trange, but --txrange will overwrite it if specified.""")
+	parser.add_argument("--trange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in all X, Y and Z. The random translation will be picked between -transrage and +trange; --txrange, --tyrange and --tzrange overwrite --trange for each specified direction.""")
+	parser.add_argument("--terror", type=int,default=0,help="""Range of random translation error in pixels to perturb individual 2-D images in each subtiltseries by along x, y and z. The random translation perturbation will be picked between -terror and +terror. If set, this will overwrite --txerror, --tyerror and --tzerror.""")
+	parser.add_argument("--tiltrange", type=float,default=60,help="""Maximum angular value at which the highest tilt picture will be simulated. Projections will be simulated from -tiltrange to +titlrange. For example, if simulating a tilt series collected from -60 to 60 degrees, enter a --tiltrange value of 60. Note that this parameter will determine the size of the missing wedge.""")
 	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", dest="verbose", action="store", metavar="n")
 
-	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
-
-	parser.add_argument("--parallel",type=str,default='thread:1',help="""Default=thread:1. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
+	'''
+	CTF PARAMETERS
+	'''
+	parser.add_argument("--applyctf", action="store_true",default=False,help="If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
+	parser.add_argument("--defocus", type=float,default=3.0,help="""Target defocus at the tilt axis (in microns) for the simulated tilt series. Default is 3.0. Notice that DEFOCUS (underfocus) values are POSITIVE, by convention.""")
+	parser.add_argument("--voltage", type=int,default=200,help="""Voltage of the microscope, used to simulate the ctf added to the subtomograms. Default is 200 KV.""")
+	parser.add_argument("--cs", type=float,default=2.1,help="""Cs of the microscope, used to simulate the ctf added to the subtomograms. Default is 2.1.""")
+	parser.add_argument("--apix",type=float,default=0.0,help="""Provide accurate apix in case the header has the wrong apix info.""")	
+	parser.add_argument("--bfactor",type=int,default=400,help="""Bfactor to use for CTF correction phase flipping. Default is 400.""")
+	parser.add_argument("--ampcont",type=float,default=0.05,help="""Amplitude contrast to use for CTF correction phase flipping. Default is 0.05.""")	
 	
-	#parser.add_argument("--defocus", type=float,default=3.0,help="Intended defocus at the tilt axis (in microns) for the simulated tilt series.")
-	#parser.add_argument("--voltage", type=int,default=200,help="Voltage of the microscope, used to simulate the ctf added to the subtomograms.")
-	#parser.add_argument("--cs", type=float,default=2.1,help="Cs of the microscope, used to simulate the ctf added to the subtomograms.")
-	#parser.add_argument("--noiseproc",type=str,help="A noise processor to be applied to the individual projections of the simulated tilt series",default=None)
-	#parser.add_argument("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
-	#parser.add_argument("--tiltstep", type=float,default=5.0,help="Degrees between each image in the simulated tilt series for each subtomogram.")
-	#parser.add_argument("--output",type=str,default=None,help="Name of the output stack for the simulated subtomograms.")
 	#parser.add_argument("--interpolator",default='',help="""What interpolation scheme to use for reconstruction. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 'gauss_5_slow', 'gypergeom_5', experimental""")	
 	#parser.add_argument("--fillwedge",action='store_true',default=False,help="""This option will fill the region of the missing wedge with evenly spaced images of Gaussian noise with the same tiltstep used to simulate the particles (as determined through the parameter --nslices).""")
 	
@@ -335,74 +266,6 @@ def main():
 				elif model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
 					print "\nThe image is 2D"
 					model = clip2D( model, max( model['nx'], model['ny'] ) )	
-			
-				'''
-				Preprocess model if necessary
-				'''
-				print "\n\n\n\n\n\nBox of model BEFORE preprocessing is", model['nx']
-				#The preprocessing function clips then shrinks. Therefore, you need to pass on clip*shrink
-				#for particles to be the adequate size, given that clip here is the FINAL box size
-				if options.preprocess or int(options.shrink) > 1 or options.lowpass or options.highpass or options.clip or options.normproc or options.threshold:
-					
-					#from e2spt_classaverage import preprocessingallocator
-					#preprocessingallocator( options, image, fftstackC='', fftstackF='', imageindex=0, postfft = 0 )
-					#model = preprocessingallocator( options, model, '','', 0, postfft=1)
-					
-					from e2spt_preproc import preprocfunc
-					options.clipali = 0
-					
-					model.write_image(options.path + '/beforepreproc.hdf',0)
-					
-					model = preprocfunc( model, options, 0, '', True)
-					
-					model.write_image(options.path + '/afterpreproc.hdf',0)
-					
-					#model = preprocessingprefft( model, options)
-					#model = preprocfilter( model, options, 'ptcls','yes',-1,'yes' )
-					
-					
-					#image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,finetag=''
-					
-					
-					#options = ret[0]
-					#if options.clip:
-						
-					#	model = clip3D( model, options.clip )
-					if options.verbose:
-						print "\n\n\n\n\n\nBox of model AFTER preprocessing is", model['nx']
-				
-				if options.savepreprocessed:
-					outpreprocmodel = options.input.replace( '.hdf', '_PREPROC.hdf' )
-					model.write_image( outpreprocmodel )
-				
-				"""	
-				newsize = max( int(modelhdr['nx']), int(modelhdr['ny']), int(modelhdr['nz']) )
-				
-				print "\n\n\n\nFINALBOZXSIZE IS",options.clip
-	
-				if options.clip:
-					if 'x' not in str(options.clip):
-						print "\nThere is no x factor in clip"
-						clip = int( float(options.clip) )
-					else:
-						options.clip = int( round( float( options.clip.replace('x','') ) * newsize ) )	
-						
-						print "Therefore the expanded boxisze is", options.clip
-						print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n\n\n\n\n\n\n\n"
-	
-					#os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.clip) + ' --first=' + str(i) + ' --last=' + str(i))
-					
-					clip2cmd = 'e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.clip) + ' --first=' + str(i) + ' --last=' + str(i)
-					p=subprocess.Popen( clip2cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-					text=p.communicate()	
-					p.stdout.close()
-					
-				else:
-					options.clip = max( int(modelhdr['nx']), int(modelhdr['ny']), int(modelhdr['nz']) )
-				"""
-				
-				#print "\n(e2spt_simulation.py)(main) Model to read is", options.input
-				#model = EMData(options.input,0)
 							
 				retrand = randomizer(options, model, tag)
 				randptcls = retrand[0]
@@ -433,9 +296,8 @@ def main():
 
 				kkk+=1
 	
-	E2end(logger)
-					
-	return()
+	E2end(logger)		
+	return
 
 
 def sptfixformat( options ):
@@ -475,19 +337,6 @@ def sptfixformat( options ):
 
 	return options
 
-"""
-def sptmakecube( options ):
-	modelhdr = EMData(options.input,0,True)
-	newsize = max( int(modelhdr['nx']), int(modelhdr['ny']), int(modelhdr['nz']) )
-	print "\n\n\n\nNEWSIZE will be", newsize
-
-	fixboxcmd='e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize)
-	p=subprocess.Popen( fixboxcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	text=p.communicate()	
-	p.stdout.close()
-			
-	return
-"""
 
 def clip3D( vol, size ):
 	
@@ -521,92 +370,10 @@ def clip2D( img, size ):
 	
 	return img
 
-"""
-def preprocess(options,stack,dimension):
-	
-	print "\n(e2spt_simulation.py)(preprocess), dimension is", dimension
-	
-	preprocessed = stack.replace('.hdf','_preproc.hdf')
-	
-	#cmd = 'e2proc3d.py ' + stack + ' ' + preprocessed
-	
-	#if dimension == 2:
-	#	cmd = 'e2proc2d.py ' + stack + ' ' + preprocessed
-	
-	cmd = 'cp ' + stack + ' ' + preprocessed
-	
-	
-	print "Cmd to run is",cmd
-	os.system( cmd )
-
-	
-	hdr = EMData(stack,0,True)
-	newsize=hdr['nx']
-	nf = EMUtil.get_image_count(stack)
-	
-	print "\n(e2pt_simulation.py)(preprocess) Read header. nf is", nf
-	if options.shrink and int(options.shrink) > 1:
-		newsize = newsize/options.shrink	
-		if newsize % 2:
-			newsize += 1
-	
-		shrinkcmd='e2proc3d.py ' + preprocessed + ' ' + preprocessed + ' --process=math.meanshrink:n=' + str(options.shrink)
-		if dimension == 2:
-			preproctmp = preprocessed.replace('.hdf','_tmp.hdf')	
-			shrinkcmd='e2proc2d.py ' + preprocessed + ' ' + preproctmp + ' --process=math.meanshrink:n=' + str(options.shrink)
-			shrinkcmd += ' rm ' + preprocessed + ' && mv ' + preproctmp + ' ' + preprocessed
-			 
-		p=subprocess.Popen( shrinkcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-	
-	if options.pad and float(options.pad) > 1.0:
-		newsize *= options.pad
-		newsize = int( round( newsize ) )
-	
-		if newsize % 2:
-			newsize += 1
-		
-		if dimension == 3:
-			clipcmd = 'e2proc3d.py ' + preprocessed + ' ' + preprocessed + ' --clip=' + str(newsize)
-			clipcmd += '&& e2fixheaderparam.py --input=' + preprocessed + ' --stem=origin --stemval=0.0'
-		
-			print "\n(e2spt_simulation.py)(preprocess) cmd to run for clipping is", clipcmd
-			p=subprocess.Popen( clipcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
-		
-		if dimension == 2:
-			preproctmp = preprocessed.replace('.hdf','_tmp.hdf')	
-			
-			n = EMUtil.get_image_count( preprocessed )
-			for ii in range(n):
-				img = EMData( preprocessed, ii )
-				img = clip2D( img, newsize )
-				img.write_image( preprocessed, ii )
-					
-			#clipcmd ='e2proc2d.py ' + preprocessed + ' ' + preproctmp + ' --clip' + str( newsize ) + ',' + str( newsize )
-			#clipcmd += ' rm ' + preprocessed + ' && mv ' + preproctmp + ' ' + preprocessed
-		
-		#sys.exit()
-		options.input = preprocessed
-		
-	
-	print "\nOptions.input has changed to",	preprocessed
-	#sys.exit()	
-	if options.filter:
-		pass #Filter not working for now
-	
-	print "\n(e2spt_simulation.py)(preprocess) Exiting function preprocess"
-	return [options,preprocessed]
-"""	
-
-
 
 '''
 ====================
-RANDOMIZER - Takes a file in .hdf format and generates a set of n particles randomly rotated and translated, where n is
-the size of the set and is defined by the user
+RANDOMIZER - Takes a file in .hdf format and generates a set of n particles randomly rotated and translated
 ====================
 '''
 def randomizer(options, model, tag):
@@ -631,11 +398,23 @@ def randomizer(options, model, tag):
 	print "#####################################\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	
 	
-	orientations = OrientGens.get("rand",{"n": options.nptcls, "phitoo":1,"inc_mirror":1})	
+	#orientations = OrientGens.get("rand",{"n": options.nptcls, "phitoo":1,"inc_mirror":1})	
 	
-	if options.evenorientations:
-		orientations = OrientGens.get("even",{"n": options.nptcls, "phitoo":1,"inc_mirror":1})						#Generate even orientations
+	#if options.evenorientations:
 	
+	orientations = OrientGens.get("even",{"n": options.nptcls, "phitoo":1,"inc_mirror":1})	#Generate evenly distributed orientations
+	palts=[]
+	if options.preferredtop and not options.preferredside:
+		paltstop = prefferedalt( options, mu=180,sigma=45, options.nptcls )
+	if options.preferredside and not options.preferredtop:
+		paltsside = prefferedalt( options, mu=90, sigma=45, options.nptcls )
+	if options.preferredside and options.prefferedtop:
+		ntop = int(round(options.nptlcs*options.preferredtop))
+		nside = options.nptlcs-ntop
+		palts = prefferedalt( options, mu=180,sigma=45, ntop ) + prefferedalt( options, mu=90,sigma=45, nside )
+
+
+	transforms=[]
 	for i in range(options.nptcls):
 		if options.verbose:
 			print "generating particle #", i
@@ -648,13 +427,19 @@ def randomizer(options, model, tag):
 			
 			if i > 0:
 				print "\nGenerating random orientation"
-				#rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1,"inc_mirror":1})						#Generate a random orientation (randomizes all 3 euler angles)
 				symorients = Symmetries.get( options.sym )
-				random_transform = orientations.gen_orientations( symorients )[i]
+				random_transform = orientations.gen_orientations( symorients )[i]	#get the ith orientation within the asymmetric unit only							
 				
+				if palts:
+					rots=random_transform.get_rotation()
+					az=rots['az']
+					phi=rots['phi']
+					alt=palts[i]
+					random_transform=Transform({'type':'eman','az':az,'alt':alt,'phi':phi})
+
 				randtx = randty = randtz = 0	
 				if options.trange and not options.txrange:
-					randtx = random.randrange(-1 * options.trange, options.trange)			#Generate random translations
+					randtx = random.randrange(-1 * options.trange, options.trange)	#Generate random translations
 				elif options.txrange:
 					randtx = random.randrange(-1 * options.txrange, options.txrange)	
 				
@@ -673,11 +458,13 @@ def randomizer(options, model, tag):
 			else:
 				print "\nthe orientation of the first particle is NEVER randomized"
 			
-			b.transform(random_transform)		
+			b.transform(random_transform)
+			transforms.append(random_transform)		
 
 		b['sptsim_randT'] = random_transform
-		b['xform.align3d'] = Transform()							#This parameter should be set to the identity transform since it can be used later to determine whether
+		b['xform.align3d'] = Transform()			#This parameter should be set to the identity transform since it can be used later to determine whether
 													#alignment programs can "undo" the random rotation in spt_randT accurately or not
+		b.process_inplace('normalize.edgemean')
 		if options.saverandstack:	
 
 			#print "The stackname to use is", stackname
@@ -697,26 +484,75 @@ def randomizer(options, model, tag):
 			b.write_image(randstackname,i)
 			print "Actually, particle %d written to %s" % ( i, randstackname )
 
-		#>>randptcls.append(b)
-
-			randptcls.update({i:b})
+		randptcls.update({i:b})
+		
 		if options.verbose:
 			print "The random transform applied to it was", random_transform
 			
-		#if options.clip:
-		#	if int(b['nx']) != int(options.clip) or int(b['ny']) != int(options.clip) or int(b['nz']) != int(options.clip):
-				
-				
-		#		clipcmdf = 'e2proc3d.py ' + randstackname + ' ' + randstackname + ' --clip=' + str(options.clip)
-		#
-		#		p=subprocess.Popen( clipcmdf, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		#		text=p.communicate()	
-		#		p.stdout.close()
 	
+	az=[]
+	alts=[]
+	phis=[]
+	for tr in transforms:
+		rots=tr.get_rotation()
+		az=rots['az']
+		azs.append(az)
+		textwriter(options,azs,'az')
+		plotangles( options, azs, 'az' )
 
-	return(randptcls,randstackname)
+		alt=rots['alt']
+		alts.append(alt)
+		textwriter(options,alts,'alt')
+		plotangles( options, alts, 'alt' )
 
+		phi=rots['phi']
+		phis.append(phi)
+		textwriter(options,phis,'phi')
+		plotangles( options, phis, 'phi' )
+
+	return randptcls,randstackname
+
+
+def preferredalt( options, mu=0, sigma=1, nalts=3 ):
+	s = np.random.normal(mu, sigma, nalts)
+	return s
+
+
+def plotangles( options, angles, tag ):
+	import matplotlib.pyplot as plt
+	count, bins, ignored = plt.hist(s, 30, normed=True)
+	plt.plot(bins, 1/(sigma * np.sqrt(2 * np.pi)) * np.exp( - (bins - mu)**2 / (2 * sigma**2) ), linewidth=2, color='r')
+
+	plt.title("Distribution of angle " + tag )
+	plt.ylabel("n")
+	plt.xlabel(tag)
 	
+	plt.savefig(options.path + '/' + tag + '.png')
+	plt.clf()
+	return
+
+
+def textwriter(options,data,tag):
+	
+	#if options.path not in name:
+	name = options.path + '/' + tag + '.txt'
+	
+	print "I am in the text writer for this file", name
+	
+	f=open(name,'w')
+	lines=[]
+	for i in range(len(data)):
+			
+		line2write = str(i) + '\t' + str(data[i]) + '\n'
+		#print "THe line to write is"
+		lines.append(line2write)
+	
+	f.writelines(lines)
+	f.close()
+
+	return
+
+
 def orthostack(options, model):
 	orthoptcls={}
 	for i in range(4):
@@ -750,8 +586,9 @@ def orthostack(options, model):
 		
 		#orthostackname = options.path + '/orthostack.hdf'
 		
-	return( orthoptcls )
+	return orthoptcls
 	
+
 '''
 ====================
 SUBTOMOSIM takes a set of particles in .hdf format and generates a simulated sub-tomogram for each, using user-defined parameters for tomographic simulation.
@@ -1391,52 +1228,6 @@ def get_results(etc,tids,options):
 		if len(tidsleft)==0: break
 		
 	return results
-
-
-
-
-
-def tomogramsim(options,tomogramdata):
-	import math
-	
-	'''
-	Transform gridholesize and icethickness to pixels
-	'''
-
-	modelhdr = EMData(options.input,0,True)
-	
-	if options.gridholesize:
-		options.gridholesize = int( options.gridholesize * math.pow(10,6) / model['apix_x'] )
-
-	if options.icethickness:
-		options.icethickness = int( options.icethickness * math.pow(10,0) / model['apix_x'] )
-	
-	tomox=options.gridholesize 						
-	tomoy=options.gridholesize
-	tomoz=options.icethickness
-	print "Gridholesize and icethickness are"
-	print options.gridholesize 
-	print options.icethickness
-	#T=EMData(tomox,tomoy,tomoz)
-	print "The size of the tomogam to create is", tomox,tomoy,tomoz
-
-	ptcls=[]
-	for w in tomogramdata:
-		ptcl=w['ptcl']
-		x=w['px']+options.gridholesize/2
-		y=w['py']
-		z=w['pz']
-
-		r=Region( (x-tomox)/2, (y-tomoy)/2, (z-tomoz)/2, tomox,tomoy,tomoz )
-		ptclr=ptcl.get_clip(r)
-		ptcls.append(ptclr)
-	
-	T=sum(ptcls)/len(ptcls)	
-	T.process_inplace('math.addnoise',{'noise':1})
-	tomogrampath = options.path + '/' + options.writetomogram
-	T.write_image(tomogrampath,0)
-	
-	return
 
 
 if __name__ == '__main__':
