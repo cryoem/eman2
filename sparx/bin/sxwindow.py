@@ -66,29 +66,30 @@ def check_options(options, progname):
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + """  input_micrograph_list_file  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --invert  --import_ctf=ctf_file  --limit_ctf  --resample_ratio=resample_ratio  --defocus_error=defocus_error  --astigmatism_error=astigmatism_error
+###	usage = progname + """  input_micrograph_list_file  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --skip_invert  --import_ctf=ctf_file  --limit_ctf  --resample_ratio=resample_ratio  --defocus_error=defocus_error  --astigmatism_error=astigmatism_error
+	usage = progname + """  input_micrograph_list_file  input_micrograph_pattern  input_coordinates_pattern  output_directory  --coordinates_format  --box_size=box_size  --skip_invert  --import_ctf=ctf_file  --limit_ctf  --astigmatism_error=astigmatism_error  --resample_ratio=resample_ratio
 	
 Window particles from micrographs in input list file. The coordinates of the particles should be given as input.
 Please specify name pattern of input micrographs and coordinates files with a wild card (*). Use the wild card to indicate the place of micrograph ID (e.g. serial number, time stamp, and etc). 
 The name patterns must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). 
 BDB files can not be selected as input micrographs.
 	
-	sxwindow.py  mic_list.txt  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt
+	sxwindow.py  mic_list.txt  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --import_ctf=outdir_cter/partres/partres.txt
 	
 If micrograph list file name is not provided, all files matched with the micrograph name pattern will be processed.
 	
-	sxwindow.py  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --invert  --import_ctf=outdir_cter/partres/partres.txt
+	sxwindow.py  ./mic*.hdf  info/mic*_info.json  particles  --coordinates_format=eman2  --box_size=64  --import_ctf=outdir_cter/partres/partres.txt
 	
 """
 	parser = OptionParser(usage, version=SPARXVERSION)
 	parser.add_option("--coordinates_format",  type="string",        default="eman1",   help="format of input coordinates files: 'sparx', 'eman1', 'eman2', or 'spider'. the coordinates of sparx, eman2, and spider format is particle center. the coordinates of eman1 format is particle box conner associated with the original box size. (default eman1)")
 	parser.add_option("--box_size",            type="int",           default=256,       help="x and y dimension of square area to be windowed (in pixels): pixel size after resampling is assumed when resample_ratio < 1.0 (default 256)")
-	parser.add_option("--invert",              action="store_true",  default=False,     help="invert image contrast: recommended for cryo data (default False)")
+	parser.add_option("--skip_invert",         action="store_true",  default=False,     help="Skip invert image contrast: Use this option for negative staining data. By default, the image contrast is inverted for cryo data. (default False)")
 	parser.add_option("--import_ctf",          type="string",        default="",        help="file name of sxcter output: normally partres.txt (default none)") 
 	parser.add_option("--limit_ctf",           action="store_true",  default=False,     help="filter micrographs based on the CTF limit: this option requires --import_ctf. (default False)")	
-	parser.add_option("--resample_ratio",      type="float",         default=1.0,       help="ratio of new to old image size (or old to new pixel size) for resampling: Valid range is 0.0 < resample_ratio <= 1.0. (default 1.0)")
-	parser.add_option("--defocus_error",       type="float",         default=1000000.0, help="defocus errror limit: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocus_error percent. the error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)" )
+###	parser.add_option("--defocus_error",       type="float",         default=1000000.0, help="defocus errror limit: exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocus_error percent. the error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)" )
 	parser.add_option("--astigmatism_error",   type="float",         default=360.0,     help="astigmatism error limit: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatism_error degrees. (default 360.0)")
+	parser.add_option("--resample_ratio",      type="float",         default=1.0,       help="ratio of new to old image size (or old to new pixel size) for resampling: Valid range is 0.0 < resample_ratio <= 1.0. (default 1.0)")
 
 	### detect if program is running under MPI
 	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
@@ -269,21 +270,37 @@ If micrograph list file name is not provided, all files matched with the microgr
 				error_status = ("Number of columns (%d) must be %d in %s. The format might be old. Please run sxcter.py again." % (len(ctf_list[0]), n_idx_cter, options.import_ctf), getframeinfo(currentframe()))
 				break
 			
+###			# NOTE: 2016/10/20 Toshio Moriya
+###			# Code before removing options.defocus_error
+###			#
+###			ctf_dict={}
+###			n_reject_defocus_error = 0
+###			ctf_error_limit = [options.defocus_error/100.0, options.astigmatism_error]
+###			for ctf_params in ctf_list:
+###				assert(len(ctf_params) == n_idx_cter)
+###				# mic_baseroot is name of micrograph minus the path and extension
+###				mic_baseroot = os.path.splitext(os.path.basename(ctf_params[idx_cter_mic_name]))[0]
+###				if(ctf_params[idx_cter_sd_def] / ctf_params[idx_cter_def] > ctf_error_limit[0]):
+###					print("Defocus error %f exceeds the threshold. Micrograph %s is rejected." % (ctf_params[idx_cter_sd_def] / ctf_params[idx_cter_def], mic_baseroot))
+###					n_reject_defocus_error += 1
+###				else:
+###					if(ctf_params[idx_cter_sd_astig_ang] > ctf_error_limit[1]):
+###						ctf_params[idx_cter_astig_amp] = 0.0
+###						ctf_params[idx_cter_astig_ang] = 0.0
+###					ctf_dict[mic_baseroot] = ctf_params
+###			# NOTE: 2016/10/20 Toshio Moriya
+###			# Code after removing options.defocus_error
+###			#
 			ctf_dict={}
-			n_reject_defocus_error = 0
-			ctf_error_limit = [options.defocus_error/100.0, options.astigmatism_error]
 			for ctf_params in ctf_list:
 				assert(len(ctf_params) == n_idx_cter)
 				# mic_baseroot is name of micrograph minus the path and extension
 				mic_baseroot = os.path.splitext(os.path.basename(ctf_params[idx_cter_mic_name]))[0]
-				if(ctf_params[idx_cter_sd_def] / ctf_params[idx_cter_def] > ctf_error_limit[0]):
-					print("Defocus error %f exceeds the threshold. Micrograph %s is rejected." % (ctf_params[idx_cter_sd_def] / ctf_params[idx_cter_def], mic_baseroot))
-					n_reject_defocus_error += 1
-				else:
-					if(ctf_params[idx_cter_sd_astig_ang] > ctf_error_limit[1]):
-						ctf_params[idx_cter_astig_amp] = 0.0
-						ctf_params[idx_cter_astig_ang] = 0.0
-					ctf_dict[mic_baseroot] = ctf_params
+				if(ctf_params[idx_cter_sd_astig_ang] > options.astigmatism_error):
+					print("The astigmatism angular SD of %s (%f degree) exceeds the specified limit (%f degree). Resetting astigmatism parameters to zeros..." % (mic_baseroot, ctf_params[idx_cter_sd_astig_ang], options.astigmatism_error))
+					ctf_params[idx_cter_astig_amp] = 0.0
+					ctf_params[idx_cter_astig_ang] = 0.0
+				ctf_dict[mic_baseroot] = ctf_params
 			del ctf_list # Do not need this anymore
 		
 		break
@@ -442,7 +459,7 @@ If micrograph list file name is not provided, all files matched with the microgr
 		# it does not set apix_*. Even though it sets apix_* when resample_ratio < 1.0 ...
 		mic_img = resample(mic_img, resample_ratio)
 		
-		if options.invert:
+		if not options.skip_invert:
 			mic_stats = Util.infomask(mic_img, None, True) # mic_stat[0:mean, 1:SD, 2:min, 3:max]
 			Util.mul_scalar(mic_img, -1.0)
 			mic_img += 2 * mic_stats[0]

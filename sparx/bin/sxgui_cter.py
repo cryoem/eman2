@@ -407,7 +407,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.graph_map_list[self.idx_graph_exp_no_astig]   = ["exp_no_astig", "Exp. No Astig (Black)", self.idx_rotinf_exp_no_astig, None]
 		self.graph_map_list[self.idx_graph_fit_no_astig]   = ["fit_no_astig", "Fit. No Astig (Blue)", self.idx_rotinf_fit_no_astig, None]
 		self.graph_map_list[self.idx_graph_exp_with_astig] = ["exp_with_astig", "Exp. with Astig (Red)", self.idx_rotinf_exp_with_astig, None]
-		self.graph_map_list[self.idx_graph_fit_with_astig] = ["fit_with_astig", "Fit. with Astig (Greed)", self.idx_rotinf_fit_with_astig, None]
+		self.graph_map_list[self.idx_graph_fit_with_astig] = ["fit_with_astig", "Fit. with Astig (Green)", self.idx_rotinf_fit_with_astig, None]
 		
 		i_enum = -1
 		i_enum += 1; self.idx_thresholdset_unapplied = i_enum
