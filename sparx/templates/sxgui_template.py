@@ -512,7 +512,7 @@ class SXCmdWidget(QWidget):
 
 						# For now, using line edit box for the other type
 						widget_text = str(sxcmd_token.widget.text())
-						if sxcmd_token.type not in ["int", "float", "apix", "wn", "box", "radius", "any_file_list", "any_image_list"]:
+						if sxcmd_token.type not in ["int", "float", "apix", "wn", "box", "radius", "any_file_list", "any_image_list", "any_directory"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
@@ -639,7 +639,7 @@ class SXCmdWidget(QWidget):
 			# First, check existence of outputs
 			for sxcmd_token in self.sxcmd.token_list:
 				if sxcmd_token.type == "output":
-					if os.path.exists(sxcmd_token.widget.text()):
+					if os.path.exists(sxcmd_token.widget.text()) or db_check_dict(str(sxcmd_token.widget.text())):
 						# DESIGN_NOTE: 2015/11/24 Toshio Moriya
 						# This special case needs to be handled with more general method...
 						if self.sxcmd.name in ["sxisac", "sxviper", "sxrviper", "sxmeridien", "sxsort3d"]:
@@ -1258,7 +1258,7 @@ class SXCmdTab(QWidget):
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "bdb":
+						elif cmd_token.type == "bdb" or cmd_token.key_base == "makevstack":
 							file_format = "bdb"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1368,7 +1368,7 @@ class SXCmdTab(QWidget):
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "directory":
+						elif cmd_token.type == "directory" or cmd_token.type == "any_directory":
 							temp_btn = QPushButton("Select directory")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							temp_btn.setToolTip('<FONT>'+"Display select directory dailog"+'</FONT>')

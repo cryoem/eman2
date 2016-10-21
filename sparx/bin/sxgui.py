@@ -512,7 +512,7 @@ class SXCmdWidget(QWidget):
 
 						# For now, using line edit box for the other type
 						widget_text = str(sxcmd_token.widget.text())
-						if sxcmd_token.type not in ["int", "float", "apix", "wn", "box", "radius", "any_file_list", "any_image_list"]:
+						if sxcmd_token.type not in ["int", "float", "apix", "wn", "box", "radius", "any_file_list", "any_image_list", "any_directory"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
@@ -639,7 +639,7 @@ class SXCmdWidget(QWidget):
 			# First, check existence of outputs
 			for sxcmd_token in self.sxcmd.token_list:
 				if sxcmd_token.type == "output":
-					if os.path.exists(sxcmd_token.widget.text()):
+					if os.path.exists(sxcmd_token.widget.text()) or db_check_dict(str(sxcmd_token.widget.text())):
 						# DESIGN_NOTE: 2015/11/24 Toshio Moriya
 						# This special case needs to be handled with more general method...
 						if self.sxcmd.name in ["sxisac", "sxviper", "sxrviper", "sxmeridien", "sxsort3d"]:
@@ -1258,7 +1258,7 @@ class SXCmdTab(QWidget):
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "bdb":
+						elif cmd_token.type == "bdb" or cmd_token.key_base == "makevstack":
 							file_format = "bdb"
 							temp_btn = QPushButton("Select .%s" % file_format)
 							temp_btn.setMinimumWidth(func_btn_min_width)
@@ -1368,7 +1368,7 @@ class SXCmdTab(QWidget):
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
-						elif cmd_token.type == "directory":
+						elif cmd_token.type == "directory" or cmd_token.type == "any_directory":
 							temp_btn = QPushButton("Select directory")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							temp_btn.setToolTip('<FONT>'+"Display select directory dailog"+'</FONT>')
@@ -2284,6 +2284,12 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.mode = "makevstack"; sxcmd.label = "Particle Stack"; sxcmd.short_info = "Output virtual image stack. Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output virtual image stack"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_bdb_stack_pattern"; token.key_prefix = ""; token.label = "Input BDB image stack pattern"; token.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sxwindow_output_dir//*/'). The stack subsets are located in the sxwindow output directory."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_directory"; sxcmd.token_list.append(token)
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2339,8 +2345,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.mode = "makevstack"; sxcmd.label = "Create Stack Subset"; sxcmd.short_info = "Make virtual image stack. Make a 'virtual' BDB image stack from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_2d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Make virtual image stack"; token.help = "Make a 'virtual' BDB image stack from one or more other stacks. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
+		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.mode = "makevstack"; sxcmd.label = "Create Stack Subset"; sxcmd.short_info = "Output virtual image stack. Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_2d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output virtual image stack"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_bdb_stack_file"; token.key_prefix = ""; token.label = "Input BDB image stack"; token.help = "File name of the class averages. It is located in the ISAC output directory."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "bdb"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "list"; token.key_prefix = "--"; token.label = "File containing selection list of images"; token.help = "Input ASCII file containing a list of selected image names to creates a new virtual BDB image stack from an existed virtual stack. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
 

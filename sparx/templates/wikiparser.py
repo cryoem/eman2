@@ -76,7 +76,9 @@ def construct_keyword_dict():
 	#                     The string with space is interpreted as a list of any image file names upon command generation. (i.e. does not enclose the string with single quotes)
 	# - function        : Two line edit boxes for formatted string type (function name & file path of the container script),
 	#                     and open file button for .py
-	# - directory       : Line edit box for formatted string type, and open directory button (NOTE: Toshio Moriya 2016/03/03: Not used at this point)
+	# - directory       : Line edit box for formatted string type, and open directory button
+	# - any_directory   : Line edit box for formatted string type, and open directory button
+	#                     The string with space is interpreted as a list of any directory names upon command generation. (i.e. does not enclose the string with single quotes)
 	#
 	# - apix            : Project constant - float typeJ78
 	# - wn              : Project constant - int type
@@ -94,7 +96,7 @@ def construct_keyword_dict():
 	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "")               # --binary_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	keyword_dict["input_micrograph_list_file"]    = SXkeyword_map(0, "txt")            # input_micrograph_list_file (contains keyworkd 'input_micrograph_list' but this should be parameters type)
-	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be string type)
+	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be directory type)
 	keyword_dict["--single_stack_output"]         = SXkeyword_map(0, "bool")           # --single_stack_output (contains keyworkd 'output' but this should be bool type)
 	keyword_dict["--hardmask"]                    = SXkeyword_map(0, "bool")           # --hardmask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--do_adaptive_mask"]            = SXkeyword_map(0, "bool")           # --do_adaptive_mask (contains keyworkd 'mask' but this should be bool type)
@@ -134,6 +136,7 @@ def construct_keyword_dict():
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
 	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=run1_directory, --previous_run2=run2_directory
+	keyword_dict["input_bdb_stack_pattern"]       = SXkeyword_map(2, "any_directory")  # input_bdb_stack_pattern
 
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")           # --apix=pixel_size, --apix
 	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")           # --pixel_size=PIXEL_SIZE
@@ -903,6 +906,16 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	return
 
 # ========================================================================================
+def create_sxcmd_subconfig_window_makevstack():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.default = "none"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack pattern"; token_edit.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sxwindow_output_dir//*/'). The stack subsets are located in the sxwindow output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "any_directory"; token_edit_list.append(token_edit)
+	
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("Particle Stack", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
+
 def create_sxcmd_subconfig_isacselect():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("isacselect"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
@@ -914,7 +927,7 @@ def create_sxcmd_subconfig_isacselect():
 
 	return sxcmd_subconfig
 
-def create_sxcmd_subconfig_makevstack():
+def create_sxcmd_subconfig_isac_makevstack():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.default = "none"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "File name of the class averages. It is located in the ISAC output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb"; token_edit_list.append(token_edit)
@@ -1125,6 +1138,7 @@ def main():
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer_old.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_window_makevstack()))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -1135,7 +1149,7 @@ def main():
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
-	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_makevstack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
