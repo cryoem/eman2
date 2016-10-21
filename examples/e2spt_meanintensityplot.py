@@ -46,45 +46,23 @@ def main():
 	usage = """Produces mean intensity histograms of stack of sub-volumes"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	
-	parser.add_argument("--input",type=str,default='',help="""Default=None. Comma-separated stacks of images whose mean intensity distribution you want to plot.""")
-
-	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). N > 2 number of particles to from each stack provided through --input to consider.""")
-
-	parser.add_argument("--path",type=str,default='',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.")
-
-	#parser.add_argument("--output",type=str,default='',help="""Name of output plot if comparing two populations or more.""")
-	
-	parser.add_argument("--shrink", type=int,default=1,help="Default=1 (no shrinking). Optionally shrink the input volumes by an integer amount n > 1.")
-	
 	parser.add_argument("--bins", type=int,default=0,help="""Default=0 (not used). Number of bins for histogram. If not provided, the optimal bin number will be automatically calculated based on bin-width, computed using Scott's normal reference rule, width = (3.5*std)/cuberoot(n), where 'std' is the standard deviation of the mean intensity distribution of population and n is the number of mean intensity values considered (this is affected by --removesigma). Then, bins will be nbins = (max(intensities) - min(intensities)) / width.""")
-	
-	#parser.add_argument("--sym", type=str, default='c1', help = "Symmetry to enforce before computing mean intensity in the box. Note that this should only be used if the particles are properly aligned to the symmetry axis.")
-	
-	parser.add_argument("--mask",type=str,default="mask.sharp:outer_radius=-2",help="Default=mask.sharp:outer_radius=-2. Mask processor applied to the particles before alignment. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).")
-	
-	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. An image file containing an additional mask to apply besides --mask.""")
-		
 	parser.add_argument("--clip",type=int,default=0,help="""Default=0 (not used). Boxsize to clip particles to before computing mean and standard deviation values for each image. (This can act as a mask, as you'd want to clip the boxes to a smaller size than their current, original size, excluding neighboring particles and background pixels/voxels).""")	
-	
-	parser.add_argument("--preprocess",type=str,default='',help="""Any processor to be applied to each image before computing mean and standard deviation values. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).""")
-	
-	parser.add_argument("--lowpass",type=str,default='',help="""Default=None. A lowpass filtering processor to be applied before computing mean and standard deviation values for each image. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).""")
-	
 	parser.add_argument("--highpass",type=str,default='',help="""Default=None. A highpass filtering processor to be applied before computing mean and standard deviation values for each image. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).""")
-
-	parser.add_argument("--threshold",type=str,default='',help="""A thresholding processor to be applied before computing mean and standard deviation values for each image. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).""")
-		
-	parser.add_argument("--normproc",type=str,default="normalize.edgemean",help="""Default=normalize.edgemean. Normalization processor applied to particles before computing mean and standard deviation values for each iamge. If normalize.mask is used, --mask will be passed in automatically. If you want to turn normalization off specify \'None\'. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).""")
-
-	parser.add_argument("--savepreprocessed",action="store_true",default=False,help="""Default=False. If provided, this option will save the image stacks in --input after all preprocessing options (lowpass, highpass, preprocess, masking, etc.) have been applied.""")
-		
+	parser.add_argument("--input",type=str,default='',help="""Default=None. Comma-separated stacks of images whose mean intensity distribution you want to plot.""")
+	parser.add_argument("--lowpass",type=str,default='',help="""Default=None. A lowpass filtering processor to be applied before computing mean and standard deviation values for each image. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).""")	
+	parser.add_argument("--mask",type=str,default="mask.sharp:outer_radius=-2",help="Default=mask.sharp:outer_radius=-2. Mask processor applied to the particles before alignment. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).")
+	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. An image file containing an additional mask to apply besides --mask.""")			
 	parser.add_argument("--normalizeplot",action="store_true",default=False,help="""Default=False. This will normalize the intensity values of the distribution to be between 0 and 1""")
-
-	parser.add_argument("--removesigma",type=int,default=0,help="""Default=0. Provide a value for the number of standard deviations away from the mean to consider values to exclude. For example, if --removesigma=3, values further than 3 standard deviations away from the mean will be excluded.""")
-	
+	parser.add_argument("--normproc",type=str,default="normalize.edgemean",help="""Default=normalize.edgemean. Normalization processor applied to particles before computing mean and standard deviation values for each iamge. If normalize.mask is used, --mask will be passed in automatically. If you want to turn normalization off specify \'None\'. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).""")
+	parser.add_argument("--path",type=str,default='',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.")
 	parser.add_argument("--ppid", type=int, help="Default=1. Set the PID of the parent process, used for cross platform PPID",default=-1)
-
+	parser.add_argument("--preprocess",type=str,default='',help="""Any processor to be applied to each image before computing mean and standard deviation values. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).""")
+	parser.add_argument("--removesigma",type=int,default=0,help="""Default=0. Provide a value for the number of standard deviations away from the mean to consider values to exclude. For example, if --removesigma=3, values further than 3 standard deviations away from the mean will be excluded.""")
+	parser.add_argument("--savepreprocessed",action="store_true",default=False,help="""Default=False. If provided, this option will save the image stacks in --input after all preprocessing options (lowpass, highpass, preprocess, masking, etc.) have been applied.""")
+	parser.add_argument("--shrink", type=int,default=1,help="Default=1 (no shrinking). Optionally shrink the input volumes by an integer amount n > 1.")
+	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). N > 2 number of particles to from each stack provided through --input to consider.""")
+	parser.add_argument("--threshold",type=str,default='',help="""A thresholding processor to be applied before computing mean and standard deviation values for each image. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).""")
 	parser.add_argument("--verbose", "-v", type=int, default=0, help="Default 0. Verbose level [0-9], higner number means higher level of verboseness",dest="verbose", action="store", metavar="n")
 
 	(options, args) = parser.parse_args()
@@ -122,7 +100,7 @@ def main():
 	
 	
 	intensitiesSeveral = []
-	iwzSeveral = []
+	intenfullSeveral = []
 	iminsSeveral = []
 	imaxsSeveral = []
 	istdsSeveral = []
@@ -151,14 +129,14 @@ def main():
 		ret = calcintensities( options, datafile )
 		
 		intensitiesSingle = ret[0]
-		iwz = ret[1]
+		intenfull = ret[1]
 		imins = ret[2]
 		imaxs = ret[3]
 		istds = ret[4]
 		
 		intensitiesSeveral.append( [ datafile, list( intensitiesSingle ) ] )
 		
-		iwzSeveral.append( [ datafile, list( iwz ) ] )
+		intensitiesSeveral.append( [ datafile, list( intenfull ) ] )
 		iminsSeveral.append( [ datafile, list( imins ) ] ) 
 		imaxsSeveral.append( [ datafile, list( imaxs ) ] ) 
 		istdsSeveral.append( [ datafile, list( istds ) ] ) 
@@ -178,8 +156,9 @@ def main():
 		means.append(mean)
 		stds.append(std)
 		
-		
-		ret = plotintensities( iwz, options, datafile,'wz' )
+		print "\nfor datafile",datafile
+		print "intenfull is",intenfull
+		ret = plotintensities( intenfull, options, datafile,'intenfull' )
 		ret = plotintensities( imins, options, datafile,'mins' )
 		ret = plotintensities( imaxs, options, datafile,'maxs' )
 		ret = plotintensities( istds, options, datafile,'stds' )
@@ -221,7 +200,7 @@ def main():
 			absmax = max( maxes ) - absmin
 		
 		for intensities in intensitiesSeveral:	
-			print "Type and len of intensities is", type(intensities[1]), len(intensities[1])
+			print "\nType and len of intensities is", type(intensities[1]), len(intensities[1])
 			
 			intensitiesNorm = intensities[1]			
 			if options.normalizeplot:
@@ -234,6 +213,7 @@ def main():
 		plt.clf()
 		
 	E2end(logger)
+	return
 
 
 def normintensities( intensitiesR, minval=0, maxval=0 ):
@@ -555,7 +535,7 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 	#msktag=msktag.split('.')[0]
 
 	#print "\n\n\n\n\n\n\nMSK TAG is\n", msktag
-	
+	origtag = tag
 	if tag:
 		tag ='_' + tag
 	plotname = datafile.replace('.hdf', '_MIplotMSK' + tag + '.png')
@@ -642,9 +622,9 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 	#hist, bins = numpy.histogram(y, options.bins)
 	'''
 
-	plt.title("Mean density distribution")
+	plt.title("Distribution of mean " + origtag + ' -' + datafile)
 	plt.ylabel("Number of particles")
-	plt.xlabel("Density")
+	plt.xlabel(origtag)
 	
 	#plt.axis([min(intensities), max(intensities)])	
 	#plt.tick_params(axis='both',which='both',direction='out',length=1,width=2)
