@@ -85,7 +85,7 @@ vstack is a derived image stack. --restore will allow it to write the change bac
     extractplots:: Extract plots as text files: If a database contains sets of plots, such as bdb:refine_xx#convergence.results, this will extract the plots as text files. (default False)
     check:: Check for self-consistency and errors: Check for self-consistency and errors in the structure of specified databases. (default False)
     merge:: Merge database contents: Merge the contents of BDB 2-N into BDB 1 (including BDB 1's contents). (default False)
-    makevstack:: Make virtual image stack: Make a 'virtual' BDB image stack from one or more other stacks. (default none)
+    makevstack:: Output virtual image stack: Make a 'virtual' BDB image stack with the specified name from one or more other stacks. (default none)
     appendvstack:: Append to or create virtual image stack: Append to or create a virtual BDB image stack with its own metadata. (default none)
     list:: File containing selection list of images: Input ASCII file containing a list of selected image names to creates a new virtual BDB image stack from an existed virtual stack. (default none)
     exlist:: File containing exclusion list of images: Specify the name of a file with a list of images to exclude in creation of virtual stacks. Please see source for details. (default none)
