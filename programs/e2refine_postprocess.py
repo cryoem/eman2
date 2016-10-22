@@ -357,7 +357,7 @@ def main():
 				combfile=combfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=1.0/options.restarget,noisecutoff=noisecutoff))
 		elif options.tophat=="local":
 			# compute local resolution and locally filter averaged volume
-			cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf -v 1".format(path=path,itr=options.iter)
+			cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf -v 1".format(path=path,itr=options.iter)
 			run(cmd)
 
 			# we impose the symmetry in real-space, since this is what people expect

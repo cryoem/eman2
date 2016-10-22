@@ -57,6 +57,8 @@ and this program should be regarded as experimental.
 #	parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
 	parser.add_argument("--output",type=str,help="Output .143 resolution volume",default="resvol143.hdf")
 	parser.add_argument("--outfilt",type=str,help="Output locally filtered average volume",default="res143_filtered.hdf")
+	parser.add_argument("--outfilte",type=str,help="Apply the local filter to the even map as well and write to specified file",default=None)
+	parser.add_argument("--outfilto",type=str,help="Apply the local filter to the odd map as well and write to specified file",default=None)
 	parser.add_argument("--localsize", type=int, help="Size in pixels of the local region to compute the resolution in",default=-1)
 	parser.add_argument("--overlap", type=int, help="Amount of oversampling to use in local resolution windows. Larger value -> larger output map",default=4)
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
@@ -153,6 +155,14 @@ and this program should be regarded as experimental.
 	volfilt.to_zero()
 	volnorm=v1.copy()
 	volnorm.to_zero()
+
+	if options.outfilte!=None : 
+		volfilte=v1.copy()
+		volfilte.to_zero()
+	
+	if options.outfilto!=None : 
+		volfilto=v1.copy()
+		volfilto.to_zero()
 	
 	# now do all of the tiled calculations
 	# TODO - parallelize this
@@ -223,15 +233,22 @@ and this program should be regarded as experimental.
 				# now we build the locally filtered volume
 				v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
 				v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
-				v1m.add(v2m)
 #				if res143>.23 : v1m.write_image("zones.hdf",-1)
 				v1m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
+				v2m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
 #				if res143>.23 : v1m.write_image("zones.hdf",-1)
 				v1m.mult(avgmask)
+				v2m.mult(avgmask)
 
 #				if res143>.2 : print x,y,z,si,lnx,fx[si],res143
 
 				volfilt.insert_scaled_sum(v1m,(x+lnx/2,y+lnx/2,z+lnx/2))
+				volfilt.insert_scaled_sum(v2m,(x+lnx/2,y+lnx/2,z+lnx/2))
+				if options.outfilte!=None : 
+					volfilte.insert_scaled_sum(v1m,(x+lnx/2,y+lnx/2,z+lnx/2))
+				if options.outfilto!=None : 
+					volfilto.insert_scaled_sum(v2m,(x+lnx/2,y+lnx/2,z+lnx/2))
+					
 				volnorm.insert_scaled_sum(avgmask,(x+lnx/2,y+lnx/2,z+lnx/2))
 
 	# while the size of avgmask was selected to produce a nearly normalized image without further work
@@ -242,6 +259,14 @@ and this program should be regarded as experimental.
 	resvol.write_image("resvol.hdf")
 	resvol143.write_image(options.output)
 	volfilt.write_image(options.outfilt)
+
+	if options.outfilte!=None : 
+		volfilte.mult(volnorm)
+		volfilte.write_image(options.outfilte)
+	
+	if options.outfilto!=None : 
+		volfilto.mult(volnorm)
+		volfilto.write_image(options.outfilto)
 	
 	out=file("fsc.curves.txt","w")
 	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
