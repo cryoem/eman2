@@ -9,22 +9,28 @@
 import sys
 #from optparse import OptionParser
 #from EMAN2 import *
+global intvararg_callback
+global floatvararg_callback
+intvararg_callback = 0
+floatvararg_callback = 0
 
 options=[]
 def parse(s):
 	global options
 	
 	sub="myfn"+s[s.find("("):]
+#	print "**** ",sub
 	return eval(sub)
 	
 
 def myfn(*args,**kargs):
 	return (args,kargs)
 
+
 lines=[i for i in file(sys.argv[1],"r")]
 
 for j,i in enumerate(lines): 
- 	if "parser.add_argument" in i:
+ 	if "parser.add_argument" in i or "parser.add_option" in i:
 		try : op=parse(i.strip())
 		except:
 			try: op=parse((i+lines[j+1]).strip())

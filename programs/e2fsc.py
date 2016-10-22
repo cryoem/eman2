@@ -55,14 +55,16 @@ and this program should be regarded as experimental.
 
 #	parser.add_option("--input",type=str,help="Similarity matrix to analyze",default=None)
 #	parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
-	parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
+	parser.add_argument("--output",type=str,help="Output .143 resolution volume",default="resvol143.hdf")
+	parser.add_argument("--outfilt",type=str,help="Output locally filtered average volume",default="res143_filtered.hdf")
 	parser.add_argument("--localsize", type=int, help="Size in pixels of the local region to compute the resolution in",default=-1)
-	parser.add_argument("--overlap", type=int, help="Amount of oversampling to use in local resolution windows. Larger value -> larger output map",default=6)
+	parser.add_argument("--overlap", type=int, help="Amount of oversampling to use in local resolution windows. Larger value -> larger output map",default=4)
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
 	#parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
 	#parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbosity [0-9]. Larger values produce more output.")
 
@@ -89,12 +91,21 @@ and this program should be regarded as experimental.
 	print "%d x %d x %d"%(nx,ny,nz)
 	if nx!=ny or nx!=nz : print "Warning: non-cubic volumes may produce unexpected results"
 	
-	if options.localsize==-1 : lnx=nx/10*2
+	overlap=options.overlap		# This is the fraction of the window size to use as a step size in sampling
+	if overlap<1:
+		print "Invalid overlap specified, using default"
+		overlap=4
+		
+	if options.localsize==-1 : 
+		lnx=int(40/apix)
+		if lnx<24: lnx=24
+		lnx=(((lnx-1)//overlap)+1)*overlap
 	else: lnx=options.localsize
 	if apix*lnx/2.0<15.0 :
 		print "WARNING: Local sampling box is <15 A. Adjusting to 20 A."
 		lnx=int(floor(40.0/apix))
 	print "Local region is %d pixels"%lnx
+	if overlap>lnx : overlap=lnx
 	
 	thresh1=v1["mean"]+v1["sigma"]
 	thresh2=v2["mean"]+v2["sigma"]
@@ -118,12 +129,6 @@ and this program should be regarded as experimental.
 #	cenmask.write_image("cenmask.hdf")
 	#display(cenmask)
 	
-	
-	overlap=options.overlap		# This is the fraction of the window size to use as a step size in sampling
-	if overlap<1 or overlap>lnx :
-		print "Invalid overlap specified, using default"
-		overlap=4
-	
 	# Create a Gaussian with the correct size to produce a flat average in 3-D
 	avgmask=EMData(lnx,lnx,lnx)
 	avgmask.to_one()
@@ -131,9 +136,10 @@ and this program should be regarded as experimental.
 #	avgmask.process_inplace("mask.gaussian",{"outer_radius":2.0*d/log(8.0) })	# this mask is adjusted to the precise width necessary so a sum of tiled overlapping Gaussians will be flat
 	avgmask.process_inplace("mask.gaussian",{"outer_radius":3.0*d/log(8.0) })	# make it a bit wider since we are weighting anyway, this should produce smoother surfaces
 	
-	xr=xrange(0,nx-lnx,lnx//overlap)
-	yr=xrange(0,ny-lnx,lnx//overlap)
-	zr=xrange(0,nz-lnx,lnx//overlap)
+	off=(nx%(lnx//overlap))/2
+	xr=xrange(off,nx-lnx,lnx//overlap)
+	yr=xrange(off,ny-lnx,lnx//overlap)
+	zr=xrange(off,nz-lnx,lnx//overlap)
 	resvol=EMData(len(xr),len(yr),len(zr))
 	resvol["apix_x"]=apix*lnx//overlap
 	resvol["apix_y"]=apix*lnx//overlap
@@ -234,8 +240,8 @@ and this program should be regarded as experimental.
 	volfilt.mult(volnorm)
 	
 	resvol.write_image("resvol.hdf")
-	resvol143.write_image("resvol143.hdf")
-	volfilt.write_image("res143_filtered.hdf")
+	resvol143.write_image(options.output)
+	volfilt.write_image(options.outfilt)
 	
 	out=file("fsc.curves.txt","w")
 	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")

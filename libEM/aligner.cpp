@@ -2629,33 +2629,31 @@ EMData* RT2DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp
 
 }
 
-// NOTE - if symmetry is applied, it is critical that "to" be the volume which is already aligned to the symmetry axes (ie - the reference)
 vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nrsoln, const string & cmp_name, const Dict& cmp_params) const {
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
 
 	int nsoln = nrsoln*2;
-	if (nrsoln<4) nsoln=6;		// we start with at least 32 solutions, but then gradually decrease with increasing scale
+	if (nrsoln<4) nsoln=12;		// we start with at least n solutions, but then gradually decrease with increasing scale
 	
-	// !!!!!! IMPORTANT NOTE - we are inverting the order of this and to here to match convention in other aligners, to compensate
+	// !!!!!! IMPORTANT NOTE - we are inverting the order of 'this' and 'to' here to match convention in other aligners, to compensate
 	// the Transform is inverted before being returned
 	EMData *base_this;
 	EMData *base_to;
 	if (this_img->is_complex()) base_to=this_img->copy();
 	else {
 		base_to=this_img->do_fft();
-		base_to->process_inplace("xform.phaseorigin.tocorner");
+		base_to->process_inplace("xform.phaseorigin.tocenter");		// This was originally .tocorner, taken from RT3DTree, but I think that's probably wrong...
 	}
 	
 	if (to->is_complex()) base_this=to->copy();
 	else {
 		base_this=to->do_fft();
-		base_this->process_inplace("xform.phaseorigin.tocorner");
+		base_this->process_inplace("xform.phaseorigin.tocenter");
 	}
 	
 	int verbose = params.set_default("verbose",0);
 
-	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_this->get_ysize()!=base_this->get_zsize()
-		|| base_to->get_xsize()!=base_to->get_ysize()+2 || base_to->get_ysize()!=base_to->get_zsize()) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images with even numbered box sizes");
+	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_to->get_xsize()!=base_to->get_ysize()+2 ) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images with even numbered box sizes");
 
 	base_this->process_inplace("xform.fourierorigin.tocenter");		// easier to chop out Fourier subvolumes
 	base_to->process_inplace("xform.fourierorigin.tocenter");
@@ -2665,41 +2663,38 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 //	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
 
+		vector<float> s_coverage(nsoln,0.0f);
 	vector<float> s_score(nsoln,0.0f);
-	vector<float> s_coverage(nsoln,0.0f);
 	vector<float> s_step(nsoln*3,7.5f);
 	vector<Transform> s_xform(nsoln);
 	if (verbose>0) printf("%d solutions\n",nsoln);
 
-	
-//	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
-	char *axname[] = {"az","alt","phi"};
-
 	// We start with 32^3, 64^3 ...
 	for (int sexp=4; sexp<10; sexp++) {
 		int ss=pow(2.0,sexp);
-		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
-		if (ss==32) ss=48;		// 16 may be too small, but 32 takes too long...
+//		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
+//		if (ss==32) ss=48;		// 16 may be too small, but 32 takes too long...
 		if (ss>ny) ss=ny;
 		if (verbose>0) printf("\nSize %d\n",ss);
 
 		//ss=good_size(ny/ds);
-		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
-		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
+		// Clearly these regions will be messed up on x=nyquist edge, but we are zeroing that pixel during rotation anyway
+		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,ss+2,ss));
+		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,ss+2,ss));
 		small_this->process_inplace("xform.fourierorigin.tocorner");					// after clipping back to canonical form
-		small_this->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",4));
+		small_this->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",3));
 		small_this->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
 		small_to->process_inplace("xform.fourierorigin.tocorner");
-		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",4));
+		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",3));
 		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
 
-		// these are cached for speed in the comparator
 		vector<float>sigmathisv=small_this->calc_radial_dist(ss/2,0,1,4);
 		vector<float>sigmatov=small_to->calc_radial_dist(ss/2,0,1,4);
-// 		for (int i=0; i<ss/2; i++) {
-// 			sigmathisv[i]*=sigmathis;
-// 			sigmatov[i]*=sigmato;
-// 		}
+		for (int i=0; i<ss/2; i++) {
+			sigmathisv[i]*=sigmathisv[i];
+			sigmatov[i]*=sigmatov[i];
+		}
+
 		
 		// debug out
 // 		EMData *x=small_this->do_ift();
@@ -2727,7 +2722,8 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			if (fabs(s_step[i*3+1])<astep/4.0) s_step[i*3+1]*=2.0;
 			if (fabs(s_step[i*3+2])<astep/4.0) s_step[i*3+2]*=2.0;
 		}
-		
+
+
 		// This is for the first loop, we do a full search in a heavily downsampled space
 		if (s_coverage[0]==0.0f) {
 			// Genrate points on a sphere in an asymmetric unit
@@ -2831,10 +2827,10 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					for (int axis=0; axis<3; axis++) {
 						if (fabs(s_step[i*3+axis])<astep/4.0) continue;		// skip axes where we already have enough precision on this axis
 						Dict upd;
-						upd[axname[axis]]=s_step[i*3+axis];
+//						upd[axname[axis]]=s_step[i*3+axis];
 						// when moving az, we move phi in the opposite direction by the same amount since the two are singular at alt=0
 						// phi continues to move independently. I believe this should produce a more monotonic energy surface
-						if (axis==0) upd[axname[2]]=-s_step[i*3+axis];		
+//						if (axis==0) upd[axname[2]]=-s_step[i*3+axis];		
 
 						int r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd);
 						
@@ -2843,7 +2839,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						if (r) changed=1; 
 						else {
 							s_step[i*3+axis]*=-0.75;
-							upd[axname[axis]]=s_step[i*3+axis];
+//							upd[axname[axis]]=s_step[i*3+axis];
 							r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd);
 							if (r) changed=1;
 						}
