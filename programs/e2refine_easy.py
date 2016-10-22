@@ -412,8 +412,8 @@ maps which look prettier, with more apparent side-chains at high resolution, but
 		append_html("<p>You are using the --tophat=local option, which modifies the final filter applied to 3-D maps. The default behavior is to apply a final Wiener filter \
 based on the FSC curve evenly across the map. This Wiener filter gives a map which in theory reduces noise and filters the map to get as close as possible to \
 what you should be able to see at the specified resolution. However, this means that some features, such as sidechains and the pitch of alpha-helices may be somewhat \
-smoothed out. This option will compute a local resolution map, by computing local FSCs in different regions of the map. This local resolution map is then applied as a set
-of local tophat filters across the map. If some regions of the map have better resolution than others, these regions will preserve more detail, and vice-versa. This may
+smoothed out. This option will compute a local resolution map, by computing local FSCs in different regions of the map. This local resolution map is then applied as a set \
+of local tophat filters across the map. If some regions of the map have better resolution than others, these regions will preserve more detail, and vice-versa. This may \
 produce some local artifacts, but generally seems to work quite well.")
 		tophat="--tophat=local"
 	else:
