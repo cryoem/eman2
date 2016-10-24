@@ -1695,7 +1695,7 @@ namespace EMAN
 
 			virtual string get_desc() const
 			{
-				return "2D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment.";
+				return "2D rotational and translational alignment using a hierarchical approach in Fourier space. flip options specifies whether this is RT or RTF. No 'refine' alignment should be required +-1 pixel.";
 			}
 
 			static Aligner *NEW()
@@ -1710,7 +1710,8 @@ namespace EMAN
 // 				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 // 				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 // 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
-				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
+				d.put("flip", EMObject::BOOL,"Include flip in the alignment search. Default True");
+				d.put("verbose", EMObject::INT,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
 
