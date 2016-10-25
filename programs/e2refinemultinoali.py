@@ -436,7 +436,7 @@ def main():
 							toavg=np.argsort(ss)[spt:ns]
 
 						for i in toavg:
-							cmxout[s][0,i]=c
+							cmxout[s][0,int(i)]=int(c)
 
 			
 			### write classmx

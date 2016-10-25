@@ -217,7 +217,7 @@ def calc_motion(ballrec, options, grad, glst=None):
 		glst=np.arange(len(npballs))
 	else:
 		f=open(glst,'r')
-		glst= np.array( [int(l.strip("ALC .\n")) for l in f])
+		glst= np.array( [int(l[3:].strip("ALC .\n")) for l in f])
 		f.close()
 		print "Gaussians used for motion calculation: ", glst
 		
