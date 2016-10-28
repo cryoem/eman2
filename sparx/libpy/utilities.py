@@ -2174,7 +2174,7 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 		xi = float(i)*qt
 		ix = min(int(xi),lt)
 		df = xi -ix
-		xval = (1.0-df)*input_object[ix] + df*input_object[ix+1]
+		xval = input_object[ix] + df*(input_object[ix+1]-input_object[ix])
 		interpolated.append(xval)
 	return interpolated
 
