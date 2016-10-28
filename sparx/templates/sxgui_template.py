@@ -44,6 +44,55 @@ from global_def import *
 from sparx import *
 
 # ========================================================================================
+# Helper Functions
+# 
+# This function is added here because db_convert_path in EMAN2db.py has a bug.
+# 
+def translate_to_bdb_path(std_path):
+	'''
+	Translate a standard file path (std_path) to bdb syntax (return value). 
+	The path pass must contain at lease EMAN2DB directory and .bdb file name.
+	For instance, if the path is particles/EMAN2DB/data.bdb,
+	will return bdb:particles#data.
+	'''
+	
+	# Check error conditions
+	if not isinstance(std_path,str): 
+		raise RuntimeError("Path has to be a string")
+	path_tokens = std_path.split("/")
+	
+	if len(path_tokens) < 2: 
+		raise ValueError("Invalid file path. The path pass must contain at least \'EMAN2DB\' directory and \'.bdb\' file name (e.g \'./EMAN2DB/data.bdb\'). ")
+
+	if path_tokens[-2] != "EMAN2DB": 
+		raise ValueError("Invalid file path. The path pass must contain \'EMAN2DB\' directory (e.g \'./EMAN2DB/data.bdb\').")
+	
+	if os.path.splitext(path_tokens[-1])[1] != ".bdb": 
+		raise ValueError("Path is invalid. The path pass must contain \'.bdb\' file name (e.g \'./EMAN2DB/data.bdb\').")
+	
+	# If necessary, compose directory path as a relative path at first
+	dir = ""
+	if len(path_tokens) > 2:
+		for idx in xrange(0, len(path_tokens) - 2):
+			if idx != 0:
+				dir += "/"
+			dir += path_tokens[idx] # accrue the directory
+	
+	# if the input file path is a absolute path, add '/' at the head of the path
+	if std_path[0] == "/" and dir[0] != "/": 
+		dir = "/" + dir
+	
+	# Add '#' before the database name (file basename without extension)
+	bdb_path = "bdb:"
+	if dir != "":
+		bdb_path += dir + "#"
+	# Finally, add file basename (without .bdb extension)
+	assert(os.path.splitext(path_tokens[-1])[1] == ".bdb")
+	bdb_path += os.path.splitext(path_tokens[-1])[0]
+	
+	return bdb_path
+
+# ========================================================================================
 # Inherited by SXcmd_category and SXconst_set
 # SXMainWindow use this class to handle events from menu item buttons
 class SXmenu_item(object):
@@ -864,11 +913,8 @@ class SXCmdWidget(QWidget):
 			file_path = str(QFileDialog.getOpenFileName(self, "Select BDB File", SXLookFeelConst.file_dialog_dir, "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
 			if file_path:
-				file_path = "bdb:" + SXLookFeelConst.format_path(file_path).replace("EMAN2DB/", "#").replace(".bdb", "")
-				file_path = file_path.replace("/#", "#")
-				# If the input directory is the current directory, use the simplified DBD file path format
-				if file_path.find(".#") != -1:
-					file_path = file_path.replace(".#", "")
+				file_path = SXLookFeelConst.format_path(file_path)
+				file_path = translate_to_bdb_path(file_path)
 		elif file_format == "py":
 			file_path = str(QFileDialog.getOpenFileName(self, "Select Python File", SXLookFeelConst.file_dialog_dir, "PY files (*.py)", options = QFileDialog.DontUseNativeDialog))
 			# Use full path

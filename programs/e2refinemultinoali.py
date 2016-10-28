@@ -207,7 +207,7 @@ def main():
 		for m in inputmodel:
 			mskmodel.append(m[:-4]+"_msk.hdf")
 			run("e2proc3d.py {model} {mskmodel} --multfile {msk}".format(model=m, mskmodel=mskmodel[-1], msk=mask3d))
-		#run("e2project3d.py {model} --outfile  {mskfile} -f --orientgen {orient} --sym {sym} --parallel {para}".format(model=mask3d,mskfile=maskfile,orient=origen,sym=db["sym"],para=options.parallel))
+		run("e2project3d.py {model} --outfile  {mskfile} -f --orientgen {orient} --sym {sym} --parallel {para}".format(model=mask3d,mskfile=maskfile,orient=origen,sym=db["sym"],para=options.parallel))
 		#simmask=EMData.read_images(maskfile)
 	
 	#### start iterations...
@@ -277,7 +277,7 @@ def main():
 			output_3d[-1][eo]=threedout
 			output_cls[-1][eo]=classout
 
-			### get alignment from classmx file and calculate similarity
+			#### get alignment from classmx file and calculate similarity
 			print "Calculating similarity matrix..."
 			cmxcls=EMData(clsmx,0)
 			cmxtx=EMData(clsmx,2)
@@ -314,21 +314,6 @@ def main():
 			t00=time.time()
 			t01=t00
 			
-			#### parallel in EMAN way.
-			#pool=EMTaskCustomer(options.parallel)
-			#taskids=pool.send_tasks(tasks)
-			
-			#while (True) :
-				#time.sleep(3)
-				#rslt=np.asarray(pool.check_task(taskids))
-				#nleft=np.sum(rslt<=0)
-				#if nleft==0:
-					#break
-				#print "Waiting for", nleft, "tasks to complete..."
-			#corr=[pool.get_results(k)[1] for k in range(npt)]
-			#print corr
-			#print corr[0]
-			
 			#### the threading part is copied from e2spt_align
 			jsd=Queue(0)
 			NTHREADS=max(options.threads+1,2)
@@ -353,19 +338,12 @@ def main():
 					#print idx,ccc
 					corr[idx]=ccc
 			
-			#### multiprocess - pool
-			#pool = Pool()
-			#corr=pool.map_async(do_compare, xforms)
-			#pool.close()
-			#while (True):
-				#if (corr.ready()): break
-				#remaining = corr._number_left
-				#print "Waiting for", remaining, "tasks to complete..."
-				#time.sleep(2)
-			#corr=corr.get()
 			print time.time()-t00
 			np.savetxt("{path}/simmx_{it:02d}_{eo}.txt".format(path=options.newpath,eo=eo, it=it),corr)
+			
+			
 			#corr=np.loadtxt("{path}/simmx_00_{eo}.txt".format(path=options.newpath,eo=eo))
+			#corr=[[c] for c in corr]
 
 			### classification
 			print "Classifying particles..."
@@ -418,14 +396,15 @@ def main():
 					for i in range(npt):
 						v=cmxcls[0,i]
 						cc=corr[i]
+						#print cc
 						if options.breaksym:
 							v=eulerlst[symdone[int(v)]][np.argmin(cc)]
 							cc=[np.min(cc)]
 						if v==c:
-							ss.append(cc)
+							ss.extend(cc)
 							ns+=1
 						else:
-							ss.append([10]*len(cc))
+							ss.extend([10]*len(cc))
 
 					### split the data by half
 					spt=int(ns*.5)
@@ -434,9 +413,10 @@ def main():
 							toavg=np.argsort(ss)[:spt]
 						else:
 							toavg=np.argsort(ss)[spt:ns]
-
+						#print toavg
 						for i in toavg:
-							cmxout[s][0,i]=c
+							cmxout[s][0,int(i)]=int(c)
+					print c, ncls,cmxout[s]["mean_nonzero"]
 
 			
 			### write classmx
@@ -455,10 +435,14 @@ def main():
 						e.write_image(newclsmx[s],i)
 			#exit()
 			print "Making class average and 3d map..."
+			if len(projfile)==1: 
+				tmpprojfile=projfile*len(models)
+			else:
+				tmpprojfile=projfile
 			for s in models:
 				### class average
 				run("e2classaverage.py --input {inputfile} --classmx {clsmx} --decayedge --storebad --output {clsout} --ref {proj} --iter {classiter} -f --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} --parallel {para}".format(
-					inputfile=ptclfile, clsmx=newclsmx[s], clsout=classout[s], proj=projfile[s], classiter=db["classiter"], normproc=db["classnormproc"], averager=db["classaverager"], classrefsf=db["classrefsf"],
+					inputfile=ptclfile, clsmx=newclsmx[s], clsout=classout[s], proj=tmpprojfile[s], classiter=db["classiter"], normproc=db["classnormproc"], averager=db["classaverager"], classrefsf=db["classrefsf"],
 					classautomask=db["classautomask"],classkeep=db["classkeep"], classkeepsig=db["classkeepsig"], classcmp=db["classcmp"], classalign=db["classalign"], classaligncmp=db["classaligncmp"],
 					classralign=db["classralign"], prefilt=db["prefilt"], para=options.parallel))
 

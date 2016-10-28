@@ -11,6 +11,7 @@ def main():
 	parser.add_argument("--path", type=str,help="path", default="refine_01")
 	parser.add_argument("--replace", type=str,help="replace particle set", default=None)
 	parser.add_argument("--szmult", type=float,help="size mult", default=None)
+	parser.add_argument("--flatten", action="store_true",help="flatten the euler angle distribution", default=False)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	

@@ -155,7 +155,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement[False]")
-	parser.add_argument("--tophat", action="store_true", default=False,help = "Instead of imposing a final Wiener filter, use a tophat filter (similar to Relion). Sharper features, but may exaggerate.", guitype='boolbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement[False]")
+	parser.add_argument("--tophat", type=str, default=None,help = "'local' or 'global'. Instead of imposing a final Wiener filter, use a tophat filter (global similar to Relion). local determines local resolution and filters. danger of feature exaggeration", guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement['None']")
 	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.")
 	parser.add_argument("--m3dold", action="store_true", default=False,help = "Use the traditional e2make3d program instead of the new e2make3dpar program",guitype='boolbox', row=11, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
@@ -401,13 +401,21 @@ maps.")
 		postprocess=""
 		m3dsetsf=""
 
-	if options.tophat:
-		append_html("<p>You are using the --tophat option, which modifies the final filter applied to 3-D maps. The default behavior is to apply a final Wiener filter \
+	if options.tophat=="global":
+		append_html("<p>You are using the --tophat=global option, which modifies the final filter applied to 3-D maps. The default behavior is to apply a final Wiener filter \
 based on the FSC curve used to compute the resolution. This Wiener filter gives a map which in theory reduces noise and filters the map to get as close as possible to \
 what you should be able to see at the specified resolution. However, this means that some features, such as sidechains and the pitch of alpha-helices may be somewhat \
 smoothed out. The alternative is a 'tophat' or 'sharp' filter imposed at the cutoff (0.143) FSC value, and is what Relion imposes on its final maps. This produces \
-maps which look prettier, with more apparent side-chains, but runs the risk that some of these features may be artifacts of the sharp filter.")
-		tophat="--tophat"
+maps which look prettier, with more apparent side-chains at high resolution, but runs the risk that some of these features may be artifacts of the sharp filter.")
+		tophat="--tophat=global"
+	elif options.tophat=="local":
+		append_html("<p>You are using the --tophat=local option, which modifies the final filter applied to 3-D maps. The default behavior is to apply a final Wiener filter \
+based on the FSC curve evenly across the map. This Wiener filter gives a map which in theory reduces noise and filters the map to get as close as possible to \
+what you should be able to see at the specified resolution. However, this means that some features, such as sidechains and the pitch of alpha-helices may be somewhat \
+smoothed out. This option will compute a local resolution map, by computing local FSCs in different regions of the map. This local resolution map is then applied as a set \
+of local tophat filters across the map. If some regions of the map have better resolution than others, these regions will preserve more detail, and vice-versa. This may \
+produce some local artifacts, but generally seems to work quite well.")
+		tophat="--tophat=local"
 	else:
 		append_html("<p>You are not using the --tophat option, meaning a final Wiener filter \
 based on the FSC curve used to compute the resolution is applied to the reconstruction. This Wiener filter gives a map which in theory reduces noise and filters the map to get as close as possible to \
