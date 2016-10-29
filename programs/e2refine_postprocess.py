@@ -365,6 +365,7 @@ def main():
 			else: symopt="--sym {}".format(options.sym)
 			
 			cmd="e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt)
+			run(cmd)
 						
 			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 		else:
