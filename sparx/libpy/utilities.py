@@ -5413,7 +5413,7 @@ def if_error_then_all_processes_exit_program(error_status):
 					print_msg("***********************************\n")
 		sys.stdout.flush()
 		mpi_finalize()
-		sys.exit(1)
+		exit() # sys.exit(1)
 
 def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
 	# The function will read from stack a subset of images specified in partids
