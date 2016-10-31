@@ -1932,7 +1932,7 @@ def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 		If no mask is provided, using circular mask with R=nx//2
 
 	"""
-	from statistics import fsc
+	from statistics import fsc, binarize
 	from utilities import model_circle
 	nx = img1.get_xsize()
 	ny = img1.get_ysize()
