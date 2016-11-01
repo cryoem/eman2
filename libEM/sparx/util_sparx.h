@@ -620,6 +620,15 @@ class FakeKaiserBessel : public KaiserBessel {
 	*/
 	static EMData* Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr);
 
+	/**
+	 * This program is half of the Crosrng_msg. It only checks straight position.
+	 * input - fourier transforms of rings!!
+	 * circ1 already multiplied by weights!
+	 * returns EM object with 1D ccf values for psis every delta starting from starpsi
+	*/
+	static EMData* Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr, float startpsi, float delta);
+
+
 	static vector<float> Crosrng_msg_vec_p(EMData* circ1, EMData* circ2, vector<int> numr );
 
 	static void  prb3p(double *b, float *pos);
