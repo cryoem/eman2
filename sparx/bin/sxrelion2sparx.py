@@ -261,7 +261,7 @@ def main():
 					
 					if relion_category_dict['window'][idx_is_category_found] == False:
 						print '# '
-						print '# ERROR!!! Input star file must contain all entries for %s. Aborting execution ...' % (relion_category_dict[category_key][idx_relion_process])
+						print '# ERROR!!! Input star file must contain all entries for %s. Aborting execution ...' % (relion_category_dict['window'][idx_relion_process])
 						is_success = False
 						break;
 						

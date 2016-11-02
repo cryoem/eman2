@@ -330,9 +330,12 @@ class SXLogoButton(QPushButton):
 		# Set style and add click event
 		self.setStyleSheet(self.customButtonStyle)
 
+		# Add ToolTip
+		self.setToolTip('Help')
+
 # ========================================================================================
 class SXPictogramButton(QPushButton):
-	def __init__(self, pictogram_file_path, parent = None):
+	def __init__(self, pictogram_name, pictogram_file_path, parent = None):
 		super(SXPictogramButton, self).__init__(parent)
 
 		# print "MRK_DEBUG: pictogram_file_path = %s" % pictogram_file_path
@@ -355,6 +358,9 @@ class SXPictogramButton(QPushButton):
 
 		# Set style and add click event
 		self.setStyleSheet(self.customButtonStyle)
+
+		# Add tooltipp
+		self.setToolTip('{0}{1}'.format(pictogram_name[0].upper(), pictogram_name[1:]))
 
 class SXMenuItemBtnAreaWidget(QWidget):
 	def __init__(self, sxconst_set, sxcmd_category_list, sxinfo, parent = None):
@@ -433,7 +439,7 @@ class SXMenuItemBtnAreaWidget(QWidget):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
 		sxmenu_item_btn_pictograph_file_path = "{0}sxgui_pictograph_{1}.png".format(get_image_directory(), sxmenu_item.name.replace("sxc_", ""))
-		sxmenu_item.btn = SXPictogramButton(sxmenu_item_btn_pictograph_file_path, self)
+		sxmenu_item.btn = SXPictogramButton(sxmenu_item.name.replace("sxc_", ""), sxmenu_item_btn_pictograph_file_path, self)
 		cur_widget_counts = sxmenu_item_btn_subarea_widget.layout().count()
 		sxmenu_item_btn_subarea_widget.layout().addWidget(sxmenu_item.btn, cur_widget_counts // 2, cur_widget_counts % 2)
 
@@ -2197,7 +2203,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "Protein particle radius [pixels]"; sxconst.help = ""; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "Point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "Protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configrations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configrations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configurations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configurations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 
 		# Store the project constant parameter set as a class data member
 		self.sxconst_set = sxconst_set
