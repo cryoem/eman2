@@ -2,7 +2,7 @@
 # Muyuan Chen 2016-09
 from EMAN2 import *
 import numpy as np
-from scipy import ndimage
+#from scipy import ndimage
 def main():
 	
 	usage=" "
@@ -84,16 +84,33 @@ def main():
 		e=EMData(segname)
 		img=e.numpy()
 		img[img<options.thresh]=0
-		lb, nlb=ndimage.measurements.label(img)
-		pks=np.array(ndimage.maximum_position(img,lb,range(1,nlb)))
 		
+		#lb, nlb=ndimage.measurements.label(img)
+		#pks=np.array(ndimage.maximum_position(img,lb,range(1,nlb)))
+		#n=len(pks)
+		#print n
+		
+		e.process_inplace("mask.onlypeaks")
+		#print np.sum(img>0)
+		pks= np.array(np.where(img>0)).T
+		
+		pk_new=[[-100,-100,-100]]
+		for p in pks:
+			
+			nb=np.sum(np.sum(np.array(pk_new-p)**2,axis=1)<(options.boxsz/4)**2)
+			#print p, nb
+			if nb<1:
+				pk_new.append(p)
+		pks=np.array(pk_new)
 		n=len(pks)
+		#e.write_image("tmp2.hdf")
+		print "{} boxes found..".format(n)
 		allbox=[]
-		if options.sort:
-			denmap=EMData(tomoname)
-			dmp=denmap.numpy()
-			den=np.array(ndimage.measurements.maximum(np.abs(dmp),lb,range(1,nlb)))
-			pks=pks[np.argsort(den)]
+		#if options.sort:
+			#denmap=EMData(tomoname)
+			#dmp=denmap.numpy()
+			#den=np.array(ndimage.measurements.maximum(np.abs(dmp),lb,range(1,nlb)))
+			#pks=pks[np.argsort(den)]
 		for j in range(n):
 			box=pks[j]
 			if min(box[2],box[1],e["nx"]-box[2],e["ny"]-box[1])<options.edge:
