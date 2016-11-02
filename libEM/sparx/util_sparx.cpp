@@ -2645,8 +2645,6 @@ c
 */
 EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, string cmode){
 	int nring = numr.size()/3;
-	int r1 = numr(1,1);
-	int r2 = numr(1,nring);
 	int maxPoints = numr(3,nring);
 	
 	int nx = image->get_xsize();
@@ -2676,13 +2674,11 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 		vcos[x] = cos(ang);
 	}
 
-	
-
 	float *xim  = image->get_data();
 	float* circ = out->get_data();
-	for (int r = 0; r < r2 - r1+1; r++) {
+	for (int it = 1; it <= nring; it++) {
 
-		int it = r+1;
+		//int it = r+1;
 		int inr = numr(1,it);
 
 		int iRef = numr(3,it)/div;
@@ -2706,7 +2702,6 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 			yold = 0.0f+cny2;
 			circ(3*iRef+kcirc) = bilinear(xold,yold,nx,limit,xim); // Sampling on 180 degree
 		}
-
 		int nPoints = iRef-1;
 		int mult = (maxPoints+1)/(nPoints+1);
 		for (int x = 0; x < nPoints; x++) {
