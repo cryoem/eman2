@@ -5276,7 +5276,7 @@ EMData* Util::Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr,
 	out->set_size(npsi,1,1);
 	float *dout = out->get_data();
 	for (int i=0; i<npsi; i++) {
-		float psi = startpsi + j*delta;
+		float psi = startpsi + i*delta;
 		while( psi > 360.0f )  psi -= 360.0f;
 		float ipsi = psi/360.0f*maxrin;
 		int ip1 = (int)(ipsi);
@@ -23096,7 +23096,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  11/01/2016  4:34 PM "<<endl;
+ cout <<"  VERSION  11/02/2016  4:34 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ << " Modification time: 9/01/2016 -- 11:46:40 AM " <<  endl; // l9oQJdJNrfgEBup91
 }
 
