@@ -330,9 +330,12 @@ class SXLogoButton(QPushButton):
 		# Set style and add click event
 		self.setStyleSheet(self.customButtonStyle)
 
+		# Add ToolTip
+		self.setToolTip('Help')
+
 # ========================================================================================
 class SXPictogramButton(QPushButton):
-	def __init__(self, pictogram_file_path, parent = None):
+	def __init__(self, pictogram_name, pictogram_file_path, parent = None):
 		super(SXPictogramButton, self).__init__(parent)
 
 		# print "MRK_DEBUG: pictogram_file_path = %s" % pictogram_file_path
@@ -355,6 +358,9 @@ class SXPictogramButton(QPushButton):
 
 		# Set style and add click event
 		self.setStyleSheet(self.customButtonStyle)
+
+		# Add tooltipp
+		self.setToolTip('{0}{1}'.format(pictogram_name[0].upper(), pictogram_name[1:]))
 
 class SXMenuItemBtnAreaWidget(QWidget):
 	def __init__(self, sxconst_set, sxcmd_category_list, sxinfo, parent = None):
@@ -433,7 +439,7 @@ class SXMenuItemBtnAreaWidget(QWidget):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
 		sxmenu_item_btn_pictograph_file_path = "{0}sxgui_pictograph_{1}.png".format(get_image_directory(), sxmenu_item.name.replace("sxc_", ""))
-		sxmenu_item.btn = SXPictogramButton(sxmenu_item_btn_pictograph_file_path, self)
+		sxmenu_item.btn = SXPictogramButton(sxmenu_item.name.replace("sxc_", ""), sxmenu_item_btn_pictograph_file_path, self)
 		cur_widget_counts = sxmenu_item_btn_subarea_widget.layout().count()
 		sxmenu_item_btn_subarea_widget.layout().addWidget(sxmenu_item.btn, cur_widget_counts // 2, cur_widget_counts % 2)
 
