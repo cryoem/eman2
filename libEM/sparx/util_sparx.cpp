@@ -5277,11 +5277,11 @@ EMData* Util::Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr,
 	float *dout = out->get_data();
 	for (int i=0; i<npsi; i++) {
 		float psi = startpsi + i*delta;
-		while( psi > 360.0f )  psi -= 360.0f;
+		while( psi >= 360.0f )  psi -= 360.0f;
 		float ipsi = psi/360.0f*maxrin;
 		int ip1 = (int)(ipsi);
 		float dpsi = ipsi-ip1;
-		dout[i]=static_cast<float>(q[ip1] + dpsi*(q[ip1+1]-q[ip1]));
+		dout[i]=static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
 	}
 	free(q);
 	return out;
