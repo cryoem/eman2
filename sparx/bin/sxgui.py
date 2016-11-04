@@ -2266,6 +2266,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxgui_unblur"; sxcmd.mode = ""; sxcmd.label = "Drift Assessment"; sxcmd.short_info = "Assess micrographs based on drift estimation produced by Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie_micrograph"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Shift files"; token.help = "A wild card * can be used to process multiple shift files. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_shift_list_file"; token.key_prefix = ""; token.label = "Input shift list file"; token.help = "Extension of input shift list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "txt"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
