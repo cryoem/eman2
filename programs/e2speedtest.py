@@ -60,6 +60,7 @@ improved with time."""
 
 	parser.add_argument("--slow",action="store_true",help="rtf_slow alignment",default=False)
 	parser.add_argument("--best",action="store_true",help="rtf_best alignment",default=False)
+	parser.add_argument("--old",action="store_true",help="old rtf+refine aligner",default=False)
 	parser.add_argument("--low",action="store_true",help="low level test",default=False)
 	parser.add_argument("--size",type=int,help="Size of particles, 192 default for comparisons",default=192)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -169,10 +170,12 @@ so in most cases it is not dealt with.'
 				tmp = data[i].align('rtf_best', data[j], {"flip":None, "maxshift":SIZE/8})
 			elif options.slow:
 				tmp = data[i].align('rtf_slow', data[j], {"flip":None, "maxshift":SIZE/8})
-			else:
+			elif options.old:
 				tmp = data[i].align('rotate_translate_flip', data[j], {})
 				data[i].del_attr("xform.align2d")
 				tmp2 = data[i].align('refine',data[j],{"verbose":0,"xform.align2d":tmp.get_attr("xform.align2d")},"ccc",{})
+			else:
+				tmp = data[i].align('rotate_translate_tree', data[j], {"flip":True})
 
 			if j%5 == 0:
 				sys.stdout.write('.')
@@ -194,6 +197,15 @@ so in most cases it is not dealt with.'
 		print 'An Intel Core i7-3960X 3.3Ghz SF --------------------------------'
 
 	print '\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0))
+	
+	try:
+		for l in file("/proc/cpuinfo","r"):
+			if "model name" in l: break
+		cpu=l.split(":")[1].strip()
+	except: cpu="unknown"
+		
+	out=file("speedtest_result.txt","a")
+	out.write("speed: {}\tsize: {}\tOS: {}\tCPU: {}\n".format(2.3/tms.mean(),SIZE,get_platform(),cpu))
 #	print '\nThis represents %1.2f (RTFAlign+Refine)/sec\n' % (5.0 * (NTT - 5.0) / ti)
 
 if __name__ == "__main__":
