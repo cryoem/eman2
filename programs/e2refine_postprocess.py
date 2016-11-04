@@ -57,7 +57,7 @@ def main():
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, auto or none). default=none",default="none")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
-	parser.add_argument("--tophat",type=str,default=False,help="'global' or 'local'. Final Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc.py results")
+	parser.add_argument("--tophat",type=str,default=None,help="'global' or 'local'. Final Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc.py results")
 	parser.add_argument("--ampcorrect",choices=['strucfac', 'flatten','none'],default="strucfac",help="Will perform amplitude correction via the specified method. The default choice is strucfac.")
 	parser.add_argument("--ncmult",type=float,default=1.05,help="Specify how much to multiply noise cutoff during flattening amplitude correction. Default is 1.05.")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing.")
@@ -364,7 +364,9 @@ def main():
 			if options.sym=="c1" : symopt=""
 			else: symopt="--sym {}".format(options.sym)
 			
-			cmd="e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt)
+			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt))
+			run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt))
+			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt))
 						
 			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 		else:

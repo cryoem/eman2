@@ -202,7 +202,7 @@ def main():
 	if options.verbose: print "Boxsize -> {}, padding to {}".format(boxsize,pad)
 		
 	# a pair of reconstructors. we will then simultaneously reconstruct in the pair, and use each to decide on the best target for each particle
-	recon=[Reconstructors.get("fourier",{"size":[pad,pad,pad],"sym":sym,"mode":"gauss_5"}) for i in (0,1)]
+	recon=[Reconstructors.get("fourier",{"size":[pad,pad,pad],"sym":sym,"mode":"gauss_2"}) for i in (0,1)]
 	for r in recon: r.setup()
 	
 	# We insert the first class-average (with the most particles) randomly into reconstructor 1 or 2

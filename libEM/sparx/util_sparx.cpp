@@ -2645,8 +2645,6 @@ c
 */
 EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, string cmode){
 	int nring = numr.size()/3;
-	int r1 = numr(1,1);
-	int r2 = numr(1,nring);
 	int maxPoints = numr(3,nring);
 	
 	int nx = image->get_xsize();
@@ -2676,13 +2674,11 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 		vcos[x] = cos(ang);
 	}
 
-	
-
 	float *xim  = image->get_data();
 	float* circ = out->get_data();
-	for (int r = 0; r < r2 - r1+1; r++) {
+	for (int it = 1; it <= nring; it++) {
 
-		int it = r+1;
+		//int it = r+1;
 		int inr = numr(1,it);
 
 		int iRef = numr(3,it)/div;
@@ -2706,7 +2702,6 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 			yold = 0.0f+cny2;
 			circ(3*iRef+kcirc) = bilinear(xold,yold,nx,limit,xim); // Sampling on 180 degree
 		}
-
 		int nPoints = iRef-1;
 		int mult = (maxPoints+1)/(nPoints+1);
 		for (int x = 0; x < nPoints; x++) {
@@ -5222,6 +5217,78 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 	return out;
 
 }
+
+
+
+
+
+EMData* Util::Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr, float startpsi, float delta)
+{
+
+	int   ip, jc, numr3i, numr2i, i, j;
+	float c1, c2, d1, d2;
+
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
+
+	float* circ1b = circ1->get_data();
+	float* circ2b = circ2->get_data();
+
+	double *q;
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+	 //  q - straight  = circ1 * conjg(circ2)
+
+	for (i=1;i<=nring;i++) {
+
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
+
+		q(1) += circ1b(numr2i) * circ2b(numr2i);
+
+		if (numr3i == maxrin)   q(2) += circ1b(numr2i+1) * circ2b(numr2i+1);
+		else             q(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1);
+
+		for (j=3;j<=numr3i;j=j+2) {
+			jc     = j+numr2i-1;
+
+			c1     = circ1b(jc);
+			c2     = circ1b(jc+1);
+			d1     = circ2b(jc);
+			d2     = circ2b(jc+1);
+
+			q(j)   +=  c1 * d1 + c2 * d2;
+			q(j+1) += -c1 * d2 + c2 * d1;
+		}
+	}
+
+	// straight
+	fftr_d(q,ip);
+
+	int npsi = (int)(360.0f/delta + 0.01);
+	EMData* out = new EMData();
+	out->set_size(npsi,1,1);
+	float *dout = out->get_data();
+	for (int i=0; i<npsi; i++) {
+		float psi = startpsi + i*delta;
+		while( psi >= 360.0f )  psi -= 360.0f;
+		float ipsi = psi/360.0f*maxrin;
+		int ip1 = (int)(ipsi);
+		float dpsi = ipsi-ip1;
+		dout[i]=static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+	}
+	free(q);
+	return out;
+
+}
+
 
 #undef circ1b
 #undef circ2b
@@ -23030,7 +23097,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  09/07/2016  5:24 PM "<<endl;
+ cout <<"  VERSION  11/02/2016  4:34 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ << " Modification time: 9/01/2016 -- 11:46:40 AM " <<  endl; // l9oQJdJNrfgEBup91
 }
 

@@ -282,8 +282,8 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 
 					size_t off;
 					off=data->add_complex_at_fast(i,j,k,dt*gg*w);
-//					norm[off/2]+=gg*w;		// This would use a Gaussian WEIGHT with square kernel, can't seem to get it to work better tho
-					norm[off/2]+=w;			// This would use a Gaussian KERNEL rather than WEIGHT with square kernel, can't seem to get it to work better tho
+					norm[off/2]+=gg*w;		// This would use a Gaussian WEIGHT with square kernel
+//					norm[off/2]+=w;			// This would use a Gaussian KERNEL rather than WEIGHT 
 
 #ifdef RECONDEBUG
 					std::complex<double> v1=dt*gg*w,v2=gg*w;

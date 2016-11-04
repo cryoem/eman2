@@ -45,11 +45,17 @@ try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from emapplication import EMApp
 	import IPython.lib.inputhook
+#	import IPython.lib.guisupport
 
 
 	app=EMApp()
 	IPython.lib.inputhook.enable_qt4(app)
+#	IPython.lib.guisupport.start_event_loop_qt4(app=app)
 
+	#IPython.lib.guisupport.get_app_qt4()
+	#if not IPython.lib.guisupport.is_event_loop_running_qt4():
+		#IPython.lib.guisupport.start_event_loop_qt4()
+	
 	from emimage import image_update
 
 	def ipy_on_timer():

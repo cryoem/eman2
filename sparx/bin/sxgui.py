@@ -330,9 +330,12 @@ class SXLogoButton(QPushButton):
 		# Set style and add click event
 		self.setStyleSheet(self.customButtonStyle)
 
+		# Add ToolTip
+		self.setToolTip('Help')
+
 # ========================================================================================
 class SXPictogramButton(QPushButton):
-	def __init__(self, pictogram_file_path, parent = None):
+	def __init__(self, pictogram_name, pictogram_file_path, parent = None):
 		super(SXPictogramButton, self).__init__(parent)
 
 		# print "MRK_DEBUG: pictogram_file_path = %s" % pictogram_file_path
@@ -355,6 +358,9 @@ class SXPictogramButton(QPushButton):
 
 		# Set style and add click event
 		self.setStyleSheet(self.customButtonStyle)
+
+		# Add tooltipp
+		self.setToolTip('{0}{1}'.format(pictogram_name[0].upper(), pictogram_name[1:]))
 
 class SXMenuItemBtnAreaWidget(QWidget):
 	def __init__(self, sxconst_set, sxcmd_category_list, sxinfo, parent = None):
@@ -433,7 +439,7 @@ class SXMenuItemBtnAreaWidget(QWidget):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
 		sxmenu_item_btn_pictograph_file_path = "{0}sxgui_pictograph_{1}.png".format(get_image_directory(), sxmenu_item.name.replace("sxc_", ""))
-		sxmenu_item.btn = SXPictogramButton(sxmenu_item_btn_pictograph_file_path, self)
+		sxmenu_item.btn = SXPictogramButton(sxmenu_item.name.replace("sxc_", ""), sxmenu_item_btn_pictograph_file_path, self)
 		cur_widget_counts = sxmenu_item_btn_subarea_widget.layout().count()
 		sxmenu_item_btn_subarea_widget.layout().addWidget(sxmenu_item.btn, cur_widget_counts // 2, cur_widget_counts % 2)
 
@@ -2197,7 +2203,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxconst = SXconst(); sxconst.key = "radius"; sxconst.label = "Protein particle radius [pixels]"; sxconst.help = ""; sxconst.register = "-1"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "sym"; sxconst.label = "Point-group symmetry"; sxconst.help = "e.g. c1, c4, d5"; sxconst.register = "c1"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "mass"; sxconst.label = "Protein molecular mass [kDa]"; sxconst.help = ""; sxconst.register = "-1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
-		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configrations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configrations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
+		sxconst = SXconst(); sxconst.key = "config"; sxconst.label = "Imaging configurations"; sxconst.help = "a free-style string for your record. please use it to describe the set of imaging configurations used in this project (e.g. types of microscope, detector, enegy filter, abbration corrector, phase plate, and etc."; sxconst.register = "MY_MICROSCOPE"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 
 		# Store the project constant parameter set as a class data member
 		self.sxconst_set = sxconst_set
@@ -2260,6 +2266,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd = SXcmd(); sxcmd.name = "sxgui_unblur"; sxcmd.mode = ""; sxcmd.label = "Drift Assessment"; sxcmd.short_info = "Assess micrographs based on drift estimation produced by Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie_micrograph"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Shift files"; token.help = "A wild card * can be used to process multiple shift files. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_shift_list_file"; token.key_prefix = ""; token.label = "Input shift list file"; token.help = "Extension of input shift list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "txt"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
@@ -2315,18 +2322,19 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.mode = ""; sxcmd.label = "Particle Extraction"; sxcmd.short_info = "Create a particle stack from a list of micrographs and particle coordinates."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "input_micrograph_list_file"; token.key_prefix = ""; token.label = "Input micrograph list file"; token.help = "Extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "txt"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrograph name pattern"; token.help = "Please use wild cards (e.g. *) to specify the name pattern of the micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "input_coordinates_pattern"; token.key_prefix = ""; token.label = "Input coordinates name pattern"; token.help = "Please use wild cards (e.g. *) to specify a name pattern of coordinates corresponding to the micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
+		sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.mode = ""; sxcmd.label = "Particle Extraction"; sxcmd.short_info = "Windows particles from micrographs using the particles coordinates."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrograph path pattern"; token.help = "Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_coordinates_pattern"; token.key_prefix = ""; token.label = "Input coordinates path pattern"; token.help = "Specify path pattern of input coordinates files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The results will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "coordinates_format"; token.key_prefix = "--"; token.label = "Coordinate file format"; token.help = "Allowed values are 'sparx', 'eman1', 'eman2', or 'spider'. sparx, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. "; token.group = "main"; token.is_required = False; token.default = "eman1"; token.restore = "eman1"; token.type = "string"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "Particle box size [Pixels]"; token.help = "The pixel size is automatically recalculated when resample_ratio < 1.0 is used. "; token.group = "main"; token.is_required = False; token.default = "256"; token.restore = "256"; token.type = "box"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "selection_list"; token.key_prefix = "--"; token.label = "Micrograph selecting list"; token.help = "Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_micrograph"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "coordinates_format"; token.key_prefix = "--"; token.label = "Coordinate file format"; token.help = "Allowed values are 'sparx', 'eman1', 'eman2', or 'spider'. The sparx, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. "; token.group = "main"; token.is_required = False; token.default = "eman1"; token.restore = "eman1"; token.type = "string"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "box_size"; token.key_prefix = "--"; token.label = "Particle box size [Pixels]"; token.help = "The x and y dimensions of square area to be windowed. The box size after resampling is assumed when resample_ratio < 1.0. "; token.group = "main"; token.is_required = False; token.default = "256"; token.restore = "256"; token.type = "box"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "skip_invert"; token.key_prefix = "--"; token.label = "Skip invert image contrast"; token.help = "Use this option for negative staining data. By default, the image contrast is inverted for cryo data. "; token.group = "main"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "import_ctf"; token.key_prefix = "--"; token.label = "CTF parameter file"; token.help = "This file is produced by sxcter and normally called partres.txt "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "limit_ctf"; token.key_prefix = "--"; token.label = "Use CTF limit filter"; token.help = "Frequencies whose oscillation cannot be properly modeled at the current pixel size are discarded in the images with the appropriate low-pass filter. This option requires --import_ctf. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "astigmatism_error"; token.key_prefix = "--"; token.label = "Astigmatism error limit"; token.help = "Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. "; token.group = "advanced"; token.is_required = False; token.default = "360.0"; token.restore = "360.0"; token.type = "float"; sxcmd.token_list.append(token)
-		token = SXcmd_token(); token.key_base = "resample_ratio"; token.key_prefix = "--"; token.label = "Ratio between the new and original box size"; token.help = "Use values between 0. and 1. "; token.group = "advanced"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "import_ctf"; token.key_prefix = "--"; token.label = "CTER CTF parameter file"; token.help = "The file produced by sxcter and normally called partres.txt. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "limit_ctf"; token.key_prefix = "--"; token.label = "Use CTF limit filter"; token.help = "Frequencies whose oscillation can not be properly modeled at the current pixel size are discarded in the images with the appropriate low-pass filter. This option requires --import_ctf. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "astigmatism_error"; token.key_prefix = "--"; token.label = "Astigmatism error limit [Degrees]"; token.help = "Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. "; token.group = "advanced"; token.is_required = False; token.default = "360.0"; token.restore = "360.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "resample_ratio"; token.key_prefix = "--"; token.label = "Ratio between new and original pixel size"; token.help = "Use values between 0.0 and 1.0. The new pixel size is automatically recalculated when resample_ratio < 1.0 is used. "; token.group = "advanced"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "check_consistency"; token.key_prefix = "--"; token.label = "Check consistency of inputs"; token.help = "Create the text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt) "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 

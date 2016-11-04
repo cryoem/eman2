@@ -492,6 +492,7 @@ class EMSimTaskDC(JSTask):
 					t =  aligned.get_attr("xform.align2d")
 					t.invert()
 					data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
+#					print t,data[ref_idx]
 					
 			else:
 				data[ref_idx] = (ptcl.cmp(options["cmp"][0],ref[0],options["cmp"][1]),None)
@@ -814,6 +815,8 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			r[0]=r[0].process("filter.matchto",{"to":target})
 			r[0].mult(msk)											# remask after filtering
 
+#		print "Final: ",target["source_n"],",",r[0]["source_n"]
+
 		if align[0] :
 			r[0].del_attr("xform.align2d")
 			ta=r[0].align(align[0],target,align[1],alicmp[0],alicmp[1])
@@ -865,9 +868,9 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 		else :
 			ret[i]=(target.cmp(cmp[0],r[0],cmp[1]),0,0,0,1.0,False)
 
-		if verbose>2 : print ret[i][0],
+		if verbose==3 : print ret[i][0],
 
-	if verbose>2 : print ""
+	if verbose==3 : print ""
 	if verbose==2 :
 		print "Best: ",sorted([(ret[i][0],i) for i in range(len(ret))])[0]
 	return ret

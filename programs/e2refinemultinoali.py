@@ -447,7 +447,7 @@ def main():
 					classralign=db["classralign"], prefilt=db["prefilt"], para=options.parallel))
 
 				### make 3d
-				run("e2make3dpar.py --input {clsout} --sym {sym} --output {threed} {preprocess} --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_5 --threads {threads} ".format(
+				run("e2make3dpar.py --input {clsout} --sym {sym} --output {threed} {preprocess} --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_2 --threads {threads} ".format(
 				clsout=classout[s],threed=threedout[s], sym=sym, recon=db["recon"], preprocess=db["m3dpreprocess"],  m3dkeep=db["m3dkeep"], keepsig=db["m3dkeepsig"],
 				m3dpad=db["pad"],threads=options.threads, apix=db_apix))
 		#exit()

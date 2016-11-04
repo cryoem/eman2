@@ -2616,7 +2616,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 EMData* RT2DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
 
- 	vector<Dict> alis = xform_align_nbest(this_img,to,4,cmp_name,cmp_params);
+ 	vector<Dict> alis = xform_align_nbest(this_img,to,2,cmp_name,cmp_params);
 
  	Dict t;
  	Transform* tr = (Transform*) alis[0]["xform.align2d"];
@@ -2633,7 +2633,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT2DTreeAligner): nsoln must be >0"); // What was the user thinking?
 
 	int nsoln = nrsoln*2;
-	if (nrsoln<4) nsoln=12;		// we start with at least n solutions, but then gradually decrease with increasing scale
+	if (nrsoln<8) nsoln=8;		// we start with at least n solutions, but then gradually decrease with increasing scale
 	
 	// !!!!!! IMPORTANT NOTE - we are inverting the order of 'this' and 'to' here to match convention in other aligners, to compensate
 	// the Transform is inverted before being returned
@@ -2719,22 +2719,24 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				EMData *ccf=small_to->calc_ccf(stt);
 				IntPoint ml=ccf->calc_max_location_wrap();
 
-				Dict aap=t.get_params("2d");
-				aap["tx"]=(int)ml[0];
-				aap["ty"]=(int)ml[1];
-				aap["tz"]=(int)ml[2];
-				t.set_params(aap);
+// 				Dict aap=t.get_params("2d");
+// 				aap["tx"]=(int)ml[0];
+// 				aap["ty"]=(int)ml[1];
+// 				aap["tz"]=(int)ml[2];
+
+				t.set_params(Dict("tx",(int)ml[0],"ty",(int)ml[1],"tz",(int)ml[2]));
+				float sim=ccf->get_attr("maximum");
 				delete stt;
 				delete ccf;
 // 				stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));	// we have to do 1 slow transform here now that we have the translation
 // 
 // 				sim=stt->cmp("ccc",small_to);
-				float sim=ccf->get_attr("maximum");
 				
 				// could have used a priority queue, but would have required more infrastructure
 				int worst=0;
 				// First we find the worst solution in the list of possible best solutions, or the first
 				// solution which is currently "empty"
+//printf("a\n");
 				for (int i=0; i<nsoln; i++) {
 					if (s_score[i]==1.0e24) { worst=i; break; }
 					if (s_score[i]>s_score[worst]) worst=i;
@@ -2747,7 +2749,6 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					s_xform[worst]=t;
 					//printf("%f\t%f\t%d\n",s_score[worst],s_coverage[worst],worst);
 				}
-				delete stt;
 			}
 
 			
@@ -2828,6 +2829,10 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		s_xform[i].invert();	// this is because we inverted the order of the input images above to match convention
 		d["xform.align2d"] = &s_xform[i];
 		solns.push_back(d);
+	}
+	if (verbose>1) {
+		Dict aap=s_xform[0].get_params("2d");
+		printf("Final:  %d\t%1.1f\t%1.1f\t%1.2f\n",(int)aap["mirror"],(int)aap["tx"],(int)aap["ty"],(float)aap["alpha"]);
 	}
 
 	return solns;

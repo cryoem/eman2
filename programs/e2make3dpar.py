@@ -96,7 +96,8 @@ def main():
 	parser.add_argument("--keepsig",action="store_true",default=False, dest="keepsig", help="If set, keep will be interpreted as a standard deviation coefficient instead of as a percentage.")
 	parser.add_argument("--keepabs",action="store_true",default=False, dest="keepabs", help="If set, keep will refer to the absolute quality of the class-average, not a local quality relative to other similar sized classes.")
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
-	parser.add_argument("--mode", type=str, default="gauss_5", help="Fourier reconstruction 'mode' to use. The default should not normally be changed. default='gauss_5'")
+	parser.add_argument("--sqrt_wt", action="store_true", default=False, help="Normally class-averages are weighted into the reconstruction based on the number of particles in the average. This option causes the sqrt of the number of particles to be used instead.")
+	parser.add_argument("--mode", type=str, default="gauss_2", help="Fourier reconstruction 'mode' to use. The default should not normally be changed. default='gauss_2'")
 	parser.add_argument("--noradcor", action="store_true",default=False, help="Normally a radial correction will be applied based on the --mode used. This option disables that correction.")
 	parser.add_argument("--seedmap",type=str, default = None, help="If specified this volume will be used as a starting point for the reconstruction, filling any missing values in Fourier space. experimental.")
 	parser.add_argument("--seedweight", type=float, default=1.0, help="If seedmap specified, this is how strongly the seedmap will bias existing values. 1 is default, and is equivalent to a one particle weight.")
@@ -129,10 +130,16 @@ def main():
 	print "e2make3dpar.py"
 	logger=E2init(sys.argv,options.ppid)
 
+	# update the no_wt parameter
+	if options.sqrt_wt : options.no_wt=2
+	elif options.no_wt : options.no_wt=1
+	else : options.no_wt=0
+
 	# get basic image parameters
 	tmp=EMData()
 	tmp.read_image(options.input,0,True)
-	if not options.no_wt :
+
+	if options.no_wt!=1 :
 		try:
 			n=1
 			while tmp["ptcl_repr"]==0 :
@@ -380,9 +387,11 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 			# skip any particles targeted at a different model
 			if inputmodel != None and tmp["model_id"]!=inputmodel : continue
 
-			if no_weights: elem["weight"]=1.0
+			if no_weights==1: elem["weight"]=1.0
 			else :
-				try: elem["weight"]=float(tmp["ptcl_repr"])
+				try: 
+					elem["weight"]=float(tmp["ptcl_repr"])
+					if no_weights==2 : elem["weight"]=sqrt(elem["weight"])
 				except: elem["weight"]=1.0
 				# This is bad if you have actual empty classes...
 				#if elem["weight"]<=0 :
