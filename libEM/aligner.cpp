@@ -2749,8 +2749,10 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				}
 				delete stt;
 			}
-			if (verbose>2) printf("\n");
 
+			
+			
+			
 		}
 		// Once we have our initial list of best locations, we just refine each possibility individually
 		else {
