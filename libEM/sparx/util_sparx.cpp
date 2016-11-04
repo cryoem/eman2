@@ -5271,6 +5271,7 @@ EMData* Util::Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr,
 
 	// straight
 	fftr_d(q,ip);
+
 	int npsi = (int)(360.0f/delta + 0.01);
 	EMData* out = new EMData();
 	out->set_size(npsi,1,1);
