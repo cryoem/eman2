@@ -202,129 +202,223 @@ def main():
 
 
 def create_sh_script(
-            unblur_path, input_image, output_dir,
-            input_dir, input_suffix, options
-            ):
-        """Create the sh script for starting unblur"""
-        strSh = ''
+        unblur_path, input_image, output_dir,
+        input_dir, input_suffix, options
+        ):
+    """Create the sh script for starting unblur"""
+    strSh = ''
 
-        # To make sure it is a bash script
-        strSh += '#!/bin/bash\n\n'
+    # To make sure it is a bash script
+    strSh += '#!/bin/bash\n\n'
 
-        # Export number of threads
-        strSh += 'export OMP_NUM_THREADS={:d}\n'.format(options.nr_threads)
+    # Export number of threads
+    strSh += 'export OMP_NUM_THREADS={:d}\n'.format(options.nr_threads)
 
-        # The script will abort with non-zero exit values
-        strSh += '# The script will abort with non-zero exit values\n'
-        strSh += 'set -e\n'
+    # The script will abort with non-zero exit values
+    strSh += '# The script will abort with non-zero exit values\n'
+    strSh += 'set -e\n'
 
-        # Create a file list of all files
-        strSh += '# Create a file list of all files\n'
-        strSh += 'fileList=$(ls {:s})\n'.format(
-            input_image
+    # Create a file list of all files
+    strSh += '# Create a file list of all files\n'
+    strSh += 'fileList=$(ls {:s})\n'.format(
+        input_image
+        )
+
+    # Create folders
+    strSh += '# Create folders\n'
+    strSh += 'mkdir -p {:s}/Doseuncorrected\n'.format(output_dir)
+
+    strSh += 'mkdir -p {:s}/Shift\n'.format(output_dir)
+
+    strSh += 'mkdir -p {:s}/Temp\n'.format(output_dir)
+
+    if options.filter_sum:
+        strSh += 'mkdir -p {:s}/Filtered\n'.format(output_dir)
+
+    if options.dose_filter:
+        strSh += 'mkdir -p {:s}/Dosecorrected\n'.format(output_dir)
+
+    if options.expert_mode:
+        strSh += 'mkdir -p {:s}/FRC\n\n'.format(output_dir)
+
+    # Abort script if files in Doseuncorrected already exists
+    strSh += '# Abort script if files in Doseuncorrected already exists\n'
+    strSh += 'for f in {:s}/Doseuncorrected/*\n'.format(output_dir)
+    strSh += 'do\n'
+    strSh += 'if [ -e $f ]\n'
+    strSh += 'then\n'
+    strSh += 'echo "Some files already exists, please choose another output directory"\n'
+    strSh += 'exit 1\n'
+    strSh += 'break\n'
+    strSh += 'fi\n'
+    strSh += 'done\n\n'
+
+    # Abort script if files in shift already exists
+    strSh += '# Abort script if files in shift already exists\n'
+    strSh += 'for f in {:s}/Shift/*\n'.format(output_dir)
+    strSh += 'do\n'
+    strSh += 'if [ -e $f ]\n'
+    strSh += 'then\n'
+    strSh += 'echo "Some files already exists, please choose another output directory"\n'
+    strSh += 'exit 1\n'
+    strSh += 'break\n'
+    strSh += 'fi\n'
+    strSh += 'done\n\n'
+
+    # Abort script if files in Dosecorrected already exists
+    strSh += '# Abort script if files in Dosecorrected already exists\n'
+    strSh += 'for f in {:s}/Dosecorrected/*\n'.format(output_dir)
+    strSh += 'do\n'
+    strSh += 'if [ -e $f ]\n'
+    strSh += 'then\n'
+    strSh += 'echo "Some files already exists, please choose another output directory"\n'
+    strSh += 'exit 1\n'
+    strSh += 'break\n'
+    strSh += 'fi\n'
+    strSh += 'done\n\n'
+
+    # Abort script if files in Filtered already exists
+    strSh += '# Abort script if files in Filtered already exists\n'
+    strSh += 'for f in {:s}/Filtered/*\n'.format(output_dir)
+    strSh += 'do\n'
+    strSh += 'if [ -e $f ]\n'
+    strSh += 'then\n'
+    strSh += 'echo "Some files already exists, please choose another output directory"\n'
+    strSh += 'exit 1\n'
+    strSh += 'break\n'
+    strSh += 'fi\n'
+    strSh += 'done\n\n'
+
+    # Abort script if files in FRC already exists
+    strSh += '# Abort script if files in FRC already exists\n'
+    strSh += 'for f in {:s}/FRC/*\n'.format(output_dir)
+    strSh += 'do\n'
+    strSh += 'if [ -e $f ]\n'
+    strSh += 'then\n'
+    strSh += 'echo "Some files already exists, please choose another output directory"\n'
+    strSh += 'exit 1\n'
+    strSh += 'break\n'
+    strSh += 'fi\n'
+    strSh += 'done\n\n'
+
+    # Loop over all files
+    strSh += '\nfor file in $fileList\ndo\n\n'
+
+    strSh += 'baseName=${{file%{:s}}}\n'.format(input_suffix)
+    strSh += 'baseName=${{baseName#{:s}}}\n'.format(input_dir)
+
+    # Create a temporary file to work with to prevent format issues
+    strSh += '# Create a temporary file to work with to prevent format issues\n'
+    strSh += 'e2proc3d.py $file {:s}/Temp/${{baseName}}_temp.mrc\n\n'.format(output_dir)
+
+    # Remove some temporary files that unblur makes
+    strSh += '# Remove some temporary files that unblur makes\n'
+    strSh += 'for f in .UnBlur*\n'
+    strSh += 'do\n'
+    strSh += 'if [ -e $f ]\n'
+    strSh += 'then\n'
+    strSh += 'rm .UnBlur*\n'
+    strSh += 'break\n'
+    strSh += 'else\n'
+    strSh += 'true\n'
+    strSh += 'fi\n'
+    strSh += 'done\n\n'
+
+    # Start Unblur without dose correction
+    strSh += '{:s} << eof\n'.format(unblur_path)
+
+    # Input File
+    strSh += '{:s}/Temp/${{baseName}}_temp.mrc\n'.format(output_dir)
+    # Number of Frames
+    strSh += '{:d}\n'.format(options.nr_frames)
+    # Sum File
+    strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}.mrc\n'.format(
+        output_dir,
+        options.sum_suffix
+        )
+    # Shift File
+    strSh += '{:s}/Shift/${{baseName}}{:s}.txt\n'.format(
+        output_dir,
+        options.shift_suffix
+        )
+    # Pixel Size
+    strSh += '{:f}\n'.format(options.pixel_size)
+
+    # Say no to Dose Filtering
+    strSh += 'NO\n'
+
+    if options.save_frames:
+        # Say yes to Save Frames
+        strSh += 'YES\n'
+        # Frames file
+        strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}{:s}.mrc\n'.format(
+            output_dir,
+            options.sum_suffix,
+            options.frames_suffix
             )
+    else:
+        # Say no to Save Frames
+        strSh += 'NO\n'
 
-        # Create folders
-        strSh += '# Create folders\n'
-        strSh += 'mkdir -p {:s}/Doseuncorrected\n'.format(output_dir)
+    if options.expert_mode:
+        # Say yes to Expert Mode
+        strSh += 'YES\n'
+        # FRC File
+        strSh += '{:s}/FRC/${{baseName}}{:s}.txt\n'.format(
+            output_dir,
+            options.frc_suffix
+            )
+        # Minimum Shift for initial search
+        strSh += '{:f}\n'.format(options.shift_initial)
+        # Outer Radius Shift Limit
+        strSh += '{:f}\n'.format(options.shift_radius)
+        # B-Factor to Apply
+        strSh += '{:f}\n'.format(options.b_factor)
+        # Half-Width Vertical
+        strSh += '{:d}\n'.format(options.fourier_vertical)
+        # Hald-Width Horizontal
+        strSh += '{:d}\n'.format(options.fourier_horizontal)
+        # Termination Shift Threshold
+        strSh += '{:f}\n'.format(options.shift_threshold)
+        # Maximum Iterations
+        strSh += '{:d}\n'.format(options.iterations)
+        # Restore Noise Power
+        if options.restore_noise:
+            # Say yes to Restore Noise Power
+            strSh += 'YES\n'
+        else:
+            # Say no to Restore Noise Power
+            strSh += 'NO\n'
+        # Verbose Output
+        if options.verbose:
+            # Say yes to Verbose Output
+            strSh += 'YES\n'
+        else:
+            # Say no to Verbose Output
+            strSh += 'NO\n'
+    else:
+        # Say no to Expert Mode
+        strSh += 'NO\n'
 
-        strSh += 'mkdir -p {:s}/Shift\n'.format(output_dir)
+    # Enf of file reached
+    strSh += 'eof\n\n'
 
-        strSh += 'mkdir -p {:s}/Temp\n'.format(output_dir)
+    # Remove some temporary files that unblur makes
+    strSh += 'for f in .UnBlur*\n'
+    strSh += 'do\n'
+    strSh += 'if [ -e $f ]\n'
+    strSh += 'then\n'
+    strSh += 'rm .UnBlur*\n'
+    strSh += 'break\n'
+    strSh += 'else\n'
+    strSh += 'true\n'
+    strSh += 'fi\n'
+    strSh += 'done\n\n'
 
-        if options.filter_sum:
-            strSh += 'mkdir -p {:s}/Filtered\n'.format(output_dir)
+    # =========== #
+    if options.dose_filter:
 
-        if options.dose_filter:
-            strSh += 'mkdir -p {:s}/Dosecorrected\n'.format(output_dir)
-
-        if options.expert_mode:
-            strSh += 'mkdir -p {:s}/FRC\n\n'.format(output_dir)
-
-        # Abort script if files in Doseuncorrected already exists
-        strSh += '# Abort script if files in Doseuncorrected already exists\n'
-        strSh += 'for f in {:s}/Doseuncorrected/*\n'.format(output_dir)
-        strSh += 'do\n'
-        strSh += 'if [ -e $f ]\n'
-        strSh += 'then\n'
-        strSh += 'echo "Some files already exists, please choose another output directory"\n'
-        strSh += 'exit 1\n'
-        strSh += 'break\n'
-        strSh += 'fi\n'
-        strSh += 'done\n\n'
-
-        # Abort script if files in shift already exists
-        strSh += '# Abort script if files in shift already exists\n'
-        strSh += 'for f in {:s}/Shift/*\n'.format(output_dir)
-        strSh += 'do\n'
-        strSh += 'if [ -e $f ]\n'
-        strSh += 'then\n'
-        strSh += 'echo "Some files already exists, please choose another output directory"\n'
-        strSh += 'exit 1\n'
-        strSh += 'break\n'
-        strSh += 'fi\n'
-        strSh += 'done\n\n'
-
-        # Abort script if files in Dosecorrected already exists
-        strSh += '# Abort script if files in Dosecorrected already exists\n'
-        strSh += 'for f in {:s}/Dosecorrected/*\n'.format(output_dir)
-        strSh += 'do\n'
-        strSh += 'if [ -e $f ]\n'
-        strSh += 'then\n'
-        strSh += 'echo "Some files already exists, please choose another output directory"\n'
-        strSh += 'exit 1\n'
-        strSh += 'break\n'
-        strSh += 'fi\n'
-        strSh += 'done\n\n'
-
-        # Abort script if files in Filtered already exists
-        strSh += '# Abort script if files in Filtered already exists\n'
-        strSh += 'for f in {:s}/Filtered/*\n'.format(output_dir)
-        strSh += 'do\n'
-        strSh += 'if [ -e $f ]\n'
-        strSh += 'then\n'
-        strSh += 'echo "Some files already exists, please choose another output directory"\n'
-        strSh += 'exit 1\n'
-        strSh += 'break\n'
-        strSh += 'fi\n'
-        strSh += 'done\n\n'
-
-        # Abort script if files in FRC already exists
-        strSh += '# Abort script if files in FRC already exists\n'
-        strSh += 'for f in {:s}/FRC/*\n'.format(output_dir)
-        strSh += 'do\n'
-        strSh += 'if [ -e $f ]\n'
-        strSh += 'then\n'
-        strSh += 'echo "Some files already exists, please choose another output directory"\n'
-        strSh += 'exit 1\n'
-        strSh += 'break\n'
-        strSh += 'fi\n'
-        strSh += 'done\n\n'
-
-        # Loop over all files
-        strSh += '\nfor file in $fileList\ndo\n\n'
-
-        strSh += 'baseName=${{file%{:s}}}\n'.format(input_suffix)
-        strSh += 'baseName=${{baseName#{:s}}}\n'.format(input_dir)
-
-        # Create a temporary file to work with to prevent format issues
-        strSh += '# Create a temporary file to work with to prevent format issues\n'
-        strSh += 'e2proc3d.py $file {:s}/Temp/${{baseName}}_temp.mrc\n\n'.format(output_dir)
-
-        # Remove some temporary files that unblur makes
-        strSh += '# Remove some temporary files that unblur makes\n'
-        strSh += 'for f in .UnBlur*\n'
-        strSh += 'do\n'
-        strSh += 'if [ -e $f ]\n'
-        strSh += 'then\n'
-        strSh += 'rm .UnBlur*\n'
-        strSh += 'break\n'
-        strSh += 'else\n'
-        strSh += 'true\n'
-        strSh += 'fi\n'
-        strSh += 'done\n\n'
-
-        # Start Unblur without dose correction
+        # Start Unblur with dose correction
         strSh += '{:s} << eof\n'.format(unblur_path)
 
         # Input File
@@ -332,7 +426,7 @@ def create_sh_script(
         # Number of Frames
         strSh += '{:d}\n'.format(options.nr_frames)
         # Sum File
-        strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}.mrc\n'.format(
+        strSh += '{:s}/Dosecorrected/${{baseName}}{:s}.mrc\n'.format(
             output_dir,
             options.sum_suffix
             )
@@ -344,14 +438,20 @@ def create_sh_script(
         # Pixel Size
         strSh += '{:f}\n'.format(options.pixel_size)
 
-        # Say no to Dose Filtering
-        strSh += 'NO\n'
+        # Say yes to Dose Filtering
+        strSh += 'YES\n'
+        # Exposure per Frame
+        strSh += '{:f}\n'.format(options.exposure_per_frame)
+        # Acceleration Voltage
+        strSh += '{:f}\n'.format(options.voltage)
+        # Pre Exposure
+        strSh += '{:f}\n'.format(options.pre_exposure)
 
         if options.save_frames:
             # Say yes to Save Frames
             strSh += 'YES\n'
             # Frames file
-            strSh += '{:s}/Doseuncorrected/${{baseName}}{:s}{:s}.mrc\n'.format(
+            strSh += '{:s}/Dosecorrected/${{baseName}}{:s}{:s}.mrc\n'.format(
                 output_dir,
                 options.sum_suffix,
                 options.frames_suffix
@@ -403,162 +503,62 @@ def create_sh_script(
         # Enf of file reached
         strSh += 'eof\n\n'
 
-        # Remove some temporary files that unblur makes
-        strSh += 'for f in .UnBlur*\n'
-        strSh += 'do\n'
-        strSh += 'if [ -e $f ]\n'
-        strSh += 'then\n'
-        strSh += 'rm .UnBlur*\n'
-        strSh += 'break\n'
-        strSh += 'else\n'
-        strSh += 'true\n'
-        strSh += 'fi\n'
-        strSh += 'done\n\n'
+    # Remove temporary file
+    strSh += 'rm {:s}/Temp/${{baseName}}_temp.mrc\n'.format(output_dir)
 
-        # =========== #
-        if options.dose_filter:
+    # Remove some temporary files that unblur makes
+    # Remove some temporary files that unblur makes
+    strSh += 'for f in .UnBlur*\n'
+    strSh += 'do\n'
+    strSh += 'if [ -e $f ]\n'
+    strSh += 'then\n'
+    strSh += 'rm .UnBlur*\n'
+    strSh += 'break\n'
+    strSh += 'else\n'
+    strSh += 'true\n'
+    strSh += 'fi\n'
+    strSh += 'done\n\n'
 
-            # Start Unblur with dose correction
-            strSh += '{:s} << eof\n'.format(unblur_path)
-
-            # Input File
-            strSh += '{:s}/Temp/${{baseName}}_temp.mrc\n'.format(output_dir)
-            # Number of Frames
-            strSh += '{:d}\n'.format(options.nr_frames)
-            # Sum File
-            strSh += '{:s}/Dosecorrected/${{baseName}}{:s}.mrc\n'.format(
+    if options.filter_sum:
+        # Filter Images
+        lowpass_angstrom = options.pixel_size / options.lowpass
+        highpass_angstrom = options.pixel_size / options.highpass
+        strSh += \
+            'e2proc3d.py {:s}/Doseuncorrected/${{baseName}}{:s}.mrc '.format(
                 output_dir,
                 options.sum_suffix
                 )
-            # Shift File
-            strSh += '{:s}/Shift/${{baseName}}{:s}.txt\n'.format(
-                output_dir,
-                options.shift_suffix
-                )
-            # Pixel Size
-            strSh += '{:f}\n'.format(options.pixel_size)
-
-            # Say yes to Dose Filtering
-            strSh += 'YES\n'
-            # Exposure per Frame
-            strSh += '{:f}\n'.format(options.exposure_per_frame)
-            # Acceleration Voltage
-            strSh += '{:f}\n'.format(options.voltage)
-            # Pre Exposure
-            strSh += '{:f}\n'.format(options.pre_exposure)
-
-            if options.save_frames:
-                # Say yes to Save Frames
-                strSh += 'YES\n'
-                # Frames file
-                strSh += '{:s}/Dosecorrected/${{baseName}}{:s}{:s}.mrc\n'.format(
-                    output_dir,
-                    options.sum_suffix,
-                    options.frames_suffix
-                    )
-            else:
-                # Say no to Save Frames
-                strSh += 'NO\n'
-
-            if options.expert_mode:
-                # Say yes to Expert Mode
-                strSh += 'YES\n'
-                # FRC File
-                strSh += '{:s}/FRC/${{baseName}}{:s}.txt\n'.format(
-                    output_dir,
-                    options.frc_suffix
-                    )
-                # Minimum Shift for initial search
-                strSh += '{:f}\n'.format(options.shift_initial)
-                # Outer Radius Shift Limit
-                strSh += '{:f}\n'.format(options.shift_radius)
-                # B-Factor to Apply
-                strSh += '{:f}\n'.format(options.b_factor)
-                # Half-Width Vertical
-                strSh += '{:d}\n'.format(options.fourier_vertical)
-                # Hald-Width Horizontal
-                strSh += '{:d}\n'.format(options.fourier_horizontal)
-                # Termination Shift Threshold
-                strSh += '{:f}\n'.format(options.shift_threshold)
-                # Maximum Iterations
-                strSh += '{:d}\n'.format(options.iterations)
-                # Restore Noise Power
-                if options.restore_noise:
-                    # Say yes to Restore Noise Power
-                    strSh += 'YES\n'
-                else:
-                    # Say no to Restore Noise Power
-                    strSh += 'NO\n'
-                # Verbose Output
-                if options.verbose:
-                    # Say yes to Verbose Output
-                    strSh += 'YES\n'
-                else:
-                    # Say no to Verbose Output
-                    strSh += 'NO\n'
-            else:
-                # Say no to Expert Mode
-                strSh += 'NO\n'
-
-            # Enf of file reached
-            strSh += 'eof\n\n'
-
-        # Remove temporary file
-        strSh += 'rm {:s}/Temp/${{baseName}}_temp.mrc\n'.format(output_dir)
-
-        # Remove some temporary files that unblur makes
-        # Remove some temporary files that unblur makes
-        strSh += 'for f in .UnBlur*\n'
-        strSh += 'do\n'
-        strSh += 'if [ -e $f ]\n'
-        strSh += 'then\n'
-        strSh += 'rm .UnBlur*\n'
-        strSh += 'break\n'
-        strSh += 'else\n'
-        strSh += 'true\n'
-        strSh += 'fi\n'
-        strSh += 'done\n\n'
-
-        if options.filter_sum:
-            # Filter Images
-            lowpass_angstrom = options.pixel_size / options.lowpass
-            highpass_angstrom = options.pixel_size / options.highpass
-            strSh += \
-                'e2proc3d.py {:s}/Doseuncorrected/${{baseName}}{:s}.mrc '.format(
-                    output_dir,
-                    options.sum_suffix
-                    )
-            strSh += '{:s}/Filtered/${{baseName}}{:s}.mrc ' \
-                .format(
-                    output_dir,
-                    options.sum_suffix
-                    )
-            strSh += '--process=filter.lowpass.gauss:cutoff_freq={:f} '.format(
-                options.lowpass
-                )
-            strSh += '--process=filter.highpass.gauss:cutoff_freq={:f}\n\n' \
-                .format(
-                    options.highpass
-                    )
-
-        if options.remove_sum:
-            # Remove sum files
-            strSh += 'rm {:s}/Doseuncorrected/${{baseName}}{:s}.mrc\n'.format(
+        strSh += '{:s}/Filtered/${{baseName}}{:s}.mrc ' \
+            .format(
                 output_dir,
                 options.sum_suffix
                 )
+        strSh += '--process=filter.lowpass.gauss:cutoff_freq={:f} '.format(
+            options.lowpass
+            )
+        strSh += '--process=filter.highpass.gauss:cutoff_freq={:f}\n\n' \
+            .format(
+                options.highpass
+                )
 
-        # Done
-        strSh += 'done\n\n'
+    if options.remove_sum:
+        # Remove sum files
+        strSh += 'rm {:s}/Doseuncorrected/${{baseName}}{:s}.mrc\n'.format(
+            output_dir,
+            options.sum_suffix
+            )
 
-        # Remove temp folder
-        strSh += 'rm -r {:s}/Temp\n'.format(output_dir)
+    # Done
+    strSh += 'done\n\n'
 
-        strSh += 'echo "All done!"'
+    # Remove temp folder
+    strSh += 'rm -r {:s}/Temp\n'.format(output_dir)
 
-        # Write Output
-        with open('{:s}/scriptUnblur.sh'.format(output_dir), 'w') as f:
-            f.write(strSh)
+    strSh += 'echo "All done!"'
+
+    # Write Output
+    with open('{:s}/scriptUnblur.sh'.format(output_dir), 'w') as f:
+        f.write(strSh)
 
 if __name__ == '__main__':
     main()
