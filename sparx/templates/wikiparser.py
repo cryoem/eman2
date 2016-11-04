@@ -96,6 +96,7 @@ def construct_keyword_dict():
 	keyword_dict["--binary_mask"]                 = SXkeyword_map(0, "")               # --binary_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--symmetrize"]                  = SXkeyword_map(0, "")               # --symmetrize (contains keyworkd '--sym' but this should be bool type)
 	keyword_dict["input_micrograph_list_file"]    = SXkeyword_map(0, "txt")            # input_micrograph_list_file (contains keyworkd 'input_micrograph_list' but this should be parameters type)
+	keyword_dict["input_shift_list_file"]    = SXkeyword_map(0, "txt")            # input_shift_list_file (contains keyworkd 'input_shift_list' but this should be parameters type)
 	keyword_dict["isac_directory"]                = SXkeyword_map(0, "directory")      # isac_directory (contains keyworkd 'directory' but this should be directory type)
 	keyword_dict["--single_stack_output"]         = SXkeyword_map(0, "bool")           # --single_stack_output (contains keyworkd 'output' but this should be bool type)
 	keyword_dict["--hardmask"]                    = SXkeyword_map(0, "bool")           # --hardmask (contains keyworkd 'mask' but this should be bool type)
