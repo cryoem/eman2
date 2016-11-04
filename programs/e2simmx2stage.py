@@ -92,7 +92,8 @@ def main():
 
 		E2progress(E2n,0.001)
 		# compute the reference self-similarity matrix
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+#		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_tree --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
 		if options.prefilt : cmd+=" --prefilt"
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print "executing ",cmd

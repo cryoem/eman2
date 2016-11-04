@@ -187,7 +187,7 @@ not need to specify any of the following other than the ones already listed abov
 #	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=15, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--simalign",type=str,help="Default=auto. The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_flip")
 	parser.add_argument("--simaligncmp",type=str,help="Default=auto. Name of the aligner along with its construction arguments",default=None)
-	parser.add_argument("--simralign",type=str,help="Default=auto. The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
+	parser.add_argument("--simralign",type=str,help="Default=auto. The name and parameters of the second stage aligner which refines the results of the first alignment", default="auto")
 	parser.add_argument("--simraligncmp",type=str,help="Default=auto. The name and parameters of the comparitor used by the second stage aligner.",default=None)
 	parser.add_argument("--simcmp",type=str,help="Default=auto. The name of a 'cmp' to be used in comparing the aligned images", default=None)
 	parser.add_argument("--simmask",type=str,help="Default=auto. A file containing a single 0/1 image to apply as a mask before comparison but after alignment", default=None)
@@ -205,7 +205,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--classiter", type=int, help="Default=auto. The number of iterations to perform.",default=-1)
 	parser.add_argument("--classalign",type=str,default="rotate_translate_flip",help="Default=auto. If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.")
 	parser.add_argument("--classaligncmp",type=str,help="Default=auto. This is the name and parameters of the comparitor used by the fist stage aligner.",default=None)
-	parser.add_argument("--classralign",type=str,help="Default=auto. The second stage aligner which refines the results of the first alignment in class averaging.", default=None)
+	parser.add_argument("--classralign",type=str,help="Default=auto. The second stage aligner which refines the results of the first alignment in class averaging.", default="auto")
 	parser.add_argument("--classraligncmp",type=str,help="Default=auto. The comparitor used by the second stage aligner in class averageing.",default=None)
 	parser.add_argument("--classaverager",type=str,help="Default=auto. The averager used to generate the class averages. Default is auto.",default=None)
 	parser.add_argument("--classcmp",type=str,help="Default=auto. The name and parameters of the comparitor used to generate similarity scores, when class averaging.", default=None)
@@ -503,7 +503,7 @@ important to use an angular step which is 90/integer.</p>")
 	if options.breaksym : options.orientgen=options.orientgen+":breaksym=1"
 
 	if options.simaligncmp==None : options.simaligncmp="ccc"
-	if options.simralign==None and options.speed<7 :
+	if options.simralign=="auto" and options.speed<7:
 		if options.targetres>=11.0 or options.speed>5:
 			options.simralign="refine"
 			if options.simraligncmp==None : options.simraligncmp="ccc"
@@ -515,7 +515,7 @@ important to use an angular step which is 90/integer.</p>")
 				options.simraligncmp="frc:zeromask=1:snrweight=1:minres=80:maxres={}".format(options.targetres)
 			
 		simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
-	elif options.speed==7 or options.simralign.lower()=="none" :
+	elif options.speed==7 or options.simralign.lower()==None or options.simralign.lower()=="none":
 		simralign=" "
 	else: simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
 
@@ -534,7 +534,7 @@ important to use an angular step which is 90/integer.</p>")
 	if options.classaligncmp==None :
 		options.classaligncmp="ccc"
 
-	if options.classralign==None:
+	if options.classralign=="auto" :
 		if options.targetres>15 or not hasctf or options.speed>5:
 			options.classralign="refine"
 			if options.classraligncmp==None : options.classraligncmp="ccc"
@@ -542,7 +542,7 @@ important to use an angular step which is 90/integer.</p>")
 			options.classralign="refine"
 			if options.classraligncmp==None : options.classraligncmp="frc:snrweight=1:zeromask=1:minres=80:maxres={}".format(options.targetres)
 		classralign="--ralign {ralign} --raligncmp {raligncmp}".format(ralign=options.classralign,raligncmp=options.classraligncmp)
-	elif options.classralign.lower()=="none":
+	elif options.classralign.lower()==None or  options.classralign.lower()=="none":
 		classralign=" "
 	else: classralign="--ralign {ralign} --raligncmp {raligncmp}".format(ralign=options.classralign,raligncmp=options.classraligncmp)
 

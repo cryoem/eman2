@@ -2828,6 +2828,10 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		d["xform.align2d"] = &s_xform[i];
 		solns.push_back(d);
 	}
+	if (verbose>1) {
+		Dict aap=s_xform[0].get_params("2d");
+		printf("Final:  %d\t%1.1f\t%1.1f\t%1.2f\n",(int)aap["mirror"],(int)aap["tx"],(int)aap["ty"],(float)aap["alpha"]);
+	}
 
 	return solns;
 }
