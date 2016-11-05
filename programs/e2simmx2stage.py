@@ -89,16 +89,17 @@ def main():
 
 	if options.align=="rotate_translate_tree" :
 		options.shrink=None
-		options.shrinks1=1
+		options.shrinks1=""
 		print "Note: shrinking disabled with rotate_translate_tree alignment"
+	else: options.shrinks1="--shrink %d"%options.shrinks1
 
 	if not options.finalstage :
 		############### Step 1 - classify the reference images
 
 		E2progress(E2n,0.001)
 		# compute the reference self-similarity matrix
-#		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_tree --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+#		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_tree --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
 		if options.prefilt : cmd+=" --prefilt"
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print "executing ",cmd
@@ -167,7 +168,7 @@ def main():
 		E2progress(E2n,0.15)
 		############### Step 2 - classify the particles against the averaged references
 		print "First stage particle classification"
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s  --cmp=%s  --saveali --force --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
+		cmd="e2simmx.py %s %s %s %s --align=%s --aligncmp=%s  --cmp=%s  --saveali --force --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
 			options.align,options.aligncmp,options.cmp, options.verbose-1)
 		if options.prefilt : cmd+=" --prefilt"
 		if options.ralign!=None : cmd+=" --ralign=%s --raligncmp=%s"%(options.ralign,options.raligncmp)
