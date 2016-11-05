@@ -87,7 +87,7 @@ def main():
 
 	print "%d references, using %d stage 1 averaged references"%(clen,clen_stg1)
 
-	if align=="rotate_translate_tree" :
+	if options.align=="rotate_translate_tree" :
 		options.shrink=None
 		options.shrinks1=1
 		print "Note: shrinking disabled with rotate_translate_tree alignment"
