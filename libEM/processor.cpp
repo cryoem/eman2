@@ -10061,7 +10061,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		float phaseConstx  = -2*pi*xshift/ny ;
 		float k1= cos(phaseConstx); float k2= sin(phaseConstx);
 		float k3= 1.0/k1; float k4= k2/k1; // that is 1/cos and tan()
-
+		int nxy=nx*ny;
+		
 		for (int kyN = 0; kyN < ny; kyN++) {
 			int kyNew = kyN;
 			if (kyN>=nx/2) kyNew=kyN-ny;  // Step 0		Unalias
@@ -10130,6 +10131,10 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 //				  float WUL = dkxUpper*dkyLower	 ;// WLL(dkxLower,dkyLower)
 //				  float WUU = dkxUpper*dkyUpper	 ;//  etc
 //				  tempW = WLL  +  WLU + WUL +  WUU ;
+					
+					// Added by steve. MAJOR limit checking issues here! Hope this doesn't cause any other problems
+			if (kLL<0||kUL<0||kLU<0||kUU<0||kLL>=nxy||kUL>=nxy||kLU>=nxy||kUU>=nxy) continue;
+				//printf("%d %d %d %d\n",kLL,kUL,kLU,kUU);
 
 				  //			Step 5	  Assign Real, then Imaginary Values
 				  tempR = Util::bilinear_interpolate(src_data[kLL],src_data[kUL], src_data[kLU], src_data[kUU],dkxUpper,dkyUpper);//
