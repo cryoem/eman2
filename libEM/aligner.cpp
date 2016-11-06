@@ -2652,7 +2652,10 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	}
 	
 	int verbose = params.set_default("verbose",0);
+	int maxshift = params.set_default("maxshift",-1);
 	int doflip = params.set_default("doflip",1);
+	float maxres = params.set_default("maxres",-1);
+	if (maxres<0.1) maxres=0.1;
 
 	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_to->get_xsize()!=base_to->get_ysize()+2 ) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images with even numbered box sizes");
 
@@ -2661,6 +2664,8 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 	float apix=(float)this_img->get_attr("apix_x");
 	int ny=this_img->get_ysize();
+	if (maxshift<0) maxshift=ny*3/8;
+	float maxs = ny*apix/maxres;
 
 //	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
 
@@ -2684,11 +2689,13 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,ss+2,ss));
 		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,ss+2,ss));
 		small_this->process_inplace("xform.fourierorigin.tocorner");					// after clipping back to canonical form
+		float cut2=0.33*ny;
+		if (maxs<cut2) cut2=maxs;
 		small_this->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",3));
-		small_this->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
+		small_this->process_inplace("filter.lowpass.gauss",Dict("cutoff_pixels",cut2));
 		small_to->process_inplace("xform.fourierorigin.tocorner");
 		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",3));
-		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
+		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_pixels",cut2));
 		
 		// This is a solid estimate for very complete searching
 		float astep = 360.0/int(M_PI/atan(1.25/ss));		// Decent angular step in degrees
@@ -2717,7 +2724,23 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				// somewhat strangely, rotations are actually much more expensive than FFTs, so we use a CCF for translation
 				EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));
 				EMData *ccf=small_to->calc_ccf(stt);
-				IntPoint ml=ccf->calc_max_location_wrap();
+
+				int lmaxs=maxshift/ss;
+				IntPoint ml(0,0,0);
+				float sim=ccf->get_attr("minimum");
+				for (int y=-lmaxs; y<=lmaxs; y++) {
+					for (int x=-lmaxs; x<=lmaxs; x++) {
+						float v=ccf->get_value_at_wrap(x,y);
+						if (v>sim) {
+							sim=v;
+							ml[0]=x;
+							ml[1]=y;
+							ml[2]=0;
+						}
+					}
+				}
+
+//				IntPoint ml=ccf->calc_max_location_wrap();
 
 // 				Dict aap=t.get_params("2d");
 // 				aap["tx"]=(int)ml[0];
@@ -2725,7 +2748,6 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 // 				aap["tz"]=(int)ml[2];
 
 				t.set_params(Dict("tx",(int)ml[0],"ty",(int)ml[1],"tz",(int)ml[2]));
-				float sim=ccf->get_attr("maximum");
 				delete stt;
 				delete ccf;
 // 				stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));	// we have to do 1 slow transform here now that we have the translation

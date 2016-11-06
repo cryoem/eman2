@@ -1708,10 +1708,11 @@ namespace EMAN
 			{
 				TypeDict d;
 // 				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
-// 				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 // 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
 				d.put("flip", EMObject::BOOL,"Include flip in the alignment search. Default True");
 				d.put("verbose", EMObject::INT,"Turn this on to have useful information printed to standard out.");
+				d.put("maxshift", EMObject::INT,"Maximum acceptable translation. Used only approximately.");
+ 				d.put("maxres", EMObject::FLOAT,"Maximum resolution to consider when full sampling is used");
 				return d;
 			}
 
