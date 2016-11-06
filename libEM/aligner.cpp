@@ -2654,10 +2654,10 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	int verbose = params.set_default("verbose",0);
 	int maxshift = params.set_default("maxshift",-1);
 	int doflip = params.set_default("doflip",1);
-	float maxres = params.set_default("maxres",-1);
+	float maxres = params.set_default("maxres",-1.0f);
 	if (maxres<0.1) maxres=0.1;
 
-	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_to->get_xsize()!=base_to->get_ysize()+2 ) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images with even numbered box sizes");
+	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_to->get_xsize()!=base_to->get_ysize()+2 ) throw InvalidCallException("ERROR (RT2DTreeAligner): requires cubic images with even numbered box sizes");
 
 	base_this->process_inplace("xform.fourierorigin.tocenter");		// easier to chop out Fourier subvolumes
 	base_to->process_inplace("xform.fourierorigin.tocenter");
