@@ -920,8 +920,13 @@ def check(options,verbose):
 			print "Warning, setting shrink to 1 does nothing. If you don't want shrinking to occur just forget the shrink argument"
 
 		if options.shrink <= 1:
-			print "Error: shrink must be greater than 1"
+			print "Error: shrink must be greater than 1 if set"
 			error = True
+
+		if options.shrink != None and options.align[:21]=="rotate_translate_tree":
+			options.shrink = None
+			print "Warning: Shrink disabled for rotate_translate_tree alignment"
+			
 
 
 	if (options.saveali):
