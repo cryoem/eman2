@@ -669,7 +669,8 @@ class boxerGauss(QtCore.QObject):
 		return
 	
 	@staticmethod
-	def do_autobox(boxer):
+	def do_autobox(micrograph,goodrefs,badrefs,apix,nthreads,params,prog=None):
+		print "ERROR: Gauss autoboxer is not yet complete. Please use another method."
 		return
 	
 aboxmodes = [ ("Local Search","auto_local",boxerLocal),("by Ref","auto_ref",boxerByRef), ("Gauss","auto_gauss",boxerGauss) ]
