@@ -2642,13 +2642,13 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	if (this_img->is_complex()) base_to=this_img->copy();
 	else {
 		base_to=this_img->do_fft();
-		base_to->process_inplace("xform.phaseorigin.tocenter");		// This was originally .tocorner, taken from RT3DTree, but I think that's probably wrong...
+		base_to->process_inplace("xform.phaseorigin.tocorner");		// This was originally .tocorner, taken from RT3DTree, but I think that's probably wrong...
 	}
 	
 	if (to->is_complex()) base_this=to->copy();
 	else {
 		base_this=to->do_fft();
-		base_this->process_inplace("xform.phaseorigin.tocenter");
+		base_this->process_inplace("xform.phaseorigin.tocorner");
 	}
 	
 	int verbose = params.set_default("verbose",0);
@@ -2709,7 +2709,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 		// This is for the first loop, we do a full search in a (normally) heavily downsampled space
 		if (sexp==5) {
-			if (verbose>1) printf("stage 1 - ang step %1.2f\n",astep);
+			if (verbose>1) printf("stage 1 - ang step %1.2f, filter %1.3f\n",astep,cut2/(apix*ny));
 			vector<Transform> transforms;
 			for (float a=0; a<359.9; a+=astep) {
 				transforms.push_back(Transform(Dict("type","2d","alpha",a,"mirror",0)));
@@ -2760,8 +2760,8 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				// solution which is currently "empty"
 //printf("a\n");
 				for (int i=0; i<nsoln; i++) {
-					if (s_score[i]==1.0e24) { worst=i; break; }
-					if (s_score[i]>s_score[worst]) worst=i;
+					if (s_score[i]==-1.0e24) { worst=i; break; }
+					if (s_score[i]<s_score[worst]) worst=i;
 				}
 
 				// If the current solution is better than the 'worst' of the previous solutions, then we
@@ -2773,14 +2773,18 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				}
 			}
 
-			
-			
+			if (verbose>2) {
+				for (int i=0; i<nsoln; i++) {
+					Dict aap=s_xform[i].get_params("2d");
+					printf("%d) %d\t%1.1f\t%1.1f\t%1.2f\n",i,(int)aap["mirror"],(float)aap["tx"],(float)aap["ty"],(float)aap["alpha"]);
+				}
+			}
 			
 		}
 		// Once we have our initial list of best locations, we just refine each possibility individually
 		else {
 			// We generate a search pattern around each existing solution
-			if (verbose>1) printf("stage 2 (%1.2f, %1.2f, %d)\n",astep,rescale,nsoln);
+			if (verbose>1) printf("stage 2 (%1.2f, %1.2f, %d) filter: %1.3f\n",astep,rescale,nsoln,cut2/(apix*ny));
 			for (int i=0; i<nsoln; i++) {
 				
 				Dict aap=s_xform[i].get_params("2d");
@@ -2812,7 +2816,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				
 				if (verbose>2) {
 					aap=s_xform[i].get_params("2d");
-					printf("%d) %d\t%1.1f\t%1.1f\t%1.2f\n",i,(int)aap["mirror"],(int)aap["tx"],(int)aap["ty"],(float)aap["alpha"]);
+					printf("%d) %d\t%1.1f\t%1.1f\t%1.2f\n",i,(int)aap["mirror"],(float)aap["tx"],(float)aap["ty"],(float)aap["alpha"]);
 				}
 			}
 		}
@@ -2854,7 +2858,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	}
 	if (verbose>1) {
 		Dict aap=s_xform[0].get_params("2d");
-		printf("Final:  %d\t%1.1f\t%1.1f\t%1.2f\n",(int)aap["mirror"],(int)aap["tx"],(int)aap["ty"],(float)aap["alpha"]);
+		printf("Final:  %d\t%1.1f\t%1.1f\t%1.2f\n",(int)aap["mirror"],(float)aap["tx"],(float)aap["ty"],(float)aap["alpha"]);
 	}
 
 	return solns;
