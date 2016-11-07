@@ -26,6 +26,8 @@
 from sys import argv
 from os import mkdir, path, system, remove, rmdir
 from glob import glob
+from numpy import genfromtxt
+import numpy
 import time
 import subprocess
 import global_def
@@ -38,6 +40,7 @@ def main():
     # Parse the Options
     progname = path.basename(argv[0])
     usage = progname + """ unblur input_image output
+    --input_micrograph_list_file
     --nr_frames=nr_frames
     --pixel_size=pixel_size
     --skip_dose_filter
@@ -80,6 +83,7 @@ def main():
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
+    parser.add_option('--input_micrograph_list_file',         type='str',          default='',    help=SUPPRESS_HELP)
     parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
     parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=SUPPRESS_HELP)
@@ -153,10 +157,13 @@ def main():
     # If there is more then one entry: the suffix is the last one.
     # Otherwhise it needs to be .mrc
     if len(input_name) >= 2:
-        input_suffix = input_name[-1]
+        if input_name[-1] == '':
+            input_suffix = '.mrc'
+        else:
+            input_suffix = input_name[-1]
     else:
         input_suffix = '.mrc'
-
+    print(input_suffix)
 
     # Get the input directory
     if len(input_split) != 1:
@@ -209,6 +216,8 @@ def main():
 
     if not options.unblur_ready:
         # Remove temp folder
+        for entry in glob('{0}/*'.format(temp_path)):
+            remove(entry)
         rmdir(temp_path)
 
     print('All Done!')
@@ -238,6 +247,26 @@ def run_unblur(
     if options.save_frames:
         frames_list = []
 
+    # If micrograph list is provided just process the images in the list
+    mic_list = options.input_micrograph_list_file
+    if mic_list:
+        # Import list file
+        try:
+            set_selection = genfromtxt(mic_list, dtype=None)
+        except TypeError:
+            ERROR('no entrys in list file {0}'.format(mic_list), 1)
+        # List of files which are in pattern and list
+        file_list = [
+                entry for entry in file_list \
+                if entry[len(input_dir):] in set_selection and \
+                path.exists(entry)
+                ]
+        # If no match is there abort
+        if len(file_list) == 0:
+            ERROR(
+                'no files in {0} matched the file pattern:\n'.format(mic_list),
+                1
+                )
     # Get the number of files
     nr_files = len(file_list)
 
@@ -259,19 +288,26 @@ def run_unblur(
 
         # Get the output names
         file_name = inputfile[len(input_dir):-len(input_suffix)]
+        print(inputfile, file_name, input_suffix, input_dir)
         if options.skip_dose_filter:
             micrograph_name = '{0}/{1}{2}.mrc'.format(
                     uncorrected_path, file_name, options.sum_suffix
                     )
-            frame_name = '{0}/{1}{2}.mrc'.format(
+            frames_name = '{0}/{1}{2}.mrc'.format(
                     uncorrected_path, file_name, options.frames_suffix
                     )
         else:
             micrograph_name = '{0}/{1}{2}.mrc'.format(
                     corrected_path, file_name, options.sum_suffix
                     )
-            frame_name = '{0}/{1}{2}.mrc'.format(
+            frames_name = '{0}/{1}{2}.mrc'.format(
                     corrected_path, file_name, options.frames_suffix
+                    )
+            micrograph_name_skip = '{0}/{1}{2}.mrc'.format(
+                    uncorrected_path, file_name, options.sum_suffix
+                    )
+            frames_name_skip = '{0}/{1}{2}.mrc'.format(
+                    uncorrected_path, file_name, options.frames_suffix
                     )
         shift_name = '{0}/{1}{2}.txt'.format(
                 shift_path, file_name, options.shift_suffix
@@ -297,67 +333,30 @@ def run_unblur(
 
 
         # First build the unblur command
-        unblur_command = []
-
-        # Input file
-        unblur_command.append('{0}'.format(temp_name))
-        # Number of frames
-        unblur_command.append('{0}'.format(options.nr_frames))
-        # Sum file
-        unblur_command.append(micrograph_name)
-        # Shift file
-        unblur_command.append(shift_name)
-        # Pixel size
-        unblur_command.append('{0}'.format(options.pixel_size))
-        # Dose correction
-        if options.skip_dose_filter:
-            unblur_command.append('NO')
+        if not options.skip_dose_filter:
+            unblur_command = create_unblur_command(
+                temp_name,
+                micrograph_name,
+                shift_name,
+                frames_name,
+                options
+                )
+            unblur_command_skip = create_unblur_command(
+                temp_name,
+                micrograph_name_skip,
+                shift_name,
+                frames_name_skip,
+                options,
+                skip=True
+                )
         else:
-            unblur_command.append('YES')
-            # Exposure per frame
-            unblur_command.append('{0}'.format(options.exposure_per_frame))
-            # Acceleration voltage
-            unblur_command.append('{0}'.format(options.voltage))
-            # Pre exposure
-            unblur_command.append('{0}'.format(options.pre_exposure))
-        # Save frames
-        if not options.save_frames:
-            unblur_command.append('NO')
-        else:
-            unblur_command.append('YES')
-            # Frames output
-            unblur_command.append('{0}'.format(frame_name))
-        # Expert mode
-        if not options.expert_mode:
-            unblur_command.append('NO')
-        else:
-            unblur_command.append('YES')
-            # FRC file
-            unblur_command.append('{0}'.format(frc_name))
-            # Minimum shift for initial search
-            unblur_command.append('{0}'.format(options.shift_initial))
-            # Outer radius shift limit
-            unblur_command.append('{0}'.format(options.shift_radius))
-            # B-Factor to Apply
-            unblur_command.append('{0}'.format(options.b_factor))
-            # Half-width vertical
-            unblur_command.append('{0}'.format(options.fourier_vertical))
-            # Half-width horizontal
-            unblur_command.append('{0}'.format(options.fourier_horizontal))
-            # Termination shift threshold
-            unblur_command.append('{0}'.format(options.shift_threshold))
-            # Maximum iterations
-            unblur_command.append('{0}'.format(options.iterations))
-            # Restore noise power
-            if options.dont_restore_noise:
-                unblur_command.append('NO')
-            else:
-                unblur_command.append('YES')
-            # Verbose output
-            if options.verbose:
-                unblur_command.append('YES')
-            else:
-                unblur_command.append('NO')
+            unblur_command = create_unblur_command(
+                temp_name,
+                micrograph_name,
+                shift_name,
+                frames_name,
+                options
+                )
 
 
         # Export the number of threads
@@ -387,21 +386,48 @@ def run_unblur(
             e2proc3d_command = r' '.join(e2proc3d_command)
         export_threads_command = r' '.join(export_threads_command)
         unblur_command = r'\n'.join(unblur_command)
+        if not options.skip_dose_filter:
+            unblur_command_skip = r'\n'.join(unblur_command_skip)
 
         # Build full command
         if not options.unblur_ready:
-            full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
-                    export_threads_command,
-                    e2proc3d_command,
-                    unblur_command,
-                    unblur_path
-                    )
+            if not options.skip_dose_filter:
+                full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
+                        export_threads_command,
+                        e2proc3d_command,
+                        unblur_command,
+                        unblur_path
+                        )
+                full_command_skip = r'{0}; echo "{1}" | {2}'.format(
+                        export_threads_command,
+                        unblur_command_skip,
+                        unblur_path
+                        )
+            else:
+                full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
+                        export_threads_command,
+                        e2proc3d_command,
+                        unblur_command,
+                        unblur_path
+                        )
         else:
-            full_command = r'{0}; echo "{1}" | {2}'.format(
-                    export_threads_command,
-                    unblur_command,
-                    unblur_path
-                    )
+            if not options.skip_dose_filter:
+                full_command = r'{0}; echo "{1}" | {2}'.format(
+                        export_threads_command,
+                        unblur_command,
+                        unblur_path
+                        )
+                full_command_skip = r'{0}; echo "{1}" | {2}'.format(
+                        export_threads_command,
+                        unblur_command_skip,
+                        unblur_path
+                        )
+            else:
+                full_command = r'{0}; echo "{1}" | {2}'.format(
+                        export_threads_command,
+                        unblur_command,
+                        unblur_path
+                        )
 
         
         # Remove temp unblur files
@@ -411,11 +437,29 @@ def run_unblur(
        
         with open(log_name, 'w') as f:
             # Execute Command
-            subprocess.Popen(
-                [full_command], shell=True, 
-                stdout=f,
-                stderr=subprocess.PIPE
-                ).wait()
+            if not options.skip_dose_filter:
+                subprocess.Popen(
+                    [full_command], shell=True, 
+                    stdout=f,
+                    stderr=subprocess.PIPE
+                    ).wait()
+
+                # Remove temp unblur files
+                temp_unblur_files = glob('.UnBlur*')
+                for entry in temp_unblur_files:
+                    remove(entry)
+        
+                subprocess.Popen(
+                    [full_command_skip], shell=True, 
+                    stdout=f,
+                    stderr=subprocess.PIPE
+                    ).wait()
+            else:
+                subprocess.Popen(
+                    [full_command], shell=True, 
+                    stdout=f,
+                    stderr=subprocess.PIPE
+                    ).wait()
 
         # Remove temp unblur files
         temp_unblur_files = glob('.UnBlur*')
@@ -464,6 +508,81 @@ def run_unblur(
         with open('{0}/unblur_frames.txt'.format(output_dir), 'w') as f:
             for entry in sorted(frames_list):
                 f.write('{0}\n'.format(entry))
+
+
+def create_unblur_command(
+        temp_name,
+        micrograph_name,
+        shift_name,
+        frames_name,
+        options,
+        skip=False
+        ):
+
+    # Command list
+    unblur_command = []
+
+    # Input file
+    unblur_command.append('{0}'.format(temp_name))
+    # Number of frames
+    unblur_command.append('{0}'.format(options.nr_frames))
+    # Sum file
+    unblur_command.append(micrograph_name)
+    # Shift file
+    unblur_command.append(shift_name)
+    # Pixel size
+    unblur_command.append('{0}'.format(options.pixel_size))
+    # Dose correction
+    if options.skip_dose_filter or skip:
+        unblur_command.append('NO')
+    else:
+        unblur_command.append('YES')
+        # Exposure per frame
+        unblur_command.append('{0}'.format(options.exposure_per_frame))
+        # Acceleration voltage
+        unblur_command.append('{0}'.format(options.voltage))
+        # Pre exposure
+        unblur_command.append('{0}'.format(options.pre_exposure))
+    # Save frames
+    if not options.save_frames:
+        unblur_command.append('NO')
+    else:
+        unblur_command.append('YES')
+        # Frames output
+        unblur_command.append('{0}'.format(frames_name))
+    # Expert mode
+    if not options.expert_mode:
+        unblur_command.append('NO')
+    else:
+        unblur_command.append('YES')
+        # FRC file
+        unblur_command.append('{0}'.format(frc_name))
+        # Minimum shift for initial search
+        unblur_command.append('{0}'.format(options.shift_initial))
+        # Outer radius shift limit
+        unblur_command.append('{0}'.format(options.shift_radius))
+        # B-Factor to Apply
+        unblur_command.append('{0}'.format(options.b_factor))
+        # Half-width vertical
+        unblur_command.append('{0}'.format(options.fourier_vertical))
+        # Half-width horizontal
+        unblur_command.append('{0}'.format(options.fourier_horizontal))
+        # Termination shift threshold
+        unblur_command.append('{0}'.format(options.shift_threshold))
+        # Maximum iterations
+        unblur_command.append('{0}'.format(options.iterations))
+        # Restore noise power
+        if options.dont_restore_noise:
+            unblur_command.append('NO')
+        else:
+            unblur_command.append('YES')
+        # Verbose output
+        if options.verbose:
+            unblur_command.append('YES')
+        else:
+            unblur_command.append('NO')
+
+    return unblur_command
 
 
 if __name__ == '__main__':

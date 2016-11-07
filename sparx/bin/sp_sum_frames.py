@@ -23,13 +23,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-from sparx import EMData, EMUtil, Region
+from sparx import EMData, EMUtil, Region, fshift
 from sys import argv
 from os import path
 from numpy import genfromtxt
 from global_def import SPARXVERSION, ERROR
 from optparse import OptionParser
 import global_def
+import time
 
 def main():
     
@@ -82,11 +83,13 @@ def main():
 
     print('All Done!')
 
+
 def sum_images(input_name, output_name, options):
     """Translate images and sum them"""
-    
+    t1 = time.time()
     #Import the input stack
     input_stack = EMData(input_name)
+    unblur_image = EMData('unblur2.mrc')
 
     # Get the dimensions of the input stack
     nx = input_stack['nx']
@@ -125,9 +128,7 @@ def sum_images(input_name, output_name, options):
             ),
             1)
 
-    # Output volume 
-    output_stack = EMData(nx, ny, 1)
-
+    ########## Translation in fourier space using fshift
     if not options.skip_alignment:
         # Import shift file in angstrom by row 
         sx, sy = genfromtxt(options.shift_file)
@@ -144,27 +145,32 @@ def sum_images(input_name, output_name, options):
                 ):
             # Get the single frame
             frame = input_stack.get_clip(Region(0, 0, i, nx, ny, 1))
-            # Transform the frame into fourier space
             frame = frame.do_fft()
-            # If neccessary translate the images
-            if x or y:
-                frame.translate(x, y, 0.0)
-            # Inverse fourier transform
-            frame = frame.do_ift()
+            # Transform the frame into fourier space
+            frame = fshift(frame, x, y)
             # Add to a sum image
-            output_stack = output_stack + frame
-
+            if i == first:
+                output_stack = frame
+            else:
+                output_stack.add(frame)
+        output_stack = output_stack.do_ift()
     else:
         # Translate the frames and sum them
         for i in range(options.first, last): 
             # Get the single frame
-            frame = input_stack.get_clip(Region(0, 0, i, nx, ny, 1))
+            frame = input_stack.get_clip(Region(0, 0, i, round(nx), round(ny), 1))
             # Add to a sum image
             output_stack = output_stack + frame
 
     # Write output
     output_stack.write_image(output_name)
-    
+    print('fshift:', time.time()-t1)
+
+
+    diff = output_stack - unblur_image
+    diff.write_image('diff.mrc')
+
+
     global_def.BATCH = False
 
 
