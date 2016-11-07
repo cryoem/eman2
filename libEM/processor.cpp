@@ -10051,12 +10051,12 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		float theta =  t.get_rotation("2d").get("alpha"); theta=theta*pi/180;
 		float Ctheta= cos(theta);
 		float Stheta= sin(theta);
-		int mirror= t.get_mirror();		// added by steve on 11/7/16
+		int mirror= t.get_mirror()?(-1.0f):1.0f;		// added by steve on 11/7/16
 		Vec3f transNow= t.get_trans();
 		float xshift= transNow[0]; float yshift= transNow[1];
 //		printf("%f\t%f\t%f\t%d\n",theta,xshift,yshift,mirror);
 		float tempR; float tempI; // float tempW;
-		float Mid =(N+1.0)/2.0;	 // Check this
+		float Mid =N*N/4;	 // steve changed to N^2
 //		int kNy= ny; //size of the real space image
 //		int kNx= nx/2; //
 		Vec2f offset(nx/2,ny/2);
@@ -10075,7 +10075,10 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			float Sphase = sin(phase);
 			int kx,ky;
 			int IndexOut;
-			if (mirror) IndexOut = -2 + nx * (ny-kyN-1);		// Added by steve on 11/7/16
+			if (mirror==-1.0) {
+				if (kyN>0) IndexOut = -2 + nx * (ny-kyN);		// Added by steve on 11/7/16
+				else IndexOut =  -2+ nx* kyN;
+			}
 			else IndexOut =  -2+ nx* kyN;
 			for (int kxN = 0; kxN < (nx/2); kxN++) {
 				IndexOut += 2;
@@ -10088,7 +10091,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 					Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is   cos = cos cos  -sin sin
 					Sphase = Sphase*k3+ Cphase*k4;	//	 and   sin = sin  (1/ cos) + cos * tan;
 
-				if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid)) { // out of bounds
+//				if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid)) { // out of bounds
+				if (Util::square_sum(kxOld,kyOld)>=Mid) {
 						  des_data[IndexOut] = 0;
 						  des_data[IndexOut+1] = 0;
 				   continue;}
@@ -10152,7 +10156,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				  float tempIb=tempR*Sphase + tempI*Cphase;
 				  //
 				  des_data[IndexOut]   = tempRb;
-				  des_data[IndexOut+1] = tempIb;
+				  des_data[IndexOut+1] = tempIb*mirror;
 				  //printf(" kxNew = %d, kyNew = %d,kxOld = %3.2f, kyOld = %3.2f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %3.2f, tempI=%3.2f,	 \n",
 				//		kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
 			}
