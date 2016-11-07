@@ -2639,16 +2639,16 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	// the Transform is inverted before being returned
 	EMData *base_this;
 	EMData *base_to;
-	if (this_img->is_complex()) base_to=this_img->copy();
+	if (this_img->is_complex()) base_this=this_img->copy();
 	else {
-		base_to=this_img->do_fft();
-		base_to->process_inplace("xform.phaseorigin.tocorner");		// This was originally .tocorner, taken from RT3DTree, but I think that's probably wrong...
+		base_this=this_img->do_fft();
+		base_this->process_inplace("xform.phaseorigin.tocorner");		// This was originally .tocorner, taken from RT3DTree, but I think that's probably wrong...
 	}
 	
-	if (to->is_complex()) base_this=to->copy();
+	if (to->is_complex()) base_to=to->copy();
 	else {
-		base_this=to->do_fft();
-		base_this->process_inplace("xform.phaseorigin.tocorner");
+		base_to=to->do_fft();
+		base_to->process_inplace("xform.phaseorigin.tocorner");
 	}
 	
 	int verbose = params.set_default("verbose",0);
@@ -2711,7 +2711,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		if (sexp==5) {
 			if (verbose>1) printf("stage 1 - ang step %1.2f, filter %1.3f\n",astep,cut2/(apix*ny));
 			vector<Transform> transforms;
-			for (float a=0; a<359.9; a+=astep) {
+			for (float a=astep/2.0; a<359.9; a+=astep) {
 				transforms.push_back(Transform(Dict("type","2d","alpha",a,"mirror",0)));
 				transforms.push_back(Transform(Dict("type","2d","alpha",a,"mirror",1)));
 			}
@@ -2728,6 +2728,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				int lmaxs=maxshift/ss;
 				IntPoint ml(0,0,0);
 				float sim=ccf->get_attr("minimum");
+				int mir=t.get_mirror()?-1:1;
 				for (int y=-lmaxs; y<=lmaxs; y++) {
 					for (int x=-lmaxs; x<=lmaxs; x++) {
 						float v=ccf->get_value_at_wrap(x,y);
@@ -2776,7 +2777,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			if (verbose>2) {
 				for (int i=0; i<nsoln; i++) {
 					Dict aap=s_xform[i].get_params("2d");
-					printf("%d) %d\t%1.1f\t%1.1f\t%1.2f\n",i,(int)aap["mirror"],(float)aap["tx"],(float)aap["ty"],(float)aap["alpha"]);
+					printf("%d) %d\t%1.1f\t%1.1f\t%1.2f\t%1.1f\n",i,(int)aap["mirror"],(float)aap["tx"],(float)aap["ty"],(float)aap["alpha"],s_score[i]);
 				}
 			}
 			
@@ -2798,6 +2799,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 //					ccf->process_inplace("xform.phaseorigin.tocenter");
 					int bx,by;
 					float ba;
+					int mir=t.get_mirror()?-1:1;
 					int tx=aap["tx"];
 					int ty=aap["ty"];
 					for (int y=-4+ty; y<=4+ty; y++) {
@@ -2816,7 +2818,7 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				
 				if (verbose>2) {
 					aap=s_xform[i].get_params("2d");
-					printf("%d) %d\t%1.1f\t%1.1f\t%1.2f\n",i,(int)aap["mirror"],(float)aap["tx"],(float)aap["ty"],(float)aap["alpha"]);
+					printf("%d) %d\t%1.1f\t%1.1f\t%1.2f\t%1.1f\n",i,(int)aap["mirror"],(float)aap["tx"],(float)aap["ty"],(float)aap["alpha"],s_score[i]);
 				}
 			}
 		}
@@ -2852,7 +2854,12 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	for (unsigned int i = 0; i < nrsoln; ++i ) {
 		Dict d;
 		d["score"] = -s_score[i];
-		s_xform[i].invert();	// this is because we inverted the order of the input images above to match convention
+//		s_xform[i].invert();	// this is because we inverted the order of the input images above to match convention
+		if (s_xform[i].get_mirror()) {
+			Vec3f t=s_xform[i].get_trans();
+			t[0]*=-1.0;
+			s_xform[i].set_trans(t);
+		}
 		d["xform.align2d"] = &s_xform[i];
 		solns.push_back(d);
 	}

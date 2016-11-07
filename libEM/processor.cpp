@@ -10156,6 +10156,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				  float tempIb=tempR*Sphase + tempI*Cphase;
 				  //
 				  des_data[IndexOut]   = tempRb;
+//				  des_data[IndexOut+1] = tempIb;
 				  des_data[IndexOut+1] = tempIb*mirror;
 				  //printf(" kxNew = %d, kyNew = %d,kxOld = %3.2f, kyOld = %3.2f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %3.2f, tempI=%3.2f,	 \n",
 				//		kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
