@@ -10048,11 +10048,13 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 //		   so we need nx =ny+2, and ny	even
 //			  or  nx = ny+1	 and ny odd
 //		   so nx even, and 2 *(nx -ny) -3=	+- 1; So  abs(2*(nx-ny)-3) == 1
-		float theta =  t.get_rotation("eman").get("phi"); theta=theta*pi/180;
+		float theta =  t.get_rotation("2d").get("alpha"); theta=theta*pi/180;
 		float Ctheta= cos(theta);
 		float Stheta= sin(theta);
+		int mirror= t.get_mirror();		// added by steve on 11/7/16
 		Vec3f transNow= t.get_trans();
 		float xshift= transNow[0]; float yshift= transNow[1];
+//		printf("%f\t%f\t%f\t%d\n",theta,xshift,yshift,mirror);
 		float tempR; float tempI; // float tempW;
 		float Mid =(N+1.0)/2.0;	 // Check this
 //		int kNy= ny; //size of the real space image
@@ -10072,7 +10074,9 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			float Cphase = cos(phase);
 			float Sphase = sin(phase);
 			int kx,ky;
-			int IndexOut=  -2+ nx* kyN;
+			int IndexOut;
+			if (mirror) IndexOut = -2 + nx * (ny-kyN-1);		// Added by steve on 11/7/16
+			else IndexOut =  -2+ nx* kyN;
 			for (int kxN = 0; kxN < (nx/2); kxN++) {
 				IndexOut += 2;
 				// int kxNew=kxN;
