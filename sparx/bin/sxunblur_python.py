@@ -2,7 +2,7 @@
 #
 # Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 #
-# This software is issued under a joint BSD/GNU license. You may use the
+
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
 # so you are responsible for compliance with the licenses of these packages
@@ -79,7 +79,7 @@ def main():
     --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode
     --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0
     --fourier_vertical=1 --fourier_horizontal=1 --shift_threshold=0.1
-    --iterations=10 --verbose --nr_threads=2
+    --iterations=10 --verbose --nr_threads=1
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
@@ -105,7 +105,7 @@ def main():
     parser.add_option('--iterations',         type='int',          default=10,        help='maximum number of iterations')
     parser.add_option('--dont_restore_noise',      action='store_true', default=False,     help='do not restore noise power')
     parser.add_option('--verbose',            action='store_true', default=False,     help='verbose output')
-    parser.add_option('--nr_threads',         type='int',          default=2,         help='Not an unblur setting: Number of threads of the CPU unblur can use')
+    parser.add_option('--nr_threads',         type='int',          default=1,         help='Not an unblur setting: Number of threads of the CPU unblur can use. The higher the faster, but it also needs a higher amount of memory.')
     parser.add_option('--unblur_ready',        action='store_true', default=False,      help=SUPPRESS_HELP)
 
     # list of the options and the arguments
@@ -288,7 +288,6 @@ def run_unblur(
 
         # Get the output names
         file_name = inputfile[len(input_dir):-len(input_suffix)]
-        print(inputfile, file_name, input_suffix, input_dir)
         if options.skip_dose_filter:
             micrograph_name = '{0}/{1}{2}.mrc'.format(
                     uncorrected_path, file_name, options.sum_suffix
