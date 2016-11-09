@@ -137,6 +137,8 @@ def sum_images(input_name, output_name, options):
         sx /= options.pixel_size
         sy /= options.pixel_size
 
+        sy *= -1
+
         # Translate the frames and sum them
         for i, x, y in zip(
                 range(first, last), 

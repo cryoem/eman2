@@ -474,7 +474,16 @@ def run_unblur(
         percent = round(100 * (index + 1) / nr_files, 2)
         estimated_time = \
             nr_files * sum(time_list) / float(len(time_list)) / float(3600)
-        if estimated_time < 3600:
+        if estimated_time < 60:
+            print(
+                'Progress: {0:.2f}%;  Time:{1:.2f}sec/{2:.2f}sec;  Micrograph done:{3}'.format(
+                    percent,
+                    round((time.time() - time_start), 2),
+                    round(estimated_time * 3600, 2),
+                    file_name
+                    )
+                )
+        elif estimated_time < 3600:
             print(
                 'Progress: {0:.2f}%;  Time:{1:.2f}min/{2:.2f}min;  Micrograph done:{3}'.format(
                     percent,
