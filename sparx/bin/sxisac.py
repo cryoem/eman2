@@ -96,7 +96,7 @@ def main(args):
 	parser.add_option("--thld_err",              type="float",         default=0.7,        help="threshold of pixel error when checking stability: equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter ou). units - pixels. (default 0.7)")
 	parser.add_option("--indep_run",             type="int",           default=4,          help="level of m-way matching for reproducibility tests: By default, perform full ISAC to 4-way matching. Value indep_run=2 will restrict ISAC to 2-way matching and 3 to 3-way matching.  Note the number of used MPI processes requested in mpirun must be a multiplicity of indep_run. (default 4)")
 	parser.add_option("--thld_grp",              type="int",           default=10,         help="minimum size of reproducible class (default 10)")
-	parser.add_option("--n_generations",         type="int",           default=100,        help="maximum number of generations: program stops when reaching this total number of generations: (default 100)")
+	parser.add_option("--n_generations",         type="int",           default=10,         help="maximum number of generations: program stops when reaching this total number of generations: (default 10)")
 	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
 	parser.add_option("--rand_seed",             type="int",           help="random seed set before calculations: useful for testing purposes. By default, total randomness (type int)")
 	parser.add_option("--new",                   action="store_true",  default=False,      help="use new code: (default False)")
