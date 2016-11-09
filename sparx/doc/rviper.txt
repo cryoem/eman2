@@ -27,7 +27,7 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
 == Input ==
     stack:: Input images stack: A small set (<100) of class averages produced by ISAC. The images must be square and the stack must be hdf format . (default required string)
 
-    radius:: Target particle radius [Pixels]: Use the same value as in ISAC. It has to be less than half the box size. (default required int)
+    radius:: Target particle radius [Pixels]: Use the same value as in ISAC. It has to be less than half the box size. (default 29)
     sym:: Point-group symmetry: (default c1)
     iteration_start:: Starting iteration: Iteration from which to start the program. 0 means go to the most recent one. (default 0)
 

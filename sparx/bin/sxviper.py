@@ -28,7 +28,7 @@ directory		output directory name: into which the results will be written (if it 
 """
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--radius",                type="int",           help="radius of the particle: has to be less than < int(nx/2)-1 (default required int)")
+	parser.add_option("--radius",                type="int",           default=29,         help="radius of the particle: has to be less than < int(nx/2)-1 (default 29)")
 
 	parser.add_option("--xr",                    type="string",        default='0',        help="range for translation search in x direction: search is +/xr in pixels (default '0')")
 	parser.add_option("--yr",                    type="string",        default='0',        help="range for translation search in y direction: if omitted will be set to xr, search is +/yr in pixels (default '0')")
