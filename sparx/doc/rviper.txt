@@ -6,7 +6,7 @@ sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure de
 
 ''usage in command line''
 
-sxrviper.py  stack  output_directory  --ir=inner_radius  --radius=outer_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --L2threshold=0.1  --doga=doga  --ref_a=S  --sym=c1  --n_shc_runs=n_shc_runs  --n_rv_runs=n_rv_runs  --n_v_runs=n_v_runs  --outlier_percentile=outlier_percentile  --iteration_start=iteration_start  --npad=npad --fl=fl  --aa=aa  --pwreference=pwreference  --mask3D=mask3D  --moon_elimination  --criterion_name  --outlier_index_threshold_method  --angle_threshold=angle_threshold
+sxrviper.py  stack  output_directory  --radius=outer_radius  --sym=c1  --iteration_start=iteration_start  --ir=inner_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --L2threshold=0.1  --doga=doga  --n_shc_runs=n_shc_runs  --n_rv_runs=n_rv_runs  --n_v_runs=n_v_runs  --outlier_percentile=outlier_percentile  --ref_a=S  --npad=npad --fl=fl  --aa=aa  --pwreference=pwreference  --mask3D=mask3D  --moon_elimination  --criterion_name  --outlier_index_threshold_method  --angle_threshold=angle_threshold
 
 === Typical usage ===
 
@@ -29,9 +29,9 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
 
     radius:: Target particle radius [Pixels]: Use the same value as in ISAC. It has to be less than half the box size. (default required int)
     sym:: Point-group symmetry: (default c1)
+    iteration_start:: Starting iteration: Iteration from which to start the program. 0 means go to the most recent one. (default 0)
 
     * The remaining parameters are optional.  
-
     ir:: Inner rotational search radius [Pixels]: (default 1)
     rs:: Ring step size: Step between rings used for the rotational search. (default 1)
     xr:: X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default '0')
@@ -47,7 +47,6 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
     n_rv_runs:: Number of iterations: (default 10)
     n_v_runs:: Number of viper runs per cycle: (default 3)
     outlier_percentile:: Percentile for outlier: Threshold above which images are considered outliers and removed if 'percentile' is used as outlier selection method. (default 95.0)
-    iteration_start:: Starting iteration: Iteration from which to start the program. 0 means go to the most recent one. (default 0)
     ref_a:: Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
     npad:: Image padding factor: The images are padded to achieve the original size times this option. (default 2)
     fl:: Low-pass filter frequency [1/Pixel]: Using a hyperbolic tangent low-pass filter. (default 0.25)
