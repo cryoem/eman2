@@ -19598,8 +19598,8 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			vector<float> refvec(3);
 			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
 			int mkl =  ncoarse_sampling_angles +1;
+			 float max_qt = -2.0f;
 			for (int kl=0; kl<nfine_sampling_angles; kl++) {
-				 float max_qt = -2.0f;
 				 float qt = dang[3*kl]*refvec[0] + dang[3*kl+1]*refvec[1] + dang[3*kl+2]*refvec[2];
 				 max_qt = max(max_qt, qt);
 				 if (qt == max_qt) 
@@ -19615,14 +19615,15 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			vector<float> refvec(3);
 			int mkl =  ncoarse_sampling_angles + 1;
 			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
+				float max_qt = -2.0f;
 				for (int kl=0; kl<nfine_sampling_angles; kl++) {
-						float max_qt = -2.0f;
 						for (int nsm = 0; nsm < 3; nsm++)  {
 						  float vc = dang[3*nsm + 9*kl]*refvec[0] + dang[1 + 3*nsm + 9*kl]*refvec[1] + dang[2+ 3*nsm + 9*kl]*refvec[2];
 					        max_qt = max(max_qt, vc);
 				           if (vc == max_qt) 
 				    		   mkl  = kl; }	
-                          ltable.push_back(mkl); }
+				    		   				}
+                          ltable.push_back(mkl); 
 						}
 	
 	} else if( symmetry.substr(0,1) == "d")  {
@@ -19637,8 +19638,8 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			vector<float> refvec(3);
 			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
 			int mkl =  ncoarse_sampling_angles + 1;
+			float max_qt = -2.0f;
 			for (int kl=0; kl<nfine_sampling_angles; kl++) {
-					float max_qt = -2.0f;
 					for (int nsm=0; nsm<3; nsm++)  {
 						float vc1 = dvecup[3*nsm +   9*kl]*refvec[0] + dvecup[1 + 3*nsm + 9*kl]*refvec[1] + dvecup[2+ 3*nsm + 9*kl]*refvec[2];
 						float vc2 = dvecdown[3*nsm + 9*kl]*refvec[0] + dvecdown[1 +3*nsm + 9*kl]*refvec[1] + dvecdown[2+ 3*nsm + 9*kl]*refvec[2];
