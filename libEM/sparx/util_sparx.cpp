@@ -19581,6 +19581,81 @@ vector<int> Util::pickup_references(const vector<vector<float> >& refang, float 
 	return ltable;
 }
 
+vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& coarse_sampling_angles, const vector<vector<float> >& fine_sampling_angles, string symmetry) {
+
+	size_t ncoarse_sampling_angles = coarse_sampling_angles.size();
+	size_t nfine_sampling_angles = fine_sampling_angles.size();
+	const float qv = static_cast<float>( pi/180.0 );
+
+	int nsym = atoi(symmetry.substr(1,1000).c_str());//std::stoi(symmetry.substr(1,1000));
+	vector<int> ltable;
+
+	if( symmetry == "c1" ) {
+		vector<float> dang(3*nfine_sampling_angles);
+		for (int kl=0; kl<nfine_sampling_angles; kl++) getfvec(fine_sampling_angles[kl][0], fine_sampling_angles[kl][1], dang[3*kl], dang[3*kl+1], dang[3*kl+2]);
+
+		for (int n=0; n<ncoarse_sampling_angles; n++) {
+			vector<float> refvec(3);
+			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
+			int mkl =  ncoarse_sampling_angles +1;
+			for (int kl=0; kl<nfine_sampling_angles; kl++) {
+				 float max_qt = -2.0f;
+				 float qt = dang[3*kl]*refvec[0] + dang[3*kl+1]*refvec[1] + dang[3*kl+2]*refvec[2];
+				 max_qt = max(max_qt, qt);
+				 if (qt == max_qt) 
+				    mkl  = kl; }	
+                ltable.push_back(mkl); }
+	} else if( symmetry.substr(0,1) == "c")  {
+		float qt = 360.0f/nsym;
+		vector<float> dang(3*3*nfine_sampling_angles);
+		for (int kl=0; kl<nfine_sampling_angles; kl++)  {
+			for (int n = 0; n < 3; n++)  getfvec(fine_sampling_angles[kl][0]+(n-1)*qt, fine_sampling_angles[kl][1], dang[3*n + 9*kl], dang[1 + 3*n + 9*kl], dang[2 + 3*n + 9*kl]);
+		}
+		for (int n = 0; n < ncoarse_sampling_angles; n++) {
+			vector<float> refvec(3);
+			int mkl =  ncoarse_sampling_angles + 1;
+			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
+				for (int kl=0; kl<nfine_sampling_angles; kl++) {
+						float max_qt = -2.0f;
+						for (int nsm = 0; nsm < 3; nsm++)  {
+						  float vc = dang[3*nsm + 9*kl]*refvec[0] + dang[1 + 3*nsm + 9*kl]*refvec[1] + dang[2+ 3*nsm + 9*kl]*refvec[2];
+					        max_qt = max(max_qt, vc);
+				           if (vc == max_qt) 
+				    		   mkl  = kl; }	
+                          ltable.push_back(mkl); }
+						}
+	
+	} else if( symmetry.substr(0,1) == "d")  {
+		float qt = 360.0f/nsym;
+		vector<float> dvecup(3*3*nfine_sampling_angles);
+		vector<float> dvecdown(3*3*nfine_sampling_angles);
+		for (int kl=0; kl<nfine_sampling_angles; kl++)  {
+			for (int n=0; n<3; n++)  getfvec(fine_sampling_angles[kl][0]+(n-1)*qt, fine_sampling_angles[kl][1], dvecup[3*n + 9*kl], dvecup[1 + 3*n + 9*kl], dvecup[2 + 3*n + 9*kl]);
+			for (int n=0; n<3; n++)  getfvec(-fine_sampling_angles[kl][0]+(n-1)*qt, 180.0f-fine_sampling_angles[kl][1], dvecdown[3*n + 9*kl], dvecdown[1 + 3*n + 9*kl], dvecdown[2 + 3*n + 9*kl]);
+		}
+		for (int n = 0; n < ncoarse_sampling_angles; n++) {
+			vector<float> refvec(3);
+			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
+			int mkl =  ncoarse_sampling_angles + 1;
+			for (int kl=0; kl<nfine_sampling_angles; kl++) {
+					float max_qt = -2.0f;
+					for (int nsm=0; nsm<3; nsm++)  {
+						float vc1 = dvecup[3*nsm +   9*kl]*refvec[0] + dvecup[1 + 3*nsm + 9*kl]*refvec[1] + dvecup[2+ 3*nsm + 9*kl]*refvec[2];
+						float vc2 = dvecdown[3*nsm + 9*kl]*refvec[0] + dvecdown[1 +3*nsm + 9*kl]*refvec[1] + dvecdown[2+ 3*nsm + 9*kl]*refvec[2];
+						if (max_qt < max(vc1, vc2))
+						 {
+						   max_qt = max(vc1,vc2);
+						   mkl    = kl;
+						   if (vc1<vc2)
+						   mkl    =-kl;
+						  }
+						} //nsym
+					 } //kl fine loop
+				ltable.push_back(mkl);
+			} // coarse loop
+		}
+	return ltable;
+}
 
 
 #define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*(size_t)nxo]
