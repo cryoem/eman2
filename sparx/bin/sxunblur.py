@@ -84,7 +84,7 @@ def main():
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--input_micrograph_list_file',         type='str',          default='',    help='Input micrograph list file: Extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
+    parser.add_option('--input_micrograph_list_file',         type='str',          default='',    help='Input micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
     parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=SUPPRESS_HELP)
@@ -130,13 +130,12 @@ def main():
             ' the name and restart the program.', 1
             )
 
-    print('Dont forget to put this back in later')
-#    # If the output directory exists, stop the script
-#    if path.exists(output_dir):
-#        ERROR(
-#            'Output directory exists, please change' +
-#            ' the name and restart the program.', 1
-#            )
+    # If the output directory exists, stop the script
+    if path.exists(output_dir):
+        ERROR(
+            'Output directory exists, please change' +
+            ' the name and restart the program.', 1
+            )
 
     # If the input file does not exists, stop the script
     file_list = glob(input_image)
@@ -164,7 +163,6 @@ def main():
             input_suffix = input_name[-1]
     else:
         input_suffix = '.mrc'
-    print(input_suffix)
 
     # Get the input directory
     if len(input_split) != 1:
@@ -324,7 +322,9 @@ def run_unblur(
         log_name = '{0}/{1}.log'.format(
                 log_path, file_name
                 )
-
+        error_name = '{0}/{1}.err'.format(
+                log_path, file_name
+                )
         # Append the names to the lists
         micrograph_list.append('{0}{1}.mrc'.format(file_name, options.sum_suffix))
         shift_list.append(shift_name)
@@ -385,9 +385,9 @@ def run_unblur(
         if not options.unblur_ready:
             e2proc3d_command = r' '.join(e2proc3d_command)
         export_threads_command = r' '.join(export_threads_command)
-        unblur_command = r'\n'.join(unblur_command)
+        unblur_command = '\n'.join(unblur_command)
         if not options.skip_dose_filter:
-            unblur_command_skip = r'\n'.join(unblur_command_skip)
+            unblur_command_skip = '\n'.join(unblur_command_skip)
 
         # Build full command
         if not options.unblur_ready:
@@ -436,30 +436,31 @@ def run_unblur(
             remove(entry)
 
         with open(log_name, 'w') as f:
-            # Execute Command
-            if not options.skip_dose_filter:
-                subprocess.Popen(
-                    [full_command], shell=True,
-                    stdout=f,
-                    stderr=subprocess.PIPE
-                    ).wait()
+            with open(error_name, 'w') as e:
+                # Execute Command
+                if not options.skip_dose_filter:
+                    subprocess.Popen(
+                        [full_command], shell=True,
+                        stdout=f,
+                        stderr=e
+                        ).wait()
 
-                # Remove temp unblur files
-                temp_unblur_files = glob('.UnBlur*')
-                for entry in temp_unblur_files:
-                    remove(entry)
+                    # Remove temp unblur files
+                    temp_unblur_files = glob('.UnBlur*')
+                    for entry in temp_unblur_files:
+                        remove(entry)
 
-                subprocess.Popen(
-                    [full_command_skip], shell=True,
-                    stdout=f,
-                    stderr=subprocess.PIPE
-                    ).wait()
-            else:
-                subprocess.Popen(
-                    [full_command], shell=True,
-                    stdout=f,
-                    stderr=subprocess.PIPE
-                    ).wait()
+                    subprocess.Popen(
+                        [full_command_skip], shell=True,
+                        stdout=f,
+                        stderr=e
+                        ).wait()
+                else:
+                    subprocess.Popen(
+                        [full_command], shell=True,
+                        stdout=f,
+                        stderr=e
+                        ).wait()
 
         # Remove temp unblur files
         temp_unblur_files = glob('.UnBlur*')
