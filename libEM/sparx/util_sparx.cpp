@@ -20303,60 +20303,6 @@ vector<int> Util::assign_projangles_f(const vector<vector<float> >& projangles, 
 	return asg;
 }
 
-EMData* Util::fast_3d_box_convolution(EMData *input_volume, int window_size) {
-
-	int nx = input_volume->get_xsize();
-	int ny = input_volume->get_ysize();
-	int nz = input_volume->get_zsize();
-	int total_size = nx*ny*nz;
-
-	int number_of_dimensions = 1 + (ny>1) + (nz>1);
-
-	int dimension_step_base[3] = {1, nx, nx*ny};
-//	int dimension_step[number_of_dimensions]; doesn't work on Windows
-	int dimension_step[3];
-	for(int i=0; i<number_of_dimensions; ++i) dimension_step[i] = dimension_step_base[i]; 
-	EMData* output_volume = new EMData();
-	output_volume->set_size(nx, ny, nz);
-	
-	float * input_data = input_volume->get_data();
-	
-	float **sum3d = (float **)calloc(number_of_dimensions, sizeof(float*));
-	for (int i=0; i < number_of_dimensions; ++i)
-		sum3d[i] = (float *)calloc(total_size, sizeof(float));
-		
-	int half_window_size = (window_size - 1) / 2;
-	int half_window_size_minus_1 = (window_size - 1) / 2 - 1;
-	int half_window_size_plus_1 = (window_size - 1) / 2 +  1;
-
-	for (int dimension_iterator = 0; dimension_iterator < number_of_dimensions; ++dimension_iterator)
-	{
-		for (int i = 0 ; i < window_size*dimension_step[dimension_iterator]; i += dimension_step[dimension_iterator])
-		  sum3d[dimension_iterator][half_window_size*dimension_step[dimension_iterator]] += input_data[i];
-		for (int j = 0; j < dimension_step[dimension_iterator]; ++j)
-			for (int i = half_window_size*dimension_step[dimension_iterator] + j; i < (total_size - half_window_size*dimension_step[dimension_iterator]); \
-			i += dimension_step[dimension_iterator])
-			{
-				double result = \
-				(double)sum3d[dimension_iterator][i - dimension_step[dimension_iterator]] - \
-				(double)input_data[i - half_window_size_plus_1*dimension_step[dimension_iterator]] + \
-				(double)input_data[i + half_window_size*dimension_step[dimension_iterator]];
-				sum3d[dimension_iterator][i] = (float)result;
-			}
-		input_data = sum3d[dimension_iterator];
-	}
-	
-	std::copy(sum3d[number_of_dimensions - 1], sum3d[number_of_dimensions - 1] + total_size, output_volume->get_data());
-	output_volume->update();
-
-	for (int i=0; i<number_of_dimensions; ++i)
-		free(sum3d[i]);
-	free(sum3d);
-	
-	return output_volume;
-}
-
-
 vector<float> Util::get_largest_angles_in_cones(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles) {
 	int length_of_refangles = refangles.size();
 	int length_of_projangles = projangles.size();
@@ -26121,6 +26067,59 @@ EMData* Util::box_convolution(EMData* img, int w)
 	return img2;
 }
 #undef img2_ptr
+
+EMData* Util::fast_3d_box_convolution(EMData *input_volume, int window_size) {
+
+	int nx = input_volume->get_xsize();
+	int ny = input_volume->get_ysize();
+	int nz = input_volume->get_zsize();
+	int total_size = nx*ny*nz;
+
+	int number_of_dimensions = 1 + (ny>1) + (nz>1);
+
+	int dimension_step_base[3] = {1, nx, nx*ny};
+//	int dimension_step[number_of_dimensions]; doesn't work on Windows
+	int dimension_step[3];
+	for(int i=0; i<number_of_dimensions; ++i) dimension_step[i] = dimension_step_base[i]; 
+	EMData* output_volume = new EMData();
+	output_volume->set_size(nx, ny, nz);
+	
+	float * input_data = input_volume->get_data();
+	
+	float **sum3d = (float **)calloc(number_of_dimensions, sizeof(float*));
+	for (int i=0; i < number_of_dimensions; ++i)
+		sum3d[i] = (float *)calloc(total_size, sizeof(float));
+		
+	int half_window_size = (window_size - 1) / 2;
+	int half_window_size_minus_1 = (window_size - 1) / 2 - 1;
+	int half_window_size_plus_1 = (window_size - 1) / 2 +  1;
+
+	for (int dimension_iterator = 0; dimension_iterator < number_of_dimensions; ++dimension_iterator)
+	{
+		for (int i = 0 ; i < window_size*dimension_step[dimension_iterator]; i += dimension_step[dimension_iterator])
+		  sum3d[dimension_iterator][half_window_size*dimension_step[dimension_iterator]] += input_data[i];
+		for (int j = 0; j < dimension_step[dimension_iterator]; ++j)
+			for (int i = half_window_size*dimension_step[dimension_iterator] + j; i < (total_size - half_window_size*dimension_step[dimension_iterator]); \
+			i += dimension_step[dimension_iterator])
+			{
+				double result = \
+				(double)sum3d[dimension_iterator][i - dimension_step[dimension_iterator]] - \
+				(double)input_data[i - half_window_size_plus_1*dimension_step[dimension_iterator]] + \
+				(double)input_data[i + half_window_size*dimension_step[dimension_iterator]];
+				sum3d[dimension_iterator][i] = (float)result;
+			}
+		input_data = sum3d[dimension_iterator];
+	}
+	
+	std::copy(sum3d[number_of_dimensions - 1], sum3d[number_of_dimensions - 1] + total_size, output_volume->get_data());
+	output_volume->update();
+
+	for (int i=0; i<number_of_dimensions; ++i)
+		free(sum3d[i]);
+	free(sum3d);
+	
+	return output_volume;
+}
 
 double Util::bessi0(double x)
 {
