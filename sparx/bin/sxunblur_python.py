@@ -92,7 +92,7 @@ def main():
     parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='exposure per frame [e/A^2]')
     parser.add_option('--voltage',            type='float',        default=300.0,     help='accelerate voltage [kV]')
     parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='pre exposure amount [e/A^2]')
-    parser.add_option('--save_frames',        action='store_true', default=False,     help='save aligned frames')
+    parser.add_option('--save_frames',        action='store_true', default=False,     help='save aligned frames. This is only neccessary if one wants to perform movie refinement and will slow down the process.')
     parser.add_option('--frames_suffix',      type='string',       default='_frames', help=SUPPRESS_HELP)
     parser.add_option('--expert_mode',        action='store_true', default=False,     help='set expert mode settings')
     parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=SUPPRESS_HELP)

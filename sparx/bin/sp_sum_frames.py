@@ -23,10 +23,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-from sparx import EMData, EMUtil, Region, fshift
+from sparx import EMData, EMUtil, Region, fshift, get_im, read_text_row, fft, Util
 from sys import argv
 from os import path
 from numpy import genfromtxt
+import numpy
 from global_def import SPARXVERSION, ERROR
 from optparse import OptionParser
 import global_def
@@ -86,10 +87,12 @@ def main():
 
 def sum_images(input_name, output_name, options):
     """Translate images and sum them"""
+
+    unblur_image = EMData('unblur_small.mrc')
+    unblur2_image = EMData('unblur2.mrc')
     t1 = time.time()
     #Import the input stack
     input_stack = EMData(input_name)
-    unblur_image = EMData('unblur2.mrc')
 
     # Get the dimensions of the input stack
     nx = input_stack['nx']
@@ -128,53 +131,141 @@ def sum_images(input_name, output_name, options):
             ),
             1)
 
-    ########## Translation in fourier space using fshift
-    if not options.skip_alignment:
-        # Import shift file in angstrom by row 
-        sx, sy = genfromtxt(options.shift_file)
+#    ########## Translation in fourier space using fshift
+#    if not options.skip_alignment:
+#        # Import shift file in angstrom by row 
+#        sx, sy = genfromtxt(options.shift_file)
+#
+#        # Translate angstrom to pixel
+#        sx /= options.pixel_size
+#        sy /= options.pixel_size
+#
+#        # Translate the frames and sum them
+#        for i, x, y in zip(
+#                range(first, last), 
+#                sx[first:last], 
+#                sy[first:last]
+#                ):
+#            # Get the single frame
+#            frame = input_stack.get_clip(Region(0, 0, i, nx, ny, 1))
+#            frame = frame.do_fft()
+#            # Transform the frame into fourier space
+#            frame = fshift(frame, x, y)
+#            # Add to a sum image
+#            if i == first:
+#                output_stack = frame
+#            else:
+#                output_stack.add(frame)
+#        output_stack = output_stack.do_ift()
+#    else:
+#        # Translate the frames and sum them
+#        for i in range(options.first, last): 
+#            # Get the single frame
+#            frame = input_stack.get_clip(Region(0, 0, i, round(nx), round(ny), 1))
+#            # Add to a sum image
+#            output_stack = output_stack + frame
+#
+#    # Write output
+#    output_stack.write_image(output_name)
+#    print('fshift:', time.time()-t1)
+#
+#
+#    diff = output_stack - unblur_image
+#    diff.write_image('diff.mrc')
+#
+#    #### Using pawels method
+#    t1 = time.time()
+#
+#    movie = get_im(input_name)
+#    nx = movie.get_xsize()
+#    ny = movie.get_ysize()
+#    nz = movie.get_zsize()
+#
+#    shifts = read_text_row(options.shift_file)
+#    if len(shifts[-2]) != nz:
+#        print('nope')
+#
+#    o = EMData(nx, ny, 1, False)
+#    for i in xrange(nz):
+#        t = fft(movie.get_clip( Region( 0, 0, i, nx, ny, 1) ))
+#        Util.add_img(o, fshift(t, shifts[-2][i]/options.pixel_size, shifts[-1][i]/options.pixel_size))
+#
+#    fft(o).write_image('pawels_suggestion.mrc')
+#    # Write output
+#    print('fshift pawel:', time.time()-t1)
+#    diff = fft(o) - unblur_image
+#    diff.write_image('diff_pawel.mrc')
 
-        # Translate angstrom to pixel
-        sx /= options.pixel_size
-        sy /= options.pixel_size
 
-        sy *= -1
+    ### DO IT ****** MANUAL!!!!
+    t1 = time.time()
 
-        # Translate the frames and sum them
-        for i, x, y in zip(
-                range(first, last), 
-                sx[first:last], 
-                sy[first:last]
-                ):
-            # Get the single frame
-            frame = input_stack.get_clip(Region(0, 0, i, nx, ny, 1))
-            frame = frame.do_fft()
-            # Transform the frame into fourier space
-            frame = fshift(frame, x, y)
-            # Add to a sum image
-            if i == first:
-                output_stack = frame
-            else:
-                output_stack.add(frame)
-        output_stack = output_stack.do_ift()
-    else:
-        # Translate the frames and sum them
-        for i in range(options.first, last): 
-            # Get the single frame
-            frame = input_stack.get_clip(Region(0, 0, i, round(nx), round(ny), 1))
-            # Add to a sum image
-            output_stack = output_stack + frame
+    movie = get_im(input_name)
+    nx = movie.get_xsize()
+    ny = movie.get_ysize()
+    nz = movie.get_zsize()
+    print(nx, ny, nz)
+    
+    shifts = read_text_row(options.shift_file)
+    sx = shifts[-2]
+    sy = shifts[-1]
+   
+    o = EMData(nx, ny, 1, False)
+    for i in xrange(nz):
+        t = fft(movie.get_clip( Region(0, 0, i, nx, ny, 1) ))
+        f = fourier_shifterino(t, sx[i], sy[i], nx, ny)
+        Util.add_img(o, f)
 
+    fft(o).write_image('own_stuff.mrc')
     # Write output
-    output_stack.write_image(output_name)
-    print('fshift:', time.time()-t1)
+    print('own: ', time.time() - t1)
+    diff = fft(o) - unblur_image
+    diff.write_image('diff_own.mrc')
 
 
-    diff = output_stack - unblur_image
-    diff.write_image('diff.mrc')
 
 
     global_def.BATCH = False
 
+
+def fourier_shifterino(frame, xshift, yshift, nx, ny):
+    zshift=0
+    nz = frame.get_zsize()
+    ny = frame.get_ysize()
+    nx = frame.get_xsize()
+    if nz > 1:
+        nzp = nz
+    else:
+        nzp = 1
+    if ny > 1:
+        nyp = ny
+    else:
+        nyp = 1
+    nxp = nx
+    lsd2 = (nxp + 2 - nxp%2) / 2
+    nzp2 = nzp/2
+    nyp2 = nyp/2
+    print(frame.get_complex_at(0, 0, 0))
+    print(frame.get_data())
+#    for iz in xrange(1, nzp+1):
+#        jz=iz-1 
+#        if jz>nzp2:
+#            jz=jz-nzp
+#        for iy in xrange(1, nyp+1):
+#            jy=iy-1
+#            if jy>nyp2:
+#                jy=jy-nyp
+#            for ix in xrange(1, lsd2+1):
+#                jx=ix-1
+#                b = frame.get_complex_at(ix, iy, iz)
+#                a = b * numpy.exp(
+#                    -2*float(numpy.pi)*1j*(
+#                        xshift*jx/nx + yshift*jy/ny+ zshift*jz/nz
+#                        )
+#                    )
+#                frame.set_complex_at(ix, iy, iz, a)
+
+    return frame
 
 if __name__ == '__main__':
     main()
