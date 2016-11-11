@@ -20247,6 +20247,35 @@ vector<int> Util::nearest_fang(const vector<float>& vecref, float x, float y, fl
 	return bout;
 }
 
+vector<int> Util::nearest_fang_select(const vector<vector<float> >& vecref, float x, float y, float z, int howmany) {
+	if ( howmany > vecref.size() ) throw InvalidValueException(howmany,"Error, number of neighbors cannot be larger than number of reference directions");
+	std::vector<int> bout(howmany);
+	std::vector<float> score(howmany);
+	for (unsigned int k=0; k<howmany; k++) {
+		score[k] = -1.0e10;
+		bout[k] = -1;
+	}
+
+	for (unsigned int i=0; i<vecref.size(); i++) {
+		float v = vecref[i][0]*x+vecref[i][1]*y+vecref[i][2]*z;
+		for (unsigned int k=0; k<howmany; k++) {
+			if (v > score[k]) {
+				for (unsigned int l=howmany-1; l>k; l-=1) {
+					score[l] = score[l-1];
+					bout[l] = bout[l-1];
+				}
+				score[k] = v;
+				bout[k] = i;
+				//cout << i<< " AAAAA "<< k<< "  "<<endl;
+				//for (unsigned int kk=0; kk<howmany; kk++) { cout << score[kk]<< "  "<<bout[kk]<<endl;}
+				break;
+			}
+		}	
+	}
+	return bout;
+}
+
+
 int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z) {
 	throw NullPointerException("nearest_ang_f");
 	float best_v = vecref[0][0]*x+vecref[0][1]*y+vecref[0][2]*z;
@@ -20258,10 +20287,11 @@ int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, 
 			best_v = v;
 			best_i = i;
 		}
-		
+
 	}
 	return best_i;
 }
+
 
 struct d_ang {
 	float d;
@@ -23119,7 +23149,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  11/02/2016  4:34 PM "<<endl;
+ cout <<"  VERSION  11/10/2016  6:08 PM "<<endl;
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ << " Modification time: 9/01/2016 -- 11:46:40 AM " <<  endl; // l9oQJdJNrfgEBup91
 }
 
