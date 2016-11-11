@@ -3816,10 +3816,8 @@ def nearest_full_k_projangles(anormals, refang, howmany = 1, sym="c1"):
 			del lookup[k]
 
 	elif( sym[:1] == "c" ):
-		from utilities import get_symt, getfvec
-		from EMAN2 import Vec2f, Transform
-		phin = int(sym[1:])
 
+		phin = int(sym[1:])
 		refnormal = []
 		for i,q in enumerate(anormals):
 			refnormal.append(getfvec(q[0]*phin,q[1]))
@@ -3832,7 +3830,7 @@ def nearest_full_k_projangles(anormals, refang, howmany = 1, sym="c1"):
 			del lookup[k]
 
 	elif( sym[:1] == "d" ):
-		from utilities import get_symt, getfvec
+		from utilities import get_symt
 		from EMAN2 import Vec2f, Transform
 		t = get_symt(sym)
 		nt = len(t)
@@ -3886,14 +3884,12 @@ def nearest_many_full_k_projangles(anormals, refangs, howmany = 1, sym="c1"):
 			assignments[i] = Util.nearest_fang_select(refnormal, ref[0],ref[1],ref[2], howmany)
 
 	elif( sym[:1] == "c" ):
-		from utilities import get_symt
-		from EMAN2 import Vec2f, Transform
-		phin = int(sym[1:])
 
+		phin = int(sym[1:])
 		for i,q in enumerate(anormals):
-			refnormal.append(getfvec(q[0],q[1]))
+			refnormal.append(getfvec(q[0]*phin,q[1]))
 		for i,q in enumerate(refangs):
-			ref = getfvec(q[0],q[1])
+			ref = getfvec(q[0]*phin,q[1])
 			assignments[i] = Util.nearest_fang_select(refnormal, ref[0],ref[1],ref[2], howmany)
 
 	elif( sym[:1] == "d" ):
