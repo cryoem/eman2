@@ -84,7 +84,7 @@ def main():
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--input_micrograph_list_file',         type='str',          default='',    help='Input micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
+    parser.add_option('--input_micrograph_list_file',         type='str',          default='',    help='not an unblur option: input micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
     parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=SUPPRESS_HELP)
@@ -106,7 +106,7 @@ def main():
     parser.add_option('--iterations',         type='int',          default=10,        help='maximum number of iterations')
     parser.add_option('--dont_restore_noise',      action='store_true', default=False,     help='do not restore noise power')
     parser.add_option('--verbose',            action='store_true', default=False,     help='verbose output')
-    parser.add_option('--nr_threads',         type='int',          default=1,         help='Not an unblur setting: Number of threads unblur is allowed to use. The higher the faster, but it also needs a higher amount of memory.')
+    parser.add_option('--nr_threads',         type='int',          default=1,         help='not an unblur option: Number of threads unblur is allowed to use. The higher the faster, but it also needs a higher amount of memory.')
     parser.add_option('--unblur_ready',        action='store_true', default=False,      help=SUPPRESS_HELP)
 
     # list of the options and the arguments

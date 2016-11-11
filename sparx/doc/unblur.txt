@@ -32,12 +32,12 @@ sxunblur.py  --input_micrograph_list_file unblur  input_mrc_micrograph  output -
 
 == Input ==
 
-    input_micrograph_list_file:: Input micrograph list file: Extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
+    input_micrograph_list_file:: Input micrograph list file: Not an unblur option, extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
     unblur:: Path to unblur executable: (default required string)
     input_mrc_micrograph:: Input micrographs: You can use the wild cards (e.g. *) to specify a list of micrographs. (default required string)
     output:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
-    nr_threads:: Number of threads: Number of threads unblur is allowed to use. The higher the faster, but it also needs a higher amount of memory. (default 1)
+    nr_threads:: Number of threads: Not an unblur option, number of threads unblur is allowed to use. The higher the faster, but it also needs a higher amount of memory. (default 1)
     nr_frames:: Number of frames: (default 3)
     pixel_size:: Pixel size [A]: (default  required -1.0)
     exposure_per_frame:: Per frame exposure [e/A^2]: (default 1.0)
