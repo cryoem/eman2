@@ -3861,6 +3861,77 @@ def nearest_full_k_projangles(anormals, refang, howmany = 1, sym="c1"):
 
 
 	else:
+		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_many_full_k_projangles",1)
+		assignments = []
+
+	return assignments
+
+
+def nearest_many_full_k_projangles(anormals, refangs, howmany = 1, sym="c1"):
+	# We assume refang can be on the list of normals
+	from utilities import getfvec
+	#lookup = range(len(anormals))
+	#refnormal = normals[:]
+	assignments = [-1]*howmany
+
+	if( sym == "c1"):
+		refnormal = []
+		for i,q in enumerate(anormals):
+			refnormal.append(getfvec(q[0],q[1]))
+		assignments = [-1]*len(refangs)
+		for i,q in enumerate(refangs):
+			ref = getfvec(q[0],q[1])
+			assignments[i] = Util.nearest_fang_select(refnormal, ref[0],ref[1],ref[2], howmany)
+
+	elif( sym[:1] == "c" ):
+		from utilities import get_symt, getfvec
+		from EMAN2 import Vec2f, Transform
+		phin = int(sym[1:])
+
+		refnormal = []
+		for i,q in enumerate(anormals):
+			refnormal.append(getfvec(q[0],q[1]))
+		ref = getfvec(refang[0]*phin,refang[1])
+		for i in xrange(howmany):
+			tmp = Util.nearest_fang(refnormal, ref[0],ref[1],ref[2])
+			k = tmp[0]
+			assignments[i] = lookup[k]
+			for l in xrange(3): del refnormal[3*k+2-l]
+			del lookup[k]
+
+	elif( sym[:1] == "d" ):
+		from utilities import get_symt, getfvec
+		from EMAN2 import Vec2f, Transform
+		t = get_symt(sym)
+		nt = len(t)
+		a = Transform({"type":"spider","phi":refang[0], "theta":refang[1]})
+		refvec = [None]*nt
+		for i in xrange(nt):
+			qt = a*(t[i].inverse())
+			qt = qt.get_params("spider")
+			refvec[i] = getfvec(qt["phi"], qt["theta"])
+			print i,qt["phi"], qt["theta"],["psi"],refvec[i]
+
+		refnormal = []
+		for i,q in enumerate(anormals):
+			refnormal += getfvec(q[0],q[1])
+
+		for i in xrange(howmany):
+			best_i = -1
+			best_v = -10000000
+			for l in xrange(nt):
+				tmp = Util.nearest_fang(refnormal, refvec[l][0],refvec[l][1],refvec[l][2])
+				if(tmp[1] > best_v):
+					best_i = tmp[0]
+					best_v = tmp[1]
+					print i,l,best_i,best_v
+
+			assignments[i] = lookup[best_i]
+			for l in xrange(3): del refnormal[3*best_i+2-l]
+			del lookup[best_i]
+
+
+	else:
 		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_full_k_projangles",1)
 		assignments = []
 
