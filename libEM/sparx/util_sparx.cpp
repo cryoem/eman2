@@ -20228,12 +20228,12 @@ int Util::nearest_ang(const vector<float>& vecref, float x, float y, float z) {
 	return best_i;
 }
 
-vector<int> Util::nearest_fang(const vector<float>& vecref, float x, float y, float z) {
+vector<int> Util::nearest_fang(const vector<vector<float> >& vecref, float x, float y, float z) {
 	float best_v = -1.0f;
 	int   best_i = -1;
 
-	for (unsigned int i=0; i<vecref.size()/3; i++) {
-		float v = vecref[i*3]*x+vecref[i*3+1]*y+vecref[i*3+2]*z;
+	for (unsigned int i=0; i<vecref.size(); i++) {
+		float v = vecref[i][0]*x+vecref[i][1]*y+vecref[i][2]*z;
 		if (v > best_v) {
 			best_v = v;
 			best_i = i;

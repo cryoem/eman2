@@ -996,7 +996,7 @@ public:
 		Notice: the input I use is different from python code, which I think is awkward.
 	*/
 	static int nearest_ang(const vector<float>& vecref, float x, float y, float z);
-	static vector<int> nearest_fang(const vector<float>& vecref, float x, float y, float z);
+	static vector<int> nearest_fang(const vector<vector<float> >& vecref, float x, float y, float z);
 	static vector<int> nearest_fang_select(const vector<vector<float> >& vecref, float x, float y, float z, int howmany);
 	static int nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z);
 
