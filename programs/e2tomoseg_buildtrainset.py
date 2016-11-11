@@ -32,7 +32,7 @@ def main():
 	parser.add_argument("--particles_raw", type=str,help="Input raw particle file", default=None,guitype='filebox',browser="EMParticlesTable(withmodal=True)", row=1, col=0, rowspan=1, colspan=3, mode="set")
 	parser.add_argument("--particles_label", type=str,help="Input labels for particle file", default=None,guitype='filebox',browser="EMParticlesTable(withmodal=True)", row=2, col=0, rowspan=1, colspan=3, mode="set")
 	parser.add_argument("--boxes_negative", type=str,help="Input boxes of negative samples", default=None,guitype='filebox',browser="EMParticlesTable(withmodal=True)", row=3, col=0, rowspan=1, colspan=3, mode="set")
-	parser.add_argument("--ncopy",type=int,help="Number of copies for NEGATIVE samples. (number of copies of particles is calculated accordingly) ",default=20, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="set")
+	parser.add_argument("--ncopy",type=int,help="Number of copies for NEGATIVE samples. (number of copies of particles is calculated accordingly) ",default=10, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="set")
 	parser.add_argument("--trainset_output", type=str,help="output file name of the training set.Default is the input particle file name plus _trainset.hdf", default=None,guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="set")
 	parser.add_argument("--zthick",type=int,help="Thickness in z ",default=0, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="set")
 

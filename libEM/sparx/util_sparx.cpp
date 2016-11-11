@@ -19647,8 +19647,6 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 						 {
 						   max_qt = max(vc1,vc2);
 						   mkl    = kl;
-						   if (vc1<vc2)
-						   mkl    =-kl;
 						  }
 						} //nsym
 					 } //kl fine loop
