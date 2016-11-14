@@ -1,0 +1,15 @@
+/* JSON file to make the particle import wizard */
+[
+  {
+    "TITLE":"e2ctf geneate SF Wizard",
+    "INST":"This Wizard is to Help users from e2ctf in generate structure factor mode. The purpose is to genrate a 1D profile spherically averaged structure factor intensities. This is achieved by simultaniously fitting multiple power spectra. You must simultaniously fit al test 3-4 powser spectra otherwise the problem become underdetermined at your SF results will be ambiguous.",
+    "WIDGETS":[]
+  },
+  {
+    "TITLE":"Select particle files",
+    "INST":"Select particle stacks to use for CTF structure factor computation. You should select only particle stacks yielding the best(strongest) power spectra for this operation otherwise your structure will be erroneous. After structure factor computation you can check the structure factors by plotting with the browser. strucfac.txt' contains the structure factors, and 'strucfac.allpoints.txt' contains the structure factors computed from all power spectra in the vicinity of the CTF peaks(regions of strongest signal).",
+    "WIDGETS":[
+      "particles"
+    ]
+  }
+]

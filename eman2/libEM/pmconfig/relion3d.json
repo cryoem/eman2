@@ -1,0 +1,60 @@
+/* JSON file for e2refinetorelion3d.py wizard */
+[
+  {
+    "TITLE":"e2refinetorelion3d Wizard",
+    "INST":"This Wizard is to Help EM users fill in the GUI to run e2refinetorelion3d.py. e2refinetorelion3d.py will output a directory, labeled relion3d_##, that contains everything required to run Relion",
+    "WIDGETS":[]
+  },
+  {
+    "TITLE":"I/O Options",
+    "INST":"These options represent the fundamental files needed for this program. The set_name is the EMAN2-created set that you wish to use as the input particles for RELION refinement. The refmap is the 3D model that you wish to use as the reference map for this reconstruction. It needs to be the same size as the particles and it should be a decent starting model. Check the greyscale box if your reference map is in greyscale. The symmgroup and symmnumber represent the symmetry of the particle (for example, C4). If you do not know the symmetry of your particle, use C1.",
+    "WIDGETS":[
+      "set_name",
+      "refmap",
+      "greyscale",
+      "symmgroup",
+      "symmnumber"
+    ]
+  },
+  {
+    "TITLE":"CTF Options",
+    "INST":"These three checkboxes are related to CTF parameters. Check the ctfcorrect box if you wish to have RELION perform CTF correction, check the dataphaseflipped box if the particle data is already phase flipped, and check the ignoretofirstpeak box if you wish to ignore CTFs until the first peak.",
+    "WIDGETS":[
+      "ctfcorrect",
+      "dataphaseflipped",
+      "ignoretofirstpeak"
+    ]
+  },
+  {
+    "TITLE":"Optimisation Options",
+    "INST":"In this section, we have several options that relate to optimisation. The first, lowpass, represents the value (in Angstroms) that RELION will lowpass filter to. The next option, imagemaskd, is the value (in Angstroms) of the image mask that RELION will apply. You want it sufficiently big to encompass the entirety of your particles but small enough to eliminate much of the noise outside of it. The final option is the solventmask. This file is a mask that RELION can use rather than simply using a spherical mask at the value specified in imagemaskd.",
+    "WIDGETS":[
+      "lowpass",
+      "imagemaskd",
+      "solventmask"
+    ]
+  },
+  {
+    "TITLE":"Sampling Options",
+    "INST":"This set of options relate mostly to the angular sampling used. Based on RELION's implementation, there are only a few discrete angular samplings possible. healpix represents the angular value for the initial sampling. This value will be automatically decreased as the reconstruction converges. The value of auto_healpix is the value at which +6/-6 times the sampling value will be used from this value onwards. Probabilities will be calculated only for translations in a circle with offsetrange (in pixels) radius. Essentially, a local search range for translations. offsetstep is the value (in pixels) of the sampling step within this range. These numbers represent only the initial values for these parameters as RELION will automatically increase the sampling rate as it converges.",
+    "WIDGETS":[
+      "healpix",
+      "auto_healpix",
+      "offsetrange",
+      "offsetstep"
+    ]
+  },
+  {
+    "TITLE":"Relion Run Options",
+    "INST":"These final options relate to how RELION runs. Threads represents the number of threads you wish to have RELION use and maxmemory is the maximum amount of memory each THREAD can use. If you are running on a cluster that has 24GB memory and 12 processors per node, you would want to use a value such as 1.8 (not 2! 2GB x 12 = all 24GB! This would assume 0 other processes running on that node and that cant be true!) so that you do not allocate more memory than the node can handle.",
+    "WIDGETS":[
+      "threads",
+      "maxmemory"
+    ]
+  },
+  {
+    "TITLE":"Final Tips",
+    "INST":"Now that you have completed all of the parameters, it is time to learn what to do next. Once you close the wizard, you can click the launch button to run e2refinetorelion3d. Once it completes, you will have a directory labeled relion3d_##. In this directory is everything you need to run RELION. You should copy this to a computing cluster and you will almost be ready! You will have to set up the relion run via MPI (we use openMPI) and as such, a sample submission script is included in the relion3d_## directory in a subdirectory called run01. In this file, there are certain values that need to be changed and they are marked as such. Once you run RELION, all of the output from RELION will be found in this run01 directory and you can do with it what you please. Good Luck!",
+    "WIDGETS":[]
+  }
+]

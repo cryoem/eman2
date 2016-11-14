@@ -1,0 +1,68 @@
+This directory contains codes that one can used to run structure 
+refinement using 
+1) projection matching  (runali3d_d)
+2) unified approach     (rununified)
+3) hybrid of projection matching and unified approach (runhybrid)
+====================================================================
+
+COMPILING THE CODES
+-------------------
+
+Before using these codes, you must install sparx (which contains
+this directory) correctly. Also make sure MPI is properly installed
+on your system.
+
+To generate all three executables, type 
+
+make 
+
+at the command line.  You can generate each individual executable
+by typing, for example,
+
+make rununified
+
+
+RUNNING THE CODES
+-----------------
+
+1. To run the projection matching refinement, simply type 
+
+   mpirun -np <np> runali3d_d -data=<stack of image> -model=<initial model> 
+
+   on the command line, where 
+
+      <np>               is the number of processors you want to use.
+      <stack of images>  is the name of the hdf file that contains
+                         experimental images.
+      <initial model>    is the name of the volume file that contains
+                         the intial 3-D model. 
+
+   More options will be allowed in future versions.
+
+2. To run the unified refinement, type
+
+   mpirun -np <np> rununified -data=<stack of image> -model=<initial model> \
+   -param=<initial angles and shifts>
+
+   on the command line, where
+
+      <initial angles and shifts> refers to an ASCII file that looks like
+
+       -31.6500   26.9880  151.5600         0         0
+        14.5040   76.8650   40.3510         0         0
+       -43.7830   11.4940  209.0100         0         0
+        35.3790   64.2090  307.6300         0         0
+        18.5550   27.7880  318.7800         0         0
+        18.8660   91.5450  136.1000         0         0
+      ....
+
+   The first three columns of the file contain intial guesses to 
+   Euler angles in SPIDER format.  The last two columns contain 
+   initial guesses to the horizontal and vertical shifts.
+    
+   More options will be allowed in future version.
+
+3. The syntax for running the hybrid refinement is the same as that
+   of the projection matching refinement.
+
+   mpirun -np <np> runhybrid -data=<stack of image> -model=<initial model> 

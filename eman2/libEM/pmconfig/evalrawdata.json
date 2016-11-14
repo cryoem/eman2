@@ -1,0 +1,31 @@
+/* JSON file to make the e2evalimage.py wizard */
+[
+  {
+    "TITLE":"e2evalimage Wizard",
+    "INST":"This Wizard is to Help users evaluate their raw micrographs. This is a screening step to remove rubbish micrographs. Rubbish micrographs = rubbish science",
+    "WIDGETS":[]
+  },
+  {
+    "TITLE":"Select micrograph files",
+    "INST":"Select micrograph files. This will be a space delimted list of files to process",
+    "WIDGETS":[
+      "image"
+    ]
+  },
+  {
+    "TITLE":"CTF parameters",
+    "INST":"Each micrograph is broken into tiles and power spectra are computed, then averaged over all tiles. Micrographs having the strongest power (strong Thon rings) are best. Please enter the CTF params",
+    "WIDGETS":[
+      "apix",
+      "voltage",
+      "cs"
+    ]
+  },
+  {
+    "TITLE":"Amplitude contrast",
+    "INST":"Almsost always the amplitude constrast should be 10",
+    "WIDGETS":[
+      "ac"
+    ]
+  }
+]

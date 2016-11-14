@@ -1,0 +1,51 @@
+= Name =
+sxisac_post_processing - ISAC - Postprocessing: Postprocess of the 2D clustering result produced by ISAC.
+
+= Usage =
+
+
+''Usage in command lines'':
+
+sxisac_post_processing.py  stack_file  isac_directory  class_file_name_no_dir_info --radius=particle_radius  --CTF  --single_stack_output 
+
+=== Typical usage ===
+
+sxisac_post_processing.py exists only in MPI version
+
+''' mpirun  -np  32  sxisac_post_processing.py  bdb:data  fisac1  locres.hdf  --radius=28 '''
+
+
+== Input ==
+    stack_file:: Original image stack: Particles required to create the full-sized class averages. The images must be square (''nx''=''ny'') and the stack must be bdb format (default required string)
+    isac_directory:: Isac output directory: Name of the directory where isac was run previously. (default required string)
+    class_file_name_no_dir_info:: Isac class file name: Name of the file (no directory info) that contains the class averages. It is located in the Isac directory. (default required string)
+
+    radius:: Particle radius [Pixels]: There is no default radius. (default required int)
+    CTF:: Phase-flip: If set, the data will be phase-flipped using CTF information included in the image headers. (default False)
+    single_stack_output:: Single stack output: If set, only one stack for all classes will be generated. Otherwise, which is the default, one file per class will be generated. (default False) 
+
+    * The remaining parameters are optional.
+
+
+== Output ==
+    The output directory is created in the isac directory and has the format "post_processing_YYYY-MM-DD--HH-MM-SS". It contains all the output files "original_image_number_in_each_class_average.txt", "twoD_params_info_list.txt" and "radius_adjusted_class_averages.hdf" (one file or multiple files according to the --single_stack_output option). 
+
+= Description =
+
+
+= Method =
+
+= Reference =
+
+= Author / Maintainer =
+Horatiu Voicu and Pawel A. Penczek
+
+= Keywords =
+
+= Files =
+sxisac_post_processing.py
+
+= See also =
+
+= Maturity =
+ alpha:: in development

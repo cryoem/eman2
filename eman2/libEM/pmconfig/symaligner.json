@@ -1,0 +1,87 @@
+/* JSON file to make the e2classaveragebysym wizard */
+[
+  {
+    "TITLE":"e2classaveragebysym",
+    "INST":"This Wizard is to Help users run e2classaveragebysym.py. This program works y aligning a 3D subtomograms to thier symmtry axis. Because this axis is common to all subtomograms, averaging can be done because all subtomograms will be in register. This algorithm works well for phase plate data, but has not been tried on convensional cryoEM data(SNR might be too low).",
+    "WIDGETS":[]
+  },
+  {
+    "TITLE":"Input subtomogram",
+    "INST":"Select the input subtomogram stack (usualy from the subtomograms directory)",
+    "WIDGETS":[
+      "input"
+    ]
+  },
+  {
+    "TITLE":"Output average",
+    "INST":"Choose the filename of the output subtomogram average",
+    "WIDGETS":[
+      "output"
+    ]
+  },
+  {
+    "TITLE":"Shrink parameters",
+    "INST":"Shrink and/or clip the subtomograms to boost performance. Shrinking may lower accuracy if you have signal at high spatial frequencies. On the other hand, shrinking increases the SNR so alignment accuracy may improve.",
+    "WIDGETS":[
+      "shrink",
+      "clip"
+    ]
+  },
+  {
+    "TITLE":"Monte Carlo steps",
+    "INST":"Subtomogram alignment to symmetry axis is done using e2symsearch3d.py. e2symsearch3d.py uses a downhill search using the simplex algorithm to align to symmetry axis. However the downhill search can get stuck in local minima, so a number of random starting positions are investigation. List this number here. Use higher numbers for lower symmtry ",
+    "WIDGETS":[
+      "steps"
+    ]
+  },
+  {
+    "TITLE":"Symmetry",
+    "INST":"Set the symmetry to align to. You must be sure about the symmetry value to use this program.",
+    "WIDGETS":[
+      "sym"
+    ]
+  },
+  {
+    "TITLE":"Preprocess subtomos",
+    "INST":"If desired, select the processor to preprosess your subtomograms before alignment. The final average will not be affected by this step. If none is desired, choose 'None'. This can greatly help alignment if you have low contrasty subtomograrm and/or are trying to align a small asymmetric feature on an otherwise symmetric particle.",
+    "WIDGETS":[
+      "preprocess"
+    ]
+  },
+  {
+    "TITLE":"Mask subtomos",
+    "INST":"If desired, select masking to apply to subtomographs prior to alignment. The final average will not be affected by this step. If none is desired, choose 'None'. Masking can aid alignment by removing background influences such as neighboring particles.",
+    "WIDGETS":[
+      "mask"
+    ]
+  },
+  {
+    "TITLE":"Output processing",
+    "INST":"To symmetrize the volume after alignment and averaging, check 'symmetrize'. To apply the transforms to move to the symmetry axis on the raw data, check 'applytoraw'",
+    "WIDGETS":[
+      "symmetrize",
+      "applytoraw"
+    ]
+  },
+  {
+    "TITLE":"choose a comparitor",
+    "INST":"Choose the comparitor to compare symmetrized subtomogram with itself. You can use a non wedge corrected cmp for icos symmetry",
+    "WIDGETS":[
+      "cmp"
+    ]
+  },
+  {
+    "TITLE":"Choose an averager",
+    "INST":"Choose a averager for computing the average, use 'mean' in almost all cases.",
+    "WIDGETS":[
+      "averager"
+    ]
+  },
+  {
+    "TITLE":"EMAN2 paralleism",
+    "INST":"Select the EMAN2 paralleism. You can choose thread(SMP) mpi, or dc(distributed computing)",
+    "WIDGETS":[
+      "parallel"
+    ]
+  }
+]

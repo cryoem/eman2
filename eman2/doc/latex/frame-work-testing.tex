@@ -1,0 +1,109 @@
+\section{Testing Framework}
+
+EMAN2 uses python unit test and regression test as its testing
+framework. For features not testable or not easily to be tested in
+python, they will be tested in C++.
+
+
+\subsection{Testing Guidelines}
+    \begin{itemize}
+      \item
+        Each unit test must be self contained. 
+      \item
+	Each test module (.py file) should  be named as "test\_" +
+	featurename.
+      \item
+	Each test method should be named as "test\_" + method-name.
+      \item
+	unittest module should be used to do the unit testing. doctest
+	is discouraged.
+    \end{itemize}
+
+\subsection{Test Example}
+\begin{itemize}
+
+  \item
+    Example of a unit test and a regression test:
+
+    \begin{verbatim}import unittest
+from test import test_support
+
+class MyTestCase1(unittest.TestCase):
+
+    # Only use setUp() and tearDown() if necessary
+
+    def setUp(self):
+        ... code to execute in preparation for tests ...
+
+    def tearDown(self):
+        ... code to execute to clean up after tests ...
+
+    def test_feature_one(self):
+        # Test feature one.
+        ... testing code ...
+
+    def test_feature_two(self):
+        # Test feature two.
+        ... testing code ...
+
+    ... more test methods ...
+
+class MyTestCase2(unittest.TestCase):
+    ... same structure as MyTestCase1 ...
+
+... more test classes ...
+
+def test\_main():
+    test\_support.run\_unittest(MyTestCase1,
+                              MyTestCase2,
+                              ... list other tests ...
+                             )
+
+if __name__ == '__main__':
+    test_main()
+    \end{verbatim}
+    \normalcolor
+
+  \item Here is a more detailed example:    
+
+    \begin{verbatim}import random
+import unittest
+
+class TestSequenceFunctions(unittest.TestCase):
+    
+    def setUp(self):
+        self.seq = range(10)
+
+    def tearDown(self):
+	# do clean up here
+
+    def testshuffle(self):
+        # make sure the shuffled sequence does not lose any elements
+        random.shuffle(self.seq)
+        self.seq.sort()
+        self.assertEqual(self.seq, range(10))
+
+    def testchoice(self):
+        element = random.choice(self.seq)
+        self.assert_(element in self.seq)
+
+    def testsample(self):
+        self.assertRaises(ValueError, random.sample, self.seq, 20)
+        for element in random.sample(self.seq, 5):
+            self.assert_(element in self.seq)
+
+if __name__ == '__main__':
+    unittest.main()\end{verbatim}
+    \normalcolor
+
+  \item
+    Asserting Values and Conditions
+    \begin{itemize}
+      \item[]
+	The crux of each test is a call to assertEqual() to check for
+	an expected result; assert\_() to verify a condition; or
+	assertRaises() to verify that an expected exception gets
+	raised.  
+    \end{itemize}
+
+\end{itemize}

@@ -1,0 +1,23 @@
+/* JSON file to make the particle import wizard */
+[
+  {
+    "TITLE":"e2ctf tunning Wizard",
+    "INST":"This Wizard is to Help users from e2ctf in tunning mode. e2CTF in tuning mode is typically run after an inital auto fitting to confirm and tune the CTF fits.",
+    "WIDGETS":[]
+  },
+  {
+    "TITLE":"Select particle files",
+    "INST":"Select particle stacks to use for CTF tuning",
+    "WIDGETS":[
+      "particles"
+    ]
+  },
+  {
+    "TITLE":"Structure factor processing",
+    "INST":"To compute structure factors directly after CTF autofitting, check 'computesf'. You almost never want to do this, as it's best to compute strucutre factors on only the best particle stacks. Initially the high resolution domains of the GroEL structure factors are used during CTF determination, however if 'sf' is set to auto, previously determined strucutre factors for this molecule are used if available(otherwise GroEL is used. To force GroEL use set 'sf' to none",
+    "WIDGETS":[
+      "computesf",
+      "sf"
+    ]
+  }
+]

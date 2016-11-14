@@ -1,0 +1,57 @@
+This file describe how to add methods to EMData class, how to add new
+processors ,etc.
+
+1. add method to EMData class:
+The emdata.h file define  class EMData. if you need add new method to 
+this class. You could add it into emdata_sparx.h, this file is part of
+emdata.h, it's already included in emdata.h. So when you should never 
+directly include emdata_sparx.h, just include emdata.h is enough. 
+And put your function difinition code into emdata_sparx.cpp. 
+
+You can also further split emdata_sparx.h/cpp, for example, you want add
+emdata_sparx2.h/cpp, just put a line:
+
+#include "emdata_sparx2.h"
+
+into emdata.h, and add your emdata_sparx2.cpp into CMakeLists.txt under 
+eman2/libEM (note it /libEM, not the one in /libEM/sparx directory). 
+
+If your function return new object, such as EMData*, you need modify the
+corresponding libpyEMData2.cpp under libpyEM directory.
+
+2. add new processor:
+To add a new processor, you could add it into processor_sparx.h, just folow
+other processor code already in there.
+
+3. type conversion:
+We already have lots of c++ data type which could be convert to Python data type.
+such as:
+vector<int>
+vector<float>
+vector<long>
+vector<double>
+vector<std::string>
+vector<EMData*>
+vector<Pixel>
+map<int,>
+map<float,>
+map<double,>
+map<string,>
+and some EMAN2 class:
+EMObject
+Dict
+tuple3
+MArrayND
+MCArrayND
+
+4. add new static function to Util class:
+The util.h/cpp files, like emdata.h/cpp, has been splitted to util_sparx.h/cpp.
+You can add your functions into util_sparx.h, and this file has been included into
+util.h, so you never need include "util_sparx.h", just include "util.h" is enough.
+Your implementation code could be added into util_sparx.cpp.
+
+5. same splitting method could work with other modular class, such as projector, 
+etc. We can add those ***_sparx.h/cpp files as we need.
+
+--Grant Tang--
+4/06/2006
