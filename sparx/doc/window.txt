@@ -5,24 +5,28 @@ sxwindow - Particle Extraction: Windows particles from micrographs using the par
 
 ''usage in command line''
 
-sxwindow.py  input_micrograph_pattern  input_coordinates_pattern  output_directory  --selection_list=selection_list  --coordinates_format  --box_size=box_size  --skip_invert  --import_ctf=ctf_file  --limit_ctf  --astigmatism_error=astigmatism_error  --resample_ratio=resample_ratio  --check_consistency
+sxwindow.py  input_micrograph_pattern  input_coordinates_pattern  input_ctf_params_source  output_directory  --selection_list=selection_list  --coordinates_format  --box_size=box_size  --skip_invert  --limit_ctf  --astigmatism_error=astigmatism_error  --resample_ratio=resample_ratio  --check_consistency
 
 
 === Typical usage ===
 
 sxwindow exists in for both MPI and non-MPI versions (Running MPI version does not require --MPI flag). 
 
-    All Micrographs Mode - Process all micrographs in a directory:: Specify path pattern of input micrographs and coordinates files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. In this mode, all micrographs matching the path pattern will be processed.
+    All Micrographs Mode - Process all micrographs in a directory:: Specify path pattern of input micrographs and coordinates files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between a associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. Next, specify the source of CTF paramters. For cryo data, this should be the file produced by sxcter and normally called partres.txt. For negative staining data, it should be the pixel size [A/Pixels] of input micrographs. Finally, specify output directory where all outputs should be saved. In this mode, all micrographs matching the path pattern will be processed.
 
-    ''' mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --import_ctf=outdir_cter/partres/partres.txt ''' <<BR>><<BR>>
+    ''' mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --coordinates_format=eman2  --box_size=64 ''' <<BR>><<BR>>
 
-    Selected Micrographs Mode - Process all micrographs in a selection list file:: In addition to path pattern of input micrographs and coordinates files, specify a name of micrograph selection list text file using --selection_list option. In this mode, only micrographs in the selection list which matches the file name part of the pattern (i.e. ignores the directory paths) will be processed. If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
+    Selected Micrographs Mode - Process all micrographs in a selection list file:: In addition input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry, specify a name of micrograph selection list text file using --selection_list option. In this mode, only micrographs in the selection list which matches the file name part of the pattern (ignoring the directory paths) will be processed. If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
 
-    ''' mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --selection_list=mic_list.txt  --coordinates_format=eman2  --box_size=64  --import_ctf=outdir_cter/partres/partres.txt ''' <<BR>><<BR>>
+    ''' mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic_list.txt  --coordinates_format=eman2  --box_size=64 ''' <<BR>><<BR>>
 
-    Single Micrograph Mode - Process a single micrograph:: In addition to path pattern of input micrographs and coordinates files, specify a single micrograph name using --selection_list option. In this mode, only the specified single micrograph will be processed. If this micrograph name does not matches the file name part of the pattern (i.e. ignores the directory paths), the process will exit without processing it. If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it.
+    Single Micrograph Mode - Process a single micrograph:: In addition input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry, specify a single micrograph name using --selection_list option. In this mode, only the specified single micrograph will be processed. If this micrograph name does not matches the file name part of the pattern (ignoring the directory paths), the process will exit without processing it. If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it.
 
-    ''' sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --selection_list=mic0.hdf  --coordinates_format=eman2  --box_size=64  --import_ctf=outdir_cter/partres/partres.txt ''' <<BR>><<BR>>
+    ''' sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic0.hdf  --coordinates_format=eman2  --box_size=64 ''' <<BR>><<BR>>
+
+    For Negative Staining Dataset:: Set the pixel size [A/Pixels] as the source of CTF paramters and use --skip_invert.
+
+    ''' mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  5.2  particles  --coordinates_format=eman2  --box_size=64  --skip_invert ''' <<BR>><<BR>>
 
 NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.
 
@@ -30,17 +34,18 @@ NOTE: Please remember to adjust box_size also when setting resample_ratio < 0.1.
 == Input ==
     input_micrograph_pattern:: Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. (default required string)
     input_coordinates_pattern:: Input coordinates path pattern: Specify path pattern of input coordinates files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. (default required string)
+    input_ctf_params_source:: CTF parameters source: Specify the file produced by sxcter and normally called partres.txt for cryo data. For negative staining data, enter pixel size [A/Pixels]. (default required string)
+
     selection_list:: Micrograph selecting list: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
     coordinates_format:: Coordinate file format: Allowed values are 'sparx', 'eman1', 'eman2', or 'spider'. The sparx, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default eman1)
     box_size:: Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when resample_ratio < 1.0. (default 256)
     skip_invert:: Skip invert image contrast: Use this option for negative staining data. By default, the image contrast is inverted for cryo data. (default False)
-    import_ctf:: CTER CTF parameter file: The file produced by sxcter and normally called partres.txt. (default none)
 
     * The remaining parameters are optional.
-    limit_ctf:: Use CTF limit filter: Frequencies whose oscillation can not be properly modeled at the current pixel size are discarded in the images with the appropriate low-pass filter. This option requires --import_ctf. (default False)
-    astigmatism_error:: Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. (default 360.0)
-    resample_ratio:: Ratio between new and original pixel size: Use values between 0.0 and 1.0. The new pixel size is automatically recalculated when resample_ratio < 1.0 is used. (default 1.0)
-    check_consistency:: Check consistency of inputs: Create the text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt) (default False)
+    limit_ctf:: Use CTF limit filter: Frequencies where CTF oscillations can not be properly modeled with the resampled pixel size will be discarded in the images with the appropriate low-pass filter. This has no effects when the CTER CTF File is not specified by the CTF paramters source argument. (default False)
+    astigmatism_error:: Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. This has no effects when the CTER CTF File is not specified by the CTF paramters source argument. (default 360.0)
+    resample_ratio:: Ratio between new and original pixel size: Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when resample_ratio < 1.0 is used. (default 1.0)
+    check_consistency:: Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)
 
 
 == Output ==
@@ -67,7 +72,7 @@ sxwindow.py
 [[http://sparx-em.org/sparxwiki/window|window]]
 
 = Maturity =
-    beta::    Please tell us if there are any bugs.
+    beta::    Please let us know if there are any bugs.
 
 === Bugs ===
 None so far.

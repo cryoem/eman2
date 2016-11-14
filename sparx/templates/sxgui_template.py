@@ -567,7 +567,7 @@ class SXCmdWidget(QWidget):
 
 						# For now, using line edit box for the other type
 						widget_text = str(sxcmd_token.widget.text())
-						if sxcmd_token.type not in ["int", "float", "apix", "wn", "box", "radius", "any_file_list", "any_image_list", "any_directory"]:
+						if sxcmd_token.type not in ["int", "float", "apix", "ctfwin", "box", "radius", "any_file_list", "any_image_list", "any_directory"]:
 							# Always enclose the string value with single quotes (')
 							widget_text = widget_text.strip("\'")  # make sure the string is not enclosed by (')
 							widget_text = widget_text.strip("\"")  # make sure the string is not enclosed by (")
@@ -1435,7 +1435,7 @@ class SXCmdTab(QWidget):
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						# elif cmd_token.type == "output":
 						# else:
-						# 	if cmd_token.type not in ["int", "float", "string", "apix", "wn", "box", "radius", "sym"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
+						# 	if cmd_token.type not in ["int", "float", "string", "apix", "ctfwin", "box", "radius", "sym"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 					cmd_token_widget.setToolTip('<FONT>'+cmd_token.help+'</FONT>')
 					cmd_token_restore_widget.setToolTip('<FONT>'+cmd_token_restore_tooltip+'</FONT>')
