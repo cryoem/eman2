@@ -40,6 +40,7 @@ from EMAN2jsondb import *
 from sparx import *
 from applications import MPI_start_end
 from inspect import currentframe, getframeinfo
+from utilities import generate_ctf
 
 # ========================================================================================
 # Define functions for reading coordinates files of different formats.
@@ -72,43 +73,19 @@ def read_spider_coords_file(coords_path):
 # ========================================================================================
 #  Helper functions
 # ========================================================================================
-def check_options(options, program_name):
-
-	error_status = None
-	# not a real while, an if with the opportunity to use break when errors need to be reported
-	while True:
-		if options.selection_list != None:
-			if not os.path.exists(options.selection_list): 
-				error_status = ("File specified by selection_list option does not exists. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
-				break
-		
-		if options.coordinates_format.lower() not in ["sparx", "eman1", "eman2", "spider"]:
-			error_status = ("Invalid option value: --coordinates_format=%s. Please run %s -h for help." % (options.coordinates_format, program_name), getframeinfo(currentframe()))
-			break
-		
-		if options.import_ctf:
-			if os.path.exists(options.import_ctf) == False:
-				error_status = ("Specified CTER CTF file is not found. Please check --import_ctf option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
-				break
-		else:
-			assert (not options.import_ctf)
-			if options.limit_ctf:
-				error_status = ("--limit_ctf option requires valid CTER CTF File (--import_ctf). Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
-				break
-		
-		if (options.resample_ratio <= 0.0 or options.resample_ratio > 1.0):
-			error_status = ("Invalid option value: --resample_ratio=%s. Please run %s -h for help." % (options.resample_ratio, program_name), getframeinfo(currentframe()))
-			break
-		
-		break
-	if_error_then_all_processes_exit_program(error_status)
+def is_float(value):
+	try:
+		float(value)
+		return True
+	except ValueError:
+		return False
 	
 # ========================================================================================
 #  Main function
 # ========================================================================================
 def main():
 	program_name = os.path.basename(sys.argv[0])
-	usage = program_name + """  input_micrograph_pattern  input_coordinates_pattern  output_directory  --selection_list=selection_list  --coordinates_format  --box_size=box_size  --skip_invert  --import_ctf=ctf_file  --limit_ctf  --astigmatism_error=astigmatism_error  --resample_ratio=resample_ratio  --check_consistency
+	usage = program_name + """  input_micrograph_pattern  input_coordinates_pattern  input_ctf_params_source  output_directory  --selection_list=selection_list  --coordinates_format  --box_size=box_size  --skip_invert  --limit_ctf  --astigmatism_error=astigmatism_error  --resample_ratio=resample_ratio  --check_consistency
 	
 Window particles from micrographs using the particles coordinates.
 
@@ -116,26 +93,36 @@ All Micrographs Mode - Process all micrographs in a directory:
 	Specify path pattern of input micrographs and coordinates files with a wild card (*). 
 	Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). 
 	The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). 
-	The substring at the variable part must be same between the associated pair of input micrograph and coordinates file.
+	The substring at the variable part must be same between a associated pair of input micrograph and coordinates file.
 	bdb files can not be selected as input micrographs.
+	Next, specify the source of CTF paramters. 
+	For cryo data, this should be the file produced by sxcter and normally called partres.txt. 
+	For negative staining data, it should be the pixel size [A/Pixels] of input micrographs.
+	Finally, specify output directory where all outputs should be saved.
 	In this mode, all micrographs matching the path pattern will be processed.
-	
-	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --coordinates_format=eman2  --box_size=64  --import_ctf=outdir_cter/partres/partres.txt
+
+	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --coordinates_format=eman2  --box_size=64
 
 Selected Micrographs Mode - Process all micrographs in a selection list file:
-	In addition to path pattern of input micrographs and coordinates files, specify a name of micrograph selection list text file using --selection_list option.
-	In this mode, only micrographs in the selection list which matches the file name part of the pattern (i.e. ignores the directory paths) will be processed.
+	In addition input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry, 
+	specify a name of micrograph selection list text file using --selection_list option.
+	In this mode, only micrographs in the selection list which matches the file name part of the pattern (ignoring the directory paths) will be processed.
 	If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
 
-	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --selection_list=mic_list.txt  --coordinates_format=eman2  --box_size=64  --import_ctf=outdir_cter/partres/partres.txt
+	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic_list.txt  --coordinates_format=eman2  --box_size=64
 
 Single Micrograph Mode - Process a single micrograph:
-	In addition to path pattern of input micrographs and coordinates files, specify a single micrograph name using --selection_list option.
+	In addition input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry, 
+	specify a single micrograph name using --selection_list option.
 	In this mode, only the specified single micrograph will be processed.
-	If this micrograph name does not matches the file name part of the pattern (i.e. ignores the directory paths), the process will exit without processing it.
+	If this micrograph name does not matches the file name part of the pattern (ignoring the directory paths), the process will exit without processing it.
 	If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it.
 
-	sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  particles  --selection_list=mic0.hdf  --coordinates_format=eman2  --box_size=64  --import_ctf=outdir_cter/partres/partres.txt
+	sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic0.hdf  --coordinates_format=eman2  --box_size=64
+
+For negative staining data, set the pixel size [A/Pixels] as the source of CTF paramters and use --skip_invert.
+
+	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  5.2  particles  --coordinates_format=eman2  --box_size=64  --skip_invert
 
 """
 	parser = OptionParser(usage, version=SPARXVERSION)
@@ -143,11 +130,10 @@ Single Micrograph Mode - Process a single micrograph:
 	parser.add_option("--coordinates_format",  type="string",        default="eman1",   help="Coordinate file format: Allowed values are \'sparx\', \'eman1\', \'eman2\', or \'spider\'. The sparx, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default eman1)")
 	parser.add_option("--box_size",            type="int",           default=256,       help="Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when resample_ratio < 1.0. (default 256)")
 	parser.add_option("--skip_invert",         action="store_true",  default=False,     help="Skip invert image contrast: Use this option for negative staining data. By default, the image contrast is inverted for cryo data. (default False)")
-	parser.add_option("--import_ctf",          type="string",        default="",        help="CTER CTF parameter file: The file produced by sxcter and normally called partres.txt. (default none)")
-	parser.add_option("--limit_ctf",           action="store_true",  default=False,     help="Use CTF limit filter: Frequencies whose oscillation can not be properly modeled at the current pixel size are discarded in the images with the appropriate low-pass filter. This option requires --import_ctf. (default False)")
-	parser.add_option("--astigmatism_error",   type="float",         default=360.0,     help="Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. (default 360.0)")
-	parser.add_option("--resample_ratio",      type="float",         default=1.0,       help="Ratio between new and original pixel size: Use values between 0.0 and 1.0. The new pixel size is automatically recalculated when resample_ratio < 1.0 is used. (default 1.0)")
-	parser.add_option("--check_consistency",   action="store_true",  default=False,     help="Check consistency of inputs: Create the text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)")
+	parser.add_option("--limit_ctf",           action="store_true",  default=False,     help="Use CTF limit filter: Frequencies where CTF oscillations can not be properly modeled with the resampled pixel size will be discarded in the images with the appropriate low-pass filter. This has no effects when the CTER CTF File is not specified by the CTF paramters source argument. (default False)")
+	parser.add_option("--astigmatism_error",   type="float",         default=360.0,     help="Astigmatism error limit [Degrees]: Set astigmatism to zero for all micrographs where the angular error computed by sxcter is larger than the desired value. This has no effects when the CTER CTF File is not specified by the CTF paramters source argument. (default 360.0)")
+	parser.add_option("--resample_ratio",      type="float",         default=1.0,       help="Ratio between new and original pixel size: Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when resample_ratio < 1.0 is used. (default 1.0)")
+	parser.add_option("--check_consistency",   action="store_true",  default=False,     help="Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)")
 	
 	# ====================================================================================
 	# Prepare processing
@@ -173,23 +159,32 @@ Single Micrograph Mode - Process a single micrograph:
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
 	# ------------------------------------------------------------------------------------
-	# Check error conditions of arguments and prepare variables for them
+	# Check error conditions of arguments and options, then prepare variables for arguments
 	# ------------------------------------------------------------------------------------
+	
 	mic_pattern = None
 	coords_pattern = None
+	ctf_params_src = None
 	out_dir = None
-	error_status = None
 	# not a real while, an if with the opportunity to use break when errors need to be reported
+	error_status = None
 	while True:
-		if len(args) != 3:
+		# --------------------------------------------------------------------------------
+		# Check the number of arguments. If OK, then prepare variables for them
+		# --------------------------------------------------------------------------------
+		if len(args) != 4:
 			error_status = ("Please check usage for number of arguments.\n Usage: " + usage + "\n" + "Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
 			break
-		else: 
-			assert (len(args) == 3)
-			mic_pattern = args[0]
-			coords_pattern = args[1]
-			out_dir = args[2]
 		
+		assert (len(args) == 4)
+		mic_pattern = args[0]
+		coords_pattern = args[1]
+		ctf_params_src = args[2]
+		out_dir = args[3]
+		
+		# --------------------------------------------------------------------------------
+		# Check error conditions of arguments
+		# --------------------------------------------------------------------------------
 		if mic_pattern[:len("bdb:")].lower() == "bdb":
 			error_status = ("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 			break
@@ -202,20 +197,87 @@ Single Micrograph Mode - Process a single micrograph:
 			error_status = ("Input coordinates file name pattern must contain wild card (*). Please check input_coordinates_pattern argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 			break
 		
-		if my_mpi_proc_id == main_mpi_proc:
-			if os.path.exists(out_dir):
-				error_status = ("Output directory exists. Please change the name and restart the program.", getframeinfo(currentframe()))
+		if not is_float(ctf_params_src):
+			assert (type(ctf_params_src) is str)
+			# This should be string for CTER CTF parameter file
+			if os.path.exists(ctf_params_src) == False:
+				error_status = ("Specified CTER CTF file is not found. Please check input_ctf_params_source argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 				break
+		else:
+			assert (is_float(ctf_params_src))
+			if float(ctf_params_src) <= 0.0:
+				error_status = ("Specified pixel size is not larger than 0.0. Please check input_ctf_params_source argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+				break
+		
+		if os.path.exists(out_dir):
+			error_status = ("Output directory exists. Please change the name and restart the program.", getframeinfo(currentframe()))
+			break
+		
+		# --------------------------------------------------------------------------------
+		# Check error conditions of options
+		# --------------------------------------------------------------------------------
+		if options.selection_list != None:
+			if not os.path.exists(options.selection_list): 
+				error_status = ("File specified by selection_list option does not exists. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+				break
+		
+		if options.coordinates_format.lower() not in ["sparx", "eman1", "eman2", "spider"]:
+			error_status = ("Invalid option value: --coordinates_format=%s. Please run %s -h for help." % (options.coordinates_format, program_name), getframeinfo(currentframe()))
+			break
+		
+		if (options.resample_ratio <= 0.0 or options.resample_ratio > 1.0):
+			error_status = ("Invalid option value: --resample_ratio=%s. Please run %s -h for help." % (options.resample_ratio, program_name), getframeinfo(currentframe()))
+			break
+		
 		break
 	if_error_then_all_processes_exit_program(error_status)
-	assert(coords_pattern != None)
-	assert(mic_pattern != None)
-	assert(out_dir != None)
+	assert (mic_pattern != None)
+	assert (coords_pattern != None)
+	assert (ctf_params_src != None)
+	assert (out_dir != None)
 	
 	# ------------------------------------------------------------------------------------
-	# Check error conditions of options
+	# Check warning conditions of options
 	# ------------------------------------------------------------------------------------
-	check_options(options, program_name)
+	if my_mpi_proc_id == main_mpi_proc:
+		# This should be string specifying pixel size [A/Pixels]
+		assert (type(ctf_params_src) is str)
+		if is_float(ctf_params_src):
+			if options.limit_ctf:
+				print("WARNING!!! --limit_ctf option has no effects since the CTER CTF File is not specified with input_ctf_params_source argument...")
+				
+			if options.astigmatism_error != 360.0: # WARN User only when it is obvious that user is trying to use astigmatism_error option
+				print("WARNING!!! --astigmatism_error option has no effects since the CTER CTF File is not specified with input_ctf_params_source argument...")
+	
+	# ------------------------------------------------------------------------------------
+	# Check the source of CTF parameteres and select the CTF mode
+	# (1) Real CTF parameters mode  : Use real CTF parameters stored in a CTER CTF parameter file for cryo data (use_real_ctf_params is True)
+	# (2) Dummy CTF parameters mode : Create dummy CTF parameters for negative staining data (use_real_ctf_params is False)
+	# ------------------------------------------------------------------------------------
+	use_real_ctf_params = not is_float(ctf_params_src)
+	
+	# Define indices of CTER Parameters
+	# All mpi processes must have access to these indices
+	i_enum = -1
+	i_enum += 1; idx_cter_def          = i_enum # defocus [um]; index must be same as ctf object format
+	i_enum += 1; idx_cter_cs           = i_enum # Cs [mm]; index must be same as ctf object format
+	i_enum += 1; idx_cter_vol          = i_enum # voltage[kV]; index must be same as ctf object format
+	i_enum += 1; idx_cter_apix         = i_enum # pixel size [A]; index must be same as ctf object format
+	i_enum += 1; idx_cter_bfactor      = i_enum # B-factor [A^2]; index must be same as ctf object format
+	i_enum += 1; idx_cter_ac           = i_enum # amplitude contrast [%]; index must be same as ctf object format
+	i_enum += 1; idx_cter_astig_amp    = i_enum # astigmatism amplitude [um]; index must be same as ctf object format
+	i_enum += 1; idx_cter_astig_ang    = i_enum # astigmatism angle [degree]; index must be same as ctf object format
+	i_enum += 1; idx_cter_sd_def       = i_enum # std dev of defocus [um]
+	i_enum += 1; idx_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
+	i_enum += 1; idx_cter_sd_astig_ang = i_enum # std dev of ast angle [degree]
+	i_enum += 1; idx_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
+	i_enum += 1; idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp [%]
+	i_enum += 1; idx_cter_spectra_diff = i_enum # average of differences between with- and without-astig. experimental 1D spectra at extrema
+	i_enum += 1; idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
+	i_enum += 1; idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
+	i_enum += 1; idx_cter_error_ctf    = i_enum # limit frequency by CTF error [1/A]
+	i_enum += 1; idx_cter_mic_path     = i_enum # micrograph file path
+	i_enum += 1; n_idx_cter            = i_enum
 	
 	# ------------------------------------------------------------------------------------
 	# Prepare the variables for all sections
@@ -232,30 +294,6 @@ Single Micrograph Mode - Process a single micrograph:
 	
 	# List keeps only id substrings of micrographs whose all necessary information are available
 	valid_mic_id_substr_list = [] 
-	
-	# Indices of CTER Parameters
-	# All mpi processes must have access to indices
-	if options.import_ctf:
-		i_enum = -1
-		i_enum += 1; idx_cter_def          = i_enum # defocus [um]; index must be same as ctf object format
-		i_enum += 1; idx_cter_cs           = i_enum # Cs [mm]; index must be same as ctf object format
-		i_enum += 1; idx_cter_vol          = i_enum # voltage[kV]; index must be same as ctf object format
-		i_enum += 1; idx_cter_apix         = i_enum # pixel size [A]; index must be same as ctf object format
-		i_enum += 1; idx_cter_bfactor      = i_enum # B-factor [A^2]; index must be same as ctf object format
-		i_enum += 1; idx_cter_ac           = i_enum # amplitude contrast [%]; index must be same as ctf object format
-		i_enum += 1; idx_cter_astig_amp    = i_enum # astigmatism amplitude [um]; index must be same as ctf object format
-		i_enum += 1; idx_cter_astig_ang    = i_enum # astigmatism angle [degree]; index must be same as ctf object format
-		i_enum += 1; idx_cter_sd_def       = i_enum # std dev of defocus [um]
-		i_enum += 1; idx_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
-		i_enum += 1; idx_cter_sd_astig_ang = i_enum # std dev of ast angle [degree]
-		i_enum += 1; idx_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
-		i_enum += 1; idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp [%]
-		i_enum += 1; idx_cter_spectra_diff = i_enum # average of differences between with- and without-astig. experimental 1D spectra at extrema
-		i_enum += 1; idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
-		i_enum += 1; idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
-		i_enum += 1; idx_cter_error_ctf    = i_enum # limit frequency by CTF error [1/A]
-		i_enum += 1; idx_cter_mic_path     = i_enum # micrograph file path
-		i_enum += 1; n_idx_cter            = i_enum
 	
 	# ====================================================================================
 	# Obtain the list of micrograph id sustrings using a single CPU (i.e. main mpi process)
@@ -297,7 +335,7 @@ Single Micrograph Mode - Process a single micrograph:
 		if len(input_mic_path_list) == 0:
 			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), getframeinfo(currentframe()))
 			break
-		assert(len(input_mic_path_list) > 0)
+		assert (len(input_mic_path_list) > 0)
 		
 		# Register micrograph id substrings to the global entry dictionary
 		for input_mic_path in input_mic_path_list:
@@ -305,13 +343,13 @@ Single Micrograph Mode - Process a single micrograph:
 			input_mic_basename = os.path.basename(input_mic_path)
 			mic_id_substr_tail_idx = input_mic_basename.index(mic_basename_tokens[1])
 			mic_id_substr = input_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-			assert(input_mic_path == mic_pattern.replace("*", mic_id_substr))
+			assert (input_mic_path == mic_pattern.replace("*", mic_id_substr))
 			if not mic_id_substr in global_entry_dict:
 				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
 				global_entry_dict[mic_id_substr] = {}
-			assert(mic_id_substr in global_entry_dict)
+			assert (mic_id_substr in global_entry_dict)
 			global_entry_dict[mic_id_substr][subkey_input_mic_path] = input_mic_path
-		assert(len(global_entry_dict) > 0)
+		assert (len(global_entry_dict) > 0)
 		
 		# --------------------------------------------------------------------------------
 		# Register micrograph id substrings found in the selection list
@@ -326,7 +364,7 @@ Single Micrograph Mode - Process a single micrograph:
 			# Treat all micrographs in the input directory as selected ones
 			selected_mic_path_list = input_mic_path_list
 		else:
-			assert(options.selection_list != None and os.path.exists(options.selection_list))
+			assert (options.selection_list != None and os.path.exists(options.selection_list))
 			if os.path.splitext(options.selection_list)[1] == ".txt":
 				print(" ")
 				print("----- Running with Selected Micrographs Mode -----")
@@ -345,13 +383,13 @@ Single Micrograph Mode - Process a single micrograph:
 				print(" ")
 				print("Processing a single micorgprah: %s..." % (options.selection_list))
 				selected_mic_path_list = [options.selection_list]
-			assert(len(selected_mic_path_list) > 0)
+			assert (len(selected_mic_path_list) > 0)
 			
 			selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 			if selected_mic_directory != "":
 				print("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory))
 			
-		assert(len(selected_mic_path_list) > 0)
+		assert (len(selected_mic_path_list) > 0)
 		
 		# Register micrograph id substrings to the global entry dictionary
 		for selected_mic_path in selected_mic_path_list:
@@ -359,13 +397,13 @@ Single Micrograph Mode - Process a single micrograph:
 			selected_mic_basename = os.path.basename(selected_mic_path)
 			mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
 			mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-			assert(selected_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+			assert (selected_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 			if not mic_id_substr in global_entry_dict:
 				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
 				global_entry_dict[mic_id_substr] = {}
-			assert(mic_id_substr in global_entry_dict)
+			assert (mic_id_substr in global_entry_dict)
 			global_entry_dict[mic_id_substr][subkey_selected_mic_basename] = selected_mic_basename
-		assert(len(global_entry_dict) > 0)
+		assert (len(global_entry_dict) > 0)
 		
 		del selected_mic_path_list # Do not need this anymore
 		del input_mic_path_list # Do not need this anymore
@@ -384,56 +422,57 @@ Single Micrograph Mode - Process a single micrograph:
 		if len(coords_path_list) == 0:
 			error_status = ("No coordinates files are found in the directory specified by coordinates file path pattern (%s). Please check input_coordinates_pattern argument. Run %s -h for help." % (os.path.dirname(coords_pattern), program_name), getframeinfo(currentframe()))
 			break
-		assert(len(coords_path_list) > 0)
+		assert (len(coords_path_list) > 0)
 		
 		for coords_path in coords_path_list:
 			# Find tail index of coordinates id substring and extract the substring from the coordinates file path
 			coords_id_substr_tail_idx = coords_path.index(coords_pattern_tokens[1])
 			coords_id_substr = coords_path[coords_id_substr_head_idx:coords_id_substr_tail_idx]
-			assert(coords_path == coords_pattern.replace("*", coords_id_substr))
+			assert (coords_path == coords_pattern.replace("*", coords_id_substr))
 			if not coords_id_substr in global_entry_dict:
 				# print("MRK_DEBUG: Added new coords_id_substr (%s) to global_entry_dict from coords_path_list " % (coords_id_substr))
 				global_entry_dict[coords_id_substr] = {}
-			assert(coords_id_substr in global_entry_dict)
+			assert (coords_id_substr in global_entry_dict)
 			global_entry_dict[coords_id_substr][subkey_coords_path] = coords_path
-		assert(len(global_entry_dict) > 0)
+		assert (len(global_entry_dict) > 0)
 		
 		del coords_path_list # Do not need this anymore
 		
 		# --------------------------------------------------------------------------------
 		# If necessary, register micrograph id substrings of CTER entries to the global entry dictionary
 		# --------------------------------------------------------------------------------
-		if options.import_ctf:
+		if use_real_ctf_params:
+			# This should be string for CTER CTF parameter file
 			print(" ")
 			print("Checking the CTER CTF file...")
-			assert(os.path.exists(options.import_ctf))
-			cter_entry_list = read_text_row(options.import_ctf)
+			assert (os.path.exists(ctf_params_src))
+			cter_entry_list = read_text_row(ctf_params_src)
 			
 			# Check error condition of CTER entry list
-			print("Found %d CTER entries in %s." % (len(cter_entry_list), options.import_ctf))
+			print("Found %d CTER entries in %s." % (len(cter_entry_list), ctf_params_src))
 			if len(cter_entry_list) == 0:
-				error_status = ("No CTER entries are found in %s. Please check --import_ctf option. Run %s -h for help." % (options.import_ctf, program_name), getframeinfo(currentframe()))
+				error_status = ("No CTER entries are found in %s. Please check input_ctf_params_source argument. Run %s -h for help." % (ctf_params_src, program_name), getframeinfo(currentframe()))
 				break
-			assert(len(cter_entry_list) > 0)
+			assert (len(cter_entry_list) > 0)
 			
 			if (len(cter_entry_list[0]) != n_idx_cter):
-				error_status = ("Number of columns (%d) must be %d in %s. The format might be old. Please run sxcter.py again." % (len(cter_entry_list[0]), n_idx_cter, options.import_ctf), getframeinfo(currentframe()))
+				error_status = ("Number of columns (%d) must be %d in %s. The format might be old. Please run sxcter.py again." % (len(cter_entry_list[0]), n_idx_cter, ctf_params_src), getframeinfo(currentframe()))
 				break
-			assert(len(cter_entry_list[0]) == n_idx_cter)
+			assert (len(cter_entry_list[0]) == n_idx_cter)
 			
 			cter_mic_directory = os.path.dirname(cter_entry_list[0][idx_cter_mic_path])
 			if cter_mic_directory != "":
 				print("    NOTE: Program disregards the directory paths in the CTER CTF file (%s)." % (cter_mic_directory))
 			
 			for cter_entry in cter_entry_list:
-				assert(len(cter_entry) == n_idx_cter)
+				assert (len(cter_entry) == n_idx_cter)
 				# Find tail index of micrograph id substring and extract the substring from the micrograph path of CTER entry
 				cter_mic_path = cter_entry[idx_cter_mic_path]
 				cter_mic_basename = os.path.basename(cter_mic_path)
 				mic_id_substr_tail_idx = cter_mic_basename.index(mic_basename_tokens[1])
 				mic_id_substr = cter_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 				# Between cter_mic_path and mic_path, directory paths might be different but the basenames should be same!
-				assert(cter_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+				assert (cter_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 				
 				if(cter_entry[idx_cter_sd_astig_ang] > options.astigmatism_error):
 					print("    NOTE: Astigmatism angular SD of %s (%f degree) exceeds specified limit (%f degree). Resetting astigmatism parameters to zeros..." % (cter_mic_basename, cter_entry[idx_cter_sd_astig_ang], options.astigmatism_error))
@@ -443,19 +482,19 @@ Single Micrograph Mode - Process a single micrograph:
 				if not mic_id_substr in global_entry_dict:
 					# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from cter_entry_list " % (mic_id_substr))
 					global_entry_dict[mic_id_substr] = {}
-				assert(mic_id_substr in global_entry_dict)
+				assert (mic_id_substr in global_entry_dict)
 				global_entry_dict[mic_id_substr][subkey_cter_entry] = cter_entry
-			assert(len(global_entry_dict) > 0)
+			assert (len(global_entry_dict) > 0)
 			
 			del cter_entry_list # Do not need this anymore
 		
 		# --------------------------------------------------------------------------------
 		# Clean up variables related to registration to the global entry dictionary
 		# --------------------------------------------------------------------------------
-		del coords_id_substr_head_idx
-		del coords_pattern_tokens
-		del mic_id_substr_head_idx
 		del mic_basename_tokens
+		del mic_id_substr_head_idx
+		del coords_pattern_tokens
+		del coords_id_substr_head_idx
 		
 		# --------------------------------------------------------------------------------
 		# Create the list containing only valid micrograph id substrings
@@ -487,12 +526,40 @@ Single Micrograph Mode - Process a single micrograph:
 					warinnig_messages.append("    associated coordinates file %s." % (coords_path))
 					no_coords_mic_id_substr_list.append(mic_id_substr)
 				
-				if options.import_ctf:
+				if use_real_ctf_params:
 					# Check if associated CTER entry exists
 					if not subkey_cter_entry in mic_id_entry:
 						mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-						warinnig_messages.append("    associated CTF parameter entry with %s in the CTER paramter file %s." % (mic_basename, options.import_ctf))
+						warinnig_messages.append("    associated CTF parameter entry with %s in the CTER paramter file %s." % (mic_basename, ctf_params_src))
 						no_cter_entry_mic_id_substr_list.append(mic_id_substr)
+				else:
+					assert(not use_real_ctf_params)
+					# Register dummy CTF parameters
+					# Create dummy CTER entry
+					assert (float(ctf_params_src) > 0.0)
+					dummy_cter_entry = [None] * n_idx_cter
+					assert (len(dummy_cter_entry) == n_idx_cter)
+					dummy_cter_entry[idx_cter_def]          = 0.0
+					dummy_cter_entry[idx_cter_cs]           = 0.0
+					dummy_cter_entry[idx_cter_vol]          = 300.0
+					dummy_cter_entry[idx_cter_apix]         = float(ctf_params_src)
+					dummy_cter_entry[idx_cter_bfactor]      = 0.0
+					dummy_cter_entry[idx_cter_ac]           = 100.0
+					dummy_cter_entry[idx_cter_astig_amp]    = 0.0
+					dummy_cter_entry[idx_cter_astig_ang]    = 0.0
+					dummy_cter_entry[idx_cter_sd_def]       = 0.0
+					dummy_cter_entry[idx_cter_sd_astig_amp] = 0.0
+					dummy_cter_entry[idx_cter_sd_astig_ang] = 0.0
+					dummy_cter_entry[idx_cter_cv_def]       = 0.0
+					dummy_cter_entry[idx_cter_cv_astig_amp] = 0.0
+					dummy_cter_entry[idx_cter_spectra_diff] = 0.0
+					dummy_cter_entry[idx_cter_error_def]    = 0.5/dummy_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					dummy_cter_entry[idx_cter_error_astig]  = 0.5/dummy_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					dummy_cter_entry[idx_cter_error_ctf]    = 0.5/dummy_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					dummy_cter_entry[idx_cter_mic_path]     = ""
+		
+					assert (not subkey_cter_entry in mic_id_entry)
+					global_entry_dict[mic_id_substr][subkey_cter_entry] = dummy_cter_entry
 				
 				if len(warinnig_messages) > 0:
 					print("WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr))
@@ -503,13 +570,13 @@ Single Micrograph Mode - Process a single micrograph:
 					# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
 			# else:
-			# 	assert(not subkey_selected_mic_basename in mic_id_entry)
+			# 	assert (not subkey_selected_mic_basename in mic_id_entry)
 			# 	# This entry is not in the selection list. Do nothing
 			
 		# Check the input dataset consistency and save the result to a text file, if necessary.
 		if options.check_consistency:
 			# Create output directory
-			assert(not os.path.exists(out_dir))
+			assert (not os.path.exists(out_dir))
 			os.mkdir(out_dir)
 			
 			# Open the consistency check file
@@ -538,11 +605,15 @@ Single Micrograph Mode - Process a single micrograph:
 					coords_path = coords_pattern.replace("*", mic_id_substr)
 					consistency_messages.append("    associated coordinates file %s." % (coords_path))
 				
-				if options.import_ctf:
+				if use_real_ctf_params:
 					# Check if associated CTER entry exists
 					if not subkey_cter_entry in mic_id_entry:
 						mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
-						consistency_messages.append("    associated CTF parameter entry with %s in the CTER paramter file %s." % (mic_basename, options.import_ctf))
+						consistency_messages.append("    associated CTF parameter entry with %s in the CTER paramter file %s." % (mic_basename, ctf_params_src))
+				else:
+					assert (not use_real_ctf_params)
+					# All entry must have dummy cter entry
+					assert (subkey_cter_entry in mic_id_entry)
 				
 				if len(consistency_messages) > 0:
 					inconsist_mic_list_file.write("Micrograph ID %s does not have:\n" % (mic_id_substr))
@@ -554,6 +625,12 @@ Single Micrograph Mode - Process a single micrograph:
 			inconsist_mic_list_file.flush()
 			inconsist_mic_list_file.close()
 			
+		# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
+		# we need sort the valid_mic_id_substr_list here
+		# print("MRK_DEBUG: before sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
+		valid_mic_id_substr_list.sort()
+		# print("MRK_DEBUG: after sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
+		
 		# --------------------------------------------------------------------------------
 		# Print out the summary of input consistency
 		# --------------------------------------------------------------------------------
@@ -562,14 +639,15 @@ Single Micrograph Mode - Process a single micrograph:
 		print("Detected                           : %6d" % (len(global_entry_dict)))
 		print("Valid                              : %6d" % (len(valid_mic_id_substr_list)))
 		print("Rejected by no coordinates file    : %6d" % (len(no_coords_mic_id_substr_list)))
-		if options.import_ctf:
+		if use_real_ctf_params:
 			print("Rejected by no CTER entry          : %6d" % (len(no_cter_entry_mic_id_substr_list)))
-		
-		# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
-		# we need sort the valid_mic_id_substr_list here
-		# print("MRK_DEBUG: before sort, no_cter_entry_mic_id_substr_list := ", valid_mic_id_substr_list)
-		valid_mic_id_substr_list.sort()
-		# print("MRK_DEBUG: after sort, no_cter_entry_mic_id_substr_list := ", valid_mic_id_substr_list)
+			
+		# --------------------------------------------------------------------------------
+		# Clean up variables related to tracking of invalid (rejected) micrographs 
+		# --------------------------------------------------------------------------------
+		del no_input_mic_id_substr_list
+		del no_coords_mic_id_substr_list
+		del no_cter_entry_mic_id_substr_list
 		
 		# --------------------------------------------------------------------------------
 		# Check MPI error condition
@@ -612,18 +690,16 @@ Single Micrograph Mode - Process a single micrograph:
 		read_coords_file = read_spider_coords_file
 	else: 
 		assert (False) # Unreachable code
-	assert(read_coords_file != None)
+	assert (read_coords_file != None)
 	
 	# Preapre variables related to CTF limit option
-	if options.limit_ctf:
-		assert (options.import_ctf)
-		abs_ctf_limit_histogram = []  # compute the histogram for micrographs cut of by cter_entry limit.
+	abs_ctf_limit_histogram = []  # compute the histogram for micrographs cut of by cter_entry limit.
 			
 	# Micrograph baseroot pattern (extension are removed from micrograph basename pattern)
 	# for substack file names
 	mic_baseroot_pattern = os.path.splitext(mic_basename_pattern)[0]  
 	
-	# Prepare the variables for the global summary of micrographs
+	# Prepare the counters for the global summary of micrographs
 	n_mic_process = 0
 	n_mic_reject_no_coords_entry = 0
 	n_global_coords_detect = 0
@@ -661,7 +737,7 @@ Single Micrograph Mode - Process a single micrograph:
 		# Print out progress if necessary
 		# --------------------------------------------------------------------------------
 		mic_basename = global_entry_dict[mic_id_substr][subkey_selected_mic_basename]
-		assert(mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
+		assert (mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 		if my_mpi_proc_id == main_mpi_proc:
 			print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
 		
@@ -671,8 +747,8 @@ Single Micrograph Mode - Process a single micrograph:
 		# Do this first because error might happen 
 		# --------------------------------------------------------------------------------
 		coords_path = global_entry_dict[mic_id_substr][subkey_coords_path]
-		assert(os.path.exists(coords_path))
-		assert(read_coords_file != None)
+		assert (os.path.exists(coords_path))
+		assert (read_coords_file != None)
 		coords_list = read_coords_file(coords_path)
 		if (len(coords_list) == 0):
 			print("For %s, the associate coordinates file %s does not contain any entries. Skipping..." % (mic_basename, coords_path))
@@ -684,41 +760,26 @@ Single Micrograph Mode - Process a single micrograph:
 		# Calculate the resampled pixel size and store it to the cter_entry if necessary
 		# Do before expensive micrograph processing
 		# --------------------------------------------------------------------------------
-		if options.import_ctf:
-			cter_entry = global_entry_dict[mic_id_substr][subkey_cter_entry] # <<== MUST BE FIXED!!!
-			pixel_size = cter_entry[idx_cter_apix]
-			
-			if resample_ratio < 1.0:
-				assert (resample_ratio > 0.0)
-				resampled_pixel_size = pixel_size / resample_ratio
-				if my_mpi_proc_id == main_mpi_proc:
-					print("Resample micrograph to pixel size %6.4f and window segments from resampled micrograph." % resampled_pixel_size)
-			else:
-				assert (resample_ratio == 1.0)
-				resampled_pixel_size = pixel_size
-			
-			# store the resampled pixel size to the cter_entry
-			cter_entry[idx_cter_apix] = resampled_pixel_size
-			
-			# Generate CTF object of this micrograph
-			from utilities import generate_ctf
-			ctf_obj = generate_ctf(cter_entry) # indexes 0 to 7 (idx_cter_def to idx_cter_astig_ang) must be same in cter format & ctf object format.
+		cter_entry = global_entry_dict[mic_id_substr][subkey_cter_entry]
+		src_pixel_size = cter_entry[idx_cter_apix]
+		if resample_ratio < 1.0:
+			assert (resample_ratio > 0.0)
+			# store the resampled pixel size to the cter_entry to generate CTF object of this micrograph
+			cter_entry[idx_cter_apix] = src_pixel_size / resample_ratio
+			if my_mpi_proc_id == main_mpi_proc:
+				print("Resample micrograph to pixel size %6.4f [A/Pixels] from %6.4f [A/Pixels] and window segments from resampled micrograph." % (cter_entry[idx_cter_apix], src_pixel_size))
+		# else:
+		# 	assert (resample_ratio == 1.0)
+		# 	# Do nothing
 		
-		else:
-			assert (not options.import_ctf)
-			if resample_ratio < 1.0:
-				assert (resample_ratio > 0.0)
-				if my_mpi_proc_id == main_mpi_proc:
-					print("Resample micrograph with ratio %6.4f and window segments from resampled micrograph." % resample_ratio)
-			else:
-				assert (resample_ratio == 1.0)
-			# Note resampled_pixel_size is not declared if not options.import_ctf!
+		# Generate CTF object of this micrograph
+		ctf_obj = generate_ctf(cter_entry) # indexes 0 to 7 (idx_cter_def to idx_cter_astig_ang) must be same in cter format & ctf object format.
 		
 		# --------------------------------------------------------------------------------
 		# Read micrograph
 		# --------------------------------------------------------------------------------
 		mic_path = global_entry_dict[mic_id_substr][subkey_input_mic_path]
-		assert(mic_path == mic_pattern.replace("*", mic_id_substr))
+		assert (mic_path == mic_pattern.replace("*", mic_id_substr))
 		mic_img = get_im(mic_path)
 		
 		# --------------------------------------------------------------------------------
@@ -731,17 +792,15 @@ Single Micrograph Mode - Process a single micrograph:
 		# Cut off frequency components higher than the (resampled) CTF limit.
 		# --------------------------------------------------------------------------------
 		if options.limit_ctf:
-			assert (options.import_ctf)
-			
-			# Comput absolute frequency of CTF limit (abs_ctf_limit) with the original pixel size
-			abs_ctf_limit, angstrom_ctf_limit = ctflimit(box_size, cter_entry[idx_cter_def], cter_entry[idx_cter_cs], cter_entry[idx_cter_vol], resampled_pixel_size)
+			# Comput absolute frequency of CTF limit (abs_ctf_limit) with the resampled pixel size
+			abs_ctf_limit, angstrom_ctf_limit = ctflimit(box_size, cter_entry[idx_cter_def], cter_entry[idx_cter_cs], cter_entry[idx_cter_vol], cter_entry[idx_cter_apix])
 			
 			# Adjust the CTF limit according to the resampling ratio and box size
 			if resample_ratio < 1.0:
 				assert (resample_ratio > 0.0)
 				abs_ctf_limit = resample_ratio * abs_ctf_limit / float(box_size)
 			else:
-				assert (resample_ratio == 1.0) # -> pixel_size == resampled_pixel_size -> pixel_size / resampled_pixel_size == 1.0
+				assert (resample_ratio == 1.0) # -> src_pixel_size == resampled_pixel_size -> src_pixel_size / resampled_pixel_size == 1.0
 				abs_ctf_limit = abs_ctf_limit / float(box_size)
 			
 			# If ctf limit is lower than Nyquist frequency, apply the low pass filter with the cutoff at CTF limit frequencye.
@@ -758,7 +817,7 @@ Single Micrograph Mode - Process a single micrograph:
 		
 		# --------------------------------------------------------------------------------
 		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
-		# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = resampled_pixel_size
+		# after resampling by resample_ratio, resampled pixel size = src_pixel_size/resample_ratio
 		# --------------------------------------------------------------------------------
 		# NOTE: 2015/04/13 Toshio Moriya
 		# resample() efficiently takes care of the case resample_ratio = 1.0 but
@@ -792,17 +851,19 @@ Single Micrograph Mode - Process a single micrograph:
 		
 		# Loop through coordinates
 		for coords_id in xrange(len(coords_list)):
-			
+			# Get coordinates
 			x = int(coords_list[coords_id][0])
 			y = int(coords_list[coords_id][1])
 			
+			# Rescale coordinates if necessary
 			if resample_ratio < 1.0:
 				assert (resample_ratio > 0.0)
 				x = int(x * resample_ratio)
 				y = int(y * resample_ratio)
 			else:
-				assert(resample_ratio == 1.0)
+				assert (resample_ratio == 1.0)
 			
+			# Window a particle at this coordinates
 			if( (0 <= x - box_half) and ( x + box_half <= nx ) and (0 <= y - box_half) and ( y + box_half <= ny ) ):
 				particle_img = Util.window(mic_img, box_size, box_size, 1, x-x0, y-y0)
 			else:
@@ -810,48 +871,44 @@ Single Micrograph Mode - Process a single micrograph:
 				# print("MRK_DEBUG: coords_reject_out_of_boundary_messages[-1] := %s" % coords_reject_out_of_boundary_messages[-1])
 				continue
 			
+			# Normalize this particle image
 			particle_img = ramp(particle_img)
 			particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
 			particle_img -= particle_stats[0]
 			particle_img /= particle_stats[1]
 			
+			# Set header entries (attributes) of this particle image
+			# 
 			# NOTE: 2015/04/09 Toshio Moriya
 			# ptcl_source_image might be redundant information...
 			# Consider re-organizing header entries...
 			# 
 			particle_img.set_attr("ptcl_source_image", mic_path)
+			particle_img.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
 			particle_img.set_attr("ptcl_source_coord_id", coords_id)
 			particle_img.set_attr("ptcl_source_coord", [int(coords_list[coords_id][0]), int(coords_list[coords_id][1])])
 			particle_img.set_attr("resample_ratio", resample_ratio)
-			
+			# 
+			# NOTE: 2015/04/13 Toshio Moriya 
+			# Pawel Comment: Micrograph is not supposed to have CTF header info.
+			# So, let's assume it does not exist & ignore its presence.
+			# assert (not particle_img.has_ctff())
+			# 
+			# NOTE: 2015/04/13 Toshio Moriya 
+			# Note that resample() "correctly" updates pixel size of CTF header info if it exists
+			# 
 			# NOTE: 2015/04/13 Toshio Moriya
 			# apix_* attributes are updated by resample() only when resample_ratio != 1.0
 			# Let's make sure header info is consistent by setting apix_* = 1.0 
 			# regardless of options, so it is not passed down the processing line
 			# 
-			particle_img.set_attr("apix_x", 1.0)
-			particle_img.set_attr("apix_y", 1.0)
-			particle_img.set_attr("apix_z", 1.0)
-			if options.import_ctf:
-				particle_img.set_attr("ctf",ctf_obj)
-				particle_img.set_attr("ctf_applied", 0)
-				particle_img.set_attr("pixel_size", pixel_size)
-				# particle_img.set_attr("apix_x", resampled_pixel_size)
-				# particle_img.set_attr("apix_y", resampled_pixel_size)
-				# particle_img.set_attr("apix_z", resampled_pixel_size)
-			# NOTE: 2015/04/13 Toshio Moriya 
-			# Pawel Comment: Micrograph is not supposed to have CTF header info.
-			# So, let's assume it does not exist & ignore its presence.
-			# Note that resample() "correctly" updates pixel size of CTF header info if it exists
-			# 
-			# elif (particle_img.has_ctff()):
-			# 	assert(not options.import_ctf)
-			# 	ctf_origin = particle_img.get_attr("ctf_obj")
-			# 	pixel_size = round(ctf_origin.apix, 5) # Because SXCTER ouputs up to 5 digits 
-			# 	particle_img.set_attr("apix_x",pixel_size)
-			# 	particle_img.set_attr("apix_y",pixel_size)
-			# 	particle_img.set_attr("apix_z",pixel_size)	
+			particle_img.set_attr("apix_x", 1.0) # particle_img.set_attr("apix_x", resampled_pixel_size)
+			particle_img.set_attr("apix_y", 1.0) # particle_img.set_attr("apix_y", resampled_pixel_size)
+			particle_img.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
+			particle_img.set_attr("ctf",ctf_obj)
+			particle_img.set_attr("ctf_applied", 0)
 			
+			# Write the particle image to local stack file
 			# print("MRK_DEBUG: local_stack_path, local_particle_id", local_stack_path, local_particle_id)
 			particle_img.write_image(local_stack_path, local_particle_id)
 			local_particle_id += 1
@@ -872,6 +929,7 @@ Single Micrograph Mode - Process a single micrograph:
 			coords_reject_out_of_boundary_file.flush()
 			coords_reject_out_of_boundary_file.close()
 		
+		# Update the counters for the global summary of micrographs
 		n_mic_process += 1
 		n_global_coords_detect += len(coords_list)
 		n_global_coords_process += local_particle_id
@@ -885,7 +943,6 @@ Single Micrograph Mode - Process a single micrograph:
 	# Print out CTF limit information
 	# ------------------------------------------------------------------------------------
 	if options.limit_ctf:
-		assert (options.import_ctf)
 		if RUNNING_UNDER_MPI:
 			abs_ctf_limit_histogram = wrap_mpi_gatherv(abs_ctf_limit_histogram, main_mpi_proc)
 		
@@ -957,11 +1014,11 @@ Single Micrograph Mode - Process a single micrograph:
 				e2bdb_command += " --appendvstack=bdb:%s/data  1>/dev/null"%root_out_dir
 		"""
 		if RUNNING_UNDER_MPI:
-			e2bdb_command = "e2bdb.py  " + root_out_dir + "/mpi_proc_*  --makevstack=bdb:" + root_out_dir + "/data"
+			e2bdb_command = "e2bdb.py  " + root_out_dir + "/mpi_proc_*  --makevstack=bdb:" + root_out_dir + "#data"
 			print(" ")
 			print("Please execute from the command line :  ", e2bdb_command)
 		else:
-			e2bdb_command = "e2bdb.py  " + root_out_dir + "  --makevstack=bdb:" + root_out_dir + "/data"
+			e2bdb_command = "e2bdb.py  " + root_out_dir + "  --makevstack=bdb:" + root_out_dir + "#data"
 			cmdexecute(e2bdb_command, printing_on_success = False)
 		
 		print(" ")
