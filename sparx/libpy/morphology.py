@@ -2114,7 +2114,6 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	import numpy as np
 	import os
 	import glob
-	from   mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 	from   fundamentals import tilemic, rot_avg_table, resample
 	from   morphology   import threshold, bracket_def, bracket, goldsearch_astigmatism
 	from   morphology   import defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett
@@ -2132,6 +2131,7 @@ def cter_mrk(input_image, output_directory, wn, pixel_size = -1.0, Cs = 2.0, vol
 	
 	# Set up MPI related variables
 	if MPI:
+		from   mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 		myid = mpi_comm_rank(MPI_COMM_WORLD)
 		ncpu = mpi_comm_size(MPI_COMM_WORLD)
 		main_node = 0
