@@ -1,0 +1,61 @@
+\section{CVS Help} \label{CVS-HELP} \index{CVS Help}
+CVS is a version control system. Using it, you can record the history of sources files, and documents. For detailed information, you may refer \href{http://www.gnu.org/software/cvs/}{http://www.gnu.org/software/cvs/}.
+
+This document gives the typical usage of CVS under Unix/Linux
+platforms. The intended audience are EMAN2 developers.
+
+\begin{itemize}
+  \item Before you use CVS, set up environmental variable CVSROOT. For
+  EMAN/EMAN2, set up the following in your shell startup script:
+  \begin{itemize}
+    \item for csh/tcsh
+      \begin{itemize} 
+	\item[\%] setenv CVS\_RSH ssh
+	\item[\%] setenv CVSROOT
+	"blake.3dem.bioch.bcm.tmc.edu:/usr/local/CVS/CVS"
+      \end{itemize}
+    \item for bash/sh/zsh
+      \begin{itemize} 
+	\item[\%] export CVS\_RSH=ssh
+	\item[\%] export
+	CVSROOT="blake.3dem.bioch.bcm.tmc.edu:/usr/local/CVS/CVS"
+      \end{itemize}
+  \end{itemize}
+  NOTE: The following supposes you put EMAN2 under \$HOME/EMAN2.
+
+  \item  To check out EMAN2 source code, run
+    \begin{itemize} 
+        \item[\%] cd \$HOME/EMAN2/src
+        \item[\%] cvs co eman2
+    \end{itemize}
+  \item To add new files, run
+    \begin{itemize} 
+      \item[\%] cd \$HOME/EMAN2/src/eman2
+      \item[\%] cd YOUR-DIRECTORY
+      \item[\%] cvs add YOUR-FILES
+      \item[\%] cvs commit
+    \end{itemize}
+	
+  \item To remove files, run
+    \begin{itemize} 
+      \item[\%] cd \$HOME/EMAN2/src/eman2
+      \item[\%] cd YOUR-DIRECTORY
+      \item[\%] cvs remove YOUR-FILES
+      \item[\%] cvs commit
+    \end{itemize}
+
+  \item To check in modified existing files, run
+    \begin{itemize} 
+      \item[\%] cd \$HOME/EMAN2/src/eman2
+      \item[\%] cvs ci
+    \end{itemize}
+
+  \item To update your source code to the latest version in the CVS tree, run
+    \begin{itemize} 
+      \item[\%] cd \$HOME/EMAN2/src/eman2
+      \item[\%] cvs update
+    \end{itemize}
+     NOTE: read the output from the above command. If you see merging conflicts, you must resolve them first.
+
+
+\end{itemize}

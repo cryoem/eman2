@@ -1,0 +1,56 @@
+= Name =
+sxgui_unblur - Drift Assessment: Assess micrographs based on drift estimation produced by Unblur.
+
+
+= Usage =
+
+
+''usage in command line''
+
+sxgui_unblur.py inputfile input_shift_list_file
+
+
+=== Typical usage ===
+
+sxgui_unblur GUI tool can be run as a stand-alone program or run from sxgui.py.
+
+sxgui_unblur.py
+
+sxgui_unblur.py 'example-*_shift.txt'
+sxgui_unblur.py 'example-list'
+sxgui_unblur.py 'example-*_shift.txt' 'example-list'
+
+
+== Input ==
+
+inputfile::Shift files: A wild card * can be used to process multiple shift files. (default none)
+input_shift_list_file:: Input shift list file: Extension of input shift list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
+
+== Output ==
+
+
+== Description ==
+
+''''This is in progress 03/11/2016''''
+
+
+= Method =
+
+= Reference =
+
+== Author / Maintainer ==
+Markus Stabrin
+
+=== Attachments ===
+
+== Keywords ==
+    category 1:: APPLICATIONS
+
+== Files ==
+sparx/bin/sxgui_unblur.py
+
+=== See also ===
+
+
+=== Maturity ===
+ alpha:: in development

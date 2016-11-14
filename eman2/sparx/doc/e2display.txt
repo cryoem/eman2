@@ -1,0 +1,55 @@
+= Name =
+e2display - Display Data: Displays images, volumes, or 1D plots.
+
+= Usage =
+
+''usage in command line''
+
+e2display.py  input_data_list  --classmx=CLASSMX  --classes=CLASSES  --pdb=PDB  --singleimage  --plot  --plot3  --fullrange  --newwidget  --ppid=PPID  --verbose=n
+
+=== Typical usage ===
+
+e2display exists in non-MPI version.
+
+    browser window with more flexible functionality
+
+    e2display.py
+
+    display images
+
+    e2display.py input_image1 input_image2 ...
+
+== Input ==
+
+    input_data_list:: Input files: List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. (default none)
+
+    * The remaining parameters are optional.
+    classmx::Show particles from a class: Shows particles in one class defined in a classification matrix. The options requires <classmx>,<#>. (default none)
+    classes::show class-averages associated with particles:Shows particles associated class averages. Requires <rawptcl>,<classmx>. (default none)
+    pdb::Show PDB structure: (default none)
+    singleimage:: Single image view: Displays a stack in a single image view: (default False)
+    plot::Plot 2D: Data file(s) should be plotted rather than displayed in 2D. (default False)
+    plot3::Plot 3D: Data file(s) should be plotted rather than displayed in 3D. (default False)
+    fullrange:: Skip auto-contrast: Disables the auto contrast for the display of particles stacks and 2D images. (default False)
+    newwidget:: Use new 3D widget: Highly recommended. (default False)
+    ppid::Set PPID: Set PPID of the process. (default -2) 
+    verbose:: Verbose: Accepted values 0-9. (default 0)
+
+== Output ==
+
+
+= Description =
+
+= Author / Maintainer =
+EMAN2 Group
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+e2display.py
+
+= See also =
+
+= Maturity =
+No Bugs known so far.

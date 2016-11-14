@@ -1,0 +1,70 @@
+\section{Adding Documentation} \index{Adding Documentation}
+
+The majority of the documentation for EMAN2 is made using \LaTeX ~(see the
+\href{http://www.latex-project.org/}{\LaTeX ~homepage} for more
+information).  No preamble should be included in the new
+documentation; preamble information can removed either manually or
+using the python script rm\_preamble.py (see \ref{ADDING-DOC-RMPRE}
+for more information).  
+
+Documentation can be created using a WYSIWYG \LaTeX ~ editor such as
+\href{http://www.lyx.org/}{LyX} or
+\href{http://www.www.texmacs.org/}{TeXmacs}.  When using these
+utilities do not create title pages, abstract sections, or tables of
+content as this will cause integration problems with the rest of
+documentation.
+
+The recommended steps for adding new documentation go as follows:
+\begin{enumerate}
+  \item Create a new stand alone document (see \ref{ADDING-DOC-STANDS}
+  for standards information)
+  \item Remove the preamble information from the new file
+  (\ref{ADDING-DOC-RMPRE})
+  \item Edit TOC.tex (\ref{ADDING-DOC-TOC})
+  \item Run ``make'' to create the new documentation file
+\end{enumerate}
+
+\subsection{Document Standards} \label{ADDING-DOC-STANDS}
+Please do not include the following sections/commands in new documentation:
+\begin{itemize}
+  \item
+    { $\backslash$title,$\backslash$maketitle}
+  \item
+    { $\backslash$tableofcontents}
+\end{itemize}
+Edit the existing title and table of content information instead.
+
+
+\subsection{Removing Preambles} \label{ADDING-DOC-RMPRE}
+
+The preamble of a \LaTeX ~document is used to specify various global
+parameters of the document.  In a stand alone document, all commands
+coming before and including {$\backslash$begin\{document\}} are part of the
+preamble.  There is also a {$\backslash$end\{document\}} at the very end
+of the document that should be removed.
+
+Use the ``\%'' character at the  start of a line to comment it out.
+
+The python script rm\_preamble.py can usually be used to automatically remove
+the preamble and other tags that should not be used.
+\begin {itemize}
+  { 
+  \item[\%] python rm\_preamble.py \textit{file1 file2 ...}}
+\end{itemize}
+The output will be placed in the \textit{file1}.tex,
+\textit{file2}.tex, ...
+
+\subsection{Editing TOC.tex} \label{ADDING-DOC-TOC}
+
+TOC.tex contains the table of contents information for this document.
+Add ``{$\backslash$input\{\textit{new file name}\}}'' in the appropriate
+chapter to insert a new documentation file.
+Of course a new chapter can always be added using the
+``{$\backslash$chapter\{\textit{new chapter name}\}}'' command.
+
+
+\subsection{Adding \LaTeX ~Packages}
+
+The package inclusion tag for the documentation is located in
+EMAN2.tex.  Add the package that is needed to the
+{$\backslash$usepackage} command.

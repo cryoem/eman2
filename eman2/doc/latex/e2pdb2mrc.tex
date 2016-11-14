@@ -1,0 +1,34 @@
+\section{e2pdb2mrc.py} \index{Program Manuals!e2pdb2mrc.py} \label{e2pdb2mrc.py}
+\subsection{Usage}
+usage: e2pdb2mrc.py [options] input.pdb output.mrc
+
+
+\subsection{Description}
+Converts a pdb file into an electron density map. 0,0,0 in PDB space will 
+
+map to the center of the volume. Use e2procpdb.py to adjust coordinates,
+
+apply symmetry, etc. Resolution is equivalent to standard cryoEM definition, 
+
+using 1/2 width of Gaussian in Fourier space.
+
+
+
+
+\subsection{Options}
+
+\begin{longtable}{|c||p{3.5in}|}
+\hline \bf{Argument} & \bf{Description}\endhead
+\hline \multicolumn{2}{r}{{Continued on next page}} \endfoot
+\hline \hline \caption[e2pdb2mrc.py Options]{e2pdb2mrc.py Options}\endlastfoot
+\\\hline   --version  &  show program's version number and exit
+\\\hline   -h, --help  &  show this help message and exit
+\\\hline   -A  &  APIX, --apix=APIX A/voxel
+\\\hline   -R  &  RES, --res=RES Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res
+\\\hline   -B  &  BOX, --box=BOX Box size in pixels, $<$xyz$>$ or $<$x$>$,$<$y$>$,$<$z$>$
+\\\hline   --het  &  Include HET atoms in the map
+\\\hline   --chains=CHAINS  &  String list of chain identifiers to include, eg 'ABEFG'
+\\\hline
+ --quiet  &  Verbose is the default
+\\\hline
+\end{longtable}
