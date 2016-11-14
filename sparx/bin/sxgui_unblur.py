@@ -1523,23 +1523,23 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     listOfShiftFiles = numpy.genfromtxt(inputlist, dtype=None, unpack=True)
                 except TypeError:
                     message = QtGui.QMessageBox(self)
-                    message.setText('Empty File:\n{0}'.format(fileName))
+                    message.setText('Empty File:\n{0}'.format(self.fileName))
                     message.exec_()
                 except ValueError:
                     message = QtGui.QMessageBox(self)
-                    message.setText('File is not valid, only one column allowed:\n{0}'.format(fileName))
+                    message.setText('File is not valid, only one column allowed:\n{0}'.format(self.fileName))
                     message.exec_()
                 else:
                     if len(numpy.shape(listOfShiftFiles)) > 1:
                         message = QtGui.QMessageBox(self)
-                        message.setText('Too many columns. Expected one column:\n{0}'.format(fileName))
+                        message.setText('Too many columns. Expected one column:\n{0}'.format(self.fileName))
                         message.exec_()
                     else:
                         listOfShiftFiles = [os.path.relpath(name) for name in listOfShiftFiles]
                         self._fill_gui(inputlist=list(listOfShiftFiles), inputfile=inputfile)
             else:
                 message = QtGui.QMessageBox(self)
-                message.setText('Not a valid file name. Try again:\n{0}'.format(fileName))
+                message.setText('Not a valid file name. Try again:\n{0}'.format(self.fileName))
                 message.exec_()
         else:
             if inputfile is not None:
@@ -1551,16 +1551,16 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                         listOfShiftFiles = numpy.genfromtxt(inputfile, dtype=None, unpack=True)
                     except TypeError:
                         message = QtGui.QMessageBox(self)
-                        message.setText('Empty File:\n{0}'.format(fileName))
+                        message.setText('Empty File:\n{0}'.format(self.fileName))
                         message.exec_()
                     except ValueError:
                         message = QtGui.QMessageBox(self)
-                        message.setText('File is not valid, only one column allowed:\n{0}'.format(fileName))
+                        message.setText('File is not valid, only one column allowed:\n{0}'.format(self.fileName))
                         message.exec_()
                     else:
                         if len(numpy.shape(listOfShiftFiles)) > 1:
                             message = QtGui.QMessageBox(self)
-                            message.setText('Too many columns. Expected one column:\n{0}'.format(fileName))
+                            message.setText('Too many columns. Expected one column:\n{0}'.format(self.fileName))
                             message.exec_()
                         else:
                             self._fill_gui(inputlist=list(listOfShiftFiles))
@@ -1596,6 +1596,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.idxFirstFrame = None
         self.idxLastFrame = None
         self.varAnalyzeOne = None
+        self.fileName = None
 
         # Indices show and hide
         self.idxVisible = 0
@@ -2223,7 +2224,10 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # If no or few files were found
         if not self.listFile:
             messageBox2 = QtGui.QMessageBox()
-            messageBox2.setText('No matching drift files found or pattern and list entries does not match\n{:s}'.format(inputfile))
+            messageBox2.setText(
+                    'No matching drift files found or pattern' + 
+                    ' and list entries does not match\n{:s}'.format(inputfile)
+                    )
             messageBox2.exec_()
             messageBox.hide()
             return None
@@ -2342,9 +2346,12 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             except IOError:
                 continue
         else:
-            print(files)
             message = QtGui.QMessageBox(self)
-            message.setText('No files in given file list available')
+            message.setText(
+                    'No files in given file list available:\n{0}'.format(
+                        self.fileName
+                        )
+                    )
             message.exec_()
             return None
 
@@ -3901,29 +3908,33 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
     def _load_from_list(self):
         """Load shift files from list"""
 
-        fileName = str(QtGui.QFileDialog.getOpenFileName(
+        self.fileName = str(QtGui.QFileDialog.getOpenFileName(
             directory=os.getcwd(),
             options=QtGui.QFileDialog.DontUseNativeDialog,
             filter='Text files (*.txt)'
             ))
-        if self._check_list_or_file(fileName) == 'list':
+        if self._check_list_or_file(self.fileName) == 'list':
             try:
-                listOfShiftFiles = numpy.genfromtxt(fileName, dtype=None, unpack=True)
+                listOfShiftFiles = numpy.genfromtxt(self.fileName, dtype=None, unpack=True)
             except TypeError:
                 message = QtGui.QMessageBox(self)
-                message.setText('Empty File:\n{0}'.format(fileName))
+                message.setText('Empty File:\n{0}'.format(self.fileName))
                 message.exec_()
             except ValueError:
                 message = QtGui.QMessageBox(self)
-                message.setText('File is not valid, only one column allowed:\n{0}'.format(fileName))
+                message.setText('File is not valid, only one column allowed:\n{0}'.format(self.fileName))
                 message.exec_()
             else:
                 if len(numpy.shape(listOfShiftFiles)) > 1:
                     message = QtGui.QMessageBox(self)
-                    message.setText('Too many columns. Expected one column:\n{0}'.format(fileName))
+                    message.setText('Too many columns. Expected one column:\n{0}'.format(self.fileName))
                     message.exec_()
                 else:
-                    self._fill_gui(inputlist=list(listOfShiftFiles))
+                    if numpy.ndim(listOfShiftFiles) == 0:
+                        listOfShiftFiles = [listOfShiftFiles[()]]
+                    else:
+                        listOfShiftFiles = list(listOfShiftFiles)
+                    self._fill_gui(inputlist=listOfShiftFiles)
         else:
             print('input is no valid list')
 
