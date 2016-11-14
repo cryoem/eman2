@@ -1,0 +1,123 @@
+= Name =
+e2proc3d - Generic 3D image processing program: The main tasks are: (1) Convert volumes from one format to another, (2) Perform basic image processing operations such as filters, masks, normalization, and etc., (3) Resize/rescale volumes, and (4) Compute FSC curves, structure factors, etc.
+
+
+= Usage =
+
+''usage in command line''
+
+e2proc3d.py  input_volume  output_file  --medianshrink=n  --meanshrink=n  --meanshrinkbig=n  --scale=n  --sym=SYM   --averager=AVERAGER  --clip='x[,y,z[,xc,yc,zc]]'  --fftclip='x,y,z'  --process='processor_name:param1=value1:param2=value2'  --apix=APIX  --origin='x,y,z'  --mult=f  --multfile=MULTFILE  --matchto=MATCHTO  --outmode=OUTMODE  --outnorescale  --add=f  --addfile=ADDFILE  --calcfsc=VOL2_FILE  --calcsf=OUTPUT_FILE  --calcradial=CALCRADIAL  --setsf=INPUT_FILE  --tophalf  --inputto1  --icos5fhalfmap  --outtype=IMAGE_TYPE  --first=n  --trans='dx,dy,dz'  --resetxf  --align='aligner_name:param1=value1:param2=value2'  --ralignzphi=RALIGNZPHI  --alignref=REF_FILE  --alignctod=ALIGNCTOD  --rot='az,alt,phi'  --icos5to2  --icos2to5  --last=n  --swap  --average  --append  --ppid=PPID  --unstacking  --tomoprep  --verbose=n  --step=STEP
+
+=== Typical usage ===
+
+e2proc3d does not support MPI. 
+
+e2proc3d is generic 3D image processing and file format conversion program. All EMAN2 recognized file formats accepted (see Wiki for list).
+
+To create a new image, rather than reading from a file, specify ':<nx>:<ny>:<nz>:<value>' as an input filename.
+
+For specific details on various options, use 'e2proc3d.py --help'. 
+
+
+ 1. Convert MRC format to HDF format.
+
+''' e2proc3d.py test.mrc test.hdf '''
+
+ 2. Apply a 10 A low-pass filter to a volume and write output to a new file.
+
+''' e2proc3d.py threed.hdf threed.filt.hdf --process=filter.lowpass.gauss:cutoff_freq=0.1 '''
+
+ 3. Extract a reconstruction from a refinement directory as an HDF file usable with Chimera.
+
+''' e2proc3d.py bdb:refine_02#threed_filt_04 map_02_04.hdf '''
+
+ 4. Create a new 64x64x64 volume, initialize it as 1, then apply a hard spherical mask to 0.
+
+''' e2proc3d.py :64:64:64:1 myvol.hdf --process mask.sharp:outer_radius=25 '''
+
+'e2help.py processors -v 2' for a detailed list of available procesors.
+
+
+== Input ==
+    input_volume:: Input volume: Input volume file name. (default required string)
+
+    medianshrink:: Downsample volume with median filter: Downsample the volume by a factor of '<n>' by computing the local median. (default 1)
+    meanshrink:: Downsample volume with averaging filter: Downsample the volume by a factor of '<n>' by computing the local average. (default 1)
+    meanshrinkbig:: Downsample large volume with averaging filter: Downsample the volume by a factor of '<n>' without reading the entire volume into RAM. The output file (after shrinking) must fit into RAM. If specified, this must be the ONLY option on the command line. Any other options will be ignored. Output data type will match input data type. It works only on single image files, not stack files. (default 1)
+    scale:: Rescale volume: Rescale the volume by '<n>'. Generally use with --clip option. (default 1.0)
+    sym:: Symmetry to impose: Point-group symmetry to impose. Choices are:'c<n>', 'd<n>', 'h<n>', 'tet', 'oct', and 'icos'. (default c1)
+    averager:: Averager: Averager used for --average and --sym options. (default mean)
+    clip:: Pad or clip: Make the output volume have this size by padding/clipping. 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. (default none)
+    fftclip:: Rescale by padding FFT: Make the output have this size with rescaling by padding FFT. The argument format is '<x>,<y>,<z>'. (default none)
+    process:: Apply processor: Apply a processor named 'processor_name' with all its parameters/values;'<processor_name>:<param1>=<value1>:<param2>=<value2>'. Type 'e2help.py processors -v 2' to see available processors. (default none)
+    apix:: Pixels size [A/pixel] for S scaling: Pixels size [A/pixel] for S scaling. (default 0.0)
+    origin:: Set origin of coordinates: Set the coordinates for the pixel (0,0,0) to '<x>,<y>,<z>' for Chimera. THIS HAS NO IMPACT ON IMAGE PROCESSING! (default none)
+    mult:: Scale densities: Scale the densities by a fixed number in the output. (default 1.0)
+    multfile:: Multiply by another volume: Multiply the volume by another volume of identical size. This can be used to apply masks, etc. (default none)
+    matchto:: Match filtration: Match filtration of input volume to this specified volume. (default none)
+    outmode:: Use specific bit-depth: All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range. (default float)
+    outnorescale:: Do not rescale float values: If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated. (default False)
+    add:: Add constant: Add a constant 'f' to the densities. (default 0.0)
+    addfile:: Add another volume: Add the volume to another volume of identical size. (default none)
+    calcfsc:: Calculate FSC: Calculate a FSC curve between two models. Output is a txt file. This option is the name of the second volume. (default none)
+    calcsf:: Calculate radial structure factor: Calculate a radial structure factor. Must specify --apix option. (default none)
+    calcradial:: Calculate radial density by shell: Calculate the radial density by shell. Output file is a text file. 0 - mean amp, 2 - min, 3 - max, 4- sigma. (default -1)
+    setsf:: Set radial structure factor: Set the radial structure factor. Must specify --apix option. (default none)
+    tophalf:: Keep only top half map: The output only keeps the top half map. (default False)
+    inputto1:: Set all voxels to 1: All voxels in the input file are set to 1 after reading. This can be used with mask.* processors to produce a mask file of the correct size. (default False)
+    icos5fhalfmap:: Input is icos 5f top half map: The input is the icos 5f top half map generated by the --tophalf option. (default False)
+    outtype:: Output image format: Set output image format; mrc, imagic, hdf, and etc. (default none)
+    first:: First image ID to process: The ID of the first image in the input to process [0 - n-1]. (default 0)
+    trans:: Translate map: Translate map by dx,dy,dz. (default none)
+    resetxf:: Reset transform matrix: Reset an existing transform matrix to the identity matrix. (default False)
+    align:: Align to reference: Align input map to reference specified with --alignref option. As with processors, a sequence of aligners is permitted. The argument format is '<aligner_name>:<param1>=<value1>:<param2>=<value2>' (default none)
+    ralignzphi:: Refine Z alignment: Refine Z alignment within +-10 pixels and phi +-15 degrees (for C symmetries). Specify name of alignment reference here not with --alignref option. (default none)
+    alignref:: Reference volume file: Alignment to reference volume. May only be specified once. (default none)
+    alignctod:: Rotate C to D symmetry: Rotate a map already aligned for C symmetry so the best 2-fold is positioned for specified D symmetry. Does not impose specified symmetry. (default none)
+    rot:: Rotate: Rotate map. Specify '<az>,<alt>,<phi>' or '<convention>:<par>=<val>:<par>=<val>:...' (e.g. 'mrc:psi=22:theta=15:omega=7'). (default none)
+    icos5to2:: Rotate icosahedral 5- to 2-fold: Rotate an icosahedral map from 5-fold on Z (EMAN standard) to 2-fold on Z (MRC standard) orientation. (default False)
+    icos2to5:: Rotate icosahedral 2- to 5-fold: Rotate an icosahedral map from 2-fold on Z (MRC standard) to 5-fold on Z (EMAN standard) orientation. (default False)
+    last:: Last image ID to process: The ID of the last image in the input to process. (default -1)
+    swap:: Swap byte order: Swap the byte order. (default False)
+    average:: Computes global average: Computes the average of a stack of 3D volumes. (default False)
+    append:: Append to stack: Append output volumes to a stack of volumes. i.e., do not write inplace (opposite of 'inplace' in e2proc2d.py). (default False)
+    ppid:: Set PID of parent process: Set the PID of the parent process, used for cross platform PPID. (default -2)
+    unstacking:: Unstack output: Process a stack of 3D images, then output it as a series of numbered single image files. (default False)
+    tomoprep:: Prepare tomography annotation: Produce a special HDF file designed for rapid interactive tomography annotation. This option should be used alone. (default False)
+    verbose:: Verbose level [0-9]: Higher number means higher level of verboseness. (default 0)
+    step:: Processes only subset: Specify '<init>,<step>'. Processes only a subset of the input data (e.g. '0,2' would process only the even numbered particles). (default none)
+
+    * The remaining parameters are optional. Normally you will not touch this.
+
+
+== Output ==
+    output_file:: Output file: Output file name. Type of output file depends on the option settings. (default required string)
+
+
+= Description =
+This program operates on single 3D volume files, stacks of 3-D volume files, and EMAN2 BDB databases. It has many command-line options for specific tasks. The generic '--process' option is by far the most powerful, offering access to 180+ different image processing operations. For a list, type
+
+'e2help.py processors -v 2' for a detailed list of available processors.
+
+
+= Author / Maintainer =
+EMAN2 Group
+
+
+= Keywords =
+    category 1:: UTILITIES
+    category 1:: APPLICATIONS
+
+
+= Files =
+e2proc3d.py
+
+
+= See also =
+e2proc3d (http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2proc3d) 
+EMAN2 Processor Manual (http://blake.bcm.edu/eman2/processors.html)
+Processors (http://blake.bcm.edu/emanwiki/EMAN2/Modular/Processors#Processors)
+
+
+= Maturity =
+No Bugs known so far.

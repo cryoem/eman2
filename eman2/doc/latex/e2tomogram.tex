@@ -1,0 +1,32 @@
+\section{e2tomogram.py} \index{Program Manuals!e2tomogram.py} \label{e2tomogram.py}
+\subsection{Usage}
+usage: e2tomogram.py [options] input\_stack.hed output.hed
+
+
+\subsection{Description}
+Processes a tomographic tilt series
+
+
+
+
+\subsection{Options}
+
+\begin{longtable}{|c||p{3.5in}|}
+\hline \bf{Argument} & \bf{Description}\endhead
+\hline \multicolumn{2}{r}{{Continued on next page}} \endfoot
+\hline \hline \caption[e2tomogram.py Options]{e2tomogram.py Options}\endlastfoot
+\\\hline   --version  &  show program's version number and exit
+\\\hline   -h, --help  &  show this help message and exit
+\\\hline   -T  &  TILT, --tilt=TILT Angular spacing between tilts (fixed)
+\\\hline   -M  &  MAXSHIFT, --maxshift=MAXSHIFT Maximum translational error between images (pixels), default=64
+\\\hline   -B  &  BOX, --box=BOX Box size for alignment probe (pixels), default=96
+\\\hline   --highpass=HIGHPASS  &  Highpass Gaussian processor radius (pixels), default none
+\\\hline   --lowpass=LOWPASS  &  Lowpass Gaussian processor radius (pixels), default none
+\\\hline   --mode=MODE  &  centering mode 'modeshift', 'censym' or 'region,$<$x$>$,$<$y$>$,$<$clipsize$>$,$<$alisize$>$
+\\\hline   --localavg=LOCALAVG  &  Average several images for the alignment
+\\\hline   --tiltaxis=TILTAXIS  &  Skip automatic tilt axis location, use fixed angle from x
+\\\hline   --twopass  &  Skip automatic tilt axis location, use fixed angle from x
+\\\hline
+ --nozero  &  Do not allow 0-translations between images
+\\\hline
+\end{longtable}

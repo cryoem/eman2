@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+
+  
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
+
+  
+  <title>CVS HowTo</title>
+</head>
+
+
+<body>
+
+<div style="text-align: center;"><big style="font-weight: bold; color: rgb(51, 51, 255);"><big>&nbsp;CVS on
+Unix/Linux
+HowTo</big></big><br>
+
+</div>
+
+<br>
+
+<br>
+
+<big>0. Introduction<br>
+
+<br>
+
+</big>CVS is a version control system. Using it, you can record the
+	history of sources files, and documents. For detailed information, you
+	may refer <a href="http://www.gnu.org/software/cvs/">http://www.gnu.org/software/cvs/</a>.<br>
+
+<br>
+
+<big><small>This document gives the typical usage of CVS under
+	Unix/Linux platforms. The intended audience are EMAN/EMAN2 developers.</small><br>
+
+<br>
+
+1. Before you use CVS, set up environmental variable 
+<span style="color: rgb(51, 51, 255);">CVSROOT</span> and 
+<span style="color: rgb(51, 51, 255);">CVS_RSH</span>. 
+	For EMAN/EMAN2, set up the following in your shell startup script:</big>
+<div style="margin-left: 40px;"><br>
+
+a) for csh/tcsh<br>
+
+<span style="color: rgb(0, 153, 0); font-weight: bold;">&nbsp;&nbsp;&nbsp;
+setenv CVS_RSH ssh</span>
+<br style="color: rgb(0, 153, 0); font-weight: bold; font-family: monospace;">
+
+<span style="color: rgb(0, 153, 0); font-weight: bold;">&nbsp;&nbsp;&nbsp;
+setenv CVSROOT "blake.bcm.tmc.edu:/usr/local/CVS/CVS"</span><br style="font-weight: bold; font-family: monospace;">
+
+<br>
+
+b) for bash/sh/zsh<br>
+
+<span style="font-weight: bold; color: rgb(0, 153, 0);">&nbsp;&nbsp;&nbsp;
+export CVS_RSH=ssh</span><br style="font-weight: bold; color: rgb(0, 153, 0); font-family: monospace;">
+
+<span style="font-weight: bold; color: rgb(0, 153, 0);">&nbsp;&nbsp;&nbsp;
+export CVSROOT="blake.bcm.tmc.edu:/usr/local/CVS/CVS"</span><br style="font-family: monospace;">
+
+<br>
+
+<br>
+
+</div>
+
+<span style="font-weight: bold; color: rgb(102, 0, 204);">NOTE:</span>
+The following supposes you put EMAN2 under <span style="font-weight: bold; color: rgb(51, 51, 255);">$HOME/EMAN2</span>.<br>
+
+<br>
+
+<big>2.&nbsp; To check out EMAN2 source code, run</big><br>
+
+<span style="font-weight: bold; color: rgb(0, 153, 0);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	cd $HOME/EMAN2/src</span><br style="font-weight: bold; color: rgb(0, 153, 0);">
+
+<span style="font-weight: bold; color: rgb(0, 153, 0);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+ 	cvs co eman2</span><br>
+
+<big><br>
+
+3.&nbsp; To add new files, run</big><br>
+
+	&nbsp;&nbsp;
+<span style="color: rgb(0, 153, 0); font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;
+	cd $HOME/EMAN2/src/eman2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+	cd YOUR-DIRECTORY<br style="color: rgb(0, 153, 0); font-weight: bold;">
+
+</span>
+<span style="color: rgb(0, 153, 0); font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	cvs add YOUR-FILES<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+	cvs commit<br>
+
+	<br style="color: rgb(0, 153, 0); font-weight: bold;">
+
+</span><big>
+4. To remove files, run</big><br>
+
+<span style="color: rgb(0, 153, 0); font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	cd $HOME/EMAN2/src/eman2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+	cd YOUR-DIRECTORY<br style="color: rgb(0, 153, 0); font-weight: bold;">
+
+</span>
+<span style="color: rgb(0, 153, 0); font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	cvs remove YOUR-FILES<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+	cvs commit
+</span><br>
+
+<br>
+
+<big>
+5.&nbsp; To check in modified existing files, run </big><br>
+
+<span style="color: rgb(0, 153, 0); font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	cd $HOME/EMAN2/src/eman2</span><br style="color: rgb(0, 153, 0); font-weight: bold;">
+
+<span style="color: rgb(0, 153, 0); font-weight: bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	cvs ci</span><br>
+
+<br>
+
+<big>
+6. To update your source code to the latest version in the CVS tree, run</big><br>
+
+<span style="font-weight: bold; color: rgb(0, 153, 0);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	cd $HOME/EMAN2/src/eman2
+</span><br>
+
+<span style="font-weight: bold; color: rgb(0, 153, 0);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+cvs update -d</span><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+<span style="font-weight: bold; color: rgb(102, 0, 204);">&nbsp;&nbsp;NOTE:</span>
+read the output from the above command. If you see merging conflicts,
+you must resolve them first.
+<br>
+
+<br>
+
+<big>
+7. To add new project to CVS</big><br>
+
+<span style="font-weight: bold; color: rgb(0, 153, 0);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	cvs &nbsp; import &nbsp; project_name &nbsp; user_tag &nbsp; release_tag
+</span><br>
+
+<br>
+
+<br>
+
+<br>
+
+<hr style="width: 100%; height: 2px;">Last modified on <big><span style="font-weight: bold;">02/14/2007</span></big> by <big><span style="font-weight: bold;">Grant Tang</span></big> (gtang@bcm.edu)<br>
+
+<br>
+
+</body>
+</html>

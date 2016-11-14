@@ -1,0 +1,52 @@
+/* JSON file for the e2sysmsearch wizard */
+[
+  {
+    "TITLE":"e2symsearch3d Wizard",
+    "INST":"This Wizard is to Help EM users fill in the GUI to run e2symsearch3d.py, which aligns a 3D model to it's, specified, symmetry axis. This is accomplished via a combined Monte Carlo and  simplex multidimensional minimization algorithm. This works for 3D model and in some cases individual subtomogram (esp pahse plate data)",
+    "WIDGETS":[]
+  },
+  {
+    "TITLE":"3D model to align",
+    "INST":"Please enter the 3D model that you want to align to its symmetry axis, and the name of the aligned 3D model.",
+    "WIDGETS":[
+      "input",
+      "output"
+    ]
+  },
+  {
+    "TITLE":"Symmetry to align to",
+    "INST":"Enter to symmetry that you wish to align to. Note that this symmetry must actually be present in the model to get decent results",
+    "WIDGETS":[
+      "sym"
+    ]
+  },
+  {
+    "TITLE":"Alignment algorithm parameters",
+    "INST":"Enter to the shrink factor, if desired, to speed alignment (but decreases accuracy). Also enter the number of Monte Carlo steps 'steps'. The more, the more likely of finding the global minimum.",
+    "WIDGETS":[
+      "shrink",
+      "steps"
+    ]
+  },
+  {
+    "TITLE":"Symmetrize",
+    "INST":"Check this box if you want to apply symmetry to the aligned model.",
+    "WIDGETS":[
+      "symmetrize"
+    ]
+  },
+  {
+    "TITLE":"Select a comparitor",
+    "INST":"Select the compartior you wish to use for alignment. Usually 'ccc' is fine, but if a missing wedge is present, then ccc.tomo is better.",
+    "WIDGETS":[
+      "cmp"
+    ]
+  },
+  {
+    "TITLE":"Select parallization",
+    "INST":"Select the parallization to use. For multicore machine, say 4 cores, use 'thread:4'.",
+    "WIDGETS":[
+      "parallel"
+    ]
+  }
+]

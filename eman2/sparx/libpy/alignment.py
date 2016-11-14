@@ -5044,6 +5044,232 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	
 	return  nalpha, ntx, nty, peak, ccf3dimg
 
+def directaligriddingconstrainedML(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, \
+			stepx = 1.0, stepy = 1.0, psiref = 0., txref = 0., tyref = 0., updown = "up"):
+	"""
+	Direct 2D alignment within a predefined angular range.  If the range is large the method will be very slow.
+	ref - a stack of reference images. 
+	updown - one of two keywords:  up, down, indicating which angle to consider, 0, or 180.
+	
+	Usage of constrains:  Search is around the previous parameters (psiref, txref, tyref), 
+	                      but only within ranges specified by (psimax, xrng, yrng).
+	
+	PAP 01/16/2015
+	"""
+
+	from fundamentals import fft, rot_shift2D, ccf, prepi
+	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
+	from alignment    import parabl
+	from EMAN2 import Processor
+	#from time  import time
+	#print  "  directaligridding1  ",psimax, psistep, xrng, yrng, stepx, stepy, updown
+	#print  "IN         %6.2f %6.2f  %6.2f"%(psiref, txref, tyref)
+
+	"""
+	M = inima.get_xsize()
+	alpha = 1.75
+	K = 6
+	N = M*2  # npad*image size
+	r = M/2
+	v = K/2.0/N
+	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+	"""
+
+
+	nr = int(2*psimax/psistep)+1
+	nc = nr//2
+	if updown == "up" :  reduced_psiref = psiref -  90.0
+	else:                reduced_psiref = psiref - 270.0
+	
+
+#  Limit psi search to within psimax range
+#  It makes no sense, as it still searches within the entire range of psi_max
+# 	bnr = int(round(reduced_psiref/psistep)) - nc
+# 	enr = nr + bnr
+	
+	bnr = min(max(int(round(reduced_psiref/psistep)) - nc, -nc), nr-nc-1)
+	enr = max(min(int(round(reduced_psiref/psistep))+nr-nc,nr-nc),-nc)
+
+	if enr <= bnr: return 0.0, 0.0, 0.0, peak
+	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
+	#  Window for ccf sampled by gridding
+	#   We quietly assume the search range for translations is always much less than the ccf size,
+	#     so instead of restricting anything, we will just window out ccf around previous shift locations
+	rnx   = int(round(xrng/stepx))
+	rny   = int(round(yrng/stepy))
+	wnx = 2*rnx + 1
+	wny = 2*rny + 1
+
+	w = model_blank( wnx, wny)
+	stepxx = 2*stepx
+	stepyy = 2*stepy
+	
+	nicx = N//2 + 2*txref #  here one would have to add or subtract the old value.
+	nicy = N//2 + 2*tyref
+	wxc = wnx//2
+	wyc = wny//2
+
+	if updown == "up" :
+		ima = inima
+		nicx = N//2 - 2*txref #  here one would have to add or subtract the old value.
+		nicy = N//2 - 2*tyref
+		#ima = inima.FourInterpol(N, N, 1,0)
+		#ima = Processor.EMFourierFilter(ima,params)
+
+	if updown == "down" :
+		#  This yields rotation by 180 degrees.  There is no extra shift as the image was padded 2x, so it is even-sized, but two rows are incorrect
+		imm = inima.conjg()
+
+		#imm = rot_shift2D(inima,180.0, interpolation_method = 'linear')
+		#imm = imm.FourInterpol(N, N, 1,0)
+		#imm = Processor.EMFourierFilter(imm,params)
+
+	#fft(ima).write_image('imap.hdf')
+
+	ma1  = -1.e23
+	ma2  = -1.e23
+	ma3  = -1.e23
+	ma4  = -1.e23
+	oma2 = [-1.e23, -1.e23, -1.e23]
+	oma4 = [-1.e23, -1.e23, -1.e23]
+	"""
+	fft(ima).write_image('ima.hdf')
+	for i in xrange(nr):  fft(ref[i]).write_image('ref.hdf',i)
+	from sys import exit
+	exit()
+	"""
+	#if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23     ## do nothing for rny=0 @ming
+	from utilities      import model_blank
+	for i in xrange(bnr, enr):
+		if updown == "up" :
+			c = ccf(ima,ref[nc+i])
+			#print "compute ccf time", time() - startc
+			#c.write_image('gcc.hdf')
+			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
+			#for q in p: print q
+			for iy in xrange(-rny, rny + 1):
+				for ix in xrange(-rnx, rnx + 1):
+					dss = fshift(ima, ix, iy)
+					peak = -Util.sqed(dss, ref[i], model_blank(N,N,1,1), model_blank(N,N,1,1))
+					xod1[kl, loxi[kl]] = peak
+	
+# 			pp = peak_search(w)[0]
+# 			
+# 			#print "find peak time", time()-startpp
+# 			#print '  peak   ',i,pp
+# 			#from sys import exit
+# 			#exit()
+# 
+# 			px = int(pp[4])
+# 			py = int(pp[5])
+# 			#print '  peak   ',i,pp,px*stepx,py*stepy
+# 			#  did not find a peak, find a maximum location instead
+# 			if( pp[0] == 1.0 and px == 0 and py == 0):
+# 				#  No peak!
+# 				pass
+# 				"""
+# 				loc = w.calc_max_location()
+# 				PEAKV = w.get_value_at(loc[0],loc[1])
+# 				#print "  Did not find a peak  :",i,loc[0]-wxc, loc[1]-wyc, PEAKV
+# 				if(PEAKV>ma2):
+# 						ma2  = PEAKV
+# 						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
+# 				"""
+# 			else:
+# 				ww = model_blank(3,3)
+# 				px = int(pp[1])
+# 				py = int(pp[2])
+# 				for k in xrange(3):
+# 					for l in xrange(3):
+# 						ww[k,l] = w[k+px-1,l+py-1]
+# 				XSH, YSH, PEAKV = parabl(ww)
+# 				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+# 				"""
+# 				if(pp[0]>ma1):
+# 					ma1 = pp[0]
+# 					oma1 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+# 				"""
+# 				if(PEAKV>ma2):
+# 					ma2  = PEAKV
+# 					#if psimax > 0:
+# 					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,i*psistep]
+# 					# if psimax == 0: 
+# # 						oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,reduced_psiref]
+		if updown == "down" :
+			c = ccf(imm,ref[nc+i])
+			for iy in xrange(-rny, rny + 1):
+				for ix in xrange(-rnx, rnx + 1):
+					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
+
+# 			pp = peak_search(w)[0]
+# 			px = int(pp[4])
+# 			py = int(pp[5])
+# 			if( pp[0] == 1.0 and px == 0 and py == 0):
+# 				#  No peak!
+# 				pass
+# 				"""
+# 				loc = w.calc_max_location()
+# 				PEAKV = w.get_value_at(loc[0],loc[1])
+# 				if(PEAKV>ma4):
+# 					ma4  = PEAKV
+# 					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
+# 				"""
+# 			else:
+# 				ww = model_blank(3,3)
+# 				px = int(pp[1])
+# 				py = int(pp[2])
+# 				for k in xrange(3):
+# 					for l in xrange(3):
+# 						ww[k,l] = w[k+px-1,l+py-1]
+# 				XSH, YSH, PEAKV = parabl(ww)
+# 				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+# 				"""
+# 				if(pp[0]>ma3):
+# 					ma3 = pp[0]
+# 					oma3 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+# 				"""
+# 				if(PEAKV>ma4):
+# 					ma4 = PEAKV
+# 					#if psimax > 0:
+# 					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,i*psistep]
+# 				# 	if psimax == 0:
+# # 						oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,reduced_psiref]
+
+	if( oma2[-2] > oma4[-2] ):
+		peak = oma2[-2]
+		if( peak == -1.0e23 ):  return  0.0, 0.0, 0.0, peak
+	
+		"""
+		print oma1
+		print oma2
+		print  "        %6.2f %6.2f  %6.2f"%(oma2[-1],oma2[-4],oma2[-3])
+		"""
+		#  The inversion would be needed for 2D alignment.  For 3D, the proper way is to return straight results.
+		#nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1], oma2[-4]*stepx, oma2[-3]*stepy, 0)
+		nalpha = oma2[-1]
+		ntx    = oma2[-4]*stepx - txref
+		nty    = oma2[-3]*stepy - tyref
+		#print "oma2[-4]*stepx - txref",oma2[-4]*stepx,  txref
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	else:
+		peak = oma4[-2]
+		if( peak == -1.0e23 ):  return  0.0, 0.0, 0.0, peak
+		#  This is still strange as why I would have to invert here but not for 90 degs.  PAP  01/09/2014
+		#print oma3
+		#print oma4
+
+		nalpha, ntx, nty, junk = compose_transform2(-oma4[-1], oma4[-4]*stepx + txref,oma4[-3]*stepy + tyref,1.0,180.,0,0,1)
+		#nalpha = oma4[-1] + 180.0
+		#ntx    = oma4[-4]*stepx
+		#nty    = oma4[-3]*stepy
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty, 0)
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	#print  "OUT        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	return  nalpha, ntx, nty, peak
+	
 def alignment3Dsnake(partition, snakeknots, nsegs, initialori, ctx, psistep, stepx, stepy, txref, tyref, nc, rnx, rny, updown = "up"):
 	from scipy import interpolate
 	from utilities    import inverse_transform2, compose_transform2
@@ -6048,7 +6274,7 @@ def generate_indices_and_refrings(nima, projangles, volft, kb, nx, delta, an, ra
 			# assignments = assign_projangles_f(projangles, coneangles)
 
 			mapped_projangles = [[0.0, 0.0, 0.0] for i in xrange(len(projangles))]
-			
+
 			for i in xrange(len(projangles)):
 				mapped_projangles[i][1] = projangles[i][1]
 				if projangles[i][1] < 90:

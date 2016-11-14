@@ -1,0 +1,109 @@
+%\documentclass{manual}
+%\usepackage{makeidx, hyperref}
+%\begin{document}
+
+
+\section{How to Install Boost Python}
+\label{HELP-OPT-PROG-INST}
+\index{Boost Python!Installation}
+  \begin{enumerate}
+    \item
+      Download 'bjam' for your platform.
+    \item
+      Download boost source from http://www.boost.org. Assume the
+      version is boost\_1\_32\_0.
+
+      \begin{itemize} 
+        \item[\%] cd /usr/local/src
+	\item[\%] tar zxf boost\_1\_32\_0.tar.gz
+	\item[\%] cd boost\_1\_32\_0.
+      \end{itemize}
+      \normalcolor
+
+    \item
+      Set up environment variables ''PYTHON\_ROOT'' and ''PYTHON\_VERSION''.
+       For example, if your python is at /usr/bin/python then PYTHON\_ROOT is
+       ''/usr''. If your python version is 2.2.X, then PYTHON\_VERSION
+       is '2.2'.
+       \begin{enumerate}
+       \item 
+	 check your shell: {\% echo \$SHELL}
+       
+       \item
+	 if you are using bash/zsh, do
+
+	 \begin{itemize}
+           \item[\%] export PYTHON\_VERSION=2.2
+           \item[\%] export PYTHON\_ROOT=/usr
+	 \end{itemize}
+	 \normalcolor
+
+          if you are using csh/tcsh, do
+
+	  \begin{itemize}
+            \item[\%] setenv PYTHON\_VERSION 2.2
+            \item[\%] setenv PYTHON\_ROOT /usr
+	  \end{itemize}
+	  \normalcolor
+       \end{enumerate}
+
+     \item
+	  { cd libs/python/build}
+    
+     \item
+       run 'bjam' with your options:
+       \begin{itemize}
+	 \item[-] linux-x86: {\% bjam}
+	 \item[-] SGI Irix: {\% bjam ''-sTOOLS=mipspro''}
+       \end{itemize}
+
+     \item
+       login as root
+    
+     \item
+
+       \begin{itemize}
+	 \item[\%] cp -df bin-stage/libboost\_python.so* /usr/local/lib
+	 \item[\%] cd ../../..; cp -rf boost /usr/local/include
+       \end{itemize}
+       \normalcolor
+
+  \end{enumerate}
+
+
+\section{How to use your own version of python}
+
+   If the python you want to use in your computer is not found by CMake,
+    you may set up environment variables ''PYTHON\_ROOT'' and
+    ''PYTHON\_VERSION''. For example, if your python is at
+    /usr/local/python2.4/bin/python. PYTHON\_ROOT is
+    ''/usr/local/python2.4''. if your python is 2.4.X, PYTHON\_VERSION
+    is '2.4'.
+
+\section{How to Install numpy}
+\index{numpy!Installation}
+   From the website
+    \href{http://sourceforge.net/projects/numpy}{http://sourceforge.net/projects/numpy}
+    and download 
+    version 1.0.1 of numpy.
+ 
+    For windows, run the binary installer and the installation is
+    complete.  Other users must download the source code and install
+    manually as follows:
+
+    \begin{itemize}
+      \item[-] get source code numpy-XX.Y.tar.gz
+
+      \item[-] \% gunzip numpy-XX.Y.tar.gz \\
+	\% tar xf numpy-XX.Y.tar
+      \normalcolor
+      \item[-] login as root
+
+      \item[-] \% cd numpy-XX.Y; \\
+	\% python setup.py install
+      \normalcolor
+    \end{itemize}
+
+
+
+%\end{document}

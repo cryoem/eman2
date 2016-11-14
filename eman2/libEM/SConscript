@@ -1,0 +1,225 @@
+#*
+"""
+cd
+/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/libEM
+&&
+/usr/bin/g++
+-fPIC
+-Wl,--export-dynamic
+-L/net/hooknose/scratch1/hohn/gar-sparx/usr/lib
+-shared
+-Wl,-soname,libEM2.so
+-o
+../lib/libEM2.so
+"CMakeFiles/EM2.dir/byteorder.o"
+"CMakeFiles/EM2.dir/emobject.o"
+"CMakeFiles/EM2.dir/emfft.o"
+"CMakeFiles/EM2.dir/log.o"
+"CMakeFiles/EM2.dir/imageio.o"
+"CMakeFiles/EM2.dir/util.o"
+"CMakeFiles/EM2.dir/emutil.o"
+"CMakeFiles/EM2.dir/interp.o"
+"CMakeFiles/EM2.dir/quaternion.o"
+"CMakeFiles/EM2.dir/transform.o"
+"CMakeFiles/EM2.dir/geometry.o"
+"CMakeFiles/EM2.dir/pointarray.o"
+"CMakeFiles/EM2.dir/mrcio.o"
+"CMakeFiles/EM2.dir/dm3io.o"
+"CMakeFiles/EM2.dir/tifio.o"
+"CMakeFiles/EM2.dir/hdfio.o"
+"CMakeFiles/EM2.dir/emdata.o"
+"CMakeFiles/EM2.dir/emdata_io.o"
+"CMakeFiles/EM2.dir/emdata_core.o"
+"CMakeFiles/EM2.dir/emdata_modular.o"
+"CMakeFiles/EM2.dir/emdata_metadata.o"
+"CMakeFiles/EM2.dir/emdata_transform.o"
+"CMakeFiles/EM2.dir/sparx/emdata_sparx.o"
+"CMakeFiles/EM2.dir/pifio.o"
+"CMakeFiles/EM2.dir/v4l2io.o"
+"CMakeFiles/EM2.dir/vtkio.o"
+"CMakeFiles/EM2.dir/spiderio.o"
+"CMakeFiles/EM2.dir/sspiderio.o"
+"CMakeFiles/EM2.dir/pgmio.o"
+"CMakeFiles/EM2.dir/icosio.o"
+"CMakeFiles/EM2.dir/lstio.o"
+"CMakeFiles/EM2.dir/pngio.o"
+"CMakeFiles/EM2.dir/salio.o"
+"CMakeFiles/EM2.dir/amiraio.o"
+"CMakeFiles/EM2.dir/xplorio.o"
+"CMakeFiles/EM2.dir/gatan2io.o"
+"CMakeFiles/EM2.dir/emio.o"
+"CMakeFiles/EM2.dir/imagicio.o"
+"CMakeFiles/EM2.dir/emcache.o"
+"CMakeFiles/EM2.dir/ctf.o"
+"CMakeFiles/EM2.dir/xydata.o"
+"CMakeFiles/EM2.dir/processor.o"
+"CMakeFiles/EM2.dir/aligner.o"
+"CMakeFiles/EM2.dir/projector.o"
+"CMakeFiles/EM2.dir/cmp.o"
+"CMakeFiles/EM2.dir/averager.o"
+"CMakeFiles/EM2.dir/reconstructor.o"
+"CMakeFiles/EM2.dir/exception.o"
+"CMakeFiles/EM2.dir/testutil.o"
+"CMakeFiles/EM2.dir/sparx/fundamentals.o"
+"CMakeFiles/EM2.dir/sparx/normpadft.o"
+"CMakeFiles/EM2.dir/sparx/periodogram.o"
+"CMakeFiles/EM2.dir/sparx/fourierfilter.o"
+"CMakeFiles/EM2.dir/sparx/rsconvolution.o"
+"CMakeFiles/EM2.dir/polardata.o"
+"CMakeFiles/EM2.dir/sparx/native_fft.o"
+"CMakeFiles/EM2.dir/sparx/util_sparx.o"
+-L/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/lib
+-L/net/cci/hohn/tmp/gar-sparx/usr/lib
+-lsrfftw
+-lsfftw
+-lgsl
+-lgslcblas
+-lm
+-ltiff
+-ljpeg
+-lhdf5
+-lz -lpng
+-Wl,-rpath,/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/lib:/net/cci/hohn/tmp/gar-sparx/usr/lib   
+      
+
+/usr/bin/g++
+-DEM2_EXPORTS
+-I/net/hooknose/scratch1/hohn/gar-sparx/usr/include
+-L/net/hooknose/scratch1/hohn/gar-sparx/usr/lib
+-O2 -pipe
+-Wall -O2
+-fPIC
+-I. -I/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006
+-I/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/libEM
+-I/net/cci/hohn/tmp/gar-sparx/usr/include
+-I/net/cci/hohn/tmp/gar-sparx/usr/include/gsl
+-D_LARGEFILE_SOURCE
+-D_FILE_OFFSET_BITS=64
+-D_LARGE_FILES
+-DHAVE_FSEEKO
+-DHAVE_FTELLO
+-DFFTW2
+-DEM_TIFF
+-DEM_HDF5
+-DEM_PNG
+-DEM_BOOST
+-o
+libEM/CMakeFiles/EM2.dir/emcache.o
+-c
+/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/libEM/emcache.cpp 
+
+
+cd
+/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/libEM
+&&
+/usr/bin/g++
+-fPIC
+-Wl,--export-dynamic
+-L/net/hooknose/scratch1/hohn/gar-sparx/usr/lib
+-shared
+-Wl,-soname,libEM2.so
+-o
+../lib/libEM2.so
+"CMakeFiles/EM2.dir/byteorder.o"
+...
+"CMakeFiles/EM2.dir/sparx/SparxIO.o"
+-L/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/lib
+-L/net/cci/hohn/tmp/gar-sparx/usr/lib
+-lsrfftw
+-lsfftw
+-lgsl
+-lgslcblas
+-lm
+-ltiff
+-ljpeg
+-lhdf5
+-lz
+-lpng
+-Wl,-rpath,/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/lib:/net/cci/hohn/tmp/gar-sparx/usr/lib   
+    
+
+
+"""
+
+#*
+import libtbx.load_env
+Import("env_base", "env_etc")
+
+cxxflags =  env_etc.cxxflags_base + [ "-DFFTW2" ]
+env = env_base.Copy(
+  CXXFLAGS = cxxflags,
+  SHCXXFLAGS = cxxflags,
+  SHLINKFLAGS = env_etc.shlinkflags,
+  LIBS = env_etc.libm + ["srfftw", "sfftw", "gsl", "gslcblas", ],
+  LIBPATH = ["/net/hooknose/scratch1/hohn/gar-sparx/usr/lib"],
+  CPPPATH = [".", env_etc.boost_include,
+             "/net/hooknose/scratch1/hohn/gar-sparx/usr/include",]
+)
+
+#**
+lib_em2_sources = [
+    "byteorder.cpp", 
+    "emobject.cpp", 
+    "emfft.cpp", 
+    "log.cpp", 
+    "imageio.cpp", 
+    "util.cpp", 
+    "emutil.cpp", 
+    "interp.cpp", 
+    "quaternion.cpp", 
+    "transform.cpp", 
+    "geometry.cpp", 
+    "pointarray.cpp", 
+    "mrcio.cpp", 
+    "dm3io.cpp", 
+    "tifio.cpp", 
+    "hdfio.cpp", 
+    "emdata.cpp", 
+    "emdata_io.cpp", 
+    "emdata_core.cpp", 
+    "emdata_modular.cpp", 
+    "emdata_metadata.cpp", 
+    "emdata_transform.cpp", 
+    "sparx/emdata_sparx.cpp", 
+    "pifio.cpp", 
+    "v4l2io.cpp", 
+    "vtkio.cpp", 
+    "spiderio.cpp", 
+    "sspiderio.cpp", 
+    "pgmio.cpp", 
+    "icosio.cpp", 
+    "lstio.cpp", 
+    "pngio.cpp", 
+    "salio.cpp", 
+    "amiraio.cpp", 
+    "xplorio.cpp", 
+    "gatan2io.cpp", 
+    "emio.cpp", 
+    "imagicio.cpp", 
+    "emcache.cpp", 
+    "ctf.cpp", 
+    "xydata.cpp", 
+    "processor.cpp", 
+    "aligner.cpp", 
+    "projector.cpp", 
+    "cmp.cpp", 
+    "averager.cpp", 
+    "reconstructor.cpp", 
+    "exception.cpp", 
+    "testutil.cpp", 
+    "sparx/fundamentals.cpp", 
+    "sparx/normpadft.cpp", 
+    "sparx/periodogram.cpp", 
+    "sparx/fourierfilter.cpp", 
+    "sparx/rsconvolution.cpp", 
+    "polardata.cpp", 
+    "sparx/native_fft.cpp", 
+    "sparx/util_sparx.cpp", 
+    ]
+
+#**
+env.SharedLibrary(
+    target = "#lib/libEM2",
+    source = lib_em2_sources)
+
+

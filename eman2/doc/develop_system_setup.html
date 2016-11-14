@@ -1,0 +1,935 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+
+  
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
+
+  
+  <title>EMAN2 development system HowTo</title>
+</head>
+
+
+<body>
+
+<div style="text-align: center;"><big><big><span style="font-weight: bold; color: rgb(51, 51, 255);">EMAN2 Development
+System Setup HowTo</span></big></big><br style="font-weight: bold;">
+
+</div>
+
+<br>
+
+<big style="color: rgb(51, 51, 255);"><big><span style="font-weight: bold;">0. Introduction</span></big></big><br>
+
+<br>
+
+This document gives the step-by-step guide on how to set up EMAN2
+development system on Linux, SGI IRIX, and Windows. It includes
+installation of the 3rd party libraries as well as setting up login
+shell.
+The intended
+audience is&nbsp; EMAN2 developers and EMAN2 users.&nbsp; <br>
+
+<br>
+
+<span style="font-weight: bold; color: rgb(102, 0, 204);">NOTE:</span>
+For any
+3rd-party package listed in the document, if you can get the proper
+binary version for your platform, you won't need to compile it from the
+source code.<br>
+
+<br style="color: rgb(51, 51, 255);">
+
+<big style="color: rgb(51, 51, 255);"><span style="font-weight: bold;">1.&nbsp;
+Linux. </span></big><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp; Let's take Mandrake 10.0 as an example<br>
+
+<br>
+
+<span style="font-weight: bold;">&nbsp;&nbsp; 1) install the following
+rpms available on the Mandrake CDs</span><br style="font-weight: bold;">
+
+<span style="font-weight: bold;">&nbsp;&nbsp; </span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+libfftw2-2.1.5-3mdk.i586.rpm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+libfftw2-devel-2.1.5-3mdk.i586.rpm</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+libgsl0-1.4-5mdk.i586.rpm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+libgsl0-devel-1.4-5mdk.i586.rpm&nbsp;&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+libhdf5_0-1.4.5-1mdk.i586.rpm</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+libhdf5_0-devel-1.4.5-1mdk.i586.rpm</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+libpython2.3-devel-2.3.3-2mdk.i586.rpm</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+python-numeric-23.1-2mdk.i586.rpm</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+python-numeric-devel-23.1-2mdk.i586.rpm</span><br>
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+libtiff3-devel-3.5.7-11mdk.i586.rpm</span><br>
+
+<span style="font-family: monospace;"></span><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; To install a <span style="font-family: monospace;">XYZ.rpm</span>, do the
+following:<br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; a) login
+in as root</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; b) rpm
+-i XYZ.rpm</span><br>
+
+<br>
+
+&nbsp;<span style="font-weight: bold;">&nbsp; 2) install boost python</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.
+Download <span style="font-weight: bold;">'bjam'</span> for linux </span><span style="font-family: monospace;">from http://www.boost.org.</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1.
+Download boost source from http://www.boost.org. Assume it's
+boost_1_32_0.</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+% cd /usr/local/src<br>
+
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; % tar zxf boost_1_32_0.tar.gz<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; % cd boost_1_32_0.</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2.
+set up environment variables "<span style="font-weight: bold;">PYTHON_ROOT</span>"
+and "<span style="font-weight: bold;">PYTHON_VERSION</span>".</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp; For example, if your python is at
+/usr/bin/python. PYTHON_ROOT is</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp; "/usr". if your python is 2.2.X,
+PYTHON_VERSION is '2.2'.</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+a) check your shell: % echo $SHELL</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+b) if you are using bash/zsh, do</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; % export PYTHON_VERSION=2.2</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; % export PYTHON_ROOT=/usr</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if you are using csh/tcsh, do</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+% setenv PYTHON_VERSION 2.2</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+% setenv PYTHON_ROOT /usr</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3.
+cd libs/python/build</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4.
+run 'bjam' : % bjam</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5.
+login as root</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6.
+cp -df bin-stage/libboost_python.so* /usr/local/lib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp; cd ../../..; cp -rf boost /usr/local/include</span><br>
+
+<br>
+
+<span style="font-weight: bold;">&nbsp;&nbsp; 3) install CMake
+(http://www.cmake.org)</span><br>
+
+<br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Let's take
+cmake version 2.0.5 as an example.</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - download
+it from http://www.cmake.org</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - gunzip
+cmake-2.0.5.tar.gz</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - tar xf
+cmake-2.0.5.tar</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - login as root</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - cd
+cmake-2.0.5</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - ./configure</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - make</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - make install</span><br>
+
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; <br>
+
+<span style="font-weight: bold; color: rgb(0, 0, 0);">&nbsp; 5) Install
+EMAN2.</span><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The typical way to install EMAN2
+is as follows. For more details, please refer the INSTALL document.<br>
+
+<br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp; % cd $HOME</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; % mkdir -p EMAN2/src</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; % cd EMAN2/src</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; % gunzip eman2.tar.gz</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; % tar xf eman2.tar</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; % mkdir build</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; % cd build</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; % cmake ../eman2</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; % make</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; % make install</span><br>
+
+<span style="color: rgb(0, 0, 0);">&nbsp; </span><br style="color: rgb(0, 0, 0);">
+
+<span style="font-weight: bold; color: rgb(0, 0, 0);">&nbsp;6) set up
+your login shell</span><br>
+
+<ul>
+
+  <li><span style="font-weight: bold;">For csh/tcsh, add the
+following to the end of your $HOME/.cshrc file:&nbsp;</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </li>
+  <br>
+
+  <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;
+setenv EMAN2DIR $HOME/EMAN2</span><br style="font-family: monospace;">
+
+  <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; setenv
+PATH $EMAN2DIR/bin:${PATH}</span><br style="font-family: monospace;">
+
+  <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; setenv
+LD_LIBRARY_PATH&nbsp; $EMAN2DIR/lib</span><br style="font-family: monospace;">
+
+  <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; setenv
+PYTHONPATH .:$HOME/EMAN2/lib</span><br>
+
+  <br>
+
+  <li><span style="font-weight: bold;">For bash, add the following
+to the end of your $HOME/.bashrc. For zsh, add it to the end of your
+$HOME/.zshrc.</span><br>
+
+  </li>
+
+</ul>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+export EMAN2DIR=$HOME/EMAN2</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+export PATH=$EMAN2DIR/bin:${PATH}</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+export LD_LIBRARY_PATH=$EMAN2DIR/lib:${LD_LIBRARY_PATH}</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+export PYTHONPATH=.:$HOME/EMAN2/lib:${PYTHONPATH}</span><br>
+
+<br>
+
+<br>
+
+<br>
+
+<big style="font-weight: bold; color: rgb(51, 51, 255);">2. SGI IRIX.</big><br>
+
+<br>
+
+<span style="font-weight: bold;">&nbsp;&nbsp; 1) install fftw from
+source</span><br>
+
+<br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
+installing fftw-2.1.5.tar.gz</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+get fftw source code from (http://www.fftw.org/)</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+gunzip fftw-2.1.5.tar.gz</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+tar xf fftw-2.1.5.tar</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+cd fftw-2.1.5</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+./configure --enable-static=no --enable-shared=yes --enable-float
+--enable-type-prefix</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+make</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+login as root</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+make install</span><br>
+
+<br>
+
+<span style="font-weight: bold;">&nbsp;&nbsp; 2) install gsl from source</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
+installing gsl-1.4.tar.gz</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+get source from http://www.gnu.org/software/gsl/</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+gunzip gsl-1.4.tar.gz</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+tar xf gsl-1.4.tar</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+cd gsl-1.4</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+./configure</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+make</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+login as root</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+make install</span><br style="font-family: monospace;">
+
+<br>
+
+<span style="font-weight: bold;">&nbsp;&nbsp; 3) install hdf5 from
+source</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
+installing hdf5-1.6.3.tar.gz</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+get source from http://hdf.ncsa.uiuc.edu/HDF5</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+gunzip hdf5-1.6.3.tar.gz</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+tar xf hdf5-1.6.3.tar.gz</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+cd hdf5-1.6.3</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+./configure</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+make</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+login as root</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+make install</span><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+
+<span style="font-weight: bold;">&nbsp;&nbsp; 4) install python from
+source</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
+installing Python-2.3.4.tgz</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+get source from http://www.python.org</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+gunzip Python-2.3.4.tgz</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+tar xf Python-2.3.4.tar</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+cd Python-2.3.4</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+./configure</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+make</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+login as root</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+make install</span><br>
+
+<br>
+
+<span style="font-weight: bold;">&nbsp;&nbsp; 5) install boost python</span><span style="font-weight: bold;"> from source</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
+installing boost_1_32_0</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+Download 'bjam' for SGI IRIX from http://www.boost.org</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+Download boost source from http://www.boost.org.</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+gunzip boost_1_32_0.tar.gz</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+tar xf boost_1_32_0.tar</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+cd boost_1_32_0</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+set up environment variables "<span style="font-weight: bold;">PYTHON_ROOT</span>"
+and "<span style="font-weight: bold;">PYTHON_VERSION</span>".</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; For example, if your python is at /usr/bin/python.
+PYTHON_ROOT is</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; "/usr". if your python is 2.3.4, PYTHON_VERSION is
+'2.3'.</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+a) check your shell: % echo $SHELL</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+b) if you are using bash/zsh, do</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; % export PYTHON_VERSION=2.3</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; % export PYTHON_ROOT=/usr</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if you are using csh/tcsh, do</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+% setenv PYTHON_VERSION 2.3</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+% setenv PYTHON_ROOT /usr</span><br style="font-family: monospace;">
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+cd libs/python/build&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+% bjam "-sTOOLS=mipspro"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+login as root</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+cp -df bin-stage/libboost_python.so* /usr/local/lib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; cd ../../..; cp -rf boost
+/usr/local/include&nbsp;&nbsp; </span><br>
+
+<br>
+
+<br>
+
+<span style="font-weight: bold;">&nbsp;&nbsp; 
+6) install CMake
+(http://www.cmake.org)</span><span style="font-weight: bold;"> from
+source</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp; Assume you are
+installing cmake version 2.0.5.</span>
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - download
+it from http://www.cmake.org</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - gunzip
+cmake-2.0.5.tar.gz</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - tar xf
+cmake-2.0.5.tar</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - login as root</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - cd
+cmake-2.0.5</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - ./configure</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - make</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - make install</span><br>
+
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; <br>
+
+<span style="font-weight: bold;">&nbsp;
+7)install numpy</span><br>
+
+<span style="font-family: monospace;">
+&nbsp;&nbsp;Assume you are installing numpy-23.6.tar.gz<br>
+
+&nbsp;&nbsp;&nbsp; - go to web site http://scipy.org<br>
+
+&nbsp;&nbsp;&nbsp; - download numpy-1.0.1.tar.gz<br>
+
+&nbsp;&nbsp;&nbsp; - gunzip </span><span style="font-family: monospace;">numpy-1.0.1.tar.gz</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - tar xf </span><span style="font-family: monospace;">numpy-1.0.1.tar</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - login as root<br>
+
+&nbsp;&nbsp;&nbsp; - cd </span><span style="font-family: monospace;">numpy-1.0.1</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - python
+setup.py install</span><br>
+
+<br>
+
+<span style="font-weight: bold;">&nbsp;&nbsp; 8) Install EMAN2. (see
+linux section 5)<br>
+
+<br style="font-weight: bold;">
+
+</span><span style="font-weight: bold;">&nbsp;&nbsp; 9) Set up login
+shell (see linux section 6)</span><br style="font-weight: bold;">
+
+<br>
+
+<big style="color: rgb(51, 51, 255);"><span style="font-weight: bold;">3.
+Microsoft Windows</span></big><br>
+
+<br>
+
+&nbsp;&nbsp; Assume you want to install all libs under C:\lib; all
+headers under C:\include. EMAN2 under: C:\EMAN2\<br>
+
+<br>
+
+<span style="font-weight: bold;">0. Computer Environment Variables</span><br>
+
+<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; - HOME = C:\</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; - PATH:&nbsp; add
+C:\EMAN2\lib;C:\EMAN2\bin;C:\lib to your PATH</span><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+
+<span style="font-weight: bold;">1. Software Installation<br>
+
+<br>
+
+1.1. A list of the softwares to install<br>
+
+</span><span style="font-family: monospace;">&nbsp;&nbsp; - CMake</span><span style="font-family: monospace;"><span style="font-family: monospace;"></span><br>
+
+</span><span style="font-family: monospace;">&nbsp;&nbsp; - python</span><span style="font-family: monospace;"></span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; - fftw</span><span style="font-family: monospace;"></span><span style="font-family: monospace;"></span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; - zlib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; - PNG</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; - szlib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; - HDF5<br>
+
+</span><span style="font-family: monospace;">&nbsp;&nbsp; - gsl</span><span style="font-family: monospace;"></span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp; - boost python<br>
+
+&nbsp;&nbsp; - Numric python numpy<br>
+
+</span><span style="font-family: monospace;">&nbsp;&nbsp; - visual
+studio .NET
+2003<br>
+
+<br>
+
+</span><span style="font-weight: bold;">&nbsp; 1.2 install CMake
+(http://www.cmake.org)</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
+installing cmake version 2.0.5.</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+download CMSetup205.exe from http://www.cmake.org</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+run CMSetup205.exe</span><span style="font-weight: bold;"></span><span style="font-weight: bold;"></span><span style="font-family: monospace;"></span><br style="font-family: monospace;">
+
+<br>
+
+&nbsp;<span style="font-weight: bold;"> 1.3 install Python</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
+installing Python-2.3.4.exe</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+download Python-2.3.4.exe from http://www.python.org</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+run Python-2.3.4.exe and install it under C:\</span><br style="font-family: monospace;">
+
+<br>
+
+<span style="font-weight: bold;">&nbsp; 1.4 install fftw</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
+installing fftw 2.1.3</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+get fftw213.libs.zip from http://www.fftw.org/download.html</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+unzip fftw213.libs.zip</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+copy FFTW2dll.dll FFTW2dll.lib RFFTW2dll.lib RFFTW2dll.dll C:\lib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+copy the following files from a linux machine (which has fftw installed)</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; fftw.h rfftw.h sfftw.h srfftw.h</span><span style="font-family: monospace;"> to C:\include</span><br>
+
+<br>
+
+<span style="font-weight: bold;">&nbsp; 1.5 zlib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
+installing 1.2.2<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - get the source from</span><span style="font-family: monospace;">
+http://sourceforge.net/projects/libpng/</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+run Visual Studio</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+open project zlib122/projects/visualc6/zlib.dsp</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+compile a release version.</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+files to install to C:\lib: zlib1d.dll, zlib1d.lib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+files to install to C:\include: zlib.h</span><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+
+<span style="font-weight: bold;">&nbsp; 1.6 png</span><span style="font-family: monospace;"></span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
+installing 1.2.6</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+get the source code from </span><span style="font-family: monospace;">http://sourceforge.net/projects/libpng/</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+run Visual Studio</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+open project lpng126/projects/visualc6/libpng.dsp</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+config it to a release version</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+add to include file dir: C:\include</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+add to linker dir: C:\lib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+compile</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+files to install to C:\lib: libpng13d.dll libpng13d.lib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+files to install to C:\include: pngconf.h png.h</span><br>
+
+<br>
+
+<span style="font-weight: bold;">&nbsp; 1.7 szlib</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+Go to ftp://ftp.ncsa.uiuc.edu/HDF/HDF5/current/src/</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+cd szip/bin/windows/szip-msvc++/szipbin/XP_.NET/</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+download everything under 'dll' to C:\lib: e.g.</span><span style="font-family: monospace;"> szlibdll.dll szlibdll.lib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+download everything under 'include' to C:\include: e.g.</span><span style="font-family: monospace;"> <br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SZconfig.h mcgill.h rice.h
+ricehdf.h szip_adpt.h szlib.h &nbsp;&nbsp;&nbsp; </span><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+
+<span style="font-weight: bold;">&nbsp; 1.8 HDF5</span><br>
+
+<span style="font-family: monospace;">&nbsp;</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume HDF5
+1.6.3</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+Get the source from </span><span style="font-family: monospace;">ftp://ftp.ncsa.uiuc.edu/HDF/HDF5/current/src/</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+copy everything under hdf5-1.6.3/windows/all/hdf5/proj/hdf5dll</span><span style="font-family: monospace;"> to hdf5-1.6.3/windows/all</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+copy *.h *.c under hdf5-1.6.3/windows/all/hdf5/src to</span><span style="font-family: monospace;"> hdf5-1.6.3/src</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+run Visual Studio</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+open project hdf5-1.6.3/windows/all/hdf5dll.dsp</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+config project properties:</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; &nbsp; -
+Release version only</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; &nbsp; -
+linker lib for zlib and szlib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; &nbsp; -
+linker path C:\lib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; &nbsp; -
+include path: C:\include</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+files to install to C:\lib: hdf5dll.dll&nbsp; hdf5dll.lib</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
+files to install to C:\include: find all header files from a binary
+release</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;</span><br>
+
+<span style="font-weight: bold;">1.9 GSL</span><br>
+
+&nbsp; &nbsp; &nbsp;&nbsp; It is better to get a binary version.
+Contact Grant Tang (gtang@bcm.edu) on where to get it.<br>
+
+<br>
+
+<span style="font-weight: bold;">1.10 Boost Python</span><br>
+
+&nbsp; &nbsp; &nbsp;&nbsp; It is better to get a binary version.
+Contact Grant Tang (gtang@bcm.edu) on where to get it.<br>
+
+<br>
+
+<span style="font-weight: bold;">1.11 numpy numarray</span><span style="font-family: monospace;"><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp; Assume you are installing </span><span style="font-family: monospace;">numpy-1.0.1.win32-py2.4.exe</span><span style="font-family: monospace;"> <br>
+
+&nbsp;&nbsp;&nbsp; - go to web site http://www.pfdubois.com/numpy<br>
+
+&nbsp;&nbsp;&nbsp; - download </span><span style="font-family: monospace;">numpy-1.0.1.win32-py2.4.exe</span><span style="font-family: monospace;"> </span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - run </span><span style="font-family: monospace;">numpy-1.0.1.win32-py2.4.exe</span><span style="font-family: monospace;"> </span><span style="font-family: monospace;"><br>
+
+<br>
+
+</span><span style="font-weight: bold;">1.12 Visual Studio .NET 2003</span><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Install it from the Visual Studio .NET
+2003 CD. It is very straight-forward.<br>
+
+<br>
+
+<br style="font-weight: bold;">
+
+<span style="font-weight: bold;">2. Use CMake to configure EMAN2</span><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span style="font-family: monospace;">- run CMake program<br>
+
+&nbsp;&nbsp; - at "Where is the source code", select C:\EMAN2\src\eman2<br>
+
+&nbsp;&nbsp; - at "Where to build the binaries", select
+C:\EMAN2\src\build<br>
+
+&nbsp;&nbsp; - at "Build For", select "Visual Studio 7 .NET 2003<br>
+
+&nbsp;&nbsp; - at "Show Advanced Values": check this box<br>
+
+&nbsp;&nbsp; - click "Configure" button<br>
+
+&nbsp;&nbsp; - If you are asked to create "C:\EMAN2\src\build", click
+"Yes".<br>
+
+&nbsp;&nbsp; - If you see any errors in the configure process, fix them
+in the main panel.<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp; That is usually where to find a library or
+header file.<br>
+
+&nbsp;&nbsp; - on the main panel, change "CMAKE_CONFIGURATION_TYPES" TO
+"Release".<br>
+
+&nbsp;&nbsp; - Click "Configure" button<br>
+
+&nbsp;&nbsp; - click "OK" button<br>
+
+<br>
+
+<br>
+
+</span><span style="font-weight: bold;">3. Use Visual Studio .NET
+2003&nbsp;
+to compile</span><br>
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - </span>load
+the
+project file generated by cmake<br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+File -&gt; Open -&gt; Project: E:\EMAN2\src\eman2\EMAN.sln</span><span style="font-family: monospace;"></span><span style="font-family: monospace;"></span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp; &nbsp; - View -&gt;
+Solution Explorer</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - In "Solution
+Explorer" window, right click "ALL_BUILD", then select "Rebuild".</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - In "Solution
+Explorer" window, right click "INSTALL", then select "Rebuild".</span><br style="font-family: monospace;">
+
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - Your EMAN2
+binary version is installed under C:\EMAN2\bin, C:\EmAN2\lib,
+C:\EMAN2\includ</span><br style="font-family: monospace;">
+
+<br>
+
+<br>
+
+&nbsp; <br>
+
+<hr style="width: 100%; height: 2px;">Last Modified on <big><span style="font-weight: bold;">09/30/2006</span></big> by <big><span style="font-weight: bold;">Grant Tang</span></big> (gtang@bcm.edu)<br>
+
+<br>
+
+<br>
+
+</body>
+</html>

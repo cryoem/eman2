@@ -1,0 +1,90 @@
+#*
+"""
+cd
+/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/libpyEM
+&&
+/usr/bin/g++
+-fPIC
+-Wl,--export-dynamic
+-L/net/hooknose/scratch1/hohn/gar-sparx/usr/lib
+-shared
+-Wl,-soname,libpyAligner2.so
+-o
+../lib/libpyAligner2.so
+"CMakeFiles/pyAligner2.dir/libpyAligner2.o"
+-L/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/lib
+-L/net/cci/hohn/tmp/gar-sparx/usr/lib
+-L/net/cci/hohn/tmp/gar-sparx/usr/lib/python2.4/config
+-lboost_python-gcc
+-lpython2.4
+-lEM2
+-lEM2
+-lsrfftw
+-lsfftw
+-lgsl
+-lgslcblas
+-lm
+-ltiff
+-ljpeg
+-lhdf5
+-lz
+-lpng
+-Wl,-rpath,/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/lib:/net/cci/hohn/tmp/gar-sparx/usr/lib:/net/cci/hohn/tmp/gar-sparx/usr/lib/python2.4/config  
+
+
+CMakeFiles/pyEMData2.dir/libpyEMData2.o
+CMakeFiles/pyEMData2.dir/emdata_wrapitems.o
+
+
+
+"""
+
+#*
+Import("env_no_includes_boost_python_ext", "env_etc")
+
+cxxflags =  env_etc.cxxflags_base + [ "-DFFTW2" ]
+env = env_no_includes_boost_python_ext.Copy(
+  CXXFLAGS = cxxflags,
+  SHCXXFLAGS = cxxflags,
+  SHLINKFLAGS = env_etc.shlinkflags,
+  LIBS = ["EM2",
+          "srfftw",
+          "sfftw",
+          "gsl",
+          "gslcblas", 
+          "boost_python",
+          ] + env_etc.libm,
+  CPPPATH = [".",
+             "../libEM",
+             "/net/hooknose/scratch1/hohn/gar-sparx/usr/include",
+             env_etc.boost_include,
+             env_etc.python_include,
+             ],
+)
+env.Append(LIBPATH = ["/net/hooknose/scratch1/hohn/gar-sparx/usr/lib"], )
+
+#*
+lib_em2_sources = [ "libpyAligner2",
+                    "libpyAverager2",
+                    "libpyCmp2",
+                    "libpyEMData2",
+                    "libpyEMObject2",
+                    "libpyFundamentals2",
+                    "libpyGeometry2",
+                    "libpyPointArray2",
+                    "libpyPolarData2",
+                    "libpyProcessor2",
+                    "libpyProjector2",
+                    "libpyReconstructor2",
+                    "libpyTransform2",
+                    "libpyTypeConverter2",
+                    "libpyUtils2",
+                    "libpyAnalyzer2",
+                    "libpyMarchingCubes2",
+                    ]
+
+#*
+for nm in lib_em2_sources:
+    env.SharedLibrary(
+        target = "#lib/%s" % nm,
+        source = ["%s.cpp" % nm])

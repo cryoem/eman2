@@ -1,0 +1,15 @@
+/* JSON file to make the e2rawdata.py wizard */
+[
+  {
+    "TITLE":"e2rawdata Wizard",
+    "INST":"This Wizard is to Help users filter their microgrpahs as a preprocessing step",
+    "WIDGETS":[]
+  },
+  {
+    "TITLE":"Select micrograph files",
+    "INST":"Select micrograph files. This will be a space delimted list of files to process",
+    "WIDGETS":[
+      "micrographs"
+    ]
+  },
+]

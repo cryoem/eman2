@@ -1,0 +1,118 @@
+%\documentclass[10pt]{article}
+%\usepackage{fullpage, graphicx, url}
+%\setlength{\parskip}{1ex}
+%\setlength{\parindent}{0ex}
+%\title{EMAN2 Coding Style}
+%\begin{document}
+
+\section {Coding Style}
+ \label{CODING-STYLE} 
+ \index{Developer's Guide!Coding Style}
+
+\begin{enumerate}
+\item Introduction
+\begin{itemize}
+\item This document summarizes the basic coding and naming style in EMAN2. The intended audiences are EMAN2 developers.
+
+\item This document is not a programming tutorial. You may refer the references at the end of document for good books.
+
+
+\end{itemize}
+\item Overview
+
+\begin{enumerate}
+  \item Coding:
+    \begin{enumerate}
+      \item EMAN2 follows the GNU coding style with minor changes. We use indent at \href{http://www.gnu.org/software/indent/indent.html}{http://www.gnu.org/software/indent/indent.html} for beautifying EMAN2 code. 
+    \end{enumerate}
+  \item Naming:
+    \begin{enumerate}
+       \item All source code files use lower cases.
+       \item All classes and data types use uppercase in the first letter; 
+       \item All functions use lower cases with '\_' if necessary.
+     \end{enumerate}
+\end{enumerate}
+
+ 
+\item indent HowTo
+\begin{enumerate}
+
+\item  install indent. (for linux, rpm is available from standard distribution.) 
+\item save file .indent.pro to your home directory.
+\item say you have a file called ``foo.C'', run indent like this: indent foo.C
+
+\item because indent is designed for C code, it is not perfect for C++ code. Read your new source and fix the following possible errors:
+
+%\end{enumerate}
+\begin{enumerate}
+%\begin{enumerate}
+%\begin{enumerate}
+\item change 'const const' to 'const'
+
+%\end{enumerate}
+
+\end{enumerate}
+
+\end{enumerate}
+
+
+ 
+\item Comments \index{Developer's Guide!Doxygen}
+
+ Use \textbf{Doxygen}
+ JavaDoc style: \\ 
+%{\color[named]{BrickRed}
+\begin{verbatim}
+/** Brief description which ends at this dot. Details follow here.\\ 
+ */\\ 
+class Test\\ 
+{\\ 
+public:\\ 
+	/** The constructor's brief description in one line.\\ 
+	 * A more elaborate description of the constructor.\\ 
+	 */\\ 
+	Test();\\ 
+\\ 
+	/** do some test.\\ 
+	 * @author Liwei Peng <lpeng@bcm.tmc.edu>\\ 
+	 * @date 1/20/2005\\ 
+	 * @param low the low threshold.\\ 
+	 * @param high the high threshold.\\ 
+	 * @return 0 if do_test succeeds; 1 if do_test fails.\\ 
+	 */\\ 
+	int do_test(float low, float high);\\ 
+\\ 
+	/** Calculate the sum of an array.\\ 
+	 * @param[in] data Data array\\ 
+	 * @param[in] nitems Number of items in the array.\\ 
+	 * @param[out] sum The sum of the array.\\ 
+	 */\\ 
+	void calc_sum(int[] data, int nitems, int *sum);\\ 
+	\\ 
+}\\ 
+\end{verbatim}%}
+
+\item Samples
+\begin{enumerate}
+\item \href{./html/emdata_8h-source.html}{emdata.h}
+\item \href{./html/emdata_8cpp-source.html}{emdata.cpp}
+
+\end{enumerate}
+
+\item References
+
+\end{enumerate}
+\begin{itemize}
+\item Doxygen: \url{http://www.stack.nl/~dimitri/doxygen/}
+
+
+\end{itemize}
+
+
+
+
+
+Last modifiedby Liwei Peng (lpeng@bcm.tmc.edu)\\ 
+\\ 
+
+%\end{document}
