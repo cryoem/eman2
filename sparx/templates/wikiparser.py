@@ -81,7 +81,7 @@ def construct_keyword_dict():
 	#                     The string with space is interpreted as a list of any directory names upon command generation. (i.e. does not enclose the string with single quotes)
 	#
 	# - apix            : Project constant - float typeJ78
-	# - wn              : Project constant - int type
+	# - ctfwin          : Project constant - int type
 	# - box             : Project constant - int type
 	# - radius          : Project constant - int type
 	# - sym             : Project constant - formatted string type
@@ -121,7 +121,7 @@ def construct_keyword_dict():
 	keyword_dict["selection_list"]                = SXkeyword_map(2, "any_micrograph") # selection_list
 	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters")     # --tr0=matrix_file
 	keyword_dict["input_coordinates"]             = SXkeyword_map(2, "parameters")     # input_coordinates_pattern
-	keyword_dict["--import_ctf"]                  = SXkeyword_map(2, "parameters")     # --import_ctf=ctf_file
+	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "parameters")     # input_ctf_params_source
 	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
 	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment
