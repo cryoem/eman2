@@ -613,7 +613,7 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 		throw ImageDimensionException("The dimensions of the seed volume do not match the reconstruction size");
 
 	// Odd dimension support is here atm, but not above.
-	image = seed;
+	image = seed->copy();
 	if (params.has_key("subvolume")) {
 		image->set_attr("subvolume_x0",subx0);
 		image->set_attr("subvolume_y0",suby0);
@@ -638,6 +638,76 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 		cout << "You will require approximately " << setprecision(3) << (subnx*subny*subnz*sizeof(float)*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
 	}
 }
+
+void FourierReconstructor::setup_seedandweights(EMData* seed,EMData* seed_weight) {
+	// default setting behavior - does not override if the parameter is already set
+	params.set_default("mode","gauss_2");
+
+	vector<int> size=params["size"];
+
+	nx = size[0];
+	ny = size[1];
+	nz = size[2];
+	nx2=nx/2-1;
+	ny2=ny/2;
+	nz2=nz/2;
+
+
+	// Adjust nx if for Fourier transform even odd issues
+	bool is_fftodd = (nx % 2 == 1);
+	// The Fourier transform requires one extra pixel in the x direction,
+	// which is two spaces in memory, one each for the complex and the
+	// real components
+	nx += 2-is_fftodd;
+
+	if (params.has_key("subvolume")) {
+		vector<int> sub=params["subvolume"];
+		subx0=sub[0];
+		suby0=sub[1];
+		subz0=sub[2];
+		subnx=sub[3];
+		subny=sub[4];
+		subnz=sub[5];
+
+		if (subx0<0 || suby0<0 || subz0<0 || subx0+subnx>nx || suby0+subny>ny || subz0+subnz>nz)
+			throw ImageDimensionException("The subvolume cannot extend outside the reconstructed volume");
+
+	}
+	else {
+		subx0=suby0=subz0=0;
+		subnx=nx;
+		subny=ny;
+		subnz=nz;
+	}
+
+	if (seed->get_xsize()!=subnx || seed->get_ysize()!=subny || seed->get_zsize()!=subnz || !seed->is_complex())
+		throw ImageDimensionException("The dimensions of the seed volume do not match the reconstruction size");
+
+	// Odd dimension support is here atm, but not above.
+	image = seed->copy();
+	if (params.has_key("subvolume")) {
+		image->set_attr("subvolume_x0",subx0);
+		image->set_attr("subvolume_y0",suby0);
+		image->set_attr("subvolume_z0",subz0);
+		image->set_attr("subvolume_full_nx",nx);
+		image->set_attr("subvolume_full_ny",ny);
+		image->set_attr("subvolume_full_nz",nz);
+	}
+
+	if (tmp_data) delete tmp_data;
+	tmp_data=seed_weight->copy();
+
+	load_inserter();
+
+	if ( (bool) params["quiet"] == false )
+	{
+		cout << "Seeded direct Fourier inversion";
+		cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
+		cout << "3D Fourier subvolume is " << subnx << " " << subny << " " << subnz << endl;
+		cout << "You will require approximately " << setprecision(3) << (subnx*subny*subnz*sizeof(float)*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
+	}
+}
+
 
 void FourierReconstructor::clear()
 {
