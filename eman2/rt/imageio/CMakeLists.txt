@@ -1,2 +1,0 @@
-ADD_EXECUTABLE(basic basic.cpp)
-TARGET_LINK_LIBRARIES(basic EM2)

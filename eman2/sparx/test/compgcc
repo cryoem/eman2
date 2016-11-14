@@ -1,2 +1,0 @@
-g++ -I$HOME/EMAN2/include -L$HOME/EMAN2/lib -O0 -o testc testc.cpp -lEM2 -lm
-g++ -I$HOME/EMAN2/include -L$HOME/EMAN2/lib -O0 -o tests tests.cpp -lEM2 -lm

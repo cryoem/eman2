@@ -1,1 +1,0 @@
-from libpy.sparx import *
