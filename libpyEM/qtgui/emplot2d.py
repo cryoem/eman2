@@ -2743,12 +2743,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 			i+=1
 		out=file(name2,"a")
 
-
+		xcol=self.slidex.value()
+		ycol=self.slidey.value()
 		for name in names :
 			data=self.target().data[name]
 
 			for i in xrange(len(data[0])):
-				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
+				out.write("%g\t%g\n"%(data[xcol][i],data[ycol][i]))
 
 		out=None
 		print "Wrote ",name2
@@ -2772,8 +2773,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 				i+=1
 
 			out=file(name2,"w")
+			xcol=self.slidex.value()
+			ycol=self.slidey.value()
 			for i in xrange(len(data[0])):
-				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
+				out.write("%g\t%g\n"%(data[xcol][i],data[ycol][i]))
 
 			print "Wrote ",name2
 

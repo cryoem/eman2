@@ -2005,7 +2005,7 @@ class SXGuiCter(QtGui.QWidget):
 			if cter_entry[self.idx_cter_select] == 0:
 				file_out = file_out_mic_discard
 			# else: assert(cter_entry[self.idx_cter_select] == 1) # do nothing
-			file_out.write("  %s\n" % cter_entry[self.idx_cter_mic_name])
+			file_out.write("  %s\n" % os.path.basename(cter_entry[self.idx_cter_mic_name]))
 		
 		file_out_mic_select.close()
 		file_out_mic_discard.close()
@@ -2013,7 +2013,7 @@ class SXGuiCter(QtGui.QWidget):
 		# Save the associated applied threshold 
 		self.writeThresholdSet(file_path_out_thresholds, self.idx_thresholdset_applied) 
 		
-		QtGui.QMessageBox.information(self, "Information","The following files are saved in %s:\n\nCTER CTF List - Selected: %s\n\nCTER CTF List - Discarded: %s\n\nMicrograph - Selected: %s\n\nMicrograph - Discarded: %s\n\nApplied Threshold Set: %s" % (os.path.dirname(self.cter_partres_file_path), file_path_out_select, file_path_out_discard, file_path_out_mic_select, file_path_out_mic_discard, file_path_out_thresholds))
+		QtGui.QMessageBox.information(self, "Information","The following files are saved in %s:\n\nCTER CTF List - Selected: %s\n\nCTER CTF List - Discarded: %s\n\nMicrograph - Selected: %s\n\nMicrograph - Discarded: %s\n\nApplied Threshold Set: %s" % (os.path.dirname(self.cter_partres_file_path), os.path.basename(file_path_out_select), os.path.basename(file_path_out_discard), os.path.basename(file_path_out_mic_select), os.path.basename(file_path_out_mic_discard), os.path.basename(file_path_out_thresholds)))
 	
 	def timeOut(self):
 		if self.busy: return

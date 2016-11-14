@@ -899,6 +899,9 @@ costlist, int* curbranch);
 
 	static vector<int> pickup_references(const vector<vector<float> >& refang, float delta, float an,
                 const vector<vector<float> >& datang, string symmetry);
+                
+	static vector<int> cast_coarse_into_fine_sampling(const vector<vector<float> >& coarse_sampling_angles, const vector<vector<float> >& fine_sampling_angles, string symmetry);
+
 
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);
@@ -993,7 +996,8 @@ public:
 		Notice: the input I use is different from python code, which I think is awkward.
 	*/
 	static int nearest_ang(const vector<float>& vecref, float x, float y, float z);
-	static vector<int> nearest_fang(const vector<float>& vecref, float x, float y, float z);
+	static vector<int> nearest_fang(const vector<vector<float> >& vecref, float x, float y, float z);
+	static vector<int> nearest_fang_select(const vector<vector<float> >& vecref, float x, float y, float z, int howmany);
 	static int nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z);
 
 	/* Assign projection angles to nearest reference projections */

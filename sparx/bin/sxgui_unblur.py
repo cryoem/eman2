@@ -61,11 +61,6 @@ class Ui_MSMainWidget(object):
         self.layoutInput.addItem(spacerItem)
         self.horizontalLayout_12 = QtGui.QHBoxLayout()
         self.horizontalLayout_12.setObjectName(_fromUtf8("horizontalLayout_12"))
-        self.pbFindDir = QtGui.QPushButton(self.layoutWidget)
-        self.pbFindDir.setEnabled(True)
-        self.pbFindDir.setCheckable(False)
-        self.pbFindDir.setObjectName(_fromUtf8("pbFindDir"))
-        self.horizontalLayout_12.addWidget(self.pbFindDir)
         self.label_7 = QtGui.QLabel(self.layoutWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -74,15 +69,31 @@ class Ui_MSMainWidget(object):
         self.label_7.setSizePolicy(sizePolicy)
         self.label_7.setObjectName(_fromUtf8("label_7"))
         self.horizontalLayout_12.addWidget(self.label_7)
-        self.leSuffix = QtGui.QLineEdit(self.layoutWidget)
+        self.lePattern = QtGui.QLineEdit(self.layoutWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.leSuffix.sizePolicy().hasHeightForWidth())
-        self.leSuffix.setSizePolicy(sizePolicy)
-        self.leSuffix.setObjectName(_fromUtf8("leSuffix"))
-        self.horizontalLayout_12.addWidget(self.leSuffix)
+        sizePolicy.setHeightForWidth(self.lePattern.sizePolicy().hasHeightForWidth())
+        self.lePattern.setSizePolicy(sizePolicy)
+        self.lePattern.setText(_fromUtf8(""))
+        self.lePattern.setObjectName(_fromUtf8("lePattern"))
+        self.horizontalLayout_12.addWidget(self.lePattern)
+        self.pbSelectTxt = QtGui.QPushButton(self.layoutWidget)
+        self.pbSelectTxt.setEnabled(True)
+        self.pbSelectTxt.setCheckable(False)
+        self.pbSelectTxt.setObjectName(_fromUtf8("pbSelectTxt"))
+        self.horizontalLayout_12.addWidget(self.pbSelectTxt)
         self.layoutInput.addLayout(self.horizontalLayout_12)
+        self.pbImportPattern = QtGui.QPushButton(self.layoutWidget)
+        self.pbImportPattern.setEnabled(True)
+        self.pbImportPattern.setCheckable(False)
+        self.pbImportPattern.setObjectName(_fromUtf8("pbImportPattern"))
+        self.layoutInput.addWidget(self.pbImportPattern)
+        self.pbImportList = QtGui.QPushButton(self.layoutWidget)
+        self.pbImportList.setEnabled(True)
+        self.pbImportList.setCheckable(False)
+        self.pbImportList.setObjectName(_fromUtf8("pbImportList"))
+        self.layoutInput.addWidget(self.pbImportList)
         self.lsFiles = QtGui.QListWidget(self.layoutWidget)
         self.lsFiles.setEnabled(False)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
@@ -1113,27 +1124,28 @@ class Ui_MSMainWidget(object):
 
     def retranslateUi(self, MSMainWidget):
         MSMainWidget.setWindowTitle(_translate("MSMainWidget", "sxgui_drift", None))
-        self.pbFindDir.setText(_translate("MSMainWidget", "Shift Directory", None))
-        self.label_7.setText(_translate("MSMainWidget", "Name Pattern:", None))
-        self.leSuffix.setText(_translate("MSMainWidget", "*_shift.txt", None))
+        self.label_7.setText(_translate("MSMainWidget", "Pattern:", None))
+        self.pbSelectTxt.setText(_translate("MSMainWidget", "Shift Directory", None))
+        self.pbImportPattern.setText(_translate("MSMainWidget", "Load files by pattern", None))
+        self.pbImportList.setText(_translate("MSMainWidget", "Load files by list", None))
         self.pbSelectAll.setText(_translate("MSMainWidget", "Select All", None))
         self.pbInvert.setText(_translate("MSMainWidget", "Invert Selection", None))
         self.label_6.setText(_translate("MSMainWidget", "Info of Current Entry:", None))
         self.label_4.setText(_translate("MSMainWidget", "   Micrograph Name", None))
-        self.label_3.setText(_translate("MSMainWidget", "   Overall Drift", None))
-        self.label.setText(_translate("MSMainWidget", "   Drift per Frame", None))
-        self.label_2.setText(_translate("MSMainWidget", "   End to End Length", None))
-        self.label_30.setText(_translate("MSMainWidget", "   Maximum Distance between Frames", None))
-        self.label_32.setText(_translate("MSMainWidget", "   Maximum Distance from Frame Start Frame", None))
+        self.label_3.setText(_translate("MSMainWidget", "   Overall Drift (A)", None))
+        self.label.setText(_translate("MSMainWidget", "   Drift per Frame (A)", None))
+        self.label_2.setText(_translate("MSMainWidget", "   End to End Length (A)", None))
+        self.label_30.setText(_translate("MSMainWidget", "   Maximum Distance between Frames (A)", None))
+        self.label_32.setText(_translate("MSMainWidget", "   Maximum Distance from Frame Start Frame (A)", None))
         self.label_8.setText(_translate("MSMainWidget", "Drift Info for selected Micrographs:", None))
         self.label_13.setText(_translate("MSMainWidget", "   Nr. of Micrographs", None))
         self.label_29.setText(_translate("MSMainWidget", "   Checked Micrographs", None))
-        self.label_9.setText(_translate("MSMainWidget", "   Average Overall Drift", None))
-        self.label_12.setText(_translate("MSMainWidget", "   Average Drift per Frame", None))
-        self.label_10.setText(_translate("MSMainWidget", "   Average End to End Length", None))
-        self.label_28.setText(_translate("MSMainWidget", "   Average Maximum Distance between Frames", None))
-        self.label_31.setText(_translate("MSMainWidget", "   Average Maximum Distance from Start Frame", None))
-        self.label_16.setText(_translate("MSMainWidget", "Sort Entrys:", None))
+        self.label_9.setText(_translate("MSMainWidget", "   Average Overall Drift (A)", None))
+        self.label_12.setText(_translate("MSMainWidget", "   Average Drift per Frame (A)", None))
+        self.label_10.setText(_translate("MSMainWidget", "   Average End to End Length (A)", None))
+        self.label_28.setText(_translate("MSMainWidget", "   Average Maximum Distance between Frames (A)", None))
+        self.label_31.setText(_translate("MSMainWidget", "   Average Maximum Distance from Start Frame (A)", None))
+        self.label_16.setText(_translate("MSMainWidget", "Sort Entries:", None))
         self.cbSort.setItemText(0, _translate("MSMainWidget", "File Name", None))
         self.cbSort.setItemText(1, _translate("MSMainWidget", "Overall Drift", None))
         self.cbSort.setItemText(2, _translate("MSMainWidget", "Drift per Frame", None))
@@ -1161,9 +1173,9 @@ class Ui_MSMainWidget(object):
         self.label_25.setText(_translate("MSMainWidget", "Registered Stop (A):", None))
         self.pbSaveOverall.setText(_translate("MSMainWidget", "Register", None))
         self.chOverallCriterion.setText(_translate("MSMainWidget", "Use as criterion", None))
-        self.label_37.setText(_translate("MSMainWidget", "Threshold if the drift of one Frame is", None))
-        self.label_38.setText(_translate("MSMainWidget", "Larger then (A):", None))
-        self.label_39.setText(_translate("MSMainWidget", "Smaller then (A):", None))
+        self.label_37.setText(_translate("MSMainWidget", "Threshold for the drift of one Frame", None))
+        self.label_38.setText(_translate("MSMainWidget", "Start (A):", None))
+        self.label_39.setText(_translate("MSMainWidget", "Stop (A):", None))
         self.pbSaveGeneral.setText(_translate("MSMainWidget", "Register", None))
         self.chGeneralCriterion.setText(_translate("MSMainWidget", "Use as criterion", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MSMainWidget", "General", None))
@@ -1184,8 +1196,9 @@ class Ui_MSMainWidget(object):
         self.chAngleCriterion.setText(_translate("MSMainWidget", "Use as criterion", None))
         self.pbUncheckCriterion.setText(_translate("MSMainWidget", "Uncheck Criteria", None))
         self.pbApply.setText(_translate("MSMainWidget", "Apply registered settings marked as criterion", None))
-        self.label_27.setText(_translate("MSMainWidget", "  Output Name:", None))
-        self.pbSaveSelected.setText(_translate("MSMainWidget", "Save Selection", None))
+        self.label_27.setText(_translate("MSMainWidget", "  Output Prefix:", None))
+        self.leOutputName.setText(_translate("MSMainWidget", "Trial00", None))
+        self.pbSaveSelected.setText(_translate("MSMainWidget", "Select output directory and save selection", None))
         self.pbSaveSettings.setText(_translate("MSMainWidget", "Save Settings", None))
         self.pbLoadSettings.setText(_translate("MSMainWidget", "Load Settings", None))
         self.pbAbout.setText(_translate("MSMainWidget", "About", None))
@@ -1492,7 +1505,7 @@ class SXUnblurPlot(QtGui.QWidget):
 
 class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
-    def __init__(self, inputfile=None, parent=None):
+    def __init__(self, inputlist=None, inputfile=None, parent=None):
         super(SXDriftUnblur, self).__init__(parent)
 
         # Setup Gui Elements
@@ -1503,9 +1516,72 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Connect events
         self._connect_events()
+        if inputlist is not None:
+            result = self._check_list_or_file(inputlist)
+            if result == 'list':
+                try:
+                    listOfShiftFiles = numpy.genfromtxt(inputlist, dtype=None, unpack=True)
+                except TypeError:
+                    message = QtGui.QMessageBox(self)
+                    message.setText('Empty File:\n{0}'.format(fileName))
+                    message.exec_()
+                except ValueError:
+                    message = QtGui.QMessageBox(self)
+                    message.setText('File is not valid, only one column allowed:\n{0}'.format(fileName))
+                    message.exec_()
+                else:
+                    if len(numpy.shape(listOfShiftFiles)) > 1:
+                        message = QtGui.QMessageBox(self)
+                        message.setText('Too many columns. Expected one column:\n{0}'.format(fileName))
+                        message.exec_()
+                    else:
+                        listOfShiftFiles = [os.path.relpath(name) for name in listOfShiftFiles]
+                        self._fill_gui(inputlist=list(listOfShiftFiles), inputfile=inputfile)
+            else:
+                message = QtGui.QMessageBox(self)
+                message.setText('Not a valid file name. Try again:\n{0}'.format(fileName))
+                message.exec_()
+        else:
+            if inputfile is not None:
+                result = self._check_list_or_file(inputfile)
+                if result == 'file':
+                    self._fill_gui(inputfile=inputfile)
+                elif result == 'list':
+                    try:
+                        listOfShiftFiles = numpy.genfromtxt(inputfile, dtype=None, unpack=True)
+                    except TypeError:
+                        message = QtGui.QMessageBox(self)
+                        message.setText('Empty File:\n{0}'.format(fileName))
+                        message.exec_()
+                    except ValueError:
+                        message = QtGui.QMessageBox(self)
+                        message.setText('File is not valid, only one column allowed:\n{0}'.format(fileName))
+                        message.exec_()
+                    else:
+                        if len(numpy.shape(listOfShiftFiles)) > 1:
+                            message = QtGui.QMessageBox(self)
+                            message.setText('Too many columns. Expected one column:\n{0}'.format(fileName))
+                            message.exec_()
+                        else:
+                            self._fill_gui(inputlist=list(listOfShiftFiles))
+                else:
+                    print('{0} not found! Try again'.format(inputfile))
 
-        if inputfile is not None:
-            self._fill_gui(inputfile)
+    def _check_list_or_file(self, data):
+        """Check if the input name is a file or a list of files"""
+        
+        if '*' in data:
+            return 'file'
+        else:
+            try:
+                with open(data, 'r') as r:
+                    if r.readline().startswith('# Unblur'):
+                        return 'file'
+                    else:
+                        return 'list'
+            except IOError:
+                return None
+
 
     def _set_variables(self):
         """Set instance variables"""
@@ -1536,7 +1612,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.idxName = 6
 
         # output directory
-        self.outputDir = 'unblur_GUI_output'
+        self.outputDir = None
 
         # Modes
         self.modeOverall = 'Overall'
@@ -1551,6 +1627,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # DType
         self.dFile = 'fileName'
+        self.dFileRaw = 'fileNameRaw'
         self.dMic = 'micName'
         self.dOverall = 'driftOverall'
         self.dFrame = 'driftFrame'
@@ -1711,7 +1788,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Connect the widgets to the events"""
 
         # Connect buttons
-        self.pbFindDir.clicked.connect(self._find_dir)
+        self.pbSelectTxt.clicked.connect(self._select_txt)
+        self.pbImportList.clicked.connect(self._load_from_list)
+        self.pbImportPattern.clicked.connect(self._load_from_pattern)
         self.pbSelectAll.clicked.connect(self._select_all)
         self.pbInvert.clicked.connect(self._invert_selection)
         self.pbAbout.clicked.connect(self._show_about)
@@ -1925,7 +2004,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
     def _enable_all(self):
         """Enable all widgets"""
 
-        self.pbFindDir.setEnabled(True)
+        self.pbSelectTxt.setEnabled(True)
         self.pbSelectAll.setEnabled(True)
         self.pbInvert.setEnabled(True)
         self.pbAbout.setEnabled(True)
@@ -1982,18 +2061,20 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         widget.setStyleSheet(self.dictColor['modified'])
 
-    def _find_dir(self):
+    def _select_txt(self):
         """Open the drift files and do the drift calculations"""
 
         # Find Directory
-        self.strInputDir = QtGui.QFileDialog.getExistingDirectory(
+        strInputFile = str(QtGui.QFileDialog.getOpenFileName(
             directory=os.getcwd(),
-            options=QtGui.QFileDialog.DontUseNativeDialog
-            )
+            options=QtGui.QFileDialog.DontUseNativeDialog,
+            filter='Text files (*.txt)'
+            ))
 
-        # If the return value is not empty, fill the gui
+        # If the return value is not empty, fill the line edit
         if self.strInputDir != '':
-            self._fill_gui()
+            self.lePattern.clear()
+            self.lePattern.insert(strInputFile)
 
     def _apply_sorting(self):
         """Sort the list widget entrys"""
@@ -2068,7 +2149,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     newItem.setCheckState(Qt.Unchecked)
                 self.lsFiles.addItem(newItem)
 
-    def _fill_gui(self, inputfile=None):
+    def _fill_gui(self, inputlist=None, inputfile=None):
         """Do the Calculations and fill the GUI"""
 
         # Reset lists
@@ -2089,55 +2170,60 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         print('Do drift calculations...')
 
         # Clear the list widget and load the shift files as list
-        self.lsFiles.clear()
-        if inputfile is None:
-            strDirectory = self.strInputDir
-            strSuffix = str(self.leSuffix.text())
-        else:
+        if inputfile is not None:
             strDirectory = os.getcwd()
-            strSuffix = inputfile
+            strSuffix = os.path.relpath(inputfile)
+            path = '{:s}/{:s}'.format(strDirectory, strSuffix)
+            self.outputDir = os.path.relpath(path[:-len(path.split('/')[-1])])
 
-        self.listFile = glob.glob('{:s}/{:s}'.format(strDirectory, strSuffix))
+            self.listFile = glob.glob(os.path.relpath(path))
 
-        # Try to find micrograph numbers
-        if len(strSuffix.split('/')) == 1:
-            listSplit = strSuffix.split('*')
-        else:
-            listSplit = strSuffix.split('/')[-1].split('*')
-        if len(listSplit) != 2:
+            # Try to find micrograph numbers
+            if len(strSuffix.split('/')) == 1:
+                listSplit = strSuffix.split('*')
+            else:
+                listSplit = strSuffix.split('/')[-1].split('*')
+            if len(listSplit) != 2:
+                self.arrMicNumber = numpy.arange(len(self.listFile))
+                print(
+                    'Could not identify micrograph number.\n' +
+                    'Drift per micrograph number is ' +
+                    'not the real micrograph number.'
+                    )
+            else:
+                listMicNumber = []
+                varBreak = False
+                for file in self.listFile:
+                    name = file.split('/')[-1]
+                    prefix = name.split(listSplit[-1])
+                    try:
+                        number = int(prefix[0].split(listSplit[0])[-1])
+                    except:
+                        self.arrMicNumber = numpy.arange(len(self.listFile))
+                        varBreak = True
+                        print(
+                            'Could not identify micrograph number.\n' +
+                            'Drift per micrograph number is ' +
+                            'not the real micrograph number.'
+                            )
+                        break
+                    else:
+                        listMicNumber.append(number)
+
+                if not varBreak:
+                    self.arrMicNumber = numpy.array(listMicNumber)
+
+        if inputlist is not None:
+            if inputfile is not None:
+                self.listFile = [name for name in inputlist if name in self.listFile]
+            else:
+                self.listFile = inputlist
             self.arrMicNumber = numpy.arange(len(self.listFile))
-            print(
-                'Could not identify micrograph number.\n' +
-                'Drift per micrograph number is ' +
-                'not the real micrograph number.'
-                )
-        else:
-            listMicNumber = []
-            varBreak = False
-            for file in self.listFile:
-                name = file.split('/')[-1]
-                prefix = name.split(listSplit[-1])
-                try:
-                    number = int(prefix[0].split(listSplit[0])[-1])
-                except:
-                    self.arrMicNumber = numpy.arange(len(self.listFile))
-                    varBreak = True
-                    print(
-                        'Could not identify micrograph number.\n' +
-                        'Drift per micrograph number is ' +
-                        'not the real micrograph number.'
-                        )
-                    break
-                else:
-                    listMicNumber.append(number)
-
-            if not varBreak:
-                self.arrMicNumber = numpy.array(listMicNumber)
 
         # If no or few files were found
         if not self.listFile:
             messageBox2 = QtGui.QMessageBox()
-            messageBox2.setText('No drift files found ({:s})'.format(strSuffix))
+            messageBox2.setText('No matching drift files found or pattern and list entries does not match\n{:s}'.format(inputfile))
             messageBox2.exec_()
             messageBox.hide()
             return None
@@ -2148,35 +2234,46 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 'so plots of all micrographs could not work as expected. !!!!\n'
                 )
 
-        # Fill list widget
-        for file in self.listFile:
-            file = file.split('/')[-1]
-            newItem = QtGui.QListWidgetItem(file)
-            newItem.setFlags(self.newItemFlags)
-            newItem.setCheckState(Qt.Checked)
-            self.lsFiles.addItem(newItem)
-
         # Load and calculate data for the first time
-        self._first_time_calculations()
+        value = self._first_time_calculations()
 
-        # Fill the frame widgets
-        self.leFrameStart.clear()
-        self.leFrameStop.clear()
-        self.leFrameStart.insert('1')
-        self.leFrameStop.insert('{:d}'.format(self.intFrames))
+        if len(self.arrMicNumber) != len(self.listFile):
+            self.arrMicNumber = numpy.arange(len(self.listFile))
+            print(
+                'Files were corrupt, lost track.\n' +
+                'Drift per micrograph number is ' +
+                'not the real micrograph number.'
+                )
 
-        # Do Calculations
-        self._calculations(oldfirst=1, oldlast=self.intFrames)
+        if value is not None:
+            # Fill list widget
+            self.lsFiles.clear()
+            for file in self.listFile:
+                if os.path.exists(file) and file in self.arrData[self.dFileRaw]:
+                    file = file.split('/')[-1]
+                    newItem = QtGui.QListWidgetItem(file)
+                    newItem.setFlags(self.newItemFlags)
+                    newItem.setCheckState(Qt.Checked)
+                    self.lsFiles.addItem(newItem)
 
-        # Fill the GUI
-        self._refresh_gui()
+            # Fill the frame widgets
+            self.leFrameStart.clear()
+            self.leFrameStop.clear()
+            self.leFrameStart.insert('1')
+            self.leFrameStop.insert('{:d}'.format(self.intFrames))
 
-        # Enable all widgets
-        self._enable_all()
+            # Do Calculations
+            self._calculations(oldfirst=1, oldlast=self.intFrames)
 
-        # Go use the GUI
+            # Fill the GUI
+            self._refresh_gui()
+            
+            # Enable all widges
+            self._enable_all()
+
+            # Go use the GUI
+            print('Done')
         messageBox.hide()
-        print('Done')
 
     def _refresh_gui(self):
         """Refresh the GUI"""
@@ -2225,21 +2322,37 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Print it black
         self._default_color()
 
+        # Check Overall and general criterion
+        self.chOverallCriterion.setChecked(True)
+        self.chGeneralCriterion.setChecked(True)
+
     def _first_time_calculations(self):
         """Calculate the Drift"""
 
         # Check how many frames are there
         self.intFrames = 0
-        with open(self.listFile[0], 'r') as f:
-            for linenumber, line in enumerate(f):
-                if linenumber == 3:
-                    self.intFrames = int(line.split()[-1])
-                    break
+        for files in self.listFile:
+            try:
+                with open(files, 'r') as f:
+                    for linenumber, line in enumerate(f):
+                        if linenumber == 3:
+                            self.intFrames = int(line.split()[-1])
+                            break
+                break
+            except IOError:
+                continue
+        else:
+            print(files)
+            message = QtGui.QMessageBox(self)
+            message.setText('No files in given file list available')
+            message.exec_()
+            return None
 
         # Fill the listDType with the right number of frames and angles.
         # Add entrys to the lists and fill the translation Dictionary.
         self.listDType = [
             (self.dFile, '|S200'),
+            (self.dFileRaw, '|S200'),
             (self.dMic, '|S200'),
             (self.dOverall, '<f8'),
             (self.dFrame, '<f8'),
@@ -2267,6 +2380,30 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     'Angle {:d}'.format(index): 'angle{:d}'.format(index)
                     })
 
+        validFiles = []
+        for file in self.listFile:
+
+            # Import the data
+            try:
+                arrCoord = numpy.genfromtxt(file, unpack=True)
+            except ValueError:
+                print('File corrupt, skip:', file)
+                continue
+
+            if len(arrCoord) != self.intFrames:
+                print('File does not have {0} Frames, skip:'.format(self.intFrames), file)
+                continue
+
+            # Get the micrograph name
+            try:
+                with open(file, 'r') as f:
+                    pass
+            except IOError:
+                continue
+            validFiles.append(file)
+
+        self.listFile = validFiles
+
         # Create an empty array
         self.arrData = numpy.empty(len(self.listFile), dtype=self.listDType)
 
@@ -2275,15 +2412,27 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         idxY = 1
         for number, file in enumerate(self.listFile):
 
+            # Import the data
+            try:
+                arrCoord = numpy.genfromtxt(file, unpack=True)
+            except ValueError:
+                print('File corrupt, skip:', file)
+                continue
+
+            if len(arrCoord) != self.intFrames:
+                print('File does not have {0} Frames, skip:'.format(self.intFrames), file)
+                continue
+
             # Get the micrograph name
-            with open(file, 'r') as f:
-                self.arrData[self.dMic][number] = f.readline().split()[-1]
+            try:
+                with open(file, 'r') as f:
+                    self.arrData[self.dMic][number] = f.readline().split()[-1]
+            except IOError:
+                continue
 
             # Get the file name
             self.arrData[self.dFile][number] = file.split('/')[-1]
-
-            # Import the data
-            arrCoord = numpy.genfromtxt(file, unpack=True)
+            self.arrData[self.dFileRaw][number] = file
 
             for linenumber, coord in enumerate(arrCoord):
                 self.arrData['x{:d}'.format(linenumber + 1)][number] = \
@@ -2306,6 +2455,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
                 self.arrData['frame{:d}'.format(index)][number] = \
                     round(fltDistance, 6)
+        return 'Done!'
 
     def _calculations(self, oldfirst, oldlast):
         """Calculate End-to-End drift, Overall drift, Maximum Distance
@@ -3197,6 +3347,19 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
     def _apply_setting(self):
         """Apply the saved settings"""
 
+        # Ask the user if he really wants to continue
+        warningBox = QtGui.QMessageBox(self)
+        warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
+        warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
+        warningBox.setText(
+                'Do you really want to apply criteria?\n' +
+                'All selections will be lost.'
+            )
+        warningBox.exec_()
+
+        if warningBox.result() == QtGui.QMessageBox.No:
+            return None
+
         # Copy of the data
         arrBetweenThres = numpy.copy(self.arrData)
 
@@ -3735,65 +3898,141 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 '{:f}'.format(fltMaxDistanceZero)
                 )
 
+    def _load_from_list(self):
+        """Load shift files from list"""
+
+        fileName = str(QtGui.QFileDialog.getOpenFileName(
+            directory=os.getcwd(),
+            options=QtGui.QFileDialog.DontUseNativeDialog,
+            filter='Text files (*.txt)'
+            ))
+        if self._check_list_or_file(fileName) == 'list':
+            try:
+                listOfShiftFiles = numpy.genfromtxt(fileName, dtype=None, unpack=True)
+            except TypeError:
+                message = QtGui.QMessageBox(self)
+                message.setText('Empty File:\n{0}'.format(fileName))
+                message.exec_()
+            except ValueError:
+                message = QtGui.QMessageBox(self)
+                message.setText('File is not valid, only one column allowed:\n{0}'.format(fileName))
+                message.exec_()
+            else:
+                if len(numpy.shape(listOfShiftFiles)) > 1:
+                    message = QtGui.QMessageBox(self)
+                    message.setText('Too many columns. Expected one column:\n{0}'.format(fileName))
+                    message.exec_()
+                else:
+                    self._fill_gui(inputlist=list(listOfShiftFiles))
+        else:
+            print('input is no valid list')
+
+    def _load_from_pattern(self):
+        """Load files from pattern"""
+
+        filePattern = str(self.lePattern.text()).replace('\n','')
+        if self._check_list_or_file(filePattern) == 'file':
+            self._fill_gui(inputfile=filePattern)
+        else:
+            message = QtGui.QMessageBox(self)
+            message.setText('Not valid unblur shift files:\n{0}'.format(filePattern))
+            message.exec_()
+
     def _write_selection(self):
         """Write the selected micrographs to a file"""
 
-        if not os.path.exists('unblur_GUI_output'):
-            os.mkdir('unblur_GUI_output')
-
-        # Create output directory
-        strOutput = '{:s}/{:s}'.format(
-            self.outputDir,
-            str(self.leOutputName.text()).replace('.txt', '')
+        # Get output path and file name
+        outputPath = QtGui.QFileDialog.getExistingDirectory(
+            directory=os.getcwd(),
+            options=QtGui.QFileDialog.DontUseNativeDialog
             )
+        if not outputPath:
+            return None
 
-        # Write output
-        with open('{:s}_uncorrected.txt'.format(strOutput), 'w') as f:
-            for name in sorted(self.listChecked):
-                arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                strDirectory = arrCurrentEntry[self.dMic][0].replace('/Temp/', '/Doseuncorrected/').replace('_temp.mrc', '_sum.mrc')
-                f.write(
-                    '{:s}\n'.format(
-                        os.path.relpath(strDirectory)
+        # Output names
+        outputPrefix = str(self.leOutputName.text()).replace('.txt', '')
+        outputSelected = '{0}/{1}_selected.txt'.format(outputPath, outputPrefix)
+        outputDiscarded = '{0}/{1}_discarded.txt'.format(outputPath, outputPrefix)
+        shiftSelected = '{0}/{1}_shift_selected.txt'.format(outputPath, outputPrefix)
+        shiftDiscarded = '{0}/{1}_shift_discarded.txt'.format(outputPath, outputPrefix)
+
+        # Check if output files already exists
+        if os.path.exists(outputSelected) or \
+                os.path.exists(outputDiscarded) or\
+                os.path.exists(shiftSelected) or \
+                os.path.exists(shiftDiscarded):
+            # Ask the user if he really wants to continue
+            warningBox = QtGui.QMessageBox(self)
+            warningBox.setStandardButtons(
+                QtGui.QMessageBox.No | QtGui.QMessageBox.Yes
+                )
+            warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
+            warningBox.setText(
+                    'Do you really want to save?\n' +
+                    '{0}\nor\n{1}\nor\n{2}\nor\n{3}\nalready exists.'.format(
+                        outputSelected,
+                        outputDiscarded,
+                        shiftSelected,
+                        shiftDiscarded
                         )
-                    )
+                )
+            warningBox.exec_()
 
-        with open('{:s}_corrected.txt'.format(strOutput), 'w') as f:
-            for name in sorted(self.listChecked):
-                arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
-                strDirectory = arrCurrentEntry[self.dMic][0].replace('/Temp/', '/Dosecorrected/').replace('_temp.mrc', '_sum.mrc')
-                f.write(
-                    '{:s}\n'.format(
-                        os.path.relpath(strDirectory)
+            if warningBox.result() == QtGui.QMessageBox.No:
+                return None
+
+        with open(outputSelected, 'w') as w:
+            with open(shiftSelected, 'w') as f:
+                for name in sorted(self.listChecked):
+                    arrCurrentEntry = self.arrData[self.arrData[self.dFile] == name]
+                    micName = arrCurrentEntry[self.dMic][0]\
+                        .split('/')[-1]\
+                        .replace('_temp.mrc', '_sum.mrc')\
+                        .replace('_frames.mrc', '_sum.mrc')
+                    w.write(
+                        '{:s}\n'.format(
+                            micName
+                            )
                         )
-                    )
+                    f.write(
+                        '{:s}\n'.format(
+                            arrCurrentEntry[self.dFileRaw][0]
+                            )
+                        )
 
-        # Show message with the save path
-        messageBox = QtGui.QMessageBox(self)
-        messageBox.setText(
-            'File saved!\n{0:s}_corrected.txt and {0:s}_uncorrected.txt'.format(strOutput)
-            )
-        messageBox.exec_()
+        with open(outputDiscarded, 'w') as w:
+            with open(shiftDiscarded, 'w') as f:
+                for name in sorted(self.listUnchecked):
+                    arrCurrentEntry = self.arrData[
+                            self.arrData[self.dFile] == name
+                            ]
+                    micName = arrCurrentEntry[self.dMic][0]\
+                        .split('/')[-1]\
+                        .replace('_temp.mrc', '_sum.mrc')\
+                        .replace('_frames.mrc', '_sum.mrc')
+                    w.write(
+                        '{:s}\n'.format(
+                            micName
+                            )
+                        )
+                    f.write(
+                        '{:s}\n'.format(
+                            arrCurrentEntry[self.dFileRaw][0]
+                            )
+                        )
 
     def _write_settings(self):
         """Save settings"""
 
-        # Create directory if it does not exists
-        if not os.path.exists('unblur_GUI_output'):
-            os.mkdir('unblur_GUI_output')
-
         # Output file name
-        strSaveName = str(
-            QtGui.QInputDialog.getText(
-                self,
-                'Save settings',
-                'File name:'
-                )[0]
-            )
+        strSaveName = str(QtGui.QFileDialog.getSaveFileName(
+            directory=os.getcwd(),
+            options=QtGui.QFileDialog.DontUseNativeDialog
+            ))
 
         # Save data to file
         if strSaveName != '':
-            with open(self.outputDir + '/' + strSaveName, 'w') as f:
+            with open(strSaveName, 'w') as f:
                 f.write('# Frames\n')
                 f.write('{:d} {:d} {:d}\n'.format(
                     self.idxFirstFrame, self.idxLastFrame, self.intFrames
@@ -4224,19 +4463,24 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 def _main():
     app = QtGui.QApplication(sys.argv)
 
-    if len(sys.argv) > 2:
+    if len(sys.argv) > 3:
         print(
             'Too many arguments!\n'
             'Please start the GUI without argument or use \n'
-            'quote marks around the wildcard "example-*_shift.txt"'
+            'quote marks around the wildcard "example-*_shift.txt".\n'
+            'Usage: sxgui_unblur.py "shift_files" "list_file"\n'
             )
         return None
+    elif len(sys.argv) == 3:
+        shiftFiles, shiftList = sys.argv[-2:]
+        msApp = SXDriftUnblur(inputfile=shiftFiles, inputlist=shiftList)
     elif len(sys.argv) == 2:
-        arg = sys.argv[-1]
+        shiftFiles = sys.argv[-1]
+        msApp = SXDriftUnblur(inputfile=shiftFiles)
     else:
         arg = None
+        msApp = SXDriftUnblur(arg)
 
-    msApp = SXDriftUnblur(arg)
     msApp.show()
 
     app.exec_()

@@ -29,7 +29,7 @@ def main():
 	parser.add_argument("--netout", type=str,help="Output neural net file name", default="nnet_save.hdf",guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode="train")
 	
 	parser.add_argument("--learnrate", type=float,help="Learning rate ", default=.01, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="train")
-	parser.add_argument("--niter", type=int,help="Training iterations", default=10, guitype='intbox', row=4, col=1, rowspan=1, colspan=1, mode="train")
+	parser.add_argument("--niter", type=int,help="Training iterations", default=20, guitype='intbox', row=4, col=1, rowspan=1, colspan=1, mode="train")
 	parser.add_argument("--ncopy", type=int,help="Number of copies for each particle", default=1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="train")
 	parser.add_argument("--batch", type=int,help="Batch size for the stochastic gradient descent. Default is 20.", default=20, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="train")
 	parser.add_argument("--nkernel", type=str,help="Number of kernels for each layer, from input to output. The number of kernels in the last layer must be 1. ", default="40,40,1", guitype='strbox', row=6, col=0, rowspan=1, colspan=1, mode="train")
@@ -41,7 +41,7 @@ def main():
 	parser.add_argument("--tomograms", type=str,help="Tomograms input.", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True)", row=1, col=0, rowspan=1, colspan=3, mode="test")
 	parser.add_argument("--applying", action="store_true", default=False ,help="Applying the neural network on tomograms", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='test[True]')
 	parser.add_argument("--dream", action="store_true", default=False ,help="Iterativly applying the neural network on noise", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='test')
-	parser.add_argument("--output", type=str,help="Segmentation out file name", default="tomosegresult.mrcs", guitype='strbox', row=3, col=0, rowspan=1, colspan=1, mode="test")
+	parser.add_argument("--output", type=str,help="Segmentation out file name", default="tomosegresult.hdf", guitype='strbox', row=3, col=0, rowspan=1, colspan=1, mode="test")
 	parser.add_argument("--threads", type=int,help="Number of thread to use when applying neural net on test images. Not used during trainning", default=12, guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="test")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -390,7 +390,7 @@ def apply_neuralnet(options):
 		
 	ksize=hdr["ksize"]
 	poolsz=hdr["poolsz"]
-
+	labelshrink=np.prod(poolsz)
 	k=1
 	#global layers
 	layers=[]
@@ -480,7 +480,10 @@ def apply_neuralnet(options):
 			idx,cout=jsd.get()
 			cout.write_image(options.output,idx)
 			
-			
+	fout="__tomoseg_tmp.hdf"
+	run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed".format(options.output,fout,float(1./labelshrink)))
+	os.rename(fout, options.output)
+	
 	print "Done."
 	print "Total time: ", time.time()-tt0
 	

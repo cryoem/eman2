@@ -351,7 +351,7 @@ class EMSimTaskDC(JSTask):
 		# ralign - the refine aligner, a list of two string. May be None which turns it off
 		# raligncmp - the refinealigncmp - a list of two strings. Needs to specified if ralign is not None
 		# cmp - the final cmp - a list of two strings
-		# shrink - a shrink value (int), may be None or unspecified - shrink the data by an integer amount prior to computing similarity scores
+		# shrink - a shrink value (float), may be None or unspecified - shrink the data prior to computing similarity scores, will adjust to produce a good box size
 
 
 		# data should have
@@ -379,7 +379,7 @@ class EMSimTaskDC(JSTask):
 
 		if self.data.has_key("mask") :
 			mask=EMData(self.data["mask"][1],self.data["mask"][2])
-			if shrink != None : mask.process_inplace("math.meanshrink",{"n":options["shrink"]})
+			if shrink != None : mask.process_inplace("math.fft.resample",{"n":shrink})
 		else : mask=None
 
 #		print self.data["references"][2:]
@@ -399,14 +399,14 @@ class EMSimTaskDC(JSTask):
 				raise Exception,"Couldn't read data in init_memory"
 				
 			if shrink != None:
-				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
+				image.process_inplace("math.fft.resample",{"n":shrink})
 
 			if ref_masks_name==None :
 				refs[idx] = (image,None)
 			else :
 				mask=EMData(ref_masks_name,idx)
 				if shrink != None:
-					mask.process_inplace("math.meanshrink",{"n":options["shrink"]})
+					mask.process_inplace("math.fft.resample",{"n":shrink})
 				refs[idx] = (image,mask)
 
 		ptcl_data_name=self.data["particles"][1]
@@ -429,7 +429,7 @@ class EMSimTaskDC(JSTask):
 			
 			
 			if shrink != None:
-				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
+				image.process_inplace("math.fft.resample",{"n":options["shrink"]})
 # removed 8/2/12 stevel. Don't want to apply mask before alignment
 #			if mask!=None : image.mult(mask)
 			ptcls[idx] = image
@@ -492,6 +492,7 @@ class EMSimTaskDC(JSTask):
 					t =  aligned.get_attr("xform.align2d")
 					t.invert()
 					data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
+#					print t,data[ref_idx]
 					
 			else:
 				data[ref_idx] = (ptcl.cmp(options["cmp"][0],ref[0],options["cmp"][1]),None)
@@ -612,7 +613,7 @@ def main():
 	parser.add_argument("--fillzero",action="store_true",help="Checks the existing output file, and fills only matrix elements which are exactly zero.",default=False)
 	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
-	parser.add_argument("--shrink", type=int,default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up.")
+	parser.add_argument("--shrink", type=float,default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up.")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_argument("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -719,8 +720,8 @@ def main():
 		#d = [ image.process("math.meanshrink",{"n":options.shrink}) for image in cimgs]
 		#cimgs = d
 		for image,imagem in cimgs:
-			image.process_inplace("math.meanshrink",{"n":options.shrink})
-			if imagem!=None : imagem.process_inplace("math.meanshrink",{"n":options.shrink})
+			image.process_inplace("math.fft.resample",{"n":options.shrink})
+			if imagem!=None : imagem.process_inplace("math.fft.resample",{"n":options.shrink})
 
 #	if (options.lowmem):
 	rimg=EMData()
@@ -756,8 +757,8 @@ def main():
 #		if ( options.lowmem ):
 		rimg.read_image(args[1],r)
 		if options.shrink != None: # the check function guarantees that shrink is an integer greater than
-			rimg.process_inplace("math.meanshrink",{"n":options.shrink})
-			if mask!=None : mask.process_inplace("math.meanshring",{"n":options.shrink})
+			rimg.process_inplace("math.fft.resample",{"n":options.shrink})
+			if mask!=None : mask.process_inplace("math.fft.resample",{"n":options.shrink})
 
 		if mask!=None : rimg.mult(mask) 		# cimgs are masked in cmponetomany
 #		else:
@@ -814,6 +815,8 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			r[0]=r[0].process("filter.matchto",{"to":target})
 			r[0].mult(msk)											# remask after filtering
 
+#		print "Final: ",target["source_n"],",",r[0]["source_n"]
+
 		if align[0] :
 			r[0].del_attr("xform.align2d")
 			ta=r[0].align(align[0],target,align[1],alicmp[0],alicmp[1])
@@ -865,9 +868,9 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 		else :
 			ret[i]=(target.cmp(cmp[0],r[0],cmp[1]),0,0,0,1.0,False)
 
-		if verbose>2 : print ret[i][0],
+		if verbose==3 : print ret[i][0],
 
-	if verbose>2 : print ""
+	if verbose==3 : print ""
 	if verbose==2 :
 		print "Best: ",sorted([(ret[i][0],i) for i in range(len(ret))])[0]
 	return ret
@@ -917,8 +920,13 @@ def check(options,verbose):
 			print "Warning, setting shrink to 1 does nothing. If you don't want shrinking to occur just forget the shrink argument"
 
 		if options.shrink <= 1:
-			print "Error: shrink must be greater than 1"
+			print "Error: shrink must be greater than 1 if set"
 			error = True
+
+		newsize=int(ysize/options.shrink)
+		if newsize!=good_size(newsize) :
+			options.shrink=ysize/float(good_size(newsize)+.1)
+			print "Shrink adjusted to {:1.3f} to produce a good size".format(options.shrink)
 
 
 	if (options.saveali):

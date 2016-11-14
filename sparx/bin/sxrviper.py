@@ -572,7 +572,7 @@ output_directory: directory name into which the output files will be written.  I
 """
 
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--radius",                type="int",           help="radius of the particle: has to be less than < int(nx/2)-1 (default required int)")
+	parser.add_option("--radius",                type="int",           default=29,         help="radius of the particle: has to be less than < int(nx/2)-1 (default 29)")
 
 	parser.add_option("--ir",                    type="int",           default=1,          help="inner radius for rotational search: > 0 (default 1)")
 	parser.add_option("--rs",                    type="int",           default=1,          help="step between rings in rotational search: >0 (default 1)")

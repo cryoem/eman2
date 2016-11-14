@@ -10048,20 +10048,23 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 //		   so we need nx =ny+2, and ny	even
 //			  or  nx = ny+1	 and ny odd
 //		   so nx even, and 2 *(nx -ny) -3=	+- 1; So  abs(2*(nx-ny)-3) == 1
-		float theta =  t.get_rotation("eman").get("phi"); theta=theta*pi/180;
+		float theta =  t.get_rotation("2d").get("alpha"); theta=theta*pi/180;
 		float Ctheta= cos(theta);
 		float Stheta= sin(theta);
+		int mirror= t.get_mirror()?(-1.0f):1.0f;		// added by steve on 11/7/16
 		Vec3f transNow= t.get_trans();
 		float xshift= transNow[0]; float yshift= transNow[1];
+//		printf("%f\t%f\t%f\t%d\n",theta,xshift,yshift,mirror);
 		float tempR; float tempI; // float tempW;
-		float Mid =(N+1.0)/2.0;	 // Check this
+		float Mid =N*N/4;	 // steve changed to N^2
 //		int kNy= ny; //size of the real space image
 //		int kNx= nx/2; //
 		Vec2f offset(nx/2,ny/2);
 		float phaseConstx  = -2*pi*xshift/ny ;
 		float k1= cos(phaseConstx); float k2= sin(phaseConstx);
 		float k3= 1.0/k1; float k4= k2/k1; // that is 1/cos and tan()
-
+		int nxy=nx*ny;
+		
 		for (int kyN = 0; kyN < ny; kyN++) {
 			int kyNew = kyN;
 			if (kyN>=nx/2) kyNew=kyN-ny;  // Step 0		Unalias
@@ -10071,7 +10074,12 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			float Cphase = cos(phase);
 			float Sphase = sin(phase);
 			int kx,ky;
-			int IndexOut=  -2+ nx* kyN;
+			int IndexOut;
+			if (mirror==-1.0) {
+				if (kyN>0) IndexOut = -2 + nx * (ny-kyN);		// Added by steve on 11/7/16
+				else IndexOut =  -2+ nx* kyN;
+			}
+			else IndexOut =  -2+ nx* kyN;
 			for (int kxN = 0; kxN < (nx/2); kxN++) {
 				IndexOut += 2;
 				// int kxNew=kxN;
@@ -10083,7 +10091,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 					Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is   cos = cos cos  -sin sin
 					Sphase = Sphase*k3+ Cphase*k4;	//	 and   sin = sin  (1/ cos) + cos * tan;
 
-				if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid)) { // out of bounds
+//				if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid)) { // out of bounds
+				if (Util::square_sum(kxOld,kyOld)>=Mid) {
 						  des_data[IndexOut] = 0;
 						  des_data[IndexOut+1] = 0;
 				   continue;}
@@ -10130,6 +10139,10 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 //				  float WUL = dkxUpper*dkyLower	 ;// WLL(dkxLower,dkyLower)
 //				  float WUU = dkxUpper*dkyUpper	 ;//  etc
 //				  tempW = WLL  +  WLU + WUL +  WUU ;
+					
+					// Added by steve. MAJOR limit checking issues here! Hope this doesn't cause any other problems
+			if (kLL<0||kUL<0||kLU<0||kUU<0||kLL>=nxy||kUL>=nxy||kLU>=nxy||kUU>=nxy) continue;
+				//printf("%d %d %d %d\n",kLL,kUL,kLU,kUU);
 
 				  //			Step 5	  Assign Real, then Imaginary Values
 				  tempR = Util::bilinear_interpolate(src_data[kLL],src_data[kUL], src_data[kLU], src_data[kUU],dkxUpper,dkyUpper);//
@@ -10143,7 +10156,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				  float tempIb=tempR*Sphase + tempI*Cphase;
 				  //
 				  des_data[IndexOut]   = tempRb;
-				  des_data[IndexOut+1] = tempIb;
+//				  des_data[IndexOut+1] = tempIb;
+				  des_data[IndexOut+1] = tempIb*mirror;
 				  //printf(" kxNew = %d, kyNew = %d,kxOld = %3.2f, kyOld = %3.2f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %3.2f, tempI=%3.2f,	 \n",
 				//		kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
 			}

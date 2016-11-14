@@ -5271,6 +5271,7 @@ EMData* Util::Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr,
 
 	// straight
 	fftr_d(q,ip);
+
 	int npsi = (int)(360.0f/delta + 0.01);
 	EMData* out = new EMData();
 	out->set_size(npsi,1,1);
@@ -19580,6 +19581,80 @@ vector<int> Util::pickup_references(const vector<vector<float> >& refang, float 
 	return ltable;
 }
 
+vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& coarse_sampling_angles, const vector<vector<float> >& fine_sampling_angles, string symmetry) {
+
+	size_t ncoarse_sampling_angles = coarse_sampling_angles.size();
+	size_t nfine_sampling_angles = fine_sampling_angles.size();
+	const float qv = static_cast<float>( pi/180.0 );
+
+	int nsym = atoi(symmetry.substr(1,1000).c_str());//std::stoi(symmetry.substr(1,1000));
+	vector<int> ltable;
+
+	if( symmetry == "c1" ) {
+		vector<float> dang(3*nfine_sampling_angles);
+		for (int kl=0; kl<nfine_sampling_angles; kl++) getfvec(fine_sampling_angles[kl][0], fine_sampling_angles[kl][1], dang[3*kl], dang[3*kl+1], dang[3*kl+2]);
+
+		for (int n=0; n<ncoarse_sampling_angles; n++) {
+			vector<float> refvec(3);
+			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
+			int mkl =  ncoarse_sampling_angles +1;
+			 float max_qt = -2.0f;
+			for (int kl=0; kl<nfine_sampling_angles; kl++) {
+				 float qt = dang[3*kl]*refvec[0] + dang[3*kl+1]*refvec[1] + dang[3*kl+2]*refvec[2];
+				 max_qt = max(max_qt, qt);
+				 if (qt == max_qt) 
+				    mkl  = kl; }	
+                ltable.push_back(mkl); }
+	} else if( symmetry.substr(0,1) == "c")  {
+		float qt = 360.0f/nsym;
+		vector<float> dang(3*3*nfine_sampling_angles);
+		for (int kl=0; kl<nfine_sampling_angles; kl++)  {
+			for (int n = 0; n < 3; n++)  getfvec(fine_sampling_angles[kl][0]+(n-1)*qt, fine_sampling_angles[kl][1], dang[3*n + 9*kl], dang[1 + 3*n + 9*kl], dang[2 + 3*n + 9*kl]);
+		}
+		for (int n = 0; n < ncoarse_sampling_angles; n++) {
+			vector<float> refvec(3);
+			int mkl =  ncoarse_sampling_angles + 1;
+			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
+				float max_qt = -2.0f;
+				for (int kl=0; kl<nfine_sampling_angles; kl++) {
+						for (int nsm = 0; nsm < 3; nsm++)  {
+						  float vc = dang[3*nsm + 9*kl]*refvec[0] + dang[1 + 3*nsm + 9*kl]*refvec[1] + dang[2+ 3*nsm + 9*kl]*refvec[2];
+					        max_qt = max(max_qt, vc);
+				           if (vc == max_qt) 
+				    		   mkl  = kl; }	
+				    		   				}
+                          ltable.push_back(mkl); 
+						}
+	
+	} else if( symmetry.substr(0,1) == "d")  {
+		float qt = 360.0f/nsym;
+		vector<float> dvecup(3*3*nfine_sampling_angles);
+		vector<float> dvecdown(3*3*nfine_sampling_angles);
+		for (int kl=0; kl<nfine_sampling_angles; kl++)  {
+			for (int n=0; n<3; n++)  getfvec(fine_sampling_angles[kl][0]+(n-1)*qt, fine_sampling_angles[kl][1], dvecup[3*n + 9*kl], dvecup[1 + 3*n + 9*kl], dvecup[2 + 3*n + 9*kl]);
+			for (int n=0; n<3; n++)  getfvec(-fine_sampling_angles[kl][0]+(n-1)*qt, 180.0f-fine_sampling_angles[kl][1], dvecdown[3*n + 9*kl], dvecdown[1 + 3*n + 9*kl], dvecdown[2 + 3*n + 9*kl]);
+		}
+		for (int n = 0; n < ncoarse_sampling_angles; n++) {
+			vector<float> refvec(3);
+			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
+			int mkl =  ncoarse_sampling_angles + 1;
+			float max_qt = -2.0f;
+			for (int kl=0; kl<nfine_sampling_angles; kl++) {
+					for (int nsm=0; nsm<3; nsm++)  {
+						float vc1 = dvecup[3*nsm +   9*kl]*refvec[0] + dvecup[1 + 3*nsm + 9*kl]*refvec[1] + dvecup[2+ 3*nsm + 9*kl]*refvec[2];
+						float vc2 = dvecdown[3*nsm + 9*kl]*refvec[0] + dvecdown[1 +3*nsm + 9*kl]*refvec[1] + dvecdown[2+ 3*nsm + 9*kl]*refvec[2];
+						if (max_qt < max(vc1, vc2))
+						 {
+						   max_qt = max(vc1,vc2);
+						   mkl    = kl;
+						  }
+						} //nsym
+					 } //kl fine loop
+				ltable.push_back(mkl);
+			} // coarse loop
+		}
+	return ltable;
+}
 
 
 #define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*(size_t)nxo]
@@ -20153,12 +20228,12 @@ int Util::nearest_ang(const vector<float>& vecref, float x, float y, float z) {
 	return best_i;
 }
 
-vector<int> Util::nearest_fang(const vector<float>& vecref, float x, float y, float z) {
+vector<int> Util::nearest_fang(const vector<vector<float> >& vecref, float x, float y, float z) {
 	float best_v = -1.0f;
 	int   best_i = -1;
 
-	for (unsigned int i=0; i<vecref.size()/3; i++) {
-		float v = vecref[i*3]*x+vecref[i*3+1]*y+vecref[i*3+2]*z;
+	for (unsigned int i=0; i<vecref.size(); i++) {
+		float v = vecref[i][0]*x+vecref[i][1]*y+vecref[i][2]*z;
 		if (v > best_v) {
 			best_v = v;
 			best_i = i;
@@ -20169,6 +20244,35 @@ vector<int> Util::nearest_fang(const vector<float>& vecref, float x, float y, fl
 	bout[1] = int(best_v*1000000);
 	return bout;
 }
+
+vector<int> Util::nearest_fang_select(const vector<vector<float> >& vecref, float x, float y, float z, int howmany) {
+	if ( howmany > vecref.size() ) throw InvalidValueException(howmany,"Error, number of neighbors cannot be larger than number of reference directions");
+	std::vector<int> bout(howmany);
+	std::vector<float> score(howmany);
+	for (unsigned int k=0; k<howmany; k++) {
+		score[k] = -1.0e10;
+		bout[k] = -1;
+	}
+
+	for (unsigned int i=0; i<vecref.size(); i++) {
+		float v = vecref[i][0]*x+vecref[i][1]*y+vecref[i][2]*z;
+		for (unsigned int k=0; k<howmany; k++) {
+			if (v > score[k]) {
+				for (unsigned int l=howmany-1; l>k; l-=1) {
+					score[l] = score[l-1];
+					bout[l] = bout[l-1];
+				}
+				score[k] = v;
+				bout[k] = i;
+				//cout << i<< " AAAAA "<< k<< "  "<<endl;
+				//for (unsigned int kk=0; kk<howmany; kk++) { cout << score[kk]<< "  "<<bout[kk]<<endl;}
+				break;
+			}
+		}	
+	}
+	return bout;
+}
+
 
 int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z) {
 	throw NullPointerException("nearest_ang_f");
@@ -20181,10 +20285,11 @@ int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, 
 			best_v = v;
 			best_i = i;
 		}
-		
+
 	}
 	return best_i;
 }
+
 
 struct d_ang {
 	float d;
@@ -20226,60 +20331,6 @@ vector<int> Util::assign_projangles_f(const vector<vector<float> >& projangles, 
 	}
 	return asg;
 }
-
-EMData* Util::fast_3d_box_convolution(EMData *input_volume, int window_size) {
-
-	int nx = input_volume->get_xsize();
-	int ny = input_volume->get_ysize();
-	int nz = input_volume->get_zsize();
-	int total_size = nx*ny*nz;
-
-	int number_of_dimensions = 1 + (ny>1) + (nz>1);
-
-	int dimension_step_base[3] = {1, nx, nx*ny};
-//	int dimension_step[number_of_dimensions]; doesn't work on Windows
-	int dimension_step[3];
-	for(int i=0; i<number_of_dimensions; ++i) dimension_step[i] = dimension_step_base[i]; 
-	EMData* output_volume = new EMData();
-	output_volume->set_size(nx, ny, nz);
-	
-	float * input_data = input_volume->get_data();
-	
-	float **sum3d = (float **)calloc(number_of_dimensions, sizeof(float*));
-	for (int i=0; i < number_of_dimensions; ++i)
-		sum3d[i] = (float *)calloc(total_size, sizeof(float));
-		
-	int half_window_size = (window_size - 1) / 2;
-	int half_window_size_minus_1 = (window_size - 1) / 2 - 1;
-	int half_window_size_plus_1 = (window_size - 1) / 2 +  1;
-
-	for (int dimension_iterator = 0; dimension_iterator < number_of_dimensions; ++dimension_iterator)
-	{
-		for (int i = 0 ; i < window_size*dimension_step[dimension_iterator]; i += dimension_step[dimension_iterator])
-		  sum3d[dimension_iterator][half_window_size*dimension_step[dimension_iterator]] += input_data[i];
-		for (int j = 0; j < dimension_step[dimension_iterator]; ++j)
-			for (int i = half_window_size*dimension_step[dimension_iterator] + j; i < (total_size - half_window_size*dimension_step[dimension_iterator]); \
-			i += dimension_step[dimension_iterator])
-			{
-				double result = \
-				(double)sum3d[dimension_iterator][i - dimension_step[dimension_iterator]] - \
-				(double)input_data[i - half_window_size_plus_1*dimension_step[dimension_iterator]] + \
-				(double)input_data[i + half_window_size*dimension_step[dimension_iterator]];
-				sum3d[dimension_iterator][i] = (float)result;
-			}
-		input_data = sum3d[dimension_iterator];
-	}
-	
-	std::copy(sum3d[number_of_dimensions - 1], sum3d[number_of_dimensions - 1] + total_size, output_volume->get_data());
-	output_volume->update();
-
-	for (int i=0; i<number_of_dimensions; ++i)
-		free(sum3d[i]);
-	free(sum3d);
-	
-	return output_volume;
-}
-
 
 vector<float> Util::get_largest_angles_in_cones(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles) {
 	int length_of_refangles = refangles.size();
@@ -23096,8 +23147,8 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  VERSION  11/02/2016  4:34 PM "<<endl;
- cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ << " Modification time: 9/01/2016 -- 11:46:40 AM " <<  endl; // l9oQJdJNrfgEBup91
+ cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
+ cout <<"  Modification time: 11/11/2016  12:44 AM " <<  endl;
 }
 
 
@@ -26045,6 +26096,59 @@ EMData* Util::box_convolution(EMData* img, int w)
 	return img2;
 }
 #undef img2_ptr
+
+EMData* Util::fast_3d_box_convolution(EMData *input_volume, int window_size) {
+
+	int nx = input_volume->get_xsize();
+	int ny = input_volume->get_ysize();
+	int nz = input_volume->get_zsize();
+	int total_size = nx*ny*nz;
+
+	int number_of_dimensions = 1 + (ny>1) + (nz>1);
+
+	int dimension_step_base[3] = {1, nx, nx*ny};
+//	int dimension_step[number_of_dimensions]; doesn't work on Windows
+	int dimension_step[3];
+	for(int i=0; i<number_of_dimensions; ++i) dimension_step[i] = dimension_step_base[i]; 
+	EMData* output_volume = new EMData();
+	output_volume->set_size(nx, ny, nz);
+	
+	float * input_data = input_volume->get_data();
+	
+	float **sum3d = (float **)calloc(number_of_dimensions, sizeof(float*));
+	for (int i=0; i < number_of_dimensions; ++i)
+		sum3d[i] = (float *)calloc(total_size, sizeof(float));
+		
+	int half_window_size = (window_size - 1) / 2;
+	int half_window_size_minus_1 = (window_size - 1) / 2 - 1;
+	int half_window_size_plus_1 = (window_size - 1) / 2 +  1;
+
+	for (int dimension_iterator = 0; dimension_iterator < number_of_dimensions; ++dimension_iterator)
+	{
+		for (int i = 0 ; i < window_size*dimension_step[dimension_iterator]; i += dimension_step[dimension_iterator])
+		  sum3d[dimension_iterator][half_window_size*dimension_step[dimension_iterator]] += input_data[i];
+		for (int j = 0; j < dimension_step[dimension_iterator]; ++j)
+			for (int i = half_window_size*dimension_step[dimension_iterator] + j; i < (total_size - half_window_size*dimension_step[dimension_iterator]); \
+			i += dimension_step[dimension_iterator])
+			{
+				double result = \
+				(double)sum3d[dimension_iterator][i - dimension_step[dimension_iterator]] - \
+				(double)input_data[i - half_window_size_plus_1*dimension_step[dimension_iterator]] + \
+				(double)input_data[i + half_window_size*dimension_step[dimension_iterator]];
+				sum3d[dimension_iterator][i] = (float)result;
+			}
+		input_data = sum3d[dimension_iterator];
+	}
+	
+	std::copy(sum3d[number_of_dimensions - 1], sum3d[number_of_dimensions - 1] + total_size, output_volume->get_data());
+	output_volume->update();
+
+	for (int i=0; i<number_of_dimensions; ++i)
+		free(sum3d[i]);
+	free(sum3d);
+	
+	return output_volume;
+}
 
 double Util::bessi0(double x)
 {

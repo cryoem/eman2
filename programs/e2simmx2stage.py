@@ -67,8 +67,8 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_argument("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save meclen,mory but potentially increase CPU time",default=False)
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
-	parser.add_argument("--shrink", type=int,default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")
-	parser.add_argument("--shrinks1", type=int,help="Shrinking performed for first stage classification, default=2",default=2)
+	parser.add_argument("--shrink", type=float,default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")
+	parser.add_argument("--shrinks1", type=float,help="Shrinking performed for first stage classification, default=2",default=2)
 	parser.add_argument("--finalstage",action="store_true",help="Assume that existing preliminary particle classifications are correct, and only recompute final local orientations",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel",type=str,help="Parallelism string",default="thread:1")
@@ -87,12 +87,21 @@ def main():
 
 	print "%d references, using %d stage 1 averaged references"%(clen,clen_stg1)
 
+	#if options.align[:21]=="rotate_translate_tree" :
+		#options.shrink=None
+		#options.shrinks1=""
+		#print "Note: shrinking disabled with rotate_translate_tree alignment"
+	#else: 
+	
+	options.shrinks1="--shrink %1.3f"%options.shrinks1
+
 	if not options.finalstage :
 		############### Step 1 - classify the reference images
 
 		E2progress(E2n,0.001)
 		# compute the reference self-similarity matrix
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+#		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_tree --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
 		if options.prefilt : cmd+=" --prefilt"
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print "executing ",cmd
@@ -161,7 +170,7 @@ def main():
 		E2progress(E2n,0.15)
 		############### Step 2 - classify the particles against the averaged references
 		print "First stage particle classification"
-		cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s  --cmp=%s  --saveali --force --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
+		cmd="e2simmx.py %s %s %s %s --align=%s --aligncmp=%s  --cmp=%s  --saveali --force --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
 			options.align,options.aligncmp,options.cmp, options.verbose-1)
 		if options.prefilt : cmd+=" --prefilt"
 		if options.ralign!=None : cmd+=" --ralign=%s --raligncmp=%s"%(options.ralign,options.raligncmp)
