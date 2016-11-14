@@ -101,6 +101,7 @@ def main():
 	parser.add_argument("--noradcor", action="store_true",default=False, help="Normally a radial correction will be applied based on the --mode used. This option disables that correction.")
 	parser.add_argument("--seedmap",type=str, default = None, help="If specified this volume will be used as a starting point for the reconstruction, filling any missing values in Fourier space. experimental.")
 	parser.add_argument("--seedweight", type=float, default=1.0, help="If seedmap specified, this is how strongly the seedmap will bias existing values. 1 is default, and is equivalent to a one particle weight.")
+	parser.add_argument("--seedweightmap", type=str, default=None, help="Specify a full map of weights for the seed. This must be in the same format as the --savenorm output map.")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -227,11 +228,14 @@ def main():
 			options.fillangle,options.verbose-1)) for i in xrange(options.threads)]
 
 	if options.seedmap!=None :
-		seed==EMData(options.seedmap)
-		seed.process_inplace("normalize.edgemean")
-		seed.clip_inplace(Region((ny-padvol)/2,(ny-padvol)/2,(ny-padvol)/2,padvol,padvol,padvol))
-		seed.fft_inplace()
-		recon.setup_seed(seed,options.seedweight)
+		seed=EMData(options.seedmap)
+#		seed.process_inplace("normalize.edgemean")
+		seed.clip_inplace(Region((nx-padvol[0])/2,(ny-padvol[1])/2,(nslice-padvol[2])/2,padvol[0],padvol[1],padvol[2]))
+		seed.do_fft_inplace()
+		if options.seedweightmap==None:  recon.setup_seed(seed,options.seedweight)
+		else: 
+			seedweightmap=EMData(seedweightmap,0)
+			recon.setup_seedandweights(seed,seedweightmap)
 	else : recon.setup()
 	
 	for i,t in enumerate(threads):

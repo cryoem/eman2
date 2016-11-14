@@ -120,13 +120,16 @@ namespace EMAN
 		
 		/** Initialize the reconstructor with a seed volume. This can be used to provide some 'default' value
 		when there is missing data in Fourier space. The passed 'seed' must be of the appropriate padded size, must be
-		in Fourier space, and the same EMData* object will be returned by finish(), meaning the Reconstructor is 
-		implicitly taking ownership of the object. However, in Python, this means the seed may be passed in without
-		copying, as the same EMData will be coming back out at the end. The seed_weight determines how 'strong' the
+		in Fourier space. The seed is copied on input. The seed_weight determines how 'strong' the
 		seed volume should be as compared to other inserted slices in Fourier space. Raises an exception if not
 		supported by the Reconstructor, or if there is an error with the size. **/
 		virtual void setup_seed(EMData* seed,float seed_weight) {throw;}
 
+		/** Initialize the reconstructor with a seed volume, as above. In this case the initial weight map is also provided
+		 explicitly, rather than a single weight value. **/
+		virtual void setup_seedandweights(EMData* seed,EMData* weight) {throw;}
+
+		
 	  	/** While you can just insert unprocessed slices, if you call preprocess_slice yourself, and insert the returned
 		 * slice instead, repeatedly, it can save a fair bit of computation. The default operation just returns a copy
 		 of the image, as the preprocessing is reconstructor-specific.
@@ -402,6 +405,8 @@ namespace EMAN
 		* @exception InvalidValueException When one of the input parameters is invalid
 		*/
 		virtual void setup_seed(EMData* seed,float seed_weight);
+
+		virtual void setup_seedandweights(EMData* seed,EMData* weight);
 
 	  	/** Preprocess the slice prior to insertion into the 3D volume
 		 * this Fourier tranforms the slice and make sure all the pixels are in the right position

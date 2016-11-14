@@ -93,7 +93,11 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
     }
 
     void setup_seed(const EMAN::EMData* seed,float seed_weight) {
-        call_method< void >(py_self, "setup_seed",seed,seed_weight);
+       call_method< void >(py_self, "setup_seed",seed,seed_weight);
+    }
+
+	void setup_seedandweights(const EMAN::EMData* seed,const EMAN::EMData* weight) {
+        call_method< void >(py_self, "setup_seedandweights",seed,weight);
     }
 
     void clear() {
@@ -186,6 +190,7 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
         .def("setup", pure_virtual(&EMAN::Reconstructor::setup))
         .def("clear", pure_virtual(&EMAN::Reconstructor::clear))
 		.def("setup_seed", (int (EMAN::Reconstructor::*)(const EMAN::EMData*, const float))&EMAN::Reconstructor::setup_seed)
+		.def("setup_seedandweights", (int (EMAN::Reconstructor::*)(const EMAN::EMData*, const EMAN::EMData*))&EMAN::Reconstructor::setup_seedandweights)
 //		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&, const float))&EMAN::Reconstructor::insert_slice)
 //		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN::Reconstructor::insert_slice)
 // 		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&, const float))&EMAN_Reconstructor_Wrapper::insert_slice3)
