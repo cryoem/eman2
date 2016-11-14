@@ -88,8 +88,8 @@ def main():
 def sum_images(input_name, output_name, options):
     """Translate images and sum them"""
 
-    unblur_image = EMData('unblur_small.mrc')
-    unblur2_image = EMData('unblur2.mrc')
+    unblur_image = EMData('unblur.mrc')
+    #unblur2_image = EMData('unblur2.mrc')
     t1 = time.time()
     #Import the input stack
     input_stack = EMData(input_name)
@@ -98,7 +98,7 @@ def sum_images(input_name, output_name, options):
     nx = input_stack['nx']
     ny = input_stack['ny']
     nz = input_stack['nz']
-
+    print(nx, ny, nz)
     # Check how many frames to use
     if nz < abs(options.last):
         ERROR(
@@ -172,32 +172,8 @@ def sum_images(input_name, output_name, options):
 #
 #    diff = output_stack - unblur_image
 #    diff.write_image('diff.mrc')
-#
-#    #### Using pawels method
-#    t1 = time.time()
-#
-#    movie = get_im(input_name)
-#    nx = movie.get_xsize()
-#    ny = movie.get_ysize()
-#    nz = movie.get_zsize()
-#
-#    shifts = read_text_row(options.shift_file)
-#    if len(shifts[-2]) != nz:
-#        print('nope')
-#
-#    o = EMData(nx, ny, 1, False)
-#    for i in xrange(nz):
-#        t = fft(movie.get_clip( Region( 0, 0, i, nx, ny, 1) ))
-#        Util.add_img(o, fshift(t, shifts[-2][i]/options.pixel_size, shifts[-1][i]/options.pixel_size))
-#
-#    fft(o).write_image('pawels_suggestion.mrc')
-#    # Write output
-#    print('fshift pawel:', time.time()-t1)
-#    diff = fft(o) - unblur_image
-#    diff.write_image('diff_pawel.mrc')
 
-
-    ### DO IT ****** MANUAL!!!!
+    ### Using pawels method
     t1 = time.time()
 
     movie = get_im(input_name)
@@ -205,27 +181,134 @@ def sum_images(input_name, output_name, options):
     ny = movie.get_ysize()
     nz = movie.get_zsize()
     print(nx, ny, nz)
-    
+
+    shifts = read_text_row(options.shift_file)
+    if len(shifts[-2]) != nz:
+        print('nope')
+
+    o = EMData(nx, ny, 1, False)
+    for i in xrange(nz):
+        t = fft(movie.get_clip( Region( 0, 0, i, nx, ny, 1) ))
+        Util.add_img(o, fshift(t, shifts[-2][i]/options.pixel_size, shifts[-1][i]/options.pixel_size))
+
+    fft(o).write_image('pawels_suggestion.mrc')
+    # Write output
+    print('fshift pawel:', time.time()-t1)
+    diff = fft(o) - unblur_image
+    diff.write_image('diff_pawel.mrc')
+
+
+#    ### DO IT ****** MANUAL!!!!
+#    t1 = time.time()
+#
+#    movie = get_im(input_name)
+#    nx = movie.get_xsize()
+#    ny = movie.get_ysize()
+#    nz = movie.get_zsize()
+#    print(nx, ny, nz)
+#    
+#    shifts = read_text_row(options.shift_file)
+#    sx = shifts[-2]
+#    sy = shifts[-1]
+#   
+#    o = EMData(nx, ny, 1, False)
+#    for i in xrange(nz):
+#        t = fft(movie.get_clip( Region(0, 0, i, nx, ny, 1) ))
+#        f = fourier_shifterino(t, sx[i], sy[i], nx, ny)
+#        Util.add_img(o, f)
+#
+#    fft(o).write_image('own_stuff.mrc')
+#    # Write output
+#    print('own: ', time.time() - t1)
+#    diff = fft(o) - unblur_image
+#    diff.write_image('diff_own.mrc')
+
+    test(input_name, output_name, options)
+
+def test(input_name, output_name, options):
+
+    idxx = 0
+    idxy = 1
+    idxz = 2
+
+    # copy summovie
+    movie = get_im(input_name, False)
+    logical_dimensions = [movie.get_xsize(), movie.get_ysize(), 1]
+    nr_movies = movie.get_zsize()
+
+    physical_upper_bound_complex = [
+        logical_dimensions[idxx] / 2 - logical_dimensions[idxx] % 2 + 1,
+        logical_dimensions[idxy],
+        logical_dimensions[idxz]
+        ]
+
     shifts = read_text_row(options.shift_file)
     sx = shifts[-2]
     sy = shifts[-1]
-   
-    o = EMData(nx, ny, 1, False)
-    for i in xrange(nz):
-        t = fft(movie.get_clip( Region(0, 0, i, nx, ny, 1) ))
-        f = fourier_shifterino(t, sx[i], sy[i], nx, ny)
-        Util.add_img(o, f)
+    sz = 0
 
-    fft(o).write_image('own_stuff.mrc')
-    # Write output
-    print('own: ', time.time() - t1)
-    diff = fft(o) - unblur_image
-    diff.write_image('diff_own.mrc')
+    first_neg = []
+    for dim in logical_dimensions:
+        if dim % 2 == 0:
+            first_neg.append(dim / 2)
+        else:
+            first_neg.append((dim + 3) / 2)
+
+    shape = []
+    for idx, dim in enumerate(logical_dimensions):
+        if idx == idxx:
+            shape.append((dim - dim%2) / 2 + 1)
+        else:
+            shape.append(dim)
+
+    frames = []
+    for i in range(nr_movies):
+        frame = movie.get_clip( Region(0, 0, i, logical_dimensions[idxx], logical_dimensions[idxy], 1) )
+        frames.append(fft(frame))
+
+        frame = frame / (logical_dimensions[idxx] * logical_dimensions[idxy] * logical_dimensions[idxz])
+
+        for k in range(1, physical_upper_bound_complex[idxz]):
+            k_logical = get_logical(k, idxz, logical_dimensions, first_neg)
+            phase_z = calc_phase(sz, k_logical, logical_dimensions[idxz])
+
+            for j in range(1, physical_upper_bound_complex[idxy]):
+                j_logical = get_logical(j, idxy, logical_dimensions, first_neg)
+                phase_y = calc_phase(sy, j_logical, logical_dimensions[idxy])
+
+
+                for i in range(1, physical_upper_bound_complex[idxx]):
+                    i_logical = i - 1
+                    phase_x = calc_phase(sx, i_logical, logical_dimensions[idxx])
+                    
+                    phase = - phase_x - phase_y - phase_z
+                    phase_cmplx = numpy.exp(1j * phase)
+
+
+
+
+    print('logdim',logical_dimensions)
+    print('phys_upper',physical_upper_bound_complex)
+    print('first_neg',first_neg)
+    print('shape',shape)
 
 
 
 
     global_def.BATCH = False
+
+def calc_phase(shift, index, logical_dim):
+    phase = shift * index * 2 * numpy.pi / logical_dim
+
+
+
+def get_logical(index, dim, logical_dim, idx_neg):
+    
+    if index >= idx_neg[dim]:
+        k = index - logical_dim[dim] - 1
+    else:
+        k = index - 1
+    return k
 
 
 def fourier_shifterino(frame, xshift, yshift, nx, ny):
