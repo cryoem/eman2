@@ -46,7 +46,7 @@ const string FourierInserter3DMode2::NAME = "gauss_2";
 const string FourierInserter3DMode3::NAME = "gauss_3";
 //const string FourierInserter3DMode4::NAME = "gauss_4";
 const string FourierInserter3DMode5::NAME = "gauss_5";
-const string FourierInserter3DMode6::NAME = "gauss_5_slow";
+const string FourierInserter3DMode6::NAME = "gauss_var";
 const string FourierInserter3DMode7::NAME = "hypergeom_5";
 const string FourierInserter3DMode8::NAME = "experimental";
 const string FourierInserter3DMode9::NAME = "kaiser_bessel";
@@ -314,8 +314,7 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 
 	if (subx0<0) {			// normal full reconstruction
 		if (x0<-nx2-4 || y0<-ny2-4 || z0<-nz2-4 || x0>nx2+3 || y0>ny2+3 || z0>nz2+3 ) return false;
-		if (xx == 0 && yy == 0 && zz == 0) return false;
-		
+
 		// no error checking on add_complex_fast, so we need to be careful here
 		int x1=x0+5;
 		int y1=y0+5;
@@ -327,35 +326,47 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 		if (z0<-nz2) z0=-nz2;
 		if (z1>nz2) z1=nz2;
 
-		float h=1.0f/EMConsts::I5G;
-		float ha=1.0f/(pow(1.2,2));		// 1.2 degree hwhm
+//		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
+//		float h=1.0f/EMConsts::I5G;
+		float h=1.0f/(Util::hypot3sq(xx/nx2,yy/ny2,zz/nz2)*EMConsts::I5G+.1);		// gaussian kernel is used as a weight not a kernel. We increase radius of integration with resolution
+//		printf("%1.0f\t%1.0f\t%1.0f\t%1.4f\n",xx,yy,zz,h);
 		float w=weight;
 
-//		float mxgg=0,nxp=0;
+// 		float h=32.0f/((8.0f+Util::hypot3(xx,yy,zz))*EMConsts::I3G);
+// 		float w=weight/(1.0f+6.0f*Util::fast_exp(-h)+12*Util::fast_exp(-h*2.0f)+8*Util::fast_exp(-h*3.0f)+
+// 			6.0f*Util::fast_exp(-h*4.0f)+24.0f*Util::fast_exp(-h*5.0f)+24.0f*Util::fast_exp(-h*6.0f)+12.0f*Util::fast_exp(-h*8.0f)+
+// 			24.0f*Util::fast_exp(-h*9.0f)+8.0f*Util::fast_exp(-h*12.0f));	// approx normalization so higer radii aren't upweighted relative to lower due to wider Gaussian
+		//size_t idx;
+		float r, gg;
+//		int pc=0;
 		for (int k = z0 ; k <= z1; k++) {
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
-					if (k==0 && j==0 && i==0) continue;
-					float r = Util::hypot3sq((float) i - xx, (float)j - yy, (float)k - zz);
-					//float rt = Util::hypot3sq((float)i,(float)j,(float)k);
-					float ang = Util::angle3((float)i,(float)j,(float)k,(float)xx,(float)yy,(float)zz)*57.296;
-//					if (!Util::goodf(&ang)) printf("%1.1f %1.1f %1.1f   %d %d %d   %1.4f\n",xx,yy,zz,i,j,k,ang);
-//					printf("%1.4f\n",ang*20.0);
-//					gg = Util::fast_exp(-(r+ang*20.0) *h);	// exponential falloff with angle on top of kernel
-					float gg = exp(-r*h);			// normal gaussian kernel
-					float ga = exp(-ang*ang*ha);	// angle compensation
-//					if (gg>mxgg) mxgg=gg;
-//					nxp++;
-//					gg = exp(-r*h);	// exponential falloff with angle on top of kernel
+					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+//					gg=weight;
+					gg = Util::fast_exp(-r *h);
+//					gg = Util::fast_exp(-r / EMConsts::I2G)*weight;
+//					gg = sqrt(Util::fast_exp(-r / EMConsts::I2G))*weight;
 
 					size_t off;
-					off=data->add_complex_at_fast(i,j,k,dt*gg*ga*w);
-					norm[off/2]+=w;			// Gaussian KERNEL rather than WEIGHT with square kernel, can't seem to get it to work better tho
+					off=data->add_complex_at_fast(i,j,k,dt*gg*w);
+					norm[off/2]+=gg*w;		// This would use a Gaussian WEIGHT with square kernel
+//					norm[off/2]+=w;			// This would use a Gaussian KERNEL rather than WEIGHT 
 
+#ifdef RECONDEBUG
+					std::complex<double> v1=dt*gg*w,v2=gg*w;
+
+					if (k<5 && j<5&& i<5&& k>=0 && j>=0 && i>=0) {
+						int idx=i*2+j*10+k*50;
+						ddata[idx]+=v1.real();
+						ddata[idx+1]+=v1.imag();
+						dnorm[idx]+=v2.real();
+						dnorm[idx+1]+=v2.imag();
+					}
+#endif
 				}
 			}
 		}
-//		if (mxgg<0.05) printf("%5.1f %5.1f %5.1f   %1.0f %1.4g\n",xx,yy,zz,nxp,mxgg);
 		return true;
 	}
 	printf("region writing not supported in mode 5\n");
