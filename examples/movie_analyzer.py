@@ -689,50 +689,59 @@ def calc_coherent_pws(frames,bs=512):
 
 def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False):
 	# use incoherent power spectrum as "control"
+	try:
+		with open('{}/hictrst_onedpws.json'.format(bdir)) as hi:
+			hi_oned_pws = json.load(hi)
+		with open('{}/hictrst_onedpws.json'.format(bdir)) as lo:
+			lo_oned_pws = json.load(lo)
+		print("USING PRIOR POWER SPECTRA")
 
-	# try: os.mkdirs("tmp")
-	# except: pass
+	except:
+		print("NO PRIOR POWER SPECTRA FOUND")
 
-	print("HIGH IPS")
-	hi_oned_pws = {}
-	hi_twod_ips = calc_incoherent_pws(frames_hi)
-	#hi_twod_ips.write_image("tmp/hi_ips.hdf")
-	hi_oned_ips = make_oned_pws(hi_twod_ips)
-	hi_oned_pws["INCOHERENT"] = hi_oned_ips
+		print("HIGH IPS")
+		hi_oned_pws = {}
+		hi_twod_ips = calc_incoherent_pws(frames_hi)
+		hi_ips, hi_ips_bg, hi_ips_bgsub = fit_defocus(hi_twod_ips)
+		hi_oned_pws["IPS"] = hi_ips
+		hi_oned_pws["IPS (bg)"] = hi_ips_bg
+		hi_oned_pws["IPS (sub)"] = hi_ips_bgsub
 
-	print("LOW IPS")
-	lo_oned_pws = {}
-	lo_twod_ips = calc_incoherent_pws(frames_lo)
-	#lo_twod_ips.write_image("tmp/lo_ips.hdf")
-	lo_oned_ips = make_oned_pws(lo_twod_ips)
-	lo_oned_pws["INCOHERENT"] = lo_oned_ips
-	
-	for key in all_trans_hi.keys():
-		if key not in ["STD","ALL","MEAN","VAR"]:
-			print("HIGH "+key)
-			shifted_hi = shift_frames(frames_hi,all_trans_hi[key])
-			hi_twod_cps = calc_coherent_pws(shifted_hi)
-			#hi_twod_cps.write_image("tmp/hi_cps_{}.hdf".format(key))
-			hi_oned_pws[key] = make_oned_pws(hi_twod_cps)
+		print("LOW IPS")
+		lo_oned_pws = {}
+		lo_twod_ips = calc_incoherent_pws(frames_lo)
+		lo_ips, lo_ips_bg, lo_ips_bgsub = fit_defocus(lo_twod_ips)
+		lo_oned_pws["IPS"] = lo_ips
+		lo_oned_pws["IPS (bg)"] = lo_ips_bg
+		lo_oned_pws["IPS (sub)"] = lo_ips_bgsub
 
-			print("LOW "+key)
-			shifted_lo = shift_frames(frames_lo,all_trans_lo[key])
-			lo_twod_cps = calc_coherent_pws(shifted_lo)
-			#lo_twod_cps.write_image("tmp/lo_cps_{}.hdf".format(key))
-			lo_oned_pws[key] = make_oned_pws(lo_twod_cps)
+		for key in all_trans_hi.keys():
+			if key not in ["STD","ALL","MEAN","VAR"]:
+				print("HIGH "+key)
+				shifted_hi = shift_frames(frames_hi,all_trans_hi[key])
+				hi_twod_cps = calc_coherent_pws(shifted_hi)
+				hi_cps, hi_cps_bg, hi_cps_bgsub = fit_defocus(hi_twod_cps)
+				hi_oned_pws["{}".format(key)] = hi_cps
+				hi_oned_pws["{} (bg)".format(key)] = hi_cps_bg
+				hi_oned_pws["{} (sub)".format(key)] = hi_cps_bgsub
 
-	with open('{}/hictrst_onedpws.json'.format(bdir), 'w') as fp:
-		json.dump(hi_oned_pws, fp)
+				print("LOW "+key)
+				shifted_lo = shift_frames(frames_lo,all_trans_lo[key])
+				lo_twod_cps = calc_coherent_pws(shifted_lo)
+				lo_cps, lo_cps_bg, lo_cps_bgsub = fit_defocus(lo_twod_cps)
+				lo_oned_pws["{}".format(key)] = lo_cps
+				lo_oned_pws["{} (bg)".format(key)] = lo_cps_bg
+				lo_oned_pws["{} (sub)".format(key)] = lo_cps_bgsub
 
-	with open('{}/loctrst_onedpws.json'.format(bdir), 'w') as fp:
-		json.dump(lo_oned_pws, fp)
+		with open('{}/hictrst_onedpws.json'.format(bdir), 'w') as fp:
+			json.dump(hi_oned_pws, fp)
+
+		with open('{}/loctrst_onedpws.json'.format(bdir), 'w') as fp:
+			json.dump(lo_oned_pws, fp)
 
 	if plot: plot_oned_spectra(hi_oned_pws,lo_oned_pws)
 
 	return hi_oned_pws,lo_oned_pws
-
-def make_oned_pws(pws):
-	return pws.calc_radial_dist(int(pws["nx"]/2.),0,1.0,1)[1:]
 
 def plot_oned_spectra(hi_pws,lo_pws,bdir):
 	# plot CPS agreement with IPS?
@@ -740,13 +749,15 @@ def plot_oned_spectra(hi_pws,lo_pws,bdir):
 
 	ax1 = fig.add_subplot(211)
 	for alg in hi_pws.keys():
-		ax1.plot(hi_pws[alg],label=alg)
+		if "sub" in alg:
+			ax1.plot(hi_pws[alg],label=alg.replace("(sub)",""))
 	ax1.legend()
 	ax1.set_title("High Contrast Power Spectra")
 
 	ax2 = fig.add_subplot(212)
 	for alg in lo_pws.keys():
-		ax2.plot(lo_pws[alg],label=alg)
+		if "sub" in alg:
+			ax2.plot(lo_pws[alg],label=alg.replace("(sub)",""))
 	ax2.legend()
 	ax2.set_title("Low Contrast Power Spectra")
 
@@ -757,6 +768,9 @@ def plot_oned_spectra(hi_pws,lo_pws,bdir):
 	# quantify difference between CPS/IPS?
 
 	# plot CPS (lo/high) agreement?
+
+	# compare SSNR
+	
 	return
 
 def calc_cips_scores(ftypes,bs=1024): #cips = coherent & incoherent power spectra
@@ -876,7 +890,6 @@ def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 
 	return times
 
-
 def fit_defocus(img):
 	ds=1.0/(img["apix_x"]*img["nx"])
 	ns=min(int(floor(.25/ds)),img["ny"]/2)
@@ -900,7 +913,7 @@ def fit_defocus(img):
 		curve*=curve
 		zeros=[int(ctf.zero(i)/ds) for i in xrange(15)]
 		zeros=[i for i in zeros if i<len(curve) and i>0]
-		onedbg,bg=self.bgsub(oned,zeros)
+		onedbg,bg=bgsub(oned,zeros)
 		qual=curve.dot(onedbg)
 		dfl.append(df)
 		ql.append(qual)
@@ -909,15 +922,9 @@ def fit_defocus(img):
 	ctf.defocus = dfl[a]
 	curve=np.array(ctf.compute_1d(ns*2,ds,Ctf.CtfType.CTF_AMP)[1:])
 	curve*=curve
-	if self.fixaxes:
-		img.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':self.nnorm,'x':1,'y':1})
-		oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
-		oned=np.log10(oned)
-		oned-=min(oned)
-		oned/=max(oned)
 	onedbg=oned-bgl[a]
 	qual=curve.dot(onedbg)
-	return np.asarray(onedbg), np.asarray(curve)
+	return oned, bgl[a], onedbg #np.asarray(curve)
 
 def bgsub(curve,zeros):
 	floc=min(zeros[0]/2,8)
