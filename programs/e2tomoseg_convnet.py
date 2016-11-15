@@ -482,7 +482,7 @@ def apply_neuralnet(options):
 			cout.write_image(options.output,idx)
 			
 	fout="__tomoseg_tmp.hdf"
-	run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed --apix ".format(options.output,fout,float(1./labelshrink), apix))
+	run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed --apix {} ".format(options.output,fout,float(1./labelshrink), apix))
 	os.rename(fout, options.output)
 	
 	print "Done."
