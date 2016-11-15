@@ -41,6 +41,8 @@ from sparx import *
 from applications import MPI_start_end
 from inspect import currentframe, getframeinfo
 from utilities import generate_ctf
+import global_def
+from global_def import *
 
 # ========================================================================================
 # Define functions for reading coordinates files of different formats.
@@ -135,6 +137,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	parser.add_option("--resample_ratio",      type="float",         default=1.0,       help="Ratio between new and original pixel size: Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when resample_ratio < 1.0 is used. (default 1.0)")
 	parser.add_option("--check_consistency",   action="store_true",  default=False,     help="Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)")
 	
+	(options, args) = parser.parse_args(sys.argv[1:])
+	
 	# ====================================================================================
 	# Prepare processing
 	# ====================================================================================
@@ -156,7 +160,16 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		my_mpi_proc_id = 0
 		n_mpi_procs = 1
 	
-	(options, args) = parser.parse_args(sys.argv[1:])
+	# ------------------------------------------------------------------------------------
+	# Set up SPHIRE global definitions
+	# ------------------------------------------------------------------------------------
+	if global_def.CACHE_DISABLE:
+		from utilities import disable_bdb_cache
+		disable_bdb_cache()
+	
+	# Change the name log file for error message
+	original_logfilename = global_def.LOGFILE
+	global_def.LOGFILE = os.path.splitext(program_name)[0] + '_' + original_logfilename + '.txt'
 	
 	# ------------------------------------------------------------------------------------
 	# Check error conditions of arguments and options, then prepare variables for arguments
@@ -1024,6 +1037,17 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		print(" ")
 		print("DONE!!!\n")
 	
+	# ====================================================================================
+	# Clean up
+	# ====================================================================================
+	# ------------------------------------------------------------------------------------
+	# Reset SPHIRE global definitions
+	# ------------------------------------------------------------------------------------
+	global_def.LOGFILE = original_logfilename
+	
+	# ------------------------------------------------------------------------------------
+	# Clean up MPI related variables
+	# ------------------------------------------------------------------------------------
 	if RUNNING_UNDER_MPI:
 		mpi_barrier(MPI_COMM_WORLD)
 		from mpi import mpi_finalize
