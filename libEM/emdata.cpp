@@ -2760,6 +2760,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 		case 0:
 		case 1:
 		case 4:
+		case 5:
 			for (i=0; i<n; i++) ret[i]=norm[i]=count[i]=0.0;
 			break;
 		case 2:
@@ -2827,12 +2828,14 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 					}
 				}
 				else {
-					r=(float)(Util::hypot_fast(x-nx/2,y-ny/2));
+					if (inten==5) r=(float)(Util::hypot_fast(x,y-ny/2));
+					else r=(float)(Util::hypot_fast(x-nx/2,y-ny/2));
 					r=(r-x0)/dx;
 					f=int(r);	// safe truncation, so floor isn't needed
 					if (f<0 || f>=n) continue;
 					switch (inten) {
 						case 0:
+						case 5:
 							v=data[i];
 							break;
 						case 1:
@@ -2852,7 +2855,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 					}
 				}
 				
-				if (inten<2) {
+				if (inten<2||inten==5) {
 					r-=float(f);	// r is now the fractional spacing between bins
 	//				printf("%d\t%d\t%d\t%1.3f\t%d\t%1.3f\t%1.4g\n",x,y,f,r,step,Util::hypot_fast(x/2,y<ny/2?y:ny-y),v);
 					ret[f]+=v*(1.0f-r);
@@ -2924,12 +2927,14 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 						}						
 					}
 					else {
-						r=Util::hypot3(x-nx/2,y-ny/2,z-nz/2);
+						if (inten==5) r=Util::hypot3(x,y-ny/2,z-nz/2);
+						else r=Util::hypot3(x-nx/2,y-ny/2,z-nz/2);
 						r=(r-x0)/dx;
 						f=int(r);	// safe truncation, so floor isn't needed
 						if (f<0 || f>=n) continue;
 						switch(inten) {
 							case 0:
+							case 5:
 								v=data[i];
 								break;
 							case 1:
@@ -2949,7 +2954,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 						}
 					}
 
-					if (inten<2) {
+					if (inten<2||inten==5) {
 // 						ret[f]+=v;
 // 						norm[f]+=1.0;
 						
@@ -2967,7 +2972,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 //		fclose(out);
 	}
 	
-	if (inten<2) {
+	if (inten<2||inten==5) {
 		for (i=0; i<n; i++) ret[i]/=(norm[i]==0?1.0f:norm[i]);	// Normalize
 	}
 	else if (inten==4) {
