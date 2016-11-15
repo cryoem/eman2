@@ -222,7 +222,7 @@ f.close()
 #####################################################################################################################
 
 
-RO = str(command_dict['apix']*.375*(all_set_data[0]['nx']))
+RO = str(apix_shift*.375*(all_set_data[0]['nx']))
 for option1 in optionList:
 	if option1 == "fbeaut":
 		FBEAUT = 'T'
@@ -246,7 +246,7 @@ for option1 in optionList:
 		IFLAG = str(options.mode)
 	elif option1 == "randomizemodel":
 		if float(options.randomizemodel) != 0.0:
-			s1 = "e2proc3d.py " + E2FA + "/3DMapInOut.mrc " + E2FA + "/3DMapInOut.mrc --process=filter.lowpass.randomphase:apix=" + str(command_dict['apix']) + ":cutoff_freq=" + str(1/float(options.randomizemodel))
+			s1 = "e2proc3d.py " + E2FA + "/3DMapInOut.mrc " + E2FA + "/3DMapInOut.mrc --process=filter.lowpass.randomphase:apix=" + str(apix_shift) + ":cutoff_freq=" + str(1/float(options.randomizemodel))
 			call(s1, shell=True)
 
 OUTFILE2 = E2FA + "/card.txt"          # Cards required by FA
@@ -267,7 +267,7 @@ XSTD = '0'
 PBC = '20'
 BOFF = '30'
 IPMAX = '10' 
-PSIZE = str(command_dict['apix']) 
+PSIZE = str(apix_shift) 
 WGH = str(ctf_dict['ampcont']/100)
 MASS = str(options.mass)
 s = RO + SPACE + RI + SPACE + PSIZE + SPACE + MASS + SPACE + WGH + SPACE + XSTD + SPACE + PBC + SPACE + BOFF + SPACE + DANG + SPACE + ITMAX + SPACE + IPMAX + '\n'
