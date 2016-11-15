@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Author: Michael Bell 09/2016
+
 import os
 
 if os.getenv("DISPLAY") == None:
@@ -28,7 +30,7 @@ def which(prog):
 
 global pkgs
 pkgs = {"EMAN2":"e2ddd_movie.py",
-		"UCSF":"dosefgpu_driftcorr",
+		"UCSF":"dosefgpu_driftcorr", # motioncor 2.1
 		"UNBLUR":"unblur_openmp_7_17_15.exe",
 		"DE":"DE_process_frames-2.8.1.py",
 		"IMOD":"alignframes",
@@ -91,7 +93,7 @@ def main():
 		try: apix = hdr["apix_x"]
 		except: apix = 1.0
 
-	if not options.skipalign: print("Performing alignments with the following packages: {}".format(", ".join(options.include)))
+	if not options.skipalign: print("Performing alignments with the following packages: {}\n".format(", ".join(options.include)))
 
 	logid=E2init(sys.argv,options.ppid)
 
@@ -129,7 +131,7 @@ def main():
 				if options.gaink2: gaink2 = "--gaink2 {}".format(options.gaink2)
 				else: gaink2 = ""
 				cmd = "e2ddd_movie.py {} {} {} {} --fixbadpixels --frames -v9".format(fname,dark,gain,gaink2)
-				wt,ct = run(cmd,shell=True)
+				times = run(cmd,shell=True)
 				if options.dark:
 					dfn = options.dark.split(".")[0]
 					os.unlink("{}_sig.hdf".format(dfn))
@@ -162,9 +164,9 @@ def main():
 			if options.verbose: print("Erasing gold and other very high contrast features")
 			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={} --verbose={} --apix={}"
 			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose,apix)
-			wt,ct = run(cmd,cwd=bdir,shell=True)
+			times = run(cmd,cwd=bdir,shell=True)
 			print(locallc)
-			wt,ct = run("e2proc2d.py hictrst_proc.hdf {}".format(locallc),shell=True,cwd=bdir)
+			times = run("e2proc2d.py hictrst_proc.hdf {}".format(locallc),shell=True,cwd=bdir)
 
 		frames_loctrst = load_frames(lcname)
 		loctrst_avg = average_frames(frames_loctrst)
@@ -198,10 +200,8 @@ def main():
 						try: os.symlink(src,dst)
 						except: pass
 						for fname in [hcname,lcname]:
-							wt,ct=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True,clear=True)
-							write_runtime(bdir,pkg,dev,wt,ct)
-
-
+							times=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True,clear=True)
+							write_runtime(bdir,pkg,dev,times,options.threads)
 						try: os.unlink(dst)
 						except: pass
 					for f in os.listdir(pdir):
@@ -223,19 +223,14 @@ def main():
 							lfn = fn.split("/")[-1] # local file name
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-							wt,ct=run("{} {} --align_frames --threads={} --allali --normalize".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
-							write_runtime(bdir,pkg,dev,wt,ct)
+							times=run("{} {} --align_frames --threads={} --allali --normalize".format(pkgs[pkg],lfn,options.threads),cwd=pdir,shell=True,clear=True)
+							write_runtime(bdir,pkg,dev,times,options.threads)
 					for f in os.listdir(pdir):
 						if "hictrst_proc_info.txt" in f: hi = os.path.join(pdir,f)
 						elif "loctrst_proc_info.txt" in f: lo = os.path.join(pdir,f)
 					try:
-						print("HERE")
-						print(hi)
-						print(lo)
 						trans_hi[pkg] = parse_eman2(hi,middle)
-						print(trans_hi[pkg])
 						trans_lo[pkg] = parse_eman2(lo,middle)
-						print(trans_lo[pkg])
 					except: failed(pkg)
 
 				if pkg == "IMOD":
@@ -246,14 +241,14 @@ def main():
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 							alif = lfn.split(".")[0]+"_ali.mrc"
-							wt,ct=run("{} -gpu 0 -xfext xf -input {} -output {}".format(pkgs[pkg],lfn,alif),cwd=pdir,shell=True,clear=True)
-							write_runtime(bdir,pkg,dev,wt,ct)
+							times=run("{} -gpu 0 -xfext xf -input {} -output {}".format(pkgs[pkg],lfn,alif),cwd=pdir,shell=True,clear=True)
+							write_runtime(bdir,pkg,dev,times,options.threads)
 					for f in os.listdir(pdir):
 						if "hictrst.xf" in f: hi = os.path.join(pdir,f)
 						elif "loctrst.xf" in f: lo = os.path.join(pdir,f)
 					try:
-						trans_hi[pkg] = parse_imod(hi)
-						trans_lo[pkg] = parse_imod(lo)
+						trans_hi[pkg] = parse_imod(hi,middle)
+						trans_lo[pkg] = parse_imod(lo,middle)
 					except: failed(pkg)
 
 				if pkg == "UCSF":
@@ -266,21 +261,21 @@ def main():
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
 								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
-									wt,ct=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
+									times=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
 									os.remove("{}/{}".format(pdir,lfn))
 								lfn = lfn_new
 								lext = "mrcs"
 							else:
 								if not os.path.isfile("{}/{}".format(pdir,lfn)):
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-							wt,ct=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir,shell=True,clear=True)
-							write_runtime(bdir,pkg,dev,wt,ct)
+							times=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir,shell=True,clear=True)
+							write_runtime(bdir,pkg,dev,times,options.threads)
 					for f in os.listdir(pdir):
 						if "hictrst_Log.txt" in f: hi = os.path.join(pdir,f)
 						elif "loctrst_Log.txt" in f: lo = os.path.join(pdir,f)
 					try:
-						trans_hi[pkg] = parse_ucsf(hi,middle,apix)
-						trans_lo[pkg] = parse_ucsf(lo,middle,apix)
+						trans_hi[pkg] = parse_ucsf(hi,middle)
+						trans_lo[pkg] = parse_ucsf(lo,middle)
 					except: failed(pkg)
 
 				if pkg == "UNBLUR":
@@ -315,7 +310,7 @@ EOF
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
 								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
-									wt,ct=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
+									times=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
 									os.remove("{}/{}".format(pdir,lfn))
 								lfn = lfn_new
 								lext = "mrcs"
@@ -335,8 +330,8 @@ EOF
 							ali=lfn.replace(".mrc","_ali.mrc")
 							frc=lfn.replace(".mrc","_frc.txt")
 							cmd = template.format(prog=pkgs[pkg],fname=lfn, nframes=nfs, alignsum=alis, shiftfile=shft, apix=apix, dosefilt="NO", saveali="YES", aliname=ali, advopts="NO", frcname=frc, minsrch=2.0, maxsrch=200.0, bfact=1500, vfmwidth=1, hfmwidth=1, thresh=0.1, maxiter=10, verbose="NO")
-							wt,ct=run(cmd,shell=True,cwd=pdir,clear=True)
-							write_runtime(bdir,pkg,dev,wt,ct)
+							times=run(cmd,shell=True,cwd=pdir,clear=True)
+							write_runtime(bdir,pkg,dev,times,options.threads)
 					for f in os.listdir(pdir):
 						if "hictrst_shifts.txt" in f: hi = os.path.join(pdir,f)
 						elif "loctrst_shifts.txt" in f: lo = os.path.join(pdir,f)
@@ -368,7 +363,7 @@ eot
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
 								lfn_new = lfn.replace(".hdf",".mrcs")
 								if not os.path.isfile("{}/{}".format(pdir,lfn_new)):
-									wt,ct=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
+									times=run("e2proc2d.py {} {}".format(lfn,lfn_new),cwd=pdir,shell=True)
 									try: os.unlink("{}/{}".format(pdir,lfn))
 									except: pass
 								lfn = lfn_new
@@ -396,8 +391,8 @@ eot
 								nsigma=nsig, rmax1=rm1, rmax2=rm2, smooth=smooth, bfactor=bfact, framefirst=ffirst,
 								framelast=flast, zeroframe=fmiddle, factr=factr, inpath=inpath, outpath=outpath,
 								shfext="shf", vecext="vec")
-							wt,ct=run(cmd,shell=True,exe="/bin/csh",cwd=pdir,clear=True)
-							write_runtime(bdir,pkg,dev,wt,ct)
+							times=run(cmd,shell=True,exe="/bin/csh",cwd=pdir,clear=True)
+							write_runtime(bdir,pkg,dev,times,options.threads)
 					for f in os.listdir(pdir):
 						if f == "hictrst.shf":
 							hi = os.path.join(pdir,f)
@@ -412,40 +407,45 @@ eot
 
 		# STEP 3: Analyze results
 
-		# Question 1: How quickly do these frame alignment alorithms run
+		# Question 1: How quickly do frame alignment alorithms run
+		print("RUNTIMES")
 		with open("{}/runtimes.txt".format(bdir),"r") as f:
 			for l in f: print(l.strip())
 
 		print("")
 
 		# Question 2: How does calculated motion differ between the most commonly used alignment algorithms?
+		print("PREDICTED TRANSLATIONS")
 		trans_orig, mags_orig = plot_traj(trans_hi,bdir,plot=options.plot)
 
 		print("")
 
 		# Question 3: How different are predicted frame translations with and without high contrast features?
+		print("CONTRAST-BASED TRANSLATION COMPARISON")
 		trans_hi, trans_lo, ssdfs = plot_differences(trans_hi,trans_lo,bdir,plot=options.plot)
 
+		print("")
+
 		# Question 4: How do alignment algorithms influence power spectral coherence?
-		#coherence_hi = calc_coherence(frames_hictrst,trans_hi)
-		#coherence_lo = calc_coherence(frames_loctrst,trans_lo)
+		print("COHERENCE-BASED POWER SPECTRAL COMPARISON")
+		# no algorithm seems to produce measurably better coherence (using calc_cips_scores).
+		hi_ips,lo_ips,hi_cps,lo_cps = calc_coherence(frames_hictrst,frames_loctrst,trans_hi,trans_lo,plot=options.plot):
+
+		print("")
 
 		# Question 5: How do alignment algorithms influence real-space contrast?
-		#contrast_hi = calc_contrast(frames_hictrst)
-		#contrast_lo = calc_contrast(frames_loctrst)
-
+		print("CONTRAST-BASED IMAGE COMPARISON")
+		#measure_contrast(frames_hictrst)
+		
 #############################
 # Parse Output Translations #
 #############################
 
-def parse_imod(fn):
+def parse_imod(fn,middle):
     with open(fn) as f:
         trans = [np.asarray(txt.split()[4:6]) for txt in f.readlines()]
     xf = np.asarray(trans).astype(float)
-    tf = np.copy(xf)
-    for i in range(len(xf)):
-        tf[i] -= np.sum(xf[:i],axis=0)
-    return tf
+    return xf-xf[middle]
 
 def parse_de(fnx,fny):
     with open(fnx) as xf:
@@ -453,19 +453,16 @@ def parse_de(fnx,fny):
     with open(fny) as yf:
         ys = np.asarray(yf.read().replace("\n","").split("\t"))[1:].astype(float)
     xf = np.vstack([xs,ys]).T
-    tf = np.copy(xf)
-    for i in range(len(xf)):
-        tf[i] -= np.sum(xf[:i+1],axis=0)
-    return tf
+    return xf
 
-def parse_ucsf(fn,middle,scale):
+def parse_ucsf(fn,middle):
     trans = []
     with open(fn) as f:
         for txt in f.readlines():
             if "......Shift of Frame #" in txt:
                 trans.append(np.asarray(txt.replace("......Add Frame #","").split(":")[-1].split())[:2])
     xf = np.asarray(trans).astype(float)
-    return (-xf+xf[middle])/scale
+    return xf-xf[middle]
 
 def parse_unblur(fn,middle):
     lines = []
@@ -475,7 +472,7 @@ def parse_unblur(fn,middle):
                 lines.append(txt.split())
             elif "Pixel size (A):" in txt:
                 apix = float(txt.split()[-1])
-    trans = np.asarray([[x,y] for (x,y) in zip(lines[0],lines[1])]).astype(float)
+    trans = -1*np.asarray([[x,y] for (x,y) in zip(lines[0],lines[1])]).astype(float)
     xf = trans / apix
     return -xf+xf[middle]
 
@@ -484,15 +481,14 @@ def parse_lmbfgs(fn,middle):
 	with open(fn) as f:
 		for i,l in enumerate(f):
 			if i != 0: lines.append(l.strip().split()) # skip header on line 0
-	xf = np.asarray(lines)[:,1:].astype(float) # skip frame numbers
-	xf /= 3.5 #-= np.mean(xf,axis=0)
+	xf = -1*np.asarray(lines)[:,1:].astype(float) # skip frame numbers
 	return xf - xf[middle]
 
 def parse_eman2(fn,middle):
     with open(fn) as f:
         trans = [txt.split("\t")[1:3] for txt in f.readlines()[1:]]
     xf = np.asarray(trans).astype(float)
-    return xf + xf[middle]
+    return xf - xf[middle]
 
 ####################
 # Compare and plot #
@@ -514,7 +510,7 @@ def plot_traj(trans,bdir,nsig=1,plot=False):
 	for key in trans.keys():
 		if key not in exclude + ["MEAN"]:
 			mags[key] = np.sqrt(trans[key][:,0]**2+trans[key][:,1]**2) - mags["MEAN"]
-	fig = plt.figure()
+	fig = plt.figure(figsize=(20,10))
 	ax1 = fig.add_subplot(211)
 	cctr = 0
 	for key in trans.keys():
@@ -552,7 +548,6 @@ def plot_traj(trans,bdir,nsig=1,plot=False):
 	return trans, mags
 
 def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
-
 	hts = []
 	for k in sorted(trans_hi.keys()):
 		if k not in ["ALL","MEAN","STD","VAR"]:
@@ -589,8 +584,8 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 			mags_lo[key] = np.sqrt(trans_lo[key][:,0]**2+trans_lo[key][:,1]**2) - mags_lo["MEAN"]
 	ssdfs = {}
 
-	grid_size = (4,2)
-	ax1 = plt.subplot2grid(grid_size,(0,0),rowspan=2,colspan=2)
+	fig2 = plt.figure(figsize=(20,12))
+	ax1 = fig2.add_subplot(211)
 	cctr = 0
 	print("PKG\tRMSD(HI,LO)")
 	with open("{}/sse.txt".format(bdir),"w") as sse:
@@ -612,7 +607,7 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 	ax1.set_ylabel("Y-shift (pixels)")
 	ax1.set_title("Frame trajectory")
 	ax1.legend(loc="best")
-	ax2 = plt.subplot2grid(grid_size,(2,0),rowspan=2,colspan=2)
+	ax2 = fig2.add_subplot(212)
 	cctr = 0
 	for key in mags_hi.keys():
 		if key != "MEAN":
@@ -636,8 +631,7 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 	ax2.set_ylabel("Relative shift magnitude (pixels)")
 	ax2.set_title("Frame shift magnitude (relative to MEAN)")
 	ax2.legend(loc="best")
-	fig = plt.gcf()
-	fig.tight_layout()
+	fig2.tight_layout()
 	plt.savefig("{}/differences.png".format(bdir))
 	if plot: plt.show()
 	return trans_hi, trans_lo, ssdfs
@@ -692,7 +686,52 @@ def calc_coherent_pws(frames,bs=512):
 	cps.process_inplace('normalize.edgemean')
 	return cps
 
-def calc_cips_scores(ftypes,bs=512): #cips = coherent & incoherent power spectra
+def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,plot=False):
+	# use incoherent power spectrum as "control"
+	hi_twod_ipws = calc_incoherent_pws(frames_hi)
+	hi_oned_ipws = make_oned_pws(hi_twod_ipws)
+
+	lo_twod_ipws = calc_incoherent_pws(frames_lo)
+	lo_oned_ipws = make_oned_pws(lo_twod_ipws)
+
+	hi_oned_cpws = {}
+	lo_oned_cpws = {}
+	
+	for key in all_trans_hi.keys():
+		shifted_hi = shift_frames(frames_hi,all_trans_hi[key])
+		hi_twod_cpws = calc_coherent_pws(shifted_hi)
+		hi_oned_cpws[key] = make_oned_pws(hi_twod_cpws)
+
+		shifted_lo = shift_frames(frames_lo,all_trans_lo[key])
+		lo_twod_cpws = calc_coherent_pws(shifted_lo)
+		lo_oned_cpws[key] = make_oned_pws(lo_twod_cpws)
+
+	if plot: plot_oned_spectra(hi_ipws,lo_ipws,hi_cpws,lo_cpws)
+	return hi_oned_ipws,lo_oned_ipws,hi_oned_cpws,lo_oned_cpws
+
+def make_oned_pws(pws):
+	return pws.calc_radial_dist(pws["nx"]/2.,0,1.0,1)[1:]
+
+def plot_oned_spectra(hi_ipws,lo_ipws,hi_cpws,lo_cpws):
+	fig = plt.figure()
+
+	ax1 = fig.add_subplot(211)
+	ax1.plot(hi_ipws,label="Incoherent")
+	for alg in hi_cpws.keys():
+		ax1.plot(hi_cpws[alg],label=alg)
+	ax1.legend()
+	ax1.set_title("High Contrast Power Spectra")
+
+	ax2 = fig.add_subplot(212)
+	ax2.plot(lo_ipws,label="Incoherent")
+	for alg in lo_cpws.keys():
+		ax2.plot(lo_cpws[alg],label=alg)
+	ax2.legend()
+	ax2.set_title("Low Contrast Power Spectra")
+
+	plt.show()
+
+def calc_cips_scores(ftypes,bs=1024): #cips = coherent & incoherent power spectra
 	# for comparison of coherent and incoherent power spectra...not such a good metric.
 	scores = {}
 	for pkg in [pkg for pkg in pkgs.keys() if pkg in options.include]:
@@ -774,9 +813,15 @@ def shift_frames(frames,trans):
 		shifted.append(f)
 	return shifted
 
-def write_runtime(bdir,pkg,dev,wt,ct):
+def write_runtime(bdir,pkg,device,times,threads):
+	walltime = times[0]
+	usrtime = times[1]
+	systime = times[2]
 	with open("{}/runtimes.txt".format(bdir),"a") as rt:
-		rt.write("{}\t{}\t{}\t{}\n".format(pkg,dev,wt,ct))
+		if device == "GPU":
+			rt.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(pkg,device,walltime,usrtime,systime,"NA"))
+		else: # CPU
+			rt.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(pkg,device,walltime,usrtime,systime,threads))
 
 def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 	if options.verbose: print(cmd.replace("\n"," "))
@@ -795,14 +840,68 @@ def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 
 	_,err=p.communicate() # write stdout to terminal. only keep timing info.
 
-	walltime,usr_time,sys_time = err.strip().split("\n")[-3:] # anything before this is exit status 1 or another error.
+	wt,ut,st = err.strip().split("\n")[-3:] # anything before this is exit status 1 or an actual error.
 
-	walltime = float(walltime.split(" ")[-1])
-	cputime = float(usr_time.split(" ")[-1]) + float(sys_time.split(" ")[-1])
+	times = [float(wt.split(" ")[-1]),float(ut.split(" ")[-1]),float(st.split(" ")[-1])]
 
-	if options.verbose: print("Wall Time: {}\tCPU Time: {}".format(walltime,cputime))
-	return walltime,cputime
+	if options.verbose: print(err.strip())
+
+	return times
+
+
+def fit_defocus(img):
+	ds=1.0/(img["apix_x"]*img["nx"])
+	ns=min(int(floor(.25/ds)),img["ny"]/2)
+	oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
+	oned=np.log10(oned)
+	oned-=min(oned)
+	oned/=max(oned)
+	ctf=EMAN2Ctf()
+	ctf.voltage=300.0
+	ctf.cs=4.7
+	ctf.ampcont=10
+	ctf.bfactor=0
+	ctf.dfdiff=0
+	s=[ds*(i+1) for i,j in enumerate(oned)]
+	dfl=[]
+	ql=[]
+	bgl=[]
+	for df in np.arange(0.6,5,.01):
+		ctf.defocus=df
+		curve=np.array(ctf.compute_1d(ns*2,ds,Ctf.CtfType.CTF_AMP)[1:])
+		curve*=curve
+		zeros=[int(ctf.zero(i)/ds) for i in xrange(15)]
+		zeros=[i for i in zeros if i<len(curve) and i>0]
+		onedbg,bg=self.bgsub(oned,zeros)
+		qual=curve.dot(onedbg)
+		dfl.append(df)
+		ql.append(qual)
+		bgl.append(bg)
+	a=np.argmax(ql)
+	ctf.defocus = dfl[a]
+	curve=np.array(ctf.compute_1d(ns*2,ds,Ctf.CtfType.CTF_AMP)[1:])
+	curve*=curve
+	if self.fixaxes: 
+		img.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':self.nnorm,'x':1,'y':1})
+		oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
+		oned=np.log10(oned)
+		oned-=min(oned)
+		oned/=max(oned)
+	onedbg=oned-bgl[a]
+	qual=curve.dot(onedbg)
+	return np.asarray(onedbg), np.asarray(curve)
+
+def bgsub(curve,zeros):
+	floc=min(zeros[0]/2,8)
+	itpx=[curve[:floc].argmin()]+list(zeros)+[len(curve)-1]
+	itpy=[min(curve[i-1:i+2]) for i in itpx]
+	itpy[0]=curve[:floc].min()
+	itpx=np.array(itpx)
+	itpy=np.array(itpy)
+	bg = np.interp(range(len(curve)),itpx,itpy)
+	ret=curve-bg
+	ret[:floc]=0
+	return ret,bg
 
 if __name__ == "__main__":
 	main()
-
