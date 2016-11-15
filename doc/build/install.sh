@@ -61,6 +61,7 @@ setup_bash()
 	echo 'export PYTHONPATH=${EMAN2DIR}/lib:${EMAN2DIR}/bin:${PYTHONPATH}' >> ${OUT}
 	echo 'export LC_CTYPE=en_US.utf8'
 	echo 'export LC_ALL=en_US.utf8'
+	echo 'alias sphire=sxgui.py' >> ${OUT}
 	echo 'alias sparx=sx.py' >> ${OUT}
 }
 
