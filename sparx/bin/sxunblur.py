@@ -146,30 +146,6 @@ def main():
             ' the name and restart the program.', 1
             )
 
-    # Split the path of the image name at the "/" Characters.
-    # The last entry contains the micrograph name.
-    # Split the micrograph name at the wildcard character for the
-    # prefix and suffix.
-    input_split = input_image.split('/')
-    input_name = input_split[-1].split('*')
-
-    # Check, if there is an prefix and suffix.
-    # If there is more then one entry: the suffix is the last one.
-    # Otherwhise it needs to be .mrc
-    if len(input_name) >= 2:
-        if input_name[-1] == '':
-            input_suffix = '.mrc'
-        else:
-            input_suffix = input_name[-1]
-    else:
-        input_suffix = '.mrc'
-
-    # Get the input directory
-    if len(input_split) != 1:
-        input_dir = input_image[:-len(input_split[-1])]
-    else:
-        input_dir = ''
-
     # Output paths
     corrected_path = '{:s}/corrsum_dose_filtered'.format(output_dir)
     uncorrected_path = '{:s}/corrsum'.format(output_dir)
@@ -177,6 +153,19 @@ def main():
     frc_path = '{:s}/frc'.format(output_dir)
     log_path = '{:s}/logfiles'.format(output_dir)
     temp_path = '{0}/temp'.format(output_dir)
+
+    # Split the path of the image name at the "/" Characters.
+    # The last entry contains the micrograph name.
+    # Split the micrograph name at the wildcard character for the
+    # prefix and suffix.
+    input_split = input_image.split('/')
+    input_name = input_split[-1].split('*')
+
+    # Get the input directory
+    if len(input_split) != 1:
+        input_dir = input_image[:-len(input_split[-1])]
+    else:
+        input_dir = ''
 
     # Create output directorys
     if not path.exists(output_dir):
@@ -208,7 +197,6 @@ def main():
         frc_path=frc_path,
         temp_path=temp_path,
         log_path=log_path,
-        input_suffix=input_suffix,
         file_list=file_list,
         options=options
         )
@@ -235,7 +223,6 @@ def run_unblur(
         frc_path,
         temp_path,
         log_path,
-        input_suffix,
         file_list,
         options
         ):
@@ -276,17 +263,21 @@ def run_unblur(
     # Loop over all files
     for index, inputfile in enumerate(sorted(file_list)):
 
+        # Check, if there is an prefix and suffix.
+        # If there is more then one entry: the suffix is the last one.
+        # Otherwhise its just the one after the dot.
+        input_suffix = inputfile.split('/')[-1].split('.')[-1]
         # First output to introduce the programm
         if index == 0:
             print(
-                'Progress: 0.0%;  Time:--.--h/--.--h;  Unblur started!'
+                    'Progress: 0.0%;  Time: --h:--m:--s/--h:--m:--s;  Unblur started!'
                 )
 
         # Time begin
         t1 = time.time()
 
         # Get the output names
-        file_name = inputfile[len(input_dir):-len(input_suffix)]
+        file_name = inputfile[len(input_dir):-len(input_suffix) - 1]
         if options.skip_dose_filter:
             micrograph_name = '{0}/{1}{2}.mrc'.format(
                     uncorrected_path, file_name, options.sum_suffix
@@ -429,7 +420,6 @@ def run_unblur(
                         unblur_path
                         )
 
-
         # Remove temp unblur files
         temp_unblur_files = glob('.UnBlur*')
         for entry in temp_unblur_files:
@@ -467,42 +457,45 @@ def run_unblur(
         for entry in temp_unblur_files:
             remove(entry)
         if not options.unblur_ready:
-            # Remove temp file
-            remove(temp_name)
+            if path.exists(temp_name):
+                # Remove temp file
+                remove(temp_name)
+            else:
+                print('Error with file:\n{0}'.format(inputfile))
 
         time_list.append(time.time() - t1)
 
         # Do progress output
         percent = round(100 * (index + 1) / nr_files, 2)
         estimated_time = \
-            nr_files * sum(time_list) / float(len(time_list)) / float(3600)
-        if estimated_time < 60:
-            print(
-                'Progress: {0:.2f}%;  Time:{1:.2f}sec/{2:.2f}sec;  Micrograph done:{3}'.format(
-                    percent,
-                    round((time.time() - time_start), 2),
-                    round(estimated_time * 3600, 2),
-                    file_name
-                    )
+            nr_files * sum(time_list) / float(len(time_list))
+        estimated_time_h = estimated_time // 3600
+        estimated_time_m = (estimated_time - estimated_time_h*3600) // 60
+        estimated_time_s = (
+                estimated_time -
+                estimated_time_h*3600 -
+                estimated_time_m*60
                 )
-        elif estimated_time < 3600:
-            print(
-                'Progress: {0:.2f}%;  Time:{1:.2f}min/{2:.2f}min;  Micrograph done:{3}'.format(
-                    percent,
-                    round((time.time() - time_start) / float(60), 2),
-                    round(estimated_time * 60, 2),
-                    file_name
-                    )
+        current_time = time.time() - time_start
+        current_time_h = current_time // 3600
+        current_time_m = (current_time - current_time_h*3600) // 60
+        current_time_s = (
+                current_time -
+                current_time_h*3600 -
+                current_time_m*60
                 )
-        else:
-            print(
-                'Progress: {0:.2f}%;  Time:{1:.2f}h/{2:.2f}h;  Micrograph done:{3}'.format(
-                    percent,
-                    round((time.time() - time_start) / float(3600), 2),
-                    round(estimated_time, 2),
-                    file_name
-                    )
+        print(
+            'Progress: {0:.2f}%;  Time: {1:.0f}h:{2:.0f}m:{3:.0f}s/{4:.0f}h:{5:.0f}m:{6:.0f}s;  Micrograph done:{7}'.format(
+                percent,
+                current_time_h,
+                current_time_m,
+                current_time_s,
+                estimated_time_h,
+                estimated_time_m,
+                estimated_time_s,
+                file_name
                 )
+            )
 
 
     # Write micrograph and shift list
