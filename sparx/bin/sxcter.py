@@ -115,7 +115,13 @@ Stack Mode - Process a stack (Advanced Option):
 		disable_bdb_cache()
 	
 	from morphology import cter_mrk
-	global_def.BATCH = True
+	# NOTE: 2016/11/15 Toshio Moriya
+	# Disabled global_def.BATCH so that the error message will be also written to standard output.
+	# In addition, change the name log file
+	# 
+	# global_def.BATCH = True
+	original_logfilename = global_def.LOGFILE
+	global_def.LOGFILE = 'sxcter_' + original_logfilename + '.txt'
 	
 	result = cter_mrk(input_image, output_directory, options.wn, pixel_size=options.apix, \
 					Cs = options.Cs, voltage=options.voltage, wgh=options.ac, \
@@ -125,7 +131,12 @@ Stack Mode - Process a stack (Advanced Option):
 					set_ctf_header = options.set_ctf_header, MPI=options.MPI, \
 					stack_mode = options.stack_mode, debug_mode = options.debug)
 	
-	global_def.BATCH = False
+	# NOTE: 2016/11/15 Toshio Moriya
+	# Disabled global_def.BATCH so that the error message will be also written to standard output
+	# In addition, resotre the name log file
+	# 
+	# global_def.BATCH = False
+	global_def.LOGFILE = original_logfilename
 	
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD, mpi_finalize
