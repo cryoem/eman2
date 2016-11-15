@@ -371,6 +371,7 @@ def apply_neuralnet(options):
 	is3d=False
 	### deal with 3D volume or image stack
 	e=EMData(options.tomograms, 0, True)
+	apix=e["apix_x"]
 	if nframe==1:
 		nframe=e["nz"]
 		if nframe>1:
@@ -481,7 +482,7 @@ def apply_neuralnet(options):
 			cout.write_image(options.output,idx)
 			
 	fout="__tomoseg_tmp.hdf"
-	run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed".format(options.output,fout,float(1./labelshrink)))
+	run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed --apix ".format(options.output,fout,float(1./labelshrink), apix))
 	os.rename(fout, options.output)
 	
 	print "Done."
