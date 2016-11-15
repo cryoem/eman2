@@ -20,6 +20,7 @@ import multiprocessing
 import subprocess
 import gc
 import psutil
+import json
 
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
@@ -429,14 +430,14 @@ eot
 		# Question 4: How do alignment algorithms influence power spectral coherence?
 		print("COHERENCE-BASED POWER SPECTRAL COMPARISON")
 		# no algorithm seems to produce measurably better coherence (using calc_cips_scores).
-		hi_ips,lo_ips,hi_cps,lo_cps = calc_coherence(frames_hictrst,frames_loctrst,trans_hi,trans_lo,plot=options.plot):
+		hi_pws,lo_pws = calc_coherence(frames_hictrst,frames_loctrst,trans_hi,trans_lo,bdir,plot=options.plot)
 
 		print("")
 
 		# Question 5: How do alignment algorithms influence real-space contrast?
-		print("CONTRAST-BASED IMAGE COMPARISON")
+		#print("CONTRAST-BASED IMAGE COMPARISON")
 		#measure_contrast(frames_hictrst)
-		
+
 #############################
 # Parse Output Translations #
 #############################
@@ -686,50 +687,77 @@ def calc_coherent_pws(frames,bs=512):
 	cps.process_inplace('normalize.edgemean')
 	return cps
 
-def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,plot=False):
+def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False):
 	# use incoherent power spectrum as "control"
-	hi_twod_ipws = calc_incoherent_pws(frames_hi)
-	hi_oned_ipws = make_oned_pws(hi_twod_ipws)
 
-	lo_twod_ipws = calc_incoherent_pws(frames_lo)
-	lo_oned_ipws = make_oned_pws(lo_twod_ipws)
+	# try: os.mkdirs("tmp")
+	# except: pass
 
-	hi_oned_cpws = {}
-	lo_oned_cpws = {}
+	print("HIGH IPS")
+	hi_oned_pws = {}
+	hi_twod_ips = calc_incoherent_pws(frames_hi)
+	#hi_twod_ips.write_image("tmp/hi_ips.hdf")
+	hi_oned_ips = make_oned_pws(hi_twod_ips)
+	hi_oned_pws["INCOHERENT"] = hi_oned_ips
+
+	print("LOW IPS")
+	lo_oned_pws = {}
+	lo_twod_ips = calc_incoherent_pws(frames_lo)
+	#lo_twod_ips.write_image("tmp/lo_ips.hdf")
+	lo_oned_ips = make_oned_pws(lo_twod_ips)
+	lo_oned_pws["INCOHERENT"] = lo_oned_ips
 	
 	for key in all_trans_hi.keys():
-		shifted_hi = shift_frames(frames_hi,all_trans_hi[key])
-		hi_twod_cpws = calc_coherent_pws(shifted_hi)
-		hi_oned_cpws[key] = make_oned_pws(hi_twod_cpws)
+		if key not in ["STD","ALL","MEAN","VAR"]:
+			print("HIGH "+key)
+			shifted_hi = shift_frames(frames_hi,all_trans_hi[key])
+			hi_twod_cps = calc_coherent_pws(shifted_hi)
+			#hi_twod_cps.write_image("tmp/hi_cps_{}.hdf".format(key))
+			hi_oned_pws[key] = make_oned_pws(hi_twod_cps)
 
-		shifted_lo = shift_frames(frames_lo,all_trans_lo[key])
-		lo_twod_cpws = calc_coherent_pws(shifted_lo)
-		lo_oned_cpws[key] = make_oned_pws(lo_twod_cpws)
+			print("LOW "+key)
+			shifted_lo = shift_frames(frames_lo,all_trans_lo[key])
+			lo_twod_cps = calc_coherent_pws(shifted_lo)
+			#lo_twod_cps.write_image("tmp/lo_cps_{}.hdf".format(key))
+			lo_oned_pws[key] = make_oned_pws(lo_twod_cps)
 
-	if plot: plot_oned_spectra(hi_ipws,lo_ipws,hi_cpws,lo_cpws)
-	return hi_oned_ipws,lo_oned_ipws,hi_oned_cpws,lo_oned_cpws
+	with open('{}/hictrst_onedpws.json'.format(bdir), 'w') as fp:
+		json.dump(hi_oned_pws, fp)
+
+	with open('{}/loctrst_onedpws.json'.format(bdir), 'w') as fp:
+		json.dump(lo_oned_pws, fp)
+
+	if plot: plot_oned_spectra(hi_oned_pws,lo_oned_pws)
+
+	return hi_oned_pws,lo_oned_pws
 
 def make_oned_pws(pws):
-	return pws.calc_radial_dist(pws["nx"]/2.,0,1.0,1)[1:]
+	return pws.calc_radial_dist(int(pws["nx"]/2.),0,1.0,1)[1:]
 
-def plot_oned_spectra(hi_ipws,lo_ipws,hi_cpws,lo_cpws):
+def plot_oned_spectra(hi_pws,lo_pws,bdir):
+	# plot CPS agreement with IPS?
 	fig = plt.figure()
 
 	ax1 = fig.add_subplot(211)
-	ax1.plot(hi_ipws,label="Incoherent")
-	for alg in hi_cpws.keys():
-		ax1.plot(hi_cpws[alg],label=alg)
+	for alg in hi_pws.keys():
+		ax1.plot(hi_pws[alg],label=alg)
 	ax1.legend()
 	ax1.set_title("High Contrast Power Spectra")
 
 	ax2 = fig.add_subplot(212)
-	ax2.plot(lo_ipws,label="Incoherent")
-	for alg in lo_cpws.keys():
-		ax2.plot(lo_cpws[alg],label=alg)
+	for alg in lo_pws.keys():
+		ax2.plot(lo_pws[alg],label=alg)
 	ax2.legend()
 	ax2.set_title("Low Contrast Power Spectra")
 
+	plt.savefig("{}/oned_spectra.png".format(bdir))
+
 	plt.show()
+
+	# quantify difference between CPS/IPS?
+
+	# plot CPS (lo/high) agreement?
+	return
 
 def calc_cips_scores(ftypes,bs=1024): #cips = coherent & incoherent power spectra
 	# for comparison of coherent and incoherent power spectra...not such a good metric.
@@ -881,7 +909,7 @@ def fit_defocus(img):
 	ctf.defocus = dfl[a]
 	curve=np.array(ctf.compute_1d(ns*2,ds,Ctf.CtfType.CTF_AMP)[1:])
 	curve*=curve
-	if self.fixaxes: 
+	if self.fixaxes:
 		img.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':self.nnorm,'x':1,'y':1})
 		oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
 		oned=np.log10(oned)
