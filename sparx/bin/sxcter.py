@@ -114,15 +114,15 @@ Stack Mode - Process a stack (Advanced Option):
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
 	
-	from morphology import cter_mrk
 	# NOTE: 2016/11/15 Toshio Moriya
 	# Disabled global_def.BATCH so that the error message will be also written to standard output.
 	# In addition, change the name log file
 	# 
 	# global_def.BATCH = True
 	original_logfilename = global_def.LOGFILE
-	global_def.LOGFILE = 'sxcter_' + original_logfilename + '.txt'
+	global_def.LOGFILE = os.path.splitext(progname)[0] + '_' + original_logfilename + '.txt'
 	
+	from morphology import cter_mrk
 	result = cter_mrk(input_image, output_directory, options.wn, pixel_size=options.apix, \
 					Cs = options.Cs, voltage=options.voltage, wgh=options.ac, \
 					f_start=options.f_start, f_stop=options.f_stop, kboot=options.kboot, \
