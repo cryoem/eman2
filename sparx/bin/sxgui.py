@@ -331,7 +331,7 @@ class SXLogoButton(QPushButton):
 		self.setStyleSheet(self.customButtonStyle)
 
 		# Add ToolTip
-		self.setToolTip('Help')
+		self.setToolTip('HELP')
 
 # ========================================================================================
 class SXPictogramButton(QPushButton):
@@ -360,7 +360,7 @@ class SXPictogramButton(QPushButton):
 		self.setStyleSheet(self.customButtonStyle)
 
 		# Add tooltipp
-		self.setToolTip('{0}{1}'.format(pictogram_name[0].upper(), pictogram_name[1:]))
+		self.setToolTip(pictogram_name.upper())
 
 class SXMenuItemBtnAreaWidget(QWidget):
 	def __init__(self, sxconst_set, sxcmd_category_list, sxinfo, parent = None):
@@ -2195,7 +2195,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		self.sxinfo = sxinfo
 
 	def construct_sxconst_set(self):
-		sxconst_set = SXconst_set(); sxconst_set.name = "sxc_project_settings"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
+		sxconst_set = SXconst_set(); sxconst_set.name = "sxc_settings"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
 		sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "Protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "Micrograph pixel size [A]"; sxconst.help = ""; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "ctfwin"; sxconst.label = "CTF window size [pixels]"; sxconst.help = "it should be slightly larger than particle box size"; sxconst.register = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
@@ -2216,26 +2216,26 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# Actual configurations of all sx command categories and sx commands are inserted into the following section by wikiparser.py
 		# as sxcmd_category_list and sxcmd_list
 		# @@@@@ START_INSERTION @@@@@
-		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_movie_micrograph"; sxcmd_category.label = "Movie Micrograph"; sxcmd_category.short_info = "movie frame alignemnt, and drift assessment"
+		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_movie"; sxcmd_category.label = "Movie Micrograph"; sxcmd_category.short_info = "movie frame alignemnt, and drift assessment"
 		sxcmd_category_list.append(sxcmd_category)
-		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_ctf"; sxcmd_category.label = "CTF"; sxcmd_category.short_info = "ctf estinatim, and ctf assessment"
+		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_cter"; sxcmd_category.label = "CTF"; sxcmd_category.short_info = "ctf estinatim, and ctf assessment"
 		sxcmd_category_list.append(sxcmd_category)
-		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_particle_stack"; sxcmd_category.label = "Particle Stack"; sxcmd_category.short_info = "particle picking, and particle windowing"
+		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_window"; sxcmd_category.label = "Particle Stack"; sxcmd_category.short_info = "particle picking, and particle windowing"
 		sxcmd_category_list.append(sxcmd_category)
-		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_2d_clustering"; sxcmd_category.label = "2D Clustering"; sxcmd_category.short_info = "2d clustering with isac, and post-processing"
+		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_isac"; sxcmd_category.label = "2D Clustering"; sxcmd_category.short_info = "2d clustering with isac, and post-processing"
 		sxcmd_category_list.append(sxcmd_category)
-		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_initial_3d_modeling"; sxcmd_category.label = "Initial 3D Modeling"; sxcmd_category.short_info = "initial 3d modeling with viper/rviper"
+		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_viper"; sxcmd_category.label = "Initial 3D Modeling"; sxcmd_category.short_info = "initial 3d modeling with viper/rviper"
 		sxcmd_category_list.append(sxcmd_category)
-		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_3d_refinement"; sxcmd_category.label = "3D Refinement"; sxcmd_category.short_info = "3d refinement and post-processing"
+		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_meridien"; sxcmd_category.label = "3D Refinement"; sxcmd_category.short_info = "3d refinement and post-processing"
 		sxcmd_category_list.append(sxcmd_category)
-		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_3d_clustering"; sxcmd_category.label = "3D Clustering"; sxcmd_category.short_info = "3d variability, and 3d clustering protocol I & II"
+		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_sort3d"; sxcmd_category.label = "3D Clustering"; sxcmd_category.short_info = "3d variability, and 3d clustering protocol I & II"
 		sxcmd_category_list.append(sxcmd_category)
 		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_localres"; sxcmd_category.label = "Local Resolution"; sxcmd_category.short_info = "local resolution, and local filter"
 		sxcmd_category_list.append(sxcmd_category)
 		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_utilities"; sxcmd_category.label = "Utilities"; sxcmd_category.short_info = "miscellaneous utlitity commands"
 		sxcmd_category_list.append(sxcmd_category)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxunblur"; sxcmd.mode = ""; sxcmd.label = "Micrograph movie alignment"; sxcmd.short_info = "Align micrograph movies with Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie_micrograph"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxunblur"; sxcmd.mode = ""; sxcmd.label = "Micrograph movie alignment"; sxcmd.short_info = "Align micrograph movies with Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "input_micrograph_list_file"; token.key_prefix = "--"; token.label = "Input micrograph list file"; token.help = "Not an unblur option, extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_image_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "unblur"; token.key_prefix = ""; token.label = "Path to unblur executable"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "exe"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_mrc_micrograph"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "You can use the wild cards (e.g. *) to specify a list of micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "mrc"; sxcmd.token_list.append(token)
@@ -2261,13 +2261,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxgui_unblur"; sxcmd.mode = ""; sxcmd.label = "Drift Assessment"; sxcmd.short_info = "Assess micrographs based on drift estimation produced by Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie_micrograph"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "sxgui_unblur"; sxcmd.mode = ""; sxcmd.label = "Drift Assessment"; sxcmd.short_info = "Assess micrographs based on drift estimation produced by Unblur."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Shift files"; token.help = "A wild card * can be used to process multiple shift files. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_shift_list_file"; token.key_prefix = ""; token.label = "Input shift list file"; token.help = "Extension of input shift list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "txt"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie_micrograph"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Skip auto-contrast"; token.help = "Disables the auto contrast for the display of particles stacks and 2D images. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2275,7 +2275,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.mode = ""; sxcmd.label = "CTF Estimation"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_ctf"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxcter"; sxcmd.mode = ""; sxcmd.label = "CTF Estimation"; sxcmd.short_info = "Automated estimation of CTF parameters with error assessment."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "input_image"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "For the multi-micrograph mode, specify micrograph list file name or file name pattern with a wild card (i.e. *). A particle stack can also be supplied with --stack_mode, but this mode is not supported by sxgui. Images of bdb format can not be used. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_micrograph"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The CTF parameters (partres file), rotationally averaged power spectra (rotinf), and micrograph thumbnails (thumb files) will be written here. This directory will be created automatically and it must not exist previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "CTF window size [Pixels]"; token.help = "It should be slightly larger than particle box size. This is ignored in the stack mode. "; token.group = "main"; token.is_required = False; token.default = "512"; token.restore = "512"; token.type = "ctfwin"; sxcmd.token_list.append(token)
@@ -2295,12 +2295,12 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxgui_cter"; sxcmd.mode = ""; sxcmd.label = "CTF Assessment"; sxcmd.short_info = "GUI tool to assess and sort micrographs based on their estimated CTF by sxcter."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_ctf"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "sxgui_cter"; sxcmd.mode = ""; sxcmd.label = "CTF Assessment"; sxcmd.short_info = "GUI tool to assess and sort micrographs based on their estimated CTF by sxcter."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "cter_ctf_file"; token.key_prefix = ""; token.label = "CTF parameter file"; token.help = "This file is produced by sxcter and normally called partres.txt "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "txt"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_ctf"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Skip auto-contrast"; token.help = "Disables the auto contrast for the display of particles stacks and 2D images. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2308,7 +2308,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2boxer_old"; sxcmd.mode = ""; sxcmd.label = "Particle Picking"; sxcmd.short_info = "Manual and automatic particle picking."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "e2boxer_old"; sxcmd.mode = ""; sxcmd.label = "Particle Picking"; sxcmd.short_info = "Manual and automatic particle picking."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_micrograph_list"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if the number is very large. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "boxsize"; token.key_prefix = "--"; token.label = "Box size [Pixels]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "-1"; token.restore = "-1"; token.type = "box"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "exclude_edges"; token.key_prefix = "--"; token.label = "Exclude edge images"; token.help = "Exclude particles extending outside the micrograph: "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2319,7 +2319,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.mode = ""; sxcmd.label = "Particle Extraction"; sxcmd.short_info = "Windows particles from micrographs using the particles coordinates."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxwindow"; sxcmd.mode = ""; sxcmd.label = "Particle Extraction"; sxcmd.short_info = "Windows particles from micrographs using the particles coordinates."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input micrograph path pattern"; token.help = "Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files can not be selected as input micrographs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_coordinates_pattern"; token.key_prefix = ""; token.label = "Input coordinates path pattern"; token.help = "Specify path pattern of input coordinates files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_ctf_params_source"; token.key_prefix = ""; token.label = "CTF parameters source"; token.help = "Specify the file produced by sxcter and normally called partres.txt for cryo data. For negative staining data, enter pixel size [A/Pixels]. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "parameters"; sxcmd.token_list.append(token)
@@ -2335,13 +2335,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.mode = "makevstack"; sxcmd.label = "Particle Stack"; sxcmd.short_info = "Output virtual image stack. Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.mode = "makevstack"; sxcmd.label = "Particle Stack"; sxcmd.short_info = "Output virtual image stack. Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output virtual image stack"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_bdb_stack_pattern"; token.key_prefix = ""; token.label = "Input BDB image stack pattern"; token.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sxwindow_output_dir//*/'). The stack subsets are located in the sxwindow output directory."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_directory"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_particle_stack"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Skip auto-contrast"; token.help = "Disables the auto contrast for the display of particles stacks and 2D images. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2349,7 +2349,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxisac"; sxcmd.mode = ""; sxcmd.label = "ISAC - 2D Clustering"; sxcmd.short_info = "Iterative Stable Alignment and Clustering (ISAC) of a 2D image stack."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_2d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxisac"; sxcmd.mode = ""; sxcmd.label = "ISAC - 2D Clustering"; sxcmd.short_info = "Iterative Stable Alignment and Clustering (ISAC) of a 2D image stack."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must to be square (''nx''=''ny''). The stack can be either in bdb or hdf format. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "Radius of the particle (pixels) "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "radius"; sxcmd.token_list.append(token)
@@ -2389,21 +2389,21 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "isacselect"; sxcmd.label = "Get ISAC Particles"; sxcmd.short_info = "Create ISAC particle ID list. Retrieve original image numbers listed in ISAC output average stack. see ISAC documentation for details. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_2d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "isacselect"; sxcmd.label = "Get ISAC Particles"; sxcmd.short_info = "Create ISAC particle ID list. Retrieve original image numbers listed in ISAC output average stack. see ISAC documentation for details. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "isacselect"; token.key_prefix = "--"; token.label = "Create ISAC particle ID list"; token.help = "Retrieve original image numbers listed in ISAC output average stack. see ISAC documentation for details. "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "class_file_name"; token.key_prefix = ""; token.label = "ISAC class file name"; token.help = "File name of the class averages. It is located in the ISAC output directory."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_list"; token.key_prefix = ""; token.label = "Output ISAC particle ID list"; token.help = "Output text file containing retrieved member particle IDs of all ISAC classes."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.mode = "makevstack"; sxcmd.label = "Create Stack Subset"; sxcmd.short_info = "Output virtual image stack. Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_2d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.mode = "makevstack"; sxcmd.label = "Create Stack Subset"; sxcmd.short_info = "Output virtual image stack. Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output virtual image stack"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_bdb_stack_file"; token.key_prefix = ""; token.label = "Input BDB image stack"; token.help = "File name of the class averages. It is located in the ISAC output directory."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "bdb"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "list"; token.key_prefix = "--"; token.label = "File containing selection list of images"; token.help = "Input ASCII file containing a list of selected image names to creates a new virtual BDB image stack from an existed virtual stack. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxisac_post_processing"; sxcmd.mode = ""; sxcmd.label = "ISAC - Postprocessing"; sxcmd.short_info = "Postprocess of the 2D clustering result produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_2d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxisac_post_processing"; sxcmd.mode = ""; sxcmd.label = "ISAC - Postprocessing"; sxcmd.short_info = "Postprocess of the 2D clustering result produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "Original image stack"; token.help = "Particles required to create the full-sized class averages. The images must be square (''nx''=''ny'') and the stack must be bdb format "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "bdb"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "isac_directory"; token.key_prefix = ""; token.label = "Isac output directory"; token.help = "Name of the directory where isac was run previously. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "class_file_name_no_dir_info"; token.key_prefix = ""; token.label = "Isac class file name"; token.help = "Name of the file (no directory info) that contains the class averages. It is located in the Isac directory. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
@@ -2413,7 +2413,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_2d_clustering"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Skip auto-contrast"; token.help = "Disables the auto contrast for the display of particles stacks and 2D images. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2421,7 +2421,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxrviper"; sxcmd.mode = ""; sxcmd.label = "Initial 3D Model - RVIPER"; sxcmd.short_info = "Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_initial_3d_modeling"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxrviper"; sxcmd.mode = ""; sxcmd.label = "Initial 3D Model - RVIPER"; sxcmd.short_info = "Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input images stack"; token.help = "A small set (<100) of class averages produced by ISAC. The images must be square and the stack must be hdf format . "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "hdf"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Target particle radius [Pixels]"; token.help = "Use the same value as in ISAC. It has to be less than half the box size. "; token.group = "main"; token.is_required = False; token.default = "29"; token.restore = "29"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2455,7 +2455,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "changesize"; sxcmd.label = "Resample VIPER Model"; sxcmd.short_info = "Resample 2D or 3D images. resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_initial_3d_modeling"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "changesize"; sxcmd.label = "Resample VIPER Model"; sxcmd.short_info = "Resample 2D or 3D images. resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "changesize"; token.key_prefix = "--"; token.label = "Resample 2D or 3D images"; token.help = "resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size. "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_stack"; token.key_prefix = ""; token.label = "Input 2D/3D image stack"; token.help = "Input 2D/3D image stack."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_stack"; token.key_prefix = ""; token.label = "Output 2D/3D image stack"; token.help = "Resampled (decimated or interpolated up) 2D/3D image stack."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
@@ -2463,14 +2463,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2proc3d"; sxcmd.mode = "clip"; sxcmd.label = "Pad/Clip VIPER Model"; sxcmd.short_info = "Pad or clip. Make the output volume have this size by padding/clipping. 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_initial_3d_modeling"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "e2proc3d"; sxcmd.mode = "clip"; sxcmd.label = "Pad/Clip VIPER Model"; sxcmd.short_info = "Pad or clip. Make the output volume have this size by padding/clipping. 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "clip"; token.key_prefix = "--"; token.label = "Pad/Clip volume to specified size [Pixels]"; token.help = "Make the output volume have this size by padding/clipping. 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input volume file name."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_file"; token.key_prefix = ""; token.label = "Output clipped/padded volume"; token.help = "Output clipped/padded volume file name."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxviper"; sxcmd.mode = ""; sxcmd.label = "Initial 3D Model - VIPER"; sxcmd.short_info = "''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_initial_3d_modeling"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxviper"; sxcmd.mode = ""; sxcmd.label = "Initial 3D Model - VIPER"; sxcmd.short_info = "''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input images stack"; token.help = "A small set of Class averages produced by ISAC. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ir"; token.key_prefix = "--"; token.label = "Inner rotational search radius [Pixels]"; token.help = ""; token.group = "advanced"; token.is_required = False; token.default = "1"; token.restore = "1"; token.type = "int"; sxcmd.token_list.append(token)
@@ -2497,7 +2497,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxpdb2em"; sxcmd.mode = ""; sxcmd.label = "PDB File Conversion"; sxcmd.short_info = "Converts an atomic model into a simulated density map"; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_initial_3d_modeling"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxpdb2em"; sxcmd.mode = ""; sxcmd.label = "PDB File Conversion"; sxcmd.short_info = "Converts an atomic model into a simulated density map"; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "input_pdb"; token.key_prefix = ""; token.label = "Input PDB file"; token.help = "Starting atomic coordinates: "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "pdb"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_hdf"; token.key_prefix = ""; token.label = "Output map"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "Pixel size of the output map [A]"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
@@ -2510,7 +2510,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_initial_3d_modeling"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Skip auto-contrast"; token.help = "Disables the auto contrast for the display of particles stacks and 2D images. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2518,7 +2518,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "adaptive_mask"; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_initial_3d_modeling"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "adaptive_mask"; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adaptive_mask"; token.key_prefix = "--"; token.label = "Create soft-edged 3D mask from reference volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
@@ -2530,7 +2530,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "angular_distribution"; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file. The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_initial_3d_modeling"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "angular_distribution"; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file. The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "Create angular distribution file"; token.help = "The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Alignment Parameter file"; token.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size in A. "; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
@@ -2542,7 +2542,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxmeridien"; sxcmd.mode = ""; sxcmd.label = "3D Refinement"; sxcmd.short_info = "Performs 3D structure refinement."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_refinement"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxmeridien"; sxcmd.mode = ""; sxcmd.label = "3D Refinement"; sxcmd.short_info = "Performs 3D structure refinement."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "current directory"; token.restore = "current directory"; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "initial_volume"; token.key_prefix = ""; token.label = "Initial 3D reference"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
@@ -2568,7 +2568,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "postprocess"; sxcmd.label = "3D Refinement Postprocess"; sxcmd.short_info = "Adjust power spectrum based on B-factor. B-factor is estimated from unfiltered odd/even 3D volumes, one volume, or ISAC 2D averages. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_refinement"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "postprocess"; sxcmd.label = "3D Refinement Postprocess"; sxcmd.short_info = "Adjust power spectrum based on B-factor. B-factor is estimated from unfiltered odd/even 3D volumes, one volume, or ISAC 2D averages. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "postprocess"; token.key_prefix = "--"; token.label = "Adjust power spectrum based on B-factor"; token.help = "B-factor is estimated from unfiltered odd/even 3D volumes, one volume, or ISAC 2D averages. "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First unfiltered half-volume "; token.help = "Generated by sxmeridien"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second unfiltered half-volume "; token.help = "Generated by sxmeridien"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
@@ -2589,7 +2589,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_refinement"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Skip auto-contrast"; token.help = "Disables the auto contrast for the display of particles stacks and 2D images. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2597,7 +2597,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "adaptive_mask"; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_refinement"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "adaptive_mask"; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adaptive_mask"; token.key_prefix = "--"; token.label = "Create soft-edged 3D mask from reference volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
@@ -2609,7 +2609,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "angular_distribution"; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file. The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_refinement"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "angular_distribution"; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file. The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "Create angular distribution file"; token.help = "The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Alignment Parameter file"; token.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size in A. "; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
@@ -2621,14 +2621,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.mode = "symmetrize"; sxcmd.label = "3D Variability Preprocess"; sxcmd.short_info = "Symmetrise input stack. Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.mode = "symmetrize"; sxcmd.label = "3D Variability Preprocess"; sxcmd.short_info = "Symmetrise input stack. Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "symmetrize"; token.key_prefix = "--"; token.label = "Symmetrise input stack"; token.help = "Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "sym"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "Only required if the structure has symmetry higher than c1. Notice this step can be run with only one CPU and there is no MPI version for it. "; token.group = "main"; token.is_required = False; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token)
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.mode = ""; sxcmd.label = "3D Variablity Estimation"; sxcmd.short_info = "Calculate 3D variability using a set of aligned projection images as an input."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sx3dvariability"; sxcmd.mode = ""; sxcmd.label = "3D Variablity Estimation"; sxcmd.short_info = "Calculate 3D variability using a set of aligned projection images as an input."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "prj_stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "ave2D"; token.key_prefix = "--"; token.label = "Output 2D averages"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "var2D"; token.key_prefix = "--"; token.label = "Output 2D variances"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token)
@@ -2648,7 +2648,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxsort3d"; sxcmd.mode = ""; sxcmd.label = "3D Clustering Protocol I"; sxcmd.short_info = "Sort 3D heterogeneity based on the reproducible members of K-means and Equal K-means classification. It runs after 3D refinement where the alignment parameters are determined."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxsort3d"; sxcmd.mode = ""; sxcmd.label = "3D Clustering Protocol I"; sxcmd.short_info = "Sort 3D heterogeneity based on the reproducible members of K-means and Equal K-means classification. It runs after 3D refinement where the alignment parameters are determined."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input images stack"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "outdir"; token.key_prefix = ""; token.label = "Output directory"; token.help = "There is a log.txt that describes the sequences of computations in the program. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = ""; token.label = "3D mask"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
@@ -2687,7 +2687,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxrsort3d"; sxcmd.mode = ""; sxcmd.label = "3D Clustering Protocol II"; sxcmd.short_info = "Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters (xform.projection) have been determined already using 3D sorting protocol I (P1)."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxrsort3d"; sxcmd.mode = ""; sxcmd.label = "3D Clustering Protocol II"; sxcmd.short_info = "Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters (xform.projection) have been determined already using 3D sorting protocol I (P1)."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input images stack"; token.help = ""; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "outdir"; token.key_prefix = ""; token.label = "Output directory"; token.help = "There is a log.txt that describes the sequences of computations in the program. "; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "mask"; token.key_prefix = ""; token.label = "3D mask"; token.help = ""; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "image"; sxcmd.token_list.append(token)
@@ -2728,7 +2728,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.mode = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is too large. "; token.group = "main"; token.is_required = False; token.default = "none"; token.restore = "none"; token.type = "any_file_list"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Displays a stack in a single image view: "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Skip auto-contrast"; token.help = "Disables the auto contrast for the display of particles stacks and 2D images. "; token.group = "advanced"; token.is_required = False; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token)
@@ -2736,7 +2736,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "adaptive_mask"; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "adaptive_mask"; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adaptive_mask"; token.key_prefix = "--"; token.label = "Create soft-edged 3D mask from reference volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
@@ -2748,7 +2748,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "binary_mask"; sxcmd.label = "Binary 3D Mask"; sxcmd.short_info = "Create binary 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "binary_mask"; sxcmd.label = "Binary 3D Mask"; sxcmd.short_info = "Create binary 3D mask from reference volume. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "binary_mask"; token.key_prefix = "--"; token.label = "Create binary 3D mask from reference volume"; token.help = ""; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "output_mask3D"; token.key_prefix = ""; token.label = "Output mask"; token.help = "Output 3D mask"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
@@ -2758,7 +2758,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "angular_distribution"; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file. The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_3d_clustering"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "angular_distribution"; sxcmd.label = "Angular Distribution"; sxcmd.short_info = "Create angular distribution file. The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "angular_distribution"; token.key_prefix = "--"; token.label = "Create angular distribution file"; token.help = "The file will contain a 3D representation of the given angular distribution, which can be viewed with UCFS Chimera "; token.group = "main"; token.is_required = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "inputfile"; token.key_prefix = ""; token.label = "Alignment Parameter file"; token.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token.group = "main"; token.is_required = True; token.default = ""; token.restore = ""; token.type = "any_file"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "pixel_size"; token.key_prefix = "--"; token.label = "Pixel size [A]"; token.help = "Pixel size in A. "; token.group = "main"; token.is_required = False; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token)
