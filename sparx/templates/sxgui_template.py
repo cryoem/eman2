@@ -331,7 +331,7 @@ class SXLogoButton(QPushButton):
 		self.setStyleSheet(self.customButtonStyle)
 
 		# Add ToolTip
-		self.setToolTip('Help')
+		self.setToolTip('HELP')
 
 # ========================================================================================
 class SXPictogramButton(QPushButton):
