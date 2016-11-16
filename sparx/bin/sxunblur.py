@@ -466,7 +466,7 @@ def run_unblur(
         time_list.append(time.time() - t1)
 
         # Do progress output
-        percent = round(100 * (index + 1) / nr_files, 2)
+        percent = round(100 * (index + 1) / float(nr_files), 2)
         estimated_time = \
             nr_files * sum(time_list) / float(len(time_list))
         estimated_time_h = estimated_time // 3600

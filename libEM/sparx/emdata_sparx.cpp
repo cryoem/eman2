@@ -8097,16 +8097,18 @@ EMData *EMData::FourTruncate(int nxn, int nyn, int nzn, bool RetReal, bool norma
 	//	throw ImageFormatException("Input image has to be real");
 
 	if (is_complex()) {
-		nx = nx - 2 + nx%2;
+		if(nxn>nx - 2 + nx%2 || nyn>ny || nzn>nz)	throw ImageDimensionException("Cannot increase the image size");
+		lsd = nx;
+		lsdn = nxn + 2 - nxn%2;
 		fint = get_data();
 	} else {
 		//  do out of place ft
+		if(nxn>nx || nyn>ny || nzn>nz)	throw ImageDimensionException("Cannot increase the image size");
+		lsd = nx + 2 - nx%2;
+		lsdn = nxn + 2 - nxn%2;
 		temp_ft = do_fft();
 		fint = temp_ft->get_data();
 	}
-	if(nxn>nx || nyn>ny || nzn>nz)	throw ImageDimensionException("Cannot increase the image size");
-	lsd = nx + 2 - nx%2;
-	lsdn = nxn + 2 - nxn%2;
 	EMData *ret = this->copy_head();
 	ret->set_size(lsdn, nyn, nzn);
 	float *fout = ret->get_data();
