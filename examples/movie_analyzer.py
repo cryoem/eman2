@@ -689,18 +689,14 @@ def calc_coherent_pws(frames,bs=512):
 
 def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False):
 	# use incoherent power spectrum as "control"
-	try:
-		with open('{}/hictrst_onedpws.json'.format(bdir)) as hi:
-			hi_oned_pws = json.load(hi)
-		with open('{}/hictrst_onedpws.json'.format(bdir)) as lo:
-			lo_oned_pws = json.load(lo)
-		print("USING PRIOR POWER SPECTRA")
 
-	except:
-		print("NO PRIOR POWER SPECTRA FOUND")
+	hi_oned_pws = js_open_dict('{}/hictrst_onedpws.json'.format(bdir))
+	lo_oned_pws = js_open_dict('{}/loctrst_onedpws.json'.format(bdir))
+
+	if len(hi_oned_pws.keys()) == 0 and len(hi_oned_pws.keys()) == 0:
+		print("NO PRIOR POWER SPECTRA FOUND.")
 
 		print("HIGH IPS")
-		hi_oned_pws = {}
 		hi_twod_ips = calc_incoherent_pws(frames_hi)
 		hi_ips, hi_ips_bg, hi_ips_bgsub = fit_defocus(hi_twod_ips)
 		hi_oned_pws["IPS"] = hi_ips
@@ -708,7 +704,6 @@ def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False
 		hi_oned_pws["IPS (sub)"] = hi_ips_bgsub
 
 		print("LOW IPS")
-		lo_oned_pws = {}
 		lo_twod_ips = calc_incoherent_pws(frames_lo)
 		lo_ips, lo_ips_bg, lo_ips_bgsub = fit_defocus(lo_twod_ips)
 		lo_oned_pws["IPS"] = lo_ips
@@ -732,12 +727,6 @@ def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False
 				lo_oned_pws["{}".format(key)] = lo_cps
 				lo_oned_pws["{} (bg)".format(key)] = lo_cps_bg
 				lo_oned_pws["{} (sub)".format(key)] = lo_cps_bgsub
-
-		with open('{}/hictrst_onedpws.json'.format(bdir), 'w') as fp:
-			json.dump(hi_oned_pws, fp)
-
-		with open('{}/loctrst_onedpws.json'.format(bdir), 'w') as fp:
-			json.dump(lo_oned_pws, fp)
 
 	if plot: plot_oned_spectra(hi_oned_pws,lo_oned_pws)
 
@@ -770,7 +759,7 @@ def plot_oned_spectra(hi_pws,lo_pws,bdir):
 	# plot CPS (lo/high) agreement?
 
 	# compare SSNR
-	
+
 	return
 
 def calc_cips_scores(ftypes,bs=1024): #cips = coherent & incoherent power spectra
