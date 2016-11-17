@@ -259,8 +259,15 @@ def main():
 					rslt["average"].process_inplace("mask.gaussian",{"inner_radius":nx/2-nx/15,"outer_radius":nx/20})
 					#rslt["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 				if options.ref!=None : rslt["average"]["projection_image"]=options.ref
-				if options.storebad : rslt["average"].write_image(options.output,t.options["n"])
-				else: rslt["average"].write_image(options.output,-1)
+				try:
+					if options.storebad : rslt["average"].write_image(options.output,t.options["n"])
+					else: rslt["average"].write_image(options.output,-1)
+				except:
+					traceback.print_exc()
+					print "Error writing class average {} to {}".format(t.options["n"],options.output)
+					print "Image attr: ",rslt["average"].get_attr_dict()
+					display(rslt["average"])
+					sys.exit(1)
 
 				# Update the resultsmx if requested
 				if options.resultmx!=None:
