@@ -207,7 +207,7 @@ def main():
 		for m in inputmodel:
 			mskmodel.append(m[:-4]+"_msk.hdf")
 			run("e2proc3d.py {model} {mskmodel} --multfile {msk}".format(model=m, mskmodel=mskmodel[-1], msk=mask3d))
-		run("e2project3d.py {model} --outfile  {mskfile} -f --orientgen {orient} --sym {sym} --parallel {para}".format(model=mask3d,mskfile=maskfile,orient=origen,sym=db["sym"],para=options.parallel))
+		#run("e2project3d.py {model} --outfile  {mskfile} -f --orientgen {orient} --sym {sym} --parallel {para}".format(model=mask3d,mskfile=maskfile,orient=origen,sym=db["sym"],para=options.parallel))
 		#simmask=EMData.read_images(maskfile)
 	
 	#### start iterations...
