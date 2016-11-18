@@ -1,12 +1,13 @@
 = Name =
 sxrviper - Initial 3D Model - RVIPER: Reproducible ''ab initio'' 3D structure determination. The program is designed to determine a validated initial intermediate resolution structure using a small set (<100?) of class averages produced by [[sxisac|ISAC]].
 
-= Usage =
 
+= Usage =
 
 ''usage in command line''
 
-sxrviper.py  stack  output_directory  --radius=outer_radius  --sym=c1  --iteration_start=iteration_start  --ir=inner_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --L2threshold=0.1  --doga=doga  --n_shc_runs=n_shc_runs  --n_rv_runs=n_rv_runs  --n_v_runs=n_v_runs  --outlier_percentile=outlier_percentile  --ref_a=S  --npad=npad --fl=fl  --aa=aa  --pwreference=pwreference  --mask3D=mask3D  --moon_elimination  --criterion_name  --outlier_index_threshold_method  --angle_threshold=angle_threshold
+sxrviper.py  stack  output_directory  --radius=outer_radius  --sym=sym  --n_rv_runs=n_rv_runs  --iteration_start=iteration_start  --n_v_runs=n_v_runs  --npad=npad  --criterion_name=criterion_name  --outlier_index_threshold_method=outlier_index_threshold_method  --angle_threshold=angle_threshold  --outlier_percentile=outlier_percentile  --ir=inner_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --mask3D=mask3D  --moon_elimination=moon_elimination  --L2threshold=L2threshold  --ref_a=ref_a  --n_shc_runs=n_shc_runs  --doga=doga --fl=fl  --aa=aa  --pwreference=pwreference
+
 
 === Typical usage ===
 
@@ -20,18 +21,27 @@ Since RVIPER makes use of group of processors working together, it is important 
 
 {{attachment:npernode_rank.png||width=600}}
 
+
 === Time and Memory ===
 
 On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 processors. Memory needs are about 0.5GB per processor.
+
 
 == Input ==
     stack:: Input images stack: A small set (<100) of class averages produced by ISAC. The images must be square and the stack must be hdf format . (default required string)
 
     radius:: Target particle radius [Pixels]: Use the same value as in ISAC. It has to be less than half the box size. (default 29)
     sym:: Point-group symmetry: (default c1)
-    iteration_start:: Starting iteration: Iteration from which to start the program. 0 means go to the most recent one. (default 0)
+    n_rv_runs:: RVIPER iterations: Corresponds to main### output directory. (default 10)
+    iteration_start:: Restarting iteration: Iteration from which to restart the program. 0 means go to the most recent one. (default 0)
 
     * The remaining parameters are optional.  
+    n_v_runs:: Minimun VIPER runs per RVIPER iterations: Corresponds to run### output directory. (default 3)
+    npad:: Image padding factor: The images are padded to achieve the original size times this option. (default 2)
+    criterion_name:: Stable projection criterion: Used to decide if the volumes have a set of stable projections. Valid options are - '80th percentile',  or 'fastest increase in the last quartile'. (default 80th percentile)
+    outlier_index_threshold_method:: Outlier selection method: Used to decide which images to keep. Valid options are -  'discontinuity_in_derivative', 'percentile', or 'angle_measure'. (default discontinuity_in_derivative)
+    angle_threshold:: Angle threshold: Threshold used to remove projections if 'angle_measure' is used to decide the outliers. (default 30)
+    outlier_percentile:: Percentile for outlier: Threshold above which images are considered outliers and removed if 'percentile' is used as outlier selection method. (default 95.0)
     ir:: Inner rotational search radius [Pixels]: (default 1)
     rs:: Ring step size: Step between rings used for the rotational search. (default 1)
     xr:: X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default '0')
@@ -41,22 +51,16 @@ On our cluster, it takes about 6 hours to process 400 88x88 particles on 64 proc
     center:: Center 3D template: 0: no centering; 1: center of gravity. (default -1.0)
     maxit1:: Maximum iterations - GA step: (default 400)
     maxit2:: Maximum iterations - Finish step: (default 50)
+    mask3D:: 3D mask: (default sphere)
+    moon_elimination:: Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
     L2threshold:: GA stop threshold: Defines the maximum relative dispersion of volumes' L2 norms. (default 0.03)
-    doga:: Threshold to start GA: Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. (default 0.1)
-    n_shc_runs:: GA population size: This defines the number of quasi-independent volumes generated. (same as '--nruns' parameter from [[sxviper.py]]). (default 4)
-    n_rv_runs:: Number of iterations: (default 10)
-    n_v_runs:: Number of viper runs per cycle: (default 3)
-    outlier_percentile:: Percentile for outlier: Threshold above which images are considered outliers and removed if 'percentile' is used as outlier selection method. (default 95.0)
     ref_a:: Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
-    npad:: Image padding factor: The images are padded to achieve the original size times this option. (default 2)
+    n_shc_runs:: GA population size: This defines the number of quasi-independent volumes generated. (same as '--nruns' parameter from [[sxviper.py]]). (default 4)
+    doga:: Threshold to start GA: Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. (default 0.1)
     fl:: Low-pass filter frequency [1/Pixel]: Using a hyperbolic tangent low-pass filter. (default 0.25)
     aa:: Low-pass filter fall-off: Fall-off of for the hyperbolic tangent low-pass filter. (default 0.1)
     pwreference:: Power spectrum reference: Text file containing a 1D reference power spectrum. (default none)
-    mask3D:: 3D mask: (default sphere)
-    moon_elimination:: Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
-    criterion_name:: Stable projection criterion: Used to decide if the volumes have a set of stable projections. Valid options are - '80th percentile',  or 'fastest increase in the last quartile'. (default 80th percentile)
-    outlier_index_threshold_method:: Outlier selection method: Used to decide which images to keep. Valid options are -  'discontinuity_in_derivative', 'percentile', or 'angle_measure'. (default discontinuity_in_derivative)
-    angle_threshold:: Angle threshold: Threshold used to remove projections if 'angle_measure' is used to decide the outliers. (default 30)
+
 
 == Output ==
     output_directory:: Output directory: The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. (default required string)
@@ -89,14 +93,11 @@ The directory structure generated by sxrviper is shown in the figure below. Each
 {{attachment:discontinuity.png ||width=400}}
 
 
-
-
 === Example of RVIPER output ===
 
 In the example below, RVIPER found in the third iteration (main003) a set of 3 reconstructed volumes whose projections show stable angle assignment. Based on the three reconstructed volumes the program generates "variance_volume.hdf" and "average_volume.hdf" which can be used as an initial reference.
 
 {{attachment:error_curve05.png||width=400}}
-
 
 
 = Reference =
