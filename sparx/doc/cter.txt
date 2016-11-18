@@ -5,52 +5,51 @@ sxcter - CTF Estimation: Automated estimation of CTF parameters with error asses
 
 ''usage in command line''
 
-sxcter.py  input_image  output_directory  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --MPI  --stack_mode  --debug  
+sxcter.py  input_image_path  output_directory  --selection_list=selection_list  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --check_consistency  --stack_mode  --debug_mode
 
 
 === Typical usage ===
 
-sxcter exists in for both MPI and non-MPI versions.
+sxcter exists in for both MPI and non-MPI versions (Running MPI version does not require --MPI flag). 
 
+    All Micrographs Mode - Process all micrographs in a directory:: Specify a list of input micrographs using a wild card (*), called here input micrographs path pattern. Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). Running from the command line requires enclosing the string by single quotes (') or double quotes ("). sxgui.py will automatically adds single quotes to the string. BDB files can not be selected as input micrographs. Then, specify output directory where all outputs should be saved. In this mode, all micrographs matching the path pattern will be processed.
 
-    Multi-Micrograph Mode - Processes a set of micrographs in a list file or in a directory:: Specify a micrograph list file name (e.g. output of sxgui_unblur.py or sxgui_cter.py) and output directory as arguments. The file extension must be ".txt".
+    ''' mpirun -np 16 sxcter.py './mic*.hdf' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 ''' <<BR>><<BR>>
 
-    ''' mpirun -np 16 sxcter.py mic_list.txt outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI ''' <<BR>><<BR>>
+    Selected Micrographs Mode - Process all micrographs in a selection list file:: In addition to input micrographs path pattern and output directry arguments, specify a name of micrograph selection list text file using --selection_list option (e.g. output of sxgui_unblur.py or sxgui_cter.py). The file extension must be ".txt". In this mode, only micrographs in the selection list which matches the file name part of the pattern (ignoring the directory paths) will be processed. If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
 
-    Alternatively, specify a list of input micrographs and their corresponding coordinates using wild card (e.g. *). Running from the command line requires enclosing the string by single quotes (') or double quotes ("). sxgui.py will automatically adds single quotes to the string (').  BDB stacks can not be used as input.
+    ''' mpirun -np 16 sxcter.py './mic*.hdf' outdir_cter --selection_list=mic_list.txt --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 ''' <<BR>><<BR>>
 
-    ''' mpirun -np 16 sxcter.py 'Micrographs/mic*.mrc' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI ''' <<BR>><<BR>>
+    Single Micrograph Mode - Process a single micrograph:: In addition to input micrographs path pattern and output directry arguments, specify a single micrograph name using --selection_list option. In this mode, only the specified single micrograph will be processed. If this micrograph name does not matches the file name part of the pattern (ignoring the directory paths), the process will exit without processing it. If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it. Use single processor for this mode.
 
-    Single-Micrograph Mode - Processes a single micrograph:: Only the micrograph name and output directory are used as arguments. BDB files can not be selected as input micrograph. Use single processor for this mode. 
+    ''' sxcter.py './mic*.hdf' outdir_cter --selection_list=mic0.hdf --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 ''' <<BR>><<BR>>
 
-    ''' sxcter.py Micrographs/mic0.mrc outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 ''' <<BR>><<BR>>
-
-    Stack Mode - Processes a particle stack:: Use option --stack_mode. The name of the particle stack and output directory are used as arguments. The --wn option will be ignored. This mode is Not supported by sxgui.py. Only implemented in the non-MPI version of sxcter. 
+    Stack Mode - Process a particle stack (Advanced Option):: Use --stack_mode option, then specify the path of particle stack file (without wild card "*") and output directory as arguments. This mode ignores --selection_list, --wn --overlap_x, --overlap_y, --edge_x, and --edge_y options. Use single processor for this mode. Not supported by sxgui.py. 
 
     ''' sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode ''' <<BR>><<BR>>
 
-
 == Input ==
-    input_image:: Input micrographs: For the multi-micrograph mode, specify micrograph list file name or file name pattern with a wild card (i.e. *). A particle stack can also be supplied with --stack_mode, but this mode is not supported by sxgui. Images of bdb format can not be used. (default required string)
-    
-    wn:: CTF window size [Pixels]: It should be slightly larger than particle box size. This is ignored in the stack mode. (default 512)
-    apix:: Pixel size [A]: (default -1.0)
-    Cs:: Microscope spherical aberration [mm]: (default 2.0)
-    voltage:: Microscope voltage [kV]: (default 300.0)
-    ac:: Amplitude contrast [%]: (default 10.0)
-    f_start:: Starting frequency [1/A]: Lowest frequency to be considered in the CTF estimation. Determined automatically by default. (default -1.0)
-    f_stop:: Stop frequency [1/A]: by Highest frequency to be considered in the CTF estimation. Determined automatically by default. (default -1.0)
+    input_image_path:: Input micrographs: For any of Micrograph Modes, specify input micrographs path pattern with a wild card (*). Images of bdb format can not be used as as input micrographs. A particle stack can also be supplied with --stack_mode, but this mode is not supported by sxgui. (default required string)
+
+    selection_list:: Micrograph selecting list: Specify path of a micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
+    wn:: CTF window size [pixels]: The size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)
+    apix:: Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. (default -1.0)
+    Cs:: Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging. (default 2.0)
+    voltage:: Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)
+    ac:: Amplitude contrast [%]: The typical amplitude contrast is in the range of 7% - 14%. The value mainly depends on the thickness of the ice embedding the particles. (default 10.0)
+    f_start:: Lowest frequency [1/A]: Lowest frequency to be considered in the CTF estimation. Determined automatically by default. (default -1.0)
+    f_stop:: Highest frequency [1/A]: Highest frequency to be considered in the CTF estimation. Determined automatically by default. (default -1.0)
 
     * The remaining parameters are optional.
-    kboot:: Number of estimates per micrograph: Used for error assessment. (default 16)
-    overlap_x:: X overlap [%]: Overlap between the windows in the x direction. (default 50)
-    overlap_y:: Y overlap [%]: Overlap between the windows in the y direction. (default 50)
-    edge_x:: Edge x [Pixels]: Defines the edge of the tiling area in the x direction. Normally it does not need to be modified. (default 0)
-    edge_y:: Edge y [Pixels]: Defines the edge of the tiling area in the y direction. Normally it does not need to be modified. (default 0)
-    set_ctf_header:: Export parameters to header: Exports the estimated CTF parameters to the image header. Not supported in the particle stack mode. (default False)
-    MPI:: Use MPI: (default False)
-    stack_mode:: Use stack mode: Advanced option. Not supported by sxgui. (default False)
-    debug:: Debug info: Prints debug information. (default False)
+    kboot:: Number of CTF estimates per micrograph: Used for error assessment. (default 16)
+    overlap_x:: X overlap [%]: Overlap between the windows in the x direction. This will be ignored in Stack Mode. (default 50)
+    overlap_y:: Y overlap [%]: Overlap between the windows in the y direction. This will be ignored in Stack Mode. (default 50)
+    edge_x:: Edge x [pixels]: Defines the edge of the tiling area in the x direction. Normally it does not need to be modified. This will be ignored in Stack Mode. (default 0)
+    edge_y:: Edge y [pixels]: Defines the edge of the tiling area in the y direction. Normally it does not need to be modified. This will be ignored in Stack Mode. (default 0)
+    set_ctf_header:: Export CTF parameters to header: Exports the estimated CTF parameters to the image header. (default False)
+    check_consistency:: Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)
+    stack_mode:: Use stack mode: Use a stack as the input. Please set the file path of a stack as the first argument and output directory for the second argument. This is advanced option. Not supported by sxgui. (default False)
+    debug_mode:: Enable debug mode: Print out debug information. (default False)
 
 
 == Output ==
@@ -102,15 +101,6 @@ The rotationally averaged power spectra (rotinf.txt files) will be written to th
 == Description ==
 
 ''''This is work in progress since 11/30/2013''''
-
-''NOTE: 2016/04/27 Toshio Moriya'':
-IMPORTANT - Finished the major modification of I/O related arguments and options as well as formats of output files. Please update your installation if it is between 2015/12/27 - 2016/04/27.
-
-''NOTE: 2016/03/17 Toshio Moriya'':
-IMPORTANT - Started another major modification of I/O related arguments and options as well as formats of output files. This work is currently in progress.
-
-''NOTE: 2015/12/27 Toshio Moriya'':
-IMPORTANT - Major modification of I/O related arguments and options to simplified the interface. 
 
 
 == Author / Maintainer ==

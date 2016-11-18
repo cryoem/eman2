@@ -117,7 +117,7 @@ def construct_keyword_dict():
 	keyword_dict["--input"]                       = SXkeyword_map(2, "image")          # --input=INPUT
 	keyword_dict["class_file_name_no_dir_info"]   = SXkeyword_map(2, "image")          # class_file_name_no_dir_info
 	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern
-	keyword_dict["input_image"]                   = SXkeyword_map(2, "any_micrograph") # input_image
+	keyword_dict["input_image_path"]              = SXkeyword_map(2, "any_micrograph") # input_image_path
 	keyword_dict["selection_list"]                = SXkeyword_map(2, "any_micrograph") # selection_list
 	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters")     # --tr0=matrix_file
 	keyword_dict["input_coordinates"]             = SXkeyword_map(2, "parameters")     # input_coordinates_pattern

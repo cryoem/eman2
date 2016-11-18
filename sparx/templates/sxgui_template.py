@@ -1789,7 +1789,7 @@ class SXConstSetWidget(QWidget):
 		self.sxconst_set = sxconst_set
 		self.sxcmd_category_list = sxcmd_category_list
 
-		self.gui_settings_file_path = "%s/gui_settings_project_settings.txt" % (SXLookFeelConst.project_dir)
+		self.gui_settings_file_path = "%s/gui_settings_project.txt" % (SXLookFeelConst.project_dir)
 
 		# Layout constants and variables
 		global_row_origin = 0; global_col_origin = 0
@@ -2195,7 +2195,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		self.sxinfo = sxinfo
 
 	def construct_sxconst_set(self):
-		sxconst_set = SXconst_set(); sxconst_set.name = "sxc_settings"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
+		sxconst_set = SXconst_set(); sxconst_set.name = "sxc_project"; sxconst_set.label = "Project Settings"; sxconst_set.short_info = "Set constant parameter values for this project. These constants will be used as default values of associated arugments and options in command settings. However, the setting here is not required to run commands."
 		sxconst = SXconst(); sxconst.key = "protein"; sxconst.label = "Protein name"; sxconst.help = "a valid string for file names on your OS."; sxconst.register = "MY_PROTEIN"; sxconst.type = "string"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "apix"; sxconst.label = "Micrograph pixel size [A]"; sxconst.help = ""; sxconst.register = "1.0"; sxconst.type = "float"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
 		sxconst = SXconst(); sxconst.key = "ctfwin"; sxconst.label = "CTF window size [pixels]"; sxconst.help = "it should be slightly larger than particle box size"; sxconst.register = "512"; sxconst.type = "int"; sxconst_set.list.append(sxconst); sxconst_set.dict[sxconst.key] = sxconst
