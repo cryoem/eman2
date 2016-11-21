@@ -75,11 +75,10 @@ Single Micrograph Mode - Process a single micrograph:
 
 	sxcter.py './mic*.hdf' outdir_cter --selection_list=mic0.hdf --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
 
-
-Stack Mode - Process a particle stack (Advanced Option):: 
+Stack Mode - Process a particle stack (Not supported by SPHIRE GUI)):: 
 	Use --stack_mode option, then specify the path of particle stack file (without wild card "*") and output directory as arguments. 
 	This mode ignores --selection_list, --wn --overlap_x, --overlap_y, --edge_x, and --edge_y options. 
-	Use single processor for this mode. Not supported by sxgui.py. 
+	Use single processor for this mode. Not supported by SPHIRE GUI (sxgui.py). 
 
 	sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode 
 

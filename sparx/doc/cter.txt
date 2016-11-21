@@ -24,12 +24,12 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
 
     ''' sxcter.py './mic*.hdf' outdir_cter --selection_list=mic0.hdf --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 ''' <<BR>><<BR>>
 
-    Stack Mode - Process a particle stack (Advanced Option):: Use --stack_mode option, then specify the path of particle stack file (without wild card "*") and output directory as arguments. This mode ignores --selection_list, --wn --overlap_x, --overlap_y, --edge_x, and --edge_y options. Use single processor for this mode. Not supported by sxgui.py. 
+    Stack Mode - Process a particle stack (Not supported by SPHIRE GUI)):: Use --stack_mode option, then specify the path of particle stack file (without wild card "*") and output directory as arguments. This mode ignores --selection_list, --wn --overlap_x, --overlap_y, --edge_x, and --edge_y options. Use single processor for this mode. Not supported by SPHIRE GUI (sxgui.py). 
 
     ''' sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode ''' <<BR>><<BR>>
 
 == Input ==
-    input_image_path:: Input micrographs: For any of Micrograph Modes, specify input micrographs path pattern with a wild card (*). Images of bdb format can not be used as as input micrographs. A particle stack can also be supplied with --stack_mode, but this mode is not supported by sxgui. (default required string)
+    input_image_path:: Input micrograph path pattern: Specify input micrographs path pattern with a wild card (*) for any of Micrograph Modes. Images of BDB format can not be used as input micrographs. As an advanced option, a particle stack file path can also be supplied here when using --stack_mode. However, Stack Mode is not supported by sxgui. (default required string)
 
     selection_list:: Micrograph selecting list: Specify path of a micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
     wn:: CTF window size [pixels]: The size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)
