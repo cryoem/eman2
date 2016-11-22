@@ -61,7 +61,7 @@ def main():
     parser.add_option('--selection_list',         type='str',          default='',    help='not a summovie option: input selection micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
-    parser.add_option('--first',              type='int',          default=0,         help='first frame used for summing')
+    parser.add_option('--first',              type='int',          default=1,         help='first frame used for summing')
     parser.add_option('--last',               type='int',          default=-1,        help='last frame used for summing')
     parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='pixel size [A]')
     parser.add_option('--apply_dose_filter',        action='store_true', default=False,     help='apply dose filter options')
@@ -92,14 +92,14 @@ def main():
     if not path.exists(summovie_path):
         ERROR(
             'Summovie directory does not exist, please change' +
-            ' the name and restart the program.', 1
+            ' the name and restart the program.', 'sxsummovie.py', 1
             )
 
     # If the output directory exists, stop the script
     if path.exists(output_dir):
         ERROR(
             'Output directory exists, please change' +
-            ' the name and restart the program.', 1
+            ' the name and restart the program.', 'sxsummovie.py', 1
             )
 
     # If the input file does not exists, stop the script
@@ -109,13 +109,13 @@ def main():
     if not file_list:
         ERROR(
             'Input micrograph file(s) does not exist, please change' +
-            ' the name and restart the program.', 1
+            ' the name and restart the program.', 'sxsummovie.py', 1
             )
 
     if not shift_list:
         ERROR(
             'Input shift file(s) does not exist, please change' +
-            ' the name and restart the program.', 1
+            ' the name and restart the program.', 'sxsummovie.py', 1
             )
 
     # Output paths
@@ -138,7 +138,7 @@ def main():
     if len(input_mic_name) != 2 or len(input_shift_name) != 2:
         ERROR(
             'Too many wildcard arguments.' +
-            'Please use exactly one * in the pattern.',
+            'Please use exactly one * in the pattern.', 'sxsummovie.py',
             1
             )
 
@@ -163,13 +163,13 @@ def main():
     # shift wildcard list
     shift_wildcard = [entry[len(input_shift_name[0]):-len(input_shift_name[-1])] \
             for entry in shift_list]
-    print(shift_wildcard)
+
     # Just use shifts that have a micrograph and vise versa
     mic_list = [
             entry for entry in file_list \
                 if entry[len(input_dir) + len(input_mic_name[0]):-len(input_mic_name[-1])]\
                 in shift_wildcard] 
-    print(mic_list)
+
     # If micrograph list is provided just process the images in the list
     selection_file = options.selection_list
     if selection_file:
@@ -177,7 +177,7 @@ def main():
         try:
             selection = genfromtxt(selection_file, dtype=None)
         except TypeError:
-            ERROR('no entrys in micrograph list file {0}'.format(selection_file), 1)
+            ERROR('no entrys in micrograph list file {0}'.format(selection_file), 'sxsummovie.py', 1)
         # List of files which are in pattern and list
         mic_list = [
                 entry for entry in mic_list \
@@ -187,10 +187,9 @@ def main():
         # If no match is there abort
         if len(mic_list) == 0:
             ERROR(
-                'no files in {0} matched the micrograph file pattern:\n'.format(selection_file),
+                'no files in {0} matched the micrograph file pattern:\n'.format(selection_file), 'sxsummovie.py',
                 1
                 )
-    print(mic_list)
 
     option_dict = {
         'summovie_path': summovie_path,
@@ -268,9 +267,9 @@ def run_summovie(
         t1 = time.time()
 
         # Get the output names
-        file_name = inputfile[len(opt['input_dir']):-len(input_suffix) - 1]
+        file_name = inputfile[len(opt['input_dir']):-len(opt['mic_suffix'])]
         file_wildcard = file_name[
-                len(opt['mic_prefix']): -len(opt['mic_suffix'])
+                len(opt['mic_prefix']):
                 ]
         micrograph_name = '{0}/{1}{2}.mrc'.format(
             opt['output_path'], file_name, opt['sum_suffix']
@@ -297,15 +296,6 @@ def run_summovie(
         micrograph_list.append('{0}{1}.mrc'.format(
             file_name, opt['sum_suffix'])
             )
-        print(file_name)
-        print(file_wildcard)
-        print(micrograph_name)
-        print(frc_name)
-        print(shift_name)
-        print(temp_name)
-        print(log_name)
-        print(error_name)
-        print(micrograph_list)
 
         # First build the summovie command
         summovie_command = create_summovie_command(
@@ -315,7 +305,6 @@ def run_summovie(
             frc_name,
             opt
             )
-        print(summovie_command)
 
         # Export the number of threads
         export_threads_command = []
@@ -383,9 +372,24 @@ def run_summovie(
                 # Remove temp file
                 remove(temp_name)
             else:
-                print('Error with file:\n{0}'.format(inputfile))
+                ERROR('e2proc2d.py error. File was not created:\n{0}'.format(inputfile), 'sxsummovie.py', 0)
 
         time_list.append(time.time() - t1)
+        
+        # Check if SumMovie finished cleanly
+        with open(log_name, 'r') as r:
+            clean = False
+            for line in r:
+                if 'SumMovie finished cleanly.' in line:
+                    clean = True
+                    break
+        if clean:
+            print('SumMovie finished cleanly.')
+        else:
+            ERROR(
+                'sum movie error. check the logfile for more information: {0}'.format(
+                    log_name), 'sxsummovie.py', 0
+                )
 
         # Do progress output
         if opt['verbose']:
@@ -435,6 +439,49 @@ def create_summovie_command(
         opt
         ):
 
+    # Handle first and last case events
+    if opt['first'] == 0:
+        ERROR(
+            'SumMovie indexing starts with 1.\n' +
+            '0 is not a valid entry for --first', 'sxsummovie.py', 1
+            )
+    elif opt['first'] < 0:
+        first = opt['nr_frames'] + opt['first'] + 1
+    else:
+        first = opt['first']
+
+    if opt['last'] == 0:
+        ERROR(
+            'SumMovie indexing starts with 1.\n' +
+            '0 is not a valid entry for --last', 'sxsummovie.py', 1
+            )
+    elif opt['last'] < 0:
+        last = opt['nr_frames'] + opt['last'] + 1
+    else:
+        last = opt['last']
+
+    if first > last:
+        ERROR(
+            'First option musst be smaller equals last option!\n' + 
+            'first: {0}; last: {1}'.format(first, last), 'sxsummovie.py', 1
+            )
+
+    if opt['nr_frames'] < last or last <= 0:
+        ERROR(
+            '--last option {0} is out of range:\n'.format(last) + 
+            'min: 1; max {0}'.format(
+            opt['nr_frames']
+            ), 'sxsummovie.py', 1
+            )
+
+    if opt['nr_frames'] < first or first <= 0:
+        ERROR(
+            '--first option {0} is out of range:\n'.format(first) + 
+            'min: 1; max {0}'.format(
+            opt['nr_frames']
+            ), 'sxsummovie.py', 1
+            )
+
     # Command list
     summovie_command = []
 
@@ -449,9 +496,9 @@ def create_summovie_command(
     # FRC file
     summovie_command.append(frc_name),
     # First frame
-    summovie_command.append('{0}'.format(opt['first']))
+    summovie_command.append('{0}'.format(first))
     # Last frame
-    summovie_command.append('{0}'.format(opt['last']))
+    summovie_command.append('{0}'.format(last))
     # Pixel size
     summovie_command.append('{0}'.format(opt['pixel_size']))
     # Dose correction
