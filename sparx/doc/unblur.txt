@@ -34,7 +34,7 @@ sxunblur.py  unblur  input_mrc_micrograph  output --summovie=SUMMOVIE  --selecti
 
     selection_list:: Input micrograph list file: Not an unblur option, extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
     unblur:: Path to unblur executable: (default required string)
-    summovie:: Path to summovie executable: (default string)
+    summovie:: Path to summovie executable: (default none)
     input_mrc_micrograph:: Input micrographs: You can use the wild cards (e.g. *) to specify a list of micrographs. (default required string)
     output:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
