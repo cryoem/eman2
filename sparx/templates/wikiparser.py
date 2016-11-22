@@ -129,6 +129,7 @@ def construct_keyword_dict():
 	keyword_dict["--list"]                        = SXkeyword_map(2, "parameters")     # --list
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
 	keyword_dict["unblur"]                        = SXkeyword_map(2, "exe")            # unblur
+	keyword_dict["summovie"]                        = SXkeyword_map(2, "exe")          # summovie
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
 	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
 	keyword_dict["input_bdb_stack_file"]          = SXkeyword_map(2, "bdb")            # input_bdb_stack_file
