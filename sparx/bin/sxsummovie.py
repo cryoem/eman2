@@ -133,17 +133,24 @@ def main():
     input_mic_name = input_mic_split[-1].split('*')
     input_shift_name = input_shift.split('*')
 
+    if len(input_mic_name) != 2 or len(input_shift_name) != 2:
+        ERROR(
+            'Too many wildcard arguments.' +
+            'Please use exactly one * in the pattern.',
+            1
+            )
+
     # Get the input directory
-    if len(input_split) != 1:
-        input_dir = input_image[:-len(input_split[-1])]
+    if len(input_mic_split) != 1:
+        input_dir = input_image[:-len(input_mic_split[-1])]
     else:
         input_dir = ''
 
     # Create output directorys
     if not path.exists(output_dir):
         mkdir(output_dir)
-    if not path.exists(output_path):
-        mkdir(output_path)
+    #if not path.exists(output_path):
+    #    mkdir(output_path)
     if not path.exists(frc_path):
         mkdir(frc_path)
     if not path.exists(temp_path) and not options.summovie_ready:
@@ -152,62 +159,61 @@ def main():
         mkdir(log_path)
 
     # shift wildcard list
-    shift_wildcard = [entry for entry in 
-
+    shift_wildcard = [entry[len(input_shift_name[0]):-len(input_shift_name[-1])] \
+            for entry in shift_list]
+    print(shift_wildcard)
     # Just use shifts that have a micrograph and vise versa
     mic_list = [
-            entry for entry in mic_list \
-                if entry[len(input_dir) + len(input_mic_name[0]):-len(input_muc_name[-1])]\
-                in 
-
+            entry for entry in file_list \
+                if entry[len(input_dir) + len(input_mic_name[0]):-len(input_mic_name[-1])]\
+                in shift_wildcard] 
+    print(mic_list)
     # If micrograph list is provided just process the images in the list
-    mic_file = options.selection_list
-    if mic_file:
+    selection_file = options.selection_list
+    if selection_file:
         # Import list file
         try:
-            selection = genfromtxt(mic_file, dtype=None)
+            selection = genfromtxt(selection_file, dtype=None)
         except TypeError:
-            ERROR('no entrys in micrograph list file {0}'.format(mic_file), 1)
+            ERROR('no entrys in micrograph list file {0}'.format(selection_file), 1)
         # List of files which are in pattern and list
-        mic_file_list = [
-                entry for entry in file_list \
+        mic_list = [
+                entry for entry in mic_list \
                 if entry[len(input_dir):] in selection and \
                 path.exists(entry)
                 ]
         # If no match is there abort
-        if len(file_list) == 0:
+        if len(mic_list) == 0:
             ERROR(
-                'no files in {0} matched the micrograph file pattern:\n'.format(mic_file),
+                'no files in {0} matched the micrograph file pattern:\n'.format(selection_file),
                 1
                 )
+    print(mic_list)
 
     option_dict = {
         'summovie_path': summovie_path,
-        'input_image': input_image,
-        'input_dir': input_dir,
-        'input_shift': input_shift,
-        'output_dir': output_dir,
-        'output_path': output_path,
-        'frc_path': frc_path,
-        'temp_path': temp_path,
-        'log_path': log_path,
-        'file_list': file_list,
-        'first': options.first,
-        'last': options.last,
-        'pixel_size': options.pixel_size,
+        'mic_list': mic_list,
+        'mic_prefix': input_mic_name[0],
+        'mic_suffix': input_mic_name[1],
+        'shift_prefix': input_shift_name[0],
+        'shift_suffix': input_shift_name[1],
         'nr_frames': options.nr_frames,
         'sum_suffix': options.sum_suffix,
+        'pixel_size': options.pixel_size,
         'apply_dose_filter': options.apply_dose_filter,
+        'exposure_per_frame': options.exposure_per_frame,
         'voltage': options.voltage,
         'pre_exposure': options.pre_exposure,
         'frc_suffix': options.frc_suffix,
         'dont_restore_noise': options.dont_restore_noise,
         'nr_threads': options.nr_threads,
         'summovie_ready': options.summovie_ready
+        }
+    print(option_dict)
 
     # Run summovie
     run_summovie(
-        options=option_dict
+        opt=option_dict
         )
 
     if not options.summovie_ready:
@@ -221,7 +227,7 @@ def main():
     global_def.BATCH = False
 
 
-def prepare_summovie(
+def run_summovie(
         summovie_path,
         input_image,
         input_dir,
