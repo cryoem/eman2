@@ -5,7 +5,7 @@ sxunblur - Micrograph movie alignment: Align micrograph movies with Unblur.
 
 ''usage in command line''
 
-sxunblur.py  --input_micrograph_list_file unblur  input_mrc_micrograph  output --nr_threads=NR_THREADS  --nr_frames=nr_frames  --pixel_size=pixel_size  --skip_dose_filter  --exposure_per_frame=exposure_per_frame  --voltage=voltage  --pre_exposure=pre_exposure  --save_frames  --expert_mode  --shift_initial=shift_initial  --shift_radius=shift_radius  --b_factor=b_factor  --fourier_vertical=fourier_vertical  --fourier_horizontal=fourier_horizontal  --shift_threshold=shift_threshold  --iterations=iterations  --dont_restore_noise --verbose
+sxunblur.py  unblur  input_mrc_micrograph  output --summovie=SUMMOVIE  --selection_list=SELECTION_LIST --nr_threads=NR_THREADS  --nr_frames=nr_frames  --pixel_size=pixel_size  --skip_dose_filter  --exposure_per_frame=exposure_per_frame  --voltage=voltage  --pre_exposure=pre_exposure  --save_frames  --expert_mode  --shift_initial=shift_initial  --shift_radius=shift_radius  --b_factor=b_factor  --fourier_vertical=fourier_vertical  --fourier_horizontal=fourier_horizontal  --shift_threshold=shift_threshold  --iterations=iterations  --dont_restore_noise --verbose
 
 === Typical usage ===
 
@@ -32,8 +32,9 @@ sxunblur.py  --input_micrograph_list_file unblur  input_mrc_micrograph  output -
 
 == Input ==
 
-    input_micrograph_list_file:: Input micrograph list file: Not an unblur option, extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
+    selection_list:: Input micrograph list file: Not an unblur option, extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
     unblur:: Path to unblur executable: (default required string)
+    summovie:: Path to summovie executable: (default string)
     input_mrc_micrograph:: Input micrographs: You can use the wild cards (e.g. *) to specify a list of micrographs. (default required string)
     output:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
