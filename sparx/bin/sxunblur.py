@@ -314,7 +314,7 @@ def run_unblur(
             frc_name = '{0}/{1}{2}.txt'.format(
                 frc_path, file_name, options.frc_suffix
                 )
-            frc_summovie_name = '{0}/{1}_summovie_{2}.txt'.format(
+            frc_summovie_name = '{0}/{1}_summovie{2}.txt'.format(
                 frc_path, file_name, options.frc_suffix
                 )
         shift_name = '{0}/{1}{2}.txt'.format(
