@@ -40,6 +40,7 @@ def main():
     # Parse the Options
     progname = path.basename(argv[0])
     usage = progname + """ unblur input_image output
+    --summovie_path
     --input_micrograph_list_file
     --nr_frames=nr_frames
     --pixel_size=pixel_size
@@ -84,6 +85,7 @@ def main():
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
+    parser.add_option('--summovie_path',        type='str',          default='',        help='path of the summovie executable')
     parser.add_option('--selection_list',     type='str',          default='',        help='not an unblur option: input selection micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
@@ -405,7 +407,7 @@ def run_unblur(
                 full_command_skip = r'{0}; echo "{1}" | {2}'.format(
                         export_threads_command,
                         summovie_command,
-                        unblur_path
+                        options.summovie_path
                         )
             else:
                 full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
@@ -421,10 +423,10 @@ def run_unblur(
                         unblur_command,
                         unblur_path
                         )
-                full_command_skip = r'{0}; echo "{1}" | {2}'.format(
+                summovie_command = r'{0}; echo "{1}" | {2}'.format(
                         export_threads_command,
                         summovie_command,
-                        unblur_path
+                        options.summovie_path
                         )
             else:
                 full_command = r'{0}; echo "{1}" | {2}'.format(
