@@ -425,7 +425,7 @@ def run_summovie(
                 )
 
 
-    # Write micrograph and shift list
+    # Write micrograph list
     with open('{0}/summovie_micrographs.txt'.format(opt['output_dir']), 'w') as f:
         for entry in sorted(micrograph_list):
             f.write('{0}\n'.format(entry))
