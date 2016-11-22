@@ -48,7 +48,7 @@ class SXkeyword_map:
 		self.priority = priority      # Priority of this keyword. Highest priority is 0. The type of higher priority will be used to avoid the conflict among keywords
 		self.token_type = token_type  # Token value type
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-		
+
 # ----------------------------------------------------------------------------------------
 def construct_keyword_dict():
 	# Define dictionary of keywords:
@@ -155,7 +155,7 @@ def construct_keyword_dict():
 	# --wn of locres, sort3d, & rsort3d; same as ctfwin?
 	# --radius of locres & filterlocal; same as radius?
 	#
-	
+
 	return keyword_dict
 
 # ----------------------------------------------------------------------------------------
@@ -227,10 +227,10 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 	print "Start parsing MoinMoinWiki document (%s as %s %s command) " % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
 	if sxcmd_config.format != "MoinMoinWiki": ERROR("Logical Error: Incorrect Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
-					
+
 	# Allocate memory for new SXcmd instance
 	sxcmd = SXcmd(sxcmd_config.category, sxcmd_config.role, sxcmd_config.is_submittable)
-	
+
 	# Define dictionary of keywords:
 	# The dictionary maps command token to special data types
 	keyword_dict = construct_keyword_dict()
@@ -439,7 +439,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 		if token.is_in_io == False: ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '= Usage ='." % token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	file_wiki.close()
-	
+
 	handle_exceptional_keywords(sxcmd)
 
 	print "Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
@@ -468,7 +468,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 			print "%s%s (group=%s, required=%s, default=%s, type=%s, restore=%s) <%s>" % (token.key_prefix, token.key_base, token.group, token.is_required, token.default, token.type, token.restore, token.label, token.help)
 		print ""
 	"""
-	
+
 	return sxcmd
 
 
@@ -510,7 +510,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 	print "Start parsing DokuWiki document (%s as %s %s command) " % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
 	if sxcmd_config.format != "DokuWiki": ERROR("Logical Error: Incorrect Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
-	
+
 	# Allocate memory for new SXcmd instance
 	sxcmd = SXcmd(sxcmd_config.category, sxcmd_config.role, sxcmd_config.is_submittable)
 
@@ -530,8 +530,8 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 	group_lists = []
 	group_lists.append("=== Main Options ==="); group_main = len(group_lists) - 1;
 	group_lists.append("=== Advanced Options ==="); group_advanced = len(group_lists) - 1;
-	current_group_name = group_lists[group_main].replace("===", "").replace("Options", "").strip().lower() 
-	
+	current_group_name = group_lists[group_main].replace("===", "").replace("Options", "").strip().lower()
+
 	# Define States and set current
 	state_searching_header  = 0
 	state_processing_header  = 1
@@ -643,7 +643,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 				elif current_section == section_input or current_section == section_output:
 					if line_wiki.find(group_lists[group_advanced]) > -1:
 						# Reached the option subsection (argument subsection is done)
-						current_group_name = group_lists[group_advanced].replace("===", "").replace("Options", "").strip().lower() 
+						current_group_name = group_lists[group_advanced].replace("===", "").replace("Options", "").strip().lower()
 					elif line_wiki[0] == ";":
 						# Option entry must start with ";"
 						line_buffer = line_wiki[1:]  # remove ";"
@@ -719,7 +719,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 						# Initialise restore value with default value
 						token.restore = token.default
 						# Ignore the rest of line ...
-					# else: 
+					# else:
 						# This is not option entry. Ignore this line
 				else:
 					ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -731,7 +731,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 		if token.is_in_io == False: ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '====== Usage ======'." % token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	file_wiki.close()
-	
+
 	handle_exceptional_keywords(sxcmd)
 
 	print "Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
@@ -763,7 +763,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 			print "%s%s (group=%s, required=%s, default=%s, type=%s, restore=%s label=%s help=%s" % (token.key_prefix, token.key_base, token.group, token.is_required, token.default, token.type, token.restore, token.label, token.help)
 		print ""
 	"""
-	
+
 	return sxcmd
 
 
@@ -912,7 +912,7 @@ def create_sxcmd_subconfig_window_makevstack():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.default = "none"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack pattern"; token_edit.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sxwindow_output_dir//*/'). The stack subsets are located in the sxwindow output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "any_directory"; token_edit_list.append(token_edit)
-	
+
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Particle Stack", token_edit_list, sxsubcmd_mpi_support)
 
@@ -923,7 +923,7 @@ def create_sxcmd_subconfig_isacselect():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("isacselect"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("class_file_name"); token_edit.key_prefix = ""; token_edit.label = "ISAC class file name"; token_edit.help = "File name of the class averages. It is located in the ISAC output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_list"); token_edit.key_prefix = ""; token_edit.label = "Output ISAC particle ID list"; token_edit.help = "Output text file containing retrieved member particle IDs of all ISAC classes."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
-	
+
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Get ISAC Particles", token_edit_list, sxsubcmd_mpi_support)
 
@@ -934,7 +934,7 @@ def create_sxcmd_subconfig_isac_makevstack():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.default = "none"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "File name of the class averages. It is located in the ISAC output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("list"); token_edit_list.append(token_edit)
-	
+
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Create Stack Subset", token_edit_list, sxsubcmd_mpi_support)
 
@@ -946,7 +946,7 @@ def create_sxcmd_subconfig_changesize():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_stack"); token_edit.key_prefix = ""; token_edit.label = "Input 2D/3D image stack"; token_edit.help = "Input 2D/3D image stack."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_stack"); token_edit.key_prefix = ""; token_edit.label = "Output 2D/3D image stack"; token_edit.help = "Resampled (decimated or interpolated up) 2D/3D image stack."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ratio"); token_edit_list.append(token_edit)
-	
+
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Resample VIPER Model", token_edit_list, sxsubcmd_mpi_support)
 
@@ -957,7 +957,7 @@ def create_sxcmd_subconfig_clip():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("clip"); token_edit.label = "Pad/Clip volume to specified size [Pixels]"; token_edit.is_required = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_file"); token_edit.key_prefix = ""; token_edit.label = "Output clipped/padded volume"; token_edit.help = "Output clipped/padded volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "output"; token_edit_list.append(token_edit)
-	
+
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Pad/Clip VIPER Model", token_edit_list, sxsubcmd_mpi_support)
 
@@ -969,10 +969,10 @@ def create_sxcmd_subconfig_clip():
 # 	token_edit = SXcmd_token(); token_edit.initialize_edit("clip"); token_edit.label = "Pad/Clip volume to specified size [Pixels]"; token_edit.is_required = True; token_edit_list.append(token_edit)
 # 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "image"; token_edit_list.append(token_edit)
 # 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_file"); token_edit.key_prefix = ""; token_edit.label = "Output resampled volume"; token_edit.help = "Output resampled volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "output"; token_edit_list.append(token_edit)
-# 	
+#
 # 	sxsubcmd_mpi_support = False
 # 	sxcmd_subconfig = SXsubcmd_config("Resample", token_edit_list, sxsubcmd_mpi_support)
-# 
+#
 # 	return sxcmd_subconfig
 
 def create_sxcmd_subconfig_adaptive_mask3d():
@@ -1113,7 +1113,7 @@ def main():
 	# and create gui generation parameter
 	# --------------------------------------------------------------------------------
 	sxcmd_config_list = []
-	
+
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_movie"
 
@@ -1123,6 +1123,7 @@ def main():
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = True))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_cter"
@@ -1226,6 +1227,7 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_binary_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
+	sxcmd_config_list.append(SXcmd_config("../doc/summovie.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = True))
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 #	token_edit_list = []
@@ -1295,7 +1297,7 @@ def main():
 						sxcmd = construct_token_list_from_DokuWiki(sxcmd_config)
 					else:
 						ERROR("Logical Error: Invalid Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
-					
+
 					if sxcmd_config.subconfig != None:
 						apply_sxsubcmd_config(sxcmd_config.subconfig, sxcmd)
 					if len(sxcmd_config.exclude_list) > 0:
