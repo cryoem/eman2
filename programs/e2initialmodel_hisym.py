@@ -98,6 +98,11 @@ def main():
 
 	try: os.mkdir("initial_models")
 	except: pass
+	iters=[int(i[6:9]) for i in os.listdir("initial_models") if i[:6]=="hisym_"]
+	try : newiter=max(iters)+1
+	except : newiter=0
+	results_name="initial_models/hisym_%02d"%newiter
+	cmp_name="initial_models/hisymcmp_%02d.hdf"%newiter
 
 	curmap=EMData(boxsize,boxsize,boxsize)
 	curmap.to_zero()
@@ -194,12 +199,15 @@ def main():
 	
 	if options.verbose: print used
 	cursum.process_inplace("normalize.edgemean")
-	cursum.write_image("final.hdf")
+	cursum["apix_x"]=apix
+	cursum["apix_y"]=apix
+	cursum["apix_z"]=apix
+	cursum.write_image(results_name)
 	
 	# write projection comparisons
 	for i in used:
-		allbest[i][-1].write_image("final_cmp.hdf",-1)
-		cursum.project("standard",{"transform":allbest[i][1]}).process("normalize.edgemean").write_image("final_cmp.hdf",-1)
+		allbest[i][-1].write_image(cmp_name,-1)
+		cursum.project("standard",{"transform":allbest[i][1]}).process("normalize.edgemean").write_image(cmp_name,-1)
 	
 	E2end(logid)
 

@@ -1,12 +1,12 @@
 = Name =
 sxviper - Initial 3D Model - VIPER: ''ab initio'' 3D structure determination using Validation of Individual Parameter Reproducibility (VIPER). Designed to determine a validated initial model using a small set of class averages produced by [[sxisac|ISAC]].
 
-= Usage =
 
+= Usage =
 
 ''usage in command line''
 
-sxviper.py stack  directory  --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range --mask3D=mask3D --moon_elimination=moon_elimination --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1 --nruns=nruns --doga=doga --fl=fl --aa=aa --pwreference=pwreference --debug
+sxviper.py stack  directory  --radius=outer_radius  --sym=sym  --ir=inner_radius  --rs=ring_step  --xr=x_range  --yr=y_range  --ts=translational_search_step  --delta=angular_step  --center=center_type  --maxit1=max_iter1  --maxit2=max_iter2  --mask3D=mask3D  --moon_elimination=moon_elimination  --L2threshold=L2threshold  --ref_a=ref_a  --nruns=nruns  --doga=doga  --fl=fl  --aa=aa  --pwreference=pwreference  --debug
 
 
 === Typical usage ===
@@ -33,17 +33,17 @@ Since VIPER makes use of group of processors working together, it is important f
     sym:: Point-group symmetry: (default c1)
 
     * The remaining parameters are optional.
-    xr:: X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default '0')
-    yr:: Y search range [Pixels]: The translational search range in the y direction. If omitted it will be xr. (default '0')
-    mask3D:: 3D mask: (default sphere)
-    moon_elimination:: Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
     ir:: Inner rotational search radius [Pixels]: (default 1)
     rs:: Ring step size: Step between rings used for the rotational search. (default 1)
+    xr:: X search range [Pixels]: The translational search range in the x direction will take place in a +/xr range. (default '0')
+    yr:: Y search range [Pixels]: The translational search range in the y direction. If omitted it will be xr. (default '0')
     ts:: Translational search step [Pixels]: The search will be performed in -xr, -xr+ts, 0, xr-ts, xr, can be fractional. (default '1.0')
     delta::  Projection angular step [Degree]: (default '2.0')
     center:: Center 3D template: 0: no centering; 1: center of gravity (default -1.0)
     maxit1:: Maximum iterations - GA step: (default 400)
     maxit2:: Maximum iterations - Finish step: (default 50)
+    mask3D:: 3D mask: (default sphere)
+    moon_elimination:: Eliminate disconnected regions: Used to removed disconnected pieces from the model. It requires as argument a comma separated string with the mass in KDa and the pixel size. (default none)
     L2threshold:: GA stop threshold: Defines the maximum relative dispersion of volumes' L2 norms. (default 0.03)
     ref_a:: Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S- Saff algorithm, or P - Penczek 1994 algorithm. (default S)
     nruns:: GA population size: This defines the number of quasi-independent volumes generated. (default 6)

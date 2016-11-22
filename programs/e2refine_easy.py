@@ -832,7 +832,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_even.hdf --sym {sym} --output {path}/threed_{itr:02d}_even.hdf {preprocess} \
- --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_2 --threads {threads} {verbose}".format(
+ --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_var --threads {threads} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad,fillangle=astep ,threads=options.threads, apix=apix, verbose=verbose)
 		else:
@@ -852,7 +852,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_odd.hdf --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf {preprocess} \
- --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_2 --threads {threads} {verbose}".format(
+ --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --mode gauss_var --threads {threads} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, fillangle=astep ,threads=options.threads, verbose=verbose)
 		else:

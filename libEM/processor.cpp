@@ -1889,10 +1889,12 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 
 	float phicen = params.set_default("phicen",0.0f)*M_PI/180.0;
 	phicen=Util::angle_norm_pi(phicen);
-	float phirange = params.set_default("phirange",90.0f)*M_PI/180.0;
+	float phirange = params.set_default("phirange",180.0f)*M_PI/180.0;
 	int phitriangle = params.set_default("phitriangle",0);
 	float cx = params.set_default("cx",nx/2);
 	float cy = params.set_default("cy",ny/2);
+	float zmin = params.set_default("zmin",0);
+	float zmax = params.set_default("zmax",nz);
 	float inner_radius = params.set_default("inner_radius",0.0f);
 	float outer_radius = params.set_default("outer_radius",nx+ny);
 
@@ -1915,12 +1917,13 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 					else val=1.0f;
 				}
 			}
-			if (r==0) {
+			if (r==0 && inner_radius<=0) {
 				if (phitriangle) val=phirange/360.0;
 				else val=1.0;
 			}
 
 			for (int z=0; z<nz; z++) {
+				if (z<zmin || z>zmax) image->mult_value_at_fast(x,y,z,0);
 				image->mult_value_at_fast(x,y,z,val);
 			}
 		}

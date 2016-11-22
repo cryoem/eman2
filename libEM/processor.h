@@ -3324,6 +3324,8 @@ The basic design of EMAN Processors: <br>\
 			d.put("phitriangle", EMObject::BOOL, "If set mask will fall from 1 at phicen to 0 at phicen+-phirange");
 			d.put("cx", EMObject::FLOAT,"Mask X center. Default nx/2");
 			d.put("cy", EMObject::FLOAT,"Mask Y center. Default ny/2");
+			d.put("zmin", EMObject::FLOAT,"Minimum Z to include");
+			d.put("zmax", EMObject::FLOAT,"Maximum Z to include");
 			d.put("inner_radius", EMObject::INT, "inner mask radius. optional. Default 0");
 			d.put("outer_radius", EMObject::INT, "outer mask radius. optional. Default nx+ny. Negative value -> box radius + outer_radius +1");
 

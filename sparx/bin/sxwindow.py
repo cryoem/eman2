@@ -96,7 +96,7 @@ All Micrographs Mode - Process all micrographs in a directory:
 	Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). 
 	The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). 
 	The substring at the variable part must be same between a associated pair of input micrograph and coordinates file.
-	bdb files can not be selected as input micrographs.
+	BDB files can not be selected as input micrographs.
 	Next, specify the source of CTF paramters. 
 	For cryo data, this should be the file produced by sxcter and normally called partres.txt. 
 	For negative staining data, it should be the pixel size [A/Pixels] of input micrographs.
@@ -106,7 +106,7 @@ All Micrographs Mode - Process all micrographs in a directory:
 	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --coordinates_format=eman2  --box_size=64
 
 Selected Micrographs Mode - Process all micrographs in a selection list file:
-	In addition input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry, 
+	In addition to input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry arguments, 
 	specify a name of micrograph selection list text file using --selection_list option.
 	In this mode, only micrographs in the selection list which matches the file name part of the pattern (ignoring the directory paths) will be processed.
 	If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
@@ -114,11 +114,12 @@ Selected Micrographs Mode - Process all micrographs in a selection list file:
 	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic_list.txt  --coordinates_format=eman2  --box_size=64
 
 Single Micrograph Mode - Process a single micrograph:
-	In addition input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry, 
+	In addition to input micrographs path pattern, coordinates files path pattern, CTF paramters source, and output directry arguments, 
 	specify a single micrograph name using --selection_list option.
 	In this mode, only the specified single micrograph will be processed.
 	If this micrograph name does not matches the file name part of the pattern (ignoring the directory paths), the process will exit without processing it.
 	If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it.
+	Use single processor for this mode. 
 
 	sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  outdir_cter/partres/partres.txt  particles  --selection_list=mic0.hdf  --coordinates_format=eman2  --box_size=64
 
@@ -179,7 +180,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	coords_pattern = None
 	ctf_params_src = None
 	out_dir = None
-	# not a real while, an if with the opportunity to use break when errors need to be reported
+	# Not a real while, each "if" statement has the opportunity to use break when errors need to be reported
 	error_status = None
 	while True:
 		# --------------------------------------------------------------------------------
@@ -377,12 +378,13 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			# Treat all micrographs in the input directory as selected ones
 			selected_mic_path_list = input_mic_path_list
 		else:
-			assert (options.selection_list != None and os.path.exists(options.selection_list))
+			assert (options.selection_list != None)
 			if os.path.splitext(options.selection_list)[1] == ".txt":
 				print(" ")
 				print("----- Running with Selected Micrographs Mode -----")
 				print(" ")
 				print("Checking the selection list...")
+				assert (os.path.exists(options.selection_list))
 				selected_mic_path_list = read_text_file(options.selection_list)
 				
 				# Check error condition of micrograph entry lists
@@ -1035,8 +1037,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			cmdexecute(e2bdb_command, printing_on_success = False)
 		
 		print(" ")
-		print("DONE!!!\n")
-	
+		print("DONE!!!")
+		print(" ")
+		
 	# ====================================================================================
 	# Clean up
 	# ====================================================================================
