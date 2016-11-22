@@ -40,7 +40,7 @@ def main():
     # Parse the Options
     progname = path.basename(argv[0])
     usage = progname + """ unblur input_image output
-    --summovie_path
+    --summovie
     --selection_list
     --nr_frames=nr_frames
     --pixel_size=pixel_size
@@ -85,7 +85,7 @@ def main():
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--summovie_path',        type='str',          default='',        help='path of the summovie executable')
+    parser.add_option('--summovie',        type='str',          default='',        help='path of the summovie executable')
     parser.add_option('--selection_list',     type='str',          default='',        help='not an unblur option: input selection micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
@@ -149,7 +149,7 @@ def main():
             )
 
     # If the skip_dose_filter option is false, the summovie path is necessary
-    if not options.skip_dose_filter and not path.exists(options.summovie_path):
+    if not options.skip_dose_filter and not path.exists(options.summovie):
         ERROR(
             'Path to the SumMovie executable is necessary when dose weighting is performed.',
             'sxunblur.py', 1
@@ -421,7 +421,7 @@ def run_unblur(
                 full_command_summovie = r'{0}; echo "{1}" | {2}'.format(
                         export_threads_command,
                         summovie_command,
-                        options.summovie_path
+                        options.summovie
                         )
             else:
                 full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
@@ -440,7 +440,7 @@ def run_unblur(
                 full_command_summovie = r'{0}; echo "{1}" | {2}'.format(
                         export_threads_command,
                         summovie_command,
-                        options.summovie_path
+                        options.summovie
                         )
             else:
                 full_command = r'{0}; echo "{1}" | {2}'.format(
