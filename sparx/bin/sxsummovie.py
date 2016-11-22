@@ -39,9 +39,8 @@ def main():
 
     # Parse the Options
     progname = path.basename(argv[0])
-    usage = progname + """ summovie input_image input_shift output
-    --input_micrograph_list_file
-    --input_shift_list_file
+    usage = progname + """ summovie input_mrc_micrograph inputfile output
+    --selection_list
     --nr_frames=nr_frames
     --pixel_size=pixel_size
     --first
@@ -55,14 +54,30 @@ def main():
 
     sxsummovie exists in non-MPI version.
 
+    Perform summovie without dose filtering
+
+    sxsummovie.py directory_for_summovie 'mic_directory/prefix*suffix' 'shift_directory/prefix*suffix'
+    output --nr_frames=24 --pixel_size=1.19 --nr_threads=1
+
+    Perform summovie without dose filtering and with less frames
+
+    sxsummovie.py directory_for_summovie 'mic_directory/prefix*suffix' 'shift_directory/prefix*suffix'
+    output --nr_frames=24 --pixel_size=1.19 --nr_threads=1 --first=3 --last=15
+
+    Perform summovie with dose filtering and with less frames
+
+    sxsummovie.py directory_for_summovie 'mic_directory/prefix*suffix' 'shift_directory/prefix*suffix'
+    output --nr_frames=24 --pixel_size=1.19 --nr_threads=1 --apply_dose_filter --exposure_per_frame=2 --voltage=300 --pre_exposure=0 --first=3 --last=15
+
+
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
     parser.add_option('--selection_list',         type='str',          default='',    help='not a summovie option: input selection micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
-    parser.add_option('--first',              type='int',          default=1,         help='first frame used for summing')
-    parser.add_option('--last',               type='int',          default=-1,        help='last frame used for summing')
+    parser.add_option('--first',              type='int',          default=1,         help='first frame for summing')
+    parser.add_option('--last',               type='int',          default=-1,        help='last frame for summing')
     parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='pixel size [A]')
     parser.add_option('--apply_dose_filter',        action='store_true', default=False,     help='apply dose filter options')
     parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='exposure per frame [e/A^2]')
