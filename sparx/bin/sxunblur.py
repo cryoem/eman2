@@ -63,20 +63,35 @@ def main():
 
     sxunblur exists in non-MPI version.
 
-    Just shift data with dose filter.
+    Perform unblur and with dose filtering and summovie without dose filterng.
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --summovie=directory_to_summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
-    --voltage=300.0 --pre_exposure=0.0
+    --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
-    Shift data with aligned sum files, and aligned frames without dose filter.
+    Perform unblur with dose filtering and summovie without dose filtering with selection list
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
-    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=2
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --summovie=directory_to_summovie
+    --selection_list=selected_micrograph_file
+    --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
+    --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
-    Dose filter and Expert Options and aligned frames
+    Perform unblur without dose filtering.
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --nr_threads=1
+
+    Perform unblur without dose filtering and save the frames.
+
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=1
+
+    Perform unblur with dose filtering and summovie without dose filtering with all options
+
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --summovie=directory_to_summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode
     --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0
@@ -85,7 +100,7 @@ def main():
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--summovie',        type='str',          default='',        help='path of the summovie executable')
+    parser.add_option('--summovie',        type='str',          default='',        help='not a summovie option: path of the summovie executable')
     parser.add_option('--selection_list',     type='str',          default='',        help='not an unblur option: input selection micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
