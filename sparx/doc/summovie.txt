@@ -1,0 +1,61 @@
+= Name =
+sxsummovie - Micrograph movie summation: Sum micrograph movies with SumMovie.
+
+= Usage =
+
+''usage in command line''
+
+sxsummovie.py  summovie  input_mrc_micrograph input_shift_file output --selection_list=SELECTION_LIST --nr_threads=NR_THREADS  --nr_frames=nr_frames  --pixel_size=pixel_size  --apply_dose_filter  --exposure_per_frame=exposure_per_frame  --voltage=voltage  --pre_exposure=pre_exposure  --dont_restore_noise
+
+=== Typical usage ===
+
+
+== Input ==
+
+    summovie:: Path to summovie executable: (default required string)
+    input_mrc_micrograph:: Input micrographs: You can use the wild cards (e.g. *) to specify a list of micrographs. (default required string)
+    input_shift_file:: Input shift files: You can use the wild cards (e.g *) to specify a list of shift files. (default required string)
+    output:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+
+    selection_list:: Input micrograph list file: Not an summovie option, extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
+    nr_threads:: Number of threads: number of threads summovie is allowed to use. The higher the faster, but it also needs a higher amount of memory. (default 1)
+    nr_frames:: Number of frames in the movie stacks: (default 3)
+    pixel_size:: Pixel size [A]: (default  required -1.0)
+
+    * The remaining parameters are optional.
+    apply_dose_filter:: Apply the dose filter step: If yes, exposure per frame, voltage, restore noise power and pre exposure will be ignored. (default False)
+    exposure_per_frame:: Per frame exposure [e/A^2]: (default 1.0)
+    voltage:: Microscope voltage [kV]: (default 300.0)
+    pre_exposure:: Pre exposure [e/A^2]: (default 0.0)
+    dont_restore_noise:: Do not restore noise power: (default False)
+
+
+== Output ==
+The program creates the directory automatically in the chosen output directory. (default required string)
+
+Without dosefilter:
+Sum files will be written to the "corrsum" folder.
+Log files will be written to the "logfiles" folder.
+FRC files will be written to the "frc" folder.
+
+With dosefilter: As without dosefilter plus:
+Dose filtered sum files will be written to the "corrsum_dose_filtered" folder.
+Log files will be written to the "logfiles" folder
+FRC files will be written to the "frc" folder.
+
+
+= Description =
+
+= Author / Maintainer =
+Markus Stabrin
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+sxunblur.py
+
+= See also =
+
+= Maturity =
+No bugs known so far.
