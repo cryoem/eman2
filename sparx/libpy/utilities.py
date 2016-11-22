@@ -3863,7 +3863,7 @@ def nearest_full_k_projangles(anormals, refang, howmany = 1, sym="c1"):
 
 
 	else:
-		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_many_full_k_projangles",1)
+		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_full_k_projangles",1)
 		assignments = []
 
 	return assignments
