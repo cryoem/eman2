@@ -61,6 +61,8 @@ def main():
     parser.add_option('--selection_list',         type='str',          default='',    help='not a summovie option: input selection micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
+    parser.add_option('--first',              type='int',          default=0,         help='first frame used for summing')
+    parser.add_option('--last',               type='int',          default=-1,        help='last frame used for summing')
     parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='pixel size [A]')
     parser.add_option('--apply_dose_filter',        action='store_true', default=False,     help='apply dose filter options')
     parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='exposure per frame [e/A^2]')
@@ -149,8 +151,8 @@ def main():
     # Create output directorys
     if not path.exists(output_dir):
         mkdir(output_dir)
-    #if not path.exists(output_path):
-    #    mkdir(output_path)
+    if not path.exists(output_path):
+        mkdir(output_path)
     if not path.exists(frc_path):
         mkdir(frc_path)
     if not path.exists(temp_path) and not options.summovie_ready:
@@ -197,8 +199,16 @@ def main():
         'mic_suffix': input_mic_name[1],
         'shift_prefix': input_shift_name[0],
         'shift_suffix': input_shift_name[1],
+        'input_dir': input_dir,
+        'output_dir': output_dir,
+        'output_path': output_path,
+        'frc_path': frc_path,
+        'log_path': log_path,
+        'temp_path': temp_path,
         'nr_frames': options.nr_frames,
         'sum_suffix': options.sum_suffix,
+        'first': options.first,
+        'last':options.last,
         'pixel_size': options.pixel_size,
         'apply_dose_filter': options.apply_dose_filter,
         'exposure_per_frame': options.exposure_per_frame,
@@ -207,9 +217,9 @@ def main():
         'frc_suffix': options.frc_suffix,
         'dont_restore_noise': options.dont_restore_noise,
         'nr_threads': options.nr_threads,
-        'summovie_ready': options.summovie_ready
+        'summovie_ready': options.summovie_ready,
+        'verbose': True
         }
-    print(option_dict)
 
     # Run summovie
     run_summovie(
@@ -228,142 +238,84 @@ def main():
 
 
 def run_summovie(
-        summovie_path,
-        input_image,
-        input_dir,
-        output_dir,
-        corrected_path,
-        uncorrected_path,
-        shift_path,
-        frc_path,
-        temp_path,
-        log_path,
-        file_list,
-        options
+        opt
         ):
 
     # Lists to write the text files later
     micrograph_list = []
-    shift_list = []
-    if options.save_frames:
-        frames_list = []
 
-    # If micrograph list is provided just process the images in the list
-    mic_list = options.input_micrograph_list_file
-    if mic_list:
-        # Import list file
-        try:
-            set_selection = genfromtxt(mic_list, dtype=None)
-        except TypeError:
-            ERROR('no entrys in list file {0}'.format(mic_list), 1)
-        # List of files which are in pattern and list
-        file_list = [
-                entry for entry in file_list \
-                if entry[len(input_dir):] in set_selection and \
-                path.exists(entry)
-                ]
-        # If no match is there abort
-        if len(file_list) == 0:
-            ERROR(
-                'no files in {0} matched the file pattern:\n'.format(mic_list),
-                1
-                )
     # Get the number of files
-    nr_files = len(file_list)
+    nr_files = len(opt['mic_list'])
 
     # Timeing stuff
     time_start = time.time()
     time_list = []
 
     # Loop over all files
-    for index, inputfile in enumerate(sorted(file_list)):
+    for index, inputfile in enumerate(sorted(opt['mic_list'])):
 
         # Check, if there is an prefix and suffix.
         # If there is more then one entry: the suffix is the last one.
         # Otherwhise its just the one after the dot.
         input_suffix = inputfile.split('/')[-1].split('.')[-1]
         # First output to introduce the programm
-        if index == 0:
+        if opt['verbose'] and index == 0:
             print(
-                    'Progress: 0.0%;  Time: --h:--m:--s/--h:--m:--s;  Unblur started!'
+                    'Progress: 0.0%;  Time: --h:--m:--s/--h:--m:--s;  Summovie started!'
                 )
 
         # Time begin
         t1 = time.time()
 
         # Get the output names
-        file_name = inputfile[len(input_dir):-len(input_suffix) - 1]
-        if options.skip_dose_filter:
-            micrograph_name = '{0}/{1}{2}.mrc'.format(
-                    uncorrected_path, file_name, options.sum_suffix
-                    )
-            frames_name = '{0}/{1}{2}.mrc'.format(
-                    uncorrected_path, file_name, options.frames_suffix
-                    )
-        else:
-            micrograph_name = '{0}/{1}{2}.mrc'.format(
-                    corrected_path, file_name, options.sum_suffix
-                    )
-            frames_name = '{0}/{1}{2}.mrc'.format(
-                    corrected_path, file_name, options.frames_suffix
-                    )
-            micrograph_name_skip = '{0}/{1}{2}.mrc'.format(
-                    uncorrected_path, file_name, options.sum_suffix
-                    )
-            frames_name_skip = '{0}/{1}{2}.mrc'.format(
-                    uncorrected_path, file_name, options.frames_suffix
-                    )
-        shift_name = '{0}/{1}{2}.txt'.format(
-                shift_path, file_name, options.shift_suffix
-                )
+        file_name = inputfile[len(opt['input_dir']):-len(input_suffix) - 1]
+        file_wildcard = file_name[
+                len(opt['mic_prefix']): -len(opt['mic_suffix'])
+                ]
+        micrograph_name = '{0}/{1}{2}.mrc'.format(
+            opt['output_path'], file_name, opt['sum_suffix']
+            )
         frc_name = '{0}/{1}{2}.txt'.format(
-                frc_path, file_name, options.frc_suffix
+                opt['frc_path'], file_name, opt['frc_suffix']
                 )
-        if not options.summovie_ready:
+        shift_name = '{0}{1}{2}'.format(
+                opt['shift_prefix'], file_wildcard, opt['shift_suffix']
+                )
+        if not opt['summovie_ready']:
             temp_name = '{0}/{1}{2}.mrc'.format(
-                    temp_path, file_name, options.sum_suffix
+                    opt['temp_path'], file_name, opt['sum_suffix']
                     )
         else:
             temp_name = inputfile
         log_name = '{0}/{1}.log'.format(
-                log_path, file_name
+                opt['log_path'], file_name
                 )
         error_name = '{0}/{1}.err'.format(
-                log_path, file_name
+                opt['log_path'], file_name
                 )
         # Append the names to the lists
-        micrograph_list.append('{0}{1}.mrc'.format(file_name, options.sum_suffix))
-        shift_list.append(shift_name)
-        if options.save_frames:
-            frames_list.append('{0}{1}.mrc'.format(file_name, options.frames_suffix))
-
+        micrograph_list.append('{0}{1}.mrc'.format(
+            file_name, opt['sum_suffix'])
+            )
+        print(file_name)
+        print(file_wildcard)
+        print(micrograph_name)
+        print(frc_name)
+        print(shift_name)
+        print(temp_name)
+        print(log_name)
+        print(error_name)
+        print(micrograph_list)
 
         # First build the summovie command
-        if not options.skip_dose_filter:
-            summovie_command = create_summovie_command(
-                temp_name,
-                micrograph_name,
-                shift_name,
-                frames_name,
-                options
-                )
-            summovie_command_skip = create_summovie_command(
-                temp_name,
-                micrograph_name_skip,
-                shift_name,
-                frames_name_skip,
-                options,
-                skip=True
-                )
-        else:
-            summovie_command = create_summovie_command(
-                temp_name,
-                micrograph_name,
-                shift_name,
-                frames_name,
-                options
-                )
-
+        summovie_command = create_summovie_command(
+            temp_name,
+            micrograph_name,
+            shift_name,
+            frc_name,
+            opt
+            )
+        print(summovie_command)
 
         # Export the number of threads
         export_threads_command = []
@@ -372,10 +324,10 @@ def run_summovie(
         export_threads_command.append('export')
         # Nr of threads
         export_threads_command.append('OMP_NUM_THREADS={0}'.format(
-            options.nr_threads
+            opt['nr_threads']
             ))
 
-        if not options.summovie_ready:
+        if not opt['summovie_ready']:
             # Do a e2proc3d.py
             e2proc3d_command = []
 
@@ -388,90 +340,45 @@ def run_summovie(
 
 
         # Translate the command to single strings
-        if not options.summovie_ready:
+        if not opt['summovie_ready']:
             e2proc3d_command = r' '.join(e2proc3d_command)
         export_threads_command = r' '.join(export_threads_command)
         summovie_command = '\n'.join(summovie_command)
-        if not options.skip_dose_filter:
-            summovie_command_skip = '\n'.join(summovie_command_skip)
 
         # Build full command
-        if not options.summovie_ready:
-            if not options.skip_dose_filter:
-                full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
-                        export_threads_command,
-                        e2proc3d_command,
-                        summovie_command,
-                        summovie_path
-                        )
-                full_command_skip = r'{0}; echo "{1}" | {2}'.format(
-                        export_threads_command,
-                        summovie_command_skip,
-                        summovie_path
-                        )
-            else:
-                full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
-                        export_threads_command,
-                        e2proc3d_command,
-                        summovie_command,
-                        summovie_path
-                        )
+        if not opt['summovie_ready']:
+            full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
+                export_threads_command,
+                e2proc3d_command,
+                summovie_command,
+                opt['summovie_path']
+                )
         else:
-            if not options.skip_dose_filter:
-                full_command = r'{0}; echo "{1}" | {2}'.format(
-                        export_threads_command,
-                        summovie_command,
-                        summovie_path
-                        )
-                full_command_skip = r'{0}; echo "{1}" | {2}'.format(
-                        export_threads_command,
-                        summovie_command_skip,
-                        summovie_path
-                        )
-            else:
-                full_command = r'{0}; echo "{1}" | {2}'.format(
-                        export_threads_command,
-                        summovie_command,
-                        summovie_path
-                        )
+            full_command = r'{0}; echo "{1}" | {2}'.format(
+                export_threads_command,
+                summovie_command,
+                opt['summovie_path']
+                )
 
         # Remove temp summovie files
-        temp_summovie_files = glob('.UnBlur*')
+        temp_summovie_files = glob('.SumMovie*')
         for entry in temp_summovie_files:
             remove(entry)
 
         with open(log_name, 'w') as f:
             with open(error_name, 'w') as e:
                 # Execute Command
-                if not options.skip_dose_filter:
-                    subprocess.Popen(
-                        [full_command], shell=True,
-                        stdout=f,
-                        stderr=e
-                        ).wait()
-
-                    # Remove temp summovie files
-                    temp_summovie_files = glob('.UnBlur*')
-                    for entry in temp_summovie_files:
-                        remove(entry)
-
-                    subprocess.Popen(
-                        [full_command_skip], shell=True,
-                        stdout=f,
-                        stderr=e
-                        ).wait()
-                else:
-                    subprocess.Popen(
-                        [full_command], shell=True,
-                        stdout=f,
-                        stderr=e
-                        ).wait()
+                subprocess.Popen(
+                    [full_command], shell=True,
+                    stdout=f,
+                    stderr=e
+                    ).wait()
 
         # Remove temp summovie files
-        temp_summovie_files = glob('.UnBlur*')
+        temp_summovie_files = glob('.SumMovie*')
         for entry in temp_summovie_files:
             remove(entry)
-        if not options.summovie_ready:
+        if not opt['summovie_ready']:
             if path.exists(temp_name):
                 # Remove temp file
                 remove(temp_name)
@@ -481,60 +388,51 @@ def run_summovie(
         time_list.append(time.time() - t1)
 
         # Do progress output
-        percent = round(100 * (index + 1) / float(nr_files), 2)
-        estimated_time = \
-            nr_files * sum(time_list) / float(len(time_list))
-        estimated_time_h = estimated_time // 3600
-        estimated_time_m = (estimated_time - estimated_time_h*3600) // 60
-        estimated_time_s = (
-                estimated_time -
-                estimated_time_h*3600 -
-                estimated_time_m*60
+        if opt['verbose']:
+            percent = round(100 * (index + 1) / float(nr_files), 2)
+            estimated_time = \
+                nr_files * sum(time_list) / float(len(time_list))
+            estimated_time_h = estimated_time // 3600
+            estimated_time_m = (estimated_time - estimated_time_h*3600) // 60
+            estimated_time_s = (
+                    estimated_time -
+                    estimated_time_h*3600 -
+                    estimated_time_m*60
+                    )
+            current_time = time.time() - time_start
+            current_time_h = current_time // 3600
+            current_time_m = (current_time - current_time_h*3600) // 60
+            current_time_s = (
+                    current_time -
+                    current_time_h*3600 -
+                    current_time_m*60
+                    )
+            print(
+                'Progress: {0:.2f}%;  Time: {1:.0f}h:{2:.0f}m:{3:.0f}s/{4:.0f}h:{5:.0f}m:{6:.0f}s;  Micrograph done:{7}'.format(
+                    percent,
+                    current_time_h,
+                    current_time_m,
+                    current_time_s,
+                    estimated_time_h,
+                    estimated_time_m,
+                    estimated_time_s,
+                    file_name
+                    )
                 )
-        current_time = time.time() - time_start
-        current_time_h = current_time // 3600
-        current_time_m = (current_time - current_time_h*3600) // 60
-        current_time_s = (
-                current_time -
-                current_time_h*3600 -
-                current_time_m*60
-                )
-        print(
-            'Progress: {0:.2f}%;  Time: {1:.0f}h:{2:.0f}m:{3:.0f}s/{4:.0f}h:{5:.0f}m:{6:.0f}s;  Micrograph done:{7}'.format(
-                percent,
-                current_time_h,
-                current_time_m,
-                current_time_s,
-                estimated_time_h,
-                estimated_time_m,
-                estimated_time_s,
-                file_name
-                )
-            )
 
 
     # Write micrograph and shift list
-    with open('{0}/summovie_micrographs.txt'.format(output_dir), 'w') as f:
+    with open('{0}/summovie_micrographs.txt'.format(opt['output_dir']), 'w') as f:
         for entry in sorted(micrograph_list):
             f.write('{0}\n'.format(entry))
-
-    with open('{0}/summovie_shiftfiles.txt'.format(output_dir), 'w') as f:
-        for entry in sorted(shift_list):
-            f.write('{0}\n'.format(entry))
-
-    if options.save_frames:
-        with open('{0}/summovie_frames.txt'.format(output_dir), 'w') as f:
-            for entry in sorted(frames_list):
-                f.write('{0}\n'.format(entry))
 
 
 def create_summovie_command(
         temp_name,
         micrograph_name,
         shift_name,
-        frames_name,
-        options,
-        skip=False
+        frc_name,
+        opt
         ):
 
     # Command list
@@ -543,62 +441,35 @@ def create_summovie_command(
     # Input file
     summovie_command.append('{0}'.format(temp_name))
     # Number of frames
-    summovie_command.append('{0}'.format(options.nr_frames))
+    summovie_command.append('{0}'.format(opt['nr_frames']))
     # Sum file
     summovie_command.append(micrograph_name)
     # Shift file
     summovie_command.append(shift_name)
+    # FRC file
+    summovie_command.append(frc_name),
+    # First frame
+    summovie_command.append('{0}'.format(opt['first']))
+    # Last frame
+    summovie_command.append('{0}'.format(opt['last']))
     # Pixel size
-    summovie_command.append('{0}'.format(options.pixel_size))
+    summovie_command.append('{0}'.format(opt['pixel_size']))
     # Dose correction
-    if options.skip_dose_filter or skip:
+    if not opt['apply_dose_filter']:
         summovie_command.append('NO')
     else:
         summovie_command.append('YES')
         # Exposure per frame
-        summovie_command.append('{0}'.format(options.exposure_per_frame))
+        summovie_command.append('{0}'.format(opt['exposure_per_frame']))
         # Acceleration voltage
-        summovie_command.append('{0}'.format(options.voltage))
+        summovie_command.append('{0}'.format(opt['voltage']))
         # Pre exposure
-        summovie_command.append('{0}'.format(options.pre_exposure))
-    # Save frames
-    if not options.save_frames:
-        summovie_command.append('NO')
-    else:
-        summovie_command.append('YES')
-        # Frames output
-        summovie_command.append('{0}'.format(frames_name))
-    # Expert mode
-    if not options.expert_mode:
-        summovie_command.append('NO')
-    else:
-        summovie_command.append('YES')
-        # FRC file
-        summovie_command.append('{0}'.format(frc_name))
-        # Minimum shift for initial search
-        summovie_command.append('{0}'.format(options.shift_initial))
-        # Outer radius shift limit
-        summovie_command.append('{0}'.format(options.shift_radius))
-        # B-Factor to Apply
-        summovie_command.append('{0}'.format(options.b_factor))
-        # Half-width vertical
-        summovie_command.append('{0}'.format(options.fourier_vertical))
-        # Half-width horizontal
-        summovie_command.append('{0}'.format(options.fourier_horizontal))
-        # Termination shift threshold
-        summovie_command.append('{0}'.format(options.shift_threshold))
-        # Maximum iterations
-        summovie_command.append('{0}'.format(options.iterations))
+        summovie_command.append('{0}'.format(opt['pre_exposure']))
         # Restore noise power
-        if options.dont_restore_noise:
+        if opt['dont_restore_noise']:
             summovie_command.append('NO')
         else:
             summovie_command.append('YES')
-        # Verbose output
-        if options.verbose:
-            summovie_command.append('YES')
-        else:
-            summovie_command.append('NO')
 
     return summovie_command
 
