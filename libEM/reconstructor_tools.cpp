@@ -328,7 +328,7 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 
 //		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
 //		float h=1.0f/EMConsts::I5G;
-		float h=1.0f/(Util::hypot3sq(xx/nx2,yy/ny2,zz/nz2)*EMConsts::I5G+.1);		// gaussian kernel is used as a weight not a kernel. We increase radius of integration with resolution
+		float h=1.0f/(Util::hypot3sq(xx/nx2,yy/ny2,zz/nz2)*EMConsts::I5G*2.0+.1);		// gaussian kernel is used as a weight not a kernel. We increase radius of integration with resolution
 //		printf("%1.0f\t%1.0f\t%1.0f\t%1.4f\n",xx,yy,zz,h);
 		float w=weight;
 

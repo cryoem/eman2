@@ -50,13 +50,15 @@ def main():
 	
 	#options associated with e2refinevariance.py
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--shrink3d",type=int,help="Shrink the class-averages and make a downsampled variance map",default=0)
+	parser.add_argument("--reslimit",type=float,help="Low-pass filter the individual maps to target the variance to the specified resolution in A. Variance maps cannot be filtered as a post-processing operation. Default = 10",default=10.0)
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data")
 	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results of e2refine_easy.py are placed. If unspecified will generate one automatically of type refine_??.")
 	parser.add_argument("--output", default=None, type=str,help="The name of a directory where the variance calculated should be placed. If unspecified will generate one automatically of type refinevar_??.")
 	parser.add_argument("--mass", default=None, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified nothing happens. Requires the --apix argument.")
 	parser.add_argument("--apix", default=None, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified, the convergence plot is generated using either the project apix, or if not an apix of 1.")
-	parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells, ngaussshells and nmaxseed. From e2proc3d.py you could achieve the same thing using --process=mask.auto3d:threshold=1.1:radius=30:nmaxseed=10:nshells=5:ngaussshells=5.")
+	#parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells, ngaussshells and nmaxseed. From e2proc3d.py you could achieve the same thing using --process=mask.auto3d:threshold=1.1:radius=30:nmaxseed=10:nshells=5:ngaussshells=5.")
 	parser.add_argument("--nmodels", type=int, help="The number of different bootstrap models to generate for the variance computation. Default=10", default=10)
 	parser.add_argument("--iteration", type=int, help="The refinement iteration to use as a basis for the variance map", default=-1)
 	parser.add_argument("--volfiles",action="store_true",help="This will bypass the construction of the individual resampled models, and use files previously generated with the --keep3d options",default=False)
@@ -89,7 +91,6 @@ def main():
 	parser.add_argument("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
 	parser.add_argument("--m3dpreprocess", type=str, default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed")
-	parser.add_argument("--shrink3d",type=int,help="Shrink the class-averages and make a downsampled variance map",default=0)
 	parser.add_argument("--keep3d",action="store_true",help="Keep all of the individual 3-D models used to make the variance map. This make take substantial disk space.")
 
 	#lowmem!
@@ -109,19 +110,26 @@ def main():
 	if options.iteration<0 :
 		print "You must specify a refinement iteration to use as a basis for the variance map."
 		sys.exit(1)
+
 	
-	if options.automask3d: 
-		vals = options.automask3d.split(",")
-		mapping = ["threshold","radius","nshells","nshellsgauss","nmaxseed"]
-		s = "mask.auto3d"
-		try:
-			for i,p in enumerate(mapping):
-				s += ":"+p+"="+vals[i]
-		except:
-			print "Error: automask3d requires 5 parameters now. See the Wiki."
-			sys.exit(1)
-		s+= ":return_mask=1"
-		options.automask3d = s
+	if options.pad==0 :
+		options.pad=db["pad"]
+	
+	#if options.automask3d: 
+		#vals = options.automask3d.split(",")
+		#mapping = ["threshold","radius","nshells","nshellsgauss","nmaxseed"]
+		#s = "mask.auto3d"
+		#try:
+			#for i,p in enumerate(mapping):
+				#s += ":"+p+"="+vals[i]
+		#except:
+			#print "Error: automask3d requires 5 parameters now. See the Wiki."
+			#sys.exit(1)
+		#s+= ":return_mask=1"
+		#options.automask3d = s
+		
+	mask=EMData(options.path+"/mask.hdf")
+	if options.shrink3d!=0: mask.process_inplace("math.meanshrink",{"n":options.shrink3d})
 
 	logid=E2init(sys.argv,options.ppid)
 	
@@ -208,22 +216,33 @@ def main():
 			ny=cur_map["ny"]
 			nz=cur_map["nz"]
 			apix=cur_map["apix_x"]
-			
+
 			if options.mass:
 				# if options.mass is not none, the check function has already ascertained that it's postivie non zero, and that the 
 				# apix argument has been specified.
 				cur_map.process_inplace("normalize.bymass",{"apix":options.apix, "mass":options.mass})
-				if options.automask3d: 
+				#if options.automask3d: 
 
-					automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
+					#automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
 
-					mask = cur_map.process(automask_parms[0],automask_parms[1])
-					cur_map.mult(mask)
+					#mask = cur_map.process(automask_parms[0],automask_parms[1])
+					#cur_map.mult(mask)
 			
-			# Write the individual models to MRC files
+			# Write the individual models to MRC files without mask/filter. This will be applied upon reading so modification is possible without recomputing bootstrap maps
 			if options.keep3d and not options.volfiles : cur_map.write_image("%s/var3d_maps.hdf"%(options.output),mod)
 	
-		if options.volfiles : cur_map=EMData("%s/var3d_maps.hdf"%(options.output),mod)
+		else : 
+			cur_map=EMData("%s/var3d_maps.hdf"%(options.output),mod)
+			nx=cur_map["nx"]
+			ny=cur_map["ny"]
+			nz=cur_map["nz"]
+			apix=cur_map["apix_x"]
+
+
+		if options.reslimit>0 :
+			cur_map.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1.0/options.reslimit})
+		cur_map.process_inplace("normalize.edgemean")
+		cur_map.mult(mask)
 	
 		# now keep a sum of all of the maps and all of the maps^2
 		if mod==0 :
@@ -299,7 +318,7 @@ def main():
 
 def get_make3d_cmd(options,check=False,nofilecheck=False):
 	
-	e2make3dcmd="e2make3dpar.py --input {inputfile} --sym {sym} --output {outfile} --apix {apix} --threads {threads} --fillangle {astep}".format(
+	e2make3dcmd="e2make3dpar.py --input {inputfile} --sym {sym} --output {outfile} --apix {apix} --threads {threads}".format(
 	inputfile=options.cafile,  sym=options.sym, outfile=options.model,threads=options.threads, apix=options.apix, astep=options.astep)
 
 	

@@ -69,6 +69,7 @@ handled this way."""
 	parser.add_argument("--varimax",action="store_true",help="Perform a 'rotation' of the basis set to produce a varimax basis",default=False)
 #	parser.add_argument("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
 	parser.add_argument("--simmx",type=str,help="Will use transformations from simmx on each particle prior to analysis")
+	parser.add_argument("--scratchfile",type=str,help="Specify an explicit scratch file to avoid multi-process conflicts",default="msa_scratch")
 	parser.add_argument("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
 	parser.add_argument("--gsl",action="store_true",help="Use gsl SVD algorithm",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -104,8 +105,8 @@ handled this way."""
 			mask=EMData(args[0],0)
 			mask.to_one()
 	
-	if options.simmx : out=msa_simmx(args[0],options.simmx,mask,options.nbasis,options.varimax,mode,options.normalize)
-	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode,options.normalize)
+	if options.simmx : out=msa_simmx(args[0],options.simmx,mask,options.nbasis,options.varimax,mode,options.normalize,options.scratchfile)
+	else : out=msa(args[0],mask,options.nbasis,options.varimax,mode,options.normalize,options.scratchfile)
 	
 	if options.verbose>0 : print "MSA complete"
 	for j,i in enumerate(out):
@@ -116,7 +117,7 @@ handled this way."""
 		
 	E2end(logid)
 
-def msa_simmx(images,simmxpath,mask,nbasis,varimax,mode,normalize=True):
+def msa_simmx(images,simmxpath,mask,nbasis,varimax,mode,normalize=True,scratchfile="msa_scratch"):
 	"""Perform principle component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
 Singular Value Decomposition (SVD). 'images' is a filename containing a stack of images to analyze which is coordinated
 with simmx. 'simmx' contains the result of an all-vs-all alignment which will be used to transform the orientation
@@ -131,7 +132,7 @@ pca,pca_large or svd_gsl"""
 
 	n=EMUtil.get_image_count(images)
 	if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
-	else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
+	else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
 
 	mean=EMData(images,0)
 	for i in range(1,n):
@@ -190,7 +191,7 @@ def get_xform(n,simmx):
 	
 	return ret.inverse()
 
-def msa(images,mask,nbasis,varimax,mode,normalize=True):
+def msa(images,mask,nbasis,varimax,mode,normalize=True,scratchfile="msa_scratch"):
 	"""Perform principal component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
 Singular Value Decomposition (SVD). 'images' is either a list of EMData or a filename containing a stack of images
 to analyze. 'mask' is an EMImage with a binary mask defining the region to analyze (must be the same size as the input
@@ -203,7 +204,7 @@ pca,pca_large or svd_gsl"""
 	if isinstance(images,str) :
 		n=EMUtil.get_image_count(images)
 		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
-		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
+		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"tmpfile":scratchfile})
 
 		mean=EMData(images,0)
 		mean.to_zero()
