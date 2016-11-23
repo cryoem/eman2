@@ -5,24 +5,41 @@ sxunblur - Micrograph movie alignment: Align micrograph movies with Unblur.
 
 ''usage in command line''
 
-sxunblur.py  --input_micrograph_list_file unblur  input_mrc_micrograph  output --nr_threads=NR_THREADS  --nr_frames=nr_frames  --pixel_size=pixel_size  --skip_dose_filter  --exposure_per_frame=exposure_per_frame  --voltage=voltage  --pre_exposure=pre_exposure  --save_frames  --expert_mode  --shift_initial=shift_initial  --shift_radius=shift_radius  --b_factor=b_factor  --fourier_vertical=fourier_vertical  --fourier_horizontal=fourier_horizontal  --shift_threshold=shift_threshold  --iterations=iterations  --dont_restore_noise --verbose
+sxunblur.py  unblur  input_mrc_micrograph  output --summovie=SUMMOVIE  --selection_list=SELECTION_LIST --nr_threads=NR_THREADS  --nr_frames=nr_frames  --pixel_size=pixel_size  --skip_dose_filter  --exposure_per_frame=exposure_per_frame  --voltage=voltage  --pre_exposure=pre_exposure  --save_frames  --expert_mode  --shift_initial=shift_initial  --shift_radius=shift_radius  --b_factor=b_factor  --fourier_vertical=fourier_vertical  --fourier_horizontal=fourier_horizontal  --shift_threshold=shift_threshold  --iterations=iterations  --dont_restore_noise --verbose
 
 === Typical usage ===
 
-    Just shift data with dose filter.
+    sxunblur exists in non-MPI version.
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
+    Perform unblur and with dose filtering and summovie without dose filtering.
+
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --summovie=directory_to_summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
-    --voltage=300.0 --pre_exposure=0.0
+    --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
-    Shift data with aligned sum files, and aligned frames without dose filter.
+    Perform unblur with dose filtering and summovie without dose filtering with selection list
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
-    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=2
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --summovie=directory_to_summovie
+    --selection_list=selected_micrograph_file
+    --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
+    --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
-    Dose filter and Expert Options and aligned frames
+    Perform unblur without dose filtering.
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --nr_threads=1
+
+    Perform unblur without dose filtering and save the frames.
+
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=1
+
+    Perform unblur with dose filtering and summovie without dose filtering with all options
+
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --summovie=directory_to_summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode
     --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0
@@ -32,11 +49,12 @@ sxunblur.py  --input_micrograph_list_file unblur  input_mrc_micrograph  output -
 
 == Input ==
 
-    input_micrograph_list_file:: Input micrograph list file: Not an unblur option, extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
     unblur:: Path to unblur executable: (default required string)
+    summovie:: Path to summovie executable: (default none)
     input_mrc_micrograph:: Input micrographs: You can use the wild cards (e.g. *) to specify a list of micrographs. (default required string)
     output:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
+    selection_list:: Input micrograph list file: Not an unblur option, extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
     nr_threads:: Number of threads: Not an unblur option, number of threads unblur is allowed to use. The higher the faster, but it also needs a higher amount of memory. (default 1)
     nr_frames:: Number of frames: (default 3)
     pixel_size:: Pixel size [A]: (default  required -1.0)
@@ -60,7 +78,7 @@ sxunblur.py  --input_micrograph_list_file unblur  input_mrc_micrograph  output -
 
 
 == Output ==
-The program creates the directory automatically in the chosen output directory. (default required string)
+The program creates the directory automatically in the chosen output directory.
 
 Without dosefilter:
 Sum files will be written to the "corrsum" folder.

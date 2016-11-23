@@ -33,14 +33,15 @@ import subprocess
 import global_def
 from global_def import SPARXVERSION, ERROR
 from optparse import OptionParser, SUPPRESS_HELP
-
+from sxsummovie import create_summovie_command
 
 def main():
 
     # Parse the Options
     progname = path.basename(argv[0])
     usage = progname + """ unblur input_image output
-    --input_micrograph_list_file
+    --summovie
+    --selection_list
     --nr_frames=nr_frames
     --pixel_size=pixel_size
     --skip_dose_filter
@@ -62,20 +63,35 @@ def main():
 
     sxunblur exists in non-MPI version.
 
-    Just shift data with dose filter.
+    Perform unblur and with dose filtering and summovie without dose filterng.
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --summovie=directory_to_summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
-    --voltage=300.0 --pre_exposure=0.0
+    --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
-    Shift data with aligned sum files, and aligned frames without dose filter.
+    Perform unblur with dose filtering and summovie without dose filtering with selection list
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
-    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=2
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --summovie=directory_to_summovie
+    --selection_list=selected_micrograph_file
+    --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
+    --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
-    Dose filter and Expert Options and aligned frames
+    Perform unblur without dose filtering.
 
-    sxunblur.py directory_to_unblur directory/prefix*suffix.mrc output_directory
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --nr_threads=1
+
+    Perform unblur without dose filtering and save the frames.
+
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=1
+
+    Perform unblur with dose filtering and summovie without dose filtering with all options
+
+    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    --summovie=directory_to_summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode
     --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0
@@ -84,7 +100,8 @@ def main():
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--input_micrograph_list_file',         type='str',          default='',    help='not an unblur option: input micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
+    parser.add_option('--summovie',        type='str',          default='',        help='not a summovie option: path of the summovie executable')
+    parser.add_option('--selection_list',     type='str',          default='',        help='not an unblur option: input selection micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
     parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=SUPPRESS_HELP)
@@ -106,7 +123,7 @@ def main():
     parser.add_option('--iterations',         type='int',          default=10,        help='maximum number of iterations')
     parser.add_option('--dont_restore_noise',      action='store_true', default=False,     help='do not restore noise power')
     parser.add_option('--verbose',            action='store_true', default=False,     help='verbose output')
-    parser.add_option('--nr_threads',         type='int',          default=1,         help='not an unblur option: Number of threads unblur is allowed to use. The higher the faster, but it also needs a higher amount of memory.')
+    parser.add_option('--nr_threads',         type='int',          default=1,         help='Number of threads unblur is allowed to use. The higher the faster, but it also needs a higher amount of memory.')
     parser.add_option('--unblur_ready',        action='store_true', default=False,      help=SUPPRESS_HELP)
 
     # list of the options and the arguments
@@ -127,14 +144,14 @@ def main():
     if not path.exists(unblur_path):
         ERROR(
             'Unblur directory does not exist, please change' +
-            ' the name and restart the program.', 1
+            ' the name and restart the program.', 'sxunblur.py', 1
             )
 
     # If the output directory exists, stop the script
     if path.exists(output_dir):
         ERROR(
             'Output directory exists, please change' +
-            ' the name and restart the program.', 1
+            ' the name and restart the program.', 'sxunblur.py', 1
             )
 
     # If the input file does not exists, stop the script
@@ -143,8 +160,16 @@ def main():
     if not file_list:
         ERROR(
             'Input file does not exist, please change' +
-            ' the name and restart the program.', 1
+            ' the name and restart the program.', 'sxunblur.py', 1
             )
+
+    # If the skip_dose_filter option is false, the summovie path is necessary
+    if not options.skip_dose_filter and not path.exists(options.summovie):
+        ERROR(
+            'Path to the SumMovie executable is necessary when dose weighting is performed.',
+            'sxunblur.py', 1
+            )
+
 
     # Output paths
     corrected_path = '{:s}/corrsum_dose_filtered'.format(output_dir)
@@ -174,12 +199,12 @@ def main():
         mkdir(uncorrected_path)
     if not path.exists(shift_path):
         mkdir(shift_path)
-    if not path.exists(corrected_path) \
-            and not options.skip_dose_filter:
-        mkdir(corrected_path)
-    if not path.exists(frc_path) \
-            and options.expert_mode:
-        mkdir(frc_path)
+    if not path.exists(corrected_path):
+        if not options.skip_dose_filter:
+            mkdir(corrected_path)
+    if not path.exists(frc_path):
+        if options.expert_mode or not options.skip_dose_filter:
+            mkdir(frc_path)
     if not path.exists(temp_path) and not options.unblur_ready:
         mkdir(temp_path)
     if not path.exists(log_path):
@@ -234,13 +259,13 @@ def run_unblur(
         frames_list = []
 
     # If micrograph list is provided just process the images in the list
-    mic_list = options.input_micrograph_list_file
+    mic_list = options.selection_list
     if mic_list:
         # Import list file
         try:
             set_selection = genfromtxt(mic_list, dtype=None)
         except TypeError:
-            ERROR('no entrys in list file {0}'.format(mic_list), 1)
+            ERROR('no entrys in list file {0}'.format(mic_list), 'sxunblur.py', 1)
         # List of files which are in pattern and list
         file_list = [
                 entry for entry in file_list \
@@ -250,7 +275,7 @@ def run_unblur(
         # If no match is there abort
         if len(file_list) == 0:
             ERROR(
-                'no files in {0} matched the file pattern:\n'.format(mic_list),
+                'no files in {0} matched the file pattern:\n'.format(mic_list), 'sxunblur.py',
                 1
                 )
     # Get the number of files
@@ -285,6 +310,9 @@ def run_unblur(
             frames_name = '{0}/{1}{2}.mrc'.format(
                     uncorrected_path, file_name, options.frames_suffix
                     )
+            frc_name = '{0}/{1}{2}.txt'.format(
+                frc_path, file_name, options.frc_suffix
+                )
         else:
             micrograph_name = '{0}/{1}{2}.mrc'.format(
                     corrected_path, file_name, options.sum_suffix
@@ -298,11 +326,14 @@ def run_unblur(
             frames_name_skip = '{0}/{1}{2}.mrc'.format(
                     uncorrected_path, file_name, options.frames_suffix
                     )
+            frc_name = '{0}/{1}{2}.txt'.format(
+                frc_path, file_name, options.frc_suffix
+                )
+            frc_summovie_name = '{0}/{1}_summovie{2}.txt'.format(
+                frc_path, file_name, options.frc_suffix
+                )
         shift_name = '{0}/{1}{2}.txt'.format(
                 shift_path, file_name, options.shift_suffix
-                )
-        frc_name = '{0}/{1}{2}.txt'.format(
-                frc_path, file_name, options.frc_suffix
                 )
         if not options.unblur_ready:
             temp_name = '{0}/{1}{2}.mrc'.format(
@@ -323,28 +354,41 @@ def run_unblur(
             frames_list.append('{0}{1}.mrc'.format(file_name, options.frames_suffix))
 
 
-        # First build the unblur command
+        # First build the unblur/summovie command
         if not options.skip_dose_filter:
             unblur_command = create_unblur_command(
                 temp_name,
                 micrograph_name,
                 shift_name,
                 frames_name,
+                frc_name,
                 options
                 )
-            unblur_command_skip = create_unblur_command(
+            # Options for the summovie command
+            options_summovie = {
+                'first': 1,
+                'last': -1,
+                'nr_frames': options.nr_frames,
+                'pixel_size': options.pixel_size,
+                'exposure_per_frame': options.exposure_per_frame,
+                'voltage': options.voltage,
+                'pre_exposure': options.pre_exposure,
+                'dont_restore_noise': options.dont_restore_noise,
+                'apply_dose_filter': False
+            }
+            summovie_command = create_summovie_command(
                 temp_name,
                 micrograph_name_skip,
                 shift_name,
-                frames_name_skip,
-                options,
-                skip=True
+                frc_summovie_name,
+                options_summovie
                 )
         else:
             unblur_command = create_unblur_command(
                 temp_name,
                 micrograph_name,
                 shift_name,
+                frc_name,
                 frames_name,
                 options
                 )
@@ -378,7 +422,7 @@ def run_unblur(
         export_threads_command = r' '.join(export_threads_command)
         unblur_command = '\n'.join(unblur_command)
         if not options.skip_dose_filter:
-            unblur_command_skip = '\n'.join(unblur_command_skip)
+            summovie_command = '\n'.join(summovie_command)
 
         # Build full command
         if not options.unblur_ready:
@@ -389,10 +433,10 @@ def run_unblur(
                         unblur_command,
                         unblur_path
                         )
-                full_command_skip = r'{0}; echo "{1}" | {2}'.format(
+                full_command_summovie = r'{0}; echo "{1}" | {2}'.format(
                         export_threads_command,
-                        unblur_command_skip,
-                        unblur_path
+                        summovie_command,
+                        options.summovie
                         )
             else:
                 full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
@@ -408,10 +452,10 @@ def run_unblur(
                         unblur_command,
                         unblur_path
                         )
-                full_command_skip = r'{0}; echo "{1}" | {2}'.format(
+                full_command_summovie = r'{0}; echo "{1}" | {2}'.format(
                         export_threads_command,
-                        unblur_command_skip,
-                        unblur_path
+                        summovie_command,
+                        options.summovie
                         )
             else:
                 full_command = r'{0}; echo "{1}" | {2}'.format(
@@ -425,10 +469,16 @@ def run_unblur(
         for entry in temp_unblur_files:
             remove(entry)
 
+        # Remove temp summovie files
+        temp_summovie_files = glob('.SumMovie*')
+        for entry in temp_summovie_files:
+            remove(entry)
+
         with open(log_name, 'w') as f:
             with open(error_name, 'w') as e:
                 # Execute Command
                 if not options.skip_dose_filter:
+
                     subprocess.Popen(
                         [full_command], shell=True,
                         stdout=f,
@@ -440,8 +490,13 @@ def run_unblur(
                     for entry in temp_unblur_files:
                         remove(entry)
 
+                    # Remove temp summovie files
+                    temp_summovie_files = glob('.SumMovie*')
+                    for entry in temp_summovie_files:
+                        remove(entry)
+
                     subprocess.Popen(
-                        [full_command_skip], shell=True,
+                        [full_command_summovie], shell=True,
                         stdout=f,
                         stderr=e
                         ).wait()
@@ -456,12 +511,45 @@ def run_unblur(
         temp_unblur_files = glob('.UnBlur*')
         for entry in temp_unblur_files:
             remove(entry)
+        # Remove temp summovie files
+        temp_summovie_files = glob('.SumMovie*')
+        for entry in temp_summovie_files:
+            remove(entry)
+
         if not options.unblur_ready:
             if path.exists(temp_name):
                 # Remove temp file
                 remove(temp_name)
             else:
                 print('Error with file:\n{0}'.format(inputfile))
+
+        # Check if SumMovie and UnBlur finished cleanly
+        with open(log_name, 'r') as r:
+            clean_summovie = False
+            clean_unblur = False
+            for line in r:
+                if 'SumMovie finished cleanly.' in line:
+                    clean_summovie = True
+                if 'UnBlur finished cleanly.' in line:
+                    clean_unblur = True
+
+        if clean_unblur:
+            print('UnBlur finished cleanly.')
+        else:
+            ERROR(
+                'unblur error. check the logfile for more information: {0}'.format(
+                    log_name
+                    ), 'sxunblur.py', 0
+                )
+
+        if clean_summovie:
+            print('SumMovie finished cleanly.')
+        else:
+            ERROR(
+                'summovie error. check the logfile for more information: {0}'.format(
+                    log_name
+                    ), 'sxunblur.py', 0
+                )
 
         time_list.append(time.time() - t1)
 
@@ -518,8 +606,8 @@ def create_unblur_command(
         micrograph_name,
         shift_name,
         frames_name,
-        options,
-        skip=False
+        frc_name,
+        options
         ):
 
     # Command list
@@ -536,7 +624,7 @@ def create_unblur_command(
     # Pixel size
     unblur_command.append('{0}'.format(options.pixel_size))
     # Dose correction
-    if options.skip_dose_filter or skip:
+    if options.skip_dose_filter:
         unblur_command.append('NO')
     else:
         unblur_command.append('YES')
