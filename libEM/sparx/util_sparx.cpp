@@ -19589,7 +19589,7 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 
 	int nsym = atoi(symmetry.substr(1,1000).c_str());//std::stoi(symmetry.substr(1,1000));
 	vector<int> ltable;
-/*  It needs to be corrected.
+
 	if( symmetry == "c1" ) {
 		vector<float> dang(3*nfine_sampling_angles);
 		for (int kl=0; kl<nfine_sampling_angles; kl++) getfvec(fine_sampling_angles[kl][0], fine_sampling_angles[kl][1], dang[3*kl], dang[3*kl+1], dang[3*kl+2]);
@@ -19604,7 +19604,7 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 				max_qt = max(max_qt, qt);
 				if (qt == max_qt)  mkl  = kl;
 			}
-		ltable.push_back(mkl);
+			ltable.push_back(mkl);
 		}
 	} else if( symmetry.substr(0,1) == "c")  {
 		float qt = 360.0f/nsym;
@@ -19620,8 +19620,10 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			for (int kl=0; kl<nfine_sampling_angles; kl++) {
 				for (int nsm = 0; nsm < 3; nsm++)  {
 					float vc = dang[3*nsm + 9*kl]*refvec[0] + dang[1 + 3*nsm + 9*kl]*refvec[1] + dang[2+ 3*nsm + 9*kl]*refvec[2];
-					max_qt = max(max_qt, vc);
-					if (vc == max_qt)  mkl  = kl; 
+					if( vc > max_qt ) {
+					max_qt = vc;
+					mkl  = kl;
+					}
 				}
 			}
             ltable.push_back(mkl); 
@@ -19653,7 +19655,6 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			ltable.push_back(mkl);
 		} // coarse loop
 	}
-	*/
 	return ltable;
 }
 
