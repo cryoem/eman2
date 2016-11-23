@@ -2042,34 +2042,29 @@ class SXInfoWidget(QWidget):
 	def __init__(self, parent = None):
 		super(SXInfoWidget, self).__init__(parent)
 
-		# Set the background color of this widget
-		self.setAutoFillBackground(True)
-		palette = QPalette()
-		palette.setBrush(QPalette.Background, QBrush(SXLookFeelConst.sxinfo_widget_bg_color))
-		self.setPalette(palette)
 
-		label_row_span = 1; label_col_span = 3
-		close_row_span = 1; close_col_span = 1
-		spacer_min_width = 12
+		# Get the picture name
+		pic_name = '{0}sxgui_info.png'.format(get_image_directory())
+		# Import the picture as pixmap to get the right dimensions
+		self.pixmap = QPixmap(pic_name)
 
-		grid_layout = QGridLayout(self)
-		grid_layout.setMargin(SXLookFeelConst.grid_margin)
-		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
+		# Create a QLabel and show the picture
+		self.label = QLabel()
+		self.label.setStyleSheet('border-image: url("{0}")'.format(pic_name))
+		self.label.resizeEvent = self.change_label_height
 
-		grid_col = 0
-		grid_row = 0; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
-		grid_row += 10; temp_label=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#ffffff;\'><b>SPHIRE GUI Prototype</b></span>")
-		temp_label.setAlignment(Qt.AlignHCenter)
-		grid_layout.addWidget(temp_label, grid_row, grid_col, label_row_span, label_col_span)
-		grid_row += 1; temp_label=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#ffffff;\'><b>Author: Toshio Moriya</b></span>")
-		temp_label.setAlignment(Qt.AlignHCenter)
-		grid_layout.addWidget(temp_label, grid_row, grid_col, label_row_span, label_col_span)
-		grid_row += 1; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
-		grid_row += 1; temp_label=QLabel("<span style=\'font-size:18pt; font-weight:600; color:#ffffff;\'><b>For more information visit:%s </b></span>" % SPARX_DOCUMENTATION_WEBSITE)
-		temp_label.setAlignment(Qt.AlignHCenter)
-		grid_layout.addWidget(temp_label, grid_row, grid_col, label_row_span, label_col_span)
-		grid_row += 1; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
-		grid_row += 1; grid_layout.setRowMinimumHeight(grid_row, spacer_min_width)
+		# Add a scroll area for vertical scrolling
+		scroll_area = QScrollArea(self)
+		scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+		scroll_area.setWidgetResizable(True)
+		scroll_area.setWidget(self.label)
+
+		layout = QHBoxLayout(self)
+		layout.addWidget(scroll_area, stretch=1)
+
+	# If the width changes, rescale the height of the image
+	def change_label_height(self, event):
+		self.label.setFixedHeight(self.label.width() * self.pixmap.height() / self.pixmap.width())
 
 # ========================================================================================
 # Main Window (started by class SXApplication)
