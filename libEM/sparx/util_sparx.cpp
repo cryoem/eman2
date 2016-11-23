@@ -20729,28 +20729,28 @@ vector<float> Util::symmetry_related(const vector<float>& angles, string symmetr
 	int nang = angles.size();
 	if( nang != 3)  throw InvalidValueException(nang, "Three angles are required");
 	int nsym = atoi(symmetry.substr(1,1000).c_str());
-	if( symmetry.substr(0,1) == "d") nsym += nsym;
-	vector<float> redang(nang*nsym);
+	float qt = 360.0f/nsym;
+	int iod = nsym;
+	if( symmetry.substr(0,1) == "d") iod += iod;
+	vector<float> redang(nang*iod);
 
 	for(int i=0; i<nang; i++)  redang[i] = angles[i];
 
 	if( symmetry.substr(0,1) == "c" and nsym >1)  {
-		float qt = 360.0f/nsym;
 		for(int l=1; l<nsym; l++) {
 			redang[3*l]   = angles[0]+l*qt;
 			redang[3*l+1] = angles[1];
 			redang[3*l+2] = angles[2];
 		}
-		
+
 	} else if( symmetry.substr(0,1) == "d")  {
-		float qt = 720.0f/nsym;
-		for(int l=1; l<nsym/2; l++) {
+		for(int l=1; l<nsym; l++) {
 			redang[3*l]   = angles[0]+l*qt;
 			redang[3*l+1] = angles[1];
 			redang[3*l+2] = angles[2];
 		}
-		for(int l=nsym/2; l<nsym; l++) {
-			redang[3*l]   = 360.0f - redang[3*(l-nsym/2)];
+		for(int l=nsym; l<2*nsym; l++) {
+			redang[3*l]   = 360.0f - redang[3*(l-nsym)];
 			redang[3*l+1] = 180.0f - angles[1];
 			redang[3*l+2] = fmod( 180.0f + angles[2], 360.0f);
 		}
@@ -20768,7 +20768,7 @@ vector<float> Util::symmetry_neighbors(const vector<vector<float> >& angles, str
 	int nang = angles[0].size();
 	if( nang != 3)  throw InvalidValueException(nang, "Three angles are required");
 	int nsym = atoi(symmetry.substr(1,1000).c_str());
-	if( symmetry.substr(0,1) == "d") nsym += nsym;
+	float qt = 360.0f/nsym;
 	if( symmetry == "c1" ) {
 		nneighbors = 0;
 	} else if( symmetry.substr(0,1) == "c" ) {
@@ -20794,7 +20794,6 @@ vector<float> Util::symmetry_neighbors(const vector<vector<float> >& angles, str
 	for(int m=0; m<nlist; m++)  for(int i=0; i<nang; i++)  redang[mnm*nang*m + i] = angles[m][i];
 
 	if( symmetry.substr(0,1) == "c" and nsym >1)  {
-		float qt = 360.0f/nsym;
 		for(int m=0; m<nlist; m++) {
 			for(int l=0; l<nneighbors; l++) {
 				int lt = 1 - l - l;  // cast to 1, -1
@@ -20805,7 +20804,6 @@ vector<float> Util::symmetry_neighbors(const vector<vector<float> >& angles, str
 		}
 		
 	} else if( symmetry.substr(0,1) == "d")  {
-		float qt = 720.0f/nsym;
 		for(int m=0; m<nlist; m++) {
 			if( nneighbors == 1 ) {
 				//  add bottom
