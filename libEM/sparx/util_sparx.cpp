@@ -20304,7 +20304,7 @@ vector<int> Util::nearest_fang_sym(const vector<vector<float> >& angles_sym_norm
 				//for (unsigned int kk=0; kk<howmany; kk++) { cout << score[kk]<< "  "<<bout[kk]<<endl;}
 				break;
 			}
-		}	
+		}
 	}
 	return bout;
 }
@@ -20762,6 +20762,7 @@ vector<float> Util::symmetry_related(const vector<float>& angles, string symmetr
 vector<float> Util::symmetry_neighbors(const vector<vector<float> >& angles, string symmetry) {
 // Symmetry related angles, all three are required
 	int nneighbors;
+	float a1,a2,a3;
 	int nlist = angles.size();
 	int nang = angles[0].size();
 	if( nang != 3)  throw InvalidValueException(nang, "Three angles are required");
@@ -20783,7 +20784,7 @@ vector<float> Util::symmetry_neighbors(const vector<vector<float> >& angles, str
 		} else {
 			nneighbors = 5;
 		}
-	}	
+	}
 
 	int mnm = nneighbors+1;
 
@@ -20805,27 +20806,40 @@ vector<float> Util::symmetry_neighbors(const vector<vector<float> >& angles, str
 	} else if( symmetry.substr(0,1) == "d")  {
 		float qt = 720.0f/nsym;
 		for(int m=0; m<nlist; m++) {
-			for(int l=0; l<nneighbors; l++) {
-				int lt = 1 - l - l;  // cast to 1, -1
-				redang[mnm*nang*m + nang*l + 0] = fmod(angles[m][0]+lt*qt,360.f);
-				redang[mnm*nang*m + nang*l + 1] = angles[m][1];
-				redang[mnm*nang*m + nang*l + 2] = angles[m][2];
+			if( nneighbors == 1 ) {
+				//  add bottom
+				a1 = 360.0f - angles[m][0];
+				while( a1 >= qt )  a1 -= qt;
+				redang[mnm*nang*m + nang + 0] = a1;
+				redang[mnm*nang*m + nang + 1] = 180.0f - angles[m][1];
+				redang[mnm*nang*m + nang + 2] = fmod( 180.0f + angles[m][2], 360.0f);
+			} else if ( nneighbors == 3 ) {
+				redang[mnm*nang*m + nang + 0] = angles[m][0]+180.f;
+				redang[mnm*nang*m + nang + 1] = angles[m][1];
+				redang[mnm*nang*m + nang + 2] = angles[m][2];
+				for(int l=1; l<nneighbors; l++) {
+					redang[mnm*nang*m + nang*(l+1) + 0] = 360.0f - angles[m][0] - 180.0f*(l-1);
+					redang[mnm*nang*m + nang*(l+1) + 1] = 180.0f - angles[m][1];
+					redang[mnm*nang*m + nang*(l+1) + 2] = fmod( 180.0f + angles[m][2], 360.0f);
+				}
+			} else if ( nneighbors > 3 ) {
+				for(int l=0; l<2; l++) {
+					int lt = 1 - l - l;  // cast to 1, -1
+					redang[mnm*nang*m + nang*(l+1) + 0] = fmod(angles[m][0]+lt*qt + 1440.0f,360.f);
+					redang[mnm*nang*m + nang*(l+1) + 1] = angles[m][1];
+					redang[mnm*nang*m + nang*(l+1) + 2] = angles[m][2];
+				}
+				// bottom
+				a1 = 360.0f - angles[m][0];
+				while( a1 >= qt )  a1 -= qt;				
+				for(int l=2; l<5; l++) {
+					redang[mnm*nang*m + nang*(l+1) + 0] = fmod(a1 + qt*(l-3)+ 1440.0f,360.f);
+					redang[mnm*nang*m + nang*(l+1) + 1] = 180.0f - angles[m][1];
+					redang[mnm*nang*m + nang*(l+1) + 2] = fmod( 180.0f + angles[m][2], 360.0f);
+				}
 			}
 		}
-
-/*
-		for(int l=1; l<nsym/2; l++) {
-			redang[3*l]   = angles[0]+l*qt;
-			redang[3*l+1] = angles[1];
-			redang[3*l+2] = angles[2];
-		}
-		for(int l=nsym/2; l<nsym; l++) {
-			redang[3*l]   = 360.0f - redang[3*(l-nsym/2)];
-			redang[3*l+1] = 180.0f - angles[1];
-			redang[3*l+2] = fmod( 180.0f + angles[2], 360.0f);
-		}*/
 	}
-
 	return redang;
 }
 
