@@ -5954,7 +5954,7 @@ def generate_indices_and_refrings(nima, projangles, volft, kb, nx, delta, an, ra
 	from alignment import reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mirror_info
 	from morphology import bracket_def, goldsearch_astigmatism
 	from applications import computenumberofrefs
-	from utilities import even_angles, assign_projangles_f, assign_projangles, cone_ang_f
+	from utilities import even_angles, assign_projangles_f, assign_projangles
 	from utilities import cone_ang_with_index
 	import sys
 	from projection import prep_vol

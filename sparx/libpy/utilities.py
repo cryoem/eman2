@@ -2113,37 +2113,6 @@ def recmat(mat):
 	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
 	#return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
 
-def reduce2asymmetric_D(angles_list, symmetry="d2"):
-	sym_angle  = 360.0/int(symmetry[1:])  # we keep all projections with theta <= 90.
-	alist      = [None]*len(angles_list)
-	for index in xrange(len(angles_list)):
-		if len(angles_list[index]) == 3:  [phi, theta, psi] = angles_list[index]
-		else:                             [phi, theta, psi, sx, sy] = angles_list[index]
-		if( theta > 90.0 ):
-			theta = 180.0 - theta
-			phi   = (-phi)%sym_angle
-		else:
-			phi = phi%sym_angle
-		alist[index] = [phi,theta,psi]
-	return alist
-
-def reduce2asymmetric_C(angles_list, symmetry="c1"):
-	sym_angle  = 360.0/int(symmetry[1:])
-	alist      = [None]*len(angles_list)
-	for index in xrange(len(angles_list)):
-		if len(angles_list[index]) == 3:  [phi, theta, psi] = angles_list[index]
-		else:                             [phi, theta, psi, sx, sy] = angles_list[index]
-		phi = phi%sym_angle
-		alist[index] = [phi,theta,psi]
-	return alist
-
-def reduce_to_asymmetric_unit(angles_list, symmetry):
-	sym_type   = symmetry[0:1].lower()
-	if sym_type == "c" :
-		return  reduce2asymmetric_C(angles_list, symmetry=symmetry)
-	elif sym_type == "d" :
-		return  reduce2asymmetric_D(angles_list, symmetry=symmetry)
-
 def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.):
 	"""
 		linearly interpolate a 1D power spectrum to required length with required Pixel size
@@ -3761,7 +3730,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 		from utilities import get_symt, getvec
 		from EMAN2 import Vec2f, Transform
 		t = get_symt(sym)
-		phir = 360.0/int(sym[1:])
+		#phir = 360.0/int(sym[1:])
 
 		tempan =  projangles[:]
 		del tempan[whichone], lookup[whichone]
@@ -3796,20 +3765,19 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 	return assignments
 
 
-def nearest_full_k_projangles(anormals, refang, howmany = 1, sym="c1"):
-	# We assume refang can be on the list of normals
+def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1"):
+	# We assume angles can be on the list of normals
 	from utilities import getfvec
-	lookup = range(len(anormals))
+	from utilities import angles_to_normals, symmetry_neighbors
+	lookup = range(len(reference_ang))
 	#refnormal = normals[:]
 	assignments = [-1]*howmany
 
 	if( sym == "c1"):
-		refnormal = []
-		for i,q in enumerate(anormals):
-			refnormal.append(getfvec(q[0],q[1]))
-		ref = getfvec(refang[0],refang[1])
+		reference_normals = angles_to_normals(reference_ang)
+		ref = getfvec(angles[0],angles[1])
 		for i in xrange(howmany):
-			tmp = Util.nearest_fang(refnormal, ref[0],ref[1],ref[2])
+			tmp = Util.nearest_fang(reference_normals, ref[0],ref[1],ref[2])
 			k = tmp[0]
 			assignments[i] = lookup[k]
 			for l in xrange(3): del refnormal[3*k+2-l]
@@ -3818,23 +3786,23 @@ def nearest_full_k_projangles(anormals, refang, howmany = 1, sym="c1"):
 	elif( sym[:1] == "c" ):
 
 		phin = int(sym[1:])
-		refnormal = []
-		for i,q in enumerate(anormals):
-			refnormal.append(getfvec(q[0]*phin,q[1]))
-		ref = getfvec(refang[0]*phin,refang[1])
+		reference_normals = angles_to_normals(reference_normals)
+		angles_sym_normals = angles_to_normals(symmetry_neighbors([angles], sym))
+		assignments = Util.nearest_fang_sym(angles_sym_normals, reference_normals, howmany, nneighbors = len(angles_sym_normals)/3, symmetry = sym )
+		'''
 		for i in xrange(howmany):
 			tmp = Util.nearest_fang(refnormal, ref[0],ref[1],ref[2])
 			k = tmp[0]
 			assignments[i] = lookup[k]
 			for l in xrange(3): del refnormal[3*k+2-l]
 			del lookup[k]
-
+		'''
 	elif( sym[:1] == "d" ):
 		from utilities import get_symt
 		from EMAN2 import Vec2f, Transform
 		t = get_symt(sym)
 		nt = len(t)
-		a = Transform({"type":"spider","phi":refang[0], "theta":refang[1]})
+		a = Transform({"type":"spider","phi":angles[0], "theta":angles[1]})
 		refvec = [None]*nt
 		for i in xrange(nt):
 			qt = a*(t[i].inverse())
@@ -3842,12 +3810,10 @@ def nearest_full_k_projangles(anormals, refang, howmany = 1, sym="c1"):
 			refvec[i] = getfvec(qt["phi"], qt["theta"])
 			print i,qt["phi"], qt["theta"],["psi"],refvec[i]
 
-		refnormal = []
-		for i,q in enumerate(anormals):
-			refnormal.append(getfvec(q[0],q[1]))
+		refnormal = angles_to_normals(reference_ang)
 
 		for i in xrange(howmany):
-			lookup = range(len(anormals))
+			lookup = range(len(reference_ang))
 			best_i = -1
 			best_v = -10000000
 			for l in xrange(nt):
@@ -4073,7 +4039,7 @@ def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 	
 	else:  print  "Symmetry not supported ",symmetry
 	return la
-
+'''
 def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -4142,7 +4108,7 @@ def cone_ang_f_with_index( projangles, phi, tht, ant ):
 			la.append(projangles[i])
 			index.append(i)
 	return la, index
-
+'''
 def cone_ang_with_index( projangles, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -4162,7 +4128,7 @@ def cone_ang_with_index( projangles, phi, tht, ant ):
 			index.append(i)
 
 	return la, index
-
+'''
 def cone_vectors( normvectors, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -4176,6 +4142,37 @@ def cone_vectors( normvectors, phi, tht, ant ):
 			la.append(normvectors[i])
 
 	return la
+'''
+
+#  Wrappers for new angular functions
+def reduce_to_asymmetric_list(angles, symmetry):
+	temp = Util.reduce_to_asymmetric_list(angles, symmetry)
+	nt = len(angles[0])
+	return [[temp[l*nt+i] for i in xrange(nt)] for l in xrange(len(angles)) ]
+
+def angles_to_normals(angles):
+	temp = Util.angles_to_normals(angles)
+	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(len(angles)) ]
+
+def symmetry_related(angles, symmetry):
+	temp = Util.symmetry_related(angles, symmetry)
+	nt = len(temp)/3
+	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+
+def symmetry_neighbors(angles, symmetry):
+	#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
+	temp = Util.symmetry_neighbors(angles, symmetry)
+	nt = len(temp)/3
+	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+	#  We could make it a list of lists
+	#mt = len(angles)
+	#nt = len(temp)/mt/3
+	#return [[ [temp[m*3*nt+l*3+i] for i in xrange(3)] for l in xrange(nt)] for m in xrange(mt) ]
+
+#def nearest_angular_direction(normals, vect, symmetry):
+
+
+###############
 
 def disable_bdb_cache():
 	import EMAN2db

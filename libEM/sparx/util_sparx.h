@@ -997,6 +997,7 @@ public:
 	*/
 	static int nearest_ang(const vector<float>& vecref, float x, float y, float z);
 	static vector<int> nearest_fang(const vector<vector<float> >& vecref, float x, float y, float z);
+	static vector<int> nearest_fang_sym(const vector<vector<float> >& angles_sym_normals, const vector<vector<float> >& reference_normals, int neighbors, string symmetry, int howmany);
 	static vector<int> nearest_fang_select(const vector<vector<float> >& vecref, float x, float y, float z, int howmany);
 	static int nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z);
 
@@ -1015,6 +1016,18 @@ public:
 
 	/* Group projection angles by (phi, theta) */
 	static vector<int> group_proj_by_phitheta(const vector<float>& projangles, const vector<float>& ref_ang, const int img_per_grp);
+
+	/*
+	Functions to handle angles, normals, their similarity, all use full range and include symmetry
+	*/
+	static vector<float> reduce_to_asymmetric(const vector<float>& angles, string symmetry);
+	static vector<float> reduce_to_asymmetric_list(const vector<vector<float> >& angles, string symmetry);
+	static vector<float> angle_to_normal(const vector<float>& angles);
+	static vector<float> angles_to_normals(const vector<vector<float> >& angles);
+	static vector<float> symmetry_related(const vector<float>& angles, string symmetry);
+	static vector<float> symmetry_neighbors(const vector<vector<float> >& angles, string symmetry);
+
+
 //	static std::vector<float> my_real_to_complex_1d(vector<float> real_data_v, int n);
 	static vector<float> my_real_to_complex_1d(vector<float> real_data_v);
 

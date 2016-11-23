@@ -6064,6 +6064,8 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 	return  params
 
 
+'''
+#  This does not handle symmetries properly
 
 def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
@@ -6415,7 +6417,7 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 
 
 	if myid == main_node: print_end_msg("ali3dlocal_MPI")
-
+'''
 
 # Auxiliary function to compute number of cones in ali3dlocal
 def computenumberofrefs(x, dat):

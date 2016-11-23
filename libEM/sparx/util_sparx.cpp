@@ -19598,13 +19598,14 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			vector<float> refvec(3);
 			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
 			int mkl =  ncoarse_sampling_angles +1;
-			 float max_qt = -2.0f;
+			float max_qt = -2.0f;
 			for (int kl=0; kl<nfine_sampling_angles; kl++) {
-				 float qt = dang[3*kl]*refvec[0] + dang[3*kl+1]*refvec[1] + dang[3*kl+2]*refvec[2];
-				 max_qt = max(max_qt, qt);
-				 if (qt == max_qt) 
-				    mkl  = kl; }	
-                ltable.push_back(mkl); }
+				float qt = dang[3*kl]*refvec[0] + dang[3*kl+1]*refvec[1] + dang[3*kl+2]*refvec[2];
+				max_qt = max(max_qt, qt);
+				if (qt == max_qt)  mkl  = kl;
+			}
+		ltable.push_back(mkl);
+		}
 	} else if( symmetry.substr(0,1) == "c")  {
 		float qt = 360.0f/nsym;
 		vector<float> dang(3*3*nfine_sampling_angles);
@@ -19615,17 +19616,17 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			vector<float> refvec(3);
 			int mkl =  ncoarse_sampling_angles + 1;
 			getfvec(coarse_sampling_angles[n][0], coarse_sampling_angles[n][1], refvec[0], refvec[1], refvec[2]);
-				float max_qt = -2.0f;
-				for (int kl=0; kl<nfine_sampling_angles; kl++) {
-						for (int nsm = 0; nsm < 3; nsm++)  {
-						  float vc = dang[3*nsm + 9*kl]*refvec[0] + dang[1 + 3*nsm + 9*kl]*refvec[1] + dang[2+ 3*nsm + 9*kl]*refvec[2];
-					        max_qt = max(max_qt, vc);
-				           if (vc == max_qt) 
-				    		   mkl  = kl; }	
-				    		   				}
-                          ltable.push_back(mkl); 
-						}
-	
+			float max_qt = -2.0f;
+			for (int kl=0; kl<nfine_sampling_angles; kl++) {
+				for (int nsm = 0; nsm < 3; nsm++)  {
+					float vc = dang[3*nsm + 9*kl]*refvec[0] + dang[1 + 3*nsm + 9*kl]*refvec[1] + dang[2+ 3*nsm + 9*kl]*refvec[2];
+					max_qt = max(max_qt, vc);
+					if (vc == max_qt)  mkl  = kl; 
+				}
+			}
+            ltable.push_back(mkl); 
+		}
+
 	} else if( symmetry.substr(0,1) == "d")  {
 		float qt = 360.0f/nsym;
 		vector<float> dvecup(3*3*nfine_sampling_angles);
@@ -19640,19 +19641,18 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			int mkl =  ncoarse_sampling_angles + 1;
 			float max_qt = -2.0f;
 			for (int kl=0; kl<nfine_sampling_angles; kl++) {
-					for (int nsm=0; nsm<3; nsm++)  {
-						float vc1 = dvecup[3*nsm +   9*kl]*refvec[0] + dvecup[1 + 3*nsm + 9*kl]*refvec[1] + dvecup[2+ 3*nsm + 9*kl]*refvec[2];
-						float vc2 = dvecdown[3*nsm + 9*kl]*refvec[0] + dvecdown[1 +3*nsm + 9*kl]*refvec[1] + dvecdown[2+ 3*nsm + 9*kl]*refvec[2];
-						if (max_qt < max(vc1, vc2))
-						 {
-						   max_qt = max(vc1,vc2);
-						   mkl    = kl;
-						  }
-						} //nsym
-					 } //kl fine loop
-				ltable.push_back(mkl);
-			} // coarse loop
-		}
+				for (int nsm=0; nsm<3; nsm++)  {
+					float vc1 = dvecup[3*nsm +   9*kl]*refvec[0] + dvecup[1 + 3*nsm + 9*kl]*refvec[1] + dvecup[2+ 3*nsm + 9*kl]*refvec[2];
+					float vc2 = dvecdown[3*nsm + 9*kl]*refvec[0] + dvecdown[1 +3*nsm + 9*kl]*refvec[1] + dvecdown[2+ 3*nsm + 9*kl]*refvec[2];
+					if (max_qt < max(vc1, vc2)) {
+						max_qt = max(vc1,vc2);
+						mkl    = kl;
+					}
+				} //nsym
+			} //kl fine loop
+			ltable.push_back(mkl);
+		} // coarse loop
+	}
 	return ltable;
 }
 
@@ -20274,6 +20274,44 @@ vector<int> Util::nearest_fang_select(const vector<vector<float> >& vecref, floa
 }
 
 
+vector<int> Util::nearest_fang_sym(const vector<vector<float> >& angles_sym_normals, const vector<vector<float> >& reference_normals, int neighbors, string symmetry, int howmany) {
+	if ( howmany > reference_normals.size() ) throw InvalidValueException(howmany,"Error, number of neighbors cannot be larger than number of reference directions");
+	std::vector<int> bout(howmany);
+	std::vector<float> score(howmany);
+	for (unsigned int k=0; k<howmany; k++) {
+		score[k] = -1.0e10;
+		bout[k] = -1;
+	}
+
+	//int nang = angles_sym_normals.size()/neighbors;	
+
+	for (unsigned int i=0; i<reference_normals.size(); i++) {
+		float v = -1.0e10;
+		for (unsigned int n=0; n<neighbors; n++) {
+			float  qv = 0.0f;
+			for (unsigned int t=0; t<3; t++) qv += reference_normals[i][t]*angles_sym_normals[n][t];
+			if( qv > v )  v = qv;
+		}
+		for (unsigned int k=0; k<howmany; k++) {
+			if (v > score[k]) {
+				for (unsigned int l=howmany-1; l>k; l-=1) {
+					score[l] = score[l-1];
+					bout[l] = bout[l-1];
+				}
+				score[k] = v;
+				bout[k] = i;
+				//cout << i<< " AAAAA "<< k<< "  "<<endl;
+				//for (unsigned int kk=0; kk<howmany; kk++) { cout << score[kk]<< "  "<<bout[kk]<<endl;}
+				break;
+			}
+		}	
+	}
+	return bout;
+}
+
+
+
+
 int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z) {
 	throw NullPointerException("nearest_ang_f");
 	float best_v = vecref[0][0]*x+vecref[0][1]*y+vecref[0][2]*z;
@@ -20587,6 +20625,213 @@ vector<int> Util::group_proj_by_phitheta(const vector<float>& projangles, const 
 	}
 	return proj_list;
 }
+
+/*
+
+Functions to handle angles, normals, their similarity, all use full range and include symmetry
+$$$
+*/
+
+
+vector<float> Util::reduce_to_asymmetric(const vector<float>& angles, string symmetry) {
+// Reduces angles 
+	int nang = angles.size();
+	vector<float> redang(nang);
+
+	int nsym = atoi(symmetry.substr(1,1000).c_str());
+	for(int i=0; i<nang; i++)  redang[i] = angles[i];
+
+	if( symmetry.substr(0,1) == "c")  {
+		float qt = 360.0f/nsym;
+		while(redang[0] >= qt) redang[0] -= qt;
+	} else if( symmetry.substr(0,1) == "d")  {
+		if( redang[1] > 90.0f ) {
+			redang[0] = 360.0f - redang[0];
+			redang[1] = 180.0f - redang[1];
+			if(nang == 3) redang[2] = fmod(redang[2]+180.0f, 360.0f);
+		}
+		float qt = 360.0f/nsym;
+		while(redang[0] >= qt) redang[0] -= qt;
+	}
+
+	return redang;
+}
+
+
+vector<float> Util::reduce_to_asymmetric_list(const vector<vector<float> >& angles, string symmetry) {
+// Reduces angles 
+	int nlist = angles.size();
+	int nang = angles[0].size();
+	vector<float> redang(nlist*nang);
+
+	int nsym = atoi(symmetry.substr(1,1000).c_str());
+	for(int l=0; l<nlist; l++)  for(int i=0; i<nang; i++)  redang[l*nang+i] = angles[l][i];
+
+	if( symmetry.substr(0,1) == "c")  {
+		float qt = 360.0f/nsym;
+		for(int l=0; l<nlist; l++) {
+			while(redang[l*nang] >= qt) redang[l*nang] -= qt;
+		}
+	} else if( symmetry.substr(0,1) == "d")  {
+		for(int l=0; l<nlist; l++) {
+			if( redang[l*nang+1] > 90.0f ) {
+				redang[l*nang] = 360.0f - redang[l*nang];
+				redang[l*nang+1] = 180.0f - redang[l*nang+1];
+				if(nang == 3) redang[l*nang+2] = fmod(redang[l*nang+2]+180.0f, 360.0f);
+			}
+			float qt = 360.0f/nsym;
+			while(redang[l*nang] >= qt) redang[l*nang] -= qt;
+		}
+	}
+
+	return redang;
+}
+
+
+vector<float> Util::angle_to_normal(const vector<float>& angles) {
+// converts to normal
+	float pi180 = M_PI/180.0f;
+	vector<float> normal(3);
+
+	float qt = angles[1]*pi180;
+	float qp = angles[0]*pi180;
+	float qs = sin(qt);
+	normal[0] = qs*cos(qp);
+	normal[1] = qs*sin(qp);
+	normal[2] = cos(qt);
+
+	return normal;
+}
+
+
+vector<float> Util::angles_to_normals(const vector<vector<float> >& angles) {
+// converts to normal
+	float pi180 = M_PI/180.0f;
+	int nlist = angles.size();
+	vector<float> normal(nlist*3);
+
+	for(int l=0; l<nlist; l++) {
+		float qt = angles[l][1]*pi180;
+		float qp = angles[l][0]*pi180;
+		float qs = sin(qt);
+		normal[3*l]   = qs*cos(qp);
+		normal[3*l+1] = qs*sin(qp);
+		normal[3*l+2] = cos(qt);
+	}
+
+	return normal;
+}
+
+
+vector<float> Util::symmetry_related(const vector<float>& angles, string symmetry) {
+// Symmetry related angles, all three are required
+	int nang = angles.size();
+	if( nang != 3)  throw InvalidValueException(nang, "Three angles are required");
+	int nsym = atoi(symmetry.substr(1,1000).c_str());
+	if( symmetry.substr(0,1) == "d") nsym += nsym;
+	vector<float> redang(nang*nsym);
+
+	for(int i=0; i<nang; i++)  redang[i] = angles[i];
+
+	if( symmetry.substr(0,1) == "c" and nsym >1)  {
+		float qt = 360.0f/nsym;
+		for(int l=1; l<nsym; l++) {
+			redang[3*l]   = angles[0]+l*qt;
+			redang[3*l+1] = angles[1];
+			redang[3*l+2] = angles[2];
+		}
+		
+	} else if( symmetry.substr(0,1) == "d")  {
+		float qt = 720.0f/nsym;
+		for(int l=1; l<nsym/2; l++) {
+			redang[3*l]   = angles[0]+l*qt;
+			redang[3*l+1] = angles[1];
+			redang[3*l+2] = angles[2];
+		}
+		for(int l=nsym/2; l<nsym; l++) {
+			redang[3*l]   = 360.0f - redang[3*(l-nsym/2)];
+			redang[3*l+1] = 180.0f - angles[1];
+			redang[3*l+2] = fmod( 180.0f + angles[2], 360.0f);
+		}
+	}
+
+	return redang;
+}
+
+
+vector<float> Util::symmetry_neighbors(const vector<vector<float> >& angles, string symmetry) {
+// Symmetry related angles, all three are required
+	int nneighbors;
+	int nlist = angles.size();
+	int nang = angles[0].size();
+	if( nang != 3)  throw InvalidValueException(nang, "Three angles are required");
+	int nsym = atoi(symmetry.substr(1,1000).c_str());
+	if( symmetry.substr(0,1) == "d") nsym += nsym;
+	if( symmetry == "c1" ) {
+		nneighbors = 0;
+	} else if( symmetry.substr(0,1) == "c" ) {
+		if( nsym == 2 ) {
+			nneighbors = 1;
+		} else {
+			nneighbors = 2;
+		}
+	} else if( symmetry.substr(0,1) == "d")  {
+		if( nsym == 1 ) {
+			nneighbors = 1;
+		} else if (nsym == 2) {
+			nneighbors = 3;
+		} else {
+			nneighbors = 5;
+		}
+	}	
+
+	int mnm = nneighbors+1;
+
+	vector<float> redang(nlist*nang*mnm);
+
+	for(int m=0; m<nlist; m++)  for(int i=0; i<nang; i++)  redang[mnm*nang*m + i] = angles[m][i];
+
+	if( symmetry.substr(0,1) == "c" and nsym >1)  {
+		float qt = 360.0f/nsym;
+		for(int m=0; m<nlist; m++) {
+			for(int l=0; l<nneighbors; l++) {
+				int lt = 1 - l - l;  // cast to 1, -1
+				redang[mnm*nang*m + nang*(l+1) + 0] = fmod(angles[m][0]+lt*qt + 1440.0f,360.f);
+				redang[mnm*nang*m + nang*(l+1) + 1] = angles[m][1];
+				redang[mnm*nang*m + nang*(l+1) + 2] = angles[m][2];
+			}
+		}
+		
+	} else if( symmetry.substr(0,1) == "d")  {
+		float qt = 720.0f/nsym;
+		for(int m=0; m<nlist; m++) {
+			for(int l=0; l<nneighbors; l++) {
+				int lt = 1 - l - l;  // cast to 1, -1
+				redang[mnm*nang*m + nang*l + 0] = fmod(angles[m][0]+lt*qt,360.f);
+				redang[mnm*nang*m + nang*l + 1] = angles[m][1];
+				redang[mnm*nang*m + nang*l + 2] = angles[m][2];
+			}
+		}
+
+/*
+		for(int l=1; l<nsym/2; l++) {
+			redang[3*l]   = angles[0]+l*qt;
+			redang[3*l+1] = angles[1];
+			redang[3*l+2] = angles[2];
+		}
+		for(int l=nsym/2; l<nsym; l++) {
+			redang[3*l]   = 360.0f - redang[3*(l-nsym/2)];
+			redang[3*l+1] = 180.0f - angles[1];
+			redang[3*l+2] = fmod( 180.0f + angles[2], 360.0f);
+		}*/
+	}
+
+	return redang;
+}
+
+
+
+/* ############################# */
 
 vector<float> Util::multiref_polar_ali_2d_delta(EMData* image, const vector< EMData* >& crefim,
                 vector<float> xrng, vector<float> yrng, float step, string mode,
