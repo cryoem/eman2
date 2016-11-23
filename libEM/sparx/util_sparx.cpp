@@ -19589,7 +19589,7 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 
 	int nsym = atoi(symmetry.substr(1,1000).c_str());//std::stoi(symmetry.substr(1,1000));
 	vector<int> ltable;
-
+/*  It needs to be corrected.
 	if( symmetry == "c1" ) {
 		vector<float> dang(3*nfine_sampling_angles);
 		for (int kl=0; kl<nfine_sampling_angles; kl++) getfvec(fine_sampling_angles[kl][0], fine_sampling_angles[kl][1], dang[3*kl], dang[3*kl+1], dang[3*kl+2]);
@@ -19653,6 +19653,7 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			ltable.push_back(mkl);
 		} // coarse loop
 	}
+	*/
 	return ltable;
 }
 

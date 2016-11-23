@@ -3778,7 +3778,7 @@ def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1"):
 	elif( sym[:1] == "c" or  sym[:1] == "d" ):
 		angles_sym_normals = angles_to_normals(symmetry_neighbors([angles], sym))
 		assignments = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals)/3, sym, howmany)
-	'''
+		'''
 		for i in xrange(howmany):
 			tmp = Util.nearest_fang(refnormal, ref[0],ref[1],ref[2])
 			k = tmp[0]
@@ -3815,7 +3815,7 @@ def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1"):
 			for l in xrange(3): del refnormal[3*best_i+2-l]
 			del lookup[best_i]
 
-	'''
+		'''
 
 	else:
 		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_full_k_projangles",1)
@@ -3823,7 +3823,7 @@ def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1"):
 
 	return assignments
 
-def nearest_many_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1")
+def nearest_many_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1"):
 	# We assume angles can be on the list of normals
 	from utilities import getfvec
 	from utilities import angles_to_normals, symmetry_neighbors
