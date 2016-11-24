@@ -1,45 +1,47 @@
 = Name =
-sxunblur - Micrograph movie alignment: Align micrograph movies with Unblur.
+sxunblur - Micrograph movie alignment: Align frames of micrograph movies with Unblur.
+
 
 = Usage =
 
 ''usage in command line''
 
-sxunblur.py  unblur  input_mrc_micrograph  output --summovie=SUMMOVIE  --selection_list=SELECTION_LIST --nr_threads=NR_THREADS  --nr_frames=nr_frames  --pixel_size=pixel_size  --skip_dose_filter  --exposure_per_frame=exposure_per_frame  --voltage=voltage  --pre_exposure=pre_exposure  --save_frames  --expert_mode  --shift_initial=shift_initial  --shift_radius=shift_radius  --b_factor=b_factor  --fourier_vertical=fourier_vertical  --fourier_horizontal=fourier_horizontal  --shift_threshold=shift_threshold  --iterations=iterations  --dont_restore_noise --verbose
+sxunblur.py  unblur_path  input_micrograph_pattern  output_directory  --summovie_path=SUMMOVIE_PATH  --selection_list=SELECTION_LIST  --nr_frames=nr_frames  --pixel_size=pixel_size  --voltage=voltage  --exposure_per_frame=exposure_per_frame  --pre_exposure=pre_exposure  --nr_threads=NR_THREADS  --save_frames  --skip_dose_filter  --expert_mode  --shift_initial=shift_initial  --shift_radius=shift_radius  --b_factor=b_factor  --fourier_vertical=fourier_vertical  --fourier_horizontal=fourier_horizontal  --shift_threshold=shift_threshold  --iterations=iterations  --dont_restore_noise  --verbose
+
 
 === Typical usage ===
 
-    sxunblur exists in non-MPI version.
+    sxunblur exists only in non-MPI version.
 
     Perform unblur and with dose filtering and summovie without dose filtering.
 
-    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
-    --summovie=directory_to_summovie
+    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    --summovie_path=~/my_app/summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
     Perform unblur with dose filtering and summovie without dose filtering with selection list
 
-    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
-    --summovie=directory_to_summovie
+    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    --summovie_path=~/my_app/summovie
     --selection_list=selected_micrograph_file
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
     Perform unblur without dose filtering.
 
-    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
     --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --nr_threads=1
 
     Perform unblur without dose filtering and save the frames.
 
-    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
     --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=1
 
     Perform unblur with dose filtering and summovie without dose filtering with all options
 
-    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
-    --summovie=directory_to_summovie
+    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    --summovie_path=~/my_app/summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode
     --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0
@@ -48,51 +50,51 @@ sxunblur.py  unblur  input_mrc_micrograph  output --summovie=SUMMOVIE  --selecti
 
 
 == Input ==
+    unblur_path:: unblur executable path (SPHIRE specific): Specify the path to unblur executable. (default required string)
+    input_micrograph_pattern:: Input micrograph path pattern (SPHIRE specific): Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrographs. (default required string)
 
-    unblur:: Path to unblur executable: (default required string)
-    summovie:: Path to summovie executable: (default none)
-    input_mrc_micrograph:: Input micrographs: You can use the wild cards (e.g. *) to specify a list of micrographs. (default required string)
-    output:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
-
-    selection_list:: Input micrograph list file: Not an unblur option, extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
-    nr_threads:: Number of threads: Not an unblur option, number of threads unblur is allowed to use. The higher the faster, but it also needs a higher amount of memory. (default 1)
-    nr_frames:: Number of frames: (default 3)
-    pixel_size:: Pixel size [A]: (default  required -1.0)
-    exposure_per_frame:: Per frame exposure [e/A^2]: (default 1.0)
-    voltage:: Microscope voltage [kV]: (default 300.0)
-    pre_exposure:: Pre exposure [e/A^2]: (default 0.0)
+    summovie_path:: summovie executable path (SPHIRE specific): Specify the path to summovie executable. (default none)
+    selection_list:: Micrograph selecting list (SPHIRE specific): Specify a name of micrograph selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
+    nr_frames:: Number of movie frames: The number of movie frames in each input micrograph. (default 3)
+    pixel_size:: Pixel size [A]: The pixel size of input micrographs. (default required float)
+    voltage:: Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)
+    exposure_per_frame:: Per frame exposure [e/A^2]: The electron dose per frame in e/A^2. (default 1.0)
+    pre_exposure:: Pre-exposure [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging .(default 0.0)
+    nr_threads:: Number of threads: The number of threads unblur can use. The higher the faster, but it requires larger memory. (default 1)
 
     * The remaining parameters are optional.
-    save_frames:: Save aligned frames: save aligned frames. This is only neccessary if one wants to perform movie refinement and will slow down the process. (default False)
-    skip_dose_filter:: Skip the dose filter step: If yes, exposure per frame, voltage, and pre exposure will be ignored. (default False)
-    expert_mode:: Set expert mode: Requires the options initial shift, shift radius, b-factor, fourier_vertical, fourier_horizontal, shift threshold, iterations, restore noise, and verbosity. (default False)
-    shift_initial:: *EXPERT* Minimum shift for initial search [A]: (default 2.0)
-    shift_radius:: *EXPERT* Outer radius shift limit [A]: (default 200.0)
-    b_factor:: *EXPERT* Apply B-factor to images [A^2]: (default 1500.0)
-    fourier_vertical:: *EXPERT* Half-width of central vertical line of fourier mask: (default 1)
-    fourier_horizontal:: *EXPERT* Half-width of central horizontal line of fourier mask: (default 1)
-    shift_threshold:: *EXPERT* Termination shift threshold: (default 0.1)
-    iterations:: *EXPERT* Maximum iterations: (default 10)
-    dont_restore_noise:: *EXPERT* Do not restore noise power: (default False)
-    verbose:: *EXPERT* Verbose: (default False)
+    save_frames:: Save aligned movie frames: Save aligned movie frames. This option slows down the process. (default False)
+    skip_dose_filter:: Skip dose filter step: With this option, voltage, exposure per frame, and pre exposure will be ignored. (default False)
+    expert_mode:: Use expert mode: Requires the options initial shift, shift radius, b-factor, fourier_vertical, fourier_horizontal, shift threshold, iterations, restore noise, and verbosity. (default False)
+    shift_initial:: Minimum shift for initial search [A] (expert mode): Effective with unblur expert mode. (default 2.0)
+    shift_radius:: Outer radius shift limit [A] (expert mode): Effective with unblur expert mode. (default 200.0)
+    b_factor:: Apply B-factor to images [A^2] (expert mode): Effective with unblur expert mode. (default 1500.0)
+    fourier_vertical:: Vertical Fourier central mask size (expert mode): The half-width of central vertical line of Fourier mask. Effective with unblur expert mode. (default 1)
+    fourier_horizontal:: Horizontal Fourier central mask size (expert mode): The half-width of central horizontal line of Fourier mask. Effective with unblur expert mode. (default 1)
+    shift_threshold:: Termination shift threshold (expert mode): Effective with unblur expert mode. (default 0.1)
+    iterations:: Maximum iterations (expert mode): Effective with unblur expert mode. (default 10)
+    dont_restore_noise:: Do not restore noise power (expert mode): Effective with unblur expert mode. (default False)
+    verbose:: Verbose (expert mode): Effective with unblur expert mode. (default False)
 
 
 == Output ==
-The program creates the directory automatically in the chosen output directory.
+    output_directory:: Output directory (SPHIRE specific): The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+
+The program automatically creates the following subdirectories in the specified output directory.
 
 Without dosefilter:
-Sum files will be written to the "corrsum" folder.
-Log files will be written to the "logfiles" folder
-Aligned frames will be written to the "corrsum" folder.
-Shift files  will be written to the "shift" folder.
-FRC files will be written to the "frc" folder.
+Sum files will be written to the "corrsum" directory.
+Log files will be written to the "logfiles" directory
+Aligned frames will be written to the "corrsum" directory.
+Shift files  will be written to the "shift" directory.
+FRC files will be written to the "frc" directory.
 
 With dosefilter: As without dosefilter plus:
-Dose filtered sum files will be written to the "corrsum_dose_filtered" folder.
-Log files will be written to the "logfiles" folder
-Dose filtered aligned frames will be written to the "corrsum_dose_filtered" folder.
-Shift files  will be written to the "shift" folder.
-FRC files will be written to the "frc" folder.
+Dose filtered sum files will be written to the "corrsum_dose_filtered" directory.
+Log files will be written to the "logfiles" directory
+Dose filtered aligned frames will be written to the "corrsum_dose_filtered" directory.
+Shift files  will be written to the "shift" directory.
+FRC files will be written to the "frc" directory.
 
 
 = Description =
