@@ -119,7 +119,8 @@ def construct_keyword_dict():
 	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern
 	keyword_dict["selection_list"]                = SXkeyword_map(2, "any_micrograph") # selection_list
 	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters")     # --tr0=matrix_file
-	keyword_dict["input_coordinates"]             = SXkeyword_map(2, "parameters")     # input_coordinates_pattern
+	keyword_dict["input_shift_pattern"]           = SXkeyword_map(2, "parameters")     # input_shift_pattern
+	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "parameters")     # input_coordinates_pattern
 	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "parameters")     # input_ctf_params_source
 	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
@@ -128,10 +129,10 @@ def construct_keyword_dict():
 	keyword_dict["--chunk"]                       = SXkeyword_map(2, "parameters")     # --chunk0=CHUNK0_FILE_NAME, --chunk1=CHUNK1_FILE_NAME
 	keyword_dict["--list"]                        = SXkeyword_map(2, "parameters")     # --list
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
-	keyword_dict["unblur"]                        = SXkeyword_map(2, "exe")            # unblur
-	keyword_dict["summovie"]                        = SXkeyword_map(2, "exe")          # summovie
+	keyword_dict["unblur_path"]                   = SXkeyword_map(2, "exe")            # unblur_path
+	keyword_dict["summovie_path"]                 = SXkeyword_map(2, "exe")            # summovie_path
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
-	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
+###	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
 	keyword_dict["input_bdb_stack_file"]          = SXkeyword_map(2, "bdb")            # input_bdb_stack_file
 	keyword_dict["input_shift_list_file"]         = SXkeyword_map(2, "txt")            # input_shift_list_file
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "txt")            # cter_ctf_file

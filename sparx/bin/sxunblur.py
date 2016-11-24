@@ -44,11 +44,12 @@ def main():
     --selection_list
     --nr_frames=nr_frames
     --pixel_size=pixel_size
-    --skip_dose_filter
-    --exposure_per_frame=exposure_per_frame
     --voltage=voltage
+    --exposure_per_frame=exposure_per_frame
     --pre_exposure=pre_exposure
+    --nr_threads
     --save_frames
+    --skip_dose_filter
     --expert_mode
     --shift_initial=shift_initial
     --shift_radius=shift_radius
@@ -59,20 +60,19 @@ def main():
     --iterations=iterations
     --dont_restore_noise
     --verbose
-    --nr_threads'
 
     sxunblur exists only in non-MPI version.
 
     Perform unblur and with dose filtering and summovie without dose filtering.
 
-    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    sxunblur.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur
     --summovie_path=~/my_app/summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
-    Perform unblur with dose filtering and summovie without dose filtering with selection list
+    Perform unblur with dose filtering and summovie without dose filtering with selection list.
 
-    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    sxunblur.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur
     --summovie_path=~/my_app/summovie
     --selection_list=selected_micrograph_file
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
@@ -80,17 +80,17 @@ def main():
 
     Perform unblur without dose filtering.
 
-    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    sxunblur.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur
     --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --nr_threads=1
 
     Perform unblur without dose filtering and save the frames.
 
-    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    sxunblur.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur
     --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=1
 
-    Perform unblur with dose filtering and summovie without dose filtering with all options
+    Perform unblur with dose filtering and summovie without dose filtering with all options.
 
-    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    sxunblur.py ~/my_app/unblur 'movies/micrograph_*_frames.mrc' outdir_unblur
     --summovie_path=~/my_app/summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode
@@ -100,30 +100,30 @@ def main():
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--summovie_path',      type='str',          default='',        help='Path to summovie executable (SPHIRE extension): Specify the path to summovie executable. (default required string)')
-    parser.add_option('--selection_list',     type='str',          default='',        help='Micrograph selecting list (SPHIRE extension): Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
-    parser.add_option('--nr_frames',          type='int',          default=3,         help='Number of frames in the set of micrographs')
+    parser.add_option('--summovie_path',      type='str',          default='',        help='summovie executable path (SPHIRE specific): Specify the file path of summovie executable. (default none)')
+    parser.add_option('--selection_list',     type='str',          default='',        help='Micrograph selecting list (SPHIRE specific): Specify a name of micrograph selection list text file. The file extension must be \'.txt\'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
+    parser.add_option('--nr_frames',          type='int',          default=3,         help='Number of movie frames: The number of movie frames in each input micrograph. (default 3)')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
     parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=SUPPRESS_HELP)
-    parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='Pixel size [A]')
-    parser.add_option('--skip_dose_filter',   action='store_true', default=False,     help='Skip apply dose filter options')
-    parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='Exposure per frame [e/A^2]')
-    parser.add_option('--voltage',            type='float',        default=300.0,     help='Accelerate voltage [kV]')
-    parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='Pre exposure amount [e/A^2]')
-    parser.add_option('--save_frames',        action='store_true', default=False,     help='Save aligned frames. This is only neccessary if one wants to perform movie refinement and will slow down the process.')
+    parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='Pixel size [A]: The pixel size of input micrographs. (default required float)')
+    parser.add_option('--voltage',            type='float',        default=300.0,     help='Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)')
+    parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='Per frame exposure [e/A^2]: The electron dose per frame in e/A^2. (default 2.0)')
+    parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='Pre-exposure [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging .(default 0.0)')
+    parser.add_option('--nr_threads',         type='int',          default=1,         help='Number of threads: The number of threads unblur can use. The higher the faster, but it requires larger memory. (default 1)')
+    parser.add_option('--save_frames',        action='store_true', default=False,     help='Save aligned movie frames: Save aligned movie frames. This option slows down the process. (default False)')
     parser.add_option('--frames_suffix',      type='string',       default='_frames', help=SUPPRESS_HELP)
-    parser.add_option('--expert_mode',        action='store_true', default=False,     help='Set expert mode settings')
+    parser.add_option('--skip_dose_filter',   action='store_true', default=False,     help='Skip dose filter step: With this option, voltage, exposure per frame, and pre exposure will be ignored. (default False)')
+    parser.add_option('--expert_mode',        action='store_true', default=False,     help='Use expert mode: Requires initial shift, shift radius, b-factor, fourier_vertical, fourier_horizontal, shift threshold, iterations, restore noise, and verbosity options. (default False)')
     parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=SUPPRESS_HELP)
-    parser.add_option('--shift_initial',      type='float',        default=2.0,       help='Minimum shift for inital search [A]')
-    parser.add_option('--shift_radius',       type='float',        default=200.0,     help='Outer radius shift limit [A]')
-    parser.add_option('--b_factor',           type='float',        default=1500.0,    help='B-factor to appy to image [A^2]')
-    parser.add_option('--fourier_vertical',   type='int',          default=1,         help='Half-width of central vertical line of fourier mask')
-    parser.add_option('--fourier_horizontal', type='int',          default=1,         help='Half-width of central horizontal line of fourier mask')
-    parser.add_option('--shift_threshold',    type='float',        default=0.1,       help='Termination shift threshold')
-    parser.add_option('--iterations',         type='int',          default=10,        help='Maximum number of iterations')
-    parser.add_option('--dont_restore_noise', action='store_true', default=False,     help='Do not restore noise power')
-    parser.add_option('--verbose',            action='store_true', default=False,     help='Verbose output')
-    parser.add_option('--nr_threads',         type='int',          default=1,         help='Number of threads: The higher the faster, but it also needs a higher amount of memory.')
+    parser.add_option('--shift_initial',      type='float',        default=2.0,       help='Minimum shift for initial search [A] (expert mode): Effective with unblur expert mode. (default 2.0)')
+    parser.add_option('--shift_radius',       type='float',        default=200.0,     help='Outer radius shift limit [A] (expert mode): Effective with unblur expert mode. (default 200.0)')
+    parser.add_option('--b_factor',           type='float',        default=1500.0,    help='Apply B-factor to images [A^2] (expert mode): Effective with unblur expert mode. (default 1500.0)')
+    parser.add_option('--fourier_vertical',   type='int',          default=1,         help='Vertical Fourier central mask size (expert mode): The half-width of central vertical line of Fourier mask. Effective with unblur expert mode. (default 1)')
+    parser.add_option('--fourier_horizontal', type='int',          default=1,         help='Horizontal Fourier central mask size (expert mode): The half-width of central horizontal line of Fourier mask. Effective with unblur expert mode. (default 1)')
+    parser.add_option('--shift_threshold',    type='float',        default=0.1,       help='Termination shift threshold (expert mode): Effective with unblur expert mode. (default 0.1)')
+    parser.add_option('--iterations',         type='int',          default=10,        help='Maximum iterations (expert mode): Effective with unblur expert mode. (default 10)')
+    parser.add_option('--dont_restore_noise', action='store_true', default=False,     help='Do not restore noise power (expert mode): Effective with unblur expert mode. (default False)')
+    parser.add_option('--verbose',            action='store_true', default=False,     help='Verbose (expert mode): Effective with unblur expert mode. (default False)')
     parser.add_option('--unblur_ready',       action='store_true', default=False,     help=SUPPRESS_HELP)
 
     # list of the options and the arguments

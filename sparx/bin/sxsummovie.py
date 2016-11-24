@@ -39,54 +39,52 @@ def main():
 
     # Parse the Options
     progname = path.basename(argv[0])
-    usage = progname + """ summovie input_mrc_micrograph inputfile output
+    usage = progname + """ summovie_path input_micrograph_pattern input_shift_pattern output_directory
     --selection_list
     --nr_frames=nr_frames
-    --pixel_size=pixel_size
     --first
     --last
+    --pixel_size=pixel_size
+    --nr_threads
     --apply_dose_filter
-    --exposure_per_frame=exposure_per_frame
     --voltage=voltage
+    --exposure_per_frame=exposure_per_frame
     --pre_exposure=pre_exposure
     --dont_restore_noise
-    --nr_threads'
 
-    sxsummovie exists in non-MPI version.
+    sxsummovie exists only in non-MPI version.
 
-    Perform summovie without dose filtering
+    Perform summovie without dose filtering.
 
-    sxsummovie.py directory_for_summovie 'mic_directory/prefix*suffix' 'shift_directory/prefix*suffix'
-    output --nr_frames=24 --pixel_size=1.19 --nr_threads=1
+    sxsummovie.py ~/my_app/summovie 'outdir_unblur/corrsum/micrograph_*_frames_sum.mrc' 'outdir_unblur/shift/micrograph_*_frames_shift.txt'
+    outdir_summovie --nr_frames=24 --pixel_size=1.19 --nr_threads=1
 
-    Perform summovie without dose filtering and with less frames
+    Perform summovie without dose filtering and with less frames.
 
-    sxsummovie.py directory_for_summovie 'mic_directory/prefix*suffix' 'shift_directory/prefix*suffix'
-    output --nr_frames=24 --pixel_size=1.19 --nr_threads=1 --first=3 --last=15
+    sxsummovie.py ~/my_app/summovie 'outdir_unblur/corrsum/micrograph_*_frames_sum.mrc' 'outdir_unblur/shift/micrograph_*_frames_shift.txt'
+    outdir_summovie --nr_frames=24 --first=3 --last=15 --pixel_size=1.19 --nr_threads=1
 
-    Perform summovie with dose filtering and with less frames
+    Perform summovie with dose filtering and with less frames.
 
-    sxsummovie.py directory_for_summovie 'mic_directory/prefix*suffix' 'shift_directory/prefix*suffix'
-    output --nr_frames=24 --pixel_size=1.19 --nr_threads=1 --apply_dose_filter --exposure_per_frame=2 --voltage=300 --pre_exposure=0 --first=3 --last=15
-
-
+    sxsummovie.py ~/my_app/summovie 'outdir_unblur/corrsum/micrograph_*_frames_sum.mrc' 'outdir_unblur/shift/micrograph_*_frames_shift.txt'
+    outdir_summovie --nr_frames=24 --first=3 --last=15 --pixel_size=1.19 --nr_threads=1 --apply_dose_filter --voltage=300 --exposure_per_frame=2 --pre_exposure=0
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--selection_list',         type='str',          default='',    help='not a summovie option: input selection micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
-    parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
+    parser.add_option('--selection_list',     type='str',          default='',        help='Micrograph selecting list (SPHIRE specific): Specify a name of micrograph selection list text file. The file extension must be \'.txt\'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
+    parser.add_option('--nr_frames',          type='int',          default=3,         help='Number of movie frames: The number of movie frames in each input micrograph. (default 3)')
+    parser.add_option('--first',              type='int',          default=1,         help='First movie frame: First movie frame for summing. (default 1)')
+    parser.add_option('--last',               type='int',          default=-1,        help='Last movie frame: Last movie frame for summing. (default -1)')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
-    parser.add_option('--first',              type='int',          default=1,         help='first frame for summing')
-    parser.add_option('--last',               type='int',          default=-1,        help='last frame for summing')
-    parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='pixel size [A]')
-    parser.add_option('--apply_dose_filter',        action='store_true', default=False,     help='apply dose filter options')
-    parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='exposure per frame [e/A^2]')
-    parser.add_option('--voltage',            type='float',        default=300.0,     help='accelerate voltage [kV]')
-    parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='pre exposure amount [e/A^2]')
+    parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='Pixel size [A]: The pixel size of input micrographs. (default required float)')
+    parser.add_option('--nr_threads',         type='int',          default=1,         help='Number of threads: The number of threads summovie can use. The higher the faster, but it requires larger memory. (default 1)')
+    parser.add_option('--apply_dose_filter',  action='store_true', default=False,     help='Apply dose filter step: Requires voltage, exposure per frame, and pre exposure options. (default False)')
+    parser.add_option('--voltage',            type='float',        default=300.0,     help='Microscope voltage (dose filter) [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)')
+    parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='Per frame exposure (dose filter) [e/A^2]: The electron dose per frame in e/A^2. (default 2.0)')
+    parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='Pre-exposure (dose filter) [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging .(default 0.0)')
     parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=SUPPRESS_HELP)
-    parser.add_option('--dont_restore_noise',      action='store_true', default=False,     help='do not restore noise power')
-    parser.add_option('--nr_threads',         type='int',          default=1,         help='number of threads summovie is allowed to use. The higher the faster, but it also needs a higher amount of memory.')
-    parser.add_option('--summovie_ready',        action='store_true', default=False,      help=SUPPRESS_HELP)
+    parser.add_option('--dont_restore_noise', action='store_true', default=False,     help='Do not restore noise power: Do not restore noise power. (default False)')
+    parser.add_option('--summovie_ready',     action='store_true', default=False,     help=SUPPRESS_HELP)
 
     # list of the options and the arguments
     (options, args) = parser.parse_args(argv[1:])
@@ -98,10 +96,10 @@ def main():
         ERROR("see usage " + usage, 1)
 
     # Convert the realtive parts to absolute ones
-    summovie_path = path.realpath(args[0])
-    input_image = path.realpath(args[1])
-    input_shift = path.realpath(args[2])
-    output_dir = path.realpath(args[3])
+    summovie_path = path.realpath(args[0]) # summovie_path
+    input_image = path.realpath(args[1])   # input_micrograph_pattern
+    input_shift = path.realpath(args[2])   # input_shift_pattern
+    output_dir = path.realpath(args[3])    # output_directory
 
     # If the summovie executable file does not exists, stop the script
     if not path.exists(summovie_path):
