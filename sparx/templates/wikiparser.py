@@ -109,10 +109,10 @@ def construct_keyword_dict():
 	keyword_dict["--makevstack"]                  = SXkeyword_map(1, "output")         # --makevstack
 	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "any_image_list") # input_micrograph_list (contains keyworkd 'input_micrograph' but this should be image_list type)
 	# Use priority 2 for the others
-	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack, input_stack
+	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack, input_stack, --instack=input_stack_file
 	keyword_dict["volume"]                        = SXkeyword_map(2, "image")          # initial_volume, firstvolume, secondvolume, input_volume
-	keyword_dict["mask"]                          = SXkeyword_map(2, "image")          # --mask3D=mask3D, maskfile, mask, --mask=MASK
-	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")          # --focus=3Dmask
+	keyword_dict["mask"]                          = SXkeyword_map(2, "image")          # --mask3D=mask3D, maskfile, mask, --mask=MASK, --mask3D=mask3d_file
+	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")          # --focus=3Dmask, --focus=focus3d_file
 	keyword_dict["--input"]                       = SXkeyword_map(2, "image")          # --input=INPUT
 	keyword_dict["class_file_name_no_dir_info"]   = SXkeyword_map(2, "image")          # class_file_name_no_dir_info
 	keyword_dict["input_image_path"]              = SXkeyword_map(2, "any_image")      # input_image_path
@@ -123,7 +123,7 @@ def construct_keyword_dict():
 	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "parameters")     # input_ctf_params_source
 	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
-	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment
+	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment, --PWadjustment=ref_pwspectrum1d_file 
 	keyword_dict["--mtf"]                         = SXkeyword_map(2, "parameters")     # --mtf=MTF_FILE_NAME
 	keyword_dict["--chunk"]                       = SXkeyword_map(2, "parameters")     # --chunk0=CHUNK0_FILE_NAME, --chunk1=CHUNK1_FILE_NAME
 	keyword_dict["--list"]                        = SXkeyword_map(2, "parameters")     # --list
@@ -137,7 +137,8 @@ def construct_keyword_dict():
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "txt")            # cter_ctf_file
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
-	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=run1_directory, --previous_run2=run2_directory
+	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "directory")      # --refinement_dir=refinemen_out_dir
+###	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=run1_directory, --previous_run2=run2_directory
 	keyword_dict["input_bdb_stack_pattern"]       = SXkeyword_map(2, "any_directory")  # input_bdb_stack_pattern
 
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")           # --apix=pixel_size, --apix
@@ -146,7 +147,7 @@ def construct_keyword_dict():
 	keyword_dict["--box"]                         = SXkeyword_map(2, "box")            # --box=box_size, --box_size=box_size
 	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")         # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
 	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")            # --sym=c1, --sym=c1, --sym=c1, --sym=symmetry, --sym=c1, --sym=c4
-
+	
 	# NOTE: 2016/02/23 Toshio Moriya
 	# Below might be useful to include
 	# reference power spectrum? --pwreference of viper, --pwreference of rviper, --PWadjustment of sort3d, --PWadjustment of rsort3d
@@ -155,11 +156,11 @@ def construct_keyword_dict():
 	# --wn of locres, sort3d, & rsort3d; same as ctfwin?
 	# --radius of locres & filterlocal; same as radius?
 	#
-
+	
 	return keyword_dict
 
 # ----------------------------------------------------------------------------------------
-def handle_exceptional_keywords(sxcmd):
+def handle_exceptional_cases(sxcmd):
 	# DESIGN_NOTE: 2016/02/05 Toshio Moriya
 	# Handle exceptional cases due to the limitation of software design
 	# In future, we should remove these exception handling by reviewing the design
@@ -167,14 +168,6 @@ def handle_exceptional_keywords(sxcmd):
 		assert(sxcmd.token_dict["stack_file"].key_base == "stack_file")
 		assert(sxcmd.token_dict["stack_file"].type == "image")
 		sxcmd.token_dict["stack_file"].type = "bdb"
-	elif sxcmd.name == "sxfilterlocal":
-		assert(sxcmd.token_dict["locres_volume"].key_base == "locres_volume")
-		assert(sxcmd.token_dict["locres_volume"].type == "output")
-		sxcmd.token_dict["locres_volume"].type = "image"
-	elif sxcmd.name in ["sxlocres",  "sxsort3d", "sxrsort3d"]:
-		assert(sxcmd.token_dict["wn"].key_base == "wn")
-		assert(sxcmd.token_dict["wn"].type == "ctfwin")
-		sxcmd.token_dict["wn"].type = "int"
 	elif sxcmd.name in ["sxrviper"]:
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "image")
@@ -188,6 +181,30 @@ def handle_exceptional_keywords(sxcmd):
 		assert(sxcmd.token_dict["radius"].key_base == "radius")
 		assert(sxcmd.token_dict["radius"].type == "radius")
 		sxcmd.token_dict["radius"].type = "int"
+	elif sxcmd.name in ["sxrsort3d"]:
+		assert(sxcmd.token_dict["wn"].key_base == "wn")
+		assert(sxcmd.token_dict["wn"].type == "ctfwin")
+		sxcmd.token_dict["wn"].type = "int"
+		# DESIGN_NOTE: 2016/11/23 Toshio Moriya
+		# The below should be a temporary solution until redesign sxrsort3d command interface
+		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")
+		assert(sxcmd.token_dict["refinement_method"].is_required == False)
+		print sxcmd.token_dict["refinement_method"].restore
+		sxcmd.token_dict["refinement_method"].is_required = True
+		assert(sxcmd.token_dict["refinement_dir"].key_base == "refinement_dir")
+		assert(sxcmd.token_dict["refinement_dir"].is_required == False)
+		sxcmd.token_dict["refinement_dir"].is_required = True
+		assert(sxcmd.token_dict["masterdir"].key_base == "masterdir")
+		assert(sxcmd.token_dict["masterdir"].is_required == False)
+		sxcmd.token_dict["masterdir"].is_required = True
+	elif sxcmd.name in ["sxsort3d", "sxlocres"]:
+		assert(sxcmd.token_dict["wn"].key_base == "wn")
+		assert(sxcmd.token_dict["wn"].type == "ctfwin")
+		sxcmd.token_dict["wn"].type = "int"
+	elif sxcmd.name == "sxfilterlocal":
+		assert(sxcmd.token_dict["locres_volume"].key_base == "locres_volume")
+		assert(sxcmd.token_dict["locres_volume"].type == "output")
+		sxcmd.token_dict["locres_volume"].type = "image"
 
 # ----------------------------------------------------------------------------------------
 def remove_MoinMoinWiki_makeup(target_text):
@@ -440,7 +457,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 
 	file_wiki.close()
 
-	handle_exceptional_keywords(sxcmd)
+	handle_exceptional_cases(sxcmd)
 
 	print "Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
@@ -732,7 +749,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	file_wiki.close()
 
-	handle_exceptional_keywords(sxcmd)
+	handle_exceptional_cases(sxcmd)
 
 	print "Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
@@ -1052,6 +1069,13 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 
 	return sxcmd_subconfig
 
+def create_exclude_list_rsort3d():
+	exclude_list = []
+
+	exclude_list.append("instack")
+
+	return exclude_list
+
 def create_exclude_list_boxer():
 	exclude_list = []
 
@@ -1198,8 +1222,12 @@ def main():
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
+	# sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	# sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
+
+	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))

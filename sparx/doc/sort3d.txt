@@ -1,5 +1,5 @@
 = Name =
-sxsort3d - 3D Clustering Protocol I: Sort 3D heterogeneity based on the reproducible members of K-means and Equal K-means classification. It runs after 3D refinement where the alignment parameters are determined.
+sxsort3d - 3D Clustering - SORT3D: Sort 3D heterogeneity based on the reproducible members of K-means and Equal K-means classification. It runs after 3D refinement where the alignment parameters are determined.
 
 = Usage =
 

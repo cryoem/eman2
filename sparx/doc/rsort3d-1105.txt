@@ -1,0 +1,88 @@
+= Name =
+sxrsort3d - 3D Clustering - RSORT3D: Reproducible 3D Clustering of heterogeneous dataset. Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters have been determined already.
+
+
+= Usage =
+
+'' usage in command line''
+
+sxrsort3d.py  --refinement_method=refinement_method  --refinement_dir=refinemen_out_dir  --masterdir=master_dir  --niter_for_sorting=num_of_sorting_iterations  --mask3D=mask3d_file  --focus=focus3d_file  --radius=outer_radius  --sym=symmetry  --number_of_images_per_group=num_of_images_per_group  --smallest_group=smallest_group  --low_pass_filter=low_pass_filter_cutoff  --Kmeans_lpf=Kmeans_lpf_method  --nindependent=indenpendent_runs  --noctf=no_ctf  --PWadjustment=ref_pwspectrum1d_file  --interpolation=interpolation_method  --comparison_method=comparison_method  --nxinit=initial_image_size  --wn=window_size  --instack=input_stack_file
+
+
+=== Typical usage ===
+
+sxrsort3d.py exists only in MPI version.
+
+    1. Initiate sorting from a SPHIRE/SPARX refinement:: In this mode, one can select arbitrary iteration of a 3D refinement directory. Typically, it is the master directory of a sxmeridien refinement via —niter_for_sorting option. 
+
+    ''' mpirun  -np  176  sxrsort3d.py  --refinement_method=SPARX  --refinement_dir=meridien_outdir  --niter_for_sorting=30  --radius=120  --sym=c5  --number_of_images_per_group=6000  --smallest_group=1500  --nindependent=5  --interpolation=trl  --low_pass_filter=0.25 ''' <<BR>><<BR>>
+
+    2.  Initiate sorting from a data stack:: Currently, this mode is not supported by SPHIRE GUI.
+
+    ''' mpirun  -np  176  sxrsort3d.py  --instack=bdb:data  --mask3D=mask3d.hdf  --focus=focus3d.hdf  -radius=29  --sym=c1  --nxinit=64  --number_of_images_per_group=2000  --nindependent=3  --low_pass_filter=0.25  --interpolation=4nn  --comparison_method=cross  --Kmeans_lpf=adhoc ''' <<BR>><<BR>>
+
+    3.  Initiate sorting from a relion refinement:: For this mode, please provide relion refinement directory. The program will pick up the results of the last iteration and start sorting. Currently, this mode is not supported by SPHIRE GUI.
+
+    ''' mpirun  -np  160  sxrsort3d.py  --refinement_method=relion  --refinement_dir=relion_outdir  --radius=120  --sym=c5  --nindependent=3  --number_of_images_per_group=6000 ''' <<BR>><<BR>>
+
+    NOTE - How to continue sxmeridien refinement using sorting results:: Please use --ctrefromsort3d option of sxmeridien, then specify the directory where you wish to continue the refinement to --oldrefdir option and a subset of data to —-subset option. The command will load the refinement information from the directory and continue refinement. Optinally, you can specify the iteration number for continuing refinement using -—ctrefromiter option, which is not necessarily be the same iteration where you used for the 3D sorting. Also, one can modify refinement parameters of the selected iteration through the other options. 
+
+    ''' mpirun  -np  88  sxmeridien.py  --ctrefromsort3d  --oldrefdir=meridien_outdir  --ctrefromiter=20  --subset=Clusters3.txt ''' <<BR>><<BR>>
+
+
+== Input ==
+    refinement_method:: Input 3D refinement method: Valid values are 'SPARX' and 'relion'. Currently, SHPIRE GUI (sxgui) supports only 'SPARX'. (default none)
+    refinement_dir:: Input 3D refinement directory: Usually the master output directory of sxmeridien. (default none)
+    masterdir:: Output directory: The master output directory for sorting. (default none)
+    niter_for_sorting:: 3D refinement iteration: Specify an iteration number of 3D refinement where the 3D alignment parameters should be extracted for this sorting. By default, it uses iteration achieved best resolution. (default -1)
+    mask3D:: 3D mask: File path of the global 3D mask for clustering. (default none)
+    focus:: Focus 3D mask: File path of a binary 3D mask for focused clustering. (default none)
+    radius:: Outer radius for rotational correlation [Pixels]: Particle radius in pixel for rotational correlation. The value must be smaller than half the box size. (default -1)
+    sym:: Point-group symmetry: Point group symmetry of the structure. (default c1) 
+    number_of_images_per_group:: Images per group: The number of images per a group. This value is critical for successful 3D clustering. (default 1000) 
+    smallest_group:: Smallest group size: Minimum number of members for being identified as a group. This value must be smaller than the number of images per a group (number_of_images_per_group). (default 500) 
+
+    * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
+    low_pass_filter:: Low-pass filter frequency [1/Pixel]: Absolute frequency cutoff of the low-pass filter used on the original image size for the 3D sorting. (default -1.0)
+    Kmeans_lpf:: Low-pass filter method for K-means: Low-pass filter method for K-means clustering. Valid values are 'adaptive', 'max', 'min', 'adhoc', and 'avg'. (default adaptive)
+    nindependent:: Independent runs: Number of independent runs for Equal Sized K-means clustering. The value must be an odd number larger than 2. (default 3) 
+    noctf:: No CTF correction: Use this option if full CTF correction should not be applied during the 3D clustering. By default, the program will do full CTF correction. (default False) 
+    PWadjustment:: Reference power spectrum file path: Path of text file containing 1D reference power spectrum of a PDB structure or EM map. The power spectrum will be used as reference to adjust the power spectra of clustered volumes. (default none) 
+    interpolation:: 3D reconstruction interpolation method: Interpolation method for 3D reconstruction. Valid values are 'trl' and '4nn'. (default 4nn) 
+    comparison_method:: Comparison method: Similarity measurement for the comparison between reprojected reference images and particle images. Valid values are 'cross' (cross-correlaton coefficients) and 'eucd' (Euclidean distance). (default cross) 
+    nxinit:: Initial image size for sorting: If it is necessary to speed up the processing time, set a non-zero positive integer to this option. Then, the program will reduce image size of original data by resampling to the specified size. By default, program determines the value from resolution. (default -1)
+    wn:: Processing window size [Pixels]: If it is necessary to speed up the processing time, set a non-zero positive integer to this option. Then, for data processing, program windows original images with the specified size by clipping the edges. (default 0) 
+    instack:: Input images stack: File path of particle stack for sorting. This option is not currently supported by SHPIRE GUI (sxgui). (default none)
+
+== Output ==
+Please use --masterdir option to specify the output directory. The results will be written here. This directory will be created automatically if it does not exist  Here, you can find a log.txt that describes the sequences of computations in the program. 
+
+
+= Description =
+sxrsort3d finds out stable members by carrying out two-way comparison of two independent sxsort3d runs.
+
+For small tested datasets (real and simulated ribosome data around 10K particles), it gives 70%-90% reproducibility. However, this rate also depends on the choice of number of images per group and number of particles in the smallest group.
+
+= Method =
+K-means, equal K-means, reproducibility, two-way comparison.
+
+= Reference =
+Not published yet.
+
+= Author / Maintainer =
+Zhong Huang
+
+= Keywords =
+    category 1:: APPLICATIONS
+
+= Files =
+sxrsort3d.py
+
+= See also =
+[[http://sparx-em.org/sparxwiki/sxsort3d|sxsort3d]]
+
+= Maturity =
+    beta::    Under development. It has been tested, The test cases/examples are available upon request. Please let us know if there are any bugs.
+
+= Bugs =
+None so far.
