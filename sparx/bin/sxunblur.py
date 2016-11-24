@@ -39,8 +39,8 @@ def main():
 
     # Parse the Options
     progname = path.basename(argv[0])
-    usage = progname + """ unblur input_image output
-    --summovie
+    usage = progname + """ unblur_path input_micrograph_pattern output_directory
+    --summovie_path
     --selection_list
     --nr_frames=nr_frames
     --pixel_size=pixel_size
@@ -61,37 +61,37 @@ def main():
     --verbose
     --nr_threads'
 
-    sxunblur exists in non-MPI version.
+    sxunblur exists only in non-MPI version.
 
-    Perform unblur and with dose filtering and summovie without dose filterng.
+    Perform unblur and with dose filtering and summovie without dose filtering.
 
-    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
-    --summovie=directory_to_summovie
+    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    --summovie_path=~/my_app/summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
     Perform unblur with dose filtering and summovie without dose filtering with selection list
 
-    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
-    --summovie=directory_to_summovie
+    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    --summovie_path=~/my_app/summovie
     --selection_list=selected_micrograph_file
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --nr_threads=1
 
     Perform unblur without dose filtering.
 
-    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
     --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --nr_threads=1
 
     Perform unblur without dose filtering and save the frames.
 
-    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
+    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
     --nr_frames=25 --pixel_size=1.19 --skip_dose_filter --save_frames --nr_threads=1
 
     Perform unblur with dose filtering and summovie without dose filtering with all options
 
-    sxunblur.py directory_to_unblur 'directory/prefix*suffix' output_directory
-    --summovie=directory_to_summovie
+    sxunblur.py ~/my_app/unblur 'movies/micrograph*.mrc' outdir_unblur
+    --summovie_path=~/my_app/summovie
     --nr_frames=25 --pixel_size=1.19 --exposure_per_frame=1.0
     --voltage=300.0 --pre_exposure=0.0 --save_frames --expert_mode
     --shift_initial=2.0 --shift_radius=200.0 --b_factor=1500.0
@@ -100,31 +100,31 @@ def main():
     """
 
     parser = OptionParser(usage, version=SPARXVERSION)
-    parser.add_option('--summovie',        type='str',          default='',        help='not a summovie option: path of the summovie executable')
-    parser.add_option('--selection_list',     type='str',          default='',        help='not an unblur option: input selection micrograph list file: Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
-    parser.add_option('--nr_frames',          type='int',          default=3,         help='number of frames in the set of micrographs')
+    parser.add_option('--summovie_path',      type='str',          default='',        help='Path to summovie executable (SPHIRE extension): Specify the path to summovie executable. (default required string)')
+    parser.add_option('--selection_list',     type='str',          default='',        help='Micrograph selecting list (SPHIRE extension): Extension of input micrograph list file must be ".txt". If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
+    parser.add_option('--nr_frames',          type='int',          default=3,         help='Number of frames in the set of micrographs')
     parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
     parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=SUPPRESS_HELP)
-    parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='pixel size [A]')
-    parser.add_option('--skip_dose_filter',        action='store_true', default=False,     help='skip apply dose filter options')
-    parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='exposure per frame [e/A^2]')
-    parser.add_option('--voltage',            type='float',        default=300.0,     help='accelerate voltage [kV]')
-    parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='pre exposure amount [e/A^2]')
-    parser.add_option('--save_frames',        action='store_true', default=False,     help='save aligned frames. This is only neccessary if one wants to perform movie refinement and will slow down the process.')
+    parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='Pixel size [A]')
+    parser.add_option('--skip_dose_filter',   action='store_true', default=False,     help='Skip apply dose filter options')
+    parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='Exposure per frame [e/A^2]')
+    parser.add_option('--voltage',            type='float',        default=300.0,     help='Accelerate voltage [kV]')
+    parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='Pre exposure amount [e/A^2]')
+    parser.add_option('--save_frames',        action='store_true', default=False,     help='Save aligned frames. This is only neccessary if one wants to perform movie refinement and will slow down the process.')
     parser.add_option('--frames_suffix',      type='string',       default='_frames', help=SUPPRESS_HELP)
-    parser.add_option('--expert_mode',        action='store_true', default=False,     help='set expert mode settings')
+    parser.add_option('--expert_mode',        action='store_true', default=False,     help='Set expert mode settings')
     parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=SUPPRESS_HELP)
-    parser.add_option('--shift_initial',      type='float',        default=2.0,       help='minimum shift for inital search [A]')
-    parser.add_option('--shift_radius',       type='float',        default=200.0,     help='outer radius shift limit [A]')
-    parser.add_option('--b_factor',           type='float',        default=1500.0,    help='b-factor to appy to image [A^2]')
-    parser.add_option('--fourier_vertical',   type='int',          default=1,         help='half-width of central vertical line of fourier mask')
-    parser.add_option('--fourier_horizontal', type='int',          default=1,         help='half-width of central horizontal line of fourier mask')
-    parser.add_option('--shift_threshold',    type='float',        default=0.1,       help='termination shift threshold')
-    parser.add_option('--iterations',         type='int',          default=10,        help='maximum number of iterations')
-    parser.add_option('--dont_restore_noise',      action='store_true', default=False,     help='do not restore noise power')
-    parser.add_option('--verbose',            action='store_true', default=False,     help='verbose output')
-    parser.add_option('--nr_threads',         type='int',          default=1,         help='Number of threads unblur is allowed to use. The higher the faster, but it also needs a higher amount of memory.')
-    parser.add_option('--unblur_ready',        action='store_true', default=False,      help=SUPPRESS_HELP)
+    parser.add_option('--shift_initial',      type='float',        default=2.0,       help='Minimum shift for inital search [A]')
+    parser.add_option('--shift_radius',       type='float',        default=200.0,     help='Outer radius shift limit [A]')
+    parser.add_option('--b_factor',           type='float',        default=1500.0,    help='B-factor to appy to image [A^2]')
+    parser.add_option('--fourier_vertical',   type='int',          default=1,         help='Half-width of central vertical line of fourier mask')
+    parser.add_option('--fourier_horizontal', type='int',          default=1,         help='Half-width of central horizontal line of fourier mask')
+    parser.add_option('--shift_threshold',    type='float',        default=0.1,       help='Termination shift threshold')
+    parser.add_option('--iterations',         type='int',          default=10,        help='Maximum number of iterations')
+    parser.add_option('--dont_restore_noise', action='store_true', default=False,     help='Do not restore noise power')
+    parser.add_option('--verbose',            action='store_true', default=False,     help='Verbose output')
+    parser.add_option('--nr_threads',         type='int',          default=1,         help='Number of threads: The higher the faster, but it also needs a higher amount of memory.')
+    parser.add_option('--unblur_ready',       action='store_true', default=False,     help=SUPPRESS_HELP)
 
     # list of the options and the arguments
     (options, args) = parser.parse_args(argv[1:])
@@ -136,9 +136,9 @@ def main():
         ERROR("see usage " + usage, 1)
 
     # Convert the realtive parts to absolute ones
-    unblur_path = path.realpath(args[0])
-    input_image = path.realpath(args[1])
-    output_dir = path.realpath(args[2])
+    unblur_path = path.realpath(args[0]) # unblur_path
+    input_image = path.realpath(args[1]) # input_micrograph_pattern
+    output_dir = path.realpath(args[2])  # output_directory
 
     # If the unblur executable file does not exists, stop the script
     if not path.exists(unblur_path):
@@ -164,7 +164,7 @@ def main():
             )
 
     # If the skip_dose_filter option is false, the summovie path is necessary
-    if not options.skip_dose_filter and not path.exists(options.summovie):
+    if not options.skip_dose_filter and not path.exists(options.summovie_path):
         ERROR(
             'Path to the SumMovie executable is necessary when dose weighting is performed.',
             'sxunblur.py', 1
@@ -436,7 +436,7 @@ def run_unblur(
                 full_command_summovie = r'{0}; echo "{1}" | {2}'.format(
                         export_threads_command,
                         summovie_command,
-                        options.summovie
+                        options.summovie_path
                         )
             else:
                 full_command = r'{0}; {1}; echo "{2}" | {3}'.format(
@@ -455,7 +455,7 @@ def run_unblur(
                 full_command_summovie = r'{0}; echo "{1}" | {2}'.format(
                         export_threads_command,
                         summovie_command,
-                        options.summovie
+                        options.summovie_path
                         )
             else:
                 full_command = r'{0}; echo "{1}" | {2}'.format(
