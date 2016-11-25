@@ -1,66 +1,67 @@
 = Name =
 sxsummovie - Micrograph movie summation: Sum micrograph movies with SumMovie.
 
+
 = Usage =
 
 ''usage in command line''
 
-sxsummovie.py  summovie  input_mrc_micrograph  inputfile  output --selection_list=SELECTION_LIST --nr_threads=NR_THREADS  --nr_frames=nr_frames  --pixel_size=pixel_size  --first=FIRST  --last=LAST  --apply_dose_filter  --exposure_per_frame=exposure_per_frame  --voltage=voltage  --pre_exposure=pre_exposure  --dont_restore_noise
+sxsummovie.py  summovie_path  input_micrograph_pattern  input_shift_pattern  output_directory  --selection_list=SELECTION_LIST  --nr_frames=nr_frames  --first=FIRST  --last=LAST  --pixel_size=pixel_size  --nr_threads=NR_THREADS  --apply_dose_filter  --voltage=voltage  --exposure_per_frame=exposure_per_frame  --pre_exposure=pre_exposure  --dont_restore_noise
+
 
 === Typical usage ===
 
+    sxsummovie exists only in non-MPI version.
 
-    sxsummovie exists in non-MPI version.
+    Perform summovie without dose filtering.
 
-    Perform summovie without dose filtering
+    sxsummovie.py ~/my_app/summovie 'outdir_unblur/corrsum/micrograph_*_frames_sum.mrc' 'outdir_unblur/shift/micrograph_*_frames_shift.txt'
+    outdir_summovie --nr_frames=24 --pixel_size=1.19 --nr_threads=1
 
-    sxsummovie.py directory_for_summovie 'mic_directory/prefix*suffix' 'shift_directory/prefix*suffix'
-    output --nr_frames=24 --pixel_size=1.19 --nr_threads=1
+    Perform summovie without dose filtering and with less frames.
 
-    Perform summovie without dose filtering and with less frames
+    sxsummovie.py ~/my_app/summovie 'outdir_unblur/corrsum/micrograph_*_frames_sum.mrc' 'outdir_unblur/shift/micrograph_*_frames_shift.txt'
+    outdir_summovie --nr_frames=24 --first=3 --last=15 --pixel_size=1.19 --nr_threads=1
 
-    sxsummovie.py directory_for_summovie 'mic_directory/prefix*suffix' 'shift_directory/prefix*suffix'
-    output --nr_frames=24 --pixel_size=1.19 --nr_threads=1 --first=3 --last=15
+    Perform summovie with dose filtering and with less frames.
 
-    Perform summovie with dose filtering and with less frames
-
-    sxsummovie.py directory_for_summovie 'mic_directory/prefix*suffix' 'shift_directory/prefix*suffix'
-    output --nr_frames=24 --pixel_size=1.19 --nr_threads=1 --apply_dose_filter --exposure_per_frame=2 --voltage=300 --pre_exposure=0 --first=3 --last=15
+    sxsummovie.py ~/my_app/summovie 'outdir_unblur/corrsum/micrograph_*_frames_sum.mrc' 'outdir_unblur/shift/micrograph_*_frames_shift.txt'
+    outdir_summovie --nr_frames=24 --first=3 --last=15 --pixel_size=1.19 --nr_threads=1 --apply_dose_filter --voltage=300 --exposure_per_frame=2 --pre_exposure=0
 
 == Input ==
+    summovie_path:: summovie executable path (SPHIRE specific): Specify the file path of summovie executable. (default required string)
+    input_micrograph_pattern:: Input micrograph path pattern (SPHIRE specific): Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). bdb files can not be selected as input micrographs. (default required string)
+    input_shift_pattern:: Input shift path pattern (SPHIRE specific): Specify path pattern of input shift files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and shift file. (default required string)
 
-    summovie:: Path to summovie executable: (default required string)
-    input_mrc_micrograph:: Input micrographs: You can use the wild cards (e.g. *) to specify a list of micrographs. (default required string)
-    inputfile:: Input shift files: You can use the wild cards (e.g *) to specify a list of shift files. (default required string)
-    output:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
-
-    selection_list:: Input micrograph list file: Not an summovie option, extension of input micrograph list file must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
-    nr_threads:: Number of threads: number of threads summovie is allowed to use. The higher the faster, but it also needs a higher amount of memory. (default 1)
-    nr_frames:: Number of frames in the movie stacks: (default 3)
-    pixel_size:: Pixel size [A]: (default  required -1.0)
-    first:: First frame: First frame for summing. (default 1)
-    last:: Last frame: Last frame for summing. (default -1)
+    selection_list:: Micrograph selecting list (SPHIRE specific): Specify a name of micrograph selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)
+    nr_frames:: Number of movie frames: The number of movie frames in each input micrograph. (default 3)
+    first:: First movie frame: First movie frame for summing. (default 1)
+    last:: Last movie frame: Last movie frame for summing. (default -1)
+    pixel_size:: Pixel size [A]: The pixel size of input micrographs. (default required float)
+    nr_threads:: Number of threads: The number of threads summovie can use. The higher the faster, but it requires larger memory. (default 1)
 
     * The remaining parameters are optional.
-    apply_dose_filter:: Apply the dose filter step: If yes, exposure per frame, voltage, restore noise power and pre exposure will be ignored. (default False)
-    exposure_per_frame:: Per frame exposure [e/A^2]: (default 1.0)
-    voltage:: Microscope voltage [kV]: (default 300.0)
-    pre_exposure:: Pre exposure [e/A^2]: (default 0.0)
-    dont_restore_noise:: Do not restore noise power: (default False)
+    apply_dose_filter:: Apply dose filter step: Requires voltage, exposure per frame, and pre exposure options. (default False)
+    voltage:: Microscope voltage (dose filter) [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)
+    exposure_per_frame:: Per frame exposure (dose filter) [e/A^2]: The electron dose per frame in e/A^2. (default 2.0)
+    pre_exposure:: Pre-exposure (dose filter) [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging .(default 0.0)
+    dont_restore_noise:: Do not restore noise power: Do not restore noise power. (default False)
 
 
 == Output ==
-The program creates the directory automatically in the chosen output directory. (default required string)
+    output_directory:: Output directory (SPHIRE specific): The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
-Without dosefiltered:
-Sum files will be written to the "corrsum" folder.
-Log files will be written to the "logfiles" folder.
-FRC files will be written to the "frc" folder.
+The program automatically creates the following subdirectories in the specified output directory.
 
-With dosefiltered:
-Dose filtered sum files will be written to the "corrsum_dose_filtered" folder.
-Log files will be written to the "logfiles" folder
-FRC files will be written to the "frc" folder.
+Without dose-filtering:
+Sum files will be written to the "corrsum" directory.
+Log files will be written to the "logfiles" directory.
+FRC files will be written to the "frc" directory.
+
+With dose-filtering:
+Dose filtered sum files will be written to the "corrsum_dose_filtered" directory.
+Log files will be written to the "logfiles" directory
+FRC files will be written to the "frc" directory.
 
 
 = Description =

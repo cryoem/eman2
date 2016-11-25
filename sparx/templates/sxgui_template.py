@@ -116,10 +116,11 @@ class SXcmd_token(object):
 		self.label = ""              # User friendly name of argument or option
 		self.help = ""               # Help info
 		self.group = ""              # Tab group: main or advanced
-		self.is_required = False     # Required argument or options. No default value are available
+		self.is_required = False     # Required argument or options. No default values are available
+		self.is_locked = False       # The restore value will be used as the locked value.
 		self.default = ""            # Default value
-		self.type = ""               # Type of value
 		self.restore = ""            # Restore value
+		self.type = ""               # Type of value
 		self.is_in_io = False        # <Used only in wikiparser.py> To check consistency between "usage in command line" and list in "== Input ==" and "== Output ==" sections
 		self.restore_widget = None   # <Used only in sxgui.py> Restore widget instance associating with this command token
 		self.widget = None           # <Used only in sxgui.py> Widget instance associating with this command token
@@ -132,7 +133,9 @@ class SXcmd_token(object):
 		self.help = None
 		self.group = None
 		self.is_required = None
+		self.is_locked = None
 		self.default = None
+		self.restore = None
 		self.type = None
 
 # ========================================================================================
@@ -880,22 +883,23 @@ class SXCmdWidget(QWidget):
 					if key_base not in self.sxcmd.token_dict.keys():
 						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s) of file (%s). This parameter file might be imcompatible with the current version. Please save the paramater file again." % (key_base, line_in, file_path_in))
 					cmd_token = self.sxcmd.token_dict[key_base]
-					# First, handle very special cases
-					if cmd_token.type == "function":
-						cmd_token.widget[function_type_line_counter].setText(val_str_in)
-						function_type_line_counter += 1
-						function_type_line_counter %= n_function_type_lines # function have two line edit boxes
-					# Then, handle the other cases
-					else:
-						if cmd_token.type == "bool":
-							# construct new widget(s) for this command token
-							if val_str_in == "YES":
-								cmd_token.widget.setChecked(Qt.Checked)
-							else: # val_str_in == "NO"
-								cmd_token.widget.setChecked(Qt.Unchecked)
+					if not cmd_token.is_locked: 
+						# First, handle very special cases
+						if cmd_token.type == "function":
+							cmd_token.widget[function_type_line_counter].setText(val_str_in)
+							function_type_line_counter += 1
+							function_type_line_counter %= n_function_type_lines # function have two line edit boxes
+						# Then, handle the other cases
 						else:
-							# For now, use line edit box for the other type
-							cmd_token.widget.setText(val_str_in)
+							if cmd_token.type == "bool":
+								# construct new widget(s) for this command token
+								if val_str_in == "YES":
+									cmd_token.widget.setChecked(Qt.Checked)
+								else: # val_str_in == "NO"
+									cmd_token.widget.setChecked(Qt.Unchecked)
+							else:
+								# For now, use line edit box for the other type
+								cmd_token.widget.setText(val_str_in)
 
 		else:
 			QMessageBox.warning(self, "Fail to load parameters", "The specified file is not parameter file for %s." % self.sxcmd.get_mode_name_for("human"))
@@ -986,6 +990,7 @@ class SXCmdTab(QWidget):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# local constants
 		required_cmd_token_restore_tooltip = "Please enter the value manually"
+		locked_cmd_token_restore_tooltip = "This value is locked"
 		const_cmd_token_restore_tooltip = "Retrieve the registed constant value for this parameter"
 		default_cmd_token_restore_tooltip = "Retrieve this default value"
 
@@ -1204,10 +1209,17 @@ class SXCmdTab(QWidget):
 							custom_style = "QPushButton {color:green; }"
 							cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
 						elif cmd_token.is_required:
-							btn_name = "required"
-							custom_style = "QPushButton {color:red; }"
-							is_btn_enable = False
-							cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+							if cmd_token.is_locked:
+								btn_name = "locked"
+								custom_style = "QPushButton {color:blue; }"
+								is_btn_enable = False
+								cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
+							else:
+								btn_name = "required"
+								custom_style = "QPushButton {color:red; }"
+								is_btn_enable = False
+								cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+							
 						cmd_token_restore_widget = QPushButton("%s" % btn_name)
 						cmd_token_restore_widget.setStyleSheet(custom_style)
 						cmd_token_restore_widget.setEnabled(is_btn_enable)
@@ -1219,7 +1231,7 @@ class SXCmdTab(QWidget):
 							cmd_token_widget.setCheckState(Qt.Checked)
 						else:
 							cmd_token_widget.setCheckState(Qt.Unchecked)
-						cmd_token_widget.setEnabled(is_btn_enable)
+						cmd_token_widget.setEnabled(not cmd_token.is_locked)
 						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 						self.connect(cmd_token_restore_widget, SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token))
@@ -1232,10 +1244,16 @@ class SXCmdTab(QWidget):
 							custom_style = "QPushButton {color:green; }"
 							cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
 						elif cmd_token.is_required:
-							btn_name = "required"
-							custom_style = "QPushButton {color:red; }"
-							is_btn_enable = False
-							cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
+							if cmd_token.is_locked:
+								btn_name = "locked"
+								custom_style = "QPushButton {color:blue; }"
+								is_btn_enable = False
+								cmd_token_restore_tooltip = locked_cmd_token_restore_tooltip
+							else:
+								btn_name = "required"
+								custom_style = "QPushButton {color:red; }"
+								is_btn_enable = False
+								cmd_token_restore_tooltip = required_cmd_token_restore_tooltip
 						cmd_token_restore_widget = QPushButton("%s" % btn_name)
 						cmd_token_restore_widget.setStyleSheet(custom_style)
 						cmd_token_restore_widget.setEnabled(is_btn_enable)
@@ -1243,6 +1261,7 @@ class SXCmdTab(QWidget):
 
 						cmd_token_widget = QLineEdit()
 						cmd_token_widget.setText(cmd_token.restore)
+						cmd_token_widget.setEnabled(not cmd_token.is_locked)
 						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
 						self.connect(cmd_token_restore_widget, SIGNAL("clicked()"), partial(self.handle_restore_widget_event, cmd_token))
@@ -1609,6 +1628,7 @@ class SXCmdTab(QWidget):
 		self.qsub_script_open_btn.setEnabled(is_enabled)
 
 	def handle_restore_widget_event(self, sxcmd_token, widget_index=0):
+		assert(not sxcmd_token.is_locked)
 		if sxcmd_token.type == "function":
 			assert(len(sxcmd_token.widget) == 2 and len(sxcmd_token.restore) == 2 and widget_index < 2)
 			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index])
@@ -1961,7 +1981,7 @@ class SXConstSetWidget(QWidget):
 			for sxcmd in sxcmd_category.cmd_list:
 				# Loop through all command tokens of this command
 				for cmd_token in sxcmd.token_list:
-					if cmd_token.type in self.sxconst_set.dict.keys():
+					if not cmd_token.is_locked and cmd_token.type in self.sxconst_set.dict.keys():
 						sxconst = self.sxconst_set.dict[cmd_token.type]
 						cmd_token.restore = sxconst.register
 						cmd_token.restore_widget.setText("%s" % cmd_token.restore)
@@ -2228,7 +2248,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 					sxcmd_token.label = [sxcmd_token.label, "Python script for user function"]
 					sxcmd_token.help = [sxcmd_token.help, "Please leave it blank if file is not external to sphire"]
 					sxcmd_token.default = [sxcmd_token.default, "none"]
-					sxcmd_token.restore = sxcmd_token.default
+					if not sxcmd_token.is_locked:
+						sxcmd_token.restore = sxcmd_token.default
 				# else: Do nothing for the other types
 
 				# Register this to command token dictionary

@@ -109,35 +109,37 @@ def construct_keyword_dict():
 	keyword_dict["--makevstack"]                  = SXkeyword_map(1, "output")         # --makevstack
 	keyword_dict["input_micrograph_list"]         = SXkeyword_map(1, "any_image_list") # input_micrograph_list (contains keyworkd 'input_micrograph' but this should be image_list type)
 	# Use priority 2 for the others
-	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack, input_stack
+	keyword_dict["stack"]                         = SXkeyword_map(2, "image")          # stack, prj_stack, input_stack, --instack=input_stack_file
 	keyword_dict["volume"]                        = SXkeyword_map(2, "image")          # initial_volume, firstvolume, secondvolume, input_volume
-	keyword_dict["mask"]                          = SXkeyword_map(2, "image")          # --mask3D=mask3D, maskfile, mask, --mask=MASK
-	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")          # --focus=3Dmask
+	keyword_dict["mask"]                          = SXkeyword_map(2, "image")          # --mask3D=mask3D, maskfile, mask, --mask=MASK, --mask3D=mask3d_file
+	keyword_dict["--focus"]                       = SXkeyword_map(2, "image")          # --focus=3Dmask, --focus=focus3d_file
 	keyword_dict["--input"]                       = SXkeyword_map(2, "image")          # --input=INPUT
 	keyword_dict["class_file_name_no_dir_info"]   = SXkeyword_map(2, "image")          # class_file_name_no_dir_info
 	keyword_dict["input_image_path"]              = SXkeyword_map(2, "any_image")      # input_image_path
 	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern
 	keyword_dict["selection_list"]                = SXkeyword_map(2, "any_micrograph") # selection_list
 	keyword_dict["--tr0"]                         = SXkeyword_map(2, "parameters")     # --tr0=matrix_file
-	keyword_dict["input_coordinates"]             = SXkeyword_map(2, "parameters")     # input_coordinates_pattern
+	keyword_dict["input_shift_pattern"]           = SXkeyword_map(2, "parameters")     # input_shift_pattern
+	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "parameters")     # input_coordinates_pattern
 	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "parameters")     # input_ctf_params_source
 	keyword_dict["--importctf"]                   = SXkeyword_map(2, "parameters")     # --importctf=IMPORTCTF
 	keyword_dict["--pwreference"]                 = SXkeyword_map(2, "parameters")     # --pwreference=pwreference
-	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment
+	keyword_dict["--PWadjustment"]                = SXkeyword_map(2, "parameters")     # --PWadjustment=PWadjustment, --PWadjustment=ref_pwspectrum1d_file 
 	keyword_dict["--mtf"]                         = SXkeyword_map(2, "parameters")     # --mtf=MTF_FILE_NAME
 	keyword_dict["--chunk"]                       = SXkeyword_map(2, "parameters")     # --chunk0=CHUNK0_FILE_NAME, --chunk1=CHUNK1_FILE_NAME
 	keyword_dict["--list"]                        = SXkeyword_map(2, "parameters")     # --list
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
-	keyword_dict["unblur"]                        = SXkeyword_map(2, "exe")            # unblur
-	keyword_dict["summovie"]                        = SXkeyword_map(2, "exe")          # summovie
+	keyword_dict["unblur_path"]                   = SXkeyword_map(2, "exe")            # unblur_path
+	keyword_dict["summovie_path"]                 = SXkeyword_map(2, "exe")            # summovie_path
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
-	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
+###	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
 	keyword_dict["input_bdb_stack_file"]          = SXkeyword_map(2, "bdb")            # input_bdb_stack_file
 	keyword_dict["input_shift_list_file"]         = SXkeyword_map(2, "txt")            # input_shift_list_file
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "txt")            # cter_ctf_file
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
-	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=run1_directory, --previous_run2=run2_directory
+	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "directory")      # --refinement_dir=refinemen_out_dir
+###	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=run1_directory, --previous_run2=run2_directory
 	keyword_dict["input_bdb_stack_pattern"]       = SXkeyword_map(2, "any_directory")  # input_bdb_stack_pattern
 
 	keyword_dict["--apix"]                        = SXkeyword_map(2, "apix")           # --apix=pixel_size, --apix
@@ -146,7 +148,7 @@ def construct_keyword_dict():
 	keyword_dict["--box"]                         = SXkeyword_map(2, "box")            # --box=box_size, --box_size=box_size
 	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")         # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
 	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")            # --sym=c1, --sym=c1, --sym=c1, --sym=symmetry, --sym=c1, --sym=c4
-
+	
 	# NOTE: 2016/02/23 Toshio Moriya
 	# Below might be useful to include
 	# reference power spectrum? --pwreference of viper, --pwreference of rviper, --PWadjustment of sort3d, --PWadjustment of rsort3d
@@ -155,11 +157,11 @@ def construct_keyword_dict():
 	# --wn of locres, sort3d, & rsort3d; same as ctfwin?
 	# --radius of locres & filterlocal; same as radius?
 	#
-
+	
 	return keyword_dict
 
 # ----------------------------------------------------------------------------------------
-def handle_exceptional_keywords(sxcmd):
+def handle_exceptional_cases(sxcmd):
 	# DESIGN_NOTE: 2016/02/05 Toshio Moriya
 	# Handle exceptional cases due to the limitation of software design
 	# In future, we should remove these exception handling by reviewing the design
@@ -167,14 +169,6 @@ def handle_exceptional_keywords(sxcmd):
 		assert(sxcmd.token_dict["stack_file"].key_base == "stack_file")
 		assert(sxcmd.token_dict["stack_file"].type == "image")
 		sxcmd.token_dict["stack_file"].type = "bdb"
-	elif sxcmd.name == "sxfilterlocal":
-		assert(sxcmd.token_dict["locres_volume"].key_base == "locres_volume")
-		assert(sxcmd.token_dict["locres_volume"].type == "output")
-		sxcmd.token_dict["locres_volume"].type = "image"
-	elif sxcmd.name in ["sxlocres",  "sxsort3d", "sxrsort3d"]:
-		assert(sxcmd.token_dict["wn"].key_base == "wn")
-		assert(sxcmd.token_dict["wn"].type == "ctfwin")
-		sxcmd.token_dict["wn"].type = "int"
 	elif sxcmd.name in ["sxrviper"]:
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "image")
@@ -188,6 +182,33 @@ def handle_exceptional_keywords(sxcmd):
 		assert(sxcmd.token_dict["radius"].key_base == "radius")
 		assert(sxcmd.token_dict["radius"].type == "radius")
 		sxcmd.token_dict["radius"].type = "int"
+	elif sxcmd.name in ["sxrsort3d"]:
+		assert(sxcmd.token_dict["wn"].key_base == "wn")
+		assert(sxcmd.token_dict["wn"].type == "ctfwin")
+		sxcmd.token_dict["wn"].type = "int"
+		# DESIGN_NOTE: 2016/11/23 Toshio Moriya
+		# The below should be a temporary solution until redesign sxrsort3d command interface
+		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")
+		assert(sxcmd.token_dict["refinement_method"].is_required == False)
+		assert(sxcmd.token_dict["refinement_method"].is_locked == False)
+		sxcmd.token_dict["refinement_method"].is_required = True
+		sxcmd.token_dict["refinement_method"].is_locked = True
+		# sxcmd.token_dict["refinement_method"].default = "SPARX"
+		sxcmd.token_dict["refinement_method"].restore = "SPARX"
+		assert(sxcmd.token_dict["refinement_dir"].key_base == "refinement_dir")
+		assert(sxcmd.token_dict["refinement_dir"].is_required == False)
+		sxcmd.token_dict["refinement_dir"].is_required = True
+		assert(sxcmd.token_dict["masterdir"].key_base == "masterdir")
+		assert(sxcmd.token_dict["masterdir"].is_required == False)
+		sxcmd.token_dict["masterdir"].is_required = True
+	elif sxcmd.name in ["sxsort3d", "sxlocres"]:
+		assert(sxcmd.token_dict["wn"].key_base == "wn")
+		assert(sxcmd.token_dict["wn"].type == "ctfwin")
+		sxcmd.token_dict["wn"].type = "int"
+	elif sxcmd.name == "sxfilterlocal":
+		assert(sxcmd.token_dict["locres_volume"].key_base == "locres_volume")
+		assert(sxcmd.token_dict["locres_volume"].type == "output")
+		sxcmd.token_dict["locres_volume"].type = "image"
 
 # ----------------------------------------------------------------------------------------
 def remove_MoinMoinWiki_makeup(target_text):
@@ -427,7 +448,8 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 											token.type = "string"
 							# else: keep the special type
 						# Initialise restore value with default value
-						token.restore = token.default
+						if not token.is_locked:
+							token.restore = token.default
 						# Ignore the rest of line ...
 				else:
 					ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -440,7 +462,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 
 	file_wiki.close()
 
-	handle_exceptional_keywords(sxcmd)
+	handle_exceptional_cases(sxcmd)
 
 	print "Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
@@ -717,7 +739,8 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 											token.type = "string"
 							# else: keep the special type
 						# Initialise restore value with default value
-						token.restore = token.default
+						if not token.is_locked:
+							token.restore = token.default
 						# Ignore the rest of line ...
 					# else:
 						# This is not option entry. Ignore this line
@@ -732,7 +755,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	file_wiki.close()
 
-	handle_exceptional_keywords(sxcmd)
+	handle_exceptional_cases(sxcmd)
 
 	print "Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role)
 
@@ -832,12 +855,17 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 				token.group = token_edit.group
 			if token_edit.is_required != None:
 				token.is_required = token_edit.is_required
+			if token_edit.is_locked != None:
+				token.is_locked = token_edit.is_locked
 			if token_edit.default != None:
 				token.default = token_edit.default
+			if token_edit.restore != None:
+				token.restore = token_edit.restore
 			if token_edit.type != None:
 				token.type = token_edit.type
 		assert(token != None)
-		token.restore = token.default
+		if not token.is_locked:
+			token.restore = token.default
 		sxcmd.token_list.append(token)
 		sxcmd.token_dict[token_edit.key_base] = (token)
 
@@ -885,13 +913,18 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		output_file.write("; token.help = \"%s\"" % token.help.replace("\"", "'"))
 		output_file.write("; token.group = \"%s\"" % token.group)
 		output_file.write("; token.is_required = %s" % token.is_required)
+		output_file.write("; token.is_locked = %s" % token.is_locked)
 		if token.type == "bool":
 			output_file.write("; token.default = %s" % token.default)
 			output_file.write("; token.restore = %s" % token.restore)
 		else:
 			if token.is_required:
-				output_file.write("; token.default = \"\"")
-				output_file.write("; token.restore = \"\"")
+				if token.is_locked:
+					output_file.write("; token.default = \"\"")
+					output_file.write("; token.restore = \"%s\"" % token.restore)
+				else:
+					output_file.write("; token.default = \"\"")
+					output_file.write("; token.restore = \"\"")
 			else:
 				output_file.write("; token.default = \"%s\"" % token.default)
 				output_file.write("; token.restore = \"%s\"" % token.restore)
@@ -910,7 +943,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 # ========================================================================================
 def create_sxcmd_subconfig_window_makevstack():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.default = "none"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack pattern"; token_edit.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sxwindow_output_dir//*/'). The stack subsets are located in the sxwindow output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "any_directory"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
@@ -920,7 +953,7 @@ def create_sxcmd_subconfig_window_makevstack():
 
 def create_sxcmd_subconfig_isacselect():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("isacselect"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("isacselect"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("class_file_name"); token_edit.key_prefix = ""; token_edit.label = "ISAC class file name"; token_edit.help = "File name of the class averages. It is located in the ISAC output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_list"); token_edit.key_prefix = ""; token_edit.label = "Output ISAC particle ID list"; token_edit.help = "Output text file containing retrieved member particle IDs of all ISAC classes."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 
@@ -931,7 +964,7 @@ def create_sxcmd_subconfig_isacselect():
 
 def create_sxcmd_subconfig_isac_makevstack():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.default = "none"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "File name of the class averages. It is located in the ISAC output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("list"); token_edit_list.append(token_edit)
 
@@ -942,7 +975,7 @@ def create_sxcmd_subconfig_isac_makevstack():
 
 def create_sxcmd_subconfig_changesize():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("changesize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("changesize"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_stack"); token_edit.key_prefix = ""; token_edit.label = "Input 2D/3D image stack"; token_edit.help = "Input 2D/3D image stack."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_stack"); token_edit.key_prefix = ""; token_edit.label = "Output 2D/3D image stack"; token_edit.help = "Resampled (decimated or interpolated up) 2D/3D image stack."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ratio"); token_edit_list.append(token_edit)
@@ -954,7 +987,7 @@ def create_sxcmd_subconfig_changesize():
 
 def create_sxcmd_subconfig_clip():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("clip"); token_edit.label = "Pad/Clip volume to specified size [Pixels]"; token_edit.is_required = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("clip"); token_edit.label = "Pad/Clip volume to specified size [Pixels]"; token_edit.is_required = True; token_edit.is_locked = False; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_file"); token_edit.key_prefix = ""; token_edit.label = "Output clipped/padded volume"; token_edit.help = "Output clipped/padded volume file name."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "output"; token_edit_list.append(token_edit)
 
@@ -977,7 +1010,7 @@ def create_sxcmd_subconfig_clip():
 
 def create_sxcmd_subconfig_adaptive_mask3d():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("adaptive_mask"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("adaptive_mask"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "Output mask"; token_edit.help = "Output 3D mask"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit_list.append(token_edit)
@@ -992,7 +1025,7 @@ def create_sxcmd_subconfig_adaptive_mask3d():
 
 def create_sxcmd_subconfig_binary_mask3d():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("binary_mask"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("binary_mask"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "Output mask"; token_edit.help = "Output 3D mask"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("bin_threshold"); token_edit_list.append(token_edit)
@@ -1005,7 +1038,7 @@ def create_sxcmd_subconfig_binary_mask3d():
 
 def create_sxcmd_subconfig_refine3d_postprocess():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("postprocess"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("postprocess"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "First unfiltered half-volume "; token_edit.help = "Generated by sxmeridien"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "Second unfiltered half-volume "; token_edit.help = "Generated by sxmeridien"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
@@ -1029,7 +1062,7 @@ def create_sxcmd_subconfig_refine3d_postprocess():
 
 def create_sxcmd_subconfig_variability_preprocess():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("prj_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image stack"; token_edit.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "image"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
@@ -1039,7 +1072,7 @@ def create_sxcmd_subconfig_variability_preprocess():
 
 def create_sxcmd_subconfig_refine3d_angular_distribution():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("angular_distribution"); token_edit.is_required = True; token_edit.default = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("angular_distribution"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("inputfile"); token_edit.label = "Alignment Parameter file"; token_edit.help = "Alignment Parameter file created by a previous 3D reconstruction step (e.g. sxmeridien.py)"; token_edit.is_required = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("round_digit"); token_edit_list.append(token_edit)
@@ -1051,6 +1084,13 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 	sxcmd_subconfig = SXsubcmd_config("Angular Distribution", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
+
+def create_exclude_list_rsort3d():
+	exclude_list = []
+
+	exclude_list.append("instack")
+
+	return exclude_list
 
 def create_exclude_list_boxer():
 	exclude_list = []
@@ -1183,7 +1223,8 @@ def main():
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien.doku.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-08-08-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien-09-09-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-09-09-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien-11-07-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_util"
@@ -1197,8 +1238,12 @@ def main():
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
+	# sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	# sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
+
+	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
