@@ -792,8 +792,8 @@ def get_refangs_and_shifts():
 # shake functions
 
 def shakerefangles(refangles, rangle, sym):
-	from utilities import reduce_to_asymmetric_unit, rotate_params
-	return reduce_to_asymmetric_unit(rotate_params(refangles, [-rangle,-rangle,-rangle]), sym)
+	from utilities import reduce_to_asymmetric_list, rotate_params
+	return reduce_to_asymmetric_list(rotate_params(refangles, [-rangle,-rangle,-rangle]), sym)
 
 def shakegrid(rshifts, qt):
 	for i in xrange(len(rshifts)):
