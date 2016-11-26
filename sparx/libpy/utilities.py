@@ -3946,7 +3946,7 @@ def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 	
 	else:  print  "Symmetry not supported ",symmetry
 	return la
-'''
+#  Push to C.  PAP  11/25/2016
 def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -3997,7 +3997,7 @@ def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 	else:  print  "Symmetry not supported ",symmetry
 
 	return la
-
+'''
 def cone_ang_f_with_index( projangles, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
