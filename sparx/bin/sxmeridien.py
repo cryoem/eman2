@@ -5,6 +5,7 @@
 #  CPU subgroup
 #  10/27/2016  Added sigma2 updating in the first phased called PRIMARY
 #  11/07       Shared refvol
+#  11/26       Removed heapsort option from numpy sorting.  It seems standard one works better.
 
 
 from __future__ import print_function
@@ -1636,7 +1637,7 @@ def ali3D_direct_euc(data, refang, shifts, procid, ctfs = None, bckgnoise = None
 			xod1 = xod1.reshape(ndat,2*lxod1)
 			xod2 = xod2.reshape(ndat,2*lxod1)
 			for kl in xrange(ndat):
-				lina = np.argsort(xod1[kl], kind = 'heapsort')
+				lina = np.argsort(xod1[kl])
 				xod1[kl] = xod1[kl][lina[::-1]]  # This sorts in reverse order
 				xod2[kl] = xod2[kl][lina[::-1]]  # This sorts in reverse order
 				tdoffset = xod1[kl,0]
@@ -1876,7 +1877,7 @@ def ali3D_direct_euc_norm(data, refang, shifts, oldparams, procid, ctfs = None, 
 			xod2 = xod2.reshape(ndat,2*lxod1)
 			xod3 = xod3.reshape(ndat,2*lxod1)
 			for kl in xrange(ndat):
-				lina = np.argsort(xod1[kl], kind = 'heapsort')
+				lina = np.argsort(xod1[kl])
 				xod1[kl] = xod1[kl][lina[::-1]]  # This sorts in reverse order
 				xod2[kl] = xod2[kl][lina[::-1]]  # This sorts in reverse order
 				xod3[kl] = xod3[kl][lina[::-1]]  # This sorts in reverse order
@@ -2149,7 +2150,7 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 			xod2 = xod2.reshape(ndat,2*lxod1)
 			xod3 = xod3.reshape(ndat,2*lxod1)
 			for kl in xrange(ndat):
-				lina = np.argsort(xod1[kl], kind = 'heapsort')
+				lina = np.argsort(xod1[kl])
 				xod1[kl] = xod1[kl][lina[::-1]]  # This sorts in reverse order
 				xod2[kl] = xod2[kl][lina[::-1]]  # This sorts in reverse order
 				xod3[kl] = xod3[kl][lina[::-1]]  # This sorts in reverse order
@@ -2505,7 +2506,7 @@ def ali3D_direct_local_euc(data, refang, shifts, oldangs, procid, ctfs = None, b
 	for kl in xrange(ndat):
 		lod = loxi[kl] ###np.max(xod2[kl])
 		if( lod > -1 ):
-			lina = np.argsort(xod1[kl], kind = 'heapsort')
+			lina = np.argsort(xod1[kl])
 			xod1[kl] = xod1[kl][lina[::-1]]  # This puts sorted in reverse order
 			xod2[kl] = xod2[kl][lina[::-1]]  # This puts sorted in reverse order
 			tdoffset = xod1[kl,0]
@@ -2775,7 +2776,7 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 	for kl in xrange(ndat):
 		lod = loxi[kl]
 		if( lod > -1 ):
-			lina = np.argsort(xod1[kl], kind = 'heapsort')
+			lina = np.argsort(xod1[kl])
 			xod1[kl] = xod1[kl][lina[::-1]]  # This puts sorted in reverse order
 			xod2[kl] = xod2[kl][lina[::-1]]  # This puts sorted in reverse order
 			xod3[kl] = xod3[kl][lina[::-1]]  # This puts sorted in reverse order
