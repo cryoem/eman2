@@ -4402,31 +4402,31 @@ def main():
 
 				projdata[procid] = []
 
-				projdata[procid] =  get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid], \
+				projdata[procid] = get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid], \
 													return_real = False, preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"])
 				
 				if Tracker["constants"]["small_memory"]:   original_data[procid] =[]
-				oldparamstructure[procid] 	= []
+				oldparamstructure[procid] = []
 
 				# METAMOVE
 				newparamstructure[procid], norm_per_particle[procid] = \
 						metamove(projdata[procid], oldparams[procid], partids[procid], partstack[procid], \
 						refang, rshifts, rangle, rshift, procid)
 
-				projdata[procid]  			= []
+				projdata[procid] = []
 				if Tracker["constants"]["small_memory"]:
 					original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 					os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 					original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
 					nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 
-				projdata[procid] =  get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid], \
+				projdata[procid] = get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid], \
 													return_real = False, preshift = True, apply_mask = False, nonorm = True)
-				oldparams[procid] 		= []
+				oldparams[procid] = []
 				if Tracker["constants"]["small_memory"]: original_data[procid]	= []
 				data, ctfs, bckgnoise = prepdata_ali3d(projdata[procid], rshifts, float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]), "DIRECT")
 				del ctfs
-				projdata[procid]  = []
+				projdata[procid] = []
 				do3d(procid, data, newparamstructure[procid], refang, norm_per_particle[procid], Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 				del bckgnoise, data
 				if( Blockdata["myid_on_node"] == 0 ):
@@ -4655,7 +4655,7 @@ def main():
 				write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"])) )
 
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"Average displacements for angular directions = %6.2f degrees; and shifts = %6.1f pixels"%(anger, shifter) )
+				print(line,"Average displacements for angular directions = %6.2f degrees; and shifts = %5.1f pixels"%(anger, shifter) )
 
 				#  Write current Trucker
 
