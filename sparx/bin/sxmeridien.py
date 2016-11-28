@@ -4656,7 +4656,7 @@ def main():
 				write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"])) )
 
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"Average displacements for angular directions  %6.2f  and shifts %6.1f"%(anger, shifter) )
+				print(line,"Average displacements for angular directions = %6.2f degrees; and shifts = %6.1f pixels"%(anger, shifter) )
 
 				#  Write current Trucker
 
