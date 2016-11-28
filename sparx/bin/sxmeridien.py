@@ -129,7 +129,7 @@ def AI( fff, anger, shifter, chout = False):
 				break
 		l01 = max(l01,-1)
 
-		if chout : print("  Dealing with FSC; Tracker[nxstep], TR[currentres], l05, l01:",Tracker["nxstep"],Tracker["currentres"],l05, l01)
+		if( chout ): print("  Dealing with FSC; Tracker[nxstep], TR[currentres], l05, l01:",Tracker["nxstep"],Tracker["currentres"],l05, l01)
 		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
 		Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
 
@@ -149,7 +149,7 @@ def AI( fff, anger, shifter, chout = False):
 		Tracker["currentres"] = maxres
 
 		#  figure changes in params
-		if(chout):  print("incoming  pares  ",Blockdata["myid"],Tracker["anger"] ,anger,Tracker["shifter"],shifter)
+		if( chout ):  print("  incoming  pares  ",Blockdata["myid"],Tracker["anger"] ,anger,Tracker["shifter"],shifter)
 		shifter *= 0.71
 		if( 1.03*anger >= Tracker["anger"] and 1.03*shifter >= Tracker["shifter"] ):	Tracker["no_params_changes"] += 1 #<<<--- 1.03 angle 1.03 shifter after 0.71 ratio
 		else:																			Tracker["no_params_changes"]  = 0
@@ -162,7 +162,7 @@ def AI( fff, anger, shifter, chout = False):
 		else:							inc += Tracker["nxstep"]
 		tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 
-		if chout : print("  IN AI nxstep, large at Nyq, outcoming current res, adjusted current, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
+		if( chout ): print("  IN AI nxstep, large at Nyq, outcoming current res, adjusted current, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
 		Tracker["nxinit"] = tmp
 		#  decide angular step and translations
@@ -172,7 +172,7 @@ def AI( fff, anger, shifter, chout = False):
 			else:
 				Tracker["saturated_sampling"] = False
 				range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( Blockdata["myid"] == 0 ):   print("computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"],range, step)
+				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"],range, step)
 				Tracker["xr"] = range
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
@@ -184,7 +184,7 @@ def AI( fff, anger, shifter, chout = False):
 				else:
 					Tracker["an"] 		= -1
 					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-				if chout : print("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
+				if( chout ): print("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
 				Tracker["no_improvement"]		= 0
 				Tracker["no_params_changes"]	= 0
 				Tracker["anger"]				= 1.0e23
@@ -2966,7 +2966,8 @@ def cerrs(params, ctfs, particle_groups):
 	acc_trans /= n_trials
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print(   "Estimated accuracy of angles = ", acc_rot, " degrees; and shifts = " , acc_trans , " pixels"  )
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(line,"Estimated accuracy of angles = %6.2f degrees; and shifts = %5.1f pixels"%(acc_rot,acc_trans) )
 
 	Tracker["acc_rot"] = acc_rot
 	Tracker["acc_trans"] = acc_trans
@@ -4310,7 +4311,7 @@ def main():
 			anger   = 1.0e9
 			shifter = 1.0e9
 
-		keepgoing = AI( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"] )
+		keepgoing = AI( fff, anger, shifter)#   Uncomment what follows to get test printouts  , Blockdata["myid"] == Blockdata["main_node"] )
 
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			print("\n\n\n\n")
@@ -4668,8 +4669,8 @@ def main():
 			keepgoing = checkconvergence(keepgoing)
 			if( keepgoing == 1 ):
 				Tracker["previousoutputdir"] = Tracker["directory"]
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					print("  MOVING  ON --------------------------------------------------------------------")
+				#if(Blockdata["myid"] == Blockdata["main_node"]):
+				#	print("  MOVING  ON --------------------------------------------------------------------")
 			else:# do final reconstruction
 				try: 
 					if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
