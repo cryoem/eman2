@@ -3382,11 +3382,13 @@ def main():
 		os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), \
 		return_real = True, preshift = True, apply_mask = False)
 		do3d_sorting_groups_4nn_iter(data, 0)
+		del data
 	else:
 		data = get_shrink_data_sorting(os.path.join(Tracker["constants"]["masterdir"], "final_partition.txt"), \
 		os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), \
 		return_real = False, preshift = True, apply_mask = False)
 		do3d_sorting_groups_trl_iter(data, 0)
+		del data
 				
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		line    = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
