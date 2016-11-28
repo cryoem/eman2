@@ -904,7 +904,6 @@ def metamove(projdata, oldparams, partids, partstack, refang, rshifts, rangle, r
 	else:  print("  WRONG STATE")
 	del ctfs
 	#
-	#  ANALYZE CHANGES IN OUTPUT PARAMETERS WITH RESPECT TO PREVIOUS INTERATION  <><><><><><><><><><><><><><><><><><><><><><><><><><><>
 	#  Store results, only best locations
 	qt = 1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]
 	params = []
@@ -4429,7 +4428,7 @@ def main():
 				del ctfs
 				projdata[procid]  = []
 				do3d(procid, data, newparamstructure[procid], refang, norm_per_particle[procid], Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
-				del bckgnoise
+				del bckgnoise, data
 				if( Blockdata["myid_on_node"] == 0 ):
 					for kproc in xrange(Blockdata["no_of_processes_per_group"]):
 						if( kproc == 0 ):
