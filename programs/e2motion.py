@@ -66,6 +66,7 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
+	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -73,13 +74,13 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.path==None:
-		options.path=numbered_path("motion",True)
+		options.path=numbered_path("m2d",True)
 #		os.makedirs(options.path)
 
 	pid=E2init(argv)
 	
 	app = EMApp()
-	motion=EMMotion(app,options.path)
+	motion=EMMotion(app,options.path,options.threads)
 	motion.show()
 	app.execute()
 	
@@ -88,7 +89,7 @@ def main():
 class EMMotion(QtGui.QMainWindow):
 	"""This is the main window for the EMMotion application"""
 	
-	def __init__(self,application,path=None):
+	def __init__(self,application,path=None,threads=4):
 		"""application is an QApplication instance. ptclstack is the path to the file containing the particles to analyze. path is the path for ouput files""" 
 		QtGui.QWidget.__init__(self)
 
@@ -279,12 +280,14 @@ class EMMotion(QtGui.QMainWindow):
 		self.vbl3a.addWidget(self.wvbptclpct)
 
 		
-		# fill in a default value for number of threads
-		try :
-			cores=num_cpus()
-		except:
-			cores=2
-		if cores==1 : cores=2
+		## fill in a default value for number of threads
+		#try :
+			#cores=num_cpus()
+		#except:
+			#cores=2
+		#if cores==1 : cores=2
+		cores=threads+1		# one thread for GUI
+		
 		self.wvbcores=ValBox(None,(0,256),"# Threads",cores)
 		self.wvbcores.setIntonly(True)
 		self.vbl3a.addWidget(self.wvbcores)
@@ -384,21 +387,19 @@ class EMMotion(QtGui.QMainWindow):
 		self.initPath(self.path)
 
 	def initPath(self,path):
-		if path[:4].lower()!="bdb:" : path="bdb:"+path
 		self.path=path
-		dicts=db_list_dicts(self.path)
 		
 		# If particles exists then we can fully initialize
-		if db_check_dict("%s#particles"%self.path) :
-			self.particles=EMData.read_images("%s#particles"%self.path)	# read in the entire particle stack
+		try:
+			self.particles=EMData.read_images("%s/particles.lst"%self.path)	# read in the entire particle stack
 			for p in self.particles: p.process_inplace("normalize.edgemean")
 			
-			cl=[i for i in dicts if "classes" in i]
+			cl=[i for i in os.listdir(self.path)  if "classes" in i]
 			cl.sort()
 			self.wlistresult.addItems(QtCore.QStringList(cl))
 			
 			self.bootstrap()
-		else :
+		except :
 			self.particles=None
 			
 		return
@@ -429,8 +430,7 @@ class EMMotion(QtGui.QMainWindow):
 			if r==QtGui.QMessageBox.Cancel : return
 			if r==QtGui.QMessageBox.Yes : n=nmax
 		
-		if ptcl[:4].lower()=="bdb:" : task="e2bdb.py %s  --makevstack=%s#particles --step=0,1,%d"%(ptcl,self.path,n)
-		else : task="e2proc2d.py %s %s#particles --last=%d"%(ptcl,self.path,n)
+		task="e2proclst.py %s --create %s/particles.lst --range=0,%d,1"%(ptcl,self.path,n)
 		print task
 		launch_childprocess(task)
 		
@@ -441,7 +441,7 @@ class EMMotion(QtGui.QMainWindow):
 	
 		for p in stack:
 			p2=p.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
-			a=p2.align("rotate_translate_flip",ref)
+			a=p2.align("rotate_translate_tree",ref)
 #			a=p2.copy()
 #			a["match_qual"]=a.cmp("frc",ref,{"sweight":0})		# compute similarity to unmasked reference
 			a["match_qual"]=a.cmp("ccc",refnomask)		# compute similarity to unmasked reference
@@ -479,9 +479,10 @@ class EMMotion(QtGui.QMainWindow):
 			lock.release()
 			
 			# now we do the alignment and dump the result into the shared output list
-			c=a.align("rotate_translate_flip",b)
+			c=a.align("rotate_translate_tree",b)
 			c.add(b)
-			c.process_inplace("xform.centerofmass",{"threshold":0.5})
+#			c.process_inplace("xform.centerofmass",{"threshold":0.5})
+			c.process_inplace("xform.center")
 			tree2.append(c)
 
 	def threadFilt(self,ptclstack,outstack):
@@ -548,8 +549,8 @@ class EMMotion(QtGui.QMainWindow):
 #		tree[0]=tree[0].get_clip(Region(-tree[0]["nx"]/2,-tree[0]["ny"]/2,tree[0]["nx"]*2,tree[0]["ny"]*2))
 		tree[0].process_inplace("xform.scale",{"clip":tree[0]["nx"]*2,"scale":2.0})
 		tree[0].process_inplace("normalize.edgemean")
-		tree[0].process_inplace("xform.centerofmass",{"threshold":0.5})
-		tree[0].process_inplace("normalize.edgemean")
+#		tree[0].process_inplace("xform.centerofmass",{"threshold":0.5})
+#		tree[0].process_inplace("normalize.edgemean")
 
 		# We look for the most 'featurefull' direction to put on Y
 		f=tree[0].do_fft()
