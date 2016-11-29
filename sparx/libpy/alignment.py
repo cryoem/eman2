@@ -5801,7 +5801,7 @@ def reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mirror_in
 
 ########################################################################################################################
 ### start: code that supports cone implementation 
-
+'''
 def save_object (obj, filename):
 	import cPickle as pickle
 	with open(filename, 'wb') as output:
@@ -6151,3 +6151,4 @@ def frame_alignment(movie_stack, particle_radius, templates, x_half_size, psi_ha
 			
 	else:
 		return result
+'''
