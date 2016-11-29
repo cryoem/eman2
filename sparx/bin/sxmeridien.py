@@ -848,7 +848,7 @@ def prepdata_ali3d(projdata, rshifts, shrink, method = "DIRECT"):
 		del projdata[kl]
 	return data, ctfs, bckgnoise
 
-def metamove(projdata, oldparams, partids, partstack, refang, rshifts, rangle, rshift, procid):
+def metamove(projdata, oldparams, refang, rshifts, rangle, rshift, procid):
 	# return newparamstructure and norm_per_particle
 	global Tracker, Blockdata
 	from mpi 			import   mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD, MPI_INT, MPI_SUM, mpi_reduce
@@ -875,9 +875,6 @@ def metamove(projdata, oldparams, partids, partstack, refang, rshifts, rangle, r
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		print_dict(Tracker,"METAMOVE parameters")
-		print("                    =>  partids             :  ",partids)
-		print("                    =>  partstack           :  ",partstack)
-	norm_per_particle = lendata*[1.0]
 
 	#  Run alignment command
 	method = "DIRECT"
@@ -892,6 +889,7 @@ def metamove(projdata, oldparams, partids, partstack, refang, rshifts, rangle, r
 			newparamstructure = ali3D_direct_ccc(data, refang, rshifts, ctfs, bckgnoise)
 			#  Disregard cccs for 3D reconstruction
 			for kl in xrange(len(newparamstructure)):   newparamstructure[kl][2] = [[newparamstructure[kl][2][0][0],1.0]]
+			norm_per_particle = [1.0]*lendata
 		elif( Tracker["state"] == "PRIMARY" ):
 			newparamstructure, norm_per_particle 	= ali3D_direct_euc_norm_bckg(data, refang, rshifts, oldparams, procid, ctfs, bckgnoise)
 		elif( Tracker["state"] == "EXHAUSTIVE" ):
@@ -1736,7 +1734,6 @@ def ali3D_direct_euc_norm(data, refang, shifts, oldparams, procid, ctfs = None, 
 	from operator import itemgetter#, attrgetter, methodcaller
 	from math     import exp
 	from random   import shuffle
-	import numpy  as np
 
 	Tracker["lentop"] = 10000
 
@@ -1993,7 +1990,6 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 	from operator import itemgetter#, attrgetter, methodcaller
 	from math     import exp
 	from random   import shuffle
-	import numpy  as np
 
 	Tracker["lentop"] = 10000
 
@@ -2591,7 +2587,6 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 	from operator import itemgetter#, attrgetter, methodcaller
 	from math     import exp
 	from random   import shuffle
-	import numpy  as np
 	Tracker["lentop"] = 10000
 
 	at = time()
@@ -4264,7 +4259,6 @@ def main():
 	original_data = [None,None]
 	oldparams = [[],[]]
 	currentparams = [[],[]]
-	oldparamstructure = [[],[]]		
 	keepgoing 		= 1
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
@@ -4368,9 +4362,7 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 
 			refang, rshifts = get_refangs_and_shifts()
-			if( Tracker["mainiteration"] == 1 ):
-				#                                   image number, [varadj, 0.0], [[hash, prob,]]
-				for procid in xrange(2):  oldparamstructure[procid] = [[i, [1.0], [] ] for i in xrange(len(original_data[procid]))]
+
 			if( Tracker["constants"]["shake"] > 0.0 ):
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
@@ -4406,12 +4398,10 @@ def main():
 													return_real = False, preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"])
 				
 				if Tracker["constants"]["small_memory"]:   original_data[procid] =[]
-				oldparamstructure[procid] = []
 
 				# METAMOVE
 				newparamstructure[procid], norm_per_particle[procid] = \
-						metamove(projdata[procid], oldparams[procid], partids[procid], partstack[procid], \
-						refang, rshifts, rangle, rshift, procid)
+						metamove(projdata[procid], oldparams[procid], refang, rshifts, rangle, rshift, procid)
 
 				projdata[procid] = []
 				if Tracker["constants"]["small_memory"]:
@@ -4678,7 +4668,6 @@ def main():
 				Blockdata["ncpuspernode"] 	= 2
 				Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 				create_subgroup()
-				oldparamstructure 			= [[],[]]
 				newparamstructure 			= [[],[]]
 				projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
 				original_data     			= [None,None]
@@ -4711,11 +4700,10 @@ def main():
 				try:  
 					if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
 				except: print(" Processor  %d is not used in subgroup "%Blockdata["myid"])
-				
+
 				Blockdata["ncpuspernode"] 	= 2
 				Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 				create_subgroup()
-				oldparamstructure 			= [[],[]]
 				newparamstructure 			= [[],[]]
 				projdata          			= [[model_blank(1,1)], [model_blank(1,1)]]
 				original_data     			= [None,None]
@@ -4728,4 +4716,3 @@ def main():
 			else: Tracker["previousoutputdir"] = Tracker["directory"]
 if __name__=="__main__":
 	main()
-
