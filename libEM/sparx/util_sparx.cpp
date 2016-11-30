@@ -20737,7 +20737,7 @@ vector<float> Util::symmetry_related(const vector<float>& angles, string symmetr
 
 	for(int i=0; i<nang; i++)  redang[i] = angles[i];
 
-	if( symmetry.substr(0,1) == "c" and nsym >1)  {
+	if( symmetry.substr(0,1) == "c" && nsym > 1)  {
 		for(int l=1; l<nsym; l++) {
 			redang[3*l]   = angles[0]+l*qt;
 			redang[3*l+1] = angles[1];
@@ -20794,7 +20794,7 @@ vector<float> Util::symmetry_neighbors(const vector<vector<float> >& angles, str
 
 	for(int m=0; m<nlist; m++)  for(int i=0; i<nang; i++)  redang[mnm*nang*m + i] = angles[m][i];
 
-	if( symmetry.substr(0,1) == "c" and nsym >1)  {
+	if( symmetry.substr(0,1) == "c" && nsym > 1)  {
 		for(int m=0; m<nlist; m++) {
 			for(int l=0; l<nneighbors; l++) {
 				int lt = 1 - l - l;  // cast to 1, -1
