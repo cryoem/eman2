@@ -59,6 +59,9 @@ def construct_keyword_dict():
 	# - output          : Line edit box for formatted string type, and output info button.
 	#                     GUI also checks the existence of output directory/file before execution of the sx*.py
 	#                     GUI abort the execution if the directory/file exists already
+	# - output_continue : Line edit box for formatted string type, open directory button, and output info button.
+	#                     GUI also checks the existence of output directory/file before execution of the sx*.py
+	#                     GUI displays a YES/NO dialog to run continuous mode if the directory/file exists already
 	# - image           : Line edit box for formatted string type, and open file buttons for .hdf and .bdb
 	# - any_image       : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .bdb
 	# - any_micrograph  : Line edit box for formatted string type, and open file buttons for all file types (also mrc, tiff, and etc) and .txt
@@ -102,6 +105,7 @@ def construct_keyword_dict():
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
+	keyword_dict["--masterdir"]                   = SXkeyword_map(1, "output")         # --masterdir=master_dir
 	keyword_dict["locres_volume"]                 = SXkeyword_map(1, "output")         # locres_volume (this contained keyword "volume" also... This is another reason why priority is introduced...)
 	keyword_dict["directory"]                     = SXkeyword_map(1, "output")         # directory
 	keyword_dict["rotpw"]                         = SXkeyword_map(1, "output")         # rotpw
@@ -128,6 +132,7 @@ def construct_keyword_dict():
 	keyword_dict["--mtf"]                         = SXkeyword_map(2, "parameters")     # --mtf=MTF_FILE_NAME
 	keyword_dict["--chunk"]                       = SXkeyword_map(2, "parameters")     # --chunk0=CHUNK0_FILE_NAME, --chunk1=CHUNK1_FILE_NAME
 	keyword_dict["--list"]                        = SXkeyword_map(2, "parameters")     # --list
+	keyword_dict["--subset"]                      = SXkeyword_map(2, "parameters")     # --subset=subset_file_path
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "any_file")       # inputfile
 	keyword_dict["unblur_path"]                   = SXkeyword_map(2, "exe")            # unblur_path
 	keyword_dict["summovie_path"]                 = SXkeyword_map(2, "exe")            # summovie_path
@@ -138,6 +143,7 @@ def construct_keyword_dict():
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "txt")            # cter_ctf_file
 	keyword_dict["input_data_list"]               = SXkeyword_map(2, "any_file_list")  # input_data_list
 	keyword_dict["--function"]                    = SXkeyword_map(2, "function")       # --function=user_function
+	keyword_dict["--oldrefdir"]                   = SXkeyword_map(1, "directory")      # --oldrefdir=refine_dir_path
 	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "directory")      # --refinement_dir=refinemen_out_dir
 ###	keyword_dict["--previous_run"]                = SXkeyword_map(2, "directory")      # --previous_run1=run1_directory, --previous_run2=run2_directory
 	keyword_dict["input_bdb_stack_pattern"]       = SXkeyword_map(2, "any_directory")  # input_bdb_stack_pattern
@@ -182,6 +188,11 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["radius"].key_base == "radius")
 		assert(sxcmd.token_dict["radius"].type == "radius")
 		sxcmd.token_dict["radius"].type = "int"
+	elif sxcmd.name in ["sxmeridien"]:
+		# Typically, this is target particle radius used by ISAC.
+		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
+		assert(sxcmd.token_dict["output_directory"].type == "output")
+		sxcmd.token_dict["output_directory"].type = "output_continue"
 	elif sxcmd.name in ["sxrsort3d"]:
 		assert(sxcmd.token_dict["wn"].key_base == "wn")
 		assert(sxcmd.token_dict["wn"].type == "ctfwin")

@@ -107,7 +107,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 == Input ==
     inputfile:: input file: required for some options. (default none)
 
-    changesize:: Resample 2D or 3D images: resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size. (default False)
+    changesize:: Resample 2D or 3D images: Resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size. (default False)
     ratio:: Ratio of new to old image size: if < 1, the pixel size will increase and image size decrease. if > 1, the other way round. (default 1.0)
 
     pw:: Compute average power spectrum of a 2D image stack: with optional padding (option wn) with zeroes. (default False)
