@@ -33,6 +33,7 @@
  *
  * */
 
+#include <stdio.h>
 #include <cstring>
 #include <climits>
 
@@ -226,29 +227,106 @@ bool MrcIO::is_image_big_endian()
 	return is_big_endian;
 }
 
-bool MrcIO::is_valid(const void *first_block, off_t file_size)
+bool MrcIO::is_valid(const void * first_block, off_t file_size)
 {
 	ENTERFUNC;
 
-	if (!first_block) {
+	if (! first_block) { // Null pointer - no data
 		return false;
 	}
 
-	const int *data = static_cast < const int *>(first_block);
-	int nx = data[0];
-	int ny = data[1];
-	int nz = data[2];
+	const int * data = static_cast < const int *>(first_block);
+
+	int nx      = data[0];
+	int ny      = data[1];
+	int nz      = data[2];
 	int mrcmode = data[3];
-	int nsymbt = data[23];	// this field specify the extra bytes for symmetry information
+	int mapc    = data[16];	// Which axis corresponds to Columns  (X=1, Y=2, Z=3)
+	int mapr    = data[17];	// Which axis corresponds to Rows     (X=1, Y=2, Z=3)
+	int maps    = data[18];	// Which axis corresponds to Sections (X=1, Y=2, Z=3)
+	int nsymbt  = data[23];	// the extra bytes for symmetry information
+	int mach    = data[44]; // Machine endian stamp
 
-	bool data_big_endian = ByteOrder::is_data_big_endian(&nz);
+	int nxw, nyw, nzw, modew, mapcw, maprw, mapsw, nsymw, machw;
 
-	if (data_big_endian != ByteOrder::is_host_big_endian()) {
-		ByteOrder::swap_bytes(&nx);
-		ByteOrder::swap_bytes(&ny);
-		ByteOrder::swap_bytes(&nz);
-		ByteOrder::swap_bytes(&mrcmode);
-		ByteOrder::swap_bytes(&nsymbt);
+	nxw   = nx;
+	nyw   = ny;
+	nzw   = nz;
+	modew = mrcmode;
+	mapcw = mapc;
+	maprw = mapr;
+	mapsw = maps;
+	nsymw = nsymbt;
+	machw = mach;
+
+	ByteOrder::swap_bytes(&nxw);
+	ByteOrder::swap_bytes(&nyw);
+	ByteOrder::swap_bytes(&nzw);
+	ByteOrder::swap_bytes(&modew);
+	ByteOrder::swap_bytes(&mapcw);
+	ByteOrder::swap_bytes(&maprw);
+	ByteOrder::swap_bytes(&mapsw);
+	ByteOrder::swap_bytes(&nsymw);
+	ByteOrder::swap_bytes(&machw);
+
+	int actual_stamp = generate_machine_stamp();
+
+	bool debug = (getenv("DEBUG_MRC_SANITY") != NULL);
+
+	if (debug) {
+		printf ("stamp: mach, file, swapd = %8.0x %8.0x %8.0x\n",
+				  actual_stamp, mach, machw);
+		printf ("stamp: mach, file, swapd = %d %d %d\n",
+				  actual_stamp, mach, machw);
+		printf ("nx, ny, nz, mode         = %d %d %d %d\n", nx,    ny,    nz,   mrcmode);
+		printf ("nx, ny, nz, mode swapped = %d %d %d %d\n", nxw,   nyw,   nzw,  modew);
+		printf ("mapc, mapr, maps         = %d %d %d\n",    mapc,  mapr,  maps);
+		printf ("mapc, mapr, maps swapped = %d %d %d\n",    mapcw, maprw, mapsw);
+	}
+
+	bool do_swap;
+
+	if (mach == actual_stamp) {
+		do_swap = false;
+	}
+	else if (machw == actual_stamp) {
+		do_swap = true;
+	}
+	else {
+		if (mrcmode == 0) {
+			if (1 <= mapr  &&  mapr <= 3  &&
+				 1 <= mapc  &&  mapc <= 3  &&
+				 1 <= maps  &&  maps <= 3) {
+				do_swap = false;
+			}
+			else if (1 <= maprw  &&  maprw <= 3  &&
+				      1 <= mapcw  &&  mapcw <= 3  &&
+				      1 <= mapsw  &&  mapsw <= 3) {
+				do_swap = true;
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			if (mrcmode > 0  &&  mrcmode < 128) {
+				do_swap = false;
+			}
+			else if (modew > 0  &&  modew < 128) {
+				do_swap = true;
+			}
+			else {
+				return false;
+			}
+		}
+	}
+
+	if (do_swap) {
+		nx      = nxw;
+		ny      = nyw;
+		nz      = nzw;
+		mrcmode = modew;
+		nsymbt  = nsymw;
 	}
 
 	if (mrcmode == MRC_SHORT_COMPLEX || mrcmode == MRC_FLOAT_COMPLEX) {
