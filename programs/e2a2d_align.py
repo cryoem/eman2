@@ -67,7 +67,7 @@ def main():
 
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="2da_" and len(i)==6 and str.isdigit(i[-2:])]
+		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="m2d_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : fls=[0]
 		options.path = "m2d_{:02d}".format(max(fls)+1)
 		try: os.mkdir(options.path)

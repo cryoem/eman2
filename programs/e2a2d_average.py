@@ -7,6 +7,7 @@ import os
 #import threading
 #import Queue
 from sys import argv,exit
+from e2classaverage import class_average
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -21,9 +22,10 @@ def main():
 	parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls_XX.hdf) containing the aligned particles.",default=False)
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder with existing e2a2d_align results (default = 2da_XX)")
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = highest existing iteration",default=0)
-	parser.add_argument("--scrorebands", default=0,type=int,help="If specified will generate averages over N bands of 'score' values, including only particles in each band.")
+	parser.add_argument("--scorebands", default=0,type=int,help="If specified will generate averages over N bands of 'score' values, including only particles in each band.")
+	parser.add_argument("--scorebandsali", default=0,type=int,help="If specified will generate averages over N bands of 'score' values, including only particles in each band, and iteratively realigning in each band.")
 	parser.add_argument("--scoreprogressive", default=0,type=int,help="If specified will generate progressive averages over N bands of 'score' values, including all particles starting with the best through the progressive bands.")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=1, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -50,21 +52,53 @@ def main():
 
 	angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
-	sortangs=[(v["score"],v["xform.align2d"],k) for k,v in angs.items()]
-	N=len(sortangs)
+	if options.scoreprogressive>0 :
+		try: os.unlink("{}/avg_prog_{:02d}.hdf".format(options.path,options.iter))
+		except: pass
 	
+	if options.scorebands>0:
+		try: os.unlink("{}/avg_band_{:02d}.hdf".format(options.path,options.iter))
+		except: pass
+
+	if options.scorebandsali>0:
+		try: os.unlink("{}/avg_bandali_{:02d}.hdf".format(options.path,options.iter))
+		except: pass
+
+	sortangs=[(v["score"],v["xform.align2d"],eval(k)) for k,v in angs.items()]		# the eval() here is poor programming practice, but is the easiest way :^(
+	N=len(sortangs)
+
+	# make a quick alignment reference
+	for i,t in enumerate(sorted(sortangs)[:50]):
+		im=EMData(t[2][0],t[2][1])			# this is from the key of angs{}
+		im.process_inplace("xform",{"transform":t[1]})
+		try: aref.add(im)
+		except: aref=im
+	aref.process_inplace("normalize.edgemean")
+		
+	
+	# the main averaging/saving loop
 	t0=time.time()
+	t1=t0
 	for i,t in enumerate(sorted(sortangs)):
-		if options.verbose==1 and time.time()-t0>1:
-			t0=time.time()
-			print "{:6d}/{:-6d}".format(i,N)
+		if options.verbose==1 and time.time()-t1>1:
+			t1=time.time()
+			frac=i/float(N)
+			try:
+				remain=int((time.time()-t0)/frac-(time.time()-t0))	# est remaining time in sec
+				print "{:6d}/{:-6d}   time remaining: {}:{:02d}     \r".format(i,N,remain//60,remain%60)
+			except:
+				print "{:6d}/{:-6d}     \r".format(i,N)
+				
+			sys.stdout.flush()
 			
 		im=EMData(t[2][0],t[2][1])			# this is from the key of angs{}
+		im.process_inplace("xform",{"transform":t[1]})
+		
 		if options.scoreprogressive>0 :
 			try: sp.add(im)
 			except: sp=im
 		
-			if i%(N//options.scoreprogressive)==0 :
+			if (i+1)%(N//options.scoreprogressive)==0 :
 				sp["ptcl_repr"]=i
 				sp.process("normalize.edgemean").write_image("{}/avg_prog_{:02d}.hdf".format(options.path,options.iter),-1)
 
@@ -76,9 +110,19 @@ def main():
 				sb["ptcl_repr"]=N//options.scorebands
 				sb.process("normalize.edgemean").write_image("{}/avg_band_{:02d}.hdf".format(options.path,options.iter),-1)
 				sb=None
-				
+		
+		if options.scorebandsali>0:
+			try: sbaptcl.append(im)
+			except: sbaptcl=[im]
+			
+			if (i+1)%(N//options.scorebandsali)==0 :
+				sba=class_average(sbaptcl,niter=5,align=("rotate_translate_tree",{}),keep=.95,keepsig=0)[0]
+				sba.process("normalize.edgemean").align("rotate_translate_tree",aref).write_image("{}/avg_bandali_{:02d}.hdf".format(options.path,options.iter),-1)
+				sbaptcl=[]
+			
+			
 
-	if options.verbose : print "Done!"
+	if options.verbose : print "\nDone!"
 
 	E2end(logid)
 
