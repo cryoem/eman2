@@ -169,6 +169,16 @@ class EMMotion(QtGui.QMainWindow):
 		self.vbl1.addWidget(self.wsbalimaskbase)
 		
 		self.vbl1.addSpacing(16)
+
+		self.wlalimaskrot=QtGui.QLabel("Rot")
+		self.vbl1.addWidget(self.wlalimaskrot)
+		
+		self.wsbalimaskrot=QtGui.QSpinBox()
+		self.wsbalimaskrot.setRange(0,360)
+		self.wsbalimaskrot.setValue(0)
+		self.vbl1.addWidget(self.wsbalimaskrot)
+		
+		self.vbl1.addSpacing(16)
 		
 		self.wbaligo=QtGui.QPushButton(QtCore.QChar(0x2192))
 		self.vbl1.addWidget(self.wbaligo)
@@ -359,12 +369,12 @@ class EMMotion(QtGui.QMainWindow):
 		# set up draw mode
 		insp=self.w2dalimaskdraw.get_inspector()
 		insp.hide()
-		insp.mmtab.setCurrentIndex(3)
+		insp.mmtab.setCurrentIndex(5)
 		insp.dtpenv.setText("0.0")
 		
 		insp=self.w2droimaskdraw.get_inspector()
 		insp.hide()
-		insp.mmtab.setCurrentIndex(3)
+		insp.mmtab.setCurrentIndex(5)
 		insp.dtpenv.setText("0.0")
 		
 		self.aliimg=None		# This is the unmasked alignment reference image
@@ -481,8 +491,8 @@ class EMMotion(QtGui.QMainWindow):
 			# now we do the alignment and dump the result into the shared output list
 			c=a.align("rotate_translate_tree",b)
 			c.add(b)
-#			c.process_inplace("xform.centerofmass",{"threshold":0.5})
-			c.process_inplace("xform.center")
+			c.process_inplace("xform.centerofmass",{"threshold":c["mean"]+c["sigma"]})
+#			c.process_inplace("xform.center")
 			tree2.append(c)
 
 	def threadFilt(self,ptclstack,outstack):
@@ -542,7 +552,7 @@ class EMMotion(QtGui.QMainWindow):
 				thrs.append(threading.Thread(target=self.threadTreeAlign, args=(tree,tree2,lock)))
 				thrs[-1].start()
 				
-			self.waitThreads(thrs,tree2,len(tree)/2+1)
+			self.waitThreads(thrs,tree2,nthr)
 
 			tree=tree2
 		
@@ -649,12 +659,16 @@ class EMMotion(QtGui.QMainWindow):
 		
 		base=self.wsbalimaskbase.value()
 		blur=self.wsbalimaskblur.value()
+		rot=self.wsbalimaskrot.value()
 		
 		mask=self.alimask.process("threshold.binary",{"value":0.001})			# binarize the drawn mask
 		mask.process_inplace("math.linear",{"scale":-1.0,"shift":1.0+base/100.0})		# invert the mask (user selects the region to include, not exclude)
 		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.5/(blur+.01)})
 		
 		self.alimasked.mult(mask)
+		if rot!=0 :
+			self.alimasked.process_inplace("xform",{"transform":Transform({"type":"2d","alpha":rot})})
+
 		self.w2dalimask.set_data(self.alimasked)
 
 	def rAlignToRef(self):

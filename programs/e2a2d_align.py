@@ -21,7 +21,9 @@ def ali2dfn(jsd,fsp,il,a,options):
 			c=b.align(options.ralign[0],a,rparms,options.raligncmp[0],options.raligncmp[1])
 			sim=c.cmp(options.cmp[0],a,options.cmp[1])
 			rslt.append((i,{"xform.align2d":c["xform.align2d"],"prealign":rparms["xform.align2d"],"score":sim}))
-		else: rslt.append((i,{"xform.align2d":c["xform.align2d"],"score":sim}))
+		else: 
+			sim=c.cmp(options.cmp[0],a,options.cmp[1])
+			rslt.append((i,{"xform.align2d":c["xform.align2d"],"score":sim}))
 		if il[0]==0 : frac=n/float(len(il))		# we monitor progress in the first thread
 
 	jsd.put((fsp,rslt))
@@ -90,12 +92,12 @@ def main():
 
 	logid=E2init(sys.argv, options.ppid)
 
-	angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
+	angs={}
 	jsd=Queue.Queue(0)
 
 	n=-1
 	N=EMUtil.get_image_count(args[0])
-	thrds=[threading.Thread(target=alifn,args=(jsd,args[0],xrange(i,N,NTHREADS-1),ref,options)) for i in xrange(NTHREADS-1)]
+	thrds=[threading.Thread(target=ali2dfn,args=(jsd,args[0],xrange(i,N,NTHREADS-1),ref,options)) for i in xrange(NTHREADS-1)]
 
 	# here we run the threads and save the results, no actual alignment done here
 	if options.verbose: print len(thrds)," threads"
@@ -124,6 +126,11 @@ def main():
 
 	for t in thrds:
 		t.join()
+
+	if options.verbose : print "Writing results"
+
+	angsd=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
+	angsd.update(angs)
 
 	if options.verbose : print "Done!"
 
