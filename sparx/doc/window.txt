@@ -1,5 +1,5 @@
 = Name =
-sxwindow - Particle Extraction: Windows particles from micrographs using the particles coordinates.
+sxwindow - Particle Extraction: Window particles from micrographs using the particle coordinates.
 
 = Usage =
 

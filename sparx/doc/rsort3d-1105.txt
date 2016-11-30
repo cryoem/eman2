@@ -6,7 +6,7 @@ sxrsort3d - 3D Clustering - RSORT3D: Reproducible 3D Clustering of heterogeneous
 
 '' usage in command line''
 
-sxrsort3d.py  --refinement_method=refinement_method  --refinement_dir=refinemen_out_dir  --masterdir=master_dir  --niter_for_sorting=num_of_sorting_iterations  --mask3D=mask3d_file  --focus=focus3d_file  --radius=outer_radius  --sym=symmetry  --number_of_images_per_group=num_of_images_per_group  --smallest_group=smallest_group  --low_pass_filter=low_pass_filter_cutoff  --Kmeans_lpf=Kmeans_lpf_method  --nindependent=indenpendent_runs  --noctf=no_ctf  --PWadjustment=ref_pwspectrum1d_file  --interpolation=interpolation_method  --comparison_method=comparison_method  --nxinit=initial_image_size  --wn=window_size  --instack=input_stack_file
+sxrsort3d.py  --refinement_method=refinement_method  --refinement_dir=refinemen_out_dir  --masterdir=master_dir  --niter_for_sorting=num_of_sorting_iterations  --mask3D=mask3d_file  --focus=focus3d_file  --radius=outer_radius  --sym=symmetry  --number_of_images_per_group=num_of_images_per_group  --smallest_group=smallest_group  --nxinit=initial_image_size  --wn=window_size  --low_pass_filter=low_pass_filter_cutoff  --Kmeans_lpf=Kmeans_lpf_method  --nindependent=indenpendent_runs  --noctf=no_ctf  --PWadjustment=ref_pwspectrum1d_file  --interpolation=interpolation_method  --comparison_method=comparison_method  --instack=input_stack_file
 
 
 === Typical usage ===
@@ -41,6 +41,8 @@ sxrsort3d.py exists only in MPI version.
     sym:: Point-group symmetry: Point group symmetry of the structure. (default c1) 
     number_of_images_per_group:: Images per group: The number of images per a group. This value is critical for successful 3D clustering. (default 1000) 
     smallest_group:: Smallest group size: Minimum number of members for being identified as a group. This value must be smaller than the number of images per a group (number_of_images_per_group). (default 500) 
+    nxinit:: Initial image size for sorting [Pixels]: If it is necessary to speed up the processing time, set a non-zero positive integer to this option. Then, the program will reduce image size of original data by resampling to the specified size. By default, program determines the value from resolution. (default -1)
+    wn:: Processing window size [Pixels]: If it is necessary to speed up the processing time, set a non-zero positive integer to this option. Then, for data processing, program windows original images with the specified size by clipping the edges. (default 0) 
 
     * The remaining parameters are optional and default values are given in parenthesis. There is rarely any need to modify them.
     low_pass_filter:: Low-pass filter frequency [1/Pixel]: Absolute frequency cutoff of the low-pass filter used on the original image size for the 3D sorting. (default -1.0)
@@ -50,8 +52,6 @@ sxrsort3d.py exists only in MPI version.
     PWadjustment:: Reference power spectrum file path: Path of text file containing 1D reference power spectrum of a PDB structure or EM map. The power spectrum will be used as reference to adjust the power spectra of clustered volumes. (default none) 
     interpolation:: 3D reconstruction interpolation method: Interpolation method for 3D reconstruction. Valid values are 'trl' and '4nn'. (default 4nn) 
     comparison_method:: Comparison method: Similarity measurement for the comparison between reprojected reference images and particle images. Valid values are 'cross' (cross-correlaton coefficients) and 'eucd' (Euclidean distance). (default cross) 
-    nxinit:: Initial image size for sorting: If it is necessary to speed up the processing time, set a non-zero positive integer to this option. Then, the program will reduce image size of original data by resampling to the specified size. By default, program determines the value from resolution. (default -1)
-    wn:: Processing window size [Pixels]: If it is necessary to speed up the processing time, set a non-zero positive integer to this option. Then, for data processing, program windows original images with the specified size by clipping the edges. (default 0) 
     instack:: Input images stack: File path of particle stack for sorting. This option is not currently supported by SHPIRE GUI (sxgui). (default none)
 
 == Output ==

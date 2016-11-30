@@ -47,7 +47,7 @@ For specific details on various options, use 'e2proc3d.py --help'.
     scale:: Rescale volume: Rescale the volume by '<n>'. Generally use with --clip option. (default 1.0)
     sym:: Symmetry to impose: Point-group symmetry to impose. Choices are:'c<n>', 'd<n>', 'h<n>', 'tet', 'oct', and 'icos'. (default c1)
     averager:: Averager: Averager used for --average and --sym options. (default mean)
-    clip:: Pad or clip: Make the output volume have this size by padding/clipping. 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. (default none)
+    clip:: Pad or clip: Pad or clip volume to the specific dimensions. Specify 1, 3 or 6 arguments; '<x>[,<y>,<z>[,<xc>,<yc>,<zc>]]'. (default none)
     fftclip:: Rescale by padding FFT: Make the output have this size with rescaling by padding FFT. The argument format is '<x>,<y>,<z>'. (default none)
     process:: Apply processor: Apply a processor named 'processor_name' with all its parameters/values;'<processor_name>:<param1>=<value1>:<param2>=<value2>'. Type 'e2help.py processors -v 2' to see available processors. (default none)
     apix:: Pixels size [A/pixel] for S scaling: Pixels size [A/pixel] for S scaling. (default 0.0)
