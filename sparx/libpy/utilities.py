@@ -993,7 +993,7 @@ def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method
 		#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
 	if (phiEQpsi == 'Minus'):
 		for k in xrange(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
-	if( theta2 == 180.0 ):  angles.append( [0.0, 180.0, 0.0] )
+	if( theta2 == 180.0 or (theta2 >180. and delta == 180.0)):  angles.append( [0.0, 180.0, 0.0] )
 
 	return angles
 
@@ -3897,6 +3897,33 @@ def assign_projangles_f(projangles, refangles, return_asg = False):
 	return assignments
 
 
+def assign_projdirs_f(projdirs, refdirs, neighbors):
+	#  projdirs - data
+	#  refdirs  - templates, each template has neighbors related copies 
+	#  output - list of lists, ofr each of refdirs/neighbors there is a list of projdirs indexes that are closest to it
+	'''
+	qsti = [-1]*len(projdirs)
+	for i,q in enumerate(projdirs):
+		dn = -2.0
+		for l in xrange(len(refdirs)/neighbors):
+			sq = -2.0
+			for k in xrange(l*neighbors,(l+1)*neighbors):
+				sq = max(q[0]*refdirs[k][0] + q[1]*refdirs[k][1] + q[2]*refdirs[k][2], sq)
+			if(sq > dn):
+				dn = sq
+				this = l
+		qsti[i] = this
+	'''
+	#  Create a list that for each projdirs contains an index of the closest refdirs/neighbors
+	qsti = Util.assign_projdirs_f(projdirs, refdirs, neighbors)
+	assignments = [[] for i in xrange(len(refdirs)/neighbors)]
+	for i in xrange(len(projdirs)):
+		assignments[qsti[i]].append(i)
+
+	return assignments
+
+
+
 def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -3946,9 +3973,10 @@ def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 	
 	else:  print  "Symmetry not supported ",symmetry
 	return la
+
 #  Push to C.  PAP  11/25/2016
 def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
-	from utilities import getvec
+	from utilities import getfvec
 	from math import cos, pi, degrees, radians
 
 	cone = cos(radians(ant))
@@ -3997,6 +4025,23 @@ def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 	else:  print  "Symmetry not supported ",symmetry
 
 	return la
+
+
+def cone_dirs_f( projdirs, ancordir, ant):
+	from math import cos, pi, degrees, radians
+	#  ancordir contains a list of symmetry neighbors
+	#  Returns a list of projdirs indexes that are within ant degrees of ancordir
+	cone = cos(radians(ant))
+	la = []
+	for i,vecs in enumerate(projdirs):
+		s = -2.0
+		for d in ancordir:
+			s = max(vecs[0]*d[0] + vecs[1]*d[1] + vecs[2]*d[2], s)
+		if s >= cone :
+			la.append(i)
+	return la
+
+
 '''
 def cone_ang_f_with_index( projangles, phi, tht, ant ):
 	from utilities import getvec

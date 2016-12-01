@@ -1006,6 +1006,7 @@ public:
 
 	/* Assign projection angles to nearest reference projections  using getfvec*/
 	static vector<int> assign_projangles_f(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles);
+	static vector<int> assign_projdirs_f(const vector<vector<float> >& projdirs, const vector<vector<float> >& refdirs, int neighbors);
 
 	static vector<float> get_largest_angles_in_cones(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles); 
 

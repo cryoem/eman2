@@ -20315,7 +20315,7 @@ vector<int> Util::nearest_fang_sym(const vector<vector<float> >& angles_sym_norm
 
 
 int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z) {
-	throw NullPointerException("nearest_ang_f");
+
 	float best_v = vecref[0][0]*x+vecref[0][1]*y+vecref[0][2]*z;
 	int best_i = 0;
 
@@ -20371,6 +20371,18 @@ vector<int> Util::assign_projangles_f(const vector<vector<float> >& projangles, 
 	}
 	return asg;
 }
+
+vector<int> Util::assign_projdirs_f(const vector<vector<float> >& projdirs, const vector<vector<float> >& refdirs, int neighbors) {
+	int length_of_refdirs  = refdirs.size();
+	int length_of_projdirs = projdirs.size();
+
+	vector<int> asg(length_of_projdirs);
+
+	for (int i=0; i<length_of_projdirs; i++)   asg[i] = nearest_ang_f(refdirs, projdirs[i][0], projdirs[i][1], projdirs[i][2])/neighbors;
+
+	return asg;
+}
+
 
 vector<float> Util::get_largest_angles_in_cones(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles) {
 	int length_of_refangles = refangles.size();

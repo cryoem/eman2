@@ -109,7 +109,11 @@ def do_EQKmeans_nways_clustering(workdir, initial_partids, params, sort_res, log
 					cmd="{} {}".format("mkdir",Tracker["directory"])
 					cmdexecute(cmd)
 				Tracker        = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
+
+
 				tmp_final_list = mref_ali3d_EQ_Kmeans(index_file, params, Tracker["clean_volumes"])
+
+
 				Tracker["directory"] =  os.path.join(workdir, "generation%03d"%generation)
 				if Blockdata["myid"] == Blockdata["main_node"]: Tracker["partition_list"].append(Tracker["partition"])
 			Tracker["partition_list"] = wrap_mpi_bcast(Tracker["partition_list"], Blockdata["main_node"], MPI_COMM_WORLD)
@@ -502,7 +506,7 @@ def mref_ali3d_EQ_Kmeans(partids, partstack, clean_volumes = True):
 	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 	if Tracker["constants"]["interpolation"] =="4nn": 
 		projdata = get_shrink_data_sorting(partids, partstack, return_real = True, preshift = True, apply_mask = True)
-	elif Tracker["constants"]["interpolation"] =="trl":
+	elif Tracker["constants"]["interpolation"] =="trl":  #  WRONG  PAP
 		if Tracker["focus3D"]: projdata = get_shrink_data_sorting(partids, partstack, return_real = True, preshift = True, apply_mask = True)
 		else:  	               projdata = get_shrink_data_sorting(partids, partstack, return_real = False, preshift = True, apply_mask = True)
 	else:  ERROR("Unknown method for 3-D reconstruction", "mref_ali3d_EQ_Kmeans", 1, Blockdata["myid"])
@@ -555,6 +559,7 @@ def mref_ali3d_EQ_Kmeans(partids, partstack, clean_volumes = True):
 		recvcount.append(ie - ib)
 			
 	# Initial reconstruction of random group partition
+	#  WRONG
 	if    Tracker["constants"]["interpolation"]=="trl": do3d_sorting_groups_trl_iter(projdata, iteration = 0)
 	elif  Tracker["constants"]["interpolation"]=="4nn": do3d_sorting_groups_4nn_iter(projdata, iteration = 0)
 	else: ERROR("Wrong interpolation method for do3d", "mref_ali3d_EQ_Kmeans", 1, Blockdata["myid"]) 
@@ -3080,7 +3085,7 @@ def main():
 	bad_3Dmask  = bcast_number_to_all(bad_focus3Dmask,	source_node =  Blockdata["main_node"])
 	if bad_3Dmask:  ERROR("Incorrect 3D mask", "sxsort3d.py", 1, Blockdata["myid"])
 	
-	##---------- PW adjustment
+	##---------- PW adjustment  WRONG PAP
 	if os.path.exists(Tracker["constants"]["PWadjustment"]):
 		Tracker ["PWadjustment"] = Tracker["constants"]["PWadjustment"]
 		PW_dict              = {}
@@ -3134,7 +3139,7 @@ def main():
 		msg ="3-D reconstruction method: %s"%Tracker["constants"]["interpolation"]
 		print(line, msg)
 		log_main.add(msg)
-		if Tracker ["PWadjustment"]:
+		if Tracker ["PWadjustment"]:  #  WRONG PAP
 			msg ="model 1-D rotatioanlly average power spectrum for PW correction: %s"%Tracker["constants"]["PWadjustment"]
 			print(line, msg)
 			log_main.add(msg)
@@ -3150,6 +3155,11 @@ def main():
 	Tracker["full_list"]       = wrap_mpi_bcast(Tracker["full_list"], Blockdata["main_node"], MPI_COMM_WORLD)	
 	Tracker["shrinkage"]       = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
 	if(Blockdata["myid"] == Blockdata["main_node"]): print_dict(Tracker,"Current sorting settings")
+
+
+	#  READ AND PREPREPARED DATA  PAP
+
+
 	###<<<-------sort3d starts here
 	for indep_sort3d in xrange(Tracker["total_sort3d_indepent_run"]):		
 		sorting                = {}
@@ -3220,7 +3230,6 @@ def main():
 		log_main.add(msg)
 		print(line, msg)
 	iter_rsort    = 0
-	
 	while iter_rsort< Tracker["total_iter_rsort"]:
 		ptp        = []
 		for indep_sort3d in xrange(Tracker["total_sort3d_indepent_run"]):
