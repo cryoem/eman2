@@ -20407,45 +20407,27 @@ vector<float> Util::get_largest_angles_in_cones(const vector<vector<float> >& pr
 	return largest_angles;
 }
 
-//solves both
-//vector<float> Util::get_largest_angles_in_cones(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles) {
-//	
-//	
-//	
-//	int length_of_refangles = refangles.size();
-//	int length_of_projangles = projangles.size();
-//	float pi180 = M_PI/180.0f;
-//	
-//	vector<float> results(length_of_projangles + length_of_refangles, 0.0);
-//	vector<int> asg(length_of_projangles);
-//	vector<vector<float> > reference_vectors(length_of_refangles, vector<float>(3));
-//	vector<float> largest_angles(length_of_refangles, 0.0);
-//		
-//	
-//	for (int i=0; i<length_of_refangles; i++)
-//		getfvec(refangles[i][0], refangles[i][1], reference_vectors[i][0], reference_vectors[i][1], reference_vectors[i][2]);
-//
-//	for (int i=0; i<length_of_projangles; i++) {
-//		float x, y, z;
-//		getfvec(projangles[i][0], projangles[i][1], x, y, z);
-//		asg[i] = nearest_ang_f(reference_vectors, x, y, z);
-//		float image_cone_direction_angle = acos(abs(reference_vectors[asg[i]][0]*x + reference_vectors[asg[i]][1]*y + reference_vectors[asg[i]][2]*z))/pi180;
-//		if (image_cone_direction_angle > largest_angles[asg[i]])
-//		  largest_angles[asg[i]] = image_cone_direction_angle;
-//	}
-//	
-//	for (int i=0; i<length_of_projangles; i++) {
-//		results[i] = (float)asg[i]; 
-//	}
-//	for (int i=0; i<length_of_refangles; i++) {
-//		results[i + length_of_projangles] = largest_angles[i]; 
-//	}
-//	
-////	return largest_angles;
-//	return results;
-//}
+//  CONE codes
 
+vector<int> Util::cone_dirs_f(const vector<vector<float> >& projdirs, const vector<vector<float> >& ancordir, float ant) {
+	//  ancordir contains a list of symmetry neighbors of a single projection direction
+	//  Returns a list of projdirs indexes that are within ant degrees of ancordir
+	int length_of_ancordir  = ancordir.size();
+	int length_of_projdirs = projdirs.size();
+	float pi180 = M_PI/180.0f;
+	float cone = cos(ant*pi180);
 
+	vector<int> asg;
+
+	for (int i=0; i<length_of_projdirs; i++)   {
+		float  s = -2.0f;
+		for (int k=0; k<length_of_ancordir; k++) s = Util::get_max(s, projdirs[i][0]*ancordir[k][0]+projdirs[i][1]*ancordir[k][1]+projdirs[i][2]*ancordir[k][2]);
+		if( s > cone )  asg.push_back(i);
+	}
+	return asg;
+}
+
+// END OF CONE codes
 
 vector<int> Util::nearestk_to_refdir(const vector<float>& projangles, const vector<float>& refangles, const int howmany) {
 	int nref = refangles.size()/2;
