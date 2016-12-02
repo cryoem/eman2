@@ -1269,7 +1269,6 @@ def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 	else:  ERROR("Unknown window2d option","window2d",1)
 	return img.get_clip(reg)
 
-"""
 # GOLDEN SEARCH CODE
 def bracket(f,x1,h):
 	c = 1.618033989 
@@ -1292,7 +1291,7 @@ def bracket(f,x1,h):
  
 def goldsearch(f,a,b,tol=1.0e-9):
 	from math import log, ceil
-	nIter = int(ceil(-2.078087*log(tol/abs(b-a)))) # Eq. (10.4)
+	nIter = int(ceil(-2.078087*log(tol/abs(b-a))))
 	R = 0.618033989
 	C = 1.0 - R
 	# First telescoping
@@ -1310,4 +1309,4 @@ def goldsearch(f,a,b,tol=1.0e-9):
 			x1 = R*a + C*b; f1 = f(x1)
 	if f1 < f2: return x1,f1
 	else: return x2,f2
-"""
+
