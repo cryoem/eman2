@@ -3709,10 +3709,10 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--do_final",             		type="int")# No change
 	parser_no_default.add_option("--small_memory",         		action="store_true")
 	parser_no_default.add_option("--memory_per_node",         	type="float")
-	parser_no_default.add_option("--ctrefromsort3d",            action="store_true")
+	parser_no_default.add_option("--continue_from_subset",      action="store_true")
 	parser_no_default.add_option("--subset",                    type="string")
 	parser_no_default.add_option("--oldrefdir",                 type="string")
-	parser_no_default.add_option("--ctrefromiter",              type="int")
+	parser_no_default.add_option("--continue_from_iter",              type="int")
 		
 	(options_no_default_value, args) = parser_no_default.parse_args(shell_line_command)
 
@@ -3758,14 +3758,14 @@ def update_tracker(shell_line_command):
 		Tracker["constants"]["small_memory"] 				= options_no_default_value.small_memory
 	if options_no_default_value.memory_per_node != -1.:
 		Tracker["constants"]["memory_per_node"] 			= options_no_default_value.memory_per_node
-	if  options_no_default_value.ctrefromsort3d != False:
-		Tracker["constants"]["ctrefromsort3d"] 			    = options_no_default_value.ctrefromsort3d
+	if  options_no_default_value.continue_from_subset != False:
+		Tracker["constants"]["ctrefromsort3d"] 			    = options_no_default_value.continue_from_subset
 	if  options_no_default_value.subset != "":
 		Tracker["constants"]["subset"] 			    = options_no_default_value.subset	
 	if  options_no_default_value.oldrefdir != "":
 		Tracker["constants"]["oldrefdir"] 			= options_no_default_value.oldrefdir	
-	if  options_no_default_value.ctrefromiter != -1:
-		Tracker["constants"]["ctrefromiter"] 		= options_no_default_value.ctrefromiter	
+	if  options_no_default_value.continue_from_iter != -1:
+		Tracker["constants"]["ctrefromiter"] 		= options_no_default_value.continue_from_iter	
 		
 	return 
 			
@@ -3822,10 +3822,10 @@ def main():
 	parser.add_option("--nonorm",               	action="store_true",  	default=False,              	help="Do not apply image norm correction")
 	parser.add_option("--do_final",             	type="int",           	default= -1,                	help="Perform final reconstruction using orientation parameters from iteration #iter. (default use iteration of best resolution achieved)")	
 	parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
-	parser.add_option("--ctrefromsort3d",           action="store_true",    default= False,                	help="Continue local/exhaustive refinement on data subset selected by sort3d")
+	parser.add_option("--continue_from_subset",     action="store_true",    default= False,                	help="Continue local/exhaustive refinement on data subset selected by sort3d")
 	parser.add_option("--subset",                   type="string",          default='',                     help="A text contains indexes of the selected data subset")
 	parser.add_option("--oldrefdir",                type="string",          default='',                     help="The old refinement directory where sort3d is initiated")
-	parser.add_option("--ctrefromiter",             type="int",             default=-1,                     help="The iteration from which refinement will be continued")
+	parser.add_option("--continue_from_iter",       type="int",             default=-1,                     help="The iteration from which refinement will be continued")
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
 	update_options  = False # restart option
@@ -3835,7 +3835,7 @@ def main():
 		masterdir 	= args[1]
 		orgstack 	= args[0]
 	elif(len(args) == 2):
-		if not options.ctrefromsort3d:
+		if not options.continue_from_subset:
 			orgstack 	= args[0]
 			volinit 	= args[1]
 			masterdir = ""
@@ -3843,7 +3843,7 @@ def main():
 			orgstack    = args[0] # provided data stack
 			masterdir   = args[1]
 	elif (len(args) == 1):
-		if not options.ctrefromsort3d:
+		if not options.continue_from_subset:
 			masterdir 	= args[0]
 			if ((options.do_final ==-1) and (not os.path.exists(masterdir))):
 				ERROR(" restart masterdir does not exist, no restart! ","meridien",1)
@@ -3855,7 +3855,7 @@ def main():
 				masterdir = ""
 			else: masterdir = args[0]
 	else:
-		if not options.ctrefromsort3d:
+		if not options.continue_from_subset:
 			print( "usage: " + usage)
 			print( "Please run '" + progname + " -h' for detailed options")
 			return 1
@@ -3865,7 +3865,7 @@ def main():
 			else:
 				masterdir =""
 	global Tracker, Blockdata
-	if options.ctrefromsort3d: update_options  = True
+	if options.continue_from_subset: update_options  = True
 	#print(  orgstack,masterdir,volinit )
 	# ------------------------------------------------------------------------------------
 	# Initialize MPI related variables
@@ -3935,10 +3935,10 @@ def main():
 		Constants["small_memory"]      			= options.small_memory
 		Constants["initialshifts"] 				= options.initialshifts
 		Constants["memory_per_node"] 			= options.memory_per_node
-		Constants["ctrefromsort3d"]            	= options.ctrefromsort3d # ctrefromsort3d four options
+		Constants["ctrefromsort3d"]            	= options.continue_from_subset # ctrefromsort3d four options
 		Constants["subset"]      				= options.subset
 		Constants["oldrefdir"] 				    = options.oldrefdir
-		Constants["ctrefromiter"] 			    = options.ctrefromiter
+		Constants["ctrefromiter"] 			    = options.continue_from_iter
 		
 		
 		
@@ -4082,7 +4082,7 @@ def main():
 		initdir = os.path.join(Tracker["constants"]["masterdir"],"main000")
 	else:  # an simple restart, just a continue run, no alteration of parameters
 		# simple restart INITIALIZATION, at least main000 is completed. Otherwise no need restart
-		if not options.ctrefromsort3d:
+		if not options.continue_from_subset:
 			Blockdata["bckgnoise"] 		= None # create entries for some variables 
 			Blockdata["accumulatepw"] 	= [[],[]]
 			initdir 			= os.path.join(masterdir,"main000")
@@ -4096,7 +4096,7 @@ def main():
 			Tracker 	= wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				print_dict(Tracker["constants"], "Permanent settings of previous run")
-	if not options.ctrefromsort3d:
+	if not options.continue_from_subset:
 		# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 		doit, keepchecking = checkstep(initdir, keepchecking)
 
@@ -4246,12 +4246,12 @@ def main():
 		if( li > 0 ):
 			masterdir = mpi_bcast(masterdir,li,MPI_CHAR,Blockdata["main_node"],MPI_COMM_WORLD)
 		masterdir = string.join(masterdir,"")
-		do_ctrefromsort3d_get_subset_data(masterdir, options.oldrefdir, options.subset, options.ctrefromiter, sys.argv[1:])
-		ctrefromsorting_rec3d_faked_iter(masterdir, options.ctrefromiter, MPI_COMM_WORLD)
+		do_ctrefromsort3d_get_subset_data(masterdir, options.oldrefdir, options.subset, options.continue_from_iter, sys.argv[1:])
+		ctrefromsorting_rec3d_faked_iter(masterdir, options.continue_from_iter, MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
-		Tracker["previousoutputdir"]    =  os.path.join(masterdir, "main%03d"%options.ctrefromiter)
-		Tracker["mainiteration"]        =  options.ctrefromiter
-		mainiteration                   =  options.ctrefromiter
+		Tracker["previousoutputdir"]    =  os.path.join(masterdir, "main%03d"%options.continue_from_iter)
+		Tracker["mainiteration"]        =  options.continue_from_iter
+		mainiteration                   =  options.continue_from_iter
 		doit                            =  1
 			
 	#  remove projdata, if it existed, initialize to nonsense
