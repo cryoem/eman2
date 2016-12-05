@@ -1244,7 +1244,7 @@ def calculate_2d_params_for_centering(kwargs):
 		# nx = int(nx*shrink_ratio + 0.5)
 
 		txrm = (nx - 2*(target_radius+1))//2
-		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, Blockdata["myid"])
+		if(txrm < 0):  ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "calculate_2d_params_for_centering",1, Blockdata["myid"])
 		if(txrm/nxrsteps>0):
 			tss = ""
 			txr = ""
