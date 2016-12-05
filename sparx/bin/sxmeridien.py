@@ -4115,7 +4115,7 @@ def main():
 			target_radius = options.target_radius
 			# target_nx = options.target_nx
 			center_method = options.center_method
-			if (radi < 1):  ERROR("Particle radius has to be provided!", "sxisac", 1, Blockdata["myid"])
+			if (radi < 1):  ERROR("Particle radius has to be provided!", "sxmeridien", 1, Blockdata["myid"])
 
 			nxrsteps = 4
 
