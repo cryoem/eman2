@@ -19619,10 +19619,10 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			float max_qt = -2.0f;
 			for (int kl=0; kl<nfine_sampling_angles; kl++) {
 				for (int nsm = 0; nsm < 3; nsm++)  {
-					float vc = dang[3*nsm + 9*kl]*refvec[0] + dang[1 + 3*nsm + 9*kl]*refvec[1] + dang[2+ 3*nsm + 9*kl]*refvec[2];
-					if( vc > max_qt ) {
-					max_qt = vc;
-					mkl  = kl;
+					float vct = dang[3*nsm + 9*kl]*refvec[0] + dang[1 + 3*nsm + 9*kl]*refvec[1] + dang[2+ 3*nsm + 9*kl]*refvec[2];
+					if( vct > max_qt ) {
+						max_qt = vct;
+						mkl  = kl;
 					}
 				}
 			}
@@ -19644,10 +19644,12 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 			float max_qt = -2.0f;
 			for (int kl=0; kl<nfine_sampling_angles; kl++) {
 				for (int nsm=0; nsm<3; nsm++)  {
-					float vc1 = dvecup[3*nsm +   9*kl]*refvec[0] + dvecup[1 + 3*nsm + 9*kl]*refvec[1] + dvecup[2+ 3*nsm + 9*kl]*refvec[2];
-					float vc2 = dvecdown[3*nsm + 9*kl]*refvec[0] + dvecdown[1 +3*nsm + 9*kl]*refvec[1] + dvecdown[2+ 3*nsm + 9*kl]*refvec[2];
-					if (max_qt < max(vc1, vc2)) {
-						max_qt = max(vc1,vc2);
+					float vct = Util::get_max( 
+						dvecup[3*nsm +   9*kl]*refvec[0] + dvecup[1 + 3*nsm + 9*kl]*refvec[1] + dvecup[2+ 3*nsm + 9*kl]*refvec[2],
+						dvecdown[3*nsm + 9*kl]*refvec[0] + dvecdown[1 +3*nsm + 9*kl]*refvec[1] + dvecdown[2+ 3*nsm + 9*kl]*refvec[2] 
+						);
+					if (max_qt < vct) {
+						max_qt = vct;
 						mkl    = kl;
 					}
 				} //nsym
@@ -23401,7 +23403,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 12/01/2016  04:04 PM " <<  endl;
+ cout <<"  Modification time: 12/05/2016  11:04 AM " <<  endl;
 }
 
 
