@@ -30,7 +30,7 @@ class SXcmd_config:
 		# class variables
 		self.wiki = wiki                      # Wiki document file path
 		self.format = format                  # Wiki document format: MoinMoinWiki or DokuWiki
-		self.category = category              # Category of this command: sxc_movie_micrograph, sxc_ctf, sxc_particle_stack, sxc_2d_clustering, sxc_initial_3d_modeling, sxc_3d_refinement, sxc_3d_clustering, sxc_utilities
+		self.category = category              # Category of this command: sxc_movie, sxc_cter, sxc_window, sxc_isac, sxc_viper, sxc_meridien, sxc_sort3d, sxc_localres, sxc_utilities
 		self.role = role                      # Role of this command; sxr_pipe (pipeline), sxr_alt (alternative) sxr_util (utility)
 		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue. If it is true, this command will be registered to child_application_list of SXCmdWidget
 		self.exclude_list = exclude_list      # token key base list to be excluded

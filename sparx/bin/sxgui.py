@@ -149,7 +149,7 @@ class SXcmd(object):
 		self.short_info = ""                  # Short description of this command
 		self.mpi_support = False              # Flag to indicate if this command suppors MPI version
 		self.mpi_add_flag = False             # DESIGN_NOTE: 2015/11/12 Toshio Moriya. This can be removed when --MPI flag is removed from all sx*.py scripts
-		self.category = category              # Category of this command: sxc_movie_micrograph, sxc_ctf, sxc_particle_stack, sxc_2d_clustering, sxc_initial_3d_modeling, sxc_3d_refinement, sxc_3d_clustering, sxc_utilities
+		self.category = category              # Category of this command: sxc_movie, sxc_cter, sxc_window, sxc_isac, sxc_viper, sxc_meridien, sxc_sort3d, sxc_localres, sxc_utilities
 		self.role = role                      # Role of this command; sxr_pipe (pipeline), sxr_alt (alternative) sxr_util (utility)
 		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue
 		self.token_list = []                  # list of command tokens. Need this to keep the order of command tokens
@@ -182,7 +182,7 @@ class SXcmd_category(SXmenu_item):
 
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
-		# self.name = name              # <Inherit from SXmenu_item> Name of this command category (i.e. sxc_movie_micrograph, sxc_ctf, sxc_particle_stack, sxc_2d_clustering, sxc_initial_3d_modeling, sxc_3d_refinement, sxc_3d_clustering, sxc_utilities), used as a key of dictionary
+		# self.name = name              # <Inherit from SXmenu_item> Name of this command category (i.e. sxc_movie, sxc_cter, sxc_window, sxc_isac, sxc_viper, sxc_meridien, sxc_sort3d, sxc_localres, sxc_utilities), used as a key of dictionary
 		# self.label = label            # <Inherit from SXmenu_item> User friendly name of this command category
 		# self.short_info = short_info  # <Inherit from SXmenu_item> Short description of this command category
 		self.cmd_list = []              # <Used only in sxgui.py> list of commands in this category. Need this to keep the order of commands
@@ -254,7 +254,7 @@ class SXLookFeelConst(object):
 	sxcmd_widget_area_min_width = -1
 
 	file_dialog_dir = ""
-
+	
 	@staticmethod
 	def initialise(sxapp):
 		# Set the directory for all file dialogs to script directory
@@ -305,6 +305,30 @@ class SXLookFeelConst(object):
 			# use relative path
 
 		return formatted_path
+
+	@staticmethod
+	def generate_sxcmd_wiki_url(sxcmd, wiki_type = "SPHIRE"):
+		if wiki_type == "SPHIRE":
+			# First, handle exceptional cases
+			if sxcmd.name in ["sxprocess", "sxsummovie", "e2bdb", "e2proc3d", "e2display", "sxpdb2em"] :
+				sxcmd_category_name = "utilities"
+			else:
+				sxcmd_category_name = sxcmd.category.replace("sxc_", "")
+			# URL Format: "http://sphire.mpg.de/wiki/doku.php?id=pipeline:CMD_CATEGORY:CMD_BASE
+			sxcmd_wiki_url = "http://sphire.mpg.de/wiki/doku.php?id=pipeline:%s:%s" % (sxcmd_category_name, sxcmd.name)
+		else:
+			assert (wiki_type == "SPARX")
+			sxcmd_wiki_url = "%s%s" % (SPARX_DOCUMENTATION_WEBSITE, sxcmd.name)
+		
+		return sxcmd_wiki_url
+
+	@staticmethod
+	def generate_sxmenu_item_wiki_url(sxmenu_item):
+		# First, handle exceptional cases
+		# URL Format: "http://sphire.mpg.de/wiki/doku.php?id=pipeline:CMD_CATEGORY:start"
+		sxmenu_item_wiki_url = "http://sphire.mpg.de/wiki/doku.php?id=pipeline:%s:start" % (sxmenu_item.name.replace("sxc_", ""))
+		
+		return sxmenu_item_wiki_url
 
 # ========================================================================================
 class SXLogoButton(QPushButton):
@@ -1779,7 +1803,12 @@ class SXCmdCategoryWidget(QWidget):
 	def handle_sxcmd_btn_event(self, sxcmd):
 		modifiers = QApplication.keyboardModifiers()
 		if modifiers == Qt.ShiftModifier:
-			os.system("python -m webbrowser %s%s" % (SPARX_DOCUMENTATION_WEBSITE, sxcmd.name))
+			# os.system("python -m webbrowser %s%s" % (SPARX_DOCUMENTATION_WEBSITE, sxcmd.name))
+			# sxcmd_wiki_url = SXLookFeelConst.generate_sxcmd_wiki_url(sxcmd, wiki_type = "SPARX")
+			sxcmd_wiki_url = SXLookFeelConst.generate_sxcmd_wiki_url(sxcmd)
+			print "Opening Wiki Page ..."
+			print sxcmd_wiki_url
+			os.system("python -m webbrowser %s" % (sxcmd_wiki_url))
 			return
 
 		if self.cur_sxcmd == sxcmd: return
@@ -2964,6 +2993,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 	def handle_sxmenu_item_btn_event(self, sxmenu_item):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
+
+		modifiers = QApplication.keyboardModifiers()
+		if modifiers == Qt.ShiftModifier:
+			sxmenu_item_wiki_url = SXLookFeelConst.generate_sxmenu_item_wiki_url(sxmenu_item)
+			print "Opening Wiki Page ..."
+			print sxmenu_item_wiki_url
+			os.system("python -m webbrowser %s" % (sxmenu_item_wiki_url))
+			return
 
 		if self.cur_sxmenu_item == sxmenu_item: return
 
