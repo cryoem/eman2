@@ -588,6 +588,17 @@ def parse_transform(optstr):
 
 	return ret
 
+def unparsemodopt(tupl):
+	"""This takes a 2-tuple of the form returned by parsemodopt and returns a corresponding string representation"""
+	
+	try:
+		if tupl[0]==None : return ""
+		if tupl[1]==None or len(tupl[1])==0 : return str(tupl[0])
+		parm=["{}={}".format(k,v) for k,v in tupl[1].items()]
+		return str(tupl[0])+":"+":".join(parm)
+	except:
+		return ""
+
 def parsemodopt(optstr):
 	"""This is used so the user can provide the name of a comparator, processor, etc. with options
 	in a convenient form. It will parse "dot:normalize=1:negative=0" and return
@@ -971,7 +982,7 @@ def free_space(p=os.getcwd()):
 
 def num_cpus():
 	'''
-	Returns the number of cpus available on the current platform
+	Returns an estimate of the number of cpus available on the current platform
 	'''
 	import platform
 	platform_string = get_platform()
@@ -981,14 +992,14 @@ def num_cpus():
 			a = [int(i.split(":")[1]) for i in f if "processor" in i]
 			return max(a)+1
 		except:
-			return 1
+			return 2
 	elif platform_string == "Windows":
 		try:
 			cores = os.getenv("NUMBER_OF_PROCESSORS")
 			if cores < 1: return 1 # just for safety
 			else: return int(cores)
 		except:
-			return 1
+			return 2
 	elif platform_string == "Darwin":
 		import commands
 		status, output = commands.getstatusoutput("sysctl hw.logicalcpu")
@@ -1003,12 +1014,12 @@ def num_cpus():
 
 		if cores < 1:
 			print "warning, the number of cpus was negative (%i), this means the MAC system command (sysctl) has been updated and EMAN2 has not accommodated for this. Returning 1 for the number of cores." %cores
-			cores = 1 # just for safety, something could have gone wrong. Maybe we should raise instead
+			cores = 2# just for safety, something could have gone wrong. Maybe we should raise instead
 		return cores
 
 	else:
-		print "error, in num_cpus - uknown platform string:",platform_string," - returning 1"
-		return 1
+		print "error, in num_cpus - uknown platform string:",platform_string," - returning 2"
+		return 2
 
 def gimme_image_dimensions2D( imagefilename ):
 	"""returns the dimensions of the first image in a file (2-D)"""

@@ -737,6 +737,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.display_fft = None
 
 	def __set_display_image(self,val):
+		if self.list_data!=None and val>=len(self.list_data) : val=len(self.list_data)-1
 		if self.list_data == None:
 			if val > 0 :
 				try:

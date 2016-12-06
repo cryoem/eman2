@@ -73,6 +73,9 @@ def main():
 		try: os.mkdir(options.path)
 		except: pass
 		if options.verbose : print "Working in folder: ",options.path
+	else:
+		try: os.mkdir(options.path)
+		except: pass
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
@@ -87,10 +90,15 @@ def main():
 	else: nref=0
 	
 	ref=EMData(reffile,nref)
+	ref.write_image("{}/refimg_{:02d}.hdf".format(options.path,options.iter))
 	
 	NTHREADS=max(options.threads,2)		# we have one thread just writing results
 
 	logid=E2init(sys.argv, options.ppid)
+	
+	parms=js_open_dict("{}/0_a2d_parms.json".format(options.path))
+	parms[options.iter]={"program":"e2a2d_align.py","input":args[0],"refimg":args[1],"align":unparsemodopt(options.align),"aligncmp":unparsemodopt(options.aligncmp),
+					  "ralign":unparsemodopt(options.ralign),"raligncmp":unparsemodopt(options.raligncmp),"cmp":unparsemodopt(options.cmp)}
 
 	angs={}
 	jsd=Queue.Queue(0)

@@ -43,6 +43,7 @@ from emapplication import get_application, EMApp
 from emimage2d import EMImage2DWidget
 from emimagemx import EMImageMXWidget
 from valslider import *
+import Queue
 import embrowser
 
 def main():
@@ -66,8 +67,9 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--threads", default=0,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.")
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
+	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	global options
@@ -77,10 +79,29 @@ def main():
 		options.path=numbered_path("m2d",True)
 #		os.makedirs(options.path)
 
+	if options.threads<1 : options.threads=num_cpus()
+
+	if options.path==None:
+		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="m2d_" and len(i)==6 and str.isdigit(i[-2:])]
+		if len(fls)==0 : fls=[1]
+		options.path = "m2d_{:02d}".format(max(fls))
+		if options.verbose : print "Using --path ",options.path
+		
+	if not os.path.exists(options.path) :
+		os.mkdir(options.path)
+		if itr==0 : itr=1
+		
+	parms=js_open_dict("{}/0_a2d_parms.json".format(options.path))
+	
+	if not parms.has_key(options.iter) :
+		try: options.iter=max([int(i) for i in parms.keys()])
+		except: options.iter=0
+		print "Iteration: ",options.iter
+
 	pid=E2init(argv)
 	
 	app = EMApp()
-	motion=EMMotion(app,options.path,options.threads)
+	motion=EMMotion(app,options.path,options.iter,options.threads)
 	motion.show()
 	app.execute()
 	
@@ -89,16 +110,27 @@ def main():
 class EMMotion(QtGui.QMainWindow):
 	"""This is the main window for the EMMotion application"""
 	
-	def __init__(self,application,path=None,threads=4):
+	def __init__(self,application,path=None,piter=None,threads=4):
 		"""application is an QApplication instance. ptclstack is the path to the file containing the particles to analyze. path is the path for ouput files""" 
 		QtGui.QWidget.__init__(self)
 
+		self.aliimg=None		# This is the unmasked alignment reference image
+		self.alisig=None		# This is the standard deviation of the alignment reference
+		self.alimask=None		# This is the drawn-upon version of aliimg used to generate the mask
+		self.alimasked=None		# This is the masked alignment reference used for the actual alignments
+		self.roidrawmask=None	# Region of interest mask drawing image
+		self.roimask=None		# Region of interest actual mask
+		self.roimasked=None		# Region of interest display widget
+
+		self.particles=None
+
 		self.app=weakref.ref(application)
 		self.path=path
+		self.iter=piter
 
-		self.setWindowTitle("Main Window (e2spt_boxer.py)")
+		self.setWindowTitle("Main Window (e2motion.py)")
 
-#		self.setWindowTitle("e2spt_boxer.py")
+#		self.setWindowTitle("e2motion.py")
 		
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
@@ -117,21 +149,48 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl = QtGui.QGridLayout(self.centralWidget())
 		cen=self.centralWidget()
 		
+		######
+		# Folder parameters
+		self.vgb0=QtGui.QGroupBox("Particle Data")
+		self.gbl.addWidget(self.vgb0,0,0,1,4)
+		
+		self.gbl2=QtGui.QGridLayout(self.vgb0)
+		self.wlpath=QtGui.QLabel("Path: {}".format(self.path))
+		self.gbl2.addWidget(self.wlpath,0,0)
+		self.gbl2.setColumnStretch(0,1)
+		
+		self.wvbiter=ValBox(label="Iter:",value=self.iter)
+		self.wvbiter.setIntonly(True)
+		self.gbl2.addWidget(self.wvbiter,0,2)
+		self.gbl2.setColumnStretch(2,0)
+		
+		self.wvsnum=ValSlider(rng=(-.2,0),label="Nptcl:",value=250)
+		self.wvsnum.setIntonly(True)
+		self.gbl2.addWidget(self.wvsnum,0,3)
+		self.gbl2.setColumnStretch(3,4)
+		
+		self.wlnptcl=QtGui.QLabel(" ")
+		self.gbl2.addWidget(self.wlnptcl,0,5)
+		self.gbl2.setColumnStretch(5,2)
+		
+		self.wbdoavg=QtGui.QPushButton("Make Avg")
+		self.gbl2.addWidget(self.wbdoavg,0,8)
+		
 		###### Alignment Mask
 		# widget for editing the alignment mask
 		self.wlalimaskdraw=QtGui.QLabel("<big><pre>Edit</pre></big>")
 		self.wlalimaskdraw.setAlignment(Qt.AlignHCenter)
-		self.gbl.addWidget(self.wlalimaskdraw,0,1)
+		self.gbl.addWidget(self.wlalimaskdraw,2,1)
 		
 		self.wlalimaskdraw2=QtGui.QLabel("<big><pre>A\nl\ni\ng\nn</pre></big>")
-		self.gbl.addWidget(self.wlalimaskdraw2,1,0)
+		self.gbl.addWidget(self.wlalimaskdraw2,3,0)
 		
 		self.w2dalimaskdraw=EMImage2DWidget()
-		self.gbl.addWidget(self.w2dalimaskdraw,1,1)
+		self.gbl.addWidget(self.w2dalimaskdraw,3,1)
 		
 		# Buttons for controlling mask
 		self.hbl1=QtGui.QHBoxLayout()
-		self.gbl.addLayout(self.hbl1,2,1)
+		self.gbl.addLayout(self.hbl1,4,1)
 		self.hbl1.addStretch(5)
 
 		self.wbdrawali=QtGui.QPushButton("Draw")
@@ -148,7 +207,7 @@ class EMMotion(QtGui.QMainWindow):
 
 		# Widget for setting alignment mask blur and base level
 		self.vbl1=QtGui.QVBoxLayout()
-		self.gbl.addLayout(self.vbl1,1,2)
+		self.gbl.addLayout(self.vbl1,3,2)
 		self.vbl1.addStretch(5)
 		
 		self.wlalimaskblur=QtGui.QLabel("Blur")
@@ -188,13 +247,13 @@ class EMMotion(QtGui.QMainWindow):
 		# widget for displaying the masked alignment reference
 		self.wlalimask=QtGui.QLabel("<big><pre>Reference</pre></big>")
 		self.wlalimask.setAlignment(Qt.AlignHCenter)
-		self.gbl.addWidget(self.wlalimask,0,3)
+		self.gbl.addWidget(self.wlalimask,2,3)
 		
 		self.w2dalimask=EMImage2DWidget()
-		self.gbl.addWidget(self.w2dalimask,1,3)
+		self.gbl.addWidget(self.w2dalimask,3,3)
 		
 		self.hbl1a=QtGui.QHBoxLayout()
-		self.gbl.addLayout(self.hbl1a,2,3)
+		self.gbl.addLayout(self.hbl1a,4,3)
 		self.hbl1a.addStretch(5)
 		
 		self.wbrecalcref=QtGui.QPushButton("Realign")
@@ -209,10 +268,10 @@ class EMMotion(QtGui.QMainWindow):
 		###### ROI Mask
 		# widget for editing the ROI mask
 		self.wlroimaskdraw=QtGui.QLabel("<big><pre>R\nO\nI</pre></big>")
-		self.gbl.addWidget(self.wlroimaskdraw,4,0)
+		self.gbl.addWidget(self.wlroimaskdraw,6,0)
 		
 		self.w2droimaskdraw=EMImage2DWidget()
-		self.gbl.addWidget(self.w2droimaskdraw,4,1)
+		self.gbl.addWidget(self.w2droimaskdraw,6,1)
 
 		# Buttons for controlling mask
 		self.hbl2=QtGui.QHBoxLayout()
@@ -233,7 +292,7 @@ class EMMotion(QtGui.QMainWindow):
 
 		# Widget for setting alignment mask blur and base level
 		self.vbl2=QtGui.QVBoxLayout()
-		self.gbl.addLayout(self.vbl2,4,2)
+		self.gbl.addLayout(self.vbl2,6,2)
 		self.vbl2.addStretch(5)
 		
 		self.wlroimaskblur=QtGui.QLabel("Blur")
@@ -251,17 +310,17 @@ class EMMotion(QtGui.QMainWindow):
 
 		# widget for displaying the masked ROI
 		self.w2droimask=EMImage2DWidget()
-		self.gbl.addWidget(self.w2droimask,4,3)
+		self.gbl.addWidget(self.w2droimask,6,3)
 		
 		self.vbl2.addStretch(5)
 
 		self.wlarrow1=QtGui.QLabel(QtCore.QChar(0x2192))
-		self.gbl.addWidget(self.wlarrow1,2,4)
+		self.gbl.addWidget(self.wlarrow1,4,4)
 
 		###### Results
 		# Widget showing lists of different result sets
 		self.vbl3=QtGui.QVBoxLayout()
-		self.gbl.addLayout(self.vbl3,1,6,5,1)
+		self.gbl.addLayout(self.vbl3,3,6,5,1)
 		
 		self.wllistresult=QtGui.QLabel("Results")
 #		self.wllistresult.setAlignment(Qt.AlignHCenter)
@@ -285,9 +344,9 @@ class EMMotion(QtGui.QMainWindow):
 		self.wvbnbasis.setIntonly(True)
 		self.vbl3a.addWidget(self.wvbnbasis)
 
-		self.wvbptclpct=ValBox(None,(0,100),"% Ptcl Incl",60)
-		self.wvbptclpct.setIntonly(True)
-		self.vbl3a.addWidget(self.wvbptclpct)
+		#self.wvbptclpct=ValBox(None,(0,100),"% Ptcl Incl",60)
+		#self.wvbptclpct.setIntonly(True)
+		#self.vbl3a.addWidget(self.wvbptclpct)
 
 		
 		## fill in a default value for number of threads
@@ -319,23 +378,23 @@ class EMMotion(QtGui.QMainWindow):
 		self.vbl3a.addWidget(self.wbcompute)
 
 		self.wlarrow2=QtGui.QLabel(QtCore.QChar(0x2192))
-		self.gbl.addWidget(self.wlarrow2,2,7)
+		self.gbl.addWidget(self.wlarrow2,4,7)
 
 
 		###### Output widgets
 		# Class-averages
 		self.wlclasses=QtGui.QLabel("<big><pre>Classes</pre></big>")
 		self.wlclasses.setAlignment(Qt.AlignHCenter)
-		self.gbl.addWidget(self.wlclasses,0,9)
+		self.gbl.addWidget(self.wlclasses,2,9)
 		
 		self.w2dclasses=EMImage2DWidget()
-		self.gbl.addWidget(self.w2dclasses,1,9)
+		self.gbl.addWidget(self.w2dclasses,3,9)
 
 		self.wbshowptcl=QtGui.QPushButton(QtCore.QChar(0x2193))
-		self.gbl.addWidget(self.wbshowptcl,2,9)
+		self.gbl.addWidget(self.wbshowptcl,4,9)
 
 		self.w2dptcl=EMImage2DWidget()
-		self.gbl.addWidget(self.w2dptcl,4,9)
+		self.gbl.addWidget(self.w2dptcl,6,9)
 		
 		## Buttons for controlling mask
 		#self.hbl1=QtGui.QHBoxLayout()
@@ -362,6 +421,9 @@ class EMMotion(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.wbroigo,QtCore.SIGNAL("clicked(bool)"),self.roiGoPress)
 		QtCore.QObject.connect(self.wbcompute,QtCore.SIGNAL("clicked(bool)"),self.doCompute)
 		QtCore.QObject.connect(self.wbshowptcl,QtCore.SIGNAL("clicked(bool)"),self.showParticles)
+		QtCore.QObject.connect(self.wvbiter,QtCore.SIGNAL("valueChanged"),self.newIter)
+		QtCore.QObject.connect(self.wvsnum,QtCore.SIGNAL("valueChanged"),self.newThresh)
+		QtCore.QObject.connect(self.wbdoavg,QtCore.SIGNAL("clicked(bool)"),self.avgPress)
 
 		QtCore.QObject.connect(self.mfileopen,QtCore.SIGNAL("triggered(bool)")  ,self.menuFileOpen  )
 
@@ -377,42 +439,84 @@ class EMMotion(QtGui.QMainWindow):
 		insp.mmtab.setCurrentIndex(5)
 		insp.dtpenv.setText("0.0")
 		
-		self.aliimg=None		# This is the unmasked alignment reference image
-		self.alisig=None		# This is the standard deviation of the alignment reference
-		self.alimask=None		# This is the drawn-upon version of aliimg used to generate the mask
-		self.alimasked=None		# This is the masked alignment reference used for the actual alignments
-		self.roidrawmask=None	# Region of interest mask drawing image
-		self.roimask=None		# Region of interest actual mask
-		self.roimasked=None		# Region of interest display widget
-
-		self.particles=None
-		self.particles_ali=None
 
 		self.path=path
-		QtCore.QTimer.singleShot(200,self.afterStart)
+		QtCore.QTimer.singleShot(500,self.afterStart)
 
 	def afterStart(self):
 		"""This gets called once the event loop is running"""
-		print "App running, initializing"
-		self.initPath(self.path)
+#		print "App running, initializing"
+		self.initPath(self.path,self.iter)
 
-	def initPath(self,path):
-		self.path=path
+	def initPath(self,path,itr):
 		
-		# If particles exists then we can fully initialize
-		try:
-			self.particles=EMData.read_images("%s/particles.lst"%self.path)	# read in the entire particle stack
-			for p in self.particles: p.process_inplace("normalize.edgemean")
-			
-			cl=[i for i in os.listdir(self.path)  if "classes" in i]
-			cl.sort()
-			self.wlistresult.addItems(QtCore.QStringList(cl))
-			
-			self.bootstrap()
-		except :
-			self.particles=None
-			
+		parms=js_open_dict("{}/0_a2d_parms.json".format(options.path))
+
+		self.wvbiter.setValue(itr)
+		self.newIter()
+		
 		return
+
+	def newIter(self,x=0):
+		itr=int(self.wvbiter.getValue())
+		
+		try: 
+			dct=js_open_dict("{}/particle_parms_{:02d}.json".format(self.path,itr))
+			self.particles=[(j["score"],j["xform.align2d"],eval(i)[0],int(eval(i)[1])) for i,j in dct.items()]
+			self.particles.sort()
+			if len(self.particles)==0 : raise Exception
+		except:
+			self.particles=None
+			self.wlnptcl.setText("No Data")
+			print "Warning: no particle alignment data found for iter=",itr
+			return
+		
+		m=0
+		s=0
+		for i in self.particles:
+			m+=i[0]
+			s+=i[0]**2
+		m/=len(self.particles)
+		s=sqrt(s/len(self.particles)-m**2)
+		self.ptclmean=m
+		self.ptclsigma=s
+		
+		self.wvsnum.setRange(1,len(self.particles)/10)
+				
+		self.newThresh()
+
+	def newThresh(self,x=0):
+		if self.particles==None or len(self.particles)<3:
+			self.wlnptcl.setText("No Data")
+			self.setAliRef(None)
+			return
+		
+		n2use=self.wvsnum.getValue()
+		if n2use>len(self.particles): 
+			n2use=len(self.particles)
+			self.wvsnum.setValue(n2use)
+			self.wvsnum.setRange(1,n2use)
+		self.wlnptcl.setText("/{:1d}    {:1.3f} sigma, {:1.1f} %".format(len(self.particles),(self.particles[n2use-1][0]-self.ptclmean)/self.ptclsigma,100.0*float(n2use)/len(self.particles)))
+
+	def avgPress(self,x=0):
+		if self.particles==None or len(self.particles)<3:
+			self.wlnptcl.setText("No Data")
+			self.setAliRef(None)
+			return
+		
+		n2use=self.wvsnum.getValue()
+		avg=Averagers.get("mean")
+		for i in self.particles[:n2use]:
+			img=EMData(i[2],i[3]).process("xform",{"transform":i[1]})
+			avg.add_image(img)
+		
+		self.aliimg=avg.finish()
+		
+		self.setAliRef(self.aliimg)
+		
+#		self.wlnptcl.setText("{:1.3f} *sigma, {:1.1f} %".format((self.particles[n2use][0]-self.ptclmean)/self.ptclsigma,100.0*float(n2use)/len(self.particles)))
+		self.wlnptcl.setText("/{:1d}    {:1.3f} sigma, {:1.1f} %".format(len(self.particles),(self.particles[n2use][0]-self.ptclmean)/self.ptclsigma,100.0*float(n2use)/len(self.particles)))
+		
 
 	def menuFileOpen(self,x):
 		if self.particles!=None:
@@ -425,49 +529,50 @@ class EMMotion(QtGui.QMainWindow):
 		self.dialog.show()
 	
 	def gotPath(self):
-		ptcl=self.dialog.getResult()
-		self.dialog=None
-		if ptcl == None : return		# user pressed cancel, but we still need to clean up
-		ptcl=ptcl[0]
+		#ptcl=self.dialog.getResult()
+		#self.dialog=None
+		#if ptcl == None : return		# user pressed cancel, but we still need to clean up
+		#ptcl=ptcl[0]
 		
-		n=EMUtil.get_image_count(ptcl)
-		sz=EMData(ptcl,0,True)["nx"]
+		#n=EMUtil.get_image_count(ptcl)
+		#sz=EMData(ptcl,0,True)["nx"]
 		
-		# We don't want the user to overwhelm the system
-		if sz*sz*4*n > 5.0e8 :
-			nmax=5.0e8/(sz*sz*4)
-			r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: This full particle set will require %d+ gb memory to process. Select Yes to use only the first %d particles, No to use the entire stack, or Cancel to abort. You may also consider using e2proc2d.py --meanshrink= to produce a downsampled stack for processing."%(int(sz*sz*12*n/1.0e9+.5),nmax),QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
-			if r==QtGui.QMessageBox.Cancel : return
-			if r==QtGui.QMessageBox.Yes : n=nmax
+		## We don't want the user to overwhelm the system
+		#if sz*sz*4*n > 5.0e8 :
+			#nmax=5.0e8/(sz*sz*4)
+			#r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: This full particle set will require %d+ gb memory to process. Select Yes to use only the first %d particles, No to use the entire stack, or Cancel to abort. You may also consider using e2proc2d.py --meanshrink= to produce a downsampled stack for processing."%(int(sz*sz*12*n/1.0e9+.5),nmax),QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
+			#if r==QtGui.QMessageBox.Cancel : return
+			#if r==QtGui.QMessageBox.Yes : n=nmax
 		
-		task="e2proclst.py %s --create %s/particles.lst --range=0,%d,1"%(ptcl,self.path,n)
-		print task
-		launch_childprocess(task)
+		#task="e2proclst.py %s --create %s/particles.lst --range=0,%d,1"%(ptcl,self.path,n)
+		#print task
+		#launch_childprocess(task)
 		
-		self.initPath(self.path)
+		#self.initPath(self.path)
+		print "does nothing"
 	
-	def threadAlign(self,stack,ref,refnomask,outstack):
+	def threadAlign(self,curlist,ref,refnomask,outstack):
 		"""This method is designed to run in a thread and perform alignments of a stack of inputs to a single reference"""
 	
-		for p in stack:
-			p2=p.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
+		for p in curlist:
+#			p2=p.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
+			p2=EMData(p[2],p[3])
 			a=p2.align("rotate_translate_tree",ref)
 #			a=p2.copy()
 #			a["match_qual"]=a.cmp("frc",ref,{"sweight":0})		# compute similarity to unmasked reference
 			a["match_qual"]=a.cmp("ccc",refnomask)		# compute similarity to unmasked reference
-			outstack.append((a["match_qual"],a))
+			outstack.put((a["match_qual"],a["xform.align2d"],p[2],p[3]))
 
-	def threadRAlign(self,stack,oldali,ref,refnomask,outstack):
+	def threadRAlign(self,curlist,ref,refnomask,outstack):
 		"""This method is designed to run in a thread and perform alignments of a stack of inputs to a single reference."""
 	
-		for i,p in enumerate(stack):
-			p2=p.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
-			a=p2.align("refine",ref,{"verbose":0,"xform.align2d":oldali[i]},"ccc",{})		# doesn't really seem to make an improvement
+		for i,p in enumerate(curlist):
+#			p2=p.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
+			p2=EMData(p[2],p[3])
+			a=p2.align("refine",ref,{"verbose":0,"xform.align2d":p[1]},"ccc",{})		# doesn't really seem to make an improvement
 #			a["match_qual"]=a.cmp("frc",ref,{"sweight":0})		# compute similarity to unmasked reference
 			a["match_qual"]=a.cmp("ccc",refnomask)		# compute similarity to unmasked reference
-			outstack.append((a["match_qual"],a))
-
-
+			outstack.put((a["match_qual"],a["xform.align2d"],p[2],p[3]))
 
 	def threadTreeAlign(self,tree,tree2,lock):
 		"""Averages pairs in tree to produce 1/2 as many averages in tree2. Competes with other threads for elements to work on."""
@@ -508,7 +613,7 @@ class EMMotion(QtGui.QMainWindow):
 		# Wait for threads to finish
 		while 1:
 			time.sleep(0.2)
-			self.wpbprogress.setValue(int(len(lst)*100/maxl))
+			self.wpbprogress.setValue(int(lst.qsize()*100/maxl))
 			QtGui.qApp.processEvents()
 
 			# If any threads are alive, it breaks out of the inner loop, if none are alive, the else block breaks out of the outer loop
@@ -592,7 +697,7 @@ class EMMotion(QtGui.QMainWindow):
 		#for i in self.particles_ali: out.write("%f\n"%i[1]["match_qual"])
 		#out.close()
 		
-		ptclfrac=self.wvbptclpct.getValue()/100.0
+#		ptclfrac=self.wvbptclpct.getValue()/100.0
 		for i,a in self.particles_ali[:int(len(self.particles)*ptclfrac)]: avgr.add_image(a)
 		
 		self.aliimg=avgr.finish()
@@ -613,6 +718,7 @@ class EMMotion(QtGui.QMainWindow):
 	def setAliRef(self,img):
 		"""Sets a new alignment reference, creating a new empty mask if none is present"""
 		
+		if img==None : return
 		self.aliimg=img
 		
 		# If there is an existing mask drawn, we copy it out before overwriting
@@ -677,27 +783,28 @@ class EMMotion(QtGui.QMainWindow):
 		self.wpbprogress.reset()
 		
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
-
-		oldali=[i[1]["xform.align2d"] for i in self.particles_ali]
 		
+		jsd=Queue.Queue(0)
 		self.particles_ali=[]
 		thrs=[]
 		# launch nthr threads to do the alignments
 		for i in range(nthr):
-			thrs.append(threading.Thread(target=self.threadRAlign, args=(self.particles[i::nthr],oldali[i::nthr],self.alimasked,self.aliimg,self.particles_ali)))
+			thrs.append(threading.Thread(target=self.threadRAlign, args=(self.particles[i::nthr],self.alimasked,self.aliimg,jsd)))
 			thrs[-1].start()
 			
-		self.waitThreads(thrs,self.particles_ali,len(self.particles))
-		
-		self.particles_ali.sort()
-		self.w2dptcl.set_data([i for j,i in self.particles_ali])
+		self.waitThreads(thrs,jsd,len(self.particles))
 
+		# for refinement we use the current iteration
+		itr=self.wvbiter.getValue()
+		
+		dct=js_open_dict("{}/particle_parms_{:02d}.json".format(self.path,itr))
+		while not jsd.empty():
+			i=jsd.get()
+			dct[(i[2],i[3])]={"xform.align2d":i[1],"score":i[0]}
+		
 		self.wpbprogress.reset()
 		self.wpbprogress.setEnabled(False)
 		
-		out=file("x.txt","w")
-		for i in self.particles_ali: out.write("%f\n"%i[1]["match_qual"])
-		out.close()
 			
 	def alignToRef(self):
 		"""realigns particles to reference, but does not compute a new reference"""
@@ -706,19 +813,28 @@ class EMMotion(QtGui.QMainWindow):
 		
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
 
-		self.particles_ali=[]
+		jsd=Queue.Queue(0)
+		n2use=self.wvsnum.getValue()
 		thrs=[]
 		# launch nthr threads to do the alignments
 		for i in range(nthr):
-			thrs.append(threading.Thread(target=self.threadAlign, args=(self.particles[i::nthr],self.alimasked,self.aliimg,self.particles_ali)))
+			thrs.append(threading.Thread(target=self.threadAlign, args=(self.particles[i:n2use:nthr],self.alimasked,self.aliimg,jsd)))
 			thrs[-1].start()
 			
-		self.waitThreads(thrs,self.particles_ali,len(self.particles))
+		self.waitThreads(thrs,jsd,len(self.particles))
+
+		# we find a new iteration to use for the new alignment
+		itr=1
+		while os.path.exists("{}/particle_parms_{:02d}.json".format(self.path,itr)): itr+=1
+		
+		dct=js_open_dict("{}/particle_parms_{:02d}.json".format(self.path,itr))
+		while not jsd.empty():
+			i=jsd.get()
+			dct[(i[2],i[3])]={"xform.align2d":i[1],"score":i[0]}
 			
-
-		self.particles_ali.sort()
-		self.w2dptcl.set_data([i for j,i in self.particles_ali])
-
+		self.wvbiter.setValue(itr)
+		
+		
 		self.wpbprogress.reset()
 		self.wpbprogress.setEnabled(False)
 
@@ -727,28 +843,28 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.alignToRef()			# realign particles to current masked reference
 		
-		# Compute the new average
-		self.alisig=EMData(self.particles[0]["nx"],self.particles[0]["ny"],1)
-		avgr=Averagers.get("mean",{"sigma":self.alisig})
-		ptclfrac=self.wvbptclpct.getValue()/100.0
-		for q,i in self.particles_ali[:int(len(self.particles)*ptclfrac)] : avgr.add_image(i)
-		self.aliimg=avgr.finish()
+		## Compute the new average
+		#self.alisig=EMData(self.particles[0]["nx"],self.particles[0]["ny"],1)
+		#avgr=Averagers.get("mean",{"sigma":self.alisig})
+		#ptclfrac=self.wvbptclpct.getValue()/100.0
+		#for q,i in self.particles_ali[:int(len(self.particles)*ptclfrac)] : avgr.add_image(i)
+		#self.aliimg=avgr.finish()
 		
-		self.setAliRef(self.aliimg)
+		#self.setAliRef(self.aliimg)
 
 	def aliRRecalcRefPress(self,x=False):
 		if len(self.particles)==0 : return
 		
 		self.rAlignToRef()			# realign particles to current masked reference
 		
-		# Compute the new average
-		self.alisig=EMData(self.particles[0]["nx"],self.particles[0]["ny"],1)
-		avgr=Averagers.get("mean",{"sigma":self.alisig})
-		ptclfrac=self.wvbptclpct.getValue()/100.0
-		for q,i in self.particles_ali[:int(len(self.particles)*ptclfrac)] : avgr.add_image(i)
-		self.aliimg=avgr.finish()
+		## Compute the new average
+		#self.alisig=EMData(self.particles[0]["nx"],self.particles[0]["ny"],1)
+		#avgr=Averagers.get("mean",{"sigma":self.alisig})
+		#ptclfrac=self.wvbptclpct.getValue()/100.0
+		#for q,i in self.particles_ali[:int(len(self.particles)*ptclfrac)] : avgr.add_image(i)
+		#self.aliimg=avgr.finish()
 		
-		self.setAliRef(self.aliimg)
+		#self.setAliRef(self.aliimg)
 	
 	def roiDrawMode(self,x=False):
 		pass
@@ -790,57 +906,96 @@ class EMMotion(QtGui.QMainWindow):
 		
 	def doComputePCA(self):
 		"""Particle classification by MSA"""
-		import e2msa
 		
-		ptclfrac=self.wvbptclpct.getValue()/100.0
+		n2use=self.wvsnum.getValue()
+		toclass=self.particles[:n2use]
+
 		nclasses=self.wvbclasses.getValue()
 		nbasis=self.wvbnbasis.getValue()
 		
+		
+		# Find a class number in the current iteration
+		clnums=[i.split("_")[-1][:2] for i in os.listdir(self.path) if "classes_{:02d}".format(self.iter) in i]
+		for i in xrange(len(clnums)):
+			try: clnums[i]=int(clnums[i])
+			except: clnums[i]=0
+		clnums.append(0)
+		clnum=max(clnums)+1		# number of the next free class averagee
+		
+		self.wpbprogress.setValue(10.0)
+		
 		# compute PCA
-		ptcl4an=[i[1].copy() for i in self.particles_ali]
-		basis=e2msa.msa(ptcl4an,self.roimask,nbasis,False,"pca_large",False)
-#		basis=e2msa.msa(ptcl4an,self.roimask,nbasis,True,"pca_large",True)
-		
-		for b in basis: b.write_image("zbas.hdf",-1)
-		
-		# reprojection
-		# outer loop over images to be projected
-		projlist=[]
-		for i,im in enumerate(ptcl4an):
-			try: im.process_inplace("normalize.unitlen")
-			except: print "Warning: Normalization failed"
-			im-=basis[0]
-
-			proj=EMData(len(basis)-1,1,1)
-		
-			# inner loop over the basis images
-			l=0
-			for j,b in enumerate(basis[1:]):
-				proj.set_value_at(j,0,0,im.cmp("ccc",b,{"negative":0}))
-				l+=proj[j,0]**2
-
-#			if options.normproj :
-			l=sqrt(l)
-			proj.mult(1.0/l)
-			proj["isvector"]=1
-			projlist.append(proj)
+		ptcl4an=[EMData(name,i).process("xform",{"transform":xform}).process("normalize.edgemean") for score,xform,name,i in toclass]
+		pca=Analyzers.get("pca_large",{"mask":self.roimask,"nvec":nbasis})
+		for p in ptcl4an:
+			p2=p.copy()
+			p2.mult(self.roimask)
+			p2.process_inplace("normalize.unitlen")
+			pca.insert_image(p2)
 			
-			proj.write_image("zprj.hdf",-1)
+		basis=pca.analyze()
+		for b in basis: b.write_image("{}/basis_{:02d}_{:02d}.hdf".format(self.path,self.iter,clnum),-1)
+		self.roimask.write_image("{}/maskroi_{:02d}_{:02d}.hdf".format(self.path,self.iter,clnum),0)
+
+		self.wpbprogress.setValue(33.0)
+		
+		# project each particle into the basis subspace
+#		proj=[[p.cmp("dot",b,{"normalize":0,"negative":0} for b in basis] for p in ptcl4an]
+		projs=[]					# 1 EMData per particle, each is a basis subspace projection (1-D image)
+		for p in ptcl4an:
+			proj=EMData(nbasis,1,1)
+			projs.append(proj)
+			for i,b in enumerate(basis):
+				proj.set_value_at(i,0,p.cmp("dot",b,{"normalize":0,"negative":0}))
+				
+		# k-means classification
+		an=Analyzers.get("kmeans",{"ncls":nclasses,"minchange":n2use//100+1,"slowseed":0,"mininclass":min((n2use//(nclasses*4)+1),10)})
+		
+		an.insert_images_list(projs)
+		centers=an.analyze()
+		self.wpbprogress.setValue(66.0)
+
+		classes=[None for i in range(nclasses)]
+		classlst=[[] for i in range(nclasses)]
+		for n,i in enumerate(ptcl4an):
+			try: classes[projs[n]["class_id"]].add(i)
+			except: classes[projs[n]["class_id"]]=i.copy()
+			classlst.append(projs[n]["class_id"])
+		
+		
+		# Make class-averages
+		for i,c in enumerate(classes): 
+			self.wpbprogress.setValue(66+33*i/len(classes))
+			c.process_inplace("normalize.edgemean")
+			c["class_ptcl_idxs"]=classlst[i]
+			c["exc_class_ptcl_idxs"]=[]
+			c["class_ptcl_src"]=toclass[0][2]
+			c.write_image("{}/classes_{:02d}_{:02d}.hdf".format(self.path,self.iter,self.clnum),-1)
+		
+		
+			
+		self.classes=classes
+		self.w2dclasses.set_data(self.classes)
+		
+		self.wpbprogress.reset()
 
 		
 	def doComputeAvD(self):
 		"""Particle classification based on average density within the mask"""
 		
-		ptclfrac=self.wvbptclpct.getValue()/100.0
-		nclasses=self.wvbclasses.getValue()
+		n2use=self.wvsnum.getValue()
+		toclass=self.particles[:n2use]
 		
-		# Determine the densities inside the mask
 		tosort=[]
-		for i,t in enumerate(self.particles_ali):
-			c=t[1].copy()
-			c.process_inplace("normalize.toimage",{"to":self.alimasked,"ignore_zero":1})
-			c.mult(self.roimask)
-			tosort.append((c["mean"],t[0],t[1]))		# a list we can sort by density in mask
+		for score,xform,name,i in toclass:
+			img=EMData(name,i).process("xform",{"transform":xform}).process("normalize")
+			imgm=img.copy()
+			imgm.mult(self.roimask)
+			tosort.append((imgm["mean"],img))
+		
+		nclasses=self.wvbclasses.getValue()
+
+#		c.process_inplace("normalize.toimage",{"to":self.alimasked,"ignore_zero":1})
 		
 		# sort by density
 		tosort.sort()
@@ -849,12 +1004,9 @@ class EMMotion(QtGui.QMainWindow):
 		self.classes=[]
 		clssz=len(tosort)/nclasses		# particles per class
 		
-		for i in xrange(nclasses):
-			sublst=[(i[1],i[2]) for i in tosort[i*clssz:(i+1)*clssz]]		# extract the particle quality and image
-			sublst.sort()													# this is sorted by overall quality (lower better)
-			
+		for cl in xrange(nclasses):
 			avgr=Averagers.get("mean")
-			for q,i in sublst[:int(len(sublst)*ptclfrac)] : avgr.add_image(i)
+			for i in tosort[cl*clssz:(cl+1)*clssz]: avgr.add_image(i[1])
 			self.classes.append(avgr.finish())
 
 		self.w2dclasses.set_data(self.classes)

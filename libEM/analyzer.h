@@ -284,6 +284,7 @@ namespace EMAN
 		void update_centers(int sigmas=0);
 		void reclassify();
 		void reseed();
+		void resort();
 
 		vector<EMData *> centers;
 		int ncls;	//number of desired classes

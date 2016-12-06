@@ -22,6 +22,7 @@ def main():
 	parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls_XX.hdf) containing the aligned particles.",default=False)
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder with existing e2a2d_align results (default = 2da_XX)")
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = highest existing iteration",default=0)
+	parser.add_argument("--scorebestset",type=int,help="Will extract the N particles with the best scores to make a new set",default=0)
 	parser.add_argument("--scorebands", default=0,type=int,help="If specified will generate averages over N bands of 'score' values, including only particles in each band.")
 	parser.add_argument("--scorebandsali", default=0,type=int,help="If specified will generate averages over N bands of 'score' values, including only particles in each band, and iteratively realigning in each band.")
 	parser.add_argument("--scoreprogressive", default=0,type=int,help="If specified will generate progressive averages over N bands of 'score' values, including all particles starting with the best through the progressive bands.")
@@ -75,6 +76,17 @@ def main():
 		except: aref=im
 	aref.process_inplace("normalize.edgemean")
 		
+	if options.scorebestset>0:
+		out=LSXFile("sets/{}_{}_{}.lst".format(options.path.split("/")[-1],options.iter,options.scorebestset))
+		for i,t in enumerate(sorted(sortangs)[:options.scorebestset]):
+			imh=EMData(t[2][0],t[2][1],True)
+			try:
+				fsp=imh["data_source"]	# if the data is from a LST file this dereferences it
+				fspn=imh["data_n"]
+			except:
+				fsp=imh["source_path"]
+				fspn=imh["source_n"]
+			out.write(i,fspn,fsp)
 	
 	# the main averaging/saving loop
 	t0=time.time()

@@ -209,6 +209,7 @@ if (calcsigmamean) {
 
 for (int i=0; i<maxiter; i++) {
 	nchanged=0;
+	resort();
 	reclassify();
 	if (verbose) printf("iter %d>  %d (%d)\n",i,nchanged,ncls);
 	if (nchanged<minchange && ncls==nclstot) break;
@@ -310,6 +311,31 @@ for (i=0; i<ncls; i++) {
 }
 
 
+}
+
+// Tries to generate a reasonable similarity path through the centers to put more similar centers closer to each other
+void KMeansAnalyzer::resort() {
+
+	Cmp *c = Factory < Cmp >::get("sqeuclidean");
+	
+	// The first center remains first, we proceed from that starting point
+	// simple shells sort to an out-of-place reference
+	for (int i=1; i<ncls; i++) {
+		float bst=1.0e22;
+		for (int j=i; j<ncls; j++) {
+			float d=c->cmp(centers[i-1],centers[j]);
+			if (d<bst) {
+				bst=d;
+				if (j!=i) {
+					EMData *tmp=centers[j];
+					centers[j]=centers[i];
+					centers[i]=tmp;
+				}
+			}
+		}
+	}
+
+	delete c;
 }
 
 
