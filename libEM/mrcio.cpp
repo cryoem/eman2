@@ -33,7 +33,6 @@
  *
  * */
 
-#include <stdio.h>
 #include <cstring>
 #include <climits>
 
@@ -269,22 +268,16 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 	ByteOrder::swap_bytes(&nsymw);
 	ByteOrder::swap_bytes(&machw);
 
+	const int max_dim = 1 << 20;
+
 	int actual_stamp = generate_machine_stamp();
 
 	bool debug = (getenv("DEBUG_MRC_SANITY") != NULL);
 
-	if (debug) {
-		printf ("stamp: mach, file, swapd = %8.0x %8.0x %8.0x\n",
-				  actual_stamp, mach, machw);
-		printf ("stamp: mach, file, swapd = %d %d %d\n",
-				  actual_stamp, mach, machw);
-		printf ("nx, ny, nz, mode         = %d %d %d %d\n", nx,    ny,    nz,   mrcmode);
-		printf ("nx, ny, nz, mode swapped = %d %d %d %d\n", nxw,   nyw,   nzw,  modew);
-		printf ("mapc, mapr, maps         = %d %d %d\n",    mapc,  mapr,  maps);
-		printf ("mapc, mapr, maps swapped = %d %d %d\n",    mapcw, maprw, mapsw);
-	}
+	bool do_swap, have_err;
+	char * errmsg;
 
-	bool do_swap;
+	have_err = false;
 
 	if (mach == actual_stamp) {
 		do_swap = false;
@@ -305,7 +298,19 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 				do_swap = true;
 			}
 			else {
-				return false;
+				double ave_xyz  = ((double) nx  + (double) ny  + (double) nz)  / 3.0;
+				double ave_xyzw = ((double) nxw + (double) nyw + (double) nzw) / 3.0;
+
+				if      (nx  > 0  &&  ny  > 0  &&  nz  > 0  &&  ave_xyz  <= max_dim) {
+					do_swap = false;
+				}
+				else if (nxw > 0  &&  nyw > 0  &&  nzw > 0  &&  ave_xyzw <= max_dim) {
+					do_swap = true;
+				}
+				else {
+					have_err = true;
+					errmsg = "MRC image dimensions nonpositive or too large.";
+				}
 			}
 		}
 		else {
@@ -316,9 +321,27 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 				do_swap = true;
 			}
 			else {
-				return false;
+				have_err = true;
+				errmsg = "MRC mode is not from 0 to 127.";
 			}
 		}
+	}
+
+	if (debug  ||  have_err) {
+		printf ("stamp: mach, file, swapd = %8.0x %8.0x %8.0x\n",
+				  actual_stamp, mach, machw);
+		printf ("stamp: mach, file, swapd = %d %d %d\n",
+				  actual_stamp, mach, machw);
+		printf ("nx, ny, nz, mode         = %d %d %d %d\n", nx,    ny,    nz,   mrcmode);
+		printf ("nx, ny, nz, mode swapped = %d %d %d %d\n", nxw,   nyw,   nzw,  modew);
+		printf ("mapc, mapr, maps         = %d %d %d\n",    mapc,  mapr,  maps);
+		printf ("mapc, mapr, maps swapped = %d %d %d\n",    mapcw, maprw, mapsw);
+	}
+
+	if (have_err) {
+		printf ("%s\n", errmsg);
+
+		return false;
 	}
 
 	if (do_swap) {
@@ -332,8 +355,6 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 	if (mrcmode == MRC_SHORT_COMPLEX || mrcmode == MRC_FLOAT_COMPLEX) {
 		nx *= 2;
 	}
-
-	const int max_dim = 1 << 20;
 
 	if ((mrcmode >= MRC_UCHAR &&
 		(mrcmode < MRC_UNKNOWN || mrcmode == MRC_UHEX)) &&
