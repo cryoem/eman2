@@ -327,7 +327,7 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 		}
 	}
 
-	if (debug  ||  have_err) {
+	if (debug  ) {
 		printf ("stamp: mach, file, swapd = %8.0x %8.0x %8.0x\n",
 				  actual_stamp, mach, machw);
 		printf ("stamp: mach, file, swapd = %d %d %d\n",
@@ -339,7 +339,7 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 	}
 
 	if (have_err) {
-		printf ("%s\n", errmsg);
+		if (debug) printf ("%s\n", errmsg);
 
 		return false;
 	}
