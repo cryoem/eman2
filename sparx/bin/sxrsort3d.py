@@ -1079,13 +1079,14 @@ def get_shrink_data_sorting(partids, partstack, return_real = False, preshift = 
 			#set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 			sx = 0.0
 			sy = 0.0
+		"""
 		if Tracker["constants"]["wn"] !=0:
 			mx = data[im].get_xsize()//2-Tracker["constants"]["nnxo"]//2
 			my = data[im].get_ysize()//2-Tracker["constants"]["nnxo"]//2
 			data[im] = data[im].get_clip(Region(mx,my,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]))
 			data[im].set_attr('ctf_applied', 0)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
-					
+		"""		
 		st = Util.infomask(data[im], mask2D, False)
 		data[im] -= st[0]
 		data[im] /= st[1]
@@ -2842,7 +2843,7 @@ def main():
 	parser.add_option("--instack",                         type   ="string",        default ='',					   help="file name, data stack for sorting provided by user")
 	parser.add_option("--radius",                          type   ="int",           default =-1,	                   help="particle radius in pixel for rotational correlation <nx-1 (set to the radius of the particle)")
 	parser.add_option("--nxinit",						   type   ="int",           default =-1,					   help="integer number, user provided image size for sorting. Otherwise, program determines it from resolution" )
-	parser.add_option("--wn",                              type   ="int",           default =0,					       help="optimal window size for data processing. Reduce image size of original data by chopping eduge off")
+	#parser.add_option("--wn",                              type   ="int",           default =0,					       help="optimal window size for data processing. Reduce image size of original data by chopping eduge off")
 	parser.add_option("--noctf",	                       action ="store_true",    default =False,                    help="do no ctf correction during clustring")
 	parser.add_option("--sym",                             type   ="string",        default ='c1',                     help="point group symmetry of the structure")
 	parser.add_option("--nindependent",                    type   ="int",           default = 3,                       help="number of independent run for EQkmeans clustering, an odd number larger than 2")
@@ -2913,7 +2914,7 @@ def main():
 	Constants["seed"]                        = -1
 	Constants["PWadjustment"]                = options.PWadjustment
 	Constants["upscale"]                     = 0.5 #
-	Constants["wn"]                          = options.wn
+	#Constants["wn"]                          = options.wn
 	Constants["interpolation"]               = options.interpolation
 	Constants["comparison_method"]           = options.comparison_method
 	Constants["fuse_freq"]                   = 40  # Now in A, convert to absolute before using
