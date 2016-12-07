@@ -943,9 +943,9 @@ class EMMotion(QtGui.QMainWindow):
 #		proj=[[p.cmp("dot",b,{"normalize":0,"negative":0} for b in basis] for p in ptcl4an]
 		projs=[]					# 1 EMData per particle, each is a basis subspace projection (1-D image)
 		for p in ptcl4an:
-			proj=EMData(nbasis,1,1)
+			proj=EMData(nbasis-1,1,1)
 			projs.append(proj)
-			for i,b in enumerate(basis):
+			for i,b in enumerate(basis[1:]):
 				proj.set_value_at(i,0,p.cmp("dot",b,{"normalize":0,"negative":0}))
 				
 		# k-means classification
@@ -960,17 +960,19 @@ class EMMotion(QtGui.QMainWindow):
 		for n,i in enumerate(ptcl4an):
 			try: classes[projs[n]["class_id"]].add(i)
 			except: classes[projs[n]["class_id"]]=i.copy()
-			classlst.append(projs[n]["class_id"])
+			classlst[projs[n]["class_id"]].append(n)
 		
 		
 		# Make class-averages
+		fsp="{}/classes_{:02d}_{:02d}.hdf".format(self.path,self.iter,clnum)
+		print fsp
 		for i,c in enumerate(classes): 
 			self.wpbprogress.setValue(66+33*i/len(classes))
 			c.process_inplace("normalize.edgemean")
 			c["class_ptcl_idxs"]=classlst[i]
-			c["exc_class_ptcl_idxs"]=[]
+#			c["exc_class_ptcl_idxs"]=[]
 			c["class_ptcl_src"]=toclass[0][2]
-			c.write_image("{}/classes_{:02d}_{:02d}.hdf".format(self.path,self.iter,self.clnum),-1)
+			c.write_image(fsp,-1)
 		
 		
 			
