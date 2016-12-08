@@ -120,10 +120,17 @@ void MrcIO::init()
 			throw ImageReadException(filename, "invalid MRC");
 		}
 
-		is_big_endian = ByteOrder::is_data_big_endian(&mrch.nz);
+		bool do_swap, have_err;
 
-		if (is_big_endian != ByteOrder::is_host_big_endian()) {
+		check_swap((const int *) (& mrch), filename.c_str(), true, do_swap, have_err);
+
+		if (do_swap) {
 			swap_header(mrch);
+
+			is_big_endian = ! ByteOrder::is_host_big_endian();
+		}
+		else {
+			is_big_endian =   ByteOrder::is_host_big_endian();
 		}
 
 		int max_labels = Util::get_min(mrch.nlabels, (int) MRC_NUM_LABELS);
@@ -226,16 +233,9 @@ bool MrcIO::is_image_big_endian()
 	return is_big_endian;
 }
 
-bool MrcIO::is_valid(const void * first_block, off_t file_size)
+void MrcIO::check_swap(int * data, char * filnam, bool show_errors,
+							  bool & do_swap, bool & have_err)
 {
-	ENTERFUNC;
-
-	if (! first_block) { // Null pointer - no data
-		return false;
-	}
-
-	const int * data = static_cast < const int *>(first_block);
-
 	int nx      = data[0];
 	int ny      = data[1];
 	int nz      = data[2];
@@ -274,7 +274,6 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 
 	bool debug = (getenv("DEBUG_MRC_SANITY") != NULL);
 
-	bool do_swap, have_err;
 	char * errmsg;
 
 	have_err = false;
@@ -309,6 +308,7 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 				}
 				else {
 					have_err = true;
+					do_swap  = false;
 					errmsg = "MRC image dimensions nonpositive or too large.";
 				}
 			}
@@ -322,12 +322,17 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 			}
 			else {
 				have_err = true;
+				do_swap  = false;
 				errmsg = "MRC mode is not from 0 to 127.";
 			}
 		}
 	}
 
-	if (debug  ) {
+	if (debug  ||  (have_err  &&  show_errors)) {
+		if (filnam != NULL) {
+			printf ("file name = '%s'.\n", filnam);
+		}
+
 		printf ("stamp: mach, file, swapd = %8.0x %8.0x %8.0x\n",
 				  actual_stamp, mach, machw);
 		printf ("stamp: mach, file, swapd = %d %d %d\n",
@@ -336,20 +341,40 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 		printf ("nx, ny, nz, mode swapped = %d %d %d %d\n", nxw,   nyw,   nzw,  modew);
 		printf ("mapc, mapr, maps         = %d %d %d\n",    mapc,  mapr,  maps);
 		printf ("mapc, mapr, maps swapped = %d %d %d\n",    mapcw, maprw, mapsw);
+		printf ("%s\n", errmsg);
+	}
+}
+
+bool MrcIO::is_valid(const void * first_block, off_t file_size)
+{
+	ENTERFUNC;
+
+	if (! first_block) { // Null pointer - no data
+		return false;
 	}
 
-	if (have_err) {
-		if (debug) printf ("%s\n", errmsg);
+	const int * data = (const int *) first_block;
 
+	int nx      = data[0];
+	int ny      = data[1];
+	int nz      = data[2];
+	int mrcmode = data[3];
+	int nsymbt  = data[23];	// the extra bytes for symmetry information
+
+	bool do_swap, have_err;
+
+	check_swap(data, NULL, false, do_swap, have_err);
+
+	if (have_err) {
 		return false;
 	}
 
 	if (do_swap) {
-		nx      = nxw;
-		ny      = nyw;
-		nz      = nzw;
-		mrcmode = modew;
-		nsymbt  = nsymw;
+		ByteOrder::swap_bytes(&nx);
+		ByteOrder::swap_bytes(&ny);
+		ByteOrder::swap_bytes(&nz);
+		ByteOrder::swap_bytes(&mrcmode);
+		ByteOrder::swap_bytes(&nsymbt);
 	}
 
 	if (mrcmode == MRC_SHORT_COMPLEX || mrcmode == MRC_FLOAT_COMPLEX) {
