@@ -19229,7 +19229,6 @@ float Util::sqed( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise )
 	EXITFUNC;
 }
 
-
 //  This version is for alignment accuracy estimation
 float Util::sqedac( EMData* img, EMData* proj, EMData* ctfsbckgnoise )
 {

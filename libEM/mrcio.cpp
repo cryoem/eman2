@@ -365,7 +365,7 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 
 	bool do_swap, have_err;
 
-	check_swap(data, NULL, false, do_swap, have_err);
+	//check_swap(data, NULL, false, do_swap, have_err);
 
 	if (have_err) {
 		return false;
