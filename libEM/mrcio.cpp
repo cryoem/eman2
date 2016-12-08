@@ -233,7 +233,7 @@ bool MrcIO::is_image_big_endian()
 	return is_big_endian;
 }
 
-void MrcIO::check_swap(int * data, char * filnam, bool show_errors,
+void MrcIO::check_swap(const int * data, const char * filnam, bool show_errors,
 							  bool & do_swap, bool & have_err)
 {
 	int nx      = data[0];
@@ -360,6 +360,8 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 	int nz      = data[2];
 	int mrcmode = data[3];
 	int nsymbt  = data[23];	// the extra bytes for symmetry information
+
+	const int max_dim = 1 << 20;
 
 	bool do_swap, have_err;
 
