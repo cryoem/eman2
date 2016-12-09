@@ -532,6 +532,7 @@ FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
 	/usr/lib/python2.7/site-packages/numpy/core/include
     #/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include
     /usr/include)
+message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
 INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
 CHECK_PYTHON(2.7)
