@@ -194,9 +194,9 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
 	elif sxcmd.name in ["sxrsort3d"]:
-		assert(sxcmd.token_dict["wn"].key_base == "wn")
-		assert(sxcmd.token_dict["wn"].type == "ctfwin")
-		sxcmd.token_dict["wn"].type = "int"
+		# assert(sxcmd.token_dict["wn"].key_base == "wn")
+		# assert(sxcmd.token_dict["wn"].type == "ctfwin")
+		# sxcmd.token_dict["wn"].type = "int"
 		# DESIGN_NOTE: 2016/11/23 Toshio Moriya
 		# The below should be a temporary solution until redesign sxrsort3d command interface
 		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")

@@ -2390,7 +2390,7 @@ def main(args):
 
 	# Define the main window (class SXMainWindow)
 	sxmain_window = SXMainWindow()
-	sxmain_window.setWindowTitle("SPHIRE-GUI Main (Alpha Version)")
+	sxmain_window.setWindowTitle("SPHIRE-GUI Main (Beta Version)")
 	sxmain_window.setMinimumWidth(SXLookFeelConst.sxmain_window_width)
 	sxmain_window.setMinimumHeight(SXLookFeelConst.sxmain_window_height)
 	sxmain_window.resize(SXLookFeelConst.sxmain_window_width, SXLookFeelConst.sxmain_window_height)
