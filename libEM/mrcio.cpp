@@ -118,8 +118,8 @@ void MrcIO::init()
 
 		bool do_swap, have_err;
 
-		check_swap((const int *) (& mrch), filename.c_str(), true,
-					   do_swap, have_err);
+		//check_swap((const int *) (& mrch), filename.c_str(), true,
+		//			   do_swap, have_err);
 
 		if (have_err  ||  ! is_valid(&mrch)) {
 			throw ImageReadException(filename, "invalid MRC");
@@ -368,7 +368,7 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 
 	bool do_swap, have_err;
 
-	check_swap(data, NULL, false, do_swap, have_err);
+	//check_swap(data, NULL, false, do_swap, have_err);
 
 	if (have_err) {
 		return false;
