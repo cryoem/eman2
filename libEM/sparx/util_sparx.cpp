@@ -5369,7 +5369,8 @@ EMData* Util::Crosrng_msg_stepsi_local(EMData* circ1, EMData* circ2, vector<int>
 		ip = j;
 		if( ip < 0 ) ip += npsi;
 		dout[j-bpsi+cpsi] = vpsi[ip];
-		dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on psi
+		///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
+		dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
 	}
 	free(q);
 	return out;
