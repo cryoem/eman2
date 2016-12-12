@@ -333,14 +333,6 @@ def mref_ali3d_Kmeans_remove_small_groups(partids, partstack, clean_volumes = Tr
 					stat     = Util.infomask(ref_vol, mask3D, False)
 					ref_vol -= stat[0]
 					if stat[1] !=0.0: Util.mul_scalar(ref_vol, 1.0/stat[1])
-				if Tracker["PWadjustment"]:
-					rt = read_text_file(Tracker["PW_dict"][ref_vol.get_xsize()])
-					ro = rops_table(ref_vol)
-					for irot in xrange(1,len(ro)):
-						if ro[irot] !=0.0:
-							ro[irot] = (rt[irot]/ro[irot])**Tracker["constants"]["upscale"]
-					ref_vol = filt_table(ref_vol,ro)
-				if Tracker["mask3D"]:
 					Util.mul_img(ref_vol, mask3D)
 				nnn = ref_vol.get_xsize()
 				if(Tracker["nxinit"] != nnn):
@@ -563,8 +555,7 @@ def mref_ali3d_EQ_Kmeans(partids, partstack, clean_volumes = True):
 	if    Tracker["constants"]["interpolation"]=="trl": do3d_sorting_groups_trl_iter(projdata, iteration = 0)
 	elif  Tracker["constants"]["interpolation"]=="4nn": do3d_sorting_groups_4nn_iter(projdata, iteration = 0)
 	else: ERROR("Wrong interpolation method for do3d", "mref_ali3d_EQ_Kmeans", 1, Blockdata["myid"]) 
-	if Tracker["constants"]["PWadjustment"]: 
-		Tracker["PWadjustment"] = Tracker["PW_dict"][Tracker["constants"]["nxinit"]]
+	
 	for im in xrange(len(projdata)):
 		phi, theta, psi, sxs, sys = get_params_proj(projdata[im])
 		#oldangles.append([phi, theta, psi])
@@ -596,14 +587,6 @@ def mref_ali3d_EQ_Kmeans(partids, partstack, clean_volumes = True):
 					stat     = Util.infomask(ref_vol, mask3D, False)
 					ref_vol -= stat[0]
 					if stat[1] !=0.0: Util.mul_scalar(ref_vol, 1.0/stat[1])
-				if Tracker["PWadjustment"]:
-					rt = read_text_file(Tracker["PW_dict"][ref_vol.get_xsize()])
-					ro = rops_table(ref_vol)
-					for irot in xrange(1,len(ro)):
-						if ro[irot] !=0.0:  
-							ro[irot] = (rt[irot]/ro[irot])**Tracker["constants"]["upscale"]
-					ref_vol = filt_table(ref_vol,ro)
-				if Tracker["mask3D"]: 
 					Util.mul_img(ref_vol, mask3D)
 				nnn = ref_vol.get_xsize()
 				if(Tracker["nxinit"] != nnn): ref_vol = fdecimate(ref_vol, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
@@ -2226,10 +2209,12 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if Tracker["constants"]["radius"] == -1: Tracker["constants"]["radius"] = Tracker_refinement["constants"]["radius"]
 		Tracker["constants"]["nnxo"] = Tracker_refinement["constants"]["nnxo"]
+		"""
 		if Tracker["constants"]["wn"] !=0: 
 			if    Tracker["constants"]["nnxo"] < Tracker["constants"]["wn"]: ERROR("window image size is not correctly chosen!", \
 			"get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 			else:                                                            Tracker["constants"]["nnxo"] = Tracker["constants"]["wn"]
+		"""
 		Tracker["constants"]["orgres"]     = Tracker_refinement["bestres"]
 		Tracker["delta"]                   = Tracker_refinement["delta"]
 		Tracker["an"]                      = 1.5*Tracker["delta"]
@@ -2546,10 +2531,12 @@ def get_input_from_relion_ref3d(log_main):# case two
 		Tracker["constants"]["orgres"]				=	fsc_curve[fsc05][1]
 		Tracker["constants"]["pixel_size"]			=	relion_dict["_rlnPixelSize"]
 		Tracker["constants"]["nnxo"]				=	relion_dict["_rlnOriginalImageSize"]
+		"""
 		if Tracker["constants"]["wn"] != 0:
 			if Tracker["constants"]["nnxo"] < Tracker["constants"]["wn"]: ERROR("sxsort3d","window size is not correctly chosen",\
 			 "get_input_from_relion_ref3d", 1, Blockdata["myid"])
-			else:                                                         Tracker["constants"]["nnxo"] = Tracker["constants"]["wn"] 
+			else:                                                         Tracker["constants"]["nnxo"] = Tracker["constants"]["wn"]
+		""" 
 		Tracker["constants"]["radius"]              = int(relion_dict["_rlnParticleDiameter"]/(2.*Tracker["constants"]["pixel_size"]))
 		Tracker["constants"]["refinement_an"]       = Tracker["constants"]["refinement_delta"]*6.0
 		Tracker["constants"]["symmetry"]            = relion_dict["_rlnSymmetryGroup"]
@@ -2603,11 +2590,12 @@ def get_input_from_datastack(log_main):# case three
 		log_main.add(msg)
 		image = get_im(Tracker["constants"]["orgstack"])
 		Tracker["constants"]["nnxo"] = image.get_xsize()
-		
+		"""
 		if Tracker["constants"]["wn"] != 0:
 			if Tracker["constants"]["nnxo"] <Tracker["constants"]["wn"]: 
 				ERROR("window size is not correct chosen","get_input_from_datastack",1, Blockdata["main_node"])
 			else: Tracker["constants"]["nnxo"] = Tracker["constants"]["wn"]
+		"""
 		if( Tracker["nxinit"] > Tracker["constants"]["nnxo"]):
 			ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"get_input_from_datastack",1, Blockdata["myid"])
 			nnxo = -1
@@ -2799,23 +2787,6 @@ def do3d_sorting_groups_4nn_iter(projdata, iteration = 0):
 	Tracker["fsc05"]  = res_05
 	return
 
-def sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file):
-	shrinkage=float(nnxo)/float(nxinit)
-	curv_orgn = read_text_file(pspcurv_nnxo_file)
-	new_curv=int(1.5*len(curv_orgn))*[0.0]
-	for index in xrange(len(curv_orgn)):
-		new_index = int(index/shrinkage)
-		fraction  = index/shrinkage-new_index
-		if fraction <=0:
-			new_curv[new_index] +=curv_orgn[index]
-		else:
-			new_curv[new_index]  +=(1.-fraction)*curv_orgn[index]
-			new_curv[new_index+1] += fraction*curv_orgn[index]
-	for index in range(len(new_curv)):
-		if index>len(curv_orgn)-1: 
-			new_curv[index] = new_curv[index-1]
-	return new_curv
-
 def main():
 	from optparse   import OptionParser
 	from global_def import SPARXVERSION
@@ -2849,7 +2820,6 @@ def main():
 	parser.add_option("--nindependent",                    type   ="int",           default = 3,                       help="number of independent run for EQkmeans clustering, an odd number larger than 2")
 	parser.add_option("--number_of_images_per_group",      type   ="int",           default =1000,                     help="number of images in a group")
 	parser.add_option("--smallest_group",				   type   ="int",           default =500,					   help="minimum number of members for being identified as a group")
-	parser.add_option("--PWadjustment",                    type   ="string",        default ='',					   help="1-D power spectrum text file of PDB structure or EM map used for volume power spectrum correction")
 	parser.add_option("--interpolation",                   type   ="string",        default ='4nn',                    help="3-D reconstruction interpolation method, either [trl] or [4nn]")
 	parser.add_option("--comparison_method",               type   ="string",        default ='cross',                  help="comparision method, either cross-correlaton coefficients [cross] or Euclidean distance [eucd] ")
 	(options, args) 				= parser.parse_args(sys.argv[1:])
@@ -2863,11 +2833,7 @@ def main():
 	if  options.interpolation =='trl' and os.path.exists(options.focus) and options.comparison_method == 'eucd':
 		ERROR("interpolation trl and comparison method eucd are incompatable with focus mask. Try either interpolation 4nn or comparison method cross to include focus mask in sorting", "sort3d", 1)
 		exit()
-	
-	if  options.interpolation =='trl' and os.path.exists(options.PWadjustment) and options.comparison_method == 'eucd':
-		ERROR("interpolation trl and comparison method eucd are incompatable with  PWadjustment. Try either interpolation 4nn or comparison method cross to include focus mask in sorting", "sort3d", 1)
-		exit()	
-		
+			
 	if options.nindependent<=2:
 		ERROR("nindependent has to be an odd number larger than 2", "sort3d", 1)
 		exit()
@@ -2889,10 +2855,7 @@ def main():
 		ERROR("number_of_images_per_group should be way larger than smallest_group", "sort3d", 1)
 		exit()
 	
-	if options.PWadjustment:
-		if not os.path.exists(options.PWadjustment): 
-			ERROR("The specified PWadjustment file does not exist", "sort3d", 1)
-			exit()
+
 					
 	#--- Fill input parameters into dictionary named after Constants
 	Constants		                         = {}
@@ -2912,7 +2875,6 @@ def main():
 	Constants["low_pass_filter"]             = options.low_pass_filter # enforced low_pass_filter
 	Constants["nxinit"]                      = options.nxinit
 	Constants["seed"]                        = -1
-	Constants["PWadjustment"]                = options.PWadjustment
 	Constants["upscale"]                     = 0.5 #
 	#Constants["wn"]                          = options.wn
 	Constants["interpolation"]               = options.interpolation
@@ -2929,7 +2891,6 @@ def main():
 	if Tracker["constants"]["mask3D"]:	           Tracker["mask3D"] = Tracker["constants"]["mask3D"]
 	else:								           Tracker["mask3D"] = None
 	Tracker["radius"]						       = Tracker["constants"]["radius"]
-	Tracker["PWadjustment"]					       = Tracker["constants"]["PWadjustment"]
 	Tracker["upscale"]						       = Tracker["constants"]["upscale"]
 	Tracker["applyctf"]						       = False  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
 	Tracker["nxinit"]						       = Tracker["constants"]["nxinit"]
@@ -3085,20 +3046,6 @@ def main():
 	else: bad_3Dmask = 0
 	bad_3Dmask  = bcast_number_to_all(bad_focus3Dmask,	source_node =  Blockdata["main_node"])
 	if bad_3Dmask:  ERROR("Incorrect 3D mask", "sxsort3d.py", 1, Blockdata["myid"])
-	
-	##---------- PW adjustment  WRONG PAP
-	if os.path.exists(Tracker["constants"]["PWadjustment"]):
-		Tracker ["PWadjustment"] = Tracker["constants"]["PWadjustment"]
-		PW_dict              = {}
-		nxinit_pwsp          = sample_down_1D_curve(Tracker["nxinit"],Tracker["constants"]["nnxo"],Tracker["constants"]["PWadjustment"])
-		Tracker["nxinit_PW"] = os.path.join(masterdir,"spwp.txt")
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			write_text_file(nxinit_pwsp,Tracker["nxinit_PW"])
-		PW_dict[Tracker["constants"]["nnxo"]] = Tracker["constants"]["PWadjustment"]
-		PW_dict[Tracker["nxinit"]]            = Tracker["nxinit_PW"]
-		Tracker["PW_dict"]         = PW_dict
-	else:
-		Tracker ["PWadjustment"] = None
 	mpi_barrier(MPI_COMM_WORLD)
 
 	############################################################################################
@@ -3140,10 +3087,6 @@ def main():
 		msg ="3-D reconstruction method: %s"%Tracker["constants"]["interpolation"]
 		print(line, msg)
 		log_main.add(msg)
-		if Tracker ["PWadjustment"]:  #  WRONG PAP
-			msg ="model 1-D rotatioanlly average power spectrum for PW correction: %s"%Tracker["constants"]["PWadjustment"]
-			print(line, msg)
-			log_main.add(msg)
 		if Tracker ["constants"]["focus3Dmask"]:
 			msg ="User provided focus mask file:     %s"%Tracker ["constants"]["focus3Dmask"]
 			print(line, msg)

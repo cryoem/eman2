@@ -3597,7 +3597,7 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 		print(line, "ctrefromsorting_rec3d_faked_iter")
 		print("Reconstruction uses solution from  %d iteration"%selected_iter)
 		print("Reconstruction image size is:  %d"%(Tracker["nxinit"]))
-		print("R directory is %s"%(Tracker["directory"]))
+		print("Reconstruction directory is %s"%(Tracker["directory"]))
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		try:
 			refang  = read_text_row( os.path.join(Tracker["directory"], "refang.txt"))
@@ -3712,7 +3712,7 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--continue_from_subset",      action="store_true")
 	parser_no_default.add_option("--subset",                    type="string")
 	parser_no_default.add_option("--oldrefdir",                 type="string")
-	parser_no_default.add_option("--continue_from_iter",              type="int")
+	parser_no_default.add_option("--continue_from_iter",        type="int")
 		
 	(options_no_default_value, args) = parser_no_default.parse_args(shell_line_command)
 
@@ -4228,7 +4228,7 @@ def main():
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			if( masterdir == ""):
 				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
-				masterdir = "ctrefromsort3d"+timestring
+				masterdir = "continue_from_sort3d"+timestring
 				li = len(masterdir)
 				cmd = "{} {}".format("mkdir", masterdir)
 				cmdexecute(cmd)
