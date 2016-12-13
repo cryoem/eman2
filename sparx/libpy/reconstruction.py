@@ -1359,8 +1359,6 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 	
 	if mpi_comm == None: mpi_comm = MPI_COMM_WORLD
 
-	imgsize = prjlist[0][0].get_ysize()  # It can be Fourier, so take y-size
-
 	refvol = model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 
@@ -1428,18 +1426,16 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 	from utilities  import reduce_EMData_to_root, random_string, get_im, findall
 	from EMAN2      import Reconstructors
 	from utilities  import model_blank
-	from filter		import filt_table
+	from filter	import filt_table
+	from fundamentals import fshift
 	from mpi        import MPI_COMM_WORLD, mpi_barrier
 	import types
 	import datetime
 	
 	if mpi_comm == None: mpi_comm = MPI_COMM_WORLD
 
-	imgsize = prjlist[0][0].get_ysize()  # It can be Fourier, so take y-size
-
 	refvol = model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
-
 
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
@@ -1456,7 +1452,7 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 
 	nnx = prjlist[0].get_xsize()
 	nny = prjlist[0].get_ysize()
-	nshifts = len(rshifts)
+	nshifts = len(rshifts_shrank)
 	for im in xrange(len(prjlist)):
 		#  parse projection structure, generate three lists:
 		#  [ipsi+iang], [ishift], [probability]
@@ -1468,23 +1464,25 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 		#  Find unique projection directions
 		tdir = list(set(ipsiandiang))
 		bckgn = prjlist[im].get_attr("bckgnoise")
+		ct = prjlist[im].get_attr("ctf")
 		#  For each unique projection direction:
-		data = [None]*rshifts
+		data = [None]*nshifts
 		for ii in xrange(len(tdir)):
 			#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
 			lshifts = findall(tdir[ii], ipsiandiang)
 			toprab  = 0.0
 			for ki in xrange(len(lshifts)):  toprab += probs[lshifts[ki]]
-			recdata = model_blank(nnx,nny)
+			recdata = EMData(nny,nny,1,False)
+			recdata.set_attr("is_complex",0)
 			for ki in xrange(len(lshifts)):
 				lpt = allshifts[lshifts[ki]]
 				if( data[lpt] == None ):
-					data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts[lpt][1])
+					data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 					data[lpt].set_attr("is_complex",0)
 				Util.add_img(recdata, Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
-			recdata.set_attr_dict({"padffted":1, "is_complex":1})
+			recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
 			if not upweighted:  recdata = filt_table(recdata, bckgn )
-			recdata.set_attr("bckgnoise", bckgn )
+			recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 			ipsi = tdir[ii]%100000
 			iang = tdir[ii]/100000
 			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
