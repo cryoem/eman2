@@ -4422,7 +4422,7 @@ def main():
 				if Tracker["constants"]["small_memory"]: original_data[procid]	= []
 				#ctfs, bckgnoise = prepdata_recon3d(projdata[procid], "DIRECT")
 				#del ctfs
-				do3d(procid, projdata, newparamstructure[procid], refang, rshifts, norm_per_particle[procid], Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
+				do3d(procid, projdata[procid], newparamstructure[procid], refang, rshifts, norm_per_particle[procid], Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 				projdata[procid] = []
 				#del bckgnoise
 				if( Blockdata["myid_on_node"] == 0 ):
