@@ -1,5 +1,5 @@
 = Name =
-sxisac_post_processing - ISAC - Postprocessing: Postprocess of the 2D clustering result produced by ISAC.
+sxisac_post_processing - Beautifier: Beautify the ISAC 2D clustering result with the original pixel size.
 
 = Usage =
 

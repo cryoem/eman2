@@ -1067,7 +1067,7 @@ def create_sxcmd_subconfig_refine3d_postprocess():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("consine_edge"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement Postprocess", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Sharpening", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
