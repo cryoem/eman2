@@ -848,46 +848,6 @@ def prepdata_ali3d(projdata, rshifts, shrink, method = "DIRECT"):
 		del projdata[kl]
 	return data, ctfs, bckgnoise
 
-def prepdata_recon3d(projdata, method = "DIRECT"):
-	global Tracker, Blockdata
-	from fundamentals 	import prepi
-	from morphology 	import ctf_img_real
-	#  Data is NOT CTF-applied.
-	#  Data is shrank, in Fourier format
-	#data = [[] for i in xrange(len(projdata))]
-	if Tracker["constants"]["CTF"]:
-		nx = projdata[0].get_ysize()
-		ctfs = [ ctf_img_real(nx, q.get_attr('ctf')) for q in projdata ]
-	else:  ctfs = None
-	if Blockdata["bckgnoise"] :
-		bckgnoise = [q.get_attr("bckgnoise") for q in projdata ]
-	else:  bckgnoise = None
-	"""
-	for kl in xrange(len(projdata)-1,-1,-1):  #  Run backwards and keep deleting projdata, it is not needed anymore
-		#  header shifts were shrank in get_shrink_data, shifts were already pre-applied, but we will leave the code as is.
-		#phi, theta, psi, sxs, sys = get_params_proj(projdata[kl])
-		particle_group = projdata[kl].get_attr("particle_group")
-		ds = projdata[kl]
-		for iq in rshifts:
-			xx = iq[0]*shrink
-			yy = iq[1]*shrink
-			dss = fshift(ds, xx, yy)
-			dss.set_attr("is_complex",0)
-			'''
-			if( method == "DIRECT" ):
-				#dss = fshift(ds, xx+sxs, yy+sys)
-				dss = fshift(ds, xx+sxs, yy+sys)
-				dss.set_attr("is_complex",0)
-			else:
-				dss = fft(fshift(ds, x+sxs, yy+sys))
-				dss,kb = prepi(dss)
-			'''
-			data[kl].append(dss)
-		data[kl].set_attr("particle_group",particle_group)  #  Pass group number 
-		del projdata[kl]
-	"""
-	return ctfs, bckgnoise
-
 def metamove(projdata, oldparams, refang, rshifts, rangle, rshift, procid):
 	# return newparamstructure and norm_per_particle
 	global Tracker, Blockdata
