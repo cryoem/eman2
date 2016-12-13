@@ -1355,9 +1355,7 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 	from filter		import filt_table
 	from mpi        import MPI_COMM_WORLD, mpi_barrier
 	import types
-	from statistics import fsc
 	import datetime
-	from reconstruction import insert_slices_pdf
 	
 	if mpi_comm == None: mpi_comm = MPI_COMM_WORLD
 
@@ -1401,6 +1399,89 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 			recdata.set_attr_dict({"padffted":1, "is_complex":0})
 			for ki in xrange(1,len(lshifts)):
 				Util.add_img(recdata, Util.mult_scalar(prjlist[im][allshifts[lshifts[ki]]], probs[lshifts[ki]]/toprab))
+			recdata.set_attr_dict({"padffted":1, "is_complex":1})
+			if not upweighted:  recdata = filt_table(recdata, bckgn )
+			recdata.set_attr("bckgnoise", bckgn )
+			ipsi = tdir[ii]%100000
+			iang = tdir[ii]/100000
+			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
+	#  clean stuff
+	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
+
+
+	reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
+
+	if myid == main_node:
+		dummy = r.finish(True)
+	mpi_barrier(mpi_comm)
+
+	if myid == main_node: return fftvol, weight, refvol
+	else: return None, None, None
+
+def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rshifts_shrank, delta, upweighted = True, mpi_comm=None, CTF = True, target_size=-1, avgnorm = 1.0, norm_per_particle = None):
+	"""
+		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
+		Input
+			list_of_prjlist: list of lists of projections to be included in the reconstruction
+	"""
+	from utilities  import reduce_EMData_to_root, random_string, get_im, findall
+	from EMAN2      import Reconstructors
+	from utilities  import model_blank
+	from filter		import filt_table
+	from mpi        import MPI_COMM_WORLD, mpi_barrier
+	import types
+	import datetime
+	
+	if mpi_comm == None: mpi_comm = MPI_COMM_WORLD
+
+	imgsize = prjlist[0][0].get_ysize()  # It can be Fourier, so take y-size
+
+	refvol = model_blank(target_size)
+	refvol.set_attr("fudge", 1.0)
+
+
+	if CTF: do_ctf = 1
+	else:   do_ctf = 0
+
+	fftvol = EMData()
+	weight = EMData()
+
+	from utilities import info
+	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
+	r = Reconstructors.get( "nn4_ctfw", params )
+	r.setup()
+	
+	if norm_per_particle == None: norm_per_particle = len(prjlist)*[1.0]
+
+	nnx = prjlist[0].get_xsize()
+	nny = prjlist[0].get_ysize()
+	nshifts = len(rshifts)
+	for im in xrange(len(prjlist)):
+		#  parse projection structure, generate three lists:
+		#  [ipsi+iang], [ishift], [probability]
+		#  Number of orientations for a given image
+		numbor = len(paramstructure[im][2])
+		ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in xrange(numbor) ]
+		allshifts   = [ paramstructure[im][2][i][0]%1000  for i in xrange(numbor) ]
+		probs       = [ paramstructure[im][2][i][1] for i in xrange(numbor) ]
+		#  Find unique projection directions
+		tdir = list(set(ipsiandiang))
+		bckgn = prjlist[im].get_attr("bckgnoise")
+		#  For each unique projection direction:
+		data = [None]*rshifts
+		for ii in xrange(len(tdir)):
+			#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
+			lshifts = findall(tdir[ii], ipsiandiang)
+			toprab  = 0.0
+			for ki in xrange(len(lshifts)):  toprab += probs[lshifts[ki]]
+			recdata = model_blank(nnx,nny)
+			for ki in xrange(len(lshifts)):
+				lpt = allshifts[lshifts[ki]]
+				if( data[lpt] == None ):
+					data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts[lpt][1])
+					data[lpt].set_attr("is_complex",0)
+				Util.add_img(recdata, Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
 			recdata.set_attr_dict({"padffted":1, "is_complex":1})
 			if not upweighted:  recdata = filt_table(recdata, bckgn )
 			recdata.set_attr("bckgnoise", bckgn )

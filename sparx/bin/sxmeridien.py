@@ -848,6 +848,46 @@ def prepdata_ali3d(projdata, rshifts, shrink, method = "DIRECT"):
 		del projdata[kl]
 	return data, ctfs, bckgnoise
 
+def prepdata_recon3d(projdata, method = "DIRECT"):
+	global Tracker, Blockdata
+	from fundamentals 	import prepi
+	from morphology 	import ctf_img_real
+	#  Data is NOT CTF-applied.
+	#  Data is shrank, in Fourier format
+	#data = [[] for i in xrange(len(projdata))]
+	if Tracker["constants"]["CTF"]:
+		nx = projdata[0].get_ysize()
+		ctfs = [ ctf_img_real(nx, q.get_attr('ctf')) for q in projdata ]
+	else:  ctfs = None
+	if Blockdata["bckgnoise"] :
+		bckgnoise = [q.get_attr("bckgnoise") for q in projdata ]
+	else:  bckgnoise = None
+	"""
+	for kl in xrange(len(projdata)-1,-1,-1):  #  Run backwards and keep deleting projdata, it is not needed anymore
+		#  header shifts were shrank in get_shrink_data, shifts were already pre-applied, but we will leave the code as is.
+		#phi, theta, psi, sxs, sys = get_params_proj(projdata[kl])
+		particle_group = projdata[kl].get_attr("particle_group")
+		ds = projdata[kl]
+		for iq in rshifts:
+			xx = iq[0]*shrink
+			yy = iq[1]*shrink
+			dss = fshift(ds, xx, yy)
+			dss.set_attr("is_complex",0)
+			'''
+			if( method == "DIRECT" ):
+				#dss = fshift(ds, xx+sxs, yy+sys)
+				dss = fshift(ds, xx+sxs, yy+sys)
+				dss.set_attr("is_complex",0)
+			else:
+				dss = fft(fshift(ds, x+sxs, yy+sys))
+				dss,kb = prepi(dss)
+			'''
+			data[kl].append(dss)
+		data[kl].set_attr("particle_group",particle_group)  #  Pass group number 
+		del projdata[kl]
+	"""
+	return ctfs, bckgnoise
+
 def metamove(projdata, oldparams, refang, rshifts, rangle, rshift, procid):
 	# return newparamstructure and norm_per_particle
 	global Tracker, Blockdata
@@ -923,17 +963,23 @@ def metamove(projdata, oldparams, refang, rshifts, rangle, rshift, procid):
 
 	return  newparamstructure, norm_per_particle
 
-def do3d(procid, data, newparams, refang, norm_per_particle, myid, mpi_comm = -1):
+def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_comm = -1):
 	global Tracker, Blockdata
 
 	#  Without filtration
 	from reconstruction import recons3d_4nnstruct_MPI
 
 	if( mpi_comm < -1 ): mpi_comm = MPI_COMM_WORDLD
-
+	"""
 	tvol, tweight, trol = recons3d_4nnstruct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
 											paramstructure = newparams, refang = refang, delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"],\
 											upweighted = False, mpi_comm = mpi_comm, \
+											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
+	"""
+	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	tvol, tweight, trol = recons3d_trl_struct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
+											paramstructure = newparams, refang = refang, rshifts_shrank = [[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts], \
+											delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
 											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
 
 	if Blockdata["subgroup_myid"]==Blockdata["nodes"][procid]:
@@ -4414,11 +4460,11 @@ def main():
 													return_real = False, preshift = True, apply_mask = False, nonorm = True)
 				oldparams[procid] = []
 				if Tracker["constants"]["small_memory"]: original_data[procid]	= []
-				data, ctfs, bckgnoise = prepdata_ali3d(projdata[procid], rshifts, float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]), "DIRECT")
-				del ctfs
+				#ctfs, bckgnoise = prepdata_recon3d(projdata[procid], "DIRECT")
+				#del ctfs
+				do3d(procid, projdata, newparamstructure[procid], refang, rshifts, norm_per_particle[procid], Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 				projdata[procid] = []
-				do3d(procid, data, newparamstructure[procid], refang, norm_per_particle[procid], Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
-				del bckgnoise, data
+				#del bckgnoise
 				if( Blockdata["myid_on_node"] == 0 ):
 					for kproc in xrange(Blockdata["no_of_processes_per_group"]):
 						if( kproc == 0 ):
