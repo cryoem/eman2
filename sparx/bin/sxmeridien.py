@@ -3096,18 +3096,15 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 			projdata[procid] = get_shrink_data(Tracker["constants"]["nnxo"], procid, original_data[procid], oldparams[procid],\
 											return_real = False, preshift = True, apply_mask = False, nonorm = True)
 			for ipar in xrange(len(oldparams[procid])):	norm_per_particle[procid].append(oldparams[procid][ipar][7])
-			oldparams[procid]     = []
-			original_data[procid] = None
-			data, ctfs, bckgnoise = prepdata_ali3d(projdata[procid], rshifts, 1.0)
-			del ctfs
-			projdata[procid]      = []
+			oldparams[procid]        = []
+			original_data[procid]    = None
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			if(Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
 			Tracker["directory"]             = Tracker["constants"]["masterdir"]
 			Tracker["nxinit"]                = Tracker["constants"]["nnxo"]
 			Tracker["maxfrad"]               = Tracker["constants"]["nnxo"]//2
-			do3d(procid, data, oldparamstructure[procid], refang, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
-			del data
+			do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
+			projdata[procid]          = []
 			oldparamstructure[procid] = []
 			norm_per_particle[procid] = []
 			mpi_barrier(Blockdata["subgroup_comm"])
@@ -3674,15 +3671,11 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 		#if Blockdata["myid"] == Blockdata["main_node"]: write_text_row(norm_per_particle[procid], "oldparams_%d.txt"%procid)
 		oldparams[procid]     = []
 		original_data[procid] = None
-		data, ctfs, bckgnoise = prepdata_ali3d(projdata[procid], rshifts, float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]), "DIRECT")
-		del ctfs
-		projdata[procid]      = []
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		if(Blockdata["myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
-		#Tracker["nxinit"]                = Tracker["constants"]["nnxo"]
 		Tracker["maxfrad"]                = Tracker["nxinit"] //2
-		do3d(procid, data, oldparamstructure[procid], refang, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
-		del data
+		do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
+		projdata[procid]          = []
 		oldparamstructure[procid] = []
 		norm_per_particle[procid] = []
 		mpi_barrier(MPI_COMM_WORLD)
