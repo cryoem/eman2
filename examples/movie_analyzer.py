@@ -65,7 +65,7 @@ def main():
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--step",type=str,default="1,1,31",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even frames. Same step used for all input files. [last] is exclusive. Default= 1,1,31.")
 	# Gold subtraction
-	parser.add_argument("--goldsize", default=70, type=float, help="Gold diameter in pixels. Default is 70.")
+	parser.add_argument("--goldsize", default=35, type=float, help="Gold diameter in pixels. Default is 70.")
 	parser.add_argument("--boxsize", default=128, type=float, help="Box size to use when tiling image to compute noise. Default is 128.")
 	parser.add_argument("--oversample", default=6, type=float, help="Oversample by this much when tiling image to compute noise. Higher values increase smoothness of transition between noise from one region to its neighbor, but require significantly more time to process. Default is 6.")
 	# Other options
@@ -213,8 +213,8 @@ def main():
 							if "hictrst" in f: hi_y = os.path.join(pdir,f)
 							elif "loctrst" in f: lo_y = os.path.join(pdir,f)
 					try:
-						trans_hi[pkg] = parse_de(hi_x,hi_y)
-						trans_lo[pkg] = parse_de(lo_x,lo_y)
+						trans_hi[pkg] = parse_de(hi_x,hi_y,middle)
+						trans_lo[pkg] = parse_de(lo_x,lo_y,middle)
 					except: failed(pkg)
 
 				if pkg == "EMAN2":
@@ -325,7 +325,8 @@ EOF
 								except: pass # file likely already exists
 								lfn = lfn_new
 								lext = "mrc"
-							nfs = len(frames_hictrst)
+							nfs = EMUtil.get_image_count(fn)
+							#len(frames_hictrst)
 							alis =lfn.replace(".mrc","_ali_sum.mrc")
 							shft =lfn.replace(".mrc","_shifts.txt")
 							ali=lfn.replace(".mrc","_ali.mrc")
@@ -448,13 +449,13 @@ def parse_imod(fn,middle):
     xf = np.asarray(trans).astype(float)
     return xf-xf[middle]
 
-def parse_de(fnx,fny):
+def parse_de(fnx,fny,middle):
     with open(fnx) as xf:
         xs = np.asarray(xf.read().replace("\n","").split("\t"))[1:].astype(float)
     with open(fny) as yf:
         ys = np.asarray(yf.read().replace("\n","").split("\t"))[1:].astype(float)
     xf = np.vstack([xs,ys]).T
-    return xf
+    return xf-xf[middle]
 
 def parse_ucsf(fn,middle):
     trans = []
@@ -475,7 +476,7 @@ def parse_unblur(fn,middle):
                 apix = float(txt.split()[-1])
     trans = -1*np.asarray([[x,y] for (x,y) in zip(lines[0],lines[1])]).astype(float)
     xf = trans / apix
-    return -xf+xf[middle]
+    return xf[middle]-xf
 
 def parse_lmbfgs(fn,middle):
 	lines = []
@@ -483,6 +484,7 @@ def parse_lmbfgs(fn,middle):
 		for i,l in enumerate(f):
 			if i != 0: lines.append(l.strip().split()) # skip header on line 0
 	xf = -1*np.asarray(lines)[:,1:].astype(float) # skip frame numbers
+	print(xf)
 	return xf - xf[middle]
 
 def parse_eman2(fn,middle):
@@ -511,7 +513,7 @@ def plot_traj(trans,bdir,nsig=1,plot=False):
 	for key in trans.keys():
 		if key not in exclude + ["MEAN"]:
 			mags[key] = np.sqrt(trans[key][:,0]**2+trans[key][:,1]**2) - mags["MEAN"]
-	fig = plt.figure(figsize=(20,10))
+	fig = plt.figure(figsize=(16,16))
 	ax1 = fig.add_subplot(211)
 	cctr = 0
 	for key in trans.keys():
@@ -576,7 +578,8 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 	if nsig == 1: siglabel = "STD"
 	else: siglabel = "{}x STD".format(nsig)
 	exclude = ["STD","VAR","ALL"]
-	xx = np.arange(1,len(trans_hi["MEAN"][:,0])+1,1)
+	xx = xx_hi = np.arange(1,len(trans_hi["MEAN"][:,0])+1,1)
+	xx_lo = np.arange(1,len(trans_lo["MEAN"][:,0])+1,1)
 	mags_hi = {"MEAN":np.sqrt(trans_hi["MEAN"][:,0]**2+trans_hi["MEAN"][:,1]**2)}
 	mags_lo = {"MEAN":np.sqrt(trans_lo["MEAN"][:,0]**2+trans_lo["MEAN"][:,1]**2)}
 	for key in trans_hi.keys():
@@ -585,36 +588,36 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 			mags_lo[key] = np.sqrt(trans_lo[key][:,0]**2+trans_lo[key][:,1]**2) - mags_lo["MEAN"]
 	ssdfs = {}
 
-	fig2 = plt.figure(figsize=(20,12))
+	fig2 = plt.figure(figsize=(16,16))
 	ax1 = fig2.add_subplot(211)
 	cctr = 0
 	print("PKG\tRMSD(HI,LO)")
 	with open("{}/sse.txt".format(bdir),"w") as sse:
 		for key in trans_hi.keys():
 			if key not in exclude:
+				ssdf = np.sum(np.square((trans_hi[key][:len(trans_lo[key])]-trans_lo[key])),axis=0)
+				ssdfs[key] = np.linalg.norm(ssdf,axis=0)
+				print("{}\t{}".format(key,ssdfs[key]))
 				if key != "MEAN":
-					ssdfs[key] = np.linalg.norm(np.sum(np.square((trans_hi[key]-trans_lo[key])),axis=0))
-					print("{}\t{}".format(key,ssdfs[key]))
 					ax1.plot(trans_hi[key][:,0],trans_hi[key][:,1],"{}-".format(colors[cctr]),label="{} high".format(key))
-					ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"{}.".format(colors[cctr]),label="{} low".format(key))
+					ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"{}--".format(colors[cctr]),label="{} low".format(key))
 				else:
-					ssdfs[key] = np.linalg.norm(np.sum(np.square((trans_hi[key]-trans_lo[key])),axis=0))
-					print("{}\t{}".format(key,ssdfs[key]))
-					ax1.plot(trans_hi[key][:,0],trans_hi[key][:,1],"k--",linewidth=2,label="{} high".format(key))
-					ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"k.",linewidth=2,label="{} low".format(key))
+					ax1.plot(trans_hi[key][:,0],trans_hi[key][:,1],"k-.",linewidth=2,label="{} high".format(key))
+					ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"k--.",linewidth=2,label="{} low".format(key))
 				sse.write("{}\t{}\n".format(key,ssdfs[key]))
 				cctr+=1
 	ax1.set_xlabel("X-shift (pixels)")
 	ax1.set_ylabel("Y-shift (pixels)")
 	ax1.set_title("Frame trajectory")
 	ax1.legend(loc="best")
+
 	ax2 = fig2.add_subplot(212)
 	cctr = 0
 	for key in mags_hi.keys():
 		if key != "MEAN":
 			ax2.plot(xx,mags_hi[key],label="{} high".format(key),alpha=1)
 		else:
-			#ax2.plot(xx,np.zeros_like(xx),"k--",label=key,alpha=1)
+			ax2.plot(xx,np.zeros_like(xx),"k--",label=key,alpha=1)
 			ax2.errorbar(xx,np.zeros_like(xx),yerr=err_hi[:,1],color='k',alpha=0.6,label="{} high".format(siglabel),linewidth=2)
 	ax2.set_xlabel("Frame Number (#)")
 	ax2.set_ylabel("Relative shift magnitude (pixels)")
@@ -623,10 +626,10 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 	cctr = 0
 	for key in mags_lo.keys():
 		if key != "MEAN":
-			ax2.plot(xx,mags_lo[key],"{}--".format(colors[cctr]),label="{} low".format(key),alpha=1)
+			ax2.plot(xx_lo,mags_lo[key],"{}--".format(colors[cctr]),label="{} low".format(key),alpha=1)
 		else:
-			ax2.plot(xx,np.zeros_like(xx),"k--",label=key,alpha=1)
-			ax2.errorbar(xx,np.zeros_like(xx),xerr=err_lo[:,0],yerr=err_lo[:,1],color='k',alpha=0.6,label="{} low".format(siglabel))
+			ax2.plot(xx_lo,np.zeros_like(xx_lo),"k--",label=key,alpha=1)
+			ax2.errorbar(xx_lo,np.zeros_like(xx_lo),xerr=err_lo[:,0],yerr=err_lo[:,1],color='k',alpha=0.6,label="{} low".format(siglabel))
 		cctr+=1
 	ax2.set_xlabel("Frame Number (#)")
 	ax2.set_ylabel("Relative shift magnitude (pixels)")
@@ -689,7 +692,6 @@ def calc_coherent_pws(frames,bs=512):
 
 def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False):
 	# use incoherent power spectrum as "control"
-
 	hi_oned_pws = js_open_dict('{}/hictrst_onedpws.json'.format(bdir))
 	lo_oned_pws = js_open_dict('{}/loctrst_onedpws.json'.format(bdir))
 
@@ -698,6 +700,7 @@ def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False
 
 		print("HIGH IPS")
 		hi_twod_ips = calc_incoherent_pws(frames_hi)
+		hi_twod_ips.write_image("{}/hictrst_twod_ips.hdf".format(bdir))
 		hi_ips, hi_ips_bg, hi_ips_bgsub = fit_defocus(hi_twod_ips)
 		hi_oned_pws["IPS"] = hi_ips
 		hi_oned_pws["IPS (bg)"] = hi_ips_bg
@@ -705,16 +708,34 @@ def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False
 
 		print("LOW IPS")
 		lo_twod_ips = calc_incoherent_pws(frames_lo)
+		lo_twod_ips.write_image("{}/loctrst_twod_ips.hdf".format(bdir))
 		lo_ips, lo_ips_bg, lo_ips_bgsub = fit_defocus(lo_twod_ips)
 		lo_oned_pws["IPS"] = lo_ips
 		lo_oned_pws["IPS (bg)"] = lo_ips_bg
 		lo_oned_pws["IPS (sub)"] = lo_ips_bgsub
+
+		print("HIGH CPS")
+		hi_twod_cps = calc_coherent_pws(frames_hi)
+		hi_twod_cps.write_image("{}/hictrst_twod_cps_noali.hdf".format(bdir))
+		hi_cps, hi_cps_bg, hi_cps_bgsub = fit_defocus(hi_twod_cps)
+		hi_oned_pws["CPS"] = hi_cps
+		hi_oned_pws["CPS (bg)"] = hi_cps_bg
+		hi_oned_pws["CPS (sub)"] = hi_cps_bgsub
+
+		print("LOW CPS")
+		lo_twod_cps = calc_coherent_pws(frames_lo)
+		lo_twod_cps.write_image("{}/loctrst_twod_cps_noali.hdf".format(bdir))
+		lo_cps, lo_cps_bg, lo_cps_bgsub = fit_defocus(lo_twod_cps)
+		lo_oned_pws["CPS"] = lo_cps
+		lo_oned_pws["CPS (bg)"] = lo_cps_bg
+		lo_oned_pws["CPS (sub)"] = lo_cps_bgsub
 
 		for key in all_trans_hi.keys():
 			if key not in ["STD","ALL","MEAN","VAR"]:
 				print("HIGH "+key)
 				shifted_hi = shift_frames(frames_hi,all_trans_hi[key])
 				hi_twod_cps = calc_coherent_pws(shifted_hi)
+				hi_twod_cps.write_image("{}/{}/hictrst_twod_cps.hdf".format(bdir,key))
 				hi_cps, hi_cps_bg, hi_cps_bgsub = fit_defocus(hi_twod_cps)
 				hi_oned_pws["{}".format(key)] = hi_cps
 				hi_oned_pws["{} (bg)".format(key)] = hi_cps_bg
@@ -723,35 +744,57 @@ def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False
 				print("LOW "+key)
 				shifted_lo = shift_frames(frames_lo,all_trans_lo[key])
 				lo_twod_cps = calc_coherent_pws(shifted_lo)
+				lo_twod_cps.write_image("{}/{}/loctrst_twod_cps.hdf".format(bdir,key))
 				lo_cps, lo_cps_bg, lo_cps_bgsub = fit_defocus(lo_twod_cps)
 				lo_oned_pws["{}".format(key)] = lo_cps
 				lo_oned_pws["{} (bg)".format(key)] = lo_cps_bg
 				lo_oned_pws["{} (sub)".format(key)] = lo_cps_bgsub
 
-	if plot: plot_oned_spectra(hi_oned_pws,lo_oned_pws)
+	if plot: plot_oned_spectra(hi_oned_pws,lo_oned_pws,bdir)
 
 	return hi_oned_pws,lo_oned_pws
 
 def plot_oned_spectra(hi_pws,lo_pws,bdir):
 	# plot CPS agreement with IPS?
-	fig = plt.figure()
 
-	ax1 = fig.add_subplot(211)
-	for alg in hi_pws.keys():
-		if "sub" in alg:
-			ax1.plot(hi_pws[alg],label=alg.replace("(sub)",""))
+	fig = plt.figure(figsize=(12,8))
+	ax0 = fig.add_subplot(311)
+	ax1 = fig.add_subplot(312)
+	ax2 = fig.add_subplot(313)
+	for i in hi_pws.items():
+		if "bg" in i[0]:
+			ax0.plot(i[1],label=i[0].replace("(bg)",""))
+		elif "sub" in i[0]:
+			ax1.plot(i[1],label=i[0].replace("(sub)",""))
+		else:
+			ax2.plot(i[1],label=i[0])
+	ax0.set_title("bg")
+	ax0.legend()
+	ax1.set_title("sub")
 	ax1.legend()
-	ax1.set_title("High Contrast Power Spectra")
-
-	ax2 = fig.add_subplot(212)
-	for alg in lo_pws.keys():
-		if "sub" in alg:
-			ax2.plot(lo_pws[alg],label=alg.replace("(sub)",""))
+	ax2.set_title("spectra")
 	ax2.legend()
-	ax2.set_title("Low Contrast Power Spectra")
+	plt.savefig("hictrst_cips_agreement.png")
+	plt.show()
 
-	plt.savefig("{}/oned_spectra.png".format(bdir))
-
+	fig = plt.figure(figsize=(12,8))
+	ax0 = fig.add_subplot(311)
+	ax1 = fig.add_subplot(312)
+	ax2 = fig.add_subplot(313)
+	for i in lo_pws.items():
+		if "bg" in i[0]:
+			ax0.plot(i[1],label=i[0].replace("(bg)",""))
+		elif "sub" in i[0]:
+			ax1.plot(i[1],label=i[0].replace("(sub)",""))
+		else:
+			ax2.plot(i[1],label=i[0])
+	ax0.set_title("bg")
+	ax0.legend()
+	ax1.set_title("sub")
+	ax1.legend()
+	ax2.set_title("spectra")
+	ax2.legend()
+	plt.savefig("loctrst_cips_agreement.png")
 	plt.show()
 
 	# quantify difference between CPS/IPS?
