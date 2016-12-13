@@ -923,17 +923,23 @@ def metamove(projdata, oldparams, refang, rshifts, rangle, rshift, procid):
 
 	return  newparamstructure, norm_per_particle
 
-def do3d(procid, data, newparams, refang, norm_per_particle, myid, mpi_comm = -1):
+def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_comm = -1):
 	global Tracker, Blockdata
 
 	#  Without filtration
-	from reconstruction import recons3d_4nnstruct_MPI
+	from reconstruction import recons3d_trl_struct_MPI
 
 	if( mpi_comm < -1 ): mpi_comm = MPI_COMM_WORDLD
-
+	"""
 	tvol, tweight, trol = recons3d_4nnstruct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
 											paramstructure = newparams, refang = refang, delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"],\
 											upweighted = False, mpi_comm = mpi_comm, \
+											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
+	"""
+	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	tvol, tweight, trol = recons3d_trl_struct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
+											paramstructure = newparams, refang = refang, rshifts_shrank = [[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts], \
+											delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
 											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
 
 	if Blockdata["subgroup_myid"]==Blockdata["nodes"][procid]:
@@ -3090,18 +3096,15 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 			projdata[procid] = get_shrink_data(Tracker["constants"]["nnxo"], procid, original_data[procid], oldparams[procid],\
 											return_real = False, preshift = True, apply_mask = False, nonorm = True)
 			for ipar in xrange(len(oldparams[procid])):	norm_per_particle[procid].append(oldparams[procid][ipar][7])
-			oldparams[procid]     = []
-			original_data[procid] = None
-			data, ctfs, bckgnoise = prepdata_ali3d(projdata[procid], rshifts, 1.0)
-			del ctfs
-			projdata[procid]      = []
+			oldparams[procid]        = []
+			original_data[procid]    = None
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			if(Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
 			Tracker["directory"]             = Tracker["constants"]["masterdir"]
 			Tracker["nxinit"]                = Tracker["constants"]["nnxo"]
 			Tracker["maxfrad"]               = Tracker["constants"]["nnxo"]//2
-			do3d(procid, data, oldparamstructure[procid], refang, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
-			del data
+			do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
+			projdata[procid]          = []
 			oldparamstructure[procid] = []
 			norm_per_particle[procid] = []
 			mpi_barrier(Blockdata["subgroup_comm"])
@@ -3668,15 +3671,11 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 		#if Blockdata["myid"] == Blockdata["main_node"]: write_text_row(norm_per_particle[procid], "oldparams_%d.txt"%procid)
 		oldparams[procid]     = []
 		original_data[procid] = None
-		data, ctfs, bckgnoise = prepdata_ali3d(projdata[procid], rshifts, float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]), "DIRECT")
-		del ctfs
-		projdata[procid]      = []
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		if(Blockdata["myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
-		#Tracker["nxinit"]                = Tracker["constants"]["nnxo"]
 		Tracker["maxfrad"]                = Tracker["nxinit"] //2
-		do3d(procid, data, oldparamstructure[procid], refang, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
-		del data
+		do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
+		projdata[procid]          = []
 		oldparamstructure[procid] = []
 		norm_per_particle[procid] = []
 		mpi_barrier(MPI_COMM_WORLD)
@@ -4414,11 +4413,11 @@ def main():
 													return_real = False, preshift = True, apply_mask = False, nonorm = True)
 				oldparams[procid] = []
 				if Tracker["constants"]["small_memory"]: original_data[procid]	= []
-				data, ctfs, bckgnoise = prepdata_ali3d(projdata[procid], rshifts, float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]), "DIRECT")
-				del ctfs
+				#ctfs, bckgnoise = prepdata_recon3d(projdata[procid], "DIRECT")
+				#del ctfs
+				do3d(procid, projdata[procid], newparamstructure[procid], refang, rshifts, norm_per_particle[procid], Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 				projdata[procid] = []
-				do3d(procid, data, newparamstructure[procid], refang, norm_per_particle[procid], Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
-				del bckgnoise, data
+				#del bckgnoise
 				if( Blockdata["myid_on_node"] == 0 ):
 					for kproc in xrange(Blockdata["no_of_processes_per_group"]):
 						if( kproc == 0 ):

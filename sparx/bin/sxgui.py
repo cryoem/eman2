@@ -227,9 +227,11 @@ class SXLookFeelConst(object):
 	# static class variables
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	default_bg_color = QColor(229, 229, 229, 192) # default_bg_color = QColor(229, 229, 229, 242) # Greyish-White Transparent
+	default_bg_color_string = 'rgba(229, 229, 229, 192)' # default_bg_color = QColor(229, 229, 229, 242) # Greyish-White Transparent
 	sxinfo_widget_bg_color = QColor(0, 0, 0, 10) # Almost-Completely Transparent
 	sxcmd_widget_bg_color = QColor(0, 0, 0, 0) # Completely Transparent
 	sxcmd_tab_bg_color = QColor(229, 229, 229, 200) # White Transparent
+	sxcmd_tab_bg_color_string = 'rgba(229, 229, 229, 200)' # White Transparent
 
 	# Constants
 	project_dir = "sxgui_settings"
@@ -2092,29 +2094,61 @@ class SXInfoWidget(QWidget):
 	def __init__(self, parent = None):
 		super(SXInfoWidget, self).__init__(parent)
 
+		self.setStyleSheet("background-color: {0}".format(SXLookFeelConst.default_bg_color_string))
+		widget = QWidget(self)
 
 		# Get the picture name
 		pic_name = '{0}sxgui_info.png'.format(get_image_directory())
 		# Import the picture as pixmap to get the right dimensions
 		self.pixmap = QPixmap(pic_name)
+		width = self.pixmap.width()
+		height = self.pixmap.height()
+
+		# Scrol widget
+		scroll_widget = QWidget()
+		scroll_widget.setStyleSheet('background-color: transparent')
+
+		label1 = QLabel()
+		label1.setFixedHeight(40)
+		label2 = QLabel()
+		label2.setFixedHeight(40)
 
 		# Create a QLabel and show the picture
 		self.label = QLabel()
-		self.label.setStyleSheet('border-image: url("{0}")'.format(pic_name))
-		self.label.resizeEvent = self.change_label_height
+		self.label.setFixedSize(width, height)
+		self.label.setStyleSheet('border-image: url("{0}"); background-color: transparent'.format(pic_name))
+
+		# Layout for the scroll widet vert
+		label3 = QLabel()
+		label3.setFixedWidth(40)
+		label4 = QLabel()
+		label4.setFixedWidth(40)
+
+		# Layout for the scroll widget hor
+		layout_vert = QHBoxLayout()
+		layout_vert.addWidget(label3)
+		layout_vert.addWidget(self.label)
+		layout_vert.addWidget(label4)
+
+		# Layout for the scroll widget hor
+		layout = QVBoxLayout(scroll_widget)
+		layout.addWidget(label1)
+		layout.addLayout(layout_vert)
+		layout.addWidget(label2)
 
 		# Add a scroll area for vertical scrolling
-		scroll_area = QScrollArea(self)
+		scroll_area = QScrollArea(widget)
 		scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-		scroll_area.setWidgetResizable(True)
-		scroll_area.setWidget(self.label)
+		scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+		scroll_area.setWidget(scroll_widget)
+		scroll_area.setStyleSheet("background-color: {0}".format(SXLookFeelConst.sxcmd_tab_bg_color_string))
 
-		layout = QHBoxLayout(self)
+		layout = QHBoxLayout(widget)
 		layout.addWidget(scroll_area, stretch=1)
 
-	# If the width changes, rescale the height of the image
-	def change_label_height(self, event):
-		self.label.setFixedHeight(self.label.width() * self.pixmap.height() / self.pixmap.width())
+		layout = QHBoxLayout(self)
+		layout.addWidget(widget)
+		layout.setContentsMargins(0, 0, 0, 0)
 
 # ========================================================================================
 # Main Window (started by class SXApplication)
@@ -2471,7 +2505,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxisac_post_processing"; sxcmd.mode = ""; sxcmd.label = "ISAC - Postprocessing"; sxcmd.short_info = "Postprocess of the 2D clustering result produced by ISAC."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		sxcmd = SXcmd(); sxcmd.name = "sxisac_post_processing"; sxcmd.mode = ""; sxcmd.label = "Beautifier"; sxcmd.short_info = "Beautify the ISAC 2D clustering result with the original pixel size."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "Original image stack"; token.help = "Particles required to create the full-sized class averages. The images must be square (''nx''=''ny'') and the stack must be bdb format "; token.group = "main"; token.is_required = True; token.is_locked = False; token.default = ""; token.restore = ""; token.type = "bdb"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "isac_directory"; token.key_prefix = ""; token.label = "Isac output directory"; token.help = "Name of the directory where isac was run previously. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.default = ""; token.restore = ""; token.type = "directory"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "class_file_name_no_dir_info"; token.key_prefix = ""; token.label = "Isac class file name"; token.help = "Name of the file (no directory info) that contains the class averages. It is located in the Isac directory. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
@@ -2640,8 +2674,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "postprocess"; sxcmd.label = "3D Refinement Postprocess"; sxcmd.short_info = "Adjust power spectrum based on B-factor. B-factor is estimated from unfiltered odd/even 3D volumes, one volume, or ISAC 2D averages. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "postprocess"; token.key_prefix = "--"; token.label = "Adjust power spectrum based on B-factor"; token.help = "B-factor is estimated from unfiltered odd/even 3D volumes, one volume, or ISAC 2D averages. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
+		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.mode = "postprocess"; sxcmd.label = "Sharpening"; sxcmd.short_info = "Sharpen power spectrum based on B-factor. B-factor is estimated from two unfiltered 3D volumes, one volume, or ISAC 2D averages. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "postprocess"; token.key_prefix = "--"; token.label = "Sharpen power spectrum based on B-factor"; token.help = "B-factor is estimated from two unfiltered 3D volumes, one volume, or ISAC 2D averages. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First unfiltered half-volume "; token.help = "Generated by sxmeridien"; token.group = "main"; token.is_required = True; token.is_locked = None; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second unfiltered half-volume "; token.help = "Generated by sxmeridien"; token.group = "main"; token.is_required = True; token.is_locked = None; token.default = ""; token.restore = ""; token.type = "image"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "mtf"; token.key_prefix = "--"; token.label = "MTF file"; token.help = "File contains the MTF (modulation transfer function) of the detector used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)

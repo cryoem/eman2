@@ -227,9 +227,11 @@ class SXLookFeelConst(object):
 	# static class variables
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	default_bg_color = QColor(229, 229, 229, 192) # default_bg_color = QColor(229, 229, 229, 242) # Greyish-White Transparent
+	default_bg_color_string = 'rgba(229, 229, 229, 192)' # default_bg_color = QColor(229, 229, 229, 242) # Greyish-White Transparent
 	sxinfo_widget_bg_color = QColor(0, 0, 0, 10) # Almost-Completely Transparent
 	sxcmd_widget_bg_color = QColor(0, 0, 0, 0) # Completely Transparent
 	sxcmd_tab_bg_color = QColor(229, 229, 229, 200) # White Transparent
+	sxcmd_tab_bg_color_string = 'rgba(229, 229, 229, 200)' # White Transparent
 
 	# Constants
 	project_dir = "sxgui_settings"
@@ -2092,29 +2094,61 @@ class SXInfoWidget(QWidget):
 	def __init__(self, parent = None):
 		super(SXInfoWidget, self).__init__(parent)
 
+		self.setStyleSheet("background-color: {0}".format(SXLookFeelConst.default_bg_color_string))
+		widget = QWidget(self)
 
 		# Get the picture name
 		pic_name = '{0}sxgui_info.png'.format(get_image_directory())
 		# Import the picture as pixmap to get the right dimensions
 		self.pixmap = QPixmap(pic_name)
+		width = self.pixmap.width()
+		height = self.pixmap.height()
+
+		# Scrol widget
+		scroll_widget = QWidget()
+		scroll_widget.setStyleSheet('background-color: transparent')
+
+		label1 = QLabel()
+		label1.setFixedHeight(40)
+		label2 = QLabel()
+		label2.setFixedHeight(40)
 
 		# Create a QLabel and show the picture
 		self.label = QLabel()
-		self.label.setStyleSheet('border-image: url("{0}")'.format(pic_name))
-		self.label.resizeEvent = self.change_label_height
+		self.label.setFixedSize(width, height)
+		self.label.setStyleSheet('border-image: url("{0}"); background-color: transparent'.format(pic_name))
+
+		# Layout for the scroll widet vert
+		label3 = QLabel()
+		label3.setFixedWidth(40)
+		label4 = QLabel()
+		label4.setFixedWidth(40)
+
+		# Layout for the scroll widget hor
+		layout_vert = QHBoxLayout()
+		layout_vert.addWidget(label3)
+		layout_vert.addWidget(self.label)
+		layout_vert.addWidget(label4)
+
+		# Layout for the scroll widget hor
+		layout = QVBoxLayout(scroll_widget)
+		layout.addWidget(label1)
+		layout.addLayout(layout_vert)
+		layout.addWidget(label2)
 
 		# Add a scroll area for vertical scrolling
-		scroll_area = QScrollArea(self)
+		scroll_area = QScrollArea(widget)
 		scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-		scroll_area.setWidgetResizable(True)
-		scroll_area.setWidget(self.label)
+		scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+		scroll_area.setWidget(scroll_widget)
+		scroll_area.setStyleSheet("background-color: {0}".format(SXLookFeelConst.sxcmd_tab_bg_color_string))
 
-		layout = QHBoxLayout(self)
+		layout = QHBoxLayout(widget)
 		layout.addWidget(scroll_area, stretch=1)
 
-	# If the width changes, rescale the height of the image
-	def change_label_height(self, event):
-		self.label.setFixedHeight(self.label.width() * self.pixmap.height() / self.pixmap.width())
+		layout = QHBoxLayout(self)
+		layout.addWidget(widget)
+		layout.setContentsMargins(0, 0, 0, 0)
 
 # ========================================================================================
 # Main Window (started by class SXApplication)

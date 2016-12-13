@@ -146,7 +146,7 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     ne:: Erosion cycles: After initial binarization the volume is eroded to remove fragmented pieces of the volume. (default 0)
     nd:: Dilation cycles: After erosing the binary volume is dilated back to smooth the surface and match the original size. (default 0)
 
-    postprocess:: Adjust power spectrum based on B-factor: B-factor is estimated from unfiltered odd/even 3D volumes, one volume, or ISAC 2D averages. (default False)
+    postprocess:: Sharpen power spectrum based on B-factor: B-factor is estimated from two unfiltered 3D volumes, one volume, or ISAC 2D averages. (default False)
     mtf:: MTF file: File contains the MTF (modulation transfer function) of the detector used. (default none)
     fsc_adj:: Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. This is not applicable to 2D image. (default False)
     B_enhance:: B-factor enhancement: -1.0: B-factor is not applied; 0.0: program estimates B-factor from options. B_start (usually 10 Angstrom) to the resolution determined by FSC143; 128.0: program use the given value 128.0 [A^2] to enhance map. (default 0.0)
