@@ -3186,7 +3186,7 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 		#  Estimated data size
 		refang, rshifts = get_refangs_and_shifts()
 		del refang
-		data_size = (max(Tracker["nima_per_chunk"])*4*float(Tracker["constants"]["nnxo"]**2)*len(rshifts))/Blockdata["no_of_groups"]/1.0e9
+		data_size = max(Tracker["nima_per_chunk"])*4*float(Tracker["constants"]["nnxo"]**2)/float(Blockdata["no_of_groups"])/1.0e9
 		del rshifts
 		nnprocs = min( Blockdata["no_of_processes_per_group"], int(((memory_per_node - data_size*1.2) / volume_size ) ) )
 		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(memory_per_node,volume_size,data_size,nnprocs))
@@ -3262,7 +3262,8 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		rshifts          = 0
 		chunk_one        = 0
 		chunk_two        = 0
-		params_last_iter = 0 	
+		params_last_iter = 0 
+		
 	params            = wrap_mpi_bcast(params, Blockdata["main_node"], MPI_COMM_WORLD)
 	params_last_iter  = wrap_mpi_bcast(params_last_iter, Blockdata["main_node"], MPI_COMM_WORLD)
 	refang            = wrap_mpi_bcast(refang,    Blockdata["main_node"], MPI_COMM_WORLD)
@@ -3377,7 +3378,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 	else:  nproc_dict    = 0
 	nproc_dict           = wrap_mpi_bcast(nproc_dict, Blockdata["main_node"], MPI_COMM_WORLD)
 	
-	### parse nproc in refinement to current nproc
+	### parse previous nproc in refinement to current nproc
 	proc_start, proc_end = MPI_start_end(Blockdata["nproc"], Blockdata["nproc"], Blockdata["myid"])
 	#print("myid", Blockdata["myid"], proc_start, proc_end)
 	if proc_start<proc_end:
@@ -3396,9 +3397,14 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 					oldparams.append(old_oldparams[old_index_of_particle])
 				fout = open(os.path.join(new_oldparamstructure_dir,  "oldparamstructure_%d_%03d_%03d.json"%(ichunk, myproc, selected_iter)), "w")
 				json.dump(oldparams, fout)
-				fout.close()				
+				fout.close()
+	else:
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			print("Request too large number of CPus. Use smaller number of CPUs for a subset of data!")
+		mpi_finalize()
+		exit()				
 	### <<<-------load 0 iteration
-	selected_iter = 0
+	selected_iter              = 0
 	old_refinement_iter_dir    = os.path.join(option_old_refinement_dir, "main%03d"%selected_iter)
 	old_oldparamstructure_dir  = os.path.join(old_refinement_iter_dir, "oldparamstructure")
 	iter_dir                   = os.path.join(masterdir, "main%03d"%selected_iter)
@@ -3857,10 +3863,7 @@ def main():
 			elif options.do_final ==-1 and os.path.exists(masterdir):
 				update_options = True
 		else:
-			if os.path.exists(args[0]):
-				orgstack  = args[0]
-				masterdir = ""
-			else: masterdir = args[0]
+			masterdir = args[0]
 	else:
 		if not options.continue_from_subset:
 			print( "usage: " + usage)
