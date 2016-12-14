@@ -149,8 +149,8 @@ def AI( fff, anger, shifter, chout = False):
 		Tracker["currentres"] = maxres
 
 		#  figure changes in params
-		if( chout ):  print("  incoming  pares  ",Blockdata["myid"],Tracker["anger"] ,anger,Tracker["shifter"],shifter)
 		shifter *= 0.71
+		if( chout ):  print("  incoming  pares  ",Blockdata["myid"],Tracker["anger"] ,anger,Tracker["shifter"],shifter)
 		if( 1.03*anger >= Tracker["anger"] and 1.03*shifter >= Tracker["shifter"] ):	Tracker["no_params_changes"] += 1 #<<<--- 1.03 angle 1.03 shifter after 0.71 ratio
 		else:																			Tracker["no_params_changes"]  = 0
 
@@ -219,16 +219,24 @@ def params_changes( params, oldparams ):
 def compute_search_params(acc_trans, shifter, old_range):
 	from math import ceil
 	if(old_range == 0.0 and shifter != 0.0):  old_range = acc_trans
-	step   = 2*min(1.5, 0.85*acc_trans)
-	range  = min( 1.3*old_range, 5.0*shifter) # new range cannot grow too fast
-	range  = min(range, 1.5*step)
+	step   = min(1.5, 0.75*acc_trans)###*2  # 2 should not be here
+	range  = min( 1.3*old_range, 5.0*shifter)
+	range  = max(range, 1.5*step)
 	if range > 4.0*step :   range /= 2.0
 	if range > 4.0*step :   step   = range/4.0
-	step /= 2
 	if(range == 0.0):  step = 1.0
 	#range = step*ceil(range/step)
 	return range, step
-
+'''
+def get_offset_step_and_range(acc_trans, adaptive_oversampling, current_changes_optimal_offsets, old_range):
+	new_step=min(1.5, 0.75*acc_trans)*2**adaptive_oversampling
+	new_range=5.*current_changes_optimal_offsets
+	new_range=min(1.3*old_range,new_range) # new range cannot grow too fast
+	if new_range <1.5*new_step: new_range =1.5*new_step
+	if new_range>4.*new_step: new_range /=2.
+	if new_range>4.*new_step: new_step=new_range/4. 
+	return new_range, new_step
+'''
 def assign_particles_to_groups(minimum_group_size = 10):
 	global Tracker, Blockdata
 	from random import shuffle
@@ -3096,18 +3104,15 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 			projdata[procid] = get_shrink_data(Tracker["constants"]["nnxo"], procid, original_data[procid], oldparams[procid],\
 											return_real = False, preshift = True, apply_mask = False, nonorm = True)
 			for ipar in xrange(len(oldparams[procid])):	norm_per_particle[procid].append(oldparams[procid][ipar][7])
-			oldparams[procid]     = []
-			original_data[procid] = None
-			data, ctfs, bckgnoise = prepdata_ali3d(projdata[procid], rshifts, 1.0)
-			del ctfs
-			projdata[procid]      = []
+			oldparams[procid]        = []
+			original_data[procid]    = None
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			if(Blockdata["subgroup_myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
 			Tracker["directory"]             = Tracker["constants"]["masterdir"]
 			Tracker["nxinit"]                = Tracker["constants"]["nnxo"]
 			Tracker["maxfrad"]               = Tracker["constants"]["nnxo"]//2
-			do3d(procid, data, oldparamstructure[procid], refang, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
-			del data
+			do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
+			projdata[procid]          = []
 			oldparamstructure[procid] = []
 			norm_per_particle[procid] = []
 			mpi_barrier(Blockdata["subgroup_comm"])
@@ -3192,7 +3197,7 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 		nogo = 0
 	
 	nogo = bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-	if( nogo == 1 ):  ERROR("Insufficient memory to compute final reconstrcution","recons3d_final", 1, Blockdata["myid"])
+	if( nogo == 1 ):  ERROR("Insufficient memory to compute final reconstruction","recons3d_final", 1, Blockdata["myid"])
 	nnprocs = bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 	Blockdata["ncpuspernode"] 	= nnprocs
 	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
@@ -3571,7 +3576,7 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 			tvol1.write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf")%Tracker["mainiteration"])
 	mpi_barrier(MPI_COMM_WORLD) #  
 	return
-	
+
 def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 	global Tracker, Blockdata
 	#from mpi import mpi_barrier, MPI_COMM_WORLD
@@ -3674,15 +3679,11 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 		#if Blockdata["myid"] == Blockdata["main_node"]: write_text_row(norm_per_particle[procid], "oldparams_%d.txt"%procid)
 		oldparams[procid]     = []
 		original_data[procid] = None
-		data, ctfs, bckgnoise = prepdata_ali3d(projdata[procid], rshifts, float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]), "DIRECT")
-		del ctfs
-		projdata[procid]      = []
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		if(Blockdata["myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
-		#Tracker["nxinit"]                = Tracker["constants"]["nnxo"]
 		Tracker["maxfrad"]                = Tracker["nxinit"] //2
-		do3d(procid, data, oldparamstructure[procid], refang, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
-		del data
+		do3d(procid, projdata[procid], oldparamstructure[procid], refang, rshifts, norm_per_particle[procid], myid = Blockdata["myid"], mpi_comm = comm)
+		projdata[procid]          = []
 		oldparamstructure[procid] = []
 		norm_per_particle[procid] = []
 		mpi_barrier(MPI_COMM_WORLD)

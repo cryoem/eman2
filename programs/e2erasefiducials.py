@@ -118,7 +118,7 @@ def main():
 
 		#parallelized tasks don't run "in order"; therefore, a dummy stack needs to be pre-created with as many images as the final stack will have
 		#(otherwise, writing output images to stack indexes randomly makes the program crash or produces garbage output)
-		dummy=EMData(8,8)
+		dummy=EMData(nx,ny)
 		dummy.to_one()
 		dummy['apix_x']=apix
 		dummy['apix_y']=apix
@@ -187,12 +187,11 @@ def main():
 				#intermediate = arg.replace('.hdf','.mrcs')
 				finaloutput = outf.replace('.hdf',originalarg[-4:])
 				cmd = 'e2proc2d.py ' + outf + ' ' + finaloutput + ' --twod2threed --outmode int16'
-				
 				#print "\ncomand to generate finaloutput",cmd
 				runcmd(options,cmd)
 				os.remove(arg)
 
-			if newarg: 
+			if newarg:
 				try:
 					os.remove(newarg)
 				except:
@@ -221,6 +220,7 @@ def fiximage(options,imgfile,imgindx,outf):
 	#sys.stdout.flush()
 
 	f = EMData(imgfile,imgindx) * -1
+
 	f.process_inplace("normalize")
 
 	sharp_msk, soft_msk = generate_masks(options,f)
@@ -253,7 +253,7 @@ def fiximage(options,imgfile,imgindx,outf):
 def generate_masks(options,img):
 	img.process_inplace("normalize")
 	# create sharp mask
-	
+
 	'''
 	random cutoff values or int multiplication factors for thresholding ('3' below) work only on few datasets
 	it's best to estimate these things based on the size of the feature to mask, and decide on a per-dataset basis
@@ -266,18 +266,18 @@ def generate_masks(options,img):
 
 	fourierpixels = img['nx']/2
 	cutoffpixels = fourierpixels - options.goldsize/2
-	
+
 	msk = img.process("filter.highpass.gauss",{"cutoff_pixels":cutoffpixels})
-	
+
 	apix = img['apix_x']
 	goldsizeinangstroms = apix*options.goldsize
 	freq = 1.0/goldsizeinangstroms
 
 	msk.process_inplace("filter.lowpass.tanh",{"cutoff_freq":freq})	#c:lowpass shouldn't be arbitrary; rather, use gold size to derive it.
-	msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+options.nsigmas*msk["sigma"],"tomean":True})
+	msk.process_inplace("threshold.clampminmax",{"maxval":msk["maximum"],"minval":msk["mean"]+options.nsigmas*msk["sigma"],"tozero":True}) # must be tozero
 
 	# remove dust
-	if options.keepdust: sharp_msk = msk.copy()
+	if options.keepdust: sharp_msk = msk.copy()*-1
 	else:
 		nproc = msk.numpy().copy()
 		s = np.sqrt(options.goldsize*2).astype(int)
@@ -285,9 +285,11 @@ def generate_masks(options,img):
 		nproc = ndimage.binary_closing(nproc,structure=se2).astype(int)
 		nproc = ndimage.binary_opening(nproc,structure=se2).astype(int)
 		sharp_msk = from_numpy(nproc)
+
 	# grow slightly and create soft mask
 	sharp_msk = sharp_msk.process("mask.addshells.gauss",{"val1":8,"val2":0})
 	soft_msk = sharp_msk.process("mask.addshells.gauss",{"val1":0,"val2":8})
+
 	return sharp_msk,soft_msk
 
 
@@ -305,21 +307,18 @@ def local_noise(options,img):
 			n = EMData(bs,bs)
 			n.to_zero()
 			n.process_inplace("math.addnoise",{"noise":r["sigma_nonzero"]})
-			
 			#n.process_inplace("filter.highpass.gauss",{"cutoff_abs":0.01})
-			
 			fourierpixels = n['nx']/2
 			cutoffpixels = fourierpixels - options.goldsize/2
 			n.process_inplace("filter.highpass.gauss",{"cutoff_pixels":cutoffpixels})
-
-			try: 
+			try:
 				n *= r["sigma_nonzero"]/n["sigma_nonzero"]
 			except:
 				if options.verbose > 8:
 					print("WARNING: division by zero, from n['sigma_nonzero']={}".format(n["sigma_nonzero"]))
 			n += r["mean_nonzero"]
 			localnoise.insert_clip(n,(x-bs/2,y-bs/2))
-	
+
 	if options.lowpass:
 		apix = img['apix_x']
 		localnoise['apix_x'] = apix
