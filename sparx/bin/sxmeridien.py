@@ -3197,7 +3197,7 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 		nogo = 0
 	
 	nogo = bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-	if( nogo == 1 ):  ERROR("Insufficient memory to compute final reconstrcution","recons3d_final", 1, Blockdata["myid"])
+	if( nogo == 1 ):  ERROR("Insufficient memory to compute final reconstruction","recons3d_final", 1, Blockdata["myid"])
 	nnprocs = bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 	Blockdata["ncpuspernode"] 	= nnprocs
 	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
