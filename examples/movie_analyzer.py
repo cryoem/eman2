@@ -163,7 +163,7 @@ def main():
 			try: os.unlink("{}/hictrst_proc.hdf".format(bdir))
 			except: pass
 			if options.verbose: print("Erasing gold and other very high contrast features")
-			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={} --verbose={} --apix={}"
+			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={} --verbose={} --apix={} --debug"
 			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose,apix)
 			times = run(cmd,cwd=bdir,shell=True)
 			print(locallc)
