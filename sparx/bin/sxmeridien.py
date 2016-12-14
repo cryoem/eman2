@@ -149,8 +149,8 @@ def AI( fff, anger, shifter, chout = False):
 		Tracker["currentres"] = maxres
 
 		#  figure changes in params
-		if( chout ):  print("  incoming  pares  ",Blockdata["myid"],Tracker["anger"] ,anger,Tracker["shifter"],shifter)
 		shifter *= 0.71
+		if( chout ):  print("  incoming  pares  ",Blockdata["myid"],Tracker["anger"] ,anger,Tracker["shifter"],shifter)
 		if( 1.03*anger >= Tracker["anger"] and 1.03*shifter >= Tracker["shifter"] ):	Tracker["no_params_changes"] += 1 #<<<--- 1.03 angle 1.03 shifter after 0.71 ratio
 		else:																			Tracker["no_params_changes"]  = 0
 
@@ -219,16 +219,24 @@ def params_changes( params, oldparams ):
 def compute_search_params(acc_trans, shifter, old_range):
 	from math import ceil
 	if(old_range == 0.0 and shifter != 0.0):  old_range = acc_trans
-	step   = 2*min(1.5, 0.85*acc_trans)
-	range  = min( 1.3*old_range, 5.0*shifter) # new range cannot grow too fast
-	range  = min(range, 1.5*step)
+	step   = min(1.5, 0.75*acc_trans)###*2  # 2 should not be here
+	range  = min( 1.3*old_range, 5.0*shifter)
+	range  = max(range, 1.5*step)
 	if range > 4.0*step :   range /= 2.0
 	if range > 4.0*step :   step   = range/4.0
-	step /= 2
 	if(range == 0.0):  step = 1.0
 	#range = step*ceil(range/step)
 	return range, step
-
+'''
+def get_offset_step_and_range(acc_trans, adaptive_oversampling, current_changes_optimal_offsets, old_range):
+	new_step=min(1.5, 0.75*acc_trans)*2**adaptive_oversampling
+	new_range=5.*current_changes_optimal_offsets
+	new_range=min(1.3*old_range,new_range) # new range cannot grow too fast
+	if new_range <1.5*new_step: new_range =1.5*new_step
+	if new_range>4.*new_step: new_range /=2.
+	if new_range>4.*new_step: new_step=new_range/4. 
+	return new_range, new_step
+'''
 def assign_particles_to_groups(minimum_group_size = 10):
 	global Tracker, Blockdata
 	from random import shuffle
@@ -3568,7 +3576,7 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 			tvol1.write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf")%Tracker["mainiteration"])
 	mpi_barrier(MPI_COMM_WORLD) #  
 	return
-	
+
 def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 	global Tracker, Blockdata
 	#from mpi import mpi_barrier, MPI_COMM_WORLD
