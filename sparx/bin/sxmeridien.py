@@ -217,26 +217,15 @@ def params_changes( params, oldparams ):
 
 
 def compute_search_params(acc_trans, shifter, old_range):
-	from math import ceil
 	if(old_range == 0.0 and shifter != 0.0):  old_range = acc_trans
-	step   = min(1.5, 0.75*acc_trans)###*2  # 2 should not be here
+	step   = min(1.5, 0.75*acc_trans)
 	range  = min( 1.3*old_range, 5.0*shifter)
 	range  = max(range, 1.5*step)
 	if range > 4.0*step :   range /= 2.0
 	if range > 4.0*step :   step   = range/4.0
 	if(range == 0.0):  step = 1.0
-	#range = step*ceil(range/step)
 	return range, step
-'''
-def get_offset_step_and_range(acc_trans, adaptive_oversampling, current_changes_optimal_offsets, old_range):
-	new_step=min(1.5, 0.75*acc_trans)*2**adaptive_oversampling
-	new_range=5.*current_changes_optimal_offsets
-	new_range=min(1.3*old_range,new_range) # new range cannot grow too fast
-	if new_range <1.5*new_step: new_range =1.5*new_step
-	if new_range>4.*new_step: new_range /=2.
-	if new_range>4.*new_step: new_step=new_range/4. 
-	return new_range, new_step
-'''
+	
 def assign_particles_to_groups(minimum_group_size = 10):
 	global Tracker, Blockdata
 	from random import shuffle
