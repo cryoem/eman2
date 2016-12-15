@@ -118,8 +118,8 @@ void MrcIO::init()
 
 		bool do_swap, have_err;
 
-		//check_swap((const int *) (& mrch), filename.c_str(), true,
-		//			   do_swap, have_err);
+		check_swap((const int *) (& mrch), filename.c_str(), true,
+					   do_swap, have_err);
 
 		if (have_err  ||  ! is_valid(&mrch)) {
 			throw ImageReadException(filename, "invalid MRC");
@@ -234,7 +234,7 @@ bool MrcIO::is_image_big_endian()
 	return is_big_endian;
 }
 
-static void check_swap(const int * data, const char * filnam, bool show_errors,
+void MrcIO::check_swap(const int * data, const char * filnam, bool show_errors,
 							  bool & do_swap, bool & have_err)
 {
 	int nx      = data[0];
@@ -271,9 +271,7 @@ static void check_swap(const int * data, const char * filnam, bool show_errors,
 
 	const int max_dim = 1 << 20;
 
-	int generate_machine_stamp();
-
-	int actual_stamp = generate_machine_stamp();
+	int actual_stamp = MrcIO::generate_machine_stamp();
 
 	bool debug = (getenv("DEBUG_MRC_SANITY") != NULL);
 
@@ -368,7 +366,7 @@ bool MrcIO::is_valid(const void * first_block, off_t file_size)
 
 	bool do_swap, have_err;
 
-	//check_swap(data, NULL, false, do_swap, have_err);
+	check_swap(data, NULL, false, do_swap, have_err);
 
 	if (have_err) {
 		return false;
