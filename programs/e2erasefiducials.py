@@ -169,19 +169,21 @@ def main():
 		if results:
 			#pass
 
-			if options.parallel:
-				#outfstem = outf.replace('.hdf','')
-				cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_proc.hdf --stackname ' + outf
-				runcmd(options,cmdbuildstack)
+			# not sure what this was supposed to do
 
-				if options.debug:
-					outfmasked = outf.replace('.hdf','_masked.hdf')
-					cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_masked.hdf --stackname ' + outfmasked
-					runcmd(options,cmdbuildstack)
+			# if options.parallel:
+			# 	outfstem = outf.replace('.hdf','')
+			# 	cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_proc.hdf --stackname ' + outfstem
+			# 	runcmd(options,cmdbuildstack)
 
-					outfnoise= outf.replace('.hdf','_noise.hdf')
-					cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_noise.hdf --stackname ' + outfnoise
-					runcmd(options,cmdbuildstack)
+			# 	if options.debug:
+			# 		outfmasked = outf.replace('.hdf','_masked.hdf')
+			# 		cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_masked.hdf --stackname ' + outfmasked
+			# 		runcmd(options,cmdbuildstack)
+
+			# 		outfnoise= outf.replace('.hdf','_noise.hdf')
+			# 		cmdbuildstack = 'e2buildstacks.py erasegold_tmp-*_noise.hdf --stackname ' + outfnoise
+			# 		runcmd(options,cmdbuildstack)
 
 			if '.ali' == originalarg[-4:] or '.mrc' == originalarg[-4:]:
 				#intermediate = arg.replace('.hdf','.mrcs')
@@ -191,15 +193,15 @@ def main():
 				runcmd(options,cmd)
 				os.remove(arg)
 
-			if newarg:
-				try:
-					os.remove(newarg)
-				except:
-					try:
-						#print "would have removed",newarg.replace('.hdf','_proc.hdf')
-						os.remove(newarg.replace('.hdf','_proc.hdf'))
-					except:
-						pass
+			# if newarg:
+			# 	try:
+			# 		os.remove(newarg)
+			# 	except:
+			# 		try:
+			# 			#print "would have removed",newarg.replace('.hdf','_proc.hdf')
+			# 			os.remove(newarg.replace('.hdf','_proc.hdf'))
+			# 		except:
+			# 			pass
 		try:
 			filelist = [ tmpf for tmpf in os.listdir(".") if 'erasegold_tmp' in tmpf ]
 			for tf in filelist:
@@ -228,7 +230,7 @@ def fiximage(options,imgfile,imgindx,outf):
 	sub_sharp = f-mskd_sharp
 
 	noise = local_noise(options,sub_sharp)
-	outn = "{}_noise.hdf".format(imgfile)
+	outn = "{}_noise.hdf".format(os.path.splitext(imgfile)[0])
 
 	if options.debug: noise.write_image(outn,imgindx)
 
@@ -236,7 +238,7 @@ def fiximage(options,imgfile,imgindx,outf):
 	sub_soft = f-mskd_soft
 
 	if options.debug:
-		sub_soft.write_image("{}_masked.hdf".format( os.path.splitext(imgfile), imgindx))
+		sub_soft.write_image("{}_masked.hdf".format( os.path.splitext(imgfile)[0], imgindx))
 
 	result=sub_soft + noise * soft_msk
 	result *= -1
