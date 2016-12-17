@@ -3016,7 +3016,7 @@ def checkconvergence(keepgoing):
 		print(" Computing 3-D reconstruction using the best solution")
 	return keepgoing
 
-def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructure, projdata, final_iter=-1, comm = -1, ):
+def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructure, projdata, final_iter=-1, comm = -1):
 	global Tracker, Blockdata
 	#from mpi import mpi_barrier, MPI_COMM_WORLD
 
