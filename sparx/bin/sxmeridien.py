@@ -2992,12 +2992,14 @@ def checkconvergence(keepgoing):
 				Tracker["is_converged"] = True
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					print(" Refinement convergence criteria A are reached")		
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					print(line,"ITERATIONS convergence criteria A are reached")	
 			elif (Tracker["delta"] <= degrees(atan(0.5/Tracker["constants"]["radius"]))) and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]):
 				Tracker["is_converged"] = True
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					print(" Refinement convergence criteria B are reached")	
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					print(line,"ITERATIONS convergence criteria B are reached")	
 			else:
 				Tracker["is_converged"] = False
 		elif  Tracker["state"] =="FINAL":
@@ -3016,7 +3018,7 @@ def checkconvergence(keepgoing):
 		print(" Computing 3-D reconstruction using the best solution")
 	return keepgoing
 
-def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructure, projdata, final_iter=-1, comm = -1, ):
+def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructure, projdata, final_iter=-1, comm = -1 ):
 	global Tracker, Blockdata
 	#from mpi import mpi_barrier, MPI_COMM_WORLD
 
