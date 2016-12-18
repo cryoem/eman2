@@ -3210,13 +3210,14 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 	
 # ctrefromsort3d has three functions
 
-def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, option_selected_cluster, option_selected_iter, shell_line_command):
+def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, option_selected_cluster, option_selected_iter, option_memory_per_node, shell_line_command):
 	global Tracker, Blockdata
 	
 	selected_iter = option_selected_iter
 	if Blockdata["myid"] == Blockdata["main_node"]: cluster = sorted(read_text_file(option_selected_cluster))
 	else:                                           cluster = 0
 	cluster = wrap_mpi_bcast(cluster, Blockdata["main_node"], MPI_COMM_WORLD) # balance processors
+	
 	
 	old_refinement_iter_dir    = os.path.join(option_old_refinement_dir, "main%03d"%selected_iter)
 	old_oldparamstructure_dir  = os.path.join(old_refinement_iter_dir, "oldparamstructure")
@@ -3236,7 +3237,40 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		fout.close()
 	else: Tracker = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD) # balance processors
-		
+	
+	## Now estimate memory
+	if option_memory_per_node == -1.: memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
+	else:                             memory_per_node = option_memory_per_node
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		delta = Tracker["delta"]
+		Tracker["delta"] = 0.46875
+		refang, rshifts  = get_refangs_and_shifts()
+		Tracker["delta"] = delta
+		image_size   = max(Tracker["nxinit"], Tracker["constants"]["nnxo"]*3./4.)
+		refdata_size = float(len(refang))*image_size**2*4.0/1.0e9
+		del refang, rshifts
+		data_size    = len(cluster)//2*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9
+		alidata_size = data_size+refdata_size/float(Blockdata["no_of_groups"])
+		volume_size  = (1.5*4*(2.0*image_size+3.0)**3)/1.e9
+		nnprocs      = min( Blockdata["no_of_processes_per_group"], int(((memory_per_node - data_size*1.2)/volume_size)))
+		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(memory_per_node,volume_size,data_size,nnprocs))
+		memory_per_cpu_3d = data_size/Blockdata["no_of_processes_per_group"]*1.2 + volume_size
+		memory_per_cpu_ali = data_size/Blockdata["no_of_processes_per_group"]*1.2+refdata_size/float(Blockdata["no_of_groups"])
+		print("  Estimated memory consumption per CPU in reconstruction %6.2f"%memory_per_cpu_3d)
+		print("  Estimated memory consumption per CPU in alignment  %6.2f"%memory_per_cpu_ali)
+		if( (memory_per_node - data_size*1.2 - volume_size) < 0 or (nnprocs == 0)):  nogo = 1
+		else:  nogo = 0
+		if memory_per_node<alidata_size: nogo = 1
+	else:
+		nnprocs = 0
+		nogo    = 0
+	nogo = bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	if( nogo == 1 ):  ERROR("Insufficient memory to continue refinement from subset","continue_from_subset", 1, Blockdata["myid"])
+	nnprocs = bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	Blockdata["ncpuspernode"] 	= nnprocs
+	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
+	create_subgroup()
+			
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		noiseimage        = get_im(os.path.join(old_previousoutputdir, "bckgnoise.hdf"))
 		noiseimage1       = get_im(os.path.join(old_refinement_iter_dir, "bckgnoise.hdf"))
@@ -3392,7 +3426,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 				fout.close()
 	else:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print("Request too large number of CPus. Use smaller number of CPUs for a subset of data!")
+			print("Request too large number of CPus. Use smaller number of CPUs for restart from a subset of data!")
 		mpi_finalize()
 		exit()				
 	### <<<-------load 0 iteration
@@ -3468,10 +3502,11 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		
 	if Blockdata["myid"] == Blockdata["main_node"]:# some numbers and path are required to be modified
 		# varibles in Tracker to be updated
-		Tracker["constants"]["masterdir"] = masterdir
-		Tracker["previousoutputdir"]      = Tracker["directory"]
-		Tracker["refvol"]                 = os.path.join(iter_dir, "vol_0_%03d.hdf"%selected_iter)
-		Tracker["mainiteration"]          = selected_iter
+		Tracker["constants"]["memory_per_node"] = memory_per_node
+		Tracker["constants"]["masterdir"]       = masterdir
+		Tracker["previousoutputdir"]            = Tracker["directory"]
+		Tracker["refvol"]                       = os.path.join(iter_dir, "vol_0_%03d.hdf"%selected_iter)
+		Tracker["mainiteration"]                = selected_iter
 		
 		if Tracker["constants"]["mask3D"]: 
 			Tracker["constants"]["mask3D"]= os.path.join(option_old_refinement_dir, "../", Tracker["constants"]["mask3D"])
@@ -4248,7 +4283,7 @@ def main():
 		if( li > 0 ):
 			masterdir = mpi_bcast(masterdir,li,MPI_CHAR,Blockdata["main_node"],MPI_COMM_WORLD)
 		masterdir = string.join(masterdir,"")
-		do_ctrefromsort3d_get_subset_data(masterdir, options.oldrefdir, options.subset, options.continue_from_iter, sys.argv[1:])
+		do_ctrefromsort3d_get_subset_data(masterdir, options.oldrefdir, options.subset, options.continue_from_iter, options.memory_per_node, sys.argv[1:])
 		ctrefromsorting_rec3d_faked_iter(masterdir, options.continue_from_iter, MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
 		Tracker["previousoutputdir"]    =  os.path.join(masterdir, "main%03d"%options.continue_from_iter)
