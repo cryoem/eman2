@@ -5282,7 +5282,7 @@ EMData* Util::Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr,
 		float ipsi = psi/360.0f*maxrin;
 		int ip1 = (int)(ipsi);
 		float dpsi = ipsi-ip1;
-		dout[i]=static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+		dout[i] = static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
 	}
 	free(q);
 	return out;

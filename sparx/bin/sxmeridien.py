@@ -4407,9 +4407,9 @@ def main():
 					shakenumber = 0.0
 				shakenumber = bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])
 
-				rangle  = shakenumber*Tracker["delta"]
-				rshift  = shakenumber*Tracker["ts"]
-				refang  = shakerefangles(refang, rangle, Tracker["constants"]["symmetry"])
+				rangle = shakenumber*Tracker["delta"]
+				rshift = shakenumber*Tracker["ts"]
+				refang = shakerefangles(refang, rangle, Tracker["constants"]["symmetry"])
 				shakegrid(rshifts, rshift)
 
 				if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -4419,8 +4419,8 @@ def main():
 				rshift = 0.0
 
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
-				write_text_row( rshifts, os.path.join(Tracker["directory"] ,"rshifts.txt") )
+				write_text_row( refang, os.path.join(Tracker["directory"], "refang.txt") )
+				write_text_row( rshifts, os.path.join(Tracker["directory"], "rshifts.txt") )
 			mpi_barrier(MPI_COMM_WORLD)
 
 			newparamstructure = [[],[]]
