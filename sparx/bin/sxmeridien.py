@@ -3176,10 +3176,7 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 		#  Estimated volume size
 		volume_size = (1.5*4*(2.0*Tracker["constants"]["nnxo"]+3.0)**3)/1.e9
 		#  Estimated data size
-		refang, rshifts = get_refangs_and_shifts()
-		del refang
 		data_size = max(Tracker["nima_per_chunk"])*4*float(Tracker["constants"]["nnxo"]**2)/float(Blockdata["no_of_groups"])/1.0e9
-		del rshifts
 		nnprocs = min( Blockdata["no_of_processes_per_group"], int(((memory_per_node - data_size*1.2) / volume_size ) ) )
 		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(memory_per_node,volume_size,data_size,nnprocs))
 		if( (memory_per_node - data_size*1.2 - volume_size) < 0 or (nnprocs == 0)):  nogo = 1
