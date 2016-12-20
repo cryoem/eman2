@@ -110,6 +110,7 @@ class EMTaskCustomer:
 	thread:nthreads[:scratch_dir]
 	mpi:ncpu[:scratch_dir_on_nodes]
 	"""
+		origtarget=target
 		target=target.lower()
 		self.servtype=target.split(":")[0]
 
@@ -128,7 +129,7 @@ class EMTaskCustomer:
 			self.handler=EMLocalTaskHandler(self.maxthreads,self.scratchdir)
 		elif self.servtype=="mpi":
 			self.maxthreads=int(target.split(":")[1])
-			try: self.scratchdir=target.split(":")[2]
+			try: self.scratchdir=origtarget.split(":")[2]
 			except: self.scratchdir="/tmp"
 			try:
 				# Caching no longer used at all with MPI
