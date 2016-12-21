@@ -208,7 +208,9 @@ def main():
 	sparx_chunk_id_max = 0
 	
 	# Open input/output files
-	assert(os.path.exists(file_path_relion_star) == True)
+	#assert(os.path.exists(file_path_relion_star) == True)
+	if not os.path.exists(file_path_relion_star):
+		ERROR("relion input file does not exists","sxrelion2sparx.py", 1)
 	file_relion_star = open(file_path_relion_star,'r')
 	file_sparx_stack_ctf = open(file_path_sparx_stack_ctf,'w+')
 	file_sparx_cter = open(file_path_sparx_cter,'w+')
@@ -230,7 +232,9 @@ def main():
 				print '# Extracted Column IDs:'
 		# Process item list and data entries 
 		else:
-			assert((is_found_section == True) & (is_found_loop == True))
+			#assert((is_found_section == True) & (is_found_loop == True))
+			if (is_found_section is False) or (is_found_loop is False):
+				ERROR("relion relion section and loop not found","sxrelion2sparx.py", 1)
 			tokens_line = str_line.split() # print tokens_line
 			n_tokens_line = len(tokens_line)
 
@@ -326,7 +330,10 @@ def main():
 					
 					##### Store CTF related parameters in cter format ##### 
 					cter_entry = [sparx_ctf['defocus'], sparx_ctf['cs'], sparx_ctf['acc_vol'], sparx_ctf['apix'], sparx_ctf['bfactor'], sparx_ctf['amp_contrast'], sparx_ctf['astig_amp'], sparx_ctf['astig_angle'], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, relion_micrograph_name]
-					assert(len(cter_entry) == n_idx_cter)
+					#assert(len(cter_entry) == n_idx_cter)
+					if (len(cter_entry) != n_idx_cter):
+						ERROR(" number of cter entries does not match number of index of cter", "sxrelion2sparx.py", 1)
+						
 					# Store one CTER entry for each micrograph
 					if micrograph_basename not in sparx_cter_dict:
 						sparx_cter_dict[micrograph_basename] = cter_entry
@@ -335,8 +342,10 @@ def main():
 							file_sparx_cter.write("  %12.5g" % cter_entry[idx_cter])
 						file_sparx_cter.write("  %s\n" % cter_entry[-1])
 					else:
-						assert(cmp(sparx_cter_dict[micrograph_basename], cter_entry) == 0)
-				
+						#assert(cmp(sparx_cter_dict[micrograph_basename], cter_entry) == 0)
+						if cmp(sparx_cter_dict[micrograph_basename], cter_entry) != 0:
+							ERROR(" number of micrograph entries does not match number of decous entries", "sxrelion2sparx.py", 1)
+	
 				if relion_category_dict['proj3d'][idx_is_category_found]:
 					##### Store Projection related parameters #####
 					relion_tx = float(tokens_line[relion_dict['_rlnOriginX'][idx_col] - 1])
@@ -373,7 +382,8 @@ def main():
 					relion_particle_source = tokens_line[relion_dict['_rlnImageName'][idx_col] - 1]
 					tokens_particle_source = relion_particle_source.split('@')
 					assert(len(tokens_particle_source) == 2)
-					
+				
+	
 					relion_local_particle_id = int(tokens_particle_source[0]) - 1 # Local Particle ID of RELION from 1 but SPARX from 0 
 					relion_local_stack_path = tokens_particle_source[1]
 										
@@ -432,9 +442,12 @@ def main():
 				print '# WARNING!!! Number of particles in generated stack (%d) is different from number of entries in input RELION star file (%d)!!!' % (i_relion_particle, i_sprax_particle)
 				print '#            Please check if there are all images specified by _rlnImageName in star file'
 			else:
-				assert(i_sprax_particle == i_relion_particle)
-				assert(os.path.exists(file_path_sparx_stack))
-				assert(i_sprax_particle == EMUtil.get_image_count(file_path_sparx_stack))
+				if (i_sprax_particle != i_relion_particle):
+					ERROR("number of particles does not match ","is_enable_create_stack", 1)
+				if (os.path.exists(file_path_sparx_stack)):
+					ERROR("sparx stack does not exists","is_enable_create_stack", 1)
+				if (i_sprax_particle != EMUtil.get_image_count(file_path_sparx_stack)):
+					ERROR("numbers of particles does not match ","is_enable_create_stack", 1)
 				
 		# Write box coordinate to files (doing here to avoid repeating open/close files in loop)
 		if box_size > 0:
