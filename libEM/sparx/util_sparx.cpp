@@ -26305,7 +26305,9 @@ float Util::innerproduct_np(std::string numpy_address, EMData* img1, EMData* mas
 	float *img1_ptr = img1->get_data();
 	float ip = 0.0f;
 	if (mask == NULL) {
-		for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+		for (size_t i=0;i<size;++i) {ip += img_ptr[i]*img1_ptr[i];
+		//cout<<"  arrays  "<<i<<"   "<<img_ptr[i]<<"   "<<img1_ptr[i]<<endl;
+		}
 	} else {
 		float *pmask = mask->get_data();
 		for (size_t i=0;i<size/2;++i) {
