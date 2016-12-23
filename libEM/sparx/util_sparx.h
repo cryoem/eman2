@@ -947,7 +947,7 @@ public:
                 vector< int >numr, float cnx, float cny, float delta_psi);
 
 
-	/* This is used in ISAC program to assigning particles equally to grops */
+	/* This is used in ISAC program to assign particles equally to grops */
 	static vector<int> assign_groups(std::string matrix_address, int nref, int nima);
 
 	static inline void getvec(float phi, float theta, float& x, float& y, float& z, int option=0) {
@@ -1168,6 +1168,8 @@ public:
 	static float ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sx, float sy);
 
 	static float innerproduct(EMData* image1, EMData* image2, EMData* mask);
+	static float innerproduct_np(std::string numpy_address, EMData* image2, EMData* mask);
+
 	static float innerproductwithctf(EMData* img, EMData* img1, EMData* img2, EMData* mask);
 
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);

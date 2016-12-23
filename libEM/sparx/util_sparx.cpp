@@ -26263,11 +26263,6 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 {
 	ENTERFUNC;
-	/* Exception Handle */
-	if (!img || !img1) {
-		throw NullPointerException("NULL input image");
-	}
-	/* ========= img += img1 ===================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
@@ -26290,6 +26285,40 @@ float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 	return ip;
 }
 
+float Util::innerproduct_np(std::string numpy_address, EMData* img1, EMData* mask)
+{
+	ENTERFUNC;
+	const float * img_ptr;
+	{ // convert memory address sent as string to pointer to float
+		size_t addr = 0;
+		for ( std::string::const_iterator i = numpy_address.begin();  i != numpy_address.end();  ++i ) {
+			int digit = *i - '0';
+			addr *= 10;
+			addr += digit;
+		}
+		img_ptr = reinterpret_cast<float*>(addr);
+	}
+
+	int nx=img1->get_xsize(),ny=img1->get_ysize(),nz=img1->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	//float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float ip = 0.0f;
+	if (mask == NULL) {
+		for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+	} else {
+		float *pmask = mask->get_data();
+		for (size_t i=0;i<size/2;++i) {
+
+			//if( pmask[i] > 0.5f)  {
+			int lol = i*2;
+			//	ip += img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1];
+			ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*pmask[i];
+			//}
+		}
+	}
+	return ip;
+}
 
 
 float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2, EMData* mask)
