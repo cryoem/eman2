@@ -1452,7 +1452,7 @@ def ali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D =
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+			temp = EMNumPy.numpy2em(img_buffer)
 
 			#temp *= (1000.0/nrmref)
 			#nrmref = 1000.
@@ -1621,7 +1621,7 @@ def ali3D_direct_euc(data, refang, shifts, procid, ctfs = None, bckgnoise = None
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+			temp = EMNumPy.numpy2em(img_buffer)
 
 
 			for kl,emimage in enumerate(data):
@@ -1857,7 +1857,7 @@ def ali3D_direct_euc_norm(data, refang, shifts, oldparams, procid, ctfs = None, 
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+			temp = EMNumPy.numpy2em(img_buffer)
 
 			for kl,emimage in enumerate(data):
 				for im in xrange(nshifts):
@@ -2129,7 +2129,7 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 			pointer_location = base_ptr + (i*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+			temp = EMNumPy.numpy2em(img_buffer)
 
 			for kl,emimage in enumerate(data):
 				for im in xrange(nshifts):
@@ -2249,7 +2249,7 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 			pointer_location = base_ptr + (iang*npsi + ipsi)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+			temp = EMNumPy.numpy2em(img_buffer)
 			Util.sqedfull(data[kl][ishift], temp, ctfs[kl], mask, tbckg, newpar[kl][2][idir][1])
 			'''
 			if( Blockdata["myid"] == 0 ):  
@@ -2474,7 +2474,7 @@ def ali3D_direct_local_euc(data, refang, shifts, oldangs, procid, ctfs = None, b
 				pointer_location = base_ptr + (itang%lenbigbuf)*size_of_one_image*disp_unit
 				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 				img_buffer = img_buffer.reshape(ny, nxt)
-				temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+				temp = EMNumPy.numpy2em(img_buffer)
 
 				lpoint += 1
 				while( ltable[lpoint] > -1 ):
@@ -2741,7 +2741,7 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 				pointer_location = base_ptr + (itang%lenbigbuf)*size_of_one_image*disp_unit
 				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 				img_buffer = img_buffer.reshape(ny, nxt)
-				temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+				temp = EMNumPy.numpy2em(img_buffer)
 
 				lpoint += 1
 				while( ltable[lpoint] > -1 ):
