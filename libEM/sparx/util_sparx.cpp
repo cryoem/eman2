@@ -5368,6 +5368,7 @@ EMData* Util::Crosrng_msg_stepsi_local(EMData* circ1, EMData* circ2, vector<int>
 	for ( j=bpsi-cpsi; j<=bpsi+cpsi; j++) {
 		ip = j;
 		if( ip < 0 ) ip += npsi;
+		else if( ip >= npsi ) ip -= npsi;
 		dout[j-bpsi+cpsi] = vpsi[ip];
 		///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
 		dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
@@ -23490,7 +23491,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 12/09/2016  12:45 PM " <<  endl;
+ cout <<"  Modification time: 12/27/2016  3:45 PM " <<  endl;
 }
 
 
