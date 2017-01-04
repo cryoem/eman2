@@ -103,7 +103,8 @@ def AI( fff, anger, shifter, chout = False):
 	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
 	from sys import exit
 	keepgoing = 1
-
+	
+	old_nxinit = Tracker["nxinit"]
 	if(Tracker["mainiteration"] == 1):
 		Tracker["state"] = "INITIAL"
 
@@ -189,7 +190,10 @@ def AI( fff, anger, shifter, chout = False):
 				Tracker["no_params_changes"]	= 0
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
-
+	
+	if old_nxinit != Tracker["nxinit"]: # update only if nxinit is changed
+		shrinkage         = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+		Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	return keepgoing
 
 
@@ -860,7 +864,7 @@ def metamove(projdata, oldparams, refang, rshifts, rangle, rshift, procid):
 
 	#  
 	#  Compute current values of some parameters.
-	Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
+	#Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	if(Tracker["radius"] < 5):
 		ERROR( "ERROR!!   radius too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, Blockdata["myid"])
 
