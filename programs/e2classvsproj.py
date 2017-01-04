@@ -85,7 +85,7 @@ def main():
 	parser.add_argument("--ralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default="refine")
 	parser.add_argument("--raligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. Default is ccc.",default="ccc")
 	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images", default="ccc")
-	parser.add_argument("--savesim",type=str,default=None,help="Save all of the similarity values to a multicolumn text file.")
+	parser.add_argument("--savesim",type=str,default=None,help="Save all of the similarity results to a text file. (ptcl#,proj#,alt,az,sim)")
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by this program at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
