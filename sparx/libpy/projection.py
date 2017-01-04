@@ -91,7 +91,7 @@ def prl(vol, params, radius, stack = None):
 def prj(vol, params, stack = None):
 	"""
 		Name
-			prj - calculate a set of 2-D projection of a 3-D volume
+			prj - calculate a set of 2-D projection of a 3-D volume using gridding
 		Input
 			vol: input volume, all dimensions have to be the same (nx=ny=nz)
 			params: a list of input parameters given as a list [i][phi, theta, psi, sx, sy], projection in calculated using the three Eulerian angles and then shifted by sx,sy
@@ -157,7 +157,7 @@ def prgs(volft, kb, params, kbx=None, kby=None):
 def prgl(volft, params, interpolation_method = 0, return_real = True):
 	"""
 		Name
-			prgl - calculate 2-D projection of a 3-D volume
+			prgl - calculate 2-D projection of a 3-D volume using either NN Fourier or or trilinear Fourier
 		Input
 			vol: input volume, the volume has to be cubic
 			params: input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by sx,sy
@@ -171,6 +171,7 @@ def prgl(volft, params, interpolation_method = 0, return_real = True):
 	from fundamentals import fft
 	from utilities import set_params_proj, info
 	from EMAN2 import Processor
+	if(interpolation_method<0 or interpolation_method>1):  ERROR('Unsupported interpolation method', "interpolation_method", 1, 0)
 	npad = volft.get_attr_default("npad",1)
 	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
 	if(npad == 1):  temp = volft.extract_section(R, interpolation_method)
@@ -184,11 +185,10 @@ def prgl(volft, params, interpolation_method = 0, return_real = True):
 		temp = Processor.EMFourierFilter(temp, filt_params)
 	if return_real:
 		temp.do_ift_inplace()
-		if(interpolation_method == 1):   temp.set_attr_dict({'ctf_applied':0, 'npad':1})
-		else:  temp.set_attr_dict({'ctf_applied':0, 'npad':npad})
+		temp.set_attr_dict({'ctf_applied':0, 'npad':1})
 		temp.depad()
 	else:
-		temp.set_attr_dict({'ctf_applied':0, 'npad':volft.get_attr("npad")})
+		temp.set_attr_dict({'ctf_applied':0, 'npad':1})
 	set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
 	return temp
 
