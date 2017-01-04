@@ -5965,12 +5965,12 @@ EMData* EMData::extract_section(const Transform& tf, int interpolate_method) {
 
 EMData* EMData::extract_section2(const Transform& tf, int interpolate_method) {
 	if (!is_complex())
-		throw ImageFormatException("extract_section requires a complex image");
+		throw ImageFormatException("extract_section2 requires a complex image");
 	if (nx%2 != 0)
-		throw ImageDimensionException("extract_section requires nx to be even");
+		throw ImageDimensionException("extract_section2 requires nx to be even");
 	int nxreal = nx - 2;
 	if (nxreal != ny || nxreal != nz)
-		throw ImageDimensionException("extract_section requires ny == nx == nz");
+		throw ImageDimensionException("extract_section2 requires ny == nx == nz");
 	// build complex result image, the assumption is that incoming volume is even and padded 2x
 	int nxo = nxreal/2 +2 ;
 	int nyo = ny/2;
