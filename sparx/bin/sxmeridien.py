@@ -4403,6 +4403,9 @@ def main():
 				else:
 					shakenumber = 0.0
 				shakenumber = bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])
+				# it has to be rounded as the number written to the disk is rounded,
+				#  so if there is discrepancy one cannot reproduce iteration.
+				shakenumber  = round(shakenumber,5)
 
 				rangle = shakenumber*Tracker["delta"]
 				rshift = shakenumber*Tracker["ts"]
