@@ -5114,7 +5114,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.
 	return params
 
 
-
+'''
 def sali3d_base_horatio_01(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.0, mpi_comm = None, log = None):	
 	"""
 		parameters: list of (all) projections | reference volume is optional, the data is shrank, 
@@ -5593,7 +5593,7 @@ def sali3d_base_horatio_01(stack, ref_vol = None, Tracker = None, rangle = 0.0, 
 	if myid == main_node:
 		log.add("Finish sali3d_base, nsoft = %1d"%nsoft)
 	return params
-
+'''
 
 # from development import sali3d_base_h_01
 # sali3d_base = sali3d_base_horatio_01

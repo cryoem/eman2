@@ -3575,6 +3575,71 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 
 
 
+def multalign2dscf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
+	from fundamentals import scf, rot_shift2D, ccf, mirror
+	from utilities import peak_search, model_blank
+	from math import radians, sin, cos
+	from alignment import ang_n
+
+	nx = image.get_xsize()
+	ny = image.get_xsize()
+	if(ou<0):  ou = min(nx//2-1,ny//2-1)
+	if(yrng < 0):  yrng = xrng
+	if(ou<2):
+		ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
+	sci = scf(image)
+	first_ring = 1
+	# center in SPIDER convention
+	cnx = nx//2+1
+	cny = ny//2+1
+
+	cimage = Util.Polar2Dm(sci, cnx, cny, numr, "H")
+	Util.Frngs(cimage, numr)
+	mimage = Util.Polar2Dm(mirror(sci), cnx, cny, numr, "H")
+	Util.Frngs(mimage, numr)
+
+	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
+	nry = min( 2*(yrng+1)+1, (((ny-2)//2)*2+1) )
+
+	totpeak = -1.0e23
+
+	for iki in xrange(len(refrings)):
+		#print  "TEMPLATE  ",iki
+		#  Find angle
+		retvals = Util.Crosrng_e(refrings[iki], cimage, numr, 0, 0.0)
+		alpha  = ang_n(retvals["tot"], "H", numr[-1])
+		peak 	= retvals["qn"]
+		#print  alpha1, peak1
+		#print  alpha2, peak2
+
+		ccf1 = Util.window(ccf(rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
+		p1 = peak_search(ccf1)
+
+		sxs = -p1[0][4]
+		sys = -p1[0][5]
+		cx = int(p1[0][1])
+		cy = int(p1[0][2])
+		peak = p1[0][0]
+
+		#print cx,cy
+		z = model_blank(3,3)
+		for i in xrange(3):
+			for j in xrange(3):
+				z[i,j] = ccf1[i+cx-1,j+cy-1]
+		#print  ccf1[cx,cy],z[1,1]
+		XSH, YSH, PEAKV = parabl(z)
+		#print  PEAKV
+		if(PEAKV > totpeak):
+			totpeak = PEAKV
+			iref = iki
+			if(mirr == 1):  	sx = -sxs+XSH
+			else:               sx =  sxs-XSH
+			sy = sys-YSH
+			talpha = alpha
+			#print "BETTER",sx,sy,iref,talpha,tmirr,totpeak
+			#return alpha, sx, sys-YSH, mirr, PEAKV
+	return sx,sy,iref,talpha,totpeak
+
 def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	from fundamentals import scf, rot_shift2D, ccf, mirror
 	from utilities import peak_search, model_blank
