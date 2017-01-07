@@ -5451,6 +5451,97 @@ EMData* Util::Crosrng_msg_stepsi_local(EMData* circ1, EMData* circ2, vector<int>
 }
 
 
+EMData* Util::Crosrng_msg_stack_stepsi_local(EMData* circ1, EMData* circ2, int icirc2, vector<int> numr, 
+										 float startpsi, float delta, float oldpsi, int cpsi)
+// cpsi is +/- integer psi search around oldpsi. The latter has to be converted to integer.
+{
+
+	int   ip, jc, numr3i, numr2i, i, j;
+	float c1, c2, d1, d2;
+
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
+
+	float* circ1b = circ1->get_data();
+	float* circ2b = circ2->get_data();
+
+	int offset = circ1->get_xsize();
+	offset *= icirc2;
+
+	double *q;
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+	 //  q - straight  = circ1 * conjg(circ2)
+
+	for (i=1;i<=nring;i++) {
+
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
+
+		q(1) += circ1b(numr2i) * circ2b(numr2i+offset);
+
+		if (numr3i == maxrin)   q(2) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+		else             q(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+
+		for (j=3;j<=numr3i;j=j+2) {
+			jc     = j+numr2i-1;
+
+			c1     = circ1b(jc);
+			c2     = circ1b(jc+1);
+			d1     = circ2b(jc+offset);
+			d2     = circ2b(jc+1+offset);
+
+			q(j)   +=  c1 * d1 + c2 * d2;
+			q(j+1) += -c1 * d2 + c2 * d1;
+		}
+	}
+
+	// straight
+	fftr_d(q,ip);
+	int npsi = (int)(360.0f/delta + 0.01);
+	vector<float> vpsi(npsi);
+	float qdm = 1.0e23;
+	int bpsi;
+	for ( i=0; i<npsi; i++) {
+		float psi = startpsi + i*delta;
+		while( psi >= 360.0f )  psi -= 360.0f;
+		float ipsi = psi/360.0f*maxrin;
+		int ip1 = (int)(ipsi);
+		float dpsi = ipsi-ip1;
+		vpsi[i]=static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+		//  find closest to old psi
+		float dummy = fabs(psi - oldpsi);
+		dummy = Util::get_min(dummy, 360.0f-dummy);
+		if( dummy < qdm ) {
+			qdm = dummy;
+			bpsi = i;
+		}
+	}
+	EMData* out = new EMData();
+	int lout = 2*cpsi+1;
+	out->set_size(2*lout,1,1);//  This is 2D array, first half contains cfc values around the peak, second the indexes (multiplied by 2, as this is on a coarse grid)
+	float *dout = out->get_data();
+	for ( j=bpsi-cpsi; j<=bpsi+cpsi; j++) {
+		ip = j;
+		if( ip < 0 ) ip += npsi;
+		else if( ip >= npsi ) ip -= npsi;
+		dout[j-bpsi+cpsi] = vpsi[ip];
+		///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
+		dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
+	}
+	free(q);
+	return out;
+
+}
+
+
 #undef circ1b
 #undef circ2b
 #undef dout
@@ -23563,7 +23654,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 01/04/2017  3:56 PM " <<  endl;
+ cout <<"  Modification time: 01/07/2017  5:11 PM " <<  endl;
 }
 
 
