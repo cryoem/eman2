@@ -627,6 +627,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	 * returns EM object with 1D ccf values for psis every delta starting from starpsi
 	*/
 	static EMData* Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr, float startpsi, float delta);
+	static EMData* Crosrng_msg_stack_stepsi(EMData* circ1, EMData* circ2, int icirc2, vector<int> numr, float startpsi, float delta);
 	static EMData* Crosrng_msg_stepsi_local(EMData* circ1, EMData* circ2, vector<int> numr,
 											 float startpsi, float delta, float oldpsi, int cpsi);
 
