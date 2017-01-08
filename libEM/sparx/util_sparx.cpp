@@ -5362,6 +5362,102 @@ EMData* Util::Crosrng_msg_stack_stepsi(EMData* circ1, EMData* circ2, int icirc2,
 }
 
 
+vector<float> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* circ2, \
+				const vector< vector<float> >& coarse_shifts_shrank,\
+				vector<int> numr, vector<float> startpsi, float delta, float cnx) {
+
+	size_t n_coarse_shifts = coarse_shifts_shrank.size();
+	int lencrefim = circ2->get_xsize();
+	int n_coarse_ang = circ2->get_ysize();
+	int npsi = (int)(360.0f/delta + 0.01);
+
+	string mode = "F";
+
+	int   ip, jc, numr3i, numr2i, i, j;
+	float c1, c2, d1, d2;
+
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
+
+	float* circ2b = circ2->get_data();
+
+	double *q;
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+	 //  q - straight  = circ1 * conjg(circ2)
+
+	vector<float> qout(n_coarse_shifts*n_coarse_ang*npsi);
+	/*
+	vector<float> peak(n_coarse_ang*5);  //, -1.0e23f);
+	for (int iref = 0; iref < n_coarse_ang; iref++) {
+		peak[iref*5] = -1.0e23f;
+		peak[iref*5+1] = 0.0f;
+		peak[iref*5+2] = 0.0;
+		peak[iref*5+3] = 0.0;
+		peak[iref*5+4] = 0;
+	}
+	*/
+	size_t counter = 0;
+	for (int ib = 0; ib < n_coarse_shifts; ib++) {
+		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
+		Frngs(cimage, numr);
+		float* circ1b = cimage->get_data();
+		for (int ic = 0; ic < n_coarse_ang; ic++) {
+			int offset = lencrefim*ic;
+
+
+			 //  q - straight  = circ1 * conjg(circ2)
+
+			for (i=1;i<=nring;i++) {
+
+				numr3i = numr(3,i);
+				numr2i = numr(2,i);
+
+				q(1) += circ1b(numr2i) * circ2b(numr2i+offset);
+
+				if (numr3i == maxrin)   q(2) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+				else             q(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+
+				for (j=3;j<=numr3i;j=j+2) {
+					jc     = j+numr2i-1;
+
+					c1     = circ1b(jc);
+					c2     = circ1b(jc+1);
+					d1     = circ2b(jc+offset);
+					d2     = circ2b(jc+1+offset);
+
+					q(j)   +=  c1 * d1 + c2 * d2;
+					q(j+1) += -c1 * d2 + c2 * d1;
+				}
+			}
+
+			// straight
+			fftr_d(q,ip);
+
+			for (int i=0; i<npsi; i++) {
+				float psi = startpsi[ic] + i*delta;
+				while( psi >= 360.0f )  psi -= 360.0f;
+				float ipsi = psi/360.0f*maxrin;
+				int ip1 = (int)(ipsi);
+				float dpsi = ipsi-ip1;
+				qout[counter] = static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+				counter++;
+			}
+
+		}  delete cimage; cimage = 0;
+	}
+	free(q);
+
+	return qout;
+}
+
 
 EMData* Util::Crosrng_msg_stepsi_local(EMData* circ1, EMData* circ2, vector<int> numr, 
 										 float startpsi, float delta, float oldpsi, int cpsi)
@@ -23654,7 +23750,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 01/07/2017  5:11 PM " <<  endl;
+ cout <<"  Modification time: 01/08/2017  3:21 PM " <<  endl;
 }
 
 
