@@ -5394,24 +5394,19 @@ vector<float> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData*
 	 //  q - straight  = circ1 * conjg(circ2)
 
 	vector<float> qout(n_coarse_shifts*n_coarse_ang*npsi);
-	/*
-	vector<float> peak(n_coarse_ang*5);  //, -1.0e23f);
-	for (int iref = 0; iref < n_coarse_ang; iref++) {
-		peak[iref*5] = -1.0e23f;
-		peak[iref*5+1] = 0.0f;
-		peak[iref*5+2] = 0.0;
-		peak[iref*5+3] = 0.0;
-		peak[iref*5+4] = 0;
-	}
-	*/
+	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<endl;
 	size_t counter = 0;
 	for (int ib = 0; ib < n_coarse_shifts; ib++) {
+	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
 		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
 		Frngs(cimage, numr);
 		float* circ1b = cimage->get_data();
+		//or (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
+		//cout<<endl;
 		for (int ic = 0; ic < n_coarse_ang; ic++) {
 			int offset = lencrefim*ic;
-
+	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
+			for (int i=0; i<maxrin; i++)  q[i] = 0.0f;
 
 			 //  q - straight  = circ1 * conjg(circ2)
 
@@ -23750,7 +23745,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 01/08/2017  3:21 PM " <<  endl;
+ cout <<"  Modification time: 01/09/2017  1:45 PM " <<  endl;
 }
 
 
