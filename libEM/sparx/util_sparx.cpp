@@ -57,6 +57,7 @@ using namespace EMAN;
 #include "randnum.h"
 #include "mcqd.h"
 #include <algorithm>
+#include <vector>
 
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
@@ -5362,7 +5363,14 @@ EMData* Util::Crosrng_msg_stack_stepsi(EMData* circ1, EMData* circ2, int icirc2,
 }
 
 
-vector<float> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* circ2, \
+struct Scores
+{
+    float score;
+    int order;
+};
+
+
+vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* circ2, \
 				const vector< vector<float> >& coarse_shifts_shrank,\
 				vector<int> numr, vector<float> startpsi, float delta, float cnx) {
 
@@ -5392,8 +5400,19 @@ vector<float> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData*
 #endif	//_WIN32
 
 	 //  q - straight  = circ1 * conjg(circ2)
+	int ndata = n_coarse_shifts*n_coarse_ang*npsi;
 
-	vector<float> qout(n_coarse_shifts*n_coarse_ang*npsi);
+	//vector<float> qout(ndata);
+
+
+    vector<Scores> ccfs(ndata);
+
+    for (vector<Scores>::size_type i = 0; i <ndata; ++i)  {
+    	ccfs[i].order = i;
+    	//ccfs[i].score = (float)i;
+    }
+
+
 	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<endl;
 	size_t counter = 0;
 	for (int ib = 0; ib < n_coarse_shifts; ib++) {
@@ -5442,14 +5461,17 @@ vector<float> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData*
 				float ipsi = psi/360.0f*maxrin;
 				int ip1 = (int)(ipsi);
 				float dpsi = ipsi-ip1;
-				qout[counter] = static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+				//qout[counter] = static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+				ccfs[counter].score = static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
 				counter++;
 			}
 
 		}  delete cimage; cimage = 0;
 	}
 	free(q);
-
+	int nouto = 200;
+	vector<int> qout(nouto);
+	for (int i=0; i<nouto; i++) qout[i] = ccfs[i].order;
 	return qout;
 }
 
