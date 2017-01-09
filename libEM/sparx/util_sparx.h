@@ -632,7 +632,7 @@ class FakeKaiserBessel : public KaiserBessel {
 
 	static vector<int> multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* circ2, \
 				const vector< vector<float> >& coarse_shifts_shrank,\
-				vector<int> numr, vector<float> startpsi, float delta, float cnx);
+				vector<int> numr, vector<float> startpsi, float delta, float cnx, int nouto);
 
 	static EMData* Crosrng_msg_stepsi_local(EMData* circ1, EMData* circ2, vector<int> numr,
 											 float startpsi, float delta, float oldpsi, int cpsi);
