@@ -5363,12 +5363,12 @@ EMData* Util::Crosrng_msg_stack_stepsi(EMData* circ1, EMData* circ2, int icirc2,
 }
 
 
-struct Scores
-{
+struct Scores {
     float score;
     int order;
 };
 
+bool sortByscore(const Scores &lhs, const Scores &rhs) { return lhs.score > rhs.score; }
 
 vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* circ2, \
 				const vector< vector<float> >& coarse_shifts_shrank,\
@@ -5469,6 +5469,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* c
 		}  delete cimage; cimage = 0;
 	}
 	free(q);
+	sort(ccfs.begin(), ccfs.end(), sortByscore);
 	int nouto = 200;
 	vector<int> qout(nouto);
 	for (int i=0; i<nouto; i++) qout[i] = ccfs[i].order;
