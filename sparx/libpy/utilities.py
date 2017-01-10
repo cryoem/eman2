@@ -3789,13 +3789,13 @@ def nearest_many_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1")
 	from utilities import angles_to_normals, symmetry_neighbors
 	#refnormal = normals[:]
 	assignments = [-1]*len(angles)
+	reference_normals = angles_to_normals(reference_ang)
 
 	if( sym == "c1"):
 		for i,q in enumerate(angles):
 			ref = getfvec(q[0],q[1])
 			assignments[i] = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
 	elif( sym[:1] == "c" or  sym[:1] == "d" ):
-		reference_normals = angles_to_normals(reference_ang)
 		for i,q in enumerate(angles):
 			angles_sym_normals = angles_to_normals(symmetry_neighbors([q], sym))
 			assignments[i] = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), sym, howmany)

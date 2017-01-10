@@ -57,6 +57,7 @@ using namespace EMAN;
 #include "randnum.h"
 #include "mcqd.h"
 #include <algorithm>
+#include <vector>
 
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
@@ -5282,13 +5283,199 @@ EMData* Util::Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr,
 		float ipsi = psi/360.0f*maxrin;
 		int ip1 = (int)(ipsi);
 		float dpsi = ipsi-ip1;
-		dout[i]=static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+		dout[i] = static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
 	}
 	free(q);
 	return out;
 
 }
 
+
+
+EMData* Util::Crosrng_msg_stack_stepsi(EMData* circ1, EMData* circ2, int icirc2, vector<int> numr, float startpsi, float delta)
+{
+
+	int   ip, jc, numr3i, numr2i, i, j;
+	float c1, c2, d1, d2;
+
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
+
+	float* circ1b = circ1->get_data();
+	float* circ2b = circ2->get_data();
+
+	int offset = circ1->get_xsize();
+	offset *= icirc2;
+
+	double *q;
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+	 //  q - straight  = circ1 * conjg(circ2)
+
+	for (i=1;i<=nring;i++) {
+
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
+
+		q(1) += circ1b(numr2i) * circ2b(numr2i+offset);
+
+		if (numr3i == maxrin)   q(2) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+		else             q(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+
+		for (j=3;j<=numr3i;j=j+2) {
+			jc     = j+numr2i-1;
+
+			c1     = circ1b(jc);
+			c2     = circ1b(jc+1);
+			d1     = circ2b(jc+offset);
+			d2     = circ2b(jc+1+offset);
+
+			q(j)   +=  c1 * d1 + c2 * d2;
+			q(j+1) += -c1 * d2 + c2 * d1;
+		}
+	}
+
+	// straight
+	fftr_d(q,ip);
+
+	int npsi = (int)(360.0f/delta + 0.01);
+	EMData* out = new EMData();
+	out->set_size(npsi,1,1);
+	float *dout = out->get_data();
+	for (int i=0; i<npsi; i++) {
+		float psi = startpsi + i*delta;
+		while( psi >= 360.0f )  psi -= 360.0f;
+		float ipsi = psi/360.0f*maxrin;
+		int ip1 = (int)(ipsi);
+		float dpsi = ipsi-ip1;
+		dout[i] = static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+	}
+	free(q);
+	return out;
+
+}
+
+
+struct Scores {
+    float score;
+    int order;
+};
+
+bool sortByscore(const Scores &lhs, const Scores &rhs) { return lhs.score > rhs.score; }
+
+vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* circ2, \
+				const vector< vector<float> >& coarse_shifts_shrank,\
+				vector<int> numr, vector<float> startpsi, float delta, float cnx, int nouto) {
+
+	size_t n_coarse_shifts = coarse_shifts_shrank.size();
+	int lencrefim = circ2->get_xsize();
+	int n_coarse_ang = circ2->get_ysize();
+	int npsi = (int)(360.0f/delta + 0.01);
+
+	string mode = "F";
+
+	int   ip, jc, numr3i, numr2i, i, j;
+	float c1, c2, d1, d2;
+
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
+
+	float* circ2b = circ2->get_data();
+
+	double *q;
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+	 //  q - straight  = circ1 * conjg(circ2)
+	int ndata = n_coarse_shifts*n_coarse_ang*npsi;
+
+	//vector<float> qout(ndata);
+
+
+    vector<Scores> ccfs(ndata);
+
+    for (vector<Scores>::size_type i = 0; i <ndata; ++i)  {
+    	ccfs[i].order = i;
+    	//ccfs[i].score = (float)i;
+    }
+
+
+	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<endl;
+	size_t counter = 0;
+	for (int ib = 0; ib < n_coarse_shifts; ib++) {
+	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
+		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
+		Frngs(cimage, numr);
+		float* circ1b = cimage->get_data();
+		//or (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
+		//cout<<endl;
+		for (int ic = 0; ic < n_coarse_ang; ic++) {
+			int offset = lencrefim*ic;
+	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
+			for (int i=0; i<maxrin; i++)  q[i] = 0.0f;
+
+			 //  q - straight  = circ1 * conjg(circ2)
+
+			for (i=1;i<=nring;i++) {
+
+				numr3i = numr(3,i);
+				numr2i = numr(2,i);
+
+				q(1) += circ1b(numr2i) * circ2b(numr2i+offset);
+
+				if (numr3i == maxrin)   q(2) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+				else             q(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+
+				for (j=3;j<=numr3i;j=j+2) {
+					jc     = j+numr2i-1;
+
+					c1     = circ1b(jc);
+					c2     = circ1b(jc+1);
+					d1     = circ2b(jc+offset);
+					d2     = circ2b(jc+1+offset);
+
+					q(j)   +=  c1 * d1 + c2 * d2;
+					q(j+1) += -c1 * d2 + c2 * d1;
+				}
+			}
+
+			// straight
+			fftr_d(q,ip);
+
+			for (int i=0; i<npsi; i++) {
+				float psi = startpsi[ic] + i*delta;
+				while( psi >= 360.0f )  psi -= 360.0f;
+				float ipsi = psi/360.0f*maxrin;
+				int ip1 = (int)(ipsi);
+				float dpsi = ipsi-ip1;
+				//qout[counter] = static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+				ccfs[counter].score = static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+				counter++;
+			}
+
+		}  delete cimage; cimage = 0;
+	}
+	free(q);
+
+	sort(ccfs.begin(), ccfs.end(), sortByscore);
+
+	vector<int> qout(nouto);
+	for (int i=0; i<nouto; i++) qout[i] = ccfs[i].order;
+	return qout;
+}
 
 
 EMData* Util::Crosrng_msg_stepsi_local(EMData* circ1, EMData* circ2, vector<int> numr, 
@@ -5368,6 +5555,98 @@ EMData* Util::Crosrng_msg_stepsi_local(EMData* circ1, EMData* circ2, vector<int>
 	for ( j=bpsi-cpsi; j<=bpsi+cpsi; j++) {
 		ip = j;
 		if( ip < 0 ) ip += npsi;
+		else if( ip >= npsi ) ip -= npsi;
+		dout[j-bpsi+cpsi] = vpsi[ip];
+		///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
+		dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
+	}
+	free(q);
+	return out;
+
+}
+
+
+EMData* Util::Crosrng_msg_stack_stepsi_local(EMData* circ1, EMData* circ2, int icirc2, vector<int> numr, 
+										 float startpsi, float delta, float oldpsi, int cpsi)
+// cpsi is +/- integer psi search around oldpsi. The latter has to be converted to integer.
+{
+
+	int   ip, jc, numr3i, numr2i, i, j;
+	float c1, c2, d1, d2;
+
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
+
+	float* circ1b = circ1->get_data();
+	float* circ2b = circ2->get_data();
+
+	int offset = circ1->get_xsize();
+	offset *= icirc2;
+
+	double *q;
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+	 //  q - straight  = circ1 * conjg(circ2)
+
+	for (i=1;i<=nring;i++) {
+
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
+
+		q(1) += circ1b(numr2i) * circ2b(numr2i+offset);
+
+		if (numr3i == maxrin)   q(2) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+		else             q(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+
+		for (j=3;j<=numr3i;j=j+2) {
+			jc     = j+numr2i-1;
+
+			c1     = circ1b(jc);
+			c2     = circ1b(jc+1);
+			d1     = circ2b(jc+offset);
+			d2     = circ2b(jc+1+offset);
+
+			q(j)   +=  c1 * d1 + c2 * d2;
+			q(j+1) += -c1 * d2 + c2 * d1;
+		}
+	}
+
+	// straight
+	fftr_d(q,ip);
+	int npsi = (int)(360.0f/delta + 0.01);
+	vector<float> vpsi(npsi);
+	float qdm = 1.0e23;
+	int bpsi;
+	for ( i=0; i<npsi; i++) {
+		float psi = startpsi + i*delta;
+		while( psi >= 360.0f )  psi -= 360.0f;
+		float ipsi = psi/360.0f*maxrin;
+		int ip1 = (int)(ipsi);
+		float dpsi = ipsi-ip1;
+		vpsi[i]=static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+		//  find closest to old psi
+		float dummy = fabs(psi - oldpsi);
+		dummy = Util::get_min(dummy, 360.0f-dummy);
+		if( dummy < qdm ) {
+			qdm = dummy;
+			bpsi = i;
+		}
+	}
+	EMData* out = new EMData();
+	int lout = 2*cpsi+1;
+	out->set_size(2*lout,1,1);//  This is 2D array, first half contains cfc values around the peak, second the indexes (multiplied by 2, as this is on a coarse grid)
+	float *dout = out->get_data();
+	for ( j=bpsi-cpsi; j<=bpsi+cpsi; j++) {
+		ip = j;
+		if( ip < 0 ) ip += npsi;
+		else if( ip >= npsi ) ip -= npsi;
 		dout[j-bpsi+cpsi] = vpsi[ip];
 		///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
 		dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
@@ -23490,7 +23769,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 12/09/2016  12:45 PM " <<  endl;
+ cout <<"  Modification time: 01/09/2017  1:45 PM " <<  endl;
 }
 
 
@@ -26263,11 +26542,6 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 {
 	ENTERFUNC;
-	/* Exception Handle */
-	if (!img || !img1) {
-		throw NullPointerException("NULL input image");
-	}
-	/* ========= img += img1 ===================== */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
@@ -26290,6 +26564,42 @@ float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 	return ip;
 }
 
+float Util::innerproduct_np(std::string numpy_address, EMData* img1, EMData* mask)
+{
+	ENTERFUNC;
+	const float * img_ptr;
+	{ // convert memory address sent as string to pointer to float
+		size_t addr = 0;
+		for ( std::string::const_iterator i = numpy_address.begin();  i != numpy_address.end();  ++i ) {
+			int digit = *i - '0';
+			addr *= 10;
+			addr += digit;
+		}
+		img_ptr = reinterpret_cast<float*>(addr);
+	}
+
+	int nx=img1->get_xsize(),ny=img1->get_ysize(),nz=img1->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	//float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	float ip = 0.0f;
+	if (mask == NULL) {
+		for (size_t i=0;i<size;++i) {ip += img_ptr[i]*img1_ptr[i];
+		//cout<<"  arrays  "<<i<<"   "<<img_ptr[i]<<"   "<<img1_ptr[i]<<endl;
+		}
+	} else {
+		float *pmask = mask->get_data();
+		for (size_t i=0;i<size/2;++i) {
+
+			//if( pmask[i] > 0.5f)  {
+			int lol = i*2;
+			//	ip += img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1];
+			ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*pmask[i];
+			//}
+		}
+	}
+	return ip;
+}
 
 
 float Util::innerproductwithctf(EMData* img, EMData* img1, EMData* img2, EMData* mask)

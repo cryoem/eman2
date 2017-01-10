@@ -674,7 +674,7 @@ def fdownsample(img, sub_rate=0.5, RetReal = True):
 	return 	e
 
 
-def prepi(image):
+def prepi(image, RetReal = True):
 	"""
 		Name
 			prepi - prepare 2-D image for rotation/shift
@@ -704,7 +704,8 @@ def prepi(image):
 	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
 		"cutoff_abs" : 0.25, "dopad" : False}
 	q = Processor.EMFourierFilter(q, params)
-	return fft(q), kb
+	if RetReal: return fft(q), kb
+	else:  return q, kb
 
 
 def prep_refim_gridding(refim, wr, numr, mode = "F"):

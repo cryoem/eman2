@@ -103,7 +103,7 @@ def AI( fff, anger, shifter, chout = False):
 	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
 	from sys import exit
 	keepgoing = 1
-
+	
 	if(Tracker["mainiteration"] == 1):
 		Tracker["state"] = "INITIAL"
 
@@ -189,7 +189,11 @@ def AI( fff, anger, shifter, chout = False):
 				Tracker["no_params_changes"]	= 0
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
-
+	
+	shrinkage         = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
+	if(Tracker["radius"] < 5):
+		ERROR( "ERROR!!   radius too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien", 1, Blockdata["myid"])
 	return keepgoing
 
 
@@ -860,9 +864,9 @@ def metamove(projdata, oldparams, refang, rshifts, rangle, rshift, procid):
 
 	#  
 	#  Compute current values of some parameters.
-	Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
-	if(Tracker["radius"] < 5):
-		ERROR( "ERROR!!   radius too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, Blockdata["myid"])
+	#Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
+	#if(Tracker["radius"] < 5):
+	#	ERROR( "ERROR!!   radius too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, Blockdata["myid"])
 
 	#  STATES not used
 	#if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
@@ -1452,7 +1456,7 @@ def ali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D =
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+			temp = EMNumPy.numpy2em(img_buffer)
 
 			#temp *= (1000.0/nrmref)
 			#nrmref = 1000.
@@ -1621,7 +1625,7 @@ def ali3D_direct_euc(data, refang, shifts, procid, ctfs = None, bckgnoise = None
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+			temp = EMNumPy.numpy2em(img_buffer)
 
 
 			for kl,emimage in enumerate(data):
@@ -1857,7 +1861,7 @@ def ali3D_direct_euc_norm(data, refang, shifts, oldparams, procid, ctfs = None, 
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+			temp = EMNumPy.numpy2em(img_buffer)
 
 			for kl,emimage in enumerate(data):
 				for im in xrange(nshifts):
@@ -2129,7 +2133,7 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 			pointer_location = base_ptr + (i*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+			temp = EMNumPy.numpy2em(img_buffer)
 
 			for kl,emimage in enumerate(data):
 				for im in xrange(nshifts):
@@ -2249,7 +2253,7 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 			pointer_location = base_ptr + (iang*npsi + ipsi)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+			temp = EMNumPy.numpy2em(img_buffer)
 			Util.sqedfull(data[kl][ishift], temp, ctfs[kl], mask, tbckg, newpar[kl][2][idir][1])
 			'''
 			if( Blockdata["myid"] == 0 ):  
@@ -2474,7 +2478,7 @@ def ali3D_direct_local_euc(data, refang, shifts, oldangs, procid, ctfs = None, b
 				pointer_location = base_ptr + (itang%lenbigbuf)*size_of_one_image*disp_unit
 				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 				img_buffer = img_buffer.reshape(ny, nxt)
-				temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+				temp = EMNumPy.numpy2em(img_buffer)
 
 				lpoint += 1
 				while( ltable[lpoint] > -1 ):
@@ -2741,7 +2745,7 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 				pointer_location = base_ptr + (itang%lenbigbuf)*size_of_one_image*disp_unit
 				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 				img_buffer = img_buffer.reshape(ny, nxt)
-				temp = EMNumPy.assign_numpy_to_emdata(img_buffer)
+				temp = EMNumPy.numpy2em(img_buffer)
 
 				lpoint += 1
 				while( ltable[lpoint] > -1 ):
@@ -2992,12 +2996,14 @@ def checkconvergence(keepgoing):
 				Tracker["is_converged"] = True
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					print(" Refinement convergence criteria A are reached")		
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					print(line,"ITERATIONS convergence criteria A are reached")	
 			elif (Tracker["delta"] <= degrees(atan(0.5/Tracker["constants"]["radius"]))) and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]):
 				Tracker["is_converged"] = True
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					print(" Refinement convergence criteria B are reached")	
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					print(line,"ITERATIONS convergence criteria B are reached")	
 			else:
 				Tracker["is_converged"] = False
 		elif  Tracker["state"] =="FINAL":
@@ -3016,7 +3022,8 @@ def checkconvergence(keepgoing):
 		print(" Computing 3-D reconstruction using the best solution")
 	return keepgoing
 
-def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructure, projdata, final_iter=-1, comm = -1, ):
+
+def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructure, projdata, final_iter=-1, comm = -1 ):
 	global Tracker, Blockdata
 	#from mpi import mpi_barrier, MPI_COMM_WORLD
 
@@ -3173,10 +3180,7 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 		#  Estimated volume size
 		volume_size = (1.5*4*(2.0*Tracker["constants"]["nnxo"]+3.0)**3)/1.e9
 		#  Estimated data size
-		refang, rshifts = get_refangs_and_shifts()
-		del refang
 		data_size = max(Tracker["nima_per_chunk"])*4*float(Tracker["constants"]["nnxo"]**2)/float(Blockdata["no_of_groups"])/1.0e9
-		del rshifts
 		nnprocs = min( Blockdata["no_of_processes_per_group"], int(((memory_per_node - data_size*1.2) / volume_size ) ) )
 		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(memory_per_node,volume_size,data_size,nnprocs))
 		if( (memory_per_node - data_size*1.2 - volume_size) < 0 or (nnprocs == 0)):  nogo = 1
@@ -3207,13 +3211,14 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 	
 # ctrefromsort3d has three functions
 
-def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, option_selected_cluster, option_selected_iter, shell_line_command):
+def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, option_selected_cluster, option_selected_iter, option_memory_per_node, shell_line_command):
 	global Tracker, Blockdata
 	
 	selected_iter = option_selected_iter
 	if Blockdata["myid"] == Blockdata["main_node"]: cluster = sorted(read_text_file(option_selected_cluster))
 	else:                                           cluster = 0
 	cluster = wrap_mpi_bcast(cluster, Blockdata["main_node"], MPI_COMM_WORLD) # balance processors
+	
 	
 	old_refinement_iter_dir    = os.path.join(option_old_refinement_dir, "main%03d"%selected_iter)
 	old_oldparamstructure_dir  = os.path.join(old_refinement_iter_dir, "oldparamstructure")
@@ -3233,7 +3238,40 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		fout.close()
 	else: Tracker = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD) # balance processors
-		
+	
+	## Now estimate memory
+	if option_memory_per_node == -1.: memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
+	else:                             memory_per_node = option_memory_per_node
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		delta = Tracker["delta"]
+		Tracker["delta"] = 0.46875
+		refang, rshifts  = get_refangs_and_shifts()
+		Tracker["delta"] = delta
+		image_size   = max(Tracker["nxinit"], Tracker["constants"]["nnxo"]*3./4.)
+		refdata_size = float(len(refang))*image_size**2*4.0/1.0e9
+		del refang, rshifts
+		data_size    = len(cluster)//2*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9
+		alidata_size = data_size+refdata_size/float(Blockdata["no_of_groups"])
+		volume_size  = (1.5*4*(2.0*image_size+3.0)**3)/1.e9
+		nnprocs      = min( Blockdata["no_of_processes_per_group"], int(((memory_per_node - data_size*1.2)/volume_size)))
+		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(memory_per_node,volume_size,data_size,nnprocs))
+		memory_per_cpu_3d = data_size/Blockdata["no_of_processes_per_group"]*1.2 + volume_size
+		memory_per_cpu_ali = data_size/Blockdata["no_of_processes_per_group"]*1.2+refdata_size/float(Blockdata["no_of_groups"])
+		print("  Estimated memory consumption per CPU in reconstruction %6.2f"%memory_per_cpu_3d)
+		print("  Estimated memory consumption per CPU in alignment  %6.2f"%memory_per_cpu_ali)
+		if( (memory_per_node - data_size*1.2 - volume_size) < 0 or (nnprocs == 0)):  nogo = 1
+		else:  nogo = 0
+		if memory_per_node<alidata_size: nogo = 1
+	else:
+		nnprocs = 0
+		nogo    = 0
+	nogo = bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	if( nogo == 1 ):  ERROR("Insufficient memory to continue refinement from subset","continue_from_subset", 1, Blockdata["myid"])
+	nnprocs = bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	Blockdata["ncpuspernode"] 	= nnprocs
+	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
+	create_subgroup()
+			
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		noiseimage        = get_im(os.path.join(old_previousoutputdir, "bckgnoise.hdf"))
 		noiseimage1       = get_im(os.path.join(old_refinement_iter_dir, "bckgnoise.hdf"))
@@ -3389,7 +3427,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 				fout.close()
 	else:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print("Request too large number of CPus. Use smaller number of CPUs for a subset of data!")
+			print("Request too large number of CPus. Use smaller number of CPUs for restart from a subset of data!")
 		mpi_finalize()
 		exit()				
 	### <<<-------load 0 iteration
@@ -3465,10 +3503,11 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		
 	if Blockdata["myid"] == Blockdata["main_node"]:# some numbers and path are required to be modified
 		# varibles in Tracker to be updated
-		Tracker["constants"]["masterdir"] = masterdir
-		Tracker["previousoutputdir"]      = Tracker["directory"]
-		Tracker["refvol"]                 = os.path.join(iter_dir, "vol_0_%03d.hdf"%selected_iter)
-		Tracker["mainiteration"]          = selected_iter
+		Tracker["constants"]["memory_per_node"] = memory_per_node
+		Tracker["constants"]["masterdir"]       = masterdir
+		Tracker["previousoutputdir"]            = Tracker["directory"]
+		Tracker["refvol"]                       = os.path.join(iter_dir, "vol_0_%03d.hdf"%selected_iter)
+		Tracker["mainiteration"]                = selected_iter
 		
 		if Tracker["constants"]["mask3D"]: 
 			Tracker["constants"]["mask3D"]= os.path.join(option_old_refinement_dir, "../", Tracker["constants"]["mask3D"])
@@ -4245,7 +4284,7 @@ def main():
 		if( li > 0 ):
 			masterdir = mpi_bcast(masterdir,li,MPI_CHAR,Blockdata["main_node"],MPI_COMM_WORLD)
 		masterdir = string.join(masterdir,"")
-		do_ctrefromsort3d_get_subset_data(masterdir, options.oldrefdir, options.subset, options.continue_from_iter, sys.argv[1:])
+		do_ctrefromsort3d_get_subset_data(masterdir, options.oldrefdir, options.subset, options.continue_from_iter, options.memory_per_node, sys.argv[1:])
 		ctrefromsorting_rec3d_faked_iter(masterdir, options.continue_from_iter, MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
 		Tracker["previousoutputdir"]    =  os.path.join(masterdir, "main%03d"%options.continue_from_iter)
@@ -4368,10 +4407,13 @@ def main():
 				else:
 					shakenumber = 0.0
 				shakenumber = bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])
+				# it has to be rounded as the number written to the disk is rounded,
+				#  so if there is discrepancy one cannot reproduce iteration.
+				shakenumber  = round(shakenumber,5)
 
-				rangle  = shakenumber*Tracker["delta"]
-				rshift  = shakenumber*Tracker["ts"]
-				refang  = shakerefangles(refang, rangle, Tracker["constants"]["symmetry"])
+				rangle = shakenumber*Tracker["delta"]
+				rshift = shakenumber*Tracker["ts"]
+				refang = shakerefangles(refang, rangle, Tracker["constants"]["symmetry"])
 				shakegrid(rshifts, rshift)
 
 				if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -4381,8 +4423,8 @@ def main():
 				rshift = 0.0
 
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
-				write_text_row( rshifts, os.path.join(Tracker["directory"] ,"rshifts.txt") )
+				write_text_row( refang, os.path.join(Tracker["directory"], "refang.txt") )
+				write_text_row( rshifts, os.path.join(Tracker["directory"], "rshifts.txt") )
 			mpi_barrier(MPI_COMM_WORLD)
 
 			newparamstructure = [[],[]]
