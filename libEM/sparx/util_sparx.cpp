@@ -5658,6 +5658,16 @@ EMData* Util::Crosrng_msg_stack_stepsi_local(EMData* circ1, EMData* circ2, int i
 }
 
 
+struct MultiScores {
+    float score;
+    int ib;
+    int ic;
+    int ipsi;
+};
+
+bool sortBymultiscore(const MultiScores &lhs, const MultiScores &rhs) { return lhs.score > rhs.score; }
+
+
 vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMData* circ2, \
 				const vector< vector<float> >& coarse_shifts_shrank,\
 				vector<int> assignments_of_refangles_to_angles, vector<int> assignments_of_refangles_to_cones,
@@ -5700,19 +5710,13 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 	//vector<float> qout(ndata);
 
 
-    vector<Scores> ccfs(ndata);
-
-	/*
-    for (vector<Scores>::size_type i = 0; i <ndata; ++i)  {
-    	ccfs[i].order = i;
-    	//ccfs[i].score = (float)i;
-    }
-    */
+    vector<MultiScores> ccfs(ndata);
 
 
 	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<endl;
 	size_t counter = 0;
 	for (int ib = 0; ib < n_coarse_shifts; ib++) {
+		ccfs[counter].ib = ib;
 	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
 		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
 		Frngs(cimage, numr);
@@ -5727,6 +5731,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 					break;
 				}
 			}
+			ccfs[counter].ic = assignments_of_refangles_to_angles[ic];
 			int offset = lencrefim*lixi;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
@@ -5785,8 +5790,8 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 				//dout[j-bpsi+cpsi] = vpsi[ip];
 				///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
 				//dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
-				ccfs[counter].order = iang + 1000*ipip;
-				cout<<"  "<<counter<<"  "<<ib<<"  "<<ic<<"  "<<j<<"  "<<ipip<<"  "<<ccfs[counter].order<<endl;
+				ccfs[counter].ipsi = ipip;
+				cout<<"  "<<counter<<"  "<<ib<<"  "<<ic<<"  "<<j<<"  "<<ipip<<"  "<<ccfs[counter].ipsi<<endl;
 				counter++;
 			}
 
@@ -5794,11 +5799,14 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 	}
 	free(q);
 
-	sort(ccfs.begin(), ccfs.end(), sortByscore);
+	sort(ccfs.begin(), ccfs.end(), sortBymultiscore);
 
-	vector<int> qout(nouto);
-	for (i=0; i<nouto; i++) {qout[i] = ccfs[i].order;
-	cout<<"  "<<i<<"  "<<ccfs[i].order<<"  "<<qout[i]<<endl;}
+	vector<int> qout(nouto*3);
+	for (i=0; i<nouto; i++) {
+		qout[3*i] = ccfs[i].ib;
+		qout[3*i+1] = ccfs[i].ic;
+		qout[3*i+2] = ccfs[i].ipsi;
+	}
 	return qout;
 }
 
