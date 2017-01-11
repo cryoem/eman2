@@ -789,7 +789,8 @@ def main():
 		refines=[i for i in os.listdir(".") if "refine_" in i]
 		fscs=[]
 		for r in refines:
-			itr=max([i for i in os.listdir(r) if "fsc_masked" in i and i[-4:]==".txt"])
+			try: itr=max([i for i in os.listdir(r) if "fsc_masked" in i and i[-4:]==".txt"])
+			except: continue
 			fscs.append("{}/{}".format(r,itr))
 
 		fscs.sort(reverse=True)
@@ -817,6 +818,8 @@ def main():
 		plt.savefig("goldstandard.pdf")
 		print "Generated: goldstandard.pdf"
 		plt.clf()
+		
+		os.system("e2display.py --plot "+" ".join(fscs))
 
 
 	if options.timing:
