@@ -4603,7 +4603,8 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 			jc     = j+numr2i-1;
 
 	// Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
-	//   			          ----- -----    ----- -----
+	//   		
+	//   		----- -----    ----- -----
 	//      			   t1     t2      t3    t4
 
 			c1     = circ1(jc);
@@ -4938,7 +4939,7 @@ EMData* Util::Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr) {
 	EMData* out = new EMData();
 	out->set_size(maxrin,2,1);
 	float *dout = out->get_data();
-	for (int i=0; i<maxrin; i++) {dout(i,0)=static_cast<float>(q[i]); dout(i,1)=static_cast<float>(t[i]);}
+	for (i=0; i<maxrin; i++) {dout(i,0)=static_cast<float>(q[i]); dout(i,1)=static_cast<float>(t[i]);}
 	//out->set_size(maxrin,1,1);
 	//float *dout = out->get_data();
 	//for (int i=0; i<maxrin; i++) {dout(i,0)=q[i];}
@@ -5154,7 +5155,7 @@ EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
 	EMData* out = new EMData();
 	out->set_size(maxrin,1,1);
 	float *dout = out->get_data();
-	for (int i=0; i<maxrin; i++) dout[i]=static_cast<float>(q[i]);
+	for (i=0; i<maxrin; i++) dout[i]=static_cast<float>(q[i]);
 	free(q);
 	return out;
 
@@ -5213,7 +5214,7 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 	EMData* out = new EMData();
 	out->set_size(maxrin,1,1);
 	float *dout = out->get_data();
-	for (int i=0; i<maxrin; i++) dout[i]=static_cast<float>(t[i]);
+	for (i=0; i<maxrin; i++) dout[i]=static_cast<float>(t[i]);
 	free(t);
 	return out;
 
@@ -5277,7 +5278,7 @@ EMData* Util::Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr,
 	EMData* out = new EMData();
 	out->set_size(npsi,1,1);
 	float *dout = out->get_data();
-	for (int i=0; i<npsi; i++) {
+	for (i=0; i<npsi; i++) {
 		float psi = startpsi + i*delta;
 		while( psi >= 360.0f )  psi -= 360.0f;
 		float ipsi = psi/360.0f*maxrin;
@@ -5349,7 +5350,7 @@ EMData* Util::Crosrng_msg_stack_stepsi(EMData* circ1, EMData* circ2, int icirc2,
 	EMData* out = new EMData();
 	out->set_size(npsi,1,1);
 	float *dout = out->get_data();
-	for (int i=0; i<npsi; i++) {
+	for (i=0; i<npsi; i++) {
 		float psi = startpsi + i*delta;
 		while( psi >= 360.0f )  psi -= 360.0f;
 		float ipsi = psi/360.0f*maxrin;
@@ -5425,7 +5426,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* c
 		for (int ic = 0; ic < n_coarse_ang; ic++) {
 			int offset = lencrefim*ic;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
-			for (int i=0; i<maxrin; i++)  q[i] = 0.0f;
+			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
 			 //  q - straight  = circ1 * conjg(circ2)
 
@@ -5473,7 +5474,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* c
 	sort(ccfs.begin(), ccfs.end(), sortByscore);
 
 	vector<int> qout(nouto);
-	for (int i=0; i<nouto; i++) qout[i] = ccfs[i].order;
+	for (i=0; i<nouto; i++) qout[i] = ccfs[i].order;
 	return qout;
 }
 
@@ -5728,7 +5729,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 			}
 			int offset = lencrefim*lixi;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
-			for (int i=0; i<maxrin; i++)  q[i] = 0.0f;
+			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
 			 //  q - straight  = circ1 * conjg(circ2)
 
@@ -5785,6 +5786,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 				///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
 				//dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
 				ccfs[counter].order = iang + 1000*ipip;
+				cout<<"  "<<counter<<"  "<<ib<<"  "<<ic<<"  "<<j<<"  "<<ipip<<"  "<<ccfs[counter].order<<endl;
 				counter++;
 			}
 
@@ -5795,7 +5797,8 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 	sort(ccfs.begin(), ccfs.end(), sortByscore);
 
 	vector<int> qout(nouto);
-	for (int i=0; i<nouto; i++) qout[i] = ccfs[i].order;
+	for (i=0; i<nouto; i++) {qout[i] = ccfs[i].order;
+	cout<<"  "<<i<<"  "<<ccfs[i].order<<"  "<<qout[i]<<endl;}
 	return qout;
 }
 
