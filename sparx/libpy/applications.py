@@ -22813,7 +22813,15 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 				mask3D          = get_im(Tracker["mask3D"])
 				stat            = Util.infomask(ref_list[iref], mask3D, False)
 				ref_list[iref] -= stat[0]
-				Util.mul_scalar(ref_list[iref], 1.0/stat[1])
+				if stat[1]!=0.0: Util.mul_scalar(ref_list[iref], 1.0/stat[1])
+				else:
+					from morphology import erosion
+					bv = model_blank(3, 3, 3)
+					bv +=1.
+					while stat[1]==0:
+						ermask = erosion(mask3D, bv)
+						stat   = Util.infomask(ref_list[iref], ermask, False)
+					Util.mul_scalar(ref_list[iref], 1.0/stat[1])
 				
 			if(Tracker["constants"]["PWadjustment"]):
 				rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
@@ -23481,10 +23489,18 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			
 			if Tracker["mask3D"]:
 				mask3D = get_im(Tracker["mask3D"])
-				stat = Util.infomask(ref_list[iref], mask3D, False)
+				stat   = Util.infomask(ref_list[iref], mask3D, False)
 				ref_list[iref] -= stat[0]
-				Util.mul_scalar(ref_list[iref], 1.0/stat[1])
-				
+				if stat[1]!=0.0: Util.mul_scalar(ref_list[iref], 1.0/stat[1])
+				else:
+					from morphology import erosion
+					bv = model_blank(3, 3, 3)
+					bv +=1.
+					while stat[1]==0:
+						ermask = erosion(mask3D, bv)
+						stat   = Util.infomask(ref_list[iref], ermask, False)
+					Util.mul_scalar(ref_list[iref], 1.0/stat[1])
+					
 			if(Tracker["constants"]["PWadjustment"] != ''):
 				rt = read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
 				ro = rops_table(ref_list[iref])
