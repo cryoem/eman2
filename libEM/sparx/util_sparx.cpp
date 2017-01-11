@@ -5784,7 +5784,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 				//dout[j-bpsi+cpsi] = vpsi[ip];
 				///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
 				//dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
-				ccfs[i].order = iang + 1000*ipip;
+				ccfs[counter].order = iang + 1000*ipip;
 				counter++;
 			}
 
