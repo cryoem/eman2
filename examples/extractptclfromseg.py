@@ -2,7 +2,11 @@
 # Muyuan Chen 2016-09
 from EMAN2 import *
 import numpy as np
-#from scipy import ndimage
+havescipy=True
+try: 
+	from scipy import ndimage
+except:
+	havescipy=False
 def main():
 	
 	usage=" "
@@ -84,15 +88,23 @@ def main():
 		e=EMData(segname)
 		img=e.numpy()
 		img[img<options.thresh]=0
+		if options.shrink==0:
+			tm=EMData(tomoname,0,True)
+			shrinkz=tm["nz"]/e["nz"]
+			shrinkxy=tm["nx"]/e["nx"]
+			print "Shrink by {} in x-y plane, and shrink {} in z axis".format(shrinkxy, shrinkz)
+		else:
+			shrinkz=shrinkxy=options.shrink
 		
-		#lb, nlb=ndimage.measurements.label(img)
-		#pks=np.array(ndimage.maximum_position(img,lb,range(1,nlb)))
-		#n=len(pks)
-		#print n
+		if havescipy:
+			lb, nlb=ndimage.measurements.label(img)
+			pks=np.array(ndimage.maximum_position(img,lb,range(1,nlb)))
+			n=len(pks)
 		
-		e.process_inplace("mask.onlypeaks")
-		#print np.sum(img>0)
-		pks= np.array(np.where(img>0)).T
+		else:
+			e.process_inplace("mask.onlypeaks")
+			#print np.sum(img>0)
+			pks= np.array(np.where(img>0)).T
 		
 		pk_new=[[-100,-100,-100]]
 		for p in pks:
@@ -116,8 +128,9 @@ def main():
 			if min(box[2],box[1],e["nx"]-box[2],e["ny"]-box[1])<options.edge:
 				continue
 			#box*=2
-			if options.shrink>0:
-				box*=int(options.shrink)
+			box[2]*=shrinkxy
+			box[1]*=shrinkxy
+			box[0]*=shrinkz
 			allbox.append([box[2], box[1],"manual", int(box[0])])
 
 		jsname=info_name(tomoname)
