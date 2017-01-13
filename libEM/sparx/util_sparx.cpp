@@ -5456,7 +5456,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* c
 			// straight
 			fftr_d(q,ip);
 
-			for (int i=0; i<npsi; i++) {
+			for ( i=0; i<npsi; i++) {
 				float psi = startpsi[ic] + i*delta;
 				while( psi >= 360.0f )  psi -= 360.0f;
 				float ipsi = psi/360.0f*maxrin;
@@ -5714,24 +5714,24 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 
 
 	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<endl;
-	size_t counter = 0;
+	int counter = 0;
 	for (int ib = 0; ib < n_coarse_shifts; ib++) {
-		ccfs[counter].ib = ib;
 	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
 		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
 		Frngs(cimage, numr);
 		float* circ1b = cimage->get_data();
 		//or (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
 		//cout<<endl;
-		for (int ic = 0; ic < n_assignments_of_refangles_to_angles; ic++) {
+		for (int iqc = 0; iqc < n_assignments_of_refangles_to_angles; iqc++) {
+			int ic = assignments_of_refangles_to_angles[iqc];
 			int lixi = -1;
 			for (int k = 0; k< n_assignments_of_refangles_to_cones; k++) {
-				if(assignments_of_refangles_to_cones[k] == assignments_of_refangles_to_angles[ic]) {
+				if(assignments_of_refangles_to_cones[k] == ic) {
 					lixi = k;
 					break;
 				}
 			}
-			ccfs[counter].ic = assignments_of_refangles_to_angles[ic];
+			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
 			int offset = lencrefim*lixi;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
@@ -5781,7 +5781,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 					bpsi = i;
 				}
 			}
-			int iang = ic*100000000 + ib;
+			//int iang = ic*100000000 + ib;
 			for ( j=bpsi-cpsi; j<=bpsi+cpsi; j++) {
 				int ipip = j;
 				if( ipip < 0 ) ipip += npsi;
@@ -5790,8 +5790,10 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 				//dout[j-bpsi+cpsi] = vpsi[ip];
 				///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
 				//dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
+				ccfs[counter].ib = ib;
+				ccfs[counter].ic = ic;
 				ccfs[counter].ipsi = ipip;
-				cout<<"  "<<counter<<"  "<<ib<<"  "<<ic<<"  "<<j<<"  "<<ipip<<"  "<<ccfs[counter].ipsi<<endl;
+				//cout<<"  ZIGA   "<<counter<<"  "<<ccfs[counter].ib<<"  "<<ccfs[counter].ic<<"   "<<lixi<<"  "<<j<<"  "<<ccfs[counter].ipsi<<"      "<<ccfs[counter].score<<endl;
 				counter++;
 			}
 
@@ -23923,7 +23925,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 01/12/2017  6:10 PM " <<  endl;
+ cout <<"  Modification time: 01/12/2017  6:20 PM " <<  endl;
 }
 
 
