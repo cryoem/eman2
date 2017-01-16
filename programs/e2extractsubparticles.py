@@ -188,6 +188,12 @@ will be examined automatically to extract the corresponding particles and projec
 				projc=[im.process("xform",{"transform":ptclxf}) for im in projs]		# we transform the projections, not the particle (as in the original classification)
 				projm=[im.process("xform",{"transform":ptclxf}) for im in projmask]
 				maskctr=[j.calc_center_of_mass(0.5) for j in projm]
+
+				# debugging
+				#for i,p in enumerate(projm):
+					#p["com"]=maskctr[i]
+					#p.write_image("prjm.hdf",-1)
+
 				if options.masked : 
 					zmsk=projc[0].process("threshold.binary",{"value":0.01})
 					
@@ -208,7 +214,7 @@ will be examined automatically to extract the corresponding particles and projec
 						ptcl3.mult(projm[k])
 #					projm[k].write_image(options.output,-1)
 #					ptcl3.write_image(options.output,-1)
-					ptcl3.translate(-maskctr[k][0]+ptcl3["nx"]/2,-maskctr[k][1]+ptcl3["ny"]/2,-maskctr[k][2]+ptcl3["nz"]/2)
+					ptcl3.translate(-maskctr[k][0]+ptcl3["nx"]/2,-maskctr[k][1]+ptcl3["ny"]/2,0)
 					if options.newbox>3 : 
 						ptcl4=ptcl3.get_clip(Region((ptcl3["nx"]-options.newbox)/2,(ptcl3["ny"]-options.newbox)/2,options.newbox,options.newbox))
 						ptcl4.write_image(options.output,-1)
