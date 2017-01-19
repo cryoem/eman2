@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+# sxgui_drift for analyzing drift parameters made by Unblur
 # Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -1575,7 +1576,12 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         else:
             try:
                 with open(data, 'r') as r:
-                    if r.readline().startswith('# Unblur'):
+                    first_line = r.readline()
+                    if first_line.startswith('# Unblur'):
+                        return 'file'
+                    elif first_line.startswith('# full frame alignment'):
+                        return 'file'
+                    elif first_line.startswith('# Patch based alignment'):
                         return 'file'
                     else:
                         return 'list'
@@ -2069,7 +2075,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         strInputFile = str(QtGui.QFileDialog.getOpenFileName(
             directory=os.getcwd(),
             options=QtGui.QFileDialog.DontUseNativeDialog,
-            filter='Text files (*.txt)'
+            filter='Unblur (*.txt);;MotionCor2 (*.log);;All (*)'
             ))
 
         # If the return value is not empty, fill the line edit
@@ -2335,13 +2341,29 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Check how many frames are there
         self.intFrames = 0
+        input_typ = None
         for files in self.listFile:
             try:
                 with open(files, 'r') as f:
-                    for linenumber, line in enumerate(f):
-                        if linenumber == 3:
-                            self.intFrames = int(line.split()[-1])
-                            break
+                    first_line = f.readline()
+                    if first_line.startswith('# Unblur'):
+                        input_typ = 'Unblur'
+                        for linenumber, line in enumerate(f):
+                            if linenumber == 2:
+                                self.intFrames = int(line.split()[-1])
+                                break
+                    elif first_line.startswith('# full frame alignment'):
+                        input_typ = 'MotionCor2'
+                        for linenumber, line in enumerate(f):
+                            pass
+                        self.intFrames = linenumber + 1
+                    elif first_line.startswith('# Patch based alignment'):
+                        input_typ = 'MotionCor2'
+                        for linenumber, line in enumerate(f):
+                            pass
+                        self.intFrames = linenumber - 1
+                    else:
+                        raise IOError
                 break
             except IOError:
                 continue
@@ -2392,7 +2414,12 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
             # Import the data
             try:
-                arrCoord = numpy.genfromtxt(file, unpack=True)
+                if input_typ == 'Unblur':
+                    arrCoord = numpy.genfromtxt(file, unpack=True)
+                elif input_typ == 'MotionCor2':
+                    arrCoord = numpy.genfromtxt(file, unpack=True)[1:]
+                    # Transpose the array
+                    arrCoord = numpy.transpose(arrCoord)
             except ValueError:
                 print('File corrupt, skip:', file)
                 continue
@@ -2421,7 +2448,12 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
             # Import the data
             try:
-                arrCoord = numpy.genfromtxt(file, unpack=True)
+                if input_typ == 'Unblur':
+                    arrCoord = numpy.genfromtxt(file, unpack=True)
+                elif input_typ == 'MotionCor2':
+                    arrCoord = numpy.genfromtxt(file, unpack=True)[1:]
+                    # Transpose the array
+                    arrCoord = numpy.transpose(arrCoord)
             except ValueError:
                 print('File corrupt, skip:', file)
                 continue
