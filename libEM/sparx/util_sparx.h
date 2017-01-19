@@ -640,6 +640,11 @@ class FakeKaiserBessel : public KaiserBessel {
 											 float startpsi, float delta, float oldpsi, int cpsi);
 
 
+	static vector<int> multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMData* circ2, \
+				const vector< vector<float> >& coarse_shifts_shrank,\
+				vector<int> assignments_of_refangles_to_angles, vector<int> assignments_of_refangles_to_cones,
+				vector<int> numr, vector<float> startpsi, float oldpsi, int cpsi, float delta, float cnx, int nouto);
+
 	static vector<float> Crosrng_msg_vec_p(EMData* circ1, EMData* circ2, vector<int> numr );
 
 	static void  prb3p(double *b, float *pos);
@@ -903,6 +908,9 @@ costlist, int* curbranch);
 	static float sqedac(EMData* img,  EMData* proj, EMData* ctfsbckgnoise);
 	//static vector<float> sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob);
 	static void sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMData* bckgnoise, float prob);
+	static vector<float> sqednormbckg( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise, 
+									EMData* indx, EMData* tfrac, EMData* tcount);
+
 	static vector<float> sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise);
 
 	//utility for sxlocres

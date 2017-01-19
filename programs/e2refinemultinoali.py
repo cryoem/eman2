@@ -48,6 +48,7 @@ def main():
 	parser.add_argument("--models","--model", dest="model", type=str,help="Comma separated list of reference maps used for classification. If a single map is provided, data will be split into two groups based on similarity to the single map.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images. eg- frc:minres=80:maxres=20. Default=ccc", default="ccc", guitype='strbox', row=10, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--threads", type=int,help="Number of threads.", default=4, guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--randomphase", type=float,help="Randomize initial model to certain frequency.", default=0.0, guitype='floatbox', row=13, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--parallel", type=str,help="Parallel option.", default="thread:4", guitype='strbox', row=13, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--iter", type=int,help="Number of iterations.", default=1, guitype='intbox', row=12, col=1, rowspan=1, colspan=1)
 	parser.add_header(name="optheader", help='Optional parameters:', title="Optional:", row=14, col=0, rowspan=1, colspan=3)
@@ -122,27 +123,35 @@ def main():
 		automask="mask.soft:outer_radius=-1"
 	else:
 		automask=db["automask3d"]
+	
+	### check if we want to randomize the phase
+	if options.randomphase<=0:
+		randphasecmd=""
+	else:
+		randphasecmd=" --process=filter.lowpass.randomphase:cutoff_freq={}".format(options.randomphase)
+		
+	### now copy and preprocess the model
 	if multimodel:
 
 		if modelstack>1:
 			models=range(modelstack)
 			for m in range(modelstack):
 				outfile="{path}/model_input_{k}.hdf".format(path=options.newpath, k=m)
-				run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} --first {mi} --last {mi}".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix, mi=m))
+				run("e2proc3d.py {model} {out} {rd} --apix={apix} --first {mi} --last {mi}".format(model=inputmodel[m],out=outfile,rd=randphasecmd,apix=db_apix, mi=m))
 				inputmodel[m]=outfile
 		else:
 
 			models=range(len(inputmodel))
 			for m in models:
 				outfile="{path}/model_input_{k}.hdf".format(path=options.newpath, k=m)
-				run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} ".format(model=inputmodel[m],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix))
+				run("e2proc3d.py {model} {out} {rd} --apix={apix} ".format(model=inputmodel[m],out=outfile,rd=randphasecmd,apix=db_apix))
 				inputmodel[m]=outfile
 
 
 	else:
 		models=[0,1]
 		outfile="{path}/model_input.hdf".format(path=options.newpath)
-		run("e2proc3d.py {model} {out} --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} ".format(model=inputmodel[0],out=outfile,freq=1.0/(db["targetres"]*2),apix=db_apix))
+		run("e2proc3d.py {model} {out} {rd} --apix={apix} ".format(model=inputmodel[0],out=outfile,rd=randphasecmd,apix=db_apix))
 		inputmodel[0]=outfile
 
 	output_3d=[]

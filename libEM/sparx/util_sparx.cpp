@@ -4603,7 +4603,8 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 			jc     = j+numr2i-1;
 
 	// Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
-	//   			          ----- -----    ----- -----
+	//   		
+	//   		----- -----    ----- -----
 	//      			   t1     t2      t3    t4
 
 			c1     = circ1(jc);
@@ -4938,7 +4939,7 @@ EMData* Util::Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr) {
 	EMData* out = new EMData();
 	out->set_size(maxrin,2,1);
 	float *dout = out->get_data();
-	for (int i=0; i<maxrin; i++) {dout(i,0)=static_cast<float>(q[i]); dout(i,1)=static_cast<float>(t[i]);}
+	for (i=0; i<maxrin; i++) {dout(i,0)=static_cast<float>(q[i]); dout(i,1)=static_cast<float>(t[i]);}
 	//out->set_size(maxrin,1,1);
 	//float *dout = out->get_data();
 	//for (int i=0; i<maxrin; i++) {dout(i,0)=q[i];}
@@ -5154,7 +5155,7 @@ EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
 	EMData* out = new EMData();
 	out->set_size(maxrin,1,1);
 	float *dout = out->get_data();
-	for (int i=0; i<maxrin; i++) dout[i]=static_cast<float>(q[i]);
+	for (i=0; i<maxrin; i++) dout[i]=static_cast<float>(q[i]);
 	free(q);
 	return out;
 
@@ -5213,7 +5214,7 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 	EMData* out = new EMData();
 	out->set_size(maxrin,1,1);
 	float *dout = out->get_data();
-	for (int i=0; i<maxrin; i++) dout[i]=static_cast<float>(t[i]);
+	for (i=0; i<maxrin; i++) dout[i]=static_cast<float>(t[i]);
 	free(t);
 	return out;
 
@@ -5277,7 +5278,7 @@ EMData* Util::Crosrng_msg_stepsi(EMData* circ1, EMData* circ2, vector<int> numr,
 	EMData* out = new EMData();
 	out->set_size(npsi,1,1);
 	float *dout = out->get_data();
-	for (int i=0; i<npsi; i++) {
+	for (i=0; i<npsi; i++) {
 		float psi = startpsi + i*delta;
 		while( psi >= 360.0f )  psi -= 360.0f;
 		float ipsi = psi/360.0f*maxrin;
@@ -5349,7 +5350,7 @@ EMData* Util::Crosrng_msg_stack_stepsi(EMData* circ1, EMData* circ2, int icirc2,
 	EMData* out = new EMData();
 	out->set_size(npsi,1,1);
 	float *dout = out->get_data();
-	for (int i=0; i<npsi; i++) {
+	for (i=0; i<npsi; i++) {
 		float psi = startpsi + i*delta;
 		while( psi >= 360.0f )  psi -= 360.0f;
 		float ipsi = psi/360.0f*maxrin;
@@ -5425,7 +5426,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* c
 		for (int ic = 0; ic < n_coarse_ang; ic++) {
 			int offset = lencrefim*ic;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
-			for (int i=0; i<maxrin; i++)  q[i] = 0.0f;
+			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
 
 			 //  q - straight  = circ1 * conjg(circ2)
 
@@ -5455,7 +5456,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* c
 			// straight
 			fftr_d(q,ip);
 
-			for (int i=0; i<npsi; i++) {
+			for ( i=0; i<npsi; i++) {
 				float psi = startpsi[ic] + i*delta;
 				while( psi >= 360.0f )  psi -= 360.0f;
 				float ipsi = psi/360.0f*maxrin;
@@ -5473,7 +5474,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* c
 	sort(ccfs.begin(), ccfs.end(), sortByscore);
 
 	vector<int> qout(nouto);
-	for (int i=0; i<nouto; i++) qout[i] = ccfs[i].order;
+	for (i=0; i<nouto; i++) qout[i] = ccfs[i].order;
 	return qout;
 }
 
@@ -5654,6 +5655,161 @@ EMData* Util::Crosrng_msg_stack_stepsi_local(EMData* circ1, EMData* circ2, int i
 	free(q);
 	return out;
 
+}
+
+
+struct MultiScores {
+    float score;
+    int ib;
+    int ic;
+    int ipsi;
+};
+
+bool sortBymultiscore(const MultiScores &lhs, const MultiScores &rhs) { return lhs.score > rhs.score; }
+
+
+vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMData* circ2, \
+				const vector< vector<float> >& coarse_shifts_shrank,\
+				vector<int> assignments_of_refangles_to_angles, vector<int> assignments_of_refangles_to_cones,
+				vector<int> numr, vector<float> startpsi, float oldpsi, int cpsi, \
+				float delta, float cnx, int nouto) {
+
+	size_t n_coarse_shifts = coarse_shifts_shrank.size();
+	int lencrefim = circ2->get_xsize();
+	int n_coarse_ang = circ2->get_ysize();
+	int npsi = (int)(360.0f/delta + 0.01);
+	int n_assignments_of_refangles_to_angles = assignments_of_refangles_to_angles.size();
+	int n_assignments_of_refangles_to_cones = assignments_of_refangles_to_cones.size();
+	
+
+	vector<float> vpsi(npsi);
+
+	string mode = "F";
+
+	int   ip, jc, numr3i, numr2i, i, j;
+	float c1, c2, d1, d2;
+
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
+
+	float* circ2b = circ2->get_data();
+
+	double *q;
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+	 //  q - straight  = circ1 * conjg(circ2)
+	int ndata = n_coarse_shifts*n_coarse_ang*(2*cpsi+1);
+
+	//vector<float> qout(ndata);
+
+
+    vector<MultiScores> ccfs(ndata);
+
+
+	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<endl;
+	int counter = 0;
+	for (int ib = 0; ib < n_coarse_shifts; ib++) {
+	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
+		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
+		Frngs(cimage, numr);
+		float* circ1b = cimage->get_data();
+		//or (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
+		//cout<<endl;
+		for (int iqc = 0; iqc < n_assignments_of_refangles_to_angles; iqc++) {
+			int ic = assignments_of_refangles_to_angles[iqc];
+			int lixi = -1;
+			for (int k = 0; k< n_assignments_of_refangles_to_cones; k++) {
+				if(assignments_of_refangles_to_cones[k] == ic) {
+					lixi = k;
+					break;
+				}
+			}
+			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
+			int offset = lencrefim*lixi;
+	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
+			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
+
+			 //  q - straight  = circ1 * conjg(circ2)
+
+			for (i=1;i<=nring;i++) {
+
+				numr3i = numr(3,i);
+				numr2i = numr(2,i);
+
+				q(1) += circ1b(numr2i) * circ2b(numr2i+offset);
+
+				if (numr3i == maxrin)   q(2) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+				else             q(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1+offset);
+
+				for (j=3;j<=numr3i;j=j+2) {
+					jc     = j+numr2i-1;
+
+					c1     = circ1b(jc);
+					c2     = circ1b(jc+1);
+					d1     = circ2b(jc+offset);
+					d2     = circ2b(jc+1+offset);
+
+					q(j)   +=  c1 * d1 + c2 * d2;
+					q(j+1) += -c1 * d2 + c2 * d1;
+				}
+			}
+
+			// straight
+			fftr_d(q,ip);
+
+			float qdm = 1.0e23;
+			int bpsi;
+			for ( i=0; i<npsi; i++) {
+				float psi = startpsi[ic] + i*delta;
+				while( psi >= 360.0f )  psi -= 360.0f;
+				float ipsi = psi/360.0f*maxrin;
+				int ip1 = (int)(ipsi);
+				float dpsi = ipsi-ip1;
+				vpsi[i]=static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
+				//  find closest to old psi
+				float dummy = fabs(psi - oldpsi);
+				dummy = Util::get_min(dummy, 360.0f-dummy);
+				if( dummy < qdm ) {
+					qdm = dummy;
+					bpsi = i;
+				}
+			}
+			//int iang = ic*100000000 + ib;
+			for ( j=bpsi-cpsi; j<=bpsi+cpsi; j++) {
+				int ipip = j;
+				if( ipip < 0 ) ipip += npsi;
+				else if( ipip >= npsi ) ipip -= npsi;
+				ccfs[counter].score = vpsi[ipip];
+				//dout[j-bpsi+cpsi] = vpsi[ip];
+				///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
+				//dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
+				ccfs[counter].ib = ib;
+				ccfs[counter].ic = ic;
+				ccfs[counter].ipsi = ipip;
+				//cout<<"  ZIGA   "<<counter<<"  "<<ccfs[counter].ib<<"  "<<ccfs[counter].ic<<"   "<<lixi<<"  "<<j<<"  "<<ccfs[counter].ipsi<<"      "<<ccfs[counter].score<<endl;
+				counter++;
+			}
+
+		}  delete cimage; cimage = 0;
+	}
+	free(q);
+
+	sort(ccfs.begin(), ccfs.end(), sortBymultiscore);
+
+	vector<int> qout(nouto*3);
+	for (i=0; i<nouto; i++) {
+		qout[3*i] = ccfs[i].ib;
+		qout[3*i+1] = ccfs[i].ic;
+		qout[3*i+2] = ccfs[i].ipsi;
+	}
+	return qout;
 }
 
 
@@ -19694,6 +19850,54 @@ void Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMDa
 }
 
 
+vector<float> Util::sqednormbckg( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise, 
+									EMData* indx, EMData* tfrac, EMData* tcount)
+{
+	ENTERFUNC;
+	int nx=img->get_xsize(),ny=img->get_ysize();
+	size_t size = (size_t)nx*ny;
+
+	nx /= 2;
+    float* data        = img->get_data();
+    float* dproj       = proj->get_data();
+    float* dctfs       = ctfs->get_data();
+    float* pbckgnoise  = bckgnoise->get_data();
+    float* dindx       = indx->get_data();
+    float* dtfrac      = tfrac->get_data();
+    float* dtcount     = tcount->get_data();
+
+	vector<float> rotav(nx+2);
+	for (int i=0; i<nx; i++)  rotav[i] = 0.0f; 
+
+	float edis = 0.0f, wdis = 0.0f;
+
+	for (size_t i=0;i<size/2;++i) {
+		if( pbckgnoise[i] > 0.0f ) {
+			int lol = i*2;
+			float p1 = data[lol]   - dctfs[i]*dproj[lol];
+			float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
+			float temp = p1*p1 + p2*p2;
+			edis += temp*pbckgnoise[i];
+			wdis += temp;
+			int ir = (int)dindx[i];
+			if( ir > -1) {
+				rotav[ir]   += temp*(1.0f-dtfrac[i]);
+				rotav[ir+1] += temp*dtfrac[i];
+			}
+		}
+	}
+
+	for (int ir=0; ir<nx; ir++) {
+		if( dtcount[ir] > 0.0 )   rotav[ir] /= dtcount[ir];
+	}
+
+	rotav[nx]   = edis*0.5f;
+	rotav[nx+1] = wdis;
+	return rotav;
+	EXITFUNC;
+}
+
+
 /*
 
 vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
@@ -19758,7 +19962,7 @@ vector<float> Util::sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* b
     float* data = img->get_data();
     float* dproj = proj->get_data();
     float* dctfs = ctfs->get_data();
-	float *pbckgnoise = bckgnoise->get_data();
+	float* pbckgnoise = bckgnoise->get_data();
 
 	float edis = 0.0f, wdis = 0.0f;
 
@@ -23769,7 +23973,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 01/09/2017  1:45 PM " <<  endl;
+ cout <<"  Modification time: 01/13/2017  5:50 PM " <<  endl;
 }
 
 
