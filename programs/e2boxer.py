@@ -336,6 +336,7 @@ def write_particles(files,boxsize,verbose):
 ##########
 
 class boxerByRef(QtCore.QObject):
+	"""Simple reference-based cross-corrlation picker with exhaustive rotational search"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
 		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",6.0,90)
@@ -503,6 +504,7 @@ class boxerByRef(QtCore.QObject):
 		sys.stdout.write("*")
 		
 class boxerLocal(QtCore.QObject):
+	"""Reference based search by downsampling and 2-D alignment to references"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
 		boxerLocal.threshold=ValSlider(None,(0,8.0),"Threshold",5.0,90)
@@ -1067,8 +1069,8 @@ class boxerGauss(QtCore.QObject):
 	
 aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("by Ref","auto_ref",boxerByRef), 
-	     ("Gauss","auto_gauss",boxerGauss),
-	     ("ConvNet", "auto_convnet", boxerConvNet)]
+#	     ("Gauss","auto_gauss",boxerGauss),
+	     ("NeuralNet", "auto_convnet", boxerConvNet)]
 boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "unknown":[.4,.4,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.4,.1,.1)}
 
 class GUIBoxer(QtGui.QWidget):

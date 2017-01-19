@@ -19850,6 +19850,54 @@ void Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMDa
 }
 
 
+vector<float> Util::sqednormbckg( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise, 
+									EMData* indx, EMData* tfrac, EMData* tcount)
+{
+	ENTERFUNC;
+	int nx=img->get_xsize(),ny=img->get_ysize();
+	size_t size = (size_t)nx*ny;
+
+	nx /= 2;
+    float* data        = img->get_data();
+    float* dproj       = proj->get_data();
+    float* dctfs       = ctfs->get_data();
+    float* pbckgnoise  = bckgnoise->get_data();
+    float* dindx       = indx->get_data();
+    float* dtfrac      = tfrac->get_data();
+    float* dtcount     = tcount->get_data();
+
+	vector<float> rotav(nx+2);
+	for (int i=0; i<nx; i++)  rotav[i] = 0.0f; 
+
+	float edis = 0.0f, wdis = 0.0f;
+
+	for (size_t i=0;i<size/2;++i) {
+		if( pbckgnoise[i] > 0.0f ) {
+			int lol = i*2;
+			float p1 = data[lol]   - dctfs[i]*dproj[lol];
+			float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
+			float temp = p1*p1 + p2*p2;
+			edis += temp*pbckgnoise[i];
+			wdis += temp;
+			int ir = (int)dindx[i];
+			if( ir > -1) {
+				rotav[ir]   += temp*(1.0f-dtfrac[i]);
+				rotav[ir+1] += temp*dtfrac[i];
+			}
+		}
+	}
+
+	for (int ir=0; ir<nx; ir++) {
+		if( dtcount[ir] > 0.0 )   rotav[ir] /= dtcount[ir];
+	}
+
+	rotav[nx]   = edis*0.5f;
+	rotav[nx+1] = wdis;
+	return rotav;
+	EXITFUNC;
+}
+
+
 /*
 
 vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
@@ -19914,7 +19962,7 @@ vector<float> Util::sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* b
     float* data = img->get_data();
     float* dproj = proj->get_data();
     float* dctfs = ctfs->get_data();
-	float *pbckgnoise = bckgnoise->get_data();
+	float* pbckgnoise = bckgnoise->get_data();
 
 	float edis = 0.0f, wdis = 0.0f;
 
@@ -23925,7 +23973,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 01/12/2017  6:20 PM " <<  endl;
+ cout <<"  Modification time: 01/13/2017  5:50 PM " <<  endl;
 }
 
 
