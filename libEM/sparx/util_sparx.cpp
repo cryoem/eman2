@@ -5456,7 +5456,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi(EMData* dataimage, EMData* c
 			// straight
 			fftr_d(q,ip);
 
-			for (int i=0; i<npsi; i++) {
+			for ( i=0; i<npsi; i++) {
 				float psi = startpsi[ic] + i*delta;
 				while( psi >= 360.0f )  psi -= 360.0f;
 				float ipsi = psi/360.0f*maxrin;
@@ -5714,24 +5714,24 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 
 
 	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<endl;
-	size_t counter = 0;
+	int counter = 0;
 	for (int ib = 0; ib < n_coarse_shifts; ib++) {
-		ccfs[counter].ib = ib;
 	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
 		EMData* cimage = Polar2Dm(dataimage, cnx-coarse_shifts_shrank[ib][0], cnx-coarse_shifts_shrank[ib][1], numr, mode);
 		Frngs(cimage, numr);
 		float* circ1b = cimage->get_data();
 		//or (int ic = 0; ic < 6; ic++)  cout<<"  "<<circ1b[ic];
 		//cout<<endl;
-		for (int ic = 0; ic < n_assignments_of_refangles_to_angles; ic++) {
+		for (int iqc = 0; iqc < n_assignments_of_refangles_to_angles; iqc++) {
+			int ic = assignments_of_refangles_to_angles[iqc];
 			int lixi = -1;
 			for (int k = 0; k< n_assignments_of_refangles_to_cones; k++) {
-				if(assignments_of_refangles_to_cones[k] == assignments_of_refangles_to_angles[ic]) {
+				if(assignments_of_refangles_to_cones[k] == ic) {
 					lixi = k;
 					break;
 				}
 			}
-			ccfs[counter].ic = assignments_of_refangles_to_angles[ic];
+			//if(lixi < 0)  cout<<"   PROBLEM"<<endl; 
 			int offset = lencrefim*lixi;
 	//cout<<" offset "<<ic<<"  "<<offset<<"  "<<startpsi[ic]<<endl;
 			for (i=0; i<maxrin; i++)  q[i] = 0.0f;
@@ -5781,7 +5781,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 					bpsi = i;
 				}
 			}
-			int iang = ic*100000000 + ib;
+			//int iang = ic*100000000 + ib;
 			for ( j=bpsi-cpsi; j<=bpsi+cpsi; j++) {
 				int ipip = j;
 				if( ipip < 0 ) ipip += npsi;
@@ -5790,8 +5790,10 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 				//dout[j-bpsi+cpsi] = vpsi[ip];
 				///dout[j-bpsi+cpsi + lout] = 2000*ip;// This is 2*1000, 1000 is to get on coarse psi
 				//dout[j-bpsi+cpsi + lout] = 1000*ip;// This is 1000 is to get on fine psi
+				ccfs[counter].ib = ib;
+				ccfs[counter].ic = ic;
 				ccfs[counter].ipsi = ipip;
-				cout<<"  "<<counter<<"  "<<ib<<"  "<<ic<<"  "<<j<<"  "<<ipip<<"  "<<ccfs[counter].ipsi<<endl;
+				//cout<<"  ZIGA   "<<counter<<"  "<<ccfs[counter].ib<<"  "<<ccfs[counter].ic<<"   "<<lixi<<"  "<<j<<"  "<<ccfs[counter].ipsi<<"      "<<ccfs[counter].score<<endl;
 				counter++;
 			}
 
@@ -19848,6 +19850,54 @@ void Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMDa
 }
 
 
+vector<float> Util::sqednormbckg( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise, 
+									EMData* indx, EMData* tfrac, EMData* tcount)
+{
+	ENTERFUNC;
+	int nx=img->get_xsize(),ny=img->get_ysize();
+	size_t size = (size_t)nx*ny;
+
+	nx /= 2;
+    float* data        = img->get_data();
+    float* dproj       = proj->get_data();
+    float* dctfs       = ctfs->get_data();
+    float* pbckgnoise  = bckgnoise->get_data();
+    float* dindx       = indx->get_data();
+    float* dtfrac      = tfrac->get_data();
+    float* dtcount     = tcount->get_data();
+
+	vector<float> rotav(nx+2);
+	for (int i=0; i<nx; i++)  rotav[i] = 0.0f; 
+
+	float edis = 0.0f, wdis = 0.0f;
+
+	for (size_t i=0;i<size/2;++i) {
+		if( pbckgnoise[i] > 0.0f ) {
+			int lol = i*2;
+			float p1 = data[lol]   - dctfs[i]*dproj[lol];
+			float p2 = data[lol+1] - dctfs[i]*dproj[lol+1];
+			float temp = p1*p1 + p2*p2;
+			edis += temp*pbckgnoise[i];
+			wdis += temp;
+			int ir = (int)dindx[i];
+			if( ir > -1) {
+				rotav[ir]   += temp*(1.0f-dtfrac[i]);
+				rotav[ir+1] += temp*dtfrac[i];
+			}
+		}
+	}
+
+	for (int ir=0; ir<nx; ir++) {
+		if( dtcount[ir] > 0.0 )   rotav[ir] /= dtcount[ir];
+	}
+
+	rotav[nx]   = edis*0.5f;
+	rotav[nx+1] = wdis;
+	return rotav;
+	EXITFUNC;
+}
+
+
 /*
 
 vector<float> Util::sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob)
@@ -19912,7 +19962,7 @@ vector<float> Util::sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* b
     float* data = img->get_data();
     float* dproj = proj->get_data();
     float* dctfs = ctfs->get_data();
-	float *pbckgnoise = bckgnoise->get_data();
+	float* pbckgnoise = bckgnoise->get_data();
 
 	float edis = 0.0f, wdis = 0.0f;
 
@@ -23923,7 +23973,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 01/09/2017  1:45 PM " <<  endl;
+ cout <<"  Modification time: 01/13/2017  5:50 PM " <<  endl;
 }
 
 

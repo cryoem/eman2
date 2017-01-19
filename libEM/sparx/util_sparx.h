@@ -908,6 +908,9 @@ costlist, int* curbranch);
 	static float sqedac(EMData* img,  EMData* proj, EMData* ctfsbckgnoise);
 	//static vector<float> sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise,  EMData* normas, float prob);
 	static void sqedfull( EMData* img, EMData* proj, EMData* ctfs, EMData* mask, EMData* bckgnoise, float prob);
+	static vector<float> sqednormbckg( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise, 
+									EMData* indx, EMData* tfrac, EMData* tcount);
+
 	static vector<float> sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise);
 
 	//utility for sxlocres

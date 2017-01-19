@@ -175,7 +175,7 @@ def prgl(volft, params, interpolation_method = 0, return_real = True):
 	npad = volft.get_attr_default("npad",1)
 	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
 	if(npad == 1):  temp = volft.extract_section(R, interpolation_method)
-	if(npad == 2):  temp = volft.extract_section2(R, interpolation_method)
+	elif(npad == 2):  temp = volft.extract_section2(R, interpolation_method)
 	temp.fft_shuffle()
 	temp.center_origin_fft()
 
