@@ -1,4 +1,5 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+#
 # sxgui_drift for analyzing drift parameters made by Unblur
 # Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 #
@@ -1563,6 +1564,8 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                             message = QtGui.QMessageBox(self)
                             message.setText('Too many columns. Expected one column:\n{0}'.format(self.fileName))
                             message.exec_()
+                        elif len(numpy.shape(listOfShiftFiles)) == 0:
+                            self._fill_gui(inputfile=str(listOfShiftFiles))
                         else:
                             self._fill_gui(inputlist=list(listOfShiftFiles))
                 else:
