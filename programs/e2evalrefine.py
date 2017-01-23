@@ -399,7 +399,7 @@ def main():
 		print("Generating new sets.")
 
 		nseg = 2
-		axes = [0,1,2,3]
+		axes = [0,1,2]
 
 		fscs = []
 		cmts = []
