@@ -13,6 +13,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptclin", type=str,help="3d volume of particles", default=None)
 	parser.add_argument("--ptclout", type=str,help="output 2D projections of the input 3D particles", default=None)
+	parser.add_argument("--tltang", type=float,help="tilt angle range", default=80.)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
