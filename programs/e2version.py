@@ -37,7 +37,7 @@ import platform
 from subprocess import *
 
 
-EMANVERSION="EMAN 2.12"
+EMANVERSION="EMAN 2.2"
 DATESTAMP="BUILD_DATE"
 
 def main():
