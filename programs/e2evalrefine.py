@@ -399,7 +399,8 @@ def main():
 		print("Generating new sets.")
 
 		nseg = 2
-		axes = [0,1,2]
+		if apix>2.5 : axes=[0,1]
+		else : axes = [0,1,2]
 
 		fscs = []
 		cmts = []
@@ -689,7 +690,7 @@ def main():
 		#mouse-over specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.".format(args[0][-2:]))
 
 		# NEW AUTOMATED INFO
-		print("Evaluation coplete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname))
+		print("Evaluation complete.\nParticles have been automatically split based on quality estimate. The better fraction has been saved in 'sets/{bn}_good.lst' and can be used in further refinements. It may be worthwile to examine the quality evaluation manually and fine-tune the good/bad segmentation parameters.".format(ref=args[0],bn=bname))
 
 		E2end(logid)
 		sys.exit(0)
