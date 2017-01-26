@@ -89,7 +89,7 @@ def main():
 	yticlocs2=(0.0,.125,.25,.375,.5,.625,.75,.875,1.0)
 	yticlbl2=("0"," ","0.25"," ","0.5"," ","0.75"," ","1.0")
 
-	if args[0][:7]=="refine_":
+	if len(args)>0 and args[0][:7]=="refine_":
 		jsparm=js_open_dict(args[0]+"/0_refine_parms.json")
 
 		if options.iter==None:
@@ -481,7 +481,7 @@ def main():
 		#mouse-over specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.".format(args[0][-2:]))
 
 		# NEW AUTOMATED INFO
-		print("Evaluation coplete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname))
+		print("Evaluation complete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname))
 
 		E2end(logid)
 		sys.exit(0)
