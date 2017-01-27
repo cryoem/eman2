@@ -185,7 +185,7 @@ not need to specify any of the following other than the ones already listed abov
 
 	# options associated with e2simmx.py
 #	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=15, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--simalign",type=str,help="Default=auto. The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_flip")
+	parser.add_argument("--simalign",type=str,help="Default=auto. The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_tree")
 	parser.add_argument("--simaligncmp",type=str,help="Default=auto. Name of the aligner along with its construction arguments",default=None)
 	parser.add_argument("--simralign",type=str,help="Default=auto. The name and parameters of the second stage aligner which refines the results of the first alignment", default="auto")
 	parser.add_argument("--simraligncmp",type=str,help="Default=auto. The name and parameters of the comparitor used by the second stage aligner.",default=None)
@@ -203,7 +203,7 @@ not need to specify any of the following other than the ones already listed abov
 #	parser.add_header(name="caheader", help='Options below this label are specific to e2classaverage', title="### e2classaverage options ###", row=22, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.")
 	parser.add_argument("--classiter", type=int, help="Default=auto. The number of iterations to perform.",default=-1)
-	parser.add_argument("--classalign",type=str,default="rotate_translate_flip",help="Default=auto. If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.")
+	parser.add_argument("--classalign",type=str,default="rotate_translate_tree",help="Default=auto. If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.")
 	parser.add_argument("--classaligncmp",type=str,help="Default=auto. This is the name and parameters of the comparitor used by the fist stage aligner.",default=None)
 	parser.add_argument("--classralign",type=str,help="Default=auto. The second stage aligner which refines the results of the first alignment in class averaging.", default="auto")
 	parser.add_argument("--classraligncmp",type=str,help="Default=auto. The comparitor used by the second stage aligner in class averageing.",default=None)

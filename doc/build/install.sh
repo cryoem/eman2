@@ -9,7 +9,7 @@
 # Date: 9/1/2009, --disable_cache, Grant Tang
 # Date: 6/30/2013, Significant updates by Ian Rees for new build system.
 # Date: 8/01/2013, changed disable_cache to disable_gui
-
+# Date: 1/23/2017, altered eman2.[bashrc/cshrc] files to include new matplotlibrc file in extlib
 usage()
 {
 	echo "usage: `basename $0` [--disable_gui]"
@@ -36,6 +36,9 @@ setup_shell() {
 	if test "X${RCFILE}" != "X"; then
     	echo "Please add the following line to the end of your ${HOME}/${RCFILE} :"
     	echo "source ${EMAN2DIR}/eman2${RCFILE}"
+	echo ""
+	echo "If you experience any problems after installation, please see for tips:"
+	echo "http:/eman2.org/Install/BinaryInstall"
 	fi
 }
 
@@ -48,6 +51,7 @@ setup_csh() {
 	echo 'else' >> ${OUT}
 	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${PYTHONPATH}' >> ${OUT}
 	echo 'endif' >> ${OUT}
+	echo 'setenv MATPLOTLIBRC ${EMAN2DIR}/extlib' >> ${OUT}
 	echo 'alias sparx sx.py' >> ${OUT}
 	echo "setenv LC_CTYPE=en_US.utf8"
 	echo "setenv LC_ALL=en_US.utf8"
@@ -59,6 +63,7 @@ setup_bash()
 	echo "export EMAN2DIR=${EMAN2DIR}" > ${OUT}
 	echo 'export PATH=${EMAN2DIR}/bin:${EMAN2DIR}/extlib/bin:$PATH' >> ${OUT}
 	echo 'export PYTHONPATH=${EMAN2DIR}/lib:${EMAN2DIR}/bin:${PYTHONPATH}' >> ${OUT}
+	echo 'export MATPLOTLIBRC=${EMAN2DIR}/extlib' >> ${OUT}
 	echo 'export LC_CTYPE=en_US.utf8'
 	echo 'export LC_ALL=en_US.utf8'
 	echo 'alias sphire=sxgui.py' >> ${OUT}
