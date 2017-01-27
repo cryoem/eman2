@@ -449,8 +449,8 @@ def main():
 		d2 = np.asarray(d2)
 
 		# need to *consistently* label the "best" and "worst" cluster
-		d1s = np.max(d1,axis=0))
-		d2s = np.max(d2,axis=0))
+		d1s = np.max(d1)
+		d2s = np.max(d2)
 		lstfs = {}
 		if d1s > d2s:
 			lstfs[0] = "{}_good.lst".format(bname)
