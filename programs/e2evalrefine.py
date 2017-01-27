@@ -449,8 +449,8 @@ def main():
 		d2 = np.asarray(d2)
 
 		# need to *consistently* label the "best" and "worst" cluster
-		d1s = np.sum(np.sum(d1,axis=0))
-		d2s = np.sum(np.sum(d2,axis=0))
+		d1s = np.max(d1,axis=0))
+		d2s = np.max(d2,axis=0))
 		lstfs = {}
 		if d1s > d2s:
 			lstfs[0] = "{}_good.lst".format(bname)
@@ -819,7 +819,7 @@ def main():
 		plt.savefig("goldstandard.pdf")
 		print "Generated: goldstandard.pdf"
 		plt.clf()
-		
+
 		os.system("e2display.py --plot "+" ".join(fscs))
 
 	if options.timingbypath:
@@ -839,14 +839,14 @@ def main():
 				print lastmap
 				box=EMData(lastmap,0,True)["nx"]
 				targetres=jsparm["targetres"]
-	
+
 				print "{path}\t{niter} iterations\t{cores} cores\t{h:02d}:{m:02d} walltime\t{cpuh:1.1f} CPU-h\t{cpuhpi:1.2f} CPU-h/it\t{bs} box\t{targ:1.1f} targetres".format(
 					path=d,niter=lastiter,cores=cores,h=int((endtime-starttime)//3600),m=int(((endtime-starttime)%3600)//60),
 					cpuh=cores*(endtime-starttime)/3600,cpuhpi=cores*(endtime-starttime)/(3600*lastiter),bs=box,targ=targetres)
 			except: print "No timing for ",d
 
 		print "\nWarning: scaling with number of CPUs can be very nonlinear, particularly with small jobs. The larger the number of particles the larger the number of cores which will produce near-linear speedup."
-			
+
 
 	if options.timing:
 		#dl=[i for i in os.listdir(".") if "refine_" in i]		# list of all refine_ directories
