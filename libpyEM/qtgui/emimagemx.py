@@ -255,6 +255,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.mouse_modes = ["App", "Del", "Drag", "Sets"]
 		self.mmode="App"
 		self.class_window = None # used if people are looking at class averages and they double click, in which case a second window is opened showing the particles in the class
+		self.downbutton=None
 
 		self.sets={}			# All available sets for the current data, key is set name, value is set of ints
 		self.sets_visible={}	# A copy of the elements from self.sets which are currently visible

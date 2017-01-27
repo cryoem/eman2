@@ -36,6 +36,9 @@ setup_shell() {
 	if test "X${RCFILE}" != "X"; then
     	echo "Please add the following line to the end of your ${HOME}/${RCFILE} :"
     	echo "source ${EMAN2DIR}/eman2${RCFILE}"
+	echo ""
+	echo "If you experience any problems after installation, please see for tips:"
+	echo "http:/eman2.org/Install/BinaryInstall"
 	fi
 }
 
