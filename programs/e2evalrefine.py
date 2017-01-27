@@ -412,7 +412,7 @@ def main():
 					cmts.append(cmt.strip())
 
 		d = np.asarray(fscs).astype(float)
-		d /= np.std(d,axis=0)
+		#d /= np.std(d,axis=0)
 		(nrow,ncol) = d.shape
 
 		imdata = []
@@ -621,7 +621,7 @@ def main():
 					cmts.append(cmt.strip())
 
 		d = np.asarray(fscs).astype(float)
-		d /= np.std(d,axis=0)
+		#d /= np.std(d,axis=0)
 		(nrow,ncol) = d.shape
 
 		imdata = []
@@ -658,8 +658,8 @@ def main():
 		d2 = np.asarray(d2)
 
 		# need to *consistently* label the "best" and "worst" cluster
-		d1s = np.sum(np.sum(d1,axis=0))
-		d2s = np.sum(np.sum(d2,axis=0))
+		d1s = np.max(d1)
+		d2s = np.max(d2)
 		lstfs = {}
 		if d1s > d2s:
 			lstfs[0] = "{}_good.lst".format(bname)
