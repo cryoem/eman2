@@ -459,6 +459,7 @@ class EMMotion(QtGui.QMainWindow):
 
 	def newIter(self,x=0):
 		itr=int(self.wvbiter.getValue())
+		self.iter=itr
 		
 		try: 
 			dct=js_open_dict("{}/particle_parms_{:02d}.json".format(self.path,itr))
