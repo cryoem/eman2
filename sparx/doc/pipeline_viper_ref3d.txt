@@ -1,0 +1,59 @@
+= Name =
+sxpipeline_viper_ref3d - Create 3D Reference: Prepare an initial reference for subsequent 3D refinement by cleaning up the input volume. Mainly designed to process a ''ab initio'' 3D structure (VIPER) produced by sxviper or sxrviper.
+
+
+= Usage =
+
+''usage in command line''
+
+sxpipeline_viper_ref3d.py  input_volume  output_directory  --resample_ratio_source  --box_size  --skip_moon_elimination  --molecular_mass  --pixel_size
+
+
+=== Typical usage ===
+
+sxpipeline_viper_ref3d.py does not support MPI. 
+
+''' sxpipeline_viper_ref3d.py  outdir_rviper/main001/average_volume.hdf  outdir_viper_ref3d  --resample_ratio_source=outdir_isac/README_shrink_ratio.txt  --box_size=64  --molecular_mass=500  --pixel_size=2.29 '''
+
+
+== Input ==
+    input_volume:: Input volume: Create an initial 3D reference from this volume. (default required string)
+
+    resample_ratio_source:: Resample ratio source: To process VIPER/RVIPER volume, specify path to shrink ratio file produced by sxisac and normally called README_shrink_ratio.txt. Otherwise, enter ratio of new to old image size to resample (decimate or interpolate up) input 3D volume to change the pixel size. if < 1, the pixel size will increase and image size decrease. if > 1, the other way round. (default '1.0').
+    box_size:: Particle box size [Pixels]: Original particle box size to be restored. The box size after resampling is assumed when resample_ratio != 1.0. (default 256)
+    skip_moon_elimination:: Skip moon elimination: Skip to eliminate disconnected pieces (called moons here) from the volume. (default False)
+    molecular_mass:: Protein molecular mass [kDa]: The molecular mass of protein. Input argument of moon elmination. (default none)
+    pixel_size:: Original micrograph pixel size [A/Pixels]: Original micrograph pixel size. Input argument of moon elmination. (default -1.0)
+
+    * The remaining parameters are optional.
+
+== Output ==
+    output_directory:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+
+
+= Description =
+
+= Method =
+
+= Reference =
+
+
+= Author / Maintainer =
+Toshio Moriya
+
+= Keywords =
+ category 1:: APPLICATIONS
+
+= Files =
+sparx/bin/sxpipeline_viper_ref3d.py
+
+= See also =
+[[sxviper]]
+[[sxrviper]]
+[[sxisac]]
+
+= Maturity =
+ alpha::     under development
+
+= Bugs =
+Under development
