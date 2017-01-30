@@ -22,6 +22,9 @@ import gc
 import psutil
 import json
 
+import matplotlib
+matplotlib.rcParams.update({'font.size': 20})
+
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
 def which(prog):
@@ -66,6 +69,7 @@ def main():
 	parser.add_argument("--step",type=str,default="1,1,31",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even frames. Same step used for all input files. [last] is exclusive. Default= 1,1,31.")
 	# Gold subtraction
 	parser.add_argument("--goldsize", default=35, type=float, help="Gold diameter in pixels. Default is 70.")
+	parser.add_argument("--nsigmas", default=3.5, type=float, help="Specify the relative intensity of golds in terms of this many standard deviations from the mean. Defaut is 3.5.")
 	parser.add_argument("--boxsize", default=128, type=float, help="Box size to use when tiling image to compute noise. Default is 128.")
 	parser.add_argument("--oversample", default=6, type=float, help="Oversample by this much when tiling image to compute noise. Higher values increase smoothness of transition between noise from one region to its neighbor, but require significantly more time to process. Default is 6.")
 	# Other options
@@ -93,6 +97,8 @@ def main():
 	else:
 		try: apix = hdr["apix_x"]
 		except: apix = 1.0
+
+	nsigmas = options.nsigmas
 
 	if not options.skipalign: print("Performing alignments with the following packages: {}\n".format(", ".join(options.include)))
 
@@ -163,8 +169,8 @@ def main():
 			try: os.unlink("{}/hictrst_proc.hdf".format(bdir))
 			except: pass
 			if options.verbose: print("Erasing gold and other very high contrast features")
-			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --lowpass --oversample={} --verbose={} --apix={} --debug"
-			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose,apix)
+			cmd = "e2erasefiducials.py hictrst.hdf --goldsize={} --boxsize={} --parallel=thread:{} --oversample={} --verbose={} --apix={} --debug --lowpass --keepdust --nsigmas {}"
+			cmd = cmd.format(options.goldsize,options.boxsize,options.threads,options.oversample,options.verbose,apix,nsigmas)
 			times = run(cmd,cwd=bdir,shell=True)
 			print(locallc)
 			times = run("e2proc2d.py hictrst_proc.hdf {}".format(locallc),shell=True,cwd=bdir)
@@ -201,7 +207,7 @@ def main():
 						try: os.symlink(src,dst)
 						except: pass
 						for fname in [hcname,lcname]:
-							times=run("{} {} {} --run_cores {}".format(pkgs[pkg],pdir,fname,options.threads),shell=True,clear=True)
+							times=run("{} {} {} --run_cores {} --apix {}".format(pkgs[pkg],pdir,fname,options.threads,apix),shell=True,clear=True)
 							write_runtime(bdir,pkg,dev,times,options.threads)
 						try: os.unlink(dst)
 						except: pass
@@ -256,6 +262,7 @@ def main():
 					dev = "GPU"
 					if not options.skipalign:
 						for fn in [hcname,lcname]: # high contrast, low contrast
+							nfs = EMUtil.get_image_count(fn)
 							lfn = fn.split("/")[-1]
 							lext = lfn.split(".")[-1]
 							if lext == "hdf": # HDF format not supported by UCSF
@@ -269,7 +276,7 @@ def main():
 							else:
 								if not os.path.isfile("{}/{}".format(pdir,lfn)):
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-							times=run("{} {} -srs 1 -ssc 1 -atm 1".format(pkgs[pkg],lfn),cwd=pdir,shell=True,clear=True)
+							times=run("{} {} -srs 1 -ssc 1 -atm 1 -fod {}".format(pkgs[pkg],lfn,int(round(nfs/4))),cwd=pdir,shell=True,clear=True)
 							write_runtime(bdir,pkg,dev,times,options.threads)
 					for f in os.listdir(pdir):
 						if "hictrst_Log.txt" in f: hi = os.path.join(pdir,f)
@@ -378,11 +385,11 @@ eot
 								movielist.write("{}".format(lfn))
 							bs = int(max(3600,min(frames_hictrst[0]["nx"]*0.75,frames_hictrst[0]["ny"]*0.75)))
 							ps = apix
-							nsig = 5
+							nsig = 6
 							rm1 = 500
-							rm2 =100
-							smooth = "0d0"
-							bfact = 2000
+							rm2 = 100
+							smooth = "1d08" #"0d0"
+							bfact = 1000
 							ffirst = 1
 							flast = 0
 							fmiddle = middle
@@ -418,24 +425,26 @@ eot
 
 		# Question 2: How does calculated motion differ between the most commonly used alignment algorithms?
 		print("PREDICTED TRANSLATIONS")
-		trans_orig, mags_orig = plot_traj(trans_hi,bdir,plot=options.plot)
+		trans_hi_1, mags_hi_1= plot_traj(trans_hi,bdir,"hi",plot=options.plot)
+		trans_lo_1, mags_lo_1 = plot_traj(trans_lo,bdir,"lo",plot=options.plot)
 
 		print("")
 
 		# Question 3: How different are predicted frame translations with and without high contrast features?
-		print("CONTRAST-BASED TRANSLATION COMPARISON")
-		trans_hi, trans_lo, ssdfs = plot_differences(trans_hi,trans_lo,bdir,plot=options.plot)
+		#print("CONTRAST-BASED TRANSLATION COMPARISON")
+		trans_hi_2, trans_lo_2, ssdfs = plot_differences(trans_hi,trans_lo,bdir,plot=options.plot)
 
 		print("")
 
 		# Question 4: How do alignment algorithms influence power spectral coherence?
-		print("COHERENCE-BASED POWER SPECTRAL COMPARISON")
+		#print("COHERENCE-BASED POWER SPECTRAL COMPARISON")
 		# no algorithm seems to produce measurably better coherence (using calc_cips_scores).
-		hi_pws,lo_pws = calc_coherence(frames_hictrst,frames_loctrst,trans_hi,trans_lo,bdir,plot=options.plot)
+		#hi_pws,lo_pws = calc_coherence(frames_hictrst,frames_loctrst,trans_hi,trans_lo,bdir,plot=options.plot)
 
-		print("")
+		#print("")
 
-		# Question 5: How do alignment algorithms influence real-space contrast?
+		# Question 5: How do alignment algorithms influence real-space contrast? PROBLEM...this is a low resolution measure
+		# Maybe...how do algorithms influence gradient in phases
 		#print("CONTRAST-BASED IMAGE COMPARISON")
 		#measure_contrast(frames_hictrst)
 
@@ -497,9 +506,9 @@ def parse_eman2(fn,middle):
 # Compare and plot #
 ####################
 
-def plot_traj(trans,bdir,nsig=1,plot=False):
+def plot_traj(trans,bdir,lbl,nsig=1,plot=False):
 	ats = np.hstack([trans[k] for k in sorted(trans.keys())])
-	np.savetxt("{}/all_trans.txt".format(bdir),ats)
+	np.savetxt("{}/all_trans_{}.txt".format(bdir,lbl),ats)
 	trans["ALL"] = np.dstack([trans[key] for key in trans.keys()])
 	trans["MEAN"] = np.mean(trans["ALL"],axis=2)
 	trans["VAR"] = np.var(trans["ALL"],axis=2)
@@ -514,39 +523,40 @@ def plot_traj(trans,bdir,nsig=1,plot=False):
 		if key not in exclude + ["MEAN"]:
 			mags[key] = np.sqrt(trans[key][:,0]**2+trans[key][:,1]**2) - mags["MEAN"]
 	fig = plt.figure(figsize=(16,16))
-	ax1 = fig.add_subplot(211)
+	ax1 = fig.add_subplot(111)
 	cctr = 0
 	for key in trans.keys():
 		if key not in exclude:
 			if key != "MEAN":
 				ax1.plot(trans[key][:,0],trans[key][:,1],colors[cctr],label=key,alpha=0.8)
 				ax1.scatter(trans[key][:,0],trans[key][:,1],color=colors[cctr],alpha=0.8)
-			else:
-				ax1.plot(trans[key][:,0],trans[key][:,1],'k-',linewidth=1.5,label=key,alpha=1)
-				ax1.scatter(trans[key][:,0],trans[key][:,1],color='k',alpha=1)
-				ax1.errorbar(trans[key][:,0],trans[key][:,1],xerr=err[:,0],yerr=err[:,1],color='k',alpha=0.25,label=siglabel)
+			#else:
+				#ax1.plot(trans[key][:,0],trans[key][:,1],'k-',linewidth=1.5,label=key,alpha=1)
+				#ax1.scatter(trans[key][:,0],trans[key][:,1],color='k',alpha=1)
+				#ax1.errorbar(trans[key][:,0],trans[key][:,1],xerr=err[:,0],yerr=err[:,1],color='k',alpha=0.25,label=siglabel)
 			cctr += 1
 	ax1.legend(loc="best")#,bbox_to_anchor=(0.95, 0.45))
-	ax1.set_title("Frame Trajectory")
+	#ax1.set_title("Frame Trajectory")
 	ax1.set_xlabel("X Frame Translation (pixels)")
 	ax1.set_ylabel("Y Frame Translations (pixels)")
-	ax2 = fig.add_subplot(212)
-	cctr = 0
+	ax1.axis("equal")
+	#ax2 = fig.add_subplot(212)
+	#cctr = 0
 	print("PKG\tABS(DIST)")
 	for key in mags.keys():
-		if key != "MEAN":
-			ax2.plot(xx,mags[key],colors[cctr],label=key,alpha=1)
-		else:
-			ax2.plot(xx,np.zeros_like(xx),"k--",label=key,alpha=1)
-			ax2.errorbar(xx,np.zeros_like(xx),xerr=err[:,0],yerr=err[:,1],color='k',alpha=0.6,label=siglabel)
-		cctr+=1
+		#if key != "MEAN":
+			#ax2.plot(xx,mags[key],colors[cctr],label=key,alpha=1)
+		#else:
+		#	ax2.plot(xx,np.zeros_like(xx),"k--",label=key,alpha=1)
+		#	ax2.errorbar(xx,np.zeros_like(xx),xerr=err[:,0],yerr=err[:,1],color='k',alpha=0.6,label=siglabel)
+		#cctr+=1
 		print("{}\t{}".format(key,np.sum(np.abs(mags[key]))))
-	ax2.set_xlabel("Frame Number (#)")
-	ax2.set_ylabel("Relative shift magnitude (pixels)")
-	ax2.set_title("Frame shift magnitude (relative to MEAN)")
-	ax2.legend(loc="best")
+	#ax2.set_xlabel("Frame Number (#)")
+	#ax2.set_ylabel("Relative shift magnitude (pixels)")
+	#ax2.set_title("Frame shift magnitude (relative to MEAN)")
+	#ax2.legend(loc="best")
 	fig.tight_layout()
-	plt.savefig("{}/trans.png".format(bdir))
+	plt.savefig("{}/trans_{}.png".format(bdir,lbl))
 	if plot: plt.show()
 	return trans, mags
 
@@ -589,7 +599,7 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 	ssdfs = {}
 
 	fig2 = plt.figure(figsize=(16,16))
-	ax1 = fig2.add_subplot(211)
+	ax1 = fig2.add_subplot(111)
 	cctr = 0
 	print("PKG\tRMSD(HI,LO)")
 	with open("{}/sse.txt".format(bdir),"w") as sse:
@@ -601,40 +611,41 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 				if key != "MEAN":
 					ax1.plot(trans_hi[key][:,0],trans_hi[key][:,1],"{}-".format(colors[cctr]),label="{} high".format(key))
 					ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"{}--".format(colors[cctr]),label="{} low".format(key))
-				else:
-					ax1.plot(trans_hi[key][:,0],trans_hi[key][:,1],"k-.",linewidth=2,label="{} high".format(key))
-					ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"k--.",linewidth=2,label="{} low".format(key))
+				#else:
+				#	ax1.plot(trans_hi[key][:,0],trans_hi[key][:,1],"k-.",linewidth=2,label="{} high".format(key))
+				#	ax1.plot(trans_lo[key][:,0],trans_lo[key][:,1],"k--.",linewidth=2,label="{} low".format(key))
 				sse.write("{}\t{}\n".format(key,ssdfs[key]))
 				cctr+=1
 	ax1.set_xlabel("X-shift (pixels)")
 	ax1.set_ylabel("Y-shift (pixels)")
-	ax1.set_title("Frame trajectory")
+	#ax1.set_title("Frame trajectory")
 	ax1.legend(loc="best")
+	ax1.axis("equal")
 
-	ax2 = fig2.add_subplot(212)
-	cctr = 0
-	for key in mags_hi.keys():
-		if key != "MEAN":
-			ax2.plot(xx,mags_hi[key],label="{} high".format(key),alpha=1)
-		else:
-			ax2.plot(xx,np.zeros_like(xx),"k--",label=key,alpha=1)
-			ax2.errorbar(xx,np.zeros_like(xx),yerr=err_hi[:,1],color='k',alpha=0.6,label="{} high".format(siglabel),linewidth=2)
-	ax2.set_xlabel("Frame Number (#)")
-	ax2.set_ylabel("Relative shift magnitude (pixels)")
-	ax2.set_title("Frame shift magnitude (relative to MEAN)")
-	ax2.legend(loc="best")
-	cctr = 0
-	for key in mags_lo.keys():
-		if key != "MEAN":
-			ax2.plot(xx_lo,mags_lo[key],"{}--".format(colors[cctr]),label="{} low".format(key),alpha=1)
-		else:
-			ax2.plot(xx_lo,np.zeros_like(xx_lo),"k--",label=key,alpha=1)
-			ax2.errorbar(xx_lo,np.zeros_like(xx_lo),xerr=err_lo[:,0],yerr=err_lo[:,1],color='k',alpha=0.6,label="{} low".format(siglabel))
-		cctr+=1
-	ax2.set_xlabel("Frame Number (#)")
-	ax2.set_ylabel("Relative shift magnitude (pixels)")
-	ax2.set_title("Frame shift magnitude (relative to MEAN)")
-	ax2.legend(loc="best")
+	#ax2 = fig2.add_subplot(212)
+	#cctr = 0
+	#for key in mags_hi.keys():
+		#if key != "MEAN":
+			#ax2.plot(xx,mags_hi[key],label="{} high".format(key),alpha=1)
+		#else:
+			#ax2.plot(xx,np.zeros_like(xx),"k--",label=key,alpha=1)
+			#ax2.errorbar(xx,np.zeros_like(xx),yerr=err_hi[:,1],color='k',alpha=0.6,label="{} high".format(siglabel),linewidth=2)
+	#ax2.set_xlabel("Frame Number (#)")
+	#ax2.set_ylabel("Relative shift magnitude (pixels)")
+	#ax2.set_title("Frame shift magnitude (relative to MEAN)")
+	#ax2.legend(loc="best")
+	#cctr = 0
+	#for key in mags_lo.keys():
+		#if key != "MEAN":
+			#ax2.plot(xx_lo,mags_lo[key],"{}--".format(colors[cctr]),label="{} low".format(key),alpha=1)
+		##else:
+		##	ax2.plot(xx_lo,np.zeros_like(xx_lo),"k--",label=key,alpha=1)
+		##	ax2.errorbar(xx_lo,np.zeros_like(xx_lo),xerr=err_lo[:,0],yerr=err_lo[:,1],color='k',alpha=0.6,label="{} low".format(siglabel))
+		#cctr+=1
+	#ax2.set_xlabel("Frame Number (#)")
+	#ax2.set_ylabel("Relative shift magnitude (pixels)")
+	#ax2.set_title("Frame shift magnitude (relative to MEAN)")
+	#ax2.legend(loc="best")
 	fig2.tight_layout()
 	plt.savefig("{}/differences.png".format(bdir))
 	if plot: plt.show()
@@ -774,7 +785,7 @@ def plot_oned_spectra(hi_pws,lo_pws,bdir):
 	ax1.legend()
 	ax2.set_title("spectra")
 	ax2.legend()
-	plt.savefig("hictrst_cips_agreement.png")
+	plt.savefig("{}/hictrst_cips_agreement.png".format(bdir))
 	plt.show()
 
 	fig = plt.figure(figsize=(12,8))
@@ -794,7 +805,7 @@ def plot_oned_spectra(hi_pws,lo_pws,bdir):
 	ax1.legend()
 	ax2.set_title("spectra")
 	ax2.legend()
-	plt.savefig("loctrst_cips_agreement.png")
+	plt.savefig("{}/loctrst_cips_agreement.png".format(bdir))
 	plt.show()
 
 	# quantify difference between CPS/IPS?
