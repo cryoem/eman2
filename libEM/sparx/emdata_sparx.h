@@ -37,6 +37,34 @@
 #define emdata__sparx_h__
 
 public:
+/**  Set the data pointer explicitly to EMData Buffer.
+ * data pointer must be allocated and managed by another object (e.g. NumPy)
+ * NOTE: Please do NOT use this function unless you are very familier with 
+ * the memory management of EMData and Boost Python Binding.
+ * @param buffer_data a pointer to the pixel data which is stored in memory. Does NOT take possession
+ * @param x the number of pixels in the x direction
+ * @param y the number of pixels in the y direction
+ * @param z the number of pixels in the z direction
+*/
+inline void register_buffer_data(float* buffer_data, const int x, const int y, const int z) {
+	// Do NOT free the rdata since the buffer data is supposed to owned by another object
+	rdata = buffer_data;
+	nx = x; ny = y; nz = z;
+	nxy = nx*ny;
+	nxyz = (size_t)nx*ny*nz;
+	update();
+}
+
+/** Unregsiter the data pointer for EMData Buffer (EMData made from an existing memory buffer (e.g. NumPy))
+ * by setting rdata to zero 
+ * Call this whenever a EMData Buffer object is not necessary any more in your code.
+ * NOTE: Please do NOT use this function unless you are very familier with 
+ * the memory management of EMData and Boost Python Binding.
+ */
+inline void unregister_buffer_data() {
+	rdata = 0;
+}
+
 /** returns the fourier harmonic transform (FH) image of the current
  * image (in real space). The current image is not changed. The result is in
  * real/imaginary format. The FH switch is set on.
