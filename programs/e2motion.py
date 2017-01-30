@@ -459,6 +459,7 @@ class EMMotion(QtGui.QMainWindow):
 
 	def newIter(self,x=0):
 		itr=int(self.wvbiter.getValue())
+		self.iter=itr
 		
 		try: 
 			dct=js_open_dict("{}/particle_parms_{:02d}.json".format(self.path,itr))
@@ -894,6 +895,9 @@ class EMMotion(QtGui.QMainWindow):
 	
 	def showParticles(self):
 		pass
+				
+
+
 	
 	def doCompute(self,x=False):
 		mode=self.wcbprocmode.currentIndex()
@@ -967,14 +971,30 @@ class EMMotion(QtGui.QMainWindow):
 		fsp="{}/classes_{:02d}_{:02d}.hdf".format(self.path,self.iter,clnum)
 		print fsp
 		for i,c in enumerate(classes): 
-			self.wpbprogress.setValue(66+33*i/len(classes))
+			self.wpbprogress.setValue(67+20*i/len(classes))
 			c.process_inplace("normalize.edgemean")
+			c["ptcl_repr"]=len(classlst[i])
 			c["class_ptcl_idxs"]=classlst[i]
 #			c["exc_class_ptcl_idxs"]=[]
 			c["class_ptcl_src"]=toclass[0][2]
+
+		# put the class with the most particles first
+		m=max(map(lambda i:(i["ptcl_repr"],i),classes))
+		classes.remove(m[1])
+		classes.insert(0,m[1])
+
+		# now start from this one for the sort
+		for c in xrange(1,len(classes)-1):
+			self.wpbprogress.setValue(87+12*c/len(classes))
+			b=classes[c-1].cmp("frc",classes[c])
+			for c2 in xrange(c+1,len(classes)):
+				ccc=classes[c-1].cmp("frc",classes[c2])
+				if ccc<b :
+					b=ccc
+					classes[c],classes[c2]=classes[c2],classes[c]
+
+		for c in classes:
 			c.write_image(fsp,-1)
-		
-		
 			
 		self.classes=classes
 		self.w2dclasses.set_data(self.classes)
