@@ -1,0 +1,54 @@
+= Name =
+sxpipeline_isac_substack - Create Stack Subset: Create virtual subset stack consisting from accounted particles by retrieving original image numbers listed in ISAC output average stack. The command also saves a list text file containing the retrieved original image numbers.
+
+
+= Usage =
+
+''usage in command line''
+
+sxpipeline_isac_substack.py  stack  isac_averages  output_directory  --skip_create_substack
+isac_averages  
+
+=== Typical usage ===
+
+sxpipeline_isac_substack.py does not support MPI. 
+
+''' sxpipeline_isac_substack.py  bdb:test3  class_averages_generation_3.hdf  outdir_isac_substack '''
+
+
+== Input ==
+    stack:: Input image stack: Specify original particle image stack use for input of the ISAC process. (default required string)
+    isac_averages:: ISAC class file name: Input ISAC class averages. Each class average should contain original image numbers of the associated particle members. (default required string)
+    
+	skip_create_substack:: Skip substack creation: Use this option to skip creation of the virtual substack. (default False)
+
+    * The remaining parameters are optional.
+
+== Output ==
+    output_directory:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+
+
+= Description =
+
+= Method =
+
+= Reference =
+
+
+= Author / Maintainer =
+Toshio Moriya
+
+= Keywords =
+ category 1:: APPLICATIONS
+
+= Files =
+sparx/bin/sxpipeline_isac_substack.py
+
+= See also =
+[[sxisac]]
+
+= Maturity =
+ alpha::     under development
+
+= Bugs =
+Under development

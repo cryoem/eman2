@@ -44,12 +44,12 @@ try:
 
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from emapplication import EMApp
-	import IPython.lib.inputhook
+	#import IPython.lib.inputhook
 #	import IPython.lib.guisupport
 
 
 	app=EMApp()
-	IPython.lib.inputhook.enable_qt4(app)
+	#IPython.lib.inputhook.enable_qt4(app)
 #	IPython.lib.guisupport.start_event_loop_qt4(app=app)
 
 	#IPython.lib.guisupport.get_app_qt4()

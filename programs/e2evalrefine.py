@@ -33,7 +33,6 @@
 
 
 from EMAN2 import *
-from EMAN2db import db_open_dict
 from math import *
 import os
 import sys
@@ -68,7 +67,8 @@ def main():
 	parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
 	parser.add_argument("--mask",type=str,help="Mask to be used to focus --evalptclqual. May be useful for separating heterogeneous data.", default=None)
 	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
-	parser.add_argument("--timing", default=False, action="store_true", help="report on how long each step of the refinement process took during the first iteration of each run")
+	parser.add_argument("--timing", default=False, action="store_true", help="Report on the time required for each step of each refinement run")
+	parser.add_argument("--timingbypath", default=False, action="store_true", help="Report on the CPU time required in each refine_xx folder")
 	parser.add_argument("--resolution", default=False, action="store_true", help="generates a resolution and convergence plot for a single refinement run.")
 	parser.add_argument("--resolution_all", default=False, action="store_true", help="generates resolution plot with the last iteration of all refine_xx directories")
 	#parser.add_argument("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
@@ -89,7 +89,7 @@ def main():
 	yticlocs2=(0.0,.125,.25,.375,.5,.625,.75,.875,1.0)
 	yticlbl2=("0"," ","0.25"," ","0.5"," ","0.75"," ","1.0")
 
-	if args[0][:7]=="refine_":
+	if len(args)>0 and args[0][:7]=="refine_":
 		jsparm=js_open_dict(args[0]+"/0_refine_parms.json")
 
 		if options.iter==None:
@@ -399,7 +399,8 @@ def main():
 		print("Generating new sets.")
 
 		nseg = 2
-		axes = [0,1,2]
+		if apix>2.5 : axes=[0,1]
+		else : axes = [0,1,2]
 
 		fscs = []
 		cmts = []
@@ -411,7 +412,7 @@ def main():
 					cmts.append(cmt.strip())
 
 		d = np.asarray(fscs).astype(float)
-		d /= np.std(d,axis=0)
+		#d /= np.std(d,axis=0)
 		(nrow,ncol) = d.shape
 
 		imdata = []
@@ -448,8 +449,8 @@ def main():
 		d2 = np.asarray(d2)
 
 		# need to *consistently* label the "best" and "worst" cluster
-		d1s = np.sum(np.sum(d1,axis=0))
-		d2s = np.sum(np.sum(d2,axis=0))
+		d1s = np.max(d1)
+		d2s = np.max(d2)
 		lstfs = {}
 		if d1s > d2s:
 			lstfs[0] = "{}_good.lst".format(bname)
@@ -480,7 +481,7 @@ def main():
 		#mouse-over specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.".format(args[0][-2:]))
 
 		# NEW AUTOMATED INFO
-		print("Evaluation coplete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname))
+		print("Evaluation complete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname))
 
 		E2end(logid)
 		sys.exit(0)
@@ -620,7 +621,7 @@ def main():
 					cmts.append(cmt.strip())
 
 		d = np.asarray(fscs).astype(float)
-		d /= np.std(d,axis=0)
+		#d /= np.std(d,axis=0)
 		(nrow,ncol) = d.shape
 
 		imdata = []
@@ -657,8 +658,8 @@ def main():
 		d2 = np.asarray(d2)
 
 		# need to *consistently* label the "best" and "worst" cluster
-		d1s = np.sum(np.sum(d1,axis=0))
-		d2s = np.sum(np.sum(d2,axis=0))
+		d1s = np.max(d1)
+		d2s = np.max(d2)
 		lstfs = {}
 		if d1s > d2s:
 			lstfs[0] = "{}_good.lst".format(bname)
@@ -689,7 +690,7 @@ def main():
 		#mouse-over specific data points to see the particle each represents. See one of the single particle analysis tutorials for more details.".format(args[0][-2:]))
 
 		# NEW AUTOMATED INFO
-		print("Evaluation coplete.\nParticles best resembling results from {ref} have been saved in 'sets/{bn}_good.lst' and can be used in further refinements.".format(ref=args[0],bn=bname))
+		print("Evaluation complete.\nParticles have been automatically split based on quality estimate. The better fraction has been saved in 'sets/{bn}_good.lst' and can be used in further refinements. It may be worthwile to examine the quality evaluation manually and fine-tune the good/bad segmentation parameters.".format(ref=args[0],bn=bname))
 
 		E2end(logid)
 		sys.exit(0)
@@ -818,8 +819,33 @@ def main():
 		plt.savefig("goldstandard.pdf")
 		print "Generated: goldstandard.pdf"
 		plt.clf()
-		
+
 		os.system("e2display.py --plot "+" ".join(fscs))
+
+	if options.timingbypath:
+		dl=[i for i in os.listdir(".") if "refine_" in i]		# list of all refine_ directories
+		dl.sort()
+
+		for d in dl:
+			try:
+				jsparm=js_open_dict("{}/0_refine_parms.json".format(d))
+				try: cores=int(jsparm["parallel"].split(":")[1])
+				except: cores=int(jsparm["threads"])
+				lastmap=str(jsparm["last_map"])
+				lastiter=int(lastmap.split("/")[-1].split("_")[-1][:2])
+				firstmap="{}/threed_00_even.hdf".format(d)
+				starttime=os.stat(firstmap).st_ctime
+				endtime=os.stat(lastmap).st_ctime
+				print lastmap
+				box=EMData(lastmap,0,True)["nx"]
+				targetres=jsparm["targetres"]
+
+				print "{path}\t{niter} iterations\t{cores} cores\t{h:02d}:{m:02d} walltime\t{cpuh:1.1f} CPU-h\t{cpuhpi:1.2f} CPU-h/it\t{bs} box\t{targ:1.1f} targetres".format(
+					path=d,niter=lastiter,cores=cores,h=int((endtime-starttime)//3600),m=int(((endtime-starttime)%3600)//60),
+					cpuh=cores*(endtime-starttime)/3600,cpuhpi=cores*(endtime-starttime)/(3600*lastiter),bs=box,targ=targetres)
+			except: print "No timing for ",d
+
+		print "\nWarning: scaling with number of CPUs can be very nonlinear, particularly with small jobs. The larger the number of particles the larger the number of cores which will produce near-linear speedup."
 
 
 	if options.timing:
