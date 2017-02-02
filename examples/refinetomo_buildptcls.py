@@ -30,7 +30,7 @@ def main():
 	
 	rotmat=[]
 	deg=[]
-	for tt in np.arange(-80,80,.2):
+	for tt in np.arange(-options.tltang,options.tltang,.2):
 		deg.append(tt)
 		t=tt/180.*np.pi
 		rotmat.append([[cos(t), -sin(t)],[sin(t), cos(t)]])
@@ -68,6 +68,7 @@ def main():
 			tr=Transform({"type":'xyz', "ytilt":p})
 			pj=e.project("standard", tr)
 			pj["model_id"]=ptid
+			pj.process_inplace("normalize")
 			pj.write_image(pjfile,-1)
 		
 		print "Processing particle # {}/{}. Number of projections: {}".format(ptid,num,len(pks))
