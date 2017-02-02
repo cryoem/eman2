@@ -7678,9 +7678,9 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
 						finfo.flush()
 				else:		
-					if(an[N_step] == -1):	
+					if(an[N_step] == -1):
 						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
-					else:	           
+					else:
 						peak, pixel_error = proj_ali_incore_local(data[im],refrings,list_of_reference_angles,\
 												numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],sym=sym)
 					if not(finfo is None):

@@ -5679,7 +5679,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 	int n_coarse_ang = circ2->get_ysize();
 	int npsi = (int)(360.0f/delta + 0.01);
 	int n_assignments_of_refangles_to_angles = assignments_of_refangles_to_angles.size();
-	int n_assignments_of_refangles_to_cones = assignments_of_refangles_to_cones.size();
+	int n_assignments_of_refangles_to_cones  = assignments_of_refangles_to_cones.size();
 	
 
 	vector<float> vpsi(npsi);
@@ -5705,13 +5705,11 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 #endif	//_WIN32
 
 	 //  q - straight  = circ1 * conjg(circ2)
-	int ndata = n_coarse_shifts*n_coarse_ang*(2*cpsi+1);
+	int ndata = n_coarse_shifts*n_coarse_ang*(2*cpsi);
 
 	//vector<float> qout(ndata);
 
-
     vector<MultiScores> ccfs(ndata);
-
 
 	//cout<<" n_coarse_shifts "<<n_coarse_shifts<<"  "<<n_coarse_ang<<"  "<<npsi<<"  "<<lencrefim<<endl;
 	int counter = 0;
@@ -5766,6 +5764,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 
 			float qdm = 1.0e23;
 			int bpsi;
+			float oldpsi_inc = oldpsi + 0.5*delta;
 			for ( i=0; i<npsi; i++) {
 				float psi = startpsi[ic] + i*delta;
 				while( psi >= 360.0f )  psi -= 360.0f;
@@ -5774,7 +5773,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 				float dpsi = ipsi-ip1;
 				vpsi[i]=static_cast<float>(q[ip1] + dpsi*(q[(ip1+1)%maxrin]-q[ip1]));
 				//  find closest to old psi
-				float dummy = fabs(psi - oldpsi);
+				float dummy = fabs(psi - oldpsi_inc); // We have to add half delta to accomodate even number of psi neighbors.
 				dummy = Util::get_min(dummy, 360.0f-dummy);
 				if( dummy < qdm ) {
 					qdm = dummy;
@@ -5782,7 +5781,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_local(EMData* dataimage, EMD
 				}
 			}
 			//int iang = ic*100000000 + ib;
-			for ( j=bpsi-cpsi; j<=bpsi+cpsi; j++) {
+			for ( j=bpsi-cpsi; j<bpsi+cpsi; j++) {
 				int ipip = j;
 				if( ipip < 0 ) ipip += npsi;
 				else if( ipip >= npsi ) ipip -= npsi;
@@ -23973,7 +23972,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 01/13/2017  5:50 PM " <<  endl;
+ cout <<"  Modification time: 02/02/2017  11:35 AM " <<  endl;
 }
 
 
