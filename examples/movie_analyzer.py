@@ -59,6 +59,7 @@ def main():
 	# Program arguments
 	parser.add_argument("--apix", default=None, type=float, help="Apix of input ddd frames. Will search the header by default.")
 	parser.add_argument("--skipalign",action="store_true",default=False,help="If you wish to skip running alignments, specify this option.")
+        parser.add_argument("--noerase",action="store_true",default=False,help="Skip gold erasing and only process original frames.")
 	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
 	parser.add_argument("--include", type=str, help="Comma separated list of packages to include during comparison.", default="DE,EMAN2,IMOD,UCSF,UNBLUR,LMBFGS")
 	parser.add_argument("--exclude", type=str, help="Comma separated list of packages to exclude during comparison.", default="")
@@ -100,7 +101,8 @@ def main():
 
 	nsigmas = options.nsigmas
 
-	if not options.skipalign: print("Performing alignments with the following packages: {}\n".format(", ".join(options.include)))
+	if not options.skipalign:
+		print("Performing alignments with the following packages: {}\n".format(", ".join(options.include)))
 
 	logid=E2init(sys.argv,options.ppid)
 
@@ -131,22 +133,35 @@ def main():
 				print("Dark/gain corrections were already performed")
 			else:
 				if options.verbose: print("Generating reference images for dark/gain correction(s)")
-				if options.dark: dark = "--dark {}".format(options.dark)
+				if options.dark:
+					dark = "--dark {}".format(options.dark)
+					ndark = EMUtil.get_image_count(options.dark)
 				else: dark = ""
-				if options.gain: gain = "--gain {}".format(options.gain)
+				if options.gain:
+					gain = "--gain {}".format(options.gain)
+					ngain = EMUtil.get_image_count(options.gain)
 				else: gain = ""
-				if options.gaink2: gaink2 = "--gaink2 {}".format(options.gaink2)
+				if options.gaink2:
+					gaink2 = "--gaink2 {}".format(options.gaink2)
+					ngain = EMUtil.get_image_count(options.gaink2)
 				else: gaink2 = ""
+
 				cmd = "e2ddd_movie.py {} {} {} {} --fixbadpixels --frames -v9".format(fname,dark,gain,gaink2)
 				times = run(cmd,shell=True)
 				if options.dark:
 					dfn = options.dark.split(".")[0]
-					os.unlink("{}_sig.hdf".format(dfn))
-					os.unlink("{}_sum.hdf".format(dfn))
+					try:
+						os.unlink("{}_sig.hdf".format(dfn))
+						os.unlink("{}_sum.hdf".format(dfn))
+					except:
+						pass
 				if options.gain:
 					gfn = options.gain.split(".")[0]
-					os.unlink("{}_sig.hdf".format(gfn))
-					os.unlink("{}_sum.hdf".format(gfn))
+					try:
+						os.unlink("{}_sig.hdf".format(gfn))
+						os.unlink("{}_sum.hdf".format(gfn))
+					except:
+						pass
 				shutil.move("{}_proc_corr.hdf".format(basen),bdir)
 			fname = "{}/{}_proc_corr.hdf".format(bdir,basen)
 
@@ -165,6 +180,8 @@ def main():
 
 		if os.path.isfile(lcname):
 			print("Found gold subtracted frames from previous analysis.")
+		elif options.noerase:
+			print("No gold subtraction will be performed")
 		else:
 			try: os.unlink("{}/hictrst_proc.hdf".format(bdir))
 			except: pass
@@ -175,9 +192,12 @@ def main():
 			print(locallc)
 			times = run("e2proc2d.py hictrst_proc.hdf {}".format(locallc),shell=True,cwd=bdir)
 
-		frames_loctrst = load_frames(lcname)
-		loctrst_avg = average_frames(frames_loctrst)
-		loctrst_avg.write_image("{}/loctrst_avg_noali.hdf".format(bdir))
+                if options.noerase:
+                    frames_loctrst = []
+                else:
+                    frames_loctrst = load_frames(lcname)
+                    loctrst_avg = average_frames(frames_loctrst)
+                    loctrst_avg.write_image("{}/loctrst_avg_noali.hdf".format(bdir))
 
 		cwd = os.getcwd()
 
@@ -187,6 +207,9 @@ def main():
 		# PART 2: Run alignment programs
 		#if os.path.isfile("{}/runtimes.txt".format(bdir)):
 		#	os.unlink("{}/runtimes.txt".format(bdir))
+
+		if options.noerase: files_to_process = [hcname]
+		else: files_to_process = [hcname,lcname]
 
 		for pkg in sorted(pkgs.keys()):
 			if pkg in options.include:
@@ -206,7 +229,7 @@ def main():
 						dst = cwd+"/DE_process_frames.cfg"
 						try: os.symlink(src,dst)
 						except: pass
-						for fname in [hcname,lcname]:
+						for fname in files_to_process:
 							times=run("{} {} {} --run_cores {} --apix {}".format(pkgs[pkg],pdir,fname,options.threads,apix),shell=True,clear=True)
 							write_runtime(bdir,pkg,dev,times,options.threads)
 						try: os.unlink(dst)
@@ -220,13 +243,13 @@ def main():
 							elif "loctrst" in f: lo_y = os.path.join(pdir,f)
 					try:
 						trans_hi[pkg] = parse_de(hi_x,hi_y,middle)
-						trans_lo[pkg] = parse_de(lo_x,lo_y,middle)
+						if not options.noerase: trans_lo[pkg] = parse_de(lo_x,lo_y,middle)
 					except: failed(pkg)
 
 				if pkg == "EMAN2":
 					dev = "CPU"
 					if not options.skipalign:
-						for fn in [hcname,lcname]: # high contrast, low contrast
+						for fn in files_to_process: # high contrast, low contrast
 							lfn = fn.split("/")[-1] # local file name
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
@@ -237,13 +260,13 @@ def main():
 						elif "loctrst_proc_info.txt" in f: lo = os.path.join(pdir,f)
 					try:
 						trans_hi[pkg] = parse_eman2(hi,middle)
-						trans_lo[pkg] = parse_eman2(lo,middle)
+						if not options.noerase: trans_lo[pkg] = parse_eman2(lo,middle)
 					except: failed(pkg)
 
 				if pkg == "IMOD":
 					dev = "GPU"
 					if not options.skipalign:
-						for fn in [hcname,lcname]: # high contrast, low contrast
+						for fn in files_to_process: # high contrast, low contrast
 							lfn = fn.split("/")[-1] # local file name
 							if not os.path.isfile("{}/{}".format(pdir,lfn)):
 								shutil.copy2(fn,"{}/{}".format(pdir,lfn))
@@ -255,13 +278,13 @@ def main():
 						elif "loctrst.xf" in f: lo = os.path.join(pdir,f)
 					try:
 						trans_hi[pkg] = parse_imod(hi,middle)
-						trans_lo[pkg] = parse_imod(lo,middle)
+						if not options.noerase: trans_lo[pkg] = parse_imod(lo,middle)
 					except: failed(pkg)
 
 				if pkg == "UCSF":
 					dev = "GPU"
 					if not options.skipalign:
-						for fn in [hcname,lcname]: # high contrast, low contrast
+						for fn in files_to_process: # high contrast, low contrast
 							nfs = EMUtil.get_image_count(fn)
 							lfn = fn.split("/")[-1]
 							lext = lfn.split(".")[-1]
@@ -283,7 +306,7 @@ def main():
 						elif "loctrst_Log.txt" in f: lo = os.path.join(pdir,f)
 					try:
 						trans_hi[pkg] = parse_ucsf(hi,middle)
-						trans_lo[pkg] = parse_ucsf(lo,middle)
+						if not options.noerase: trans_lo[pkg] = parse_ucsf(lo,middle)
 					except: failed(pkg)
 
 				if pkg == "UNBLUR":
@@ -311,7 +334,7 @@ def main():
 EOF
 """
 
-						for fn in [hcname,lcname]:
+						for fn in files_to_process:
 							lfn = fn.split("/")[-1]
 							lext = lfn.split(".")[-1]
 							if lext == "hdf": # HDF format not supported by unblur
@@ -346,7 +369,7 @@ EOF
 						elif "loctrst_shifts.txt" in f: lo = os.path.join(pdir,f)
 					try:
 						trans_hi[pkg] = parse_unblur(hi,middle)
-						trans_lo[pkg] = parse_unblur(lo,middle)
+						if not options.noerase: trans_lo[pkg] = parse_unblur(lo,middle)
 					except: failed(pkg)
 
 				if pkg == "LMBFGS":
@@ -365,7 +388,7 @@ EOF
 eot
 """
 
-						for fn in [hcname,lcname]:
+						for fn in files_to_process:
 							lfn = fn.split("/")[-1]
 							lext = lfn.split(".")[-1]
 							if lext == "hdf": # HDF format not supported by alignframes_lmbfgs
@@ -385,11 +408,11 @@ eot
 								movielist.write("{}".format(lfn))
 							bs = int(max(3600,min(frames_hictrst[0]["nx"]*0.75,frames_hictrst[0]["ny"]*0.75)))
 							ps = apix
-							nsig = 6
-							rm1 = 500
+							nsig = 5
+							rm1 = 500 # 1000?
 							rm2 = 100
 							smooth = "1d08" #"0d0"
-							bfact = 1000
+							bfact = 2000
 							ffirst = 1
 							flast = 0
 							fmiddle = middle
@@ -402,15 +425,23 @@ eot
 								shfext="shf", vecext="vec")
 							times=run(cmd,shell=True,exe="/bin/csh",cwd=pdir,clear=True)
 							write_runtime(bdir,pkg,dev,times,options.threads)
-					for f in os.listdir(pdir):
-						if f == "hictrst.shf":
-							hi = os.path.join(pdir,f)
-						elif f == "loctrst.shf":
-							lo = os.path.join(pdir,f)
-					try:
-						trans_hi[pkg] = parse_lmbfgs(hi,middle)
-						trans_lo[pkg] = parse_lmbfgs(lo,middle)
-					except: failed(pkg)
+						with open("{}/shiftlist.txt".format(pdir),'w') as shf:
+							for f in os.listdir(pdir):
+								if f == "hictrst.shf":
+									hi = os.path.join(pdir,f)
+									shf.write("hictrst.shf\n")
+								elif f == "loctrst.shf":
+									lo = os.path.join(pdir,f)
+									shf.write("loctrst.shf\n")
+						try:
+							times = run("shiftframes_list.csh",cwd=pdir,shell=True,exe="/bin/csh")
+						except:
+							print("!!!!!!!!!!!!! Failed to run shiftframes_list.csh")
+
+						try:
+							trans_hi[pkg] = parse_lmbfgs(hi,middle)
+							if not options.noerase: trans_lo[pkg] = parse_lmbfgs(lo,middle)
+						except: failed(pkg)
 
 		print("")
 
@@ -426,20 +457,22 @@ eot
 		# Question 2: How does calculated motion differ between the most commonly used alignment algorithms?
 		print("PREDICTED TRANSLATIONS")
 		trans_hi_1, mags_hi_1= plot_traj(trans_hi,bdir,"hi",plot=options.plot)
-		trans_lo_1, mags_lo_1 = plot_traj(trans_lo,bdir,"lo",plot=options.plot)
+		if not options.noerase: 
+			trans_lo_1, mags_lo_1 = plot_traj(trans_lo,bdir,"lo",plot=options.plot)
 
 		print("")
 
 		# Question 3: How different are predicted frame translations with and without high contrast features?
-		#print("CONTRAST-BASED TRANSLATION COMPARISON")
-		trans_hi_2, trans_lo_2, ssdfs = plot_differences(trans_hi,trans_lo,bdir,plot=options.plot)
+		if not options.noerase:
+			print("CONTRAST-BASED TRANSLATION COMPARISON")
+			trans_hi_2, trans_lo_2, ssdfs = plot_differences(trans_hi,trans_lo,bdir,plot=options.plot)
 
 		print("")
 
 		# Question 4: How do alignment algorithms influence power spectral coherence?
-		#print("COHERENCE-BASED POWER SPECTRAL COMPARISON")
+		print("COMPARE POWER SPECTRA")
 		# no algorithm seems to produce measurably better coherence (using calc_cips_scores).
-		#hi_pws,lo_pws = calc_coherence(frames_hictrst,frames_loctrst,trans_hi,trans_lo,bdir,plot=options.plot)
+		hi_pws,lo_pws = calc_coherence(frames_hictrst,frames_loctrst,trans_hi,trans_lo,bdir,plot=options.plot)
 
 		#print("")
 
@@ -493,7 +526,6 @@ def parse_lmbfgs(fn,middle):
 		for i,l in enumerate(f):
 			if i != 0: lines.append(l.strip().split()) # skip header on line 0
 	xf = -1*np.asarray(lines)[:,1:].astype(float) # skip frame numbers
-	print(xf)
 	return xf - xf[middle]
 
 def parse_eman2(fn,middle):
@@ -655,7 +687,7 @@ def plot_differences(trans_hi,trans_lo,bdir,nsig=1,plot=False):
 # Compute Power Spectra #
 #########################
 
-def calc_incoherent_pws(frames,bs=512):
+def calc_incoherent_pws(frames,bs=2048):
 	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
 	my = np.arange(bs+50,frames[1]['ny']-bs+50,bs)
 	regions = {}
@@ -674,10 +706,12 @@ def calc_incoherent_pws(frames,bs=512):
 	ips = ips.finish()
 	ips.process_inplace("math.sqrt")
 	ips.process_inplace('normalize.edgemean')
-	ips.process_inplace('math.rotationalaverage')
+	ips_ra = ips.process('math.rotationalaverage')
+	#ips = ips-ips_ra
+	#ips.process_inplace("math.rotationalaverage")
 	return ips
 
-def calc_coherent_pws(frames,bs=512):
+def calc_coherent_pws(frames,bs=2048):
 	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
 	my = np.arange(bs+50,frames[1]['ny']-bs+50,bs)
 	regions = {}
@@ -706,62 +740,66 @@ def calc_coherence(frames_hi,frames_lo,all_trans_hi,all_trans_lo,bdir,plot=False
 	hi_oned_pws = js_open_dict('{}/hictrst_onedpws.json'.format(bdir))
 	lo_oned_pws = js_open_dict('{}/loctrst_onedpws.json'.format(bdir))
 
-	if len(hi_oned_pws.keys()) == 0 and len(hi_oned_pws.keys()) == 0:
-		print("NO PRIOR POWER SPECTRA FOUND.")
+	bs = 784
+	print("HIGH IPS ({})".format(bs))
+	
 
-		print("HIGH IPS")
-		hi_twod_ips = calc_incoherent_pws(frames_hi)
-		hi_twod_ips.write_image("{}/hictrst_twod_ips.hdf".format(bdir))
-		hi_ips, hi_ips_bg, hi_ips_bgsub = fit_defocus(hi_twod_ips)
-		hi_oned_pws["IPS"] = hi_ips
-		hi_oned_pws["IPS (bg)"] = hi_ips_bg
-		hi_oned_pws["IPS (sub)"] = hi_ips_bgsub
+	hi_twod_ips = calc_incoherent_pws(frames_hi,bs)
+	hi_twod_ips.write_image("{}/hictrst_twod_ips.hdf".format(bdir))
+	hi_ips, hi_ips_bg, hi_ips_bgsub = fit_defocus(hi_twod_ips)
+	hi_oned_pws["IPS"] = hi_ips_bgsub
+	hi_oned_pws["IPS (bg)"] = hi_ips_bg
+	hi_oned_pws["IPS (orig)"] = hi_ips
 
+	if len(all_trans_lo.keys()) != 0:
 		print("LOW IPS")
-		lo_twod_ips = calc_incoherent_pws(frames_lo)
+		lo_twod_ips = calc_incoherent_pws(frames_lo, bs)
 		lo_twod_ips.write_image("{}/loctrst_twod_ips.hdf".format(bdir))
 		lo_ips, lo_ips_bg, lo_ips_bgsub = fit_defocus(lo_twod_ips)
-		lo_oned_pws["IPS"] = lo_ips
+		lo_oned_pws["IPS"] = lo_ips_bgsub
 		lo_oned_pws["IPS (bg)"] = lo_ips_bg
-		lo_oned_pws["IPS (sub)"] = lo_ips_bgsub
+		lo_oned_pws["IPS (orig)"] = lo_ips
 
-		print("HIGH CPS")
-		hi_twod_cps = calc_coherent_pws(frames_hi)
-		hi_twod_cps.write_image("{}/hictrst_twod_cps_noali.hdf".format(bdir))
-		hi_cps, hi_cps_bg, hi_cps_bgsub = fit_defocus(hi_twod_cps)
-		hi_oned_pws["CPS"] = hi_cps
-		hi_oned_pws["CPS (bg)"] = hi_cps_bg
-		hi_oned_pws["CPS (sub)"] = hi_cps_bgsub
+	print("HIGH CPS")
+	hi_twod_cps = calc_coherent_pws(frames_hi, bs)
+	hi_twod_cps.write_image("{}/hictrst_twod_cps_noali.hdf".format(bdir))
+	hi_cps, hi_cps_bg, hi_cps_bgsub = fit_defocus(hi_twod_cps)
+	hi_oned_pws["CPS"] = hi_cps_bgsub #
+	hi_oned_pws["CPS (bg)"] = hi_cps_bg
+	hi_oned_pws["CPS (orig)"] = hi_cps
 
+	if len(all_trans_lo.keys()) != 0:
 		print("LOW CPS")
-		lo_twod_cps = calc_coherent_pws(frames_lo)
+		lo_twod_cps = calc_coherent_pws(frames_lo, bs)
 		lo_twod_cps.write_image("{}/loctrst_twod_cps_noali.hdf".format(bdir))
 		lo_cps, lo_cps_bg, lo_cps_bgsub = fit_defocus(lo_twod_cps)
-		lo_oned_pws["CPS"] = lo_cps
+		lo_oned_pws["CPS"] = lo_cps_bgsub
 		lo_oned_pws["CPS (bg)"] = lo_cps_bg
-		lo_oned_pws["CPS (sub)"] = lo_cps_bgsub
+		lo_oned_pws["CPS (orig)"] = lo_cps
 
-		for key in all_trans_hi.keys():
-			if key not in ["STD","ALL","MEAN","VAR"]:
-				print("HIGH "+key)
-				shifted_hi = shift_frames(frames_hi,all_trans_hi[key])
-				hi_twod_cps = calc_coherent_pws(shifted_hi)
-				hi_twod_cps.write_image("{}/{}/hictrst_twod_cps.hdf".format(bdir,key))
-				hi_cps, hi_cps_bg, hi_cps_bgsub = fit_defocus(hi_twod_cps)
-				hi_oned_pws["{}".format(key)] = hi_cps
-				hi_oned_pws["{} (bg)".format(key)] = hi_cps_bg
-				hi_oned_pws["{} (sub)".format(key)] = hi_cps_bgsub
+	for key in all_trans_hi.keys():
+		if key not in ["STD","ALL","MEAN","VAR"]:
+			print("HIGH "+key)
+			shifted_hi = shift_frames(frames_hi,all_trans_hi[key])
+			hi_twod_cps = calc_coherent_pws(shifted_hi, bs)
+			hi_twod_cps.write_image("{}/{}/hictrst_twod_cps.hdf".format(bdir,key))
+			hi_cps, hi_cps_bg, hi_cps_bgsub = fit_defocus(hi_twod_cps)
+			hi_oned_pws["{}".format(key)] = hi_cps_bgsub
+			hi_oned_pws["{} (bg)".format(key)] = hi_cps_bg
+			hi_oned_pws["{} (orig)".format(key)] = hi_cps
 
+			if len(all_trans_lo.keys()) != 0:
 				print("LOW "+key)
 				shifted_lo = shift_frames(frames_lo,all_trans_lo[key])
-				lo_twod_cps = calc_coherent_pws(shifted_lo)
+				lo_twod_cps = calc_coherent_pws(shifted_lo, bs)
 				lo_twod_cps.write_image("{}/{}/loctrst_twod_cps.hdf".format(bdir,key))
 				lo_cps, lo_cps_bg, lo_cps_bgsub = fit_defocus(lo_twod_cps)
-				lo_oned_pws["{}".format(key)] = lo_cps
+				lo_oned_pws["{}".format(key)] = lo_cps_bgsub
 				lo_oned_pws["{} (bg)".format(key)] = lo_cps_bg
-				lo_oned_pws["{} (sub)".format(key)] = lo_cps_bgsub
+				lo_oned_pws["{} (orig)".format(key)] = lo_cps
 
-	if plot: plot_oned_spectra(hi_oned_pws,lo_oned_pws,bdir)
+	if plot:
+		plot_oned_spectra(hi_oned_pws,lo_oned_pws,bdir)
 
 	return hi_oned_pws,lo_oned_pws
 
@@ -769,44 +807,45 @@ def plot_oned_spectra(hi_pws,lo_pws,bdir):
 	# plot CPS agreement with IPS?
 
 	fig = plt.figure(figsize=(12,8))
-	ax0 = fig.add_subplot(311)
-	ax1 = fig.add_subplot(312)
-	ax2 = fig.add_subplot(313)
+	ax0 = fig.add_subplot(111)
+	#ax1 = fig.add_subplot(312)
+	#ax2 = fig.add_subplot(313)
 	for i in hi_pws.items():
-		if "bg" in i[0]:
-			ax0.plot(i[1],label=i[0].replace("(bg)",""))
-		elif "sub" in i[0]:
-			ax1.plot(i[1],label=i[0].replace("(sub)",""))
-		else:
-			ax2.plot(i[1],label=i[0])
-	ax0.set_title("bg")
+		#if "sub" in i[0]:
+		ax0.plot(i[1],label=i[0].replace("(bg)",""))
+		#elif "sub" in i[0]:
+		#	ax1.plot(i[1],label=i[0].replace("(sub)",""))
+		#else:
+		#	ax2.plot(i[1],label=i[0])
+	ax0.set_title("1D Power Spectra")
 	ax0.legend()
-	ax1.set_title("sub")
-	ax1.legend()
-	ax2.set_title("spectra")
-	ax2.legend()
+	#ax1.set_title("sub")
+	#ax1.legend()
+	#ax2.set_title("spectra")
+	#ax2.legend()
 	plt.savefig("{}/hictrst_cips_agreement.png".format(bdir))
 	plt.show()
 
-	fig = plt.figure(figsize=(12,8))
-	ax0 = fig.add_subplot(311)
-	ax1 = fig.add_subplot(312)
-	ax2 = fig.add_subplot(313)
-	for i in lo_pws.items():
-		if "bg" in i[0]:
-			ax0.plot(i[1],label=i[0].replace("(bg)",""))
-		elif "sub" in i[0]:
-			ax1.plot(i[1],label=i[0].replace("(sub)",""))
-		else:
-			ax2.plot(i[1],label=i[0])
-	ax0.set_title("bg")
-	ax0.legend()
-	ax1.set_title("sub")
-	ax1.legend()
-	ax2.set_title("spectra")
-	ax2.legend()
-	plt.savefig("{}/loctrst_cips_agreement.png".format(bdir))
-	plt.show()
+	if len(lo_pws.keys()) != 0:
+		fig = plt.figure(figsize=(12,8))
+		ax0 = fig.add_subplot(311)
+		#ax1 = fig.add_subplot(312)
+		#ax2 = fig.add_subplot(313)
+		for i in lo_pws.items():
+			#if "bg" in i[0]:
+			#	ax0.plot(i[1],label=i[0].replace("(bg)",""))
+			#if "sub" in i[0]:
+			ax0.plot(i[1],label=i[0].replace("(sub)",""))
+			#else:
+			#	ax2.plot(i[1],label=i[0])
+		ax0.set_title("1D Gold-Subtracted Power Spectra")
+		ax0.legend()
+		#ax1.set_title("sub")
+		#ax1.legend()
+		#ax2.set_title("spectra")
+		#ax2.legend()
+		plt.savefig("{}/loctrst_cips_agreement.png".format(bdir))
+		plt.show()
 
 	# quantify difference between CPS/IPS?
 
