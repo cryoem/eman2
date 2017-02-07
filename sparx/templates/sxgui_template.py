@@ -715,6 +715,11 @@ class SXCmdWidget(QWidget):
 		return cmd_line
 
 	def execute_cmd_line(self):
+		# Disable the run command button
+		execute_btn = self.sender()
+		execute_btn.setEnabled(False)
+		QtCore.QTimer.singleShot(5000, lambda: execute_btn.setEnabled(True))
+
 		# Generate command line
 		cmd_line = self.generate_cmd_line()
 
@@ -1615,7 +1620,7 @@ class SXCmdTab(QWidget):
 			# self.execute_btn = QPushButton("Run %s" % self.sxcmdwidget.sxcmd.get_mode_name_for("human"))
 			self.execute_btn = QPushButton("Run command")
 			# make 3D textured push button look
-			custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0)} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084)} QPushButton:focus {font: bold; color: #000;border: 2px solid #8D0;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0)}"
+			custom_style = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0)} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084)} QPushButton:focus {font: bold; color: #000;border: 2px solid #8D0;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0)} QPushButton:disabled {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #ff0000)}"
 			self.execute_btn.setStyleSheet(custom_style)
 			self.execute_btn.setMinimumWidth(btn_min_width)
 			self.execute_btn.setToolTip('<FONT>'+"Run %s and automatically save gui parameter settings</FONT>" % self.sxcmdwidget.sxcmd.get_mode_name_for("human"))

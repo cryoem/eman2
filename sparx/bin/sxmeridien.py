@@ -6,6 +6,7 @@
 #  10/27/2016  Added sigma2 updating in the first phased called PRIMARY
 #  11/07       Shared refvol
 #  11/26       Removed heapsort option from numpy sorting.  It seems standard one works better.
+#  02/03/2017  Introduced Toshio's new numpy handling
 
 
 from __future__ import print_function
@@ -727,19 +728,19 @@ def subdict(d,u):
 	for q in u:  d[q] = u[q]
 	
 def get_anger(angle1, angle2, sym="c1"):
-	from math import acos, pi
-	R1               = Transform({"type":"spider","phi":  angle1[0], "theta":  angle1[1],  "psi": angle1[2]})
-	R2               = Transform({"type":"spider","phi":  angle2[0], "theta":  angle2[1],  "psi": angle2[2]})
+	from math import acos, pi, degrees
+	R1               = Transform({"type":"spider","phi": angle1[0], "theta": angle1[1], "psi": angle1[2]})
+	R2               = Transform({"type":"spider","phi": angle2[0], "theta": angle2[1], "psi": angle2[2]})
 	R2               = R2.get_sym_proj(sym)
 	axes_dis_min     = 1.0e23
 	for isym in xrange(len(R2)):
-		A1 		         = R1.get_matrix()
-		A2 		         = R2[isym].get_matrix()
-		X1               = A1[0]*A2[0] + A1[1]*A2[1] + A1[2]*A2[2] 
-		X2               = A1[4]*A2[4] + A1[5]*A2[5] + A1[6]*A2[6]
-		X3               = A1[8]*A2[8] + A1[9]*A2[9] + A1[10]*A2[10] 
-		axes_dis         = acos(max(min(X1,1.),-1.0))*180./pi +acos(max(min(X2,1.),-1.0))*180./pi +acos(max(min(X3,1.),-1.0))*180./pi/3.0
-		axes_dis_min     = min(axes_dis_min, axes_dis)
+		A1 		     = R1.get_matrix()
+		A2 		     = R2[isym].get_matrix()
+		X1           = A1[0]*A2[0] + A1[1]*A2[1] + A1[2]*A2[2] 
+		X2           = A1[4]*A2[4] + A1[5]*A2[5] + A1[6]*A2[6]
+		X3           = A1[8]*A2[8] + A1[9]*A2[9] + A1[10]*A2[10] 
+		axes_dis     = (degrees(acos(max(min(X1,1.),-1.0)))+degrees(acos(max(min(X2,1.),-1.0)))+degrees(acos(max(min(X3,1.),-1.0))))/3.0
+		axes_dis_min = min(axes_dis_min, axes_dis)
 	return axes_dis_min
 
 def checkstep(item, keepchecking):
@@ -1353,17 +1354,6 @@ def ali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D =
 					Util.mulclreal(data[kl][im], temp)
 			del bckgnoise
 	#else:  first = False
-	"""
-	at = time()
-	for i in xrange(nang):
-		iang = i*100000000
-		for j in xrange(npsi):
-			iangpsi = j*1000 + iang
-			psi = j*Tracker["delta"]
-			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
-			else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
-	if(Blockdata["myid"]%20 == 0):  print( "  time to generate projectionss",Blockdata["myid"],time()-at)
-	"""
 
 	#  REFVOL
 	disp_unit = np.dtype("f4").itemsize
@@ -1398,7 +1388,10 @@ def ali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D =
 		np.copyto(volbuf,ndo)
 		del odo,ndo
 
-	volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+
+	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	emnumpy1 = EMNumPy()
+	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
 	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
 
 
@@ -1419,7 +1412,13 @@ def ali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D =
 	buffer = buffer.reshape(lenbigbuf, ny, nxt)
 	#ncbuf = lenbigbuf//2
 	
-	bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+
+	emnumpy2 = EMNumPy()
+	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
+	emnumpy3 = EMNumPy()
+
 	#  end of setup
 
 	at = time()
@@ -1456,7 +1455,8 @@ def ali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D =
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.numpy2em(img_buffer)
+			#temp = EMNumPy.numpy2em(img_buffer)
+			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
 
 			#temp *= (1000.0/nrmref)
 			#nrmref = 1000.
@@ -1473,6 +1473,10 @@ def ali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D =
 	#mpi_barrier(MPI_COMM_WORLD)
 	mpi_win_free(win_vol)
 	mpi_win_free(win_sm)
+	emnumpy1.unregister_numpy_from_emdata()
+	emnumpy2.unregister_numpy_from_emdata()
+	emnumpy3.unregister_numpy_from_emdata()
+	del emnumpy1, emnumpy2, emnumpy3
 
 	mpi_barrier(Blockdata["shared_comm"])
 
@@ -1575,7 +1579,9 @@ def ali3D_direct_euc(data, refang, shifts, procid, ctfs = None, bckgnoise = None
 		np.copyto(volbuf,ndo)
 		del odo,ndo
 
-	volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	emnumpy1 = EMNumPy()
+	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
 	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
 
 
@@ -1596,7 +1602,13 @@ def ali3D_direct_euc(data, refang, shifts, procid, ctfs = None, bckgnoise = None
 	buffer = buffer.reshape(lenbigbuf, ny, nxt)
 	#ncbuf = lenbigbuf//2
 	
-	bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+
+	emnumpy2 = EMNumPy()
+	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
+	emnumpy3 = EMNumPy()
+
 	#  end of setup
 
 	at = time()
@@ -1625,7 +1637,8 @@ def ali3D_direct_euc(data, refang, shifts, procid, ctfs = None, bckgnoise = None
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.numpy2em(img_buffer)
+			#temp = EMNumPy.numpy2em(img_buffer)
+			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
 
 
 			for kl,emimage in enumerate(data):
@@ -1653,6 +1666,10 @@ def ali3D_direct_euc(data, refang, shifts, procid, ctfs = None, bckgnoise = None
 
 	mpi_win_free(win_vol)
 	mpi_win_free(win_sm)
+	emnumpy1.unregister_numpy_from_emdata()
+	emnumpy2.unregister_numpy_from_emdata()
+	emnumpy3.unregister_numpy_from_emdata()
+	del emnumpy1, emnumpy2, emnumpy3
 
 	mpi_barrier(Blockdata["shared_comm"])
 
@@ -1812,7 +1829,9 @@ def ali3D_direct_euc_norm(data, refang, shifts, oldparams, procid, ctfs = None, 
 		np.copyto(volbuf,ndo)
 		del odo,ndo
 
-	volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	emnumpy1 = EMNumPy()
+	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
 	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
 
 
@@ -1834,7 +1853,13 @@ def ali3D_direct_euc_norm(data, refang, shifts, oldparams, procid, ctfs = None, 
 	buffer = buffer.reshape(lenbigbuf, ny, nxt)
 	#ncbuf = lenbigbuf//2
 	
-	bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+
+	emnumpy2 = EMNumPy()
+	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
+	emnumpy3 = EMNumPy()
+
 	#  end of setup
 
 	at = time()
@@ -1861,7 +1886,8 @@ def ali3D_direct_euc_norm(data, refang, shifts, oldparams, procid, ctfs = None, 
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.numpy2em(img_buffer)
+			#temp = EMNumPy.numpy2em(img_buffer)
+			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
 
 			for kl,emimage in enumerate(data):
 				for im in xrange(nshifts):
@@ -1893,6 +1919,10 @@ def ali3D_direct_euc_norm(data, refang, shifts, oldparams, procid, ctfs = None, 
 
 	mpi_win_free(win_vol)
 	mpi_win_free(win_sm)
+	emnumpy1.unregister_numpy_from_emdata()
+	emnumpy2.unregister_numpy_from_emdata()
+	emnumpy3.unregister_numpy_from_emdata()
+	del emnumpy1, emnumpy2, emnumpy3
 
 	mpi_barrier(Blockdata["shared_comm"])
 
@@ -2067,7 +2097,9 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 		np.copyto(volbuf,ndo)
 		del odo,ndo
 
-	volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	emnumpy1 = EMNumPy()
+	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
 	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
 
 
@@ -2090,7 +2122,13 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 	buffer = buffer.reshape(lenbigbuf, ny, nxt)
 	#ncbuf = lenbigbuf//2
 	
-	bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+
+	emnumpy2 = EMNumPy()
+	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
+	emnumpy3 = EMNumPy()
+
 	#  end of setup
 	at = time()
 
@@ -2133,7 +2171,8 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 			pointer_location = base_ptr + (i*npsi + j)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.numpy2em(img_buffer)
+			#temp = EMNumPy.numpy2em(img_buffer)
+			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
 
 			for kl,emimage in enumerate(data):
 				for im in xrange(nshifts):
@@ -2253,7 +2292,8 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 			pointer_location = base_ptr + (iang*npsi + ipsi)*size_of_one_image*disp_unit
 			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 			img_buffer = img_buffer.reshape(ny, nxt)
-			temp = EMNumPy.numpy2em(img_buffer)
+			#temp = EMNumPy.numpy2em(img_buffer)
+			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
 			Util.sqedfull(data[kl][ishift], temp, ctfs[kl], mask, tbckg, newpar[kl][2][idir][1])
 			'''
 			if( Blockdata["myid"] == 0 ):  
@@ -2268,6 +2308,11 @@ def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = N
 	mpi_win_free(win_vol)
 	mpi_win_free(win_sm)
 	del  data, ctfs, temp, tbckg
+	emnumpy1.unregister_numpy_from_emdata()
+	emnumpy2.unregister_numpy_from_emdata()
+	emnumpy3.unregister_numpy_from_emdata()
+	del emnumpy1, emnumpy2, emnumpy3
+
 	# Reduce stuff
 	if( procid == 1 ):
 		Blockdata["totprob"] = mpi_reduce(Blockdata["totprob"], nyb, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -2402,7 +2447,9 @@ def ali3D_direct_local_euc(data, refang, shifts, oldangs, procid, ctfs = None, b
 		np.copyto(volbuf,ndo)
 		del odo,ndo
 
-	volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	emnumpy1 = EMNumPy()
+	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
 	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
 
 
@@ -2424,7 +2471,11 @@ def ali3D_direct_local_euc(data, refang, shifts, oldangs, procid, ctfs = None, b
 	buffer = buffer.reshape(lenbigbuf, ny, nxt)
 	#ncbuf = lenbigbuf//2
 	
-	bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+	emnumpy2 = EMNumPy()
+	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
+	emnumpy3 = EMNumPy()
+
 	#  end of setup
 
 	at = time()
@@ -2478,7 +2529,8 @@ def ali3D_direct_local_euc(data, refang, shifts, oldangs, procid, ctfs = None, b
 				pointer_location = base_ptr + (itang%lenbigbuf)*size_of_one_image*disp_unit
 				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 				img_buffer = img_buffer.reshape(ny, nxt)
-				temp = EMNumPy.numpy2em(img_buffer)
+				#temp = EMNumPy.numpy2em(img_buffer)
+				temp = emnumpy3.register_numpy_to_emdata(img_buffer)
 
 				lpoint += 1
 				while( ltable[lpoint] > -1 ):
@@ -2669,7 +2721,9 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 		np.copyto(volbuf,ndo)
 		del odo,ndo
 
-	volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	emnumpy1 = EMNumPy()
+	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
 	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
 
 
@@ -2693,7 +2747,13 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 	buffer = buffer.reshape(lenbigbuf, ny, nxt)
 	#ncbuf = lenbigbuf//2
 	
-	bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+
+	emnumpy2 = EMNumPy()
+	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
+	emnumpy3 = EMNumPy()
+
 	#  end of setup
 
 	at = time()
@@ -2745,7 +2805,8 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 				pointer_location = base_ptr + (itang%lenbigbuf)*size_of_one_image*disp_unit
 				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 				img_buffer = img_buffer.reshape(ny, nxt)
-				temp = EMNumPy.numpy2em(img_buffer)
+				#temp = EMNumPy.numpy2em(img_buffer)
+				temp = emnumpy3.register_numpy_to_emdata(img_buffer)
 
 				lpoint += 1
 				while( ltable[lpoint] > -1 ):
@@ -2767,6 +2828,10 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 
 	mpi_win_free(win_vol)
 	mpi_win_free(win_sm)
+	emnumpy1.unregister_numpy_from_emdata()
+	emnumpy2.unregister_numpy_from_emdata()
+	emnumpy3.unregister_numpy_from_emdata()
+	del emnumpy1, emnumpy2, emnumpy3
 
 	mpi_barrier(Blockdata["shared_comm"])
 

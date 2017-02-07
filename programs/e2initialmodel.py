@@ -215,7 +215,7 @@ class InitMdlTask(JSTask):
 			bslst=[]
 			quals=[]
 			for i in range(len(ptcls)):
-				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_tree",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
+				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
 				bs=min(sim)
 #				print bs[0]
 				bss+=bs[0]
@@ -233,7 +233,7 @@ class InitMdlTask(JSTask):
 			for i in range(len(ptcls)*7/8):
 				n=ptcls[bslst[i][1]]["match_n"]
 				quals.append(ptcls[bslst[i][1]]["match_qual"])
-				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_tree",projs[n][0],{},"ccc",{}))
+				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n][0],{},"ccc",{}))
 				if it<2 : aptcls[-1].process_inplace("xform.centerofmass",{})
 				aptcls[-1].process_inplace("normalize.toimage",{"to":projs[n][0]})
 				aptcls[-1].add(-aptcls[-1]["mean"])

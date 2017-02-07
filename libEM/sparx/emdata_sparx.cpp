@@ -5991,7 +5991,6 @@ EMData* EMData::extract_section2(const Transform& tf, int interpolate_method) {
 
 //	int ixg =0, iyg=0, izg=0;
 	float rim = nhalfo*float(nhalfo);
-
 	Transform tftrans = tf; // need transpose of tf here for consistency
 	tftrans.invert();      // with spider
 	if( interpolate_method == 0 ) {

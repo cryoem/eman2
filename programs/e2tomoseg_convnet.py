@@ -41,6 +41,7 @@ def main():
 	parser.add_argument("--tomograms", type=str,help="Tomograms input.", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True)", row=1, col=0, rowspan=1, colspan=3, mode="test")
 	parser.add_argument("--applying", action="store_true", default=False ,help="Applying the neural network on tomograms", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='test[True]')
 	parser.add_argument("--dream", action="store_true", default=False ,help="Iterativly applying the neural network on noise", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='test')
+	parser.add_argument("--to3d", action="store_true", default=True ,help="convert to result to 3D.", guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='test')
 	parser.add_argument("--output", type=str,help="Segmentation out file name", default="tomosegresult.hdf", guitype='strbox', row=3, col=0, rowspan=1, colspan=1, mode="test")
 	parser.add_argument("--threads", type=int,help="Number of thread to use when applying neural net on test images. Not used during trainning", default=12, guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="test")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -85,15 +86,7 @@ def main():
 
 	labelshrink=np.prod(options.poolsz)
 	print "loading particles..."
-	if options.trainset.endswith(".pkl"):
-		f = file(options.trainset, 'rb')
-		particles=cPickle.load(f)
-		f.close()
-	else:
-		particles=load_particles(options.trainset,labelshrink,options.ncopy)
-		f = file("data_training.pkl", 'wb')
-		cPickle.dump(particles, f, protocol=cPickle.HIGHEST_PROTOCOL)
-		f.close()
+	particles=load_particles(options.trainset,labelshrink,options.ncopy)
 
 	train_set_x= particles[0]
 	labels=particles[1]
@@ -156,18 +149,13 @@ def main():
 			
 	if options.trainout:
 		print "Generating results ..."
-		test_imgs = theano.function(
-			inputs=[index],
-			outputs=convnet.convlayers[0].get_reconstructed_input(),
-			givens={
-				convnet.x: train_set_x[index * batch_size: (index+1) * batch_size]
-			}
-		)
+		nsample=100
+		convnet.update_shape((nsample, shape[2], shape[0],shape[1]))
 		test_cls = theano.function(
-			inputs=[index],
+			inputs=[],
 			outputs=convnet.clslayer.get_image(),
 			givens={
-				convnet.x: train_set_x[index * batch_size: (index+1) * batch_size]
+				convnet.x: train_set_x[:nsample]
 			}
 		)
 		if options.netout.endswith(".hdf"):
@@ -177,51 +165,48 @@ def main():
 		try:os.remove(fname)
 		except: pass
 		print convnet.outsize,shape
-		for idi in range(2):
-			rt=test_imgs(idi)
-			mid=test_cls(idi)
-			mid_cent=mid
-			mid_mean=np.mean(mid_cent)
-			mid_std=np.std(mid_cent)
-			#print "mean:",mid_mean,"std:",mid_std
-			#print np.shape(test_imgs(0))
+		mid=test_cls()
+		mid_cent=mid
+		mid_mean=np.mean(mid_cent)
+		mid_std=np.std(mid_cent)
+		#print "mean:",mid_mean,"std:",mid_std
+		#print np.shape(test_imgs(0))
 
-			ipt= train_set_x[idi * batch_size: (idi + 1) * batch_size]
-			ipt= ipt.eval()
+		ipt= train_set_x[:nsample]
+		ipt= ipt.eval()
+		
+		lb= labels[:nsample].eval()
+		
+		for t in range(nsample):
+			#img=ipt[t].reshape(lth,lth)
+			if shape[2]==1:
+				img=ipt[t].reshape(shape[0],shape[1])
+			else:
+				img=ipt[t].reshape(shape[2],shape[0],shape[1])
+				img=img[shape[2]/2]
+			e = from_numpy(img.astype("float32"))
+			#e.mult(-1)
+			e.process_inplace("normalize")
+			e.write_image(fname,-1)
 			
-			lb= labels[idi * batch_size: (idi + 1) * batch_size].eval()
+			img=lb[t].reshape(convnet.outsize,convnet.outsize)
+			e = from_numpy(img.astype("float32"))
+			#e.process_inplace("normalize")
+			e.mult(2)
+			e=e.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
+			e.scale(float(shape[0])/float(convnet.outsize))
+			e.write_image(fname,-1)
 			
-			for t in range(len(rt)):
-				#img=ipt[t].reshape(lth,lth)
-				#print ipt[t].shape,shape
-				if shape[2]==1:
-					img=ipt[t].reshape(shape[0],shape[1])
-				else:
-					img=ipt[t].reshape(shape[2],shape[0],shape[1])
-					img=img[shape[2]/2]
-				e = from_numpy(img.astype("float32"))
-				#e.mult(-1)
-				e.process_inplace("normalize")
-				e.write_image(fname,-1)
-				
-				img=lb[t].reshape(convnet.outsize,convnet.outsize)
-				e = from_numpy(img.astype("float32"))
-				#e.process_inplace("normalize")
-				e.mult(2)
-				e=e.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
-				e.scale(float(shape[0])/float(convnet.outsize))
-				e.write_image(fname,-1)
-				
-				img=mid[t].reshape(convnet.outsize,convnet.outsize)
-				df=(np.mean(img)-mid_mean)/mid_std
-				e = from_numpy(img.astype("float32"))
-				#e.process_inplace("normalize")
-				e.div(float(mid_std))
-				
-				e=e.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
-				#print float(shape[0])/float(convnet.outsize)
-				e.scale(float(shape[0])/float(convnet.outsize))
-				e.write_image(fname,-1)
+			img=mid[t].reshape(convnet.outsize,convnet.outsize)
+			df=(np.mean(img)-mid_mean)/mid_std
+			e = from_numpy(img.astype("float32"))
+			#e.process_inplace("normalize")
+			#e.div(float(mid_std))
+			
+			e=e.get_clip(Region((convnet.outsize-shape[0])/2,(convnet.outsize-shape[0])/2,shape[0],shape[0]))
+			#print float(shape[0])/float(convnet.outsize)
+			e.scale(float(shape[0])/float(convnet.outsize))
+			e.write_image(fname,-1)
 		print "Writing output on training set in {}".format(fname)
 	print "Done"
 	E2end(E2n)
@@ -481,8 +466,14 @@ def apply_neuralnet(options):
 			idx,cout=jsd.get()
 			cout.write_image(options.output,idx)
 			
+	if is3d and options.to3d:
+		to3d=" --twod2threed"
+	else:
+		to3d=""
+		
+		
 	fout="__tomoseg_tmp.hdf"
-	run("e2proc2d.py {} {} --process math.fft.resample:n={} --twod2threed --apix {} ".format(options.output,fout,float(1./labelshrink), apix))
+	run("e2proc2d.py {} {} --process math.fft.resample:n={} {} --apix {} ".format(options.output,fout,float(1./labelshrink), to3d, apix))
 	os.rename(fout, options.output)
 	
 	print "Done."
@@ -690,7 +681,8 @@ def load_particles(ptcls,labelshrink,ncopy=5):
 	label=[label[i] for i in rndid]
 	
 	data=np.asarray(data,dtype=theano.config.floatX)
-	data/=np.std(data.flatten())*3  #np.max(np.abs(data))
+	print np.std(data.flatten())
+	#data/=np.std(data.flatten())*3  #np.max(np.abs(data))
 	label=np.asarray(label,dtype=theano.config.floatX)
 	label/=np.max(np.abs(label))
 	

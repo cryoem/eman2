@@ -152,7 +152,7 @@ int JpegIO::write_header(const Dict & dict, int image_index,
 	cinfo.in_color_space = JCS_GRAYSCALE; /* colorspace of input image */
 
 	jpeg_set_defaults(&cinfo);
-	jpeg_set_quality(&cinfo, jpegqual, true);
+	jpeg_set_quality(&cinfo, jpegqual, TRUE);
 
 	EXITFUNC;
 
