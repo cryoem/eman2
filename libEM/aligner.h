@@ -1662,7 +1662,7 @@ namespace EMAN
 
 			static const string NAME;
 	};
-	
+
 	/** 2D rotational and translational alignment using a hierarchical method with gradually decreasing downsampling in Fourier space.
 	 * In theory, very fast, and without need for a "refine" aligner. Comparator is ignored. Uses an inbuilt comparison.
 	 * @param verbose Turn this on to have useful information printed to standard out
@@ -1702,7 +1702,7 @@ namespace EMAN
 			{
 				return new RT2DTreeAligner();
 			}
-			
+
 
 			virtual TypeDict get_param_types() const
 			{
@@ -1713,6 +1713,65 @@ namespace EMAN
 				d.put("verbose", EMObject::INT,"Turn this on to have useful information printed to standard out.");
 				d.put("maxshift", EMObject::INT,"Maximum acceptable translation. Used only approximately.");
  				d.put("maxres", EMObject::FLOAT,"Maximum resolution to consider when full sampling is used");
+				return d;
+			}
+
+			static const string NAME;
+
+		private:
+			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const;
+
+	};
+
+	/** Alignment of a 2D image into a 3D volume using a hierarchical method with gradually decreasing downsampling in Fourier space.
+	 * In theory, very fast, and without need for a "refine" aligner. Comparator is ignored. Uses an inbuilt comparison.
+	 * @param sym The symmtery to use as the basis of the spherical sampling
+	 * @param verbose Turn this on to have useful information printed to standard out
+	 * @author Steve Ludtke
+	 * @date Feburary 2016
+	 */
+	class RT2Dto3DTreeAligner:public Aligner
+	{
+		public:
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img,
+								   const string & cmp_name= "sqeuclidean", const Dict& cmp_params = Dict()) const;
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "sqeuclidean", Dict());
+			}
+
+
+			/** See Aligner comments for more details
+			 */
+			virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const;
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual string get_desc() const
+			{
+				return "3D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment.";
+			}
+
+			static Aligner *NEW()
+			{
+				return new RT2Dto3DTreeAligner();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (no symmetry)");
+//				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
+//				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
+// 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
+				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
 
