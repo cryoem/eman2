@@ -728,19 +728,19 @@ def subdict(d,u):
 	for q in u:  d[q] = u[q]
 	
 def get_anger(angle1, angle2, sym="c1"):
-	from math import acos, pi
-	R1               = Transform({"type":"spider","phi":  angle1[0], "theta":  angle1[1],  "psi": angle1[2]})
-	R2               = Transform({"type":"spider","phi":  angle2[0], "theta":  angle2[1],  "psi": angle2[2]})
+	from math import acos, pi, degrees
+	R1               = Transform({"type":"spider","phi": angle1[0], "theta": angle1[1], "psi": angle1[2]})
+	R2               = Transform({"type":"spider","phi": angle2[0], "theta": angle2[1], "psi": angle2[2]})
 	R2               = R2.get_sym_proj(sym)
 	axes_dis_min     = 1.0e23
 	for isym in xrange(len(R2)):
-		A1 		         = R1.get_matrix()
-		A2 		         = R2[isym].get_matrix()
-		X1               = A1[0]*A2[0] + A1[1]*A2[1] + A1[2]*A2[2] 
-		X2               = A1[4]*A2[4] + A1[5]*A2[5] + A1[6]*A2[6]
-		X3               = A1[8]*A2[8] + A1[9]*A2[9] + A1[10]*A2[10] 
-		axes_dis         = acos(max(min(X1,1.),-1.0))*180./pi +acos(max(min(X2,1.),-1.0))*180./pi +acos(max(min(X3,1.),-1.0))*180./pi/3.0
-		axes_dis_min     = min(axes_dis_min, axes_dis)
+		A1 		     = R1.get_matrix()
+		A2 		     = R2[isym].get_matrix()
+		X1           = A1[0]*A2[0] + A1[1]*A2[1] + A1[2]*A2[2] 
+		X2           = A1[4]*A2[4] + A1[5]*A2[5] + A1[6]*A2[6]
+		X3           = A1[8]*A2[8] + A1[9]*A2[9] + A1[10]*A2[10] 
+		axes_dis     = (degrees(acos(max(min(X1,1.),-1.0)))+degrees(acos(max(min(X2,1.),-1.0)))+degrees(acos(max(min(X3,1.),-1.0))))/3.0
+		axes_dis_min = min(axes_dis_min, axes_dis)
 	return axes_dis_min
 
 def checkstep(item, keepchecking):
