@@ -2889,7 +2889,7 @@ EMData* RT2Dto3DTreeAligner::align(EMData * this_img, EMData *to, const string &
 
 // NOTE - if symmetry is applied, it is critical that "to" be the volume which is already aligned to the symmetry axes (ie - the reference)
 vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nrsoln, const string & cmp_name, const Dict& cmp_params) const {
-	if (this_img->nz!=1 || to->nz==1) throw InvalidParameterException("ERROR (RT2Dto3DTreeAligner): first image must be 2D and second 3D");
+	if (this_img->get_zsize()!=1 || to->get_zsize()==1) throw InvalidParameterException("ERROR (RT2Dto3DTreeAligner): first image must be 2D and second 3D");
 
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT2Dto3DTreeAligner): nsoln must be >0"); // What was the user thinking?
 
@@ -2928,6 +2928,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 
 	vector<float> s_score(nsoln,0.0f);
 	vector<float> s_step(nsoln*3,7.5f);
+	vector<float> s_coverage(nsoln,0.0f);
 	vector<Transform> s_xform(nsoln);
 	if (verbose>0) printf("%d solutions\n",nsoln);
 
@@ -2957,8 +2958,8 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		vector<float>sigmathisv=small_this->calc_radial_dist(ss/2,0,1,4);
 		vector<float>sigmatov=small_to->calc_radial_dist(ss/2,0,1,4);
 		for (int i=0; i<ss/2; i++) {
-			sigmathisv[i]*=sigmathisv[i]*sigmathis;
-			sigmatov[i]*=sigmatov[i]*sigmato;
+//			sigmathisv[i]*=sigmathisv[i]*sigmathis;
+//			sigmatov[i]*=sigmatov[i]*sigmato;
 		}
 
 		// debug out
