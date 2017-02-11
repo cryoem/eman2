@@ -81,6 +81,7 @@ ENDIF(CMAKE_SYSTEM MATCHES "Darwin-12*")
 # ENDIF (ENABLE_LEOPARD)
 
 IF (ENABLE_OPTIMIZE_MOUNTAIN_LION)
+	SET(CMAKE_MACOSX_RPATH ON)
 	SET(GL_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib)
 	SET(GLU_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib)
 	SET(GL_INCLUDE_PATH /usr/include)
@@ -204,6 +205,7 @@ ENDIF(ENABLE_IOCACHE)
 
 SET(INCLUDE_DIRS
 	${EMAN_SOURCE_DIR}/libEM
+	$ENV{HOME}/anaconda2/include
 	$ENV{HOME}/include
 	$ENV{FFTWDIR}/include
 	$ENV{GSLDIR}/include
@@ -218,6 +220,7 @@ SET(INCLUDE_DIRS
 SET(LIB_DIRS
 	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
 	$ENV{EMANDIR}/lib
+	$ENV{HOME}/anaconda2/lib
 	$ENV{HOME}/lib
 	${PLATFORMLIB}
 	$ENV{FFTWDIR}/lib
@@ -277,39 +280,42 @@ MACRO(CHECK_LIB_ONLY upper lower)
 ENDMACRO(CHECK_LIB_ONLY)
 
 MACRO(CHECK_PYTHON)
-	SET(PYTHON_FOUND FALSE)
+        SET(PYTHON_FOUND FALSE)
 
-	FOREACH(PYVER ${ARGV})
-		IF(NOT PYTHON_FOUND)
-			IF (WIN32)
-				FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-					$ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include)
+        FOREACH(PYVER ${ARGV})
+                IF(NOT PYTHON_FOUND)
+                        IF (WIN32)
+                                FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+                                        $ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include)
 
-				FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
-					$ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
+                                FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
+                                        $ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
 
-			ELSE (WIN32)
-				FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-					$ENV{PYTHON_ROOT}/include/python${PYVER}
-					/usr/local/include/python${PYVER}
-					/usr/include/python${PYVER})
+                        ELSE (WIN32)
+                                FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+					$ENV{HOME}/anaconda2/include/python2.7
+                                        $ENV{PYTHON_ROOT}/include/python${PYVER}
+                                        /usr/local/include/python${PYVER}
+                                        /usr/include/python${PYVER})
 
-				FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
-					$ENV{PYTHON_ROOT}/lib/python${PYVER}/config
-					/usr/local/lib/python${PYVER}/config
-					/usr/lib/python${PYVER}/config
-					/usr/lib64/python${PYVER}/config
-					$ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib)
+                                FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
+					$ENV{HOME}/anaconda2/lib
+                                        $ENV{PYTHON_ROOT}/lib/python${PYVER}
+                                        /usr/local/lib/python${PYVER}
+                                        /usr/lib/python${PYVER}
+                                        /usr/lib64/python${PYVER}
+                                        $ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib)
 
-			ENDIF (WIN32)
+                        ENDIF (WIN32)
 
-			IF(PYTHON_INCLUDE_PATH)
-				IF(PYTHON_LIBRARY)
-					SET(PYTHON_FOUND TRUE)
-				ENDIF(PYTHON_LIBRARY)
-			ENDIF(PYTHON_INCLUDE_PATH)
+                        IF(PYTHON_INCLUDE_PATH)
+                                IF(PYTHON_LIBRARY)
+                                        SET(PYTHON_FOUND TRUE)
+					SET(PYTHON_INCLUDE_DIR PYTHON_INCLUDE_PATH)
+                                ENDIF(PYTHON_LIBRARY)
+                        ENDIF(PYTHON_INCLUDE_PATH)
 
-		ENDIF(NOT PYTHON_FOUND)
+                ENDIF(NOT PYTHON_FOUND)
     ENDFOREACH(PYVER)
 ENDMACRO(CHECK_PYTHON)
 
@@ -438,7 +444,7 @@ IF (ENABLE_FTGL)
 		ADD_DEFINITIONS(-DOLD_FTGL)
 	ENDIF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
 	ADD_SUBDIRECTORY(fonts)
-    	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h /usr/include/freetype2 /usr/include $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
+    	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h $ENV{HOME}/anaconda2/include/freetype2 /usr/include/freetype2 /usr/include $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
 	CHECK_REQUIRED_LIB(FREETYPE freetype freetype/config/ftheader.h )
 	IF (ENABLE_STATIC_FTGL)
 		IF(WIN32)
@@ -480,29 +486,17 @@ ENDIF(ENABLE_PNG)
 
 FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
     $ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
-    $ENV{PYTHON_ROOT}/lib/python2.6/site-packages/numpy/core/include
-	$ENV{PYTHON_ROOT}/lib/python2.5/site-packages/numpy/core/include
-	$ENV{PYTHON_ROOT}/lib/python2.4/site-packages/numpy/core/include
 	/usr/local/lib/python2.7/site-packages/numpy/core/include
-	/usr/local/lib/python2.6/site-packages/numpy/core/include
 	/usr/lib64/python2.7/site-packages/numpy/core/include
-	/usr/lib64/python2.6/site-packages/numpy/core/include
-	/usr/lib64/python2.5/site-packages/numpy/core/include
-	/usr/lib64/python2.4/site-packages/numpy/core/include
 	/usr/lib/python2.7/site-packages/numpy/core/include
-	/usr/lib/python2.6/site-packages/numpy/core/include
-	/usr/lib/python2.5/site-packages/numpy/core/include
-    /Library/Python/2.5/site-packages/numpy/core/include
-    /usr/lib/python2.4/site-packages/numpy/core/include
-    /System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include
-    /System/Library/Frameworks/Python.framework/Versions/2.6/Extras/lib/python/numpy/core/include
+    #/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include
     /usr/include)
 INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
 IF(WIN32)
-	CHECK_PYTHON($ENV{PYTHON_VERSION} 27 26 25 24 23 22)
+	CHECK_PYTHON(2.7)
 ELSE(WIN32)
-	CHECK_PYTHON($ENV{PYTHON_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2)
+	CHECK_PYTHON(2.7)
 ENDIF(WIN32)
 
 IF(PYTHON_INCLUDE_PATH)
