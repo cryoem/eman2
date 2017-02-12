@@ -476,6 +476,7 @@ ENDIF(ENABLE_PNG)
 
 FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
     $ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
+	$ENV{SP_DIR}/numpy/core/include
 	/usr/local/lib/python2.7/site-packages/numpy/core/include
 	/usr/lib64/python2.7/site-packages/numpy/core/include
 	/usr/lib/python2.7/site-packages/numpy/core/include
