@@ -483,11 +483,7 @@ FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
     /usr/include)
 INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
-IF(WIN32)
-	CHECK_PYTHON(2.7)
-ELSE(WIN32)
-	CHECK_PYTHON(2.7)
-ENDIF(WIN32)
+CHECK_PYTHON(2.7)
 
 IF(PYTHON_INCLUDE_PATH)
     # Check the most generic name first (used by cctbx).
