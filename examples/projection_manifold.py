@@ -25,6 +25,7 @@ def main():
 	
 	pjsimx=[f for f in os.listdir(options.path) if f.startswith("proj_simmx_") and f.endswith("even.hdf")]
 	pjsimx=os.path.join(options.path, np.sort(pjsimx)[-1])
+	projname=pjsimx.replace("proj_simmx_", "projections_")
 	print "Using {}...".format(pjsimx)
 	e=EMData(pjsimx)
 	simx=e.numpy().copy()
@@ -32,17 +33,17 @@ def main():
 	print "Doing PCA..."
 	dc=decomp.PCA(n_components=options.ncomponents)
 	dcout=dc.fit_transform(simx)
-	write_out(dcout,"pca_projs_{}.txt".format(options.path))
+	write_out(dcout,"pca_projs_{}.txt".format(options.path), projname)
 	
 	
 	print "Doing TSNE..."
 	mani=manifold.TSNE(n_components=options.ncomponents,verbose=3, perplexity=options.perplexity)
 	mnout=mani.fit_transform(simx) 
-	write_out(mnout,"tsne_projs_{}.txt".format(options.path))
+	write_out(mnout,"tsne_projs_{}.txt".format(options.path), projname)
 
 	E2end(logid)
 		
-def write_out(data,fname=None,projname="refine_final/projections_03_even.hdf"):
+def write_out(data,fname=None,projname=None):
 	n=len(data[0])
 	if fname:
 		f=open(fname,'w')
@@ -51,7 +52,11 @@ def write_out(data,fname=None,projname="refine_final/projections_03_even.hdf"):
 		s=""
 		for i in range(n):
 			s+="{}\t".format(d[i])
-		s+="# {};{}\n".format(di,projname)
+		
+		if projname:
+			s+="# {};{}\n".format(di,projname)
+		else:
+			s+="\n"
 		if fname:
 			f.write(s)
 		else:
@@ -59,6 +64,7 @@ def write_out(data,fname=None,projname="refine_final/projections_03_even.hdf"):
 		
 	if fname:
 		f.close()
+		print "Output written to {}.".format(fname)
 		return
 	else:
 		return s
