@@ -579,6 +579,16 @@ INCLUDE_DIRECTORIES(.
 #            /usr/include/freetype2
 #            /usr/local/include/freetype2
 
+#---------------------------------------------------------------------------------------
+message("\nINCLUDE_DIRECTORIES---START")
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+
+foreach(dir ${dirs})
+	message(STATUS "INCLUDE_DIR='${dir}'")
+endforeach()
+message("\nINCLUDE_DIRECTORIES---END")
+#---------------------------------------------------------------------------------------
+
 IF(ENABLE_RT)
     ADD_SUBDIRECTORY(rt)
 ENDIF(ENABLE_RT)
