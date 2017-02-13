@@ -12,7 +12,9 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--ncomponents", type=int,help="number of output components", default=2)
+	parser.add_argument("--dopca", type=int,help="perform PCA for comparison", default=1)
 	parser.add_argument("--perplexity", type=int,help="perplexity for TSNE", default=300)
+	parser.add_argument("--mode", type=int,help="choose from: 0: TSNE, 1: Isomap, 2: LocallyLinearEmbedding, 3:SpectralEmbedding, default is TSNE", default=0)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -30,16 +32,23 @@ def main():
 	e=EMData(pjsimx)
 	simx=e.numpy().copy()
 	
-	print "Doing PCA..."
-	dc=decomp.PCA(n_components=options.ncomponents)
-	dcout=dc.fit_transform(simx)
-	write_out(dcout,"pca_projs_{}.txt".format(options.path), projname)
+	if options.dopca:
+		print "Doing PCA..."
+		dc=decomp.PCA(n_components=options.ncomponents)
+		dcout=dc.fit_transform(simx)
+		write_out(dcout,"pca_projs_{}.txt".format(options.path), projname)
 	
-	
-	print "Doing TSNE..."
-	mani=manifold.TSNE(n_components=options.ncomponents,verbose=3, perplexity=options.perplexity)
+	mode_dict={0: "TSNE", 1: "Isomap", 2: "LocallyLinearEmbedding", 3:"SpectralEmbedding"}
+	mode=mode_dict[options.mode]
+	if options.mode==0:
+		print "Doing TSNE..."
+		mani=manifold.TSNE(n_components=options.ncomponents,verbose=3, perplexity=options.perplexity)
+	else:
+		print "Doing {}...".format(mode)
+		mani=eval("manifold.{}(n_components={:d})".format(mode, options.ncomponents))
+		
 	mnout=mani.fit_transform(simx) 
-	write_out(mnout,"tsne_projs_{}.txt".format(options.path), projname)
+	write_out(mnout,"{}_projs_{}.txt".format(mode,options.path), projname)
 
 	E2end(logid)
 		
