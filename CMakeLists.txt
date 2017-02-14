@@ -203,7 +203,6 @@ ENDIF(ENABLE_IOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
-add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
 
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 	FUNCTION(message_debug var)
@@ -212,8 +211,11 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 
 	if(NOT WIN32)
 		set(CMAKE_PREFIX_PATH $ENV{PREFIX})
+		set(GSL_INCLUDE_DIRS $ENV{PREFIX}/include)
 	else()
 		set(CMAKE_PREFIX_PATH $ENV{LIBRARY_PREFIX})
+		add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
+		set(GSL_INCLUDE_DIRS $ENV{LIBRARY_PREFIX}/include)
 	endif()
 		
 	find_package(Boost COMPONENTS python REQUIRED)
@@ -222,13 +224,6 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 	find_package(PNG REQUIRED)
 	find_package(JPEG REQUIRED)
 	find_package(ZLIB REQUIRED)
-	
-	if(NOT WIN32)
-		set(GSL_INCLUDE_DIRS $ENV{PREFIX}/include)
-	else()
-		set(GSL_INCLUDE_DIRS $ENV{LIBRARY_PREFIX}/include)
-	endif()
-	
 	find_package(Freetype REQUIRED)
 
 #		Set expected vars to values just found
