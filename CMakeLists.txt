@@ -413,8 +413,12 @@ IF(ENABLE_FFTW3)
     SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
 
-	message("FFTW3F_LIBRARIES: ${FFTW3F_LIBRARIES}")
-	message("FFTW_INCLUDE_PATH: ${FFTW_INCLUDE_PATH}")
+	if(DEFINED ENV{CONDA_BUILD_STATE})
+		if($ENV{CONDA_BUILD_STATE} STREQUAL "BUILD")
+			message("FFTW3F_LIBRARIES: ${FFTW3F_LIBRARIES}")
+			message("FFTW_INCLUDE_PATH: ${FFTW_INCLUDE_PATH}")
+		endif()
+	endif()
 		
     IF(ENABLE_NFFT2)
     	CHECK_REQUIRED_LIB(FFTW3D fftw3 fftw3.h)
@@ -541,7 +545,11 @@ FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
 	/usr/lib/python2.7/site-packages/numpy/core/include
     #/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include
     /usr/include)
-message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
+if(DEFINED ENV{CONDA_BUILD_STATE})
+	if($ENV{CONDA_BUILD_STATE} STREQUAL "BUILD")
+		message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
+	endif()
+endif()
 INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
 CHECK_PYTHON(2.7)
@@ -584,13 +592,17 @@ INCLUDE_DIRECTORIES(.
 #            /usr/local/include/freetype2
 
 #---------------------------------------------------------------------------------------
-message("\nINCLUDE_DIRECTORIES---START")
-get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-
-foreach(dir ${dirs})
-	message(STATUS "INCLUDE_DIR='${dir}'")
-endforeach()
-message("\nINCLUDE_DIRECTORIES---END")
+if(DEFINED ENV{CONDA_BUILD_STATE})
+	if($ENV{CONDA_BUILD_STATE} STREQUAL "BUILD")
+		message("\nINCLUDE_DIRECTORIES---START")
+		get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+		
+		foreach(dir ${dirs})
+			message(STATUS "INCLUDE_DIR='${dir}'")
+		endforeach()
+		message("\nINCLUDE_DIRECTORIES---END")
+	endif()
+endif()
 #---------------------------------------------------------------------------------------
 
 IF(ENABLE_RT)
