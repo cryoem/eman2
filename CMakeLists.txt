@@ -318,7 +318,7 @@ MACRO(CHECK_OPTIONAL_LIB upper lower header)
 ENDMACRO(CHECK_OPTIONAL_LIB)
 
 MACRO(CHECK_LIB_ONLY upper lower)
-    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
+    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS} NO_DEFAULT_PATH)
 ENDMACRO(CHECK_LIB_ONLY)
 
 MACRO(CHECK_PYTHON)
@@ -363,7 +363,7 @@ MACRO(CHECK_PYTHON)
                                         /usr/local/lib/python${PYVER}
                                         /usr/lib/python${PYVER}
                                         /usr/lib64/python${PYVER}
-                                        $ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib)
+                                        $ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
 
                         ENDIF (WIN32)
 
