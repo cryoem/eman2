@@ -203,6 +203,12 @@ ENDIF(ENABLE_IOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	FUNCTION(message_debug var)
+		message("${var}: ${${var}}")
+	endfunction()
+endif()
+
 if(DEFINED ENV{CONDA_BUILD_STATE})
 	if($ENV{CONDA_BUILD_STATE} STREQUAL "BUILD")
 		set(CMAKE_PREFIX_PATH $ENV{PREFIX})
@@ -301,6 +307,12 @@ SET(LIB_DIRS
 
 
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
+	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+		message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
+		message_debug(${upper}_INCLUDE_PATH)
+		message_debug(${upper}_LIBRARY)
+	endif()
+		
 	IF(NOT ${upper}_INCLUDE_PATH)
 		FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
 	endif()
@@ -318,6 +330,12 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
     ELSE(${upper}_INCLUDE_PATH)
 		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
     ENDIF(${upper}_INCLUDE_PATH)
+
+	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+		message("### END ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
+		message_debug(${upper}_INCLUDE_PATH)
+		message_debug(${upper}_LIBRARY)
+	endif()
 ENDMACRO(CHECK_REQUIRED_LIB2)
 
 MACRO(CHECK_REQUIRED_LIB upper lower header)
