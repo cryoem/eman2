@@ -245,6 +245,7 @@ endif()
 
 SET(INCLUDE_DIRS
 	${EMAN_SOURCE_DIR}/libEM
+	$ENV{HOME}/EMAN2/anaconda2/include
 	$ENV{HOME}/anaconda2/include
 	$ENV{HOME}/include
 	$ENV{FFTWDIR}/include
@@ -260,6 +261,7 @@ SET(INCLUDE_DIRS
 SET(LIB_DIRS
 	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
 	$ENV{EMANDIR}/lib
+	$ENV{HOME}/EMAN2/anaconda2/lib
 	$ENV{HOME}/anaconda2/lib
 	$ENV{HOME}/lib
 	${PLATFORMLIB}
@@ -274,10 +276,10 @@ SET(LIB_DIRS
 
 
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
-    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
+    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
     IF(${upper}_INCLUDE_PATH)
     ELSE (${upper}_INCLUDE_PATH)
-		FIND_PATH(${upper}_INCLUDE_PATH ${header2} $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
+		FIND_PATH(${upper}_INCLUDE_PATH ${header2} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
     ENDIF(${upper}_INCLUDE_PATH)
 
     IF(${upper}_INCLUDE_PATH)
@@ -296,7 +298,7 @@ MACRO(CHECK_REQUIRED_LIB upper lower header)
 ENDMACRO(CHECK_REQUIRED_LIB)
 
 MACRO(CHECK_OPTIONAL_LIB upper lower header)
-    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
+    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
 
     IF(${upper}_INCLUDE_PATH)
         FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
@@ -341,19 +343,21 @@ MACRO(CHECK_PYTHON)
                 IF(NOT PYTHON_FOUND)
                         IF (WIN32)
                                 FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-                                        $ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include)
+                                        $ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include NO_DEFAULT_PATH)
 
                                 FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
                                         $ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
 
                         ELSE (WIN32)
                                 FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+					$ENV{HOME}/EMAN2/anaconda2/include/python2.7
 					$ENV{HOME}/anaconda2/include/python2.7
                                         $ENV{PYTHON_ROOT}/include/python${PYVER}
                                         /usr/local/include/python${PYVER}
-                                        /usr/include/python${PYVER})
+                                        /usr/include/python${PYVER} NO_DEFAULT_PATH)
 
                                 FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
+					$ENV{HOME}/EMAN2/anaconda2/lib
 					$ENV{HOME}/anaconda2/lib
                                         $ENV{PYTHON_ROOT}/lib/python${PYVER}
                                         /usr/local/lib/python${PYVER}
@@ -470,11 +474,11 @@ ENDIF(ENABLE_DJBFFT)
 IF(ENABLE_OPTPP)
     FIND_PATH(OPTPP_INCLUDE_PATH Opt.h /usr/include /usr/include/opt++
               /usr/local/include /usr/local/include/opt++ $ENV{HOME}/include
-             $ENV{HOME}/include/opt++)
+             $ENV{HOME}/include/opt++ NO_DEFAULT_PATH)
     FIND_PATH(NEWMAT_INCLUDE_PATH newmat.h /usr/include /usr/include/opt++
               /usr/include/newmat /usr/local/include/newmat
               /usr/local/include /usr/local/include/opt++ $ENV{HOME}/include
-             $ENV{HOME}/include/opt++)
+             $ENV{HOME}/include/opt++ NO_DEFAULT_PATH)
     FIND_LIBRARY(OPTPP_LIBRARY NAMES opt-linux PATHS /usr/lib /usr/local/lib)
     FIND_LIBRARY(NEWMAT_LIBRARY NAMES newmat-linux PATHS /usr/lib /usr/local/lib)
 
@@ -497,8 +501,16 @@ IF (ENABLE_FTGL)
 		ADD_DEFINITIONS(-DOLD_FTGL)
 	ENDIF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
 	ADD_SUBDIRECTORY(fonts)
-    	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h $ENV{HOME}/anaconda2/include/freetype2 /usr/include/freetype2 /usr/include $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
-	CHECK_REQUIRED_LIB(FREETYPE freetype freetype/config/ftheader.h )
+    	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h 
+		$ENV{HOME}/EMAN2/anaconda2/include/freetype2 
+		$ENV{HOME}/anaconda2/include/freetype2 
+		/usr/include/freetype2 
+		/usr/include 
+#		$ENV{${upper}DIR}/include
+		${INCLUDE_DIRS}
+		NO_DEFAULT_PATH
+	)
+	CHECK_REQUIRED_LIB(FREETYPE freetype config/ftheader.h )
 	IF (ENABLE_STATIC_FTGL)
 		IF(WIN32)
 			CHECK_REQUIRED_LIB(FREETYPE freetype ft2build.h)
@@ -538,13 +550,16 @@ IF(ENABLE_PNG)
 ENDIF(ENABLE_PNG)
 
 FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
-    $ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
+	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
+	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
+	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
+	$ENV{SP_DIR}/numpy/core/include
 	$ENV{SP_DIR}/numpy/core/include
 	/usr/local/lib/python2.7/site-packages/numpy/core/include
 	/usr/lib64/python2.7/site-packages/numpy/core/include
 	/usr/lib/python2.7/site-packages/numpy/core/include
     #/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include
-    /usr/include)
+    /usr/include NO_DEFAULT_PATH)
 if(DEFINED ENV{CONDA_BUILD_STATE})
 	if($ENV{CONDA_BUILD_STATE} STREQUAL "BUILD")
 		message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
