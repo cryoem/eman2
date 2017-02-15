@@ -3024,8 +3024,8 @@ def cerrs(params, ctfs, particle_groups):
 	acc_rot = mpi_bcast(acc_rot, 1, MPI_FLOAT, Blockdata["main_node"], MPI_COMM_WORLD)
 	acc_trans = mpi_bcast(acc_trans, 1, MPI_FLOAT, Blockdata["main_node"], MPI_COMM_WORLD)
 
-	acc_rot = acc_rot[0]
-	acc_trans = acc_trans[0]
+	acc_rot = float(acc_rot[0])
+	acc_trans = float(acc_trans[0])
 	n_trials = Blockdata["nproc"]*len(params)
 
 	acc_rot /= n_trials
