@@ -1,0 +1,56 @@
+= Name =
+sxpipe isac_substack - Create Stack Subset: Create virtual subset stack consisting from ISAC accounted particles by retrieving particle numbers associated with the class averages. The command also saves a list text file containing the retrieved original image numbers.
+
+
+= Usage =
+
+''usage in command line''
+
+sxpipe.py  isac_substack  input_bdb_stack_path  input_isac_class_avgs_path  output_directory  --isac_class_id=ISAC_CLASS_ID  --no_virtual_stack
+
+=== Typical usage ===
+
+sxpipeline.py isac_substack does not support MPI. 
+
+
+ 1. Retrieve member :
+
+''' sxpipe.py  isac_substack   bdb:test3  class_averages_generation_3.hdf  outdir_isac_substack '''
+
+
+== Input ==
+    input_bdb_stack_path:: Input BDB image stack: Specify the same BDB image stack used for the associated ISAC run. (default required string)
+    input_isac_class_avgs_path:: ISAC class average file path: Input ISAC class average file path. (default required string)
+    
+    * The remaining parameters are optional.
+	isac_class_id:: ISAC class average ID: Retrieve only particle members of the specifed ISAC class. By default, retrieve from all classes. (default -1)
+	no_virtual_stack:: Do not create virtual stack: Use this option to create only the particle ID list text file associated with the ISAC class averages. (default False)
+
+== Output ==
+    output_directory:: Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+
+
+= Description =
+
+= Method =
+
+= Reference =
+
+
+= Author / Maintainer =
+Toshio Moriya
+
+= Keywords =
+ category 1:: APPLICATIONS
+
+= Files =
+sparx/bin/sxpipe.py
+
+= See also =
+[[sxisac]]
+
+= Maturity =
+ alpha::     under development
+
+= Bugs =
+Under development
