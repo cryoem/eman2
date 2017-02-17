@@ -42,30 +42,30 @@
 	#include <cfloat>
 #endif	//_WIN32
 
-#include "sparx/emconstants.h"
-#include "exception.h"
+#ifdef WIN32
+#include <windows.h>
+	#include <process.h>
+	#define M_PI 3.14159265358979323846f
+	#define MUTEX HANDLE
+//#define MAXPATHLEN (MAX_PATH * 4)
+#else
+#include <pthread.h>
+#define MUTEX pthread_mutex_t
+#endif
+
 #include <vector>
 #include <iostream>
 
 #include <string>
 using std::string;
 
+#include "sparx/emconstants.h"
+#include "exception.h"
 
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
 //#include <boost/math/special_functions/fpclassify.hpp>
 #include "vec3.h"
-
-#ifdef WIN32
-	#include <windows.h>
-	#include <process.h>
-	#define M_PI 3.14159265358979323846f
-	#define MUTEX HANDLE
-//#define MAXPATHLEN (MAX_PATH * 4)
-#else 
-	#include <pthread.h>
-	#define MUTEX pthread_mutex_t
-#endif
 
 using std::string;
 using std::vector;
