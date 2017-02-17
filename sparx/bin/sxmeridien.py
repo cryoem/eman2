@@ -3802,7 +3802,7 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 				ptl_on_this_cpu  +=1
 				mlocal_id_on_old +=1
 		del oldparamstructure_on_old_cpu
-		mpi_barrier(Blockdata["subgroup_comm"]
+		mpi_barrier(Blockdata["subgroup_comm"])
 		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 				os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 				original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
