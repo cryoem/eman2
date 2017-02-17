@@ -18,3 +18,27 @@ platform:
 
 install:
     - cmd: set
+    # Cywing's git breaks conda-build. (See https://github.com/conda-forge/conda-smithy-feedstock/pull/2.)
+    - cmd: rmdir C:\cygwin /s /q
+
+    # Add path, activate `conda` and update conda.
+    - cmd: call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+
+    - cmd: set PYTHONUNBUFFERED=1
+
+    # Add our channels.
+    - cmd: conda config --set show_channel_urls true
+    - cmd: conda config --add channels conda-forge
+
+    # Configure the VM.
+    - cmd: set CPU_COUNT=2
+    - cmd: conda install --quiet --yes obvious-ci
+    - cmd: conda config --set add_pip_as_python_dependency false
+    - cmd: conda install -n root --yes --quiet vs2008_express_vc_python_patch
+    - cmd: call setup_x64
+    - cmd: conda info
+    - cmd: conda config --get
+
+
+# Skip .NET project specific build phase.
+build: off
