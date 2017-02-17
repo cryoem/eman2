@@ -29,6 +29,8 @@ install:
     # Add our channels.
     - cmd: conda config --set show_channel_urls true
     - cmd: conda config --add channels conda-forge
+    - cmd: conda config --add channels gorgoncryoem/label/dependency
+    - cmd: conda config --add channels shadow_walker/label/dev
 
     # Configure the VM.
     - cmd: set CPU_COUNT=2
