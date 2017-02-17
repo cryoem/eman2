@@ -241,6 +241,7 @@ namespace EMAN
 //		float voltage;		// microscope voltage in kV
 //		float cs;			// Cs in mm
 //		float apix;			// A/pix value used when generating 2D results
+		float phase_shift;	// phase_shift value is the additional phase shift of Volta Phase Plate in degrees. 
 		float dsbg;			// ds value for background and SNR
 		vector<float> background;	// background intensity, 1 value per radial pixel (NX/2, corners ignored)
 		vector<float> snr;			// SNR, 1 value per radial pixel (NX/2, corners assumed 0)
