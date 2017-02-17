@@ -261,6 +261,8 @@ if(DEFINED ENV{CONDA_BUILD_STATE})
 			set(FTGL_INCLUDE_PATH      $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
 			set(FFTW3_INCLUDE_PATH     $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
 			set(FFTW3d_INCLUDE_PATH    $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
+			set(FFTW3_LIBRARY     "$ENV{LIBRARY_PREFIX}/lib/libfftw3f-3.lib;$ENV{LIBRARY_PREFIX}/lib/libfftw3-3.lib" CACHE PATH "")
+			set(FFTW3d_LIBRARY    $ENV{LIBRARY_PREFIX}/lib/libfftw3f-3.lib CACHE PATH "")
 		endif()
 
 #		Print vars
