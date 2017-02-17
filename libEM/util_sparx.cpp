@@ -7554,13 +7554,12 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 #undef   SS
 #undef   PROJ
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-float Util::tf(float dzz, float ak, float voltage, float phase_shift, float cs, float wgh, float b_factor, float sign)
+float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)
 {
-	// phase_shift in radians
 	float cst  = cs*1.0e7f;
 
 	wgh /= 100.0;
-	float phase = atan(wgh/sqrt(1.0f-wgh*wgh)) + phase_shift;
+	float phase = atan(wgh/sqrt(1.0f-wgh*wgh));
 	float lambda=12.398f/sqrt(voltage*(1022.0f+voltage));
 	float ak2 = ak*ak;
 	float g1 = dzz*1.0e4f*lambda*ak2;
@@ -23973,7 +23972,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 02/02/2017  11:34 AM " <<  endl;
+ cout <<"  Modification time: 02/02/2017  11:35 AM " <<  endl;
 }
 
 
