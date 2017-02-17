@@ -498,6 +498,7 @@ EMAN2Ctf::EMAN2Ctf()
 	bfactor = 0;
 	ampcont = 0;
 	voltage = 0;
+	phase_shift = 0;
 	cs = 0;
 	apix = 1.0;
 	dsbg=-1;
@@ -520,8 +521,8 @@ int EMAN2Ctf::from_string(const string & ctf)
 	float v;
 	const char *s=ctf.c_str();
 
-	sscanf(s, "%c%f %f %f %f %f %f %f %f %f %d%n",
-				   &type,&defocus, &dfdiff,&dfang,&bfactor,&ampcont,&voltage, &cs, &apix,&dsbg,&bglen,&pos);
+	sscanf(s, "%c%f %f %f %f %f %f %f %f %f %f %d%n",
+				   &type,&defocus, &dfdiff,&dfang,&bfactor,&ampcont,&voltage, &phase_shift, &cs, &apix,&dsbg,&bglen,&pos);
 	if (type!='E') throw InvalidValueException(type,"Trying to initialize Ctf object with bad string");
 	if (pos==-1) throw InvalidValueException(s," Invalid CTF string");
 	
@@ -549,8 +550,8 @@ int EMAN2Ctf::from_string(const string & ctf)
 string EMAN2Ctf::to_string() const
 {
 	char ctf[256];
-	sprintf(ctf, "E%1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %d",
-			defocus, dfdiff, dfang, bfactor, ampcont, voltage, cs, apix, dsbg,(int)background.size());
+	sprintf(ctf, "E%1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %d",
+			defocus, dfdiff, dfang, bfactor, ampcont, voltage, phase_shift, cs, apix, dsbg,(int)background.size());
 
 	string ret=ctf;
 	for (int i=0; i<(int)background.size(); i++) {
@@ -584,6 +585,8 @@ void EMAN2Ctf::from_dict(const Dict & dict)
 //	printf("ac\n");
 	voltage = (float)dict["voltage"];
 //	printf("vo\n");
+	phase_shift = (float)dict["phase_shift"];
+//	printf("phase_shift\n");
 	cs = (float)dict["cs"];
 //	printf("cs\n");
 	apix = (float)dict["apix"];
@@ -605,6 +608,7 @@ Dict EMAN2Ctf::to_dict() const
 	dict["bfactor"] = bfactor;
 	dict["ampcont"] = ampcont;
 	dict["voltage"] = voltage;
+	dict["phase_shift"] = phase_shift;
 	dict["cs"] = cs;
 	dict["apix"] = apix;
 	dict["dsbg"] = dsbg;
@@ -665,6 +669,7 @@ void EMAN2Ctf::copy_from(const Ctf * new_ctf)
 		bfactor = c->bfactor;
 		ampcont = c->ampcont;
 		voltage = c->voltage;
+		phase_shift = c->phase_shift;
 		cs = c->cs;
 		apix = c->apix;
 		dsbg = c->dsbg;
@@ -1212,6 +1217,7 @@ bool EMAN2Ctf::equal(const Ctf * ctf1) const
 			bfactor != c->bfactor ||
 			ampcont != c->ampcont ||
 			voltage != c->voltage ||
+			phase_shift != c->phase_shift ||
 			cs != c->cs ||
 			apix != c->apix ||
 			dsbg != c->dsbg ||

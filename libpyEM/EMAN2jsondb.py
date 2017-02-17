@@ -176,6 +176,7 @@ def eman2ctf_from_jsondict(dct):
 	ret.bfactor = dct["bfactor"]
 	ret.ampcont = dct["ampcont"]
 	ret.voltage = dct["voltage"]
+	ret.phase_shift = dct["phase_shift"]
 	ret.cs = dct["cs"]
 	ret.apix = dct["apix"]
 	ret.dsbg = dct["dsbg"]
