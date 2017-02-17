@@ -219,7 +219,11 @@ if(DEFINED ENV{CONDA_BUILD_STATE})
 		find_package(PNG REQUIRED)
 		find_package(JPEG REQUIRED)
 		find_package(ZLIB REQUIRED)
-		set(GSL_INCLUDE_DIRS $ENV{PREFIX}/include)
+		if(NOT WIN32)
+			set(GSL_INCLUDE_DIRS $ENV{PREFIX}/include)
+		else()
+			set(GSL_INCLUDE_DIRS $ENV{LIBRARY_PREFIX}/include)
+		endif()
 		find_package(Freetype REQUIRED)
 	
 #		Set expected vars to values just found
