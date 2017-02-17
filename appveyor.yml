@@ -42,3 +42,9 @@ install:
 
 # Skip .NET project specific build phase.
 build: off
+
+test_script:
+    # Update to latest `conda`, because earlier versions fail to download from ftp
+    - "%CMD_IN_ENV% conda update --yes --quiet conda -c defaults"
+    # Only download szip source
+    - "%CMD_IN_ENV% conda build %APPVEYOR_BUILD_FOLDER%\\recipes\\szip --source --quiet"
