@@ -211,7 +211,11 @@ endif()
 
 if(DEFINED ENV{CONDA_BUILD_STATE})
 	if($ENV{CONDA_BUILD_STATE} STREQUAL "BUILD")
-		set(CMAKE_PREFIX_PATH $ENV{PREFIX})
+		if(NOT WIN32)
+			set(CMAKE_PREFIX_PATH $ENV{PREFIX})
+		else()
+			set(CMAKE_PREFIX_PATH $ENV{LIBRARY_PREFIX})
+		endif()
 			
 		find_package(Boost COMPONENTS python REQUIRED)
 		find_package(OpenGL REQUIRED)
