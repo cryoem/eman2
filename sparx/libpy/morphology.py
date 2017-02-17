@@ -321,7 +321,6 @@ def ctf_1d(nx, ctf, sign = 1):
 	"""
 	dict = ctf.to_dict()
 	dz = dict["defocus"]
-	phase_shift = dict["phase_shift"]
 	cs = dict["cs"]
 	voltage = dict["voltage"]
 	pixel_size = dict["apix"]
