@@ -3096,52 +3096,6 @@ def memory_check(myid,t = " "):
 	import psutil, os
 	print("                MEMORY OCCUPIED  %s: "%t,myid,"   ",psutil.Process(os.getpid()).memory_info()[0]/1.e9,"GB")
 
-def checkconvergence(keepgoing):
-	global Tracker, Blockdata
-	# Currently neither of FINAL local is decided.
-	# when the following conditions are all true
-	#1. has_fine_enough_angular_sampling  True   Tracker["saturated_sampling"] #   Current sampling are fine enough
-	#2. nr_iter_wo_resol_gain >= MAX_NR_ITER_WO_RESOL_GAIN # 
-	#3. nr_iter_wo_large_hidden_variable_changes >= MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES
-	if not keepgoing:
-		if(Blockdata["myid"] == Blockdata["main_node"]):	
-			Tracker["is_converged"] = True	
-	else:	
-		if Tracker["state"] =="INITIAL" or Tracker["state"]== "PRIMARY" or Tracker["state"]== "EXHAUSTIVE":
-			Tracker["is_converged"] = False
-
-		elif Tracker["state"] =="RESTRICTED" or Tracker["state"] =="LOCAL" :
-			if (Tracker["saturated_sampling"]) and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) :
-				Tracker["is_converged"] = True
-				keepgoing = 0
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(line,"ITERATIONS convergence criteria A are reached")	
-			elif (Tracker["delta"] <= degrees(atan(0.5/Tracker["constants"]["radius"]))) and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]):
-				Tracker["is_converged"] = True
-				keepgoing = 0
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(line,"ITERATIONS convergence criteria B are reached")	
-			else:
-				Tracker["is_converged"] = False
-		elif  Tracker["state"] =="FINAL":
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				Tracker["is_converged"] = True
-				keepgoing = 0
-		else:
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				print(" Unknown state, program terminates")
-				Tracker["is_converged"] = True
-				keepgoing = 0
-	if( Tracker["is_converged"] and (Blockdata["myid"] == Blockdata["main_node"]) ):
-		print(" The current state is %s"%Tracker["state"])
-		print(" 3-D refinement converged")
-		print(" The best solution is in the directory main%03d "%Tracker["constants"]["best"])
-		print(" Computing 3-D reconstruction using the best solution")
-	return keepgoing
-
-
 def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructure, projdata, final_iter=-1, comm = -1 ):
 	global Tracker, Blockdata
 	#from mpi import mpi_barrier, MPI_COMM_WORLD
@@ -3821,19 +3775,34 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 			while os.path.exists(os.path.join(Tracker["directory"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid, nproc_previous, Tracker["mainiteration"]))):
 				nproc_previous += 1
 		nproc_previous = bcast_number_to_all(nproc_previous, source_node = Blockdata["main_node"], mpi_comm = comm)
-		if Blockdata["myid"] == Blockdata["main_node"]:
-			for iproc in xrange(nproc_previous):
-				fout = open(os.path.join(Tracker["directory"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid, iproc,Tracker["mainiteration"])),'r')
-				oldparamstructure[procid] += convert_json_fromunicode(json.load(fout))
-				fout.close()
-		else:
-			oldparamstructure[procid] = [0]
-		oldparamstructure[procid] = wrap_mpi_bcast(oldparamstructure[procid], Blockdata["main_node"], comm)
-		im_start, im_end = MPI_start_end(len(oldparamstructure[procid]), Blockdata["nproc"], Blockdata["myid"])
-		oldparamstructure[procid] = oldparamstructure[procid][im_start:im_end]
-		#print("nproc_previous", nproc_previous)
-		mpi_barrier(MPI_COMM_WORLD)
-		#####
+		psize = len(read_text_file(partids[procid]))
+		oldparamstructure[procid] = []
+		
+		im_start, im_end = MPI_start_end(psize, Blockdata["subgroup_size"], Blockdata["subgroup_myid"])
+		
+		istart_old_proc_id = -1
+		iend_old_proc_id   = -1
+		plist = []
+		for iproc_old in xrange(nproc_previous):
+			im_start_old, im_end_old = MPI_start_end(psize, nproc_previous, iproc_old)
+			if (im_start>= im_start_old) and im_start <=im_end_old:
+				istart_old_proc_id = iproc_old
+			if (im_end>= im_start_old) and im_end <=im_end_old:
+				iend_old_proc_id = iproc_old
+			plist.append([im_start_old, im_end_old])
+				
+		ptl_on_this_cpu = im_start
+		for iproc_index_old in xrange(istart_old_proc_id, iend_old_proc_id+1):
+			fout = open(os.path.join(final_dir,"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,iproc_index_old,Tracker["mainiteration"])),'r')
+			oldparamstructure_on_old_cpu = convert_json_fromunicode(json.load(fout))
+			fout.close()
+			mlocal_id_on_old = ptl_on_this_cpu - plist[iproc_index_old][0]
+			while (mlocal_id_on_old<len(oldparamstructure_on_old_cpu)) and (ptl_on_this_cpu<im_end):
+				oldparamstructure[procid].append(oldparamstructure_on_old_cpu[mlocal_id_on_old])
+				ptl_on_this_cpu  +=1
+				mlocal_id_on_old +=1
+		del oldparamstructure_on_old_cpu
+		mpi_barrier(Blockdata["subgroup_comm"]
 		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 				os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 				original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
@@ -4864,15 +4833,12 @@ def main():
 				Tracker = convert_json_fromunicode(json.load(fout))
 				fout.close()
 				print("  Directory exists, iteration skipped")
-				keepgoing = checkconvergence(keepgoing)
 			else:
 				Tracker = None
 			keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"])
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			if keepgoing == 0:
-				try:  
-					if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
-				except: print(" Processor  %d is not used in subgroup "%Blockdata["myid"])
+				if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
 
 				Blockdata["ncpuspernode"] 	= 2
 				Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
