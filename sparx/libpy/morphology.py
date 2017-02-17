@@ -321,7 +321,6 @@ def ctf_1d(nx, ctf, sign = 1):
 	"""
 	dict = ctf.to_dict()
 	dz = dict["defocus"]
-	phase_shift = dict["phase_shift"]
 	cs = dict["cs"]
 	voltage = dict["voltage"]
 	pixel_size = dict["apix"]
@@ -334,7 +333,7 @@ def ctf_1d(nx, ctf, sign = 1):
 	length = int(1.41*float(nx/2)) + 1
 	ctf_1 = [0.0]*length
 	for i in xrange(length):
-		ctf_1[i] = Util.tf(dz, i*scl, voltage, phase_shift, cs, ampcont, bfactor, sign)
+		ctf_1[i] = Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign)
 	return ctf_1
 
 def ctf_2(nx, ctf):
@@ -348,7 +347,6 @@ def ctf_2(nx, ctf):
 	"""
 	dict       = ctf.to_dict()
 	dz         = dict["defocus"]
-	phase_shift = dict["phase_shift"]
 	cs         = dict["cs"]
 	voltage    = dict["voltage"]
 	pixel_size = dict["apix"]
@@ -360,7 +358,7 @@ def ctf_2(nx, ctf):
 	length = int(1.7321*float(nx/2)) + 2
 	ctf_2 = [0.0]*length
 	for i in xrange(length):
-		ctf_val = Util.tf(dz, i*scl, voltage, phase_shift, cs, ampcont, b_factor)
+		ctf_val = Util.tf(dz, i*scl, voltage, cs, ampcont, b_factor)
 		ctf_2[i] = ctf_val*ctf_val
 	return ctf_2
 
