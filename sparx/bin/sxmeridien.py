@@ -4819,25 +4819,8 @@ def main():
 					Tracker = None
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 				Tracker["previousoutputdir"] = Tracker["directory"]
-		else:
-			#  Directory existed, so got here.
-			"""
-			for procid in xrange(2):
-				fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,Blockdata["myid"],Tracker["mainiteration"])),'r')
-				oldparamstructure[procid] = convert_json_fromunicode(json.load(fout))
-				fout.close()
-			"""
-			#  Read tracker
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'r')
-				Tracker = convert_json_fromunicode(json.load(fout))
-				fout.close()
-				print("  Directory exists, iteration skipped")
-			else:
-				Tracker = None
-			keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"])
-			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-			if keepgoing == 0:
+		else: # converged, do final
+				Tracker["mainiteration"] -=1 
 				if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
 
 				Blockdata["ncpuspernode"] 	= 2
@@ -4852,6 +4835,5 @@ def main():
 				recons3d_final(Tracker["constants"]["masterdir"], Tracker["constants"]["best"], Tracker["constants"]["memory_per_node"])
 				mpi_finalize()
 				exit()
-			else: Tracker["previousoutputdir"] = Tracker["directory"]
 if __name__=="__main__":
 	main()
