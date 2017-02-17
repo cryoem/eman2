@@ -203,6 +203,8 @@ ENDIF(ENABLE_IOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
+add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
+
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 	FUNCTION(message_debug var)
 		message("${var}: ${${var}}")
