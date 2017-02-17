@@ -1,7 +1,0 @@
-test:
-  override:
-    - bash:
-        parallel: true
-        files:
-            - ci_support/run_circle_no_envars.sh
-            - ci_support/run_circle_with_envars.sh
