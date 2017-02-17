@@ -48,3 +48,8 @@ test_script:
     - "%CMD_IN_ENV% conda update --yes --quiet conda -c defaults"
     # Only download szip source
     - "%CMD_IN_ENV% conda build %APPVEYOR_BUILD_FOLDER%\\recipes\\szip --source --quiet"
+    # Install conda-build-all,
+    # this may pull older version of conda,
+    # but since szip is in the cache, it should skip the download during build
+    - "%CMD_IN_ENV% conda install --yes --quiet conda-build-all"
+    - "%CMD_IN_ENV% conda-build-all %APPVEYOR_BUILD_FOLDER%\\recipes --matrix-conditions python 2.7.*"
