@@ -111,145 +111,125 @@ def AI( fff, anger, shifter, chout = False):
 	#3. nr_iter_wo_large_hidden_variable_changes >= MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES
 
 	keepgoing = 1
+
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "AI check convergence")
-		
-	if (Tracker["state"] =="INITIAL") or (Tracker["state"]== "PRIMARY") or (Tracker["state"]== "EXHAUSTIVE"):
+		print(line, "AI update state parameters, check convergence, update angular and translation samplings")
+
+	if(Tracker["mainiteration"] == 1):
+		Tracker["state"] = "INITIAL"
+
+		inc = Tracker["currentres"]
+		if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
+		else:							inc += Tracker["nxstep"]
+		Tracker["nxinit"] = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
+		Tracker["local"]  = False
+		#  Do not use CTF during first iteration
+		#Tracker["applyctf"]    = False
+		Tracker["constants"]["best"] = Tracker["mainiteration"]
 		Tracker["is_converged"] = False
-
-	elif (Tracker["state"] =="RESTRICTED") or (Tracker["state"] =="LOCAL"):
-		if (Tracker["saturated_sampling"]) and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]):
-			Tracker["is_converged"] = True
-			keepgoing = 0
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"ITERATIONS convergence criteria A are reached")	
-		elif (2.*Tracker["delta"] <= degrees(atan(0.5/Tracker["constants"]["radius"]))) and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]):
-			Tracker["is_converged"] = True
-			keepgoing = 0
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"ITERATIONS convergence criteria B are reached")	
-		else:
+		#Blockdata["delta"] = Tracker["delta"]
+		#Blockdata["xr"] = Tracker["xr"]
+		#Blockdata["ts"] = Tracker["ts"]
+		#Tracker["delta"] *= 2
+		#Tracker["ts"] *= 2
+	else:
+		if( Tracker["mainiteration"] == 2 ):
+			Tracker["state"] = "PRIMARY"
 			Tracker["is_converged"] = False
-			
-	elif (Tracker["state"] =="FINAL"):
-		Tracker["is_converged"] = True
-		keepgoing = 0
-		
-	else:
-		Tracker["is_converged"] = True
-		keepgoing = 0
-		if(Blockdata["myid"] == Blockdata["main_node"]):  print(" Unknown state, program terminates")
+			#Tracker["delta"] = Blockdata["delta"]
+			#Tracker["ts"] = Blockdata["ts"]
+		l05 = -1
+		l01 = -1
+		for i in xrange(len(fff)):
+			if(fff[i] < 0.5):
+				l05 = i-1
+				break
+		for i in xrange(len(fff)):
+			if(fff[i] < 0.143):
+				l01 = i-1
+				break
+		l01 = max(l01,-1)
 
-	if (keepgoing == 0):
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print(" The current state is %s"%Tracker["state"])
-			print(" 3-D refinement converged")
-			print(" The best solution is in the directory main%03d "%Tracker["constants"]["best"])
-			print(" Computing 3-D reconstruction using the best solution")
-	else:
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line, "AI update angular and translation samplings")
-		
-		if(Tracker["mainiteration"] == 1):
-			Tracker["state"] = "INITIAL"
-
-			inc = Tracker["currentres"]
-			if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-			else:							inc += Tracker["nxstep"]
-			Tracker["nxinit"] = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
-			Tracker["local"]  = False
-			#  Do not use CTF during first iteration
-			#Tracker["applyctf"]    = False
-			Tracker["constants"]["best"] = Tracker["mainiteration"]
-			#Blockdata["delta"] = Tracker["delta"]
-			#Blockdata["xr"] = Tracker["xr"]
-			#Blockdata["ts"] = Tracker["ts"]
-			#Tracker["delta"] *= 2
-			#Tracker["ts"] *= 2
-		else:
-			if( Tracker["mainiteration"] == 2 ):
-				Tracker["state"] = "PRIMARY"
-				#Tracker["delta"] = Blockdata["delta"]
-				#Tracker["ts"] = Blockdata["ts"]
-			l05 = -1
-			l01 = -1
-			for i in xrange(len(fff)):
-				if(fff[i] < 0.5):
-					l05 = i-1
-					break
-			for i in xrange(len(fff)):
-				if(fff[i] < 0.143):
-					l01 = i-1
-					break
-			l01 = max(l01,-1)
-
-			if( chout ): print("  Dealing with FSC; Tracker[nxstep], TR[currentres], l05, l01:",Tracker["nxstep"],Tracker["currentres"],l05, l01)
-			Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-			Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
+		if( chout ): print("  Dealing with FSC; Tracker[nxstep], TR[currentres], l05, l01:",Tracker["nxstep"],Tracker["currentres"],l05, l01)
+		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
+		Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
 
 
-			if( Tracker["mainiteration"] == 2 ):  maxres = Tracker["constants"]["inires"]
-			else:                                 maxres = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
+		if( Tracker["mainiteration"] == 2 ):  maxres = Tracker["constants"]["inires"]
+		else:                                 maxres = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
 
-			if( maxres >= Tracker["bestres"]):
-				Tracker["bestres"]				= maxres	
-				Tracker["constants"]["best"] 	= Tracker["mainiteration"]
+		if( maxres >= Tracker["bestres"]):
+			Tracker["bestres"]				= maxres	
+			Tracker["constants"]["best"] 	= Tracker["mainiteration"]-1
 
-			if( maxres > Tracker["currentres"]):
-				Tracker["no_improvement"] 		= 0
-				Tracker["no_params_changes"] 	= 0
-			else:    Tracker["no_improvement"] += 1
+		if( maxres > Tracker["currentres"]):
+			Tracker["no_improvement"] 		= 0
+			Tracker["no_params_changes"] 	= 0
+		else:    Tracker["no_improvement"] += 1
 
-			Tracker["currentres"] = maxres
+		Tracker["currentres"] = maxres
 
-			#  figure changes in params
-			if( chout ):  print("  incoming  pares  ",Blockdata["myid"],Tracker["anger"],anger,Tracker["shifter"],shifter)
-			shifter *= 0.71
-			if( 1.03*anger >= Tracker["anger"] and 1.03*shifter >= Tracker["shifter"] ):	Tracker["no_params_changes"] += 1 #<<<--- 1.03 angle 1.03 shifter after 0.71 ratio
-			else:																			Tracker["no_params_changes"]  = 0
+		#  figure changes in params
+		if( chout ):  print("  incoming  pares  ",Blockdata["myid"],Tracker["anger"],anger,Tracker["shifter"],shifter)
+		shifter *= 0.71
+		if( 1.03*anger >= Tracker["anger"] and 1.03*shifter >= Tracker["shifter"] ):	Tracker["no_params_changes"] += 1 #<<<--- 1.03 angle 1.03 shifter after 0.71 ratio
+		else:																			Tracker["no_params_changes"]  = 0
 
-			if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
-			if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
+		if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
+		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
 
-			inc = Tracker["currentres"]
-			if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-			else:							inc += Tracker["nxstep"]
-			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
+		inc = Tracker["currentres"]
+		if Tracker["large_at_Nyquist"]:	inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
+		else:							inc += Tracker["nxstep"]
+		tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 
-			if( chout ): print("  IN AI nxstep, large at Nyq, outcoming current res, adjusted current, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
-		
-		
-			Tracker["nxinit"] = tmp
-			#  decide angular step and translations
-			if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"])):
-				if 2*Tracker["delta"] <0.75 *Tracker["acc_rot"]:#<<<----it might cause converge issues when shake is 0.0 
-					Tracker["saturated_sampling"] = True
+		if( chout ): print("  IN AI nxstep, large at Nyq, outcoming current res, adjusted current, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
+
+		Tracker["nxinit"] = tmp
+		#  decide angular step and translations
+		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"])):
+			if Tracker["delta"] <0.75 *Tracker["acc_rot"]:#<<<----it might cause converge issues when shake is 0.0 
+				Tracker["saturated_sampling"] = True
+				Tracker["is_converged"] = True
+				keepgoing = 0
+				if(Blockdata["myid"] == Blockdata["main_node"]):
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					print(line,"ITERATIONS convergence criterion A is reached")
+			else:  
+				Tracker["saturated_sampling"] = False								
+				range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
+				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"],range, step)
+				Tracker["xr"] = range
+				Tracker["ts"] = step
+				Tracker["delta"] /= 2.0
+				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
+					#  CHANGE SIGMA2 OF ANGLES' DISTRIBUTION TO NARROW SEARCHES
+					#sigma2_rot = sigma2_tilt = sigma2_psi = (2. * Tracker["delta"])**2
+					Tracker["an"]		= 6*Tracker["delta"]
+					Tracker["state"]	= "RESTRICTED"
 				else:
-					Tracker["saturated_sampling"] = False
-					range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-					if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"],range, step)
-					Tracker["xr"] = range
-					Tracker["ts"] = step
-					Tracker["delta"] /= 2.0
-					if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
-						#  CHANGE SIGMA2 OF ANGLES' DISTRIBUTION TO NARROW SEARCHES
-						#sigma2_rot = sigma2_tilt = sigma2_psi = (2. * Tracker["delta"])**2
-						Tracker["an"]		= 6*Tracker["delta"]
-						Tracker["state"]	= "RESTRICTED"
-					else:
-						Tracker["an"] 		= -1
-						if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
-					if( chout ): print("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
-					Tracker["no_improvement"]		= 0
-					Tracker["no_params_changes"]	= 0
-					Tracker["anger"]				= 1.0e23
-					Tracker["shifter"]				= 1.0e23
-			Tracker["keepfirst"] = -1
-
+					Tracker["an"] 		= -1
+					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
+				if( chout ): print("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
+				# check convergence before reset
+				if (Tracker["delta"] <= degrees(atan(0.5/Tracker["constants"]["radius"]))) and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]):
+					Tracker["is_converged"] = True
+					keepgoing = 0
+					if(Blockdata["myid"] == Blockdata["main_node"]):
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						print(line,"ITERATIONS convergence criterion B is reached")
+				Tracker["no_improvement"]		= 0
+				Tracker["no_params_changes"]	= 0
+				Tracker["anger"]				= 1.0e23
+				Tracker["shifter"]				= 1.0e23
+	Tracker["keepfirst"] = -1
+	if (keepgoing == 0) and (Blockdata["myid"] == Blockdata["main_node"]):
+		print(" The current state is %s"%Tracker["state"])
+		print(" 3-D refinement converged")
+		print(" The best solution is in the directory main%03d "%Tracker["constants"]["best"])
+		print(" Computing 3-D reconstruction using the best solution")
+		Tracker["mainiteration"] -=1
 	return keepgoing
 
 def params_changes( params, oldparams ):
@@ -4826,7 +4806,6 @@ def main():
 				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 				Tracker["previousoutputdir"] = Tracker["directory"]
 		else: # converged, do final
-				Tracker["mainiteration"] -=1 
 				if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
 
 				Blockdata["ncpuspernode"] 	= 2
