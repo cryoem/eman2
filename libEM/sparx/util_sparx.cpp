@@ -27834,9 +27834,10 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 				ix=i;
 				if(float(ix*ix+iy*iy+iz*iz)>res2) 
 				{
-					float amp           = (*rimg)(2*i, j, k)*(*rimg)(2*i, j, k)+(*rimg)(2*i+1, j, k)*(*rimg)(2*i+1, j, k);
+					float amp           = (*img)(2*i, j, k)*(*img)(2*i, j, k)+(*img)(2*i+1, j, k)*(*img)(2*i+1, j, k);
 					amp                 = sqrt(amp);
-    				float phase         = rnd_unif(0., 2.*quadpi);
+					float twopi         = 2.*quadpi;
+    				float phase         = rnd_unif(0., twopi);
 					(*rimg) (i*2,j,k)   = amp * cos(phase);
 					(*rimg) (i*2+1,j,k) = amp * sin(phase);	
 					}
