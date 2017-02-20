@@ -27794,6 +27794,17 @@ EMData* Util::divide_mtf( EMData* img, vector<float> mtf, vector<float> res) {
 	EXITFUNC;
 	return img1;
 }
+
+inline float rnd_unif(float a, float b)
+{
+
+
+        if (a == b)
+        return a;
+    else
+        return a + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(b-a)));
+}
+
 #define		quadpi	 	 	3.141592653589793238462643383279502884197
 EMData* Util::randomizephasesafter( EMData* img, float res) 
 {
@@ -27825,7 +27836,7 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 				{
 					float amp           = (*rimg)(2*i, j, k)*(*rimg)(2*i, j, k)+(*rimg)(2*i+1, j, k)*(*rimg)(2*i+1, j, k);
 					amp                 = sqrt(amp);
-    				float phase         = Util::get_frand(0., 2.*quadpi);
+    				float phase         = rnd_unif(0., 2.*quadpi);
 					(*rimg) (i*2,j,k)   = amp * cos(phase);
 					(*rimg) (i*2+1,j,k) = amp * sin(phase);	
 					}
