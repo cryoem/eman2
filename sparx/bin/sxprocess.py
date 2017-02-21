@@ -1016,7 +1016,7 @@ def main():
 			log_main.add("do_adaptive_mask  	:"+str(options.do_adaptive_mask))
 			log_main.add("cosine_edge    		:"+str(options.consine_edge))
 			log_main.add("dilation    		:"+str(options.dilation))
-			log_main.add("randomphasesafter    "+str(options.randomphasesafter))
+			log_main.add("randomphasesafter :"+str(options.randomphasesafter))
 			log_main.add("------------->>>processing<<<-----------------------")		
 			log_main.add( "3-D refinement postprocess ")
 			nargs     = len(args)
@@ -1076,32 +1076,31 @@ def main():
 						randomize_at = float(ifreq)
 						break
 				log_main.add("randomize phases beyond: %f Angstrom"% (options.pixel_size/(randomize_at/map1.get_xsize())))
-				log_main.add("randomize phases beyond: %d"% int(randomize_at))
+				#log_main.add("randomize phases beyond: %d"% int(randomize_at))
 				frc_masked = fsc(map1*m, map2*m, 1) 
 				map1 = fft(Util.randomizedphasesafter(fft(map1), randomize_at))*m
 				map2 = fft(Util.randomizedphasesafter(fft(map2), randomize_at))*m
 				frc_random_masked = fsc(map1, map2, 1)
-				fsc_true     = [frc_without_mask[0], [None]*len(frc_without_mask[0])]
-				#fsc_true [1] = [None]*len(frc_without_mask[0])
+				fsc_true          = [frc_without_mask[0], [None]*len(frc_without_mask[0])]
 				for i in xrange(len(fsc_true[1])):
 					if i < (int(randomize_at) + 2):# move two pixel up
 						fsc_true [1][i] = frc_masked[1][i]
 					else:
 						fsct = frc_masked[1][i]
 						fscn = frc_random_masked[1][i]
-						if (fscn > fsct):	fsc_true[1][i]= 0.;
-						else:	fsc_true [1][i]=(fsct-fscn)/(1.-fscn);
+						if (fscn > fsct):	       fsc_true[1][i]= 0.
+						else:	fsc_true [1][i]=(fsct-fscn)/(1.-fscn)
 			else:
 				fsc_true = fsc(map1, map2, 1)
 				 
 			for ifreq in xrange(len(fsc_true[1])):
 				if fsc_true[1][ifreq] < 0.143:
-					resolution_FSC143   = fsc_true[0][ifreq-1]
+					resolution_FSC143  = fsc_true[0][ifreq-1]
 					break
 				
 			for ifreq in xrange(len(fsc_true[1])):
 				if fsc_true[1][ifreq] < 0.5:
-					resolution_FSChalf   = fsc_true[0][ifreq-1]
+					resolution_FSChalf = fsc_true[0][ifreq-1]
 					break
 			###															
 			map1 = get_im(args[0]) 
@@ -1136,11 +1135,11 @@ def main():
 				#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 				fil = len(fsc_true[1])*[None]
 				for i in xrange(len(fil)):
-					if fsc_true[1][i]>=0.0: 	tmp = fsc_true[1][i]
-					else: 					tmp = 0.0
+					if fsc_true[1][i]>=0.0:  tmp = fsc_true[1][i]
+					else:         tmp = 0.0
 					fil[i] = sqrt(2.*tmp/(1.+tmp))
-				map1=filt_table(map1,fil)
-				guinierline   = rot_avg_table(power(periodogram(map1),.5))
+				map1 = filt_table(map1,fil)
+				guinierline = rot_avg_table(power(periodogram(map1),.5))
 				outtext.append(["LogFSCadj"])
 				for ig in xrange(len(guinierline)):
 					outtext[-1].append("%10.6f"%log(guinierline[ig]))
@@ -1172,6 +1171,7 @@ def main():
 					log_main.add("Similiarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"%(ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
 					log_main.add("The slope is %f Angstrom^2 "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
+					
 				else: # User provided value
 					#log_main.add( " apply user provided B-factor to enhance map!")
 					log_main.add("User provided B-factor is %f Angstrom^2   "%options.B_enhance)
