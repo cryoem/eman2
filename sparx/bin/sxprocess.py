@@ -1132,7 +1132,7 @@ def main():
 				
 			if options.fsc_adj: #2
 				log_main.add("(2*FSC)/(1+FSC) is applied to adjust power spectrum of the summed volumes")
-				log_main.add("Notice: apply FSC adjustment to powerspectrum will increase B-factor 2-3 times than not!")
+				log_main.add("Notice: FSC adjustment of powerspectrum will increase B-factor 2-3 times than not!")
 				#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 				fil = len(fsc_true[1])*[None]
 				for i in xrange(len(fil)):
