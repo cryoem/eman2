@@ -1018,7 +1018,7 @@ def main():
 			log_main.add("dilation    		:"+str(options.dilation))
 			log_main.add("randomphasesafter :"+str(options.randomphasesafter))
 			log_main.add("------------->>>processing<<<-----------------------")		
-			log_main.add( "3-D refinement postprocess ")
+			log_main.add("3-D refinement postprocess ")
 			nargs     = len(args)
 			if nargs >=3:
 				ERROR("Too many inputs!", "--postprocess option for 3-D")
@@ -1044,6 +1044,7 @@ def main():
 			## prepare mask 
 			if options.mask != None and options.do_adaptive_mask:
 				ERROR("Wrong options, use either adaptive_mask or user provided mask", " options.mask and options.do_adaptive_mask ")
+				
 			if options.mask != None:
 				log_main.add("User provided mask: %s"%options.mask)
 				try:
@@ -1053,10 +1054,11 @@ def main():
 					exit()
 				if (m.get_xsize() != map1.get_xsize()) or (m.get_ysize() != map1.get_ysize()) or (m.get_zsize() != map1.get_zsize()):
 					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--postprocess for mask "+options.mask)
+					
 			elif options.do_adaptive_mask:
 				map1 +=map2
 				map1 /=2.
-				log_main.add("Creating surface mask, and wait...")
+				log_main.add("Create a surface mask, let's wait...")
 				m = Util.surface_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
 				m.write_image("vol_adaptive_mask.hdf")
 				map1 = get_im(args[0]) # re-read map1
@@ -1130,7 +1132,7 @@ def main():
 				
 			if options.fsc_adj: #2
 				log_main.add("(2*FSC)/(1+FSC) is applied to adjust power spectrum of the summed volumes")
-				log_main.add("This option will increase B-factor to 2-3 times!")
+				log_main.add("Notice: apply FSC adjustment to powerspectrum will increase B-factor 2-3 times than not!")
 				#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 				fil = len(fsc_true[1])*[None]
 				for i in xrange(len(fil)):
@@ -1160,7 +1162,7 @@ def main():
 					if options.B_stop!=0.0: freq_max = 1./options.B_stop 
 					if freq_min>= freq_max:
 						log_main.add("Your B_start is too high! Decrease it and rerun the program!")
-						ERROR("your B_start is too high! Decrease it and re-run the program!", "--postprocess option")
+						ERROR("Your B_start is too high! Decrease it and re-run the program!", "--postprocess option")
 						exit()
 					b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = 4.*b # Just a convention!
