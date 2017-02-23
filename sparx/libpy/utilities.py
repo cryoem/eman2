@@ -5349,10 +5349,10 @@ def cmdexecute(cmd, printing_on_success = True):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(outcome != 0):
 		print  line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome
-		from sys import exit
-		exit()
+		return 0
 	elif printing_on_success:
 		print line,"Executed successfully: ",cmd
+		return 1
 
 def string_found_in_file(myregex, filename):
 	import re

@@ -193,12 +193,12 @@ def main(args):
 			timestring = strftime("%Y_%m_%d__%H_%M_%S" + DIR_DELIM, localtime())
 			masterdir = "master"+timestring
 			cmd = "{} {}".format("mkdir", masterdir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		elif not os.path.exists(masterdir):
 			# os.path.exists(masterdir) does not exist
 			masterdir = args[1]
 			cmd = "{} {}".format("mkdir", masterdir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 
 		if(args[0][:4] == "bdb:"): filename = args[0][4:]
 		else:                      filename = args[0][:-4]
@@ -572,8 +572,8 @@ def main(args):
 	# if 1:
 		pass
 		if (myid == main_node):
-			cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%stack_processed_by_ali2d_base__filename__without_master_dir)
-			cmdexecute("e2bdb.py %s --makevstack=%s_000"%(stack_processed_by_ali2d_base__filename__without_master_dir, stack_processed_by_ali2d_base__filename__without_master_dir))
+			junk = cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%stack_processed_by_ali2d_base__filename__without_master_dir)
+			junk = cmdexecute("e2bdb.py %s --makevstack=%s_000"%(stack_processed_by_ali2d_base__filename__without_master_dir, stack_processed_by_ali2d_base__filename__without_master_dir))
 
 	if (myid == main_node):
 		main_dir_no = get_latest_directory_increment_value("./", NAME_OF_MAIN_DIR, myformat="%04d")
@@ -589,28 +589,28 @@ def main(args):
 			for i in xrange(isac_generation_from_command_line+1, main_dir_no + 1):
 				if i == isac_generation_from_command_line+1:
 					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
-					cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
-				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%i +  " 000_backup" + "%05d"%backup_dir_no)
-				cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%i)
+					junk = cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
+				junk = cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%i +  " 000_backup" + "%05d"%backup_dir_no)
+				junk = cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%i)
 				
 			# it includes both command line and json file
 			my_restart_section = stored_state[-1]["location_in_program"].split("___")[-1]
 			if "restart" in my_restart_section:
 				if "backup_dir_no" not in locals():
 					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
-					cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
-				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line +  " 000_backup" + "%05d"%backup_dir_no)
-				cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%isac_generation_from_command_line )
+					junk = cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
+				junk = cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line +  " 000_backup" + "%05d"%backup_dir_no)
+				junk = cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%isac_generation_from_command_line )
 			elif "candidate_class_averages" in my_restart_section:
 				if "backup_dir_no" not in locals():
 					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
-					cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
-				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line +  " 000_backup" + "%05d"%backup_dir_no)
-				cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line)
-				# cmdexecute("rm -f " + NAME_OF_MAIN_DIR + "%04d/class_averages_candidate*"%isac_generation_from_command_line)
+					junk = cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
+				junk = cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line +  " 000_backup" + "%05d"%backup_dir_no)
+				junk = cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line)
+				# junk = cmdexecute("rm -f " + NAME_OF_MAIN_DIR + "%04d/class_averages_candidate*"%isac_generation_from_command_line)
 			elif "reproducible_class_averages" in my_restart_section:
-				cmdexecute("rm -rf " + NAME_OF_MAIN_DIR + "%04d/ali_params_generation_*"%isac_generation_from_command_line)
-				cmdexecute("rm -f " + NAME_OF_MAIN_DIR + "%04d/class_averages_generation*"%isac_generation_from_command_line)
+				junk = cmdexecute("rm -rf " + NAME_OF_MAIN_DIR + "%04d/ali_params_generation_*"%isac_generation_from_command_line)
+				junk = cmdexecute("rm -f " + NAME_OF_MAIN_DIR + "%04d/class_averages_generation*"%isac_generation_from_command_line)
 		else:
 			if os.path.exists(NAME_OF_JSON_STATE_FILE):
 				stored_stack, stored_state = restore_program_stack_and_state(NAME_OF_JSON_STATE_FILE)
@@ -630,7 +630,7 @@ def main(args):
 	
 	if (myid == main_node):
 		if isac_generation == 0:
-			cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
+			junk = cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 			write_text_file([1], os.path.join(NAME_OF_MAIN_DIR + "%04d"%isac_generation, "generation_%d_accounted.txt"%isac_generation))
 			write_text_file(range(number_of_images_in_stack), os.path.join(NAME_OF_MAIN_DIR + "%04d"%isac_generation, "generation_%d_unaccounted.txt"%isac_generation))
 
@@ -645,10 +645,10 @@ def main(args):
 		program_state_stack.restart_location_title = "restart"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 			if (myid == main_node):
-				cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
+				junk = cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 				# reference the original stack
 				list_file = os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1), "generation_%d_unaccounted.txt"%(isac_generation - 1))
-				cmdexecute("e2bdb.py %s --makevstack=%s --list=%s"%(stack_processed_by_ali2d_base__filename__without_master_dir,\
+				junk = cmdexecute("e2bdb.py %s --makevstack=%s --list=%s"%(stack_processed_by_ali2d_base__filename__without_master_dir,\
 						stack_processed_by_ali2d_base__filename__without_master_dir + "_%03d"%isac_generation, list_file))
 			mpi_barrier(MPI_COMM_WORLD)
 
@@ -721,7 +721,7 @@ def main(args):
 			if files_are_missing(isac_generation):
 				break
 				
-			cmdexecute("rm -f class_averages.hdf")
+			junk = cmdexecute("rm -f class_averages.hdf")
 			cpy(["generation_%04d/class_averages_generation_%d.hdf"%(i,i) for i in xrange(1, isac_generation + 1)], "class_averages.hdf")
 			
 			break

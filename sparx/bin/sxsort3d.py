@@ -87,7 +87,7 @@ def main():
 		mpi_comm = MPI_COMM_WORLD
 		main_node= 0
 		# import some utilities
-		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
+		from utilities import get_im,bcast_number_to_all,junk = cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
 		from applications import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
 		from statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum
 		from applications import mref_ali3d_EQ_Kmeans, ali3d_mref_Kmeans_MPI  
@@ -297,11 +297,11 @@ def main():
 	   	if myid==main_node:
 			if(orgstack[:4] == "bdb:"):	cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
-	   		cmdexecute(cmd)
+	   		junk = cmdexecute(cmd)
 			cmd = "{} {} {}".format("sxheader.py  --params=xform.projection", "--export="+Tracker["constants"]["ali3d"],orgstack)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 			cmd = "{} {} {}".format("sxheader.py  --params=ctf", "--export="+Tracker["constants"]["ctf_params"],orgstack)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		mpi_barrier(MPI_COMM_WORLD)	   		   	
 		########-----------------------------------------------------------------------------
 		Tracker["total_stack"]              = total_stack

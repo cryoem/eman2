@@ -54,16 +54,6 @@ def subdict(d,u):
 	# substitute values in dictionary d by those given by dictionary u
 	for q in u:  d[q] = u[q]
 
-def cmdexecute(cmd):
-	from   time import localtime, strftime
-	import subprocess
-	outcome = subprocess.call(cmd, shell=True)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(outcome == 1):
-		print(  line,"ERROR!!   Command failed:  ", cmd)
-		exit()
-	else:  print(line,"Executed successfully: ",cmd)
-
 def fuselowf(vs, fq):
 	n = len(vs)
 	for i in xrange(n): fftip(vs[i])
@@ -184,7 +174,7 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 		log = Logger(BaseLogger_Files())
 		log.prefix = os.path.join(outputdir)
 		#cmd = "mkdir "+log.prefix
-		#cmdexecute(cmd)
+		#junk = cmdexecute(cmd)
 		log.prefix += "/"
 	else:  log = None
 	mpi_barrier(MPI_COMM_WORLD)
@@ -417,7 +407,7 @@ def main():
 			masterdir = "master"+timestring
 		li = len(masterdir)
 		cmd = "{} {}".format("mkdir", masterdir)
-		cmdexecute(cmd)
+		junk = cmdexecute(cmd)
 	else:
 		li = 0
 

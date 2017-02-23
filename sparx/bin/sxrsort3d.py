@@ -90,7 +90,7 @@ def do_EQKmeans_nways_clustering(workdir, initial_partids, params, sort_res, log
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				Tracker["directory"]  = os.path.join(workdir, "generation%03d"%generation)
 				cmd="{} {}".format("mkdir",Tracker["directory"])
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 				log_main.add("-------->>> generation         %5d"%generation)
 				log_main.add("number of images per group:  %d"%Tracker["number_of_images_per_group"])
 				log_main.add("the initial number of groups:  %d  number of independent runs:  %d"%(Tracker["number_of_groups"], Tracker["constants"]["indep_runs"]))
@@ -107,7 +107,7 @@ def do_EQKmeans_nways_clustering(workdir, initial_partids, params, sort_res, log
 					print(line, msg)
 					log_main.add(msg)
 					cmd="{} {}".format("mkdir",Tracker["directory"])
-					cmdexecute(cmd)
+					junk = cmdexecute(cmd)
 				Tracker        = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 
 
@@ -129,7 +129,7 @@ def do_EQKmeans_nways_clustering(workdir, initial_partids, params, sort_res, log
 				print(line, msg)
 				log_main.add(msg)
 				cmd="{} {}".format("mkdir",Tracker["directory"])
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 			final_list, num_in_groups = mref_ali3d_Kmeans_remove_small_groups(Tracker["Accounted_on_disk"],  \
 			os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"), Tracker["clean_volumes"])	
@@ -462,10 +462,11 @@ def mref_ali3d_Kmeans_remove_small_groups(partids, partstack, clean_volumes = Tr
 	group_list           = wrap_mpi_bcast(group_list, Blockdata["main_node"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		cmd = "{} {}".format("rm -rf", os.path.join(Tracker["directory"], "tempdir"))
-		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): cmdexecute(cmd)
+		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
+			junk = cmdexecute(cmd)
 		if clean_volumes:
 			 cmd = "{} {}".format("rm -rf", os.path.join(Tracker["directory"], "vol_*.hdf"))
-			 cmdexecute(cmd)
+			 junk = cmdexecute(cmd)
 	mpi_barrier(MPI_COMM_WORLD)	
 	return group_list, npergroup 	
 
@@ -768,10 +769,11 @@ def mref_ali3d_EQ_Kmeans(partids, partstack, clean_volumes = True):
 		log.add("mref_ali3d_EQ_Kmeans done")
 		write_text_row(Tracker["partition"], os.path.join(Tracker["directory"],"list.txt"))
 		cmd = "{} {}".format("rm -rf", os.path.join(Tracker["directory"], "tempdir"))
-		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): cmdexecute(cmd)
+		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
+			junk = cmdexecute(cmd)
 		if clean_volumes:
 			cmd = "{} {}".format("rm -rf", os.path.join(Tracker["directory"], "vol_*.hdf"))
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 	else:   Tracker["partition"] = 0
 	Tracker["partition"] = wrap_mpi_bcast(Tracker["partition"],Blockdata["main_node"])
 	return Tracker["partition"]
@@ -1632,7 +1634,7 @@ def do3d_sorting(procid, data):
 			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
 				print("tempdir exists")
 			else:
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 		tvol.set_attr("is_complex",0)
 		tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d.hdf"%procid))
 		tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%01d.hdf"%procid))
@@ -1821,8 +1823,10 @@ def do3d_sorting_group_bp(data):
 	global Tracker, Blockdata
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
 		cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"], "tempdir"))
-		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")):print("tempdir exists")
-		else: cmdexecute(cmd)
+		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
+			print("tempdir exists")
+		else:
+			junk = cmdexecute(cmd)
 		
 	for index_of_groups in xrange(Tracker["number_of_groups"]):
 		for procid in xrange(3):
@@ -1845,8 +1849,10 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 	keepgoing = 1
 	if(Blockdata["myid"] == Blockdata["nodes"][0]):
 		cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"], "tempdir"))
-		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
-		else:                                                             cmdexecute(cmd)
+		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
+			print("tempdir exists")
+		else:
+			junk = cmdexecute(cmd)
 	do3d_sorting_group_bp(data)
 	mpi_barrier(MPI_COMM_WORLD)
 	
@@ -2133,7 +2139,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%selected_iter, "params_%03d.txt"%selected_iter)):
 			cmd = "{} {} {}".format("cp ",os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%selected_iter, \
 			 "params_%03d.txt"%selected_iter), os.path.join(Tracker["constants"]["masterdir"], "sparx_refinement_params.txt"))
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		else: import_from_sparx_refinement = 0
 		Tracker["constants"]["selected_iter"] = selected_iter
 	import_from_sparx_refinement			= bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
@@ -2147,7 +2153,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%selected_iter, "driver_%03d.txt"%selected_iter)):
 			cmd = "{} {} {}".format("cp ",os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%selected_iter, \
 			 "driver_%03d.txt"%selected_iter), os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		else: import_from_sparx_refinement = 0
 		Tracker["constants"]["selected_iter"] = selected_iter
 		if import_from_sparx_refinement: fsc_curve = read_text_row(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
@@ -2174,7 +2180,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt")):
 			cmd = "{} {} {}".format("cp ", os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt"), \
 			os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"))
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		else:	import_from_sparx_refinement = 0	
 	import_from_sparx_refinement			= bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:	
@@ -2187,13 +2193,13 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/chunk_0_000.txt")):
 			cmd = "{} {} {}".format("cp ", os.path.join(Tracker["constants"]["refinement_dir"], "main000/chunk_0_000.txt"), \
 			os.path.join(Tracker["constants"]["masterdir"], "chunk_0.txt"))
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		else:	
 			import_from_sparx_refinement == 0
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/chunk_1_000.txt")):
 			cmd = "{} {} {}".format("cp ", os.path.join(Tracker["constants"]["refinement_dir"], "main000/chunk_1_000.txt"), \
 			os.path.join(Tracker["constants"]["masterdir"], "chunk_1.txt"))
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		else: 	
 			import_from_sparx_refinement == 0
 			
@@ -2229,7 +2235,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			refinement_mask3D_path, refinement_mask3D_file = os.path.split(Tracker_refinement["constants"]["mask3D"])# MRK_DEBUG
 			cmd = "{} {} {}".format("cp ", os.path.join(refinement_dir_path, Tracker_refinement["constants"]["mask3D"]), \
 			os.path.join(Tracker["constants"]["masterdir"], refinement_mask3D_file))
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 			Tracker["constants"]["mask3D"] = os.path.join(Tracker["constants"]["masterdir"], refinement_mask3D_file)
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
@@ -2552,7 +2558,7 @@ def get_input_from_relion_ref3d(log_main):# case two
 			relion_mask3D_path, relion_mask3D_file = os.path.split(relion_dict["_rlnSolventMaskName"])
 			cmd = "{} {} {}".format("cp ", os.path.join(refinement_path, relion_dict["_rlnSolventMaskName"]), \
 			os.path.join(Tracker["constants"]["masterdir"], relion_mask3D_file))
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 			Tracker["constants"]["mask3D"] = os.path.join(Tracker["constants"]["masterdir"], relion_mask3D_file)
 				
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
@@ -2923,14 +2929,14 @@ def main():
 
 	from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
 	from applications 	import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
-	from utilities 		import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
+	from utilities 		import get_im,bcast_number_to_all,junk = cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
 	from utilities 		import get_initial_ID, print_upper_triangular_matrix, print_a_line_with_timestamp
 	from utilities 		import get_resolution_mrk01,partition_to_groups,partition_independent_runs,get_outliers
 	from utilities 		import merge_groups, save_alist, margin_of_error, get_margin_of_error, get_ali3d_params
 	from utilities 		import counting_projections, unload_dict, load_dict, get_stat_proj, get_number_of_groups, recons_mref
 	from utilities 		import apply_low_pass_filter, get_groups_from_partition, get_number_of_groups, get_complementary_elements_total, update_full_dict
 	from utilities 		import count_chunk_members, set_filter_parameters_from_adjusted_fsc, adjust_fsc_down, get_two_chunks_from_stack
-	from utilities 		import get_input_from_string, cmdexecute
+	from utilities 		import get_input_from_string, junk = cmdexecute
 	from filter			import filt_tanl
 	from time           import sleep
 	from logger         import Logger,BaseLogger_Files
@@ -2951,12 +2957,12 @@ def main():
 			timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 			masterdir ="sort3d"+timestring
 			cmd="{} {}".format("mkdir", masterdir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		else:
 			if os.path.exists(masterdir): restart = 1
 			else:
 				cmd="{} {}".format("mkdir", masterdir)
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 		li =len(masterdir)
 		#print_dict(Tracker["constants"],"Permanent sorting settings from input options")
 	else:
@@ -3114,7 +3120,7 @@ def main():
 		Tracker["indep_sort3d_dir"] = os.path.join(Tracker["constants"]["masterdir"], "sort3d_run%d"%indep_sort3d)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"	
-			cmdexecute("{} {}".format("mkdir",Tracker["indep_sort3d_dir"]))
+			junk = cmdexecute("{} {}".format("mkdir",Tracker["indep_sort3d_dir"]))
 			msg = "---------->>>Independent sort3d  %d<<<----------- "%indep_sort3d
 			print(line, msg)
 			log_main.add(msg)
@@ -3213,7 +3219,7 @@ def main():
 			log_main.add(msg)
 			print(line, msg)
 			cmd = "{} {}".format("mkdir",Tracker["directory"])
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 			write_text_file(Tracker["unaccounted_list"], os.path.join(Tracker["directory"], "Unaccounted.txt"))
 			write_text_row(Tracker["accounted_list"], os.path.join(Tracker["directory"], "Accounted.txt"))
 		mpi_barrier(MPI_COMM_WORLD)
@@ -3274,7 +3280,7 @@ def main():
 			print(line, msg)
 			log_main.add(msg)
 			cmd = "{} {}".format("mkdir",Tracker["directory"])
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		mpi_barrier(MPI_COMM_WORLD)
 		
 		final_list, num_in_groups = mref_ali3d_Kmeans_remove_small_groups(os.path.join(Tracker["constants"]["masterdir"], "rsort%d"%iter_rsort, "index_for_Kmeans.txt"), \
@@ -3346,7 +3352,8 @@ def main():
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		line    = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		cmd = "{} {}".format("rm -rf", os.path.join(Tracker["directory"], "tempdir"))
-		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): cmdexecute(cmd)
+		if os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
+			junk = cmdexecute(cmd)
 		msg = "Final sort3d summary"
 		print(line, msg)
 		log_main.add(msg)

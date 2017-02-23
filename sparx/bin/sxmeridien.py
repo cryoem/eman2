@@ -984,7 +984,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
 				print("tempdir exists")
 			else:
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 
 		tvol.set_attr("is_complex",0)
 		tvol.write_image(os.path.join(Tracker["directory"], "tempdir", "tvol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
@@ -3114,7 +3114,8 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 		partids =[None, None]
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			cmd = "{} {} ".format("mkdir ",os.path.join(Tracker["constants"]["masterdir"], "tempdir"))
-			if not os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "tempdir")): cmdexecute(cmd)
+			if not os.path.exists(os.path.join(Tracker["constants"]["masterdir"], "tempdir")):
+				junk = cmdexecute(cmd)
 			l = 0
 			for procid in xrange(2):
 				partids[procid] = os.path.join(final_dir,"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
@@ -3197,9 +3198,9 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 	# also copy params to masterdir as final params
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		cmd = "{} {}  {}".format("cp ", os.path.join(final_dir, "params_%03d.txt"%Tracker["mainiteration"]), os.path.join(Tracker["constants"]["masterdir"], "final_params.txt"))
-		cmdexecute(cmd)
+		junk = cmdexecute(cmd)
 		cmd = "{} {}".format("rm -rf", os.path.join(Tracker["constants"]["masterdir"], "tempdir"))
-		cmdexecute(cmd)
+		junk = cmdexecute(cmd)
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 
@@ -3389,16 +3390,16 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if not os.path.exists(iter_dir):
 			cmd         = "{} {}".format("mkdir", iter_dir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		if not os.path.exists(main0_dir):
 			cmd         = "{} {}".format("mkdir", main0_dir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		if not os.path.exists(new_oldparamstructure_dir):	
 			cmd = "{} {}".format("mkdir", new_oldparamstructure_dir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 		if not os.path.exists(previousoutputdir):
 			cmd = "{} {}".format("mkdir", previousoutputdir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 	mpi_barrier(MPI_COMM_WORLD)
 	# load selected iter
 	new_chunk_one                  = []
@@ -3524,7 +3525,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if not os.path.exists(iter_dir):
 			cmd         = "{} {}".format("mkdir", iter_dir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if Blockdata["myid"] == Blockdata["main_node"]:
@@ -3741,7 +3742,8 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 	partids =[None, None]
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		cmd = "{} {} ".format("mkdir ",os.path.join(Tracker["directory"], "tempdir"))
-		if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): cmdexecute(cmd)
+		if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")):
+			junk = cmdexecute(cmd)
 		l = 0
 		for procid in xrange(2):
 			partids[procid] = os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
@@ -4178,12 +4180,12 @@ def main():
 				masterdir = "master"+timestring
 				li = len(masterdir)
 				cmd = "{} {}".format("mkdir", masterdir)
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 				keepchecking = 0
 			else:
 				if not os.path.exists(masterdir):
 					cmd = "{} {}".format("mkdir", masterdir)
-					cmdexecute(cmd)
+					junk = cmdexecute(cmd)
 				li = 0
 				keepchecking = 1
 		else:
@@ -4291,7 +4293,7 @@ def main():
 
 			if( Blockdata["myid"] == Blockdata["main_node"] ):
 				cmd = "mkdir "+initdir
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 				write_text_file(range(total_stack), partids)
 			mpi_barrier(MPI_COMM_WORLD)
 
@@ -4362,12 +4364,12 @@ def main():
 				masterdir = "continue_from_sort3d"+timestring
 				li = len(masterdir)
 				cmd = "{} {}".format("mkdir", masterdir)
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 				keepchecking = 0
 			else:
 				if not os.path.exists(masterdir):
 					cmd = "{} {}".format("mkdir", masterdir)
-					cmdexecute(cmd)
+					junk = cmdexecute(cmd)
 				li = 0
 				keepchecking = 1
 		else:
@@ -4456,7 +4458,7 @@ def main():
 				if doit:
 					if(Blockdata["myid"] == Blockdata["main_node"]):
 						cmd = "{} {}".format("rm -rf ", Tracker["directory"])
-						cmdexecute(cmd)
+						junk = cmdexecute(cmd)
 			"""
 			mpi_barrier(MPI_COMM_WORLD)
 			if doit:
@@ -4468,9 +4470,9 @@ def main():
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 
 					cmd = "{} {}".format("mkdir", Tracker["directory"])
-					cmdexecute(cmd)
+					junk = cmdexecute(cmd)
 					cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"],"oldparamstructure"))
-					cmdexecute(cmd)
+					junk = cmdexecute(cmd)
 
 				mpi_barrier(MPI_COMM_WORLD)
 
@@ -4695,7 +4697,7 @@ def main():
 
 				if( Blockdata["myid"] == Blockdata["nodes"][0] ):
 					cmd = "{} {}".format("rm -rf", os.path.join(Tracker["directory"], "tempdir"))
-					cmdexecute(cmd)
+					junk = cmdexecute(cmd)
 
 				#from sys import exit
 				#mpi_finalize()
@@ -4712,7 +4714,7 @@ def main():
 					for procid in xrange(2):
 						cmd = "{} {} {}".format("cp -p", os.path.join(Tracker["previousoutputdir"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1)), \
 												os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
-						cmdexecute(cmd)
+						junk = cmdexecute(cmd)
 
 					pinids = read_text_file(partids[0])  + read_text_file(partids[1])
 					params = read_text_row(partstack[0]) + read_text_row(partstack[1])

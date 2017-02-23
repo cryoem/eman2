@@ -178,7 +178,7 @@ def main():
 		if(instack[:4] !="bdb:"):
 			stack = "bdb:data"
 			delete_bdb(stack)
-			cmdexecute("sxcpy.py  "+instack+"  "+stack)
+			junk = cmdexecute("sxcpy.py  "+instack+"  "+stack)
 		else:
 			stack = instack
 
@@ -190,7 +190,7 @@ def main():
 		angsa = [None]*na
 		for k in xrange(ks):
 			delete_bdb("bdb:Q%1d"%k)
-			cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
+			junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
 			DB = db_open_dict("bdb:Q%1d"%k)
 			for i in xrange(na):
 				ut = qt[i]*ts[k]
@@ -198,12 +198,12 @@ def main():
 				#bt = ut.get_params("spider")
 				#angsa[i] = [round(bt["phi"],3)%360.0, round(bt["theta"],3)%360.0, bt["psi"], -bt["tx"], -bt["ty"]]
 			#write_text_row(angsa, 'ptsma%1d.txt'%k)
-			#cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
-			#cmdexecute("sxheader.py  bdb:Q%1d  --params=xform.projection  --import=ptsma%1d.txt"%(k,k))
+			#junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
+			#junk = cmdexecute("sxheader.py  bdb:Q%1d  --params=xform.projection  --import=ptsma%1d.txt"%(k,k))
 			DB.close()
 		delete_bdb("bdb:sdata")
-		cmdexecute("e2bdb.py . --makevstack=bdb:sdata --filt=Q")
-		#cmdexecute("ls  EMAN2DB/sdata*")
+		junk = cmdexecute("e2bdb.py . --makevstack=bdb:sdata --filt=Q")
+		#junk = cmdexecute("ls  EMAN2DB/sdata*")
 		a = get_im("bdb:sdata")
 		a.set_attr("variabilitysymmetry",sym)
 		a.write_image("bdb:sdata")
