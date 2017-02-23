@@ -1093,6 +1093,7 @@ def main():
 						else:      fsc_true [1][i]=(fsct-fscn)/(1.-fscn)
 			else:
 				fsc_true = fsc(map1, map2, 1)
+			write_text_file(fsc_true, "fsc.txt")
 				 
 			for ifreq in xrange(len(fsc_true[1])):
 				if fsc_true[1][ifreq] < 0.143:
