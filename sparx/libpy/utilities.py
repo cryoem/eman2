@@ -792,7 +792,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 	angles = []
 	symmetryLower = symmetry.lower()
 	symmetry_string = split(symmetry)[0]
-	if  (symmetry_string[0]  == "c"):
+	if(symmetry_string[0]  == "c"):
 		if(phi2 == 359.99):
 			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2/int(symmetry_string[1:])+ant, method, phiEqpsi)
 		else:
@@ -833,7 +833,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 				if(angles[t][0] >= qt + ant ):  del angles[t]
 	elif(symmetry_string[0]  == "s"):
 
-	#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
+		#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
 		# for helical, theta1 cannot be 0.0
 		if theta1 > 90.0:
 			ERROR('theta1 must be less than 90.0 for helical symmetry', 'even_angles', 1)
@@ -867,7 +867,25 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 					angles.append([i*delta,90.0-j*theta2,90.0])
 
 
-	else : # This is very close to the Saff even_angles routine on the asymmetric unit;
+	elif(symmetry_string[0]  == "o"):
+		from EMAN2 import parsesym
+		if(method.lower() == "s"):  met = "saff"
+		elif(method.lower() == "p"): met = "even"
+		if(theta2 == 180.0):  inc_mirror = 1
+		else:  inc_mirror = 0
+		tt = parsesym(symmetry)
+		z = tt.gen_orientations(met,{"delta":delta,"inc_mirror":inc_mirror})
+		angles = []
+		if( phiEqpsi == "Minus" ):
+			for q in z:
+				q = q.get_params("spider")
+				angles.append([q["phi"], q["theta"],-q["phi"]])
+		else:
+			for q in z:
+				q = q.get_params("spider")
+				angles.append([q["phi"], q["theta"],0.0])
+	else :
+		# This is very close to the Saff even_angles routine on the asymmetric unit;
 		# the only parameters used are symmetry and delta
 		# The formulae are given in the Transform Class Paper
 		# The symmetric unit 		nVec=[]; # x,y,z triples
@@ -3692,7 +3710,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 
 	elif( sym[:1] == "d" ):
 		from utilities import get_symt, getvec
-		from EMAN2 import Vec2f, Transform
+		from EMAN2 import Transform
 		t = get_symt(sym)
 		phir = 360.0/int(sym[1:])
 		for i in xrange(len(t)):  t[i] = t[i].inverse()
@@ -3730,7 +3748,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 
 	elif( sym[:1] == "c" ):
 		from utilities import get_symt, getvec
-		from EMAN2 import Vec2f, Transform
+		from EMAN2 import Transform
 		t = get_symt(sym)
 		#phir = 360.0/int(sym[1:])
 

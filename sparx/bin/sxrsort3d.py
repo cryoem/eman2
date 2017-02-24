@@ -2929,14 +2929,14 @@ def main():
 
 	from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
 	from applications 	import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
-	from utilities 		import get_im,bcast_number_to_all,junk = cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
+	from utilities 		import get_im,bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
 	from utilities 		import get_initial_ID, print_upper_triangular_matrix, print_a_line_with_timestamp
 	from utilities 		import get_resolution_mrk01,partition_to_groups,partition_independent_runs,get_outliers
 	from utilities 		import merge_groups, save_alist, margin_of_error, get_margin_of_error, get_ali3d_params
 	from utilities 		import counting_projections, unload_dict, load_dict, get_stat_proj, get_number_of_groups, recons_mref
 	from utilities 		import apply_low_pass_filter, get_groups_from_partition, get_number_of_groups, get_complementary_elements_total, update_full_dict
 	from utilities 		import count_chunk_members, set_filter_parameters_from_adjusted_fsc, adjust_fsc_down, get_two_chunks_from_stack
-	from utilities 		import get_input_from_string, junk = cmdexecute
+	from utilities 		import get_input_from_string, cmdexecute
 	from filter			import filt_tanl
 	from time           import sleep
 	from logger         import Logger,BaseLogger_Files
