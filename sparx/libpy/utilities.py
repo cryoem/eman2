@@ -3796,7 +3796,7 @@ def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1"):
 		assignments = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
 	elif( sym[:1] == "c" or  sym[:1] == "d" ):
 		angles_sym_normals = angles_to_normals(symmetry_neighbors([angles], sym))
-		assignments = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), sym, howmany)
+		assignments = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), howmany)
 	else:
 		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_full_k_projangles",1)
 		assignments = []
@@ -3818,7 +3818,7 @@ def nearest_many_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1")
 	elif( sym[:1] == "c" or  sym[:1] == "d" ):
 		for i,q in enumerate(angles):
 			angles_sym_normals = angles_to_normals(symmetry_neighbors([q], sym))
-			assignments[i] = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), sym, howmany)
+			assignments[i] = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), howmany)
 	else:
 		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_many_full_k_projangles",1)
 		assignments = []
@@ -4127,9 +4127,29 @@ def angles_to_normals(angles):
 	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(len(angles)) ]
 
 def symmetry_related(angles, symmetry):
-	temp = Util.symmetry_related(angles, symmetry)
-	nt = len(temp)/3
-	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+	if(symmetry == "oct" ):
+		from EMAN2 import Transform
+		neighbors = []
+		junk = Transform({"type":"spider","phi":angles[0],"theta":angles[1],"psi":angles[2]})
+		junk = junk.get_sym_proj(symmetry)
+		for p in junk:
+			d = p.get_params("spider")
+			neighbors.append([d["phi"],d["theta"],d["psi"]])
+		return neighbors
+	else:
+		temp = Util.symmetry_related(angles, symmetry)
+		nt = len(temp)/3
+		return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+
+def symmetry_related_normals(angles, symmetry):
+	from EMAN2 import Transform
+	neighbors = []
+	junk = Transform({"type":"spider","phi":angles[0],"theta":angles[1],"psi":angles[2]})
+	junk = junk.get_sym_proj(symmetry)
+	for p in junk:
+		neighbors.append(p.get_matrix()[8:11])
+	return neighbors
+
 
 def symmetry_neighbors(angles, symmetry):
 	#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
