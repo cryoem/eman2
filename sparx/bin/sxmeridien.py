@@ -965,7 +965,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 	#  Without filtration
 	from reconstruction import recons3d_trl_struct_MPI
 
-	if( mpi_comm < -1 ): mpi_comm = MPI_COMM_WORDLD
+	if( mpi_comm < -1 ): mpi_comm = MPI_COMM_WORLD
 	"""
 	tvol, tweight, trol = recons3d_4nnstruct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
 											paramstructure = newparams, refang = refang, delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"],\
