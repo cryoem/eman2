@@ -1,0 +1,47 @@
+package:
+    name: eman2
+    version: 2.2
+
+source:
+    path: {{ RECIPE_DIR }}/../..
+
+requirements:
+    build:
+        - cmake
+        
+        - python 2.7.*
+        - boost 1.63*
+        - fftw
+        - numpy
+        - ftgl
+        - freetype
+        - gsl
+        - hdf5
+        - jpeg
+        - libtiff
+        - libpng
+        - szip  # [win]
+        - zlib
+    
+    run:
+        - python 2.7.*
+        - boost 1.63*
+        - fftw
+        - numpy
+        - ftgl
+        - freetype
+        - gsl
+        - hdf5
+        - jpeg
+        - libtiff
+        - libpng
+        - szip  # [win]
+        - zlib
+        
+        - bsddb  # [not win]
+        - matplotlib
+        - ipython
+        - pyqt 4.*
+        - pyopengl
+        - theano
+        - scipy
