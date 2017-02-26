@@ -17,3 +17,5 @@ set "PATH=%HOME%\EMAN2\bin;%PATH%"
 set "PYTHONPATH=%HOME%\EMAN2\bin;PYTHONPATH"
 e2version.py
 if errorlevel 1 exit 1
+e2speedtest.py
+if errorlevel 1 exit 1
