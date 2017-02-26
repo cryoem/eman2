@@ -484,6 +484,7 @@ def do_convolve(jsd, job):
 	#idx=job
 	
 	e0=tomo_in[idx]
+	e0.div(3.)
 	imgs=[e0]
 	print "starting: ", idx#, e0["nx"]
 	
@@ -682,7 +683,8 @@ def load_particles(ptcls,labelshrink,ncopy=5):
 	
 	data=np.asarray(data,dtype=theano.config.floatX)
 	print np.std(data.flatten())
-	#data/=np.std(data.flatten())*3  #np.max(np.abs(data))
+	data/=np.std(data.flatten())*3  #np.max(np.abs(data))
+	data/=3.
 	label=np.asarray(label,dtype=theano.config.floatX)
 	label/=np.max(np.abs(label))
 	
