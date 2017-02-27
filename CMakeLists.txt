@@ -81,6 +81,7 @@ ENDIF(CMAKE_SYSTEM MATCHES "Darwin-12*")
 # ENDIF (ENABLE_LEOPARD)
 
 IF (ENABLE_OPTIMIZE_MOUNTAIN_LION)
+	SET(CMAKE_MACOSX_RPATH ON)
 	SET(GL_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib)
 	SET(GLU_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib)
 	SET(GL_INCLUDE_PATH /usr/include)
@@ -202,8 +203,100 @@ ENDIF(ENABLE_IOCACHE)
 #     ADD_DEFINITIONS(-DHDFIO_CACHE)
 # ENDIF(ENABLE_HDFIOCACHE)
 
+
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	FUNCTION(message_debug var)
+		message("${var}: ${${var}}")
+	endfunction()
+
+	if(NOT WIN32)
+		set(CMAKE_PREFIX_PATH $ENV{PREFIX})
+		set(GSL_INCLUDE_DIRS $ENV{PREFIX}/include)
+	else()
+		set(CMAKE_PREFIX_PATH $ENV{LIBRARY_PREFIX})
+		add_definitions(-DGSL_DLL -DFTGL_LIBRARY_STATIC)
+		set(GSL_INCLUDE_DIRS $ENV{LIBRARY_PREFIX}/include)
+	endif()
+		
+	find_package(Boost COMPONENTS python REQUIRED)
+	find_package(OpenGL REQUIRED)
+	find_package(HDF5 REQUIRED)
+	find_package(PNG REQUIRED)
+	find_package(JPEG REQUIRED)
+	find_package(ZLIB REQUIRED)
+	find_package(Freetype REQUIRED)
+
+#		Set expected vars to values just found
+	set(BOOST_LIBRARY ${Boost_LIBRARIES} CACHE PATH "")
+	set(BOOST_INCLUDE_PATH ${Boost_INCLUDE_DIR} CACHE PATH "")
+		
+	set(OPENGL_LIBRARY ${OPENGL_gl_LIBRARY} CACHE PATH "")
+	set(GL_LIBRARY ${OPENGL_gl_LIBRARY}     CACHE PATH "")
+	set(GLU_LIBRARY ${OPENGL_LIBRARIES} CACHE PATH "")
+	set(GL_INCLUDE_PATH ${OPENGL_INCLUDE_DIR})
+	set(GLU_INCLUDE_PATH ${OPENGL_INCLUDE_DIR})
+
+	set(HDF5_LIBRARY ${HDF5_LIBRARIES} CACHE PATH "")
+	set(PNG_LIBRARY ${PNG_LIBRARIES} CACHE PATH "")
+	set(JPEG_LIBRARY ${JPEG_LIBRARIES} CACHE PATH "")
+	set(ZLIB_LIBRARY ${ZLIB_LIBRARIES} CACHE PATH "")
+
+	set(GSL_LIBRARY ${GSL_LIBRARIES})
+	set(GSL_INCLUDE_PATH ${GSL_INCLUDE_DIRS})
+	set(GSL_CBLAS_LIBRARY ${GSL_CLBAS_LIBRARY})
+	set(GSL_CBLAS_INCLUDE_PATH ${GSL_INCLUDE_DIRS})
+		
+	set(FREETYPE_LIBRARY ${FREETYPE_LIBRARIES} CACHE PATH "")
+	set(FREETYPE_INCLUDE_PATH ${FREETYPE_INCLUDE_DIRS} CACHE PATH "")
+		
+	if(NOT WIN32)
+		set(FTGL_INCLUDE_PATH $ENV{PREFIX}/include CACHE PATH "")
+		set(FFTW3_INCLUDE_PATH $ENV{PREFIX}/include CACHE PATH "")
+		set(FFTW3d_INCLUDE_PATH $ENV{PREFIX}/include CACHE PATH "")
+	else()
+		set(FTGL_INCLUDE_PATH      $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
+		set(FFTW3_INCLUDE_PATH     $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
+		set(FFTW3d_INCLUDE_PATH    $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
+		set(FFTW3_LIBRARY     "$ENV{LIBRARY_PREFIX}/lib/libfftw3f-3.lib;$ENV{LIBRARY_PREFIX}/lib/libfftw3-3.lib" CACHE PATH "")
+		set(FFTW3d_LIBRARY    $ENV{LIBRARY_PREFIX}/lib/libfftw3f-3.lib CACHE PATH "")
+		set(SZLIB_LIBRARY          $ENV{LIBRARY_PREFIX}/lib/libszip.lib CACHE PATH "")
+		set(HDF5_LIBRARY          $ENV{LIBRARY_PREFIX}/lib/libhdf5.lib CACHE PATH "" FORCE)
+
+		set(GL_INCLUDE_PATH  "C:/Program Files/Microsoft SDKs/Windows/v7.0/Include" CACHE PATH "")
+		set(GLU_INCLUDE_PATH "C:/Program Files/Microsoft SDKs/Windows/v7.0/Include" CACHE PATH "")
+	endif()
+
+#		Print vars
+	message("BOOST_LIBRARY: ${BOOST_LIBRARY}")
+	message("BOOST_INCLUDE_PATH: ${BOOST_INCLUDE_PATH}")
+	message("OPENGL_LIBRARY: ${OPENGL_LIBRARY}")
+	message("GL_LIBRARY: ${GL_LIBRARY}")
+	message("GLU_LIBRARY: ${GLU_LIBRARY}")
+	message("OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
+	message("GL_INCLUDE_PATH: ${GL_INCLUDE_PATH}")
+	message("GLU_INCLUDE_PATH: ${GLU_INCLUDE_PATH}")
+	message("HDF5_LIBRARY: ${HDF5_LIBRARIES}")
+	message("PNG_LIBRARY: ${PNG_LIBRARY}")
+	message("JPEG_LIBRARY: ${JPEG_LIBRARY}")
+	message("ZLIB_LIBRARY: ${ZLIB_LIBRARY}")
+	message("GSL_LIBRARY: ${GSL_LIBRARY}")
+	message("GSL_INCLUDE_PATH: ${GSL_INCLUDE_PATH}")
+	message("GSL_CBLAS_LIBRARY: ${GSL_CBLAS_LIBRARY}")
+	message("GSL_CBLAS_INCLUDE_PATH: ${GSL_CBLAS_INCLUDE_PATH}")
+	message("FREETYPE_LIBRARIES: ${FREETYPE_LIBRARIES}")
+	message("FREETYPE_INCLUDE_DIRS: ${FREETYPE_INCLUDE_DIRS}")
+	message("FREETYPE_INCLUDE_DIR_ft2build: ${FREETYPE_INCLUDE_DIR_ft2build}")
+	message("FREETYPE_INCLUDE_DIR_freetype2: ${FREETYPE_INCLUDE_DIR_freetype2}")
+	message("FTGL_INCLUDE_PATH: ${FTGL_INCLUDE_PATH}")
+	message("FFTW3_INCLUDE_PATH: ${FFTW3_INCLUDE_PATH}")
+	message("FFTW3d_INCLUDE_PATH: ${FFTW3d_INCLUDE_PATH}")
+	message("SZLIB_LIBRARY: ${SZLIB_LIBRARY}")
+endif()
+
 SET(INCLUDE_DIRS
 	${EMAN_SOURCE_DIR}/libEM
+	$ENV{HOME}/EMAN2/anaconda2/include
+	$ENV{HOME}/anaconda2/include
 	$ENV{HOME}/include
 	$ENV{FFTWDIR}/include
 	$ENV{GSLDIR}/include
@@ -218,6 +311,8 @@ SET(INCLUDE_DIRS
 SET(LIB_DIRS
 	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
 	$ENV{EMANDIR}/lib
+	$ENV{HOME}/EMAN2/anaconda2/lib
+	$ENV{HOME}/anaconda2/lib
 	$ENV{HOME}/lib
 	${PLATFORMLIB}
 	$ENV{FFTWDIR}/lib
@@ -231,10 +326,18 @@ SET(LIB_DIRS
 
 
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
-    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
+	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+		message("\n### BEGIN ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
+		message_debug(${upper}_INCLUDE_PATH)
+		message_debug(${upper}_LIBRARY)
+	endif()
+		
+	IF(NOT ${upper}_INCLUDE_PATH)
+		FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
+	endif()
     IF(${upper}_INCLUDE_PATH)
     ELSE (${upper}_INCLUDE_PATH)
-		FIND_PATH(${upper}_INCLUDE_PATH ${header2} $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
+		FIND_PATH(${upper}_INCLUDE_PATH ${header2} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
     ENDIF(${upper}_INCLUDE_PATH)
 
     IF(${upper}_INCLUDE_PATH)
@@ -246,6 +349,12 @@ MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
     ELSE(${upper}_INCLUDE_PATH)
 		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
     ENDIF(${upper}_INCLUDE_PATH)
+
+	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+		message("### END ### CHECK_REQUIRED_LIB2 upper lower header lower2 header2")
+		message_debug(${upper}_INCLUDE_PATH)
+		message_debug(${upper}_LIBRARY)
+	endif()
 ENDMACRO(CHECK_REQUIRED_LIB2)
 
 MACRO(CHECK_REQUIRED_LIB upper lower header)
@@ -253,7 +362,7 @@ MACRO(CHECK_REQUIRED_LIB upper lower header)
 ENDMACRO(CHECK_REQUIRED_LIB)
 
 MACRO(CHECK_OPTIONAL_LIB upper lower header)
-    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
+    FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS} NO_DEFAULT_PATH)
 
     IF(${upper}_INCLUDE_PATH)
         FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
@@ -273,44 +382,63 @@ MACRO(CHECK_OPTIONAL_LIB upper lower header)
 ENDMACRO(CHECK_OPTIONAL_LIB)
 
 MACRO(CHECK_LIB_ONLY upper lower)
-    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
+    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS} NO_DEFAULT_PATH)
 ENDMACRO(CHECK_LIB_ONLY)
 
 MACRO(CHECK_PYTHON)
-	SET(PYTHON_FOUND FALSE)
+	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+		find_package(PythonInterp)
+		find_package(PythonLibs)
 
-	FOREACH(PYVER ${ARGV})
-		IF(NOT PYTHON_FOUND)
-			IF (WIN32)
-				FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-					$ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include)
+		set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
+		set(PYTHON_LIBRARY ${PYTHON_LIBRARIES} CACHE PATH "")
 
-				FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
-					$ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
+		message("PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE}")
+		message("PYTHON_LIBRARIES: ${PYTHON_LIBRARIES}")
+		message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
+		message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
+		message("PYTHON_INCLUDE_DIR: ${PYTHON_INCLUDE_DIR}")
+	else()
+        SET(PYTHON_FOUND FALSE)
 
-			ELSE (WIN32)
-				FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-					$ENV{PYTHON_ROOT}/include/python${PYVER}
-					/usr/local/include/python${PYVER}
-					/usr/include/python${PYVER})
+        FOREACH(PYVER ${ARGV})
+                IF(NOT PYTHON_FOUND)
+                        IF (WIN32)
+                                FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+                                        $ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include NO_DEFAULT_PATH)
 
-				FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
-					$ENV{PYTHON_ROOT}/lib/python${PYVER}/config
-					/usr/local/lib/python${PYVER}/config
-					/usr/lib/python${PYVER}/config
-					/usr/lib64/python${PYVER}/config
-					$ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib)
+                                FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
+                                        $ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
 
-			ENDIF (WIN32)
+                        ELSE (WIN32)
+                                FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+					$ENV{HOME}/EMAN2/anaconda2/include/python2.7
+					$ENV{HOME}/anaconda2/include/python2.7
+                                        $ENV{PYTHON_ROOT}/include/python${PYVER}
+                                        /usr/local/include/python${PYVER}
+                                        /usr/include/python${PYVER} NO_DEFAULT_PATH)
 
-			IF(PYTHON_INCLUDE_PATH)
-				IF(PYTHON_LIBRARY)
-					SET(PYTHON_FOUND TRUE)
-				ENDIF(PYTHON_LIBRARY)
-			ENDIF(PYTHON_INCLUDE_PATH)
+                                FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
+					$ENV{HOME}/EMAN2/anaconda2/lib
+					$ENV{HOME}/anaconda2/lib
+                                        $ENV{PYTHON_ROOT}/lib/python${PYVER}
+                                        /usr/local/lib/python${PYVER}
+                                        /usr/lib/python${PYVER}
+                                        /usr/lib64/python${PYVER}
+                                        $ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
 
-		ENDIF(NOT PYTHON_FOUND)
+                        ENDIF (WIN32)
+
+                        IF(PYTHON_INCLUDE_PATH)
+                                IF(PYTHON_LIBRARY)
+                                        SET(PYTHON_FOUND TRUE)
+					SET(PYTHON_INCLUDE_DIR PYTHON_INCLUDE_PATH)
+                                ENDIF(PYTHON_LIBRARY)
+                        ENDIF(PYTHON_INCLUDE_PATH)
+
+                ENDIF(NOT PYTHON_FOUND)
     ENDFOREACH(PYVER)
+	endif()
 ENDMACRO(CHECK_PYTHON)
 
 IF(ENABLE_FFTW2)
@@ -346,21 +474,16 @@ IF(ENABLE_FFTW3)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 
     CHECK_REQUIRED_LIB(FFTW3 fftw3f fftw3.h)
-
-    IF(NOT WIN32)
-       CHECK_REQUIRED_LIB(FFTW3d fftw3 fftw3.h)
-    ENDIF(NOT WIN32)
-
+    CHECK_REQUIRED_LIB(FFTW3d fftw3 fftw3.h)
     ADD_DEFINITIONS(-DFFTW3)
-
-    IF(WIN32)
-       SET(FFTW_LIBRARIES ${FFTW3_LIBRARY})
-    ELSE(WIN32)
-       SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
-    ENDIF(WIN32)
-
+    SET(FFTW_LIBRARIES ${FFTW3_LIBRARY} ${FFTW3d_LIBRARY})
     SET(FFTW_INCLUDE_PATH ${FFTW3_INCLUDE_PATH})
 
+	if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+		message("FFTW3F_LIBRARIES: ${FFTW3F_LIBRARIES}")
+		message("FFTW_INCLUDE_PATH: ${FFTW_INCLUDE_PATH}")
+	endif()
+		
     IF(ENABLE_NFFT2)
     	CHECK_REQUIRED_LIB(FFTW3D fftw3 fftw3.h)
     	CHECK_REQUIRED_LIB(NFFT2 nfft nfft.h)
@@ -411,11 +534,11 @@ ENDIF(ENABLE_DJBFFT)
 IF(ENABLE_OPTPP)
     FIND_PATH(OPTPP_INCLUDE_PATH Opt.h /usr/include /usr/include/opt++
               /usr/local/include /usr/local/include/opt++ $ENV{HOME}/include
-             $ENV{HOME}/include/opt++)
+             $ENV{HOME}/include/opt++ NO_DEFAULT_PATH)
     FIND_PATH(NEWMAT_INCLUDE_PATH newmat.h /usr/include /usr/include/opt++
               /usr/include/newmat /usr/local/include/newmat
               /usr/local/include /usr/local/include/opt++ $ENV{HOME}/include
-             $ENV{HOME}/include/opt++)
+             $ENV{HOME}/include/opt++ NO_DEFAULT_PATH)
     FIND_LIBRARY(OPTPP_LIBRARY NAMES opt-linux PATHS /usr/lib /usr/local/lib)
     FIND_LIBRARY(NEWMAT_LIBRARY NAMES newmat-linux PATHS /usr/lib /usr/local/lib)
 
@@ -438,8 +561,16 @@ IF (ENABLE_FTGL)
 		ADD_DEFINITIONS(-DOLD_FTGL)
 	ENDIF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
 	ADD_SUBDIRECTORY(fonts)
-    	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h /usr/include/freetype2 /usr/include $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
-	CHECK_REQUIRED_LIB(FREETYPE freetype freetype/config/ftheader.h )
+    	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h 
+		$ENV{HOME}/EMAN2/anaconda2/include/freetype2 
+		$ENV{HOME}/anaconda2/include/freetype2 
+		/usr/include/freetype2 
+		/usr/include 
+#		$ENV{${upper}DIR}/include
+		${INCLUDE_DIRS}
+		NO_DEFAULT_PATH
+	)
+	CHECK_REQUIRED_LIB(FREETYPE freetype config/ftheader.h )
 	IF (ENABLE_STATIC_FTGL)
 		IF(WIN32)
 			CHECK_REQUIRED_LIB(FREETYPE freetype ft2build.h)
@@ -479,31 +610,24 @@ IF(ENABLE_PNG)
 ENDIF(ENABLE_PNG)
 
 FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
-    $ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
-    $ENV{PYTHON_ROOT}/lib/python2.6/site-packages/numpy/core/include
-	$ENV{PYTHON_ROOT}/lib/python2.5/site-packages/numpy/core/include
-	$ENV{PYTHON_ROOT}/lib/python2.4/site-packages/numpy/core/include
+	$ENV{HOME}/anaconda2/lib/python2.7/site-packages/numpy/core/include
+	$ENV{HOME}/EMAN2/anaconda2/lib/python2.7/site-packages/numpy/core/include
+	$ENV{PYTHON_ROOT}/lib/python2.7/site-packages/numpy/core/include
+	$ENV{SP_DIR}/numpy/core/include
+	$ENV{SP_DIR}/numpy/core/include
 	/usr/local/lib/python2.7/site-packages/numpy/core/include
-	/usr/local/lib/python2.6/site-packages/numpy/core/include
 	/usr/lib64/python2.7/site-packages/numpy/core/include
-	/usr/lib64/python2.6/site-packages/numpy/core/include
-	/usr/lib64/python2.5/site-packages/numpy/core/include
-	/usr/lib64/python2.4/site-packages/numpy/core/include
 	/usr/lib/python2.7/site-packages/numpy/core/include
-	/usr/lib/python2.6/site-packages/numpy/core/include
-	/usr/lib/python2.5/site-packages/numpy/core/include
-    /Library/Python/2.5/site-packages/numpy/core/include
-    /usr/lib/python2.4/site-packages/numpy/core/include
-    /System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include
-    /System/Library/Frameworks/Python.framework/Versions/2.6/Extras/lib/python/numpy/core/include
-    /usr/include)
+    #/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include
+    /usr/include NO_DEFAULT_PATH)
+
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	message("NUMPY_INCLUDE_PATH: ${NUMPY_INCLUDE_PATH}")
+endif()
+
 INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
 
-IF(WIN32)
-	CHECK_PYTHON($ENV{PYTHON_VERSION} 27 26 25 24 23 22)
-ELSE(WIN32)
-	CHECK_PYTHON($ENV{PYTHON_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2)
-ENDIF(WIN32)
+CHECK_PYTHON(2.7)
 
 IF(PYTHON_INCLUDE_PATH)
     # Check the most generic name first (used by cctbx).
@@ -541,6 +665,18 @@ INCLUDE_DIRECTORIES(.
             )
 #            /usr/include/freetype2
 #            /usr/local/include/freetype2
+
+#---------------------------------------------------------------------------------------
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
+	message("\nINCLUDE_DIRECTORIES---START")
+	get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+	
+	foreach(dir ${dirs})
+		message(STATUS "INCLUDE_DIR='${dir}'")
+	endforeach()
+	message("\nINCLUDE_DIRECTORIES---END")
+endif()
+#---------------------------------------------------------------------------------------
 
 IF(ENABLE_RT)
     ADD_SUBDIRECTORY(rt)

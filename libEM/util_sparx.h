@@ -802,7 +802,7 @@ costlist, int* curbranch);
           * sign can be set as +1 or -1 . The unit of frequency ak is 1/Angstrom
                   Attention: Envelope function in power spectrum has a form of exp(-b_factor*ak^2)
                                           */
-	static float tf(float dzz, float ak, float voltage = 300.0f, float cs = 2.0f, float wgh = 0.1f, float b_factor = 0.0f, float sign = -1.0f);
+	static float   tf(float dzz, float ak, float voltage = 300.0f, float cs = 2.0f, float wgh = 0.1f, float b_factor = 0.0f, float sign = -1.0f);
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
 
 	/** Recreates a n-d image using its compressed 1-D form and the mask */
@@ -1016,7 +1016,7 @@ public:
 	*/
 	static int nearest_ang(const vector<float>& vecref, float x, float y, float z);
 	static vector<int> nearest_fang(const vector<vector<float> >& vecref, float x, float y, float z);
-	static vector<int> nearest_fang_sym(const vector<vector<float> >& angles_sym_normals, const vector<vector<float> >& reference_normals, int neighbors, int howmany);
+	static vector<int> nearest_fang_sym(const vector<vector<float> >& angles_sym_normals, const vector<vector<float> >& reference_normals, int neighbors, string symmetry, int howmany);
 	static vector<int> nearest_fang_select(const vector<vector<float> >& vecref, float x, float y, float z, int howmany);
 	static int nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z);
 

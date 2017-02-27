@@ -20847,7 +20847,7 @@ vector<int> Util::nearest_fang_select(const vector<vector<float> >& vecref, floa
 }
 
 
-vector<int> Util::nearest_fang_sym(const vector<vector<float> >& angles_sym_normals, const vector<vector<float> >& reference_normals, int neighbors, int howmany) {
+vector<int> Util::nearest_fang_sym(const vector<vector<float> >& angles_sym_normals, const vector<vector<float> >& reference_normals, int neighbors, string symmetry, int howmany) {
 	if ( howmany > reference_normals.size() ) throw InvalidValueException(howmany,"Error, number of neighbors cannot be larger than number of reference directions");
 	std::vector<int> bout(howmany);
 	std::vector<float> score(howmany);
@@ -23972,7 +23972,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
  cout <<"  Compile time of util_sparx.cpp  "<< __DATE__ << "  --  " << __TIME__ <<   endl;
- cout <<"  Modification time: 02/17/2017  02:20 PM " <<  endl;
+ cout <<"  Modification time: 02/02/2017  11:35 AM " <<  endl;
 }
 
 
@@ -27794,17 +27794,6 @@ EMData* Util::divide_mtf( EMData* img, vector<float> mtf, vector<float> res) {
 	EXITFUNC;
 	return img1;
 }
-
-inline float rnd_unif(float a, float b)
-{
-
-
-        if (a == b)
-        return a;
-    else
-        return a + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(b-a)));
-}
-
 #define		quadpi	 	 	3.141592653589793238462643383279502884197
 EMData* Util::randomizephasesafter( EMData* img, float res) 
 {
@@ -27834,10 +27823,9 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 				ix=i;
 				if(float(ix*ix+iy*iy+iz*iz)>res2) 
 				{
-					float amp           = (*img)(2*i, j, k)*(*img)(2*i, j, k)+(*img)(2*i+1, j, k)*(*img)(2*i+1, j, k);
+					float amp           = (*rimg)(2*i, j, k)*(*rimg)(2*i, j, k)+(*rimg)(2*i+1, j, k)*(*rimg)(2*i+1, j, k);
 					amp                 = sqrt(amp);
-					float twopi         = 2.*quadpi;
-    				float phase         = rnd_unif(0., twopi);
+    				float phase         = Util::get_frand(0., 2.*quadpi);
 					(*rimg) (i*2,j,k)   = amp * cos(phase);
 					(*rimg) (i*2+1,j,k) = amp * sin(phase);	
 					}

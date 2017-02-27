@@ -51,17 +51,6 @@ from   sys import exit
 from   time import localtime, strftime
 
 
-
-def cmdexecute(cmd):
-	from   time import localtime, strftime
-	import subprocess
-	outcome = subprocess.call(cmd, shell=True)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(outcome == 1):
-		print(  line,"ERROR!!   Command failed:  ", cmd)
-		exit()
-	else:  print(line,"Executed successfully: ",cmd)
-
 def volshiftali(vv, mask3d=None):
 	nv = len(vv)
 	ni = vv[0].get_xsize()
@@ -290,7 +279,7 @@ def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, k
 			doit = 1
 		if doit:
 			cmd = "{} {}".format("mkdir", fscoutputdir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	#  not averaged
@@ -501,7 +490,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 		log = Logger(BaseLogger_Files())
 		log.prefix = os.path.join(outputdir)
 		cmd = "mkdir "+log.prefix
-		cmdexecute(cmd)
+		junk = cmdexecute(cmd)
 		log.prefix += "/"
 	else:  log = None
 	mpi_barrier(MPI_COMM_WORLD)
@@ -708,7 +697,7 @@ def main():
 			masterdir = "master"+timestring
 			li = len(masterdir)
 			cmd = "{} {}".format("mkdir", masterdir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 			keepchecking = 0
 		else:
 			li = 0
@@ -735,9 +724,9 @@ def main():
 		if  doit:
 			if(orgstack[:4] == "bdb:"):	cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+stack)
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, stack)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 			cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", stack)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 			keepchecking = False
 		total_stack = EMUtil.get_image_count(stack)
 		junk = get_im(stack)
@@ -786,11 +775,11 @@ def main():
 
 			if( myid == main_node ):
 				cmd = "mkdir "+initdir
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				print(line,"INITIALIZATION")
 				cmd = "{} {}".format("sxheader.py --params=xform.projection  --export="+os.path.join(initdir,"params-chunk0.txt"), stack)
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 				print(line,"Executed successfully: ","Imported initial parameters from the input stack")
 
 		else:
@@ -888,7 +877,7 @@ def main():
 
 			if doit:
 				cmd = "{} {}".format("mkdir", mainoutputdir)
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 
 		# prepare names of input file names, they are in main directory, 
 		#   log subdirectories contain outputs from specific refinements
@@ -1155,9 +1144,9 @@ def main():
 			for procid in xrange(2):
 				#  This is standard path, copy parameters to be used to the main
 				cmd = "{} {} {}".format("cp -p ", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 				cmd = "{} {} {}".format("cp -p ", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 
 		keepgoing = 0
 		if( newres > currentres or (eliminated_outliers and not tracker["eliminated-outliers"])):
@@ -1250,10 +1239,10 @@ def main():
 					#  partids ads partstack contain parameters to be used as starting in the next iteration
 					if(not os.path.exists(os.path.join(mainoutputdir,"chunk%01d.txt"%procid))):
 						cmd = "{} {} {}".format("cp -p ", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
-						cmdexecute(cmd)
+						junk = cmdexecute(cmd)
 					if(not os.path.exists(os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))):
 						cmd = "{} {} {}".format("cp -p ", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
-						cmdexecute(cmd)
+						junk = cmdexecute(cmd)
 				"""
 			previousoutputdir = mainoutputdir
 			tracker["previous-shrink"]     = shrink

@@ -792,7 +792,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 	angles = []
 	symmetryLower = symmetry.lower()
 	symmetry_string = split(symmetry)[0]
-	if  (symmetry_string[0]  == "c"):
+	if(symmetry_string[0]  == "c"):
 		if(phi2 == 359.99):
 			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2/int(symmetry_string[1:])+ant, method, phiEqpsi)
 		else:
@@ -833,7 +833,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 				if(angles[t][0] >= qt + ant ):  del angles[t]
 	elif(symmetry_string[0]  == "s"):
 
-	#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
+		#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
 		# for helical, theta1 cannot be 0.0
 		if theta1 > 90.0:
 			ERROR('theta1 must be less than 90.0 for helical symmetry', 'even_angles', 1)
@@ -867,7 +867,25 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 					angles.append([i*delta,90.0-j*theta2,90.0])
 
 
-	else : # This is very close to the Saff even_angles routine on the asymmetric unit;
+	elif(symmetry_string[0]  == "o"):
+		from EMAN2 import parsesym
+		if(method.lower() == "s"):  met = "saff"
+		elif(method.lower() == "p"): met = "even"
+		if(theta2 == 180.0):  inc_mirror = 1
+		else:  inc_mirror = 0
+		tt = parsesym(symmetry)
+		z = tt.gen_orientations(met,{"delta":delta,"inc_mirror":inc_mirror})
+		angles = []
+		if( phiEqpsi == "Minus" ):
+			for q in z:
+				q = q.get_params("spider")
+				angles.append([q["phi"], q["theta"],-q["phi"]])
+		else:
+			for q in z:
+				q = q.get_params("spider")
+				angles.append([q["phi"], q["theta"],0.0])
+	else :
+		# This is very close to the Saff even_angles routine on the asymmetric unit;
 		# the only parameters used are symmetry and delta
 		# The formulae are given in the Transform Class Paper
 		# The symmetric unit 		nVec=[]; # x,y,z triples
@@ -3496,7 +3514,7 @@ def generate_ctf(p):
 	"""
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle, phase_shift]
 	    [ microns, mm, kV, Angstroms, A^2, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
@@ -3518,9 +3536,11 @@ def generate_ctf(p):
 	ctf = EMAN2Ctf()
 	if(len(p) == 6):
 		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast})
-	else:
+	elif(len(p) == 8):
 		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast,'dfdiff':p[6],'dfang':p[7]})
-
+	else:
+		ERROR("Incorrect number of entries on a list, cennot generate CTF","generate_ctf",0)
+		return None
 	return ctf
 
 def set_ctf(ima, p):
@@ -3690,7 +3710,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 
 	elif( sym[:1] == "d" ):
 		from utilities import get_symt, getvec
-		from EMAN2 import Vec2f, Transform
+		from EMAN2 import Transform
 		t = get_symt(sym)
 		phir = 360.0/int(sym[1:])
 		for i in xrange(len(t)):  t[i] = t[i].inverse()
@@ -3728,7 +3748,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 
 	elif( sym[:1] == "c" ):
 		from utilities import get_symt, getvec
-		from EMAN2 import Vec2f, Transform
+		from EMAN2 import Transform
 		t = get_symt(sym)
 		#phir = 360.0/int(sym[1:])
 
@@ -3776,7 +3796,7 @@ def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1"):
 		assignments = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
 	elif( sym[:1] == "c" or  sym[:1] == "d" ):
 		angles_sym_normals = angles_to_normals(symmetry_neighbors([angles], sym))
-		assignments = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), sym, howmany)
+		assignments = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), howmany)
 	else:
 		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_full_k_projangles",1)
 		assignments = []
@@ -3798,7 +3818,7 @@ def nearest_many_full_k_projangles(reference_ang, angles, howmany = 1, sym="c1")
 	elif( sym[:1] == "c" or  sym[:1] == "d" ):
 		for i,q in enumerate(angles):
 			angles_sym_normals = angles_to_normals(symmetry_neighbors([q], sym))
-			assignments[i] = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), sym, howmany)
+			assignments[i] = Util.nearest_fang_sym(angles_sym_normals, reference_normals, len(angles_sym_normals), howmany)
 	else:
 		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_many_full_k_projangles",1)
 		assignments = []
@@ -4107,9 +4127,29 @@ def angles_to_normals(angles):
 	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(len(angles)) ]
 
 def symmetry_related(angles, symmetry):
-	temp = Util.symmetry_related(angles, symmetry)
-	nt = len(temp)/3
-	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+	if(symmetry == "oct" ):
+		from EMAN2 import Transform
+		neighbors = []
+		junk = Transform({"type":"spider","phi":angles[0],"theta":angles[1],"psi":angles[2]})
+		junk = junk.get_sym_proj(symmetry)
+		for p in junk:
+			d = p.get_params("spider")
+			neighbors.append([d["phi"],d["theta"],d["psi"]])
+		return neighbors
+	else:
+		temp = Util.symmetry_related(angles, symmetry)
+		nt = len(temp)/3
+		return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+
+def symmetry_related_normals(angles, symmetry):
+	from EMAN2 import Transform
+	neighbors = []
+	junk = Transform({"type":"spider","phi":angles[0],"theta":angles[1],"psi":angles[2]})
+	junk = junk.get_sym_proj(symmetry)
+	for p in junk:
+		neighbors.append(p.get_matrix()[8:11])
+	return neighbors
+
 
 def symmetry_neighbors(angles, symmetry):
 	#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
@@ -5347,10 +5387,10 @@ def cmdexecute(cmd, printing_on_success = True):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(outcome != 0):
 		print  line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome
-		from sys import exit
-		exit()
+		return 0
 	elif printing_on_success:
 		print line,"Executed successfully: ",cmd
+		return 1
 
 def string_found_in_file(myregex, filename):
 	import re

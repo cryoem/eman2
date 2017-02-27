@@ -907,7 +907,7 @@ def recons3d_4nnf_MPI(myid, list_of_prjlist, bckgdata, snr = 1.0, sign=1, symmet
 
 
 		cmd = "{} {} {} {} {} {}".format("rm -f", fftvol_file[0], fftvol_file[1], weight_file[0], weight_file[1], results_list[0] )
-		cmdexecute(cmd)
+		junk = cmdexecute(cmd)
 
 	mpi_barrier(mpi_comm)
 	if myid == 0:

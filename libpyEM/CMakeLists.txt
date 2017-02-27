@@ -15,7 +15,7 @@ ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 	IF(WIN32)
 		ADD_LIBRARY(${libname} SHARED lib${libname}.cpp ${srcfile})		
-		TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY} ${PYTHON_LIBRARY})
+		TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY} ${PYTHON_LIBRARY} ${FREETYPE_LIBRARY})
 		INSTALL(FILES ${LIBRARY_OUTPUT_PATH}/release/${libname}.dll
 				DESTINATION	lib
 				RENAME lib${libname}.pyd)
@@ -102,18 +102,5 @@ FOREACH(f ${empythonlibs})
 ENDFOREACH(f)
 
 # MESSAGE("empy list: ${empythonlibs}")
-
-FILE(GLOB headerfiles "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
-
-# INSTALL(FILES ${headerfiles} DESTINATION include)
-
-FOREACH(f ${headerfiles})
-	INSTALL(FILES ${f} DESTINATION include)
-	IF(DBG MATCHES "y")
-		MESSAGE("Copied file ${f} to include.")
-	ENDIF(DBG MATCHES "y")
-ENDFOREACH(f)
-
-# MESSAGE("hdr files: ${headerfiles}")
 
 ADD_SUBDIRECTORY(qtgui)

@@ -144,6 +144,7 @@ class SXcmd(object):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.name = ""                        # Name of this command (i.e. name of sx*.py script but without .py extension), used for generating command line
+		self.subname = ""                     # Subname of this command, used for generating command line
 		self.mode = ""                        # key base name of a command token, defining mode/subset of this command. For fullset command, use empty string
 		self.label = ""                       # User friendly name of this command
 		self.short_info = ""                  # Short description of this command
@@ -160,12 +161,19 @@ class SXcmd(object):
 
 	def get_mode_name_for(self, target_name):
 		mode_name = self.name
+		
+		if self.subname != "":
+			if target_name in ["file_path"]:
+				mode_name = "%s_%s" % (mode_name, self.subname)
+			elif target_name in ["human"]:
+				mode_name = "%s %s" % (mode_name, self.subname)
+		
 		if self.mode != "":
 			if target_name in ["file_path"]:
-				mode_name = "%s_%s" % (self.name, self.mode)
+				mode_name = "%s_%s" % (mode_name, self.mode)
 			elif target_name in ["human"]:
-				mode_name = "%s %s%s" % (self.name, self.token_dict[self.mode].key_prefix, self.mode)
-
+				mode_name = "%s %s%s" % (mode_name, self.token_dict[self.mode].key_prefix, self.mode)
+		
 		return mode_name
 
 	def get_category_dir_path(self, parent_dir_path = ""):
@@ -318,9 +326,13 @@ class SXLookFeelConst(object):
 				sxcmd_category_name = sxcmd.category.replace("sxc_", "")
 			# URL Format: "http://sphire.mpg.de/wiki/doku.php?id=pipeline:CMD_CATEGORY:CMD_BASE
 			sxcmd_wiki_url = "http://sphire.mpg.de/wiki/doku.php?id=pipeline:%s:%s" % (sxcmd_category_name, sxcmd.name)
+			if sxcmd.subname != "":
+				sxcmd_wiki_url = "%s_%s" % (sxcmd_wiki_url, sxcmd.subname)
 		else:
 			assert (wiki_type == "SPARX")
 			sxcmd_wiki_url = "%s%s" % (SPARX_DOCUMENTATION_WEBSITE, sxcmd.name)
+			if sxcmd.subname != "":
+				sxcmd_wiki_url = "%s_%s" % (sxcmd_wiki_url, sxcmd.subname)
 		
 		return sxcmd_wiki_url
 
@@ -548,7 +560,10 @@ class SXCmdWidget(QWidget):
 
 	def map_widgets_to_sxcmd_line(self):
 		# Add program name to command line
-		sxcmd_line = "%s.py" % self.sxcmd.name
+		sxcmd_line = "%s.py" % (self.sxcmd.name)
+		
+		if self.sxcmd.subname != "":
+			sxcmd_line += " %s" % (self.sxcmd.subname)
 
 		# Loop through all command tokens
 		for sxcmd_token in self.sxcmd.token_list:
@@ -586,7 +601,7 @@ class SXCmdWidget(QWidget):
 					if sxcmd_token.widget.text() == sxcmd_token.default:
 						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == True:  # Error case
 						if sxcmd_token.is_required == True:
-							QMessageBox.warning(self, "Invalid parameter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("message_output")))
+							QMessageBox.warning(self, "Invalid parameter value", "Token (%s) of command (%s) is required. Please set the value for this." % (sxcmd_token.label, self.sxcmd.get_mode_name_for("human")))
 							return ""
 						### if sxcmd_token.widget.text() == sxcmd_token.default and sxcmd_token.is_required == False: # Do not add this token to command line
 						# else: # assert(sxcmd_token.is_required == False) # Do not add to this command line
@@ -2023,7 +2038,7 @@ class SXConstSetWidget(QWidget):
 						cmd_token.restore = sxconst.register
 						cmd_token.restore_widget.setText("%s" % cmd_token.restore)
 						cmd_token.widget.setText(cmd_token.restore)
-						# print "MRK_DEBUG: %s, %s, %s, %s, %s" % (sxcmd.name, cmd_token.key_base, cmd_token.type, cmd_token.default, cmd_token.restore)
+						# print "MRK_DEBUG: %s, %s, %s, %s, %s, %s" % (sxcmd.name, sxcmd.subname, cmd_token.key_base, cmd_token.type, cmd_token.default, cmd_token.restore)
 
 		# Save the current state of GUI settings
 		if os.path.exists(SXLookFeelConst.project_dir) == False:

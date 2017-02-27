@@ -121,12 +121,12 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 			if no_of_viper_runs_analyzed_together > MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER:
 				error_status = 1
 				print "RVIPER reached maximum number of VIPER runs analyzed together without finding a core set of stable projections for the current RVIPER iteration (%d)! Finishing."%rviper_iter
-				cmd = "{} {}".format("mkdir ", masterdir + "MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER__Reached"); cmdexecute(cmd)
+				cmd = "{} {}".format("mkdir ", masterdir + "MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER__Reached"); junk = cmdexecute(cmd)
 			else:
 				# No set of solutions has been found to make a selection for outlier elimination.
 				# A new independent viper run will be performed
 				no_of_viper_runs_analyzed_together_must_be_incremented = 1
-				cmd = "{} {}".format("rm ", mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json"); cmdexecute(cmd)
+				cmd = "{} {}".format("rm ", mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json"); junk = cmdexecute(cmd)
 
 		else:
 			# Outliers are eliminated based on the viper runs contained in "list_of_independent_viper_run_indices_used_for_outlier_elimination"
@@ -379,9 +379,9 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 
 	if len(index_outliers) > 0:
 		cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter - 1), "--makevstack=" + bdb_stack_location + "_outliers_%03d"%(rviper_iter), "--list=" + mainoutputdir  +  "this_iteration_index_outliers.txt")
-		cmdexecute(cmd)
+		junk = cmdexecute(cmd)
 	cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter - 1), "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter), "--list=" + mainoutputdir +  "this_iteration_index_keep_images.txt")
-	cmdexecute(cmd)
+	junk = cmdexecute(cmd)
 	dat = EMData.read_images(bdb_stack_location + "_%03d"%(rviper_iter - 1))
 
 	write_text_file([dat[i].get_attr("original_image_index")  for i in index_outliers],mainoutputdir + "index_outliers.txt")
@@ -716,7 +716,7 @@ output_directory: directory name into which the output files will be written.  I
 	#Create folder for all results or check if there is one created already
 	if(myid == main_node):
 		#cmd = "{}".format("Rmycounter ccc")
-		#cmdexecute(cmd)
+		#junk = cmdexecute(cmd)
 
 		if( masterdir == ""):
 			timestring = strftime("%Y_%m_%d__%H_%M_%S" + DIR_DELIM, localtime())
@@ -724,7 +724,7 @@ output_directory: directory name into which the output files will be written.  I
 
 		if not os.path.exists(masterdir):
 			cmd = "{} {}".format("mkdir", masterdir)
-			cmdexecute(cmd)
+			junk = cmdexecute(cmd)
 
 		if ':' in args[0]:
 			bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
@@ -732,9 +732,9 @@ output_directory: directory name into which the output files will be written.  I
 
 			if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
 				# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB" DIR_DELIM)
-				# cmdexecute(cmd)
+				# junk = cmdexecute(cmd)
 				cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 
 				from applications import header
 				try:
@@ -748,7 +748,7 @@ output_directory: directory name into which the output files will be written.  I
 			bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
 			if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
 				cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
-				cmdexecute(cmd)
+				junk = cmdexecute(cmd)
 
 				from applications import header
 				try:
@@ -826,16 +826,16 @@ output_directory: directory name into which the output files will be written.  I
 			if (myid == main_node):
 				independent_run_dir = masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM + NAME_OF_RUN_DIR + "%03d" + DIR_DELIM)%(rviper_iter, runs_iter)
 				if run_get_already_processed_viper_runs:
-					cmd = "{} {}".format("mkdir -p", masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM)%(rviper_iter)); cmdexecute(cmd)
-					cmd = "{} {}".format("rm -rf", independent_run_dir); cmdexecute(cmd)
-					cmd = "{} {}".format("cp -r", get_already_processed_viper_runs() + " " +  independent_run_dir); cmdexecute(cmd)
+					cmd = "{} {}".format("mkdir -p", masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM)%(rviper_iter)); junk = cmdexecute(cmd)
+					cmd = "{} {}".format("rm -rf", independent_run_dir); junk = cmdexecute(cmd)
+					cmd = "{} {}".format("cp -r", get_already_processed_viper_runs() + " " +  independent_run_dir); junk = cmdexecute(cmd)
 
 				if os.path.exists(independent_run_dir + "log.txt") and (string_found_in_file("Finish VIPER2", independent_run_dir + "log.txt")):
 					this_run_is_NOT_complete = 0
 				else:
 					this_run_is_NOT_complete = 1
-					cmd = "{} {}".format("rm -rf", independent_run_dir); cmdexecute(cmd)
-					cmd = "{} {}".format("mkdir -p", independent_run_dir); cmdexecute(cmd)
+					cmd = "{} {}".format("rm -rf", independent_run_dir); junk = cmdexecute(cmd)
+					cmd = "{} {}".format("mkdir -p", independent_run_dir); junk = cmdexecute(cmd)
 
 				this_run_is_NOT_complete = mpi_bcast(this_run_is_NOT_complete,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
 				dir_len = len(independent_run_dir)
@@ -863,10 +863,10 @@ output_directory: directory name into which the output files will be written.  I
 				# for debugging purposes
 				#if (myid == main_node):
 					#cmd = "{} {}".format("cp ~/log.txt ", independent_run_dir)
-					#cmdexecute(cmd)
+					#junk = cmdexecute(cmd)
 					#cmd = "{} {}{}".format("cp ~/paramdir/params$(mycounter ccc).txt ", independent_run_dir, "param%03d.txt"%runs_iter)
 					#cmd = "{} {}{}".format("cp ~/paramdir/params$(mycounter ccc).txt ", independent_run_dir, "params.txt")
-					#cmdexecute(cmd)
+					#junk = cmdexecute(cmd)
 
 				if (myid == main_node):
 					store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', locals(), exclude_list_of_vars=["usage"], 

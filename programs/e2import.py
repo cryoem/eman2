@@ -295,9 +295,15 @@ with the same name, you should specify only the .hed files (no renaming is neces
 				os.rename(filename,os.path.join(tomosdir,os.path.basename(filename)))
 			if options.importation == "copy":
 				### use hdf file as output
+				
+				if options.shrink>1:
+					shrinkstr="_bin{:d}".format(options.shrink)
+				else:
+					shrinkstr=""
+					
 				tpos=filename.rfind('.')
 				if tpos>0:
-					newname=os.path.join(tomosdir,os.path.basename(filename[:tpos]+'.hdf'))
+					newname=os.path.join(tomosdir,os.path.basename(filename[:tpos]+shrinkstr+'.hdf'))
 				else:
 					newname=os.path.join(tomosdir,os.path.basename(filename))
 				cmd="e2proc3d.py {} {} ".format(filename, newname)

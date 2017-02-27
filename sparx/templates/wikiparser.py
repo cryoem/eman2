@@ -104,6 +104,7 @@ def construct_keyword_dict():
 	keyword_dict["--hardmask"]                    = SXkeyword_map(0, "bool")           # --hardmask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--do_adaptive_mask"]            = SXkeyword_map(0, "bool")           # --do_adaptive_mask (contains keyworkd 'mask' but this should be bool type)
 	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")           # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--no_virtual_stack"]            = SXkeyword_map(0, "bool")           # --no_virtual_stack (contains keyworkd 'stack' but this should be bool type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")         # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
 	keyword_dict["outdir"]                        = SXkeyword_map(1, "output")         # outdir
@@ -122,6 +123,7 @@ def construct_keyword_dict():
 	keyword_dict["--input"]                       = SXkeyword_map(2, "image")          # --input=INPUT
 	keyword_dict["class_file_name_no_dir_info"]   = SXkeyword_map(2, "image")          # class_file_name_no_dir_info
 	keyword_dict["isac_averages"]                 = SXkeyword_map(2, "image")          # isac_averages
+	keyword_dict["input_isac_class_avgs_path"]    = SXkeyword_map(2, "image")          # input_isac_class_avgs_path
 	keyword_dict["input_image_path"]              = SXkeyword_map(2, "any_image")      # input_image_path
 	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "any_image")      # input_micrograph_pattern
 	keyword_dict["selection_list"]                = SXkeyword_map(2, "any_micrograph") # selection_list
@@ -142,6 +144,7 @@ def construct_keyword_dict():
 	keyword_dict["input_pdb"]                     = SXkeyword_map(2, "pdb")            # input_pdb
 ###	keyword_dict["input_mrc_micrograph"]          = SXkeyword_map(2, "mrc")            # input_mrc_micrograph
 	keyword_dict["input_bdb_stack_file"]          = SXkeyword_map(2, "bdb")            # input_bdb_stack_file
+	keyword_dict["input_bdb_stack_path"]          = SXkeyword_map(2, "bdb")            # input_bdb_stack_path
 	keyword_dict["input_shift_list_file"]         = SXkeyword_map(2, "txt")            # input_shift_list_file
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "txt")            # cter_ctf_file
 	keyword_dict["--resample_ratio_source"]       = SXkeyword_map(2, "txt")            # --resample_ratio_source
@@ -338,7 +341,14 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 					target_operator = "-"
 					item_tail = line_buffer.find(target_operator)
 					if item_tail == -1: ERROR("Wiki Format Error: '= Name =' section should contain only one valid line, and the line should starts from 'sx* - ' or 'e2* - ': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
-					sxcmd.name = line_buffer[0:item_tail].strip()
+					sxcmd_string = line_buffer[0:item_tail].strip()
+					sxcmd_string_token_list = sxcmd_string.split()
+					n_sxcmd_string_token_list = len(sxcmd_string_token_list)
+					sxcmd.name = sxcmd_string_token_list[0]
+					if n_sxcmd_string_token_list == 2:
+						sxcmd.subname = sxcmd_string_token_list[1]
+					elif n_sxcmd_string_token_list > 2:
+						ERROR("Wiki Format Error: Command string should be only script file name or script file name plus subcommand", "%s in %s" % (__name__, os.path.basename(__file__)))
 					line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 					# Extract the label of this sxscript
 					target_operator = ":"
@@ -352,9 +362,13 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 					# This information is also used to check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
 					if line_wiki[0:len("sx")] == "sx" or line_wiki[0:len("e2")] == "e2":
 						usage_token_list = line_wiki.split()
+						head_token_idx = 1
 						if usage_token_list[0] != sxcmd.name + ".py": ERROR("Wiki Format Error: First token should be script name with .py (sx*.py or e2*.py)", "%s in %s" % (__name__, os.path.basename(__file__)))
+						if sxcmd.subname != "":
+							head_token_idx = 2
+							if usage_token_list[1] != sxcmd.subname: ERROR("Wiki Format Error: Second token of this command should be subname", "%s in %s" % (__name__, os.path.basename(__file__)))
 						# Register arguments and options
-						for usage_token in usage_token_list[1:]:
+						for usage_token in usage_token_list[head_token_idx:]:
 							# Check if --MPI is used in this script
 							# NOTE: 2015/11/12 Toshio Moriya
 							# The following can be removed when --MPI flag is removed from all sx*.py scripts
@@ -491,6 +505,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 		print "GLOBAL"
 		print "------"
 		print "name            : %s" % sxcmd.name
+		print "subname         : %s" % sxcmd.subname
 		print "label           : %s" % sxcmd.label
 		print "short_info      : %s" % sxcmd.short_info
 		print "mpi_support     : %s" % sxcmd.mpi_support
@@ -910,6 +925,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 	output_file.write("\t\t")
 	output_file.write("%s = SXcmd()" % sxcmd_variable_name)
 	output_file.write("; %s.name = \"%s\"" % (sxcmd_variable_name, sxcmd.name))
+	output_file.write("; %s.subname = \"%s\"" % (sxcmd_variable_name, sxcmd.subname))
 	output_file.write("; %s.mode = \"%s\"" % (sxcmd_variable_name, sxcmd.mode))
 	output_file.write("; %s.label = \"%s\"" % (sxcmd_variable_name, sxcmd.label))
 	output_file.write("; %s.short_info = \"%s\"" % (sxcmd_variable_name, sxcmd.short_info.replace("\"", "'")))
@@ -1233,7 +1249,8 @@ def main():
 	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
-	sxcmd_config_list.append(SXcmd_config("../doc/pipeline_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+###	sxcmd_config_list.append(SXcmd_config("../doc/pipeline_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_isac_substack.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
@@ -1358,7 +1375,8 @@ def main():
 	sxgui_template_file_path = "sxgui_template.py"
 
 #	output_file_path = "../bin/sxgui.py" # output_file_path = "sxgui_trial.py"
-	output_file_path = "./sxgui_jove.py"
+#	output_file_path = "./sxgui_jove.py"
+	output_file_path = "./sxgui_jove_debug.py"
 	# remove the previous output
 	if os.path.exists(output_file_path):
 		os.remove(output_file_path)
