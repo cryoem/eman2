@@ -56,5 +56,3 @@ string(TIMESTAMP EMAN_TIMESTAMP "%Y-%m-%d %H:%M")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/e2version.py.in
 				${CMAKE_INSTALL_PREFIX}/bin/e2version.py
 				)
-
-#INSTALL (CODE "execute_process(COMMAND e2postinstallscript.py)")
