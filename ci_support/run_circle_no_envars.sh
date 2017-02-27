@@ -5,7 +5,8 @@ source ci_support/run_circle_pre.sh
 prefix=$HOME/miniconda2/
 sp_dir=$prefix/lib/python2.7/site-packages
 
-cmake $src_dir   -DNUMPY_INCLUDE_PATH="$sp_dir/numpy/core/include" \
+cmake $src_dir   -DCMAKE_INSTALL_RPATH="$HOME/EMAN2/lib" \
+                    -DNUMPY_INCLUDE_PATH="$sp_dir/numpy/core/include" \
                     -DBOOST_INCLUDE_PATH="$prefix/include" \
                     -DBOOST_LIBRARY="$prefix/lib/libboost_python.so" \
                     -DFFTW3_INCLUDE_PATH="$prefix/include" \
