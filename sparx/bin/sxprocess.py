@@ -1094,7 +1094,6 @@ def main():
 				fsc_true = fsc(map1, map2, 1)
 			
 			resolution_in_angstrom = [None]*len(fsc_true[0])
-			
 			for ifreq in xrange(len(fsc_true[0])):
 				if fsc_true[0][ifreq] !=0.0:
 					resolution_in_angstrom [ifreq] = options.pixel_size/fsc_true[0][ifreq]
@@ -1104,7 +1103,7 @@ def main():
 			
 			fsc_out = []
 			for ifreq in xrange(len(fsc_true[0])):
-				fsc_out.append("%5d %7.2f %7.2f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
+				fsc_out.append("%5d    %7.2f   %5.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
 			write_text_file(fsc_out, "fsc.txt")
 			
 			for ifreq in xrange(1, len(fsc_true[1])):
@@ -1220,8 +1219,8 @@ def main():
 			
 			map1.write_image(options.output)
 			log_main.add("---------- >>>Summary<<<------------")
-			log_main.add("Resolution at criteria 0.143 is %5.2f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
-			log_main.add("Resolution at criteria 0.5   is %5.2f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
+			log_main.add("Resolution at criteria 0.143 is %7.2f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
+			log_main.add("Resolution at criteria 0.5   is %7.2f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
 			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
 			else:                       log_main.add( "B-factor is not applied  ")
 			log_main.add( "FSC curve is saved in fsc.txt ")

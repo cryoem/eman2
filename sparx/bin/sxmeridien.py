@@ -51,6 +51,7 @@ Blockdata["node_volume"]		= [Blockdata["no_of_groups"]-2, Blockdata["no_of_group
 #  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
 Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
+Blockdata["fsc143"]  = 0.0
 # end of Blockdata
 
 #######
@@ -3225,8 +3226,11 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 				do_final_iter = Tracker["constants"]["best"] # set the best as do_final iteration
 			except:				
 				carryon = 0
-		carryon = bcast_number_to_all(carryon)
+		carryon       = bcast_number_to_all(carryon)
+		do_final_iter = bcast_number_to_all(do_final_iter)
 		if carryon == 0: ERROR("search failed, and the final reconstruction terminates ", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
+		if do_final_iter ==0: # poor starting 
+			ERROR(" The best solution is zero iteration", "recons3d_final", 1, Blockdata["myid"])
 	elif do_final_iter == -1: 
 		do_final_iter = Tracker["constants"]["best"]
 	else:
@@ -3659,6 +3663,7 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 	lcfsc = bcast_number_to_all(lcfsc)
 	if( Blockdata["myid"] != Blockdata["nodes"][0]  ): cfsc = [0.0]*lcfsc
 	cfsc = bcast_list_to_all(cfsc, Blockdata["myid"], Blockdata["nodes"][0] )
+	
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
 		out_fsc(cfsc)
