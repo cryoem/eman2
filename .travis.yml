@@ -34,7 +34,7 @@ install:
     - |
       echo ""
       echo "Configuring conda."
-      source /Users/travis/miniconda2/bin/activate root
+      source ${HOME}/miniconda2/bin/activate root
       conda install --yes --quiet qt=4 pyqt=4
       conda install --yes --quiet -c conda-forge boost boost-cpp fftw
       conda install --yes --quiet -c jmbell ftgl
