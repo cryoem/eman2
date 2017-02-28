@@ -1089,20 +1089,24 @@ def main():
 						fsct = frc_masked[1][i]
 						fscn = frc_random_masked[1][i]
 						if (fscn > fsct): fsc_true[1][i]= 0.
-						else:      fsc_true [1][i]=(fsct-fscn)/(1.-fscn)
+						else: fsc_true [1][i]=(fsct-fscn)/(1.-fscn)
 			else:
 				fsc_true = fsc(map1, map2, 1)
+			
 			resolution_in_angstrom = [None]*len(fsc_true[0])
 			
 			for ifreq in xrange(len(fsc_true[0])):
 				if fsc_true[0][ifreq] !=0.0:
 					resolution_in_angstrom [ifreq] = options.pixel_size/fsc_true[0][ifreq]
 				else:
-					resolution_in_angstrom [ifreq] = 0.0
-					
+					resolution_in_angstrom [ifreq] = 0.0	
 			if fsc_true[1][0]<0.0: fsc_true[1][0] =1.0  # always reset fsc of zero frequency
-			write_text_file([fsc_true[0], resolution_in_angstrom, fsc_true[1]], "fsc.txt")
-				 
+			
+			fsc_out = []
+			for ifreq in xrange(len(fsc_true[0])):
+				fsc_out.append("%5d %7.2f %7.2f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
+			write_text_file(fsc_out, "fsc.txt")
+			
 			for ifreq in xrange(1, len(fsc_true[1])):
 				if fsc_true[1][ifreq] < 0.143:
 					resolution_FSC143 = fsc_true[0][ifreq-1]
