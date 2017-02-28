@@ -1016,7 +1016,7 @@ def main():
 			log_main.add("do_adaptive_mask  	:"+str(options.do_adaptive_mask))
 			log_main.add("cosine_edge    		:"+str(options.consine_edge))
 			log_main.add("dilation    		:"+str(options.dilation))
-			log_main.add("randomphasesafter :"+str(options.randomphasesafter))
+			log_main.add("randomphasesafter     :"+str(options.randomphasesafter))
 			log_main.add("------------->>>processing<<<-----------------------")		
 			log_main.add("3-D refinement postprocess ")
 			nargs     = len(args)
@@ -1093,7 +1093,13 @@ def main():
 						else:      fsc_true [1][i]=(fsct-fscn)/(1.-fscn)
 			else:
 				fsc_true = fsc(map1, map2, 1)
-			write_text_file(fsc_true, "fsc.txt")
+			resolution_in_angstrom = [None]*len(fsc_true[0])
+			for ifreq in xrange(len(fsc_true[0])):
+				if fsc_true[0][ifreq] !=0.0:
+					resolution_in_angstrom [ifreq] = options.pixel_size/fsc_true[0][ifreq]
+				else:
+					resolution_in_angstrom [ifreq] = 0.0
+			write_text_file([fsc_true[0], resolution_in_angstrom, fsc_true[1]], "fsc.txt")
 				 
 			for ifreq in xrange(len(fsc_true[1])):
 				if fsc_true[1][ifreq] < 0.143:
