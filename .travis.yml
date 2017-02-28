@@ -4,9 +4,13 @@ os: osx
 osx_image: xcode6.4
 
 env:
+  global:
+    - CONDA_PY=27
+    - MINICONDA_FILE="Miniconda2-latest-MacOSX-x86_64.sh"
+    - suffix=dylib
   matrix:
-    
-    - CONDA_PY=27 MINICONDA_FILE="Miniconda2-latest-MacOSX-x86_64.sh"
+    - build_scrt="build_with_envars.sh"
+    - build_scrt="build_no_envars.sh"
 
 
 before_install:
@@ -24,6 +28,6 @@ install:
     - source ci_support/pre_build.sh
 
 script:
-  - source ${src_dir}/ci_support/build_with_envars.sh
+  - source ${src_dir}/ci_support/${build_scrt}
   
   - export PYTHONPATH="${PREFIX}/lib:$PYTHONPATH"
