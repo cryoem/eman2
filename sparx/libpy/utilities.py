@@ -3514,7 +3514,7 @@ def generate_ctf(p):
 	"""
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle, phase_shift]
+        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
 	    [ microns, mm, kV, Angstroms, A^2, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
