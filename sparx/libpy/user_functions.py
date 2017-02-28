@@ -954,6 +954,25 @@ def dovolume( ref_data ):
 
 	return  vol, cs
 
+def do_volume_mask(ref_data):
+	"""
+		1. - volume
+		2. - Tracker, see meridien
+		3. - current iteration number
+	"""
+	from EMAN2	import Util
+	from morphology import cosinemask
+
+	# Retrieve the function specific input arguments from ref_data
+	vol				= ref_data[0]
+	Tracker			= ref_data[1]
+	mainiteration	= ref_data[2]
+
+
+	if(Tracker["constants"]["mask3D"] == None):  vol = cosinemask(vol, radius = Tracker["constants"]["radius"])
+	else:  Util.mul_img(vol, get_im(Tracker["constants"]["mask3D"]))
+
+	return vol
 
 def do_volume_mrk02(ref_data):
 	"""
@@ -975,9 +994,8 @@ def do_volume_mrk02(ref_data):
 	Tracker  = ref_data[1]
 	myid     = ref_data[2]
 	nproc    = ref_data[3]
-       	mpi_comm = None
-	
-	if(mpi_comm == None):  mpi_comm = MPI_COMM_WORLD
+
+	mpi_comm = MPI_COMM_WORLD
 	myid  = mpi_comm_rank(mpi_comm)
 	nproc = mpi_comm_size(mpi_comm)
 	
