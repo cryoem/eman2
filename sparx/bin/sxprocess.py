@@ -287,26 +287,25 @@ def main():
    14. Postprocess 3-D or 2-D images:
    
 	for 3-D volumes: 
-		a. calculate FSC with provided mask; 
+		a. calculate FSC with provided mask and adjust the FSC by random phases FSC;
 		b. sum two volume; 
 		c. apply mask
-		d. apply MTF correction;
-		e. adjust power spectrum by 2*FSC/(1+FSC);  
-		f. estimate B-factor from 10 Angstrom to resolution; 
-		g. apply negative B-factor to enhance the volume;
-		h. low_pass filter the volume
-		options are independent of each others. However, if there is only one input map, do not use --fsc_adj option. 	
+		d. apply MTF correction (optional);
+		e. adjust power spectrum by 2*FSC/(1+FSC) (optional);  
+		f. estimate B-factor from 10 Angstrom (default) to the resolution (optional); 
+		g. apply negative B-factor to enhance the volume (optional);
+		h. low_pass filter the volume (optional)
+		options are independent of each others.
 		--low_pass_filter: =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2  
 		--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
-		--mtf:             =aa.txt, for those high resolution maps, mtf corrections would significantly enhance structural features.
+		--mtf:             =aa.txt, for those high resolution maps, mtf correction would significantly enhance structural features.
 		--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
 		--do_adaptive_mask =True when it is restored, the program adaptively creates surface mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
 		--output           output volume 
 										
-		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
-		sxprocess.py vol_0_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --mtf=aa.txt        --output=vol_0_post.hdf
-		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --mask=mask15.mrc --postprocess   --pixel_size=1.2     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj
-		sxprocess.py vol_0_unfil_026.hdf vol_1_unfil_026.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.2   --mtf=aa.txt --fsc_adj
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf 
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj
+		sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.12   --mtf=aa.txt --fsc_adj
 		
 	 for 2-D images:       calculate B-factor and apply negative B-factor to 2-D images.
 		
@@ -994,7 +993,7 @@ def main():
 				else:
 					global_b = option.B_enhance
 					log_main.add( "User provided B_factor is %f"%global_b)
-				sigma_of_inverse=sqrt(2./global_b)
+				sigma_of_inverse = sqrt(2./global_b)
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.low_pass_filter>0.0 and options.low_pass_filte<0.5:
 					log_main.add("low-pass filter ff %   aa  %f"%(options.low_pass_filter, options.aa))
@@ -1050,7 +1049,7 @@ def main():
 				try:
 					m = get_im(options.mask)
 				except:
-					ERROR("Sphire postprocess fails to read mask file "+options.mask, "--postprocess option for 3-D")
+					ERROR("Sphire postprocess fails to read mask file " + options.mask, "--postprocess option for 3-D")
 					exit()
 				if (m.get_xsize() != map1.get_xsize()) or (m.get_ysize() != map1.get_ysize()) or (m.get_zsize() != map1.get_zsize()):
 					ERROR(" mask file  "+options.mask+" has different size with input image  ", "--postprocess for mask "+options.mask)
@@ -1073,18 +1072,18 @@ def main():
 			if m:
 				frc_without_mask = fsc(map1, map2, 1)
 				randomize_at     = -1.0
-				for ifreq in xrange(len(frc_without_mask[1])):
-					if frc_without_mask[1][ifreq]<options.randomphasesafter:
+				for ifreq in xrange(1, len(frc_without_mask[1])): # always skip zero frequency
+					if frc_without_mask[1][ifreq] < options.randomphasesafter:
 						randomize_at = float(ifreq)
 						break
 				log_main.add("Phases are randomized after: %4.2f Angstrom"% (options.pixel_size/(randomize_at/map1.get_xsize())))
-				frc_masked = fsc(map1*m, map2*m, 1) 
+				frc_masked = fsc(map1*m, map2*m, 1)
 				map1 = fft(Util.randomizedphasesafter(fft(map1), randomize_at))*m
 				map2 = fft(Util.randomizedphasesafter(fft(map2), randomize_at))*m
 				frc_random_masked = fsc(map1, map2, 1)
 				fsc_true          = [frc_without_mask[0], [None]*len(frc_without_mask[0])]
 				for i in xrange(len(fsc_true[1])):
-					if i < (int(randomize_at) + 2):# move two pixel up
+					if i < (int(randomize_at) + 2):# move two pixels up
 						fsc_true [1][i] = frc_masked[1][i]
 					else:
 						fsct = frc_masked[1][i]
@@ -1100,14 +1099,16 @@ def main():
 					resolution_in_angstrom [ifreq] = options.pixel_size/fsc_true[0][ifreq]
 				else:
 					resolution_in_angstrom [ifreq] = 0.0
+					
+			if fsc_true[1][0]<0.0: fsc_true[1][0] =1.0  # always reset fsc of zero frequency
 			write_text_file([fsc_true[0], resolution_in_angstrom, fsc_true[1]], "fsc.txt")
 				 
-			for ifreq in xrange(len(fsc_true[1])):
+			for ifreq in xrange(1, len(fsc_true[1])):
 				if fsc_true[1][ifreq] < 0.143:
 					resolution_FSC143 = fsc_true[0][ifreq-1]
 					break
 				
-			for ifreq in xrange(len(fsc_true[1])):
+			for ifreq in xrange(1, len(fsc_true[1])):
 				if fsc_true[1][ifreq] < 0.5:
 					resolution_FSChalf = fsc_true[0][ifreq-1]
 					break
