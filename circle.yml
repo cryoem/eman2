@@ -4,4 +4,4 @@ test:
         parallel: true
         files:
             - ci_support/build_no_envars.sh
-            - ci_support/run_circle_with_envars.sh
+            - ci_support/build_with_envars.sh
