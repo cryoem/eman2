@@ -19,9 +19,13 @@ conda install --yes --quiet bsddb freetype gsl hdf5 ipython jpeg libpng libtiff 
 
 # Build and install eman2
 export build_dir=$HOME/build_eman
-export src_dir=$HOME/eman2_src
 
-mv -v $HOME/eman2 $src_dir
+if [ -e ${HOME}/eman2 ];then
+    export src_dir=$HOME/eman2_src
+    mv -v $HOME/eman2 $src_dir
+else
+    export src_dir=${PWD}
+fi
 
 rm -rf ${build_dir}
 mkdir -p ${build_dir}
