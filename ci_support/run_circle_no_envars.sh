@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source ci_support/run_circle_pre.sh
+source ci_support/pre_build.sh
 
 prefix=$HOME/miniconda2/
 sp_dir=$prefix/lib/python2.7/site-packages
