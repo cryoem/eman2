@@ -12,4 +12,4 @@ make install
 
 export PYTHONPATH="${PREFIX}/lib:$PYTHONPATH"
 
-source $src_dir/ci_support/run_circle_post.sh
+source $src_dir/ci_support/post_build.sh

@@ -57,4 +57,4 @@ script:
   
   - export PYTHONPATH="${PREFIX}/lib:$PYTHONPATH"
 
-  - source ../ci_support/run_circle_post.sh
+  - source ../ci_support/post_build.sh

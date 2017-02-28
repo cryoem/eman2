@@ -38,4 +38,4 @@ make install
 
 export PYTHONPATH="$HOME/EMAN2/lib:$PYTHONPATH"
 
-source $src_dir/ci_support/run_circle_post.sh
+source $src_dir/ci_support/post_build.sh
