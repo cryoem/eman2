@@ -1103,8 +1103,10 @@ def main():
 			
 			fsc_out = []
 			for ifreq in xrange(len(fsc_true[0])):
-				fsc_out.append("%5d    %7.2f   %5.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
+				fsc_out.append("%5d    %7.2f       %5.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
 			write_text_file(fsc_out, "fsc.txt")
+			
+			## determine resolution by two criterion from corrected FSC
 			
 			for ifreq in xrange(1, len(fsc_true[1])):
 				if fsc_true[1][ifreq] < 0.143:
@@ -1189,7 +1191,7 @@ def main():
 					sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 					global_b = options.B_enhance
 					
-				map1        = filt_gaussinv(map1,sigma_of_inverse)
+				map1        = filt_gaussinv(map1, sigma_of_inverse)
 				guinierline = rot_avg_table(power(periodogram(map1),.5))
 				outtext.append([" LogBfacapplied"])
 				last_non_zero = -999.0
