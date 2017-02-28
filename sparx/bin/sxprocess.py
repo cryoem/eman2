@@ -1016,7 +1016,7 @@ def main():
 			log_main.add("do_adaptive_mask  	:"+str(options.do_adaptive_mask))
 			log_main.add("cosine_edge    		:"+str(options.consine_edge))
 			log_main.add("dilation    		:"+str(options.dilation))
-			log_main.add("randomphasesafter     :"+str(options.randomphasesafter))
+			log_main.add("randomphasesafter        :"+str(options.randomphasesafter))
 			log_main.add("------------->>>processing<<<-----------------------")		
 			log_main.add("3-D refinement postprocess ")
 			nargs     = len(args)
@@ -1077,7 +1077,7 @@ def main():
 					if frc_without_mask[1][ifreq]<options.randomphasesafter:
 						randomize_at = float(ifreq)
 						break
-				log_main.add("Phases are randomized after: %f Angstrom"% (options.pixel_size/(randomize_at/map1.get_xsize())))
+				log_main.add("Phases are randomized after: %4.2f Angstrom"% (options.pixel_size/(randomize_at/map1.get_xsize())))
 				frc_masked = fsc(map1*m, map2*m, 1) 
 				map1 = fft(Util.randomizedphasesafter(fft(map1), randomize_at))*m
 				map2 = fft(Util.randomizedphasesafter(fft(map2), randomize_at))*m
@@ -1094,6 +1094,7 @@ def main():
 			else:
 				fsc_true = fsc(map1, map2, 1)
 			resolution_in_angstrom = [None]*len(fsc_true[0])
+			
 			for ifreq in xrange(len(fsc_true[0])):
 				if fsc_true[0][ifreq] !=0.0:
 					resolution_in_angstrom [ifreq] = options.pixel_size/fsc_true[0][ifreq]
@@ -1174,13 +1175,13 @@ def main():
 					b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = 4.*b # Just a convention!
 					cc = pearson(junk[1],logguinierline)
-					log_main.add("Similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %f"%(ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
-					log_main.add("The slope is %f Angstrom^2 "%(round(-b,2)))
+					log_main.add("Similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
+					log_main.add("The slope is %6.2f Angstrom^2 "%(round(-b,2)))
 					sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
 					
 				else: # User provided value
 					#log_main.add( " apply user provided B-factor to enhance map!")
-					log_main.add("User provided B-factor is %f Angstrom^2   "%options.B_enhance)
+					log_main.add("User provided B-factor is %6.2f Angstrom^2   "%options.B_enhance)
 					sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
 					global_b = options.B_enhance
 					
@@ -1214,14 +1215,14 @@ def main():
 			
 			map1.write_image(options.output)
 			log_main.add("---------- >>>Summary<<<------------")
-			log_main.add("Resolution at criteria 0.143 is %f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
-			log_main.add("Resolution at criteria 0.5   is %f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
-			if options.B_enhance !=-1:  log_main.add( "B-factor is  %f Angstrom^2  "%(round((-global_b),2)))
+			log_main.add("Resolution at criteria 0.143 is %5.2f Angstrom"%round((options.pixel_size/resolution_FSC143),3))
+			log_main.add("Resolution at criteria 0.5   is %5.2f Angstrom"%round((options.pixel_size/resolution_FSChalf),3))
+			if options.B_enhance !=-1:  log_main.add( "B-factor is  %6.2f Angstrom^2  "%(round((-global_b),2)))
 			else:                       log_main.add( "B-factor is not applied  ")
 			log_main.add( "FSC curve is saved in fsc.txt ")
 			log_main.add( "The Final sharpened volume is "+options.output)
 			log_main.add("guinierlines in logscale are saved in guinierlines.txt")
-			if options.low_pass_filter !=-1: log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%f Angstrom" %round(cutoff,2))
+			if options.low_pass_filter !=-1: log_main.add("Top hat low-pass filter is applied to cut off high frequencies from resolution 1./%5.2f Angstrom" %round(cutoff,2))
 			else:                            log_main.add("The final volume is not low_pass filtered. ")
 			write_text_file(outtext, "guinierlines.txt")
 			log_main.add("-----------------------------------")
