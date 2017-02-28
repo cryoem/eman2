@@ -1468,6 +1468,7 @@ class factory_class:
 		self.contents["steady"]             = steady
 		self.contents["dovolume"]           = dovolume	 
 		self.contents["temp_dovolume"]      = temp_dovolume
+                self.contents["do_volume_mask"]     = do_volume_mask
 		self.contents["do_volume_mrk02"]    = do_volume_mrk02	 
 		self.contents["do_volume_mrk03"]    = do_volume_mrk03
 		self.contents["do_volume_mrk04"]    = do_volume_mrk04
