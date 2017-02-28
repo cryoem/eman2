@@ -24,10 +24,7 @@ before_install:
       rm ~/uninstall_homebrew
 
 
-install:
-    - source ci_support/pre_build.sh
-
 script:
-  - source ${src_dir}/ci_support/${build_scrt}
+  - source ci_support/${build_scrt}
   
   - export PYTHONPATH="${PREFIX}/lib:$PYTHONPATH"
