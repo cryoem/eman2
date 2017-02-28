@@ -962,10 +962,11 @@ def do_volume_mask(ref_data):
 	"""
 	from EMAN2	import Util
 	from morphology import cosinemask
+	from utilities  import get_im
 
 	# Retrieve the function specific input arguments from ref_data
-	vol				= ref_data[0]
-	Tracker			= ref_data[1]
+	vol		= ref_data[0]
+	Tracker		= ref_data[1]
 	mainiteration	= ref_data[2]
 
 
