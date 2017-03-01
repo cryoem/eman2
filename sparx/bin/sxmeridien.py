@@ -4460,7 +4460,7 @@ def main():
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				print("\n\n\n\n")
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"ITERATION  #%2d. Resolution achieved so far: %3d pixels, FSC0.5 %5.2fA, FSC0.143 %5.2fA Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
+				print(line,"ITERATION  #%2d. Resolution achieved so far: %3d / %3d pixels, %5.2fA / %5.2fA Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 					(Tracker["mainiteration"], \
 					Tracker["currentres"], Blockdata["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
 					Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]),\
