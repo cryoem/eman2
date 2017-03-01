@@ -51,7 +51,7 @@ Blockdata["node_volume"]		= [Blockdata["no_of_groups"]-2, Blockdata["no_of_group
 #  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
 Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
-Blockdata["fsc143"]  = 0.0
+Blockdata["fsc143"]  = 0
 # end of Blockdata
 
 #######
@@ -3668,12 +3668,11 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 		write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
 		out_fsc(cfsc)
 		# determine 0.143 resolution
-		nfsc143 =1
+		fsc143 =1
 		for ifreq in xrange(1, len(cfsc)):
 			if cfsc[ifreq] < 0.143:
 				break
-		nfsc143 =ifreq - 1
-		fsc143 = Tracker["constants"]["pixel_size"]*float(Tracker["constants"]["nnxo"])/float(nfsc143)
+		fsc143 =ifreq - 1
 	else:
 		fsc143 = 0.0
 	fsc143 = bcast_number_to_all(fsc143, source_node = Blockdata["main_node"])
@@ -4463,8 +4462,8 @@ def main():
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				print(line,"ITERATION  #%2d. Resolution achieved so far: %3d pixels, FSC0.5 %5.2fA, FSC0.143 %5.2fA Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 					(Tracker["mainiteration"], \
-					Tracker["currentres"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
-					Blockdata["fsc143"],\
+					Tracker["currentres"], Blockdata["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+					Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]),\
 					Tracker["state"],Tracker["nxinit"],  \
 					Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
 				
