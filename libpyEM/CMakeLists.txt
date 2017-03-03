@@ -27,7 +27,8 @@ MACRO(ADD_PYSTE_LIB_WITH_SRC libname srcfile)
 			SUFFIX ${suffix}
 			)
 	
-	TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY} ${PYTHON_LIBRARY})
+	# Windows fails without linking against freetype
+	TARGET_LINK_LIBRARIES(${libname} EM2 ${BOOST_LIBRARY} ${PYTHON_LIBRARY} ${FREETYPE_LIBRARY})
 	INSTALL(TARGETS ${libname} DESTINATION lib)
 ENDMACRO(ADD_PYSTE_LIB_WITH_SRC)
 
