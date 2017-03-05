@@ -209,8 +209,6 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 		message("${var}: ${${var}}")
 	endfunction()
 
-	set(CMAKE_INSTALL_RPATH "${EMAN_INSTALL_PREFIX}/lib")
-		
 	if(NOT WIN32)
 		set(CMAKE_PREFIX_PATH $ENV{PREFIX})
 		set(GSL_INCLUDE_DIRS $ENV{PREFIX}/include)
