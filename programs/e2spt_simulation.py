@@ -405,13 +405,13 @@ def randomizer(options, model, tag):
 	orientations = OrientGens.get("even",{"n": options.nptcls, "phitoo":1,"inc_mirror":1})	#Generate evenly distributed orientations
 	palts=[]
 	if options.preferredtop and not options.preferredside:
-		paltstop = prefferedalt( options, mu=180,sigma=45, options.nptcls )
+		paltstop = prefferedalt( options, 180,45, options.nptcls )
 	if options.preferredside and not options.preferredtop:
-		paltsside = prefferedalt( options, mu=90, sigma=45, options.nptcls )
+		paltsside = prefferedalt( options, 90, 45, options.nptcls )
 	if options.preferredside and options.prefferedtop:
 		ntop = int(round(options.nptlcs*options.preferredtop))
 		nside = options.nptlcs-ntop
-		palts = prefferedalt( options, mu=180,sigma=45, ntop ) + prefferedalt( options, mu=90,sigma=45, nside )
+		palts = prefferedalt( options, 180,45, ntop ) + prefferedalt( options, 90,45, nside )
 
 
 	transforms=[]

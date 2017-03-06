@@ -68,8 +68,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	if options.maps:
-		
+	#if options.maps:
 
 	if args[0][:6]=="multi_":
 		jsparm=js_open_dict(args[0]+"/0_refine_parms.json")
