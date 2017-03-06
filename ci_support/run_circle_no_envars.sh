@@ -36,6 +36,6 @@ cmake $src_dir   -DCMAKE_INSTALL_RPATH="$HOME/EMAN2/lib" \
 make
 make install
 
-export PYTHONPATH="$HOME/EMAN2/lib:$HOME/EMAN2/bin:$PYTHONPATH"
+export PYTHONPATH="$HOME/EMAN2/lib:$PYTHONPATH"
 
 source $src_dir/ci_support/run_circle_post.sh
