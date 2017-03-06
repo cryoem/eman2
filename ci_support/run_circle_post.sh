@@ -6,3 +6,4 @@ export PYTHONPATH="$HOME/EMAN2/lib:$HOME/EMAN2/bin:$PYTHONPATH"
 export EMAN2DIR=$HOME/EMAN2
 
 e2version.py
+e2speedtest.py

@@ -13,7 +13,9 @@ if errorlevel 1 exit 1
 cmake --build "%builddir%" --config Release --target install
 if errorlevel 1 exit 1
 
-set "PATH=%HOME%\EMAN2\bin;%PATH%"
-set "PYTHONPATH=%HOME%\EMAN2\bin;PYTHONPATH"
+set "PATH=c:\\EMAN2\bin;%PATH%"
+set "PYTHONPATH=c:\\EMAN2\lib;%PYTHONPATH%"
 e2version.py
+if errorlevel 1 exit 1
+e2speedtest.py
 if errorlevel 1 exit 1
