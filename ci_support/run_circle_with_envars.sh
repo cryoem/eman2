@@ -10,4 +10,6 @@ cmake $src_dir
 make
 make install
 
+export PYTHONPATH="${PREFIX}/lib:$PYTHONPATH"
+
 source $src_dir/ci_support/run_circle_post.sh
