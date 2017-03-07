@@ -197,7 +197,10 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["radius"].type == "radius")
 		sxcmd.token_dict["radius"].type = "int"
 	elif sxcmd.name in ["sxmeridien"]:
-		# Typically, this is target particle radius used by ISAC.
+		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
+		assert(sxcmd.token_dict["output_directory"].type == "output")
+		sxcmd.token_dict["output_directory"].type = "output_continue"
+	elif sxcmd.name in ["sxmeridien_polar"]:
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
