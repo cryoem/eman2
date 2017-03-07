@@ -36,9 +36,9 @@
 #ifndef eman__emutil__h__
 #define eman__emutil__h__ 1
 
+#include <string.h>
 #include "emobject.h"
 #include "emassert.h"
-#include <string.h>
 
 using std::string;
 using std::vector;

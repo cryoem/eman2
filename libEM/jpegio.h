@@ -38,10 +38,10 @@
 
 #ifdef EM_JPEG
 
+#include "imageio.h"
 extern "C" {
 #include <jpeglib.h>
 }
-#include "imageio.h"
 
 
 namespace EMAN

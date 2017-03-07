@@ -33,17 +33,17 @@
  *
  * */
 
-#include "amiraio.h"
-#include "util.h"
-
 #ifndef WIN32
-	#include <sys/param.h>
+#include <sys/param.h>
 #else
-	#include <windows.h>
+#include <windows.h>
 	#define MAXPATHLEN (MAX_PATH*4)
 #endif	//WIN32
 
 #include <cstdio>
+
+#include "amiraio.h"
+#include "util.h"
 
 using namespace EMAN;
 

@@ -33,11 +33,6 @@
  *
  * */
 
-#include <cstdio>
-#include <cstring>
-#include "lstfastio.h"
-#include "util.h"
-
 #ifndef WIN32
 #include <sys/param.h>
 #include <unistd.h>
@@ -47,6 +42,11 @@
 #define M_PI 3.14159265358979323846f
 #define MAXPATHLEN (MAX_PATH*4)
 #endif
+
+#include <cstdio>
+#include <cstring>
+#include "lstfastio.h"
+#include "util.h"
 
 
 using namespace EMAN;

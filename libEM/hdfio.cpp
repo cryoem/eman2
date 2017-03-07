@@ -35,6 +35,13 @@
 
 #ifdef EM_HDF5
 
+#ifndef _WIN32
+	#include <sys/param.h>
+#else
+	#include <windows.h>
+	#define  MAXPATHLEN (MAX_PATH * 4)
+#endif	//_WIN32
+
 #include "hdfio.h"
 #include "geometry.h"
 #include "ctf.h"
@@ -42,13 +49,6 @@
 #include "transform.h"
 #include <iostream>
 #include <cstring>
-
-#ifndef _WIN32
-	#include <sys/param.h>
-#else
-	#include <windows.h>
-	#define  MAXPATHLEN (MAX_PATH * 4)
-#endif	//_WIN32
 
 #ifndef UINT_16_MAX
 /* Minimum of signed integral types.  */
