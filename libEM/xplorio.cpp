@@ -33,13 +33,6 @@
  *
  * */
 
-#include <cstring>
-#include "xplorio.h"
-#include "util.h"
-#include "emassert.h"
-#include "portable_fileio.h"
-#include "geometry.h"
-
 #ifdef WIN32
 #include <time.h>
 #include <windows.h>
@@ -47,6 +40,13 @@
 #else
 #include <sys/param.h>
 #endif
+
+#include <cstring>
+#include "xplorio.h"
+#include "util.h"
+#include "emassert.h"
+#include "portable_fileio.h"
+#include "geometry.h"
 
 
 using namespace EMAN;

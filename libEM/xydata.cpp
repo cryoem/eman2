@@ -33,14 +33,14 @@
  *
  * */
 
-#include "xydata.h"
-#include <algorithm>
 #ifndef WIN32
 #include <sys/param.h>
 #else
 #include <windows.h>
 #define MAXPATHLEN (MAX_PATH*4)
 #endif
+#include "xydata.h"
+#include <algorithm>
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
