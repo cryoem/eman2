@@ -1104,11 +1104,13 @@ def create_sxcmd_subconfig_refine3d_postprocess():
 
 def create_sxcmd_subconfig_meridien_local():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("continue_from_subset"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("continue_from_subset"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctrefromsort3d"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("subset"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("oldrefdir"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("continue_from_iter"); token_edit_list.append(token_edit)
+	# token_edit = SXcmd_token(); token_edit.initialize_edit("continue_from_iter"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("ctrefromiter"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("small_memory"); token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = True
@@ -1134,10 +1136,12 @@ def create_sxcmd_subconfig_refine3d_angular_distribution():
 def create_exclude_list_meridien():
 	exclude_list = []
 
-	exclude_list.append("continue_from_subset")
+	# exclude_list.append("continue_from_subset")
+	exclude_list.append("ctrefromsort3d")
 	exclude_list.append("subset")
 	exclude_list.append("oldrefdir")
-	exclude_list.append("continue_from_iter")
+	# exclude_list.append("continue_from_iter")
+	exclude_list.append("ctrefromiter")
 
 	return exclude_list
 
@@ -1284,7 +1288,8 @@ def main():
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-08-08-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-09-09-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-11-07-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien-11-07-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien()))
+	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-11-07-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_polar.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_util"
@@ -1302,7 +1307,8 @@ def main():
 	# sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien-11-07-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local()))
+	# sxcmd_config_list.append(SXcmd_config("../doc/meridien-11-07-2016.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien_polar.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_refine3d_postprocess()))
 
 	sxcmd_role = "sxr_alt"
@@ -1376,7 +1382,8 @@ def main():
 
 #	output_file_path = "../bin/sxgui.py" # output_file_path = "sxgui_trial.py"
 #	output_file_path = "./sxgui_jove.py"
-	output_file_path = "./sxgui_jove_debug.py"
+#	output_file_path = "./sxgui_jove_debug.py"
+	output_file_path = "./sxgui_meridien_polar.py"
 	# remove the previous output
 	if os.path.exists(output_file_path):
 		os.remove(output_file_path)
