@@ -253,7 +253,11 @@ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 	set(FREETYPE_INCLUDE_PATH ${FREETYPE_INCLUDE_DIRS} CACHE PATH "")
 
 	foreach(inc PNG JPEG TIFF ZLIB GSL GSL_CBLAS)
-		set(${inc}_INCLUDE_PATH $ENV{PREFIX}/include CACHE PATH "")
+		if(NOT WIN32)
+			set(${inc}_INCLUDE_PATH $ENV{PREFIX}/include CACHE PATH "")
+		else()
+			set(${inc}_INCLUDE_PATH $ENV{LIBRARY_PREFIX}/include CACHE PATH "")
+		endif()
 		message("${inc}_INCLUDE_PATH: ${${inc}_INCLUDE_PATH}")
 	endforeach()
 		
