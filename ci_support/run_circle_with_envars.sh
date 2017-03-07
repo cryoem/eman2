@@ -6,8 +6,10 @@ export CONDA_BUILD_STATE=BUILD
 export PREFIX=$HOME/miniconda2/
 export SP_DIR=$PREFIX/lib/python2.7/site-packages
 
-cmake $src_dir -DCMAKE_INSTALL_RPATH="$HOME/EMAN2/lib"
+cmake $src_dir
 make
 make install
+
+export PYTHONPATH="${PREFIX}/lib:$PYTHONPATH"
 
 source $src_dir/ci_support/run_circle_post.sh

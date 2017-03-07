@@ -54,4 +54,7 @@ script:
   - cmake ..
   - make
   - make install
+  
+  - export PYTHONPATH="${PREFIX}/lib:$PYTHONPATH"
+
   - source ../ci_support/run_circle_post.sh
