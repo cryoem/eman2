@@ -2660,27 +2660,35 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				if options.verbose:
 					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate btref is", cmdbt
 
-				#p=subprocess.Popen( cmdbt, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				#text=p.communicate()	
-				#p.stdout.close()
-			
-			
-				#cmdbt2 = 'mv ' + btrefsubdir + ' ' + options.path + '/' 
-				#runcmd( options, cmdbt2 )
-				
 				try:
 					print "\nmoving btrefsubdir into path", btrefsubdir, options.path
 					os.rename( btrefsubdir, options.path + '/' + btrefsubdir )
 				except:
-					print "tried moving btrefsubdir into path but failed", btrefsubdir, options.path
-					newdirectorycount = '_'.join( btrefsubdir.split('_')[:-1])  
-					try: 
-						newdirectorycount += '_' + str( int(btrefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					print "\nfirst try moving btrefsubdir %s into path %s failed" %( btrefsubdir, options.path )
+					
+					btsubdirstem = '_'.join( btrefsubdir.split('_')[:-1])
+
+					try:
+						btsubdircount = str( int(btrefsubdir.split('_')[-1])+1)
 					except:
-						#newdirectorycount += '_0'
-						pass
+						btsubdircount = '01'
+						btsubdirstem = btrefsubdir
+					
+
+					newbtrefsubdir = btsubdirstem + '_' + btsubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					try: 
+						os.rename( newbtrefsubdir, options.path + '/' + btrefsubdir )
+					except:
+						print "\nsecond try moving btrefsubdir %s into path %s failed" %( newbtrefsubdir, options.path )
+
+						try:
+							newbtrefsubdir += '_01'
+							os.rename( newbtrefsubdir, options.path + '/' + btrefsubdir )
+
+						except:
+							print "\nthird and FINAL attempt to move btrefsubdir %s into path %s failed. exiting" %( newbtrefsubdir, options.path )
+							sys.exit(1)
 						
-					os.rename( btrefsubdir, options.path + '/' + newdirectorycount )
 								
 				
 				#cmdbt3 = 'mv ' + subsetForBTRef + ' ' + options.path
