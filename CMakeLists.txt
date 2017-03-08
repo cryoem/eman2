@@ -23,6 +23,8 @@ endif()
 SET(CMAKE_INSTALL_PREFIX ${EMAN_INSTALL_PREFIX} CACHE INTERNAL "installation prefix")
 MARK_AS_ADVANCED(CLEAR EMAN_INSTALL_PREFIX)
 
+set(CMAKE_INSTALL_RPATH ${EMAN_INSTALL_PREFIX}/lib)
+
 OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 
 OPTION(ENABLE_FFTW2 "enable fftw 2 support (LEGACY)" OFF)
