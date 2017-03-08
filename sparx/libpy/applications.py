@@ -4603,15 +4603,15 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.projection', 'previousmax', 'ID']
 			if myid == main_node:
-	   			if(file_type(stack) == "bdb"):
-	        			from utilities import recv_attr_dict_bdb
-	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        		else:
-	        			from utilities import recv_attr_dict
-	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+				if(file_type(stack) == "bdb"):
+					from utilities import recv_attr_dict_bdb
+					recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+				else:
+					from utilities import recv_attr_dict
+					recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 				print_msg("Time to write header information= %d\n"%(time()-start_time))
 				start_time = time()
-	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
+			else:	send_attr_dict(main_node, data, par_str, image_start, image_end)
 
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 			else:   vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
