@@ -96,16 +96,16 @@ and this program should be regarded as experimental.
 	overlap=options.overlap		# This is the fraction of the window size to use as a step size in sampling
 	if overlap<1:
 		print "Invalid overlap specified, using default"
-		overlap=4
+		overlap=6
 		
 	if options.localsize==-1 : 
-		lnx=int(40/apix)
-		if lnx<24: lnx=24
+		lnx=int(32/apix)
+		if lnx<16: lnx=16
 		lnx=(((lnx-1)//overlap)+1)*overlap
 	else: lnx=options.localsize
-	if apix*lnx/2.0<15.0 :
-		print "WARNING: Local sampling box is <15 A. Adjusting to 20 A."
-		lnx=int(floor(40.0/apix))
+	if apix*lnx/2.0<10.0 :
+		print "WARNING: Local sampling box is <10 A. Adjusting to 16 A."
+		lnx=int(floor(32.0/apix))
 	print "Local region is %d pixels"%lnx
 	if overlap>lnx : overlap=lnx
 	
