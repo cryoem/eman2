@@ -1,18 +1,67 @@
 #!/usr/bin/env python
 #
-#  11/07/2016
+#  09/09/2016
 #  
 #  CPU subgroup
 #  10/27/2016  Added sigma2 updating in the first phased called PRIMARY
 #  11/07       Shared refvol
-#  11/26       Removed heapsort option from numpy sorting.  It seems standard one works better.
-#  02/03/2017  Introduced Toshio's new numpy handling
+#  10/28/2016 - Polar
+#  11/18/2016 change in strategy
+#  01/05/2017 - wrapping up first take.
+
+
+"""
+Exhaustive:
+          delta        projdir         projdir*npsi
+         15.00000        189            4536  
+          7.50000        756           36288  
+          3.75000       3025          290400  
+          1.87500      12101         2323392  
+          0.93750      48405        18587520  
+          0.46875     193622       148701696  
+          0.23438     774489      1189615104  
+          0.11719    3097958      9516926976  
+
+Assume image 192x192
+         15.00000        189       0.028 GB            4536          0.669 GB 
+          7.50000        756       0.111 GB           36288          5.351 GB 
+          3.75000       3025       0.446 GB          290400         42.821 GB 
+          1.87500      12101       1.784 GB         2323392        342.598 GB 
+          0.93750      48405       7.138 GB        18587520       2740.841 GB 
+          0.46875     193622      28.551 GB       148701696      21926.957 GB 
+          0.23438     774489     114.203 GB      1189615104     175415.885 GB 
+          0.11719    3097958     456.812 GB      9516926976    1403327.984 GB 
+
+
+Local with an = 6*delta
+         15.00000         96            1248  
+          7.50000        113            1469  
+          3.75000        115            1495  
+          1.87500        115            1495  
+          0.93750        117            1521  
+          0.46875        117            1521  
+          0.23438        117            1521  
+          0.11719        115            1495  
+
+Local with an = 12*delta
+         15.00000        189            4725  
+          7.50000        377            9425  
+          3.75000        446           11150  
+          1.87500        461           11525  
+          0.93750        470           11750  
+          0.46875        464           11600  
+          0.23438        463           11575  
+          0.11719        463           11575  
+
+
+"""
+
 
 
 from __future__ import print_function
 from EMAN2 	import *
 from sparx 	import *
-from EMAN2 import EMNumPy
+from EMAN2  import EMNumPy
 from logger import Logger, BaseLogger_Files
 import global_def
 
@@ -21,16 +70,16 @@ from math  	import  *
 from random import *
 import numpy as np
 
-
 import os
 import sys
 import subprocess
-import time
 import string
 import json
 from   sys 	import exit
 from   time import localtime, strftime, sleep
+
 global Tracker, Blockdata
+global  target_theta, refang
 
 
 mpi_init(0, [])
@@ -51,10 +100,7 @@ Blockdata["node_volume"]		= [Blockdata["no_of_groups"]-2, Blockdata["no_of_group
 #  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
 Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
-Blockdata["fsc143"]  = 0
 # end of Blockdata
-
-#######
 
 def create_subgroup():
 	# select a subset of myids to be in subdivision
@@ -91,7 +137,6 @@ def create_subgroup():
 #  create_subgroup()
 #if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
 
-
 def AI( fff, anger, shifter, chout = False):
 	global Tracker, Blockdata
 	#  chout - if true, one can print, call the program with, chout = (Blockdata["myid"] == Blockdata["main_node"])
@@ -107,15 +152,11 @@ def AI( fff, anger, shifter, chout = False):
 	
 	###  checkconvergence  merged in AI  02/16/2017
 	# when the following conditions are all true
-	#1. has_fine_enough_angular_sampling  True   Tracker["saturated_sampling"] #   Current sampling are fine enough
+	#1. has_fine_enough_angular_sampling  True  #   Current sampling are fine enough
 	#2. nr_iter_wo_resol_gain >= MAX_NR_ITER_WO_RESOL_GAIN # 
 	#3. nr_iter_wo_large_hidden_variable_changes >= MAX_NR_ITER_WO_LARGE_HIDDEN_VARIABLE_CHANGES
 
 	keepgoing = 1
-
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "AI update state parameters, check convergence, update angular and translation samplings")
 
 	if(Tracker["mainiteration"] == 1):
 		Tracker["state"] = "INITIAL"
@@ -128,18 +169,8 @@ def AI( fff, anger, shifter, chout = False):
 		#  Do not use CTF during first iteration
 		#Tracker["applyctf"]    = False
 		Tracker["constants"]["best"] = Tracker["mainiteration"]
-		Tracker["is_converged"] = False
-		#Blockdata["delta"] = Tracker["delta"]
-		#Blockdata["xr"] = Tracker["xr"]
-		#Blockdata["ts"] = Tracker["ts"]
-		#Tracker["delta"] *= 2
-		#Tracker["ts"] *= 2
 	else:
-		if( Tracker["mainiteration"] == 2 ):
-			Tracker["state"] = "PRIMARY"
-			Tracker["is_converged"] = False
-			#Tracker["delta"] = Blockdata["delta"]
-			#Tracker["ts"] = Blockdata["ts"]
+		if( Tracker["mainiteration"] == 2 ):  Tracker["state"] = "PRIMARY"
 		l05 = -1
 		l01 = -1
 		for i in xrange(len(fff)):
@@ -152,16 +183,17 @@ def AI( fff, anger, shifter, chout = False):
 				break
 		l01 = max(l01,-1)
 
-		if( chout ): print("  Dealing with FSC; Tracker[nxstep], TR[currentres], l05, l01:",Tracker["nxstep"],Tracker["currentres"],l05, l01)
+		if( chout ): print("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01,fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01, fff[Tracker["nxinit"]//2-1])
 		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
+		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.1
+		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
 
 
 		if( Tracker["mainiteration"] == 2 ):  maxres = Tracker["constants"]["inires"]
 		else:                                 maxres = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
 
 		if( maxres >= Tracker["bestres"]):
-			Tracker["bestres"]				= maxres	
+			Tracker["bestres"]				= maxres
 			Tracker["constants"]["best"] 	= Tracker["mainiteration"]-1
 
 		if( maxres > Tracker["currentres"]):
@@ -170,12 +202,14 @@ def AI( fff, anger, shifter, chout = False):
 		else:    Tracker["no_improvement"] += 1
 
 		Tracker["currentres"] = maxres
+		Tracker["fsc143"] = l01
+
+		params_changes = anger >= 1.1*Tracker["anger"] and shifter >= 1.1*Tracker["shifter"]
 
 		#  figure changes in params
-		if( chout ):  print("  incoming  pares  ",Blockdata["myid"],Tracker["anger"],anger,Tracker["shifter"],shifter)
-		shifter *= 0.71
-		if( 1.03*anger >= Tracker["anger"] and 1.03*shifter >= Tracker["shifter"] ):	Tracker["no_params_changes"] += 1 #<<<--- 1.03 angle 1.03 shifter after 0.71 ratio
-		else:																			Tracker["no_params_changes"]  = 0
+		if( chout ):  print("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
+		if( params_changes ):	Tracker["no_params_changes"] += 1
+		else:					Tracker["no_params_changes"]  = 0
 
 		if( anger < Tracker["anger"] ):			Tracker["anger"]   = anger
 		if( shifter < Tracker["shifter"] ):		Tracker["shifter"] = shifter
@@ -189,48 +223,41 @@ def AI( fff, anger, shifter, chout = False):
 
 		Tracker["nxinit"] = tmp
 		#  decide angular step and translations
-		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"])):
-			if Tracker["delta"] <0.75 *Tracker["acc_rot"]:#<<<----it might cause converge issues when shake is 0.0 
-				Tracker["saturated_sampling"] = True
-				Tracker["is_converged"] = True
+		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
+			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(line,"ITERATIONS convergence criterion A is reached")
-			else:  
-				Tracker["saturated_sampling"] = False								
+					print(line,"ITERATIONS convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
+			else:
 				range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
 				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"],range, step)
 				Tracker["xr"] = range
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
 				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
-					#  CHANGE SIGMA2 OF ANGLES' DISTRIBUTION TO NARROW SEARCHES
-					#sigma2_rot = sigma2_tilt = sigma2_psi = (2. * Tracker["delta"])**2
 					Tracker["an"]		= 6*Tracker["delta"]
-					Tracker["state"]	= "RESTRICTED"
+					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
+					else:	Tracker["state"] = "RESTRICTED"
 				else:
-					Tracker["an"] 		= -1
+					Tracker["an"] = -1
 					if( Tracker["state"] == "PRIMARY" ):  Tracker["state"] = "EXHAUSTIVE"
 				if( chout ): print("  IN AI there was reset due to no changes, adjust stuff  ",Tracker["no_improvement"],Tracker["no_params_changes"],Tracker["delta"],Tracker["xr"],Tracker["ts"], Tracker["state"])
 				# check convergence before reset
-				if (Tracker["delta"] <= degrees(atan(0.5/Tracker["constants"]["radius"]))) and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]):
-					Tracker["is_converged"] = True
+				if( (Tracker["state"] == "FINAL") and (Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) ):
 					keepgoing = 0
 					if(Blockdata["myid"] == Blockdata["main_node"]):
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-						print(line,"ITERATIONS convergence criterion B is reached")
+						print(line,"ITERATIONS convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
 				Tracker["no_improvement"]		= 0
 				Tracker["no_params_changes"]	= 0
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
 	Tracker["keepfirst"] = -1
 	if (keepgoing == 0) and (Blockdata["myid"] == Blockdata["main_node"]):
-		print(" The current state is %s"%Tracker["state"])
-		print(" 3-D refinement converged")
-		print(" The best solution is in the directory main%03d "%Tracker["constants"]["best"])
+		print(" 3-D refinement converged, the best solution is in the directory main%03d "%Tracker["constants"]["best"] )
 		print(" Computing 3-D reconstruction using the best solution")
-		Tracker["mainiteration"] -=1
+		Tracker["mainiteration"] -= 1
 	return keepgoing
 
 def params_changes( params, oldparams ):
@@ -253,19 +280,20 @@ def params_changes( params, oldparams ):
 		shifter     += (params[i][3] - oldparams[i][3] )**2 + (params[i][4] - oldparams[i][4] )**2
 		anger += get_anger(params[i][0:3], oldparams[i][0:3],Tracker["constants"]["symmetry"])
 
-	return round(anger/n,5), round(sqrt(shifter/n),5)
-
+	return round(anger/n,5), round(sqrt(shifter/2/n),5)
 
 def compute_search_params(acc_trans, shifter, old_range):
+	# step refer to the fine sampled step; while the range remains
 	if(old_range == 0.0 and shifter != 0.0):  old_range = acc_trans
-	step   = min(1.5, 0.75*acc_trans)
+	step   = min(1.5, 0.75*acc_trans)   #remove 2 
 	range  = min( 1.3*old_range, 5.0*shifter)
-	range  = max(range, 1.5*step)
-	if range > 4.0*step :   range /= 2.0
-	if range > 4.0*step :   step   = range/4.0
-	if(range == 0.0):  step = 1.0
+	range  = max(range, 3.0*step) # change 1.5 to 3.0
+	if range > 8.0*step :   range /= 2.0 # change 4 to 8
+	if range > 8.0*step :   step   = range/8.0 # change 4 to 8
+	#  change 4. to 8. on account of the fact that we return actual shift which is then doubled for coarse search.
+	if(range == 0.0):  step = 0.5  # change 1.0 to 0.5
 	return range, step
-	
+
 def assign_particles_to_groups(minimum_group_size = 10):
 	global Tracker, Blockdata
 	from random import shuffle
@@ -405,6 +433,151 @@ def assign_particles_to_groups(minimum_group_size = 10):
 
 	return  q0, q1
 
+#  CONES support functions
+
+def number_of_cones_to_delta(number_of_cones, symmetry):
+
+	if( not (symmetry[0] == "c" or symmetry[0] == "d" or symmetry == "oct" ) ):
+		print( " Unsuported symmetry")
+		return -1, 0
+	if( number_of_cones == 1):
+		if(symmetry[0] == "c" ):  return 181.0, 1
+		elif(symmetry[0] == "d"):  return 91.0, 1
+	else:
+		if(symmetry[0] == "c"):
+			sym = symmetry
+			t2 = 89.0
+			for i in xrange(92,0,-1):
+				a = even_angles(i, symmetry=sym, theta1=1.0, theta2=t2, method="S", phiEqpsi="Zero")
+				a += [[(q[0]+90.0)%360., 180.-q[1],0] for q in a]
+				nren = len(a)
+				if(nren>number_of_cones): return float(i), nren
+			while(True):
+				i /= 2.0
+				a = even_angles(i, symmetry=sym, theta1=1.0, theta2=t2, method="S", phiEqpsi="Zero")
+				a += [[(q[0]+90.0)%360., 180.-q[1],0] for q in a]
+				nren = len(a)
+				if(nren>number_of_cones): return float(i), nren
+				
+		elif(symmetry[0] == "d"):
+			sym = "c"+symmetry[1:]
+			t2 = 90.01
+			for i in xrange(92,0,-1):
+				a = even_angles(i, symmetry=sym, theta1=1.0, theta2=t2, method="S", phiEqpsi="Zero")
+				nren = len(a)
+				if(nren>number_of_cones): return float(i), nren
+			while(True):
+				i /= 2.0
+				a = even_angles(i, symmetry=sym, theta1=1.0, theta2=t2, method="S", phiEqpsi="Zero")
+				nren = len(a)
+				if(nren>number_of_cones): return float(i), nren
+
+		elif(symmetry == "oct"):
+			sym = symmetry
+			for i in xrange(92,0,-1):
+				a = Blockdata["parsesym"].gen_orientations("saff",{"delta":float(i),"inc_mirror":1})
+				del a[0]
+				for i,q in enumerate(a):
+					q = q.get_params("spider")
+					a[i] = [q["phi"], q["theta"], 0.0]
+				nren = len(a)
+				if(nren>number_of_cones): return float(i), nren
+			while(True):
+				i /= 2.0
+				a = Blockdata["parsesym"].gen_orientations("saff",{"delta":float(i),"inc_mirror":1})
+				del a[0]
+				for i,q in enumerate(a):
+					q = q.get_params("spider")
+					a[i] = [q["phi"], q["theta"], 0.0]
+				nren = len(a)
+				if(nren>number_of_cones): return float(i), nren
+			
+
+		print(  "  ERROR  in  number_of_cones_to_delta")
+		return -1, 0
+
+def find_assignments_of_refangles_to_angles(normals_set, ancor_angle, an, sym):
+	#  returns list of angles within normals_set that are within an angles from ancor_angle
+	global  Blockdata
+	if( sym[:1] == "c"):	toptheta = 180.0
+	elif( sym[:1] == "d" or sym == "oct"):	toptheta = 90.0
+	nang1 = len(normals_set) - 1
+	Blockdata["target_theta"] = ancor_angle[1]
+	u1,u2 = goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+	u1 = int(u1+0.5)
+
+	Blockdata["target_theta"] = max(0.0, ancor_angle[1] - 1.2*an )
+	u3,u4 = goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+	u3 = int(u3+0.5)
+	if(u3<10):  u3 = 0
+
+	Blockdata["target_theta"] = min(toptheta, ancor_angle[1] + 1.2*an )
+	u5,u6 = goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+	u5 = int(u5+0.5)
+	if(u5>nang1-10):  u5 = nang1+1
+	if( sym == "oct" ):  ancordir = symmetry_related_normals(ancor_angle, sym)
+	else:  ancordir = angles_to_normals(symmetry_neighbors([ancor_angle[:3]], sym))
+	ltemp = Util.cone_dirs_f( normals_set[u3:u5], ancordir, an )
+	###ltemp = cone_dirs_f( normals_set[u3:u5], ancordir, an )#Util.cone_dirs_f( normals_set[u3:u5], ancordir, an )
+	#print(" us ",Blockdata["myid"],u1,u3,u5,m,"  ltemp ",ltemp)
+	return  [qtemp+u3 for qtemp in ltemp]
+
+def find_nearest_k_refangles_to_many_angles(normals_set, angles, delta, howmany, sym = "c1"):
+	assignments = [-1]*len(angles)
+	for i,ancor_angle in enumerate(angles):
+		assignments[i] = find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany, sym = sym)
+	return assignments
+
+def find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany, sym = "c1"):
+	#  returns list of angles within normals_set that are within an angles from ancor_angle
+	global  Blockdata
+	nang1 = len(normals_set) - 1
+	if( sym[:1] == "c"):	toptheta = 180.0
+	elif( sym[:1] == "d" or sym == "oct"):	toptheta = 90.0
+	qtl = 0
+	bigger = 1.0
+	while( qtl < howmany ):
+		an = bigger*max(delta*(howmany//2),delta)
+		Blockdata["target_theta"] = ancor_angle[1]
+		u1,u2 = goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+		u1 = int(u1+0.5)
+
+		Blockdata["target_theta"] = max(0.0, ancor_angle[1] - 1.1*an )
+		u3,u4 = goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+		u3 = int(u3+0.5)
+		if(u3<10):  u3 = 0
+
+		Blockdata["target_theta"] = min(toptheta, ancor_angle[1] + 1.1*an )
+		u5,u6 = goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+		u5 = int(u5+0.5)
+		if(u5>nang1-10):  u5 = nang1+1
+		qtl = len(normals_set[u3:u5])
+		bigger *= 1.25
+		
+	#ancordir = angles_to_normals(symmetry_neighbors([ancor_angle[:3]], "c1"))
+	#ltemp = Util.cone_dirs_f( normals_set[u3:u5], ancordir, an )
+	###print " us ", an, ancor_angle[:2],len(normals_set[u3:u5])," u1 ",u1,Blockdata["angle_set"][u1][:2]," u3 ",u3,Blockdata["angle_set"][u3][:2]," u5 ",u5,Blockdata["angle_set"][u5][:2]#,"  ltemp ",ltemp
+	if( sym == "c1"):
+		ancordir = getfvec(ancor_angle[0],ancor_angle[1])
+		ltemp = Util.nearest_fang_select(normals_set[u3:u5], ancordir[0], ancordir[1], ancordir[2], howmany)
+	elif( sym[:1] == "c" or  sym[:1] == "d" ):
+		ancordir = angles_to_normals(symmetry_neighbors([ancor_angle], sym))
+		ltemp = Util.nearest_fang_sym(ancordir, normals_set[u3:u5], len(ancordir), howmany)
+	elif( sym == "oct" ):
+		ancordir = symmetry_related_normals(ancor_angle, sym)
+		ltemp = Util.nearest_fang_sym(ancordir, normals_set[u3:u5], len(ancordir), howmany)
+	else:
+		ERROR("  ERROR:  symmetry not supported  "+sym,"nearest_many_full_k_projangles",1)
+		return []
+	return  [qtemp+u3 for qtemp in ltemp]
+
+def auxiliary_funcdef(xxx):
+	global  Blockdata
+	l = min(max(int(xxx+0.5),0),len(Blockdata["angle_set"])-1)
+	#print l,abs(target_theta - refang[l][1])
+	return  abs(Blockdata["target_theta"] - Blockdata["angle_set"][l][1])
+
+#  ------
 
 def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi_comm = -1):
 	global Tracker, Blockdata
@@ -606,7 +779,6 @@ def getindexdata(partids, partstack, particle_groups, original_data=None, small_
 			original_data[im].set_attr("particle_group", group_reference[im])
 	return original_data, partstack
 
-
 def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 					return_real = False, preshift = False, apply_mask = True, nonorm = False, npad = 1):
 	global Tracker, Blockdata
@@ -761,7 +933,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 def subdict(d,u):
 	# substitute values in dictionary d by those given by dictionary u
 	for q in u:  d[q] = u[q]
-	
+
 def get_anger(angle1, angle2, sym="c1"):
 	from math import acos, pi, degrees
 	R1               = Transform({"type":"spider","phi": angle1[0], "theta": angle1[1], "psi": angle1[2]})
@@ -805,9 +977,36 @@ def out_fsc(f):
 
 def get_refangs_and_shifts():
 	global Tracker, Blockdata
+	def set_psi_to_zero(tut):
+		for i,q in enumerate(tut):
+			q = q.get_params("spider")
+			tut[i] = Transform({"type":"spider","phi":q["phi"], "theta":q["theta"]})
 
-	if(Tracker["constants"]["symmetry"][:1] == "c"):  refang = even_angles(Tracker["delta"], symmetry=Tracker["constants"]["symmetry"], theta2=180.0, method='S', phiEqpsi="Zero")
-	elif(Tracker["constants"]["symmetry"][:1] == "d"):  refang = even_angles(Tracker["delta"], symmetry= ("c"+Tracker["constants"]["symmetry"][1:]), theta2=90.0+0.01*Tracker["delta"], method='S', phiEqpsi="Zero")
+	if(Tracker["constants"]["symmetry"][:1] == "c"):
+		refang = even_angles(Tracker["delta"], symmetry=Tracker["constants"]["symmetry"], theta2=180.0, method='S', phiEqpsi="Zero")
+		coarse = even_angles(Tracker["delta"]*2, symmetry=Tracker["constants"]["symmetry"], theta2=180.0, method='S', phiEqpsi="Zero")
+		refang = reduce_to_asymmetric_list(rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]), Tracker["constants"]["symmetry"])
+	elif(Tracker["constants"]["symmetry"][:1] == "d"):
+		refang = even_angles(Tracker["delta"], symmetry= ("c"+Tracker["constants"]["symmetry"][1:]), theta2=90.0+0.01*Tracker["delta"], method='S', phiEqpsi="Zero")
+		coarse = even_angles(Tracker["delta"]*2, symmetry= ("c"+Tracker["constants"]["symmetry"][1:]), theta2=90.0+0.01*Tracker["delta"]*2, method='S', phiEqpsi="Zero")
+		refang = reduce_to_asymmetric_list(rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]), Tracker["constants"]["symmetry"])
+	elif(Tracker["constants"]["symmetry"] == "oct"):
+		Blockdata["t_refang"] = Blockdata["parsesym"].gen_orientations("saff",{"delta":Tracker["delta"],"inc_mirror":1})
+		set_psi_to_zero(Blockdata["t_refang"])
+		Blockdata["t_coarse"] = Blockdata["parsesym"].gen_orientations("saff",{"delta":2*Tracker["delta"],"inc_mirror":1})
+		set_psi_to_zero(Blockdata["t_coarse"])
+		rota = Transform({"type":"spider","phi":0.5*Tracker["delta"], "theta":0.5*Tracker["delta"],"psi":0.5*Tracker["delta"]}) # note different sign than above
+		refang = [None]*len(Blockdata["t_refang"])
+		for i,q in enumerate(Blockdata["t_refang"]):
+			Blockdata["t_refang"][i] = Blockdata["parsesym"].reduce(q*rota, 0)
+			d = Blockdata["t_refang"][i].get_params("spider")
+			refang[i] = [d["phi"],d["theta"],d["psi"]]
+		coarse = [None]*len(Blockdata["t_coarse"])
+		for i in xrange(len(coarse)):
+			d = Blockdata["t_coarse"][i].get_params("spider")
+			coarse[i] = [d["phi"],d["theta"],d["psi"]]
+
+
 	"""
 	if(Tracker["delta"] == 15.0):  refang = read_text_row("refang15.txt")
 	elif(Tracker["delta"] == 7.5):  refang = read_text_row("refang7p5.txt")
@@ -816,22 +1015,91 @@ def get_refangs_and_shifts():
 	elif(Tracker["delta"] == 0.9375):  refang = read_text_row("refang0p9375.txt")
 	elif(Tracker["delta"] == 0.46875):  refang = read_text_row("refang0p46875.txt")
 	"""
+
+	k = int(ceil(Tracker["xr"]/Tracker["ts"]))
+	radi = (Tracker["xr"]+Tracker["ts"])**2
+	rshifts = []
+	for ix in xrange(-k,k,1):
+		six = ix*Tracker["ts"] + Tracker["ts"]/2
+		for iy in xrange(-k,k,1):
+			siy = iy*Tracker["ts"] + Tracker["ts"]/2
+			if(six*six+siy*siy <= radi):
+				rshifts.append( [six, siy] )
+
+	ts_coarse = 2*Tracker["ts"]
+	k = int(ceil(Tracker["xr"]/ts_coarse))
+	radi = Tracker["xr"]*Tracker["xr"]
+	coarse_shifts = []
+	for ix in xrange(-k,k+1,1):
+		six = ix*ts_coarse
+		for iy in xrange(-k,k+1,1):
+			siy = iy*ts_coarse
+			if(six*six+siy*siy <= radi):
+				coarse_shifts.append( [six, siy] )
+
+	return refang, rshifts, coarse, coarse_shifts
+
+def get_coarse_shifts():
+	global Tracker, Blockdata
+
 	k = int(ceil(Tracker["xr"]/Tracker["ts"]))
 	radi = Tracker["xr"]*Tracker["xr"]
-	rshifts = []
+
+	indc = []
 	for ix in xrange(-k,k+1,1):
 		six = ix*Tracker["ts"]
 		for iy in xrange(-k,k+1,1):
 			siy = iy*Tracker["ts"]
 			if(six*six+siy*siy <= radi):
-				rshifts.append( [six, siy] )
-	return refang, rshifts
+				indc.append( [ix, iy] )
+
+	cndc = []
+	for ix in xrange(0,k+1,2):
+		six = ix*Tracker["ts"]
+		for iy in xrange(0,k+1,2):
+			siy = iy*Tracker["ts"]
+			if(six*six+siy*siy <= radi):
+				cndc.append( [ix, iy] )
+
+	for ix in xrange(1,len(cndc)):  cndc.append([-cndc[ix][0],-cndc[ix][1]])
+
+	list_of_coarse_shifts = []
+	for ix in xrange(len(cndc)):  list_of_coarse_shifts.append(indc.index(cndc[ix]))
+
+
+	return list_of_coarse_shifts
+
+def get_shifts_neighbors(rshifts, cs):
+	"""
+	  	output is a list of shift neighbors to cs within ts*1.5 distance\
+	  	This yields at most five shifts
+	"""
+	shiftneighbors = []
+	rad = Tracker["ts"]*1.5
+	for l,q in enumerate(rshifts):
+		if(get_dist(q, cs) <= rad): shiftneighbors.append(l)
+	return 	shiftneighbors
 
 # shake functions
 
-def shakerefangles(refangles, rangle, sym):
-	from utilities import reduce_to_asymmetric_list, rotate_params
-	return reduce_to_asymmetric_list(rotate_params(refangles, [-rangle,-rangle,-rangle]), sym)
+def shakerefangles(refangles1, refangles2, rangle, sym):
+	global Tracker, Blockdata
+	if(	sym[0] == "c" or sym[0] == "d" ):
+		from utilities import reduce_to_asymmetric_list, rotate_params
+		return reduce_to_asymmetric_list(rotate_params(refangles1, [-rangle,-rangle,-rangle]), sym),\
+			reduce_to_asymmetric_list(rotate_params(refangles2, [-rangle,-rangle,-rangle]), sym)
+	elif( sym == "oct"):
+		rota = Transform({"type":"spider","phi":rangle, "theta":rangle,"psi":rangle}) # note different sign than above
+		for i,q in enumerate(Blockdata["t_refang"]):
+			Blockdata["t_refang"][i] = Blockdata["parsesym"].reduce(q*rota, 0)
+			d = Blockdata["t_refang"][i].get_params("spider")
+			refangles1[i] = [d["phi"],d["theta"],d["psi"]]
+		for i,q in enumerate(Blockdata["t_coarse"]):
+			Blockdata["t_coarse"][i] = Blockdata["parsesym"].reduce(q*rota, 0)
+			d = Blockdata["t_coarse"][i].get_params("spider")
+			refangles2[i] = [d["phi"],d["theta"],d["psi"]]
+		return  refangles1, refangles2
+	else:  ERROR("Incorrect symmetry","shakerefangles",1,Blockdata["myid"])
 
 def shakegrid(rshifts, qt):
 	for i in xrange(len(rshifts)):
@@ -885,81 +1153,6 @@ def prepdata_ali3d(projdata, rshifts, shrink, method = "DIRECT"):
 		del projdata[kl]
 	return data, ctfs, bckgnoise
 
-def metamove(projdata, oldparams, refang, rshifts, rangle, rshift, procid):
-	# return newparamstructure and norm_per_particle
-	global Tracker, Blockdata
-	from mpi 			import   mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD, MPI_INT, MPI_SUM, mpi_reduce
-	from projection 	import prep_vol
-	#  Takes preshrunk projdata and does the refinement as specified in Tracker
-	#  projdata is in Fourier format.
-	#  Will create outputdir
-	#  Will write to outputdir output parameters: params-chunk0.txt and params-chunk1.txt
-	from utilities  	import get_input_from_string
-	lendata = len(projdata)
-	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
-
-	#  
-	#  Compute current values of some parameters.
-	#Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
-	#if(Tracker["radius"] < 5):
-	#	ERROR( "ERROR!!   radius too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, Blockdata["myid"])
-
-	#  STATES not used
-	#if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
-	#	Tracker["pixercutoff"] = 0.5
-	#	Tracker["delta"] = 2.0
-	#	Tracker["ts"]    = 2.0
-
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print_dict(Tracker,"METAMOVE parameters")
-
-	#  Run alignment command
-	method = "DIRECT"
-	data, ctfs, bckgnoise = prepdata_ali3d(projdata, rshifts, shrinkage, method)
-	#  delta_psi is the same as delta.
-
-	if( Tracker["mainiteration"] == 1 ):	lntop = 1
-	else:  									lntop =  Tracker["lentop"]
-	#  newparams contains full matching structure
-	if( Tracker["state"] == "EXHAUSTIVE" or Tracker["state"] == "PRIMARY" or Tracker["state"] == "INITIAL" ):
-		if (Tracker["mainiteration"] == 1) : # take always_ccc out
-			newparamstructure = ali3D_direct_ccc(data, refang, rshifts, ctfs, bckgnoise)
-			#  Disregard cccs for 3D reconstruction
-			for kl in xrange(len(newparamstructure)):   newparamstructure[kl][2] = [[newparamstructure[kl][2][0][0],1.0]]
-			norm_per_particle = [1.0]*lendata
-		elif( Tracker["state"] == "PRIMARY" ):
-			newparamstructure, norm_per_particle 	= ali3D_direct_euc_norm_bckg(data, refang, rshifts, oldparams, procid, ctfs, bckgnoise)
-		elif( Tracker["state"] == "EXHAUSTIVE" ):
-			if Tracker["constants"]["nonorm"]:  newparamstructure 						= ali3D_direct_euc(data, refang, rshifts, procid, ctfs, bckgnoise)
-			else: 								newparamstructure, norm_per_particle 	= ali3D_direct_euc_norm(data, refang, rshifts, oldparams, procid, ctfs, bckgnoise)
-
-	elif Tracker["state"] == "RESTRICTED":
-		if Tracker["constants"]["nonorm"]:	newparamstructure 						= ali3D_direct_local_euc(data, refang, rshifts, oldparams, procid, ctfs, bckgnoise)
-		else: 								newparamstructure, norm_per_particle 	= ali3D_direct_local_euc_norm(data, refang, rshifts, oldparams, procid, ctfs, bckgnoise)
-	else:  print("  WRONG STATE")
-	del ctfs
-	#
-	#  Store results, only best locations
-	qt = 1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]
-	params = []
-	for im in xrange(lendata):
-		#  Select only one best
-		hash = newparamstructure[im][2][0][0]
-		ishift = hash%1000
-		ipsi = (hash/1000)%100000
-		iang  = hash/100000000
-		params.append([ refang[iang][0], refang[iang][1], (refang[iang][2]+ipsi*Tracker["delta"])%360.0, rshifts[ishift][0]+oldparams[im][3], rshifts[ishift][1]+oldparams[im][4], newparamstructure[im][-1][0][1], norm_per_particle[im]*qt, norm_per_particle[im]])
-
-	mpi_barrier(MPI_COMM_WORLD)
-	params = wrap_mpi_gatherv(params, Blockdata["main_node"], MPI_COMM_WORLD)
-	#  store params
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,"Executed successfully: ","Projection matching, state: %s, number of images:%7d"%(Tracker["state"],len(params)))
-		write_text_row(params, os.path.join(Tracker["directory"], "params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
-
-	return  newparamstructure, norm_per_particle
-
 def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_comm = -1):
 	global Tracker, Blockdata
 
@@ -995,8 +1188,8 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"Executed successfully backprojection for group ",procid)
 	mpi_barrier(mpi_comm)
-	return  
-	
+	return
+
 def do3d_final_mpi(final_iter):
 	global Tracker, Blockdata
 	from mpi import MPI_COMM_WORLD, mpi_barrier
@@ -1037,7 +1230,7 @@ def do3d_final_mpi(final_iter):
 		if( Blockdata["myid_on_node"] == 0 ):
 			tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil.hdf"))
 	elif( Blockdata["color"] == Blockdata["node_volume"][0]):
-		#--  memory_check(Blockdata["myid"],"second node, before steptwo")
+		#--  #--  memory_check(Blockdata["myid"],"second node, before steptwo")
 		#  compute filtered volume
 		if( Blockdata["myid_on_node"] == 0 ):
 			treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
@@ -1122,14 +1315,10 @@ def steptwo(tvol, tweight, treg, cfsc = None, regularized = True):
 	elif(nx < 2*Tracker["constants"]["nnxo"] ):
 		tvol = fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
 
-	#tvol = fft(fshift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]))
-	tvol = fft(tvol)
-	tvol = cyclic_shift(tvol,Tracker["nnxo"],Tracker["nnxo"],Tracker["nnxo"])
-	tvol.set_attr("npad",2)
-	tvol.div_sinc(1)
-	tvol.del_attr("npad")
+	tvol = fft(fshift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]))
 	tvol = Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	tvol = cosinemask(tvol, Tracker["constants"]["nnxo"]//2-1,5, None)
+	tvol.div_sinc(1)
 	return tvol
 	
 def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0):
@@ -1293,7 +1482,7 @@ def calculate_2d_params_for_centering(kwargs):
 		# nx = int(nx*shrink_ratio + 0.5)
 
 		txrm = (nx - 2*(target_radius+1))//2
-		if(txrm < 0):  ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "calculate_2d_params_for_centering",1, Blockdata["myid"])
+		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, Blockdata["myid"])
 		if(txrm/nxrsteps>0):
 			tss = ""
 			txr = ""
@@ -1338,7 +1527,97 @@ def calculate_2d_params_for_centering(kwargs):
 			return params2d
 		else:  return [0.0]
 
-def ali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D = None):
+'''
+def getangc5(p1,p2):
+	from utilities import getfvec
+	from math import acos, degrees
+	n1 = getfvec(p1[0],p1[1])
+	n2 = getfvec(p1[0]+72.,p1[1])
+	n3 = getfvec(p1[0]-72.,p1[1])
+	n4 = getfvec(p2[0],p2[1])
+	return degrees(min(acos(max(min((n1[0]*n4[0]+n1[1]*n4[1]+n1[2]*n4[2]),1.0),-1.0)),\
+	acos(max(min((n2[0]*n4[0]+n2[1]*n4[1]+n2[2]*n4[2]),1.0),-1.0)),acos(max(min((n3[0]*n4[0]+n3[1]*n4[1]+n3[2]*n4[2]),1.0),-1.0))))
+
+def difangc5(n4,p1):
+	from utilities import getfvec
+	from math import acos, degrees
+	n1 = getfvec(p1[0],p1[1])
+	n2 = getfvec(p1[0]+72.,p1[1])
+	n3 = getfvec(p1[0]-72.,p1[1])
+	#n4 = getfvec(p2[0],p2[1])
+	return degrees(min(acos(max(min((n1[0]*n4[0]+n1[1]*n4[1]+n1[2]*n4[2]),1.0),-1.0)),\
+	acos(max(min((n2[0]*n4[0]+n2[1]*n4[1]+n2[2]*n4[2]),1.0),-1.0)),acos(max(min((n3[0]*n4[0]+n3[1]*n4[1]+n3[2]*n4[2]),1.0),-1.0))))
+'''
+def Numrinit_local(first_ring, last_ring, skip=1, mode="F"):
+	"""This function calculates the necessary information for the 2D 
+	   polar interpolation. For each ring, three elements are recorded:
+	   numr[i*3]:  Radius of this ring
+	   numr[i*3+1]: Total number of samples of all inner rings+1
+	   		(Or, the beginning point of this ring)
+	   numr[i*3+2]: Number of samples of this ring. This number is an 
+	   		FFT-friendly power of the 2.
+			
+	   "F" means a full circle interpolation
+	   "H" means a half circle interpolation
+	"""
+	MAXFFT = 32768
+	from math import pi
+	skip = 1
+	if (mode == 'f' or mode == 'F'): dpi = 2*pi
+	else:                            dpi = pi
+	numr = []
+	lcirc = 1
+	for k in xrange(first_ring, last_ring+1, skip):
+		numr.append(k)
+		jp = int(dpi * 1.5*k)
+		ip = 2**(log2(jp))  # two times oversample each ring
+		ip=min(MAXFFT,ip)
+		#if ip >16 : ip/=2  #  subsample rings
+		#if (k+skip <= last_ring and jp > ip+ip//2): ip=min(MAXFFT,2*ip)
+		#if (k+skip  > last_ring and jp > ip+ip//5): ip=min(MAXFFT,2*ip)
+
+		numr.append(lcirc)
+		numr.append(ip)
+		lcirc += ip
+
+	return  numr
+
+'''
+def XNumrinit_local(first_ring, last_ring, skip=1, mode="F"):
+	"""This function calculates the necessary information for the 2D 
+	   polar interpolation. For each ring, three elements are recorded:
+	   numr[i*3]:  Radius of this ring
+	   numr[i*3+1]: Total number of samples of all inner rings+1
+	   		(Or, the beginning point of this ring)
+	   numr[i*3+2]: Number of samples of this ring. This number is an 
+	   		FFT-friendly power of the 2.
+			
+	   "F" means a full circle interpolation
+	   "H" means a half circle interpolation
+	"""
+	MAXFFT = 32768
+	from math import pi
+	skip = 1
+
+	if (mode == 'f' or mode == 'F'): dpi = 2*pi
+	else:                            dpi = pi
+	numr = []
+	lcirc = 1
+	for k in xrange(first_ring, last_ring+1, skip):
+		numr.append(k)
+		jp = int(dpi * k+0.5)
+		ip = 2**(log2(jp)+1)  # two times oversample each ring
+		if (k+skip <= last_ring and jp > ip+ip//2): ip=min(MAXFFT,2*ip)
+		if (k+skip  > last_ring and jp > ip+ip//5): ip=min(MAXFFT,2*ip)
+
+		numr.append(lcirc)
+		numr.append(ip)
+		lcirc += ip
+
+	return  numr
+'''
+
+def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D = None):
 	global Tracker, Blockdata
 	from projection 	import prgs,prgl
 	from fundamentals 	import fft
@@ -1525,878 +1804,15 @@ def ali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D =
 	mpi_barrier(MPI_COMM_WORLD)
 	#print("  ALL DONE  ",Blockdata["myid"])
 	return newpar
-	
-# NONORM version
-def ali3D_direct_euc(data, refang, shifts, procid, ctfs = None, bckgnoise = None, kb3D = None):
-	global Tracker, Blockdata
-	from projection 		import prgs,prgl
-	from fundamentals 		import fft
-	from utilities 			import wrap_mpi_gatherv
-	from math 				import sqrt
-	from mpi 				import mpi_barrier, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM, mpi_reduce, mpi_bcast, MPI_INT, MPI_MIN, MPI_MAX
-	from time 				import time,sleep
-	#  Input data has to be CTF-multiplied, preshifted
-	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
-	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
-	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
-	#  Coding of orientations:
-	#    hash = ang*100000000 + lpsi*1000 + ishift
-	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000
-	#    iang  = hash/100000000
-	#  To get best matching for particle #kl:
-	#     hash_best = newpar[kl][-1][0][0]
-	#     best_sim  = newpar[kl][-1][0][1]
-	#  To sort:
-	from operator 			import itemgetter#, attrgetter, methodcaller
-	from math 				import exp
-	from random 			import shuffle
-	
-	#   params.sort(key=itemgetter(2))
-	Tracker["lentop"] = 10000
 
-	at = time()
-	if(Blockdata["myid"] == 0):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "ENTERING Xali exhaustive buffered NONORM Euc ")
-
-	npsi 	= int(360./Tracker["delta"])
-	nang 	= len(refang)
-	ndat 	= len(data)
-	nshifts = len(shifts)
-
-	ny = data[0][0].get_ysize()
-	#reachpw = data[0][0].get_xsize()//2 # The last element of accumulated pw is zero so for the full size nothing is added.
-	mask = Util.unrollmask(ny)
-	nxt = 2*(mask.get_xsize())
-	if bckgnoise:
-		for i in xrange(len(bckgnoise)):
-			bckgnoise[i] = Util.unroll1dpw(ny, bckgnoise[i])
-
-	from time import sleep
-
-	doffset = [0.0]*ndat
-
-	lxod1 = npsi*nshifts
-	nlxod1 = max(Tracker["lentop"]//lxod1,1)
-	lxod1 = min(nlxod1,nang)*lxod1
-	xod1 = np.ndarray((ndat,2,lxod1),dtype='f4',order="C")
-	xod1.fill(np.finfo(dtype='f4').min)
-	xod2 = np.ndarray((ndat,2,lxod1),dtype=int,order="C")
-	xod2.fill(-1)
-
-	#  REFVOL
-	disp_unit = np.dtype("f4").itemsize
-	if( Blockdata["myid_on_node"] == 0 ):
-		odo = prep_vol( get_refvol(Tracker["nxinit"]), npad = 2, interpolation_method = 1)
-		ndo = EMNumPy.em2numpy(odo)
-		nxvol = odo.get_xsize()
-		nyvol = odo.get_ysize()
-		nzvol = odo.get_zsize()
-		orgsizevol = nxvol*nyvol*nzvol
-		sizevol = orgsizevol
-	else:
-		orgsizevol = 0
-		sizevol = 0
-		nxvol = 0
-		nyvol = 0
-		nzvol = 0
-
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
-
-	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	sizevol = orgsizevol
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
-
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
-	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
-	if( Blockdata["myid_on_node"] == 0 ):
-		np.copyto(volbuf,ndo)
-		del odo,ndo
-
-	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
-	emnumpy1 = EMNumPy()
-	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
-	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-
-
-	#  BIG BUFFER
-	size_of_one_image = ny*nxt
-	lenbigbuf = min(Blockdata["no_of_processes_per_group"],nang)*npsi
-	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
-
-	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-	else:  size = 0
-
-	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	size = orgsize
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
-
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
-	buffer = buffer.reshape(lenbigbuf, ny, nxt)
-	#ncbuf = lenbigbuf//2
-	
-	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
-
-	emnumpy2 = EMNumPy()
-	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
-
-	emnumpy3 = EMNumPy()
-
-	#  end of setup
-
-	at = time()
-	for i in xrange(nang):
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,nang/5)) == 0) and (i>0)):
-			print( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(nang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
-
-		if(i%Blockdata["no_of_processes_per_group"] == 0 ):  #  Time to fill up the buffer
-			for itemp in xrange(i, min(i+Blockdata["no_of_processes_per_group"], nang)):
-				if( itemp-i == Blockdata["myid_on_node"]):
-					for j in xrange(npsi):
-						psi = (refang[i][2] + j*Tracker["delta"])%360.0
-						temp = prgl(volprep,[ refang[itemp][0],refang[itemp][1],psi, 0.0,0.0], 1, False)
-						temp.set_attr("is_complex",0)
-						bigbuffer.insert_clip(temp,(0,0,(itemp-i)*npsi+j))
-	
-			mpi_barrier(Blockdata["shared_comm"])
-
-		iang = i*100000000
-		for j in xrange(npsi):
-			iangpsi = j*1000 + iang
-			psi = (refang[i][2] + j*Tracker["delta"])%360.0
-			#temp = Util.window(bigbuffer, nxt, ny, 1, 0, 0, -ncbuf + (i%Blockdata["no_of_processes_per_group"])*npsi + j)
-
-			#  Here we get an image from a buffer by assigning an address instead of copy.
-			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
-			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
-			img_buffer = img_buffer.reshape(ny, nxt)
-			#temp = EMNumPy.numpy2em(img_buffer)
-			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
-
-
-			for kl,emimage in enumerate(data):
-				for im in xrange(nshifts):
-					hashparams = im + iangpsi
-					peak = -Util.sqed(emimage[im], temp, ctfs[kl], bckgnoise[kl])
-					loxi = im + (j + (i%nlxod1)*npsi)*nshifts
-					xod1[kl,1, loxi] = peak - doffset[kl]
-					xod2[kl,1, loxi] = hashparams
-
-		#print( "  Angle loop 1:",Blockdata["myid"],i,time()-fust, time()-at)
-		if( ((i+1)%nlxod1 == 0) or (i == nang-1) ):
-			xod1 = xod1.reshape(ndat,2*lxod1)
-			xod2 = xod2.reshape(ndat,2*lxod1)
-			for kl in xrange(ndat):
-				lina = np.argsort(xod1[kl])
-				xod1[kl] = xod1[kl][lina[::-1]]  # This sorts in reverse order
-				xod2[kl] = xod2[kl][lina[::-1]]  # This sorts in reverse order
-				tdoffset = xod1[kl,0]
-				xod1[kl] -= tdoffset
-				doffset[kl] += tdoffset
-				
-			xod1 = xod1.reshape(ndat,2,lxod1)
-			xod2 = xod2.reshape(ndat,2,lxod1)
-
-	mpi_win_free(win_vol)
-	mpi_win_free(win_sm)
-	emnumpy1.unregister_numpy_from_emdata()
-	emnumpy2.unregister_numpy_from_emdata()
-	emnumpy3.unregister_numpy_from_emdata()
-	del emnumpy1, emnumpy2, emnumpy3
-
-	mpi_barrier(Blockdata["shared_comm"])
-
-	if bckgnoise: del bckgnoise
-	del  data, ctfs
-
-	newpar = [[i, [1.0], []] for i in xrange(ndat)]
-
-	for kl in xrange(ndat):
-		lina = np.argwhere(xod1[kl][0] > Tracker["constants"]["expthreshold"])
-		temp = xod1[kl][0][lina]
-		temp = temp.flatten()
-		np.exp(temp, out=temp)
-		temp /= np.sum(temp)
-		cumprob = 0.0
-		for j in xrange(len(temp)):
-			cumprob += temp[j]
-			if(cumprob > Tracker["constants"]["ccfpercentage"]):
-				lit = j+1
-				break
-
-		ctemp = xod2[kl][0][lina]
-		ctemp = ctemp.flatten()
-
-		for j in xrange(lit):
-			 newpar[kl][2].append([int(ctemp[j]),float(temp[j])])
-	del lina,temp,ctemp,xod1,xod2
-	mpi_barrier(MPI_COMM_WORLD)
-
-	#  Compute statistics of smear
-	smax = -1000000
-	smin = 1000000
-	sava = 0.0
-	svar = 0.0
-	snum = 0
-	for kl in xrange(ndat):
-		j = len(newpar[kl][2])
-		snum += 1
-		sava += float(j)
-		svar += j*float(j)
-		smax = max(smax, j)
-		smin = min(smin, j)
-	snum = mpi_reduce(snum, 1, MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	sava = mpi_reduce(sava, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	svar = mpi_reduce(svar, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	smax = mpi_reduce(smax, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
-	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
-	if( Blockdata["myid"] == 0 ):
-		from math import sqrt
-		sava = float(sava)/snum
-		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
-
-	mpi_barrier(MPI_COMM_WORLD)
-	return newpar
-
-#  Exhaustive, buffered, only norm
-def ali3D_direct_euc_norm(data, refang, shifts, oldparams, procid, ctfs = None, bckgnoise = None, kb3D = None):
-	global Tracker, Blockdata
-	from projection   import prgs,prgl
-	from fundamentals import fft
-	from utilities    import wrap_mpi_gatherv
-	from math         import sqrt
-	from mpi          import mpi_barrier, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM, mpi_reduce, mpi_bcast, MPI_INT, MPI_MIN, MPI_MAX
-	from time         import time,sleep
-	#  Input data has to be CTF-multiplied, preshifted
-	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
-	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
-	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
-	#  Coding of orientations:
-	#    hash = ang*100000000 + lpsi*1000 + ishift
-	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000
-	#    iang  = hash/100000000
-	#  To get best matching for particle #kl:
-	#     hash_best = newpar[kl][-1][0][0]
-	#     best_sim  = newpar[kl][-1][0][1]
-	#  To sort:
-	# for norm correction
-	# norm_per_particle[kl]  --> exp_wsum_norm_correction  weighted diff2
-	# leave newpar[kl][1][0] empty 
-	
-	from operator import itemgetter#, attrgetter, methodcaller
-	from math     import exp
-	from random   import shuffle
-
-	Tracker["lentop"] = 10000
-
-	at      = time()
-	if(Blockdata["myid"] == 0):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "  ENTERING Xali buffered norm Euc ")
-
-	npsi     = int(360./Tracker["delta"])
-	nang     = len(refang)
-	ndat     = len(data)
-	nshifts  = len(shifts)
-	norm_per_particle = ndat*[0.0]
-
-	ny      = data[0][0].get_ysize()
-	reachpw = data[0][0].get_xsize()//2 # The last element of accumulated pw is zero so for the full size nothing is added.
-	mask    = Util.unrollmask(ny)
-	nxt = 2*(mask.get_xsize())
-	if bckgnoise:
-		for i in xrange(len(bckgnoise)):
-			bckgnoise[i] = Util.unroll1dpw(ny, bckgnoise[i])
-
-	from time import sleep
-
-	newpar = [[i, [0.0], []] for i in xrange(ndat)]
-
-	doffset = [0.0]*ndat
-	
-	lxod1  = npsi*nshifts
-	nlxod1 = max(Tracker["lentop"]//lxod1,1)
-	lxod1  = min(nlxod1,nang)*lxod1  #  peak-offset
-	xod1   = np.ndarray((ndat,2,lxod1),dtype='f4',order="C")
-	xod1.fill(np.finfo(dtype='f4').min)  #  hashparam
-	xod2   = np.ndarray((ndat,2,lxod1),dtype=int,order="C")
-	xod2.fill(-1)
-	xod3   = np.ndarray((ndat,2,lxod1),dtype='f4',order="C")
-	xod3.fill(0.0)  #  varadj
-
-	#  REFVOL
-	disp_unit = np.dtype("f4").itemsize
-	if( Blockdata["myid_on_node"] == 0 ):
-		odo = prep_vol( get_refvol(Tracker["nxinit"]), npad = 2, interpolation_method = 1)
-		ndo = EMNumPy.em2numpy(odo)
-		nxvol = odo.get_xsize()
-		nyvol = odo.get_ysize()
-		nzvol = odo.get_zsize()
-		orgsizevol = nxvol*nyvol*nzvol
-		sizevol = orgsizevol
-	else:
-		orgsizevol = 0
-		sizevol = 0
-		nxvol = 0
-		nyvol = 0
-		nzvol = 0
-
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
-
-	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	sizevol = orgsizevol
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
-
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
-	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
-	if( Blockdata["myid_on_node"] == 0 ):
-		np.copyto(volbuf,ndo)
-		del odo,ndo
-
-	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
-	emnumpy1 = EMNumPy()
-	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
-	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-
-
-
-	#  BIG BUFFER
-	size_of_one_image = ny*nxt
-	lenbigbuf = min(Blockdata["no_of_processes_per_group"],nang)*npsi
-	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
-
-	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-	else:  size = 0
-
-	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	size = orgsize
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
-
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
-	buffer = buffer.reshape(lenbigbuf, ny, nxt)
-	#ncbuf = lenbigbuf//2
-	
-	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
-
-	emnumpy2 = EMNumPy()
-	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
-
-	emnumpy3 = EMNumPy()
-
-	#  end of setup
-
-	at = time()
-	for i in xrange(nang):
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,nang/5)) == 0) and (i>0)):
-			print( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(nang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
-
-		if(i%Blockdata["no_of_processes_per_group"] == 0 ):  #  Time to fill up the buffer
-			for itemp in xrange(i, min(i+Blockdata["no_of_processes_per_group"], nang)):
-				if( itemp-i == Blockdata["myid_on_node"]):
-					for j in xrange(npsi):
-						psi = (refang[i][2] + j*Tracker["delta"])%360.0
-						rtemp = prgl(volprep,[ refang[itemp][0],refang[itemp][1],psi, 0.0,0.0], 1, False)
-						rtemp.set_attr("is_complex",0)
-						bigbuffer.insert_clip(rtemp,(0,0,(itemp-i)*npsi+j))
-			mpi_barrier(Blockdata["shared_comm"])
-
-		iang = i*100000000
-		for j in xrange(npsi):
-			iangpsi = j*1000 + iang
-			psi = (refang[i][2] + j*Tracker["delta"])%360.0
-
-			#  Here we get an image from a buffer by assigning an address instead of copy.
-			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
-			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
-			img_buffer = img_buffer.reshape(ny, nxt)
-			#temp = EMNumPy.numpy2em(img_buffer)
-			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
-
-			for kl,emimage in enumerate(data):
-				for im in xrange(nshifts):
-					hashparams = im + iangpsi
-					[peak,varadj] = Util.sqednorm(emimage[im], temp, ctfs[kl], bckgnoise[kl])
-					loxi = im + (j + (i%nlxod1)*npsi)*nshifts
-					xod1[kl,1, loxi] = -peak - doffset[kl]
-					xod2[kl,1, loxi] = hashparams
-					xod3[kl,1, loxi] = varadj
-
-		if( ((i+1)%nlxod1 == 0) or (i == nang-1) ):
-			if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i == nang-1) ):
-				print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
-				at = time()
-			xod1 = xod1.reshape(ndat,2*lxod1)
-			xod2 = xod2.reshape(ndat,2*lxod1)
-			xod3 = xod3.reshape(ndat,2*lxod1)
-			for kl in xrange(ndat):
-				lina = np.argsort(xod1[kl])
-				xod1[kl] = xod1[kl][lina[::-1]]  # This sorts in reverse order
-				xod2[kl] = xod2[kl][lina[::-1]]  # This sorts in reverse order
-				xod3[kl] = xod3[kl][lina[::-1]]  # This sorts in reverse order
-				tdoffset = xod1[kl,0]
-				xod1[kl] -= tdoffset
-				doffset[kl] += tdoffset
-			xod1 = xod1.reshape(ndat,2,lxod1)
-			xod2 = xod2.reshape(ndat,2,lxod1)
-			xod3 = xod3.reshape(ndat,2,lxod1)
-
-	mpi_win_free(win_vol)
-	mpi_win_free(win_sm)
-	emnumpy1.unregister_numpy_from_emdata()
-	emnumpy2.unregister_numpy_from_emdata()
-	emnumpy3.unregister_numpy_from_emdata()
-	del emnumpy1, emnumpy2, emnumpy3
-
-	mpi_barrier(Blockdata["shared_comm"])
-
-	if bckgnoise: del bckgnoise
-	del  data, ctfs
-
-	for kl in xrange(ndat):# per particle
-		lina = np.argwhere(xod1[kl][0] > Tracker["constants"]["expthreshold"])
-		temp = xod1[kl][0][lina]
-		morm = xod3[kl][0][lina]
-		temp = temp.flatten()
-		morm = morm.flatten()
-		np.exp(temp, out=temp)
-		temp /= np.sum(temp)
-		cumprob = 0.0
-		for j in xrange(len(temp)):
-			cumprob += temp[j]
-			if(cumprob > Tracker["constants"]["ccfpercentage"]):
-				lit = j+1
-				break
-
-		#  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
-		norm_per_particle[kl] = np.sum(temp[:lit]*morm[:lit]) + Blockdata["accumulatepw"][procid][kl][reachpw]
-		ctemp = xod2[kl][0][lina]
-		ctemp = ctemp.flatten()
-		for j in xrange(lit):
-			 newpar[kl][2].append([int(ctemp[j]),float(temp[j])])
-	del lina,temp,ctemp,xod1,xod2,xod3
-
-	# norm correction ---- calc the norm correction per particle
-	snormcorr = 0.0
-	for kl in xrange(ndat):
-		norm_per_particle[kl] = sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
-		snormcorr            += norm_per_particle[kl]
-	Tracker["avgvaradj"][procid] = snormcorr
-	mpi_barrier(MPI_COMM_WORLD)
-	#  Compute avgvaradj
-	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
-	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
-	mpi_barrier(MPI_COMM_WORLD)
-
-	#  Compute statistics of smear -----------------
-	smax = -1000000
-	smin = 1000000
-	sava = 0.0
-	svar = 0.0
-	snum = 0
-	for kl in xrange(ndat):
-		j = len(newpar[kl][2])
-		snum += 1
-		sava += float(j)
-		svar += j*float(j)
-		smax = max(smax, j)
-		smin = min(smin, j)
-	snum = mpi_reduce(snum, 1, MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	sava = mpi_reduce(sava, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	svar = mpi_reduce(svar, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	smax = mpi_reduce(smax, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
-	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
-	if( Blockdata["myid"] == 0 ):
-		from math import sqrt
-		sava = float(sava)/snum
-		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
-
-	mpi_barrier(MPI_COMM_WORLD)
-
-	return newpar, norm_per_particle
-
-#  Exhaustive, buffered, only norm  PRIMARY
-def ali3D_direct_euc_norm_bckg(data, refang, shifts, oldparams, procid, ctfs = None, bckgnoise = None):
-	global Tracker, Blockdata
-	from projection   import prgs,prgl
-	from fundamentals import fft
-	from utilities    import wrap_mpi_gatherv
-	from math         import sqrt
-	from mpi          import mpi_barrier, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM, mpi_reduce, mpi_bcast, MPI_INT, MPI_MIN, MPI_MAX
-	from time         import time,sleep
-	#  Input data has to be CTF-multiplied, preshifted
-	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
-	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
-	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
-	#  Coding of orientations:
-	#    hash = ang*100000000 + lpsi*1000 + ishift
-	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000
-	#    iang  = hash/100000000
-	#  To get best matching for particle #kl:
-	#     hash_best = newpar[kl][-1][0][0]
-	#     best_sim  = newpar[kl][-1][0][1]
-	#  To sort:
-	# for norm correction
-	# norm_per_particle[kl]  --> exp_wsum_norm_correction  weighted diff2
-	# leave newpar[kl][1][0] empty 
-	
-	from operator import itemgetter#, attrgetter, methodcaller
-	from math     import exp
-	from random   import shuffle
-
-	Tracker["lentop"] = 10000
-
-	at      = time()
-	if(Blockdata["myid"] == 0):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "  ENTERING Xali buffered norm bckg Euc ")
-
-	npsi     = int(360./Tracker["delta"])
-	nang     = len(refang)
-	ndat     = len(data)
-	nshifts  = len(shifts)
-	norm_per_particle = ndat*[0.0]
-
-	ny      = data[0][0].get_ysize()
-	reachpw = data[0][0].get_xsize()//2 # The last element of accumulated pw is zero so for the full size nothing is added.
-	mask    = Util.unrollmask(ny)
-	nxt = 2*(mask.get_xsize())
-	for i in xrange(len(bckgnoise)):
-		bckgnoise[i] = Util.unroll1dpw(ny, bckgnoise[i])
-
-	from time import sleep
-
-	newpar = [[i, [0.0], []] for i in xrange(ndat)]
-
-	doffset = [0.0]*ndat
-	
-	lxod1  = npsi*nshifts
-	nlxod1 = max(Tracker["lentop"]//lxod1,1)
-	lxod1  = min(nlxod1,nang)*lxod1  #  peak-offset
-	xod1   = np.ndarray((ndat,2,lxod1),dtype='f4',order="C")
-	xod1.fill(np.finfo(dtype='f4').min)  #  hashparam
-	xod2   = np.ndarray((ndat,2,lxod1),dtype=int,order="C")
-	xod2.fill(-1)
-	xod3   = np.ndarray((ndat,2,lxod1),dtype='f4',order="C")
-	xod3.fill(0.0)  #  varadj
-
-	#  REFVOL
-	disp_unit = np.dtype("f4").itemsize
-	if( Blockdata["myid_on_node"] == 0 ):
-		odo = prep_vol( get_refvol(Tracker["nxinit"]), npad = 2, interpolation_method = 1)
-		ndo = EMNumPy.em2numpy(odo)
-		nxvol = odo.get_xsize()
-		nyvol = odo.get_ysize()
-		nzvol = odo.get_zsize()
-		orgsizevol = nxvol*nyvol*nzvol
-		sizevol = orgsizevol
-	else:
-		orgsizevol = 0
-		sizevol = 0
-		nxvol = 0
-		nyvol = 0
-		nzvol = 0
-
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
-
-	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	sizevol = orgsizevol
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
-
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
-	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
-	if( Blockdata["myid_on_node"] == 0 ):
-		np.copyto(volbuf,ndo)
-		del odo,ndo
-
-	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
-	emnumpy1 = EMNumPy()
-	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
-	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-
-
-
-	#  BIG BUFFER
-	size_of_one_image = ny*nxt
-	#lenbigbuf = min(Blockdata["no_of_processes_per_group"],nang)*npsi
-	lenbigbuf = nang*npsi
-	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
-
-	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-	else:  size = 0
-
-	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	size = orgsize
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
-
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
-	buffer = buffer.reshape(lenbigbuf, ny, nxt)
-	#ncbuf = lenbigbuf//2
-	
-	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
-
-	emnumpy2 = EMNumPy()
-	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
-
-	emnumpy3 = EMNumPy()
-
-	#  end of setup
-	at = time()
-
-	nang_start, nang_end = MPI_start_end(nang*npsi, Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
-
-	for ii in xrange(nang_start, nang_end, 1):  # This will take care of no of process on a node less than nang.  Some loops will not be executed
-		i = ii/npsi
-		j = ii%npsi
-		psi = (refang[i][2] + j*Tracker["delta"])%360.0
-		rtemp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
-		rtemp.set_attr("is_complex",0)
-		bigbuffer.insert_clip(rtemp,(0,0,ii))
-
-	mpi_barrier(Blockdata["shared_comm"])
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
-
-	at = time()
-	for i in xrange(nang):
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,nang/5)) == 0) and (i>0)):
-			print( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(nang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
-		'''
-		if(i%Blockdata["no_of_processes_per_group"] == 0 ):  #  Time to fill up the buffer
-			for itemp in xrange(i, min(i+Blockdata["no_of_processes_per_group"], nang)):
-				if( itemp-i == Blockdata["myid_on_node"]):
-					for j in xrange(npsi):
-						psi = (refang[i][2] + j*Tracker["delta"])%360.0
-						rtemp = prgl(volprep,[ refang[itemp][0],refang[itemp][1],psi, 0.0,0.0], 1, False)
-						rtemp.set_attr("is_complex",0)
-						bigbuffer.insert_clip(rtemp,(0,0,(itemp-i)*npsi+j))
-			mpi_barrier(Blockdata["shared_comm"])
-		'''
-		iang = i*100000000
-		for j in xrange(npsi):
-			iangpsi = j*1000 + iang
-			psi = (refang[i][2] + j*Tracker["delta"])%360.0
-
-			#  Here we get an image from a buffer by assigning an address instead of copy.
-			#pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
-			pointer_location = base_ptr + (i*npsi + j)*size_of_one_image*disp_unit
-			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
-			img_buffer = img_buffer.reshape(ny, nxt)
-			#temp = EMNumPy.numpy2em(img_buffer)
-			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
-
-			for kl,emimage in enumerate(data):
-				for im in xrange(nshifts):
-					hashparams = im + iangpsi
-					[peak,varadj] = Util.sqednorm(emimage[im], temp, ctfs[kl], bckgnoise[kl])
-					loxi = im + (j + (i%nlxod1)*npsi)*nshifts
-					xod1[kl,1, loxi] = -peak - doffset[kl]
-					xod2[kl,1, loxi] = hashparams
-					xod3[kl,1, loxi] = varadj
-
-		if( ((i+1)%nlxod1 == 0) or (i == nang-1) ):
-			if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i == nang-1) ):
-				print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
-				at = time()
-			xod1 = xod1.reshape(ndat,2*lxod1)
-			xod2 = xod2.reshape(ndat,2*lxod1)
-			xod3 = xod3.reshape(ndat,2*lxod1)
-			for kl in xrange(ndat):
-				lina = np.argsort(xod1[kl])
-				xod1[kl] = xod1[kl][lina[::-1]]  # This sorts in reverse order
-				xod2[kl] = xod2[kl][lina[::-1]]  # This sorts in reverse order
-				xod3[kl] = xod3[kl][lina[::-1]]  # This sorts in reverse order
-				tdoffset = xod1[kl,0]
-				xod1[kl] -= tdoffset
-				doffset[kl] += tdoffset
-			xod1 = xod1.reshape(ndat,2,lxod1)
-			xod2 = xod2.reshape(ndat,2,lxod1)
-			xod3 = xod3.reshape(ndat,2,lxod1)
-
-	mpi_barrier(Blockdata["shared_comm"])
-	if bckgnoise: del bckgnoise
-
-
-	for kl in xrange(ndat):# per particle
-		lina = np.argwhere(xod1[kl][0] > Tracker["constants"]["expthreshold"])
-		temp = xod1[kl][0][lina]
-		morm = xod3[kl][0][lina]
-		temp = temp.flatten()
-		morm = morm.flatten()
-		np.exp(temp, out=temp)
-		temp /= np.sum(temp)
-		cumprob = 0.0
-		for j in xrange(len(temp)):
-			cumprob += temp[j]
-			if(cumprob > Tracker["constants"]["ccfpercentage"]):
-				lit = j+1
-				break
-
-		#  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
-		norm_per_particle[kl] = np.sum(temp[:lit]*morm[:lit]) + Blockdata["accumulatepw"][procid][kl][reachpw]
-		ctemp = xod2[kl][0][lina]
-		ctemp = ctemp.flatten()
-		for j in xrange(lit):
-			 newpar[kl][2].append([int(ctemp[j]),float(temp[j])])
-	del lina,temp,ctemp,xod1,xod2,xod3
-
-	# norm correction ---- calc the norm correction per particle
-	snormcorr = 0.0
-	for kl in xrange(ndat):
-		norm_per_particle[kl] = sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
-		snormcorr            += norm_per_particle[kl]
-	Tracker["avgvaradj"][procid] = snormcorr
-	mpi_barrier(MPI_COMM_WORLD)
-	#  Compute avgvaradj
-	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
-	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
-	mpi_barrier(MPI_COMM_WORLD)
-
-	#  Compute statistics of smear -----------------
-	smax = -1000000
-	smin = 1000000
-	sava = 0.0
-	svar = 0.0
-	snum = 0
-	for kl in xrange(ndat):
-		j = len(newpar[kl][2])
-		snum += 1
-		sava += float(j)
-		svar += j*float(j)
-		smax = max(smax, j)
-		smin = min(smin, j)
-	snum = mpi_reduce(snum, 1, MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	sava = mpi_reduce(sava, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	svar = mpi_reduce(svar, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	smax = mpi_reduce(smax, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
-	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
-	if( Blockdata["myid"] == 0 ):
-		from math import sqrt
-		sava = float(sava)/snum
-		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
-
-	at = time()
-	mpi_barrier(Blockdata["shared_comm"])
-	# Compute new background noise
-	nxb = Blockdata["bckgnoise"][0].get_xsize()
-	nyb = len(Blockdata["bckgnoise"])
-	if( procid == 0 ):
-		Blockdata["totprob"] = [0.0]*nyb
-		Blockdata["newbckgnoise"] = model_blank(nxb,nyb)
-	for kl in xrange(ndat):# per particle
-		particle_group	= data[kl][0].get_attr("particle_group")
-		tbckg = model_blank(nxb)
-		for idir in xrange(len(newpar[kl][2])): ##xrange(min(len(newpar[kl][2]),10)): # Take at most 10 top directions, why 10?
-			Blockdata["totprob"][particle_group] += newpar[kl][2][idir][1]
-			# identify projection params
-			ipsiandiang	= newpar[kl][2][idir][0]/1000
-			ipsi		= ipsiandiang%100000
-			iang		= ipsiandiang/100000
-			ishift		= newpar[kl][2][idir][0]%1000
-
-			#  Here we get an image from a buffer by assigning an address instead of copy.
-			pointer_location = base_ptr + (iang*npsi + ipsi)*size_of_one_image*disp_unit
-			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
-			img_buffer = img_buffer.reshape(ny, nxt)
-			#temp = EMNumPy.numpy2em(img_buffer)
-			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
-			Util.sqedfull(data[kl][ishift], temp, ctfs[kl], mask, tbckg, newpar[kl][2][idir][1])
-			'''
-			if( Blockdata["myid"] == 0 ):  
-				Util.sqedfull(data[kl][ishift], temp, ctfs[kl], mask, tbckg, newpar[kl][2][idir][1])
-				sleep(50)
-			else:
-				sleep(50)
-			'''
-		for i in xrange(nxb):  Blockdata["newbckgnoise"][i,particle_group] += tbckg[i]
-
-	mpi_barrier(MPI_COMM_WORLD)
-	mpi_win_free(win_vol)
-	mpi_win_free(win_sm)
-	del  data, ctfs, temp, tbckg
-	emnumpy1.unregister_numpy_from_emdata()
-	emnumpy2.unregister_numpy_from_emdata()
-	emnumpy3.unregister_numpy_from_emdata()
-	del emnumpy1, emnumpy2, emnumpy3
-
-	# Reduce stuff
-	if( procid == 1 ):
-		Blockdata["totprob"] = mpi_reduce(Blockdata["totprob"], nyb, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-		reduce_EMData_to_root(Blockdata["newbckgnoise"], Blockdata["myid"], Blockdata["main_node"])
-		if( Blockdata["myid"] == 0 ):
-			for igrp in xrange(nyb):
-				Blockdata["newbckgnoise"][0, igrp] = 1.0
-				for i in xrange(1,ny/2):
-					if(Blockdata["newbckgnoise"][i, igrp] > 0.0):  Blockdata["newbckgnoise"][i, igrp] = 2.0*Blockdata["totprob"][igrp]/Blockdata["newbckgnoise"][i, igrp]  # normalize and invert
-				for i in xrange(ny/2,nxb):
-					Blockdata["newbckgnoise"][i, igrp] = Blockdata["bckgnoise"][igrp][i]
-				"""
-				if(igrp%1000000 == 0):
-					print("  DEF GROUP ",igrp)
-					for i in xrange(1,nxb):
-						qb = Blockdata["bckgnoise"][igrp][i]
-						if( qb > 0.0):   qb = 1.0/qb
-						qn = Blockdata["newbckgnoise"][i, igrp]
-						if( qn > 0.0):   qn = 1.0/qn
-						print("   %5d     %20.10f     %20.10f"%(i,qb,qn))
-				"""
-			Blockdata["newbckgnoise"].write_image(os.path.join(Tracker["directory"],"bckgnoise.hdf")) #  Write updated bckgnoise to current directory
-
-		bcast_EMData_to_all(Blockdata["newbckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"], comm = MPI_COMM_WORLD)
-		for igrp in xrange(nyb):
-			for i in xrange(nxb):
-				Blockdata["bckgnoise"][igrp][i] = Blockdata["newbckgnoise"][i, igrp]
-		del Blockdata["newbckgnoise"]
-	mpi_barrier(MPI_COMM_WORLD)
-	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished sigma2   %10.1fmin"%((time()-at)/60.))
-
-	return newpar, norm_per_particle
-	
-# fast shared buffer local nonorm  (for small number of data this is slower)
-def ali3D_direct_local_euc(data, refang, shifts, oldangs, procid, ctfs = None, bckgnoise = None, kb3D = None):
+def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs = None, bckgnoise = None, kb3D = None):
 	global Tracker, Blockdata
 	from projection 	import prgs,prgl
 	from fundamentals 	import fft
 	from utilities 		import wrap_mpi_gatherv
 	from math 			import sqrt
-	from mpi 			import mpi_barrier, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM, mpi_reduce, mpi_bcast, MPI_INT, MPI_MIN, MPI_MAX
-	from time 			import time,sleep
+	from mpi 			import mpi_barrier, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM, mpi_reduce, mpi_bcast
+	from time 			import time
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
 	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
@@ -2414,46 +1830,56 @@ def ali3D_direct_local_euc(data, refang, shifts, oldangs, procid, ctfs = None, b
 	#  To sort:
 	from operator 		import itemgetter#, attrgetter, methodcaller
 	from math 			import exp
-	from random 		import shuffle
 	
 	#   params.sort(key=itemgetter(2))
-
-
 	at = time()
 	if(Blockdata["myid"] == 0):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "ENTERING Xali LOCAL buffered per node nonorm Euc ")
+		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered exhaustive CCC")
+		write_text_row(coarse_angles,"coarse_angles.txt")
 
 	npsi = int(360./Tracker["delta"])
 	nang = len(refang)
 	ndat = len(data)
-	nshifts = len(shifts)
 
-	from math import cos, radians
-	ac = cos(radians(Tracker["an"]))
-	symang = get_sym(Tracker["constants"]["symmetry"])
-	nsym = len(symang)
+	#  FINE SEARCH CONSTANTS
+	#  Fine grids are shifted by half-fine_step
+	nang = len(refang)
+	npsi = int(360./Tracker["delta"])
+	nshifts = len(shifts)
+	n_fine_shifts = 4
+
+	#  COARSE SEARCH CONSTANTS
+	n_coarse_ang = len(coarse_angles)
+	coarse_delta = 2*Tracker["delta"]
+	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_shifts = len(coarse_shifts)
+
+	#  each data holds two lists: n_coarse_shifts of coarse shifted versions and then nhifts versions of Fine shifted images
 
 	ny = data[0][0].get_ysize()
-	reachpw = data[0][0].get_xsize()//2 # The last element of accumulated pw is zero so for the full size nothing is added.
 	mask = Util.unrollmask(ny)
 	nxt = 2*(mask.get_xsize())
-	if bckgnoise:
-		for i in xrange(len(bckgnoise)):
-			bckgnoise[i] = Util.unroll1dpw(ny, bckgnoise[i])
 
-	from time import sleep
-	size_of_one_image = ny*nxt
+	'''
+	if(Blockdata["myid"] <3):
+		for kl in xrange(0,ndat,ndat/2):
+			for m in xrange(0,len(data[kl]),len(data[kl])/3):  print(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
+	'''
 
-	Tracker["lentop"] = 10000
-	#  Estimate number of possible orientations
-	lang = int(len(cone_ang_f(refang, 360.0/int(Tracker["constants"]["symmetry"][1:])/2, 45.0,Tracker["an"],Tracker["constants"]["symmetry"]))*1.25)
-	lxod1 = lang*nshifts*(2*int(Tracker["an"]/Tracker["delta"]+0.5)+1)
-	xod1 = np.ndarray((ndat,lxod1),dtype='f4',order="C")
-	xod1.fill(np.finfo(dtype='f4').min)
-	xod2 = np.ndarray((ndat,lxod1),dtype=int,order="C")
-	xod2.fill(-1)
-	loxi = [0]*ndat
+	if Tracker["mainiteration"]>1 :
+		#first = True
+		if Tracker["constants"]["CTF"] :
+			for kl in xrange(ndat):
+				for im in xrange(n_coarse_shifts+nshifts):
+					Util.mulclreal(data[kl][im], ctfs[kl])
+		del ctfs
+		if bckgnoise:  #  This should be a flag to activate sharpening during refinement as bckgnoise is always present (for 3D later)
+			for kl in xrange(ndat):
+				temp = Util.unroll1dpw(ny, bckgnoise[kl])
+				for im in xrange(n_coarse_shifts+nshifts):
+					Util.mulclreal(data[kl][im], temp)
+			del bckgnoise
+	#else:  first = False
 
 	#  REFVOL
 	disp_unit = np.dtype("f4").itemsize
@@ -2488,294 +1914,19 @@ def ali3D_direct_local_euc(data, refang, shifts, oldangs, procid, ctfs = None, b
 		np.copyto(volbuf,ndo)
 		del odo,ndo
 
-	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
-	emnumpy1 = EMNumPy()
-	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
-	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-
-
-	Tracker["constants"]["nproj_per_CPU"] = 1000
-
-	#  BIG BUFFER
-	lenbigbuf = Blockdata["no_of_processes_per_group"]*Tracker["constants"]["nproj_per_CPU"]
-	orgsize = lenbigbuf*ny*nxt  #  This is number of projections to be computed simultaneously times their size
-
-	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-	else:  size = 0
-
-	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	size = orgsize
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
-
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
-	buffer = buffer.reshape(lenbigbuf, ny, nxt)
-	#ncbuf = lenbigbuf//2
-	
-	emnumpy2 = EMNumPy()
-	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
-
-	emnumpy3 = EMNumPy()
-
-	#  end of setup
-
-	at = time()
-	ttable = Util.pickup_references(refang, Tracker["delta"], Tracker["an"], oldangs, Tracker["constants"]["symmetry"])
-
-	ltable = []
-	iangles = []
-	lpoint = 0
-	while( ttable[lpoint] > -1 ):
-		iangles.append( ttable[lpoint]*100000 +ttable[lpoint+1] )
-		ltable.append(iangles[-1])
-		lpoint += 2
-		while( ttable[lpoint] > -1 ):
-			ltable.append(ttable[lpoint])
-			lpoint += 1
-		ltable.append(-1)
-		lpoint += 1
-	ltable.append(-1)
-	del ttable
-
-	iangles = wrap_mpi_gatherv(iangles, 0, Blockdata["shared_comm"])
-	if( Blockdata["myid_on_node"] == 0 ):
-		iangles = list(set(iangles))
-		iangles.sort()
-	iangles = wrap_mpi_bcast(iangles, 0, communicator = Blockdata["shared_comm"])
-
-	at = time()
-	lpoint = 0
-	for itang in xrange(len(iangles)):
-		if( itang%lenbigbuf == 0 ):  #  Time to fill up the buffer
-			for itemp in xrange(Tracker["constants"]["nproj_per_CPU"]*Blockdata["myid_on_node"]+itang, min(Tracker["constants"]["nproj_per_CPU"]*(Blockdata["myid_on_node"]+1)+itang, len(iangles))):
-				i = iangles[itemp]/100000
-				j = iangles[itemp]%100000				
-				psi = (refang[i][2] + j*Tracker["delta"])%360.0
-				###if kb3D:  rtemp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
-				###else:     
-				rtemp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
-				rtemp.set_attr("is_complex",0)
-				bigbuffer.insert_clip(rtemp,(0,0,itemp-itang))
-
-			mpi_barrier(Blockdata["shared_comm"])
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (itang%(max(1,len(iangles)/5)) == 0) and (itang>0)):
-			print( "  Angle :%8d    %5.1f"%(lpoint,float(itang)/float(len(iangles))*100.) + "%" +"   %10.1fmin"%((time()-at)/60.0))
-		if( ltable[lpoint] > -1 ):
-			#  Is the current projection angle the same as current useful projection?
-			if( ltable[lpoint] == iangles[itang] ):
-
-				iangpsi = ltable[lpoint]*1000
-
-				#  Here we get an image from a buffer by assigning an address instead of copy.
-				pointer_location = base_ptr + (itang%lenbigbuf)*size_of_one_image*disp_unit
-				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
-				img_buffer = img_buffer.reshape(ny, nxt)
-				#temp = EMNumPy.numpy2em(img_buffer)
-				temp = emnumpy3.register_numpy_to_emdata(img_buffer)
-
-				lpoint += 1
-				while( ltable[lpoint] > -1 ):
-					kl = ltable[lpoint]
-					for im in xrange(nshifts):
-						hashparams = im + iangpsi
-						peak = -Util.sqed(data[kl][im], temp, ctfs[kl], bckgnoise[kl])
-
-						xod1[kl, loxi[kl]] = peak
-						xod2[kl, loxi[kl]] = hashparams
-						loxi[kl] += 1
-						if(loxi[kl] >= lxod1):  ERROR("ali3D_direct_local_euc","Underestimated number of orientations in local search",1,Blockdata["myid"])
-
-					lpoint += 1
-				#Move to the next one
-				lpoint += 1
-
-	mpi_win_free(win_vol)
-	mpi_win_free(win_sm)
-
-	mpi_barrier(Blockdata["shared_comm"])
-
-	del ltable
-	if bckgnoise: del bckgnoise
-	del  data, ctfs
-
-	for kl in xrange(ndat):
-		lod = loxi[kl] ###np.max(xod2[kl])
-		if( lod > -1 ):
-			lina = np.argsort(xod1[kl])
-			xod1[kl] = xod1[kl][lina[::-1]]  # This puts sorted in reverse order
-			xod2[kl] = xod2[kl][lina[::-1]]  # This puts sorted in reverse order
-			tdoffset = xod1[kl,0]
-			xod1[kl] -= tdoffset
-
-	newpar = [[i, [1.0], []] for i in xrange(ndat)]
-
-	for kl in xrange(ndat):
-		lina = np.argwhere(xod1[kl] > Tracker["constants"]["expthreshold"])
-		temp = xod1[kl][lina]
-		temp = temp.flatten()
-		np.exp(temp, out=temp)
-		temp /= np.sum(temp)
-		cumprob = 0.0
-		for j in xrange(len(temp)):
-			cumprob += temp[j]
-			if(cumprob > Tracker["constants"]["ccfpercentage"]):
-				lit = j+1
-				break
-
-		ctemp = xod2[kl][lina]
-		ctemp = ctemp.flatten()
-
-		for j in xrange(lit):
-			 newpar[kl][2].append([int(ctemp[j]),float(temp[j])])
-
-	del lina,temp,ctemp,xod1,xod2
-	mpi_barrier(MPI_COMM_WORLD)
-
-	#  Compute statistics of smear
-	smax = -1000000
-	smin = 1000000
-	sava = 0.0
-	svar = 0.0
-	snum = 0
-	for kl in xrange(ndat):
-		j = len(newpar[kl][2])
-		snum += 1
-		sava += float(j)
-		svar += j*float(j)
-		smax = max(smax, j)
-		smin = min(smin, j)
-	snum = mpi_reduce(snum, 1, MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	sava = mpi_reduce(sava, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	svar = mpi_reduce(svar, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	smax = mpi_reduce(smax, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
-	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
-	if( Blockdata["myid"] == 0 ):
-		from math import sqrt
-		sava = float(sava)/snum
-		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
-
-
-	mpi_barrier(MPI_COMM_WORLD)
-	return newpar
-
-#buffered local with norm (for small number of data this is slower)
-def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = None, bckgnoise = None, kb3D = None):
-	global Tracker, Blockdata
-	from projection   import prgs,prgl
-	from fundamentals import fft
-	from utilities    import wrap_mpi_gatherv
-	from math         import sqrt
-	from mpi          import mpi_barrier, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM, mpi_reduce, mpi_bcast, MPI_INT, MPI_MIN, MPI_MAX
-	from time         import time,sleep
-	#  Input data has to be CTF-multiplied, preshifted
-	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
-	#    newpar = [[params],[],... len(data)]
-	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
-	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
-	#  Coding of orientations:
-	#    hash = ang*100000000 + lpsi*1000 + ishift
-	#    ishift = hash%1000
-	#    ipsi = (hash/1000)%100000
-	#    iang  = hash/100000000
-	#  To get best matching for particle #kl:
-	#     hash_best = newpar[kl][-1][0][0]
-	#     best_sim  = newpar[kl][-1][0][1]
-	#  To sort:
-	from operator import itemgetter#, attrgetter, methodcaller
-	from math     import exp
-	from random   import shuffle
-	Tracker["lentop"] = 10000
-
-	at = time()
-	if(Blockdata["myid"] == 0):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line, "ENTERING Xali LOCAL buffered per node only norm Euc ")
-
-	npsi = int(360./Tracker["delta"])
-	nang = len(refang)
-	ndat = len(data)
-	nshifts = len(shifts)
-	from math import cos, radians
-	ac = cos(radians(Tracker["an"]))
-	symang = get_sym(Tracker["constants"]["symmetry"])
-	nsym = len(symang)
-
-	ny = data[0][0].get_ysize()
-	reachpw = data[0][0].get_xsize()//2 # The last element of accumulated pw is zero so for the full size nothing is added.
-	mask = Util.unrollmask(ny)
-	nxt = 2*(mask.get_xsize())
-	if bckgnoise:
-		for i in xrange(len(bckgnoise)):
-			bckgnoise[i] = Util.unroll1dpw(ny, bckgnoise[i])
-
-	if Tracker["constants"]["nonorm"]: newpar = [[i, [1.0], []] for i in xrange(ndat)]
-	else:                              newpar = [[i, [0.0], []] for i in xrange(ndat)]
-
-	doffset = [0.0]*ndat
-	
-	Tracker["lentop"] = 10000
-	#  Estimate number of possible orientations
-	lang = int(len(cone_ang_f(refang, 360.0/int(Tracker["constants"]["symmetry"][1:])/2, 45.0,Tracker["an"],Tracker["constants"]["symmetry"]))*1.25)
-	lxod1 = lang*nshifts*(2*int(Tracker["an"]/Tracker["delta"]+0.5)+1)
-
-	xod1 = np.ndarray((ndat,lxod1),dtype='f4',order="C")
-	xod1.fill(np.finfo(dtype='f4').min)
-	xod2 = np.ndarray((ndat,lxod1),dtype=int,order="C")
-	xod2.fill(-1)
-	xod3   = np.ndarray((ndat,lxod1),dtype='f4',order="C")
-	xod3.fill(0.0)  #  varadj
-	loxi = [0]*ndat
-
-	#  REFVOL
-	disp_unit = np.dtype("f4").itemsize
-	if( Blockdata["myid_on_node"] == 0 ):
-		odo = prep_vol( get_refvol(Tracker["nxinit"]), npad = 2, interpolation_method = 1)
-		ndo = EMNumPy.em2numpy(odo)
-		nxvol = odo.get_xsize()
-		nyvol = odo.get_ysize()
-		nzvol = odo.get_zsize()
-		orgsizevol = nxvol*nyvol*nzvol
-		sizevol = orgsizevol
-	else:
-		orgsizevol = 0
-		sizevol = 0
-		nxvol = 0
-		nyvol = 0
-		nzvol = 0
-
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
-
-	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
-	sizevol = orgsizevol
-	if( Blockdata["myid_on_node"] != 0 ):
-		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
-
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
-	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
-	if( Blockdata["myid_on_node"] == 0 ):
-		np.copyto(volbuf,ndo)
-		del odo,ndo
 
 	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
 	emnumpy1 = EMNumPy()
 	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
 	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
 
-
-
-	Tracker["constants"]["nproj_per_CPU"] = 1000
 
 	#  BIG BUFFER
 	size_of_one_image = ny*nxt
-	lenbigbuf = Blockdata["no_of_processes_per_group"]*Tracker["constants"]["nproj_per_CPU"]
-	orgsize = lenbigbuf*size_of_one_image  #  This is number of projections to be computed simultaneously times their size
-
+	#lenbigbuf = min(Blockdata["no_of_processes_per_group"],n_coarse_ang)*n_coarse_psi
+	lenbigbuf = nang*npsi
+	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
+	if( Blockdata["myid"] == 0 ):  print("  BIGBUFFER  ",float(orgsize)/1.e9,"GB")
 	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
 	else:  size = 0
 
@@ -2798,75 +1949,100 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 	#  end of setup
 
 	at = time()
-	ttable = Util.pickup_references(refang, Tracker["delta"], Tracker["an"], oldangs, Tracker["constants"]["symmetry"])
+	#  Here we simply search for a max
+	newpar = [[i, [1.0], [[-1,-1.0e23]] ] for i in xrange(ndat)]
 
-	ltable = []
-	iangles = []
-	lpoint = 0
-	while( ttable[lpoint] > -1 ):
-		iangles.append( ttable[lpoint]*100000 +ttable[lpoint+1] )
-		ltable.append(iangles[-1])
-		lpoint += 2
-		while( ttable[lpoint] > -1 ):
-			ltable.append(ttable[lpoint])
-			lpoint += 1
-		ltable.append(-1)
-		lpoint += 1
-	ltable.append(-1)
-	del ttable
+	for i in xrange(n_coarse_ang):
+		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,n_coarse_ang/5)) == 0) and (i>0)):
+			print( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(n_coarse_ang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
 
-	iangles = wrap_mpi_gatherv(iangles, 0, Blockdata["shared_comm"])
-	if( Blockdata["myid_on_node"] == 0 ):
-		iangles = list(set(iangles))
-		iangles.sort()
-	iangles = wrap_mpi_bcast(iangles, 0, communicator = Blockdata["shared_comm"])
+		if(i%Blockdata["no_of_processes_per_group"] == 0 ):  #  Time to fill up the buffer
+			for itemp in xrange(i, min(i+Blockdata["no_of_processes_per_group"], n_coarse_ang)):
+				if( itemp-i == Blockdata["myid_on_node"]):
+					for j in xrange(n_coarse_psi):
+						psi = (coarse_angles[i][2] + j*coarse_delta)%360.0
+						###if kb3D:  rtemp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
+						###else:
+						temp = prgl(volprep,[ coarse_angles[itemp][0],coarse_angles[itemp][1],psi, 0.0,0.0], 1, False)
+						temp.set_attr("is_complex",0)
+						Util.mulclreal(temp, mask)
+						nrmref = sqrt(Util.innerproduct(temp, temp, None))
+						Util.mul_scalar(temp, 1.0/nrmref)
+						bigbuffer.insert_clip(temp,(0,0,(itemp-i)*npsi+j))
 
-	at = time()
-	lpoint = 0
-	for itang in xrange(len(iangles)):
-		if( itang%lenbigbuf == 0 ):  #  Time to fill up the buffer
-			for itemp in xrange(Tracker["constants"]["nproj_per_CPU"]*Blockdata["myid_on_node"]+itang, min(Tracker["constants"]["nproj_per_CPU"]*(Blockdata["myid_on_node"]+1)+itang, len(iangles))):
-				i = iangles[itemp]/100000
-				j = iangles[itemp]%100000				
-				psi = (refang[i][2] + j*Tracker["delta"])%360.0
-				rtemp = prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
-				rtemp.set_attr("is_complex",0)
-				bigbuffer.insert_clip(rtemp,(0,0,itemp-itang))
 			mpi_barrier(Blockdata["shared_comm"])
 
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (itang%(max(1,len(iangles)/5)) == 0) and (itang>0)):
-			print( "  Angle :%8d    %5.1f"%(lpoint,float(itang)/float(len(iangles))*100.) + "%" +"   %10.1fmin"%((time()-at)/60.0))
-		if( ltable[lpoint] > -1 ):
-			#  Is the current projection angle the same as current useful projection?
-			if( ltable[lpoint] == iangles[itang] ):
+		iang = i*100000000
+		for j in xrange(n_coarse_psi):
+			iangpsi = j*1000 + iang
+			psi = (coarse_angles[i][2] + j*coarse_delta)%360.0
+			#temp = Util.window(bigbuffer, nxt, ny, 1, 0, 0, -ncbuf + (i%Blockdata["no_of_processes_per_group"])*npsi + j)
 
-				iangpsi = ltable[lpoint]*1000
+			#  Here we get an image from a buffer by assigning an address instead of copy.
+			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*n_coarse_psi + j)*size_of_one_image*disp_unit
+			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+			img_buffer = img_buffer.reshape(ny, nxt)
+			#temp = EMNumPy.numpy2em(img_buffer)
+			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
 
-				#  Here we get an image from a buffer by assigning an address instead of copy.
-				pointer_location = base_ptr + (itang%lenbigbuf)*size_of_one_image*disp_unit
+			#temp *= (1000.0/nrmref)
+			#nrmref = 1000.
+			for kl,emimage in enumerate(data):
+				for im in xrange(n_coarse_shifts):
+					peak = Util.innerproduct(temp, emimage[im], None)
+					if(peak>newpar[kl][2][0][1]):  newpar[kl][2] = [[im + iangpsi, peak]]
+
+	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
+	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
+	if Blockdata["myid"] == Blockdata["main_node"]:   print("  COARSE SEARCHES DONE  ","   %10.1fmin"%((time()-at)/60.))
+	at = time()
+	for itemp in xrange(0, min(Blockdata["no_of_processes_per_group"], nang)):
+		if( itemp == Blockdata["myid_on_node"]):
+			for j in xrange(npsi):
+				psi = (refang[i][2] + j*Tracker["delta"])%360.0
+				temp = prgl(volprep,[ refang[itemp][0],refang[itemp][1],psi, 0.0,0.0], 1, False)
+				temp.set_attr("is_complex",0)
+				Util.mulclreal(temp, mask)
+				nrmref = sqrt(Util.innerproduct(temp, temp, None))
+				Util.mul_scalar(temp, 1.0/nrmref)
+				bigbuffer.insert_clip(temp,(0,0,itemp*npsi+j))
+
+	mpi_barrier(Blockdata["shared_comm"])
+	if( Blockdata["myid"] == Blockdata["main_node"] ):   print("  REFPROJ DONE  ","   %10.1fmin"%((time()-at)/60.))
+	at = time()
+
+	opar = []
+	Blockdata["angle_set"] = refang
+	#  Extract normals from rotation matrices
+	if( Tracker["constants"]["symmetry"] == "oct" ):  refdirs = [q.get_matrix()[8:11] for q in Blockdata["t_refang"]]
+	else:  refdirs = angles_to_normals(refang)
+
+	for kl,emimage in enumerate(data):
+		hashparams = newpar[kl][2][0][0]
+		ipsiandiang	= hashparams/1000
+		oldiang = ipsiandiang/100000
+		ipsi = ipsiandiang%100000
+		ishift = hashparams%1000
+		tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, [coarse_angles[oldiang]], Tracker["delta"], howmany = 4, sym = Tracker["constants"]["symmetry"])
+		opar.append([coarse_angles[oldiang][0],coarse_angles[oldiang][1],(coarse_angles[oldiang][2]+ipsi*coarse_delta)%360.0 , coarse_shifts[ishift][0],coarse_shifts[ishift][1]])
+		for i2 in xrange(4):
+			iang = ltabang[0][i2]
+			for i3 in xrange(2):  # psi
+				itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+				itpsi = (itpsi + i3)%npsi
+				pointer_location = base_ptr + (iang*n_coarse_psi + itpsi)*size_of_one_image*disp_unit
 				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
 				img_buffer = img_buffer.reshape(ny, nxt)
 				#temp = EMNumPy.numpy2em(img_buffer)
 				temp = emnumpy3.register_numpy_to_emdata(img_buffer)
 
-				lpoint += 1
-				while( ltable[lpoint] > -1 ):
-					kl = ltable[lpoint]
+				newpar[kl][2][0][1] = -1.0e23
+				for i4 in xrange(len(tshifts)):
+					peak = Util.innerproduct(temp, emimage[im+n_coarse_shifts], None) # take now fine images
+					if(peak>newpar[kl][2][0][1]):  newpar[kl][2] = [[iang*100000000 + itpsi*1000 + tshifts[i4], peak]]
 
-					for im in xrange(nshifts):
-						hashparams = im + iangpsi
-						[peak,varadj] = Util.sqednorm(data[kl][im], temp, ctfs[kl], bckgnoise[kl])
-
-						xod1[kl, loxi[kl]] = -peak
-						xod2[kl, loxi[kl]] = hashparams
-						xod3[kl, loxi[kl]] = varadj
-						loxi[kl] += 1
-						if(loxi[kl] >= lxod1):  ERROR("ali3D_direct_local_euc","Underestimated number of orientations in local search",1,Blockdata["myid"])
-
-					lpoint += 1
-				#Move to the next one
-				lpoint += 1
-
+	#mpi_barrier(MPI_COMM_WORLD)
 	mpi_win_free(win_vol)
 	mpi_win_free(win_sm)
 	emnumpy1.unregister_numpy_from_emdata()
@@ -2875,50 +2051,626 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 	del emnumpy1, emnumpy2, emnumpy3
 
 	mpi_barrier(Blockdata["shared_comm"])
+	if Blockdata["myid"] == Blockdata["main_node"]:   print("  FINE SEARCH DONE  ","   %10.1fmin"%((time()-at)/60.))
 
-	del ltable
-	if bckgnoise: del bckgnoise
-	del  data, ctfs
-	norm_per_particle = ndat*[None]
-	for kl in xrange(ndat):
-		lod = loxi[kl]
-		if( lod > -1 ):
-			lina = np.argsort(xod1[kl])
-			xod1[kl] = xod1[kl][lina[::-1]]  # This puts sorted in reverse order
-			xod2[kl] = xod2[kl][lina[::-1]]  # This puts sorted in reverse order
-			xod3[kl] = xod3[kl][lina[::-1]]  # This puts sorted in reverse order
-			tdoffset = xod1[kl,0]
-			xod1[kl] -= tdoffset
+	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
+	mpi_barrier(MPI_COMM_WORLD)
+	opar = wrap_mpi_gatherv(opar, Blockdata["main_node"], MPI_COMM_WORLD)
+	if( Blockdata["myid"] == Blockdata["main_node"] ):   write_text_row(opar,"opar.txt")
+	#print("  ALL DONE  ",Blockdata["myid"])
+	return newpar
 
-	for kl in xrange(ndat):
-		lina = np.argwhere(xod1[kl] > Tracker["constants"]["expthreshold"])
-		temp = xod1[kl][lina]
-		morm = xod3[kl][lina]
-		temp = temp.flatten()
-		morm = morm.flatten()
-		np.exp(temp, out=temp)
-		temp /= np.sum(temp)
+def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
+					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
+	global Tracker, Blockdata
+	"""
+	This function will read from stack a subset of images specified in partids
+	   and assign to them parameters from partstack with optional CTF application and shifting of the data.
+	So, the lengths of partids and partstack are the same.
+	  The read data is properly distributed among MPI threads.
+
+	Flow of data:
+	1. Read images, if there is enough memory, keep them as original_data.
+	2. Read current params
+	3.  Apply shift
+	7.  Apply CTF.
+	8.  Apply bckgnoise
+	6#.  Shrink data.
+	
+	"""
+	global Tracker, Blockdata
+	from projection 	import prgs,prgl
+	from fundamentals 	import fft
+	from utilities 		import wrap_mpi_gatherv
+	from math 			import sqrt
+	from mpi 			import mpi_barrier, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM, mpi_reduce, mpi_bcast
+	from time 			import time
+	#  Input data has to be CTF-multiplied, preshifted
+	#  Output - newpar, see structure
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[params],[],... len(data)]
+	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
+	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+	#  Coding of orientations:
+	#    hash = ang*100000000 + lpsi*1000 + ishift
+	#    ishift = hash%1000
+	#    ipsi = (hash/1000)%100000
+	#    iang  = hash/100000000
+	#  To get best matching for particle #kl:
+	#     hash_best = newpar[kl][-1][0][0]
+	#     best_sim  = newpar[kl][-1][0][1]
+	#  To sort:
+	from operator 		import itemgetter#, attrgetter, methodcaller
+	#   params.sort(key=itemgetter(2))
+	#from fundamentals import resample
+	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from fundamentals import fdecimate, fshift, fft
+	from filter       import filt_ctf, filt_table
+	from applications import MPI_start_end
+	from math         import sqrt
+
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		print_dict(Tracker,"PROJECTION MATCHING parameters of polar CCC")
+
+
+	at = time()
+	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
+	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
+	mode = "F"
+	numr = Numrinit_local(1, radius, 1, mode)
+	wr = ringwe(numr, mode)
+	cnx = float(Tracker["nxpolar"]//2 + 1)
+
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	#  FINE SEARCH CONSTANTS
+	#  Fine grids are shifted by half-fine_step
+	nang = len(refang)
+	npsi = int(360./Tracker["delta"])
+	nshifts = len(shifts)
+	n_fine_shifts = 4
+
+	nima = len(original_data)
+	mask = Util.unrollmask(Tracker["nxinit"])
+	for j in xrange(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
+	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
+
+	#  COARSE SEARCH CONSTANTS
+	n_coarse_ang = len(coarse_angles)
+	coarse_delta = 2*Tracker["delta"]
+	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_shifts = len(coarse_shifts)
+
+	coarse_shifts_shrank = [None]*n_coarse_shifts
+	for ib in xrange(n_coarse_shifts):
+		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
+
+	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw)
+
+	disp_unit = np.dtype("f4").itemsize
+
+	#  REFVOL
+	if( Blockdata["myid_on_node"] == 0 ):
+		odo = prep_vol( get_refvol( Tracker["nxpolar"]), npad = 2, interpolation_method = 1 )
+		ndo = EMNumPy.em2numpy(odo)
+		nxvol = odo.get_xsize()
+		nyvol = odo.get_ysize()
+		nzvol = odo.get_zsize()
+		orgsizevol = nxvol*nyvol*nzvol
+		sizevol = orgsizevol
+	else:
+		orgsizevol = 0
+		sizevol = 0
+		nxvol = 0
+		nyvol = 0
+		nzvol = 0
+
+	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+
+	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+	sizevol = orgsizevol
+	if( Blockdata["myid_on_node"] != 0 ):
+		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
+
+	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
+	if( Blockdata["myid_on_node"] == 0 ):
+		np.copyto(volbuf,ndo)
+		del odo,ndo
+
+	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	emnumpy1 = EMNumPy()
+	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
+	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
+
+	crefim = Util.Polar2Dm(model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
+
+	#  BIG BUFFER (for n_coarse_ang polar arrays)
+	size_of_one_image = crefim.get_xsize()
+	lenbigbuf = n_coarse_ang
+	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
+
+	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
+	else:  size = 0
+
+	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+	size = orgsize
+	if( Blockdata["myid_on_node"] != 0 ):
+		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
+
+	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
+	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+
+	emnumpy2 = EMNumPy()
+	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
+	#  end of setup
+
+	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
+		mpi_win_free(win_vol)
+		#  REFVOL FOR ML
+		if( Blockdata["myid_on_node"] == 0 ):
+			odo = prep_vol( get_refvol( Tracker["nxinit"]), npad = 2, interpolation_method = 1 )
+			###print("   ODO   ",odo[0],odo[1],info(odo))
+			###odo = prep_vol( get_refvol( Tracker["nxpolar"]), npad = 2, interpolation_method = 1 )
+			ndoinit = EMNumPy.em2numpy(odo)
+			nxvol = odo.get_xsize()
+			nyvol = odo.get_ysize()
+			nzvol = odo.get_zsize()
+			orgsizevol = nxvol*nyvol*nzvol
+			sizevol = orgsizevol
+		else:
+			orgsizevol = 0
+			sizevol = 0
+			nxvol = 0
+			nyvol = 0
+			nzvol = 0
+
+		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+
+		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+		sizevol = orgsizevol
+		if( Blockdata["myid_on_node"] != 0 ):
+			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
+
+		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
+		if( Blockdata["myid_on_node"] == 0 ):
+			np.copyto(volbufinit,ndoinit)
+			del odo,ndoinit
+
+		#volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
+		emnumpy4 = EMNumPy()
+		volinit = emnumpy4.register_numpy_to_emdata(volbufinit)
+		volinit.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
+		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
+		mpi_barrier(Blockdata["shared_comm"])
+		###if( Blockdata["myid"] < 10 ):
+		###	print(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
+	else:
+		volinit = volprep
+	#  End of replaced volprep
+
+
+	at = time()
+
+	nang_start, nang_end = MPI_start_end(n_coarse_ang, Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
+
+	for i in xrange(nang_start, nang_end, 1):  # This will take care of process on a node less than nang.  Some loops will not be executed
+		temp = prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
+		crefim = Util.Polar2Dm(temp, cnx, cnx, numr, mode)
+		Util.Normalize_ring(crefim, numr)
+		Util.Frngs(crefim, numr)
+		Util.Applyws(crefim, numr, wr)
+		bigbuffer.insert_clip(crefim,(0,i) )
+
+	mpi_barrier(Blockdata["shared_comm"])
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		print( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
+	
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		print( "  " )
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
+
+	#  Preprocess the data
+
+	#  Note these are in Fortran notation for polar searches
+	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
+	txl    	= float(radius - Tracker["nxpolar"]//2+1)
+	"""
+	if Blockdata["bckgnoise"] :
+		oneover = []
+		nnx = Blockdata["bckgnoise"][0].get_xsize()
+		for i in xrange(len(Blockdata["bckgnoise"])):
+			temp = [0.0]*nnx
+			for k in xrange(nnx):
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+			oneover.append(temp)
+		del temp
+
+	accumulatepw = [None]*nima
+	norm_per_particle = [None]*nima
+	"""
+
+	lxod1 = n_coarse_ang*len(coarse_shifts)*n_coarse_psi
+	newpar = [[i, [0.0], []] for i in xrange(nima)]
+
+	#  This is for auxiliary function searches.
+	Blockdata["angle_set"] = refang
+	#  Extract normals from rotation matrices
+	if( Tracker["constants"]["symmetry"] == "oct" ):  refdirs = [q.get_matrix()[8:11] for q in Blockdata["t_refang"]]
+	else:  refdirs = angles_to_normals(refang)
+
+	#if( Blockdata["myid"] == Blockdata["main_node"]):
+	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
+
+	###firsti = True
+
+	at = time()
+
+	for im in xrange(nima):
+
+		#phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
+		phi,theta,psi,sx,sy = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4]#  First ITER
+
+		if preshift:
+			sx = int(round(sx))
+			sy = int(round(sy))
+			dataimage  = cyclic_shift(original_data[im],sx,sy)
+			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
+			oldparams[im][3] = sx
+			oldparams[im][4] = sy
+			sx = 0.0
+			sy = 0.0
+		else:  dataimage = original_data[im].copy()
+
+		st = Util.infomask(dataimage, mask2D, False)
+		dataimage -= st[0]
+		dataimage /= st[1]
+		##if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
+		#  Do bckgnoise if exists
+		if apply_mask:
+			if Tracker["constants"]["hardmask"]:
+				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"])
+			else:
+				bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+				bckg.set_attr("is_complex",1)
+				bckg.set_attr("is_fftpad",1)
+				bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
+				#  Normalize bckg noise in real space, only region actually used.
+				st = Util.infomask(bckg, mask2D, False)
+				bckg -= st[0]
+				bckg /= st[1]
+				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
+		#else:
+		#	#  if no bckgnoise, do simple masking instead
+		#	if apply_mask:  dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
+
+		
+		#  Apply varadj, FIRST ITERATION, THERE IS NONE
+		#if not nonorm:
+		#	Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
+
+		###  FT
+		dataimage = fft(dataimage)
+		##sig = Util.rotavg_fourier( dataimage )
+		##accumulatepw[im] = sig[len(sig)//2:]+[0.0]
+
+		#  We have to make sure the shifts are within correct range, shrinkage or not
+		#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
+		"""
+		if Blockdata["bckgnoise"]:
+			temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
+			bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in xrange(temp.get_xsize())])
+		else:
+			bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+		bckgnoise = bckgn.copy()
+		for j in xrange(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
+		"""
+		if Tracker["constants"]["CTF"] :
+			ctf_params = dataimage.get_attr("ctf")
+			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+			ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
+			#  Here we set astigmatism to zero
+			ctf_params.dfdiff = 0.0
+			ctfs = ctf_img_real(Tracker["nxinit"], ctf_params)
+		dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
+		data = []
+		for iq in coarse_shifts:
+			xx = iq[0]*shrink
+			yy = iq[1]*shrink
+			dss = fshift(dataml, xx, yy)
+			dss.set_attr("is_complex",0)
+			data.append(dss)
+
+		#  This will get it to real space
+		#dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
+		dataimage = fpol(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
+
+		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
+			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+
+		if( im < min(nima, 1) and procid == 0):
+			#   Search all and compare with direct to figure what keepfirst might be
+			keepfirst = (n_coarse_ang *  n_coarse_psi)/10#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
+
+			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
+					coarse_shifts_shrank,\
+					numr, [coarse_angles[ic][2] for ic in xrange(n_coarse_ang)], coarse_delta, cnx, keepfirst))
+
+			assert(len(xod2) == keepfirst)
+
+			xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
+
+			for iln in xrange(keepfirst):
+				m = xod2[iln]
+				j = m%n_coarse_psi
+				ic = (m/n_coarse_psi)%n_coarse_ang
+				ib  = m/(n_coarse_ang*n_coarse_psi)
+				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
+			# DO NOT order by angular directions to save time on reprojections.
+			pre_ipsiandiang = -1
+			for iln in xrange(keepfirst):
+				hashparams	= int(xod2[iln])
+				ishift		= hashparams%1000
+				ipsiandiang	= hashparams/1000
+				if(ipsiandiang != pre_ipsiandiang):
+					pre_ipsiandiang = ipsiandiang
+					ipsi = ipsiandiang%100000
+					iang = ipsiandiang/100000
+					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp.set_attr("is_complex",0)
+					nrmref = sqrt(Util.innerproduct(temp, temp, None))
+					#Util.mul_scalar(temp, 1.0/nrmref)
+
+				xod1[iln] = Util.innerproduct(data[ishift], temp, None)/nrmref  # peak
+				##xod2[iln] = hashparams
+
+			z = np.max(xod1)
+			lina = np.argwhere(xod1 == z)[0]
+			#if( Blockdata["myid"] == 0 ):  
+			#print("  STARTING ",Blockdata["myid"],z,lina)
+			keepf = lina[0]
+			xod1 = xod1[lina]
+			xod2 = xod2[lina]
+
+			"""			
+			lina = np.argsort(xod1)
+			xod1 = xod1[lina[::-1]]  # This sorts in reverse order
+			xod2 = xod2[lina[::-1]]  # This sorts in reverse order
+			np.exp(xod1, out=xod1)
+			xod1 /= np.sum(xod1)
+			cumprob = 0.0
+			lit = len(xod1)
+			for j in xrange(len(xod1)):
+				cumprob += xod1[j]
+				if(cumprob > Tracker["constants"]["ccfpercentage"]):
+					lit = j+1
+					break
+			"""
+			lit = 1
+			keepf = [keepf]
+			keepf = wrap_mpi_gatherv(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+			if( Blockdata["myid"] == 0 ):
+				keepf.sort()
+				keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
+			else:  keepf = 0
+			keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+			Tracker["keepfirst"] = int(keepf)
+			###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+
+		else:
+			#Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
+
+			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
+					coarse_shifts_shrank,\
+					numr, [coarse_angles[ic][2] for ic in xrange(n_coarse_ang)], coarse_delta, cnx, Tracker["keepfirst"]))
+
+			xod1 = np.ndarray((Tracker["keepfirst"]),dtype='f4',order="C")
+
+			for iln in xrange(Tracker["keepfirst"]):
+				m = xod2[iln]
+				j = m%n_coarse_psi
+				ic = (m/n_coarse_psi)%n_coarse_ang
+				ib  = m/(n_coarse_ang*n_coarse_psi)
+				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
+			# order by angular directions to save time on reprojections.
+			ipsiandiang = xod2/1000
+			lina = np.argsort(ipsiandiang)
+			xod2 = xod2[lina]  # order does not matter
+			pre_ipsiandiang = -1
+			for iln in xrange(Tracker["keepfirst"]):
+				hashparams	= int(xod2[iln])
+				ishift		= hashparams%1000
+				ipsiandiang	= hashparams/1000
+				if(ipsiandiang != pre_ipsiandiang):
+					pre_ipsiandiang = ipsiandiang
+					ipsi = ipsiandiang%100000
+					iang = ipsiandiang/100000
+					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp.set_attr("is_complex",0)
+					nrmref = sqrt(Util.innerproduct(temp, temp, None))
+				peak = Util.innerproduct(data[ishift], temp, None)/nrmref
+				xod1[iln] = peak
+				##xod2[iln] = hashparams
+
+			lina = np.argsort(xod1)
+			xod1 = xod1[lina[::-1]]  # This sorts in reverse order
+			xod2 = xod2[lina[::-1]]  # This sorts in reverse order
+			lit = Tracker["keepfirst"]
+			"""
+			xod1 -= xod1[0]
+
+			lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
+			xod1 = xod1[lina]
+			xod2 = xod2[lina]
+			np.exp(xod1, out=xod1)
+			xod1 /= np.sum(xod1)
+			cumprob = 0.0
+			lit = len(xod1)
+			for j in xrange(len(xod1)):
+				cumprob += xod1[j]
+				if(cumprob > Tracker["constants"]["ccfpercentage"]):
+					lit = j+1
+					break
+			"""
+
+		del data
+
+		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  SECOND KEPT  ",lit)
+
+		firstdirections = [[0.0,0.0] for iln in xrange(lit)]
+		firstshifts = [0]*lit
+		for iln in xrange(lit):
+			hashparams = int(xod2[iln])
+			ishift = hashparams%1000
+			ipsiandiang	= hashparams/1000
+			#ipsi = ipsiandiang%100000
+			iang = ipsiandiang/100000
+			firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
+			firstshifts[iln] = ishift
+		###del xod2
+		###if( Blockdata["myid"] == Blockdata["main_node"]): print("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
+		#mpi_barrier(MPI_COMM_WORLD)
+		#mpi_finalize()
+		#exit()
+
+		# Find neighbors, ltabang contains positions on refang list, no psis
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4, sym = Tracker["constants"]["symmetry"])
+
+		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
+		#   even though it is longer than lit.
+
+		#  Prepare image for chi2.
+		#  We have to repeat everything from get shrink data, including shifts
+		#  The number of entries is lit=len(ltabang), each proj dir has 4 neighbors
+		#    there are 2 psis, and at most n_fine_shifts. which should be 4.
+		#    Not not all shifts have to be populated. We may also have repeated triplets of angles, but each can have
+		#      different shifts.  If so, we have to remove duplicates from the entire set.
+		lcod1 = lit*4*2*n_fine_shifts
+		cod2 = []
+		#lol = 0
+		for i1 in xrange(lit):
+			hashparams = int(xod2[i1])
+			ipsiandiang	= hashparams/1000
+			oldiang = ipsiandiang/100000
+			ipsi = ipsiandiang%100000
+			ishift = hashparams%1000
+			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
+			for i2 in xrange(4):
+				iang = ltabang[i1][i2]
+				for i3 in xrange(2):  # psi
+					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+					itpsi = (itpsi + i3)%npsi
+					for i4 in xrange(len(tshifts)):
+						cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
+
+
+		del xod1, xod2
+
+		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
+		cod2 = list(set(cod2))
+		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+		cod1.sort()
+
+		lit = len(cod1)
+
+		cod2 = np.asarray([cod2[cod1[i][1]] for i in xrange(lit)])
+
+		cod1 = np.ndarray(lit,dtype='f4',order="C")
+		#cod1.fill(np.finfo(dtype='f4').min)
+		#cod3 = np.ndarray(lit,dtype='f4',order="C")
+		#cod3.fill(0.0)  #  varadj
+
+		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD2   ",im,lit,cod2)
+
+		#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+		#  Thrid ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
+
+		data = [None]*nshifts
+		johi = 0
+		iln = 0
+		prevdir = -1
+		while(iln<lit):
+			hashparams = cod2[iln]
+			ipsiandiang	= hashparams/1000
+			if(ipsiandiang != prevdir):
+				prevdir = ipsiandiang
+				ipsi = ipsiandiang%100000
+				iang = ipsiandiang/100000
+				temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
+				temp.set_attr("is_complex",0)
+				nrmref = sqrt(Util.innerproduct(temp, temp, None))
+				johi += 1
+			while( ipsiandiang == cod2[iln]/1000 ):
+				hashparams = cod2[iln]
+				ishift = hashparams%1000
+				if( data[ishift] == None ):
+					xx = shifts[ishift][0]*shrink
+					yy = shifts[ishift][1]*shrink
+					data[ishift] = fshift(dataml, xx, yy)
+					data[ishift].set_attr("is_complex",0)
+
+				cod1[iln] = Util.innerproduct(data[ishift], temp, None)/nrmref
+				iln += 1
+				if(iln == lit  ):  break
+
+		del data
+		del dataml
+
+		lina = np.argsort(cod1)
+		cod1 = cod1[lina[::-1]]  # This sorts in reverse order
+		cod2 = cod2[lina[::-1]]  # This sorts in reverse order
+		##cod3 = cod3[lina[::-1]]  # This sorts in reverse order
+		##cod1 -= cod1[0]
+		##lina = np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
+		cod1 = cod1[0]
+		cod2 = cod2[0]
+		# = cod3[lina]
+		"""
+		np.exp(cod1, out=cod1)
+		cod1 /= np.sum(cod1)
 		cumprob = 0.0
-		for j in xrange(len(temp)):
-			cumprob += temp[j]
+		for j in xrange(len(cod1)):
+			cumprob += cod1[j]
 			if(cumprob > Tracker["constants"]["ccfpercentage"]):
 				lit = j+1
 				break
-		#  New norm is a sum of eq distances multiplied by their probabilities augmented by PW
-		norm_per_particle [kl] 	= np.sum(temp[:lit]*morm[:lit]) + Blockdata["accumulatepw"][procid][kl][reachpw]
-		ctemp = xod2[kl][lina]
-		ctemp = ctemp.flatten()
+		"""
+		#  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
+		###norm_per_particle[im] = np.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
 
-		for j in xrange(lit):
-			 newpar[kl][2].append([int(ctemp[j]),float(temp[j])])
+		###for iln in xrange(lit):
+		newpar[im][2] = [[int(cod2), float(cod1)]]
 
-	del lina,temp,ctemp,xod1,xod2
+		del cod1, cod2, lina
+		###mpi_barrier(MPI_COMM_WORLD)
+		###mpi_finalize()
+		###exit()
+	mpi_barrier(MPI_COMM_WORLD)
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+	#  All images were processed, now to the additional calculations
+	###mpi_barrier(MPI_COMM_WORLD)
+	###mpi_finalize()
+	###exit()
 
+	"""
 	# norm correction ---- calc the norm correction per particle
 	snormcorr = 0.0
-	for kl in xrange(ndat):
-		norm_per_particle [kl]   = sqrt(norm_per_particle[kl]*2.0)*oldangs[kl][7]/Tracker["avgvaradj"][procid]
-		snormcorr                += norm_per_particle [kl]
+	for kl in xrange(nima):
+		norm_per_particle[kl] = sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
+		snormcorr            += norm_per_particle[kl]
 	Tracker["avgvaradj"][procid] = snormcorr
 	mpi_barrier(MPI_COMM_WORLD)
 	#  Compute avgvaradj
@@ -2935,7 +2687,720 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 	sava = 0.0
 	svar = 0.0
 	snum = 0
-	for kl in xrange(ndat):
+	for kl in xrange(nima):
+		j = len(newpar[kl][2])
+		snum += 1
+		sava += float(j)
+		svar += j*float(j)
+		smax = max(smax, j)
+		smin = min(smin, j)
+	snum = mpi_reduce(snum, 1, MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	sava = mpi_reduce(sava, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	svar = mpi_reduce(svar, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	smax = mpi_reduce(smax, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
+	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
+	if( Blockdata["myid"] == 0 ):
+		from math import sqrt
+		sava = float(sava)/snum
+		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+	"""
+	at = time()
+	mpi_barrier(Blockdata["shared_comm"])
+
+	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
+	mpi_win_free(win_sm)
+	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
+		mpi_win_free(win_volinit)
+		emnumpy4.unregister_numpy_from_emdata()
+		del emnumpy4
+	else:   mpi_win_free(win_vol)
+
+	mpi_barrier(Blockdata["shared_comm"])
+	emnumpy1.unregister_numpy_from_emdata()
+	emnumpy2.unregister_numpy_from_emdata()
+	del emnumpy1, emnumpy2
+
+	del volinit
+
+	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
+	mpi_barrier(MPI_COMM_WORLD)
+	#if( Blockdata["myid"] == Blockdata["main_node"] ):
+	#	#write_text_row([[newpar[0][2][j][0],newpar[0][2][j][1]] for j in xrange(len(newpar[0][2]))],os.path.join(Tracker["directory"], "polar%1d.txt"%procid))
+	#	print( "  Statistics finished : %10.1fmin"%((time()-at)/60.))
+	return newpar, [1.0]*nima#norm_per_particle
+
+def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
+					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
+	global Tracker, Blockdata
+	"""
+	This function will read from stack a subset of images specified in partids
+	   and assign to them parameters from partstack with optional CTF application and shifting of the data.
+	So, the lengths of partids and partstack are the same.
+	  The read data is properly distributed among MPI threads.
+
+	Flow of data:
+	1. Read images, if there is enough memory, keep them as original_data.
+	2. Read current params
+	3.  Apply shift
+	7.  Apply CTF.
+	8.  Apply bckgnoise
+	6#.  Shrink data.
+	
+	"""
+	global Tracker, Blockdata
+	from projection 	import prgs,prgl
+	from fundamentals 	import fft
+	from utilities 		import wrap_mpi_gatherv
+	from math 			import sqrt
+	from mpi 			import mpi_barrier, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM, mpi_reduce, mpi_bcast
+	from time 			import time
+	#  Input data has to be CTF-multiplied, preshifted
+	#  Output - newpar, see structure
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[params],[],... len(data)]
+	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
+	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+	#  Coding of orientations:
+	#    hash = ang*100000000 + lpsi*1000 + ishift
+	#    ishift = hash%1000
+	#    ipsi = (hash/1000)%100000
+	#    iang  = hash/100000000
+	#  To get best matching for particle #kl:
+	#     hash_best = newpar[kl][-1][0][0]
+	#     best_sim  = newpar[kl][-1][0][1]
+	#  To sort:
+	#from operator 		import itemgetter, attrgetter, methodcaller
+	#   params.sort(key=itemgetter(2))
+	#from fundamentals import resample
+	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from fundamentals import fdecimate, fshift, fft
+	from filter       import filt_ctf, filt_table
+	from applications import MPI_start_end
+	from math         import sqrt
+
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered exhaustive polar")
+
+
+	at = time()
+	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
+	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
+	mode = "F"
+	numr = Numrinit_local(1, radius, 1, mode)
+	wr = ringwe(numr, mode)
+	cnx = float(Tracker["nxpolar"]//2 + 1)
+
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	#  FINE SEARCH CONSTANTS
+	#  Fine grids are shifted by half-fine_step
+	nang = len(refang)
+	npsi = int(360./Tracker["delta"])
+	nshifts = len(shifts)
+	n_fine_shifts = 4
+
+	nima = len(original_data)
+	mask = Util.unrollmask(Tracker["nxinit"])
+	for j in xrange(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
+	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
+
+	#  COARSE SEARCH CONSTANTS
+	n_coarse_ang = len(coarse_angles)
+	coarse_delta = 2*Tracker["delta"]
+	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_shifts = len(coarse_shifts)
+
+	coarse_shifts_shrank = [None]*n_coarse_shifts
+	for ib in xrange(n_coarse_shifts):
+		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
+
+
+	ny = Tracker["nxinit"]
+	nyp2 = ny/2
+	nxth = (Tracker["nxinit"]+2)/2
+	indx = model_blank(nxth, Tracker["nxinit"], 1, -1)
+	tfrac = model_blank(nxth, Tracker["nxinit"])
+	tcount = model_blank(nxth)
+	for iy in xrange(1, ny+1):
+		jy=iy-1
+		if(jy>nyp2): jy=jy-ny
+		argy = float(jy*jy)
+		for ix in xrange(1,nxth+1):
+			jx=ix-1
+			roff = (jx+(iy-1)*nxth)
+			if(mask[ix-1,iy-1] > 0.0 ):
+				rf = sqrt( argy + float(jx*jx) )
+				ir = int(rf)
+				#print  ix-1,iy-1,roff,mask[ix-1,iy-1],rf,ir
+
+				if( ir < nxth-1):
+					frac = rf - float(ir)
+					qres = 1.0 - frac
+					tfrac[ix-1,iy-1] = frac
+					#ioff = 2*roff
+					tcount[ir]   	+= qres
+					tcount[ir+1] 	+= frac
+					indx[ix-1,iy-1]	= ir
+
+	disp_unit = np.dtype("f4").itemsize
+
+	#  REFVOL
+	if( Blockdata["myid_on_node"] == 0 ):
+		odo = prep_vol( get_refvol( Tracker["nxpolar"]), npad = 2, interpolation_method = 1 )
+		ndo = EMNumPy.em2numpy(odo)
+		nxvol = odo.get_xsize()
+		nyvol = odo.get_ysize()
+		nzvol = odo.get_zsize()
+		orgsizevol = nxvol*nyvol*nzvol
+		sizevol = orgsizevol
+	else:
+		orgsizevol = 0
+		sizevol = 0
+		nxvol = 0
+		nyvol = 0
+		nzvol = 0
+
+	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+
+	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+	sizevol = orgsizevol
+	if( Blockdata["myid_on_node"] != 0 ):
+		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
+
+	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
+	if( Blockdata["myid_on_node"] == 0 ):
+		np.copyto(volbuf,ndo)
+		del odo,ndo
+
+	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	emnumpy1 = EMNumPy()
+	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
+	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
+	crefim = Util.Polar2Dm(model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
+
+	#  BIG BUFFER (for n_coarse_ang polar arrays)
+	size_of_one_image = crefim.get_xsize()
+	lenbigbuf = n_coarse_ang
+	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
+
+	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
+	else:  size = 0
+
+	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+	size = orgsize
+	if( Blockdata["myid_on_node"] != 0 ):
+		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
+
+	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
+	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+
+	emnumpy2 = EMNumPy()
+	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
+	#  end of setup
+
+	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
+		mpi_win_free(win_vol)
+		#  REFVOL FOR ML
+		if( Blockdata["myid_on_node"] == 0 ):
+			odo = prep_vol( get_refvol( Tracker["nxinit"]), npad = 2, interpolation_method = 1 )
+			###print("   ODO   ",odo[0],odo[1],info(odo))
+			###odo = prep_vol( get_refvol( Tracker["nxpolar"]), npad = 2, interpolation_method = 1 )
+			ndoinit = EMNumPy.em2numpy(odo)
+			nxvol = odo.get_xsize()
+			nyvol = odo.get_ysize()
+			nzvol = odo.get_zsize()
+			orgsizevol = nxvol*nyvol*nzvol
+			sizevol = orgsizevol
+		else:
+			orgsizevol = 0
+			sizevol = 0
+			nxvol = 0
+			nyvol = 0
+			nzvol = 0
+
+		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+
+		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+		sizevol = orgsizevol
+		if( Blockdata["myid_on_node"] != 0 ):
+			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
+
+		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
+		if( Blockdata["myid_on_node"] == 0 ):
+			np.copyto(volbufinit,ndoinit)
+			del odo,ndoinit
+
+		#volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
+		emnumpy4 = EMNumPy()
+		volinit = emnumpy4.register_numpy_to_emdata(volbufinit)
+		volinit.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
+		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
+		mpi_barrier(Blockdata["shared_comm"])
+	else:
+		volinit = volprep
+	#  End of replaced volprep
+
+
+	at = time()
+
+	nang_start, nang_end = MPI_start_end(n_coarse_ang, Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
+
+	for i in xrange(nang_start, nang_end, 1):  # This will take care of no of process on a node less than nang.  Some loops will not be executed
+		temp = prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
+		crefim = Util.Polar2Dm(temp, cnx, cnx, numr, mode)
+		Util.Frngs(crefim, numr)
+		Util.Applyws(crefim, numr, wr)
+		bigbuffer.insert_clip(crefim,(0,i) )
+
+	mpi_barrier(Blockdata["shared_comm"])
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		print( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
+
+	###mpi_finalize()
+	###exit()
+	###  <><><><><><><><>
+
+	
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		print( "  " )
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
+
+	#  Preprocess the data
+
+	#  Note these are in Fortran notation for polar searches
+	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
+	txl    	= float(radius - Tracker["nxpolar"]//2+1)
+
+
+
+	if Blockdata["bckgnoise"] :
+		oneover = []
+		nxb = Blockdata["bckgnoise"][0].get_xsize()
+		nyb = len(Blockdata["bckgnoise"])
+		for i in xrange(nyb):
+			temp = [0.0]*nxb
+			for k in xrange(nxb):
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+			oneover.append(temp)
+		del temp
+
+		if( procid == 0 ):
+			Blockdata["totprob"] = [0.0]*nyb
+			Blockdata["newbckgnoise"] = model_blank(nxb,nyb)
+
+	accumulatepw = [None]*nima
+	norm_per_particle = [None]*nima
+
+
+	lxod1 = n_coarse_ang*len(coarse_shifts)*n_coarse_psi
+	newpar = [[i, [0.0], []] for i in xrange(nima)]
+
+	#  This is for auxiliary function searches.
+	Blockdata["angle_set"] = refang
+	#  Extract normals from rotation matrices
+	if( Tracker["constants"]["symmetry"] == "oct" ):  refdirs = [q.get_matrix()[8:11] for q in Blockdata["t_refang"]]
+	else:  refdirs = angles_to_normals(refang)
+
+	#if( Blockdata["myid"] == Blockdata["main_node"]):
+	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
+
+	at = time()
+
+	for im in xrange(nima):
+		particle_group = original_data[im].get_attr("particle_group")
+
+		phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
+
+		if preshift:
+			sx = int(round(sx))
+			sy = int(round(sy))
+			dataimage  = cyclic_shift(original_data[im],sx,sy)
+			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
+			oldparams[im][3] = sx
+			oldparams[im][4] = sy
+			sx = 0.0
+			sy = 0.0
+		else:  dataimage = original_data[im].copy()
+
+		st = Util.infomask(dataimage, mask2D, False)
+		dataimage -= st[0]
+		dataimage /= st[1]
+		if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
+		#  Do bckgnoise if exists
+		#if Blockdata["bckgnoise"]:  # It always exists
+		if apply_mask:
+			if Tracker["constants"]["hardmask"]:
+				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"])
+			else:
+				bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+				bckg.set_attr("is_complex",1)
+				bckg.set_attr("is_fftpad",1)
+				bckg = fft(filt_table(bckg, oneover[particle_group]))
+				#  Normalize bckg noise in real space, only region actually used.
+				st = Util.infomask(bckg, mask2D, False)
+				bckg -= st[0]
+				bckg /= st[1]
+				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
+		#else:
+		#	#  if no bckgnoise, do simple masking instead
+		#	if apply_mask:  dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
+
+		#  Apply varadj
+		if not nonorm:
+			Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
+
+		###  FT
+		dataimage = fft(dataimage)
+		sig = Util.rotavg_fourier( dataimage )
+		accumulatepw[im] = sig[len(sig)//2:]+[0.0]
+
+		#  We have to make sure the shifts are within correct range, shrinkage or not
+		#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
+		if Blockdata["bckgnoise"]:
+			temp = Blockdata["bckgnoise"][particle_group]
+			bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in xrange(temp.get_xsize())])
+		else:
+			bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+		bckgnoise = bckgn.copy()
+		for j in xrange(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
+
+		if Tracker["constants"]["CTF"] :
+			ctf_params = dataimage.get_attr("ctf")
+			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+			ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
+			#  Here we set astigmatism to zero
+			ctf_params.dfdiff = 0.0
+			ctfs = ctf_img_real(Tracker["nxinit"], ctf_params)
+		dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
+		data = []
+		for iq in coarse_shifts:
+			xx = iq[0]*shrink
+			yy = iq[1]*shrink
+			dss = fshift(dataml, xx, yy)
+			dss.set_attr("is_complex",0)
+			data.append(dss)
+
+		#  This will get it to real space
+		dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
+
+		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
+			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+
+		if( im < min(nima, 1) and procid == 0):
+			#   Search all and compare with direct to figure what keepfirst might be
+			keepfirst = (n_coarse_ang *  n_coarse_psi)/10#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
+
+			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
+					coarse_shifts_shrank,\
+					numr, [coarse_angles[ic][2] for ic in xrange(n_coarse_ang)], coarse_delta, cnx, keepfirst))
+
+			assert(len(xod2) == keepfirst)
+
+			xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
+
+			for iln in xrange(keepfirst):
+				m = xod2[iln]
+				j = m%n_coarse_psi
+				ic = (m/n_coarse_psi)%n_coarse_ang
+				ib  = m/(n_coarse_ang*n_coarse_psi)
+				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
+			# DO NOT order by angular directions to save time on reprojections.
+			pre_ipsiandiang = -1
+			for iln in xrange(keepfirst):
+				hashparams	= int(xod2[iln])
+				ishift		= hashparams%1000
+				ipsiandiang	= hashparams/1000
+				if(ipsiandiang != pre_ipsiandiang):
+					pre_ipsiandiang = ipsiandiang
+					ipsi = ipsiandiang%100000
+					iang = ipsiandiang/100000
+					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp.set_attr("is_complex",0)
+				xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)  # peak
+				##xod2[iln] = hashparams
+
+			xod1 -= np.max(xod1)
+			lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
+			#if( Blockdata["myid"] == 0 ):  print("  STARTING ",np.max(xod1),np.min(xod1),len(lina),lina[-1])
+			lina = lina.reshape(lina.size)
+			keepf = lina[-1]
+
+			xod1 = xod1[lina]
+			xod2 = xod2[lina]
+
+			
+			lina = np.argsort(xod1)
+			xod1 = xod1[lina[::-1]]  # This sorts in reverse order
+			xod2 = xod2[lina[::-1]]  # This sorts in reverse order
+			np.exp(xod1, out=xod1)
+			xod1 /= np.sum(xod1)
+			cumprob = 0.0
+			lit = len(xod1)
+			for j in xrange(len(xod1)):
+				cumprob += xod1[j]
+				if(cumprob > Tracker["constants"]["ccfpercentage"]):
+					lit = j+1
+					break
+			#keepf = mpi_reduce(keepf, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
+			#if( Blockdata["myid"] == 0 ):
+			#	keepf = max(int(float(keepf)*0.9),1)
+			keepf = [keepf]
+			keepf = wrap_mpi_gatherv(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+			if( Blockdata["myid"] == 0 ):
+				keepf.sort()
+				keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
+			else:  keepf = 0
+			keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+			Tracker["keepfirst"] = int(keepf)
+			###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+				
+		else:
+			#Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
+
+			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
+					coarse_shifts_shrank,\
+					numr, [coarse_angles[ic][2] for ic in xrange(n_coarse_ang)], coarse_delta, cnx, Tracker["keepfirst"]))
+
+			xod1 = np.ndarray((Tracker["keepfirst"]),dtype='f4',order="C")
+
+			for iln in xrange(Tracker["keepfirst"]):
+				m = xod2[iln]
+				j = m%n_coarse_psi
+				ic = (m/n_coarse_psi)%n_coarse_ang
+				ib  = m/(n_coarse_ang*n_coarse_psi)
+				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
+			# order by angular directions to save time on reprojections.
+			ipsiandiang = xod2/1000
+			lina = np.argsort(ipsiandiang)
+			xod2 = xod2[lina]  # order does not matter
+			pre_ipsiandiang = -1
+			for iln in xrange(Tracker["keepfirst"]):
+				hashparams	= int(xod2[iln])
+				ishift		= hashparams%1000
+				ipsiandiang	= hashparams/1000
+				if(ipsiandiang != pre_ipsiandiang):
+					pre_ipsiandiang = ipsiandiang
+					ipsi = ipsiandiang%100000
+					iang = ipsiandiang/100000
+					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp.set_attr("is_complex",0)
+				peak = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
+				xod1[iln] = peak
+				##xod2[iln] = hashparams
+
+			lina = np.argsort(xod1)
+			xod1 = xod1[lina[::-1]]  # This sorts in reverse order
+			xod2 = xod2[lina[::-1]]  # This sorts in reverse order
+
+			xod1 -= xod1[0]
+
+			lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
+			xod1 = xod1[lina]
+			xod2 = xod2[lina]
+			np.exp(xod1, out=xod1)
+			xod1 /= np.sum(xod1)
+			cumprob = 0.0
+			lit = len(xod1)
+			for j in xrange(len(xod1)):
+				cumprob += xod1[j]
+				if(cumprob > Tracker["constants"]["ccfpercentage"]):
+					lit = j+1
+					break
+
+
+		del data
+
+		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  SECOND KEPT  ",lit)
+
+		#mpi_barrier(MPI_COMM_WORLD)
+		#mpi_finalize()
+		#exit()
+
+		firstdirections = [[0.0,0.0] for iln in xrange(lit)]
+		firstshifts = [0]*lit
+		for iln in xrange(lit):
+			hashparams = int(xod2[iln])
+			ishift = hashparams%1000
+			ipsiandiang	= hashparams/1000
+			#ipsi = ipsiandiang%100000
+			iang = ipsiandiang/100000
+			firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
+			firstshifts[iln] = ishift
+
+		# Find neighbors, ltabang contains positions on refang list, no psis
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4, sym = Tracker["constants"]["symmetry"])
+
+		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
+		#   even though it is longer than lit.
+
+		#  Prepare image for chi2.
+		#  We have to repeat everything from get shrink data, including shifts
+		#  The number of entries is lit=len(ltabang), each proj dir has 4 neighbors
+		#    there are 2 psis, and at most n_fine_shifts. which should be 4.
+		#    Not not all shifts have to be populated. We may also have repeated triplets of angles, but each can have
+		#      different shifts.  If so, we have to remove duplicates from the entire set.
+		lcod1 = lit*4*2*n_fine_shifts
+
+		cod2 = []
+		for i1 in xrange(lit):
+			hashparams = int(xod2[i1])
+			ipsiandiang	= hashparams/1000
+			oldiang = ipsiandiang/100000
+			ipsi = ipsiandiang%100000
+			ishift = hashparams%1000
+			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
+			for i2 in xrange(4):
+				iang = ltabang[i1][i2]
+				for i3 in xrange(2):  # psi
+					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+					itpsi = (itpsi + i3)%npsi
+					for i4 in xrange(len(tshifts)):
+						cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
+
+		del xod1, xod2
+
+		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
+		cod2 = list(set(cod2))
+		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+		cod1.sort()
+
+		lit = len(cod1)
+
+		cod2 = np.asarray([cod2[cod1[i][1]] for i in xrange(lit)])
+
+		cod1 = np.ndarray(lit,dtype='f4',order="C")
+		#cod1.fill(np.finfo(dtype='f4').min)
+		cod3 = np.ndarray(lit,dtype='f4',order="C")
+		#cod3.fill(0.0)  #  varadj
+
+		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD2   ",im,lit,cod2)
+
+		#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+		#  Thrid ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
+		#  Make sure volprep has nxinit size
+		tbckg = []
+		data = [None]*nshifts
+		johi = 0
+		iln = 0
+		prevdir = -1
+		while(iln<lit):
+			hashparams = cod2[iln]
+			ipsiandiang	= hashparams/1000
+			if(ipsiandiang != prevdir):
+				prevdir = ipsiandiang
+				ipsi = ipsiandiang%100000
+				iang = ipsiandiang/100000
+				temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
+				temp.set_attr("is_complex",0)
+				johi += 1
+			while( ipsiandiang == cod2[iln]/1000 ):
+				hashparams = cod2[iln]
+				ishift = hashparams%1000
+				if( data[ishift] == None ):
+					xx = shifts[ishift][0]*shrink
+					yy = shifts[ishift][1]*shrink
+					data[ishift] = fshift(dataml, xx, yy)
+					data[ishift].set_attr("is_complex",0)
+
+				##[peak,varadj] = Util.sqednorm(data[ishift], temp, ctfa, bckgnoise)
+				fofa = Util.sqednormbckg(data[ishift], temp, ctfa, bckgnoise, indx, tfrac, tcount)
+				cod1[iln] = -fofa[-2]   # -peak
+				cod3[iln] =  fofa[-1]   #  varadj
+				tbckg.append(fofa[:-2])
+				iln += 1
+				if(iln == lit  ):  break
+
+		del data
+		del dataml
+
+		lina = np.argsort(cod1)
+		lina = lina[::-1]  # This sorts in reverse order
+		cod1 = cod1[lina]
+		cod2 = cod2[lina]
+		cod3 = cod3[lina]
+		cod1 -= cod1[0]
+		tbckg = [tbckg[q] for q in lina]
+		lina = np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
+		cod1 = cod1[lina]
+		cod2 = cod2[lina]
+		cod3 = cod3[lina]
+		tbckg = [tbckg[q] for q in lina]
+
+		np.exp(cod1, out=cod1)
+		cod1 /= np.sum(cod1)
+		cumprob = 0.0
+		for j in xrange(len(cod1)):
+			cumprob += cod1[j]
+			if(cumprob > Tracker["constants"]["ccfpercentage"]):
+				lit = j+1
+				break
+		
+		#  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
+		norm_per_particle[im] = np.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
+		atbckg = [0.0]*len(tbckg[0])
+		for iln in xrange(lit):
+			prob = float(cod1[iln])
+			Blockdata["totprob"][particle_group] += prob
+			for iq in xrange(len(tbckg[0])):
+				atbckg[iq] += tbckg[iln][iq]*prob
+
+		del tbckg
+		for iq in xrange(nxth):  Blockdata["newbckgnoise"][iq,particle_group] += atbckg[iq]
+		del atbckg
+		for iln in xrange(lit):
+			newpar[im][2].append([int(cod2[iln]), float(cod1[iln])])
+
+		del cod1, cod2, cod3, lina
+		###mpi_barrier(MPI_COMM_WORLD)
+		###mpi_finalize()
+		###exit()
+	mpi_barrier(MPI_COMM_WORLD)
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		print( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
+	at = time()
+	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+	#  All images were processed, now to the additional calculations
+	###mpi_barrier(MPI_COMM_WORLD)
+	###mpi_finalize()
+	###exit()
+
+
+	# norm correction ---- calc the norm correction per particle
+	snormcorr = 0.0
+	for kl in xrange(nima):
+		norm_per_particle[kl] = sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
+		snormcorr            += norm_per_particle[kl]
+	Tracker["avgvaradj"][procid] = snormcorr
+	mpi_barrier(MPI_COMM_WORLD)
+	#  Compute avgvaradj
+	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
+	else:  Tracker["avgvaradj"][procid] = 0.0
+	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	mpi_barrier(MPI_COMM_WORLD)
+
+	#  Compute statistics of smear -----------------
+	smax = -1000000
+	smin = 1000000
+	sava = 0.0
+	svar = 0.0
+	snum = 0
+	for kl in xrange(nima):
 		j = len(newpar[kl][2])
 		snum += 1
 		sava += float(j)
@@ -2954,7 +3419,1709 @@ def ali3D_direct_local_euc_norm(data, refang, shifts, oldangs, procid, ctfs = No
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
+	at = time()
 	mpi_barrier(MPI_COMM_WORLD)
+	mpi_win_free(win_sm)
+	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
+		mpi_win_free(win_volinit)
+		emnumpy4.unregister_numpy_from_emdata()
+		del emnumpy4
+	else:   mpi_win_free(win_vol)
+
+	mpi_barrier(Blockdata["shared_comm"])
+	emnumpy1.unregister_numpy_from_emdata()
+	emnumpy2.unregister_numpy_from_emdata()
+	del emnumpy1, emnumpy2
+
+	del volinit
+
+	# Compute new background noise
+	# Reduce stuff
+	if( procid == 1 ):
+		Blockdata["totprob"] = mpi_reduce(Blockdata["totprob"], nyb, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+		reduce_EMData_to_root(Blockdata["newbckgnoise"], Blockdata["myid"], Blockdata["main_node"])
+		if( Blockdata["myid"] == 0 ):
+			for igrp in xrange(nyb):
+				Blockdata["newbckgnoise"][0, igrp] = 1.0
+				for i in xrange(1,nxth):
+					if(Blockdata["newbckgnoise"][i, igrp] > 0.0):  Blockdata["newbckgnoise"][i, igrp] = 2.0*Blockdata["totprob"][igrp]/Blockdata["newbckgnoise"][i, igrp]  # normalize and invert
+				for i in xrange(nxth,nxb):
+					Blockdata["newbckgnoise"][i, igrp] = Blockdata["bckgnoise"][igrp][i]
+			Blockdata["newbckgnoise"].write_image(os.path.join(Tracker["directory"],"bckgnoise.hdf")) #  Write updated bckgnoise to current directory
+
+		bcast_EMData_to_all(Blockdata["newbckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"], comm = MPI_COMM_WORLD)
+		for igrp in xrange(nyb):
+			for i in xrange(nxb):
+				Blockdata["bckgnoise"][igrp][i] = Blockdata["newbckgnoise"][i, igrp]
+		del Blockdata["newbckgnoise"]
+	mpi_barrier(MPI_COMM_WORLD)
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		print( "  Finished sigma2   %10.1fmin"%((time()-at)/60.))
+	return newpar, norm_per_particle
+
+def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
+					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
+	global Tracker, Blockdata
+	"""
+	This function will read from stack a subset of images specified in partids
+	   and assign to them parameters from partstack with optional CTF application and shifting of the data.
+	So, the lengths of partids and partstack are the same.
+	  The read data is properly distributed among MPI threads.
+
+	Flow of data:
+	1. Read images, if there is enough memory, keep them as original_data.
+	2. Read current params
+	3.  Apply shift
+	7.  Apply CTF.
+	8.  Apply bckgnoise
+	6#.  Shrink data.
+	
+	"""
+	global Tracker, Blockdata
+	from projection 	import prgs,prgl
+	from fundamentals 	import fft
+	from utilities 		import wrap_mpi_gatherv
+	from math 			import sqrt
+	from mpi 			import mpi_barrier, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM, mpi_reduce, mpi_bcast
+	from time 			import time
+	#  Input data has to be CTF-multiplied, preshifted
+	#  Output - newpar, see structure
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[params],[],... len(data)]
+	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
+	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+	#  Coding of orientations:
+	#    hash = ang*100000000 + lpsi*1000 + ishift
+	#    ishift = hash%1000
+	#    ipsi = (hash/1000)%100000
+	#    iang  = hash/100000000
+	#  To get best matching for particle #kl:
+	#     hash_best = newpar[kl][-1][0][0]
+	#     best_sim  = newpar[kl][-1][0][1]
+	#  To sort:
+	from operator 		import itemgetter#, attrgetter, methodcaller
+	#   params.sort(key=itemgetter(2))
+	#from fundamentals import resample
+	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from fundamentals import fdecimate, fshift, fft
+	from filter       import filt_ctf, filt_table
+	from applications import MPI_start_end
+	from math         import sqrt
+
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered exhaustive CCC")
+
+
+	at = time()
+	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
+	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
+	mode = "F"
+	numr = Numrinit_local(1, radius, 1, mode)
+	wr = ringwe(numr, mode)
+	cnx = float(Tracker["nxpolar"]//2 + 1)
+
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	#  FINE SEARCH CONSTANTS
+	#  Fine grids are shifted by half-fine_step
+	nang = len(refang)
+	npsi = int(360./Tracker["delta"])
+	nshifts = len(shifts)
+	n_fine_shifts = 4
+
+	nima = len(original_data)
+	mask = Util.unrollmask(Tracker["nxinit"])
+	for j in xrange(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
+	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
+
+	#  COARSE SEARCH CONSTANTS
+	n_coarse_ang = len(coarse_angles)
+	coarse_delta = 2*Tracker["delta"]
+	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_shifts = len(coarse_shifts)
+
+	coarse_shifts_shrank = [None]*n_coarse_shifts
+	for ib in xrange(n_coarse_shifts):
+		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
+
+	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw)
+
+	disp_unit = np.dtype("f4").itemsize
+
+	#  REFVOL
+	if( Blockdata["myid_on_node"] == 0 ):
+		odo = prep_vol( get_refvol( Tracker["nxpolar"]), npad = 2, interpolation_method = 1 )
+		ndo = EMNumPy.em2numpy(odo)
+		nxvol = odo.get_xsize()
+		nyvol = odo.get_ysize()
+		nzvol = odo.get_zsize()
+		orgsizevol = nxvol*nyvol*nzvol
+		sizevol = orgsizevol
+	else:
+		orgsizevol = 0
+		sizevol = 0
+		nxvol = 0
+		nyvol = 0
+		nzvol = 0
+
+	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+
+	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+	sizevol = orgsizevol
+	if( Blockdata["myid_on_node"] != 0 ):
+		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
+
+	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
+	if( Blockdata["myid_on_node"] == 0 ):
+		np.copyto(volbuf,ndo)
+		del odo,ndo
+
+	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	emnumpy1 = EMNumPy()
+	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
+	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
+
+	crefim = Util.Polar2Dm(model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
+
+	#  BIG BUFFER (for n_coarse_ang polar arrays)
+	size_of_one_image = crefim.get_xsize()
+	lenbigbuf = n_coarse_ang
+	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
+
+	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
+	else:  size = 0
+
+	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+	size = orgsize
+	if( Blockdata["myid_on_node"] != 0 ):
+		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
+
+	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
+	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+
+	emnumpy2 = EMNumPy()
+	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
+	#  end of setup
+
+	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
+		mpi_win_free(win_vol)
+		#  REFVOL FOR ML
+		if( Blockdata["myid_on_node"] == 0 ):
+			odo = prep_vol( get_refvol( Tracker["nxinit"]), npad = 2, interpolation_method = 1 )
+			###print("   ODO   ",odo[0],odo[1],info(odo))
+			###odo = prep_vol( get_refvol( Tracker["nxpolar"]), npad = 2, interpolation_method = 1 )
+			ndoinit = EMNumPy.em2numpy(odo)
+			nxvol = odo.get_xsize()
+			nyvol = odo.get_ysize()
+			nzvol = odo.get_zsize()
+			orgsizevol = nxvol*nyvol*nzvol
+			sizevol = orgsizevol
+		else:
+			orgsizevol = 0
+			sizevol = 0
+			nxvol = 0
+			nyvol = 0
+			nzvol = 0
+
+		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+
+		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+		sizevol = orgsizevol
+		if( Blockdata["myid_on_node"] != 0 ):
+			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
+
+		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
+		if( Blockdata["myid_on_node"] == 0 ):
+			np.copyto(volbufinit,ndoinit)
+			del odo,ndoinit
+
+		#volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
+		emnumpy4 = EMNumPy()
+		volinit = emnumpy4.register_numpy_to_emdata(volbufinit)
+		volinit.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
+		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
+		mpi_barrier(Blockdata["shared_comm"])
+		###if( Blockdata["myid"] < 10 ):
+		###	print(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
+	else:
+		volinit = volprep
+	#  End of replaced volprep
+
+
+	at = time()
+
+	nang_start, nang_end = MPI_start_end(n_coarse_ang, Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
+
+	for i in xrange(nang_start, nang_end, 1):  # This will take care of process on a node less than nang.  Some loops will not be executed
+		temp = prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
+		crefim = Util.Polar2Dm(temp, cnx, cnx, numr, mode)
+		Util.Frngs(crefim, numr)
+		Util.Applyws(crefim, numr, wr)
+		bigbuffer.insert_clip(crefim,(0,i) )
+
+	mpi_barrier(Blockdata["shared_comm"])
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		print( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
+	
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		print( "  " )
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift) )
+
+	#  Preprocess the data
+
+	#  Note these are in Fortran notation for polar searches
+	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
+	txl    	= float(radius - Tracker["nxpolar"]//2+1)
+
+
+
+	if Blockdata["bckgnoise"] :
+		oneover = []
+		nnx = Blockdata["bckgnoise"][0].get_xsize()
+		for i in xrange(len(Blockdata["bckgnoise"])):
+			temp = [0.0]*nnx
+			for k in xrange(nnx):
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+			oneover.append(temp)
+		del temp
+
+	accumulatepw = [None]*nima
+	norm_per_particle = [None]*nima
+
+
+	lxod1 = n_coarse_ang*len(coarse_shifts)*n_coarse_psi
+	newpar = [[i, [0.0], []] for i in xrange(nima)]
+
+	#  This is for auxiliary function searches.
+	Blockdata["angle_set"] = refang
+	#  Extract normals from rotation matrices
+	if( Tracker["constants"]["symmetry"] == "oct" ):  refdirs = [q.get_matrix()[8:11] for q in Blockdata["t_refang"]]
+	else:  refdirs = angles_to_normals(refang)
+
+	#if( Blockdata["myid"] == Blockdata["main_node"]):
+	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
+
+	###firsti = True
+
+	at = time()
+
+	for im in xrange(nima):
+
+		phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
+
+		if preshift:
+			sx = int(round(sx))
+			sy = int(round(sy))
+			dataimage  = cyclic_shift(original_data[im],sx,sy)
+			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
+			oldparams[im][3] = sx
+			oldparams[im][4] = sy
+			sx = 0.0
+			sy = 0.0
+		else:  dataimage = original_data[im].copy()
+
+		st = Util.infomask(dataimage, mask2D, False)
+		dataimage -= st[0]
+		dataimage /= st[1]
+		if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
+		#  Do bckgnoise if exists
+		#if Blockdata["bckgnoise"]:  # I think we should assume it always exists
+		if apply_mask:
+			if Tracker["constants"]["hardmask"]:
+				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"])
+			else:
+				bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+				bckg.set_attr("is_complex",1)
+				bckg.set_attr("is_fftpad",1)
+				bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
+				#  Normalize bckg noise in real space, only region actually used.
+				st = Util.infomask(bckg, mask2D, False)
+				bckg -= st[0]
+				bckg /= st[1]
+				dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
+		#else:
+		#	#  if no bckgnoise, do simple masking instead
+		#	if apply_mask:  dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
+
+		#  Apply varadj
+		if not nonorm:
+			Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
+
+		###  FT
+		dataimage = fft(dataimage)
+		sig = Util.rotavg_fourier( dataimage )
+		accumulatepw[im] = sig[len(sig)//2:]+[0.0]
+
+		#  We have to make sure the shifts are within correct range, shrinkage or not
+		#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
+		if Blockdata["bckgnoise"]:
+			temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
+			bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in xrange(temp.get_xsize())])
+		else:
+			bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+		bckgnoise = bckgn.copy()
+		for j in xrange(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
+
+		if Tracker["constants"]["CTF"] :
+			ctf_params = dataimage.get_attr("ctf")
+			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+			ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
+			#  Here we set astigmatism to zero
+			ctf_params.dfdiff = 0.0
+			ctfs = ctf_img_real(Tracker["nxinit"], ctf_params)
+		dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
+		data = []
+		for iq in coarse_shifts:
+			xx = iq[0]*shrink
+			yy = iq[1]*shrink
+			dss = fshift(dataml, xx, yy)
+			dss.set_attr("is_complex",0)
+			data.append(dss)
+
+		#  This will get it to real space
+		dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
+
+		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
+			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+
+		if( im < min(nima, 1) and procid == 0):
+			#   Search all and compare with direct to figure what keepfirst might be
+			keepfirst = (n_coarse_ang *  n_coarse_psi)/10#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
+
+			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
+					coarse_shifts_shrank,\
+					numr, [coarse_angles[ic][2] for ic in xrange(n_coarse_ang)], coarse_delta, cnx, keepfirst))
+
+			assert(len(xod2) == keepfirst)
+
+			xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
+
+			for iln in xrange(keepfirst):
+				m = xod2[iln]
+				j = m%n_coarse_psi
+				ic = (m/n_coarse_psi)%n_coarse_ang
+				ib  = m/(n_coarse_ang*n_coarse_psi)
+				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
+			# DO NOT order by angular directions to save time on reprojections.
+			pre_ipsiandiang = -1
+			for iln in xrange(keepfirst):
+				hashparams	= int(xod2[iln])
+				ishift		= hashparams%1000
+				ipsiandiang	= hashparams/1000
+				if(ipsiandiang != pre_ipsiandiang):
+					pre_ipsiandiang = ipsiandiang
+					ipsi = ipsiandiang%100000
+					iang = ipsiandiang/100000
+					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp.set_attr("is_complex",0)
+				xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)  # peak
+				##xod2[iln] = hashparams
+
+			xod1 -= np.max(xod1)
+			lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
+			#if( Blockdata["myid"] == 0 ):  
+			#print("  STARTING ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
+			lina = lina.reshape(lina.size)
+			keepf = int(lina[-1])
+
+			xod1 = xod1[lina]
+			xod2 = xod2[lina]
+
+			
+			lina = np.argsort(xod1)
+			xod1 = xod1[lina[::-1]]  # This sorts in reverse order
+			xod2 = xod2[lina[::-1]]  # This sorts in reverse order
+			np.exp(xod1, out=xod1)
+			xod1 /= np.sum(xod1)
+			cumprob = 0.0
+			lit = len(xod1)
+			for j in xrange(len(xod1)):
+				cumprob += xod1[j]
+				if(cumprob > Tracker["constants"]["ccfpercentage"]):
+					lit = j+1
+					break
+			#keepf = mpi_reduce(keepf, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
+			#if( Blockdata["myid"] == 0 ):
+			#	keepf = max(int(float(keepf)*0.9),1)
+			keepf = [keepf]
+			keepf = wrap_mpi_gatherv(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+			if( Blockdata["myid"] == 0 ):
+				keepf.sort()
+				keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
+			else:  keepf = 0
+			keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+			Tracker["keepfirst"] = int(keepf)
+			###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+
+		else:
+			#Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
+
+			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
+					coarse_shifts_shrank,\
+					numr, [coarse_angles[ic][2] for ic in xrange(n_coarse_ang)], coarse_delta, cnx, Tracker["keepfirst"]))
+
+			xod1 = np.ndarray((Tracker["keepfirst"]),dtype='f4',order="C")
+
+			for iln in xrange(Tracker["keepfirst"]):
+				m = xod2[iln]
+				j = m%n_coarse_psi
+				ic = (m/n_coarse_psi)%n_coarse_ang
+				ib  = m/(n_coarse_ang*n_coarse_psi)
+				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
+			# order by angular directions to save time on reprojections.
+			ipsiandiang = xod2/1000
+			lina = np.argsort(ipsiandiang)
+			xod2 = xod2[lina]  # order does not matter
+			pre_ipsiandiang = -1
+			for iln in xrange(Tracker["keepfirst"]):
+				hashparams	= int(xod2[iln])
+				ishift		= hashparams%1000
+				ipsiandiang	= hashparams/1000
+				if(ipsiandiang != pre_ipsiandiang):
+					pre_ipsiandiang = ipsiandiang
+					ipsi = ipsiandiang%100000
+					iang = ipsiandiang/100000
+					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp.set_attr("is_complex",0)
+				peak = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
+				xod1[iln] = peak
+				##xod2[iln] = hashparams
+
+			lina = np.argsort(xod1)
+			xod1 = xod1[lina[::-1]]  # This sorts in reverse order
+			xod2 = xod2[lina[::-1]]  # This sorts in reverse order
+
+			xod1 -= xod1[0]
+
+			lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
+			xod1 = xod1[lina]
+			xod2 = xod2[lina]
+			np.exp(xod1, out=xod1)
+			xod1 /= np.sum(xod1)
+			cumprob = 0.0
+			lit = len(xod1)
+			for j in xrange(len(xod1)):
+				cumprob += xod1[j]
+				if(cumprob > Tracker["constants"]["ccfpercentage"]):
+					lit = j+1
+					break
+
+
+		del data
+
+		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  SECOND KEPT  ",lit)
+
+		firstdirections = [[0.0,0.0] for iln in xrange(lit)]
+		firstshifts = [0]*lit
+		for iln in xrange(lit):
+			hashparams = int(xod2[iln])
+			ishift = hashparams%1000
+			ipsiandiang	= hashparams/1000
+			#ipsi = ipsiandiang%100000
+			iang = ipsiandiang/100000
+			firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
+			firstshifts[iln] = ishift
+		###del xod2
+		###if( Blockdata["myid"] == Blockdata["main_node"]): print("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
+		#mpi_barrier(MPI_COMM_WORLD)
+		#mpi_finalize()
+		#exit()
+
+		# Find neighbors, ltabang contains positions on refang list, no psis
+		ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4, sym = Tracker["constants"]["symmetry"])
+
+		# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
+		#   even though it is longer than lit.
+
+		#  Prepare image for chi2.
+		#  We have to repeat everything from get shrink data, including shifts
+		#  The number of entries is lit=len(ltabang), each proj dir has 4 neighbors
+		#    there are 2 psis, and at most n_fine_shifts. which should be 4.
+		#    Not not all shifts have to be populated. We may also have repeated triplets of angles, but each can have
+		#      different shifts.  If so, we have to remove duplicates from the entire set.
+		lcod1 = lit*4*2*n_fine_shifts
+		cod2 = []
+		#lol = 0
+		for i1 in xrange(lit):
+			hashparams = int(xod2[i1])
+			ipsiandiang	= hashparams/1000
+			oldiang = ipsiandiang/100000
+			ipsi = ipsiandiang%100000
+			ishift = hashparams%1000
+			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
+			for i2 in xrange(4):
+				iang = ltabang[i1][i2]
+				for i3 in xrange(2):  # psi
+					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+					itpsi = (itpsi + i3)%npsi
+					for i4 in xrange(len(tshifts)):
+						cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
+
+
+		del xod1, xod2
+
+		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
+		cod2 = list(set(cod2))
+		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+		cod1.sort()
+
+		lit = len(cod1)
+
+		cod2 = np.asarray([cod2[cod1[i][1]] for i in xrange(lit)])
+
+		cod1 = np.ndarray(lit,dtype='f4',order="C")
+		#cod1.fill(np.finfo(dtype='f4').min)
+		cod3 = np.ndarray(lit,dtype='f4',order="C")
+		#cod3.fill(0.0)  #  varadj
+
+		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD2   ",im,lit,cod2)
+
+		#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+		#  Thrid ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
+
+		data = [None]*nshifts
+		johi = 0
+		iln = 0
+		prevdir = -1
+		while(iln<lit):
+			hashparams = cod2[iln]
+			ipsiandiang	= hashparams/1000
+			if(ipsiandiang != prevdir):
+				prevdir = ipsiandiang
+				ipsi = ipsiandiang%100000
+				iang = ipsiandiang/100000
+				temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
+				temp.set_attr("is_complex",0)
+				johi += 1
+			while( ipsiandiang == cod2[iln]/1000 ):
+				hashparams = cod2[iln]
+				ishift = hashparams%1000
+				if( data[ishift] == None ):
+					xx = shifts[ishift][0]*shrink
+					yy = shifts[ishift][1]*shrink
+					data[ishift] = fshift(dataml, xx, yy)
+					data[ishift].set_attr("is_complex",0)
+
+				[peak,varadj] = Util.sqednorm(data[ishift], temp, ctfa, bckgnoise)
+				cod1[iln] = -peak
+				cod3[iln] = varadj
+				iln += 1
+				if(iln == lit  ):  break
+
+		del data
+		del dataml
+
+		lina = np.argsort(cod1)
+		cod1 = cod1[lina[::-1]]  # This sorts in reverse order
+		cod2 = cod2[lina[::-1]]  # This sorts in reverse order
+		cod3 = cod3[lina[::-1]]  # This sorts in reverse order
+		cod1 -= cod1[0]
+		lina = np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
+		cod1 = cod1[lina]
+		cod2 = cod2[lina]
+		cod3 = cod3[lina]
+
+		np.exp(cod1, out=cod1)
+		cod1 /= np.sum(cod1)
+		cumprob = 0.0
+		for j in xrange(len(cod1)):
+			cumprob += cod1[j]
+			if(cumprob > Tracker["constants"]["ccfpercentage"]):
+				lit = j+1
+				break
+
+		#  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
+		norm_per_particle[im] = np.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
+
+		for iln in xrange(lit):
+			newpar[im][2].append([int(cod2[iln]), float(cod1[iln])])
+
+		del cod1, cod2, cod3, lina
+		###mpi_barrier(MPI_COMM_WORLD)
+		###mpi_finalize()
+		###exit()
+	mpi_barrier(MPI_COMM_WORLD)
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+	#  All images were processed, now to the additional calculations
+	###mpi_barrier(MPI_COMM_WORLD)
+	###mpi_finalize()
+	###exit()
+
+
+	# norm correction ---- calc the norm correction per particle
+	snormcorr = 0.0
+	for kl in xrange(nima):
+		norm_per_particle[kl] = sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
+		snormcorr            += norm_per_particle[kl]
+	Tracker["avgvaradj"][procid] = snormcorr
+	mpi_barrier(MPI_COMM_WORLD)
+	#  Compute avgvaradj
+	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
+	else:  Tracker["avgvaradj"][procid] = 0.0
+	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	mpi_barrier(MPI_COMM_WORLD)
+
+	#  Compute statistics of smear -----------------
+	smax = -1000000
+	smin = 1000000
+	sava = 0.0
+	svar = 0.0
+	snum = 0
+	for kl in xrange(nima):
+		j = len(newpar[kl][2])
+		snum += 1
+		sava += float(j)
+		svar += j*float(j)
+		smax = max(smax, j)
+		smin = min(smin, j)
+	snum = mpi_reduce(snum, 1, MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	sava = mpi_reduce(sava, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	svar = mpi_reduce(svar, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	smax = mpi_reduce(smax, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
+	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
+	if( Blockdata["myid"] == 0 ):
+		from math import sqrt
+		sava = float(sava)/snum
+		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+
+	at = time()
+	mpi_barrier(Blockdata["shared_comm"])
+
+	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
+	mpi_win_free(win_sm)
+	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
+		mpi_win_free(win_volinit)
+		emnumpy4.unregister_numpy_from_emdata()
+		del emnumpy4
+	else:   mpi_win_free(win_vol)
+
+	mpi_barrier(Blockdata["shared_comm"])
+	emnumpy1.unregister_numpy_from_emdata()
+	emnumpy2.unregister_numpy_from_emdata()
+	del emnumpy1, emnumpy2
+
+	del volinit
+
+	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
+	mpi_barrier(MPI_COMM_WORLD)
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		#write_text_row([[newpar[0][2][j][0],newpar[0][2][j][1]] for j in xrange(len(newpar[0][2]))],os.path.join(Tracker["directory"], "polar%1d.txt"%procid))
+		print( "  Statistics finished : %10.1fmin"%((time()-at)/60.))
+	return newpar, norm_per_particle
+
+# TRUE POLAR
+def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
+					preshift = False, apply_mask = True, nonorm = False, applyctf = True):
+	"""
+	02/07/2017
+	"""
+	global Tracker, Blockdata
+	from projection 	import prgs,prgl
+	from fundamentals 	import fft
+	from utilities 		import wrap_mpi_gatherv
+	from math 			import sqrt
+	from mpi 			import mpi_barrier, MPI_COMM_WORLD, MPI_FLOAT, MPI_SUM, mpi_reduce, mpi_bcast
+	from time 			import time
+	#  Input data has to be CTF-multiplied, preshifted
+	#  Output - newpar, see structure
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[params],[],... len(data)]
+	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
+	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+	#  Coding of orientations:
+	#    hash = ang*100000000 + lpsi*1000 + ishift
+	#    ishift = hash%1000
+	#    ipsi = (hash/1000)%100000
+	#    iang  = hash/100000000
+	#  To get best matching for particle #kl:
+	#     hash_best = newpar[kl][-1][0][0]
+	#     best_sim  = newpar[kl][-1][0][1]
+	#  To sort:
+	from operator 		import itemgetter#, attrgetter, methodcaller
+	#   params.sort(key=itemgetter(2))
+	#from fundamentals import resample
+	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	from fundamentals import fdecimate, fshift, fft
+	from filter       import filt_ctf, filt_table
+	from applications import MPI_start_end
+	from math         import sqrt
+
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered local polar")
+
+	at = time()
+	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
+	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
+	mode = "F"
+	numr = Numrinit_local(1, radius, 1, mode)
+	wr = ringwe(numr, mode)
+	cnx = float(Tracker["nxpolar"]//2 + 1)
+
+	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
+	#  FINE SEARCH CONSTANTS
+	nang = len(refang)
+	ac_fine = cos(radians(Tracker["an"]))
+	npsi = int(360./Tracker["delta"])
+	mpsi = 2
+	c_fine_psi = mpsi//2
+	nshifts = len(shifts)
+	n_fine_shifts = 4
+
+	nima = len(original_data)
+	mask = Util.unrollmask(Tracker["nxinit"])
+	for j in xrange(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
+	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
+
+	#  COARSE SEARCH CONSTANTS
+	n_coarse_ang = len(coarse_angles)
+	coarse_delta = 2*Tracker["delta"]
+	n_coarse_psi = int(360./coarse_delta)
+	###m_coarse_psi = int((2*2*Tracker["an"])/coarse_delta + 0.5) + 1
+	m_coarse_psi = int(Tracker["an"]/Tracker["delta"] + 0.5)
+	c_coarse_psi = m_coarse_psi//2
+	n_coarse_shifts = len(coarse_shifts)
+
+	coarse_shifts_shrank = [None]*n_coarse_shifts
+	for ib in xrange(n_coarse_shifts):
+		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
+
+	###if(Blockdata["myid"] == Blockdata["main_node"]): print("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw,n_coarse_ang,coarse_delta,n_coarse_psi,m_coarse_psi,c_coarse_psi,n_coarse_shifts)
+
+	"""
+	ny = projdata[0].get_ysize()
+	mask = Util.unrollmask(ny)
+	nxt = 2*(mask.get_xsize())
+	"""
+
+	#if(Blockdata["myid"] == Blockdata["main_node"]):
+	#	print( original_data[0].get_attr("identifier") )
+	#	print( original_data[1].get_attr("identifier") )
+	
+
+	disp_unit = np.dtype("f4").itemsize
+	#  REFVOL
+	if( Blockdata["myid_on_node"] == 0 ):
+		###odo = prep_vol( get_refvol( Tracker["nxinit"]), npad = 2, interpolation_method = 1 )
+		odo = prep_vol( get_refvol( Tracker["nxpolar"]), npad = 2, interpolation_method = 1 )
+		###odo.update()
+		###print("   ODO polar  ",odo[0],odo[1],info(odo))
+		ndo = EMNumPy.em2numpy(odo)
+		nxvol = odo.get_xsize()
+		nyvol = odo.get_ysize()
+		nzvol = odo.get_zsize()
+		orgsizevol = nxvol*nyvol*nzvol
+		sizevol = orgsizevol
+	else:
+		orgsizevol = 0
+		sizevol = 0
+		nxvol = 0
+		nyvol = 0
+		nzvol = 0
+
+	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+
+	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+	sizevol = orgsizevol
+	if( Blockdata["myid_on_node"] != 0 ):
+		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
+
+	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
+	if( Blockdata["myid_on_node"] == 0 ):
+		np.copyto(volbuf,ndo)
+		del odo,ndo
+
+	#volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
+	emnumpy1 = EMNumPy()
+	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
+	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
+
+	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
+		mpi_win_free(win_vol)
+		#  REFVOL FOR ML
+		if( Blockdata["myid_on_node"] == 0 ):
+			odo = prep_vol( get_refvol( Tracker["nxinit"]), npad = 2, interpolation_method = 1 )
+			###print("   ODO   ",odo[0],odo[1],info(odo))
+			###odo = prep_vol( get_refvol( Tracker["nxpolar"]), npad = 2, interpolation_method = 1 )
+			ndoinit = EMNumPy.em2numpy(odo)
+			nxvol = odo.get_xsize()
+			nyvol = odo.get_ysize()
+			nzvol = odo.get_zsize()
+			orgsizevol = nxvol*nyvol*nzvol
+			sizevol = orgsizevol
+		else:
+			orgsizevol = 0
+			sizevol = 0
+			nxvol = 0
+			nyvol = 0
+			nzvol = 0
+
+		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+
+		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+		sizevol = orgsizevol
+		if( Blockdata["myid_on_node"] != 0 ):
+			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
+
+		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
+		if( Blockdata["myid_on_node"] == 0 ):
+			np.copyto(volbufinit,ndoinit)
+			del odo,ndoinit
+
+		#volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
+		emnumpy4 = EMNumPy()
+		volinit = emnumpy4.register_numpy_to_emdata(volbufinit)
+		volinit.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
+		if( Blockdata["myid_on_node"] == 0 ):  volinit.update()
+		mpi_barrier(Blockdata["shared_comm"])
+		###if( Blockdata["myid"] < 10 ):
+		###	print(" VOLPREP  ",volinit[0],volinit[1],info(volinit))
+	else:
+		volinit = volprep
+	#  End of replaced volprep
+
+
+	#  START CONES
+	#  This has to be systematically done per node
+	#
+	crefim = Util.Polar2Dm(model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
+	size_of_one_image = crefim.get_xsize()
+	#  We will assume half of the memory is available.  We will do it betteer later.
+	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
+	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
+	#  number of references that will fit into one mode
+	if( Tracker["constants"]["symmetry"] == "oct" ):  normals_set = [q.get_matrix()[8:11] for q in Blockdata["t_coarse"]]
+	else:	normals_set = angles_to_normals(coarse_angles)
+	Blockdata["angle_set"] = coarse_angles
+	if( n_coarse_ang <= numberofrefs_inmem ):
+		number_of_cones = 1
+		numberofrefs_inmem = n_coarse_ang
+		assignments_to_cones = [range(len(oldparams))]
+
+		assignments_of_refangles_to_cones = [[] for i in xrange(len(assignments_to_cones))]
+		assignments_of_refangles_to_angles = [[] for i in xrange(nima)]  # for each myid separately, these are angles on this myid
+
+		for i,q in enumerate(assignments_to_cones):
+			#  find assignments of refdirs to this cone within an of each angledirs, so we need symmetry neighbors set of refdirs.
+			###print( "in loop ", Blockdata["myid"],i,len(q))#,q
+
+			for m in q:
+				#print " m ",m,len(angles)
+
+				assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"], Tracker["constants"]["symmetry"])
+				assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
+
+			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
+			#print(  " assignments_of_refangles_to_cones on myid ",Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
+			assignments_of_refangles_to_cones[i] = wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
+			doit = 1
+			if( Blockdata["myid_on_node"] == 0 ):
+				assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
+				#print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]) )#,assignments_of_refangles_to_cones[i]
+
+		for i,q in enumerate(assignments_of_refangles_to_cones):
+			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
+			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
+
+	else:
+
+		angledirs = angles_to_normals([u1[:3] for u1 in oldparams])
+
+		number_of_cones = max(2, int(n_coarse_ang/numberofrefs_inmem*1.5 + 0.5))
+		###if Blockdata["myid_on_node"] == 0:  print( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
+		cont = True
+		while  cont :
+			#  Translate number of cones to cone_delta
+			cone_delta, number_of_cones = number_of_cones_to_delta(number_of_cones, Tracker["constants"]["symmetry"])
+			#  Generate cone_angles
+			##if Blockdata["myid"] == 0:  print( "  WHILE  ",number_of_cones, cone_delta)
+			if(Tracker["constants"]["symmetry"][0] == "c"):
+				if( number_of_cones == 1 ):
+					cone_delta  = 180.1
+					cone_angles = [[0., 1.0, 0.]]
+				else:
+					cone_angles = even_angles(cone_delta, symmetry=Tracker["constants"]["symmetry"], theta1 = 1.0, theta2=89.0, method="S", phiEqpsi="Zero")
+					cone_angles += [[(q[0]+90.0)%360., 180.-q[1],0] for q in cone_angles]
+					cone_angles = reduce_to_asymmetric_list(cone_angles, Tracker["constants"]["symmetry"])
+			elif(Tracker["constants"]["symmetry"][0] == "d"):
+				cone_angles = even_angles(cone_delta, symmetry= ("c"+Tracker["constants"]["symmetry"][1:]), theta2=90.01, method="S", phiEqpsi="Zero")
+			elif(Tracker["constants"]["symmetry"] == "oct"):
+				t_cone_angles = Blockdata["parsesym"].gen_orientations("saff",{"delta":cone_delta,"inc_mirror":1})
+				del t_cone_angles[0]
+				cone_angles = [None]*len(a)
+				conedirs = []
+				for i,q in enumerate(t_cone_angles):
+					u = q.get_sym_proj(Tracker["constants"]["symmetry"])
+					for p in u:
+						conedirs.append(p.get_matrix()[8:11])
+					q = q.get_params("spider")
+					cone_angles[i] = [q["phi"], q["theta"], 0.0]
+				assert(number_of_cones == len(cone_angles) )
+				neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
+				assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
+				del conedirs
+				
+			if(Tracker["constants"]["symmetry"][0] == "c" or Tracker["constants"]["symmetry"][0] == "d"):
+				#if Blockdata["myid"] == 0:  print(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
+				assert(number_of_cones == len(cone_angles) )
+
+				conedirs = angles_to_normals(symmetry_neighbors(cone_angles, Tracker["constants"]["symmetry"]))
+				neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
+				#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
+				#  assign data directions to cone_angles
+				assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
+				###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
+				#  the above should have length of refdirs and each should have indexes of data that belong to this cone
+				del conedirs
+				#print "assignments_to_cones ",assignments_to_cones
+			#  For each cone we have to find which refangles are needed to do the matching
+			assignments_of_refangles_to_cones = [[] for i in xrange(len(assignments_to_cones))]
+			assignments_of_refangles_to_angles = [[] for i in xrange(nima)]  # for each myid separately, these are angles on this myid
+
+
+			for i,q in enumerate(assignments_to_cones):
+				#  find assignments of refdirs to this cone within an of each angledirs, so we need symmetry neighbors set of refdirs.
+				#if Blockdata["myid"] == 0:  print( "in loop ", Blockdata["myid"],i,len(q),q)
+
+				if(len(q) == 0):
+					# empty assignment, on a given CPU there are no images assigned to a given cone
+					assignments_of_refangles_to_cones[i] = [-1]
+				else:
+					for m in q:
+						#print " m ",m,len(angles)
+
+						assignments_of_refangles_to_angles[m] = find_assignments_of_refangles_to_angles(normals_set, oldparams[m], Tracker["an"], Tracker["constants"]["symmetry"])
+						#if Blockdata["myid"] == 0:  print( "assignments_of_refangles_to_angles[m] ", Blockdata["color"],i,m,assignments_of_refangles_to_angles[m])
+						assignments_of_refangles_to_cones[i].extend(assignments_of_refangles_to_angles[m])
+
+					#if( Blockdata["myid"] == 19 ):  print(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
+					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
+				###if Blockdata["myid"] == 19:  print(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
+				assignments_of_refangles_to_cones[i] = wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
+				###if Blockdata["myid"] == 0:  print(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
+				doit = 1
+				if( Blockdata["myid_on_node"] == 0 ):
+					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i])-set([-1]))
+					###if( Blockdata["myid_on_node"] == 0 ):  print(  " assignments_of_refangles_to_cones on zero ",i,len(assignments_of_refangles_to_cones[i]))
+					#  POSSIBLE PROBLEM - IT IS POSSIBLE FOR A GIVEN CONE TO HAVE NO REFANGLES AND THUS BE EMPTY
+					if( len(assignments_of_refangles_to_cones[i]) > numberofrefs_inmem  and False):
+						number_of_cones = int(number_of_cones*1.25)
+						#print(  " increased number_of_cones ",i,number_of_cones )
+						doit = 0
+				doit = bcast_number_to_all(doit, source_node = 0)
+				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
+				###if( Blockdata["myid"] == 19 ):  print(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
+				if( doit == 0 ):  break
+
+			if( doit == 1 ):
+				cont = False
+
+
+		for i,q in enumerate(assignments_of_refangles_to_cones):
+			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
+			assignments_of_refangles_to_cones[i] = wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
+			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
+			#if( myid == 1 ):
+			#	print " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
+
+	if( Blockdata["myid"] == 0  ):  print( " number_of_cones: ",number_of_cones)
+	#  Maximum number of refangles assigned to angles (max number of references per image)
+	nlocal_angles = max( [ len(q) for q in assignments_of_refangles_to_angles] )
+	#  Most likely we have to delete some lists before proceeding
+	del normals_set
+	# We have to figure the maximum length of xod1, which is lang.  If there are no cones, it is an estimate.  If there are cones, we have list of assignments
+	#  For number of cones I use refang and an.  This should give approximately the same number as coarse angles and 2*an, which is what is actually used in searches
+	numberofrefs_inmem = max([len(q) for q in assignments_of_refangles_to_cones])
+
+	###for i,q in enumerate(assignments_of_refangles_to_cones):
+	###	print( " which refangles belong to which cone OUT ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],i,numberofrefs_inmem,nlocal_angles,len(q))#,q
+
+	#  BIG BUFFER
+	lenbigbuf = numberofrefs_inmem  #MAXIMUM NUMBER OF REFERENCE IN ONE OF THE CONES
+	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
+
+	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
+	else:  size = 0
+
+	win_sm, base_ptr  = mpi_win_allocate_shared( size*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
+	size = orgsize
+	if( Blockdata["myid_on_node"] != 0 ):
+		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
+
+	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
+	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
+
+	emnumpy2 = EMNumPy()
+	bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
+	#  end of CONES setup
+
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		print( "  " )
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
+
+	#  Note these are in Fortran notation for polar searches
+	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
+	txl    	= float(radius - Tracker["nxpolar"]//2+1)
+
+	if Blockdata["bckgnoise"] :
+		oneover = []
+		nnx = Blockdata["bckgnoise"][0].get_xsize()
+		for i in xrange(len(Blockdata["bckgnoise"])):
+			temp = [0.0]*nnx
+			for k in xrange(nnx):
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+			oneover.append(temp)
+		del temp
+
+	accumulatepw = [0.0]*nima
+	norm_per_particle = [0.0]*nima
+
+	##lxod1 = lang*len(list_of_coarse_shifts)*(int(2*Tracker["an"]/coarse_delta+0.5)+1)
+	newpar = [[i, [0.0], []] for i in xrange(nima)]
+
+	#  This is for auxiliary function searches.
+	Blockdata["angle_set"] = refang
+	#  Extract normals from rotation matrices
+	if( Tracker["constants"]["symmetry"] == "oct" ):  refdirs = [q.get_matrix()[8:11] for q in Blockdata["t_refang"]]
+	else:  refdirs = angles_to_normals(refang)
+
+
+	#  We have to make sure the number of cones is the same on all nodes, this is due to the strange MPI problem
+	#   that forced me to insert overall barrier into iterations over cones
+	max_number_of_cones = number_of_cones
+	max_number_of_cones = mpi_reduce(max_number_of_cones, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD)
+	if Blockdata["myid"] == Blockdata["main_node"] :  max_number_of_cones = int(max_number_of_cones[0])
+	max_number_of_cones = mpi_bcast(max_number_of_cones, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	max_number_of_cones = int(max_number_of_cones[0])
+
+
+	#if( Blockdata["myid_on_node"] == 0):
+	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, nlocal_angles, n_coarse_psi, len(list_of_coarse_shifts), number_of_cones , max_number_of_cones ",nima, nang,npsi,nshifts,n_coarse_ang,nlocal_angles,n_coarse_psi, len(coarse_shifts),number_of_cones,max_number_of_cones)
+
+	##firsti = True
+	at = time()
+	##eat = 0.0
+	lima = 0  #  total counter of images
+	#  PROCESSING OF CONES
+	for icone in xrange(max_number_of_cones):
+		mpi_barrier(MPI_COMM_WORLD)
+		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
+			nang_start, nang_end = MPI_start_end(len(assignments_of_refangles_to_cones[icone]), Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
+			#if(Blockdata["color"] == 1):
+			###print( " ZXZ11  ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],len(assignments_of_refangles_to_cones[icone]),nang_start, nang_end)
+
+			for i in xrange(nang_start, nang_end, 1):  # This will take care of no of process on a node less than nang.  Some loops will not be executed
+				ic = assignments_of_refangles_to_cones[icone][i]
+				temp = prgl(volprep,[ coarse_angles[ic][0],coarse_angles[ic][1],0.0, 0.0,0.0], 1, True)
+				crefim = Util.Polar2Dm(temp, cnx, cnx, numr, mode)
+				Util.Frngs(crefim, numr)
+				Util.Applyws(crefim, numr, wr)
+				bigbuffer.insert_clip(crefim,(0,i) )
+
+			mpi_barrier(Blockdata["shared_comm"])
+
+			#if(Blockdata["myid"] == Blockdata["main_node"]):
+			#	print( "  Reference projections generated for cone %4d: %10.1fmin"%(icone,(time()-at)/60.))
+			###print("  TOPOP    ",Blockdata["myid"],MPI_COMM_WORLD,len(assignments_to_cones[icone]))
+			###mpi_finalize()
+			###exit()
+			###  <><><><><><><><>
+
+			#  Preprocess the data
+
+			#  We only process images in the current cone.  icnm is consecutive number, im the actual image number
+			#for icnm,im in enumerate(assignments_to_cones[icone]):
+			lenass = len(assignments_to_cones[icone])
+			###print("   ENTERING  ",Blockdata["myid"],icone,lenass)
+			for icnm in xrange(max(1,lenass)):  # I have to enter the loop even it there is no assignment
+				if( lenass == 0 ):
+					keepf = -1
+					###print("  FOUNDEMPTY  ",Blockdata["myid"],icone,icnm,len(assignments_to_cones[icone]),assignments_to_cones)
+				else:
+					#  PREPARE ONE IMAGE
+					im = assignments_to_cones[icone][icnm]
+
+					phi,theta,psi,sx,sy, wnorm = oldparams[im][0], oldparams[im][1], oldparams[im][2], oldparams[im][3], oldparams[im][4], oldparams[im][7]
+
+					#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):  print("\n\n  INPUT PARAMS  ",im,phi,theta,psi,sx,sy)
+					if preshift:
+						sx = int(round(sx))
+						sy = int(round(sy))
+						dataimage  = cyclic_shift(original_data[im],sx,sy)
+						#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
+						oldparams[im][3] = sx
+						oldparams[im][4] = sy
+						sx = 0.0
+						sy = 0.0
+					else:  dataimage = original_data[im].copy()
+
+
+					st = Util.infomask(dataimage, mask2D, False)
+					dataimage -= st[0]
+					dataimage /= st[1]
+					if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
+					#  Do bckgnoise if exists
+					if Blockdata["bckgnoise"]:
+						if apply_mask:
+							if Tracker["constants"]["hardmask"]:
+								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"])
+							else:
+								bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+								bckg.set_attr("is_complex",1)
+								bckg.set_attr("is_fftpad",1)
+								bckg = fft(filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
+								#  Normalize bckg noise in real space, only region actually used.
+								st = Util.infomask(bckg, mask2D, False)
+								bckg -= st[0]
+								bckg /= st[1]
+								dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
+					else:
+						#  if no bckgnoise, do simple masking instead
+						if apply_mask:  dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
+
+					#  Apply varadj
+					if not nonorm:
+						Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
+
+					###  FT
+					dataimage = fft(dataimage)
+					sig = Util.rotavg_fourier( dataimage )
+					accumulatepw[im] = sig[len(sig)//2:]+[0.0]
+
+					#  We have to make sure the shifts are within correct range, shrinkage or not
+					#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
+					if Blockdata["bckgnoise"]:
+						temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
+						bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in xrange(temp.get_xsize())])
+					else:
+						bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+					bckgnoise = bckgn.copy()
+					for j in xrange(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
+
+					if Tracker["constants"]["CTF"] :
+						ctf_params = dataimage.get_attr("ctf")
+						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+						ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
+						#  Here we set astigmatism to zero
+						ctf_params.dfdiff = 0.0
+						ctfs = ctf_img_real(Tracker["nxinit"], ctf_params)
+					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
+					##	dataimage.set_attr("is_complex",0)
+					##	dataimage.write_image("dataimagefft.hdf")
+					##	dataimage.set_attr("is_complex",1)
+					dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
+					data = []
+					for iq in coarse_shifts:
+						xx = iq[0]*shrink
+						yy = iq[1]*shrink
+						dss = fshift(dataml, xx, yy)
+						dss.set_attr("is_complex",0)
+						data.append(dss)
+
+					#  This will get it to real space
+					dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
+					# Compute max number of angles on the fly
+					lang = len(assignments_of_refangles_to_angles[im])
+					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
+
+				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
+					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
+				lima += 1
+
+
+
+				###print("  CONA1    ",Blockdata["myid"],lima)
+				if( lima == 1 and procid == 0):
+					###print("  CONA2    ",Blockdata["myid"])
+					if( lenass > 0):
+						###print("   CICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
+						keepfirst = lang*m_coarse_psi*n_coarse_shifts#150#lang*m_coarse_psi*len(coarse_shifts_shrank)  #500#min(200,nlocal_angles)#min(max(lxod1/25,200),lxod1)
+						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),keepfirst)
+						#if( Blockdata["myid"] == Blockdata["main_node"] ):  
+						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
+								coarse_shifts_shrank,\
+								assignments_of_refangles_to_angles[im], assignments_of_refangles_to_cones[icone],\
+								numr, [coarse_angles[i][2] for i in xrange(n_coarse_ang)], \
+								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
+
+						##'''
+						assert(len(lxod1)/3 == keepfirst)
+
+						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
+						#xod1.fill(1.0)
+						xod2 = np.ndarray((keepfirst),dtype='int',order="C")
+						for iq in xrange(keepfirst):
+							#          ishift         iang                      ipsi
+							xod2[iq] = lxod1[3*iq] + lxod1[3*iq+1]*100000000 + lxod1[3*iq+2]*1000
+
+						##'''
+						#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+						#  Second step - find which coarse ones are significant
+
+						# order by angular directions to save time on reprojections.
+
+						pre_ipsiandiang = -1
+						for iln in xrange(keepfirst):
+							hashparams	= int(xod2[iln])
+							ishift		= hashparams%1000
+							ipsiandiang	= hashparams/1000
+							if(ipsiandiang != pre_ipsiandiang):
+								pre_ipsiandiang = ipsiandiang
+								ipsi = ipsiandiang%100000
+								iang = ipsiandiang/100000
+								##junk = time()
+								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+								##eat += time()-junk
+								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
+								temp.set_attr("is_complex",0)
+							##junk = time()
+							xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
+							##eat += time()-junk
+							##xod2[iln] = hashparams
+
+						xod1 -= np.max(xod1)
+						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
+						#if( Blockdata["myid"] == 0 ):  
+						###print("  STARTING1   ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
+
+
+						lina = lina.reshape(lina.size)
+						keepf = int(lina[-1])
+
+						xod1 = xod1[lina]
+						xod2 = xod2[lina]
+
+						###print("  STARTING2    ",Blockdata["myid"])
+
+						lina = np.argsort(xod1)
+						xod1 = xod1[lina[::-1]]  # This sorts in reverse order
+						xod2 = xod2[lina[::-1]]  # This sorts in reverse order
+						np.exp(xod1, out=xod1)
+						xod1 /= np.sum(xod1)
+						cumprob = 0.0
+						lit = len(xod1)
+						###print("  STARTING3    ",Blockdata["myid"],lit)
+						for j in xrange(len(xod1)):
+							cumprob += xod1[j]
+							if(cumprob > Tracker["constants"]["ccfpercentage"]):
+								lit = j+1
+								break
+
+
+						###print("  STARTING4    ",Blockdata["myid"],lit,keepf)
+					keepf = [keepf]
+					###mpi_barrier(MPI_COMM_WORLD)
+					###print("  STARTING5    ",Blockdata["myid"],keepf,MPI_COMM_WORLD)
+					mpi_barrier(MPI_COMM_WORLD)
+					keepf = wrap_mpi_gatherv(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+					###print("  STARTING6    ",Blockdata["myid"],keepf)
+					if( Blockdata["myid"] == 0 ):
+						keepf = [junk for junk in keepf if junk != -1]
+						if( len(keepf) <2 ):  ERROR("Too few images to estimate keepfirst","sxmeridien")
+						keepf.sort()
+						keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
+					else:  keepf = 0
+					###print("  STARTING7    ",Blockdata["myid"],keepf)
+					keepf = wrap_mpi_bcast(keepf, Blockdata["main_node"], MPI_COMM_WORLD)
+					###print("  STARTING8    ",Blockdata["myid"],keepf)
+					Tracker["keepfirst"] = int(keepf)
+					###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
+
+				else:
+					if(lenass>0):
+						###print("   DICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
+						###if( Blockdata["myid"] == 18 and lima<5):  print(" START   nlocal_angles* m_coarse_psi*len(coarse_shifts_shrank",nlocal_angles,coarse_delta,len(coarse_shifts_shrank),Tracker["keepfirst"])
+						#if( Blockdata["myid"] == Blockdata["main_node"] ):  
+						lxod1 = Util.multiref_Crosrng_msg_stack_stepsi_local(dataimage, bigbuffer, \
+								coarse_shifts_shrank,\
+								assignments_of_refangles_to_angles[im], assignments_of_refangles_to_cones[icone],\
+								numr, [coarse_angles[i][2] for i in xrange(n_coarse_ang)], \
+								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, Tracker["keepfirst"])
+						#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  ")
+						##'''
+
+						xod1 = np.ndarray((Tracker["keepfirst"]),dtype='f4',order="C")
+						#xod1.fill(1.0)
+						xod2 = np.ndarray((Tracker["keepfirst"]),dtype='int',order="C")
+						for iq in xrange(Tracker["keepfirst"]):
+							#          ishift         iang                      ipsi
+							xod2[iq] = lxod1[3*iq] + lxod1[3*iq+1]*100000000 + lxod1[3*iq+2]*1000
+
+						##'''
+
+						#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+						#  Second step - find which coarse ones are significant
+
+						# order by angular directions to save time on reprojections.
+						ipsiandiang = xod2/1000
+						lina = np.argsort(ipsiandiang)
+						xod2 = xod2[lina]  # order does not matter
+
+						pre_ipsiandiang = -1
+						for iln in xrange(Tracker["keepfirst"]):
+							hashparams	= int(xod2[iln])
+							ishift		= hashparams%1000
+							ipsiandiang	= hashparams/1000
+							if(ipsiandiang != pre_ipsiandiang):
+								pre_ipsiandiang = ipsiandiang
+								ipsi = ipsiandiang%100000
+								iang = ipsiandiang/100000
+								##junk = time()
+								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
+								##eat += time()-junk
+								temp.set_attr("is_complex",0)
+							##junk = time()
+							peak = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
+							##eat += time()-junk
+							#  Note I replace ccc by eqdist
+							xod1[iln] = peak
+							##xod2[iln] = hashparams
+
+						lina = np.argsort(xod1)
+						xod1 = xod1[lina[::-1]]  # This sorts in reverse order
+						xod2 = xod2[lina[::-1]]  # This sorts in reverse order
+
+						xod1 -= xod1[0]
+
+						#if( Blockdata["myid"] == Blockdata["main_node"]):
+						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
+						#	for iln in xrange(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
+
+
+						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
+						xod1 = xod1[lina]
+						xod2 = xod2[lina]
+						np.exp(xod1, out=xod1)
+						xod1 /= np.sum(xod1)
+						cumprob = 0.0
+						lit = len(xod1)
+						for j in xrange(len(xod1)):
+							cumprob += xod1[j]
+							if(cumprob > Tracker["constants"]["ccfpercentage"]):
+								lit = j+1
+								break
+
+						#  To here
+						###if( Blockdata["myid"] == 18 and lima<5):  print("  SECOND KEPT  ",lit)
+						#if( lima<5):  print("  SECOND KEPT  ",lit)
+
+
+				#mpi_barrier(MPI_COMM_WORLD)
+				#mpi_finalize()
+				#exit()
+				#for j in xrange(lit):
+				#	 newpar[kl][2].append([int(xod2[j]),float(xod1[j])])
+				if( lenass > 0):
+					###print("   EICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im)#,assignments_to_cones)
+
+					firstdirections = [[0.0,0.0] for iln in xrange(lit)]
+					firstshifts = [0]*lit
+					for iln in xrange(lit):
+						hashparams = int(xod2[iln])
+						ishift = hashparams%1000
+						ipsiandiang	= hashparams/1000
+						#ipsi = ipsiandiang%100000
+						iang = ipsiandiang/100000
+						#try:
+						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
+						#except:
+						#	print(" FAILED  ",Blockdata["myid"],Tracker["keepfirst"],iln,lima,lit,hashparams,iang,xod2[:lit],xod1[:lit])
+						#	mpi_finalize()
+						#	exit()
+						firstshifts[iln] = ishift
+						#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):
+						#	ipsi = ipsiandiang%100000
+						#	ishift = hashparams%1000
+						#	###print("  SECONDPAR%04d  "%im,iln,hashparams, ipsi,iang,ishift)
+						#	print(" SECONDPAR%04d  "%im,iln, refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
+					###del xod2
+					###if( Blockdata["myid"] == 18 and lima<5):   print("  SECOND KEPT  ",im,lit)#,len(xod2),xod2,firstdirections,firstshifts)
+					#mpi_barrier(MPI_COMM_WORLD)
+					#mpi_finalize()
+					#exit()
+
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  FIFI ",firstdirections)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  GUGU ",firstshifts)
+					# Find neighbors, ltabang contains positions on refang list, no psis
+					###ltabang = nearest_many_full_k_projangles(refang, firstdirections, howmany = 5, sym=Tracker["constants"]["symmetry"])
+					ltabang = find_nearest_k_refangles_to_many_angles(refdirs, firstdirections, Tracker["delta"], howmany = 4, sym = Tracker["constants"]["symmetry"])
+					###if( Blockdata["myid"] == Blockdata["main_node"]): print("  ltabang ",ltabang)
+					##mpi_barrier(MPI_COMM_WORLD)
+					##mpi_finalize()
+					##exit()
+
+					# ltabang has length lit, which is the same as length as firshifts.  However, original xod2 is still available,
+					#   even though it is longer than lit.
+
+
+					###ltabshi = [shiftneighbors[iln] for iln in firstshifts]
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  HUHU ",ltabang)
+					#if(Blockdata["myid"] == Blockdata["main_node"]):  print("  OUOU ",ltabshi)
+
+					#  Prepare image for chi2.
+					#  We have to repeat everything from get shrink data, including shifts
+					#  The number of entries is lit=len(ltabang), each proj dir has 4 neighbors, so including itself there are 5,
+					#    there are 3 psis, and at most n_fine_shifts. 
+					#    Not not all shifts have to be populated. We may also have repeated triplets of angles, but each can have
+					#      different shifts.  If so, we have to remove duplicates from the entire set.
+					lcod1 = lit*4*2*n_fine_shifts
+
+					#cod2 = np.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
+					#cod2.fill(-1)  #  hashparams
+					cod2 = []
+					#lol = 0
+					for i1 in xrange(lit):
+						hashparams = int(xod2[i1])
+						ipsiandiang	= hashparams/1000
+						oldiang = ipsiandiang/100000
+						ipsi = ipsiandiang%100000
+						ishift = hashparams%1000
+						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
+						#if( Blockdata["myid"] == Blockdata["main_node"]): print(" tshifts  ",i1,len(tshifts))
+						for i2 in xrange(4):
+							iang = ltabang[i1][i2]
+							for i3 in xrange(2):  # psi
+								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+								itpsi = (itpsi + i3)%npsi
+								for i4 in xrange(len(tshifts)):
+									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
+									#lol += 1
+									#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  zibzi  ",i1,i2,i3,i4, lol)
+
+
+					del xod1, xod2
+
+					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
+					cod2 = list(set(cod2))
+					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+					cod1.sort()
+
+					lit = len(cod1)
+
+					cod2 = np.asarray([cod2[cod1[i][1]] for i in xrange(lit)])
+
+					cod1 = np.ndarray(lit,dtype='f4',order="C")
+					#cod1.fill(np.finfo(dtype='f4').min)
+					cod3 = np.ndarray(lit,dtype='f4',order="C")
+					#cod3.fill(0.0)  #  varadj
+
+					###if( Blockdata["myid"] == 18 and lima<5): print("  THIRD   ",im,lit)#,cod2)
+
+					#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+					#  Thrid ML part.  Now the actual chi2 distances, we compute reprojections on the fly.
+					#  Make sure volprep has nxinit size
+					data = [None]*nshifts
+					johi = 0
+					iln = 0
+					prevdir = -1
+					while(iln<lit):
+						hashparams = cod2[iln]
+						#if( Blockdata["myid"] == Blockdata["main_node"]): print("  COD2   ",im,lit,iln,cod2[iln])
+						ipsiandiang	= hashparams/1000
+						if(ipsiandiang != prevdir):
+							prevdir = ipsiandiang
+							ipsi = ipsiandiang%100000
+							iang = ipsiandiang/100000
+							##junk = time()
+							temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
+							##eat += time()-junk
+							temp.set_attr("is_complex",0)
+							johi += 1
+						while( ipsiandiang == cod2[iln]/1000 ):
+							hashparams = cod2[iln]
+							ishift = hashparams%1000
+							if( data[ishift] == None ):
+								xx = shifts[ishift][0]*shrink
+								yy = shifts[ishift][1]*shrink
+								data[ishift] = fshift(dataml, xx, yy)
+								data[ishift].set_attr("is_complex",0)
+							##junk = time()
+							[peak,varadj] = Util.sqednorm(data[ishift], temp, ctfa, bckgnoise)
+							##eat += time()-junk
+							cod1[iln] = -peak
+							cod3[iln] = varadj
+							iln += 1
+							if(iln == lit  ):  break
+						#if( Blockdata["myid"] == Blockdata["main_node"]):
+						#	temp.write_image("temp.hdf")
+						#	data[iln].write_image("data.hdf")
+						#	ctfa.write_image("ctfa.hdf")
+						#	bckgnoise.write_image("bckgnoise.hdf")
+						#	exit()
+						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  print(" progress  ",iln,time()-at)
+					#if( Blockdata["myid"] == Blockdata["main_node"]):
+					#	print("  PROJECT   ",im,lit,johi)#,cod2)
+					#	#for iln in xrange(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
+					del data
+					del dataml
+
+					lina = np.argsort(cod1)
+					cod1 = cod1[lina[::-1]]  # This sorts in reverse order
+					cod2 = cod2[lina[::-1]]  # This sorts in reverse order
+					cod3 = cod3[lina[::-1]]  # This sorts in reverse order
+					cod1 -= cod1[0]
+					lina = np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
+					cod1 = cod1[lina]
+					cod2 = cod2[lina]
+					cod3 = cod3[lina]
+
+					###if( Blockdata["myid"] == Blockdata["main_node"]):
+					###for iui in xrange(len(lina)):
+					###	for iui in xrange(len(cod1)):
+					###		print("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
+
+					np.exp(cod1, out=cod1)
+					cod1 /= np.sum(cod1)
+					cumprob = 0.0
+					for j in xrange(len(cod1)):
+						cumprob += cod1[j]
+						if(cumprob > Tracker["constants"]["ccfpercentage"]):
+							lit = j+1
+							break
+
+					#  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
+					norm_per_particle[im] = np.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
+					###print("   CNORMPERPARTICLE  ",Blockdata["myid"],im,norm_per_particle[im])
+
+					for iln in xrange(lit):
+						newpar[im][2].append([int(cod2[iln]), float(cod1[iln])])
+						#  CONTROLPRINTOUT   if( Blockdata["myid"] == Blockdata["main_node"] and icnm<5):
+						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1])
+						#	hashparams = newpar[im][2][iln][0]
+						#	ipsiandiang	= hashparams/1000
+						#	ipsi = ipsiandiang%100000
+						#	iang = ipsiandiang/100000
+						#	ishift = hashparams%1000
+						#	#print("  NEWPAR%04d  "%im,iln,newpar[im][2][-1],hashparams,ipsi,iang,ishift)
+						#	print(" NEWPAR%04d  "%im,iln,newpar[im][2][iln], refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, shifts[ishift])
+
+					###if( Blockdata["myid"] == 18 and lima<5):   print("  FINALLY  ",im,lit)
+					del cod1, cod2, cod3, lina
+					###mpi_barrier(MPI_COMM_WORLD)
+					###mpi_finalize()
+					###exit()
+
+	"""
+	Number of images :     82     410   20.0%          1.3min          0.8min
+	Number of images :    164     410   40.0%          3.0min          1.8min
+	Number of images :    246     410   60.0%          5.7min          3.1min
+	Number of images :    328     410   80.0%          8.8min          4.4min
+	#  Projection and equdist take 50% time, so on the whole run of the program one could
+	#    reduce time from 311 to 233, (6h to 4h) if this time was totally eliminated.
+	"""
+
+	#  END OF CONES
+	mpi_barrier(MPI_COMM_WORLD)
+	if( Blockdata["myid"] == Blockdata["main_node"] ):
+		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+	at = time()
+	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+	#  All images were processed, now to the additional calculations
+
+	###mpi_barrier(MPI_COMM_WORLD)
+	###mpi_finalize()
+	###exit()
+
+
+	# norm correction ---- calc the norm correction per particle
+	snormcorr = 0.0
+	for kl in xrange(nima):
+		###print("   NORMPERPARTICLE  ",Blockdata["myid"],kl,norm_per_particle[kl])
+		norm_per_particle[kl]	= sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
+		snormcorr				+= norm_per_particle[kl]
+	Tracker["avgvaradj"][procid] = snormcorr
+	mpi_barrier(MPI_COMM_WORLD)
+	#  Compute avgvaradj
+	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
+	else:  Tracker["avgvaradj"][procid] = 0.0
+	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	mpi_barrier(MPI_COMM_WORLD)
+
+	#  Compute statistics of smear -----------------
+	smax = -1000000
+	smin = 1000000
+	sava = 0.0
+	svar = 0.0
+	snum = 0
+	for kl in xrange(nima):
+		j = len(newpar[kl][2])
+		snum += 1
+		sava += float(j)
+		svar += j*float(j)
+		smax = max(smax, j)
+		smin = min(smin, j)
+	snum = mpi_reduce(snum, 1, MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	sava = mpi_reduce(sava, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	svar = mpi_reduce(svar, 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
+	smax = mpi_reduce(smax, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
+	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
+	if( Blockdata["myid"] == 0 ):
+		from math import sqrt
+		sava = float(sava)/snum
+		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(line, "Smear stat  (number of images, ave, sumsq, min max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
+
+	at = time()
+	mpi_barrier(Blockdata["shared_comm"])
+
+	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
+	mpi_win_free(win_sm)
+	if( Tracker["nxinit"] != Tracker["nxpolar"] ):
+		mpi_win_free(win_volinit)
+		emnumpy4.unregister_numpy_from_emdata()
+		del emnumpy4
+	else:   mpi_win_free(win_vol)
+
+	mpi_barrier(Blockdata["shared_comm"])
+	emnumpy1.unregister_numpy_from_emdata()
+	emnumpy2.unregister_numpy_from_emdata()
+	del emnumpy1, emnumpy2
+
+	del volinit
+
+	mpi_barrier(Blockdata["shared_comm"])
+
+	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
+	mpi_barrier(MPI_COMM_WORLD)
+	#if( Blockdata["myid"] == Blockdata["main_node"] ):
+	#	print( "  Projection matching finished : %10.1fmin"%((time()-at)/60.))
 	return newpar, norm_per_particle
 
 def cerrs(params, ctfs, particle_groups):
@@ -3079,10 +5246,6 @@ def cerrs(params, ctfs, particle_groups):
 	Tracker["acc_rot"] = acc_rot
 	Tracker["acc_trans"] = acc_trans
 
-def memory_check(myid,t = " "):
-	import psutil, os
-	print("                MEMORY OCCUPIED  %s: "%t,myid,"   ",psutil.Process(os.getpid()).memory_info()[0]/1.e9,"GB")
-
 def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructure, projdata, final_iter=-1, comm = -1 ):
 	global Tracker, Blockdata
 	#from mpi import mpi_barrier, MPI_COMM_WORLD
@@ -3124,8 +5287,8 @@ def do_final_rec3d(partids, partstack, original_data, oldparams, oldparamstructu
 		else:
 			l  = 0
 		l  = bcast_number_to_all(l, source_node = Blockdata["main_node"], mpi_comm = comm)
-		norm_per_particle = [[],[]]
 		
+		norm_per_particle = [[],[]]
 		# get the previous number of CPUs
 		nproc_previous = 0
 		if Blockdata["subgroup_myid"] == 0:
@@ -3226,11 +5389,16 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 				do_final_iter = Tracker["constants"]["best"] # set the best as do_final iteration
 			except:				
 				carryon = 0
-		carryon       = bcast_number_to_all(carryon)
-		do_final_iter = bcast_number_to_all(do_final_iter)
+		carryon = bcast_number_to_all(carryon)
 		if carryon == 0: ERROR("search failed, and the final reconstruction terminates ", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
-		if do_final_iter ==0: # poor starting 
-			ERROR(" The best solution is zero iteration", "recons3d_final", 1, Blockdata["myid"])
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			 if do_final_iter ==0:
+			 	print("Best solution searching error!")
+		else:
+			do_final_iter ==0
+		do_final_iter = bcast_number_to_all(do_final_iter)
+		if do_final_iter ==0:
+			ERROR(" Best solution is found to be zero, terminate final 3-D reconstruction!", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
 	elif do_final_iter == -1: 
 		do_final_iter = Tracker["constants"]["best"]
 	else:
@@ -3294,14 +5462,13 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 	
 # ctrefromsort3d has three functions
 
-def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, option_selected_cluster, option_selected_iter, option_memory_per_node, shell_line_command):
+def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, option_selected_cluster, option_selected_iter, shell_line_command):
 	global Tracker, Blockdata
 	
 	selected_iter = option_selected_iter
 	if Blockdata["myid"] == Blockdata["main_node"]: cluster = sorted(read_text_file(option_selected_cluster))
 	else:                                           cluster = 0
 	cluster = wrap_mpi_bcast(cluster, Blockdata["main_node"], MPI_COMM_WORLD) # balance processors
-	
 	
 	old_refinement_iter_dir    = os.path.join(option_old_refinement_dir, "main%03d"%selected_iter)
 	old_oldparamstructure_dir  = os.path.join(old_refinement_iter_dir, "oldparamstructure")
@@ -3321,40 +5488,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		fout.close()
 	else: Tracker = 0
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD) # balance processors
-	
-	## Now estimate memory
-	if option_memory_per_node == -1.: memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
-	else:                             memory_per_node = option_memory_per_node
-	if(Blockdata["myid"] == Blockdata["main_node"]):
-		delta = Tracker["delta"]
-		Tracker["delta"] = 0.46875
-		refang, rshifts  = get_refangs_and_shifts()
-		Tracker["delta"] = delta
-		image_size   = max(Tracker["nxinit"], Tracker["constants"]["nnxo"]*3./4.)
-		refdata_size = float(len(refang))*image_size**2*4.0/1.0e9
-		del refang, rshifts
-		data_size    = len(cluster)//2*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9
-		alidata_size = data_size+refdata_size/float(Blockdata["no_of_groups"])
-		volume_size  = (1.5*4*(2.0*image_size+3.0)**3)/1.e9
-		nnprocs      = min( Blockdata["no_of_processes_per_group"], int(((memory_per_node - data_size*1.2)/volume_size)))
-		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(memory_per_node,volume_size,data_size,nnprocs))
-		memory_per_cpu_3d = data_size/Blockdata["no_of_processes_per_group"]*1.2 + volume_size
-		memory_per_cpu_ali = data_size/Blockdata["no_of_processes_per_group"]*1.2+refdata_size/float(Blockdata["no_of_groups"])
-		print("  Estimated memory consumption per CPU in reconstruction %6.2f"%memory_per_cpu_3d)
-		print("  Estimated memory consumption per CPU in alignment  %6.2f"%memory_per_cpu_ali)
-		if( (memory_per_node - data_size*1.2 - volume_size) < 0 or (nnprocs == 0)):  nogo = 1
-		else:  nogo = 0
-		if memory_per_node<alidata_size: nogo = 1
-	else:
-		nnprocs = 0
-		nogo    = 0
-	nogo = bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-	if( nogo == 1 ):  ERROR("Insufficient memory to continue refinement from subset","continue_from_subset", 1, Blockdata["myid"])
-	nnprocs = bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-	Blockdata["ncpuspernode"] 	= nnprocs
-	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
-	create_subgroup()
-			
+		
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		noiseimage        = get_im(os.path.join(old_previousoutputdir, "bckgnoise.hdf"))
 		noiseimage1       = get_im(os.path.join(old_refinement_iter_dir, "bckgnoise.hdf"))
@@ -3372,8 +5506,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		rshifts          = 0
 		chunk_one        = 0
 		chunk_two        = 0
-		params_last_iter = 0 
-		
+		params_last_iter = 0 	
 	params            = wrap_mpi_bcast(params, Blockdata["main_node"], MPI_COMM_WORLD)
 	params_last_iter  = wrap_mpi_bcast(params_last_iter, Blockdata["main_node"], MPI_COMM_WORLD)
 	refang            = wrap_mpi_bcast(refang,    Blockdata["main_node"], MPI_COMM_WORLD)
@@ -3441,8 +5574,6 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		Tracker["no_improvement"]         = 0
 		Tracker["no_params_changes"]      = 0
 		Tracker["pixercutoff"]            = 0
-		Tracker["saturated_sampling"]     = False
-		Tracker["is_converged"]           = False
 		Tracker["large_at_Nyquist"]       = False
 		Tracker["previousoutputdir"]      = previousoutputdir
 		Tracker["refvol"]                 = os.path.join(iter_dir, "vol_0_%03d.hdf"%selected_iter)
@@ -3488,7 +5619,7 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 	else:  nproc_dict    = 0
 	nproc_dict           = wrap_mpi_bcast(nproc_dict, Blockdata["main_node"], MPI_COMM_WORLD)
 	
-	### parse previous nproc in refinement to current nproc
+	### parse nproc in refinement to current nproc
 	proc_start, proc_end = MPI_start_end(Blockdata["nproc"], Blockdata["nproc"], Blockdata["myid"])
 	#print("myid", Blockdata["myid"], proc_start, proc_end)
 	if proc_start<proc_end:
@@ -3507,14 +5638,9 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 					oldparams.append(old_oldparams[old_index_of_particle])
 				fout = open(os.path.join(new_oldparamstructure_dir,  "oldparamstructure_%d_%03d_%03d.json"%(ichunk, myproc, selected_iter)), "w")
 				json.dump(oldparams, fout)
-				fout.close()
-	else:
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print("Request too large number of CPus. Use smaller number of CPUs for restart from a subset of data!")
-		mpi_finalize()
-		exit()				
+				fout.close()				
 	### <<<-------load 0 iteration
-	selected_iter              = 0
+	selected_iter = 0
 	old_refinement_iter_dir    = os.path.join(option_old_refinement_dir, "main%03d"%selected_iter)
 	old_oldparamstructure_dir  = os.path.join(old_refinement_iter_dir, "oldparamstructure")
 	iter_dir                   = os.path.join(masterdir, "main%03d"%selected_iter)
@@ -3586,11 +5712,10 @@ def do_ctrefromsort3d_get_subset_data(masterdir, option_old_refinement_dir, opti
 		
 	if Blockdata["myid"] == Blockdata["main_node"]:# some numbers and path are required to be modified
 		# varibles in Tracker to be updated
-		Tracker["constants"]["memory_per_node"] = memory_per_node
-		Tracker["constants"]["masterdir"]       = masterdir
-		Tracker["previousoutputdir"]            = Tracker["directory"]
-		Tracker["refvol"]                       = os.path.join(iter_dir, "vol_0_%03d.hdf"%selected_iter)
-		Tracker["mainiteration"]                = selected_iter
+		Tracker["constants"]["masterdir"] = masterdir
+		Tracker["previousoutputdir"]      = Tracker["directory"]
+		Tracker["refvol"]                 = os.path.join(iter_dir, "vol_0_%03d.hdf"%selected_iter)
+		Tracker["mainiteration"]          = selected_iter
 		
 		if Tracker["constants"]["mask3D"]: 
 			Tracker["constants"]["mask3D"]= os.path.join(option_old_refinement_dir, "../", Tracker["constants"]["mask3D"])
@@ -3653,7 +5778,7 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 			cfsc 	= cfsc[:Tracker["nxinit"]]
 		for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
 		lcfsc = len(cfsc)
-		#--  memory_check(Blockdata["myid"],"second node, after stepone")
+		#--  #--  memory_check(Blockdata["myid"],"second node, after stepone")
 	else:
 		#  receive fsc
 		lcfsc = 0
@@ -3663,21 +5788,9 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 	lcfsc = bcast_number_to_all(lcfsc)
 	if( Blockdata["myid"] != Blockdata["nodes"][0]  ): cfsc = [0.0]*lcfsc
 	cfsc = bcast_list_to_all(cfsc, Blockdata["myid"], Blockdata["nodes"][0] )
-	
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
 		out_fsc(cfsc)
-		# determine 0.143 resolution
-		fsc143 =1
-		for ifreq in xrange(1, len(cfsc)):
-			if cfsc[ifreq] < 0.143:
-				break
-		fsc143 =ifreq - 1
-	else:
-		fsc143 = 0.0
-	fsc143 = bcast_number_to_all(fsc143, source_node = Blockdata["main_node"])
-	Blockdata["fsc143"] = fsc143
-			
 	# do steptwo
 	if( Blockdata["color"] == Blockdata["node_volume"][1]):
 		if( Blockdata["myid_on_node"] == 0 ):
@@ -3691,7 +5804,7 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 		if( Blockdata["myid_on_node"] == 0 ):
 			tvol0.write_image(os.path.join(Tracker["directory"], "vol_0_%03d.hdf")%Tracker["mainiteration"])
 	elif( Blockdata["color"] == Blockdata["node_volume"][0]):
-		#--  memory_check(Blockdata["myid"],"second node, before steptwo")
+		#--  #--  memory_check(Blockdata["myid"],"second node, before steptwo")
 		#  compute filtered volume
 		if( Blockdata["myid_on_node"] == 0 ):
 			treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
@@ -3779,34 +5892,19 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 			while os.path.exists(os.path.join(Tracker["directory"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid, nproc_previous, Tracker["mainiteration"]))):
 				nproc_previous += 1
 		nproc_previous = bcast_number_to_all(nproc_previous, source_node = Blockdata["main_node"], mpi_comm = comm)
-		psize = len(read_text_file(partids[procid]))
-		oldparamstructure[procid] = []
-		
-		im_start, im_end = MPI_start_end(psize, Blockdata["subgroup_size"], Blockdata["subgroup_myid"])
-		
-		istart_old_proc_id = -1
-		iend_old_proc_id   = -1
-		plist = []
-		for iproc_old in xrange(nproc_previous):
-			im_start_old, im_end_old = MPI_start_end(psize, nproc_previous, iproc_old)
-			if (im_start>= im_start_old) and im_start <=im_end_old:
-				istart_old_proc_id = iproc_old
-			if (im_end>= im_start_old) and im_end <=im_end_old:
-				iend_old_proc_id = iproc_old
-			plist.append([im_start_old, im_end_old])
-				
-		ptl_on_this_cpu = im_start
-		for iproc_index_old in xrange(istart_old_proc_id, iend_old_proc_id+1):
-			fout = open(os.path.join(final_dir,"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,iproc_index_old,Tracker["mainiteration"])),'r')
-			oldparamstructure_on_old_cpu = convert_json_fromunicode(json.load(fout))
-			fout.close()
-			mlocal_id_on_old = ptl_on_this_cpu - plist[iproc_index_old][0]
-			while (mlocal_id_on_old<len(oldparamstructure_on_old_cpu)) and (ptl_on_this_cpu<im_end):
-				oldparamstructure[procid].append(oldparamstructure_on_old_cpu[mlocal_id_on_old])
-				ptl_on_this_cpu  +=1
-				mlocal_id_on_old +=1
-		del oldparamstructure_on_old_cpu
-		mpi_barrier(Blockdata["subgroup_comm"])
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			for iproc in xrange(nproc_previous):
+				fout = open(os.path.join(Tracker["directory"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid, iproc,Tracker["mainiteration"])),'r')
+				oldparamstructure[procid] += convert_json_fromunicode(json.load(fout))
+				fout.close()
+		else:
+			oldparamstructure[procid] = [0]
+		oldparamstructure[procid] = wrap_mpi_bcast(oldparamstructure[procid], Blockdata["main_node"], comm)
+		im_start, im_end = MPI_start_end(len(oldparamstructure[procid]), Blockdata["nproc"], Blockdata["myid"])
+		oldparamstructure[procid] = oldparamstructure[procid][im_start:im_end]
+		#print("nproc_previous", nproc_previous)
+		mpi_barrier(MPI_COMM_WORLD)
+		#####
 		original_data[procid], oldparams[procid] = getindexdata(partids[procid], partstack[procid], \
 				os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_%01d.txt"%procid), \
 				original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
@@ -3836,6 +5934,29 @@ def ctrefromsorting_rec3d_faked_iter(masterdir, selected_iter=-1, comm = -1):
 	return 
 ###End of ctrefromsort3d
 
+def update_memory_estimation():
+	global Tracker, Blockdata
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
+		image_size   = max(Tracker["nxinit"], Tracker["constants"]["nnxo"]*1./2.)
+		data_size    = total_stack*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9
+		volume_size  = (1.5*4*(2.0*image_size+3.0)**3)/1.e9
+		nnprocs      = min( Blockdata["no_of_processes_per_group"], int(((Tracker["constants"]["memory_per_node"] - data_size*1.2)/volume_size)))
+		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(Tracker["constants"]["memory_per_node"],volume_size,data_size,nnprocs))
+		memory_per_cpu_3d = data_size/Blockdata["no_of_processes_per_group"]*1.2 + volume_size
+		print("  Estimated memory consumption per CPU in reconstruction %6.2f"%memory_per_cpu_3d)
+		if( (Tracker["constants"]["memory_per_node"] - data_size*1.2 - volume_size) < 0 or (nnprocs == 0)):  nogo = 1
+		else:  nogo = 0
+	else:
+		nnprocs = 0
+		nogo    = 0
+	nogo = bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	if( nogo == 1 ):  ERROR("Insufficient memory to continue refinement from subset","continue_from_subset", 1, Blockdata["myid"])
+	nnprocs = bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	Blockdata["ncpuspernode"] 	= nnprocs
+	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
+	create_subgroup()
+
 def update_tracker(shell_line_command):
 	global Tracker, Blockdata
 	# reset parameters for a restart run; update only those specified options in restart
@@ -3856,15 +5977,16 @@ def update_tracker(shell_line_command):
 	parser_no_default.add_option("--center_method",				type="int")
 	parser_no_default.add_option("--target_radius", 			type="int")
 	parser_no_default.add_option("--mask3D",		         	type="string")
+	parser.add_option("--function",						type="string", default="do_volume_mask",  help="name of the reference preparation function (default do_volume_mask)")
 	parser_no_default.add_option("--ccfpercentage",		 		type="float")
 	parser_no_default.add_option("--nonorm",               		action="store_true")
 	parser_no_default.add_option("--do_final",             		type="int")# No change
 	parser_no_default.add_option("--small_memory",         		action="store_true")
 	parser_no_default.add_option("--memory_per_node",         	type="float")
-	parser_no_default.add_option("--continue_from_subset",      action="store_true")
+	parser_no_default.add_option("--ctrefromsort3d",            action="store_true")
 	parser_no_default.add_option("--subset",                    type="string")
 	parser_no_default.add_option("--oldrefdir",                 type="string")
-	parser_no_default.add_option("--continue_from_iter",        type="int")
+	parser_no_default.add_option("--ctrefromiter",              type="int")
 		
 	(options_no_default_value, args) = parser_no_default.parse_args(shell_line_command)
 
@@ -3880,7 +6002,7 @@ def update_tracker(shell_line_command):
 	if options_no_default_value.inires != None:
 		Tracker["constants"]["inires"] 						= options_no_default_value.inires
 		Tracker["constants"]["inires"]= int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
-		Tracker["currentres"] =  Tracker["constants"]["inires"]
+		Tracker["currentres"] = Tracker["constants"]["inires"]
 		
 	if options_no_default_value.delta != None:				
 		Tracker["delta"] 									= options_no_default_value.delta
@@ -3910,17 +6032,16 @@ def update_tracker(shell_line_command):
 		Tracker["constants"]["small_memory"] 				= options_no_default_value.small_memory
 	if options_no_default_value.memory_per_node != -1.:
 		Tracker["constants"]["memory_per_node"] 			= options_no_default_value.memory_per_node
-	if  options_no_default_value.continue_from_subset != False:
-		Tracker["constants"]["ctrefromsort3d"] 			    = options_no_default_value.continue_from_subset
+	if  options_no_default_value.ctrefromsort3d != False:
+		Tracker["constants"]["ctrefromsort3d"] 			    = options_no_default_value.ctrefromsort3d
 	if  options_no_default_value.subset != "":
 		Tracker["constants"]["subset"] 			    = options_no_default_value.subset	
 	if  options_no_default_value.oldrefdir != "":
 		Tracker["constants"]["oldrefdir"] 			= options_no_default_value.oldrefdir	
-	if  options_no_default_value.continue_from_iter != -1:
-		Tracker["constants"]["ctrefromiter"] 		= options_no_default_value.continue_from_iter	
+	if  options_no_default_value.ctrefromiter != -1:
+		Tracker["constants"]["ctrefromiter"] 		= options_no_default_value.ctrefromiter	
 		
 	return 
-			
 	
 # 		
 # - "Tracker" (dictionary) object
@@ -3953,20 +6074,21 @@ def main():
 	# ------------------------------------------------------------------------------------
 	# PARSE COMMAND OPTIONS
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  [output_directory]  initial_volume  --radius=particle_radius --ref_a=S --sym=c1 --initialshifts --inires=25  --mask3D=surface_mask.hdf "
+	usage = progname + " stack  [output_directory]  initial_volume  --radius=particle_radius --ref_a=S --symmetry=c1 --initialshifts --inires=25  --mask3D=surface_mask.hdf --function=user_function"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--radius",      		   		type= "int",          	default= -1,			     	help="Outer radius [in pixels] of particles < int(nx/2)-1")
 	parser.add_option("--xr",      		       		type="float",         	default= 5.,		         	help="range for translation search in both directions, search is +/xr (default 5), can be fractional")
-	parser.add_option("--ts",      		       		type="float",        	default= 2.,		         	help="step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 2), can be fractional")
+	parser.add_option("--ts",      		       		type="float",        	default= 1.,		         	help="step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 1), can be fractional")
 	parser.add_option("--inires",		       		type="float",	     	default=25.,		         	help="Resolution of the initial_volume volume (default 25A)")
 	parser.add_option("--mask3D",		        	type="string",	      	default=None,		          	help="3D mask file (default a sphere with radius (nx/2)-1)")
-	parser.add_option("--hardmask",			   		action="store_true",	default=False,		     		help="Apply hard maks (with radius) to 2D data (False)")
-	parser.add_option("--sym",     		       		type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure")
+	parser.add_option("--function",					type="string", default="do_volume_mask",  help="name of the reference preparation function (default do_volume_mask)")
+	parser.add_option("--hardmask",			   		action="store_true",	default=True,		     		help="Apply hard maks (with radius) to 2D data (False)")
+	parser.add_option("--symmetry",					type="string",        	default= 'c1',		     		help="Point-group symmetry of the refined structure")
 	parser.add_option("--skip_prealignment",		action="store_true", 	default=False,		         	help="skip 2-D pre-alignment step: to be used if images are already centered. (default False)")
 	parser.add_option("--initialshifts",         	action="store_true",  	default=False,	         		help="Use orientation parameters in the input file header to jumpstart the procedure")
 	parser.add_option("--center_method",			type="int",			 	default=-1,			     		help="method for centering: of average during initial 2D prealignment of data (0 : no centering; -1 : average shift  method;  please see center_2D in utilities.py for methods 1-7) (default -1)")
 	parser.add_option("--target_radius", 			type="int",			 	default=29,			     		help="target particle radius for 2D prealignment. Images will be shrank/enlarged to this radius (default 29)")
-	parser.add_option("--delta",					type="float",			default=15.0,		     		help="initial angular sampling step (15.0)")
+	parser.add_option("--delta",					type="float",			default=7.5,		     		help="initial angular sampling step (default 7.5)")
 	parser.add_option("--shake",	           		type="float", 	     	default=0.5,                	help="shake (0.5)")
 	parser.add_option("--small_memory",         	action="store_true",  	default= False,             	help="data will not be kept in memory if small_memory is true")
 	parser.add_option("--ref_a",   		       		type="string",        	default= 'S',		         	help="method for generating the quasi-uniformly distributed projection directions (default S)")	
@@ -3974,10 +6096,10 @@ def main():
 	parser.add_option("--nonorm",               	action="store_true",  	default=False,              	help="Do not apply image norm correction")
 	parser.add_option("--do_final",             	type="int",           	default= -1,                	help="Perform final reconstruction using orientation parameters from iteration #iter. (default use iteration of best resolution achieved)")	
 	parser.add_option("--memory_per_node",          type="float",           default= -1.0,                	help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")	
-	parser.add_option("--continue_from_subset",     action="store_true",    default= False,                	help="Continue local/exhaustive refinement on data subset selected by sort3d")
+	parser.add_option("--ctrefromsort3d",           action="store_true",    default= False,                	help="Continue local/exhaustive refinement on data subset selected by sort3d")
 	parser.add_option("--subset",                   type="string",          default='',                     help="A text contains indexes of the selected data subset")
 	parser.add_option("--oldrefdir",                type="string",          default='',                     help="The old refinement directory where sort3d is initiated")
-	parser.add_option("--continue_from_iter",       type="int",             default=-1,                     help="The iteration from which refinement will be continued")
+	parser.add_option("--ctrefromiter",             type="int",             default=-1,                     help="The iteration from which refinement will be continued")
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
 	update_options  = False # restart option
@@ -3987,7 +6109,7 @@ def main():
 		masterdir 	= args[1]
 		orgstack 	= args[0]
 	elif(len(args) == 2):
-		if not options.continue_from_subset:
+		if not options.ctrefromsort3d:
 			orgstack 	= args[0]
 			volinit 	= args[1]
 			masterdir = ""
@@ -3995,16 +6117,19 @@ def main():
 			orgstack    = args[0] # provided data stack
 			masterdir   = args[1]
 	elif (len(args) == 1):
-		if not options.continue_from_subset:
+		if not options.ctrefromsort3d:
 			masterdir 	= args[0]
 			if ((options.do_final ==-1) and (not os.path.exists(masterdir))):
 				ERROR(" restart masterdir does not exist, no restart! ","meridien",1)
 			elif options.do_final ==-1 and os.path.exists(masterdir):
 				update_options = True
 		else:
-			masterdir = args[0]
+			if os.path.exists(args[0]):
+				orgstack  = args[0]
+				masterdir = ""
+			else: masterdir = args[0]
 	else:
-		if not options.continue_from_subset:
+		if not options.ctrefromsort3d:
 			print( "usage: " + usage)
 			print( "Please run '" + progname + " -h' for detailed options")
 			return 1
@@ -4014,7 +6139,7 @@ def main():
 			else:
 				masterdir =""
 	global Tracker, Blockdata
-	if options.continue_from_subset: update_options  = True
+	if options.ctrefromsort3d: update_options  = True
 	#print(  orgstack,masterdir,volinit )
 	# ------------------------------------------------------------------------------------
 	# Initialize MPI related variables
@@ -4047,11 +6172,12 @@ def main():
 	Blockdata["nsubset"] = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 	create_subgroup()
 
+	Blockdata["rkeepf"] = 0.90
 
 
 	if not update_options: #<<<-------Fresh run
 		#  Constant settings of the project
-		Constants				       			= {}
+		Constants		       			= {}
 		
 		Constants["stack"]             			= args[0]
 		Constants["rs"]                			= 1
@@ -4059,8 +6185,8 @@ def main():
 		Constants["an"]                			= "-1"
 		Constants["maxit"]             			= 1
 		Constants["fuse_freq"]         			= 45  # Now in A, convert to absolute before using
-		sym                            			= options.sym
-		Constants["symmetry"]                   = sym[0].lower() + sym[1:]
+		sym                            			= options.symmetry
+		Constants["symmetry"]				= sym[0].lower() + sym[1:]
 		Constants["npad"]              			= 1
 		Constants["center"]            			= 0
 		Constants["shake"]             			= options.shake  #  move params every iteration
@@ -4076,22 +6202,20 @@ def main():
 		Constants["limit_improvement"] 			= 1
 		Constants["limit_changes"]     			= 1  # reduce delta by half if both limits are reached simultaneously
 		Constants["states"]            			= ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL"]
+		Constants["user_func"]					= options.function
 		Constants["hardmask"]          			= options.hardmask
 		Constants["ccfpercentage"]     			= options.ccfpercentage/100.
 		Constants["expthreshold"]      			= -10
 		Constants["number_of_groups"]  			= -1 # number of defocus groups, to be set by assign_particles_to_groups
 		Constants["nonorm"]            			= options.nonorm
 		Constants["small_memory"]      			= options.small_memory
-		Constants["initialshifts"] 				= options.initialshifts
+		Constants["initialshifts"]			= options.initialshifts
 		Constants["memory_per_node"] 			= options.memory_per_node
-		Constants["ctrefromsort3d"]            	= options.continue_from_subset # ctrefromsort3d four options
-		Constants["subset"]      				= options.subset
-		Constants["oldrefdir"] 				    = options.oldrefdir
-		Constants["ctrefromiter"] 			    = options.continue_from_iter
-		
-		
-		
-		
+		Constants["ctrefromsort3d"]			= options.ctrefromsort3d # ctrefromsort3d four options
+		Constants["subset"]				= options.subset
+		Constants["oldrefdir"]				    = options.oldrefdir
+		Constants["ctrefromiter"]			    = options.ctrefromiter
+
 		#
 		#  The program will use three different meanings of x-size
 		#  nnxo         - original nx of the data, will not be changed
@@ -4102,20 +6226,20 @@ def main():
 		#
 		# Initialize Tracker Dictionary with input options
 		Tracker = {}
-		Tracker["constants"]      		= Constants
-		Tracker["maxit"]          		= Tracker["constants"]["maxit"]
-		Tracker["radius"]         		= Tracker["constants"]["radius"]
-		Tracker["xr"]             		= options.xr
-		Tracker["yr"]             		= options.xr  # Do not change!  I do not think it is used anywhere
-		Tracker["ts"]             		= options.ts
-		Tracker["an"]             		= "-1"
-		Tracker["delta"]          		= options.delta  # How to decide it
-		#Tracker["applyctf"]       		= False  #  For prob, never premultiply by the CTF.  Should the data be premultiplied by the CTF.  Set to False for local continuous.
-		Tracker["refvol"]         		= None
-		Tracker["nxinit"]         		= -1  # will be figured in first AI.
-		Tracker["nxstep"]         		= 10
+		Tracker["constants"]		= Constants
+		Tracker["maxit"]		= Tracker["constants"]["maxit"]
+		Tracker["radius"]		= Tracker["constants"]["radius"]
+		Tracker["xr"]			= options.xr
+		Tracker["yr"]			= options.xr  # Do not change!  I do not think it is used anywhere
+		Tracker["ts"]			= options.ts
+		Tracker["an"]			= "-1"
+		Tracker["delta"]		= options.delta  # How to decide it
+		Tracker["refvol"]		= None
+		Tracker["nxinit"]		= -1  # will be figured in first AI.
+		Tracker["nxstep"]		= 10
 		#  Resolution in pixels at 0.5 cutoff
-		Tracker["currentres"]    		= -1
+		Tracker["currentres"]		= -1
+		Tracker["fsc143"]			= -1
 		Tracker["maxfrad"]           	= -1
 		Tracker["no_improvement"]    	= 0
 		Tracker["no_params_changes"] 	= 0
@@ -4126,16 +6250,14 @@ def main():
 		Tracker["directory"]         	= ""
 		Tracker["previousoutputdir"] 	= ""
 		Tracker["acc_rot"]           	= 0.0
-		Tracker["acc_trans"] 			= 0.0
+		Tracker["acc_trans"]			= 0.0
 		Tracker["avgvaradj"]			= [1.0,1.0]  # This has to be initialized to 1.0 !!
 		Tracker["mainiteration"]     	= 0
-		Tracker["lentop"] 	 			= 2000
+		Tracker["lentop"]				= 2000
 		Tracker["state"]             	= Tracker["constants"]["states"][0]
 		Tracker["nima_per_chunk"]    	= [0,0]
 		###<<<----state 
-		Tracker["is_converged"]      	= False
-		Tracker["bestres"]          	= 0.0
-		Tracker["saturated_sampling"] 	= False
+		Tracker["bestres"]          	= 0
 
 		Blockdata["bckgnoise"]          = None
 		Blockdata["accumulatepw"]       = [[],[]]
@@ -4171,12 +6293,13 @@ def main():
 		del fq, nnxo, pixel_size
 		# Resolution is always in full size image pixel units.
 		Tracker["constants"]["inires"] = int(Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"] + 0.5)
-		Tracker["currentres"] =  Tracker["constants"]["inires"]
+		Tracker["currentres"] = Tracker["constants"]["inires"]
+		Tracker["fsc143"] = Tracker["constants"]["inires"]
 
 
 		###  VARIOUS SANITY CHECKES
 		if options.initialshifts: options.skip_prealignment =True  # No prealignment if initial shifts are set
-		if( options.mask3D and (not os.path.exists(options.mask3D))): ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
+		if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))): ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
 		if( options.xr/options.ts<1.0 ): ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien",1,Blockdata["myid"])
 		if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
 			ERROR("Image size less than what would follow from the initial resolution provided $d"%Tracker["nxinit"],"sxmeridien",1, Blockdata["myid"])
@@ -4186,7 +6309,8 @@ def main():
 		elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
 			ERROR("Particle radius set too large!","sxmeridien",1,Blockdata["myid"])
 		###<-----end of sanity check <----------------------
-		###<<<----------------------------- parse program 
+		###<<<----------------------------- parse program
+
 
 	# ------------------------------------------------------------------------------------
 		#  MASTER DIRECTORY
@@ -4231,7 +6355,7 @@ def main():
 		initdir = os.path.join(Tracker["constants"]["masterdir"],"main000")
 	else:  # an simple restart, just a continue run, no alteration of parameters
 		# simple restart INITIALIZATION, at least main000 is completed. Otherwise no need restart
-		if not options.continue_from_subset:
+		if not options.ctrefromsort3d:
 			Blockdata["bckgnoise"] 		= None # create entries for some variables 
 			Blockdata["accumulatepw"] 	= [[],[]]
 			initdir 			= os.path.join(masterdir,"main000")
@@ -4245,7 +6369,7 @@ def main():
 			Tracker 	= wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				print_dict(Tracker["constants"], "Permanent settings of previous run")
-	if not options.continue_from_subset:
+	if not options.ctrefromsort3d:
 		# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 		doit, keepchecking = checkstep(initdir, keepchecking)
 
@@ -4253,6 +6377,7 @@ def main():
 			if update_options:
 				update_tracker(sys.argv[1:]) # rare case!
 				update_options = False
+				update_memory_estimation()
 				if(Blockdata["myid"] == Blockdata["main_node"]): print_dict(Tracker["constants"], "Permanent settings of restart run")
 			partids   = os.path.join(initdir, "indexes_000.txt")
 			#### add prealignment like in isac
@@ -4264,7 +6389,7 @@ def main():
 			target_radius = options.target_radius
 			# target_nx = options.target_nx
 			center_method = options.center_method
-			if (radi < 1):  ERROR("Particle radius has to be provided!", "sxmeridien", 1, Blockdata["myid"])
+			if (radi < 1):  ERROR("Particle radius has to be provided!", "sxisac", 1, Blockdata["myid"])
 
 			nxrsteps = 4
 
@@ -4342,10 +6467,10 @@ def main():
 				del l1, l2
 
 				# Create reference models for each particle group
-				if(options.mask3D == None):
+				if(Tracker["constants"]["mask3D"] == None):
 					viv = filt_table(cosinemask(get_im(volinit),radius = Tracker["constants"]["radius"]), [1.0]*Tracker["constants"]["inires"] + [0.5] + [0.0]*Tracker["constants"]["nnxo"])
 				else:
-					viv = filt_table(get_im(volinit)*get_im(options.mask3D), [1.0]*Tracker["constants"]["inires"] + [0.5] + [0.0]*Tracker["constants"]["nnxo"])
+					viv = filt_table(get_im(volinit)*get_im(Tracker["constants"]["mask3D"]), [1.0]*Tracker["constants"]["inires"] + [0.5] + [0.0]*Tracker["constants"]["nnxo"])
 				# make a copy of original reference model for this particle group (procid)
 				for procid in xrange(2):
 					viv.write_image(os.path.join(initdir,"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
@@ -4372,12 +6497,13 @@ def main():
 		# ------------------------------------------------------------------------------------
 		#  MAIN ITERATION
 		mainiteration 	= 0
+		Tracker["mainiteration"] = mainiteration
 		
 	else: # ctrefromsort3d
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			if( masterdir == ""):
 				timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
-				masterdir = "continue_from_sort3d"+timestring
+				masterdir = "ctrefromsort3d"+timestring
 				li = len(masterdir)
 				cmd = "{} {}".format("mkdir", masterdir)
 				junk = cmdexecute(cmd)
@@ -4395,14 +6521,17 @@ def main():
 		if( li > 0 ):
 			masterdir = mpi_bcast(masterdir,li,MPI_CHAR,Blockdata["main_node"],MPI_COMM_WORLD)
 		masterdir = string.join(masterdir,"")
-		do_ctrefromsort3d_get_subset_data(masterdir, options.oldrefdir, options.subset, options.continue_from_iter, options.memory_per_node, sys.argv[1:])
-		ctrefromsorting_rec3d_faked_iter(masterdir, options.continue_from_iter, MPI_COMM_WORLD)
+		do_ctrefromsort3d_get_subset_data(masterdir, options.oldrefdir, options.subset, options.ctrefromiter, sys.argv[1:])
+		ctrefromsorting_rec3d_faked_iter(masterdir, options.ctrefromiter, MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
-		Tracker["previousoutputdir"]    =  os.path.join(masterdir, "main%03d"%options.continue_from_iter)
-		Tracker["mainiteration"]        =  options.continue_from_iter
-		mainiteration                   =  options.continue_from_iter
-		doit                            =  1
+		Tracker["previousoutputdir"] =  os.path.join(masterdir, "main%03d"%options.ctrefromiter)
+		Tracker["mainiteration"]     =  options.ctrefromiter
+		mainiteration                =  options.ctrefromiter
 			
+	#  Object to handle symmtries, for now only used by oct
+	from EMAN2 import parsesym
+	Blockdata["parsesym"] = parsesym(Tracker["constants"]["symmetry"])
+
 	#  remove projdata, if it existed, initialize to nonsense
 	projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 	original_data = [None,None]
@@ -4415,81 +6544,87 @@ def main():
 		fout.close()
 
 	while(keepgoing):
+		Tracker["previousoutputdir"] = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 		mainiteration += 1
 		Tracker["mainiteration"] = mainiteration
-		#  prepare output directory,  the settings are awkward
 		Tracker["directory"]     = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 
-		# prepare names of input file names, they are in main directory,
-		#   log subdirectories contain outputs from specific refinements
-		partids = [None]*2
-		for procid in xrange(2):  partids[procid] = os.path.join(Tracker["previousoutputdir"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1))
-		partstack = [None]*2
-		for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["previousoutputdir"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1))
-
-		mpi_barrier(MPI_COMM_WORLD)
-		doit = bcast_number_to_all(doit, source_node = Blockdata["main_node"])
-
-		if(Tracker["mainiteration"] == 1):
-			fff = None
-		else:
+		doit, keepchecking = checkstep(Tracker["directory"], keepchecking)
+		if( not doit ):			
+			li = True
+			doit2, keepchecking2 = checkstep(os.path.join(Tracker["directory"],"Tracker_%03d.json"%Tracker["mainiteration"]), li)
+			if doit2:
+				doit = True
+				if( Blockdata["myid"] == Blockdata["main_node"] ):
+					cmd = "rm -rf  "+Tracker["directory"]
+					junk = cmdexecute(cmd)
+				mpi_barrier(MPI_COMM_WORLD)
+		if doit :
 			if(Blockdata["myid"] == Blockdata["main_node"]):
-				fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
-				#print("  reading fsc  ",os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
+				fout = open(os.path.join(Tracker["previousoutputdir"],"Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r')
+				Tracker = convert_json_fromunicode(json.load(fout))
+				fout.close()
+				#  It has to be repeated here as Tracker is from previous iteration, I see no other way.
+				Tracker["previousoutputdir"]	= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
+				Tracker["mainiteration"]		= mainiteration
+				Tracker["directory"]			= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 			else:
-				fff = []
+				Tracker = None
+			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+
+			
+			# prepare names of input file names, they are in main directory,
+			#   log subdirectories contain outputs from specific refinements
+			partids = [None]*2
+			for procid in xrange(2):  partids[procid] = os.path.join(Tracker["previousoutputdir"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1))
+			partstack = [None]*2
+			for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["previousoutputdir"],"params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1))
+
 			mpi_barrier(MPI_COMM_WORLD)
-			fff = bcast_list_to_all(fff, Blockdata["myid"], source_node=Blockdata["main_node"])
-		if(Tracker["mainiteration"] > 1):
-			if(Blockdata["myid"] == Blockdata["main_node"]):
-				[anger, shifter] = read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
+
+			if(Tracker["mainiteration"] == 1):
+				fff = None
+				anger   = 1.0e9
+				shifter = 1.0e9
 			else:
-				anger   = 0.0
-				shifter = 0.0
+				if(Blockdata["myid"] == Blockdata["main_node"]):
+					fff = read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
+					[anger, shifter] = read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
+				else:
+					fff = []
+					anger   = 0.0
+					shifter = 0.0
+				fff = bcast_list_to_all(fff, Blockdata["myid"], source_node=Blockdata["main_node"])
+				anger   = bcast_number_to_all(anger,   source_node = Blockdata["main_node"])
+				shifter = bcast_number_to_all(shifter, source_node = Blockdata["main_node"])
 
-			anger   = bcast_number_to_all(anger,   source_node = Blockdata["main_node"])
-			shifter = bcast_number_to_all(shifter, source_node = Blockdata["main_node"])
-		else:
-			anger   = 1.0e9
-			shifter = 1.0e9
+			keepgoing = AI( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
+			if keepgoing == 1: # not converged
 
-		keepgoing = AI( fff, anger, shifter)#   Uncomment what follows to get test printouts  , Blockdata["myid"] == Blockdata["main_node"] )
-		
-		if keepgoing:
-		
-			if Blockdata["myid"] == Blockdata["main_node"]:
-				print("\n\n\n\n")
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"ITERATION  #%2d. Resolution achieved so far: %3d / %3d pixels, %5.2fA / %5.2fA Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
-					(Tracker["mainiteration"], \
-					Tracker["currentres"], Blockdata["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
-					Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]),\
-					Tracker["state"],Tracker["nxinit"],  \
-					Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
-				
-			doit, keepchecking = checkstep(Tracker["directory"], keepchecking)
-			mpi_barrier(MPI_COMM_WORLD)
-			"""
-			if not doit: # check the tracker jason file, the last of the saved files.
-				doit, keepchecking = checkstep(os.path.join(Tracker["directory"],"Tracker_%03d.json"%Tracker["mainiteration"]), keepchecking)
-				if doit:
-					if(Blockdata["myid"] == Blockdata["main_node"]):
-						cmd = "{} {}".format("rm -rf ", Tracker["directory"])
-						junk = cmdexecute(cmd)
-			"""
-			mpi_barrier(MPI_COMM_WORLD)
-			if doit:
-				if update_options: 
+				if update_options:
 					update_tracker(sys.argv[1:])
+					update_memory_estimation()
 					update_options = False # only update once
 					if(Blockdata["myid"] == Blockdata["main_node"]): print_dict(Tracker["constants"], "Permanent settings of restart run")
-				#print("RACING  A ",Blockdata["myid"])
-				if(Blockdata["myid"] == Blockdata["main_node"]):
 
+				if Blockdata["myid"] == Blockdata["main_node"]:
+					print("\n\n\n\n")
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					print(line,"ITERATION  #%2d. Resolution achieved so far: %3d/%3d pixels, %5.2fA/%5.2fA. Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
+						(Tracker["mainiteration"], \
+						Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+						Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]),\
+						Tracker["state"],Tracker["nxinit"],  \
+						Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
+				#print("RACING  A ",Blockdata["myid"])
+				li = True
+				doit2, keepchecking2 = checkstep(Tracker["directory"], li)
+				if(Blockdata["myid"] == Blockdata["main_node"] and doit2):
 					cmd = "{} {}".format("mkdir", Tracker["directory"])
 					junk = cmdexecute(cmd)
 					cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"],"oldparamstructure"))
 					junk = cmdexecute(cmd)
+				if(not doit2):  ERROR("There was a gap in main directories, program cannot proceed","sxmeridien",1,Blockdata["myid"])
 
 				mpi_barrier(MPI_COMM_WORLD)
 
@@ -4501,10 +6636,6 @@ def main():
 						original_data[procid], small_memory = Tracker["constants"]["small_memory"],\
 						nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 
-
-				#if(Tracker["state"] == "INITIAL" or Tracker["state"] == "EXHAUSTIVE" or Blockdata["bckgnoise"] == None or Blockdata["accumulatepw"] == None):	dryrun = False
-				###if(Tracker["state"] == "INITIAL" or Tracker["mainiteration"] == 1 or Blockdata["bckgnoise"] == None or Blockdata["accumulatepw"] == None):	dryrun = False
-				###else:																dryrun = True
 				mpi_barrier(MPI_COMM_WORLD)
 				if( Tracker["mainiteration"] == 1 ):	dryrun = False
 				else:									dryrun = True
@@ -4514,8 +6645,7 @@ def main():
 
 				mpi_barrier(MPI_COMM_WORLD)
 
-				refang, rshifts = get_refangs_and_shifts()
-
+				refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts()
 				if( Tracker["constants"]["shake"] > 0.0 ):
 					if(Blockdata["myid"] == Blockdata["main_node"]):
 						shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
@@ -4528,8 +6658,9 @@ def main():
 
 					rangle = shakenumber*Tracker["delta"]
 					rshift = shakenumber*Tracker["ts"]
-					refang = shakerefangles(refang, rangle, Tracker["constants"]["symmetry"])
+					refang, coarse_angles = shakerefangles(refang, coarse_angles, rangle, Tracker["constants"]["symmetry"])
 					shakegrid(rshifts, rshift)
+					shakegrid(coarse_shifts, rshift)
 
 					if(Blockdata["myid"] == Blockdata["main_node"]):
 						write_text_row([[shakenumber, rangle, rshift]], os.path.join(Tracker["directory"] ,"randomize_search.txt") )
@@ -4538,26 +6669,60 @@ def main():
 					rshift = 0.0
 
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					write_text_row( refang, os.path.join(Tracker["directory"], "refang.txt") )
-					write_text_row( rshifts, os.path.join(Tracker["directory"], "rshifts.txt") )
+					write_text_row( refang, os.path.join(Tracker["directory"] ,"refang.txt") )
+					write_text_row( rshifts, os.path.join(Tracker["directory"] ,"rshifts.txt") )
 				mpi_barrier(MPI_COMM_WORLD)
 
 				newparamstructure = [[],[]]
 				raw_vol = [[],[]]
 				norm_per_particle =[[],[]]
+
+				from time import sleep
+
+			
 				for procid in xrange(2):
 					Tracker["refvol"] = os.path.join(Tracker["previousoutputdir"],"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"]-1))
 
-					projdata[procid] = []
+					Tracker["nxpolar"] = Tracker["nxinit"]#min( 3*Tracker["nxinit"], Tracker["constants"]["nnxo"] )
+					#Tracker["nxpolar"] = min( 2*Tracker["nxinit"], Tracker["constants"]["nnxo"] )
+					if( Tracker["state"] == "INITIAL" ):
+						newparamstructure[procid], norm_per_particle[procid] = \
+								ali3D_polar_ccc(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
+								preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = False)
+					elif( Tracker["state"] == "PRIMARY" ):
+						newparamstructure[procid], norm_per_particle[procid] = \
+								ali3D_primary_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
+								preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
+					elif( Tracker["state"] == "EXHAUSTIVE" ):
+						newparamstructure[procid], norm_per_particle[procid] = \
+								ali3D_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
+								preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
+					elif( (Tracker["state"] == "RESTRICTED") or (Tracker["state"] == "FINAL") ):
+						newparamstructure[procid], norm_per_particle[procid] = \
+								ali3D_local_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
+								preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
+					else:  ERROR("sxmeridien","Incorrect state  %s"%Tracker["state"],1,Blockdata["myid"])
 
-					projdata[procid] = get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid], \
-														return_real = False, preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"])
-				
-					if Tracker["constants"]["small_memory"]:   original_data[procid] =[]
 
-					# METAMOVE
-					newparamstructure[procid], norm_per_particle[procid] = \
-							metamove(projdata[procid], oldparams[procid], refang, rshifts, rangle, rshift, procid)
+					qt = 1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]
+					params = []
+					for im in xrange(len(newparamstructure[procid])):
+						#  Select only one best
+						hash = newparamstructure[procid][im][2][0][0]
+						ishift = hash%1000
+						ipsi = (hash/1000)%100000
+						iang  = hash/100000000
+						params.append([ refang[iang][0], refang[iang][1], (refang[iang][2]+ipsi*Tracker["delta"])%360.0, rshifts[ishift][0]+oldparams[procid][im][3], rshifts[ishift][1]+oldparams[procid][im][4], newparamstructure[procid][im][-1][0][1], norm_per_particle[procid][im]*qt, norm_per_particle[procid][im]])
+
+					mpi_barrier(MPI_COMM_WORLD)
+
+					params = wrap_mpi_gatherv(params, Blockdata["main_node"], MPI_COMM_WORLD)
+					#  store params
+					if(Blockdata["myid"] == Blockdata["main_node"]):
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						print(line,"Executed successfully: ","Projection matching, state: %s, number of images:%7d"%(Tracker["state"],len(params)))
+						write_text_row(params, os.path.join(Tracker["directory"], "params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
+					del params
 
 					projdata[procid] = []
 					if Tracker["constants"]["small_memory"]:
@@ -4568,13 +6733,13 @@ def main():
 
 					projdata[procid] = get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid], \
 														return_real = False, preshift = True, apply_mask = False, nonorm = True)
+
 					oldparams[procid] = []
 					if Tracker["constants"]["small_memory"]: original_data[procid]	= []
-					#ctfs, bckgnoise = prepdata_recon3d(projdata[procid], "DIRECT")
-					#del ctfs
+
 					do3d(procid, projdata[procid], newparamstructure[procid], refang, rshifts, norm_per_particle[procid], Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 					projdata[procid] = []
-					#del bckgnoise
+
 					if( Blockdata["myid_on_node"] == 0 ):
 						for kproc in xrange(Blockdata["no_of_processes_per_group"]):
 							if( kproc == 0 ):
@@ -4590,14 +6755,13 @@ def main():
 					else:
 						wrap_mpi_send(newparamstructure[procid], 0, Blockdata["shared_comm"])
 
-
 					###fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,Blockdata["myid"],Tracker["mainiteration"])),'w')
 					###json.dump(newparamstructure[procid], fout)
 					###fout.close()
 					newparamstructure[procid] = []
 					norm_per_particle[procid] = []
 					mpi_barrier(MPI_COMM_WORLD)
-			
+
 				del refang, rshifts
 
 				#  DRIVER RESOLUTION ASSESSMENT and RECONSTRUCTION <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -4632,7 +6796,7 @@ def main():
 					cfsc 		= fsc(shrank0, shrank1)[1]
 					del shrank0, shrank1
 					if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
-						cfsc 	= cfsc[:Tracker["nxinit"]]
+						cfsc 	= cfsc[:Tracker["nxinit"]//2+1]
 						for i in xrange(len(cfsc),Tracker["constants"]["nnxo"]//2+1):  cfsc.append(0.0)
 					lcfsc = len(cfsc)
 					#--  memory_check(Blockdata["myid"],"second node, after stepone")
@@ -4649,8 +6813,7 @@ def main():
 				if( Blockdata["myid"] == Blockdata["main_node"]):
 					write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
 					out_fsc(cfsc)
-
-				mpi_barrier(MPI_COMM_WORLD)
+				
 				#  Now that we have the curve, do the reconstruction
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
 				if( Blockdata["color"] == Blockdata["node_volume"][1] ):
@@ -4665,7 +6828,7 @@ def main():
 					tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])
 					del tweight0, treg0
 					if( Blockdata["myid_on_node"] == 0 ):
-					#--  memory_check(Blockdata["myid"],"first node, before masking")
+						#--  memory_check(Blockdata["myid"],"first node, before masking")
 						if( Tracker["mainiteration"] == 1 ):
 							# At a first iteration truncate resolution at the initial resolution set by the user
 							for i in xrange(len(cfsc)):
@@ -4674,10 +6837,11 @@ def main():
 								elif( i > Tracker["constants"]["inires"]+1 ): cfsc[i]  	= 0.0
 							tvol0 = filt_table(tvol0, cfsc)
 							del cfsc
-						if(options.mask3D == None):  tvol0 = cosinemask(tvol0, radius = Tracker["constants"]["radius"])
-						else:  Util.mul_img(tvol0, get_im(options.mask3D))
-						#--  memory_check(Blockdata["myid"],"first node, after masking")
-						tvol0.write_image(os.path.join(Tracker["directory"], "vol_0_%03d.hdf"%(Tracker["mainiteration"])))
+
+						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						ref_data = [tvol0, Tracker, mainiteration]
+						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
+						user_func(ref_data).write_image(os.path.join(Tracker["directory"], "vol_0_%03d.hdf"%(Tracker["mainiteration"])))
 						#--  memory_check(Blockdata["myid"],"first node, after 1 steptwo")
 					del tvol0
 					#--  memory_check(Blockdata["myid"],"first node, after 2 steptwo")
@@ -4702,16 +6866,15 @@ def main():
 								elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
 							tvol1 = filt_table(tvol1, cfsc)
 							del cfsc
-						if(options.mask3D == None):  tvol1 = cosinemask(tvol1, radius = Tracker["constants"]["radius"])
-						else:    Util.mul_img(tvol1, get_im(options.mask3D))
-						#--  memory_check(Blockdata["myid"],"second node, after masking")
-						tvol1.write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf"%(Tracker["mainiteration"])))
+						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						ref_data = [tvol1, Tracker, mainiteration]
+						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
+						user_func(ref_data).write_image(os.path.join(Tracker["directory"], "vol_1_%03d.hdf"%(Tracker["mainiteration"])))
 						#--  memory_check(Blockdata["myid"],"second node, after 1 steptwo")
 					del tvol1
 					#--  memory_check(Blockdata["myid"],"second node, after 2 steptwo")
 				#  Here end per node execution.
 				mpi_barrier(MPI_COMM_WORLD)
-
 				if( Blockdata["myid"] == Blockdata["nodes"][0] ):
 					cmd = "{} {}".format("rm -rf", os.path.join(Tracker["directory"], "tempdir"))
 					junk = cmdexecute(cmd)
@@ -4811,20 +6974,12 @@ def main():
 					json.dump(Tracker, fout)
 					fout.close()
 				#  CHECK CONVERGENCE
+				#keepgoing = checkconvergence(keepgoing)
+				#if( keepgoing == 1 ):
 				Tracker["previousoutputdir"] = Tracker["directory"]
-			else: # continue loading the next iteration tracker
-				#  Directory existed, so got here.
-				#  Read tracker
-				if(Blockdata["myid"] == Blockdata["main_node"]):
-					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'r')
-					Tracker = convert_json_fromunicode(json.load(fout))
-					fout.close()
-					print("  Directory exists, iteration skipped")
-				else:
-					Tracker = None
-				Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-				Tracker["previousoutputdir"] = Tracker["directory"]
-		else: # converged, do final
+				#if(Blockdata["myid"] == Blockdata["main_node"]):
+				#	print("  MOVING  ON --------------------------------------------------------------------")
+			else: # converged, do final
 				if( Blockdata["subgroup_myid"]> -1): mpi_comm_free(Blockdata["subgroup_comm"])
 
 				Blockdata["ncpuspernode"] 	= 2
@@ -4837,7 +6992,13 @@ def main():
 				Blockdata["accumulatepw"]  	= [None, None]
 				#if Tracker["constants"]["memory_per_node"] <0.0: Tracker["constants"]["memory_per_node"] = 2.0*Blockdata["no_of_processes_per_group"]
 				recons3d_final(Tracker["constants"]["masterdir"], Tracker["constants"]["best"], Tracker["constants"]["memory_per_node"])
-				mpi_finalize()
-				exit()
+
+		#  End of if doit
+	#   end of while
+
+	mpi_finalize()
+	exit() 
+
+
 if __name__=="__main__":
 	main()
