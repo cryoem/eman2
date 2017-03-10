@@ -409,6 +409,7 @@ def randomizer(options, model, tag):
 	palts=[]
 
 	if options.preferredtop and not options.preferredside:
+<<<<<<< HEAD
 		paltstop = preferredalt( options, mu=180,sigma=45, nptlcs=options.nptcls )
 	if options.preferredside and not options.preferredtop:
 		paltsside = preferredalt( options, mu=90, sigma=45, nptlcs=options.nptcls )
@@ -416,6 +417,15 @@ def randomizer(options, model, tag):
 		ntop = int(round(options.nptlcs*options.preferredtop))
 		nside = options.nptlcs-ntop
 		palts = preferredalt( options, mu=180,sigma=45, nptlcs=ntop ) + preferredalt( options, mu=90,sigma=45, nptlcs=nside )
+=======
+		paltstop = prefferedalt( options, 180,45, options.nptcls )
+	if options.preferredside and not options.preferredtop:
+		paltsside = prefferedalt( options, 90, 45, options.nptcls )
+	if options.preferredside and options.prefferedtop:
+		ntop = int(round(options.nptlcs*options.preferredtop))
+		nside = options.nptlcs-ntop
+		palts = prefferedalt( options, 180,45, ntop ) + prefferedalt( options, 90,45, nside )
+>>>>>>> fdf75c89cc111d8e032ffa4d4ed6d5306dcd6b29
 
 
 	transforms=[]

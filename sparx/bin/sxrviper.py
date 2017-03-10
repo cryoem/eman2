@@ -6,7 +6,7 @@ from mpi import MPI_SUM, mpi_reduce, mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi
 	mpi_comm_split, mpi_bcast, MPI_INT, MPI_CHAR, MPI_FLOAT
 
 from utilities import get_im, string_found_in_file, get_latest_directory_increment_value, store_value_of_simple_vars_in_json_file
-from utilities import junk = cmdexecute, if_error_then_all_processes_exit_program
+from utilities import cmdexecute, if_error_then_all_processes_exit_program
 from utilities import read_text_row, read_text_file, write_text_file, write_text_row, getindexdata, print_program_start_information
 from multi_shc import find_common_subset, do_volume, multi_shc
 

@@ -33,19 +33,19 @@
  *
  * */
 
+#ifdef _WIN32
+#include <windows.h>
+	#define MAXPATHLEN MAX_PATH
+#else
+#include <sys/param.h>
+#endif	//_WIN32
+
 #include "testutil.h"
 #include "xydata.h"
 
 #include <algorithm>
 #include "emassert.h"
 //#include <stdlib.h>
-
-#ifdef _WIN32
-	#include <windows.h>
-	#define MAXPATHLEN MAX_PATH
-#else
-	#include <sys/param.h>
-#endif	//_WIN32
 
 using std::vector;
 using std::string;

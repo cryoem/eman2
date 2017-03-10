@@ -1,0 +1,10 @@
+{% set name = "szip" %}
+{% set version = "2.1" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: ftp://ftp.hdfgroup.org/lib-external/szip/2.1/src/szip-2.1.tar.gz

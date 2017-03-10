@@ -920,7 +920,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 	def newPlotMode(self,mode):
 		self.plotmode=mode
-		self.wplot.set_data(None,replace=True,quiet=True)	# clear the data so plots are properly redisplayed, but don't update the display
+#		self.wplot.set_data(None,replace=True,quiet=True)	# clear the data so plots are properly redisplayed, but don't update the display
 		self.needredisp=True
 
 	def newBox(self):

@@ -20847,7 +20847,7 @@ vector<int> Util::nearest_fang_select(const vector<vector<float> >& vecref, floa
 }
 
 
-vector<int> Util::nearest_fang_sym(const vector<vector<float> >& angles_sym_normals, const vector<vector<float> >& reference_normals, int neighbors, string symmetry, int howmany) {
+vector<int> Util::nearest_fang_sym(const vector<vector<float> >& angles_sym_normals, const vector<vector<float> >& reference_normals, int neighbors, int howmany) {
 	if ( howmany > reference_normals.size() ) throw InvalidValueException(howmany,"Error, number of neighbors cannot be larger than number of reference directions");
 	std::vector<int> bout(howmany);
 	std::vector<float> score(howmany);

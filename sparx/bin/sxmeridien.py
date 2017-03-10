@@ -51,6 +51,7 @@ Blockdata["node_volume"]		= [Blockdata["no_of_groups"]-2, Blockdata["no_of_group
 #  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
 #  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
 Blockdata["main_shared_nodes"]	= [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"]]
+Blockdata["fsc143"]  = 0
 # end of Blockdata
 
 #######
@@ -965,7 +966,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 	#  Without filtration
 	from reconstruction import recons3d_trl_struct_MPI
 
-	if( mpi_comm < -1 ): mpi_comm = MPI_COMM_WORDLD
+	if( mpi_comm < -1 ): mpi_comm = MPI_COMM_WORLD
 	"""
 	tvol, tweight, trol = recons3d_4nnstruct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
 											paramstructure = newparams, refang = refang, delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"],\
@@ -3225,8 +3226,11 @@ def recons3d_final(masterdir, do_final_iter, memory_per_node):
 				do_final_iter = Tracker["constants"]["best"] # set the best as do_final iteration
 			except:				
 				carryon = 0
-		carryon = bcast_number_to_all(carryon)
+		carryon       = bcast_number_to_all(carryon)
+		do_final_iter = bcast_number_to_all(do_final_iter)
 		if carryon == 0: ERROR("search failed, and the final reconstruction terminates ", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
+		if do_final_iter ==0: # poor starting 
+			ERROR(" The best solution is zero iteration", "recons3d_final", 1, Blockdata["myid"])
 	elif do_final_iter == -1: 
 		do_final_iter = Tracker["constants"]["best"]
 	else:
@@ -3659,9 +3663,21 @@ def do_ctrefromsort3d_get_maps_mpi(ctrefromsort3d_iter_dir):
 	lcfsc = bcast_number_to_all(lcfsc)
 	if( Blockdata["myid"] != Blockdata["nodes"][0]  ): cfsc = [0.0]*lcfsc
 	cfsc = bcast_list_to_all(cfsc, Blockdata["myid"], Blockdata["nodes"][0] )
+	
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
 		out_fsc(cfsc)
+		# determine 0.143 resolution
+		fsc143 =1
+		for ifreq in xrange(1, len(cfsc)):
+			if cfsc[ifreq] < 0.143:
+				break
+		fsc143 =ifreq - 1
+	else:
+		fsc143 = 0.0
+	fsc143 = bcast_number_to_all(fsc143, source_node = Blockdata["main_node"])
+	Blockdata["fsc143"] = fsc143
+			
 	# do steptwo
 	if( Blockdata["color"] == Blockdata["node_volume"][1]):
 		if( Blockdata["myid_on_node"] == 0 ):
@@ -4444,9 +4460,10 @@ def main():
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				print("\n\n\n\n")
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"ITERATION  #%2d. Resolution achieved so far: %3d pixels, %5.2fA.  Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
+				print(line,"ITERATION  #%2d. Resolution achieved so far: %3d / %3d pixels, %5.2fA / %5.2fA Current state: %14s, nxinit: %3d, delta: %9.4f, xr: %9.4f, ts: %9.4f"%\
 					(Tracker["mainiteration"], \
-					Tracker["currentres"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+					Tracker["currentres"], Blockdata["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+					Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]),\
 					Tracker["state"],Tracker["nxinit"],  \
 					Tracker["delta"], Tracker["xr"], Tracker["ts"]  ))
 				

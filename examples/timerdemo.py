@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 #
-# Author: Grant Tang
-# Copyright (c) 2000-2006 Baylor College of Medicine
+# Author: Steven Ludtke, 03/03/2017 (sludtke@bcm.edu)
+# Copyright (c) 2000-2017 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -31,52 +31,38 @@
 #
 #
 
-import os
-import sys
-import platform
-from subprocess import *
-
-
-EMANVERSION="EMAN 2.2"
-DATESTAMP="BUILD_DATE"
+from EMAN2 import *
+from PyQt4 import QtCore
+from emapplication import EMApp
+from emimage2d import EMImage2DWidget
 
 def main():
-	print(EMANVERSION + ' (GITHUB: ' + DATESTAMP +')')
+	global cur_data,data,imdisp
+	
+	# an application
+	em_app = EMApp()
 
-	if sys.platform=='linux2':
-		print('Your EMAN2 is running on: {} {}'.format(platform.platform(), os.uname()[2], os.uname()[-1]))
+	widget=TestDisplay()
+	widget.show()
 
-	elif sys.platform=='darwin':
-		print('Your EMAN2 is running on: Mac OS {} {}'.format(platform.mac_ver()[0], platform.mac_ver()[2]))
+	em_app.execute()
 
-	elif sys.platform=='win32':
-		ver = sys.getwindowsversion()
-		ver_format = ver[3], ver[0], ver[1]
-		win_version = {
-					(1, 4, 0): '95',
-					(1, 4, 10): '98',
-					(1, 4, 90): 'ME',
-					(2, 4, 0): 'NT',
-					(2, 5, 0): '2000',
-					(2, 5, 1): 'XP',
-					(2, 5, 2): '2003',
-					(2, 6, 0): '2008',
-					(2, 6, 1): '7'
-				}
+class TestDisplay(EMImage2DWidget):
+	def __init__(self):
+		EMImage2DWidget.__init__(self)
+		# the single image display widget
+		self.datatodisp=[test_image(1),test_image(2)]
 
-		if win_version.has_key(ver_format):
-			winsysver = 'Windows' + ' ' + win_version[ver_format]
-		else:
-			winsysver = 'Windows'
+		self.curdata=0
+		self.set_data(self.datatodisp[0])
+	
+		timer = QtCore.QTimer(self)
+		self.connect(timer,QtCore.SIGNAL("timeout()"),self.mytimeout)
+		timer.start(1000)
 
-		if 'PROGRAMFILES(X86)' in os.environ:
-			winsystype = '64bit'
-		else:
-			winsystype = '32bit'
+	def mytimeout(self):
+		self.curdata=self.curdata^1
 
-		print('Your EMAN2 is running on: {} {}'.format(winsysver, winsystype))
-
-	print('Your Python version is: {}'.format(os.sys.version.split()[0]))
-
-if __name__== "__main__":
-	main()
+		self.set_data(self.datatodisp[self.curdata])
+		
+main()
