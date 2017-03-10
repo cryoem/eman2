@@ -854,7 +854,15 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 				ptcl2.mult(mask)
 				ret[i]=(ptcl2.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
 			else:
-				ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
+				try:
+					ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
+				except:
+					print "ERROR: CMP FAILURE. See err.hdf"
+					print cmp
+					target.write_image("err.hdf",0)
+					ta.write_image("err.hdf",1)
+					sys.exit(1)
+					
 #			ta.write_image("dbug.hdf",-1)
 
 #				print ta["source_n"],target["source_n"]

@@ -86,6 +86,8 @@ def main():
 	
 	parser.add_argument("--calcglobaldefocus", action='store_true', default=False, help="""Default=False. Calculate the global defocus. If --fitgradient is nor provided, these will be the final defocus values to use.""")
 	
+	parser.add_argument("--correctionwidth", type=int, default=0, help="""Default=tile size. Width of the strip to be phase-flipped. 1 would mean that the correction moves pixel by pixel.""")
+
 	parser.add_argument("--cs", type=float,default=2.1,help="""Default=2.1. Cs of the microscope with which the images were collected. Supply it to replace the value in ctfparamsfile(s), or if ctfparamsfile(s) are lacking altogether.""")
 
 	parser.add_argument("--ctfparamsfile",type=str,default='',help="""This should be a text file with ctf parameters in the following format; defocus=value voltage=value cs=value apix=value bfactor=value ampcont=value. A single space should separate each parameter from the next. Do not write any unit symbols for the values; just the numerical value. Defocus should be in microns, voltage in kV, apix in angstroms per pixel, and ampcont (amplitude contrast) should be a decimal; for example, 0.1 for 10 percent amplitude contrast. IF you want to use DIFFERENT PARAMETERS PER IMAGE, then the file must contain multiple rows with the different values. The first row will be used to phase flip the first image, the second row to phase flip the second, etc.""")
@@ -114,10 +116,10 @@ def main():
 	
 	parser.add_argument("--mintiles", type=int, default=0, help="""Minimum number of 'good tiles' in strip to consider it.""")
 
-	parser.add_argument("--path",type=str,default='sptctf',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'sptctf'; for example, sptctf_02 will be the directory by default if 'sptctf_01' already exists.""")
-			
 	parser.add_argument("--overlaptiles",action='store_true',default=False,help="""Default=False. If provided, it will cause tiles to overlap by 50 percent in x and y for power spectrum computation (periodogram averaging).""")
-		
+
+	parser.add_argument("--path",type=str,default='sptctf',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'sptctf'; for example, sptctf_02 will be the directory by default if 'sptctf_01' already exists.""")
+					
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	parser.add_argument("--phaseflipwhole", action='store_true',default=False,help="""This will perform phase flipping on the entire image for each image in an aligned tiltseries using the CTF parameters supplied.""")
@@ -144,7 +146,7 @@ def main():
 	
 	parser.add_argument("--thickness", type=int,default=0,help="""This corresponds to the spread of the specimen in Z in the tomogram, at the same binning (sampling) as the provided tiltseries, images or subtiltseries.""")	
 	
-	parser.add_argument("--thicknessauto",action='store_true',default=False,help="""Default=False. Requires --radius. The thickness of the specimen will be --radius*2. If --coords is provided (and if --thickness is *not* provided), the thickness of the specimen in Z will be calculated by computing the difference between the largest and the smallest Z coordinate in --coords, plus the size of the specimen as --radius*2.""")
+	#parser.add_argument("--thicknessauto",action='store_true',default=False,help="""Default=False. Requires --radius. The thickness of the specimen will be --radius*2. If --coords is provided (and if --thickness is *not* provided), the thickness of the specimen in Z will be calculated by computing the difference between the largest and the smallest Z coordinate in --coords, plus the size of the specimen as --radius*2.""")
 	
 	parser.add_argument("--tilesize",type=int,default=512,help="""Tile size to use for strips when --autofit is provided.""")
 		
@@ -162,21 +164,22 @@ def main():
 	'''
 	parameters exclusive to e2stp_ctf.py
 	'''
-	parser.add_argument("--coords",default='',type=str,help="""Default=None. Text file containing x y z (or just z) coordinates for the particles, used to calculate thickness if --thicknessauto is specified for ctf fitting.""")
+	#parser.add_argument("--coords",default='',type=str,help="""Default=None. Text file containing x y z (or just z) coordinates for the particles, used to calculate thickness if --thicknessauto is specified for ctf fitting.""")
 	
-	parser.add_argument("--defocusbottom",action='store_true',default=False,help="""Requires --coords. Assumes the signal for defocus measurement (e.g., carbon film) is at the top layer of the tomogram. By default, the average signal is assumed to correspond to the middle Z plane of the tomogram.""")
+	#parser.add_argument("--defocusbottom",action='store_true',default=False,help="""Requires --coords. Assumes the signal for defocus measurement (e.g., carbon film) is at the top layer of the tomogram. By default, the average signal is assumed to correspond to the middle Z plane of the tomogram.""")
 	
-	parser.add_argument("--defocustop",action='store_true',default=False,help="""Requires --coords. Assumes the signal for defocus measurement (e.g., carbon film) is at the top layer of the tomogram. By default, the average signal is assumed to correspond to the middle Z plane of the tomogram.""")
-		
-	parser.add_argument("--framexsize",type=int,default=0,help="""This correspond to the X size in pixes of the images/frames in the raw tilt series; that is, the size of the entire frame along the X axis (perpendicular to the direction of the tilt axis in the aligned tilt series). It is used to calculate the distance of each particle (subtiltseries) to the tilt axis, since this will induce different shifts in defocus in 3-D for the actual particles. Particles right at the tilt axis don't move "up" or "down" as they are tilted.""")
+	#parser.add_argument("--defocustop",action='store_true',default=False,help="""Requires --coords. Assumes the signal for defocus measurement (e.g., carbon film) is at the top layer of the tomogram. By default, the average signal is assumed to correspond to the middle Z plane of the tomogram.""")
+	
+	#read this from the header?	
+	#parser.add_argument("--framexsize",type=int,default=0,help="""This correspond to the X size in pixes of the images/frames in the raw tilt series; that is, the size of the entire frame along the X axis (perpendicular to the direction of the tilt axis in the aligned tilt series). It is used to calculate the distance of each particle (subtiltseries) to the tilt axis, since this will induce different shifts in defocus in 3-D for the actual particles. Particles right at the tilt axis don't move "up" or "down" as they are tilted.""")
 
-	parser.add_argument("--pad2d", type=float,default=0.0,help="""Default=0. Padding factor to zero-pad the 2d images in the tilt series prior to reconstruction. (The final reconstructed subvolumes will be cropped to the original size).""")
+	#parser.add_argument("--pad2d", type=float,default=0.0,help="""Default=0. Padding factor to zero-pad the 2d images in the tilt series prior to reconstruction. (The final reconstructed subvolumes will be cropped to the original size).""")
 
-	parser.add_argument("--pad3d", type=float,default=0.0,help="""Padding factor to zero-pad the reconstruction volume. (The final reconstructed subvolumes will be cropped to the original size).""")	
+	#parser.add_argument("--pad3d", type=float,default=0.0,help="""Padding factor to zero-pad the reconstruction volume. (The final reconstructed subvolumes will be cropped to the original size).""")	
 	
-	parser.add_argument("--save2d",action='store_true',default=False,help="""If on, the CTF corrected subtiltseries will be saved as 2-D image stacks [one per particle].""")
+	#parser.add_argument("--save2d",action='store_true',default=False,help="""If on, the CTF corrected subtiltseries will be saved as 2-D image stacks [one per particle].""")
 	
-	parser.add_argument("--nozcorrection",action='store_true',default=False,help="""If you turn on this option and --subtiltsdir is provided, the position in Z of each subtomogram will not be considered for CTF correction""")
+	#parser.add_argument("--nozcorrection",action='store_true',default=False,help="""If you turn on this option and --subtiltsdir is provided, the position in Z of each subtomogram will not be considered for CTF correction""")
 		
 	'''
 	deprecated parameters
@@ -241,7 +244,6 @@ def main():
 	'''
 	c:pair images and angles into and ordered dictionary
 	'''
-	
 	imagefilenamesdict = imgangpairs(options,angles,imagefilenameslist)
 
 	'''
@@ -265,24 +267,24 @@ def main():
 	framexsize = 0
 	nimgs = len(imagefilenamesdict)
 					
-	if options.apix:
-		apix = options.apix
-		
-	if options.framexsize:
-		framexsize = options.framexsize
-	
-	if not options.apix or not options.framexsize:
+	if not options.apix:# or not options.framexsize:
+
 		count=0
 		for indx in imagefilenamesdict:
 			if count < 1:
 				apix = EMData( imagefilenamesdict[indx][0], 0, True )['apix_x']
-				framexsize = EMData( imagefilenamesdict[indx][0], 0, True )['nx']
+				#framexsize = EMData( imagefilenamesdict[indx][0], 0, True )['nx']
 			count+=1
-	
-	'''
-	c:calculate the specimen thickness value to use
-	'''
-	thicknesscalc(options)
+
+	if options.apix:
+		apix = options.apix
+		
+	#if options.framexsize:
+	#	framexsize = options.framexsize
+	#'''
+	#c:calculate the specimen thickness value to use
+	#'''
+	#thicknesscalc(options)
 
 	'''
 	c:read or generate the CTF parameters to use
@@ -378,60 +380,73 @@ def getimages(options):
 	#If input is a tiltseries, unstack it, then put the individual images into an imagefilenames dictionary
 	'''
 	if options.tiltseries:
-		if '.st' in options.tiltseries or '.mrc' in options.tiltseries or '.ali' in options.tiltseries or '.hdf' in options.tiltseries:
+		#nz=EMData(options.tiltseries,0,True)['nz']
+		if '.st' in options.tiltseries or '.mrc' in options.tiltseries or '.mrcs' in options.tiltseries or '.ali' in options.tiltseries or '.hdf' in options.tiltseries:
 			print "\n(e2spt_ctf)(getimages) unstacking tiltseries", options.tiltseries
 			
 			nimgs = EMData(options.tiltseries,0,True)['nz']
 			print "\n(e2spt_ctf.py)(main) containing %d tilt images" %(nimgs)
 			
-			if nimgs > 1:
-				#c:make sure the unstacked tiltseries images will have .hdf extension				
-				outname = options.tiltseries
-				if '.mrc' in options.tiltseries[-4:]:
-					outname = options.tiltseries.replace('.mrc','.hdf')
-				if '.mrcs' in options.tiltseries[-5:]:
-					outname = options.tiltseries.replace('.mrcs','.hdf')
-				if '.st' in options.tiltseries[-3:]:
-					outname = options.tiltseries.replace('.st','.hdf')	
-				if '.ali' in options.tiltseries[-4:]:
-					outname = options.tiltseries.replace('.ali','.hdf')
-				if '.MRC' in options.tiltseries[-4:]:
-					outname = options.tiltseries.replace('.MRC','.hdf')
-				if '.MRCS' in options.tiltseries[-5:]:
-					outname = options.tiltseries.replace('.MRCS','.hdf')
-				if '.ST' in options.tiltseries[-3:]:
-					outname = options.tiltseries.replace('.ST','.hdf')	
-				if '.ALI' in options.tiltseries[-4:]:
-					outname =  options.tiltseries.replace('.ALI','.hdf')	
-						
-				outname = outname.replace('.hdf','_UNSTACKED_sptctftmp.hdf')
-				
-				if options.path not in outname:
-				 outname = options.path + '/' + outname
-				
-				#c:define the command to unstack the tiltseries and execute it
-				cmdun = 'e2proc2d.py ' + options.tiltseries + ' ' + outname+ ' --unstacking '
-				
-				print "\n\n.st in tiltseries", ".st" in options.tiltseries[-3:]
-				print "usntacking cmdun is", cmdun
+			#if nimgs > 1:
+			
+			#c:make sure the unstacked tiltseries images will have .hdf extension				
+			outname = options.tiltseries
 
-				
-				runcmd( options, cmdun )
-				
-				#c:images are unstacked directly into the output directory; and add them to imagefilenameslist as the images to work with
-				outnamestem = os.path.basename(outname).replace('.hdf','')
-				
-				c = os.getcwd()
-				findir = os.listdir( options.path )
-				#print "\nstem to look for in unstacked images is",outnamestem
-				for f in findir:
-					if outnamestem in f:
-						#print "found image", f
-						finalimagefile=options.path + '/' + f
-						imagefilenameslist.append( finalimagefile )
-						#print "and appended it to imagefilenameslist"				
-			elif nimgs == 1:
-				imagefilenameslist.append( options.tiltseries )
+			outname = 'tomoctftmp.hdf'
+			
+			'''
+			if '.mrc' in options.tiltseries[-4:]:
+				outname = options.tiltseries.replace('.mrc','.hdf')
+			if '.mrcs' in options.tiltseries[-5:]:
+				outname = options.tiltseries.replace('.mrcs','.hdf')
+			if '.st' in options.tiltseries[-3:]:
+				outname = options.tiltseries.replace('.st','.hdf')	
+			if '.ali' in options.tiltseries[-4:]:
+				outname = options.tiltseries.replace('.ali','.hdf')
+			if '.MRC' in options.tiltseries[-4:]:
+				outname = options.tiltseries.replace('.MRC','.hdf')
+			if '.MRCS' in options.tiltseries[-5:]:
+				outname = options.tiltseries.replace('.MRCS','.hdf')
+			if '.ST' in options.tiltseries[-3:]:
+				outname = options.tiltseries.replace('.ST','.hdf')	
+			if '.ALI' in options.tiltseries[-4:]:
+				outname =  options.tiltseries.replace('.ALI','.hdf')	
+			
+
+			outname = outname.replace('.hdf','_UNSTACKED_sptctftmp.hdf')
+			'''
+			
+			if options.path not in outname:
+				outname = options.path + '/' + outname
+			
+			#c:define the command to unstack the tiltseries and execute it
+			cmdun = 'e2proc2d.py ' + options.tiltseries + ' ' + outname
+
+			if nimgs > 1:
+				cmdun += ' --unstacking'
+			
+			#print "\n\n.st in tiltseries", ".st" in options.tiltseries[-3:]
+			
+			print "\nunstacking cmdun is", cmdun
+
+			
+			runcmd( options, cmdun )
+			
+			#c:images are unstacked directly into the output directory; and add them to imagefilenameslist as the images to work with
+			outnamestem = os.path.basename(outname).replace('.hdf','')
+			
+			c = os.getcwd()
+			findir = os.listdir( options.path )
+			#print "\nstem to look for in unstacked images is",outnamestem
+			for f in findir:
+				if outnamestem in f:
+					#print "found image", f
+					finalimagefile=options.path + '/' + f
+					imagefilenameslist.append( finalimagefile )
+					#print "and appended it to imagefilenameslist"				
+			
+			#elif nimgs == 1:
+			#	imagefilenameslist.append( options.tiltseries )
 
 			nfiles = len(imagefilenameslist)
 			if nimgs != nfiles:
@@ -440,7 +455,7 @@ def getimages(options):
 				sys.exit(1)
 			
 		else:
-			print "\n(e2spt_ctf)(getimages) --tiltseries must be in .st or .mrc or .ali extension"
+			print "\n(e2spt_ctf)(getimages) --tiltseries must be in .st or .mrc or .mrcs or .ali or .hdf extension"
 			sys.exit(1)	
 		
 		
@@ -486,7 +501,7 @@ def imgangpairs(options,angles,imagefilenameslist):
 	
 	return imagefilenamesdict
 
-
+'''
 def thicknesscalc(options):
 	print "\n(e2tomo_ctf)(thicknesscalc) determining thickness"
 	if not options.thickness:
@@ -542,7 +557,7 @@ def thicknesscalc(options):
 	print "returning thickness value", options.thickness
 	#sys.exit(1)
 	return
-
+'''
 
 def pruneexcluded(options):
 	#cmdex = 'e2proc2d.py ' + options.tiltseries + ' ' + newtiltseries + ' --outmode int16'
@@ -759,10 +774,12 @@ def genctfparamlines( options, apix, nimgs, angles, imagefilenames ):
 				will be used."""
 				
 			kk=0
+			print "\nread defocuses are",defoci
 			for d in defoci:
 				#if kk not in indxstoexclude and kk < len(angles):
-				de = d.replace('\n','').replace(' ','').replace('\t','')
-				line = 'defocus=' + str( de ) + 'ampcont=' + str( options.ampcont ) + 'voltage=' + str( options.voltage ) + 'cs=' + str( options.cs ) + 'apix=' + str( apix ) + 'bfactor=' + str( options.bfactor )
+				#de = d.replace('\n','').replace(' ','').replace('\t','')
+				de=d.split()[-1]
+				line = 'defocus=' + str( de ) + ' ampcont=' + str( options.ampcont ) + ' voltage=' + str( options.voltage ) + ' cs=' + str( options.cs ) + ' apix=' + str( apix ) + ' bfactor=' + str( options.bfactor )
 				ctf = ctfparamparser( line ) 
 				angle = angles[ kk ]
 				ctfs.update( { kk:ctf } )
@@ -865,17 +882,18 @@ def getangles( options ):
 	
 def ctfparamparser( pline ):
 	
-	defocus = pline.replace('\n',' ').split("defocus=")[-1].split(' ')[-1]
-	ampcont = pline.replace('\n',' ').split("ampcont=")[-1].split(' ')[-1]
-	voltage = pline.replace('\n',' ').split("voltage=")[-1].split(' ')[-1]
-	cs = pline.replace('\n',' ').split("cs=")[-1].split(' ')[-1]
-	apix = pline.replace('\n',' ').split("apix=")[-1].split(' ')[-1]
-	bfactor = pline.replace('\n',' ').split("bfactor=")[-1].split(' ')[-1]
+	defocus = pline.replace('\n',' ').split("defocus=")[-1].split(' ')[0]
+	ampcont = pline.replace('\n',' ').split("ampcont=")[-1].split(' ')[0]
+	voltage = pline.replace('\n',' ').split("voltage=")[-1].split(' ')[0]
+	cs = pline.replace('\n',' ').split("cs=")[-1].split(' ')[0]
+	apix = pline.replace('\n',' ').split("apix=")[-1].split(' ')[0]
+	bfactor = pline.replace('\n',' ').split("bfactor=")[-1].split(' ')[0]
 
 	params = {'ampcont':ampcont,'apix':apix,'bfactor':bfactor,'cs':cs,'defocus':defocus,'voltage':voltage}
-	print "\n(e2spt_ctf.py)(ctfparamparser) The parsed parameters are"
+	print "\nparameters are",params
+	print "\n(e2spt_ctf.py)(ctfparamparser) The parsed parameters are:\n"
 	for key in params.keys():
-		print key + '=' + params[key] 
+		print key + '=' + params[key] +'\n'
 	
 	ctf = EMAN2Ctf()
 	#ctf.from_dict({'defocus':params['defocus'],'bfactor':params['bfactor'],'ampcont':params['ampcont'],'apix':params['apix'],'voltage':params['voltage'],'cs':params['cs']})	
@@ -902,31 +920,8 @@ def flipstack(options,imgsdict,ctfs,apix):
 		
 			originalx = img['nx']
 			originaly = img['ny']
-		
-			#recrop=0
-			#if img['nx'] != img['ny']:
-			#	print "\n\nThe image is not square; therefore it will be padded so that all 4 sides are equal to its largest dimension"
-			#	size = max(img['nx'],img['ny'])
-			#	print "The image will be padded into a square of size", size
-			#	imgc = clip2d(img,size,size)
-				
-			#	#if options.saveintermediatefiles:
-			#	imgc.write_image( imgfile.replace(imagefilextension,'_sq' + imagefilextension), 0  )
-				
-			#	recrop=1
-		
-			#print "The returned ctf to use is", ctf
-			#print "Of type", type(ctf)
 
-			imgf = flipimage(options,img,ctf)
-			
-			#imgf = ret[0]
-		
-			#if recrop:
-			#	print "the image will be recropped into its oiriginal size of", originalx,originaly
-			#	imgf = clip2d(imgf,originalx,originaly)
-		
-			#print "\nphase-flipped image"
+			imgf = flipimage(options,img,ctf)	
 
 			imgffileout = options.path + '/' + os.path.splitext(imgfilebase)[0]+'_flipped' + imgfilextension
 
@@ -999,12 +994,15 @@ def flipimage(options,img,ctf):
 
 	img_fft = img.do_fft()
 	flipim = img_fft.copy()	
-	ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+	ctf.compute_2d_complex( flipim,Ctf.CtfType.CTF_SIGN )
 
 	img_fft.mult( flipim )
 	img_corrected = img_fft.do_ift()
 	img_corrected['apix_x'] = ctf.apix
 	img_corrected['apix_y'] = ctf.apix
+
+	print "\nflipped image with this ctf", ctf
+	print "ctf.defocus", ctf.defocus
 
 	return img_corrected
 	
@@ -1038,19 +1036,34 @@ def flipstripbystrip(options,imgsdict,ctfs,angles):
 			
 			nstripsx = int(nx/options.tilesize)
 			nstripsy = int(ny/options.tilesize)
+
+			if options.correctionwidth:
+				nstripsx = int(nx/options.correctionwidth)
+
 			
 			finalimage = EMData( nx, ny )
 			finalimage.to_zero()
 			
 			for i in range(nstripsx):
-				startx = i*options.tilesize	
-				xpixels = options.tilesize
+
+				startx = i*options.tilesize
+				#startx = i*options.correctionwidth
 				
-				#on the last strip, you have to go all the way to the end of the image; so this last strip might be larger than the tilesize	
+				if options.correctionwidth:
+					startx = i*options.correctionwidth
+
+				xpixels = options.tilesize
+				if options.correctionwidth:
+					xpixels = options.correctionwidth
+
+				
+				#on the last strip, you have to go all the way to the end of the image; so this last strip might be larger than the others	
 				if i == nstripsx-1:
 					xpixels = nx-startx
 				
-				stripcenterXpixels = int( ( startx + (startx + xpixels) )/ 2 )
+				#stripcenterXpixels = int( ( startx + (startx + xpixels) )/ 2 )
+				stripcenterXpixels = int( ( 2*startx + xpixels )/ 2 )
+
 				stripcenterXmicrons = stripcenterXpixels * apix/10000 #this is in micrometers
 				
 				'''
@@ -1086,14 +1099,23 @@ def flipstripbystrip(options,imgsdict,ctfs,angles):
 				for j in range(nstripsy):
 					starty = j*options.tilesize	
 					ypixels = options.tilesize
+
 				
 					#on the last strip, you have to go all the way to the end of the image; so this last strip might be larger than the tilesize	
+					
 					if j == nstripsy-1:
 						ypixels = ny-starty
 				
-					r = Region(startx - pad, starty - pad, xpixels + options.tilesize, ypixels + options.tilesize)
-					#print "\n for strip, row %d,%d" %(i,j)
-					#print "clipping region", r
+					#r = Region(startx - pad, starty - pad, xpixels + options.tilesize, ypixels + options.tilesize)
+					#r = Region(startx - pad, starty - pad, options.tilesize + pad, options.tilesize + pad)
+					#r = Region(startx - pad, starty - pad, options.tilesize + pad, options.tilesize + pad)
+					
+					stripcenterYpixels = int( (2*starty + ypixels) / 2 )
+
+					r = Region( stripcenterXpixels - options.tilesize, stripcenterYpixels - options.tilesize, 2*options.tilesize, 2*options.tilesize )
+					
+
+					print "\nclipping region", r
 				
 					clipr_padded = EMData()
 					clipr_padded.read_image( imgfile, 0, False, r )
@@ -1126,7 +1148,18 @@ def flipstripbystrip(options,imgsdict,ctfs,angles):
 					#	stripxsize = xpixels
 					
 					clipr_flipped_originalsize = clip2d( clipr_flipped, xpixels, ypixels ) 
+					#r = Region(startx - pad, starty - pad, options.tilesize + pad, options.tilesize + pad)
+
 					#clipr_flipped_originalsize.write_image(options.path + '/stripsflippedcropped_' + str(indx).zfill(len( str(nstripsx) )) +'.hdf',i) 
+
+					#if j != 0:
+					#	clipr_flipped_originalsize.to_zero()
+					#	print "\nMMMMMMADE clip 0"
+
+					print "\nfor strip, column=%d, row=%d, clipping corrected strip to size nx=%d, nx=%d, ny=%d, ny=%d" %(i,j,xpixels,ypixels,clipr_flipped_originalsize['nx'],clipr_flipped_originalsize['ny'])
+					print "and inserting it at x=%d, y=%d" %(startx,starty)
+					print "mean=%.4f, sigma=%.4f" %( clipr_flipped_originalsize['mean_nonzero'], clipr_flipped_originalsize['sigma'] )
+
 
 					#strip_final = clip2d( img_flipped_originalsize, options.tilesize, ny )
 					#finalimage.insert_clip( strip_final, r )
@@ -1148,48 +1181,57 @@ def flipstripbystrip(options,imgsdict,ctfs,angles):
 				
 
 			imgffileout = options.path + '/' + os.path.splitext(imgfilebase)[0]+'_flipped_s' + imgfilextension
+			#imgffileout = options.path + '/' + os.path.splitext(imgfilebase)[0]+'_flipped_s.hdf'
 
 			finalimage['spt_phaseflipped']='strips'
 			finalimage['spt_defocus_mean'] = ctf.defocus
+			print "\nbefore normalization, finalimage mean=%.4f, sigma=%.4f" %(finalimage['mean_nonzero'],finalimage['sigma'])
+			
 			finalimage.process_inplace('normalize')
+
 			
 			print "\nwriting image out to %s, with size %d, %d, sigma %f, mean %f" %(imgffileout,finalimage['nx'],finalimage['ny'],finalimage['sigma'],finalimage['mean'])
 			
 			finalimage.write_image(imgffileout,0)
-			print "\nWrote flipped image to", imgffileout			
+			print "\nwrote flipped image to", imgffileout
+
+
 		else:
 			print "\nERROR: no CTF for image at indx %d" %(indx)
 			
 			
 	outflippedstack = ''
-	extension = '.mrc'
+	extension = '.mrcs'
 	images2stack = options.path + '/*_flipped_s*' 
 	if options.tiltseries:
-		base=os.path.basename(options.tiltseries)
+		base = os.path.basename(options.tiltseries)
 		extension = os.path.splitext(base)[1]
-		outflippedstack = options.path + '/' + os.path.splitext(base)[0]+ '_flipped_s.hdf'
+		outflippedstack = options.path + '/' + os.path.splitext(base)[0]+ '_flipped_s.mrcs' #+ extension
 	elif options.imagestem:
-		outflippedstack = options.path + '/' + options.imagestem + '_flipped_s.hdf'
+		outflippedstack = options.path + '/' + options.imagestem + '_flipped_s.mrcs'
 		
-	cmd = 'e2buildstacks.py --stackname ' + outflippedstack + ' ' + images2stack
-	cmd += ' && e2fixheader.py --input ' + outflippedstack + ' --stem apix --stemval ' + str(apix) + ' --valtype float'
+	cmdstack = 'e2buildstacks.py --stackname ' + outflippedstack + ' ' + images2stack
+	runcmd(options,cmdstack)
 
+	cmdfixheader = 'e2fixheader.py --input ' + outflippedstack + ' --stem apix --stemval ' + str(apix) + ' --valtype float'
+	runcmd(options,cmdfixheader)
 	
-	outflippedstack3d = outflippedstack.replace('.hdf','.mrc')
-	cmd += ' && e2proc2d.py ' + outflippedstack + ' ' + outflippedstack3d + ' --outmode int16 --twod2threed'
-	#cmd += ' && e2fixheader.py --input ' + outflippedstack3d + ' --stem apix --stemval ' + str(apix) + ' --valtype float'
-	
-	runcmd( options, cmd )
-	os.remove( outflippedstack )
-	
-	if extension != '.mrc':
-		finalname = outflippedstack3d.replace('.mrc',extension)
-		os.rename( outflippedstack3d, finalname )
-		
+	if extension != '.mrcs':
+		os.rename(outflippedstack,outflippedstack.replace('.mrcs',extension))
+		outflippedstack = outflippedstack.replace('.mrcs',extension)
+	#outflippedstack3d = outflippedstack.replace('.hdf','.mrc')
+	#cmdtype = 'e2proc2d.py ' + outflippedstack + ' ' + outflippedstack3d + ' --outmode int16 --twod2threed'	
+	#runcmd( options, cmdtype )
+
 	findir = os.listdir( options.path )
 	for f in findir:
+		if 'tomoctftmp' in f:
+			os.remove( options.path + '/' + f )
 		if 'sptctftmp' in f:
 			os.remove( options.path + '/' + f)
+	
+	#testdisplay = EMData(outflippedstack,0)
+	#display(testdisplay)
 	
 	return
 
@@ -2468,7 +2510,7 @@ def bgAdj(ctf,fg_1d):
 	return
 
 
-def clip2d( img, nx, ny=0 ):
+def clip2d( img, nx, ny=0, imgycc=None, imgxcc=None ):
 	
 	sizex = nx
 	sizey = nx
@@ -2476,9 +2518,14 @@ def clip2d( img, nx, ny=0 ):
 		sizey = ny
 		
 	imgxc = img['nx']/2
+	if imgxcc != None:
+		imgxc=imgxcc
+
 	imgyc = img['ny']/2
-	
-	Rimg =  Region( (2*imgxc - sizex)/2, (2*imgyc - sizey)/2, 0, sizex , sizey , 1)
+	if imgycc != None:
+		imgyc=imgycc
+
+	Rimg =  Region( (2*imgxc - sizex)/2, (2*imgyc - sizey)/2, sizex , sizey )
 	img.clip_inplace( Rimg )
 	
 	return img
