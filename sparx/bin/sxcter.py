@@ -41,7 +41,7 @@ from utilities import if_error_then_all_processes_exit_program
 
 def main():
 	program_name = os.path.basename(sys.argv[0])
-	usage = program_name + """  input_image_path  output_directory  --selection_list=selection_list  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --check_consistency  --stack_mode  --debug_mode
+	usage = program_name + """  input_image_path  output_directory  --selection_list=selection_list  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --vpp  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --set_ctf_header  --check_consistency  --stack_mode  --debug_mode
 
 Automated estimation of CTF parameters with error assessment.
 
@@ -80,30 +80,31 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	This mode ignores --selection_list, --wn --overlap_x, --overlap_y, --edge_x, and --edge_y options. 
 	Use single processor for this mode. Not supported by SPHIRE GUI (sxgui.py). 
 
-	sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode 
+	sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode
 
 """
 	parser = OptionParser(usage, version=SPARXVERSION)
-	parser.add_option("--selection_list",    type="string",        default=None,   help="Micrograph selecting list: Specify path of a micrograph selection list text file for Selected Micrographs Mode. The file extension must be \'.txt\'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)")
-	parser.add_option("--wn",                type="int",           default=512,    help="CTF window size [pixels]: The size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)")
-	parser.add_option("--apix",              type="float",         default=-1.0,   help="Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. (default -1.0)")
-	parser.add_option("--Cs",                type="float",         default=2.0,    help="Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging. (default 2.0)")
-	parser.add_option("--voltage",           type="float",         default=300.0,  help="Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)")
-	parser.add_option("--ac",                type="float",         default=10.0,   help="Amplitude contrast [%]: The typical amplitude contrast is in the range of 7% - 14%. The value mainly depends on the thickness of the ice embedding the particles. (default 10.0)")
-	parser.add_option("--f_start",           type="float",         default=-1.0,   help="Lowest frequency [1/A]: Lowest frequency to be considered in the CTF estimation. Determined automatically by default. (default -1.0)")
-	parser.add_option("--f_stop",            type="float",         default=-1.0,   help="Highest frequency [1/A]: Highest frequency to be considered in the CTF estimation. Determined automatically by default. (default -1.0)")
-	parser.add_option("--kboot",             type="int",           default=16,     help="Number of CTF estimates per micrograph: Used for error assessment. (default 16)")
-	parser.add_option("--overlap_x",         type="int",           default=50,     help="X overlap [%]: Overlap between the windows in the x direction. This will be ignored in Stack Mode. (default 50)")
-	parser.add_option("--overlap_y",         type="int",           default=50,     help="Y overlap [%]: Overlap between the windows in the y direction. This will be ignored in Stack Mode. (default 50)")
-	parser.add_option("--edge_x",            type="int",           default=0,      help="Edge x [pixels]: Defines the edge of the tiling area in the x direction. Normally it does not need to be modified. This will be ignored in Stack Mode. (default 0)")
-	parser.add_option("--edge_y",            type="int",           default=0,      help="Edge y [pixels]: Defines the edge of the tiling area in the y direction. Normally it does not need to be modified. This will be ignored in Stack Mode. (default 0)")
-	parser.add_option("--set_ctf_header",    action="store_true",  default=False,  help="Export CTF parameters to header: Exports the estimated CTF parameters to the image header. (default False)")
-	parser.add_option("--check_consistency", action="store_true",  default=False,  help="Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)")
-	parser.add_option("--stack_mode",        action="store_true",  default=False,  help="Use stack mode: Use a stack as the input. Please set the file path of a stack as the first argument and output directory for the second argument. This is advanced option. Not supported by sxgui. (default False)")
-	parser.add_option("--debug_mode",        action="store_true",  default=False,  help="Enable debug mode: Print out debug information. (default False)")
-	
+	parser.add_option("--selection_list",	type="string",        default=None,   help="Micrograph selecting list: Specify path of a micrograph selection list text file for Selected Micrographs Mode. The file extension must be \'.txt\'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)")
+	parser.add_option("--wn",				type="int",           default=512,    help="CTF window size [pixels]: The size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)")
+	parser.add_option("--apix",				type="float",         default=-1.0,   help="Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. (default -1.0)")
+	parser.add_option("--Cs",				type="float",         default=2.0,    help="Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging. (default 2.0)")
+	parser.add_option("--voltage",			type="float",         default=300.0,  help="Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)")
+	parser.add_option("--ac",				type="float",         default=10.0,   help="Amplitude contrast [%]: The typical amplitude contrast is in the range of 7% - 14%. The value mainly depends on the thickness of the ice embedding the particles. (default 10.0)")
+	parser.add_option("--f_start",			type="float",         default=-1.0,   help="Lowest frequency [1/A]: Lowest frequency to be considered in the CTF estimation. Determined automatically by default. (default -1.0)")
+	parser.add_option("--f_stop",			type="float",         default=-1.0,   help="Highest frequency [1/A]: Highest frequency to be considered in the CTF estimation. Determined automatically by default. (default -1.0)")
+	parser.add_option("--kboot",			type="int",           default=16,     help="Number of CTF estimates per micrograph: Used for error assessment. (default 16)")
+	parser.add_option("--overlap_x",		type="int",           default=50,     help="X overlap [%]: Overlap between the windows in the x direction. This will be ignored in Stack Mode. (default 50)")
+	parser.add_option("--overlap_y",		type="int",           default=50,     help="Y overlap [%]: Overlap between the windows in the y direction. This will be ignored in Stack Mode. (default 50)")
+	parser.add_option("--edge_x",			type="int",           default=0,      help="Edge x [pixels]: Defines the edge of the tiling area in the x direction. Normally it does not need to be modified. This will be ignored in Stack Mode. (default 0)")
+	parser.add_option("--edge_y",			type="int",           default=0,      help="Edge y [pixels]: Defines the edge of the tiling area in the y direction. Normally it does not need to be modified. This will be ignored in Stack Mode. (default 0)")
+	parser.add_option("--set_ctf_header",	action="store_true",  default=False,  help="Export CTF parameters to header: Exports the estimated CTF parameters to the image header. (default False)")
+	parser.add_option("--check_consistency",action="store_true",  default=False,  help="Check consistency of inputs: Create a text file containing the list of inconsistent Micrograph ID entries (i.e. inconsist_mic_list_file.txt). (default False)")
+	parser.add_option("--stack_mode",		action="store_true",  default=False,  help="Use stack mode: Use a stack as the input. Please set the file path of a stack as the first argument and output directory for the second argument. This is advanced option. Not supported by sxgui. (default False)")
+	parser.add_option("--debug_mode",		action="store_true",  default=False,  help="Enable debug mode: Print out debug information. (default False)")
+	parser.add_option("--vpp",				action="store_true",  default=False,  help="Volta Phas Plate - fit smplitude contrast. (default False)")
+
 	(options, args) = parser.parse_args(sys.argv[1:])
-	
+
 	# ====================================================================================
 	# Prepare processing
 	# ====================================================================================
@@ -112,7 +113,7 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	# ------------------------------------------------------------------------------------
 	# Detect if program is running under MPI
 	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
-	
+
 	main_mpi_proc = 0
 	if RUNNING_UNDER_MPI:
 		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_barrier, MPI_COMM_WORLD
@@ -150,24 +151,24 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 			error_status = ("Please check usage for number of arguments.\n Usage: " + usage + "\n" + "Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
 			break
 		assert (len(args) == 2)
-		
+
 		# NOTE: 2015/11/27 Toshio Moriya
 		# Require single quotes (') or double quotes (") when input micrograph pattern is give for input_image_path
 		#  so that sys.argv does not automatically expand wild card and create a list of file names
 		#
 		input_image_path = args[0]
 		output_directory = args[1]
-		
+
 		# --------------------------------------------------------------------------------
 		# NOTE: 2016/03/17 Toshio Moriya
 		# cter_mrk() will take care of all the error conditions 
 		# --------------------------------------------------------------------------------
-		
+
 		break
 	if_error_then_all_processes_exit_program(error_status)
 	assert (input_image_path != None)
 	assert (output_directory != None)
-	
+
 	if my_mpi_proc_id == main_mpi_proc:
 		command_line = ""
 		for command_token in sys.argv:
@@ -175,13 +176,17 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 		print(" ")
 		print("Shell line command:")
 		print(command_line)
-	
-	from morphology import cter_mrk
-	result = cter_mrk(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.set_ctf_header, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
-	
+
+	if options.vpp:
+		from morphology import cter_vpp
+		result = cter_vpp(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.set_ctf_header, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
+	else:
+		from morphology import cter_mrk
+		result = cter_mrk(input_image_path, output_directory, options.selection_list, options.wn, options.apix, options.Cs, options.voltage, options.ac, options.f_start, options.f_stop, options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, options.set_ctf_header, options.check_consistency, options.stack_mode, options.debug_mode, program_name, RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
+
 	if RUNNING_UNDER_MPI:
 		mpi_barrier(MPI_COMM_WORLD)
-	
+
 	if main_mpi_proc == my_mpi_proc_id:
 		if options.debug_mode:
 			print "Returned value from cter_mrk() := ", result
@@ -204,9 +209,9 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 		mpi_barrier(MPI_COMM_WORLD)
 		from mpi import mpi_finalize
 		mpi_finalize()
-	
+
 	sys.stdout.flush()
 	sys.exit(0)
-	
+
 if __name__ == "__main__":
 	main()
