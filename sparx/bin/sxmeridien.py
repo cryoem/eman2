@@ -185,7 +185,7 @@ def AI( fff, anger, shifter, chout = False):
 
 		if( chout ): print("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01)
 		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.1
+		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1   or fff[Tracker["nxinit"]//2-1] > 0.2)
 		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
 
 
