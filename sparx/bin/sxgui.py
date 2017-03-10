@@ -3033,6 +3033,13 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "e2bdb"; sxcmd.subname = ""; sxcmd.mode = "makevstack"; sxcmd.label = "Create Virtual Stack"; sxcmd.short_info = "Output virtual image stack. Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "makevstack"; token.key_prefix = "--"; token.label = "Output virtual image stack"; token.help = "Make a 'virtual' BDB image stack with the specified name from one or more other stacks. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_bdb_stack_file"; token.key_prefix = ""; token.label = "Input BDB image stack"; token.help = "Specify path to input BDB stack file. "; token.group = "main"; token.is_required = True; token.is_locked = None; token.default = ""; token.restore = ""; token.type = "bdb"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "list"; token.key_prefix = "--"; token.label = "File containing selection list of images"; token.help = "Input ASCII file containing a list of selected image names to creates a new virtual BDB image stack from an existed virtual stack. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.default = "none"; token.restore = "none"; token.type = "parameters"; sxcmd.token_list.append(token)
+
+		sxcmd_list.append(sxcmd)
+
 		# @@@@@ END_INSERTION @@@@@
 
 		# Create dictionaries from the constructed lists
