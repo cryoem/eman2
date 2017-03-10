@@ -183,9 +183,9 @@ def AI( fff, anger, shifter, chout = False):
 				break
 		l01 = max(l01,-1)
 
-		if( chout ): print("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01,fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01, fff[Tracker["nxinit"]//2-1])
+		if( chout ): print("  AI: Tracker[nxstep], TR[currentres], Tracker[fsc143], l05, l01, fff[Tracker[nxinit]//2-1]:",Tracker["nxstep"],Tracker["currentres"],Tracker["fsc143"], l05, l01,fff[Tracker["nxinit"]//2-1])
 		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
-		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1   or fff[Tracker["nxinit"]//2-1] > 0.2)
+		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
 		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
 
 
@@ -204,7 +204,7 @@ def AI( fff, anger, shifter, chout = False):
 		Tracker["currentres"] = maxres
 		Tracker["fsc143"] = l01
 
-		params_changes = anger >= 1.1*Tracker["anger"] and shifter >= 1.1*Tracker["shifter"]
+		params_changes = anger >= 1.03*Tracker["anger"] and shifter >= 1.03*Tracker["shifter"]
 
 		#  figure changes in params
 		if( chout ):  print("  Incoming  parameters  %10.3f  %10.3f  %10.3f  %10.3f   %s"%(Tracker["anger"],anger,Tracker["shifter"],shifter,params_changes))
@@ -1171,7 +1171,6 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 											paramstructure = newparams, refang = refang, rshifts_shrank = [[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts], \
 											delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
 											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
-
 	if Blockdata["subgroup_myid"]==Blockdata["nodes"][procid]:
 		if( procid == 0 ):
 			cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"], "tempdir") )
@@ -1188,8 +1187,8 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"Executed successfully backprojection for group ",procid)
 	mpi_barrier(mpi_comm)
-	return
-
+	return  
+	
 def do3d_final_mpi(final_iter):
 	global Tracker, Blockdata
 	from mpi import MPI_COMM_WORLD, mpi_barrier
