@@ -228,7 +228,7 @@ def AI( fff, anger, shifter, chout = False):
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(line,"ITERATIONS convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
+					print(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
 				range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
 				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"],range, step)
@@ -248,15 +248,18 @@ def AI( fff, anger, shifter, chout = False):
 					keepgoing = 0
 					if(Blockdata["myid"] == Blockdata["main_node"]):
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-						print(line,"ITERATIONS convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
+						print(line,"Convergence criterion B is reached (angular step delta smaller than the limit imposed by the structure radius)")
 				Tracker["no_improvement"]		= 0
 				Tracker["no_params_changes"]	= 0
 				Tracker["anger"]				= 1.0e23
 				Tracker["shifter"]				= 1.0e23
 	Tracker["keepfirst"] = -1
-	if (keepgoing == 0) and (Blockdata["myid"] == Blockdata["main_node"]):
-		print(" 3-D refinement converged, the best solution is in the directory main%03d "%Tracker["constants"]["best"] )
-		print(" Computing 3-D reconstruction using the best solution")
+	if( (keepgoing == 0) and (Blockdata["myid"] == Blockdata["main_node"]) ):
+		print(line, "ITERATION  #%2d. Resolution achieved       : %3d/%3d pixels, %5.2fA/%5.2fA."%\
+				(Tracker["mainiteration"], \
+				Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])))
+		print(line, "The best solution is in the directory main%03d "%Tracker["constants"]["best"] )
 		Tracker["mainiteration"] -= 1
 	return keepgoing
 
