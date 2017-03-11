@@ -8,7 +8,7 @@ source:
 requirements:
     {% set reqs_common = [
             "python 2.7.*",
-            "boost 1.63.*",
+            "boost 1.61.*",
             "fftw",
             "numpy",
             "ftgl",
