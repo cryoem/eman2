@@ -61,7 +61,7 @@ from e2project3d import EMProject3DTaskDC
 from e2spt_classaverage import Align3DTask
 from e2spt_preproc import Preproc3DTask
 from e2spt_hac import Align3DTaskAVSA
-#from e2spt_simulation import SubtomoSimTask
+from e2spt_simulation import SubtomoSimTask
 from e2tomopreproc import TomoPreproc2DTask
 from e2symsearch3d import SymAlignTask
 from e2spt_boxer import TomoBoxer3DTask

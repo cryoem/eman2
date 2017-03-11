@@ -2347,45 +2347,36 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				except:
 					pass
 					
-					
 				cmdhac+=' --path=' + hacrefsubdir
-				#cmdhac+=' --iter='+str(niterhac)
 				cmdhac+=' --input='+subsetForHacRef
-				#cmdhac+= ' --nopreprocprefft'
 				
-				print "cmdhac is", cmdhac
+				if options.verbose:
+					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac
 				
 				runcmd( options, cmdhac )
-				#cmdhac += ' && mv ' + hacrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForHacRef + ' ' + options.path
-
-				#cmdhac2 = 'mv ' + hacrefsubdir + ' ' + options.path + '/'
-				#runcmd( options, cmdhac2 )
-				#os.rename( hacrefsubdir, options.path + '/' + hacrefsubdir)
-
-				
-				#cmdhac3 = 'mv ' + subsetForHacRef + ' ' + options.path
-				#runcmd( options, cmdhac3 )
-				#os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef)
-				
-				
-				
+			
 				try:
-					print "\nmoving hacrefsubdir into path", hacrefsubdir, options.path
+					print "\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path )
 					os.rename( hacrefsubdir, options.path + '/' + hacrefsubdir )
 				except:
-					print "tried moving hacrefsubdir into path but failed", hacrefsubdir, options.path
-					newdirectorycount = '_'.join( hacrefsubdir.split('_')[:-1]) 
-					
+					print "\nfirst try moving hacrefsubdir %s into path %s failed" %( hacrefsubdir, options.path )
+					hacsubdirstem = '_'.join( hacrefsubdir.split('_')[:-1])
+
 					try:
-						newdirectorycount += '_' + str( int(hacrefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+						hacsubdircount = str( int(hacrefsubdir.split('_')[-1])+1)
 					except:
-						#newdirectorycount += '_0'
-						pass
+						hacsubdircount = '01'
+						hacsubdirstem = hacrefsubdir
 					
-					
-					print "newdirectorycount is", newdirectorycount
-					os.rename( hacrefsubdir, options.path + '/' + newdirectorycount )
-				
+
+					newhacrefsubdir = hacsubdirstem + '_' + hacsubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					try: 
+						print "\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path )
+						os.rename( newhacrefsubdir, options.path + '/' + hacrefsubdir )
+					except:
+						print "\nsecond and final try moving hacrefsubdir %s into path %s failed" %( newhacrefsubdir, options.path )
+						sys.exit(1)
+
 				
 				
 				try:
@@ -2417,8 +2408,8 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				ref = EMData( options.path + '/' + hacrefsubdir +'/final_avg.hdf', 0 )
 
 				refsdict.update({ klassnum : ref })
-		
-			#elif options.ssaref:
+				
+			
 			if method == 'ssa':
 				if options.verbose:
 					print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using self symmetry alignment through e2symsearch3d.py"
@@ -2426,7 +2417,6 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				if options.sym == 'c1' or options.sym == 'C1':
 					print """\n(e2spt_classaverage)(sptRefGen) - ERROR: You must provide at least c2 or higher symmetry to use
 					--ssaref"""
-				#sys.exit(1)
 			
 				subsetForSsaRef = 'sptssarefsubset'+ klassidref + '.hdf'
 				
@@ -2434,7 +2424,6 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					os.remove( subsetForSsaRef )
 				except:
 					pass
-					
 								
 				nptclsforref = 10
 				try:
@@ -2467,19 +2456,9 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				print "\nelements are", elements
 				for ele in elements:
 					if 'saveallpeaks' not in ele and 'fine' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
-					#	print "Appended element", ele
 						ssaelements.append(ele)
 						print "appending element",ele
-					#else:
-					#	print "SKIPPED element", ele
-					
-				#if 'e2spt_classaverage' in ssaelements:
-				#	print "HERE!"
-				#	sys.exit()
-				#else:
-				#	print "Not here, see", ssaelements
-				#	sys.exit()
-				
+		
 				cmdssa = ' '.join(ssaelements)
 				print "before replacing program name, cmdssa is", cmdssa
 
@@ -2492,44 +2471,40 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				cmdssa += ' --path=' + ssarefsubdir
 				cmdssa += ' --symmetrize'
 				cmdssa += ' --average'
-				#cmdssa+= ' --nopreprocprefft'
 				
 				print "\ncmdssa is", cmdssa
 				
+				if options.verbose:
+					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa
+
 				runcmd( options, cmdssa )
 				
-				#ssarefname = 'ssaref_' + klassidref + '.hdf'
 				ssarefname = 'final_avg.hdf'
-				#cmdssa += ' --output=' + ssarefname
-			
-				#cmdssa += ' && mv ' + ssarefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForSsaRef + ' ' + options.path
-
-				#cmdssa2 = 'mv ' + ssarefsubdir + ' ' + options.path + '/'
-				#runcmd( options, cmdssa2 )
-				#os.rename( ssarefsubdir, options.path + '/' + ssarefsubdir)
-				
-				
-				#cmdssa3 =  'mv ' + subsetForSsaRef + ' ' + options.path
-				#runcmd( options, cmdssa3 )
-				#os.rename( subsetForSsaRef, options.path + '/' + subsetForSsaRef)
-				
-				
+					
 				try:
-					print "\nmoving ssarefsubdir into path", ssarefsubdir, options.path
+					print "\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path )
 					os.rename( ssarefsubdir, options.path + '/' + ssarefsubdir )
 				except:
-					print "tried moving ssarefsubdir into path but failed", ssarefsubdir, options.path
-					newdirectorycount = '_'.join( ssarefsubdir.split('_')[:-1]) 
-					
+					print "\nfirst try moving ssarefsubdir %s into path %s failed" %( ssarefsubdir, options.path )
+					hacsubdirstem = '_'.join( ssarefsubdir.split('_')[:-1])
+
 					try:
-						newdirectorycount += '_' + str( int(ssarefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+						ssasubdircount = str( int(ssarefsubdir.split('_')[-1])+1)
 					except:
-						#newdirectorycount += '_0'
-						pass
+						ssasubdircount = '01'
+						ssasubdirstem = ssarefsubdir
 					
-					print "newdirectorycount is", newdirectorycount
-					os.rename( ssarefsubdir, options.path + '/' + newdirectorycount )			
-				
+					newssarefsubdir = ssasubdirstem + '_' + ssasubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					try: 
+						print "\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path )
+						os.rename( newssarefsubdir, options.path + '/' + ssarefsubdir )
+					except:
+						print "\nsecond and final try moving ssarefsubdir %s into path %s failed" %( newssarefsubdir, options.path )
+						sys.exit(1)
+
+
+
+
 				findir = os.listdir(options.path)
 				if subsetForSsaRef in findir:
 					print "tried moving subsetForSsaRef into path but failed", subsetForSsaRef, options.path
@@ -2660,27 +2635,28 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				if options.verbose:
 					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate btref is", cmdbt
 
-				#p=subprocess.Popen( cmdbt, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				#text=p.communicate()	
-				#p.stdout.close()
-			
-			
-				#cmdbt2 = 'mv ' + btrefsubdir + ' ' + options.path + '/' 
-				#runcmd( options, cmdbt2 )
-				
 				try:
 					print "\nmoving btrefsubdir into path", btrefsubdir, options.path
 					os.rename( btrefsubdir, options.path + '/' + btrefsubdir )
 				except:
-					print "tried moving btrefsubdir into path but failed", btrefsubdir, options.path
-					newdirectorycount = '_'.join( btrefsubdir.split('_')[:-1])  
-					try: 
-						newdirectorycount += '_' + str( int(btrefsubdir.split('_')[-1])+1 )	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					print "\nfirst try moving btrefsubdir %s into path %s failed" %( btrefsubdir, options.path )
+					
+					btsubdirstem = '_'.join( btrefsubdir.split('_')[:-1])
+
+					try:
+						btsubdircount = str( int(btrefsubdir.split('_')[-1])+1)
 					except:
-						#newdirectorycount += '_0'
-						pass
+						btsubdircount = '01'
+						btsubdirstem = btrefsubdir
+					
+
+					newbtrefsubdir = btsubdirstem + '_' + btsubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
+					try: 
+						os.rename( newbtrefsubdir, options.path + '/' + btrefsubdir )
+					except:
+						print "\nsecond and final try moving btrefsubdir %s into path %s failed" %( newbtrefsubdir, options.path )
+						sys.exit(1)
 						
-					os.rename( btrefsubdir, options.path + '/' + newdirectorycount )
 								
 				
 				#cmdbt3 = 'mv ' + subsetForBTRef + ' ' + options.path
