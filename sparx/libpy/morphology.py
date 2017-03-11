@@ -5057,7 +5057,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			crefim = Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
 			Util.Frngs(crefim, numr)
 			Util.Applyws(crefim, numr, wr)
-			defc, ampcont, subpw, ctf2, baseline, envelope, istart, istop = defocusgett_vpp2(qse,rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
+			defc, ampcont, subpw, ctf2, baseline, envelope, istart, istop = defocusgett_vpp2(qse, rooc, wn, voltage = voltage, Pixel_size = pixel_size, Cs = Cs, f_start = f_start, f_stop = f_stop, round_off = 1.0, nr1 = 3, nr2 = 6, parent = None, DEBug = debug_mode)
 			if debug_mode or True:
 				print "  RESULT %s" % (img_name), defc, ampcont, istart, istop,(time()-at)/60.
 				
@@ -5065,7 +5065,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				for i in xrange(len(freq)):  freq[i] = float(i) / wn / pixel_size
 #				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], "%s/ravg%05d.txt" % (output_directory, ifi))
 				#fou = os.path.join(outravg, "%s_ravg_%02d.txt" % (img_basename_root, nboot))
-				fou = os.path.join(".", "%s_ravg_%02d.txt" % (img_basename_root, nboot))
+				fou = os.path.join(".", "%s_ravg22_%02d.txt" % (img_basename_root, nboot))
 				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], fou)
 			
 			#pc = ctf2_rimg(wn,generate_ctf([defc,Cs,voltage,pixel_size,0.0,wgh]))
@@ -5684,7 +5684,7 @@ def defocusgett_vpp2(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_star
 		data[7] = float(a)
 		print "  fdasfdsfa  ",a
 		#for i in xrange(1000,100000,50):
-		for i in xrange(1000,100000,200):
+		for i in xrange(1000,100000,50):
 			dc = float(i)/10000.0
 			qt = simpw1d(dc, data)
 
@@ -5719,8 +5719,8 @@ def defocusgett_vpp2(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_star
 	ctf2 = ctf2_rimg(nx, generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]))
 	qse.write_image("qse.hdf")
 	ctf2.write_image("c1.hdf")
-	ctf2 = ctf2_rimg(nx, generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]))
-	ctf2.write_image("c2.hdf")
+	ctf22 = ctf2_rimg(nx, generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]))
+	ctf22.write_image("c2.hdf")
 	'''
 	from utilities import write_text_file
 	foki = subpw.tolist()
