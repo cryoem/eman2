@@ -38,6 +38,5 @@ requirements:
         - matplotlib
         - ipython
         - pyqt 4.*
-        - pyopengl
+        - pyopengl 3.1.0
         - theano
-        - scipy
