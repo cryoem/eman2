@@ -453,7 +453,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 	double result = 0.;
 	long n = 0;
 	if(image->is_complex() && with->is_complex()) {
-	// Implemented by PAP  01/09/06 - please do not change.  If in doubts, write/call me.
+		// Implemented by PAP  01/09/06 - please do not change.  If in doubts, write/call me.
 		int nx  = with->get_xsize();
 		int ny  = with->get_ysize();
 		int nz  = with->get_zsize();
@@ -464,132 +464,130 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		int iyb = ny%2;
 		//
 		if(nz == 1) {
-		//  it looks like it could work in 3D, but does not
-		for ( int iz = 0; iz <= nz-1; ++iz) {
-			double part = 0.;
-			for ( int iy = 0; iy <= ny-1; ++iy) {
-				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ++ix) {
-					size_t ii = ix + (iy  + iz * ny)* lsd2;
-					part += x_data[ii] * double(y_data[ii]);
+			//  it looks like it could work in 3D, but does not
+			for ( int iz = 0; iz <= nz-1; ++iz) {
+				double part = 0.;
+				for ( int iy = 0; iy <= ny-1; ++iy) {
+					for ( int ix = 2; ix <= lsd2 - 1 - ixb; ++ix) {
+						size_t ii = ix + (iy  + iz * ny)* lsd2;
+						part += x_data[ii] * double(y_data[ii]);
+					}
 				}
-			}
-			for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
-				size_t ii = (iy  + iz * ny)* lsd2;
-				part += x_data[ii] * double(y_data[ii]);
-				part += x_data[ii+1] * double(y_data[ii+1]);
-			}
-			if(nx%2 == 0) {
 				for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
-					size_t ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+					size_t ii = (iy  + iz * ny)* lsd2;
 					part += x_data[ii] * double(y_data[ii]);
 					part += x_data[ii+1] * double(y_data[ii+1]);
 				}
+				if(nx%2 == 0) {
+					for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
+						size_t ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+						part += x_data[ii] * double(y_data[ii]);
+						part += x_data[ii+1] * double(y_data[ii+1]);
+					}
 
-			}
-			part *= 2;
-			part += x_data[0] * double(y_data[0]);
-			if(ny%2 == 0) {
-				size_t ii = (ny/2  + iz * ny)* lsd2;
-				part += x_data[ii] * double(y_data[ii]);
-			}
-			if(nx%2 == 0) {
-				size_t ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
-				part += x_data[ii] * double(y_data[ii]);
+				}
+				part *= 2;
+				part += x_data[0] * double(y_data[0]);
 				if(ny%2 == 0) {
-					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
+					size_t ii = (ny/2  + iz * ny)* lsd2;
 					part += x_data[ii] * double(y_data[ii]);
 				}
-			}
-			result += part;
-		}
-		if( normalize ) {
-		//  it looks like it could work in 3D, but does not
-		double square_sum1 = 0., square_sum2 = 0.;
-		for ( int iz = 0; iz <= nz-1; ++iz) {
-			for ( int iy = 0; iy <= ny-1; ++iy) {
-				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ++ix) {
-					size_t ii = ix + (iy  + iz * ny)* lsd2;
-					square_sum1 += x_data[ii] * double(x_data[ii]);
-					square_sum2 += y_data[ii] * double(y_data[ii]);
+				if(nx%2 == 0) {
+					size_t ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
+					part += x_data[ii] * double(y_data[ii]);
+					if(ny%2 == 0) {
+						int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
+						part += x_data[ii] * double(y_data[ii]);
+					}
 				}
+				result += part;
 			}
-			for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
-				size_t ii = (iy  + iz * ny)* lsd2;
-				square_sum1 += x_data[ii] * double(x_data[ii]);
-				square_sum1 += x_data[ii+1] * double(x_data[ii+1]);
-				square_sum2 += y_data[ii] * double(y_data[ii]);
-				square_sum2 += y_data[ii+1] * double(y_data[ii+1]);
-			}
-			if(nx%2 == 0) {
-				for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
-					size_t ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
-					square_sum1 += x_data[ii] * double(x_data[ii]);
-					square_sum1 += x_data[ii+1] * double(x_data[ii+1]);
-					square_sum2 += y_data[ii] * double(y_data[ii]);
-					square_sum2 += y_data[ii+1] * double(y_data[ii+1]);
-				}
-
-			}
-			square_sum1 *= 2;
-			square_sum1 += x_data[0] * double(x_data[0]);
-			square_sum2 *= 2;
-			square_sum2 += y_data[0] * double(y_data[0]);
-			if(ny%2 == 0) {
-				int ii = (ny/2  + iz * ny)* lsd2;
-				square_sum1 += x_data[ii] * double(x_data[ii]);
-				square_sum2 += y_data[ii] * double(y_data[ii]);
-			}
-			if(nx%2 == 0) {
-				int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
-				square_sum1 += x_data[ii] * double(x_data[ii]);
-				square_sum2 += y_data[ii] * double(y_data[ii]);
-				if(ny%2 == 0) {
-					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
-					square_sum1 += x_data[ii] * double(x_data[ii]);
-					square_sum2 += y_data[ii] * double(y_data[ii]);
-				}
-			}
-		}
-		result /= sqrt(square_sum1*square_sum2);
-		} 
-			else  result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz);
-			// This concludes the 2D part.
 		} else {
-		// The 3D code
-		int ky, kz;
-		int ny2 = ny/2; int nz2 = nz/2;
-		for ( int iz = 0; iz <= nz-1; ++iz) {
-			if(iz>nz2) kz=iz-nz; else kz=iz;
-			for ( int iy = 0; iy <= ny-1; ++iy) {
-				if(iy>ny2) ky=iy-ny; else ky=iy;
-				for (int ix = 0; ix <= lsd2-1; ++ix) {
-						int p = 2;
-						if  (ix <= 1 || ix >= lsd2-2 && nx%2 == 0)   p = 1;
-						size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
-						result += p * x_data[ii] * double(y_data[ii]);
+			// The 3D code
+			int ky, kz;
+			int ny2 = ny/2; int nz2 = nz/2;
+			for ( int iz = 0; iz <= nz-1; ++iz) {
+				if(iz>nz2) kz=iz-nz; else kz=iz;
+				for ( int iy = 0; iy <= ny-1; ++iy) {
+					if(iy>ny2) ky=iy-ny; else ky=iy;
+					for (int ix = 0; ix <= lsd2-1; ++ix) {
+							int p = 2;
+							if  (ix <= 1 || (ix >= lsd2-2 && nx%2 == 0) )   p = 1;
+							size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
+							result += p * x_data[ii] * double(y_data[ii]);
+					}
 				}
 			}
-		}
-		if( normalize ) {
-		double square_sum1 = 0., square_sum2 = 0.;
-		int ky, kz;
-		int ny2 = ny/2; int nz2 = nz/2;
-		for ( int iz = 0; iz <= nz-1; ++iz) {
-			if(iz>nz2) kz=iz-nz; else kz=iz;
-			for ( int iy = 0; iy <= ny-1; ++iy) {
-				if(iy>ny2) ky=iy-ny; else ky=iy;
-				for (int ix = 0; ix <= lsd2-1; ++ix) {
-						int p = 2;
-						if  (ix <= 1 || ix >= lsd2-2 && nx%2 == 0)   p = 1;
-						size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
-						square_sum1 += p * x_data[ii] * double(x_data[ii]);
-						square_sum2 += p * y_data[ii] * double(y_data[ii]);
+			if( normalize ) {
+				double square_sum1 = 0., square_sum2 = 0.;
+				int ky, kz;
+				int ny2 = ny/2; int nz2 = nz/2;
+				for ( int iz = 0; iz <= nz-1; ++iz) {
+					if(iz>nz2) kz=iz-nz; else kz=iz;
+					for ( int iy = 0; iy <= ny-1; ++iy) {
+						if(iy>ny2) ky=iy-ny; else ky=iy;
+						for (int ix = 0; ix <= lsd2-1; ++ix) {
+								int p = 2;
+								if  (ix <= 1 || (ix >= lsd2-2 && nx%2 == 0) )   p = 1;
+								size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
+								square_sum1 += p * x_data[ii] * double(x_data[ii]);
+								square_sum2 += p * y_data[ii] * double(y_data[ii]);
+						}
+					}
 				}
-			}
-		}
-		result /= sqrt(square_sum1*square_sum2);
-		} 
-			else result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz);
+				result /= sqrt(square_sum1*square_sum2);
+			}  else result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz);
+			if( normalize ) {
+				//  it looks like it could work in 3D, but does not
+				double square_sum1 = 0., square_sum2 = 0.;
+				for ( int iz = 0; iz <= nz-1; ++iz) {
+					for ( int iy = 0; iy <= ny-1; ++iy) {
+						for ( int ix = 2; ix <= lsd2 - 1 - ixb; ++ix) {
+							size_t ii = ix + (iy  + iz * ny)* lsd2;
+							square_sum1 += x_data[ii] * double(x_data[ii]);
+							square_sum2 += y_data[ii] * double(y_data[ii]);
+						}
+					}
+					for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
+						size_t ii = (iy  + iz * ny)* lsd2;
+						square_sum1 += x_data[ii] * double(x_data[ii]);
+						square_sum1 += x_data[ii+1] * double(x_data[ii+1]);
+						square_sum2 += y_data[ii] * double(y_data[ii]);
+						square_sum2 += y_data[ii+1] * double(y_data[ii+1]);
+					}
+					if(nx%2 == 0) {
+						for ( int iy = 1; iy <= ny/2-1 + iyb; ++iy) {
+							size_t ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+							square_sum1 += x_data[ii] * double(x_data[ii]);
+							square_sum1 += x_data[ii+1] * double(x_data[ii+1]);
+							square_sum2 += y_data[ii] * double(y_data[ii]);
+							square_sum2 += y_data[ii+1] * double(y_data[ii+1]);
+						}
+
+					}
+					square_sum1 *= 2;
+					square_sum1 += x_data[0] * double(x_data[0]);
+					square_sum2 *= 2;
+					square_sum2 += y_data[0] * double(y_data[0]);
+					if(ny%2 == 0) {
+						int ii = (ny/2  + iz * ny)* lsd2;
+						square_sum1 += x_data[ii] * double(x_data[ii]);
+						square_sum2 += y_data[ii] * double(y_data[ii]);
+					}
+					if(nx%2 == 0) {
+						int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
+						square_sum1 += x_data[ii] * double(x_data[ii]);
+						square_sum2 += y_data[ii] * double(y_data[ii]);
+						if(ny%2 == 0) {
+							int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
+							square_sum1 += x_data[ii] * double(x_data[ii]);
+							square_sum2 += y_data[ii] * double(y_data[ii]);
+						}
+					}
+				}
+				result /= sqrt(square_sum1*square_sum2);
+			}	else  result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz);
+			// This concludes the 2D part.
 		}
 	} else {
 		// This part is for when two images are real, which is much easier because 2-D or 3-D
@@ -620,7 +618,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			}
 		} else {
 			// this little bit of manual loop unrolling makes the dot product as fast as sqeuclidean with -O2
-			for (size_t i=0; i<totsize; i++) result+=x_data[i]*y_data[i];
+			for (size_t i=0; i<totsize; i++) result += x_data[i]*y_data[i];
 
 			if (normalize) {
 				square_sum1 = image->get_attr("square_sum");
