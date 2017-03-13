@@ -217,7 +217,7 @@ def AI( fff, anger, shifter, chout = False):
 		inc = Tracker["currentres"]
 		if Tracker["large_at_Nyquist"]:	
 			inc += int(0.25 * Tracker["constants"]["nnxo"]/2 +0.5)
-			tmp = min(max(2*inc,int(Tracker["nxinit"]*1.09), Tracker["constants"]["nnxo"] )
+			tmp = min(max(2*inc,int(Tracker["nxinit"]*1.09)), Tracker["constants"]["nnxo"] )
 		else:
 			inc += Tracker["nxstep"]
 			tmp = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
