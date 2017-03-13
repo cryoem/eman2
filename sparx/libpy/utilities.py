@@ -3539,7 +3539,7 @@ def generate_ctf(p):
 	elif(len(p) == 8):
 		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast,'dfdiff':p[6],'dfang':p[7]})
 	else:
-		ERROR("Incorrect number of entries on a list, cennot generate CTF","generate_ctf",0)
+		ERROR("Incorrect number of entries on a list, cannot generate CTF","generate_ctf",0)
 		return None
 	return ctf
 
