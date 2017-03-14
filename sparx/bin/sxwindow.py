@@ -788,14 +788,35 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# 	# Do nothing
 		
 		# Generate CTF object of this micrograph
-		ctf_obj = generate_ctf(cter_entry) # indexes 0 to 7 (idx_cter_def to idx_cter_astig_ang) must be same in cter format & ctf object format.
+		# indexes 0 to 7 (idx_cter_def to idx_cter_astig_ang) must be same in cter format & ctf object format.
+		# ctf_obj = generate_ctf(cter_entry) 
+		# 
+		# NOTE: 2017/03/07 Toshio Moriya
+		# Due to the change of error handling in generate_ctf()  
+		# the argument have to be a list with length of 6 or 8 now.
+		# 
+		ctf_entry = []
+		ctf_entry.append(cter_entry[idx_cter_def])
+		ctf_entry.append(cter_entry[idx_cter_cs])
+		ctf_entry.append(cter_entry[idx_cter_vol])
+		ctf_entry.append(cter_entry[idx_cter_apix])
+		ctf_entry.append(cter_entry[idx_cter_bfactor])
+		ctf_entry.append(cter_entry[idx_cter_ac])
+		ctf_entry.append(cter_entry[idx_cter_astig_amp])
+		ctf_entry.append(cter_entry[idx_cter_astig_ang])
+		assert(len(ctf_entry) == 8)
+		ctf_obj = generate_ctf(ctf_entry) 
 		
 		# --------------------------------------------------------------------------------
 		# Read micrograph
 		# --------------------------------------------------------------------------------
 		mic_path = global_entry_dict[mic_id_substr][subkey_input_mic_path]
 		assert (mic_path == mic_pattern.replace("*", mic_id_substr))
-		mic_img = get_im(mic_path)
+		try:
+			mic_img = get_im(mic_path)
+		except:
+			print("Failed to read the associate micrograph %s for %s. The file might be corrupted. Skipping..." % (mic_path, mic_basename))
+			continue
 		
 		# --------------------------------------------------------------------------------
 		# Move to the Fourier spsace processing

@@ -33,6 +33,13 @@
  *
  * */
 
+#ifdef WIN32
+#include <windows.h>
+	#define MAXPATHLEN (MAX_PATH*4)
+#else
+#include <sys/param.h>
+#endif	// WIN32
+
 #include "all_imageio.h"
 #include "portable_fileio.h"
 #include "emcache.h"
@@ -44,13 +51,6 @@
 
 #include <boost/shared_ptr.hpp>
 using boost::shared_ptr;
-
-#ifdef WIN32
-	#include <windows.h>
-	#define MAXPATHLEN (MAX_PATH*4)
-#else
-	#include <sys/param.h>
-#endif	// WIN32
 
 //#ifdef EMAN2_USING_CUDA_MALLOC
 //#include "cuda/cuda_util.h"

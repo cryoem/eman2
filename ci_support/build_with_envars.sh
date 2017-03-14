@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source ci_support/run_circle_pre.sh
+source ci_support/pre_build.sh
 
 export CONDA_BUILD_STATE=BUILD
 export PREFIX=$HOME/miniconda2/
@@ -10,4 +10,6 @@ cmake $src_dir
 make
 make install
 
-source $src_dir/ci_support/run_circle_post.sh
+export PYTHONPATH="${PREFIX}/lib:$PYTHONPATH"
+
+source $src_dir/ci_support/post_build.sh

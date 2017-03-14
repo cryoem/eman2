@@ -56,11 +56,6 @@ using std::pair;
 
 #include <iterator>
 
-#include "log.h"
-#include "exception.h"
-
-// #include "transform.h" // Trnasform3D::EulerType
-
 // debug
 #include <cstdio>
 #include <iostream>
@@ -69,6 +64,11 @@ using std::endl;
 
 #include <cctype> // tolower
 #include <algorithm> //tolower
+#include "log.h"
+#include "exception.h"
+
+// #include "transform.h" // Trnasform3D::EulerType
+
 namespace EMAN
 {
 	class EMConsts {

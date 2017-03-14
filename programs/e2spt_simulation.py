@@ -50,7 +50,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	parser.add_argument("--clip", type=int,default=0,help="""The final box size to clip the output subtomograms to.""")								
 	parser.add_argument("--gridholesize", type=float,default=1.0,help="""Default=1.0. Size of the carbon hole in micrometers for the simulated grid (this will determine the shifts in defocus for each particle at each tilt angle, depending on the position of the particle respect to the tilt axis; the tilt axis by convention goes parallel to Y through the middle of the tomogram.""")
-	parser.add_argument("--icethickness", type=float,default=0.4,help="""Thickness of the specimen to simulate, in microns. Default=0.4. If --writetomogram is supplied, --icethickness will be used to calculate the size of the tomogram in Z in PIXELS for the simulated tomogram. This parameter will also be used to assign a random coordinate in Z to each subtomogram.""")
+	parser.add_argument("--icethickness", type=float,default=0.4,help="""Thickness of the specimen to simulate, in microns. Default=0.4; --icethickness will be used to calculate the size of the tomogram in Z in PIXELS for the simulated tomogram. This parameter will also be used to assign a random coordinate in Z to each subtomogram.""")
 	parser.add_argument("--input", type=str, default='', help="""The name of the input volume from which simulated subtomograms will be generated. The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. If the input file is PDB or MRC, a version of the supplied model will be written out in HDF format. If the input file is a stack, simulatd subvolumes will be generated from each model in the stack and written to different output stacks. For example, if the input file contains models A and B, two output stacks with simulated subvolumes will be generated.""")
 	parser.add_argument("--invert",action="store_true",default=False,help=""""This will multiply the pixel values by -1. This is intended to make the simulated particles be like real EM data before contrast reversal (black, negative contrast), assuming that they're being generated from a model/image where the protein has positive values. It not supplied, 'white protein' (positive density values) will be used by default (or whatever the original contrast is of the image supplied as a model).""")
 	parser.add_argument("--nosim", action="store_true",default=False,help="""If on, the program will generate stacks of "perfect particles" in different random orientations, but with no missing wedge, no noise, no ctf parameters, etc. The output randstack.hdf will be identical to simptcls.hdf""")	
@@ -62,6 +62,9 @@ def main():
 	parser.add_argument("--pad2d", type=float,default=0.0,help="""Factor to pad projections in the tilt series by before reconstruction.""")								
 	parser.add_argument("--parallel",type=str,default='thread:1',help="""Default=thread:1. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
 	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
+	parser.add_argument("--preferredside",action='store_true',default=False,help='''Default=False. If supplied, this option will cause the distribution of orientations to be biased towards alt=90. Works in conjuction with --preferredtop, in which case half of the particles will be biased towards 'top' view orientations and half towards 'side' view orientations.''')
+	parser.add_argument("--preferredtop",action='store_true',default=False,help='''Default=False. If supplied, this option will cause the distribution of orientations to be biased towards alt=180. Works in conjuction with --preferredside, in which case half of the particles will be biased towards 'top' view orientations and half towards 'side' view orientations.''')
+
 	parser.add_argument("--randstack",type=str,default='',help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
 	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line to see all options and parameters available. To specify the interpolation scheme for the fourier reconstruction, specify 'mode'. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 'gauss_5_slow', 'gypergeom_5', 'experimental'. For example --reconstructor=fourier:mode=gauss_5 """)																				
 	parser.add_argument("--savenoise", action="store_true",default=False,help="""If on, it saves the noise stack for each particle. This can be useful for testing alignment under varying SNR, so that the same noise (just at a different ratio/level) is tested.""")
@@ -404,14 +407,25 @@ def randomizer(options, model, tag):
 	
 	orientations = OrientGens.get("even",{"n": options.nptcls, "phitoo":1,"inc_mirror":1})	#Generate evenly distributed orientations
 	palts=[]
+
 	if options.preferredtop and not options.preferredside:
-		paltstop = prefferedalt( options, mu=180,sigma=45, options.nptcls )
+<<<<<<< HEAD
+		paltstop = preferredalt( options, mu=180,sigma=45, nptlcs=options.nptcls )
 	if options.preferredside and not options.preferredtop:
-		paltsside = prefferedalt( options, mu=90, sigma=45, options.nptcls )
+		paltsside = preferredalt( options, mu=90, sigma=45, nptlcs=options.nptcls )
+	if options.preferredside and options.preferedtop:
+		ntop = int(round(options.nptlcs*options.preferredtop))
+		nside = options.nptlcs-ntop
+		palts = preferredalt( options, mu=180,sigma=45, nptlcs=ntop ) + preferredalt( options, mu=90,sigma=45, nptlcs=nside )
+=======
+		paltstop = prefferedalt( options, 180,45, options.nptcls )
+	if options.preferredside and not options.preferredtop:
+		paltsside = prefferedalt( options, 90, 45, options.nptcls )
 	if options.preferredside and options.prefferedtop:
 		ntop = int(round(options.nptlcs*options.preferredtop))
 		nside = options.nptlcs-ntop
-		palts = prefferedalt( options, mu=180,sigma=45, ntop ) + prefferedalt( options, mu=90,sigma=45, nside )
+		palts = prefferedalt( options, 180,45, ntop ) + prefferedalt( options, 90,45, nside )
+>>>>>>> fdf75c89cc111d8e032ffa4d4ed6d5306dcd6b29
 
 
 	transforms=[]
@@ -490,38 +504,42 @@ def randomizer(options, model, tag):
 			print "The random transform applied to it was", random_transform
 			
 	
-	az=[]
+	azs=[]
 	alts=[]
 	phis=[]
-	for tr in transforms:
-		rots=tr.get_rotation()
-		az=rots['az']
-		azs.append(az)
-		textwriter(options,azs,'az')
-		plotangles( options, azs, 'az' )
 
-		alt=rots['alt']
-		alts.append(alt)
-		textwriter(options,alts,'alt')
-		plotangles( options, alts, 'alt' )
+	if len(transforms) > 2:
+		for tr in transforms:
+			rots=tr.get_rotation()
+			az=rots['az']
+			azs.append(az)
+			textwriter(options,azs,'az')
+			plotangles( options, azs, 'az' )
 
-		phi=rots['phi']
-		phis.append(phi)
-		textwriter(options,phis,'phi')
-		plotangles( options, phis, 'phi' )
+			alt=rots['alt']
+			alts.append(alt)
+			textwriter(options,alts,'alt')
+			plotangles( options, alts, 'alt' )
+
+			phi=rots['phi']
+			phis.append(phi)
+			textwriter(options,phis,'phi')
+			plotangles( options, phis, 'phi' )
 
 	return randptcls,randstackname
 
 
 def preferredalt( options, mu=0, sigma=1, nalts=3 ):
-	s = np.random.normal(mu, sigma, nalts)
+	s = numpy.random.normal(mu, sigma, nalts)
 	return s
 
 
 def plotangles( options, angles, tag ):
 	import matplotlib.pyplot as plt
-	count, bins, ignored = plt.hist(s, 30, normed=True)
-	plt.plot(bins, 1/(sigma * np.sqrt(2 * np.pi)) * np.exp( - (bins - mu)**2 / (2 * sigma**2) ), linewidth=2, color='r')
+	count, bins, ignored = plt.hist(angles, 30, normed=True)
+	sigmaangles = numpy.std(angles)
+	meanangles = numpy.mean(angles)
+	plt.plot(bins, 1/(sigmaangles * numpy.sqrt(2 * numpy.pi)) * numpy.exp( - (bins - meanangles)**2 / (2 * sigmaangles**2) ), linewidth=2, color='r')
 
 	plt.title("Distribution of angle " + tag )
 	plt.ylabel("n")
@@ -691,8 +709,8 @@ def subtomosim(options,ptcls,outname,dimension):
 		text=p.communicate()	
 		p.stdout.close()
 	
-	if options.writetomogram:
-		tomogramsim(options,results)
+	#if options.writetomogram:
+	#	tomogramsim(options,results)
 
 	
 	return
@@ -859,6 +877,9 @@ class SubtomoSimTask(JSTask):
 			
 		#tiltangles = []
 		#for j in range( nslices ):						#Extra 'noise' slices are 0 if --fillwedge is off. Calculated above if on.
+		
+
+		prjindx=0
 		for realalt in tiltangles:	
 			#realalt = alt + j*tiltstep
 		
@@ -960,6 +981,7 @@ class SubtomoSimTask(JSTask):
 			prj['spt_txerror'] = txerror
 			prj['spt_tyerror'] = tyerror
 			prj['ptcl_source_coord']=sptcoords
+			prj['spt_prj_indx'] = prjindx
 		
 			#print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nThe size of the prj is", prj['nx']
 			#print "\n"
@@ -972,7 +994,7 @@ class SubtomoSimTask(JSTask):
 				#	finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
 				
 				finalprjsRAW = finalprjsRAW.replace('_preproc','')	
-				prj.write_image( finalprjsRAW , -1)					#Write projections stack for particle i
+				prj.write_image( finalprjsRAW , prjindx )					#Write projections stack for particle i
 				
 			raw_projections.append(prj)
 			
@@ -1018,11 +1040,11 @@ class SubtomoSimTask(JSTask):
 				#	finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') 
 				
 				finalprjsED = finalprjsED.replace('_preproc','')
-				prj_r.write_image( finalprjsED , -1)	
-				print "wrote edited prj to", finalprjsED
+				prj_r.write_image( finalprjsED , prjindx)	
+				print "wrote edited prj to %s, indx %d" %( finalprjsED, prjindx )
 	
-	
-	
+			prjindx += 1
+
 		#print "The box for IMAGE is with image.get_xsize", image.get_xsize()
 		#print "Whereas with image['nx']", image['nx']
 

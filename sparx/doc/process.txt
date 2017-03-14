@@ -6,7 +6,7 @@ sxprocess - Miscellaneous Commands: Carry out various SPARX commands on image se
 
 ''usage in command line''
 
-sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --low_pass_filter  --aa=AA  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --B_stop=B_STOP  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
+sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --postprocess  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --randomphasesafter=FSC  --low_pass_filter  --aa=AA  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --B_start=B_START  --B_stop=B_STOP  --window_stack  --box=BOX  --angular_distribution  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
 
 
 === Typical usage ===
@@ -99,6 +99,22 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
 
 ''' sxprocess.py  --postprocess  run1_half1_class001_unfil.mrc  run1_half2_class001_unfil.mrc  --fsc_adj --do_adaptive_mask --pixel_size=1.12 '''
 
+14. Postprocess 3-D or 2-D images: For 3-D volumes, (a) Calculate FSC with provided mask and adjust the FSC by random phases FSC, (b) Sum two volume, (c) Apply mask, (d) Apply MTF correction (optional), (e) Adjust power spectrum by 2*FSC/(1+FSC) (optional), (f) Estimate B-factor from 10 Angstrom (default) to the resolution (optional), (g) Apply negative B-factor to enhance the volume (optional), (h) Apply low_pass filter to the volume (optional). Options are independent of each others.
+--low_pass_filter: =0.0, low_pass filter to resolution; =-1., no low_pass filter; =5.8 low_pass filter to 5.8 Angstrom; =.2 low_pass filter to 0.2  
+--B_enhance:       =-1, B-factor is not applied; =0, program estimates B-factor from options.B_start(usually set as 10 Angstrom)to the resolution determined by FSC 0.143; =128., program use the given value 128. to enhance map.
+--mtf:             =aa.txt, for those high resolution maps, mtf correction would significantly enhance structural features.
+--fsc_adj:         fsc adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
+--do_adaptive_mask =True when it is restored, the program adaptively creates surface mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
+--output           output volume 
+
+''' sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter =-1  --mtf=aa.txt  --fsc_adj --output=vol_post.hdf '''
+
+''' sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --mask=mask15.hdf --postprocess   --pixel_size=1.12     --low_pass_filter=4.7  --mtf=aa.txt --fsc_adj '''
+
+''' sxprocess.py vol_0_unfil.hdf vol_1_unfil.hdf  --do_adaptive_mask   --postprocess   --pixel_size=1.12   --mtf=aa.txt --fsc_adj '''
+
+For 2-D images: Calculate B-factor and apply negative B-factor to 2-D images.
+
 15. Window stack file -reduce size of images without changing the pixel size.
 
 16. Create angular distribution .build file
@@ -157,10 +173,11 @@ IMPORTANT: Please do not move (or remove!) any input/intermediate EMAN2DB files 
     mask_threshold:: Adaptive mask threshold: Density threshold for creating adaptive surface mask. (default 0.02)
     consine_edge:: Cosine edge width [Pixels]: Width of cosine transition area for soft-edge masking. (default 6.0)
     dilation:: surface dilation size [Pixels]: Size of surface dilation or erosion. (default 3.0) 
-    output:: Output file: (default vol_postrefine_masked.hdf)
+    output:: Output file: Output file name. (default vol_postrefine_masked.hdf)
     pixel_size:: Pixel size [A]: Pixel size of input data. (default 0.0)
     B_start:: B-factor lower limit [A]: Lower limit for B-factor estimation. (default 10.0)
     B_stop:: B-factor higher limit [A]: Higher limit for B-factor estimation. (default  0.0)
+    randomphasesafter:: Randomise phases after this FSC: Set Fourier pixels random phases after this FSC value. (default 0.8)
 
     window_stack:: Window stack images using a smaller window size: (default False)
     box:: new window size: (default 0)

@@ -663,7 +663,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		data = re.sub("\s//.*\n", "", data)
 		return data
 
-        def _tree_widget_click(self, item, col):
+	def _tree_widget_click(self, item, col):
 		# Display the progrma GUI
 		if item.getProgram():
 			self._set_GUI(item.getProgram(), item.getMode())
